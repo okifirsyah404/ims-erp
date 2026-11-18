@@ -1,0 +1,62 @@
+---
+import AppLayout from "./AppLayout.astro";
+import Logo from "../components/customer/Logo.astro";
+import Media from "../components/customer/Media.astro";
+import type { AuthBrand } from "./auth-brand";
+
+/**
+ * 04 Authentication screens: single column, content pinned top, actions can stick to the
+ * bottom. From `lg` a `brand` panel (04.0x Desktop) sits beside the form column.
+ */
+interface Props {
+  title: string;
+  themeColor?: string;
+  dark?: boolean;
+  brand?: AuthBrand;
+}
+
+const { title, themeColor, dark = false, brand } = Astro.props;
+---
+
+<AppLayout title={title} themeColor={themeColor ?? (dark ? "#060F26" : "#FFFFFF")} bodyClass={dark ? "bg-navy-950" : undefined}>
+  {
+    brand ? (
+      <div class="lg:flex lg:min-h-dvh">
+        <aside class="relative isolate hidden w-[42%] max-w-[600px] shrink-0 flex-col justify-between overflow-hidden p-12 lg:sticky lg:top-0 lg:flex lg:h-dvh" aria-label="About the Entragate customer portal">
+          <Media alt="" tone="dark" class="absolute inset-0 -z-20 size-full" />
+          <span class="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2659_0%,#060F2626_30%,#060F26F2_100%)]" aria-hidden="true" />
+          <div class="flex items-center justify-between gap-4">
+            <a href="/welcome" aria-label="Entragate"><Logo tone="light" /></a>
+            <span class="flex items-center gap-2 rounded-pill bg-white/12 px-3.5 py-[7px] text-[12px] font-bold tracking-[1.2px] text-white uppercase ring-1 ring-white/20 backdrop-blur-[8px] ring-inset">
+              <span class="size-[7px] rounded-full bg-cyan-400" aria-hidden="true" />
+              {brand.eyebrow}
+            </span>
+          </div>
+          <div class="flex flex-col gap-5">
+            <p class="font-heading text-[40px] leading-[45px] font-bold tracking-[-1.25px] text-white">{brand.headline}</p>
+            <p class="text-[16px] leading-[26px] text-fg-on-dark-muted">{brand.description}</p>
+            {
+              brand.stats && (
+                <dl class="flex rounded-[20px] bg-white/8 px-1 py-5 ring-1 ring-white/15 backdrop-blur-[12px] ring-inset">
+                  {brand.stats.map((stat, index) => (
+                    <div class:list={["flex flex-1 flex-col-reverse gap-1 px-5", index > 0 && "border-l border-white/15"]}>
+                      <dt class="text-[12.5px] text-fg-on-dark-muted">{stat.label}</dt>
+                      <dd class="font-heading text-[26px] leading-[29px] font-extrabold tracking-[-0.8px] text-white">{stat.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )
+            }
+          </div>
+        </aside>
+        <main id="main" class="app-column flex min-h-dvh flex-1 flex-col pt-[env(safe-area-inset-top)] lg:max-w-[540px] lg:justify-center lg:py-[72px]">
+          <slot />
+        </main>
+      </div>
+    ) : (
+      <main id="main" class:list={["app-column flex min-h-dvh flex-col pt-[env(safe-area-inset-top)] md:max-w-[560px]", dark && "bg-navy-950"]}>
+        <slot />
+      </main>
+    )
+  }
+</AppLayout>

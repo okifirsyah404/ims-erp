@@ -1,0 +1,26 @@
+---
+/** KPI tile used inside the decorative product-UI mockups (02.04 · Window KPIs). */
+interface Props {
+  label: string;
+  value: string;
+  delta?: string;
+  tone?: "success" | "warning" | "danger";
+  variant?: "desktop" | "mobile" | "hero";
+}
+
+const { label, value, delta, tone = "success", variant = "desktop" } = Astro.props;
+const toneClass = { success: "text-success", warning: "text-warning", danger: "text-danger" }[tone];
+const sizes = {
+  hero: { box: "rounded-md p-3 gap-1", label: "text-[10px]", value: "text-[20px]", delta: "text-[10px]", gap: "gap-1.5" },
+  desktop: { box: "rounded-sm p-2.5 gap-[3px]", label: "text-[9.5px]", value: "text-[17px]", delta: "text-[9.5px]", gap: "gap-[5px]" },
+  mobile: { box: "rounded-sm p-2 gap-0.5", label: "text-[8.5px]", value: "text-[14px]", delta: "text-[9.5px]", gap: "gap-[5px]" },
+}[variant];
+---
+
+<div class:list={["flex min-w-0 flex-1 flex-col bg-white ring-1 ring-border ring-inset", sizes.box]}>
+  <span class:list={["text-fg-muted", sizes.label]}>{label}</span>
+  <span class:list={["flex items-end", sizes.gap]}>
+    <span class:list={["font-heading font-bold whitespace-nowrap text-fg", sizes.value]}>{value}</span>
+    {delta && variant !== "mobile" && <span class:list={["font-semibold", toneClass, sizes.delta]}>{delta}</span>}
+  </span>
+</div>

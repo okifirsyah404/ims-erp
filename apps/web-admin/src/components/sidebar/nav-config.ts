@@ -70,8 +70,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				items: [
 					{ titleKey: 'item.quotes', url: '/sales/quotes', permission: 'quotation.read' },
 					{ titleKey: 'item.salesOrders', url: '/sales/orders', permission: 'sales_order.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries' },
+					// Same either-or as `GET /delivery-notes` (the leaf had no permission,
+					// so the route guard refused the pages to everyone).
+					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries', anyPermission: ['stock.read', 'sales_order.read'] },
+					{ titleKey: 'item.salesReturns', url: '/sales/returns', permission: 'sales_return.read' },
 					{ titleKey: 'item.invoices', url: '/sales/invoices', permission: 'invoice.read' },
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
@@ -146,7 +148,6 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
 					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
-					{ titleKey: 'item.newItem', url: '/inventory/items/new', permission: 'product.create' },
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },
@@ -158,9 +159,12 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: Truck,
 				items: [
 					{ titleKey: 'item.suppliers', url: '/procurement/suppliers', permission: 'supplier.read' },
+					{ titleKey: 'item.purchaseRequests', url: '/procurement/purchase-requests', permission: 'purchase_request.read' },
 					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders', permission: 'purchase_order.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts' },
+					// Same grant as `GET /goods-receipts` (ERP-0068: the leaf had none, so
+					// the route guard refused the BPB pages to everyone).
+					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts', permission: 'stock.read' },
+					{ titleKey: 'item.purchaseReturns', url: '/procurement/purchase-returns', permission: 'purchase_return.read' },
 				],
 			},
 			{
@@ -291,8 +295,10 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
 			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash, permission: 'code_number.read' },
-			// No catalog resource yet: hidden.
-			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText },
+			// No catalog resource yet: hidden. The document settings page carries
+			// no permission of its own (its values are edited per group), so it
+			// stays open like the settings section itself.
+			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText, open: true },
 		],
 	},
 ];

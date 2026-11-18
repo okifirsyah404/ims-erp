@@ -298,6 +298,12 @@ Menu **Proyek**. Diagram:
 4. Customer service/PM memilih **Teknisi**. Teknisi: **Mulai kerjakan** →
    **Selesaikan** (tindakan perbaikan, biaya servis) — bisa **Buka lagi**.
 5. **Tutup Tiket** hanya dengan konfirmasi pelanggan (nama dan saluran).
+6. **Pesan** di tiket: tulis **catatan internal** (hanya staf) atau centang
+   *Terlihat oleh pelanggan di portal* untuk membalas pelanggan. Pesan yang
+   ditulis pelanggan di portal juga muncul di sini. Tiket yang dibuat
+   pelanggan di portal bersaluran **Portal pelanggan**, dan pelanggan bisa
+   mengonfirmasi tiket yang sudah selesai di sana (tiket tertutup dengan
+   saluran konfirmasi *Portal pelanggan*).
 
 ### 8.5 Lisensi dan langganan (M03)
 
@@ -388,6 +394,30 @@ Menu **Proyek**. Diagram:
 5. **FAQ asisten** (marketing, admin): isi pertanyaan dan jawaban persis
    yang boleh dibaca pelanggan, beserta kata kunci. Hanya entri **Aktif**
    yang dipakai. Jangan menulis diskon atau janji di sini.
+
+### 8.8 Portal pelanggan (ERP-0022)
+
+1. **CRM → Pelanggan → (pelanggan) → Portal pelanggan**: isi nama orang,
+   email yang dipakai untuk masuk, dan **peran** (Pemilik, Penyetuju,
+   Keuangan, Pemantau) → **Undang ke portal**. Satu login per orang; satu
+   perusahaan bisa punya beberapa. Orang tersebut menerima email untuk
+   membuat kata sandi (berlaku 3 hari). Undang minimal satu **Pemilik** per
+   perusahaan: pemilik mengundang dan mencabut rekannya sendiri di portal.
+2. Kartu menampilkan setiap login dengan perannya: **Menunggu kata sandi**
+   sampai kata sandi dibuat, lalu **Aktif** dan waktu terakhir masuk. **Kirim
+   ulang tautan** mengirim email kata sandi baru; **Cabut akses** mengakhiri
+   semua sesi (bisa diundang lagi nanti).
+2a. Pelanggan individu juga bisa **mendaftar sendiri** di portal: mereka
+   memasukkan kode 6 digit yang dikirim ke email, lalu ERP membuat pelanggan
+   (kode `PRT-…`, tipe Individu) beserta kontaknya. Perusahaan tidak bisa
+   mendaftar sendiri; mereka diundang.
+3. Di portal pelanggan melihat proyeknya (tahap, checklist, BAST, dan file uji
+   fungsi / pelatihan / BAST bertanda tangan / foto — tidak pernah biaya atau
+   catatan internal), perangkat dan garansinya, serta tiket servisnya;
+   pelanggan bisa membuat tiket, menulis pesan, dan mengonfirmasi perbaikan.
+4. Email login staf tidak bisa dipakai untuk portal, dan login pelanggan tidak
+   bisa masuk ke web-admin. Setelah 5 kali salah kata sandi, portal mengunci
+   email itu selama 15 menit.
 
 ## 9. Dokumen cetak dan penomoran
 

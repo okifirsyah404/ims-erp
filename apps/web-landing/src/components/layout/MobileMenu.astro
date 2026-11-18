@@ -1,0 +1,131 @@
+---
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import Search from "@lucide/astro/icons/search";
+import UserRound from "@lucide/astro/icons/user-round";
+import LogIn from "@lucide/astro/icons/log-in";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Phone from "@lucide/astro/icons/phone";
+import Button from "../ui/Button.astro";
+import SocialLinks from "../ui/SocialLinks.astro";
+import { company, customerPortal, mainNav, routes } from "../../data/site";
+import { isActivePath } from "../../lib/nav";
+import { catalogCategories } from "../../data/catalog";
+import { platforms } from "../../data/solutions";
+
+/** 01.05 Guest Menu (open) — Mobile 390. */
+interface Props {
+  id: string;
+  pathname: string;
+}
+
+const { id, pathname } = Astro.props;
+const productLinks = catalogCategories.map((c) => ({ label: c.name, href: `${routes.products}?category=${c.slug}` }));
+const solutionLinks = platforms.map((p) => ({ label: p.name, href: `${routes.solutions}/${p.slug}` }));
+---
+
+<div id={id} hidden class="fixed inset-x-0 top-16 bottom-0 z-40 overflow-y-auto overscroll-contain bg-white nav:hidden">
+  <div class="container-page flex flex-col gap-[18px] pt-4 pb-8">
+    <form action={routes.search} method="get" role="search">
+      <label
+        class="flex h-12 items-center gap-3 rounded-md bg-white pr-2 pl-[18px] ring-1 ring-border ring-inset focus-within:ring-blue-600"
+      >
+        <Search size={20} class="text-fg-muted" aria-hidden="true" />
+        <span class="sr-only">Search products</span>
+        <input
+          type="search"
+          name="q"
+          placeholder="Search products…"
+          class="h-full min-w-0 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-fg-muted"
+        />
+      </label>
+    </form>
+
+    <nav aria-label="Mobile">
+      <ul class="flex flex-col">
+        {
+          mainNav.map((item) => {
+            const active = isActivePath(pathname, item.href);
+            const sub = item.href === routes.products ? productLinks : item.href === routes.solutions ? solutionLinks : undefined;
+            const label = ["font-heading text-[18px]", active ? "font-extrabold text-blue-600" : "font-semibold text-navy-900"];
+            return sub ? (
+              <li class="border-b border-border">
+                <details class="group/sub" name="mobile-nav">
+                  <summary class:list={["flex cursor-pointer list-none items-center justify-between px-1 py-[15.5px] [&::-webkit-details-marker]:hidden", label]}>
+                    {item.label}
+                    <ChevronDown size={18} class="text-fg-muted transition-transform duration-200 group-open/sub:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <ul class="flex flex-col gap-0.5 pb-3">
+                    <li>
+                      <a href={item.href} aria-current={active ? "page" : undefined} class="flex items-center justify-between rounded-md px-3 py-2.5 text-[14px] font-semibold text-blue-600">
+                        All {item.label.toLowerCase()}
+                        <ArrowRight size={15} aria-hidden="true" />
+                      </a>
+                    </li>
+                    {sub.map((link) => (
+                      <li>
+                        <a href={link.href} class="block rounded-md px-3 py-2.5 text-[14px] font-medium text-fg-secondary active:bg-surface">{link.label}</a>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </li>
+            ) : (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  class:list={["flex items-center justify-between border-b border-border px-1 py-[15.5px]", label]}
+                >
+                  {item.label}
+                  <ArrowUpRight size={18} class="text-fg-muted" aria-hidden="true" />
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+
+    <div class="flex flex-col gap-3 rounded-lg bg-surface p-[18px]">
+      <div class="flex items-center gap-3">
+        <span class="flex size-10 items-center justify-center rounded-md bg-white text-blue-600">
+          <UserRound size={20} aria-hidden="true" />
+        </span>
+        <span class="flex flex-col gap-0.5">
+          <span class="text-[15px] font-bold text-fg">Customer Portal</span>
+          <span class="text-[12px] text-fg-muted">Track orders, quotes &amp; warranties</span>
+        </span>
+      </div>
+      <div class="flex gap-2.5">
+        <a
+          href={customerPortal.login}
+          class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 px-3 py-[13px] text-[14px] font-semibold text-white"
+        >
+          Log in
+          <LogIn size={15} aria-hidden="true" />
+        </a>
+        <a
+          href={customerPortal.register}
+          class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white px-3 py-[13px] text-[14px] font-semibold text-fg ring-1 ring-border ring-inset"
+        >
+          Register
+        </a>
+      </div>
+    </div>
+
+    <Button href={routes.quote} size="lg" block icon={ArrowRight}>Get a Quote</Button>
+
+    <div class="flex items-center justify-between py-1">
+      <a href={company.phoneHref} class="flex items-center gap-2 text-[13px] font-semibold text-fg">
+        <Phone size={16} class="text-blue-600" aria-hidden="true" />
+        {company.phone}
+      </a>
+      <SocialLinks
+        only={["instagram", "linkedin", "whatsapp"]}
+        itemClass="size-[34px] rounded-md bg-surface text-fg"
+        class="gap-2"
+      />
+    </div>
+  </div>
+</div>

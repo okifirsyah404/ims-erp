@@ -64,6 +64,8 @@ export interface IProjectRepository {
 	 */
 	stats(request: { involvedUserId?: string; today: string }): Promise<TProjectStats>;
 	findById(id: string): Promise<TProjectSelect | null>;
+	/** A customer's live, not cancelled projects, newest first (portal, ERP-0022). */
+	listByCustomer(customerId: string): Promise<TProjectSelect[]>;
 	/** Whether the user leads the project or has a live task in it. */
 	isInvolved(projectId: string, userId: string): Promise<boolean>;
 	findLiveBySalesOrder(salesOrderId: string): Promise<TProjectSelect | null>;

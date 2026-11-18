@@ -16,10 +16,13 @@ import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
-	LEDGER_REPOSITORY_TOKEN,
 	POSTING_SERVICE_TOKEN,
 } from '../constants/ar-di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import {
+	AP_OPEN_ITEM_REPOSITORY_TOKEN,
+	SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN,
+	SUPPLIER_BILL_REPOSITORY_TOKEN,
+} from '../constants/di';
 import type { PostingService } from './posting.service';
 import type { ArAccountResolverService } from './ar-account-resolver.service';
 import {
@@ -27,8 +30,10 @@ import {
 	BillNotDraftError,
 	BillNotFoundError,
 	BillOrderNotBillableError,
-	PaymentTargetNotIssuedError,
 } from '../errors/ledger.errors';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type { ISupplierBillItemRepository } from '../contracts/supplier-bill-item.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
 export type TBillActionContext = {
 	organizationId: string;
@@ -80,7 +85,9 @@ const toQuantity = (milli: bigint) => (Number(milli) / 1000).toFixed(3);
 export class SupplierBillService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(SUPPLIER_BILL_REPOSITORY_TOKEN) private readonly bills: ISupplierBillRepository,
+		@inject(AP_OPEN_ITEM_REPOSITORY_TOKEN) private readonly ap: IApOpenItemRepository,
+		@inject(SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN) private readonly billItems: ISupplierBillItemRepository,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly accountResolver: ArAccountResolverService,
@@ -120,7 +127,7 @@ export class SupplierBillService {
 	async publishDueNotices(today = businessDateOf()): Promise<{ processed: number; skipped: number }> {
 		const horizon = new Date(`${today}T00:00:00Z`);
 		horizon.setUTCDate(horizon.getUTCDate() + 7);
-		const bills = await this.repo.listOpenBillsDueBy(horizon.toISOString().slice(0, 10));
+		const bills = await this.bills.listOpenBillsDueBy(horizon.toISOString().slice(0, 10));
 		let processed = 0;
 		let skipped = 0;
 		for (const bill of bills) {
@@ -147,7 +154,7 @@ export class SupplierBillService {
 	}
 
 	private async withBilled(order: TBillableOrder): Promise<TBillableOrderView> {
-		const billed = await this.repo.billedQuantities(order.lines.map((line) => line.id));
+		const billed = await this.billItems.billedQuantities(order.lines.map((line) => line.id));
 		return {
 			...order,
 			lines: order.lines.map((line) => {
@@ -167,7 +174,7 @@ export class SupplierBillService {
 	/** One bill with its purchase order lines, if any. */
 	async detail(organizationId: string, id: string): Promise<TSupplierBillDetail> {
 		const bill = await this.get(organizationId, id);
-		return { ...bill, items: await this.repo.findSupplierBillItems(organizationId, id) };
+		return { ...bill, items: await this.billItems.findSupplierBillItems(organizationId, id) };
 	}
 
 	/**
@@ -197,8 +204,8 @@ export class SupplierBillService {
 		);
 
 		const created = await this.database.transaction(async (tx) => {
-			await this.repo.lockPurchaseOrderBilling(order.id, tx);
-			const billed = await this.repo.billedQuantities(
+			await this.billItems.lockPurchaseOrderBilling(order.id, tx);
+			const billed = await this.billItems.billedQuantities(
 				chosen.map(({ orderLine }) => orderLine.id),
 				tx,
 			);
@@ -210,7 +217,7 @@ export class SupplierBillService {
 				date: new Date(`${input.billDate}T12:00:00+07:00`),
 				tx,
 			});
-			const bill = await this.repo.insertSupplierBill(
+			const bill = await this.bills.insertSupplierBill(
 				{
 					organizationId: ctx.organizationId,
 					code,
@@ -231,7 +238,7 @@ export class SupplierBillService {
 				},
 				tx,
 			);
-			await this.repo.insertSupplierBillItems(
+			await this.billItems.insertSupplierBillItems(
 				chosen.map(({ orderLine, quantity }, index) => ({
 					organizationId: ctx.organizationId,
 					supplierBillId: bill.id,
@@ -258,11 +265,11 @@ export class SupplierBillService {
 		filters: { status?: string; supplierId?: string },
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<TSupplierBillSelect>> {
-		return this.repo.listSupplierBills(organizationId, filters, pagination);
+		return this.bills.listSupplierBills(organizationId, filters, pagination);
 	}
 
 	async get(organizationId: string, id: string): Promise<TSupplierBillSelect> {
-		const bill = await this.repo.findSupplierBillById(organizationId, id);
+		const bill = await this.bills.findSupplierBillById(organizationId, id);
 		if (!bill) throw new BillNotFoundError();
 		return bill;
 	}
@@ -277,7 +284,7 @@ export class SupplierBillService {
 				date: new Date(`${input.billDate}T12:00:00+07:00`),
 				tx,
 			});
-			return this.repo.insertSupplierBill(
+			return this.bills.insertSupplierBill(
 				{
 					organizationId: ctx.organizationId,
 					code,
@@ -302,10 +309,10 @@ export class SupplierBillService {
 
 	/** Draft → void. No journal impact (nothing was posted). */
 	async cancel(ctx: TBillActionContext, id: string): Promise<TSupplierBillSelect> {
-		const bill = await this.repo.findSupplierBillById(ctx.organizationId, id);
+		const bill = await this.bills.findSupplierBillById(ctx.organizationId, id);
 		if (!bill) throw new BillNotFoundError();
 		if (bill.status !== 'draft') throw new BillNotDraftError();
-		const updated = await this.repo.updateSupplierBill(ctx.organizationId, id, {
+		const updated = await this.bills.updateSupplierBill(ctx.organizationId, id, {
 			status: 'void',
 		});
 		return updated ?? bill;
@@ -332,7 +339,7 @@ export class SupplierBillService {
 
 	private async recordInTransaction(ctx: TBillActionContext, id: string): Promise<TSupplierBillSelect> {
 		return this.database.transaction(async (tx) => {
-			const bill = await this.repo.findSupplierBillById(ctx.organizationId, id, tx);
+			const bill = await this.bills.findSupplierBillById(ctx.organizationId, id, tx);
 			if (!bill) throw new BillNotFoundError();
 			if (bill.status !== 'draft') throw new BillNotDraftError();
 
@@ -341,7 +348,7 @@ export class SupplierBillService {
 
 			// ERP-0012: stock lines of a bill made from a purchase order debit
 			// inventory (Persediaan); everything else stays an expense.
-			const items = await this.repo.findSupplierBillItems(ctx.organizationId, id, tx);
+			const items = await this.billItems.findSupplierBillItems(ctx.organizationId, id, tx);
 			const toInventory = items.filter((item) => item.isStock).reduce((sum, item) => sum + item.taxBase, 0);
 			const lines: Array<{
 				accountId: string;
@@ -386,7 +393,7 @@ export class SupplierBillService {
 				lines,
 			});
 
-			await this.repo.insertApOpenItem(
+			await this.ap.insertApOpenItem(
 				{
 					organizationId: ctx.organizationId,
 					supplierBillId: bill.id,
@@ -402,7 +409,7 @@ export class SupplierBillService {
 				tx,
 			);
 
-			return this.repo.updateSupplierBill(
+			return this.bills.updateSupplierBill(
 				ctx.organizationId,
 				id,
 				{
@@ -417,5 +424,4 @@ export class SupplierBillService {
 	}
 }
 
-// Kept so the payment side can refuse bills that were never recorded.
-export { PaymentTargetNotIssuedError };
+

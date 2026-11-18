@@ -1,0 +1,44 @@
+---
+import type { HTMLAttributes } from "astro/types";
+
+/**
+ * Image slot. The approved .pen file references generated photos that are not
+ * shipped with the repository; until real assets are provided under
+ * `public/images/...`, a neutral placeholder keeps the exact layout box.
+ */
+type Props = {
+  src?: string;
+  alt: string;
+  loading?: "lazy" | "eager";
+  class?: string;
+  tone?: "light" | "dark";
+} & Omit<HTMLAttributes<"div">, "class">;
+
+const { src, alt, loading = "lazy", class: className, tone = "light", ...rest } = Astro.props;
+---
+
+{
+  src ? (
+    <img
+      src={src}
+      alt={alt}
+      loading={loading}
+      decoding="async"
+      class:list={["object-cover", className]}
+      {...(rest as HTMLAttributes<"img">)}
+    />
+  ) : (
+    <div
+      role={alt ? "img" : undefined}
+      aria-label={alt || undefined}
+      aria-hidden={alt ? undefined : "true"}
+      class:list={[
+        tone === "light"
+          ? "bg-[linear-gradient(135deg,var(--eg-blue-50)_0%,var(--eg-surface-2)_60%,var(--eg-cyan-50)_100%)]"
+          : "bg-[linear-gradient(135deg,var(--eg-navy-800)_0%,var(--eg-navy-900)_100%)]",
+        className,
+      ]}
+      {...rest}
+    />
+  )
+}

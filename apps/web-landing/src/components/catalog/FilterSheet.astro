@@ -1,0 +1,59 @@
+---
+import X from "@lucide/astro/icons/x";
+import CatalogFilters from "./CatalogFilters.astro";
+import type { CatalogFacets, CatalogQuery } from "../../lib/catalog";
+
+/**
+ * Mobile filter sheet opened by the Search Row filter button. Not drawn in the .pen
+ * file; it reuses the desktop Filters content inside the app sheet pattern
+ * (App / Sheet Grabber, radius-sheet).
+ */
+interface Props {
+  query: CatalogQuery;
+  facets: CatalogFacets;
+}
+
+const { query, facets } = Astro.props;
+---
+
+<dialog
+  id="filter-sheet"
+  aria-label="Filters"
+  class="m-0 mt-auto max-h-[90dvh] w-full max-w-none overflow-hidden rounded-t-sheet bg-white p-0 backdrop:bg-navy-950/50 xl:hidden"
+  data-filter-sheet
+>
+  <div class="flex max-h-[90dvh] flex-col">
+    <div class="flex justify-center pt-2.5 pb-1.5"><span class="h-[5px] w-10 rounded-pill bg-border-strong"></span></div>
+    <div class="overflow-y-auto overscroll-contain px-5 pt-2">
+      <CatalogFilters query={query} facets={facets} idPrefix="sheet" autoSubmit={false}>
+        <div class="sticky bottom-0 -mx-5 flex gap-2.5 border-t border-border bg-white px-5 pt-3 pb-5">
+          <button
+            type="button"
+            class="flex size-12 shrink-0 items-center justify-center rounded-md bg-surface text-fg"
+            aria-label="Close filters"
+            data-close-filters
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+          <button
+            type="submit"
+            class="flex-1 rounded-md bg-blue-600 px-5 py-3.5 text-[15px] font-semibold text-white shadow-cta"
+          >
+            Show results
+          </button>
+        </div>
+      </CatalogFilters>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const sheet = document.querySelector<HTMLDialogElement>("[data-filter-sheet]");
+  if (sheet) {
+    document.querySelector("[data-open-filters]")?.addEventListener("click", () => sheet.showModal());
+    sheet.querySelector("[data-close-filters]")?.addEventListener("click", () => sheet.close());
+    sheet.addEventListener("click", (event) => {
+      if (event.target === sheet) sheet.close();
+    });
+  }
+</script>

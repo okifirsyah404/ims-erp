@@ -1,0 +1,88 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { PHONE_PLACEHOLDER } from "../../lib/phone";
+
+/**
+ * Form Field (KLFlG): 13px label over a 48px input (or 96px textarea).
+ * `error` renders a server-side message; `[data-error-for]` is also filled by
+ * scripts/action-form.ts. Invalid fields use the danger tokens.
+ */
+type Props = {
+  label: string;
+  name: string;
+  multiline?: boolean;
+  /** Textarea height in px on desktop (design: 96 default, 120 on Contact). */
+  rows?: number;
+  hint?: string;
+  error?: string;
+  required?: boolean;
+  /** Show " *" after the label (02.05 Demo form marks required fields). */
+  asterisk?: boolean;
+  class?: string;
+  inputClass?: string;
+} & Omit<HTMLAttributes<"input">, "class" | "name">;
+
+const {
+  label,
+  name,
+  multiline = false,
+  rows = 3,
+  hint,
+  error,
+  required,
+  asterisk = false,
+  class: className,
+  inputClass,
+  id = `field-${name}`,
+  value,
+  ...rest
+} = Astro.props;
+// Phone / WhatsApp fields: numeric phone keyboard and the Indonesian format hint.
+if (rest.type === "tel") {
+  rest.inputmode ??= "tel";
+  rest.placeholder ??= PHONE_PLACEHOLDER;
+  rest.title ??= "Indonesian number, e.g. 0812 3456 7890 or +62 812 3456 7890";
+}
+if (rest.type === "email") {
+  rest.inputmode ??= "email";
+  rest.autocapitalize ??= "off";
+  rest.spellcheck ??= false;
+}
+const control =
+  "w-full rounded-md bg-white px-3.5 text-[15px] text-fg ring-1 ring-border ring-inset outline-none placeholder:text-fg-muted focus:ring-2 focus:ring-blue-600 user-invalid:ring-danger aria-invalid:ring-danger";
+const errorId = `${id}-error`;
+const describedBy = [hint && `${id}-hint`, errorId].filter(Boolean).join(" ");
+---
+
+<div class:list={["flex flex-col gap-2", className]}>
+  <label for={id} class="text-[13px] font-semibold text-fg">
+    {label}{asterisk && <span aria-hidden="true"> *</span>}
+  </label>
+  {
+    multiline ? (
+      <textarea
+        id={id}
+        name={name}
+        rows={rows}
+        required={required}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={describedBy}
+        class:list={[control, "min-h-24 resize-y py-3.5", inputClass]}
+        {...(rest as HTMLAttributes<"textarea">)}
+      >{value}</textarea>
+    ) : (
+      <input
+        id={id}
+        name={name}
+        value={value}
+        required={required}
+        aria-invalid={error ? "true" : undefined}
+        aria-describedby={describedBy}
+        class:list={[control, "h-12", inputClass]}
+        {...rest}
+      />
+    )
+  }
+  {hint && <p id={`${id}-hint`} class="text-[12px] text-fg-muted">{hint}</p>}
+  <p id={errorId} class="text-[12.5px] font-semibold text-danger" data-error-for={name} hidden={!error}>{error}</p>
+</div>

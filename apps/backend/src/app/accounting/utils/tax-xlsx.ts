@@ -12,6 +12,7 @@
  * gate (D12).
  */
 import ExcelJS from 'exceljs';
+import type { TCompanyProfileSnapshot } from '@app/company';
 import type { TRecapCsvLine } from './tax-csv';
 
 const HEADERS = [
@@ -26,13 +27,17 @@ const HEADERS = [
 /**
  * Builds the recap workbook: one row per recap line plus a bold TOTAL footer.
  * Returns a Buffer ready to stream as an attachment.
+ *
+ * @param company - The letterhead snapshot; its legal/trading name becomes the
+ *   workbook creator instead of the hardcoded app name.
  */
 export async function recapToXlsx(
 	lines: readonly TRecapCsvLine[],
 	period: { year: number; month: number },
+	company?: Pick<TCompanyProfileSnapshot, 'legalName' | 'tradingName'> | null,
 ): Promise<Buffer> {
 	const workbook = new ExcelJS.Workbook();
-	workbook.creator = 'IMS ERP';
+	workbook.creator = company?.tradingName ?? company?.legalName ?? 'IMS ERP';
 	workbook.created = new Date();
 
 	const sheet = workbook.addWorksheet(

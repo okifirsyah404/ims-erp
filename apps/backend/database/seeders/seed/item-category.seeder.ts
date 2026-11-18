@@ -12,8 +12,8 @@ const logger = pino({
 });
 
 /**
- * The public website's product categories (entragate-platform
- * `apps/web/src/data/catalog.ts`; decision 2026-11-02: ERP categories follow
+ * The public website's product categories (website app
+ * `apps/web-landing/src/data/catalog.ts`; decision 2026-11-02: ERP categories follow
  * the website so the catalog maps 1:1 by slug). Real reference data, seeded
  * in every environment.
  */

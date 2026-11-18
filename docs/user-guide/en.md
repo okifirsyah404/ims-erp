@@ -300,6 +300,12 @@ Menu **Projects**. Diagram:
    work** → **Resolve** (resolution, service cost) — can **Reopen**.
 5. **Close ticket** only with the customer's confirmation (name and
    channel).
+6. **Messages** on the ticket: write an **internal note** (staff only) or
+   tick *Visible to the customer in the portal* to reply to the customer.
+   Messages the customer writes in the portal appear here too. Tickets the
+   customer opens in the portal have the channel **Customer portal**, and
+   the customer can confirm a resolved ticket there (it closes with the
+   confirmation channel *Customer portal*).
 
 ### 8.5 Licenses and subscriptions (M03)
 
@@ -388,6 +394,30 @@ Menu **Projects**. Diagram:
 5. **Assistant FAQ** (marketing, admin): add the questions and the exact
    answers customers may read, with keywords. Only **Active** entries are
    used. Never write discounts or promises here.
+
+### 8.8 Customer portal (ERP-0022)
+
+1. **CRM → Customers → (a customer) → Customer portal**: enter the person's
+   name, the email they sign in with and the **role** (Owner, Approver,
+   Finance, Viewer) → **Invite to portal**. One login per person; a company
+   can have several. The person gets an email to set a password (valid 3
+   days). Invite at least one **Owner** per company: owners invite and remove
+   their colleagues themselves in the portal.
+2. The card lists every login with its role: **Waiting for password** until
+   the person sets it, then **Active** and the last sign-in. **Resend link**
+   sends a new password email; **Revoke access** ends every session (you can
+   invite again later).
+2a. Individual customers can also **sign up themselves** in the portal: they
+   confirm a 6-digit code sent to their email, and the ERP creates the
+   customer (code `PRT-…`, type Individual) with its contact. Companies
+   cannot sign up; they are invited.
+3. In the portal the customer sees their projects (stage, checklist, BASTs
+   and the function test / training / signed BAST / photo files — never
+   costs or internal notes), their devices and warranties, and their service
+   tickets; they can open a ticket, write messages and confirm a fix.
+4. The email of a staff login cannot be used for the portal, and a customer
+   login cannot sign in to the web admin. After 5 wrong passwords the portal
+   locks that email for 15 minutes.
 
 ## 9. Printed documents and numbering
 

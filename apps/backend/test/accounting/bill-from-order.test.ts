@@ -82,6 +82,8 @@ beforeEach(() => {
 	service = new SupplierBillService(
 		{ transaction: async (work: (tx: never) => Promise<unknown>) => work({} as never) } as never,
 		repo as never,
+		repo as never,
+		repo as never,
 		{
 			post: async (_tx: unknown, entry: { lines: { accountId: string; debit: number; credit: number }[] }) => {
 				posted.push(...entry.lines);

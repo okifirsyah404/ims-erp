@@ -26,6 +26,8 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun run dev` | repo root | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up |
 | `bun dev` | `apps/backend` | ✅ verified 2026-10-29/30 — `bun run --watch src/index.ts` |
 | `bun run build` | repo root / `apps/web-admin` | ✅ verified 2026-10-29/30 (web-admin tsc + vite) |
+| `bun run dev:website` / `bun run dev:portal` | repo root | proposed — the public website (`@ims-erp/web-landing`, :4321) and the customer portal (`@ims-erp/web-customer-portal`, :4322) in `apps/`, moved in 2026-11-15; their `astro check` (0 errors) and `astro build` were verified the same day, dev servers not started here |
+| `bun run typecheck` | repo root | ✅ verified 2026-11-15 — 6/6 turbo tasks, including `astro check` of `@ims-erp/web-landing` (167 files) and `@ims-erp/web-customer-portal` (147 files), 0 errors each |
 
 ## Checks
 
@@ -146,13 +148,22 @@ Rules:
 
 ## Docker
 
-Compose provides `postgres` + `redis` (local infra) plus `backend` + `web-admin`
-services pulling published Docker Hub images (`docker-compose.yml`); build
-images from source with `docker-compose.local.yml`. A source-build backend
-Dockerfile for local dev iteration is open backlog work.
+Compose provides `postgres` + `redis` (local infra) plus `backend`, `web-admin`,
+`web-landing` (:4321) and `web-customer-portal` (:4322) services pulling
+published Docker Hub images (`docker-compose.yml`); build images from source
+with `docker-compose.local.yml`. A source-build backend Dockerfile for local dev
+iteration is open backlog work.
+
+The two Astro services are Node standalone servers (`apps/<app>/Dockerfile`:
+`astro build`, then a production `node_modules` next to `dist/`). Their
+`PUBLIC_*` values are inlined into the client bundle at build time, so they are
+Docker build args, not runtime env; server-context values (`ERP_API_BASE_URL`,
+`WEB_HANDOFF_SECRET`, …) are runtime env. The portal keeps server-side sessions
+on disk (`/app/.astro/session`), mounted as the `portal-sessions` volume.
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.local.yml up postgres redis    # infra for local backend dev
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build web-landing web-customer-portal
 ```
 
 ## Troubleshooting notes

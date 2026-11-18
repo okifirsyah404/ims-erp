@@ -1,0 +1,31 @@
+---
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import X from "@lucide/astro/icons/x";
+import IconButton from "./IconButton.astro";
+
+/**
+ * App / Top Bar (QEnXb): back button, centred title, optional action (slot "action").
+ * `back` is the fallback URL; the script prefers history.back() for same-origin history.
+ */
+interface Props {
+  title?: string;
+  back?: string;
+  closeIcon?: boolean;
+  class?: string;
+}
+
+const { title, back = "/", closeIcon = false, class: className } = Astro.props;
+const hasAction = Astro.slots.has("action");
+---
+
+<header class:list={["flex h-14 items-center justify-between gap-3 px-5", className]}>
+  <IconButton label={closeIcon ? "Close" : "Back"} href={back} data-back>
+    {closeIcon ? <X size={20} aria-hidden="true" /> : <ChevronLeft size={20} aria-hidden="true" />}
+  </IconButton>
+  {title && <h1 class="min-w-0 truncate font-heading text-[17px] font-bold text-fg">{title}</h1>}
+  {hasAction ? <slot name="action" /> : <span class="size-10" aria-hidden="true" />}
+</header>
+
+<script>
+  import "../../scripts/back";
+</script>

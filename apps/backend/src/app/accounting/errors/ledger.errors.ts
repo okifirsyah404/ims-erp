@@ -260,61 +260,14 @@ export class InvoiceDueBeforeIssueError extends AppError {
 	}
 }
 
-/* ----------------------------- payments (F4) ----------------------------- */
+// ADR-0024: the payment ledger lives in the payment module, and it owns its own
+// domain errors. Accounting does not re-export them (errors never cross a
+// module boundary); this file keeps only Accounting's errors.
 
-export class PaymentNotFoundError extends AppError {
+/** The AR/AP open-item mirror a settlement expects is missing (ledger drift). */
+export class OpenItemNotFoundError extends AppError {
 	constructor() {
-		super(404, 'accounting.paymentNotFound', 'Payment not found');
-	}
-}
-
-/** A workflow transition that the draft→submitted→approved→executed machine forbids. */
-export class PaymentInvalidTransitionError extends AppError {
-	constructor() {
-		super(409, 'accounting.paymentInvalidTransition', 'That status change is not allowed for this payment');
-	}
-}
-
-/** Only payments that have not been executed can be voided in F4 (decision 4a). */
-export class PaymentVoidNotAllowedError extends AppError {
-	constructor() {
-		super(
-			409,
-			'accounting.paymentVoidNotAllowed',
-			'Executed payments cannot be voided here; correct through a period-end adjustment instead',
-		);
-	}
-}
-
-/** Σ allocations must equal the payment amount (keeps the JE balanced). */
-export class PaymentAllocationMismatchError extends AppError {
-	constructor() {
-		super(
-			422,
-			'accounting.paymentAllocationMismatch',
-			'Allocations must add up exactly to the payment amount',
-		);
-	}
-}
-
-/** An allocation exceeds the invoice's outstanding amount. */
-export class PaymentOverAllocationError extends AppError {
-	constructor() {
-		super(422, 'accounting.paymentOverAllocation', 'Allocation exceeds the invoice outstanding amount');
-	}
-}
-
-/** Allocations target invoices that are not issued (or already void/cancelled). */
-export class PaymentTargetNotIssuedError extends AppError {
-	constructor() {
-		super(422, 'accounting.paymentTargetNotIssued', 'Allocations may only target issued or partially paid invoices');
-	}
-}
-
-/** Executing requires the payment to carry a cash/bank account. */
-export class PaymentCashAccountRequiredError extends AppError {
-	constructor() {
-		super(422, 'accounting.paymentCashAccountRequired', 'A cash/bank account is required to execute this payment');
+		super(409, 'accounting.openItemNotFound', 'The open-item sub-ledger row for this document is missing');
 	}
 }
 

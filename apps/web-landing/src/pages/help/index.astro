@@ -1,0 +1,350 @@
+---
+import Search from "@lucide/astro/icons/search";
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Plus from "@lucide/astro/icons/plus";
+import Minus from "@lucide/astro/icons/minus";
+import Route from "@lucide/astro/icons/route";
+import BookOpen from "@lucide/astro/icons/book-open";
+import ThumbsUp from "@lucide/astro/icons/thumbs-up";
+import ThumbsDown from "@lucide/astro/icons/thumbs-down";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Mail from "@lucide/astro/icons/mail";
+import CircleUserRound from "@lucide/astro/icons/circle-user-round";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
+import EmptyState from "../../components/ui/EmptyState.astro";
+import { faqGroups, helpArticles, helpTopics, popularSearches } from "../../data/knowledge";
+import { company, customerPortal, routes } from "../../data/site";
+import { icons } from "../../lib/icons";
+
+/** 01.03 Knowledge Center · Help & FAQ (desktop g7VsN / mobile vvfBG). `?q=` searches articles and FAQs. */
+export const prerender = false;
+
+const q = (Astro.url.searchParams.get("q") ?? "").trim().slice(0, 100);
+const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+const matches = (text: string) => terms.every((t) => text.toLowerCase().includes(t));
+const articleResults = q ? helpArticles.filter((a) => matches(`${a.title} ${a.summary} ${a.body.join(" ")}`)) : [];
+const faqResults = q ? faqGroups.flatMap((g) => g.items).filter((i) => matches(`${i.question} ${i.answer}`)) : [];
+const articleCount = (topic: string) => helpArticles.filter((a) => a.topic === topic).length;
+const topicTitle = (slug: string) => helpTopics.find((t) => t.slug === slug)?.title ?? "";
+const linkIcons = { route: Route, "book-open": BookOpen };
+const channels = [
+  { icon: MessageCircle, title: "WhatsApp 24/7", detail: company.supportWhatsapp, href: company.supportWhatsappHref, external: true },
+  { icon: Mail, title: "Email support", detail: company.supportEmail, href: `mailto:${company.supportEmail}` },
+  { icon: CircleUserRound, title: "Customer portal", detail: "Submit & track tickets", href: customerPortal.newTicket },
+];
+---
+
+<PublicLayout title="Help Center & FAQ | Entragate Knowledge Center" description="Answers on ordering, installation, warranty and the Entragate platform from the IMS support team.">
+  <KnowledgeTabs active="help" />
+
+  <section class="bg-navy-950 bg-[radial-gradient(ellipse_60%_70%_at_50%_0%,#1F5BFF59_0%,#060F2600_100%)]">
+    <div class="container-page flex flex-col gap-4 pt-7 pb-7 xl:items-center xl:gap-7 xl:pt-[88px] xl:pb-24 xl:text-center">
+      <nav aria-label="Breadcrumb" class="hidden xl:block">
+        <ol class="flex items-center gap-2 text-[13px]">
+          <li class="flex items-center gap-2"><a href={routes.home} class="text-fg-on-dark-muted hover:text-white">Home</a><ChevronRight size={13} class="text-fg-on-dark-muted" aria-hidden="true" /></li>
+          <li class="flex items-center gap-2"><span class="text-fg-on-dark-muted">Support</span><ChevronRight size={13} class="text-fg-on-dark-muted" aria-hidden="true" /></li>
+          <li><span aria-current="page" class="font-semibold text-white">Help Center</span></li>
+        </ol>
+      </nav>
+      <div class="flex flex-col gap-3 xl:w-[760px] xl:gap-4">
+        <p class="text-[12px] font-bold tracking-[1.6px] text-cyan-400 uppercase xl:text-[13px]">Knowledge Center</p>
+        <h1 class="font-heading text-[30px] leading-[35px] font-bold tracking-[-1px] text-white xl:text-[56px] xl:leading-[63px] xl:tracking-[-1.6px]">
+          How can we help you today?
+        </h1>
+        <p class="text-[14px] leading-[21px] text-fg-on-dark-muted xl:text-[17px] xl:leading-[27px]">
+          <span class="xl:hidden">Guides on ordering, installation, warranty and the Entragate platform.</span>
+          <span class="hidden xl:inline">Answers on ordering, installation, warranty and the Entragate platform — from the team that builds and services it.</span>
+        </p>
+      </div>
+      <form method="get" action={routes.help} role="search" class="w-full xl:w-[680px]">
+        <label class="flex h-[52px] items-center gap-3 rounded-control bg-white pr-2 pl-[18px] ring-1 ring-border ring-inset focus-within:ring-2 focus-within:ring-blue-600 xl:h-[60px]">
+          <Search size={18} class="shrink-0 text-fg-muted" aria-hidden="true" />
+          <span class="sr-only">Search help articles</span>
+          <input
+            type="search"
+            name="q"
+            value={q}
+            maxlength="100"
+            placeholder="Search help articles"
+            data-kbd-search
+            data-desktop-placeholder="Search e.g. “warranty claim”, “Faktur Pajak”, “error E-21”"
+            class="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted xl:text-[16px]"
+          />
+          <kbd class="hidden rounded-sm bg-surface px-2 py-1 text-[12px] font-semibold text-fg-muted ring-1 ring-border ring-inset xl:block">⌘ K</kbd>
+        </label>
+      </form>
+      <div class="flex flex-wrap items-center gap-2 xl:justify-center">
+        <span class="hidden text-[13.5px] font-medium text-fg-on-dark-muted xl:inline">Popular:</span>
+        {
+          popularSearches.map((term, index) => (
+            <a
+              href={`${routes.help}?q=${encodeURIComponent(term)}`}
+              class:list={[
+                "rounded-pill bg-white/8 px-[13px] py-[7px] text-[12.5px] font-medium text-white ring-1 ring-white/15 ring-inset hover:bg-white/14 xl:text-[13px]",
+                index >= 3 && "hidden xl:block",
+              ]}
+            >
+              {term}
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  {
+    q ? (
+      <section class="container-page flex flex-col gap-6 py-10 xl:py-24" aria-labelledby="results-title">
+        <div class="flex flex-col gap-2">
+          <p class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">Search results</p>
+          <h2 id="results-title" class="font-heading text-[28px] font-bold tracking-[-0.8px] text-navy-900 xl:text-[40px]">
+            {articleResults.length + faqResults.length} results for “{q}”
+          </h2>
+          <a href={routes.help} class="text-[14px] font-semibold text-blue-600 hover:underline">Clear search</a>
+        </div>
+        {articleResults.length + faqResults.length === 0 ? (
+          <EmptyState title="No answers found" description="Try a different keyword, or talk to our support engineers — they reply on WhatsApp in about 12 minutes.">
+            <a href={company.supportWhatsappHref} target="_blank" rel="noopener noreferrer" class="font-semibold text-blue-600 hover:underline">WhatsApp support</a>
+          </EmptyState>
+        ) : (
+          <ul class="flex flex-col divide-y divide-border rounded-card ring-1 ring-border ring-inset">
+            {articleResults.map((a) => (
+              <li>
+                <a href={`${routes.help}/articles/${a.slug}`} class="flex items-center gap-4 p-5 hover:bg-surface">
+                  <span class="flex flex-1 flex-col gap-1">
+                    <span class="text-[12px] font-bold tracking-[1px] text-blue-600 uppercase">{topicTitle(a.topic)} · Article</span>
+                    <span class="font-heading text-[17px] font-bold text-fg">{a.title}</span>
+                    <span class="text-[14px] text-fg-secondary">{a.summary}</span>
+                  </span>
+                  <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
+                </a>
+              </li>
+            ))}
+            {faqResults.map((item) => (
+              <li class="flex flex-col gap-1 p-5">
+                <span class="text-[12px] font-bold tracking-[1px] text-blue-600 uppercase">FAQ</span>
+                <span class="font-heading text-[17px] font-bold text-fg">{item.question}</span>
+                <span class="text-[14px] leading-[22px] text-fg-secondary">{item.answer}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    ) : (
+      <section class="container-page flex flex-col gap-4 pt-7 xl:gap-10 xl:pt-24" aria-labelledby="topics-title">
+        <div class="flex items-end justify-between">
+          <div class="flex flex-col gap-3">
+            <p class="hidden text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:block">Browse by topic</p>
+            <h2 id="topics-title" class="font-heading text-[22px] font-bold tracking-[-0.5px] text-navy-900 xl:text-[40px] xl:leading-[45px] xl:tracking-[-1.1px]">
+              <span class="xl:hidden">Browse by topic</span>
+              <span class="hidden xl:inline">Find the right guide</span>
+            </h2>
+          </div>
+          <p class="hidden text-[14px] text-fg-muted xl:block">{helpArticles.length} articles · updated weekly by IMS support engineers</p>
+        </div>
+        <ul class="grid overflow-hidden rounded-lg ring-1 ring-border ring-inset xl:grid-cols-3 xl:rounded-card">
+          {helpTopics.map((topic, index) => {
+            const Icon = icons[topic.icon];
+            const highlight = index === 0;
+            return (
+              <li class:list={["border-border", index > 0 && "border-t", index % 3 !== 0 && "xl:border-l", index < 3 && "xl:border-t-0"]}>
+                <a
+                  href={`${routes.help}/topics/${topic.slug}`}
+                  class:list={["group flex items-center gap-3 px-3 py-3 xl:h-full xl:flex-col xl:items-stretch xl:gap-3.5 xl:p-8", highlight ? "xl:bg-blue-50" : "hover:bg-surface"]}
+                >
+                  <span class="flex items-center justify-between">
+                    <span class:list={["flex size-9 items-center justify-center rounded-md xl:size-11", highlight ? "bg-blue-600 text-white" : "bg-surface text-fg"]}>
+                      <Icon size={18} class="xl:size-5" aria-hidden="true" />
+                    </span>
+                    <ArrowUpRight size={16} class="hidden text-fg-muted group-hover:text-blue-600 xl:block" aria-hidden="true" />
+                  </span>
+                  <span class="flex flex-1 flex-col gap-0.5 xl:gap-3.5">
+                    <span class="font-heading text-[14px] font-bold text-navy-900 xl:text-[19px] xl:leading-[21px] xl:tracking-[-0.3px]">
+                      <span class="xl:hidden">{topic.mobileTitle ?? topic.title}</span>
+                      <span class="hidden xl:inline">{topic.title}</span>
+                    </span>
+                    <span class="hidden text-[14px] leading-[22px] text-fg-secondary xl:block">{topic.description}</span>
+                    <span class="text-[12px] text-fg-muted xl:text-[13px] xl:font-semibold xl:text-blue-600">{articleCount(topic.slug)} articles</span>
+                  </span>
+                  <ChevronRight size={16} class="text-fg-muted xl:hidden" aria-hidden="true" />
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )
+  }
+
+  <section class="container-page flex flex-col gap-4 pt-9 xl:flex-row xl:gap-20 xl:py-28" aria-labelledby="faq-title" data-faq>
+    <div class="flex flex-col gap-3 xl:w-[340px] xl:shrink-0 xl:gap-7">
+      <div class="flex flex-col gap-2 xl:gap-3">
+        <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:text-[13px]">FAQ</p>
+        <h2 id="faq-title" class="font-heading text-[24px] font-bold tracking-[-0.6px] text-navy-900 xl:text-[40px] xl:leading-[45px] xl:tracking-[-1.1px]">
+          Frequently asked questions
+        </h2>
+      </div>
+      <div role="tablist" aria-label="FAQ categories" class="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 xl:mx-0 xl:flex-col xl:gap-0.5 xl:px-0" hidden data-faq-tabs>
+        {
+          faqGroups.map((group, index) => (
+            <button
+              type="button"
+              role="tab"
+              id={`faq-tab-${group.key}`}
+              aria-controls={`faq-${group.key}`}
+              aria-selected={index === 0 ? "true" : "false"}
+              data-faq-tab={group.key}
+              class="group flex shrink-0 items-center justify-between rounded-pill px-3 py-1.5 text-[13px] font-semibold text-fg ring-1 ring-border ring-inset aria-selected:bg-blue-600 aria-selected:text-white aria-selected:ring-blue-600 xl:rounded-md xl:px-3.5 xl:py-[11px] xl:text-[14px] xl:font-medium xl:text-fg-secondary xl:ring-0 xl:aria-selected:bg-navy-900 xl:aria-selected:font-semibold xl:hover:bg-surface xl:aria-selected:hover:bg-navy-900"
+            >
+              <span class="xl:hidden">{group.mobileLabel}</span>
+              <span class="hidden xl:inline">{group.label}</span>
+              <span class="hidden text-[12.5px] font-semibold text-fg-muted group-aria-selected:text-cyan-400 xl:inline">{group.items.length}</span>
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="flex-1">
+      {
+        faqGroups.map((group, groupIndex) => (
+          <div id={`faq-${group.key}`} role="tabpanel" aria-labelledby={`faq-tab-${group.key}`} data-faq-panel={group.key} class="border-border xl:border-t">
+            <h3 class="sr-only">{group.label}</h3>
+            {group.items.map((item, index) => (
+              <details class="group/faq border-b border-border" open={groupIndex === 0 && index === 0}>
+                <summary class="flex cursor-pointer list-none items-start gap-5 py-4 xl:items-center xl:py-6 [&::-webkit-details-marker]:hidden">
+                  <span class="hidden font-heading text-[13px] font-bold text-fg-muted group-open/faq:text-blue-600 xl:block">{String(index + 1).padStart(2, "0")}</span>
+                  <span class="flex-1 font-heading text-[14.5px] leading-[21px] font-bold text-fg group-open/faq:text-navy-900 xl:text-[18px] xl:leading-6 xl:font-semibold xl:tracking-[-0.3px] xl:group-open/faq:font-bold">
+                    {item.question}
+                  </span>
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-pill bg-surface text-fg group-open/faq:bg-blue-600 group-open/faq:text-white xl:size-8" aria-hidden="true">
+                    <Plus size={14} class="group-open/faq:hidden" />
+                    <Minus size={14} class="hidden group-open/faq:block" />
+                  </span>
+                </summary>
+                <div class="flex flex-col gap-3 pb-5 xl:gap-4 xl:pr-[52px] xl:pb-7 xl:pl-[38px]">
+                  <p class="text-[13.5px] leading-[22px] text-fg-secondary xl:text-[15px] xl:leading-[26px]">{item.answer}</p>
+                  {item.links && (
+                    <div class="flex flex-wrap gap-5">
+                      {item.links.map((link) => {
+                        const Icon = linkIcons[link.icon];
+                        return (
+                          <a href={link.href} class="flex items-center gap-1.5 text-[13.5px] font-semibold text-blue-600 hover:underline">
+                            <Icon size={15} aria-hidden="true" />
+                            {link.label}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div class="hidden items-center gap-2.5 xl:flex" data-feedback>
+                    <span class="text-[13px] text-fg-muted" data-feedback-label>Was this helpful?</span>
+                    <button type="button" class="flex size-[30px] items-center justify-center rounded-sm text-fg-secondary ring-1 ring-border ring-inset hover:bg-surface" aria-label="Yes, this was helpful" data-feedback-vote="up">
+                      <ThumbsUp size={14} aria-hidden="true" />
+                    </button>
+                    <button type="button" class="flex size-[30px] items-center justify-center rounded-sm text-fg-secondary ring-1 ring-border ring-inset hover:bg-surface" aria-label="No, this wasn't helpful" data-feedback-vote="down">
+                      <ThumbsDown size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </details>
+            ))}
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="container-page pt-8 pb-10 xl:pt-0 xl:pb-28" aria-labelledby="help-channels-title">
+    <div class="flex flex-col gap-5 rounded-card bg-navy-900 p-[22px] xl:flex-row xl:gap-12 xl:rounded-xl xl:p-12">
+      <div class="flex flex-col gap-2 xl:w-[380px] xl:gap-3.5">
+        <p class="text-[11px] font-bold tracking-[1.6px] text-cyan-400 uppercase xl:text-[13px]">Still need help?</p>
+        <h2 id="help-channels-title" class="font-heading text-[22px] leading-[27px] font-bold tracking-[-0.6px] text-white xl:text-[32px] xl:leading-[37px] xl:tracking-[-1px]">
+          Talk to a real engineer, any time.
+        </h2>
+        <p class="hidden text-[15px] leading-6 text-fg-on-dark-muted xl:block">Average first response: 12 minutes on WhatsApp, 2 hours by email.</p>
+      </div>
+      <!-- Desktop channel cards -->
+      <ul class="hidden flex-1 gap-4 xl:flex">
+        {
+          channels.map(({ icon: Icon, title, detail, href, external }) => (
+            <li class="flex-1">
+              <a
+                href={href}
+                target={external ? "_blank" : undefined}
+                rel={external ? "noopener noreferrer" : undefined}
+                class="flex h-full flex-col gap-3.5 rounded-lg bg-white/5 p-[22px] ring-1 ring-white/12 ring-inset hover:bg-white/8"
+              >
+                <span class="flex size-10 items-center justify-center rounded-md bg-white/8 text-cyan-400"><Icon size={20} aria-hidden="true" /></span>
+                <span class="flex flex-col gap-[3px]">
+                  <span class="text-[15px] font-bold text-white">{title}</span>
+                  <span class="text-[13px] text-fg-on-dark-muted">{detail}</span>
+                </span>
+                <span class="flex items-center gap-1.5 text-[13px] font-semibold text-white">Contact <ArrowRight size={13} class="text-cyan-400" aria-hidden="true" /></span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <!-- Mobile actions -->
+      <div class="flex flex-col gap-2.5 xl:hidden">
+        <a href={company.supportWhatsappHref} target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 rounded-md bg-[#25A244] py-3.5 text-[14px] font-bold text-white">
+          WhatsApp 24/7 <MessageCircle size={16} aria-hidden="true" />
+        </a>
+        <div class="flex gap-2.5">
+          <a href={`mailto:${company.supportEmail}`} class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white/8 py-3 text-[13px] font-bold text-white ring-1 ring-white/15 ring-inset">
+            <Mail size={15} class="text-cyan-400" aria-hidden="true" />Email us
+          </a>
+          <a href={customerPortal.newTicket} class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white/8 py-3 text-[13px] font-bold text-white ring-1 ring-white/15 ring-inset">
+            <CircleUserRound size={15} class="text-cyan-400" aria-hidden="true" />Open ticket
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</PublicLayout>
+
+<script>
+  import { initKnowledgeSearchShortcut } from "../../scripts/knowledge";
+
+  // FAQ category tabs: without JS every group is listed; with JS one group shows at a time.
+  const root = document.querySelector<HTMLElement>("[data-faq]");
+  const tablist = root?.querySelector<HTMLElement>("[data-faq-tabs]");
+  if (root && tablist) {
+    const tabs = [...tablist.querySelectorAll<HTMLButtonElement>("[data-faq-tab]")];
+    const panels = [...root.querySelectorAll<HTMLElement>("[data-faq-panel]")];
+    const select = (key: string) => {
+      tabs.forEach((tab) => tab.setAttribute("aria-selected", String(tab.dataset.faqTab === key)));
+      panels.forEach((panel) => (panel.hidden = panel.dataset.faqPanel !== key));
+    };
+    tablist.hidden = false;
+    select(tabs[0]?.dataset.faqTab ?? "");
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => select(tab.dataset.faqTab!));
+      tab.addEventListener("keydown", (event) => {
+        const delta = event.key === "ArrowRight" || event.key === "ArrowDown" ? 1 : event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 0;
+        if (!delta) return;
+        event.preventDefault();
+        const next = tabs[(index + delta + tabs.length) % tabs.length];
+        next.focus();
+        select(next.dataset.faqTab!);
+      });
+    });
+  }
+
+  // "Was this helpful?" — acknowledged locally until feedback reaches the ERP/CMS.
+  document.querySelectorAll<HTMLElement>("[data-feedback]").forEach((box) => {
+    box.querySelectorAll<HTMLButtonElement>("[data-feedback-vote]").forEach((button) =>
+      button.addEventListener("click", () => {
+        const label = box.querySelector("[data-feedback-label]");
+        if (label) label.textContent = button.dataset.feedbackVote === "up" ? "Thanks for your feedback!" : "Thanks — we'll improve this answer.";
+        box.querySelectorAll("button").forEach((b) => b.remove());
+      }),
+    );
+  });
+
+  initKnowledgeSearchShortcut();
+</script>

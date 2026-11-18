@@ -2,18 +2,30 @@ import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
+import { CLOSE_CHECKLIST_REPOSITORY_TOKEN, AR_OPEN_ITEM_REPOSITORY_TOKEN, AP_OPEN_ITEM_REPOSITORY_TOKEN, SUPPLIER_BILL_REPOSITORY_TOKEN, BANK_ACCOUNT_LINK_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN } from '../constants/di';
 import { CASH_BANK_SERVICE_TOKEN } from '../constants/ar-di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+// elysia-module rule 3.4: token and contract type only, never Sales' services or repositories.
+import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sales/constants/ar-di';
+import type { IExportedInvoiceService } from '@app/sales/contracts/exported-invoice.contract';
 import type { CashBankService } from './cash-bank.service';
-import type {
-	TPaymentSelect,
-} from '@drizzle/schemas/finance.schema';
+import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
+// elysia-module rule 3.4: cross-module imports are the DI token and the contract
+// type only — never the other module's index (that would pull its HTTP surface
+// and container into Accounting).
+import { PAYMENT_LEDGER_GATEWAY_TOKEN } from '@app/payment/constants/di';
+import type { IPaymentLedgerGateway } from '@app/payment/contracts/payment-ledger.gateway.interface';
 import {
-	PaymentInvalidTransitionError,
-	PaymentNotFoundError,
+	CashBankLinkRequiredError,
+	JournalEntryNotFoundError,
+	OpenItemNotFoundError,
 	ReportPeriodInvalidError,
 } from '../errors/ledger.errors';
+import type { ICloseChecklistRepository } from '../contracts/close-checklist.repository.interface';
+import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
+import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type { IBankAccountLinkRepository } from '../contracts/bank-account-link.repository.interface';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
 
 export type TCloseActionContext = {
 	organizationId: string;
@@ -67,8 +79,16 @@ export type TVoidExecutedPaymentInput = {
 export class MonthEndCloseService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(CLOSE_CHECKLIST_REPOSITORY_TOKEN) private readonly closeChecks: ICloseChecklistRepository,
+		@inject(AR_OPEN_ITEM_REPOSITORY_TOKEN) private readonly ar: IArOpenItemRepository,
+		@inject(AP_OPEN_ITEM_REPOSITORY_TOKEN) private readonly ap: IApOpenItemRepository,
+		@inject(SUPPLIER_BILL_REPOSITORY_TOKEN) private readonly bills: ISupplierBillRepository,
+		@inject(BANK_ACCOUNT_LINK_REPOSITORY_TOKEN) private readonly links: IBankAccountLinkRepository,
+		@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
+		@inject(EXPORTED_INVOICE_SERVICE_TOKEN) private readonly invoices: IExportedInvoiceService,
 		@inject(CASH_BANK_SERVICE_TOKEN) private readonly cashBank: CashBankService,
+		/** ADR-0024: payment owns payment.payments; F7 reads/stamps it through this. */
+		@inject(PAYMENT_LEDGER_GATEWAY_TOKEN) private readonly payments: IPaymentLedgerGateway,
 	) {}
 
 	/** Pre-close checklist for one month (computed on demand, D7). */
@@ -84,7 +104,13 @@ export class MonthEndCloseService {
 		const endDate = new Date(Date.UTC(periodYear, periodMonth, 0))
 			.toISOString()
 			.slice(0, 10);
-		const counts = await this.repo.closeChecklistCounts(
+		const pendingPayments = await this.payments.countOpen(organizationId);
+		const draftInvoices = await this.invoices.countDraftsInWindow(
+			organizationId,
+			startDate,
+			endDate,
+		);
+		const counts = await this.closeChecks.closeChecklistCounts(
 			organizationId,
 			startDate,
 			endDate,
@@ -93,14 +119,14 @@ export class MonthEndCloseService {
 			{
 				key: 'draft_invoices',
 				label: 'Draft invoices in range must be issued or voided',
-				pass: counts.draftInvoicesInRange === 0,
-				count: counts.draftInvoicesInRange,
+				pass: draftInvoices === 0,
+				count: draftInvoices,
 			},
 			{
 				key: 'pending_payments',
 				label: 'Payments not yet executed must be finished or voided',
-				pass: counts.draftPayments === 0,
-				count: counts.draftPayments,
+				pass: pendingPayments === 0,
+				count: pendingPayments,
 			},
 			{
 				key: 'draft_bills',
@@ -141,13 +167,11 @@ export class MonthEndCloseService {
 		input: TVoidExecutedPaymentInput,
 	): Promise<TPaymentSelect> {
 		return this.database.transaction(async (tx) => {
-			const payment = await this.repo.findPaymentById(ctx.organizationId, id, tx);
-			if (!payment) throw new PaymentNotFoundError();
-			if (payment.status !== 'executed') {
-				throw new PaymentInvalidTransitionError();
-			}
+			// Payment owns its own state rules (ADR-0024): this throws its
+			// domain errors, so Accounting never imports them.
+			const payment = await this.payments.requireExecuted(ctx.organizationId, id, tx);
 
-			const allocations = await this.repo.listExecutedAllocations(
+			const allocations = await this.payments.listAllocations(
 				ctx.organizationId,
 				payment.id,
 				tx,
@@ -181,27 +205,27 @@ export class MonthEndCloseService {
 			// The counterpart and cash GL accounts come from the original JE
 			// lines instead of re-resolving roles: the reversal must mirror
 			// what was actually posted (D4 append-only corrections).
-			const originalEntry = await this.repo.findPostedEntryBySourceTypeAndId(
+			const originalEntry = await this.journal.findEntryBySource(
 				ctx.organizationId,
 				'payment',
 				payment.id,
 				tx,
 			);
-			if (!originalEntry) throw new PaymentNotFoundError();
-			const originalLines = await this.repo.findLinesByEntryId(
+			if (!originalEntry) throw new JournalEntryNotFoundError();
+			const originalLines = await this.journal.findLinesByEntryId(
 				ctx.organizationId,
 				originalEntry.id,
 				tx,
 			);
-			const link = await this.repo.findBankAccountLinkByCashAccount(
+			const link = await this.links.findBankAccountLinkByCashAccount(
 				ctx.organizationId,
 				payment.cashBankAccountId!,
 			);
-			if (!link) throw new PaymentNotFoundError();
+			if (!link) throw new CashBankLinkRequiredError();
 			const counterpartLine = originalLines.find(
 				(line) => line.accountId !== link.chartOfAccountId,
 			);
-			if (!counterpartLine) throw new PaymentNotFoundError();
+			if (!counterpartLine) throw new JournalEntryNotFoundError();
 
 			await this.cashBank.postMovement(
 				ctx,
@@ -219,31 +243,20 @@ export class MonthEndCloseService {
 				tx,
 			);
 
-			return (
-				(await this.repo.updatePayment(
-					ctx.organizationId,
-					payment.id,
-					{
-						status: 'void',
-						voidedAt: new Date(),
-						voidReason: input.reason,
-					},
-					tx,
-				)) ?? payment
-			);
+			return this.payments.markVoided(ctx.organizationId, payment.id, input.reason, tx);
 		});
 	}
 
 	/* ----------------------------- internals ----------------------------- */
 
-	/** Rolls paid/outstanding back on `ar_open_items` + `sales.invoices`. */
+	/** Rolls paid/outstanding back on `ar_open_items` + the Sales invoice (via its export). */
 	private async rollbackInvoiceAllocation(
 		organizationId: string,
 		invoiceId: string,
 		amount: number,
 		tx: TTx,
 	): Promise<void> {
-		const item = (await this.repo.findArOpenItemByInvoice(
+		const item = (await this.ar.findArOpenItemByInvoice(
 			organizationId,
 			invoiceId,
 			tx,
@@ -251,17 +264,17 @@ export class MonthEndCloseService {
 			paidAmount: number;
 			originalAmount: number;
 		} | null;
-		if (!item) throw new PaymentNotFoundError();
+		if (!item) throw new OpenItemNotFoundError();
 		const paidAmount = item.paidAmount - amount;
 		const outstandingAmount = item.originalAmount - paidAmount;
-		await this.repo.updateArOpenItem(organizationId, invoiceId, {
+		await this.ar.updateArOpenItem(organizationId, invoiceId, {
 			paidAmount,
 			outstandingAmount,
 			status: paidAmount === 0 ? 'open' : 'partially_paid',
 		}, tx);
 		// The invoice itself returns to `issued` with rolled-back totals; the
 		// original invoice status check only allows issued/partially_paid/paid.
-		await this.repo.updateSalesInvoiceTotals(organizationId, invoiceId, {
+		await this.invoices.updateTotals(organizationId, invoiceId, {
 			paidTotal: paidAmount,
 			outstandingTotal: outstandingAmount,
 			status: paidAmount === 0 ? 'issued' : 'partially_paid',
@@ -275,7 +288,7 @@ export class MonthEndCloseService {
 		amount: number,
 		tx: TTx,
 	): Promise<void> {
-		const item = (await this.repo.findApOpenItemByBill(
+		const item = (await this.ap.findApOpenItemByBill(
 			organizationId,
 			billId,
 			tx,
@@ -283,16 +296,16 @@ export class MonthEndCloseService {
 			paidAmount: number;
 			originalAmount: number;
 		} | null;
-		if (!item) throw new PaymentNotFoundError();
+		if (!item) throw new OpenItemNotFoundError();
 		const paidAmount = item.paidAmount - amount;
 		const outstandingAmount = item.originalAmount - paidAmount;
 		const status = paidAmount === 0 ? 'approved' : 'partially_paid';
-		await this.repo.updateApOpenItem(organizationId, billId, {
+		await this.ap.updateApOpenItem(organizationId, billId, {
 			paidAmount,
 			outstandingAmount,
 			status,
 		}, tx);
-		await this.repo.updateSupplierBill(organizationId, billId, {
+		await this.bills.updateSupplierBill(organizationId, billId, {
 			paidTotal: paidAmount,
 			outstandingTotal: outstandingAmount,
 			status,

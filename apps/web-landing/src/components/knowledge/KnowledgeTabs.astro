@@ -1,0 +1,62 @@
+---
+import BookOpen from "@lucide/astro/icons/book-open";
+import CircleQuestionMark from "@lucide/astro/icons/circle-question-mark";
+import FolderDown from "@lucide/astro/icons/folder-down";
+import CirclePlay from "@lucide/astro/icons/circle-play";
+import GraduationCap from "@lucide/astro/icons/graduation-cap";
+import { routes } from "../../data/site";
+
+/** Knowledge Center tab bar (01.03 / 01.04): underline tabs on desktop, pills on mobile. */
+interface Props {
+  active: "help" | "documents" | "videos" | "training";
+}
+
+const { active } = Astro.props;
+const tabs = [
+  { key: "help", label: "Help & FAQ", href: routes.help, icon: CircleQuestionMark },
+  { key: "documents", label: "Documents & Downloads", mobileLabel: "Downloads", href: routes.documents, icon: FolderDown },
+  { key: "videos", label: "Video Guides", href: routes.videos, icon: CirclePlay },
+  { key: "training", label: "Training & Certification", mobileLabel: "Training", href: routes.training, icon: GraduationCap },
+] as const;
+---
+
+<nav aria-label="Knowledge Center" class="border-b border-border bg-white">
+  <div class="mx-auto hidden h-14 max-w-[1440px] items-center gap-1 px-[120px] xl:flex">
+    <span class="flex items-center gap-2 pr-6 font-heading text-[15px] font-extrabold text-fg">
+      <BookOpen size={18} class="text-blue-600" aria-hidden="true" />
+      Knowledge Center
+    </span>
+    {
+      tabs.map(({ key, label, href, icon: Icon }) => (
+        <a
+          href={href}
+          aria-current={key === active ? "page" : undefined}
+          class:list={[
+            "-mb-px flex h-14 items-center gap-2 border-b-2 px-4 text-[14px]",
+            key === active ? "border-blue-600 font-bold text-fg" : "border-transparent font-medium text-fg-secondary hover:text-fg",
+          ]}
+        >
+          <Icon size={16} class={key === active ? "text-blue-600" : "text-fg-muted"} aria-hidden="true" />
+          {label}
+        </a>
+      ))
+    }
+  </div>
+  <div class="scrollbar-none flex gap-2 overflow-x-auto px-5 py-2.5 xl:hidden">
+    {
+      tabs.map(({ key, label, href, icon: Icon, ...rest }) => (
+        <a
+          href={href}
+          aria-current={key === active ? "page" : undefined}
+          class:list={[
+            "flex shrink-0 items-center gap-1.5 rounded-pill px-3 py-[7px] text-[12.5px] font-semibold",
+            key === active ? "bg-navy-900 text-white" : "bg-surface text-fg-secondary",
+          ]}
+        >
+          <Icon size={14} aria-hidden="true" />
+          {"mobileLabel" in rest ? rest.mobileLabel : label}
+        </a>
+      ))
+    }
+  </div>
+</nav>

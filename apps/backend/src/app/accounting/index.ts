@@ -18,6 +18,8 @@ export { registerAccounting } from './container';
 export { registerSupplierBillDueSchedule } from './queues/supplier-bill-due.queue';
 export { startSupplierBillDueWorker } from './queues/supplier-bill-due.worker';
 export { POSTING_SERVICE_TOKEN } from './constants/di';
+export { LEDGER_SETTLEMENT_PORT_TOKEN } from './constants/ar-di';
+export type { ILedgerSettlementPort } from './contracts/ledger-settlement.port';
 export type { TPostingInput, TPostingLine, TPostingResult } from './services/posting.service';
 export { PostingService } from './services/posting.service';
 

@@ -1,0 +1,59 @@
+---
+import MockKpi from "./MockKpi.astro";
+
+/** Entragate Parking window body (02.04). Slot maps copy the occupancy patterns in the design. */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+const desktopRows = ["XX.XXX.XXX", "X.XXXXXX.XX", ".XXX.XXXX.", "XXX.XX.XXX"].map((r) => r.slice(0, 10).padEnd(10, "X"));
+const mobileRows = ["XX.XXX.X", "X.XXXXX.", ".XXX.XXX"];
+---
+
+{
+  variant === "desktop" ? (
+    <div class="flex min-h-0 flex-1 gap-2.5">
+      <div class="flex flex-1 flex-col gap-2 rounded-sm bg-white p-3 ring-1 ring-border ring-inset">
+        <div class="flex justify-between text-[10px]">
+          <span class="font-semibold text-fg">Level B1 · Occupancy</span>
+          <span class="font-bold text-blue-600">78%</span>
+        </div>
+        {desktopRows.map((row) => (
+          <div class="flex flex-1 gap-1">
+            {[...row].map((slot) => (
+              <span class:list={["flex-1 rounded-xs", slot === "X" ? "bg-blue-600" : "bg-white ring-1 ring-border ring-inset"]} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div class="flex w-[170px] shrink-0 flex-col gap-2">
+        <MockKpi label="Revenue today" value="Rp 38.600.000" delta="+11%" />
+        <MockKpi label="Avg. stay" value="2h 14m" />
+        <div class="flex flex-1 flex-col gap-1.5 rounded-sm bg-navy-900 p-2.5">
+          <span class="text-[9.5px] text-fg-on-dark-muted">Gate In · LPR</span>
+          <span class="w-fit rounded-xs bg-white px-2 py-1 font-heading text-[13px] font-extrabold tracking-[1px] text-fg">B 1984 TJA</span>
+          <span class="text-[9.5px] font-semibold text-cyan-400">✓ Barrier opened · 0.4s</span>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class="flex min-h-0 flex-1 gap-2">
+      <div class="flex flex-1 flex-col gap-1 rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+        <span class="text-[9.5px] font-semibold text-fg">Level B1 · 78%</span>
+        {mobileRows.map((row) => (
+          <div class="flex flex-1 gap-[3px]">
+            {[...row].map((slot) => (
+              <span class:list={["flex-1 rounded-xs", slot === "X" ? "bg-blue-600" : "bg-white ring-1 ring-border ring-inset"]} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div class="flex w-[110px] shrink-0 flex-col gap-1.5 rounded-sm bg-navy-900 p-2.5">
+        <span class="text-[9px] text-fg-on-dark-muted">Gate In · LPR</span>
+        <span class="w-fit rounded-xs bg-white px-1.5 py-[3px] font-heading text-[11px] font-extrabold text-fg">B 1984 TJA</span>
+        <span class="text-[9px] font-semibold text-cyan-400">✓ Opened 0.4s</span>
+      </div>
+    </div>
+  )
+}

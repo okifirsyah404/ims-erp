@@ -16,8 +16,15 @@ import { QuotationController } from './controllers/quotation.controller';
 import { ReceiptController } from './controllers/receipt.controller';
 import { SalesController } from './controllers/sales.controller';
 import { SalesOrderController } from './controllers/sales-order.controller';
+import { SalesReturnController } from './controllers/sales-return.controller';
 
 export { registerSales } from './container';
+
+/** Contract the payment module uses for invoices and receipts (ADR-0023). */
+export { INVOICE_PAYMENT_PORT_TOKEN, EXPORTED_INVOICE_SERVICE_TOKEN } from './constants/ar-di';
+export type { IExportedInvoiceService } from './contracts/exported-invoice.contract';
+export type { IInvoicePaymentPort } from './contracts/invoice-payment.port';
+export { InvoiceNotFoundError, InvoiceNotPayableError } from './errors/invoice.errors';
 
 /** Elysia instance mounting every sales controller, in route order. */
 export function salesModule() {
@@ -25,6 +32,7 @@ export function salesModule() {
 		.use(QuotationController.plugin())
 		.use(SalesOrderController.plugin())
 		.use(DeliveryNoteController.plugin())
+		.use(SalesReturnController.plugin())
 		.use(InvoiceController.plugin())
 		.use(ReceiptController.plugin())
 		.use(SalesController.plugin());

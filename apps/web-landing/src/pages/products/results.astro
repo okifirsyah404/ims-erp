@@ -1,0 +1,31 @@
+---
+import CategoryChips from "../../components/catalog/CategoryChips.astro";
+import CatalogResults from "../../components/catalog/CatalogResults.astro";
+import { getCatalogFacets, listProducts, parseCatalogQuery } from "../../lib/catalog";
+import { catalogIsSample } from "../../lib/server/catalog";
+
+/**
+ * HTML fragment for in-place catalog updates (`/products/results?…`, same query string as
+ * `/products`). Returns the chips and results regions only; the catalog script swaps them
+ * into the page. Not indexed and never cached.
+ */
+export const partial = true;
+export const prerender = false;
+
+const query = parseCatalogQuery(Astro.url.searchParams);
+let result = null;
+let total = 0;
+try {
+  const [page, facets] = await Promise.all([listProducts(query), getCatalogFacets()]);
+  result = page;
+  total = facets.total;
+} catch (error) {
+  console.error("[catalog] fragment failed", error);
+  Astro.response.status = 502;
+}
+Astro.response.headers.set("Cache-Control", "no-store");
+Astro.response.headers.set("X-Robots-Tag", "noindex");
+---
+
+<template data-region="chips"><CategoryChips query={query} /></template>
+<template data-region="results"><CatalogResults query={query} result={result} catalogTotal={total} sample={catalogIsSample} /></template>

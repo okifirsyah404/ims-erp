@@ -15,6 +15,10 @@ import type { SupplierService } from '../services/supplier.service';
 import type { IGoodsReceiptRepository } from '../contracts/goods-receipt.repository.interface';
 import type { GoodsReceiptService } from '../services/goods-receipt.service';
 import type { PurchaseBillingService } from '../services/purchase-billing.service';
+import type { IPurchaseReturnRepository } from '../contracts/purchase-return.repository.interface';
+import type { PurchaseReturnService } from '../services/purchase-return.service';
+import type { IPurchaseRequestRepository } from '../contracts/procurement.repository.interface';
+import type { PurchaseRequestService } from '../services/purchase-request.service';
 
 export const SUPPLIER_REPOSITORY_TOKEN: InjectionToken<ISupplierRepository> = Symbol('SUPPLIER_REPOSITORY');
 export const SUPPLIER_SERVICE_TOKEN: InjectionToken<SupplierService> = Symbol('SUPPLIER_SERVICE');
@@ -24,3 +28,7 @@ export const GOODS_RECEIPT_REPOSITORY_TOKEN: InjectionToken<IGoodsReceiptReposit
 export const GOODS_RECEIPT_SERVICE_TOKEN: InjectionToken<GoodsReceiptService> = Symbol('GOODS_RECEIPT_SERVICE');
 /** Exported contract for Finance's supplier bills (ERP-0012). */
 export const PURCHASE_BILLING_SERVICE_TOKEN: InjectionToken<PurchaseBillingService> = Symbol('PURCHASE_BILLING_SERVICE');
+export const PURCHASE_RETURN_REPOSITORY_TOKEN: InjectionToken<IPurchaseReturnRepository> = Symbol('PURCHASE_RETURN_REPOSITORY');
+export const PURCHASE_RETURN_SERVICE_TOKEN: InjectionToken<PurchaseReturnService> = Symbol('PURCHASE_RETURN_SERVICE');
+export const PURCHASE_REQUEST_REPOSITORY_TOKEN: InjectionToken<IPurchaseRequestRepository> = Symbol('PURCHASE_REQUEST_REPOSITORY');
+export const PURCHASE_REQUEST_SERVICE_TOKEN: InjectionToken<PurchaseRequestService> = Symbol('PURCHASE_REQUEST_SERVICE');

@@ -1,0 +1,86 @@
+---
+import LayoutGrid from "@lucide/astro/icons/layout-grid";
+import { catalogCategories, mobileChipSlugs } from "../../data/catalog";
+import { catalogHref, type CatalogQuery } from "../../lib/catalog";
+import { icons } from "../../lib/icons";
+
+/** Category Chips (02.01 Catalog Hero). Desktop chips carry icons; mobile is a text-only subset. */
+interface Props {
+  query: CatalogQuery;
+}
+
+const { query } = Astro.props;
+const isAll = query.categories.length === 0;
+const isOnly = (slug: string) => query.categories.length === 1 && query.categories[0] === slug;
+const mobileCategories = catalogCategories.filter((c) => mobileChipSlugs.includes(c.slug));
+---
+
+<nav aria-label="Product categories">
+  <ul class="hidden flex-wrap gap-1.5 xl:flex">
+    <li>
+      <a
+        href={catalogHref(query, { categories: [] })}
+        aria-current={isAll ? "true" : undefined}
+        class:list={[
+          "flex items-center gap-[7px] rounded-pill px-3 py-[9px] text-[13px] font-semibold",
+          isAll ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset hover:ring-border-strong",
+        ]}
+      >
+        <LayoutGrid size={15} class={isAll ? "text-cyan-400" : "text-fg-secondary"} aria-hidden="true" />
+        All
+      </a>
+    </li>
+    {
+      catalogCategories.map((category) => {
+        const Icon = icons[category.icon];
+        const active = isOnly(category.slug);
+        return (
+          <li>
+            <a
+              href={catalogHref(query, { categories: [category.slug] })}
+              aria-current={active ? "true" : undefined}
+              class:list={[
+                "flex items-center gap-[7px] rounded-pill px-3 py-[9px] text-[13px] font-semibold",
+                active ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset hover:ring-border-strong",
+              ]}
+            >
+              <Icon size={15} class={active ? "text-cyan-400" : "text-fg-secondary"} aria-hidden="true" />
+              {category.chipLabel}
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+
+  <ul class="scrollbar-none -mx-5 flex gap-2 overflow-x-auto px-5 md:-mx-8 md:px-8 xl:hidden">
+    <li class="shrink-0">
+      <a
+        href={catalogHref(query, { categories: [] })}
+        aria-current={isAll ? "true" : undefined}
+        class:list={[
+          "block rounded-pill px-3.5 py-2 text-[13px] font-semibold",
+          isAll ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset",
+        ]}
+      >
+        All
+      </a>
+    </li>
+    {
+      mobileCategories.map((category) => (
+        <li class="shrink-0">
+          <a
+            href={catalogHref(query, { categories: [category.slug] })}
+            aria-current={isOnly(category.slug) ? "true" : undefined}
+            class:list={[
+              "block rounded-pill px-3.5 py-2 text-[13px] font-semibold whitespace-nowrap",
+              isOnly(category.slug) ? "bg-navy-900 text-white" : "bg-white text-fg ring-1 ring-border ring-inset",
+            ]}
+          >
+            {category.mobileChipLabel ?? category.chipLabel}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

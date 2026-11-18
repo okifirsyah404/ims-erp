@@ -57,6 +57,7 @@ function DeliveryNoteDetailPage() {
 	const queryClient = useQueryClient();
 	const canIssue = usePermission('stock.issue');
 	const canSeeCost = usePermission('product.read_cost');
+	const canReturn = usePermission('sales_return.create');
 	const [action, setAction] = useState<TAction>(null);
 	const [input, setInput] = useState('');
 	const [busy, setBusy] = useState(false);
@@ -131,6 +132,15 @@ function DeliveryNoteDetailPage() {
 						</>
 					)}
 					{canIssue && data.status === 'shipped' && <Button onClick={() => open('deliver')}>{t('sales:deliveries.deliver')}</Button>}
+					{canReturn && (data.status === 'shipped' || data.status === 'delivered') && (
+						<Button
+							variant='outline'
+							render={<Link to='/sales/returns/new' search={{ deliveryNoteId }} />}
+							nativeButton={false}
+						>
+							{t('sales:returns.returnGoods')}
+						</Button>
+					)}
 				</div>
 			</div>
 			{data.status === 'cancelled' && data.cancellationReason && (

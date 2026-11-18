@@ -109,6 +109,9 @@ export type TApplicationApiKey = {
 	createdAt: string;
 	revokedAt: string | null;
 	lastUsedAt: string | null;
+	/** Who issued / revoked the key (the API key is issued as that member). */
+	createdByName: string | null;
+	revokedByName: string | null;
 };
 
 export type TLicenseKey = {

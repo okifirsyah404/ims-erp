@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import {
+	COMMENT_VISIBILITIES,
 	TICKET_CHANNELS,
 	TICKET_STATUSES,
+	type TServiceTicketCommentInsert,
+	type TServiceTicketCommentSelect,
 	type TServiceTicketInsert,
 	type TServiceTicketSelect,
 } from '@drizzle/schemas/aftersales.schema';
@@ -59,6 +62,68 @@ export const warrantyCheckQuerySchema = z.object({
 
 export const ticketIdParamSchema = z.object({ id: z.uuid() });
 
+/** Staff comment on a ticket: an internal note or a reply the customer sees in the portal (ERP-0022). */
+export const ticketCommentSchema = z.object({
+	body: z.string().trim().min(1).max(4000),
+	visibility: z.enum(COMMENT_VISIBILITIES).default('internal'),
+});
+export type TTicketCommentRequest = z.output<typeof ticketCommentSchema>;
+
+/** A ticket opened by the customer in the portal (ERP-0022). */
+export type TPortalTicketRequest = {
+	subject: string;
+	description: string;
+	projectId: string | null;
+	serialNumber: string | null;
+	deviceDescription: string | null;
+};
+
+/**
+ * A ticket as the customer sees it (portal DTO, ERP-0022): no service cost,
+ * no internal notes, no staff ids.
+ */
+export type TPortalTicket = {
+	id: string;
+	code: string;
+	status: TServiceTicketSelect['status'];
+	complaint: string;
+	serialNumber: string | null;
+	deviceDescription: string | null;
+	projectId: string | null;
+	inWarranty: boolean;
+	warrantyEndsOn: string | null;
+	reportedAt: Date;
+	resolution: string | null;
+	resolvedAt: Date | null;
+	closedAt: Date | null;
+	assigneeName: string | null;
+	messageCount: number;
+	lastMessage: TPortalTicketMessage | null;
+};
+
+export type TPortalTicketMessage = {
+	id: string;
+	authorType: 'staff' | 'customer';
+	authorName: string;
+	body: string;
+	createdAt: Date;
+};
+
+export type TPortalTicketDetail = TPortalTicket & { messages: TPortalTicketMessage[] };
+
+/** The portal login acting on the ticket (from the portal guard). */
+export type TPortalActor = { userId: string; name: string; email: string; customerId: string };
+
+export type TTicketCommentData = Omit<TServiceTicketCommentInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
+
+/** Persistence port for `aftersales.service_ticket_comments` (live rows, oldest first). */
+export interface IServiceTicketCommentRepository {
+	list(ticketId: string, visibility?: 'customer'): Promise<TServiceTicketCommentSelect[]>;
+	/** Count and latest customer-visible comment per ticket, for the portal list. */
+	latestCustomerVisible(ticketIds: string[]): Promise<Map<string, { latest: TServiceTicketCommentSelect; count: number }>>;
+	create(data: TTicketCommentData): Promise<TServiceTicketCommentSelect>;
+}
+
 export type TCreateTicketRequest = z.output<typeof createTicketSchema>;
 export type TTicketListQuery = z.output<typeof ticketListQuerySchema>;
 
@@ -72,6 +137,8 @@ export type TTicketCreateData = Omit<TServiceTicketInsert, 'id' | 'createdAt' | 
 export interface IServiceTicketRepository {
 	paginate(query: TTicketListQuery & { assigneeUserId?: string }): Promise<TPaginationResult<TServiceTicketSelect>>;
 	findById(id: string): Promise<TServiceTicketSelect | null>;
+	/** Every live ticket of a customer, newest first (portal, ERP-0022). */
+	listByCustomer(customerId: string): Promise<TServiceTicketSelect[]>;
 	create(data: TTicketCreateData): Promise<TServiceTicketSelect>;
 	transition(
 		id: string,

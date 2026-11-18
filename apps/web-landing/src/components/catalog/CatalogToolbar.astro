@@ -1,0 +1,124 @@
+---
+import X from "@lucide/astro/icons/x";
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import ArrowUpDown from "@lucide/astro/icons/arrow-up-down";
+import LayoutGrid from "@lucide/astro/icons/layout-grid";
+import List from "@lucide/astro/icons/list";
+import { availabilityOptions, catalogCategories, sortOptions } from "../../data/catalog";
+import { catalogHref, type CatalogQuery } from "../../lib/catalog";
+import { formatRupiah } from "../../lib/format";
+
+/** Results toolbar (02.01 · Toolbar): count, removable active filters, sort and view toggle. */
+interface Props {
+  query: CatalogQuery;
+  resultCount: number;
+  catalogTotal: number;
+  /** Demo mode: results come from the labelled sample catalog. */
+  sample?: boolean;
+}
+
+const { query, resultCount, catalogTotal, sample = false } = Astro.props;
+const sortLabel = sortOptions.find((s) => s.value === query.sort)?.label ?? sortOptions[0].label;
+
+const shortCategory: Record<string, string> = {
+  "swing-barrier-gate": "Swing Barrier",
+  "flap-barrier-gate": "Flap Barrier",
+};
+const active = [
+  ...query.categories.map((slug) => ({
+    label: shortCategory[slug] ?? catalogCategories.find((c) => c.slug === slug)?.name ?? slug,
+    href: catalogHref(query, { categories: query.categories.filter((c) => c !== slug) }),
+  })),
+  ...query.availability.map((value) => ({
+    label: availabilityOptions.find((a) => a.value === value)?.label ?? value,
+    href: catalogHref(query, { availability: query.availability.filter((a) => a !== value) }),
+  })),
+  ...query.applications.map((value) => ({
+    label: value,
+    href: catalogHref(query, { applications: query.applications.filter((a) => a !== value) }),
+  })),
+  ...(query.minPrice !== null || query.maxPrice !== null
+    ? [
+        {
+          label: `${formatRupiah(query.minPrice ?? 0)} – ${query.maxPrice !== null ? formatRupiah(query.maxPrice) : "any"}`,
+          href: catalogHref(query, { minPrice: null, maxPrice: null }),
+        },
+      ]
+    : []),
+  ...(query.q ? [{ label: `“${query.q}”`, href: catalogHref(query, { q: "" }) }] : []),
+];
+
+/** Hidden fields so the sort form keeps the current filters. */
+const preserved: [string, string][] = [
+  ...(query.q ? [["q", query.q] as [string, string]] : []),
+  ...query.categories.map((c) => ["category", c] as [string, string]),
+  ...query.availability.map((a) => ["availability", a] as [string, string]),
+  ...query.applications.map((a) => ["application", a] as [string, string]),
+  ...(query.minPrice !== null ? [["min", String(query.minPrice)] as [string, string]] : []),
+  ...(query.maxPrice !== null ? [["max", String(query.maxPrice)] as [string, string]] : []),
+];
+---
+
+<!-- Desktop -->
+<div class="hidden items-center justify-between gap-4 xl:flex">
+  <div class="flex min-w-0 flex-wrap items-center gap-3">
+    <p class="text-[14px] text-fg-secondary" aria-live="polite">
+      Showing <strong class="font-bold text-fg">{resultCount} of {catalogTotal}</strong> products
+    </p>
+    {sample && <span class="rounded-pill bg-warning-bg px-2.5 py-[5px] text-[11px] font-bold tracking-[0.4px] text-warning uppercase" title="Development sample data — not live ERP stock or prices">Sample data</span>}
+    {
+      active.map((filter) => (
+        <a
+          href={filter.href}
+          class="flex items-center gap-1.5 rounded-pill bg-surface py-[5px] pr-2 pl-2.5 text-[12px] font-semibold text-fg ring-1 ring-border ring-inset hover:ring-border-strong"
+          aria-label={`Remove filter ${filter.label}`}
+        >
+          {filter.label}
+          <X size={12} class="text-fg-muted" aria-hidden="true" />
+        </a>
+      ))
+    }
+  </div>
+  <div class="flex shrink-0 items-center gap-2">
+    <form method="get" action="/products" class="relative" data-sort-form>
+      {preserved.map(([name, value]) => <input type="hidden" name={name} value={value} />)}
+      <label class="flex items-center gap-2 rounded-md px-3.5 py-2.5 text-[13px] ring-1 ring-border ring-inset focus-within:ring-blue-600">
+        <span class="text-fg-muted">Sort:</span>
+        <span class="font-semibold text-fg">{sortLabel}</span>
+        <ChevronDown size={14} class="text-fg-secondary" aria-hidden="true" />
+        <select name="sort" class="absolute inset-0 cursor-pointer opacity-0" aria-label="Sort products">
+          {sortOptions.map((option) => <option value={option.value} selected={option.value === query.sort}>{option.label}</option>)}
+        </select>
+      </label>
+      <noscript><button type="submit" class="sr-only">Apply sort</button></noscript>
+    </form>
+    <div class="flex gap-0.5 rounded-md bg-surface-2 p-[3px]" role="group" aria-label="Layout">
+      <span class="flex size-[34px] items-center justify-center rounded-sm bg-white text-fg" aria-current="true" title="Grid view">
+        <LayoutGrid size={16} aria-hidden="true" />
+        <span class="sr-only">Grid view</span>
+      </span>
+      <span class="flex size-[34px] items-center justify-center rounded-sm text-fg-muted" aria-disabled="true" title="List view (coming soon)">
+        <List size={16} aria-hidden="true" />
+        <span class="sr-only">List view (coming soon)</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile -->
+<div class="flex items-center justify-between xl:hidden">
+  <p class="text-[14px] text-fg-secondary" aria-live="polite">
+    <strong class="font-bold text-fg">{resultCount}</strong> results
+    {sample && <span class="ml-1.5 rounded-pill bg-warning-bg px-2 py-[3px] text-[10.5px] font-bold text-warning uppercase">Sample</span>}
+  </p>
+  <form method="get" action="/products" class="relative" data-sort-form>
+    {preserved.map(([name, value]) => <input type="hidden" name={name} value={value} />)}
+    <label class="flex items-center gap-1.5 rounded-md px-3 py-2 text-[13px] font-semibold text-fg ring-1 ring-border ring-inset">
+      <ArrowUpDown size={14} class="text-fg-secondary" aria-hidden="true" />
+      {sortLabel}
+      <select name="sort" class="absolute inset-0 cursor-pointer opacity-0" aria-label="Sort products">
+        {sortOptions.map((option) => <option value={option.value} selected={option.value === query.sort}>{option.label}</option>)}
+      </select>
+    </label>
+  </form>
+</div>

@@ -1,0 +1,158 @@
+---
+import History from "@lucide/astro/icons/rotate-ccw-clock";
+import Eye from "@lucide/astro/icons/eye";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Receipt from "@lucide/astro/icons/receipt";
+import Landmark from "@lucide/astro/icons/landmark";
+import QrCode from "@lucide/astro/icons/qr-code";
+import ArrowLeftRight from "@lucide/astro/icons/arrow-left-right";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import LargeHeader from "../components/customer/LargeHeader.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import Segmented from "../components/customer/Segmented.astro";
+import StatusChip from "../components/customer/StatusChip.astro";
+import SectionHeader from "../components/customer/SectionHeader.astro";
+import ListRow from "../components/customer/ListRow.astro";
+import IconTile from "../components/customer/IconTile.astro";
+import PayInvoiceSheet from "../features/payments/PayInvoiceSheet";
+import { portal } from "../services/portal";
+import { formatRupiah } from "../lib/format";
+
+/** 05.07 Invoices & Payments (+ 05.07b Pay invoice sheet). */
+const tokens = Astro.locals.tokens!;
+const [billing, methods] = await Promise.all([portal.listInvoices(tokens), portal.listPaymentMethods(tokens)]);
+const tab = ["unpaid", "paid", "all"].includes(Astro.url.searchParams.get("tab") ?? "") ? Astro.url.searchParams.get("tab")! : "unpaid";
+const unpaid = billing.invoices.filter((i) => i.status !== "paid");
+const list = tab === "unpaid" ? unpaid : tab === "paid" ? billing.invoices.filter((i) => i.status === "paid") : billing.invoices;
+const nextDue = unpaid.filter((i) => i.dueDate).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!))[0];
+const daysUntil = nextDue?.dueDate ? Math.max(0, Math.ceil((Date.parse(nextDue.dueDate) - Date.now()) / 86_400_000)) : undefined;
+const methodIcon = { virtual_account: Landmark, qris: QrCode, transfer: ArrowLeftRight };
+const saved = methods.filter((m) => m.savedLabel);
+---
+
+<CustomerLayout title="Payments" tab="home">
+  <LargeHeader eyebrow="Invoices, receipts & methods" title="Payments">
+    <IconButton slot="action" label="Payment history" href="/payments?tab=paid"><History size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-5 px-5 pt-3 pb-6">
+    <section class="relative isolate flex flex-col gap-[18px] overflow-hidden rounded-xl bg-[linear-gradient(130.7deg,var(--eg-navy-950)_19.5%,var(--eg-navy-800)_59.1%,var(--eg-blue-600)_80.5%)] p-[22px] shadow-[0_14px_30px_#0A1A3F33]">
+      <span class="absolute -top-[110px] left-[190px] -z-10 size-[260px] rounded-full bg-[radial-gradient(closest-side,#22D3EE4D,#22D3EE00)]" aria-hidden="true"></span>
+      <div class="flex items-center justify-between">
+        <span class="text-[13px] font-medium text-fg-on-dark-muted">Outstanding balance</span>
+        <button type="button" class="text-fg-on-dark-muted" aria-label="Hide balance" aria-pressed="false" data-toggle-balance><Eye size={18} aria-hidden="true" /></button>
+      </div>
+      <p class="font-heading text-[32px] font-extrabold tracking-[-1px] text-white" data-balance>{formatRupiah(billing.outstanding)}</p>
+      <div class="flex items-center justify-between gap-2.5">
+        {
+          nextDue ? (
+            <StatusChip tone="cyan" label={`${unpaid.length} invoice${unpaid.length === 1 ? "" : "s"} due in ${daysUntil} days`} />
+          ) : (
+            <StatusChip tone="cyan" label="All invoices paid" />
+          )
+        }
+        {
+          nextDue && (
+            <a href={`#pay-${nextDue.id}`} class="flex items-center gap-1.5 rounded-pill bg-white px-4 py-2.5 text-[13.5px] font-bold text-navy-900">
+              Pay now
+              <ArrowRight size={15} aria-hidden="true" />
+            </a>
+          )
+        }
+      </div>
+    </section>
+
+    <dl class="flex gap-2.5">
+      <div class="flex flex-1 flex-col gap-1 rounded-lg bg-surface p-3.5">
+        <dt class="text-[11px] font-semibold text-fg-muted">Paid in {new Date().getFullYear()}</dt>
+        <dd class="text-[15px] font-extrabold text-success">{formatRupiah(billing.paidThisYear)}</dd>
+      </div>
+      <div class="flex flex-1 flex-col gap-1 rounded-lg bg-surface p-3.5">
+        <dt class="text-[11px] font-semibold text-fg-muted">Overdue</dt>
+        <dd class:list={["text-[15px] font-extrabold", billing.overdue > 0 ? "text-danger" : "text-fg"]}>{formatRupiah(billing.overdue)}</dd>
+      </div>
+    </dl>
+
+    <Segmented
+      label="Invoice status"
+      active={tab}
+      items={[
+        { key: "unpaid", label: `Unpaid · ${unpaid.length}`, href: "/payments" },
+        { key: "paid", label: "Paid", href: "/payments?tab=paid" },
+        { key: "all", label: "All", href: "/payments?tab=all" },
+      ]}
+    />
+
+    {
+      list.length === 0 ? (
+        <p class="rounded-card bg-surface p-6 text-center text-[14px] text-fg-secondary">{tab === "unpaid" ? "You're all caught up — no unpaid invoices." : "No invoices yet."}</p>
+      ) : (
+        <ul class="app-card flex flex-col py-1">
+          {list.map((invoice, index) => {
+            const paid = invoice.status === "paid";
+            return (
+              <li class:list={["mx-4", index > 0 && "border-t border-border"]}>
+                <a href={`/payments/${invoice.id}`} class="flex items-center gap-3.5 py-3.5">
+                  <IconTile tone={paid ? "success" : invoice.status === "overdue" ? "danger" : "warning"}><Receipt size={20} /></IconTile>
+                  <span class="flex min-w-0 flex-1 flex-col gap-[3px]">
+                    <span class="text-[14.5px] font-bold text-fg">{invoice.number}</span>
+                    <span class="text-[12.5px] leading-[18px] text-fg-muted">{invoice.description}</span>
+                  </span>
+                  <span class="flex flex-col items-end gap-1.5">
+                    <span class="text-[14px] font-bold whitespace-nowrap text-fg">{formatRupiah(invoice.amount)}</span>
+                    {paid ? <StatusChip tone="success" label="Paid" /> : <StatusChip tone={invoice.status === "overdue" ? "danger" : "warning"} label={invoice.dueLabel ?? "Unpaid"} />}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+
+    <SectionHeader title="Payment methods" linkLabel="Manage" />
+    <div class="app-card flex flex-col py-1">
+      {
+        saved.map((method, index) => {
+          const Icon = methodIcon[method.kind];
+          return (
+            <>
+              {index > 0 && <span class="mx-4 h-px bg-border" />}
+              <ListRow title={method.name} subtitle={method.savedLabel} chevron>
+                <IconTile slot="icon" tone="neutral" class="!text-navy-900"><Icon size={20} /></IconTile>
+              </ListRow>
+            </>
+          );
+        })
+      }
+    </div>
+  </div>
+
+  {
+    unpaid.map((invoice) => (
+      <PayInvoiceSheet
+        slot="overlay"
+        client:idle
+        invoiceId={invoice.id}
+        number={invoice.number}
+        amount={invoice.amount}
+        dueLabel={invoice.dueLabel}
+        methods={methods.map(({ id, kind, name, detail }) => ({ id, kind, name, detail }))}
+      />
+    ))
+  }
+</CustomerLayout>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>("[data-toggle-balance]");
+  const balance = document.querySelector<HTMLElement>("[data-balance]");
+  if (toggle && balance) {
+    const value = balance.textContent ?? "";
+    toggle.addEventListener("click", () => {
+      const hidden = toggle.getAttribute("aria-pressed") === "true";
+      toggle.setAttribute("aria-pressed", String(!hidden));
+      toggle.setAttribute("aria-label", hidden ? "Hide balance" : "Show balance");
+      balance.textContent = hidden ? value : "Rp ••••••••";
+    });
+  }
+</script>

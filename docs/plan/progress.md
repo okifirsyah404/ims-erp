@@ -12,6 +12,67 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-18 - PR #112 merged `main` in; bill lines ported onto the per-table accounting repositories; migration regenerated
+
+`origin/main` (`d51d3faa`) was merged into `feat/m05-payables-from-receipts`
+(`ae7b5209`): 94 main commits. No package rename was needed (this branch only
+touches `@ims-erp/web-admin`) and ERP-0012 keeps its id.
+
+**Structural conflict.** The branch edited `accounting/repositories/ledger.repository.ts`,
+which main deleted (one repository per table). Git could not merge that, so the
+branch's additions were ported by hand:
+- New `SupplierBillItemRepository` (`finance.supplier_bill_items`) with its
+  contract `ISupplierBillItemRepository` and `SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN`,
+  registered in the accounting container: `insertSupplierBillItems`,
+  `findSupplierBillItems`, `billedQuantities` (joins `supplier_bills` to skip void
+  bills), `lockPurchaseOrderBilling` (advisory lock).
+- `SupplierBillRepository` / `ISupplierBillRepository`: `listOpenBillsDueBy`
+  and the optional `supplierInvoiceNumber` on insert.
+- `.mapWith(Number)` on the debit/credit sums (`JournalRepository`, 4 places) and
+  the cash-bank sum (`CashBankRepository`), carried over from the old file.
+- `SupplierBillService`: main's `bills` + `ap` split kept; added `billItems`,
+  `purchasing`, `outbox` and `suppliers`. `ledger.repository.ts` stays deleted;
+  no import of it remains.
+
+**Other conflicts (15 entries).**
+- Kept both sides: `outbox.contract.ts` (`supplier_bill.recorded/due` next to
+  the return events), procurement `constants/di.ts` and `container.ts`
+  (`PURCHASE_BILLING_SERVICE_TOKEN` next to the request/return tokens),
+  `index.ts` (supplier-bill due schedule/worker next to `registerPortal`),
+  `automation.md`, both locale `api.ts`, `locale-dead-keys.test.ts`.
+- Tests `ap-flows.test.ts`, `month-end-close.test.ts`: main's per-table fakes
+  taken; only the `SupplierBillService` constructor was extended
+  (`bills, ap, billItems` + purchasing/outbox/suppliers stubs). The branch's own
+  `bill-from-order.test.ts` got the same constructor update.
+- `docs.dbml`: the conflict was a large block that moved on main (payments now
+  live in `payment`), so main's file was taken and only this branch's changes
+  were re-applied: `supplier_invoice_number`, the `supplier_bill_items` table, its
+  `Ref`, the group entry, and the supplier-bills note (now naming
+  `payment.payments`). `logical-references.md` regenerated (544 refs).
+  `backlog.md`: main's ERP-0011 row plus the ERP-0012 row. `progress.md`: main as
+  base, this branch's two sections kept.
+
+**Migration regenerated on main's chain**: `20261115205311_erp0012_supplier_bill_lines`
+deleted, `20261118102449_erp0012_supplier_bill_lines` generated: same 5
+statements (`supplier_bill_items`, `supplier_bills.supplier_invoice_number`, two
+indexes, FK). No hints were needed.
+
+**Cross-module check.** Accounting reaches Procurement through
+`PURCHASE_BILLING_SERVICE_TOKEN` and `SUPPLIER_SERVICE_TOKEN` exported by
+`@app/procurement`; `PurchaseBillingService` itself uses only Procurement's
+repository and `ITEM_SERVICE_TOKEN`. No other module's repository is imported.
+
+**Verification.**
+- `typecheck` 6/6, `build` 5/5, `lint` 0 errors (19 ui, 14 web-admin, 9 backend
+  pre-existing warnings), `test` backend 1259 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail. `validate-dbml.ts` OK (280 tables, 241 refs, 0
+  cross-module).
+- Disposable Postgres 18: `migrate-reset` applied the chain, `supplier_bill_items`
+  and `supplier_bills.supplier_invoice_number` exist, `drizzle-kit check` clean;
+  a second seed run produced 0 errors and inserted 0 tax rows. Container removed.
+- Not re-run: the branch's API e2e and browser walk-through (2026-11-16), and the
+  n8n delivery of the two new events against a real receiver.
+
 ## 2026-11-16 - ERP-0012: supplier bills publish `supplier_bill.recorded` and a daily `supplier_bill.due`
 
 At the owner's request, the payables flow now feeds n8n:
@@ -161,6 +222,1679 @@ this handoff.
 - No reviewer sign-off.
 
 `docs/database/` was updated (see above).
+
+## 2026-11-18 - PR #111 merged `main` in (it was stacked on the old #108); migration regenerated
+
+`origin/main` (`30451b66`, #108 included) was merged into
+`feat/m02-sales-returns` (`0a1af47c`): 83 main commits. The branch was stacked on
+the pre-renumber head of #108 (`2d49f521`), so most conflicts came from #108
+landing on main in a different shape, not from sales returns. No package rename
+was needed (this branch only touches `@ims-erp/web-admin`).
+
+**Conflicts (12).**
+- `code-number.schema.ts`, `code-number.ts` (2 hunks), `sales/container.ts`,
+  `locale-dead-keys.test.ts`: both sides kept (`sales_return` `RTJ` next to
+  `purchase_request` `PR`; sales-return registrations next to the invoice
+  billing / payment-port / exported-invoice registrations; both dynamic locale
+  prefixes).
+- Serial status (`serial-unit.repository.interface.ts`,
+  `item-status-matrix.test.ts`, `docs.dbml` note): **this branch's side taken**,
+  with ERP-0064 -> ERP-0068 for the purchase-return references. It is a real
+  extension of #108, not stale text: the code guards `status IN ('in_stock',
+  'damaged')`, the schema allows `in_stock -> damaged` and `damaged -> returned`,
+  and `purchase-return.service.ts` returns customer-damaged units. Main's wording
+  (`in_stock` only) predates sales returns.
+- `automation.md`: both event rows kept (`purchase_return.updated` as ERP-0068,
+  `sales_return.updated` ERP-0065).
+- `routeTree.gen.ts`: main's file taken, regenerated by the build
+  (`/sales/returns` and `/procurement/purchase-returns` present).
+- `docs.dbml`, `logical-references.md`: dbml note merged, references
+  regenerated (541 refs, 240 intra-module). `backlog.md`: main's ERP-0068 row
+  plus this branch's ERP-0065 row. `progress.md`: main as base, this branch's
+  three sections kept on top.
+
+**ERP-0065 stays**: highest id anywhere is 0068 (#108, merged); 0066/0067 are
+#116/#117; 0065 is used only here.
+
+**Migration regenerated on main's chain**: `20261115202516_erp0065_sales_returns`
+deleted, `20261118100435_erp0065_sales_returns` generated. Same 14 statements as
+before (`sales_returns`, `sales_return_items`, indexes, FKs, and the
+`serial_tracked_items_status_check` widened to include `returned` + `damaged`).
+Unlike #108, `drizzle-kit generate` asked for no hints: the `payment.*` move is
+already migrated on main.
+
+**Verification.**
+- `typecheck` 6/6, `build` 5/5, `lint` 0 errors (14 web-admin, 9 backend,
+  19 ui pre-existing warnings), `test` backend 1250 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail. `validate-dbml.ts` OK (279 tables, 240 refs, 0
+  cross-module).
+- Disposable Postgres 18: `migrate-reset` applied the chain and seeded; second
+  seed inserted 0; `sales.sales_returns`, `sales.sales_return_items`,
+  `procurement.purchase_returns`, `payment.payments` exist; the status check
+  allows `returned` and `damaged`; `drizzle-kit check` clean; container removed.
+- Not re-run: the API e2e and browser walk-through from 2026-11-16.
+
+## 2026-11-16 - ERP-0065: sales returns publish `sales_return.updated` to n8n
+
+`feat/m05-purchase-returns` (with its `purchase_return.updated` event) was
+merged in. Every committed state change of a sales return now goes to the
+M04 outbox:
+- `submitted`, `approved`, `rejected`, `received` and `cancelled`.
+- The payload carries the lines with their received condition, the delivery
+  note and SO numbers, and the customer snapshot (phone, WhatsApp, email).
+- Publishing happens after the commit and never throws.
+
+Changes:
+- `OUTBOX_TOPICS` gained the topic; new `sales/utils/sales-return-event.ts`.
+- `automation.md` has a new row.
+- `docs/database/` was reviewed and is unchanged.
+
+Verification: backend `tsc` clean; the sales and purchase return unit tests
+pass 20/20, and they assert the submitted → approved → received events.
+
+## 2026-11-16 - M02 sales returns renumbered ERP-0062 -> ERP-0065 (PR #111), `main` merged in
+
+`main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and
+ERP-0062 (sidebar and signature actions, #110) while this branch's id was
+reserved only in an unmerged PR. Following the number-reservation rule, the
+merged ids stand. After checking `main`, every remote branch and all open
+PRs, the highest id anywhere was ERP-0062, so M05 purchase requests (#102)
+became ERP-0063, M05 purchase returns (#108) ERP-0064, and M02 sales returns
+(#111) ERP-0065.
+
+- **What was renamed.** The backlog row, `features.md`, the code comments
+  and the migration folder name (`_erp0065_`) now use the new id. Earlier
+  `progress.md` entries keep the id they were written with; read ERP-0062
+  there as ERP-0065 for this work.
+- **The merge.** `feat/m05-purchase-returns` (#108, which carries `origin/main` `9dc2373`) was merged in. It adds no
+  migration, so this branch's migration keeps its parent.
+
+## 2026-11-16 - ERP-0062 M02 sales returns (retur penjualan), replacement only
+
+Branch `feat/m02-sales-returns`, stacked on `feat/m05-purchase-returns` (PR
+#108). The returns need #108's outbound stock fix to ship delivery notes,
+and #108's `returned` unit status.
+
+**Number check.** `origin/main`, every remote branch and the heads of the
+eight open PRs (#97 to #108) were checked. The highest id was ERP-0061, so
+this is ERP-0062. Nothing moved on `main` since 2026-11-15.
+
+**Gate 1 (read).**
+- `docs.dbml` Sales (sales_returns scaffold, delivery notes, order lines)
+  and Inventory (serial units).
+- `module-ownership.md`, `integrity-and-consistency.md`, and
+  `data-dictionary.md` §3.2.
+- `logical-references.md`, regenerated.
+- Skipped: `implementation-phases.md` (no dependency on an unlanded step).
+
+**Gate 2 (owner decisions 2026-11-16 plus the manual grill).**
+- **Outcome.** Replacement only, like purchase returns: the goods come back
+  into stock, the order quantity is released, and the replacement leaves on
+  a normal delivery note. There is no credit memo, and the invoice is not
+  touched.
+- **Condition.** Set per line when the warehouse receives:
+  - `good`: the units go back to `in_stock`;
+  - `damaged`: the units become `damaged`, a new unit status.
+  - A `damaged` unit is never offered for a delivery. It can still go back
+    to the supplier: purchase returns now accept `in_stock` or `damaged`
+    units.
+  - Non-serialized damaged goods are kept apart by receiving them into a
+    storage (optional per line).
+- **Ownership.** `sales` owns the return. Stock and units change only
+  through `StockService.postMovement` and the new
+  `ItemService.receiveCustomerUnits`. The order is released through the
+  sales order repository (same module).
+- **Tenant, soft delete, money and dates.**
+  - Company-wide like delivery notes, so there is no `organization_id`.
+  - `deleted_at` on both tables.
+  - Money is IDR minor units: `unit_price` is the order price, and
+    `unit_cost` is the delivery line's issue cost, booked back by
+    `return_in`.
+  - `return_date` is a Jakarta business date; `*_at` columns are unix ms.
+- **References.**
+  - `customer_id`, `warehouse_id`, line `bin_id`, `stock_movement_id` and the
+    `*_by` columns are plain nullable logical ids.
+  - The links to the delivery note, its lines, the order lines and the order
+    are real FKs (`restrict`) inside `sales`.
+- **Status vocabulary.**
+  - Return: `draft -> submitted -> approved -> received`; rejection goes back
+    to draft; `cancelled` before receiving.
+  - Unit transitions: `sold -> in_stock | damaged` and
+    `damaged -> in_stock | returned | lost`.
+  - `ItemService.transitionUnit` has no HTTP caller today. If a manual
+    endpoint is ever added, it must exclude these document-owned edges (noted
+    in the test).
+
+**What changed**
+- **`docs/database`**
+  - `docs.dbml`: rewrote `sales.sales_returns` and added
+    `sales.sales_return_items`; FKs; the `damaged` unit status.
+  - `data-dictionary.md` §3.2: `received` is the executed state.
+  - `logical-references.md`: regenerated.
+  - `validate-dbml.ts`: `OK` (276 tables, 0 cross-module refs, 0 timestamp
+    gaps, 0 parity drift).
+- **Drizzle and migration**
+  - `sales.schema.ts`: two tables, `SALES_RETURN_STATUSES` and
+    `SALES_RETURN_CONDITIONS`.
+  - `inventory.schema.ts`: `damaged` added to the statuses, transitions and
+    CHECK.
+  - Code type `sales_return` (`RTJ`).
+  - `bun run drizzle:generate` produced the migration, renamed to
+    `20261115202516_erp0062_sales_returns`. Inspected: two tables, indexes,
+    FKs and the unit status CHECK swap.
+- **Backend**
+  - `/sales-returns`: list, `returnable-deliveries`, detail, create, patch,
+    submit, decision, receive and cancel.
+  - The delivery cost is hidden without `product:read_cost`.
+  - New `SalesOrderRepository.reopenForReplacement`.
+  - en/id `api` messages.
+- **Permissions.** `sales_return: read, create, update, submit, approve,
+  receive, cancel`.
+  - Sales: create, update, submit, cancel.
+  - Sales manager: also approve.
+  - Warehouse: read and receive.
+  - Finance and auditor: read.
+  - Owner: all.
+- **Web admin**
+  - `/sales/returns`: list, new (also from a delivery note via
+    `?deliveryNoteId=`), detail with a receiving dialog (condition and
+    storage per line), and edit.
+  - The delivery note page has a "Return goods" action.
+  - Unit status label `damaged`; numbering type `sales_return`.
+- **Fix found on the way: the delivery note pages were refused to everyone.**
+  - The cause: the nav leaf had no permission, the same bug as the goods
+    receipt leaf in #108.
+  - The backend reads delivery notes with `stock:read` **or**
+    `sales_order:read`, so the nav gained an `anyPermission` option,
+    honoured by the sidebar filter and the route guard.
+
+**Verification**
+- Backend and web-admin `tsc` clean. `bun run lint`: 0 errors, with no
+  warning in the new files.
+- Tests:
+  - Backend `bun test`: 1090 pass, 4 fail (the known `Bun.Image` / toWebp
+    tests).
+  - Updated tests: `item-status-matrix.test.ts` (`sold` may now only go to
+    `in_stock` / `damaged`; `returned` is terminal) and `item.service.test.ts`
+    (an illegal-edge example that is still illegal).
+  - New: `test/unit/sales-return.service.test.ts`, 8 pass.
+  - Locales: 94 pass. The id strings for `return.order` and `return.status`
+    were translated (the untranslated-copy guard).
+  - web-admin: 100 pass.
+- **Disposable DB `ims_erp_v_srt`.** Migrated from empty; `drizzle-kit
+  check` printed "Everything's fine"; seed ran twice.
+- **API e2e on `APP_PORT=3010`: 28/28.**
+  - Set-up: PO + BPB for stock, quotation → SO → delivery note **shipped**
+    (proves #108's outbound fix).
+  - Access: technician 403, warehouse cannot create, sales cannot approve or
+    receive.
+  - Refused with 422: over-quantity and a foreign serial. The Indonesian
+    message is returned.
+  - Lifecycle: approve numbered `.../RTJ/...`; receive (serial damaged,
+    plain good); a missing condition and a double receive return 422.
+  - After receiving: two `return_in` movements; the order released (1/2 and
+    4/6 delivered) and deliverable again; the damaged serial cannot be
+    delivered.
+  - The replacement delivery note was shipped. The damaged serial went back
+    to the supplier on a purchase return.
+  - Cancel path checked; a received return cannot be cancelled.
+- **DB check after the run.**
+  - Plain item: 10 - 6 + 2 - 2 = 4.
+  - Serial `-B`: `sold -> damaged -> returned` (no warehouse, no customer).
+  - Serials `-A` and `-C`: `sold`.
+- **Browser walk-through** (built web-admin):
+  - Sales opens the delivery note (the page now opens for sales) and clicks
+    "Retur barang"; the form opens with the note preselected.
+  - Sales ticks the serial, sets qty 1, saves and submits.
+  - The sales manager approves (`RTJ`).
+  - The warehouse receives: serial "Rusak", plain "Layak jual". The detail
+    shows both conditions.
+  - The list shows it.
+  - No page errors and no 4xx/5xx.
+
+**Not done.** No printed return document and no reviewer sign-off.
+`docs/database/` was updated (see above).
+
+## 2026-11-18 - PR #108 merged `main` in; purchase returns renumbered ERP-0064 -> ERP-0068; migration regenerated
+
+`origin/main` (`b373ff69`) was merged into `feat/m05-purchase-returns`
+(`2d49f521`). The branch had not seen main since 2026-11-16: 81 main commits
+came in. No package rename was needed: this branch only touches
+`@ims-erp/web-admin`; the new `@ims-erp/web-landing`,
+`@ims-erp/web-customer-portal` and `@ims-erp/design-tokens` arrive from main.
+
+**Conflicts (12).**
+- Code, 7 files (`code-number.schema.ts`, `code-number.ts` x2 hunks,
+  `procurement/{constants/di,container,errors/procurement.errors,index}.ts`,
+  `procurement.schema.ts` x4 hunks): main added purchase requests (ERP-0063)
+  next to the same lines. Both sides kept. `purchase_request` (`PR`) and
+  `purchase_return` (`RTB`) code types do not collide.
+- `apps/web-admin/src/routeTree.gen.ts`: main's file taken, then regenerated by
+  `bun run build`; it contains the purchase-returns, purchase-requests and
+  signature routes.
+- `docs/database/docs.dbml`: merged header comment (main already carried the
+  return tables). `docs/database/logical-references.md`: main's copy, then
+  regenerated with `gen-logical-references.ts` (537 refs, 236 intra-module).
+- `packages/locales/src/locale-dead-keys.test.ts`: both dynamic prefixes kept
+  (`procurement:returnStatus.`, `procurement:prStatus.`).
+- `docs/plan/progress.md`: main as base, this branch's three sections kept on top.
+
+**Renumbered ERP-0064 -> ERP-0068.** Main gave ERP-0064 to company branding;
+the highest id across main, every remote branch and open PRs is ERP-0067 (#117),
+so purchase returns take ERP-0068. 31 code/doc lines changed. Branding's own
+ERP-0064 mentions (backlog, `features.md`, `settings/documents`) were left alone.
+
+**Migration regenerated on main**, not renumbered: the branch's
+`20261115125224_erp0064_purchase_returns` was deleted and
+`20261118093646_erp0068_purchase_returns` generated on top of main's chain.
+It creates `purchase_returns` / `purchase_return_items` and widens the
+`serial_tracked_items` status check (`returned`).
+**It also carries a move that main never migrated:** the schema already declares
+`payment.payments` and `payment.payment_allocations` (ADR-0024), but no migration
+moved them out of `finance`. `drizzle-kit generate` stops on that drift (on main
+too), so it was resolved with rename hints: `ALTER TABLE finance.payments / payment_allocations SET SCHEMA payment`, drop of the
+cross-schema `cash_bank_account_id` FK, and two indexes. This is ADR-0024
+work shipped in this PR's migration; if you want it separate, it must be split
+before merge.
+
+**Verification.**
+- `bun run typecheck` 6/6; `bun run lint` 0 errors (14 web-admin, 9 backend,
+  19 ui pre-existing warnings); `bun run test` backend 1238 / web-admin 119 /
+  locales 98 / react-email 6, 0 fail; `bun run build` 5/5.
+- `validate-dbml.ts` OK (278 tables, 236 refs, 0 cross-module).
+- Migration: a disposable Postgres 18 container, `drizzle:migrate-reset`
+  applied the whole chain and seeded; `payment.payments`,
+  `payment.payment_allocations`, `procurement.purchase_returns` and `_items`
+  exist; seed run a second time inserts 0 rows; `drizzle-kit check` clean.
+  Container removed.
+- Not re-run: the API e2e (34/34) and browser walk-through, which date from
+  2026-11-15 on the previous head.
+
+## 2026-11-16 - ERP-0064: purchase returns publish `purchase_return.updated` to n8n
+
+At the owner's request ("tambahkan" the return and bill events for n8n),
+every committed state change of a purchase return now goes to the M04
+outbox:
+- `submit` publishes `submitted`, `decide` publishes `approved` or
+  `rejected`, `ship` publishes `shipped`, and `cancel` publishes
+  `cancelled`.
+- The payload carries the return, its lines and serials, the goods receipt
+  and PO numbers, and the supplier snapshot with its PIC contact.
+- Publishing happens after the commit and never throws, so a notification
+  never undoes a return.
+
+Changes:
+- `OUTBOX_TOPICS` gained the topic.
+- New `procurement/utils/purchase-return-event.ts`.
+- `docs/architecture/modules/automation.md` has a new event table row.
+- `docs/database/` was reviewed and is unchanged (`outbox_messages.topic` is
+  free text).
+
+Verification: backend `tsc` clean; `purchase-return.service.test.ts` 12/12,
+and it now asserts the submitted → approved → shipped events.
+
+## 2026-11-16 - M05 purchase returns renumbered ERP-0061 -> ERP-0064 (PR #108), `main` merged in
+
+`main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and
+ERP-0062 (sidebar and signature actions, #110) while this branch's id was
+reserved only in an unmerged PR. Following the number-reservation rule, the
+merged ids stand. After checking `main`, every remote branch and all open
+PRs, the highest id anywhere was ERP-0062, so M05 purchase requests (#102)
+became ERP-0063, M05 purchase returns (#108) ERP-0064, and M02 sales returns
+(#111) ERP-0065.
+
+- **What was renamed.** The backlog row, `features.md`, the code comments
+  and the migration folder name (`_erp0064_`) now use the new id. Earlier
+  `progress.md` entries keep the id they were written with; read ERP-0061
+  there as ERP-0064 for this work.
+- **The merge.** `origin/main` (`9dc2373`) was merged in. It adds no
+  migration, so this branch's migration keeps its parent.
+
+## 2026-11-15 - ERP-0061 M05 purchase returns (retur pembelian), replacement only
+
+Branch `feat/m05-purchase-returns` from `origin/main` (`aa3a7ad`), PR #108.
+
+**Number check.** Before taking ERP-0061: `origin/main`, every remote branch
+and the heads of the seven open PRs (#97 to #107) were checked. The highest
+backlog id anywhere was ERP-0060 (PR #102), and the highest ADR was ADR-0022
+(PR #97). No ADR was needed.
+
+**Gate 1 (read).**
+- `docs.dbml` Procurement and Inventory sections.
+- `module-ownership.md` (procurement is company-wide; inventory owns units and
+  the ledger).
+- `integrity-and-consistency.md` and `data-dictionary.md` (§3.2 status
+  vocabulary, money and quantity columns).
+- `logical-references.md`, regenerated after the edit.
+- Skipped: `implementation-phases.md`. Nothing depends on an unlanded step.
+
+**Gate 2 (owner decisions 2026-11-15 plus the manual grill).**
+- **Ownership.** Returns live in `procurement`. Stock and serial units change
+  only through the inventory services (`StockService.postMovement`, new
+  `ItemService.returnUnits`), never through inventory repositories.
+- **Tenant.** Company-wide like goods receipts (ADR-0011), so there is no
+  `organization_id`. The old scaffold (tenant org, `catalog.items`, PO-based,
+  `requested|approved|rejected|shipped|completed`) is replaced.
+- **Soft delete.** `deleted_at` on both tables. Draft lines are replaced as a
+  whole, as purchase orders already do.
+- **Money and quantity.** `unit_cost`, `line_total` and `total_amount` are
+  bigint IDR minor units at the BPB's ex-VAT cost; the total is informative.
+  Quantities are `numeric(18,3)`.
+- **Datetimes.** `return_date` is a Jakarta business date; `*_at` columns are
+  unix ms.
+- **Logical references.** `warehouse_id`, `bin_id` and `stock_movement_id`
+  point to inventory and the `*_by` columns to auth: all are plain nullable
+  ids with the standard notes. The FKs inside procurement (goods receipt,
+  goods receipt line, PO, PO line, supplier) are real FKs with `restrict`.
+- **Status vocabulary.**
+  - Return: `draft -> submitted -> approved -> shipped`; rejection goes back
+    to draft; `cancelled` before shipping.
+  - Unit: a new terminal status `returned`, reached from `in_stock` only.
+- **Business rules.**
+  - A line never takes more than the BPB line minus the live (not cancelled)
+    returns.
+  - A serialized line names serials of that BPB line that are still in stock
+    and not on another live return.
+  - Shipping re-checks the quantities under a lock on the return and its BPB.
+  - Stock leaves from the BPB's warehouse and storage.
+  - The returned quantity is taken off the PO line, and the PO goes back to
+    `partially_received` (or `sent` when nothing stays received).
+  - No credit note, refund or journal.
+
+**What changed**
+- **`docs/database`**
+  - `docs.dbml`: rewrote `procurement.purchase_returns` / `_items`, added the
+    `returned` unit status and the procurement header note.
+  - `data-dictionary.md`: §3.2 names `shipped` as the executed state.
+  - `logical-references.md`: regenerated.
+  - `validate-dbml.ts`: `OK` (0 cross-module refs, 0 timestamp gaps, 0 parity
+    drift).
+- **Drizzle and migration**
+  - `procurement.schema.ts`: two tables plus `PURCHASE_RETURN_STATUSES`.
+  - `inventory.schema.ts`: `returned` added to `UNIT_STATUSES`, the
+    transitions and the CHECK.
+  - Code type `purchase_return` (`RTB`).
+  - `bun run drizzle:generate` produced the migration, renamed to
+    `20261115125224_erp0061_purchase_returns`: two tables, indexes, FKs and
+    the serial status CHECK swap. Inspected.
+- **Backend**
+  - Contract, repository, service and controller under
+    `/purchase-returns`: list, `returnable-receipts`, detail, create, patch,
+    submit, decision, ship and cancel.
+  - Costs are hidden without `product:read_cost`.
+  - Errors are translated in `api` en/id.
+  - The document registry records the approved return and voids it on
+    cancel.
+- **Permissions.** `purchase_return: read, create, update, submit, approve,
+  ship, cancel`.
+  - Purchasing: create, update, submit, cancel.
+  - Operations manager: approve.
+  - Warehouse: ship.
+  - Owner: all.
+  - Auditor: read.
+- **Web admin**
+  - `/procurement/purchase-returns`: list with a status filter, new (also
+    from a BPB via `?goodsReceiptId=`), detail with the actions, and edit.
+  - The BPB detail page has a "Return goods" action.
+  - Sidebar and breadcrumbs.
+  - Unit status label `returned`.
+  - The numbering settings list `purchase_return`.
+  - en/id locales.
+- **Two fixes found by the live run, outside the new code**
+  - **Outbound stock was broken on main.** `BalanceRepository.applyDelta`
+    opened a missing balance at the delta with `INSERT ... ON CONFLICT DO
+    NOTHING`. Postgres checks CHECK constraints on the proposed row before
+    conflict arbitration, so any negative delta failed
+    `stock_balances_on_hand_check` even when the row existed. Reproduced in
+    `psql` on the disposable DB. The insert now opens at zero, and the
+    existing guarded UPDATE applies the delta (and still raises
+    `InsufficientStockError`). This also affects delivery notes, adjustments
+    out and transfers on main. It is in Oki's inventory area and is flagged
+    for his review.
+  - **The BPB pages were refused to every user.** The goods receipt nav leaf
+    had no permission, so `canOpenPath` denied it. It now carries
+    `stock.read`, the same grant as `GET /goods-receipts`.
+
+**Verification**
+- `bun run typecheck` (backend and web-admin `tsc` clean). `bun run lint`: 0
+  errors.
+- Tests:
+  - Backend `bun test`: 1078 pass, 4 fail (the known `Bun.Image` / toWebp
+    tests).
+  - `test/unit/purchase-return.service.test.ts`: 12 pass.
+  - `item-status-matrix.test.ts` was updated for `returned`.
+  - Locales: 94 pass, after adding the `returnLine` / `returnState` /
+    `returnStatus` dynamic prefixes.
+  - web-admin: 100 pass.
+- **Disposable DB `ims_erp_v_ret`.** `drizzle:migrate` on an empty DB
+  succeeded; `drizzle-kit check` printed "Everything's fine"; seed ran twice.
+  The constraint now reads `status IN (..., 'returned')`.
+- **API e2e on `APP_PORT=3010`: 34/34.**
+  - Access: technician 403, warehouse cannot create, purchasing cannot approve
+    or ship.
+  - Refused with 422: over-quantity, a foreign serial, a serial already on a
+    live return, and a second return taking what a draft holds. The Indonesian
+    message is returned for `Accept-Language: id`.
+  - Lifecycle: draft edit, reject with reason, approve numbered
+    `.../RTB/...`, ship, double ship 422, and cancel after shipping refused.
+  - After shipping: PO `partially_received` (2/3 and 7/10), two `return_out`
+    movements at the BPB warehouse, no costs for the warehouse role, and the
+    returnable list without the shipped serial.
+  - The replacement BPB set the PO back to `received`. Cancelling an approved
+    return freed its quantity.
+- **DB check after the run.** The plain item's balance is 10 + 10 - 3 + 3 =
+  20. Serial `-B` is `returned` with no warehouse; replacement `-B2` is
+  `in_stock`.
+- **Browser walk-through** (built web-admin, `VITE_API_URL=http://localhost:3010`):
+  - Purchasing opens the BPB and clicks "Retur barang"; the form opens with
+    the BPB preselected and only the 2 in-stock serials.
+  - Purchasing saves the draft and submits it.
+  - The operations manager approves (number `0007/RTB/DEV/XI/26`).
+  - The warehouse ships it from the dialog: status "Dikirim ke pemasok" with
+    the hint.
+  - The list shows it.
+  - No page errors and no 4xx/5xx.
+
+**Not done.** No printed return document; no reviewer sign-off; the stock
+fix needs Oki's review. `docs/database/` was updated (see above).
+
+Next executable task: review of the open PRs (#97, #98, #99, #100, #102,
+#104, #107 and this one), Oki's review of the stock balance fix; after each
+merge, the remaining PRs regenerate their migration on the new parent.
+
+## 2026-11-18 - Website and portal get Dockerfiles, compose services and `.env.example` files
+
+Augments the two Astro apps (PR #107 branch) with the deployment surface the
+rest of the repo already has for backend and web-admin.
+
+**Added**
+- `apps/web-landing/Dockerfile` and `apps/web-customer-portal/Dockerfile`
+  (root build context, like the other apps): `deps` -> `build` (`astro build`)
+  -> `prod-deps` -> `runtime` (`node:22-alpine`), running
+  `node /app/dist/server/entry.mjs`.
+- `docker-compose.yml`: `web-landing` (:4321) and `web-customer-portal`
+  (:4322) services, plus the `portal-sessions` volume.
+- `docker-compose.local.yml`: source builds for both, with the `PUBLIC_*`
+  build args.
+- `.env.example` for both apps, rewritten to list every variable the code
+  actually reads and to say which ones are build-time (`PUBLIC_*`, inlined by
+  `astro:env`) versus runtime.
+- Root `.dockerignore`: `**/.astro`, `**/designs`, `**/*.pen`.
+
+**Two problems found by testing instead of guessing**
+
+1. **The runtime image needs `node_modules`.** `dist/server/entry.mjs` imports
+   npm packages at runtime (`astro`, `@astrojs/node`, `react`, `zod`, `send`,
+   `cookie`, `server-destroy`, ...). A runtime stage holding only `dist` starts
+   and immediately throws `ERR_MODULE_NOT_FOUND`. The Dockerfile therefore has
+   a `prod-deps` stage (`bun install --frozen-lockfile --production`) copied
+   next to `dist`.
+2. **`cookie` was missing from a production-only install.** Astro's built chunks
+   import `cookie` unscoped, while Astro itself declares `cookie ^2.0.2`. In
+   the full monorepo the root hoists `cookie@1.1.1` (from `elysia`, the
+   backend), so the app silently resolved the wrong major. An install with only
+   the Astro manifests produced no `cookie` at all. Fixed at the source by
+   adding `"cookie": "^2.0.2"` to both Astro manifests: root `cookie` is now
+   2.0.2, `elysia` keeps its nested `cookie@1.1.1` (`elysia/cookie` in the
+   lock), and the backend suite is unchanged at 1223 pass.
+
+**How the runtime was proven without a Docker daemon (superseded, see below).** Docker
+was not running at first, so the exact image layout was reproduced on the host:
+`bun install --frozen-lockfile --production` with only the Astro manifests (the
+same set the Dockerfile copies), that `node_modules` copied beside `dist`, then
+`node dist/server/entry.mjs` with `NODE_ENV=production`. Both apps answered
+`HTTP 200` on `/`. Before the two fixes above the same harness failed with
+`ERR_MODULE_NOT_FOUND` (`piccolore`, then `cookie`) - the failures are what
+drove the design.
+
+**Real Docker verification (2026-11-18, daemon 29.8.1).**
+- `docker build -f apps/{web-landing,web-customer-portal}/Dockerfile .` both
+  succeed: 611 MB and 833 MB images.
+- `docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+  --no-deps web-landing web-customer-portal` starts both; `web-landing` :4321
+  answers 200 (274 kB, `/products` 200) and `web-customer-portal` :4322
+  answers 200 (`/offline` 200). `docker run` of the same images behaves
+  identically.
+- Runtime user is non-root `app` (uid 100); `/app/.astro/session` is owned by
+  it; `portal-sessions` mounts at that path; a marker file survives
+  `docker restart` and the portal answers 200 again.
+- `PUBLIC_*` build args are inlined into the bundle as documented: rebuilding
+  with `--build-arg PUBLIC_WEB_URL=https://probe-web.example.test` puts that
+  string in `dist/server` and `dist/client`.
+- Teardown: `docker compose down -v`, probe image removed; no containers,
+  volumes or images left behind.
+
+**Compose validated:** `docker compose config` exits 0 for the base file and
+the local override; the two services resolve with ports 4321/4322, their build
+args, and `portal-sessions:/app/.astro/session`.
+
+**Verification.** `bun run typecheck` 6/6 (`astro check` 173 + 150 files, 0
+errors); `bun run lint` 0 errors; `bun run test` backend 1223, web-admin 119,
+locales 98, react-email 6; `bun run build` 5/5; `validate-dbml.ts` OK. No
+schema change.
+
+**Still open.**
+- No CI workflow publishes these two images yet; `main-deploy-*.yml` covers
+  backend and web-admin only.
+- Dev servers and a browser walkthrough of either app remain unrun (the
+  containers were checked over HTTP, not in a browser).
+- The containers were started with `--no-deps`: the full stack (backend +
+  postgres + redis + dicebear + both web apps) has not been run together, so
+  server-to-server ERP calls from the Astro apps are unverified.
+
+## 2026-11-18 - `packages/api-client` removed: contracts live in each app's `src/api/`
+
+The ERP contract clients were a shared workspace package imported by both Astro
+apps. Both are separate deployments that must not import each other, and
+`packages/common` holds no HTTP client code (its 35 exports and `api-client`'s
+117 share zero names), so the package was not replaced by `common` — it was
+deleted and its files were split by consumer.
+
+**Where each file went.**
+
+| Source (`packages/api-client`) | Landing (`apps/web-landing/src/api/`) | Portal (`apps/web-customer-portal/src/api/`) |
+|---|---|---|
+| `client.ts` | copy | copy (moved) |
+| `website.ts`, `catalog.ts`, `rfq.ts` | moved | — |
+| `portal.ts` | — | moved |
+| `portal-schemas.ts` | `contract-schemas.ts` (`httpsUrl`, `ErpContractError`, `parseOrThrow`) | moved whole |
+| `Money` (from `portal.ts`) | `money.ts` (one line) | still in `portal.ts` |
+
+**Why the split is not perfectly clean.** `website.ts` and `catalog.ts` need
+`Money` and the two schema helpers, which lived in the portal files. Copying the
+609-line `portal.ts` into the website would have duplicated 60 exports to use
+one line, so the website carries `money.ts` plus a 24-line `contract-schemas.ts`
+instead. `client.ts` is duplicated in full (~170 lines each): the only piece
+both apps genuinely need and cannot share without a package. Both copies carry
+a header saying they must stay identical.
+
+**Import style.** Both apps use Astro's path alias: `@/*` -> `./src/*`. The
+portal already had it; `apps/web-landing/tsconfig.json` gained the same
+`baseUrl`/`paths` block. 43 import sites across 40 files (`.ts`, `.astro`,
+`env.d.ts`) now import from `@/api/...`.
+
+**Manifests.** `@ims-erp/api-client` removed from both `package.json`;
+`zod` `^4.6.7` added to both, because the moved schemas import it. Lockfile:
+one package removed, pins unchanged (`@lucide/astro` 1.61.0, `astro` 7.4.12).
+
+**What broke and was fixed while moving.** Two script bugs of my own: a
+multi-line import regex that spanned across statements (pulled `ActionError`
+from `astro:actions` into the rewrite), and a name detector that ignored
+`export interface` (`CatalogSource`). Neither reached a commit.
+
+**Verification.**
+- `bun run typecheck` 6/6; `astro check` `@ims-erp/web-landing` 173 files and
+  `@ims-erp/web-customer-portal` 150 files, 0 errors / 0 warnings / 0 hints.
+- `bun run lint` 0 errors (backend 9, ui 19, web-admin 14 pre-existing warnings).
+- `bun run test`: backend 1223 pass / 0 fail, web-admin 119, locales 98,
+  react-email 6.
+- `bun run build` 5/5; `bunx astro build` in both apps: complete.
+- `bun docs/database/validate-dbml.ts`: OK (278 tables, 234 refs). No schema change.
+- No `@ims-erp/api-client` import left in `apps/` or `packages/`; no `.pen` or
+  `.env` file tracked.
+
+**Not verified.** Dev servers and a browser walkthrough of either app. CI still
+has no website or portal workflow.
+
+## 2026-11-18 - Website and portal restructured flat: `apps/web-landing`, `apps/web-customer-portal`, `packages/api-client`, `packages/design-tokens`
+
+The website and portal were at `apps/entragate-platform/apps/{web,customer}`
+(nested, from PR #107), while a second copy with the same package names
+existed untracked at `apps/web-landing` and `apps/web-customer-portal`. The
+untracked copies were the newer work: `apps/web-customer-portal/src/services/auth.ts`
+adds `ensureFreshAuth` (refresh dedupe via `inflight`) and `safeNext`
+(same-origin `returnTo` check, blocks `//` and `/\`). The tracked copy had
+neither. Chosen source of truth: the untracked flat folders.
+
+**State found before editing.** `apps/entragate-platform/apps/{customer,web}`
+had 384 tracked files deleted in the working tree (unstaged). Those deletions
+matched HEAD exactly (166 + 218), nothing outside those two apps was missing,
+and the untracked folders were intact. Not caused by this session's commands;
+recorded as found.
+
+**Moves (staged as renames, 100% similar except two files).**
+- `apps/entragate-platform/packages/api-client` -> `packages/api-client` (`git mv`
+  failed once with "Permission denied" on the folder; a plain `Move-Item` then
+  succeeded, and the rename was staged afterwards).
+- `apps/entragate-platform/packages/design-tokens` -> `packages/design-tokens`.
+- `apps/entragate-platform/apps/customer` -> `apps/web-customer-portal`
+  (`package.json` R096, `auth.ts` replaced by the flat version).
+- `apps/entragate-platform/apps/web` -> `apps/web-landing` (`package.json` R095).
+- `apps/entragate-platform/README.md` rewritten as `docs/architecture/modules/website-and-portal.md`.
+- `apps/entragate-platform/` removed (its `.gitignore` duplicated the app-level and root rules).
+
+**Renamed packages.** `@ims-erp/web` -> `@ims-erp/web-landing`,
+`@ims-erp/customer` -> `@ims-erp/web-customer-portal`. `@ims-erp/api-client` and
+`@ims-erp/design-tokens` unchanged.
+
+**Workspaces.** Root `workspaces` is `apps/*`, `packages/*`, `modules/*`; the
+`apps/entragate-platform/*` globs are gone. `dev:website` and `dev:portal`
+filter the new names. Turbo stays `^2.11.11`.
+
+**Lockfile.** `bun install` added the four flat workspaces. Pins unchanged:
+`@lucide/astro` 1.61.0, `astro` 7.4.12.
+
+**Docs and comments updated (live references only).** `package.json`,
+`docs/architecture/runbook.md`, `docs/plan/backlog.md` (ERP-0022),
+`docs/plan/plans/features.md` (M07), `docs/architecture/modules/customer-portal.md`,
+`ADR-0022` (context line), `packages/api-client` service headers,
+`apps/backend` portal/crm comments and `.env.example`, `item-category.seeder.ts`,
+the two app READMEs, and `.gitignore` (designs paths).
+Not changed: historical entries in this file, and
+`docs/plan/plans/website-integration.md`, which describes the website repo's
+own layout and paths outside this monorepo.
+
+**Verification.**
+- `bun run typecheck` 6/6; `astro check` `@ims-erp/web-landing` 167 files and
+  `@ims-erp/web-customer-portal` 147 files, 0 errors / 0 warnings / 0 hints.
+- `bun run lint` 0 errors (backend 9, ui 19, web-admin 14 pre-existing warnings).
+- `bun run test`: backend 1223 pass / 0 fail, web-admin 119, locales 98, react-email 6.
+- `bun run build` 5/5; `bunx astro build` run directly in both apps: complete.
+- `bun docs/database/validate-dbml.ts`: OK (278 tables, 234 refs). No schema change.
+- `git ls-files`: no `.pen` file, no `.env` file other than `.env.example`.
+
+**Not verified.** `bun run dev:website` and `bun run dev:portal` (dev servers
+not started, no browser walkthrough). CI has no website or portal workflow.
+
+## 2026-11-18 - PR #107 merged `main`; `@entragate/*` renamed to `@ims-erp/*`; Zudoku references removed
+
+Branch `chore/entragate-platform-workspace` (**PR #107**) merged `origin/main`
+(`3ee3378e`, PR #104 included). Folder `apps/entragate-platform` kept; no dir
+rename.
+
+**Conflicts (3, no code conflict).**
+- `bun.lock` - took main's lockfile, then `bun install` to add the four
+  website/portal workspaces. Pins checked: `@lucide/astro` 1.61.0 (the
+  tested version; a fresh resolve gave 1.75.0, so the range was pinned for
+  one install and restored to `^1.61.0`), `astro` 7.4.12, `lucide-react`
+  1.73.0 (main's version, also used by web-admin).
+- `docs/plan/backlog.md` ERP-0022 - kept main's status (stage 1
+  implemented, re-merged 2026-11-17) and appended the 2026-11-15 move of the
+  website/portal into the monorepo.
+- `docs/plan/progress.md` - took main as base and re-inserted the branch's
+  2026-11-15 section above the PR #104 entry.
+
+**Rename.** `@entragate/web`, `@entragate/customer`, `@entragate/api-client`,
+`@entragate/design-tokens` -> `@ims-erp/*` (52 files: package manifests,
+imports, CSS `@import`, root `dev:website` / `dev:portal` filters, docs).
+The only remaining `@entragate/` is the historical owner decision in the
+2026-11-15 entry, left as written.
+
+**Zudoku references removed.**
+- `apps/api-docs/` deleted from main (the leftover PR #100 copy). Its
+  `openapi/licensing.yaml` was the canonical-spec sibling of
+  `docs/architecture/api/licensing.yaml`; the docs copy was kept because it is
+  the one `docs/architecture/modules/licensing-subscription.md` points at. The
+  docs copy had mojibake in several lines (UTF-8 read as cp1252) and was
+  replaced with the correct UTF-8 text from the deleted copy. The
+  `pages/licensing-integration.md` page was already at
+  `docs/architecture/modules/licensing-integration.md`.
+- `docs/architecture/api/licensing.yaml`: `api-docs-drift.test.ts` no longer
+  exists, so the spec comment now says it is hand-curated and must follow
+  `license-api.controller.ts`. No Zudoku wording left in the file.
+- `apps/entragate-platform/README.md` and the `erp-routes.ts` header pointed
+  at `apps/api-docs`. Both now point at the backend's `/docs` (`@elysia/openapi`)
+  and the docs files above.
+
+**Verification (merged head).**
+- `bun run typecheck` 6/6; `astro check` `@ims-erp/web` 167 files and
+  `@ims-erp/customer` 147 files, 0 errors / 0 warnings / 0 hints.
+- `bun run lint` 0 errors (backend 9 and web-admin 14 pre-existing warnings).
+- `bun run test` backend 1223 pass / 0 fail, web-admin 119, locales 98,
+  react-email 6.
+- `bun run build` 5/5; `astro build` run directly for both apps, complete.
+- `bun docs/database/validate-dbml.ts` OK (278 tables, 234 refs); no schema change.
+- `git ls-files`: no `.pen` tracked; only the two `.env.example` files from
+  the app folder.
+
+**Still not verified.** Dev servers and a browser walk-through from the new
+location (`bun run dev:website`, `bun run dev:portal`). CI has no
+website/portal workflow.
+
+## 2026-11-15 - Website and customer portal moved into the monorepo (`apps/entragate-platform`)
+
+The owner copied the separate `entragate-platform` repository (public website
+and customer portal UI, Astro) into `apps/entragate-platform`.
+
+Owner choices:
+- keep the folder name;
+- keep the design source out of git;
+- keep the `@entragate/*` package names.
+
+Branch `chore/entragate-platform-workspace` (**PR #107**) from `origin/main` (`aa3a7ad`).
+
+**Found as copied (it did not work).**
+- It was a nested monorepo: its own `package.json` (workspaces), `bun.lock`
+  and `node_modules`. Bun does not do nested workspaces, so the root saw one
+  package, `entragate-platform`, and none of its apps.
+- Its `node_modules` were junctions into the old
+  `C:\laragon\www\Personal\entragate-platform\ΓÇª`, which no longer
+  exists. `astro check` / `astro build` failed with "Cannot find module
+  ΓÇªastro.mjs".
+- Root `turbo run dev/build` would have run its broken scripts.
+- `designs/entragate-final.pen` is ~14 MB (133 MB with exports).
+- `apps/customer/.env` exists locally; it was already git-ignored.
+
+**Change**
+- **Nested files removed.** The nested `package.json` and `bun.lock` were
+  removed (copies kept outside the repo); the dev scripts moved to the root
+  as `dev:website` / `dev:portal`. The broken `node_modules` were deleted.
+- **Root workspaces** gain `apps/entragate-platform/apps/*` and
+  `apps/entragate-platform/packages/*`. One `bun install` and one `bun.lock`;
+  the repo's Bun pin (1.4.2) applies.
+- **Tested versions kept.** The first root install resolved newer versions
+  than the website's own lockfile, which broke
+  `@lucide/astro/icons/*` imports (1.61.0 ΓåÆ 1.73.0). The website's direct
+  dependencies were pinned exactly to their old lockfile versions for one
+  install, then the original `^` ranges were restored; the lockfile keeps
+  the tested versions. Astro itself resolves 7.4.12 (patch over 7.4.2).
+- **TypeScript.** `typescript` ^7.0.2 ΓåÆ **^6.0.3**, like the rest of the
+  monorepo. `astro check` refuses TypeScript 7 ("does not currently support
+  TypeScript 7.0"); the old repository had the same problem, because its
+  lockfile resolved 7.0.2.
+- **Turbo.** `"typecheck": "astro check"` is added to both apps, so the root
+  `typecheck` covers them.
+- **Git.** The root `.gitignore` ignores `apps/entragate-platform/designs/`.
+  The nested `.gitignore` keeps `.env`, `dist/` and `.astro/` out. Only
+  `.env.example` files are committed; every secret value in them is empty.
+- **Docs.** `apps/entragate-platform/README.md` (apps, ports, commands, env,
+  where the design file lives) and runbook rows. The portal `.env.example`
+  comment described the ERP envelope as `{ success, message, data }`; it now
+  reads `{ requestId, status, message, timestamp, data }`.
+- `docs/database/` was reviewed and is unchanged.
+
+**Verification**
+- `astro check`: `@ims-erp/web` 167 files and `@ims-erp/customer` 147
+  files, **0 errors / 0 warnings / 0 hints** each.
+- `astro build`: both complete.
+- Root `bun run typecheck`: **6/6**. `bun run lint`: 0 errors.
+- Backend `bun test`: 1063 pass, 4 fail (the known `Bun.Image` tests, Bun
+  1.4.1 here). web-admin 100; locales 94. The web-admin `vite build` passes,
+  so the lockfile re-hoisting broke nothing in the ERP.
+- Not run here: the dev servers (`dev:website` / `dev:portal`), and a
+  browser walk-through from the new location.
+
+## 2026-11-18 - PR #104 merged `main` in; license API key issuer fix re-verified on today's main
+
+`origin/main` (`d1bedf7e`, PR #102 included) was merged into
+`fix/m03-api-key-issuer` (`1e36841f`). The branch had not seen main since
+2026-11-15, so 74 main commits came in.
+
+**Conflicts (2, both docs; no code conflict).**
+- `docs/plan/backlog.md` - the ERP-0019 row was edited on both sides. Kept
+  main's newer wording (integration docs moved to
+  `docs/architecture/modules/licensing-integration.md` +
+  `docs/architecture/api/licensing.yaml`) and appended this branch's issuer
+  evidence to the same row. ERP-0020 keeps main's status.
+- `docs/plan/progress.md` - both sides inserted sections at the top. Took
+  main's file as the base and re-inserted this branch's 2026-11-15 ERP-0019
+  entry, so no main entry is lost.
+
+**Feature conflicts checked.**
+- `packages/common` `erpRoleGrants.sales_manager`: main's `whatsapp` and
+  `document.signature_*` grants plus this branch's `apiKey: create, read,
+  update` all survive the auto-merge (verified in the merged file, not
+  assumed).
+- Zudoku removal (`34938477`) left two stale references that claimed the
+  licensing docs still live in `apps/api-docs`:
+  `docs/architecture/modules/licensing-subscription.md` and
+  `docs/plan/plans/features.md` M03. Both point at the real files now.
+  `apps/api-docs/openapi/licensing.yaml` remains on main as a leftover copy;
+  removing it is out of scope here.
+
+## 2026-11-16 - M05 purchase requests renumbered ERP-0060 -> ERP-0063 (PR #102), `main` merged in
+
+`main` took ERP-0060 (dashboard, #109), ERP-0061 (audit activity feed) and
+ERP-0062 (sidebar and signature actions, #110) while this branch's id was
+reserved only in an unmerged PR. Following the number-reservation rule, the
+merged ids stand. After checking `main`, every remote branch and all open
+PRs, the highest id anywhere was ERP-0062, so M05 purchase requests (#102)
+became ERP-0063, M05 purchase returns (#108) ERP-0064, and M02 sales returns
+(#111) ERP-0065.
+
+- **What was renamed.** The backlog row, `features.md`, the code comments
+  and the migration folder name (`_erp0063_`) now use the new id. Earlier
+  `progress.md` entries keep the id they were written with; read ERP-0060
+  there as ERP-0063 for this work.
+- **The merge.** `origin/main` (`9dc2373`) was merged in. It adds no
+  migration, so this branch's migration keeps its parent.
+
+## 2026-11-15 - ERP-0019: license API keys issued as the acting member (PR #100 review)
+
+Review comment from programmer A on PR #100: "Pake API key bawaan
+better-auth aja, jadi bisa track issuernya siapa."
+
+**Findings.**
+- The license API already used Better Auth's API key plugin (config
+  `licensing`, `elk_`). But `adapters/better-auth-api-keys.ts` issued and
+  revoked every key **as the organization owner**, so Better Auth never saw
+  the real issuer.
+- Better Auth's `auth.apikeys` has no creator column: only `reference_id`,
+  the owner.
+
+**Owner decision (2026-11-15).** Keep keys organization-owned, so they
+survive staff leaving; issue them as the acting member. A user-owned key
+would have died with the issuer's account.
+
+Branch `fix/m03-api-key-issuer` (**PR #104**) from `origin/main` (`c7ae98d`).
+
+**Change**
+- **Catalog.** `@ims-erp/common` `builtInOrgStatements` gains Better Auth's
+  `apiKey: create, read, update, delete`. Owner: all four. Sales manager:
+  `create, read, update`, next to `license:manage_api`.
+- **Adapter and service.** The adapter issues and revokes with `userId` =
+  the actor and puts `issuedBy` in the key metadata.
+  `LicenseApiService.ownerOf` is gone. A Better Auth refusal
+  (`INSUFFICIENT_API_KEY_PERMISSIONS`, `USER_NOT_MEMBER_OF_ORGANIZATION`)
+  becomes `ApiKeyIssueError('notPermitted')` (403). The locale key
+  `licensing.apiKey.noOwner` is replaced by `licensing.apiKey.notPermitted`
+  (en/id).
+- **Security fix found on the way.** Better Auth's own HTTP routes
+  `/api/auth/api-key/create|get|list|update|delete|delete-all-expired-api-keys`
+  were open. The owner could already mint keys of **any** config (including
+  website `ewk_` keys) directly, bypassing the ERP checks, and the new grant
+  would have extended that to sales managers. They are now closed with
+  `disabledPaths` (`auth.options.ts`). Better Auth applies `disabledPaths` in
+  its HTTP router only (checked in `better-auth@1.7.18`
+  `dist/api/index.mjs`), so the server-side `auth.api` calls of the ERP and of
+  `scripts/create-website-api-key.ts` still work.
+- **List and web.** `GET /licenses/applications/:id/api-keys` returns
+  `createdByName` / `revokedByName`, from the organization's members. The API
+  keys screen gets an "Issued by" column and "Revoked by ╬ô├ç┬¬"; en/id keys added.
+- **Tests.**
+  - `license-api.service.test.ts`: issued and revoked as the actor; a
+    refusal gives 403; the names are returned.
+  - `permission-matrix.test.ts`: every role with `license:manage_api` holds
+    `apiKey` create + update, and no other role does.
+- `docs/database/` was reviewed and is unchanged: no table or column
+  changed; the issuer goes in the existing Better Auth `metadata` column.
+
+**Verification**
+- `bun run typecheck`: 4/4. `bun run lint`: 0 errors; the only warning in
+  the area is in `social-providers.auth.ts`, which was not touched.
+- Backend `bun test`: 1021 pass, 4 fail (the known `Bun.Image` tests, Bun
+  1.4.1 here). Locales 90; web-admin 100.
+- Fresh disposable `ims_erp_lic`: migrate and development seed.
+- Live e2e: **18/18**.
+  - The sales manager (not the owner) registers an own application and
+    issues a key (201, `elk_`).
+  - `auth.apikeys`: `reference_id` = the organization and
+    `metadata.issuedBy` = the sales manager. The licensing row's
+    `created_by` = the sales manager.
+  - The key authenticates on `/licensing/v1/validate`, and the list names
+    the issuer.
+  - `sales` (no `manage_api`) gets 403.
+  - All five Better Auth `/api/auth/api-key/*` routes answer 404, and no key
+    was created through them.
+  - Revoke by the sales manager: Better Auth key disabled, `/licensing/v1`
+    answers 401, and the list names who revoked it.
+- `scripts/create-website-api-key.ts` still creates an `ewk_` key (`website`
+  config). Its output was discarded, so no secret was printed.
+
+## 2026-11-15 - PR #102 brought onto main again (`aa3a7ad`), shadcn controls
+
+`origin/main` (M04, the shadcn web-admin pass #105, reports) went into
+`feat/m05-purchase-requests`.
+- **PO form conflict.** Main moved the PO form to shadcn `Select` and dropped
+  the native `select` class constant. This branch's item mapper and
+  purchase-request prefill are kept, without the dropped constant.
+- **Migration.** Regenerated after main's M04 migrations:
+  `20261115090002_erp0060_purchase_requests` (the same DDL).
+  `drizzle-kit check`: "Everything's fine". PR #97 and PR #99 also add one
+  migration each on the same parent: whichever merges later re-runs
+  `drizzle:generate`.
+- **Main's new convention, followed.** The purchase request form now uses
+  `DatePicker` (request date, needed by), and the list uses the shadcn
+  `Select` (status) and `Checkbox` ("only mine") instead of native controls.
+- `logical-references.md` was regenerated; `validate-dbml.ts` prints OK.
+- **Verification.** `bun run typecheck` 4/4; `bun run lint` 0 errors (no
+  warning in the purchase request files); backend `bun test` 1073 pass,
+  4 fail (the known `Bun.Image` tests); web-admin 100; locales 94. The API
+  e2e and browser check were not re-run: the Docker engine is down on this
+  machine.
+- **Live re-verification (Docker back, same day).** Disposable DB
+  `ims_erp_v102`: `drizzle:migrate` on a fresh DB, `drizzle-kit check`
+  "Everything's fine", seed run twice. Backend on `APP_PORT=3010`: the API
+  e2e (create, submit, self-approval refused, approve, PO by split lines,
+  free-text mapping, status sync, cancel guards) passed **32/32**. Browser
+  check against the built web-admin (`VITE_API_URL=http://localhost:3010`):
+  sidebar entry, PR create with `DatePicker`, approve as operations manager,
+  PO prefilled from the PR (2 lines, mapper shown, save disabled until
+  mapped), shadcn supplier `Select`, PO saved, PR shown as "Sudah dipesan";
+  no page errors and no 5xx.
+
+## 2026-11-15 - ERP-0020: online payments publish `receipt.recorded` (M04); DB verification on main
+
+With Docker back, the reworked branch was verified on a fresh disposable
+database: `ims_erp_v99` migrated (20 folders), `drizzle-kit check` printed
+"Everything's fine", the development seed ran twice, and an open period was
+inserted by SQL.
+
+**Found on the way.** M04 on main publishes `invoice.issued` and
+`receipt.recorded` to the n8n outbox from `InvoiceService`. A receipt that a
+paid gateway webhook records goes through the repository inside the
+checkout's row lock, so it published nothing: n8n would never hear of an
+online payment.
+
+**Fix.** `GatewayPaymentService` takes the outbox (`OUTBOX_SERVICE_TOKEN`).
+After the transaction commits, an `applied` webhook publishes
+`receipt.recorded` with the same payload as a manual receipt
+(`receiptRecordedEvent`, with the invoice after the payment). An unapplied
+payment or a replay publishes nothing. The unit test covers one event per
+applied payment and none on replays (28 pass).
+
+**Verification (live, backend on :3010, fake provider)**
+- Invoice API e2e: 19/19 in five runs. Gateway API e2e: **24/24**.
+  Concurrency: 5 identical paid webhooks gave 1 `applied` and 4
+  `duplicate`, with 1 receipt.
+- Outbox: `receipt.recorded` went 5 ΓåÆ 6 during the gateway run (one applied
+  payment; the unapplied one and the replays add none). `invoice.issued`
+  is published by the issue path.
+- `tsc --noEmit` (apps/backend): clean.
+
+## 2026-11-15 - PR #99 brought onto main again (via #98, `aa3a7ad`)
+
+The updated `fix/m02-invoice-billing` (now on main with M04) went into
+`feat/m02-payment-gateway`.
+- **Combined config.** M04 and the gateway each add a config block:
+  `.env.example` has the M04 integrations, then the gateway; `config.schema.ts`
+  has `IntegrationsConfigSchema` and `PaymentGatewayConfigSchema`, both in
+  `EnvConfigSchema`; the API error keys of both sides are kept (en/id).
+- **ADR index.** ADR-0020 (M04 outbox, main) and ADR-0021 (this gateway).
+  The customer portal record is ADR-0022 (PR #97).
+- **Backlog.** The ERP-0020 row is from this branch; ERP-0021 and ERP-0039
+  are from main. `logical-references.md` was regenerated; `validate-dbml.ts`
+  prints OK.
+- **Migration.** Regenerated after main's M04 migrations:
+  `20261115090002_erp0020_gateway_payments` (`sales.gateway_payments`,
+  `organization_id` nullable). `drizzle-kit check`: "Everything's fine".
+  PR #97 also adds one migration on the same parent: whichever merges second
+  re-runs `drizzle:generate`.
+- **Verification.** `bun run typecheck` 4/4; `bun run lint` 0 errors;
+  backend `bun test` 1102 pass, 4 fail (the known `Bun.Image` tests);
+  web-admin 100; locales 94. The gateway e2e was not re-run: the Docker
+  engine is down on this machine.
+
+## 2026-11-18 - PR #102 merged main (PR #99 state) in; migration regenerated on top of main
+
+`origin/main` (`3f749a59`, after PR #99 payment module) merged into
+`feat/m05-purchase-requests`.
+
+- **Conflicts: two, both documentation.** `docs/database/logical-references.md`
+  (generated: took main's side and re-ran `gen-logical-references.ts` ΓåÆ 535
+  refs across 41 targets, 239 intra-module) and `docs/plan/progress.md` (both
+  sides kept). No code conflict: the procurement module, its controllers,
+  repositories and the web-admin screens auto-merged.
+- **Migration ordered after main.** The branch's
+  `20261115090002_erp0063_purchase_requests` was stamped *before* main's
+  `20261116112133_erp0048_signature_requests` and later work, so a database
+  migrated from main would have run it out of order. The folder was deleted and
+  `bun run drizzle:generate` produced
+  `20261117175149_erp0063_purchase_requests` (same DDL: the two tables, the
+  `purchase_order_items.purchase_request_item_id` column, its FK and the
+  partial unique code index). No data migration: no environment had the old
+  one applied.
+- **Ref count note.** The regenerated file reports 535 refs, three fewer than
+  main's 538, because this PR drops `purchase_requests.department_id` and
+  `.project_id` (replaced by free-text `project_name`), matching the owner's
+  decision recorded in `docs.dbml`. Table count stays 278.
+- Verified (2026-11-18, repo root): `bun install --frozen-lockfile` no
+  changes; `bun run typecheck` 4/4; `bun run lint` 5/5, 0 errors;
+  `bun run test` backend 1219 / web-admin 119 / locales 98 / react-email 6,
+  0 fail; `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK
+  (278 tables, 0 cross-module, drizzle parity 0);
+  `bunx --bun drizzle-kit check` "Everything's fine".
+- Not verified here: applying the regenerated migration to a disposable
+  database, and the PR #102 API e2e after the merge.
+
+## 2026-11-18 - Accounting contracts split one file per table
+
+- `accounting/contracts/ledger.repositories.ts` (one barrel, 12 interfaces) is
+  replaced by 12 files `contracts/<table>.repository.interface.ts`, matching
+  the existing `tax.repository.interface.ts` naming. Interface bodies moved
+  verbatim; the aggregate join scope stays in each file's doc comment.
+- 28 consumer imports rewritten to the per-table file. The barrel is deleted.
+- Verified (2026-11-18): typecheck 4/4; accounting + invoice-billing +
+  payment-gateway tests 109 pass; `bun run lint` 0 errors (backend 9 pre-existing
+  warnings); `bun run test` backend 1219 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail; `validate-dbml.ts` OK.
+
+## 2026-11-18 - Accounting reaches sales.invoices only through Sales' exported service
+
+- Sales publishes `IExportedInvoiceService` (`findById`, `updateTotals`,
+  `countDraftsInWindow`) via `EXPORTED_INVOICE_SERVICE_TOKEN`, following the
+  `Exported<Module>Service` pattern (`assets/services/exported-asset.service.ts`).
+  It depends only on Sales' own invoice repository.
+- Accounting no longer has an invoice repository. Deleted
+  `accounting/repositories/invoice-mirror.repository.ts`,
+  `IInvoiceMirrorRepository`, `INVOICE_MIRROR_REPOSITORY_TOKEN` and its
+  registration. `LedgerSettlementPortService` and `MonthEndCloseService` inject
+  the facade.
+- The draft-invoice count left `close-checklist.repository.ts` (it read
+  `sales.invoices`) and is answered by `countDraftsInWindow`.
+- `docs/database/`: no table, column or ref change; `validate-dbml.ts` OK.
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  0 errors, backend 9 pre-existing warnings; `bun run test` backend 1219,
+  web-admin 119, locales 98, react-email 6, 0 fail; accounting + invoice-billing
+  + payment-gateway tests 109 pass; `validate-dbml.ts` OK.
+- Not verified: accounting API e2e against a live server.
+- Known remaining: `payment` still reads `sales.invoices` totals through
+  `InvoicePaymentPort` (Sales side, unchanged here).
+
+## 2026-11-18 - LedgerRepository split per table; payment owns the ledger; Sales freed of accounting repositories
+
+Owner request: "pecah lagi ledger.repository.ts, harusnya 1 repository representasi 1 tabel
+(bisa join)". Follow-up to ADR-0024 (payment ledger moved to `payment.*`).
+
+- **`docs.dbml` first** (canonical): `finance.payments` and
+  `finance.payment_allocations` moved to `payment.payments` /
+  `payment.payment_allocations`, in the Payment TableGroup and module section.
+  `sales_invoice_id` / `receipt_id` became nullable logical references
+  (ADR-0014) and the 3 `payments.* -> finance.*` FKs became logical too, so no
+  cross-schema ref remains. The 7 intra-module Finance refs that an earlier edit
+  had removed were restored; `validate-dbml.ts` ΓåÆ 278 tables, 234 refs,
+  0 cross-module, **OK** (the 5 fewer than main are exactly the 2
+  `gateway_payments` and 3 `payments` refs that became logical).
+- **One repository per table** (`accounting/repositories/`):
+  `chart-of-account`, `accounting-period`, `journal` (entries+lines aggregate),
+  `opening-balance`, `bank-account-link`, `cash-bank` (accounts+transactions),
+  `ar-open-item`, `ap-open-item`, `supplier-bill`, `bank-reconciliation`
+  (parents+items), `account-balance`, plus two documented non-entity
+  repositories: `invoice-mirror` (the AR mirror write path into
+  `sales.invoices`, the one known rule 3.2/3.4 deviation, isolated so it can be
+  replaced by a Sales contract) and `close-checklist` (a 4-table read model).
+  `ledger.repository.ts` (1574 lines, 65 methods, 14 tables) is deleted.
+- **Contracts** in `accounting/contracts/ledger.repositories.ts`, one interface
+  per repository, with the join scope documented per aggregate. Tokens in
+  `constants/di.ts`; `registerAccounting` registers all thirteen.
+- **Services inject only what they query** ΓÇö e.g. `PostingService` takes
+  accounts + journal + periods instead of the whole ledger; `AccountService`
+  takes only the chart of accounts.
+- **Sales no longer imports an accounting repository** (it did, in
+  `invoice.service` and `invoice-billing.service` ΓÇö a rule 3.4 violation).
+  Accounting now publishes `IArLedgerPort`
+  (`openItem`, `setOpenItemStatus`, `findPostedEntryForSource`) via
+  `AR_LEDGER_PORT_TOKEN`; Sales injects the token and the interface only.
+- **Payment integration follows ADR-0024**: `payment` owns the ledger
+  (`payment.repository.ts`), reaches Sales through `IInvoicePaymentPort` and
+  Accounting through `ILedgerSettlementPort`, and exposes
+  `IPaymentLedgerGateway` (`countOpen`, `listAllocations`, `requireExecuted`,
+  `markVoided`) so Accounting's F7 reversal needs no payment repository. The
+  `payment` errors are the only class identity (`accounting/errors` re-exports
+  nothing from payment); `OpenItemNotFoundError` was added for ledger drift.
+- **Migration** `20261117172959_erp0020_payment_gateway` (regenerated, not
+  copied): `CREATE SCHEMA "payment"` + the table. `drizzle-kit check`:
+  "Everything's fine".
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors, backend warnings back to the 9 pre-existing; `bun run test`
+  backend 1219 / web-admin 119 / locales 98 / react-email 6, 0 fail;
+  `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK.
+- Not verified: applying the migration to a disposable database, and the
+  accounting API e2e against a live server.
+
+## 2026-11-18 - ERP-0020: gateway checkouts moved to a `payment` schema/module (ADR-0023)
+
+Owner request: "buat payment gateway di db menggunakan schema payment.*".
+`docs.dbml` was edited first (it is canonical), then the Drizzle schema, then
+the code.
+
+- **Contract.** `sales.gateway_payments` ΓåÆ `payment.gateway_payments`, in a new
+  `Payment` TableGroup and a `// MODULE: Payment (schema: payment)` section.
+  `sales_invoice_id` and `receipt_id` lost their foreign keys and became
+  nullable logical references (ADR-0014); `organization_id` and `requested_by`
+  stay logical. Header count 27 ΓåÆ 28 schemas/modules.
+- **Regenerated docs.** `gen-logical-references.ts` ΓåÆ 538 refs across 41
+  targets, 238 intra-module; `validate-dbml.ts` ΓåÆ 278 tables, 0 cross-module,
+  0 timestamp gaps, **OK**.
+- **Migration.** The branch-only folder `20261115090002_erp0020_gateway_payments`
+  was deleted and `bun run drizzle:generate` produced
+  `20261117172959_erp0020_payment_gateway`: `CREATE SCHEMA "payment"` +
+  `CREATE TABLE payment.gateway_payments` (no FK). No data migration: the old
+  table never reached `main`. `drizzle-kit check` ΓåÆ "Everything's fine".
+- **Code.** New module `apps/backend/src/app/payment/` (contracts, constants,
+  adapters ├ù4, errors, repositories, services, utils, controllers, container,
+  index) holding what was in `sales/`: `GatewayPaymentService`,
+  `GatewayPaymentRepository`, `PaymentGatewayRegistry` and the Xendit/SingaPay/
+  fake adapters, `gateway-signature`, the two controllers and their routes
+  (`/gateway-payments/status`, `/invoices/:id/gateway-payments`,
+  `/payments/gateway/:provider/webhook` unchanged, so the web admin needs no
+  change). `registerPayment` runs after `registerSales` in `src/index.ts`;
+  `app.ts` mounts `paymentModule()`.
+- **Boundary.** Sales now exposes `IInvoicePaymentPort`
+  (`sales/contracts/invoice-payment.port.ts`, `INVOICE_PAYMENT_PORT_TOKEN`,
+  implemented by `InvoicePaymentPortService`): `findById`, `addReceipt`,
+  `publishReceiptRecorded`. Payment never injects Sales' repository, and the
+  outbox publish of `receipt.recorded` moved back to Sales (the event shape is
+  Sales'). `InvoiceNotFoundError` / `InvoiceNotPayableError` are exported from
+  the sales entry point so the HTTP codes/keys are unchanged.
+- **Docs.** ADR-0023 added; ADR-0021 ┬º1 marked superseded for storage;
+  `modules/payment.md`, `modules/sales.md`, `module-ownership.md` (module 28,
+  Sales profile), `data-model.md`, `backlog.md` (ERP-0020 evidence),
+  `features.md` updated.
+- Verified (2026-11-18, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors (warning counts unchanged); `bun run test` backend 1209 /
+  web-admin 119 / locales 98 / react-email 6, 0 fail (payment-gateway suite
+  28/28); `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK;
+  `bunx --bun drizzle-kit check` "Everything's fine".
+- Not verified here: applying the migration to a disposable database (Docker
+  state on this machine), the gateway API e2e against a live server, and the
+  provider sandbox (no account). `docs/database/` was updated (required).
+
+## 2026-11-18 - PR #99 merged main (PR #98 merged) in; docs conflicts resolved
+
+`origin/main` (`09a503ce`, after PR #98) merged into `feat/m02-payment-gateway`.
+All five conflicts were documentation; no code conflict (the gateway service,
+adapters, migration and invoice contract auto-merged).
+
+- `docs/architecture/README.md`: ADR index keeps ADR-0021 as a link row
+  (`proposed`) and adds ADR-0022 (customer portal, main). The duplicate
+  `reserved` placeholder row from main is dropped; both ADR files exist.
+- `docs/database/logical-references.md`: generated file ΓÇö resolved by taking
+  main's side and re-running `bun docs/database/gen-logical-references.ts`
+  (538 refs across 41 targets, 240 intra-module).
+- `docs/plan/backlog.md`: the duplicate ERP-0019 / ERP-0020 rows were merged
+  into one row each. ERP-0019 keeps main's licensing-docs note, corrected:
+  the docs now live in `docs/architecture/modules/licensing-integration.md` +
+  `docs/architecture/api/licensing.yaml` (Zudoku was removed by PR #97 /
+  #100). ERP-0020 keeps this branch's `in-progress` evidence, not main's
+  `planned`.
+- `docs/plan/plans/features.md`: M02 planned/in-progress sections merged ΓÇö
+  gateway work listed under `in-progress`, remaining gaps (reconciliation,
+  document renderer, external signers, PDF from HTML) under `planned`.
+- `docs/plan/progress.md`: both sides kept.
+- Verified (2026-11-18, repo root): `bun install --frozen-lockfile` no
+  changes; `bun run typecheck` 4/4; `bun run lint` 5/5, 0 errors;
+  `bun run test` backend 1209 / web-admin 119 / locales 98 / react-email 6,
+  0 fail; `bun run build` 3/3; `bun docs/database/validate-dbml.ts` OK
+  (538 refs, 0 cross-module, drizzle parity drift 0).
+- Not verified here: gateway API e2e on a live server (Docker state on this
+  machine), provider sandbox (no account), PR #99 checks after push.
+
+## 2026-11-17 - PR #98 merged main (PR #97 state) in; conflicts resolved
+
+`origin/main` (`73b2a920`, after PR #97) merged into `fix/m02-invoice-billing`.
+Four conflicts, resolved as follows:
+
+- `invoice.repository.ts`: imports merged (both `TInvoiceListFilters` and
+  `TInvoiceSummary`). `hasLiveInvoices` keeps the branch semantics ΓÇö `void`
+  **and** `cancelled` invoices do not lock the order (the fix's own point);
+  `summary()` from main kept.
+- `invoice.controller.ts`: all invoice routes coexist ΓÇö `/invoices/summary`
+  (main, M01 dashboard) and `/invoices/orders/:orderId/summary` +
+  `/invoices/:id/void` (branch). `/invoices/:id` keeps the branch handler
+  (billing detail + items). `/invoices/summary` is declared **before**
+  `/invoices/:id` so it is not swallowed by the id route.
+- `invoice.contract.ts`: both sides' schemas/types kept.
+- `docs/plan/progress.md`: both sides kept (branch entry above, main entry
+  below), plus this entry.
+- New `test/unit/invoice-has-live.test.ts` pins the `cancelled` exclusion in
+  `hasLiveInvoices` (2 tests, mocked Drizzle chain).
+- Fixed `test/authorization/dashboard-aggregates.test.ts`: the merged
+  controller also resolves `INVOICE_BILLING_SERVICE_TOKEN` at plugin build
+  time; registered an empty stub there.
+- Verified (2026-11-17, repo root): `bun run typecheck` 4/4; `bun run lint`
+  5/5, 0 errors; `bun run test` backend 1181 / web-admin 119 / locales 98 /
+  react-email 6, 0 fail; `bun run build` 3/3;
+  `bun docs/database/validate-dbml.ts` OK (drizzle parity drift 0).
+- Not verified here: mutation check of the new test (the mutation attempt
+  could not write the file ΓÇö locked by another process), Swagger in a
+  browser, PR #98 status checks after push.
+
+## 2026-11-15 - PR #98 brought onto main again (`aa3a7ad`)
+
+`origin/main` (with the M04 merge) went into `fix/m02-invoice-billing`.
+- `InvoiceService.issue`: main split it so the `invoice.issued` event goes to
+  the outbox after the transaction (`issueInTransaction`). This branch passes
+  the issue form's dates. Combined: `issue(ctx, id, dates)` ΓåÆ
+  `issueInTransaction(ctx, id, dates)`, then the event.
+- `features.md`: this branch's ERP-0011 evidence is kept. Main's note that
+  the invoice API no longer matched the web is exactly what this PR fixes.
+  progress.md kept both sides.
+- Verification: `bun run typecheck` 4/4; `bun run lint` 0 errors; backend
+  `bun test` 1074 pass, 4 fail (the known `Bun.Image` tests); web-admin
+  100; `drizzle-kit check` "Everything's fine". The invoice API e2e was not
+  re-run: the Docker engine is down on this machine.
+
+## 2026-11-17 - PR #100 conflict resolved against main (Zudoku removed, licensing docs kept as Markdown)
+
+`main` (`73b2a920`, PR #97 merged) deleted `apps/api-docs/` and
+`api-docs-drift.test.ts`. PR #100 still modified them, so the merge conflicted.
+Resolution:
+
+- Deleted the Zudoku files (take `main`).
+- Kept the licensing content as plain docs, not as a Zudoku site:
+  `docs/architecture/api/licensing.yaml` (OpenAPI for `/licensing/v1`) and
+  `docs/architecture/modules/licensing-integration.md` (own-app integration
+  guide). The API reference itself is `@elysia/openapi` in the backend.
+- `progress.md`: both sides kept (this entry above, PR #97 entry below).
+
+## 2026-11-17 - PR #100 takes the portal branch after its third move onto main
+
+`feat/m07-customer-portal` (`9823619`, PR #97 re-merged with `origin/main`
+`c5f65bd`, portal migration now `20261117130000_erp0022_customer_portal`)
+merged into `docs/m03-licensing-api` without conflicts. The PR's own diff
+against the portal branch is unchanged (api-docs licensing reference and
+guide, `api-docs-drift.test.ts`, plan docs). `docs/database/` reviewed and
+unchanged by this PR.
+
+- `bun install --frozen-lockfile` ok; `bun run --cwd apps/api-docs build`
+  exit 0 (20 routes prerendered).
+- With an official Bun 1.4.4 binary (CI version): `bun run typecheck` 4/4,
+  `bun run lint` exit 0, `bun run test` exit 0 (backend 1160/1160, web-admin
+  119, locales 98, react-email 6); `bun test ./test/unit` 697/697.
+- Backlog unchanged (status moves belong to #97 / #100 as already recorded).
+
+## 2026-11-17 - Zudoku removed; GitGuardian follow-up (feat/m07-customer-portal)
+
+- **Zudoku removed.** `apps/api-docs/` and `apps/backend/test/unit/api-docs-drift.test.ts`
+  deleted. The API reference is `@elysia/openapi` (already mounted in
+  `src/app/app.ts`). `bun.lock` regenerated by `bun install` (zudoku tree gone).
+  `docs/architecture/modules/customer-portal.md` and `runbook.md` updated; old
+  entries in this file left as written.
+- **Main merged in** (`--no-ff`): `main` (`c5f65bdf`) into the feature branch.
+  No textual conflicts. `apps/backend/src/index.ts`, config loader/schema,
+  `.env.example`, `bun.lock` auto-merged.
+- **GitGuardian** (PR #97, head `34938477`): check still FAILURE with 4
+  incidents: 40062720, 40062721, 40063477 (literals in `dc22cdf`, `01c94af`)
+  and 40104776 (flagged on `4fbb73a7`, the fix commit itself: the new
+  `FAKE_PASSWORD_*` constants). All four are test fixtures. Incidents marked
+  false positive in the dashboard by the owner, except where noted in the PR.
+  Git history not rewritten. The check reruns on push.
+- Verified (2026-11-17, repo root):
+  - `bun install`: 1 package removed, lockfile saved.
+  - `bun run typecheck`: 4/4 successful.
+  - `bun run lint`: 5/5 successful, 0 errors (warnings pre-existing).
+  - `bun run test`: backend 1168 pass / 0 fail (86 files).
+- Not verified here: the Swagger page in a browser; PR status checks on GitHub.
+- `docs/database/` reviewed: unchanged by this step.
+
+## 2026-11-17 - PR #97 brought onto main a third time (`c5f65bd`): portal migration moved after ERP-0048/0050
+
+`origin/main` gained ERP-0048 (signature requests, signed PDF), ERP-0050
+(onboarding image) and the reports surface since the last merge. Merged into
+`feat/m07-customer-portal` so the PR merges cleanly again.
+
+- **Conflicts:** `docs/plan/progress.md` (both sides kept, main's newer
+  entries first), `docs/database/logical-references.md` (regenerated with
+  `bun docs/database/gen-logical-references.ts`), `bun.lock` (main's side,
+  then `bun install`; `bun install --frozen-lockfile` -> no changes).
+- **Migration chain repaired:** the portal migration and
+  `20261116112133_erp0048_signature_requests` both had `prevIds` =
+  `122be409ΓÇª` (a branching chain). The portal migration moved from
+  `20261115090002_erp0022_customer_portal` to
+  `20261117130000_erp0022_customer_portal`, its snapshot `prevIds` set to
+  `dc42424aΓÇª` (`20261117120000_erp0050_onboarding_image`). The snapshots
+  are `diff` type and the footprints of the portal migration and the three
+  main migrations do not overlap, so only the parent link changed; the SQL
+  is unchanged.
+- `docs/database/`: `docs.dbml` auto-merged; `validate-dbml.ts` -> OK (277
+  tables / 238 refs, 0 cross-module, 0 timestamp gaps, 0 Drizzle drift).
+- `bun run typecheck` 4/4; `bun run --cwd apps/backend lint` and
+  `bun run --cwd apps/web-admin lint` exit 0 (warnings only, pre-existing).
+- Tests: web-admin 119/119, locales 98/98, react-email 6/6; backend
+  `bun test ./test/unit` 691 pass / 5 fail ΓÇö all 5 are `Bun.Image`
+  (`toWebp` x3, `CompanyService images` x2), the known local Bun 1.4.1 on
+  Windows gap (CI runs Bun 1.4.4). Re-run with an official Bun 1.4.4
+  binary (temp folder, global Bun left at 1.4.1): `bun test ./test/unit`
+  696/696; the pre-commit hook (lint, test, build) ran under it.
+- Disposable DB `ims_erp_pr97`: `bun run database/migrate-reset.ts` exit 0
+  (`auth.portal_identities`, `aftersales.service_ticket_comments` and
+  `document.signature_requests` present), second
+  `bun run database/seeders/index.ts` inserted 0 rows,
+  `bunx --bun drizzle-kit check` -> "Everything's fine".
+- Backlog ERP-0022 status unchanged (implemented ΓÇö stage 1); evidence line
+  updated.
+
+## 2026-11-17 - Dynamic company branding + login onboarding image (user request)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17). `docs/database/`
+**changed**: one new column `company.profiles.onboarding_object_key`;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+What landed:
+
+- **`docs.dbml` first**, then the Drizzle schema: `company.profiles` gains
+  `onboarding_object_key text` (nullable, WebP like the other profile
+  images). Migration `20261117120000_erp0050_onboarding_image` (single
+  ALTER TABLE, hand written ΓÇö `drizzle:generate`/`migrate` stay blocked on
+  main), applied via `migrate-reset` twice (idempotent seed, 0 new rows on
+  the second run). The hand-written migration shipped without its
+  `snapshot.json` at first, which made `drizzle-kit check` report schema
+  drift; the real diff snapshot was produced by one throwaway
+  `drizzle-kit generate` (same `ALTER TABLE`, `prevIds` =
+  `9a93dbcfΓÇª` from `20261116173810_erp0048_signed_pdf`), moved in, and the
+  probe folder deleted ΓÇö `drizzle-kit check` now answers
+  `Everything's fine`.
+- **Company module**: `TCompanyImageKind` gains `'onboarding'` (contract,
+  controller `kind` enum, repository `setImage` third branch, service
+  `toView`/snapshot + `onboardingUrl`/`onboardingObjectKey`). New public
+  endpoint `GET /company/branding` (`guards` left at the plugin default
+  `none`, no `erp` macro) returning `{ name, onboardingUrl }` where
+  `name = tradingName ?? legalName`; only non-sensitive fields.
+- **New `ICompanyService.getDisplayName()`** so other modules read the
+  company name through the contract (no `company.*` table access).
+- **Emails**: `mailer.templates.tsx` `appName()` now resolves the company
+  display name via `COMPANY_SERVICE_TOKEN` (repository cache makes it
+  cheap), falling back to `APP_NAME` env, then `'ERP'`. All four templates
+  (verification, reset, app + org invitation) interpolate it.
+- **XLSX**: `recapToXlsx` takes the company profile; `workbook.creator`
+  becomes `tradingName ?? legalName ?? 'IMS ERP'`; the tax controller
+  resolves the snapshot via `COMPANY_SERVICE_TOKEN`.
+- **Web admin**: `login-form.tsx` fetches the public branding ΓÇö subtitle
+  `t('login.subtitle', { app })`, hero image
+  `src={branding?.onboardingUrl ?? '/hero.png'}`, `alt={name ?? 'Entragate'}`.
+  **Logo + onboarding upload live on `/settings/company`** (an "Images" card
+  under the profile form ΓÇö this moves the logo off `/settings/documents`,
+  superseding the ERP-0045c placement, now that there are two images to
+  manage); `/settings/documents` holds the document settings card only. The
+  `/settings/documents` nav leaf gains `open: true` ΓÇö it declares no
+  permission, and ERP-0051's deny-by-default guard redirected it to `/`.
+  Locales: `login.subtitle` interpolated (`{{app}}`) in en + id; new
+  `settings:companyProfile.image.onboarding`; `document.description` no
+  longer mentions the logo.
+- **UI consistency (2026-11-17, user request):** `/settings/company` now
+  uses the `Card` family from `@ims-erp/ui` throughout. The profile form is
+  one `Card` (`CardContent` with two `FieldSet`s, `FieldLegend variant=label`,
+  `FieldSeparator`, Save in `CardFooter`) instead of hand-rolled bordered
+  boxes; the images card is a `Card` with `CardHeader`/`CardContent`.
+  `DocumentImageField` wraps its label/hint in `Field`/`FieldLabel`/
+  `FieldDescription` from `@ims-erp/ui`. Section title "Logo" -> "Images"
+  (en) / "Gambar" (id), since the card holds two images.
+- Fallback chain everywhere: profile name -> `APP_NAME` env -> literal
+  (login image falls back to the bundled `/hero.png`).
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` -> **1133 pass /
+  0 fail** (84 files), incl. new onboarding/branding service tests.
+- `apps/web-admin`: `bunx tsc -b` clean; `bun test` 119 pass.
+  `packages/locales` 98 pass; `packages/react-email` 5 pass.
+- Root `bun run lint` 0 errors (warnings pre-existing, none in changed
+  files).
+- Live (backend 3001, Vite 5173): `GET /company/branding` unauthenticated
+  -> 200 `{ name: "Entragate", onboardingUrl: null }`; `PUT
+  /company/profile/onboarding` (1x1 PNG, admin session) -> 200 with a
+  presigned MinIO WebP URL; branding then carries it; `DELETE` -> null.
+- Browser: login page subtitle "Login to your Entragate account" /
+  "Masuk ke akun Entragate Anda" (name from the profile, not hardcode);
+  with an image uploaded the `<img>` loads the S3 URL
+  (`naturalWidth: 1`); after delete it falls back to `/hero.png`.
+  Console clean. Follow-up move (same day, user request): the logo and
+  onboarding upload fields relocated to `/settings/company` ("Images" card);
+  `/settings/documents` re-checked in the browser (renders the document
+  settings card only) after giving its nav leaf `open: true` ΓÇö without it
+  the ERP-0051 deny-by-default guard redirected the page to `/`.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
+## 2026-11-17 - Signed-PDF placement: signer stamps their signature on an uploaded PDF (ERP-0048 slice 2)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-17; no committed
+e2e). `docs/database/` **changed**: three columns on `document.signatures`, one
+new index, one new `access_logs.action` value;
+`bun docs/database/validate-dbml.ts` -> OK (277 tables / 237 refs, 0
+cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+Design decisions (grilled 2026-11-17, superseding D13 of the signature plan):
+
+- The PDF must already be one of the document's files; the app never generates
+  a PDF from its own HTML layouts.
+- The signature image is snapshotted onto the evidence row at signing time
+  (`signature_image_key`), so replacing the user image later never rewrites an
+  existing signature.
+- The artifact is its own column (`signed_file_key`), not a `document.files`
+  row, and placement is **final**: a second attempt answers 409.
+- The source PDF is recorded (`source_file_id`) so the artifact stays traceable.
+- Placement is recorded as a new `pdf_sign` access action, not as `print`.
+
+What landed:
+
+- **`docs.dbml` first**, then the generators, then the Drizzle schema:
+  `document.signatures` gains `signature_image_key`, `source_file_id`
+  (indexed), `signed_file_key`; `document.access_logs.action` gains `pdf_sign`.
+  Migration `20261116173810_erp0048_signed_pdf` (ALTER TABLE + CHECK swap),
+  applied via `migrate-reset`; `drizzle-kit check` -> `Everything's fine`.
+- **Backend**: `PUT /documents/signatures/requests/:id/signed-pdf` (multipart
+  `file` + `sourceFileId`, permission `document:signature_sign`) and
+  `GET ΓÇª/signed-pdf` (presigned 300 s + a `download` row). `sign` now snapshots
+  the image key and the organization. `SignaturePdfInvalidError` (422) and
+  `SignaturePdfStateError` (409) added; the controller's `onError` now carries
+  the real locale key instead of the generic one.
+- **Web admin**: new route
+  `/documents/signatures/mine/$requestId/place` renders the chosen PDF page with
+  `pdfjs-dist` at a fixed 1.5x scale, overlays the signature image, and on
+  "Apply" embeds it with `pdf-lib` and uploads the result. The Mine page gained
+  "Place on PDF" (signed, no artifact yet) and "Download signed PDF".
+  `mine.tsx` moved to `mine/index.tsx` so the placement route can be a sibling
+  instead of a child of a leaf route.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 / 237).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1132 pass / 0 fail**
+  (84 files): 10 new placement tests in `signature.service.test.ts` (snapshot,
+  final placement, non-PDF source, foreign source, non-PDF upload, race, URL)
+  and 2 new guard tests (403 without `signature_sign`, 401 anonymous).
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean,
+  `bun test` 119 pass; `packages/locales` 98 pass.
+- Root `bun run lint` 0 errors (11 backend + 14 web-admin warnings, all
+  pre-existing), `bun docs/database/validate-dbml.ts` OK.
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- API: uploaded a real 1-page A4 PDF to a registry document, requested a
+  signature, signed it, then `PUT ΓÇª/signed-pdf` -> 200 with
+  `hasSignedPdf: true` and the source file id; a second `PUT` -> 409;
+  `GET ΓÇª/signed-pdf` -> 200 presigned MinIO URL.
+- Artifact check: the downloaded object is a valid PDF (`%PDF` magic, 1 page,
+  595x842) and grew 872 -> 2089 bytes with exactly one image XObject, i.e. the
+  signature really is embedded.
+- Database: `document.signatures` shows `signed_file_key`, `source_file_id` and
+  `signature_image_key` all set on the placed row; `document.access_logs` holds
+  `pdf_sign` rows.
+- Browser: the placement page renders the PDF canvas (892x1263 at 1.5x, 3306
+  dark pixels of real text), the overlay image sits at the configured
+  position, "Apply" writes the artifact (PUT 200), and the Mine page then shows
+  "Download signed PDF" (GET 200).
+
+Three defects found by the live run and fixed in the same change:
+
+1. The route was mounted at `/:id/signed-pdf` while the client called
+   `/requests/:id/signed-pdf` -> 404; the service also treated the request id as
+   a document id. Both corrected: the route lives under `/requests/` and the
+   service resolves the request first, then re-checks the signer.
+2. `page.render({ canvas, canvasContext, viewport })` rejects in pdfjs v6 (the
+   context is the deprecated path) and the failure was swallowed -> blank canvas.
+   Now `render({ canvas, viewport })` and render errors surface as a toast.
+3. `canvas.toDataURL` threw "Tainted canvases may not be exported" because the
+   signature image comes from object storage. The export path now fetches the
+   bytes and decodes them into an `ImageBitmap` (untainted), then encodes PNG.
+
+Known limits: the placement page requires the signer to already have a signature
+image (signing without one is still allowed, the placement is simply blocked);
+re-placing is impossible by design; and the artifact is never regenerated, so a
+re-print of the app's own layout does not include the signature.
+
+Next executable task: run the queued UAT, or slice 3 (draw the signature on a
+canvas at signing time).
+
+## 2026-11-16 - Document signature flow: requests, evidence, user image (ERP-0048 / ERP-0049)
+
+Status: **implemented** (live HTTP + browser verified 2026-11-16; no committed
+e2e, so the evidence is the manual walk-through below). Plan:
+`docs/plan/plans/signature-implementation-plan.md` (13 locked decisions).
+`docs/database/` **changed**: two new tables (`document.signature_requests`,
+`document.user_signatures`), three new logical-reference columns and one
+intra-module FK; `bun docs/database/validate-dbml.ts` -> OK (277 tables / 236
+refs, 0 cross-module, 0 timestamp gaps, 0 Drizzle drift).
+
+What landed, in the plan's order:
+
+- **`docs.dbml` first.** `document.signature_requests` (status vocabulary
+  `pending/signed/declined/expired/cancelled`, `requested_by_user_id` +
+  `signer_user_id` as logical references, `signer_name` snapshot, nullable
+  `expires_at`/`responded_at`, partial unique `(document_id, signer_user_id)
+  WHERE status = 'pending' AND deleted_at IS NULL`) and
+  `document.user_signatures` (one live row per user). Then
+  `gen-logical-references.ts` (536 refs / 41 targets) and `validate-dbml.ts`.
+- **Migration** `20261116112133_erp0048_signature_requests` (custom SQL, hand
+  written because `drizzle:generate`/`migrate` stay blocked on main per
+  AGENTS.md). Its `snapshot.json` needed the real `deltas`/`footprints`:
+  a plain `generate --custom` writes an empty diff, so the deltas were produced
+  by one throwaway `drizzle-kit generate` and spliced in, which is what makes
+  `drizzle-kit check` answer `Everything's fine` instead of reporting drift.
+- **Backend** (`apps/backend/src/app/document/`): `contracts/signature.contract.ts`,
+  `contracts/signature.repository.interface.ts`, `repositories/signature.repository.ts`,
+  `services/signature.service.ts`, `errors/signature.errors.ts`,
+  `controllers/signature.controller.ts` (`SignatureController` +
+  `DocumentSignatureController`), two DI tokens, both registered in
+  `container.ts` and mounted in `documentModule()`. Routes: `GET /documents/signatures`,
+  `GET/POST /documents/signatures/requests`, `ΓÇª/requests/incoming`,
+  `ΓÇª/requests/outgoing`, `ΓÇª/requests/:id/{sign,decline,cancel}`,
+  `GET/PUT/DELETE /documents/signatures/my-image`, `POST /documents/signatures/user-images`,
+  `GET /documents/:id/signatures`. Evidence rows are written only by `sign`;
+  expiry is lazy (a past-due pending row reads as `expired`, no job); ownership
+  and state are re-checked in the service, so the guard is the first gate only.
+- **Notifications**: `document.signature_signed` and `document.signature_declined`
+  added to `NOTIFICATION_TEMPLATE_CODES` + the seeder (copy in English, the
+  client localizes) and to the en/id `notifications` bundles;
+  `notification-text.ts` gained both cases.
+- **Web admin**: `lib/signature-api.ts`; the three stub pages replaced
+  (`documents.tsx` register with method filter + pagination, `request.tsx`
+  document picker + member multi-select + expiry days + "requests I sent" with
+  cancel, `mine.tsx` image upload/replace/remove + incoming sign/decline +
+  history) and a Signatures card on `/documents/files/$documentId`. New
+  `signatures` locale namespace (en + id, flat dot-keys) with
+  `i18next.d.ts` augmentation; `routeTree.gen.ts` regenerated by the build.
+
+Commands and outcomes:
+
+- `bun docs/database/gen-logical-references.ts` -> 536 refs / 41 targets;
+  `bun docs/database/validate-dbml.ts` -> OK (277 tables / 236 refs).
+- `apps/backend` `bunx tsc --noEmit` clean; `bun test` -> **1120 pass / 0 fail**
+  (84 files), including the new `test/unit/signature.service.test.ts` (23 tests)
+  and 13 new route-guard tests in `test/authorization/authorization.test.ts`.
+- `bun run database/migrate-reset.ts` against `ims_erp_local` -> migrations +
+  seed complete, run three times with no new rows (idempotent); `drizzle-kit check`
+  -> `Everything's fine`; `psql` confirms both tables, the partial unique
+  indexes and the cascade FK.
+- `apps/web-admin` `bunx tsc -b --noEmit` clean, `bun run build` clean
+  (`routeTree.gen.ts` regenerated), `bun test` 119 pass.
+- `packages/locales` `bun test` 98 pass (parity, no-empty, interpolation sets,
+  dead-key scan with the new `signatures` namespace).
+- Root `bun run lint` 0 errors (10 backend + 12 web-admin pre-existing warnings).
+
+Live verification (backend 3001 + Vite 5173, `admin` session, org `entragate`):
+
+- Created a real registry document (`POST /documents` -> `001/BAST/DEV/XI/2026`),
+  then the full lifecycle over HTTP: create request (200, `pending`), sign with
+  `wet_ink` (200, evidence row + request `signed`), register lists it with
+  `documentCode`/`documentTitle` resolved, decline (`Nominal salah`), re-request
+  after decline (allowed by the partial unique), cancel.
+- Signature image: `PUT my-image` with a real PNG -> 200 and a MinIO WebP;
+  `GET` presigns it (browser renders 512├ù288); `POST user-images` returns the
+  same URL; `DELETE` soft-deletes and `GET` then answers `null`.
+- Browser: `/documents/signatures/documents` (register row with method badge,
+  timestamp, IP), `/documents/signatures/request` (member picker, outgoing list
+  with Cancelled/Declined/Signed badges), `/documents/signatures/mine` (image
+  card, pending card with Sign/Decline, history incl. the decline reason),
+  `/documents/files/$documentId` (Signatures card: evidence + requests +
+  "Request a signature"), Indonesian locale on all of it, console clean.
+
+Two defects found by the live run and fixed in the same change: the request
+list query joined `document.signatures` without a join (500), and
+`documentCode`/`documentTitle`/`requestedByName` were hardcoded `null` (the UI
+rendered raw UUIDs). Also fixed: `requestedBy` had no `{{name}}` placeholder, so
+the Mine page printed "Requested by ┬╖".
+
+Skipped on purpose (upgrade path in the plan): rendering the user signature
+image into the printed documents (V1.5), external signers via a public token
+link, `certificate_serial`/PKI, ordered signing, reminders, and any PDF library
+- print browser stays the PDF mechanism.
+
+Next executable task: the V1.5 slice (render `imageUrl` into the BAST and
+quotation print components), or the UAT items that were already queued.
+
+## 2026-11-16 - Inventory & asset lists: cards, images, dialog create, URL pagination (ERP-0063)
+
+Status: **implemented** (browser-checked 2026-11-16; multi-page paging still
+unverified because the seeded lists fit one page). `docs/database/` reviewed: no
+table, column, index, constraint, status vocabulary or cross-module link changed
+(`bun docs/database/validate-dbml.ts` -> OK, 275 tables / 235 refs).
+
+Scope, in the order it landed:
+
+- **Backend projections only (no schema change).**
+  `inventory/contracts/item.repository.interface.ts` +
+  `repositories/item.repository.ts`: `findNamesByIds` now returns
+  `{ id, name, imageObjectKey }` instead of `{ id, name }`, so the stock lists
+  can resolve a photo in the same query that resolves the name.
+  `services/item-image.service.ts`: new `urlFor(objectKey)` (the body
+  `withImageUrl` already used), injected into `StockService`;
+  `TStockBalanceWithNames` / `TStockMovementWithNames` gained `imageUrl`.
+  `assets/contracts/borrowing.repository.interface.ts` +
+  `repositories/borrowing.repository.ts`: new `listFirstAssetImages(ids)` (one
+  `borrowing_lines` x `assets` join per page, ordered by line `created_at`), and
+  `BorrowingService.paginate` decorates each row with `imageUrl`
+  (`TBorrowingListItem`).
+- **Card layout + images.** New `apps/web-admin/src/components/item-thumb.tsx`
+  (photo, or a two-letter initials tile) used by both card grids and the three
+  tables. `components/inventory/item-kind-list.tsx` is a card grid
+  (`sm:grid-cols-2 lg:grid-cols-3`) showing the photo, name link, code ┬╖ sku,
+  category, inactive and tracking badges; `components/assets/asset-register-list.tsx`
+  replaced the `https://picsum.photos/300/200` placeholder with
+  `ItemThumb src={asset.imageUrl}`. `stock-list`, `movement-list` and
+  `borrowing-list` keep their tables and gained a 40px thumb beside the item /
+  borrowing code.
+- **Create in a dialog.** `ItemForm` gained `defaultItemKind` (the kind page
+  pre-selects its own kind) and `compact` (drops the page heading);
+  `AssetForm` gained `onSuccess`, `onCancel` and `compact`. Each of
+  `/inventory/products`, `/inventory/components`, `/inventory/materials` and
+  `/assets/register` now opens the form in a `Dialog` behind `product.create` /
+  `asset.create`. Deleted `routes/_authed/inventory/items/new.tsx` and
+  `routes/_authed/assets/register/new.tsx`, plus the `nav:item.newItem` sidebar
+  entry and its `nav.ts` key in **both** locales (the dead-key scan would fail
+  otherwise). `routeTree.gen.ts` regenerated by `bun run build`.
+- **Pagination.** `page` is a URL search param on all six lists
+  (`validateSearch` + `Route.useSearch()`/`useNavigate()`, house pattern); the
+  page size is a frontend constant `PAGE_SIZE = 24` passed as `limit`, so the
+  address bar carries `page` but never `limit`. Components take `page` /
+  `onPageChange` props (shared `ItemKindList` cannot use one `getRouteApi` id);
+  each query uses `placeholderData: previous` and clamps the rendered page to
+  `totalPages`. The stock `inStockOnly` toggle resets to page 1. Previously every
+  list hardcoded `limit: 100` and had no pager.
+
+Commands and outcomes:
+
+- `apps/backend`: `bunx tsc --noEmit -p tsconfig.json` clean after adding the
+  `urlFor`/`listFirstAssetImages` doubles to
+  `test/authorization/stock-test-doubles.ts` and
+  `test/unit/asset-borrowing.service.test.ts`, and `imageObjectKey` to the
+  `findNamesByIds` double in `test/unit/item.service.test.ts`; `bun test`
+  -> **1084 pass / 0 fail** (83 files).
+- `apps/web-admin`: `bun run build` (`tsc -b && vite build`) clean.
+- Root: `bun run lint` 0 errors (12 pre-existing warnings, none in the touched
+  files); `bun run test` green (web-admin 119 pass - the new `clampPage` cases
+  included - plus `packages/locales` parity/dead-key).
+- `bun docs/database/validate-dbml.ts` -> OK.
+
+Browser-verified 2026-11-16 (in-app browser, Vite 5173 + backend 3001, `admin`
+session): `/inventory/products` renders 12 cards with the initials fallback
+(seeded items carry no photo), code ┬╖ sku, category and tracking badge, and the
+"New item" dialog opens with Kind pre-selected to `Product`; `/assets/register`
+renders 6 cards with the same fallback, no `picsum` request, and its "Register
+asset" dialog opens; `/inventory/stock` (4 rows), `/inventory/stock/movements`
+(4 rows) and `/assets/borrowings` (3 rows) show the 40px thumb beside the
+item/borrowing code; console clean on all five pages. `?page=9` on a 1-page list
+is rewritten to `?page=1` by `useClampPage` (`lib/use-clamp-page.ts`), which is
+what the manual `Math.min` clamp alone could not do. The pager itself does not
+render because every seeded list fits one page (`PaginationControls` returns
+`null` at `totalPages <= 1`), so a real second page is still unverified.
 
 ## 2026-11-16 - Sidebar: Components, Materials and Signatures restored (ERP-0062)
 
@@ -339,7 +2073,7 @@ dashboard rewrite are slice 3.
 
 ## 2026-11-15 - Dashboard real data, slice 3: real dashboard, mock removed (ERP-0060)
 
-Plan: `plans/dashboard-real-data.md` (D3, D13, D16–D22). The mock
+Plan: `plans/dashboard-real-data.md` (D3, D13, D16ΓÇôD22). The mock
 (`MOCK_SUMMARY`, `fetchDashboardSummary`) and `dashboard:banner.sampleData` are
 deleted; `/` renders only endpoint data.
 
@@ -347,7 +2081,7 @@ deleted; `/` renders only endpoint data.
 
 - `lib/dashboard-api.ts` rewritten: local fetchers (`getJson`, `getPage`) send
   `organizationHeaders()`; every query key is `['dashboard', <domain>,
-  organizationId, …]` (D19) and `enabled` is false without an organization or
+  organizationId, ΓÇª]` (D19) and `enabled` is false without an organization or
   without the source permission (D16). Sources: `/invoices/summary` (sales card
   and chart, one request), `/cash-bank/accounts`, `/reports/profit-and-loss`
   (current month), `/items?limit=1` (count), `/stock/valuation` (`grandTotal`),
@@ -357,10 +2091,10 @@ deleted; `/` renders only endpoint data.
 - `project-api.ts`: `TProjectStats` + `projectStatsQueryOptions`.
 - `components/dashboard/dashboard-page.tsx` rewritten: Refresh invalidates
   `['dashboard']`; each widget has its own skeleton / unavailable + retry; stock
-  value is withheld (`—`) without `product:read_cost`; profit is labelled
+  value is withheld (`ΓÇö`) without `product:read_cost`; profit is labelled
   provisional; projects show active/closed/overdue and a bar per stage; the
   activity feed interleaves the five newest invoices and receipts; no
-  organization → an `Empty` state pointing to `/organizations`. Project stage
+  organization ΓåÆ an `Empty` state pointing to `/organizations`. Project stage
   labels reuse `projects:stage.*`.
 - `locales`: `en` + `id` `dashboard` bundle rewritten (sample banner removed,
   keys only for rendered copy). Parity and dead-key guards green.
@@ -450,7 +2184,7 @@ Slice 4 of `plans/dashboard-real-data.md`.
 
 No code changed in this slice. Gates re-run 2026-11-16 anyway:
 `bun run test` 5/5 (backend 1081, web-admin 106, locales 94, react-email 5,
-0 failures) and `bun docs/database/validate-dbml.ts` → `OK` (275 tables, 0
+0 failures) and `bun docs/database/validate-dbml.ts` ΓåÆ `OK` (275 tables, 0
 cross-module refs, 0 timestamp gaps, 0 parity drift).
 
 Still open, so ERP-0060 stays `in-progress`: permission denial in the browser
@@ -515,7 +2249,7 @@ read over 14 days, 1/3/6 months, 1/5 years, or a custom date range.
 
 Verification (browser, local stack, after inserting three probe invoices for the
 Entragate organization and deleting them again):
-- Chart is the first card, 977 px inside a 1025 px `main` — full width.
+- Chart is the first card, 977 px inside a 1025 px `main` ΓÇö full width.
 - Presets resolved as: 14 days `2026-11-03..11-16` `groupBy=day` (Rp 100.000);
   1 month `2026-10-17..11-16` (Rp 100.000); 3 months `2026-08-17..11-16`
   (Rp 300.000); 6 months `2026-05-17..11-16` (Rp 300.000); 1 year
@@ -523,7 +2257,7 @@ Entragate organization and deleting them again):
   catching the June 2024 invoice). Non-zero bars matched each total.
 - Custom range: picking 1 Nov then 15 Nov produced `2026-11-01..11-15`
   `groupBy=day`, closed the popover, and issued exactly one request.
-- A single day shows `Nov 1, 2026 – …` while the second date is pending.
+- A single day shows `Nov 1, 2026 ΓÇô ΓÇª` while the second date is pending.
 
 Gates: repo `bun run test` 5/5 (backend 1081, web-admin 115, locales 94,
 react-email 5), `bun run typecheck` 4/4, `bun run lint` 0 errors.
@@ -547,22 +2281,64 @@ two-month calendar straight away.
   range is complete.
 
 Verified in the browser: Custom opens two calendars with no input button
-(`hasInputButton: false`), picking 1 → 15 Nov closes it and shows
+(`hasInputButton: false`), picking 1 ΓåÆ 15 Nov closes it and shows
 `2026-11-01 to 2026-11-15`, clicking Custom again reopens with the range
 selected, Escape dismisses, and switching to a preset leaves it closed.
 
+## 2026-11-15 - PR #97 brought onto main again (`aa3a7ad`): ADR-0022, migration after M04
 
+`origin/main` moved on after this morning's merge: the M04 merge (#84), the
+web-admin shadcn work (#105) and the reports surface (#106). It was merged
+into `feat/m07-customer-portal`.
 
+- **ADR clash again.** The M04 outbox record took **ADR-0020** on its merge,
+  while this branch's reservation (README index) was not on main yet. All
+  branches were checked: the highest number in use is ADR-0021 (payment
+  gateway, PR #99). The customer portal record is now **ADR-0022**: the file
+  was renamed and only the portal's references changed (README index,
+  `modules/customer-portal.md`, `data-model.md`, `docs.dbml` note,
+  `website.yaml`, the `session.auth.ts` comments, backlog ERP-0022,
+  features, and this branch's portal entries). The M04 references to
+  ADR-0020 are untouched.
+- **Migration regenerated after M04's.** `20261114182159_erp0022_customer_portal`
+  sat on the same parent snapshot as main's
+  `20261115090000_m04_catalog_automation_schemas`; a later `generate` would
+  have re-created the portal tables. It was removed and generated again:
+  `20261115090002_erp0022_customer_portal`, the same DDL (the two tables and
+  the ticket channel checks). `drizzle-kit check`: "Everything's fine".
+- **Code conflicts.**
+  - `service-ticket.service.ts`: main's `this.changed(ticket, 'created')`
+    (ticket events) is kept.
+  - `index.ts`: the imports are combined (licensing due worker, catalog,
+    automation, portal).
+  - The ticket pages keep main's shadcn `Select` with this branch's
+    `STAFF_TICKET_CHANNELS` (staff cannot pick `portal`).
+  - The dead-key prefixes of both sides are kept.
+  - `customer-portal.test.ts` passes the new outbox argument of
+    `ServiceTicketService`.
+- **Docs.** The user guide puts M04 at 8.7 and the portal at 8.8. Backlog
+  rows: ERP-0021 and ERP-0039 from main, ERP-0022 from this branch.
+  `logical-references.md` was regenerated; `validate-dbml.ts` prints OK.
 
-
-
-
-
-
+**Verification**
+- `bun run typecheck`: 4/4. `bun run lint`: 0 errors.
+- Backend `bun test`: 1089 pass, 4 fail (the known `Bun.Image` tests).
+  Portal + ticket suites: 28. web-admin 100; locales 94; API-docs drift 2/2.
+  `apps/api-docs` build: 16 routes.
+- **Not run:** the regenerated migration was not applied to a disposable
+  database, and the portal e2e was not re-run. Docker Desktop's engine is down
+  on this machine (`dockerDesktopLinuxEngine` pipe missing, Redis closed).
+  Both are to be repeated when Docker is back.
+- **Done later the same day (Docker back).** Disposable DB `ims_erp_v97`:
+  `drizzle:migrate` on a fresh DB applied the regenerated migration,
+  `drizzle-kit check` "Everything's fine", seed run twice. Backend on
+  `APP_PORT=3010` with `PORTAL_URL` set: the portal e2e (signup code,
+  invitation claim, sign-in gate, contacts, tickets and thread, staff
+  replies) passed **50/50**.
 
 ## 2026-11-15 - M12 T30: statement CSV exports + monthly report archive (branch `feat/reports-surface`)
 
-Item 3 of `plans/2026-11-15_0538_todo_undone.md` §7. The report **API** already
+Item 3 of `plans/2026-11-15_0538_todo_undone.md` ┬º7. The report **API** already
 existed; what was missing was the export surface, the monthly archive, and the
 `/reports/*` UI. All three now exist.
 
@@ -726,19 +2502,19 @@ The last non-date native inputs followed `DatePicker`: 4 `type='month'`, 2
 Each keeps the value contract its call site already held, so handlers only lost
 their `event.target.value`:
 
-- `MonthPicker` — `YYYY-MM` (`todayBusinessDate().slice(0, 7)`), year stepper
+- `MonthPicker` ΓÇö `YYYY-MM` (`todayBusinessDate().slice(0, 7)`), year stepper
   plus a 12-month grid.
-- `TimePicker` — `HH:mm`, two scrollable columns; `step` defaults to 1 so no
+- `TimePicker` ΓÇö `HH:mm`, two scrollable columns; `step` defaults to 1 so no
   stored minute is unreachable, and an empty value still maps to `null` in the
   attendance handler.
-- `DateTimePicker` — `YYYY-MM-DDTHH:mm`, the exact shape
+- `DateTimePicker` ΓÇö `YYYY-MM-DDTHH:mm`, the exact shape
   `toDateTimeInput`/`fromDateTimeInput` produce, so the CRM dialogs did not
   change. Calendar and time sit in one popover; picking either half fills the
   other with today / `00:00` so the emitted value is always complete.
 
 All three share the `DatePicker` shell: `Button variant="outline"` trigger,
 `data-empty` for the placeholder colour, a suffix icon in
-`--muted-foreground` (so it follows light/dark — measured
+`--muted-foreground` (so it follows light/dark ΓÇö measured
 `oklch(0.551 0.0234 264.364)` in light), and the off-screen `required` input that
 keeps native form validation working. `parseTime`/`formatTime` moved to
 `packages/ui/src/lib/time.ts` so `TimePicker` and `DateTimePicker` share one
@@ -746,8 +2522,8 @@ parser instead of a component file exporting helpers.
 
 Verified:
 
-- `@ims-erp/ui` `typecheck` and `lint` → exit 0
-- `bunx tsc -b` in `apps/web-admin` → clean; `lint` → exit 0; `test` → 100 pass, 0 fail
+- `@ims-erp/ui` `typecheck` and `lint` ΓåÆ exit 0
+- `bunx tsc -b` in `apps/web-admin` ΓåÆ clean; `lint` ΓåÆ exit 0; `test` ΓåÆ 100 pass, 0 fail
 - Browser: `/hr/attendance` "Monthly recap" shows `November 2026` and the popover
   opens the 2026 month grid, picking March updates the trigger to
   `March 2026`; the day sheet's In/Out columns render `--:--` disabled for
@@ -781,7 +2557,7 @@ Two details that are easy to get wrong and are handled in the component:
   value; `checkValidity()` on it is `true` when a date is set. It is omitted
   when `disabled` so a disabled picker never blocks a form.
 - `min`/`max` map to the calendar's `disabled` matchers, and `YYYY-MM-DD` is
-  parsed by hand — `new Date('2026-11-15')` is UTC and lands a day early west of
+  parsed by hand ΓÇö `new Date('2026-11-15')` is UTC and lands a day early west of
   Greenwich.
 
 `type='month'`, `type='time'` and `type='datetime-local'` are untouched: this
@@ -789,9 +2565,9 @@ slice covers date-only inputs, which is what the request named.
 
 Verified:
 
-- `bun run --filter '@ims-erp/ui' typecheck` and `lint` → exit 0
-- `bunx tsc -b` in `apps/web-admin` → clean
-- `bun run --filter '@ims-erp/web-admin' lint` → exit 0; `test` → 100 pass, 0 fail
+- `bun run --filter '@ims-erp/ui' typecheck` and `lint` ΓåÆ exit 0
+- `bunx tsc -b` in `apps/web-admin` ΓåÆ clean
+- `bun run --filter '@ims-erp/web-admin' lint` ΓåÆ exit 0; `test` ΓåÆ 100 pass, 0 fail
 - Browser: `/projects/new` shows `dd/mm/yyyy` placeholders with the suffix icon,
   the popover opens a calendar with month and year dropdowns (123 years), and
   picking the 20th sets `Nov 20, 2026`; toggling the root `dark` class re-colours
@@ -814,7 +2590,7 @@ are gone. `NativeSelect` usages (`components/assets/borrowing-form.tsx`,
 **Bug found and fixed in `packages/ui`, not at the call sites.** Base UI's
 `SelectValue` reads the trigger label from the root's `items` prop, not from the
 `SelectItem` children (the popup unmounts while closed). Without `items` every
-filter trigger rendered its raw value — the pre-existing `hr/employees` status
+filter trigger rendered its raw value ΓÇö the pre-existing `hr/employees` status
 filter already showed `all` on `main`, so this was not introduced here but the
 conversion multiplied it. `packages/ui/src/components/select.tsx` now wraps
 `SelectPrimitive.Root` and derives `items` from the `SelectItem` children when
@@ -824,20 +2600,20 @@ churn.
 Behaviour notes: empty/placeholder options use a `'none'` (or `'all'`) sentinel
 mapped back to `''`/`undefined`/`null` in the handler; `disabled`, `id` (moved
 to `SelectTrigger` so `<label htmlFor>` still works) and `aria-label` are
-preserved. `required` no longer triggers the browser's native form validation —
+preserved. `required` no longer triggers the browser's native form validation ΓÇö
 each affected form already guards its submit button on the same state
 (`!salesOrderId`, `!bastId`, `!itemId`, ...), so submission behaviour is
 unchanged but the browser tooltip is gone.
 
 Verified:
 
-- `bun run --filter '@ims-erp/web-admin' lint` → exit 0 (pre-existing warnings only)
-- `bunx tsc -b` in `apps/web-admin` → clean; `bun run --filter '@ims-erp/ui' typecheck` → exit 0
-- `bun run --filter '@ims-erp/ui' lint` → exit 0
-- `bun run --filter '@ims-erp/web-admin' test` → 100 pass, 0 fail
+- `bun run --filter '@ims-erp/web-admin' lint` ΓåÆ exit 0 (pre-existing warnings only)
+- `bunx tsc -b` in `apps/web-admin` ΓåÆ clean; `bun run --filter '@ims-erp/ui' typecheck` ΓåÆ exit 0
+- `bun run --filter '@ims-erp/ui' lint` ΓåÆ exit 0
+- `bun run --filter '@ims-erp/web-admin' test` ΓåÆ 100 pass, 0 fail
 - Browser walkthrough on the dev server: `/crm/leads`, `/crm/customers`,
   `/hr/employees`, `/projects`, `/procurement/purchase-orders`,
-  `/projects/new`, `/procurement/purchase-orders/new` — trigger labels render
+  `/projects/new`, `/procurement/purchase-orders/new` ΓÇö trigger labels render
   ("All statuses", "Pick a supplier", "Hardware"), the search boxes carry the
   icon, and selecting an option updates the trigger and the query.
   `/integrations/webhooks` could not be checked: the page fetches
@@ -850,7 +2626,7 @@ lifecycle change). No locale keys were added or removed.
 ## 2026-11-15 - M04 lands on the current mainline: `main` merged into `feat/m04-on-main`
 
 Branch `feat/m04-on-main` was 106 commits behind `main`; the M04 code (website
-catalog, outbox to n8n, WhatsApp assistant) had never reached `main` at all —
+catalog, outbox to n8n, WhatsApp assistant) had never reached `main` at all ΓÇö
 the "carried onto main 2026-11-12" wording in `backlog.md` was wrong and is
 withdrawn. Forty files were changed on both sides, 28 of them conflicting
 (`git merge-tree --write-tree`), and the other 12 auto-merged into code that
@@ -864,7 +2640,7 @@ would have compiled or run differently than either branch intended.
    produced one migration for the M04 schemas:
    `20261115090000_m04_catalog_automation_schemas` (2 `CREATE SCHEMA`, 5
    tables, 2 intra-module FKs, 14 indexes, 9 checks). `drizzle-kit check`
-   → `Everything's fine`, and `generate` afterwards → `No schema changes`.
+   ΓåÆ `Everything's fine`, and `generate` afterwards ΓåÆ `No schema changes`.
 2. **Backend.** `app.ts` mounts main's `realtimeGateway`/`notification`/
    `company`/`code-number`/`document`/`hr` modules plus M04's
    `catalogModule()` and `automationModule()`; `index.ts` keeps main's
@@ -872,8 +2648,8 @@ would have compiled or run differently than either branch intended.
    worker (avatar, org logo, notification, outbox, WhatsApp, mail, license
    due) from the one `startWorkers` array with both schedules behind
    `scheduler.enabled`. The three conflicting services keep main's seams
-   (`CODE_NUMBER_SERVICE_TOKEN` — `NUMBERING_SERVICE_TOKEN` is gone from
-   main — and `DOCUMENT_SERVICE_TOKEN`) **plus** M04's `OUTBOX_SERVICE_TOKEN`:
+   (`CODE_NUMBER_SERVICE_TOKEN` ΓÇö `NUMBERING_SERVICE_TOKEN` is gone from
+   main ΓÇö and `DOCUMENT_SERVICE_TOKEN`) **plus** M04's `OUTBOX_SERVICE_TOKEN`:
    `invoice.issue` still splits into `issue` + `issueInTransaction` so
    `invoice.issued` publishes after the commit, and `receipt.recorded` sits
    next to the ERP-0044 `documents.register`; `serviceTicket.close` registers
@@ -892,7 +2668,7 @@ would have compiled or run differently than either branch intended.
 4. **Permissions.** `erpStatements.whatsapp` (new) and M04's grants, dropped
    for `investor`/`customer` because main moved those to application roles
    (ADR-0018); main's `company`/`code_number` split kept.
-5. **Web/UI.** `nav-config.ts` taken from main — it already pointed at
+5. **Web/UI.** `nav-config.ts` taken from main ΓÇö it already pointed at
    `/integrations/{website-catalog,whatsapp-ai,webhooks}`, which only exist
    on this branch, so the merge is what makes those three live; `item.
    notifications` kept from main (see the open defect below);
@@ -902,7 +2678,7 @@ would have compiled or run differently than either branch intended.
    `notification.md` taken from main (the old branch file described M04 under
    the name that now belongs to ERP-0047); `data-model.md` gained the
    `catalog`/`automation`/`notification` entries; user guide has both 8.6 (M08)
-   and 8.7 (M04). The M04 ADR was **renumbered ADR-0015 → ADR-0020** because
+   and 8.7 (M04). The M04 ADR was **renumbered ADR-0015 ΓåÆ ADR-0020** because
    main claimed ADR-0015 for the company/document/code_number split;
    `README.md` indexes both.
 7. **`docs/database/logical-references.md` regenerated**, not merged.
@@ -910,33 +2686,33 @@ would have compiled or run differently than either branch intended.
 Verification (this machine, `ims_erp_local` + disposable
 `ims_m04_merge_check`):
 
-- `bun install` — no changes; `bun run typecheck` (backend, after adding the
+- `bun install` ΓÇö no changes; `bun run typecheck` (backend, after adding the
   `documents` double to `sales-invoice-events.test.ts`), `bun run lint`
-  (0 errors, 6 pre-existing warnings), `bun run test` — backend **1056 pass**,
+  (0 errors, 6 pre-existing warnings), `bun run test` ΓÇö backend **1056 pass**,
   web-admin **100**, locales **94**, react-email **5**, 0 fail;
   `bun run --cwd apps/web-admin build` clean.
-- `drizzle:migrate-reset` on `ims_m04_merge_check` → **21 migrations, 128
+- `drizzle:migrate-reset` on `ims_m04_merge_check` ΓåÆ **21 migrations, 128
   tables**, `automation.*` (4) and `catalog.web_listings` present; a second
-  `drizzle:migrate` is a no-op (21/128); `drizzle:seed` twice → `inserted: 0`
+  `drizzle:migrate` is a no-op (21/128); `drizzle:seed` twice ΓåÆ `inserted: 0`
   both times.
-- `drizzle:migrate` on the dev DB appended only the new migration (19 → 21
-  journal rows, 116 → 128 tables).
-- `docs/database/validate-dbml.ts` → 274 tables, 235 refs, 0 cross-module,
+- `drizzle:migrate` on the dev DB appended only the new migration (19 ΓåÆ 21
+  journal rows, 116 ΓåÆ 128 tables).
+- `docs/database/validate-dbml.ts` ΓåÆ 274 tables, 235 refs, 0 cross-module,
   0 timestamp gaps, 0 drizzle parity drift, `OK`;
-  `gen-logical-references.ts` → 531 refs across 41 targets.
+  `gen-logical-references.ts` ΓåÆ 531 refs across 41 targets.
 
 **Open defect inherited from `main` (not caused by this merge):**
-`nav-config.ts` shows **Notifications → `/integrations/notifications`**, but
+`nav-config.ts` shows **Notifications ΓåÆ `/integrations/notifications`**, but
 neither branch has that route (main's notification UI is the header bell,
 `components/notification/notification-bell.tsx`). `SidebarItem.url` is a
 plain `string`, so typecheck passes and the link 404s when clicked. Fixing it
-means either dropping the item or building an inbox page — tracked here, not
+means either dropping the item or building an inbox page ΓÇö tracked here, not
 done in a merge commit.
 
 Gate for M04 itself: nothing changed in what is *verified*. Live WhatsApp and
 n8n still need a WAHA instance, a dedicated number and an AI provider
 (ADR-0020 stays `proposed`). Browser verification of the merged web screens
-(`/integrations/website-catalog`, `/integrations/whatsapp-ai`, `…/faq`,
+(`/integrations/website-catalog`, `/integrations/whatsapp-ai`, `ΓÇª/faq`,
 `/integrations/webhooks`, `/settings/company`, `/settings/code-numbers`) is
 **not yet done**: the dev stack starts and those routes load with no console
 errors, but each redirects to `/login` without a session, so the pages were
@@ -944,12 +2720,12 @@ not walked through with data. Pending the owner's login in the browser.
 
 ## 2026-11-12 - WA/n8n guide (T32), plan-doc cleanup, UAT scripts (ERP-0024)
 
-Owner asked for three small items on `feat/m04-on-main`. Docs only — no
+Owner asked for three small items on `feat/m04-on-main`. Docs only ΓÇö no
 code, migration, seeder or test changed; `docs/database/` reviewed and
 unchanged (no table, column or reference touched).
 
 1. **WA/n8n setup guide (M04 T32 handover):**
-   `docs/user-guide/whatsapp-n8n-setup.en.md` and `.id.md` — `.env`
+   `docs/user-guide/whatsapp-n8n-setup.en.md` and `.id.md` ΓÇö `.env`
    variables, WAHA webhook (URL, `message` event, HMAC key), n8n webhook
    with a signature-check Code node and dedupe on `X-Erp-Event-Id`, one
    flow per topic, AI provider, troubleshooting by status code, go-live
@@ -960,16 +2736,16 @@ unchanged (no table, column or reference touched).
 2. **Plan-doc cleanup:** `features.md` M02 "planned" no longer lists
    customers/leads and invoices/DP/receipts (they were already under
    implemented); the stale "ERP-0037 port in-progress" block (the port is
-   ERP-0038) replaced; ERP-0038 → implemented (PR #58 → PR #68, merged to
-   main 2026-11-09); ERP-0006 → implemented (location module, seeder,
-   cache, test — built by programmer A; found while checking); ERP-0037
+   ERP-0038) replaced; ERP-0038 ΓåÆ implemented (PR #58 ΓåÆ PR #68, merged to
+   main 2026-11-09); ERP-0006 ΓåÆ implemented (location module, seeder,
+   cache, test ΓÇö built by programmer A; found while checking); ERP-0037
    (nullable cross-module refs) stays `planned`: `sales.quotations`
    `customer_id` is still `NOT NULL`. Last synced 2026-11-12.
-3. **UAT scripts (ERP-0024 → in-progress):** `docs/plan/uat/README.md` plus
+3. **UAT scripts (ERP-0024 ΓåÆ in-progress):** `docs/plan/uat/README.md` plus
    one file per owned module (M02 13 cases, M03 11, M04 11, M05 11, M07 9,
    M08 10), each with steps, expected result, Pass/Fail/Blocked and a
    sign-off table. Cases come from each plan's Acceptance interpretation
-   (U01–U32 Excel text is not in the repo). Not testable yet and marked
+   (U01ΓÇôU32 Excel text is not in the repo). Not testable yet and marked
    N/T: payment gateway callbacks (ERP-0020), customer portal (ERP-0022),
    payroll journal (ERP-0018). Expected results were checked against the
    error codes in the services (e.g. licensing keys, receipt overpayment).
@@ -981,20 +2757,20 @@ decide):** the web billing card and invoice page call
 #68 merge) has only list/get/create (explicit items)/update/cancel (draft
 only)/issue/receipts. Creating an invoice from a sales order and voiding an
 issued invoice therefore fail in the browser on main. Recorded in the M02
-UAT script (cases 09–11) and backlog ERP-0038.
+UAT script (cases 09ΓÇô11) and backlog ERP-0038.
 
-Verification: `bun docs/database/validate-dbml.ts` → OK; locale and code
+Verification: `bun docs/database/validate-dbml.ts` ΓåÆ OK; locale and code
 untouched (no test run needed for docs).
 
 Next executable task: programmer A reviews PR #83 and #84; then run the UAT
-scripts on a staging database with the owner (M02 first — after the invoice
+scripts on a staging database with the owner (M02 first ΓÇö after the invoice
 API mismatch is fixed), and set up the sandbox WAHA + n8n with the guide.
 
 ## 2026-11-12 - ERP-0021 lead capture from WhatsApp chats
 
 Closes the Phase 6 gap recorded in the compliance pass below. Owner said
 "kerjakan"; the open choice (automatic on handoff vs an admin button) was
-taken as **an admin button** — no lead is made from spam or chit-chat, and
+taken as **an admin button** ΓÇö no lead is made from spam or chit-chat, and
 the admin decides.
 
 Gate 1: `docs.dbml` `crm.leads` (source `whatsapp`, `whatsapp` column,
@@ -1002,17 +2778,17 @@ nullable `owner_user_id`), `module-ownership.md` (CRM owns leads; the link
 needs a contract method on the owning side), `logical-references.md`,
 `integrity-and-consistency.md` 7.1, `data-dictionary.md` 1.10/1.14;
 `implementation-phases.md` skipped (no dependency on an unlanded step).
-Gate 2 (manual): ownership — CRM creates the lead through the new contract
-`LeadService.captureFromChat`; automation keeps only the link; tenant — leads
+Gate 2 (manual): ownership ΓÇö CRM creates the lead through the new contract
+`LeadService.captureFromChat`; automation keeps only the link; tenant ΓÇö leads
 and chats are company-wide; new column
 `automation.whatsapp_conversations.lead_id` is a nullable logical reference
 (ADR-0014); lead unassigned (`owner_user_id` null, like a website inquiry),
 `created_by` the admin; permission `whatsapp:reply`; once per chat via a
-conditional `UPDATE … WHERE lead_id IS NULL` (two admins at the same instant
-could leave one unlinked duplicate lead in CRM — accepted, documented); no
-service-level DI cycle (WhatsappService → LeadService → OutboxService).
+conditional `UPDATE ΓÇª WHERE lead_id IS NULL` (two admins at the same instant
+could leave one unlinked duplicate lead in CRM ΓÇö accepted, documented); no
+service-level DI cycle (WhatsappService ΓåÆ LeadService ΓåÆ OutboxService).
 
-Built: `docs.dbml` first (gen-logical-references → 539 refs, validate-dbml
+Built: `docs.dbml` first (gen-logical-references ΓåÆ 539 refs, validate-dbml
 OK), Drizzle `leadId`, hand-written migration
 `20261113090400_m04_whatsapp_lead_link` (one nullable column);
 `POST /automation/whatsapp/conversations/:id/lead`; web "Create lead" /
@@ -1020,19 +2796,19 @@ OK), Drizzle `leadId`, hand-written migration
 keys; ADR-0015, `notification.md`, `data-model.md`, user guide 8.7, backlog
 ERP-0021 (partial note removed), features.
 
-Verification: `bunx tsc --noEmit` clean; `bun run lint` → 0 errors (warnings
-unchanged from main); `NODE_ENV=test bun test` (apps/backend) → 843 pass;
-web `bun run build` OK; locales 86 pass; new tests — CRM contract
-(`lead.service.test.ts`) and chat → lead incl. idempotency
+Verification: `bunx tsc --noEmit` clean; `bun run lint` ΓåÆ 0 errors (warnings
+unchanged from main); `NODE_ENV=test bun test` (apps/backend) ΓåÆ 843 pass;
+web `bun run build` OK; locales 86 pass; new tests ΓÇö CRM contract
+(`lead.service.test.ts`) and chat ΓåÆ lead incl. idempotency
 (`whatsapp-assistant.test.ts`); disposable `ims_erp_m04` rebuilt with
-`database/migrate-reset.ts` → migrations and seed complete, `drizzle-kit
-push --explain` → no automation/catalog/crm difference. E2E on the dev stack
+`database/migrate-reset.ts` ΓåÆ migrations and seed complete, `drizzle-kit
+push --explain` ΓåÆ no automation/catalog/crm difference. E2E on the dev stack
 against `ims_erp_m04` (temporary `POSTGRES_DB` and `WAHA_WEBHOOK_SECRET`,
-restored): two signed webhook messages → chat handed off (`no_provider`);
-customer service "Create lead" → 200, linked; second click → same lead;
+restored): two signed webhook messages ΓåÆ chat handed off (`no_provider`);
+customer service "Create lead" ΓåÆ 200, linked; second click ΓåÆ same lead;
 sales manager reads the lead (`whatsapp`, unassigned, number and both
 questions in `needs`); one `lead.created` outbox event; `sales` (no
-`whatsapp:*`) → 403; screenshot of the chat page checked.
+`whatsapp:*`) ΓåÆ 403; screenshot of the chat page checked.
 
 ## 2026-11-12 - M04 compliance pass against AGENTS.md (ERP-0039, ERP-0021)
 
@@ -1045,7 +2821,7 @@ the gaps. What was missing before and what was done:
   `OUTBOX_SERVICE_TOKEN`, the assistant `CATALOG_SERVICE_TOKEN`), one path-
   param name per position, worker handles in `startWorkers`, and
   `container.resolve` only in `plugin()` / worker start: conform. No
-  service-level DI cycle (assistant → catalog → licensing → outbox).
+  service-level DI cycle (assistant ΓåÆ catalog ΓåÆ licensing ΓåÆ outbox).
 - **Gate 1 completed:** `docs.dbml`, `module-ownership.md`,
   `integrity-and-consistency.md`, `data-dictionary.md` and
   `logical-references.md` (regenerated) read for the M04 tables;
@@ -1054,7 +2830,7 @@ the gaps. What was missing before and what was done:
   - integrity 7.1 (state transitions are conditional updates): WhatsApp
     handoff / resume / close now update only from the expected statuses
     (`updateConversation(..., from)`); a second handoff sends no second reply
-    or event; resume / close of a chat already in that state → 409
+    or event; resume / close of a chat already in that state ΓåÆ 409
     `automation.whatsappState.*` (en/id). The outbox `recordAttempt` no
     longer overwrites a `published` event.
   - data-dictionary 1.10 (actor columns): `whatsapp_messages.sent_by_user_id`
@@ -1068,20 +2844,20 @@ the gaps. What was missing before and what was done:
 - **Phase 6 (ERP-0021) check:** FAQ/catalog-only answers, human handoff,
   untrusted-message tests, sandbox/mock gating, webhook authenticity,
   idempotency, retries: met. **Lead capture from WhatsApp chats is not
-  built** → ERP-0021 marked partial in `backlog.md`. Exit criterion "outbox
+  built** ΓåÆ ERP-0021 marked partial in `backlog.md`. Exit criterion "outbox
   decision recorded": ADR-0015 (proposed) written and indexed in
   `docs/architecture/README.md`.
 - **Phase 3 output:** `data-model.md` now lists the `catalog` and
   `automation` schemas.
 
-Commands and results: `bun docs/database/gen-logical-references.ts` → 538
-refs; `bun docs/database/validate-dbml.ts` → OK; `bunx tsc --noEmit` clean;
-`bun run lint` → 0 errors (warnings unchanged from main: backend 6,
+Commands and results: `bun docs/database/gen-logical-references.ts` ΓåÆ 538
+refs; `bun docs/database/validate-dbml.ts` ΓåÆ OK; `bunx tsc --noEmit` clean;
+`bun run lint` ΓåÆ 0 errors (warnings unchanged from main: backend 6,
 web-admin 11, ui 19; none in M04 files); `NODE_ENV=test bun test`
-(apps/backend) → 841 pass (new: conditional handoff/resume/close, outbox
+(apps/backend) ΓåÆ 841 pass (new: conditional handoff/resume/close, outbox
 race); web `bun run build` OK; locales 86 pass. Disposable `ims_erp_m04`
-rebuilt with `bun run database/migrate-reset.ts` → migrations and seed
-complete; `drizzle-kit push --explain` → no catalog/automation difference.
+rebuilt with `bun run database/migrate-reset.ts` ΓåÆ migrations and seed
+complete; `drizzle-kit push --explain` ΓåÆ no catalog/automation difference.
 `graphify update .` not run: graphify is not installed on this machine.
 
 ## 2026-11-12 - M04 carried onto main (ERP-0039, ERP-0021)
@@ -1112,15 +2888,15 @@ Status: **implemented** on branch `feat/m04-on-main` (from `origin/main`
   `20261113090300_m04_whatsapp_assistant` (the SQL is the drizzle-kit
   output of the M04 branch; the sections below use the old names).
 
-Verification: `bun docs/database/gen-logical-references.ts` → 538 refs,
+Verification: `bun docs/database/gen-logical-references.ts` ΓåÆ 538 refs,
 `validate-dbml.ts` OK; `bunx tsc --noEmit` clean; `NODE_ENV=test bun test`
-(apps/backend) → 839 pass; web `bun run build` OK; locales 86 pass.
+(apps/backend) ΓåÆ 839 pass; web `bun run build` OK; locales 86 pass.
 Fresh disposable database `ims_erp_m04`: `bun run database/migrate-reset.ts`
-→ migrations complete, seed complete; seeder run again → no new rows;
+ΓåÆ migrations complete, seed complete; seeder run again ΓåÆ no new rows;
 `drizzle-kit push --explain` shows **no difference for any catalog or
 automation table** (only main's pre-existing `auth.organization_role` and
 `sales.receipts` FK drift). Smoke test on the dev stack against
-`ims_erp_m04` (`POSTGRES_DB` switched temporarily, restored): lead →
+`ims_erp_m04` (`POSTGRES_DB` switched temporarily, restored): lead ΓåÆ
 `lead.created` outbox row `pending` ("not configured"); catalog listings
 200; public catalog without key 401; WhatsApp webhook without a configured
 key 503; FAQ by marketing 201, by customer service 403. Invoice issue and
@@ -1137,7 +2913,7 @@ merge needs a small rebase.
 Status: **implemented** (4a catalog API, 4b outbox to n8n, 4c stage 2
 events, 4d WhatsApp assistant), not yet accepted by the owner. Live use
 needs WAHA, a dedicated WhatsApp number (sandbox first), n8n flows and an
-AI provider — none exist yet.
+AI provider ΓÇö none exist yet.
 
 Next executable task: owner review of M04 on `feat/m04-integrations` (PR
 with base `merge/main-sync`); then the go-live checklist in
@@ -1147,49 +2923,49 @@ Branch `feat/m04-integrations` (from `merge/main-sync`, so PR #58 stays as
 reviewed).
 
 Gate 1 (read): `docs/plan/erp-module-plans/m04-n8n-whatsapp-website.md`
-(stage 1: public catalog + profile, requirements form → lead, one ERP event
+(stage 1: public catalog + profile, requirements form ΓåÆ lead, one ERP event
 to n8n with outbox log and manual retry; stage 2: WhatsApp AI on FAQ +
 catalog, notifications, handoff to an admin, logs; the AI must never grant
-discounts or transact — enforced by what it can call); docs.dbml MODULE
+discounts or transact ΓÇö enforced by what it can call); docs.dbml MODULE
 Catalog / Commerce / Automation (scaffolds; the automation workflow engine
 is beyond baseline because n8n is the engine); the website repo
 `entragate-platform` (`CatalogSource` contract: list / get / categories /
 facets / stock / pricing / solutions / search / price cart, ERP routes
-still empty); the website form → lead API already built in M02
+still empty); the website form ΓåÆ lead API already built in M02
 (`/public/v1`, ADR-0011 step 3b).
 
 Owner decisions (2026-11-07):
 1. **WhatsApp via WAHA** (self-hosted WhatsApp HTTP API, not the official
    Business API): no template approval, but a risk of the number being
-   banned — a dedicated number and a sandbox number first.
+   banned ΓÇö a dedicated number and a sandbox number first.
 2. **No n8n yet**; n8n and WAHA are not added to the dev docker compose
-   for now — the ERP side is built and tested against a fake receiver.
+   for now ΓÇö the ERP side is built and tested against a fake receiver.
 3. **Events**: stage 1 `lead.created` (n8n notifies the sales admin);
    stage 2 `invoice.issued`, `receipt.recorded`, `license.due`,
    `service_ticket.updated`; one outbox with send log, manual retry and an
    event id the receiver dedupes on.
-4. **AI in scope (stage 2), logic in the ERP**: WAHA → n8n → an ERP endpoint
+4. **AI in scope (stage 2), logic in the ERP**: WAHA ΓåÆ n8n ΓåÆ an ERP endpoint
    that reads the FAQ and published catalog, asks the AI, answers or hands
    off, and logs the conversation; n8n only relays. **AI provider not chosen
    yet**: the ERP gets a provider-neutral port; with no provider configured
    every message is handed off to an admin.
 5. **Routing (2026-11-07, refines 4)**: WAHA runs separately from the ERP.
-   Customer chat goes WAHA → the ERP's inbound webhook directly (HMAC
+   Customer chat goes WAHA ΓåÆ the ERP's inbound webhook directly (HMAC
    verified, deduped on the WhatsApp message id, answered at once and
    processed on the BullMQ queue), and replies go back through a WAHA
-   adapter. n8n is used for the business events (the outbox): ERP → n8n →
+   adapter. n8n is used for the business events (the outbox): ERP ΓåÆ n8n ΓåÆ
    WAHA / email.
 
-### 4a — website catalog API (implemented 2026-11-07)
+### 4a ΓÇö website catalog API (implemented 2026-11-07)
 
 - `docs/database/docs.dbml` MODULE Catalog: header (item master moved to
   inventory; scaffold target-only) + new `catalog.web_listings`
-  (company-wide); `validate-dbml.ts` → OK. Drizzle
+  (company-wide); `validate-dbml.ts` ΓåÆ OK. Drizzle
   `drizzle/schemas/catalog.schema.ts`; migration
   `20261107092348_catalog_web_listings` (generated, inspected, applied).
 - Inventory contract `ItemCatalogService` (`ITEM_CATALOG_SERVICE_TOKEN`:
-  live items with category, available stock over every warehouse —
-  new `BalanceRepository.availableByItems` —, photo URL); test doubles of
+  live items with category, available stock over every warehouse ΓÇö
+  new `BalanceRepository.availableByItems` ΓÇö, photo URL); test doubles of
   the balance repository extended.
 - Module `src/app/catalog`: admin `/catalog/listings` (`catalog:read |
   create | update | publish | archive`; sales manager gains `catalog`,
@@ -1219,21 +2995,21 @@ Owner decisions (2026-11-07):
   (disabled afterwards): no key 401, hidden product 404, products / product
   / categories / facets / stock / pricing / search / cart as expected.
 
-### 4b — ERP events to n8n: the outbox (implemented 2026-11-07)
+### 4b ΓÇö ERP events to n8n: the outbox (implemented 2026-11-07)
 
 - `docs/database/docs.dbml` MODULE Automation: header note (n8n is the
   workflow engine; the ERP keeps only the outbox) and
   `automation.outbox_messages` rewritten company-wide (topic, aggregate,
   payload, status `pending | published | failed`, attempts, last response);
   `bun docs/database/gen-logical-references.ts` then
-  `bun docs/database/validate-dbml.ts` → OK. Drizzle
+  `bun docs/database/validate-dbml.ts` ΓåÆ OK. Drizzle
   `drizzle/schemas/automation.schema.ts`; migration
   `20261107093321_automation_outbox` (generated, inspected, applied with
   `NODE_ENV=development bun run drizzle:migrate`).
 - Module `src/app/automation`: `OutboxService.publish` writes the event (row
   id = event id n8n dedupes on) and queues it on BullMQ `automation-outbox`
   (5 attempts, exponential backoff from 30 s); it never throws into the
-  business action — a queue outage leaves the event `pending` for a manual
+  business action ΓÇö a queue outage leaves the event `pending` for a manual
   send. Adapter `adapters/n8n-webhook.ts` posts the envelope with
   `X-Erp-Event-Id`, `X-Erp-Event-Type`, `X-Erp-Timestamp` and
   `X-Erp-Signature: sha256=<HMAC of "timestamp.body">`, 10 s timeout, never
@@ -1247,30 +3023,30 @@ Owner decisions (2026-11-07):
   `/:id/retry` (`automation:execute`); admin role gains `automation`. Web
   `/integrations/webhooks` (log, filters, "Send now", not-configured alert);
   locale keys `integrations:outbox.*` en/id.
-- Verification: `NODE_ENV=test bun test` (apps/backend) → 694 pass (new
+- Verification: `NODE_ENV=test bun test` (apps/backend) ΓåÆ 694 pass (new
   `outbox.service.test.ts` 5, `lead.service.test.ts` + 1); `bun run
   typecheck` / `bun run lint` clean; locales 70 pass; web build OK. E2E
   against a local fake receiver (HMAC checked, first call 503, dedupe on
   event id; temporary `.env` entries removed afterwards): lead with no
-  webhook → `pending` "not configured"; lead with webhook → 503 → BullMQ
-  retry → `published` after 2 attempts; manual send of the pending one →
+  webhook ΓåÆ `pending` "not configured"; lead with webhook ΓåÆ 503 ΓåÆ BullMQ
+  retry ΓåÆ `published` after 2 attempts; manual send of the pending one ΓåÆ
   `published`; resending a published event sends nothing; screenshot of the
   log screen checked. Note: two stale dev stacks were running at once and
-  answered with an old env — stop ports 3000/5173/5174 before restarting.
+  answered with an old env ΓÇö stop ports 3000/5173/5174 before restarting.
 
-### 4c — stage 2 events to n8n (implemented 2026-11-07)
+### 4c ΓÇö stage 2 events to n8n (implemented 2026-11-07)
 
 - `docs/database/docs.dbml`: `automation.outbox_messages.dedupe_key`
   (varchar 200, unique) for once-per-fact events; gen-logical-references +
-  validate-dbml → OK. Migration `20261107094748_outbox_dedupe_key`
+  validate-dbml ΓåÆ OK. Migration `20261107094748_outbox_dedupe_key`
   (generated, inspected: one column + unique index; applied).
   `OutboxService.publish(..., { dedupeKey })` skips a repeated key
   (`onConflictDoNothing`), nothing queued.
 - Publishers (payload builders are pure utils): Finance `invoice.issued`
-  (on issue) and `receipt.recorded` (with the invoice after the payment) —
+  (on issue) and `receipt.recorded` (with the invoice after the payment) ΓÇö
   `finance/utils/finance-events.ts`; After-sales `service_ticket.updated` on
   every change (`created / assigned / started / resolved / reopened /
-  closed`, customer contact via the CRM contract) —
+  closed`, customer contact via the CRM contract) ΓÇö
   `aftersales/utils/ticket-event.ts`; Licensing `license.due` from
   `LicensingService.publishDueNotices` (thresholds 30 / 7 days / ended in
   grace, `dueNoticeThreshold` in `utils/license.ts`; dedupe key
@@ -1283,30 +3059,30 @@ Owner decisions (2026-11-07):
 - Event contract for whoever builds the n8n flows:
   `docs/architecture/modules/notification.md` (rewritten; the old NestJS
   text was stale).
-- Verification: `NODE_ENV=test bun test` (apps/backend) → 697 pass (new:
+- Verification: `NODE_ENV=test bun test` (apps/backend) ΓåÆ 697 pass (new:
   outbox dedupe, `license.due` thresholds + once-per-threshold, event
   assertions in invoice and ticket tests); `bun run typecheck` /
   `bun run lint` clean. E2E (dev DB, fake receiver checking the HMAC,
   temporary `.env` entries with `SCHEDULER_ENABLED=true` and a per-minute
   cron, all removed afterwards; the temporary job scheduler removed from
-  Redis): customer → quotation → approval → sales order → invoice issued →
-  receipt → ticket → license contract ending in 10 days; the receiver got
+  Redis): customer ΓåÆ quotation ΓåÆ approval ΓåÆ sales order ΓåÆ invoice issued ΓåÆ
+  receipt ΓåÆ ticket ΓåÆ license contract ending in 10 days; the receiver got
   `invoice.issued`, `receipt.recorded` (status `partially_paid`),
   `service_ticket.updated` (`created`) and one `license.due` (threshold
   30) across several scheduler runs, all signed and `published`. E2E data
   (customer `E2E-4C` and its documents) stays in the dev database.
 
-### 4d — WhatsApp assistant (implemented 2026-11-07)
+### 4d ΓÇö WhatsApp assistant (implemented 2026-11-07)
 
 Gate 1: `docs.dbml` MODULE Automation (no conversation/FAQ tables existed;
 `notifications` / `notification_templates` stay target-only because n8n
-sends the messages), `module-ownership.md` §21 (automation owns
+sends the messages), `module-ownership.md` ┬º21 (automation owns
 notifications/integrations; queues stay in the Redis worker), M04 plan
 stage 2 + controls (AI cannot discount or transact, enforced by what it can
 call; inbound webhooks verified; secrets in server config). Skipped
 `implementation-phases.md` (no dependency on an unlanded step).
 
-Gate 2 (manual fallback; `grilling` is not installed) — answers:
+Gate 2 (manual fallback; `grilling` is not installed) ΓÇö answers:
 - Ownership: `automation` schema (this module), tables `faq_entries`,
   `whatsapp_conversations`, `whatsapp_messages`; catalog data through the
   catalog contract (`CatalogService.matchProducts`), never its tables.
@@ -1327,11 +3103,11 @@ Gate 2 (manual fallback; `grilling` is not installed) — answers:
   lead/customer linking, OTP delivery.
 
 Built:
-- `docs.dbml` (3 tables + 2 intra-module refs) → gen-logical-references +
+- `docs.dbml` (3 tables + 2 intra-module refs) ΓåÆ gen-logical-references +
   validate-dbml OK; Drizzle in `automation.schema.ts`; migration
   `20261107095923_whatsapp_assistant` (generated, inspected, applied).
 - `src/app/automation`: `WhatsappService` (receive, send, handoff, inbox),
-  `AssistantService` (guards → AI → re-check), `FaqService`;
+  `AssistantService` (guards ΓåÆ AI ΓåÆ re-check), `FaqService`;
   `adapters/waha.ts` (sendText), `adapters/openai-compatible.ts` (optional
   model, text only); `utils/assistant.ts` (HMAC-SHA512 check, WAHA parsing,
   restricted / human patterns, FAQ ranking, holding replies); queue
@@ -1342,7 +3118,7 @@ Built:
   `AI_MODEL` (names in `.env.example`).
 - Permissions: statement `whatsapp: read | reply | manage_faq`; admin all,
   sales manager + customer service read/reply, marketing read/FAQ;
-  `packages/common` rebuilt; `bun scripts/refresh-role-grants.ts` → 5 roles.
+  `packages/common` rebuilt; `bun scripts/refresh-role-grants.ts` ΓåÆ 5 roles.
 - Web: `/integrations/whatsapp-ai` (status alerts, tabs with counts,
   search), `/$conversationId` (log, admin reply, resend, hand back, close),
   `/faq` (CRUD); locale keys en/id; the dead "Notifications" nav item
@@ -1353,12 +3129,12 @@ Built:
   `bun run typecheck` / `bun run lint` clean (no new warnings), web build
   OK, locales 70 pass. E2E with temporary `.env` entries (removed), a fake
   WAHA and a fake OpenAI-compatible model: FAQ created by marketing
-  (customer service gets 403); FAQ question → assistant reply sent through
-  WAHA with the FAQ in the model's context; the same webhook twice → one
-  reply; bad signature → 401; discount request → refusal + handoff
-  `restricted`, model not called; off-FAQ question → handoff `not_found`;
+  (customer service gets 403); FAQ question ΓåÆ assistant reply sent through
+  WAHA with the FAQ in the model's context; the same webhook twice ΓåÆ one
+  reply; bad signature ΓåÆ 401; discount request ΓåÆ refusal + handoff
+  `restricted`, model not called; off-FAQ question ΓåÆ handoff `not_found`;
   admin reply sent and the chat assigned; two `whatsapp.handoff` outbox
-  events; sales → 403 on the inbox; screenshots of list, chat and FAQ
+  events; sales ΓåÆ 403 on the inbox; screenshots of list, chat and FAQ
   pages checked. E2E chats and FAQ entries stay in the dev database.
 - Not verified: a real WAHA instance, a real AI provider, n8n flows.
 
@@ -1369,6 +3145,822 @@ Built:
 > to the `erp` repository, so a reader on an older branch sees the docs before
 > the code. Nothing here claims a commit that does not exist on that branch.
 
+## 2026-11-15 - ERP-0060 (PR #102) brought onto main: renumbered, migration regenerated after M08
+
+`origin/main` (`41e3a96`, with the M08 merge and its migration
+`20261114173050_lush_darkstar`) was merged into
+`feat/m05-purchase-requests`. `progress.md` kept both sides;
+`logical-references.md` was regenerated.
+
+- **Renumbered ERP-0053 ΓåÆ ERP-0060.** Main gave ERP-0053 to M08 and
+  ERP-0053ΓÇª0059 to `plans/erp-0051-follow-ups.md` in parallel. ERP-0060 is
+  the first number free on main, every remote branch and the open PRs.
+- **Migration regenerated.** The M05 migration had been generated on the
+  same parent snapshot as M08's (`create_sales_schema`), so the two would
+  collide in drizzle's chain. It was removed and generated again after M08:
+  `20261114183120_erp0060_purchase_requests`, the same DDL.
+
+**Verification**
+- `validate-dbml.ts`: OK. `bun run typecheck`: 4/4.
+- Backend `bun test`: 1027 pass, 4 fail (the known `Bun.Image` tests).
+  Locales 90; web-admin 100.
+- Fresh disposable `ims_erp_m05b`: migrate applied the 20 folders;
+  `drizzle-kit check` printed "Everything's fine"; development seed.
+- PR ΓåÆ PO API e2e: **32/32**.
+
+## 2026-11-15 - ERP-0060 M05 purchase requests (PR ΓåÆ PO by lines)
+
+> Renumbered 2026-11-15 from ERP-0053: main assigned ERP-0053 to the M08 merge
+> and ERP-0053ΓÇª0059 in `plans/erp-0051-follow-ups.md` in parallel; ERP-0060 is the
+> first free number on main, every remote branch and the open PRs.
+
+Owner's choice for the next M05 slice, made while #97ΓÇô#100 wait for review.
+Branch `feat/m05-purchase-requests` (**PR #102**), from `origin/main` (`2b28fc4`, with the
+squashed migration baseline of ADR-0019 / ERP-0052).
+
+**Gate 1.**
+- `docs.dbml` MODULE Procurement + Inventory items, read.
+  `module-ownership.md`, `integrity-and-consistency.md` and
+  `data-dictionary.md` (codes, money, quantity) were also read.
+  `implementation-phases.md` was skipped: no pending step is involved.
+- The PR tables in `docs.dbml` were the old scaffold:
+  - tenant-scoped;
+  - `catalog.items` / `catalog.units` refs, although the item master is now
+    `inventory.items` (OPEN-1);
+  - `department_id` / `project_id` cross-module references;
+  - `requested_by NOT NULL`, against ADR-0014;
+  - no link to purchase orders.
+- They were rewritten **before** the Drizzle schema.
+
+**Gate 2.** The owner answered four questions; all four recommended options
+were chosen:
+- lines split across POs;
+- free-text lines allowed and mapped on the PO;
+- one-level approval;
+- company-wide.
+
+The rest was resolved from existing rules:
+- **Ownership:** Procurement.
+- **Tenant:** company-wide; `organization_id` is a nullable informational
+  logical reference.
+- **Soft delete:** `deleted_at` on both tables.
+- **Column types:** money is bigint minor units, quantity is
+  `numeric(18,3)`, dates are Jakarta `date`.
+- **Cross-module references:** `requested_by`, `approved_by`,
+  `cancelled_by`, `organization_id`, `item_id`, all nullable logical
+  references. The intra-module FK is `purchase_order_items.purchase_request_item_id`.
+- **Status vocabulary:** `draft | submitted | approved | ordered | cancelled`.
+- **Rejection** returns the request to draft (same as POs).
+- **Permissions:** the existing catalog (`purchase_request:*`), unchanged.
+
+**Change**
+- **Schema and migration.**
+  - `docs.dbml` first: 2 tables rewritten, PO line column, ref and index.
+    `bun docs/database/gen-logical-references.ts` printed "521 refs across
+    41 targets"; `bun docs/database/validate-dbml.ts` printed "269 tables,
+    cross-module refs: 0, timestamp gaps: 0, OK"; Refs went from 232 to 233.
+  - Drizzle schema, then **`bun run drizzle:generate`**, which produced a
+    normal diff on the new baseline. The migration was renamed to
+    `20261114183120_erp0060_purchase_requests` and inspected: 2 `CREATE TABLE`,
+    `ALTER TABLE ... ADD COLUMN purchase_request_item_id`, indexes, and
+    2 FKs with drizzle's auto names.
+  - Numbering type `purchase_request` (`PR`), plus the web settings list and
+    locales.
+- **Backend.**
+  - `PurchaseRequestRepository` and `PurchaseRequestService`;
+    `PurchaseRequestController` at `/purchase-requests`.
+  - `repositories/request-ordering.ts`: the claim under `FOR UPDATE` and the
+    `approved Γåö ordered` sync.
+  - The PO repository's `create` / `replaceDraft` now claim request lines
+    and return `TPurchaseOrderWrite`.
+  - PO cancel syncs the requests. The PO detail shows the request per line.
+  - Errors `procurement.pr*`, en + id.
+- **Found in the browser check.** A technician (requester) gets **403 on
+  `GET /items`**: no `product:read`. Rather than widen the role catalog, a
+  narrow `GET /purchase-requests/items` (`purchase_request:create`) searches
+  active items through the `ItemService.paginate` contract and returns only
+  id / SKU / name / unit / specification / purchase price.
+- **Web.**
+  - `/procurement/purchase-requests`: list with search, status and "only
+    mine"; new / edit / detail with submit, approve, reject, cancel and
+    "Buat purchase order".
+  - PO form: "Dari permintaan pembelian" picker, prefill from
+    `?fromRequest=`, an item mapper for free-text lines, and save blocked
+    while a line is unmapped.
+  - Fixed while doing this: the PO edit form kept no request link, so saving
+    an edit would have dropped it. It now carries `purchaseRequestItemId`.
+  - Sidebar entry, breadcrumbs, en + id keys; dead-key prefixes
+    `procurement:prStatus.` and `procurement.prState.`.
+
+**Verification**
+- **Typecheck and lint.** `bun run typecheck`: 4/4 clean. `bun run lint`:
+  0 errors, no warning in the touched files.
+- **Unit tests.**
+  - Backend `bun test`: 1010 pass, 4 fail. The 4 are the known `Bun.Image` /
+    WebP tests (Bun 1.4.1 here, the repo pins 1.4.2).
+  - New `purchase-request.service.test.ts` passes 9. `procurement.service.test.ts`
+    passes 8, including the request-line claim mapping and the cancel sync.
+  - web-admin 100; locales 90.
+- **Disposable database `ims_erp_m05`.** It was created fresh.
+  `drizzle:migrate` applied the 19 baseline folders plus the new one.
+  `drizzle-kit check` printed "Everything's fine". The development seed ran
+  after a rebuild of `packages/common`, whose `dist` was stale and lacked
+  `appRoleNames`.
+- **API e2e: 32/32.**
+  - Drafting: item and free-text lines; another role or another user
+    cannot edit (403).
+  - Approval: submit numbers the request (`ΓÇª/PR/ΓÇª`); a technician cannot
+    approve; ops rejects to draft and the number is kept on resubmit; ops
+    approves.
+  - Ordering:
+    - open lines are listed;
+    - PO 1 orders the item line and the request stays approved;
+    - the same line on a second PO gets 422; the same line twice on one PO
+      gets 422 on line 2;
+    - **3 concurrent POs for one line: exactly one 201**;
+    - the request becomes `ordered` and the PO detail shows the request
+      code;
+    - an ordered request cannot be cancelled (422).
+  - Freeing lines: the owner cancels PO 2, the request goes back to
+    `approved` and the line is open again; editing PO 1 without the link
+    frees its line.
+  - Refusals: an unapproved request cannot be ordered; a cancelled request
+    cannot be ordered.
+  - Lists: `mine` and the company-wide list; search.
+  - No session: 401.
+- **Browser (Playwright, Indonesian).**
+  - Setup: the static build was served by request interception.
+  - The technician creates a request with a master item and a free-text
+    line, then submits it (`0004/PR/DEV/XI/26`).
+  - The operations manager approves it.
+  - Purchasing opens "Buat purchase order": both lines are prefilled, the
+    subject and project come from the request, the mapper shows for the
+    free-text line, and save stays disabled until it is mapped. The PO is
+    saved.
+  - The request shows "Sudah dipesan" with the PO per line.
+  - No page errors and no failing API calls.
+- **Environment note.** The first API run returned 404. Two old backend
+  processes were still holding port 3000, one of them the payment-gateway
+  backend of 2026-11-14 on `ims_erp_inv`. Both were stopped and the backend
+  was started again.
+- **`docs/database/`** was updated in this change (above).
+
+## 2026-11-15 - ERP-0020 (PR #99) brought onto main: ADR-0021, regenerated migration, nullable organization_id
+
+`origin/main` (`41e3a96`) went into `fix/m02-invoice-billing` (PR #98; only
+progress.md conflicted, kept both), and that branch went into
+`feat/m02-payment-gateway`. `logical-references.md` was regenerated.
+
+- **ADR renumbered.** The payment gateway record is now **ADR-0021**
+  (`git mv`). It was reserved in the ADR index by PR #97, and main's
+  ADR-0019 is the migration baseline. Every gateway reference was updated
+  (code comments, config schema, `.env.example`, `docs.dbml`, module docs,
+  backlog ERP-0020, features, this branch's entry); main's ADR-0019
+  references are untouched.
+- **Migration regenerated.** The hand-written
+  `20261114120000_erp0020_gateway_payments` (no snapshot) was removed, and
+  `bun run drizzle:generate` produced `20261114182643_erp0020_gateway_payments`.
+- **Fixed: my own rule violation.** `sales.gateway_payments.organization_id`
+  was `NOT NULL`, against the ADR-0014 hard rule (cross-module references are
+  nullable).
+  - Now nullable in `docs.dbml` first, then Drizzle, then the migration.
+  - The webhook treats a row without an organization as unapplied; the
+    service always sets it when opening a checkout.
+
+**Verification**
+- `validate-dbml.ts`: OK. `bun run typecheck`: 4/4.
+- Backend `bun test`: 1056 pass, 4 fail (the known `Bun.Image` tests).
+  Gateway and billing units: 39. Locales 90; web-admin 100.
+- Fresh disposable `ims_erp_gw2`: `drizzle:migrate` applied the 20 folders;
+  `drizzle-kit check` printed "Everything's fine"; development seed; an open
+  2026-11 period inserted by SQL (still no catalog permission for periods).
+- Invoice API e2e (#98): **19/19**, run three times to create invoices.
+- Gateway API e2e with the fake provider: **24/24**.
+- Concurrency: 5 identical paid webhooks gave 1 `applied` and 4
+  `duplicate`, with 1 posted receipt.
+
+## 2026-11-14 - ERP-0020 payment gateway: online payment of invoices (Xendit / SingaPay, provider neutral)
+
+Owner: "Payment gateway dibikin dinamis karna ada 2 kemungkinan menggunakan
+xendit/singapay"; customers pay after staff confirmation; no sandbox account
+yet, so build with faked responses. Branch `feat/m02-payment-gateway`,
+stacked on `fix/m02-invoice-billing` (PR #98) as **PR #99**, because the invoice page it
+extends is broken on `main` until #98 merges. Decisions: ADR-0021 (proposed).
+
+**Gate 1.** Read `docs/database/docs.dbml` (Sales, Finance, Automation,
+Commerce), `module-ownership.md` (Sales owns invoices and receipts, Finance
+owns `finance.payments`), `integrity-and-consistency.md` (FK policy,
+soft delete), `data-dictionary.md` (money and datetimes). No gateway
+transaction table existed (only `finance.payments`,
+`automation.integration_credentials` and `commerce.commerce_orders`
+`payment_status`). `logical-references.md` was regenerated; the only new
+logical reference is `requested_by` ΓåÆ auth users. `implementation-phases.md`
+was skipped: no pending step is involved.
+
+**Gate 2 (manual fallback; the `grilling` skill is not installed).**
+- **Owner:** Sales, because it owns invoices and receipts. `finance.payments`
+  is M09 and stays untouched.
+- **Tenant:** `organization_id` on every row. The webhook finds a row by its
+  id, which is the merchant reference.
+- **Soft delete:** `deleted_at`. Rows are never deleted.
+- **Money:** bigint IDR minor units. Gateways charge whole rupiah, rounded
+  up; the receipt is capped at the outstanding amount.
+- **Datetimes:** unix ms.
+- **Status vocabulary:** `pending | paid | expired | failed`.
+- **Cross-module:** none except `requested_by`.
+- **Permissions:** existing `receipt:create` / `invoice:read`.
+- **Idempotency:** row lock plus a partial unique `receipt_id`.
+- **Redirect:** never trusted.
+
+**Provider research (official docs, read 2026-11-14).**
+- **Xendit:** Invoice API `POST /v2/invoices` with Basic auth (secret key).
+  Callback authenticated by `x-callback-token`. Status `PAID` / `SETTLED` /
+  `EXPIRED`.
+- **SingaPay** (docs.singapay.id): `POST /api/v1.1/access-token/b2b`, signed
+  HMAC-SHA512 over `client_id_client_secret_YYYYMMDD`; Payment Link v2
+  `POST /api/v2.0/payment-link/{account_id}`; webhook `X-Signature`
+  HMAC-SHA512 over `METHOD:path:token:sha256(key-sorted body):timestamp`,
+  with a 5-minute window.
+- **Unverified until a sandbox exists:** the SingaPay `expired_at` format,
+  and number serialization in the signed body.
+
+**Change**
+- **Schema.**
+  - `docs.dbml` first: `sales.gateway_payments` plus two intra-module refs
+    and the Sales group.
+  - Then `bun docs/database/gen-logical-references.ts`, which printed
+    "526 refs across 41 targets, 233 intra-module refs".
+  - Then `bun docs/database/validate-dbml.ts`, which printed "269 tables,
+    cross-module refs: 0, timestamp gaps: 0, OK".
+  - Drizzle `gatewayPayments` in `sales.schema.ts`.
+  - Hand-written append-only migration
+    `20261114120000_erp0020_gateway_payments`.
+- **Config:** `paymentGateway` block, with env names in `.env.example` only
+  (`PAYMENT_GATEWAY_PROVIDER`, `..._EXPIRY_HOURS`, `..._SUCCESS_URL`,
+  `XENDIT_*`, `SINGAPAY_*`, `PAYMENT_GATEWAY_FAKE_SECRET`).
+- **Backend (sales module):**
+  - Port in `contracts/payment-gateway.contract.ts`.
+  - `adapters/` for Xendit, SingaPay and fake, plus a registry (fake is
+    never built in production).
+  - `GatewayPaymentRepository` and `GatewayPaymentService` (`open`, `list`,
+    `status`, `handleWebhook`).
+  - `GatewayPaymentController` (erp guard) and `GatewayWebhookController`
+    (public).
+  - Errors in `errors/payment-gateway.errors.ts`.
+  - `InvoiceRepository.addReceipt` can now join the caller's transaction and
+    cap the amount at the outstanding total. Existing callers are unchanged.
+- **Web:** `GatewayPaymentsCard` on the invoice page: create the link (copied
+  to the clipboard), status, expiry, copy/open, an "automatic receipt" note
+  and an "unapplied" note.
+- **Locales (en + id):** `finance:gateway.*` and the four `sales.gateway*`
+  API errors. Dead-key prefix `finance:gateway.status.`.
+
+**Verification**
+- **Typecheck and lint:**
+  - `bun run typecheck`: 4/4 clean.
+  - `bun run lint`: 0 errors, and no warning in the touched files.
+- **Unit tests:**
+  - Backend `bun test`: 960 pass, 4 fail. The 4 are the same `Bun.Image` /
+    WebP tests as before (Bun 1.4.1 here, the repo pins 1.4.2).
+  - New `test/unit/payment-gateway.test.ts`: **28 pass**. It covers the wire
+    formats with faked HTTP, the token cache, signature tampering / path /
+    token / stale timestamp, the registry, the service, and the webhook
+    outcomes.
+  - web-admin 97; locales 90.
+- **Migration:** applied with `psql -v ON_ERROR_STOP=1` to the disposable
+  `ims_erp_inv`, twice. The second run is idempotent: `IF NOT EXISTS`
+  notices only.
+  - `bun run drizzle:migrate` refuses on this database with "Conflicting
+    migrations detected" (`20261106103434_add_asset_image_url` against the
+    `20261106110000..` chain). That conflict is pre-existing on `main` and
+    unrelated to this change.
+- **API e2e: 24/24** on `ims_erp_inv` (development seed). The backend ran
+  with `PAYMENT_GATEWAY_PROVIDER=fake` and a local secret.
+  - Status: enabled.
+  - Open: 201, pending, whole-rupiah amount, link. `lastEvent` is hidden.
+  - Opening again reuses the pending checkout.
+  - Forged webhook: 401. A provider without credentials: 404. An unsupported
+    provider: 400.
+  - Paid webhook without a session: 200, `applied`. The invoice is `paid`,
+    with one posted receipt for the outstanding amount, the gateway
+    reference and the note.
+  - Replay: `duplicate`, still one receipt.
+  - The paid invoice refuses a new checkout (409).
+  - Second invoice: issue ΓåÆ open ΓåÆ `expired` webhook (`updated`) ΓåÆ void ΓåÆ
+    paid webhook ΓåÆ `unapplied`, no receipt, a note.
+  - The sales role cannot open a checkout (403). No session: 401.
+  - DB check: the receipt has a null `received_by` and is registered in
+    `document.documents`.
+- **Concurrency:** 5 identical paid webhooks sent at once gave 1 `applied`
+  and 4 `duplicate`; the invoice is `paid` with exactly 1 posted receipt.
+- **Browser (Playwright, signed in as finance, Indonesian):**
+  - Setup: the static web-admin build was served from `dist` by request
+    interception (no dev server started), with
+    `VITE_API_URL=http://localhost:3000`.
+  - The card is shown; "Buat link pembayaran" creates the link and copies
+    it to the clipboard.
+  - Pending, paid ("Kwitansi tercatat otomatis") and unapplied rows render.
+  - No page errors and no failing API calls.
+
+**Open:**
+- Live sandbox runs (no Xendit / SingaPay account yet).
+- Gateway fees and net-settlement reconciliation, and the `finance.payments`
+  row behind each receipt (M09, for programmer A).
+- The portal pay button (ERP-0022 stage C, after #97).
+
+## 2026-11-14 - M02 invoices: billing by terms, summary and void restored (ERP-0011 regression)
+
+Owner: "perbaiki aja" (programmer A to be told). Branch `fix/m02-invoice-billing`
+from `origin/main` (`a997778`).
+
+**Cause.** The merge `812f2b5` ("Sales owns invoice + receipt", PR #68) kept
+programmer A's accounting-aware Sales `InvoiceService` (free items, issue
+posts DR AR / CR revenue / CR VAT, receipts) and dropped the M02 billing use
+cases of `3072ccf` (ADR-0011 step 3d-2). The web admin still calls them, so on
+`main` the order's billing card (`GET /invoices/orders/:id/summary`), "create
+invoice" (`POST /invoices` with `term`), the invoice page (expects receipts,
+order and schedule), void (`POST /invoices/:id/void`), the issue dates and the
+list filters (`termKind` for the DP page, `search`, `overdue`) all failed or
+were ignored. The table `sales.invoices` still had every term column, so no
+schema change was needed.
+
+**Fix** (programmer A's service changed minimally):
+- `sales/utils/invoice-terms.ts` ΓÇö the pure term rules ported back (money
+  helpers from `@utils/money.util`).
+- `sales/services/invoice-billing.service.ts` (`InvoiceBillingService`):
+  `summary`, `createFromTerm` (next planned / percentage / amount incl. VAT /
+  remaining; per-order advisory lock; DP / installment / settlement; **one
+  invoice line per term** so the existing issue posting works; numbered at
+  draft like every Sales draft), `detail` (receipts in the web shape, the
+  order and its schedule of issued terms), `void` (unpaid draft or issued;
+  for an issued invoice the journal is reversed with `PostingService.reverse`,
+  the AR open item set to `void` ΓÇö amounts kept because of the
+  `outstanding = original ΓêÆ paid` check ΓÇö and the registry copy voided, all
+  in one transaction with the invoice row locked).
+- Repository: `createTermDraftLocked`, `withLockedInvoice`, list filters;
+  `hasLiveInvoices` no longer counts `cancelled` drafts.
+- Controller: summary route, `POST /invoices` takes `term` or items,
+  `GET /invoices/:id` returns the detail plus `items`, issue accepts
+  `issueDate` / `dueDate`, void route (`invoice:void`).
+- `InvoiceService.list` passes the new filters; `issue` takes optional dates.
+- Web: status `cancelled` (a cancelled draft) labelled. en/id keys for the
+  new errors (`sales.invoiceOrderUnavailable`, `sales.invoiceTerm.*`,
+  `sales.invoiceNotVoidable`) and `finance:status.cancelled`.
+
+`docs/database/` reviewed and unchanged (no table, column or reference
+touched).
+
+**Verification**
+- `bun run typecheck` 4/4; `bun run lint` 0 errors (warning counts as on
+  main; none in the touched files); backend `bun test` 932 pass / 4 fail (the
+  same `Bun.Image` tests, Bun 1.4.1 here); new
+  `invoice-billing.service.test.ts` 11 pass; web-admin 97; locales 90.
+- API e2e on the disposable `ims_erp_inv` (development seed, role accounts),
+  calling exactly what the web calls: **19/19** ΓÇö sales creates customer and
+  SPH with DP 30 / Terpasang 70, sales manager approves and creates the order;
+  billing summary (next term DP 30%); DP draft from the next term; a term above
+  what is left 422; issue with the form dates (journal posted); detail shape;
+  partial receipt; void of a partly paid invoice 409; receipt reversed; void of
+  the unpaid issued invoice with a reason; DP-list filter; search by customer
+  name; DP again after the void, then settlement; the order exactly fully
+  invoiced; an order with a live invoice cannot be cancelled. Ledger checked in
+  the DB: the invoice entry `reversed`, one `journal_reversal` entry posted, AR
+  item `void`, debits = credits.
+- Browser (Playwright, web admin on the same backend, signed in as finance):
+  order page billing card, voided invoice page (reason, struck-out reversed
+  receipt), invoices / down payments / receipts lists ΓÇö no page errors, no
+  failing API calls; the raw `status.cancelled` label found here was fixed.
+
+Opened as **PR #98** to `main` for programmer A's review.
+
+**Found for programmer A (M09, not changed here):**
+- Issuing needs the chart of accounts codes `1-1300` / `4-1000` / `2-1000`
+  (created in the test through `POST /accounts` as the accountant).
+- An **open accounting period** is required, but `POST /periods` demands
+  `accounting_period:create`, which is not in the permission catalog ΓÇö no role
+  can open a period through the API (the test DB got its period by SQL).
+
+
+## 2026-11-14 - M03 license API docs for own applications (Zudoku)
+
+Owner: M03 means license codes the ERP generates so each own application
+(gym, e-ticketing, visitor, ΓÇª) can be activated. The API itself exists on
+`main` since 2026-11-06 (ERP-0019 stage 2). This change adds the
+documentation application teams need. Branch `docs/m03-licensing-api`,
+stacked on `feat/m07-customer-portal` as **PR #100**, because `apps/api-docs` lives in
+PR #97.
+
+- `apps/api-docs/openapi/licensing.yaml`: `validate` / `activate` /
+  `deactivate`, the `elk_` bearer, 120 calls a minute, the envelope, the
+  status vocabulary (`ok`, `grace`, `expired`, `not_started`, `suspended`,
+  `terminated`, `revoked`, `unknown`, `not_activated`) and the refusal codes
+  (404 / 403 / 409). Everything is taken from `license-api.service.ts`,
+  `licensing.errors.ts` and `utils/license.ts`.
+- `pages/licensing-integration.md`: what the ERP does (application, contract,
+  API key, activations log) and what the app does (activate at setup,
+  validate on start-up and every few hours, deactivate on uninstall). It also
+  covers a stable `instanceId`, offline caching up to `graceEndsOn`, the
+  grace period, the rate limit and secrets, with TypeScript and curl
+  examples.
+- `zudoku.config.tsx`: a second API (`/licensing-api`) and an "Own
+  applications" navigation group. The introduction links the guide.
+- `api-docs-drift.test.ts`: also checks `/licensing/v1` against
+  `LicenseApiController`, and requires an operationId and a summary in both
+  specs.
+- `licensing-subscription.md`: the envelope was described as
+  `{ success, message, data }` and is now corrected. The doc links the
+  Zudoku pages.
+- No code behaviour, schema or locale changed. `docs/database/` was
+  reviewed and is unchanged.
+
+**Verification**
+- Drift test: `bun test test/unit/api-docs-drift.test.ts` passes 3/3.
+  Renaming a documented path makes it fail (2 pass / 1 fail); after the
+  revert it passes 3/3 again.
+- `bunx tsc --noEmit` (apps/backend): clean.
+- `bun run build` (apps/api-docs): 20 routes prerendered, including
+  `licensing-api` and `licensing-integration`.
+- Browser (Playwright, the static `dist` served by request interception):
+  both pages render, with no page errors.
+## 2026-11-15 - PR #97: GitGuardian findings in a unit test (no real secret)
+
+GitGuardian reported 8 "Generic Password" occurrences on PR #97, all in
+`apps/backend/test/unit/customer-portal.test.ts` (commits `dc22cdf`,
+`01c94af`). They were fake fixture passwords of the in-memory test doubles;
+no real credential was involved.
+
+- The 4 password literals are now `FAKE_PASSWORD_1..4`, generated per run
+  with `crypto.randomUUID()`, so the source holds no credential-like
+  strings.
+- The findings stay in the earlier commits. Programmer A, as the
+  GitGuardian workspace owner, should mark incidents 40062720, 40062721 and
+  40063477 as false positives (test credentials).
+- `bun test test/unit/customer-portal.test.ts`: 24 pass. `tsc --noEmit`
+  (apps/backend): clean. No code behaviour changed; `docs/database/` was
+  reviewed and is unchanged.
+
+## 2026-11-15 - ERP-0022 (PR #97) brought onto main: ADR-0020, regenerated migration, login-gate portal exception
+
+`origin/main` (`41e3a96`) merged into `feat/m07-customer-portal`. Main had
+taken ADR-0018 (investor/customer app roles, login gate) and ADR-0019
+(squashed per-schema migration baseline) in parallel (PR #101).
+
+- **ADR renumbered.** The customer portal record is now **ADR-0020**
+  (`git mv`). Only the portal's references changed: the ADR, the
+  architecture README index, `modules/customer-portal.md`, `data-model.md`,
+  the `docs.dbml` note, `website.yaml`, backlog ERP-0022, features, and this
+  branch's own progress entries. Main's ADR-0018 references are untouched.
+- **Numbering rule.** The ADR index now reserves ADR-0021 for the payment
+  gateway (PR #99) and records the rule: check main, every remote branch and
+  the open PRs before taking an ADR or ERP number.
+- **Migration regenerated.** The two hand-written folders
+  (`20261114100000` / `20261114110000`, no snapshots) were removed, and
+  `bun run drizzle:generate` produced
+  `20261114182159_erp0022_customer_portal`. It is the same DDL:
+  `auth.portal_identities` with `contact_id` / `portal_role`,
+  `aftersales.service_ticket_comments`, and the `portal` ticket channel
+  checks.
+- **Login gate.** Main's `session.create.before` rejects users without an
+  internal organization role, which would also have rejected the portal's
+  own sign-in. Main's version is kept, plus one exception
+  (`isPortalSignIn`): the request carries the portal module's nonce **and**
+  the user holds an active portal identity. Such a session gets no
+  organization, and the gate keeps refusing it on every web-admin route. The
+  old "portal user without the nonce ΓåÆ false" branch is gone: the gate
+  covers it.
+- **Other merges.**
+  - `http/plugin.ts`: guard sets `session+warehouse` (main) and `portal`
+    (this branch).
+  - User guide: the portal section is now 8.7, after main's 8.6 (M08).
+  - `logical-references.md`: regenerated.
+
+**Verification**
+- `bun docs/database/gen-logical-references.ts` and `validate-dbml.ts`: OK
+  (272 tables, 0 cross-module refs, 0 timestamp gaps).
+- Fresh disposable `ims_erp_portal2`: `drizzle:migrate` applied the 20
+  folders; `drizzle-kit check` printed "Everything's fine"; the development
+  seed ran (after rebuilding `packages/common`).
+- `bun run typecheck`: 4/4 clean. Backend `bun test`: 1043 pass, 4 fail (the
+  known `Bun.Image` tests, Bun 1.4.1 here). Locales 90; web-admin 100.
+- Portal API e2e: **50/50** on `ims_erp_portal2`, including staff sign-in
+  through the gate and "a customer login on the web-admin sign-in is
+  refused". The backend ran with `PORTAL_URL` set: invitations need it, and
+  the first run returned 503 without it.
+
+## 2026-11-14 - PR #97 opened for the customer portal
+
+`feat/m07-customer-portal` merged with `origin/main` (`a997778`, conflict
+only in this file, both sides kept), re-verified (`tsc` clean; backend 947
+pass / 4 pre-existing `Bun.Image` fails; web-admin 97; locales 90) and opened
+as **PR #97** to `main` for programmer A's review. Owner direction recorded
+for the next work: portal ordering with an ERP check, a provider-neutral
+payment gateway (Xendit / SingaPay), payroll rules left to programmer A, M03 =
+activation keys for the company's own apps.
+
+## 2026-11-14 - API reference with Zudoku (`apps/api-docs`) for the website and portal API
+
+Owner asked what the ERP gained for the portal (answered in the session: the
+portal branch's DB, modules, security, web admin and docs) and for readable
+API docs with https://zudoku.dev. Owner choices: a new workspace
+`apps/api-docs` in this repo; scope = what the website uses (`/portal/v1`
+and `/public/v1`), not the ~400 internal web-admin routes.
+
+Why a curated spec: the ERP's generated `/docs/json` lists the routes (406,
+22 portal) but has no request or response schemas, because the controllers
+validate with zod inside the handlers ΓÇö Zudoku would render empty pages.
+
+Built (branch `feat/m07-customer-portal`):
+- `apps/api-docs/openapi/website.yaml` ΓÇö OpenAPI 3.1, 26 operations
+  (23 portal incl. `/me` and ticket `confirm`, 3 public website), envelope and
+  error schemas, `portalBearer` / `websiteApiKey` security, the portal view
+  shapes (from `portal-presenter.ts`), limits and examples.
+- `apps/api-docs` (Zudoku 0.93.2, React 19): `zudoku.config.tsx`, guide pages
+  `introduction`, `authentication`, `conventions`, `website-setup`;
+  `dev` on port 3100 (3000 is the backend).
+- Drift guard `apps/backend/test/unit/api-docs-drift.test.ts`: builds the
+  portal and public-website controllers (services faked) and compares their
+  mounted routes with the spec; every operation needs an `operationId` and a
+  summary. Negative check done: renaming `/portal/v1/badges` in the spec made
+  the test fail; restored.
+- Corrections found while writing it: the envelope is `{ requestId, status,
+  message, timestamp, data }` (+ `errors`), not `{ success, message, data }`
+  as written earlier in `modules/customer-portal.md`, the gap analysis and the
+  website's `erp-routes.ts` comment ΓÇö fixed; the default response language
+  without `Accept-Language` is English (`DEFAULT_LANGUAGE = 'en'`).
+
+Verification: `bun install` (375 packages; `bun.lock` updated for zudoku);
+drift test 2 pass; YAML validated (PyYAML and `Bun.YAML`); `bun run build`
+in `apps/api-docs` ΓåÆ built, prerendered 16 routes; `bun run dev` ΓåÆ `/introduction`,
+`/api`, `/api/portal-support` 200, screenshots checked (guide page, endpoint
+page with schema, example response and cURL). The catalog API (`/public/v1/
+catalog/*`) is added to the spec once PR #84 lands. Runbook command row added.
+
+## 2026-11-14 - Customer portal: every screen checked, stage-2 screens show "Coming soon"
+
+Owner reported `PortalNotConfiguredError ΓÇª "listQuotations"` and asked to check
+the whole portal. A crawler (Playwright, signed in as the test individual)
+opened all 37 portal screens plus fake-id detail URLs: 8 answered 500 ΓÇö
+orders, tracking, payments, quotations, book service, documents,
+notifications, wishlist ΓÇö because their data comes only from stage-2
+operations. Astro renders page errors as a 500 response (they never reach the
+middleware), so the website now checks before rendering.
+
+Website repo (working tree, still uncommitted there):
+- `src/pages/coming-soon.astro` (signed-in layout, "Coming soon", back to home
+  / contact support);
+- `src/middleware.ts` `SCREEN_OPERATIONS`: a screen whose operations are not
+  in `erp-routes.ts` is rewritten to `/coming-soon`;
+  `src/services/portal/index.ts` `isConnected(operation)` (always true in
+  demo mode);
+- `src/pages/search.astro`: orders/quotations/invoices empty when not
+  connected (`unlessNotConnected`).
+
+ERP: a malformed id on a portal route answered 400, which the portal shows as
+an error page; now 404 (`PortalNotFoundError`, `common.notFound`), which the
+portal shows as "We couldn't find that". `tsc` clean;
+`customer-portal.test.ts` 24 pass.
+
+Re-crawl after restarting both dev servers: all 37 screens 200 (the 8 stage-2
+screens show "Coming soon", screenshot checked); `/projects/x`,
+`/warranty/x`, `/support/x`, `/sites/x` ΓåÆ 404 page; a real ticket detail
+200. Form actions that need unconnected operations already answer "This
+feature isn't connected yet" (unchanged).
+
+## 2026-11-14 - ERP-0022 website portal wired to the ERP and tried in a browser
+
+Owner: "lanjut menyambungkan router di repo website dulu agar bisa dicoba
+langsung". Website repo `entragate-platform` (its `master` has no commits
+yet, so nothing was committed there; changes are in its working tree):
+- `apps/customer/src/services/portal/erp-routes.ts`: the 21 built operations
+  (`refreshSession` left out on purpose: 7-day Better Auth sessions, no
+  refresh token; stage-2 operations left out).
+- `apps/customer/.env.example`: `ERP_RESPONSE_ENVELOPE=data`; a local
+  gitignored `.env` (`ERP_API_BASE_URL=http://localhost:3000`,
+  `PORTAL_DATA_SOURCE=erp`).
+- `apps/customer/src/services/errors.ts` `unlessNotConnected`; home
+  (orders, invoices, quotations) and profile (counters) use it ΓÇö before, both
+  pages answered 500 because they call stage-2 operations.
+
+ERP fix found by the walk-through: the portal sends tickets as multipart and
+Elysia already parses the `payload` field into an object, so
+`POST /portal/v1/tickets` answered 400. `formPayload` moved to
+`src/app/portal/utils/form-payload.ts` and accepts a parsed object; unit test
+added (`customer-portal.test.ts` ΓåÆ 24 pass); `bunx tsc --noEmit` clean.
+
+Browser walk-through (Playwright with the installed Chromium; ERP backend on
+the disposable `ims_erp_portal`, `PORTAL_URL=http://localhost:4322`; portal
+`astro dev --background` on port 4322 because 4321 was taken): all steps
+pass ΓÇö individual sign-up ΓåÆ `/verify-email` ΓåÆ code (read from the backend's
+"mail disabled" log: SMTP is off) ΓåÆ signed in ΓåÆ `/`, `/projects`,
+`/warranty`, `/support` 200 ΓåÆ new ticket ΓåÆ `/support/submitted`, listed as
+`0005/TKT/IMS/XI/26` with the message ΓåÆ `/profile` 200 ΓåÆ `POST /logout` ΓåÆ
+sign in again with the password. Screenshots checked (home, support).
+`astro check` cannot run in the website repo (it does not support the
+installed TypeScript 7) ΓÇö pre-existing tooling gap there.
+Seen, not ours: the support page shows static copy ("average first reply 12
+min", "SLA reply < 4 hours") and the desktop home quick-actions card overflows.
+
+Next executable task: owner tries the portal (`docs/architecture/modules/
+customer-portal.md`), then the PR for `feat/m07-customer-portal`; the
+website repo needs its first commit by its owner.
+
+## 2026-11-14 - ERP-0022 portal logins per contact with roles, individual sign-up (D1/D2)
+
+Owner decisions after the gap analysis below (`docs/plan/plans/website-integration.md`):
+**D1** individuals sign up themselves, businesses are invited; **D2** one login
+per person (customer contact) with a role `owner | approver | finance |
+viewer`, owners manage colleagues, and the web admin refuses customer logins.
+The owner asked for a recommendation on D2 because "the current login is for
+internal users": explained that customers use the same Better Auth (AGENTS.md:
+no second auth system) but are separated by `portal_identities` (never
+organization members, only `/portal/v1`), then the owner chose the
+recommendation. Recorded in ADR-0022 (decision 2 rewritten, 2a added) and the
+gap analysis.
+
+Gate 1: `docs.dbml` Identity (`portal_identities`) and CRM
+(`customer_contacts`, `customers`), `logical-references.md` format (the
+generator only reads the standard note), `module-ownership.md` (CRM owns
+contacts ΓåÆ contract methods). Gate 2 (manual, on top of the stage-1 record):
+tenant company-wide; new cross-module reference `contact_id` ΓåÆ CRM, nullable,
+checked through `CustomerService.getContact`; role vocabulary as above;
+self-sign-up customer code `PRT-<base36 time><4 hex>` generated in CRM (no
+`code_number` change ΓÇö that module is programmer A's); pending sign-ups live
+in Redis (code hashed, 10 min, 5 attempts); an unverified user without an
+identity can never sign in.
+
+**docs.dbml first**: `contact_id` (standard logical-reference note),
+`portal_role` + check, unique live index moved to `(portal_type,
+contact_id)`, `created_by` note. `gen-logical-references.ts` ΓåÆ `525 refs across
+41 targets, 232 intra-module refs`; `validate-dbml.ts` ΓåÆ OK.
+
+**Built** (branch `feat/m07-customer-portal`): Drizzle `portal.schema.ts`
+(+ `contactId`, `portalRole`), append-only migration
+`20261114110000_erp0022_portal_contacts_roles`; CRM
+`CustomerService.createFromPortalSignup`; Identity `PortalAccountService`
+rewritten (per-contact invitations with role, `listForCustomer`, `members`,
+`inviteMember`, `removeMember`, `startSignup`, `resendSignupCode`,
+`verifySignup`), adapter `setPassword` / `markEmailVerified`, mail
+`sendSignupCode` + `renderPortalSignupCodeEmail` + new `CodeEmail`
+(`packages/react-email`); `session.create.before` refuses sessions of portal
+users without the portal sign-in nonce (`providers/better-auth/portal-signin.ts`);
+portal `register`, `verify-email`, `verify-email/resend`, `GET /account`,
+`POST/DELETE /account/members`; web admin card lists all logins with roles and
+invites with a role. en/id keys (api, crm, email; `ALLOWED`/dynamic prefixes
+updated). Docs: ADR-0022, `modules/customer-portal.md`, gap analysis
+(22/51 operations), `data-model.md`, user guide 8.8 (en, id).
+
+**Verification**
+- `bun run typecheck` ΓåÆ 4/4 clean; `bun run lint` ΓåÆ 0 errors, warning counts
+  unchanged (none in the touched files).
+- Backend `bun test` ΓåÆ 942 pass, 4 fail (the same `Bun.Image` tests, Bun 1.4.1
+  on this machine); `customer-portal.test.ts` 23 pass (accounts, members,
+  sign-up incl. 5 wrong codes, sign-in, tickets, projects, devices, guard);
+  web-admin 74 pass; locales 90 pass; react-email 6 pass (new code email test).
+- Disposable `ims_erp_portal`: `migrate-reset.ts` ΓåÆ complete; `drizzle-kit
+  push --explain` ΓåÆ only main's `sales.receipts` FK drift.
+- E2E (backend alone, `PORTAL_URL` on the process, `.env` untouched): **50/50**
+  ΓÇö stage-1 checks plus: account lists 1 owner; owner invites finance (201,
+  invited); staff sees 2 logins; finance signs in and gets 403 inviting; owner
+  removing self 422; owner removes finance ΓåÆ finance token 401; **the customer's
+  password on the web admin sign-in is refused with no session cookie**;
+  business sign-up 403; individual sign-up 200; unverified sign-in 401; wrong
+  code 400; right code signs in as `individual`; staff sees the new `PRT-`
+  individual customer; later password sign-in 200; signing up again with the
+  verified email answers 200 and leaves the password unchanged. SMTP is off on
+  this stack, so the code was read from the backend's "mail disabled" log line
+  (same behaviour as the existing reset/invitation mails).
+- Not done: website adapter wiring; browser check of the web admin card.
+
+`docs/database/` updated (above). Next executable task: owner review, then the
+PR for `feat/m07-customer-portal`; then wire the website routes.
+
+## 2026-11-14 - Website / customer portal integration gap analysis (ERP-0022, ERP-0020)
+
+Owner asked whether the portal is "full API" and whether the website repo's
+needs were analysed. Honest answer: stage 1 covers 16 of the 51 `PortalSource`
+operations, and the website repo had only been read for the portal contract.
+Docs only, on `feat/m07-customer-portal`: `docs/plan/plans/website-integration.md`
+maps every operation of `PortalSource` (51), `CatalogSource` (9, all on PR
+#84) and `WebsiteSource` (10, 3 on main) to an ERP route, status and owner
+module, and lists 11 owner decisions. Two conflict with the 2026-11-14
+choices and would change the portal schema before its PR: **D1** the
+website assumes open sign-up (and checkout needs a portal sign-in), **D2**
+it assumes several members per company. Also found: the website's
+signed-in RFQ/cart/checkout calls send only the customer token, so those
+ERP routes must be `portal`-guarded. Counts re-checked from the interfaces.
+No code changed; `docs/database/` reviewed and unchanged.
+
+Next executable task: owner decides D1 and D2 (then adjust the branch), the
+rest of the decisions as each step starts (order in the document).
+
+## 2026-11-14 - ERP-0022 customer portal, stage 1 (M07 T26 + M12 T25 account part)
+
+Branch `feat/m07-customer-portal` from `origin/main` (`f64788d`). Owner asked
+to leave the #83/#84 conflicts to programmer A and continue with another
+module; picked the customer portal. ERP-0022 was listed under owner A while
+the module plans give T25/T26 to B: the owner chose to take it and inform
+programmer A (backlog owner updated with that note).
+
+**Gate 1** (`erp-database-schema` order): `docs.dbml` module headers, Identity
+(`auth.portal_identities`), CRM (`crm.customers.portal_identity_id`),
+Projects, After-Sales (`service_tickets`, `service_ticket_comments`),
+Ticketing (`ticket.*`, target only); `module-ownership.md` (Identity contract
+`resolvePortalIdentity`), `integrity-and-consistency.md`,
+`data-dictionary.md`, `logical-references.md`. Skipped
+`implementation-phases.md` (no dependency on an unlanded step). Also read the
+website repo's `PortalSource` contract (`entragate-platform/packages/
+api-client/src/services/portal.ts`) and `apps/customer` reset page.
+
+**Gate 2** (owner, 2026-11-14; `grilling` skill not installed, manual pass):
+portal UI = the website repo (ERP gives the API); login = staff invitation +
+password set from the email (no sign-up); one login per customer; portal
+tickets = after-sales service tickets (not the `ticket.*` module); stage 1 =
+account + projects + tickets + warranty. Resolved by me and recorded in
+ADR-0022: a portal user is never an organization member (the unused
+`customer` role stays unused); no Better Auth `bearer` plugin (token valid
+only on `/portal/v1`); lockout in Redis (5 failures, 15 min); separate portal
+DTOs (no money, no internal notes); responses in the portal's `PortalSource`
+shapes (labels id/en). Tenant: company-wide like the tickets/projects
+(ADR-0011/0012), no `organization_id`. Soft delete: revoked identities get
+`deleted_at`; comments carry `deleted_at`. Status vocabularies: identity
+`active|suspended|revoked`; ticket channel + confirmation channel gain
+`portal`; comment `visibility internal|customer`, `author_type
+staff|customer`. Cross-module links: `portal_identities.linked_entity_id`
+(ΓåÆ CRM, nullable, checked by `CustomerService.getActiveCustomer`).
+`crm.customers.portal_identity_id` is left unused (the identity row is the
+source of truth; writing it would be a second cross-module write).
+
+**docs.dbml first**: `auth.portal_identities` (nullable logical reference,
+`created_by`, `last_login_at`, unique live indexes), `aftersales.
+service_ticket_comments` rewritten company-wide (+ `author_type`,
+`author_name`, FK to the ticket), ticket channel checks + `portal`.
+`bun docs/database/gen-logical-references.ts` ΓåÆ `524 refs across 41 targets,
+232 intra-module refs`; `bun docs/database/validate-dbml.ts` ΓåÆ `cross-module
+refs: 0, timestamp gaps: 0, OK`.
+
+**Built**
+- Drizzle `drizzle/schemas/portal.schema.ts` (auth extension) and
+  `service_ticket_comments`; hand-written migration
+  `20261114100000_erp0022_customer_portal` (no snapshot, main's convention).
+- Identity (`src/app/user`): `PortalAccountService` (invite / resend /
+  revoke / `resolveCustomer` / `requestPasswordReset`), repository, Better
+  Auth adapter (internal adapter; the token is Better Auth's own
+  `reset-password:` verification), queue mailer + `renderPortalInvitationEmail`,
+  `/admin/portal-accounts`, permission `portal_account:read|invite|revoke`
+  (admin, sales manager, customer service; owner via all). Config `PORTAL_URL`
+  (trusted origin).
+- Authorization: `src/authorization/portal-auth.ts` (`portal` macro) and
+  `domainPlugin({ guards: 'portal' })`.
+- Portal module `src/app/portal` (no tables): sign-in/logout/reset/change
+  password with lockout, `/portal/v1` me, home, badges, projects, tickets
+  (create, messages, confirm), products/warranty; pure presenter to the
+  `PortalSource` shapes.
+- Projects: `ProjectPortalService` (+ `listByCustomer`). After-sales:
+  `ServiceTicketService` portal + thread methods, comment repository,
+  `/service-tickets/:id/comments`, `WarrantyService.listForCustomer /
+  getForCustomer`.
+- Web admin: customer page **Customer portal** card; ticket page **Messages**
+  thread; `portal` channel shown, not selectable by staff. en/id keys (crm,
+  projects, api, email).
+- Docs: ADR-0022, `modules/customer-portal.md` (route map for the website's
+  `PortalRoutes`), `data-model.md`, module and ADR indexes, user guide 8.4 +
+  8.8 (en, id), `.env.example`.
+
+**Verification**
+- Baseline on `origin/main` before any change: backend `bun test` ΓåÆ 919 pass,
+  4 fail. The 4 (`toWebp` ├ù3, `CompanyService images`) need `Bun.Image`
+  from Bun 1.4.2; this machine runs 1.4.1 (`bun upgrade` failed: ENOENT) ΓÇö
+  environment, not code. `tsc` needed `packages/common` rebuilt first
+  (`bun run build`), then clean.
+- After: `bun run typecheck` ΓåÆ clean (all workspaces); `bun run lint` ΓåÆ 0
+  errors, no warnings in the new files; backend `bun test` ΓåÆ 936 pass, 4 fail
+  (the same 4); `test/unit/customer-portal.test.ts` 17 pass (rejections
+  awaited); locales `bun test` ΓåÆ 90 pass.
+- Disposable DB `ims_erp_portal`: `bun run database/migrate-reset.ts` ΓåÆ
+  migrations and seed complete; `drizzle-kit push --explain` ΓåÆ only main's
+  pre-existing `sales.receipts` FK drift, no portal/aftersales difference.
+- E2E (backend alone on `ims_erp_portal`, `PORTAL_URL` set on the process,
+  `.env` untouched; script outside the repo): **32/32** ΓÇö invite 201, second
+  invite 409, staff email 409, token from Better Auth's Redis storage, short
+  password 400, first password set, token reuse 400, register 403, staff
+  login on the portal 401, portal login with the `PortalSource` shape, `/me`,
+  portal token on an ERP route refused, staff cookie on a portal route 401,
+  projects `[]`, portal ticket 201 (channel `portal`), staff internal note +
+  reply, portal sees the reply but not the note (`awaiting_you`), customer
+  message, staff thread 3, list/badges, another customer's ticket 404 (read
+  and write), confirm before resolved 422 then closed via portal, wrong
+  current password 400, lockout 423, revoke ΓåÆ token 401. The first runs
+  failed on test setup only (untrusted origin in the script, stale
+  `packages/common` dist, empty company profile needed for numbering ΓÇö a
+  pre-existing rule, token in Redis not in the table); one run locked the
+  admin's email on the portal after 5 runs, which is the lockout working.
+- Not done: the website's `PortalRoutes` / adapter wiring (website repo);
+  a browser check of the two web-admin cards; UAT M07-09 (UAT scripts live
+  on `feat/m04-on-main` and will move from N/T when both land).
+
+`docs/database/` updated (above). Next executable task: owner review and PR
+for `feat/m07-customer-portal`; then wire the website adapter routes
+(`modules/customer-portal.md`) and run the portal against this API.
 ## 2026-11-15 - ERP-0054 `docs.dbml` vs Drizzle parity (branch `docs/dbml-schema-parity`)
 
 Question that started it: does `apps/backend/drizzle/schemas/` match
@@ -1452,28 +4044,28 @@ below.
 
 **Conflicts resolved (7).**
 
-- `apps/backend/database/seeders/index.ts` — union: `seedHrEmployees` →
-  `seedLeaveTypes` → `seedNotificationTemplates` → `seedNotificationDemo`.
-- `apps/backend/src/app/app.ts` — both `documentModule` and `hrModule` mounted.
-- `apps/backend/src/app/hr/services/employee.service.ts` — took main's shape
+- `apps/backend/database/seeders/index.ts` ΓÇö union: `seedHrEmployees` ΓåÆ
+  `seedLeaveTypes` ΓåÆ `seedNotificationTemplates` ΓåÆ `seedNotificationDemo`.
+- `apps/backend/src/app/app.ts` ΓÇö both `documentModule` and `hrModule` mounted.
+- `apps/backend/src/app/hr/services/employee.service.ts` ΓÇö took main's shape
   (`toRow`/`withPersonal` mappers, `EmployeeInviteService`,
   `CodeNumberService`, `IUserPersonalFieldsPort`) and re-applied the M08 NIK
   masking on top: `canReadPrivate` on the context, `maskTail` on read/list/
   update responses, and the `nationalId` write gate on update.
-- `apps/web-admin/src/components/sidebar/nav-config.ts` — `overtime` gated by
+- `apps/web-admin/src/components/sidebar/nav-config.ts` ΓÇö `overtime` gated by
   `overtime.read`, `payroll` by `payroll.read`, M08 `hrTasks` by `task.read`.
-- `docs/database/logical-references.md` — took main's file and regenerated.
-- `docs/plan/backlog.md`, `docs/plan/progress.md` — main entries first, the
+- `docs/database/logical-references.md` ΓÇö took main's file and regenerated.
+- `docs/plan/backlog.md`, `docs/plan/progress.md` ΓÇö main entries first, the
   M08 2026-11-12 entries kept after the header.
 
 **Migrations.** Both orphan M08 folders (`20261112000000_erp0034_hr_employees`,
 `20261112100000_m08_hr_records`) were deleted; `bun run drizzle:generate` on the
 squashed 19-folder baseline produced `20261114173050_lush_darkstar`
-(`migration.sql` + `snapshot.json`, `prevIds` = `f3e62ffa…` sales snapshot).
+(`migration.sql` + `snapshot.json`, `prevIds` = `f3e62ffaΓÇª` sales snapshot).
 The SQL was read: 7 tables (`attendance_records`, `bank_accounts`,
 `employee_tasks`, `leave_requests`, `leave_types`, `overtime_requests`,
 `salary_summaries`) with their checks, partial unique indexes, and
-`ON DELETE RESTRICT` FKs. `bunx --bun drizzle-kit check` → `Everything's fine`.
+`ON DELETE RESTRICT` FKs. `bunx --bun drizzle-kit check` ΓåÆ `Everything's fine`.
 
 **Semantics.** `GLOBAL_ADMIN_ROLE` string compares became `hasAppRole(...)`
 (`hr/controllers/hr-context.ts`, comma-joined `user.role`, ADR-0018) and
@@ -1483,32 +4075,32 @@ Both employee pickers are kept (`/hr/employees/picker` from main and
 `/hr/active-employees` from M08).
 
 **Deliberate deviation.** M08's `restrict` FK deletes were kept over main's
-`cascade` for `attendance_records`, `leave_requests` and `bank_accounts` —
+`cascade` for `attendance_records`, `leave_requests` and `bank_accounts` ΓÇö
 records must not disappear with an employee.
 
 **Renumbering.** M08's backlog row is `ERP-0053` (main assigned `ERP-0040` to
 the organization info dashboard); `progress.md`/`data-model.md`/`features.md`
-M08 references are `ERP-0059` to avoid main's reserved `ERP-0053`…`ERP-0058`.
+M08 references are `ERP-0059` to avoid main's reserved `ERP-0053`ΓÇª`ERP-0058`.
 
 **Gates (executed here).**
 
-- `bun run typecheck` → 4/4 tasks successful.
-- `bun run lint` → 5/5 tasks successful (warnings only; none new in `hr/`).
-- `bun run test` → backend 1021 pass, web-admin 100 pass, locales 90 pass,
+- `bun run typecheck` ΓåÆ 4/4 tasks successful.
+- `bun run lint` ΓåÆ 5/5 tasks successful (warnings only; none new in `hr/`).
+- `bun run test` ΓåÆ backend 1021 pass, web-admin 100 pass, locales 90 pass,
   react-email 5 pass, 0 fail.
-- `bun docs/database/gen-logical-references.ts` → `526 refs across 41 targets,
+- `bun docs/database/gen-logical-references.ts` ΓåÆ `526 refs across 41 targets,
   236 intra-module refs`.
-- `bun docs/database/validate-dbml.ts` → `parsed: 272 tables, 236 refs`,
+- `bun docs/database/validate-dbml.ts` ΓåÆ `parsed: 272 tables, 236 refs`,
   `cross-module refs: 0`, `timestamp gaps: 0`, `OK`.
 
-**Database gates — run later the same day on a local PostgreSQL 5432 / Redis
+**Database gates ΓÇö run later the same day on a local PostgreSQL 5432 / Redis
 6379 (native services, Docker not involved).** Disposable database
 `ims_erp_m08_browser` (dropped afterwards):
 
-- `POSTGRES_URL=…/ims_erp_m08_browser bun run drizzle:migrate` → `migrations
+- `POSTGRES_URL=ΓÇª/ims_erp_m08_browser bun run drizzle:migrate` ΓåÆ `migrations
   applied successfully` from an empty database: all 20 folders including
   `20261114173050_lush_darkstar` replayed in order.
-- `bun run drizzle:seed` twice → first run created 29 employees, 4 leave types,
+- `bun run drizzle:seed` twice ΓåÆ first run created 29 employees, 4 leave types,
   4 notification templates, 3 demo notifications; second run reported
   `created 0` / `inserted 0` for every seeder. Idempotent.
 - `drizzle-kit push --explain` still **not** run (not needed for this merge;
@@ -1517,23 +4109,23 @@ M08 references are `ERP-0059` to avoid main's reserved `ERP-0053`…`ERP-0058`.
 **Browser pass (Edge via `browse`, backend `:3001`, web-admin `:5173`,
 2026-11-15).**
 
-- Sign-in `admin@local.com` → shell renders; `/hr/employees` lists 29 seeded
+- Sign-in `admin@local.com` ΓåÆ shell renders; `/hr/employees` lists 29 seeded
   employees, `/hr/attendance` renders the day grid, `/hr/leave`,
   `/hr/overtime`, `/hr/tasks`, `/hr/payroll` render their empty states.
 - Write path exercised through the UI: set the first attendance row to
-  `present` and clicked **Save day** → toast `saved, 0 leave day(s) kept`, and
+  `present` and clicked **Save day** ΓåÆ toast `saved, 0 leave day(s) kept`, and
   `hr.attendance_records` holds one row (`status=present`, `source=manual`,
   `recorded_by` = the signed-in user).
 - NIK masking, both directions: with `national_id` set to
   `3201234567890123` on `EMP-00011`, the org `owner` account
   (`admin@local.com`) reads `3201234567890123` from list and detail, while the
   org `admin` account (`admin.seed@entragate.local`, no
-  `employee:read_private`) reads `••••••••••••0123` from both.
+  `employee:read_private`) reads `ΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇóΓÇó0123` from both.
 - Sidebar gating as org `admin`: Overtime, Payroll and Tasks are hidden
   (`overtime.read` / `payroll.read` / `task.read` absent), Leave hidden, and
   the **New employee** / **Archive** controls are gone; Attendance stays.
   Direct `/hr/payroll` returns **403 `Insufficient permissions`** from the
-  backend — the server-side fact holds.
+  backend ΓÇö the server-side fact holds.
 - Kept as observed, pre-existing from `main`: the route guard still renders
   `/hr/payroll` for that account instead of redirecting (ERP-0053 follow-up,
   `canOpenPath` fails open), and the realtime bell briefly shows
@@ -1585,7 +4177,7 @@ the gaps.
   and `data-model.md` migration policy now say that drizzle-kit
   generate/migrate are blocked on main and how migrations are verified
   meanwhile.
-- `bun run lint` → 0 errors (warnings unchanged from main: backend 6,
+- `bun run lint` ΓåÆ 0 errors (warnings unchanged from main: backend 6,
   web-admin 11, ui 19; none in HR files). `graphify update .` not run:
   graphify is not installed on this machine.
 
@@ -1596,7 +4188,7 @@ move.
 
 `hr.leave_requests.recorded_by` and `hr.overtime_requests.recorded_by`
 reference `auth.users`, so per ADR-0014 they are nullable (the services
-always set them). Changed in `docs.dbml` (gen-logical-references → 535
+always set them). Changed in `docs.dbml` (gen-logical-references ΓåÆ 535
 refs, validate-dbml OK), the Drizzle schema and the unmerged hand-written
 migration `20261112100000_m08_hr_records` (not applied to any shared
 database). Disposable `ims_erp_m08` rebuilt with `migrate-reset`: migrations
@@ -1622,21 +4214,21 @@ answers (manual fallback):
   FKs to `employees`).
 - Tenant: no `organization_id` on the M08 tables; a record is scoped through
   its employee with ERP-0034's rule (company-level + active organization; an
-  application admin sees all) — lists, reads, decisions, imports and salary
+  application admin sees all) ΓÇö lists, reads, decisions, imports and salary
   approval included.
 - Soft delete on all; money bigint minor units; business dates `date`;
   status vocabularies unchanged from the M08 design (2026-11-07).
 - Base salary: ERP-0034 employees carry none and the DBML's
   `employment_contracts` / `employee_salary_components` are not built, so
   "Fill from last month" copies last month's base and allowances (0 for the
-  first month). Position field dropped (DBML has `position_id` → not built).
+  first month). Position field dropped (DBML has `position_id` ΓåÆ not built).
 - Employee codes are unique per organization in ERP-0034, so an import code
   that matches two visible employees is reported (`employeeAmbiguous`).
 
 Built:
 - `docs.dbml` HR section: the seven M08 tables (from the M08 branch) with
   ERP-0034's `employees` kept as is; `bun docs/database/gen-logical-references.ts`
-  → 535 refs; `bun docs/database/validate-dbml.ts` → OK.
+  ΓåÆ 535 refs; `bun docs/database/validate-dbml.ts` ΓåÆ OK.
 - Migration `20261112100000_m08_hr_records`, **hand-written**: `drizzle-kit
   generate` and `migrate` refuse to run on main (pre-existing two-branch
   snapshot conflict, see findings). The SQL is the drizzle-kit output of the
@@ -1656,7 +4248,7 @@ Built:
   export` (decision 2026-11-07); `permission-matrix.test.ts` finance case
   updated. `packages/common` rebuilt.
 - Seeder `hr-leave-types.seeder.ts` (every environment): run twice on
-  `ims_erp_m08` → inserted 4, then 0.
+  `ims_erp_m08` ΓåÆ inserted 4, then 0.
 - Web: pages attendance / leave / overtime / payroll / tasks (stubs on main
   replaced), `lib/hr-records-api.ts`, bank account + leave balance cards on
   the ERP-0034 employee page, Tasks in the sidebar, HR crumbs; `hr` locale
@@ -1664,20 +4256,20 @@ Built:
 - Docs: `docs/architecture/modules/employee.md` rewritten; user guide 8.6
   (en/id).
 
-Verification: `NODE_ENV=test bun test` (apps/backend) → 824 pass
+Verification: `NODE_ENV=test bun test` (apps/backend) ΓåÆ 824 pass
 (`hr-records.service.test.ts` 16); `bunx tsc --noEmit` clean; web `bun run
 build` OK; locales 82 pass. E2E against `ims_erp_m08` (dev `.env`
 `POSTGRES_DB` switched temporarily, restored afterwards): `/hr/employees`
 200; NIK and bank account masked for admin, clear for HR; day sheet saved;
 leave 5 days, self-approval 403, another HR approves, 5 leave days in the
 month recap; overtime 2.50 h approved; task created; finance saves a salary
-row; generate → 29 rows; finance approve 403, owner approves; edit after
+row; generate ΓåÆ 29 rows; finance approve 403, owner approves; edit after
 lock 409; finance reads attendance 403. Screenshots of attendance, payroll
 and the employee page checked.
 
 Findings on main (pre-existing, not changed here):
 - `drizzle-kit generate` / `migrate` blocked: two snapshot branches from
-  `20261106103434_add_asset_image_url`, two snapshots with id `d536237d…`,
+  `20261106103434_add_asset_image_url`, two snapshots with id `d536237dΓÇª`,
   and hand-written migrations without snapshots. Only the drizzle-orm
   migrator (`migrate-reset`) applies migrations. Needs one agreed repair.
 - `drizzle-kit push --explain` on a fresh database still wants to create
@@ -1695,7 +4287,7 @@ Findings on main (pre-existing, not changed here):
 The developer database `ims_erp_sync` holds the old M08 branch schema; this
 branch runs on a fresh database (`migrate-reset`).
 
-PR #83 (`feat/m08-hr-on-main` → `main`) opened 2026-11-12; PR #64 closed as
+PR #83 (`feat/m08-hr-on-main` ΓåÆ `main`) opened 2026-11-12; PR #64 closed as
 superseded. Next executable task: review of #83 (programmer A), then
 rebuild M04 (PR #65) on main the same way (invoice/receipt events now on the
 sales module).
@@ -1725,7 +4317,7 @@ that are not missing features, so they are recorded in
   `items` code indexes; already recorded as known in ADR-0019.
 
 `features.md` and the `side-nav-role-based.md` header now point at the new file, so ERP-0051
-stays closed. `backlog.md` has no ERP-0053…ERP-0058 rows yet; the file states that and asks the
+stays closed. `backlog.md` has no ERP-0053ΓÇªERP-0058 rows yet; the file states that and asks the
 next worker to add them when work starts rather than duplicating the ledger.
 
 `docs/database/` reviewed: no table, column, index, constraint, logical reference or status
@@ -1907,7 +4499,7 @@ because `ims_erp_local` predated the PIC table and was recorded never-to-migrate
 checks were re-run against it.
 
 **Backup first** (the reset drops every application schema):
-`pg_dump` → `%TEMP%\opencode\ims_erp_local_backup_20261114_210952.sql`, 11,893,114 bytes. Before the reset
+`pg_dump` ΓåÆ `%TEMP%\opencode\ims_erp_local_backup_20261114_210952.sql`, 11,893,114 bytes. Before the reset
 the DB held 21 tables, 40 `auth.users`, 2 `inventory.warehouses`, and no `inventory.warehouse_managers`.
 
 **Reset:**
@@ -1917,11 +4509,11 @@ bun run drizzle:migrate-reset
 ```
 Outcome: every app schema dropped, migrations replayed, seeders ran - `Migrate-reset complete` after 9.4s
 (6.7s of it seeding). After: **116 tables, 57 journal rows**, `inventory.warehouse_managers` present, 2 live
-PIC grants (`GLOBAL-MAIN` and `WH-MAIN` → `warehouse.seed@entragate.local`), 40 `auth.users`, organization
+PIC grants (`GLOBAL-MAIN` and `WH-MAIN` ΓåÆ `warehouse.seed@entragate.local`), 40 `auth.users`, organization
 `Entragate` = `LwhLYWKg7I9qkzTSHXPqQColX3To0u5r`.
 
 **Full Phase 5 smoke re-run against `ims_erp_local`** (backend on 3001, `SCHEDULER_ENABLED=false`):
-`bun run scripts/smoke-warehouse-pic.ts LwhLYWKg7I9qkzTSHXPqQColX3To0u5r` → **47 passed, 0 failed**. The
+`bun run scripts/smoke-warehouse-pic.ts LwhLYWKg7I9qkzTSHXPqQColX3To0u5r` ΓåÆ **47 passed, 0 failed**. The
 same cases as the disposable-DB run, now on the real dev database. Cleanup verified afterwards: 0 leftover
 `pic-check%` users, 2 warehouses, 2 live grants - the seeded rows were read, not mutated.
 
@@ -1931,8 +4523,8 @@ never branches on it, so authorization is identical for all five values. `wareho
 only `read` (2 routes), `update` (4) and `archive` (2) through its `picRoute(...)` helper - `import` and
 `export` appear nowhere outside the `TWarehouseAction` union.
 
-New tests in `test/authorization/warehouse-authorization.test.ts` (`warehouse routes — the guard is
-action-agnostic (ADR-0017 §2)`, 6 cases) pin that down instead of leaving it as prose:
+New tests in `test/authorization/warehouse-authorization.test.ts` (`warehouse routes ΓÇö the guard is
+action-agnostic (ADR-0017 ┬º2)`, 6 cases) pin that down instead of leaving it as prose:
 - every declared action (all five, `import`/`export` included) is allowed for a PIC of that warehouse, and
   the action survives into the context;
 - every declared action gives 404 for a PIC of another warehouse;
@@ -1951,7 +4543,7 @@ matrix above is a unit test and the 47 cases are the live proof.
 
 Gates after the new tests: `bun run typecheck` 4/4 successful; `bun run lint` 5/5, 0 errors; `bun run test`
 5/5 - **backend 1005 pass / 0 fail** (999 + 6 new), web-admin 100, locales 90, react-email 5.
-`bun run docs/database/validate-dbml.ts` → `269 tables, 232 refs, cross-module refs: 0, timestamp gaps: 0,
+`bun run docs/database/validate-dbml.ts` ΓåÆ `269 tables, 232 refs, cross-module refs: 0, timestamp gaps: 0,
 OK`. `docs/database/` unchanged (no schema delta).
 
 Cleanup: backend stopped, port 3001 free. `ims_erp_local` is left in its fresh, seeded state.
@@ -1982,7 +4574,7 @@ POSTGRES_DB=ims_erp_pic_check bun run scripts/smoke-warehouse-pic.ts <organizati
 **Backend enforcement - `apps/backend/scripts/smoke-warehouse-pic.ts`, 47 pass / 0 fail.** The script
 creates its own accounts and grant, removes them at the end, and only reads seeded rows. Sections and
 cases: login gate (app admin without membership 200, investor-only 403, customer-only 403,
-investor+internal 200); no session (`/warehouses/mine`, `/warehouses/:id` → 401); app admin without
+investor+internal 200); no session (`/warehouses/mine`, `/warehouses/:id` ΓåÆ 401); app admin without
 membership (`/mine` 200 listing every live warehouse, any `/:id` 200, `/:id/managers` 200,
 `/manager-candidates` 200 with rows); PIC (`/mine` 200 returning exactly the granted warehouse with its
 `storages`, own `/:id` 200, another warehouse 404 so existence is not leaked, admin list 403,
@@ -2061,8 +4653,8 @@ Web admin:
   and the new `components/inventory/warehouse-access-gate.tsx` all read it; the gate replaces
   `AdminOnly` on the warehouse routes.
 - Nav: a dedicated `warehousePic` flag on `SidebarItem` plus `isPic` on `NavContext`, because a PIC
-  grant is a table row, not a permission string. `leafVisible` order is `appAdminOnly` → `warehousePic`
-  → `open` → `internalRole` → `permission`; a parent section hides when no child passes.
+  grant is a table row, not a permission string. `leafVisible` order is `appAdminOnly` ΓåÆ `warehousePic`
+  ΓåÆ `open` ΓåÆ `internalRole` ΓåÆ `permission`; a parent section hides when no child passes.
 - `canOpenPath` resolves the PIC fact from `/warehouses/mine` and short-circuits
   `/inventory/warehouses/new` to app-admin only (a PIC grant has no `create`).
 - List split into `AdminWarehouseList` (paginated, filters, create) and `PicWarehouseList`
@@ -2136,26 +4728,26 @@ remaining plan phases.
 
 Branch `refactor/app-roles-investor-customer`. Phase 1 of `plans/side-nav-role-based.md`: the
 `inventory.warehouse_managers` table only. Gate 1 (`docs/database/`) read: `docs.dbml` (header,
-Inventory module, `warehouse_organizations` as the nearest sibling), `module-ownership.md` §10,
-`integrity-and-consistency.md` §4-5, `data-dictionary.md` §1.3/1.9/1.10/1.13, `logical-references.md`
-(`auth.users.id` → Identity). `implementation-phases.md` skipped: no sequencing question. Gate 2
-(`grill-me` → `grilling`) run before coding; five answers recorded - stay on this branch, add
+Inventory module, `warehouse_organizations` as the nearest sibling), `module-ownership.md` ┬º10,
+`integrity-and-consistency.md` ┬º4-5, `data-dictionary.md` ┬º1.3/1.9/1.10/1.13, `logical-references.md`
+(`auth.users.id` ΓåÆ Identity). `implementation-phases.md` skipped: no sequencing question. Gate 2
+(`grill-me` ΓåÆ `grilling`) run before coding; five answers recorded - stay on this branch, add
 `updated_at` via the shared `softDeleteTimestamps` pair, hand-write the migration, keep `user_id`
 nullable with no CHECK, add a small deterministic seeder.
 
-Shape: `id uuid pk uuidv7()`, `warehouse_id uuid NOT NULL` (intra-module FK → `inventory.warehouses`,
+Shape: `id uuid pk uuidv7()`, `warehouse_id uuid NOT NULL` (intra-module FK ΓåÆ `inventory.warehouses`,
 `ON DELETE CASCADE`), `user_id text` and `assigned_by text` as logical references to `auth.users.id`
 (cross-module FK omitted, nullable, per ADR-0014), `created_at` / `updated_at` / `deleted_at` from
 `softDeleteTimestamps`. Partial unique `warehouse_managers_uq (warehouse_id, user_id) WHERE
 deleted_at IS NULL`, index `warehouse_managers_user_id_idx`. No `organization_id` (the grant
-deliberately ignores the warehouse↔organization link, ADR-0017 decision 3) and no status vocabulary.
+deliberately ignores the warehouseΓåöorganization link, ADR-0017 decision 3) and no status vocabulary.
 
 Commands and outcomes:
 - `bun docs/database/validate-dbml.ts`: `parsed: 269 tables, 232 refs`, `cross-module refs: 0`,
   `timestamp gaps: 0`, `OK`.
 - `ims_erp_migrate_check` dropped and recreated empty, `POSTGRES_URL` pointed at it, `bun run
-  drizzle:migrate`: `migrations applied successfully`; 57 journal rows (56 → 57), 116 tables
-  (115 → 116), 21 schemas unchanged. Columns verified in `information_schema` (`id`/`warehouse_id`/
+  drizzle:migrate`: `migrations applied successfully`; 57 journal rows (56 ΓåÆ 57), 116 tables
+  (115 ΓåÆ 116), 21 schemas unchanged. Columns verified in `information_schema` (`id`/`warehouse_id`/
   `created_at` NOT NULL, `user_id`/`assigned_by`/`updated_at`/`deleted_at` nullable), indexes
   `warehouse_managers_pkey` / `_uq` / `_user_id_idx` present, FK `..._warehouse_id_warehouses_id_fkey`
   with `confdeltype = c` (cascade). Second `migrate` run a no-op.
@@ -2191,9 +4783,9 @@ touched):
   no-op.
 - Data behaviour, with fixture rows injected after rolling the journal back to 55 and re-applying:
   `investor` / `customer` / `" investor "` / `investor,` memberships deleted; `sales,investor`,
-  `investor,sales` → `sales`; `sales, customer ,owner` → `sales,owner`; `owner` untouched; a
+  `investor,sales` ΓåÆ `sales`; `sales, customer ,owner` ΓåÆ `sales,owner`; `owner` untouched; a
   pre-existing empty-role row **survives** (the point of the rewrite). `user_invitations.org_role`
-  `investor` / `customer` → NULL, `sales` and NULL untouched.
+  `investor` / `customer` ΓåÆ NULL, `sales` and NULL untouched.
 - `bun run database/seeders/index.ts` twice on the migrated database: 40 users / 40 members both runs
   (idempotent), zero memberships holding a portal role.
 - Reference check: no table has a foreign key to `auth.members` or `auth.user_invitations`, so no
@@ -2210,7 +4802,7 @@ Not verified: the PIC half of the ADR-0017 verification list (no `warehouse_mana
 the gate's own DB query still has no automated test (it is covered live, not in `bun test`).
 
 Docs: `docs/database/` reviewed, unchanged (no table or column change; the migration only moves data
-between existing columns). `ADR-0018` §Risks and §Verification updated to match the results above -
+between existing columns). `ADR-0018` ┬ºRisks and ┬ºVerification updated to match the results above -
 the earlier text still claimed the migration was unrun and a DB-backed gate test was missing.
 
 Next executable task: owner review of ADR-0017 / ADR-0018; then warehouse PIC Phase 1-2.
@@ -2228,14 +4820,14 @@ What changed:
   `plugins/admin.auth.ts` declare the roles; web-admin `adminClient` mirrors them.
 - Every `user.role === 'admin'` check (backend and web-admin) replaced by `hasRole` / `hasAppRole`
   (multi-role, comma-joined `user.role`).
-- Login gate (ADR-0017 §8 amended by ADR-0018): `providers/better-auth/ac/login-gate.ts`
+- Login gate (ADR-0017 ┬º8 amended by ADR-0018): `providers/better-auth/ac/login-gate.ts`
   (`isWebAdminAllowed`). Enforced in `session.create.before` (`session.auth.ts`) and re-checked
   per request in `sessionGuard` (403). `erpGuard` unchanged. PIC without membership is rejected.
 - Login hook default org = first membership with an internal role.
 - Migration `20261114120000_erp0048_investor_customer_app_roles`: strips portal tokens from mixed
   `members.role` rows, deletes portal-only rows, NULLs `user_invitations.org_role` for portal roles.
   Dev-only; no production data.
-- ADR-0018 written (`proposed`). ADR-0017 §8 and §9 amended in place.
+- ADR-0018 written (`proposed`). ADR-0017 ┬º8 and ┬º9 amended in place.
 
 Commands and outcomes:
 - `bun test test/unit/global-role-contract.test.ts` (backend): 3 pass - `createUserSchema` and
@@ -2281,8 +4873,8 @@ Cause (snapshot metadata only, no SQL was wrong):
   `20261107090000_drop_dynamic_roles_org_role_enum` (`d536237d-...`) and pointed at the same parent,
   so two nodes shared one id.
 
-Fix: two links corrected - `erp0016.prevIds` → `ad2beb0a-...` (`merge_main_reconcile`), and
-`sales_owns` given a fresh unique id with `prevIds` → `d536237d-...`. No migration SQL edited,
+Fix: two links corrected - `erp0016.prevIds` ΓåÆ `ad2beb0a-...` (`merge_main_reconcile`), and
+`sales_owns` given a fresh unique id with `prevIds` ΓåÆ `d536237d-...`. No migration SQL edited,
 deleted or reordered; no schema change.
 
 Commands and outcomes:
@@ -2314,7 +4906,7 @@ Claimed `ERP-0051` in `backlog.md` (in-progress; PIC and login gate stay blocked
 - `/organizations/new` is app-admin only in `canOpenPath`. It was previously derived from the
   `/organizations` nav leaf (`organization.read`), which a non-admin org owner also holds.
 - Decision 9: `organization-switcher.tsx` re-checks the current route after a switch, using a
-  fresh `getSession()`. If the new organization does not allow the page → toast + `navigate('/')`.
+  fresh `getSession()`. If the new organization does not allow the page ΓåÆ toast + `navigate('/')`.
 - Plan correction: Phase 4.3 says "one `organization.hasPermission` call with every nav
   permission". That is not possible - the endpoint returns one boolean for the whole set, so
   per-item filtering needs one call per permission. `useQueries` is the correct shape; the plan
@@ -2327,13 +4919,13 @@ Commands and outcomes:
 - `bunx tsc -b` (web-admin): exit 0.
 - Browser (`localhost:5173`, dev DB):
   - `orgadmin.test` (`admin` in Entragate, `sales` in Live Org):
-    - `/organizations/new` → redirected to `/` with the denied toast.
-    - No active organization (session `set-active` null) → `/settings/company` redirected to `/`
+    - `/organizations/new` ΓåÆ redirected to `/` with the denied toast.
+    - No active organization (session `set-active` null) ΓåÆ `/settings/company` redirected to `/`
       with the toast; sidebar showed Dashboard + Notifications only, so Settings is hidden
       without an active organization.
-    - `/crm/customers` with Live Org active → switch to Entragate (no `customer.read`) →
+    - `/crm/customers` with Live Org active ΓåÆ switch to Entragate (no `customer.read`) ΓåÆ
       redirected to `/` with the denied toast.
-    - `/documents/files` (allowed in both) → switch Entragate → Live Org → stayed on the page,
+    - `/documents/files` (allowed in both) ΓåÆ switch Entragate ΓåÆ Live Org ΓåÆ stayed on the page,
       toast "Organization switched". No false redirect.
   - `admin`: `/organizations/new` renders "New organization"; `/crm/customers` renders (member
     of Entragate as owner), no redirect.
@@ -2345,8 +4937,8 @@ Docs: `docs/database/` reviewed, unchanged (no schema change).
 
 Dev database reset after the checks (owner request): `bun run drizzle:migrate-reset` in
 `apps/backend` - all schemas dropped, migrations replayed, seeders run, `Migrate-reset
-complete` in 9.7 s. Post-reset: `POST /api/auth/sign-in/username` `admin` → 200,
-`GET /organizations/mine` → 200 with Entragate only. The throwaway accounts used for the
+complete` in 9.7 s. Post-reset: `POST /api/auth/sign-in/username` `admin` ΓåÆ 200,
+`GET /organizations/mine` ΓåÆ 200 with Entragate only. The throwaway accounts used for the
 browser checks (`investor.test`, `investor2.test`, `customer.test`, `orgadmin.test`) no longer
 exist; they were created through the API, never by a seeder.
 
@@ -2355,7 +4947,7 @@ exist; they were created through the API, never by a seeder.
 - `lib/route-guard.ts` `canOpenPath`: finds the governing nav leaf (`findNavLeaf`, longest url
   match), reuses `leafVisible` and the same permission cache (`orgPermissionQueryOptions`,
   exported from `use-nav-permissions.ts`) and `['my-organizations']`. Fails closed on error.
-- `_authed.tsx` `beforeLoad`: denied path → `toast.error` (`nav:access.denied`, en + id) and
+- `_authed.tsx` `beforeLoad`: denied path ΓåÆ `toast.error` (`nav:access.denied`, en + id) and
   `redirect({ to: '/' })`.
 - `_authed.index.tsx`: Dashboard renders only for internal-role users; others get an empty page.
   Not a redirect, because redirecting `/` to `/` would loop.
@@ -2368,7 +4960,7 @@ Commands and outcomes:
   `route-guard.test.ts` added).
 - `bunx tsc -b` (web-admin): exit 0.
 - Browser, `investor2.test` (investor in Entragate only), `localhost:5173`:
-  - `/crm/customers` by URL → redirected to `/`, toast "You do not have access to that page."
+  - `/crm/customers` by URL ΓåÆ redirected to `/`, toast "You do not have access to that page."
     (en) and "Anda tidak memiliki akses ke halaman tersebut." (id).
   - Dashboard hidden, sidebar shows Notifications only.
 
@@ -2433,9 +5025,9 @@ Branch `fix/side-nav-role-based`. Docs only; no code, no migration, no `docs/dat
 
 - `docs/plan/plans/side-nav-role-based.md` added (status: planned). No `ERP-*` claimed.
 - `docs/architecture/decisions/ADR-0017-warehouse-person-in-charge.md` added (status: `proposed`).
-  Amends ADR-0008 §3 and ADR-0010 §5, §7, §10 by reference only. Those ADRs are not edited yet.
+  Amends ADR-0008 ┬º3 and ADR-0010 ┬º5, ┬º7, ┬º10 by reference only. Those ADRs are not edited yet.
 - `docs/plan/plans/features.md` gets a cross-cutting section (planned, evidence: none).
-- Cross-checked ADR-0008 §3 (warehouse global, no org role holds `warehouse:*`) against the
+- Cross-checked ADR-0008 ┬º3 (warehouse global, no org role holds `warehouse:*`) against the
   ADR-0017 wording: consistent.
 - Owner sign-off on ADR-0017: **pending**. Backend PIC work does not merge before acceptance.
 - `docs/database/` reviewed, unchanged in this phase (the `inventory.warehouse_managers` table lands in Phase 1).
@@ -2500,11 +5092,11 @@ logged in through the login form in the in-app browser tab. Admin logged in thro
 the login form in the Firefox tab. Separate browser sessions, separate cookies.
 
 - Run 1: user bell "Notifications, 1 unread" (baseline). Admin
-  `POST /organizations/I40etZ.../members` (Live Org `live-zkc8m9`, role `sales`) → 201.
+  `POST /organizations/I40etZ.../members` (Live Org `live-zkc8m9`, role `sales`) ΓåÆ 201.
   User bell, no reload: "Notifications, 2 unread". Popover top item:
   "You joined Live Org live-zkc8m9".
 - Run 2: user bell "Notifications, 2 unread" (baseline). Admin creates
-  `Live Org live2-cpbmho` → 201, then adds the user as `sales` → 201.
+  `Live Org live2-cpbmho` ΓåÆ 201, then adds the user as `sales` ΓåÆ 201.
   User bell, no reload: "Notifications, 3 unread". Popover top item:
   "You joined Live Org live2-cpbmho".
 - Open risk, not reproduced: in run 2, the first add-member call was sent right after
@@ -2537,8 +5129,8 @@ walkthrough. The one step not run is a true second-user live arrival (see
   `username`, so the backend `email-identifier` hook fell back to the raw email
   and the username plugin returned 422 `INVALID_USERNAME` ("Username is invalid").
 - **`apps/backend/test/notification/realtime.smoke.test.ts`** (new)
-  — real `Bun.serve` `/ws` socket with a session cookie; `ExportedNotificationService`
-  → dispatcher → `processNotificationSendJob` → in-memory repository → hub → socket.
+  ΓÇö real `Bun.serve` `/ws` socket with a session cookie; `ExportedNotificationService`
+  ΓåÆ dispatcher ΓåÆ `processNotificationSendJob` ΓåÆ in-memory repository ΓåÆ hub ΓåÆ socket.
   Asserts the frame `{ type: 'notification.created', status: 'success', sentAt, data }`
   with `data.status === 'sent'`, and that the stored row carries the same
   `templateCode` and `variables` the client renders. Second test: a second
@@ -2589,7 +5181,7 @@ Not verified in Phase 8:
 
 Phase 9 deliverables:
 
-- `docs/plan/backlog.md` ERP-0047 stays `in-progress`; evidence lists Phases 0–7
+- `docs/plan/backlog.md` ERP-0047 stays `in-progress`; evidence lists Phases 0ΓÇô7
   plus Phase 8 partial. Not moved to `verified` until the second-user live step runs.
 - `docs/plan/plans/features.md` stays under `in-progress` (no rollup move).
 - User guide section 11 explains the bell, unread badge, mark read, mark all,
@@ -2608,39 +5200,39 @@ only), producers for sales invoice and document signature templates.
 Status: **Phase 7 done**. The header has a working notification bell fed by the
 single `/ws` socket; `NavUser` moved out of the sidebar footer into the header.
 
-- **`apps/web-admin/package.json`** — `zustand@5.1.0` added (the only new
+- **`apps/web-admin/package.json`** ΓÇö `zustand@5.1.0` added (the only new
   dependency).
-- **`src/lib/realtime/realtime-client.ts`** (new) — one `WebSocket` to
+- **`src/lib/realtime/realtime-client.ts`** (new) ΓÇö one `WebSocket` to
   `ws(s)://<api>/ws`, exponential backoff (1s doubling, capped at 30s), exact
-  `type` → handler registry. `onerror` is deliberately unwired: a browser error
+  `type` ΓåÆ handler registry. `onerror` is deliberately unwired: a browser error
   event is always followed by `close`, and reconnecting from both would double
   every retry. Exports `reconnectDelayMs` and `realtimeUrl` so the two pure
   pieces are testable.
-- **`src/lib/realtime/realtime-store.ts`** (new) — zustand store holding the
+- **`src/lib/realtime/realtime-store.ts`** (new) ΓÇö zustand store holding the
   connection status only.
-- **`src/lib/realtime/use-realtime.ts`** (new) — mounts the socket once, from
+- **`src/lib/realtime/use-realtime.ts`** (new) ΓÇö mounts the socket once, from
   `MainLayout`. `onOpen` refetches the inbox, because frames sent while the
   socket was down are not replayed.
-- **`src/lib/notification-api.ts`** (new) — `notificationsQueryOptions`,
+- **`src/lib/notification-api.ts`** (new) ΓÇö `notificationsQueryOptions`,
   `unreadCountQueryOptions`, `markNotificationRead`,
   `markAllNotificationsRead`, `refreshNotifications`, and the three socket
   handlers (`notification.created` / `.updated` invalidate,
   `notification.unread_count` writes the count into the cache).
-- **`src/lib/notification-text.ts`** (new) — localized title/body per
+- **`src/lib/notification-text.ts`** (new) ΓÇö localized title/body per
   `templateCode` via an explicit `switch`.
-- **`src/components/notification/notification-bell.tsx`** (new) — icon-only
+- **`src/components/notification/notification-bell.tsx`** (new) ΓÇö icon-only
   ghost `Button` with the unread badge and a disconnected dot, `Popover` with a
   header, "mark all as read" and a scrollable list of title / body / tag chips;
   an item marks itself read and navigates.
-- **`src/components/layout/main-layout.tsx`** — header is now
-  `[SidebarTrigger][Separator][Breadcrumb] … [NotificationBell][NavUser]`, and
+- **`src/components/layout/main-layout.tsx`** ΓÇö header is now
+  `[SidebarTrigger][Separator][Breadcrumb] ΓÇª [NotificationBell][NavUser]`, and
   the layout calls `useRealtime()`.
-- **`src/components/sidebar/nav-user.tsx`** — trigger is a ghost `Button`
+- **`src/components/sidebar/nav-user.tsx`** ΓÇö trigger is a ghost `Button`
   (avatar always, name/email `hidden md:grid`); `ChevronsUpDown` and the
   dead "Notifications" item removed.
-- **`src/components/sidebar/main-sidebar.tsx`** — `SidebarFooter` / `NavUser`
+- **`src/components/sidebar/main-sidebar.tsx`** ΓÇö `SidebarFooter` / `NavUser`
   removed.
-- **`packages/locales`** — new `notifications` namespace (`en` + `id`, including
+- **`packages/locales`** ΓÇö new `notifications` namespace (`en` + `id`, including
   the four template copies), registered in `NAMESPACES`, both `index.ts`
   bundles and `i18next.d.ts`; `NotificationKey` type added; the now-dead
   `nav:user.notifications` removed from both bundles.
@@ -2653,14 +5245,14 @@ Deviations from the plan text:
 - **The store holds connection status only.** Buffered events and an optimistic
   badge were dropped: a buffer is stale after a long outage (refetch on open is
   correct), and the badge is already the server's count.
-- **Template copy is a `switch`, not a key map** — a map of keys compiles to a
+- **Template copy is a `switch`, not a key map** ΓÇö a map of keys compiles to a
   union and i18next's overloads then reject the call, losing the interpolation
   check.
 - **Template keys are camelCase** (`template.org.memberAdded.title`): i18next
   reads `_` as a plural suffix and rejects the snake_case code as a key.
 - **`useRealtime()` lives in `MainLayout`**, not the `_authed` route.
-- **Item navigation is shallow**: `organization` → the organization page,
-  `organization_member` → `/organizations`, everything else marks read only.
+- **Item navigation is shallow**: `organization` ΓåÆ the organization page,
+  `organization_member` ΓåÆ `/organizations`, everything else marks read only.
 
 Commands and outcomes:
 
@@ -2697,21 +5289,21 @@ Seeded demo rows were restored to their intended state after the manual pass
 Status: **Phase 6 done**. A seeded database has the four templates and three
 demo notifications for the seed admin; the bell (Phase 7) has data to render.
 
-- **`database/seeders/seed/notification-templates.seeder.ts`** (new) — the four
+- **`database/seeders/seed/notification-templates.seeder.ts`** (new) ΓÇö the four
   canonical templates (`org.member_added`, `org.org_created`,
   `sales.invoice_issued`, `document.signature_requested`) with English
   subject/body copy and their declared `variables`. Anchored on `code` with
   `deleted_at IS NULL`, so re-runs insert nothing and an operator's edited copy
   is never overwritten. Runs in **every** environment: a production database
   without templates would make every producer job skip.
-- **`database/seeders/seed/notification-demo.seeder.ts`** (new) — three demo
+- **`database/seeders/seed/notification-demo.seeder.ts`** (new) ΓÇö three demo
   rows for `appConfig.auth.seedAdminEmail` only (two unread, one read, staggered
   `createdAt` so "newest first" is visible). Anchored on
   `(user_id, source_id)` with `source_type='seed_demo'`. Dev-only.
-- **`database/seeders/index.ts`** — both wired after `seedHrEmployees()`:
+- **`database/seeders/index.ts`** ΓÇö both wired after `seedHrEmployees()`:
   templates then demo, because the demo rows reference the templates and the
   seed admin created by `seedAuth`.
-- **`test/unit/notification-seeders.test.ts`** (new) — drift guard between the
+- **`test/unit/notification-seeders.test.ts`** (new) ΓÇö drift guard between the
   schema's `NOTIFICATION_TEMPLATE_CODES`, the seed list, and each seed's
   placeholders vs declared `variables`.
 
@@ -2766,22 +5358,22 @@ Status: **Phase 5 done**. Adding a user to an organization now produces an
 in-app notification for that user; creating an organization notifies the
 creator. No seeders (Phase 6) and no UI (Phase 7) yet.
 
-- **`src/app/organization/services/organization.service.ts`** — injects
+- **`src/app/organization/services/organization.service.ts`** ΓÇö injects
   `EXPORTED_NOTIFICATION_SERVICE_TOKEN` and notifies on three paths:
-  `addMember` → `org.member_added`, `createOrganization` → `org.org_created`
-  for the creator, and a nested **active** user attached at create time →
+  `addMember` ΓåÆ `org.member_added`, `createOrganization` ΓåÆ `org.org_created`
+  for the creator, and a nested **active** user attached at create time ΓåÆ
   `org.member_added`. The organization name is both the tag chip and the
   `organizationName` variable. `role` is the comma-joined Better Auth list
   rendered as `admin, sales`.
-- **`src/app/user/services/invitation.service.ts`** — `claim()` notifies
+- **`src/app/user/services/invitation.service.ts`** ΓÇö `claim()` notifies
   `org.member_added` **after** `attachMembership` succeeds, so the claim that
   actually creates the membership is the notification point. Invite send,
   resend, cancel, and a rejected or expired token notify nothing.
 - **`src/app/notification/constants/di.ts` + `container.ts` +
-  `services/exported-notification.service.ts`** — new
+  `services/exported-notification.service.ts`** ΓÇö new
   `NOTIFICATION_DISPATCHER_TOKEN` registered with the real `dispatchNotification`
   as a `useValue`, and injected into `ExportedNotificationService`.
-- **`test/unit/notification.producers.test.ts`** (new) — 7 tests over the three
+- **`test/unit/notification.producers.test.ts`** (new) ΓÇö 7 tests over the three
   paths, including the real `ExportedNotificationService` over a throwing
   dispatcher to prove a queue outage never fails the business write.
 
@@ -2791,8 +5383,8 @@ Deviations / defects found:
   constructor parameter emits no design type, so tsyringe threw
   `Cannot inject the dependency at position #0 of "ExportedNotificationService"
   ... TypeInfo not known for "Object"` the first time a producer actually
-  resolved the exported service — and it surfaced as a chain through
-  `QuotationService` → `LeadService` → `OrganizationService` →
+  resolved the exported service ΓÇö and it surfaced as a chain through
+  `QuotationService` ΓåÆ `LeadService` ΓåÆ `OrganizationService` ΓåÆ
   `InvitationService`. Unit tests never resolve the container, so the whole
   suite stayed green while `bun run src/index.ts` failed. Fixed with an explicit
   token; constructing the class by hand in tests still works.
@@ -2814,7 +5406,7 @@ cd apps/backend; bunx oxlint
   exit 0
 
 cd apps/backend; bun run src/index.ts
-  "🦊 Elysia is running at localhost:3001" (boot re-verified after the DI fix)
+  "≡ƒªè Elysia is running at localhost:3001" (boot re-verified after the DI fix)
 
 # live, real queue + real worker, local Postgres/Redis
 POST /organizations                     -> 201; queue completed +1
@@ -2838,26 +5430,26 @@ notification.notifications row -> status 'sent',
 Status: **Phase 4 done**. The caller's inbox is reachable over HTTP; nothing
 produces a notification yet (Phase 5) and there is no UI (Phase 7).
 
-- **`src/app/notification/controllers/notification.controller.ts`** (new) —
+- **`src/app/notification/controllers/notification.controller.ts`** (new) ΓÇö
   `GET /notifications` (paginated, newest first), `GET /notifications/unread-count`,
   `PATCH /notifications/:id/read`, `POST /notifications/read-all`. Mounted with
   `guards: 'session'` only (D13): app-scope, no `erp` macro, no
   `x-organization-id`. The caller's id always comes from the resolved session,
   never from a path or body field, so no request can widen the scope.
 - **`notificationIdParamsSchema`** added to
-  `contracts/notification.contract.ts` — `z.uuid()`, so a malformed id is a 400
+  `contracts/notification.contract.ts` ΓÇö `z.uuid()`, so a malformed id is a 400
   instead of a Postgres 500.
 - **`notificationModule()`** added to the module `index.ts` and mounted in
   `src/app/app.ts` after `auditModule()`.
-- **`src/authorization/elysia-auth.ts`** — `sessionGuard()` now carries its own
-  `onError({ as: 'global' })` mapping `ErpAuthError` → envelope. It previously
+- **`src/authorization/elysia-auth.ts`** ΓÇö `sessionGuard()` now carries its own
+  `onError({ as: 'global' })` mapping `ErpAuthError` ΓåÆ envelope. It previously
   relied on being mounted beside `erpGuard()`, so an unauthenticated call to a
   session-only module answered with Elysia's default plain-text body. The
   notification routes are the first session-only surface with no `erp` macro.
-- **`src/http/plugin.ts`** — the shared `VALIDATION` branch is fixed (see below).
-- **`test/unit/notification.controller.test.ts`** (new) — 10 tests: 401 envelope,
+- **`src/http/plugin.ts`** ΓÇö the shared `VALIDATION` branch is fixed (see below).
+- **`test/unit/notification.controller.test.ts`** (new) ΓÇö 10 tests: 401 envelope,
   caller-scoped list + ordering, `unreadOnly`, malformed page, unread count,
-  mark-read, another user's row → 404, non-uuid id → 400, `read-all`, and the
+  mark-read, another user's row ΓåÆ 404, non-uuid id ΓåÆ 400, `read-all`, and the
   same 400 asserted against a **listening** server.
 
 Deviations / defects found:
@@ -2866,13 +5458,13 @@ Deviations / defects found:
   `String(error.value)` into `errors[0].field`; with Zod-backed schemas Elysia
   puts the raw request input there, and stringifying it threw
   `TypeError: No default value`. On a **listening** server (AOT-compiled route)
-  that turned every param/query validation failure into a 500 HTML page —
+  that turned every param/query validation failure into a 500 HTML page ΓÇö
   `app.handle()` never reproduced it, which is why the suite was green. Fixed by
   a `validationDetail()` helper reading `error.valueError.path` (Zod array and
   TypeBox JSON-pointer both handled) and the validator's own message. Pre-existing
   shared-plumbing defect, not a notification bug.
 - The 500 was first misread as an i18n/CORS problem; three probe files bisected
-  it (`createApp().handle` → 400, `createApp().listen` → 500). Probes deleted.
+  it (`createApp().handle` ΓåÆ 400, `createApp().listen` ΓåÆ 500). Probes deleted.
 - Another user's id returns 404, not 403 (D-decision), so a caller cannot probe
   which ids exist.
 
@@ -2909,49 +5501,49 @@ Status: **Phase 3 done**. The module exists with a repository, two services,
 a BullMQ `send`/`prune` queue and its worker; nothing produces a notification
 yet (Phase 5) and there is no REST route (Phase 4) or UI (Phase 7).
 
-- **`src/app/notification/constants/di.ts`** (new) — three tokens:
+- **`src/app/notification/constants/di.ts`** (new) ΓÇö three tokens:
   `NOTIFICATION_REPOSITORY_TOKEN`, `NOTIFICATION_SERVICE_TOKEN` (in-module
   read/ack surface) and `EXPORTED_NOTIFICATION_SERVICE_TOKEN` (the **only**
   entry point other modules may use, D7).
-- **`contracts/notification.repository.interface.ts`** (new) — the data-access
+- **`contracts/notification.repository.interface.ts`** (new) ΓÇö the data-access
   contract: `insert`, `findTemplateByCode`, `findByIdForUser`, `listForUser`,
   `countUnread`, `markRead`, `markAllRead`, `pruneRead`. Reads filter
   `deleted_at IS NULL`; `pruneRead` is the one hard delete, because retention
   (D10) is a storage rule.
-- **`contracts/notification.contract.ts`** (new) — `notificationQuerySchema`
+- **`contracts/notification.contract.ts`** (new) ΓÇö `notificationQuerySchema`
   (`page`, `limit`, `unreadOnly`) and `toNotificationView`, which maps a row to
   the wire shape with ISO dates so an HTTP body and a WebSocket frame describe
   a notification identically. `unreadOnly` is an enum of `"true"`/`"false"`, not
-  `z.coerce.boolean()` — coercion turns the string `"false"` into `true`.
-- **`repositories/notification.repository.ts`** (new) — every statement against
+  `z.coerce.boolean()` ΓÇö coercion turns the string `"false"` into `true`.
+- **`repositories/notification.repository.ts`** (new) ΓÇö every statement against
   `notification.*`; ownership is part of the WHERE clause, so a row belonging to
   another user is indistinguishable from a missing one.
-- **`services/notification.service.ts`** (new) — `list`, `unreadCount`,
+- **`services/notification.service.ts`** (new) ΓÇö `list`, `unreadCount`,
   `markRead`, `markAllRead`, `assertOwnedBy`. Every method takes the caller's
   `userId`; there is no "any user" variant to widen the scope by accident.
   Read-state changes publish `notification.updated` + `notification.unread_count`
   to that user's other tabs.
-- **`services/exported-notification.service.ts`** (new) — `notify({ userIds,
+- **`services/exported-notification.service.ts`** (new) ΓÇö `notify({ userIds,
   templateCode, variables, tags, sourceType?, sourceId?, metadata? })`.
   Enqueue-only, one job per recipient, duplicates and blanks collapsed; a queue
   failure is logged and never thrown into the caller's write.
-- **`queues/notification.queue.ts`** (new) — queue `notification`, jobs `send`
+- **`queues/notification.queue.ts`** (new) ΓÇö queue `notification`, jobs `send`
   and `prune`, `upsertJobScheduler` for the retention job.
-- **`queues/notification.worker.ts`** (new) — `send` resolves the template,
+- **`queues/notification.worker.ts`** (new) ΓÇö `send` resolves the template,
   renders `{{variable}}` placeholders into English `title`/`body`, inserts the
   row as `sent` with `sent_at`, then publishes `notification.created`; `prune`
   hard-deletes read rows past the window. A missing or inactive template
-  **skips** the job instead of retrying — a retry cannot create a template.
-- **`errors/notification.errors.ts`** (new) — `NotificationNotFoundError` (404).
-- **`config/schemas/config.schema.ts` + `config/loaders/config.loader.ts`** —
+  **skips** the job instead of retrying ΓÇö a retry cannot create a template.
+- **`errors/notification.errors.ts`** (new) ΓÇö `NotificationNotFoundError` (404).
+- **`config/schemas/config.schema.ts` + `config/loaders/config.loader.ts`** ΓÇö
   `scheduler.notificationRetentionCron` (`SCHEDULER_NOTIFICATION_RETENTION_CRON`,
   default `0 4 * * *`) and `scheduler.notificationRetentionDays`
   (`NOTIFICATION_RETENTION_DAYS`, default 90). `.env.example` documents both and
   the `SCHEDULER_ENABLED` master switch, which was undocumented before.
-- **`src/index.ts`** — `registerNotification(container)`,
+- **`src/index.ts`** ΓÇö `registerNotification(container)`,
   `startNotificationWorker()` inside the existing `startWorkers(...)` call, and
   `registerNotificationSchedules(...)` behind `scheduler.enabled`.
-- **`packages/locales/src/{en,id}/api.ts`** — `notification.notFound`.
+- **`packages/locales/src/{en,id}/api.ts`** ΓÇö `notification.notFound`.
 
 Deviations from the plan text:
 
@@ -3001,7 +5593,7 @@ registerNotificationSchedules -> [{ key: 'prune', pattern: '0 4 * * *' }]
 second call -> still 1 (idempotent)
 
 # boot, real process
-bun run src/index.ts -> "🦊 Elysia is running at localhost:3001" with the
+bun run src/index.ts -> "≡ƒªè Elysia is running at localhost:3001" with the
   notification worker registered alongside the avatar/org-logo/mail workers
 ```
 
@@ -3011,34 +5603,34 @@ Status: **Phase 2 done**. One WebSocket endpoint exists, authenticated at
 upgrade, with an in-process fanout hub. No notification module yet; Phase 3 is
 next.
 
-- **`src/providers/realtime/realtime.message.ts`** (new) — `TRealtimeMessage`
+- **`src/providers/realtime/realtime.message.ts`** (new) ΓÇö `TRealtimeMessage`
   (`{ type, status, sentAt, data }`) and `realtimeMessage()` which stamps
   `sentAt` at send time. `status` is the frame result; `data.status` stays the
   domain status.
-- **`src/providers/realtime/realtime.hub.ts`** (new) — `IRealtimeHub` +
+- **`src/providers/realtime/realtime.hub.ts`** (new) ΓÇö `IRealtimeHub` +
   `REALTIME_HUB_TOKEN` + `InProcessRealtimeHub`. Two maps (`byWsId` for close,
   `byUserId` for publish) so neither operation scans. `publish` serializes once
   per frame, delivers to every tab of the user, and drops a socket that throws
   instead of failing the producer.
-- **`src/providers/realtime/realtime.gateway.ts`** (new) — `.ws('/ws')` with the
+- **`src/providers/realtime/realtime.gateway.ts`** (new) ΓÇö `.ws('/ws')` with the
   Better Auth session resolved in `resolve({ as: 'local' })`; `open`/`close`
-  register/unregister; a session-less upgrade throws `RealtimeAuthError` → 401
+  register/unregister; a session-less upgrade throws `RealtimeAuthError` ΓåÆ 401
   envelope.
-- **`src/di/provider.ts`** — hub registered with `useValue` (one map per
+- **`src/di/provider.ts`** ΓÇö hub registered with `useValue` (one map per
   process; `useClass` would hand out a fresh empty hub per resolve).
-- **`src/app/app.ts`** — gateway mounted before the feature modules.
-- **`docs/architecture/runbook.md`** — new "Realtime socket (`/ws`) and reverse
+- **`src/app/app.ts`** ΓÇö gateway mounted before the feature modules.
+- **`docs/architecture/runbook.md`** ΓÇö new "Realtime socket (`/ws`) and reverse
   proxies" section (nginx `Upgrade`/`Connection`/`proxy_read_timeout`, Caddy,
   Traefik, CDN caveat; the in-process hub's single-instance limit).
 
 Two plan deviations, both measured rather than assumed:
 
-- `websocket()` from `elysia/ws` **does not exist** in 1.4.31 — the module
+- `websocket()` from `elysia/ws` **does not exist** in 1.4.31 ΓÇö the module
   exports a handler object, so calling it throws `websocket is not a function`.
   The Bun adapter already installs its own handler in `Bun.serve`; `.ws()` alone
   is correct.
 - `beforeHandle` cannot carry the user id: a value returned there does not reach
-  `ws.data`. `resolve({ as: 'local' })` does — probed both ways before writing
+  `ws.data`. `resolve({ as: 'local' })` does ΓÇö probed both ways before writing
   the gateway.
 
 Commands and outcomes:
@@ -3075,7 +5667,7 @@ local database. No application code yet; Phase 2 (`/ws` transport) is next.
   `deleted_at IS NULL`, body, declared variables, channel) and `notifications`
   (`user_id`, `template_code`, `title`, `body`, `tags`/`variables`/`metadata`
   jsonb, `channel`, `status`, `sent_at`, `read_at`, `source_type`/`source_id`,
-  timestamps). No `organization_id` anywhere — app-scope per ADR-0016. The one
+  timestamps). No `organization_id` anywhere ΓÇö app-scope per ADR-0016. The one
   FK is intra-module, `set null`. Exported `NOTIFICATION_CHANNELS`,
   `NOTIFICATION_STATUSES`, `NOTIFICATION_TEMPLATE_CODES`.
 - **`database/migrations/20261113150000_erp0047_notification_schema/migration.sql`**
@@ -3133,30 +5725,30 @@ socket per feature.
 
 - **`database/docs.dbml`**: new `// MODULE: Notification (schema: notification)`
   section; `notification_templates` + `notifications` moved out of Automation
-  and reshaped - `recipient_user_id` → `user_id`, `organization_id` /
+  and reshaped - `recipient_user_id` ΓåÆ `user_id`, `organization_id` /
   `recipient_type` / `recipient_value` / `subject` / `scheduled_at` /
   `error_message` dropped, `template_code` / `title` / `tags` (jsonb) /
   `variables` (jsonb) / `metadata` (jsonb) added, template `code` unique
-  globally instead of per tenant. Header note 26 → 27 schemas/modules.
+  globally instead of per tenant. Header note 26 ΓåÆ 27 schemas/modules.
   `TableGroup "Notification"` added; `automation` header comment no longer
   claims notifications.
-- **`database/module-ownership.md`**: module table 26 → 27 rows (Automation
-  11 tables / 7 intra FKs / 16 logical refs → 9 / 6 / 13; Notification 2 / 1 / 1),
+- **`database/module-ownership.md`**: module table 26 ΓåÆ 27 rows (Automation
+  11 tables / 7 intra FKs / 16 logical refs ΓåÆ 9 / 6 / 13; Notification 2 / 1 / 1),
   totals 268 tables / 231 intra FKs / 524 logical refs, Automation profile
   updated and a new Notification profile with the contract and the app-scope
   rule.
 - **`database/implementation-phases.md`**: S6 table list drops the two tables
   and a paragraph states the module lands through `ws-notification.md` Phase 1,
   not S6; schema-existence check list gains `notification`; exit criterion
-  26 → 27 schemas.
+  26 ΓåÆ 27 schemas.
 - **`database/data-dictionary.md`**: `jsonb` exception for notification
   payloads (and the rule that payload data is never authorization), the
   app-scope carve-out in the tenant-column section, Notification glossary, and
   the `3.5` vocabulary list repointed at `notification.notification_templates`.
-- **`database/logical-references.md`**: regenerated by script - 526 → 524
+- **`database/logical-references.md`**: regenerated by script - 526 ΓåÆ 524
   referring columns (the two dropped `organization_id` columns),
-  `auth.organizations.id` 188 → 186, `automation.notifications →
-  recipient_user_id` replaced by `notification.notifications → user_id`.
+  `auth.organizations.id` 188 ΓåÆ 186, `automation.notifications ΓåÆ
+  recipient_user_id` replaced by `notification.notifications ΓåÆ user_id`.
 - **`architecture/modules/notification.md`**: rewritten. The old file was the
   deleted NestJS audit ("scaffold only"); it now documents the boundary, the
   data ownership, the `ExportedNotificationService` contract, the envelope and
@@ -3168,7 +5760,7 @@ socket per feature.
   guard only, 404 not 403 for another user's row) and the socket envelope
   `{ type, status, sentAt, data }` with the rule that REST stays the source of
   truth.
-- **`plan/plans/ws-notification.md`** (new): the 10-phase plan (Phase 0 docs →
+- **`plan/plans/ws-notification.md`** (new): the 10-phase plan (Phase 0 docs ΓåÆ
   Phase 9 close-out) with locked decisions D1-D14 and a per-phase exit gate.
 - **`plan/backlog.md`**: `ERP-0047` in-progress (Phase 0 done).
   **`plan/plans/features.md`**: new "Notification + realtime" section
@@ -3223,36 +5815,36 @@ and there was no module doc for the three new modules at all.
   plus the one-module-one-schema rule naming the three new schemas.
 - **`architecture/domain-map.md`**: the "Company, users, roles, permissions,
   audit" row now lists `company`, `code_number` and `document` as owners.
-- **`database/docs.dbml`**: header 24 schemas/24 modules → 26/26, and the
+- **`database/docs.dbml`**: header 24 schemas/24 modules ΓåÆ 26/26, and the
   "Warehouse and Inventory are one module spanning two schemas" clause replaced
   by "every module owns exactly one schema" - the clause had been false since
-  ADR-0008. `TableGroup "Documents"` → `"Document"`, `"CodeNumber"` →
+  ADR-0008. `TableGroup "Documents"` ΓåÆ `"Document"`, `"CodeNumber"` ΓåÆ
   `"Code Number"`, and the Inventory module comment no longer describes a
   `warehouse` schema.
-- **`database/module-ownership.md`**: `226 Ref:` → `231`, `522` logical
-  reference columns → `526`, and the module-count paragraph rewritten (Company
+- **`database/module-ownership.md`**: `226 Ref:` ΓåÆ `231`, `522` logical
+  reference columns ΓåÆ `526`, and the module-count paragraph rewritten (Company
   and Code Number split out of Organization; `location` and `ticket` reasons
   kept; ADR-0015 named). A dead `(see 10b)` cross-reference removed.
-- **`database/integrity-and-consistency.md`**: `218 Ref:` → `231`,
-  `parsed: 251 tables` → `268`, and §2.2 "The one exception" rewritten - there
+- **`database/integrity-and-consistency.md`**: `218 Ref:` ΓåÆ `231`,
+  `parsed: 251 tables` ΓåÆ `268`, and ┬º2.2 "The one exception" rewritten - there
   is no two-schema module left, so no cross-schema foreign key is allowed
   anywhere.
-- **`database/implementation-phases.md`**: target 24/251 → 26/268; the
+- **`database/implementation-phases.md`**: target 24/251 ΓåÆ 26/268; the
   `warehouse` schema row and the "generate both in the same step" instruction
   replaced by the folded `inventory` shape (14 tables); the `warehouse.schema.ts`
   stub dropped from the file list; the two `inventory <-> warehouse` exception
   clauses in the verification queries and exit criteria replaced by "no
-  exception"; final checklist 24/251/218 → 26/268/231.
+  exception"; final checklist 24/251/218 ΓåÆ 26/268/231.
 - **`database/data-dictionary.md`**: the warehouse-schema note now names
   `inventory.warehouses` / `inventory.warehouse_addresses` /
   `inventory.warehouse_storages`.
 - **`user-guide/en.md` + `id.md`**: setup step 1 rewritten. It used to tell the
   admin to fill the signatory, the bank accounts, the default terms and the
   warranty texts on the company page - none of which are editable there since
-  ERP-0045c. The steps now split into Settings → Company (identity + contact),
-  Settings → Code numbering, Settings → Document (logo), with an explicit note
+  ERP-0045c. The steps now split into Settings ΓåÆ Company (identity + contact),
+  Settings ΓåÆ Code numbering, Settings ΓåÆ Document (logo), with an explicit note
   that the removed fields cannot be edited from the UI and that stored values
-  keep printing. "Settings → Document numbering" became "Settings → Code
+  keep printing. "Settings ΓåÆ Document numbering" became "Settings ΓåÆ Code
   numbering"; the item code is called out as generated and immutable.
 - **`plan/plans/features.md`**: the sidebar bullet no longer claims
   Administration holds Company and Code numbering (ERP-0045c moved them);
@@ -3261,7 +5853,7 @@ and there was no module doc for the three new modules at all.
 - **`plan/backlog.md`**: unchanged in this entry - ERP-0042..ERP-0046 already
   carry their statuses.
 
-Verified: `bun docs/database/validate-dbml.ts` →
+Verified: `bun docs/database/validate-dbml.ts` ΓåÆ
 `parsed: 268 tables, 231 refs` / `cross-module refs: 0` / `timestamp gaps: 0` /
 `OK`. Grep for `organization.company_profiles`,
 `organization.document_sequences`, `organization.company_bank_accounts`,
@@ -3296,11 +5888,11 @@ existing image keeps printing; a fresh install prints documents without one
 until the signature module fills it.
 
 Verification (2026-11-13):
-- `bun test` (packages/locales): 86 pass, 0 fail — after the first run failed on
+- `bun test` (packages/locales): 86 pass, 0 fail ΓÇö after the first run failed on
   the identical "Logo" values, which the parity guard is meant to catch.
 - `bun test` (web-admin): 70 pass. `bun test` (backend): 872 pass.
 - web-admin `bun run build`: exit 0. `bun run lint` (root): 0 errors.
-- Browser `/settings/documents`: two cards — "Logo / Printed in the letterhead
+- Browser `/settings/documents`: two cards ΓÇö "Logo / Printed in the letterhead
   of every document. / Letterhead logo" with exactly one file input, and
   "Document settings" ("No document settings yet"). No "Signature and stamp".
 - Note: a plain `bun test` from the repo root runs the backend integration
@@ -3396,22 +5988,22 @@ backlog text: `company.settings` only. `organization.settings` is split out as
   `companySettingInputSchema` (`valueType` + nullable `value`, max 4000),
   `TCompanySettingView`.
 - Repository: `findSettings()`, `findSetting(group, key)`, `upsertSetting(...)`.
-  The upsert is a single `insert … onConflictDoUpdate` against the live
+  The upsert is a single `insert ΓÇª onConflictDoUpdate` against the live
   `(setting_group, setting_key)` partial unique index, so two concurrent PUTs
   cannot both insert. Both reads filter `deleted_at IS NULL`.
 - Service: `listSettings()`, `upsertSetting()` with `assertSettingValue` per
-  `value_type` (`null` always allowed = cleared). Bad value →
+  `value_type` (`null` always allowed = cleared). Bad value ΓåÆ
   `CompanySettingInvalidError` (422, `company.settingInvalid`).
 - Routes: `GET /company/settings` (`company:read`),
   `PUT /company/settings/:group/:key` (`company:update`). No delete route.
 - `is_secret` decision: column stays, default `false`, reserved. The API neither
   accepts nor returns it, so there is no `hasValue` field. Recorded in
   `docs.dbml` and in the service comment.
-- UI: `CompanySettingsCard` on `/admin/company` (table + Change → dialog with
+- UI: `CompanySettingsCard` on `/admin/company` (table + Change ΓåÆ dialog with
   type select and value input). Empty value clears to `null`. en/id keys
   `settings:settings.*`; `settings:settings.type.` added to the dead-key
   `DYNAMIC_PREFIXES` and `settings:settings.type.json` to `ALLOWED_IDENTICAL`.
-- Schema: no migration needed — `company.settings` and its constraints already
+- Schema: no migration needed ΓÇö `company.settings` and its constraints already
   exist from `20261113120000_erp0042_company`.
 
 Verification (2026-11-13):
@@ -3420,8 +6012,8 @@ Verification (2026-11-13):
 - `bun test` (web-admin): 70 pass. `bun test` (packages/locales): 86 pass.
 - web-admin `tsc`/build: exit 0. `bun run lint`: exit 0, 0 errors.
 - Browser (`/admin/company`, logged in as admin): Settings card lists
-  `invoice / due_days / Number / 14 / Change`. Change → `abc` → dialog stays open
-  and the toast shows "The value does not match its type"; Change → `14` → dialog
+  `invoice / due_days / Number / 14 / Change`. Change ΓåÆ `abc` ΓåÆ dialog stays open
+  and the toast shows "The value does not match its type"; Change ΓåÆ `14` ΓåÆ dialog
   closes, row shows 14, `GET /company/settings` returns `value: "14"`.
 - First browser attempt showed the raw key `company.settingInvalid`: the backend
   process was started before the locale key existed and `bun --watch` does not
@@ -3439,7 +6031,7 @@ values with `hasValue`. No feature reads `company.settings` yet.
 Status: **implemented** (uncommitted at time of writing; see commit line below).
 Supersedes the sidebar entry further down for the Documents section.
 
-- Section order: Dashboard → CRM & Sales → Documents → Subscription ….
+- Section order: Dashboard ΓåÆ CRM & Sales ΓåÆ Documents ΓåÆ Subscription ΓÇª.
 - Documents section: Files (`/documents/files`, the registry moved from
   `/documents`), Signatures (parent, no URL) with three sub-items, Templates
   (`/documents/templates`, flat, placeholder until ERP-0050).
@@ -3563,7 +6155,7 @@ pre-ERP-0042 schema (`organization.company_profiles`, no `company`/`code_number`
 `pg_dump` to `%TEMP%\opencode\ims_erp_local_backup_20261113_054440.sql` (11.9 MB,
 47 auth users). Then `bun run drizzle:migrate-reset` in `apps/backend`, exit 0:
 schemas `company`, `code_number`, `document`, `organization` present, 40 auth
-users after the seed. Backend restarted; `GET /company/profile` → 401 without
+users after the seed. Backend restarted; `GET /company/profile` ΓåÆ 401 without
 session, and the logged-in `/admin/company` page renders the seeded profile.
 
 Docs (2026-11-13): `docs.dbml` `company.profiles` note and
@@ -3571,7 +6163,7 @@ Docs (2026-11-13): `docs.dbml` `company.profiles` note and
 organizations under it, multi-company (`company_id`) not built, subsidiaries out
 of scope. No schema change. `gen-logical-references.ts`: 526 refs, 41 targets.
 `validate-dbml.ts`: OK (268 tables, 231 refs, 0 cross-module, 0 timestamp gaps).
-`features.md`: ERP-0042 → ERP-0046 rename for the dependabot row, carried from
+`features.md`: ERP-0042 ΓåÆ ERP-0046 rename for the dependabot row, carried from
 the merge.
 
 Next executable task: **ERP-0045** (settings KV CRUD) - still waiting on the five open questions.
@@ -3698,7 +6290,7 @@ and the `ITEM-005`/`ITEM-009` opening-stock anchors are untouched; a new
 
 **Web admin.** `TItem`/`TItemCreateInput` gained `code`/`serialNumber`; the item
 form shows `code` read-only when editing and a serial-number input; the kind list
-gained a Code column; the detail header renders `code · sku`. Locale keys
+gained a Code column; the detail header renders `code ┬╖ sku`. Locale keys
 `inventory:items.code`, `items.codeAutoHint`, `items.serialNumber` in **en + id**.
 
 **Verification (this worktree).**
@@ -3725,7 +6317,7 @@ backfill of `code` into any other module's snapshot columns (nothing references
 an item code yet).
 
 
-Status: **verified** (2026-11-13) — live walk-through done: upload via the
+Status: **verified** (2026-11-13) ΓÇö live walk-through done: upload via the
 edit page renders the WebP from MinIO, and the `/organizations` list renders
 every card logo from a presigned URL; create page has the image picker only
 (nested users removed 2026-11-12); detail page no longer hosts the card.
@@ -3741,9 +6333,9 @@ gained an optional image picker (file is client-encoded WebP and uploaded
 right after the org exists, since the endpoints are id-scoped).
 Verified live in the browser (dev servers already running): logged in as the
 seed admin, POSTed a canvas-encoded WebP to
-`/organizations/:id/image-profile` → 200 `imageKey: organizations/<id>/logo.webp`,
+`/organizations/:id/image-profile` ΓåÆ 200 `imageKey: organizations/<id>/logo.webp`,
 GET returned a MinIO presigned URL, and the edit page rendered the image
-(72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 →
+(72px preview, Replace/Delete buttons). `docs/plan/backlog.md` ERP-0041 ΓåÆ
 **verified**.
 
 ## 2026-11-13 - ERP-0042: `organization` split into `company` / `document` / `code_number`
@@ -3768,7 +6360,7 @@ answers recorded in `docs/plan/plans/features.md` and `docs/database/docs.dbml`.
   and `organization.settings` (per organization), both created/dropped in the
   same migration.
 - `organization.document_sequences` is a **verbatim** rename to
-  `code_number.series` (column `document_type` → `code_type`), so existing
+  `code_number.series` (column `document_type` ΓåÆ `code_type`), so existing
   counters survive. The vocabulary grew from 28 to 29 code types: `warehouse`
   was added so a warehouse code can be allocated (`WH-{SEQ:4}`).
 - Three append-only migrations, each standalone: `20261113120000_erp0042_company_schema`,
@@ -3792,13 +6384,13 @@ create, update, submit, approve, issue, void, download]` added. Owner/admin get
 full, auditor read-only, and every role that had `document` keeps it.
 `packages/common` rebuilt (`bun run build`) before the backend typecheck.
 
-**API.** `/company-profile` → `/company/profile`, `/document-numbering` →
+**API.** `/company-profile` ΓåÆ `/company/profile`, `/document-numbering` ΓåÆ
 `/code-numbers`; no aliases kept (nothing outside this repo consumes them).
 
 **UI.** `/admin/settings` and `/admin/settings/numbering` deleted with no
 redirect; replaced by `/admin/company` and `/admin/code-numbers`. New top-level
 `/documents` registry page (`lib/documents-api.ts`, list/search/status filter +
-void). `lib/company-settings-api.ts` → `lib/company-api.ts` (`/company/profile`,
+void). `lib/company-settings-api.ts` ΓåÆ `lib/company-api.ts` (`/company/profile`,
 `/code-numbers`, `TCodeNumberSetting`, `CODE_TYPES`). `nav-config.ts`,
 `build-crumbs.ts` and every print/document component repointed.
 `routeTree.gen.ts` regenerated by `bunx vite build` (`bunx tsr generate` crashes
@@ -3832,8 +6424,8 @@ added; `api` keys `company.profileRequired` / `numbering.unknownCodeType` /
   deleted.
 - `apps/backend`: `bunx tsc --noEmit` clean; `bun test` **844 pass / 0 fail**;
   `bun run lint` warnings only (pre-existing). Tests renamed:
-  `test/unit/numbering.service.test.ts` → `code-number.service.test.ts`,
-  `company-profile.service.test.ts` → `company.service.test.ts`; new
+  `test/unit/numbering.service.test.ts` ΓåÆ `code-number.service.test.ts`,
+  `company-profile.service.test.ts` ΓåÆ `company.service.test.ts`; new
   `CodeNumberServiceDouble` in `test/helpers/numbering-double.ts`.
 - `apps/web-admin`: `bunx tsc -p tsconfig.app.json --noEmit` clean, `bun test`
   62 pass, `bunx vite build` succeeds (regenerates `routeTree.gen.ts`),
@@ -3842,7 +6434,7 @@ added; `api` keys `company.profileRequired` / `numbering.unknownCodeType` /
 - Root `bun run typecheck` 4/4, `bun run lint` 5/5, `bun run test` 5/5.
   Note: `apps/web-admin` and `packages/common` have no `typecheck` script, so
   the root task does not cover them; both were checked directly.
-- `bun docs/database/validate-dbml.ts` → `parsed: 268 tables, 231 refs`,
+- `bun docs/database/validate-dbml.ts` ΓåÆ `parsed: 268 tables, 231 refs`,
   `cross-module refs: 0`, `timestamp gaps: 0`, `OK`;
   `gen-logical-references.ts` re-run (526 refs).
 
@@ -3852,15 +6444,15 @@ ERP-0043 - see above), and no browser walk-through of the moved pages yet.
 
 ## 2026-11-13 - Images: the server normalises every upload and generated image
 
-User request: stop asking people to convert images to WebP by hand — the web
+User request: stop asking people to convert images to WebP by hand ΓÇö the web
 admin converts on upload when it can, the backend converts always.
 
 - **New `apps/backend/src/utils/image.util.ts`** (zero new dependencies):
-  `sniffImageType` (magic bytes → png/jpeg/webp/gif/bmp/tiff/heic/avif),
+  `sniffImageType` (magic bytes ΓåÆ png/jpeg/webp/gif/bmp/tiff/heic/avif),
   `toWebp(bytes, { maxSize, quality })` and `fileBytes`. `toWebp` decodes with
   Bun's built-in `Bun.Image` (verified on Bun 1.4.4: decodes JPEG/PNG/WebP/GIF/
-  BMP/TIFF/HEIC/AVIF and emits `RIFF…WEBP`), downscales the longest side and
-  re-encodes — which also strips EXIF/GPS and any appended payload. Undecodable
+  BMP/TIFF/HEIC/AVIF and emits `RIFFΓÇªWEBP`), downscales the longest side and
+  re-encodes ΓÇö which also strips EXIF/GPS and any appended payload. Undecodable
   bytes throw `UnsupportedImageError`.
 - **The server is the format authority now:** `OrganizationService.setImage`,
   `UserService.setSelfAvatar` (`users/<id>/avatar-custom.webp`, 144px),
@@ -3872,7 +6464,7 @@ admin converts on upload when it can, the backend converts always.
   normalised bytes are written without a `Blob` copy. Old rows keep working:
   the DB stores object keys, so `avatar-custom.png` / `<uuid>.png` stay valid.
 - **Web admin:** `encodeWebp` (organization-api) and `compressAvatar`
-  (user-api) collapsed into one `encodeImage` in `lib/image-file.ts` —
+  (user-api) collapsed into one `encodeImage` in `lib/image-file.ts` ΓÇö
   downscales to 512px, returns WebP when the browser can encode it and PNG
   otherwise, and decodes through `<img>` when `createImageBitmap` rejects the
   format. Call sites: org create, org edit, org image card, profile avatar,
@@ -3882,14 +6474,14 @@ admin converts on upload when it can, the backend converts always.
   `profile.avatarInvalidType`, `profile.avatarHint`, `common.image.hint`,
   `common.image.tooLarge`, `orgImage.description`, `orgImage.decodeFailed`.
 - **Bug found by the live check:** `POST /users/me/avatar` returned
-  `500 Body already used` — the handler called `request.formData()` after
+  `500 Body already used` ΓÇö the handler called `request.formData()` after
   Elysia had already parsed the multipart body. It now reads the parsed `body`
   (`avatarFileFrom`), like every other upload route.
 
 Verification:
 
 - `bun test` backend **849 pass / 0 fail** (new `test/unit/image.util.test.ts`,
-  9 tests: sniffing incl. ISO-BMFF brands, PNG/JPEG→WebP, WebP re-encode,
+  9 tests: sniffing incl. ISO-BMFF brands, PNG/JPEGΓåÆWebP, WebP re-encode,
   size ceiling, garbage bytes; `organization-create-nested.test.ts` and
   `company-profile.service.test.ts` updated for WebP keys and decode-time
   format rejection), web-admin **66 pass** (new
@@ -3898,18 +6490,18 @@ Verification:
 - `bunx tsc -b --noEmit` clean in `apps/backend`, `apps/web-admin`,
   `packages/locales`; `bun run lint` shows only the pre-existing warnings.
 - Live (dev servers, seed admin, `bun run --watch` picked the change up):
-  PNG 900×600 → org `image-profile` 200, stored key
-  `organizations/<id>/logo.webp`, fetched bytes `RIFF/WEBP`, 512×341;
-  JPEG 800×800 → `/users/me/avatar` 200 → `users/<id>/avatar-custom.webp`,
-  144×144; PNG 640×400 → `PUT /company-profile/logo` 200 →
-  `company/logo/<uuid>.webp`, 512×320; the same PNGs dropped into the edit
+  PNG 900├ù600 ΓåÆ org `image-profile` 200, stored key
+  `organizations/<id>/logo.webp`, fetched bytes `RIFF/WEBP`, 512├ù341;
+  JPEG 800├ù800 ΓåÆ `/users/me/avatar` 200 ΓåÆ `users/<id>/avatar-custom.webp`,
+  144├ù144; PNG 640├ù400 ΓåÆ `PUT /company-profile/logo` 200 ΓåÆ
+  `company/logo/<uuid>.webp`, 512├ù320; the same PNGs dropped into the edit
   page and the profile page preview from the presigned URL. Rejections:
-  PDF bytes to the org image → 422 `common.imageInvalid`; garbage bytes to the
-  avatar → 415; 2 MB + 10 bytes → 413.
+  PDF bytes to the org image ΓåÆ 422 `common.imageInvalid`; garbage bytes to the
+  avatar ΓåÆ 415; 2 MB + 10 bytes ΓåÆ 413.
 - `docs/database/` reviewed: one note changed (no table/column/index/constraint)
-  — `company_profile.logo_object_key` now documents the WebP normalisation.
+  ΓÇö `company_profile.logo_object_key` now documents the WebP normalisation.
   `bun docs/database/gen-logical-references.ts` regenerated 533 refs;
-  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs, 0 timestamp
+  `bun docs/database/validate-dbml.ts` ΓåÆ `OK: 0 cross-module refs, 0 timestamp
   gaps`. That validator had been failing on `main` with a `hr.bank_accounts`
   vs `company.bank_accounts` bare-name duplicate; both tables are real and
   always schema-qualified, so `bank_accounts` joined `DUP_ALLOWED` with a note.
@@ -3924,10 +6516,10 @@ is queryable and shown on detail.
   text` (no DB length limit; the 2000-char cap is a zod boundary rule so
   widening it needs no migration). Migration
   `20261113090000_erp0041_org_description` is hand-written append-only (same
-  convention as `20261112120000` / `20261112150000` — the repo carries no
+  convention as `20261112120000` / `20261112150000` ΓÇö the repo carries no
   drizzle-kit journal).
 - Better Auth: `additionalFields.description` added, and the plugin options
-  changed from `: OrganizationOptions` to `satisfies OrganizationOptions` —
+  changed from `: OrganizationOptions` to `satisfies OrganizationOptions` ΓÇö
   the widened annotation erased `additionalFields` from the inferred API
   types, so `description` was rejected in create/update bodies. The adapter
   strips `description` before calling Better Auth and re-adds it (Better Auth
@@ -3946,7 +6538,7 @@ is queryable and shown on detail.
 **Cache bug found by the live check:** PATCH `/organizations/:id` returned the
 pre-update row and the detail page kept showing the old description. Cause:
 `findById` is cache-aside (5-min TTL) and profile updates go through Better
-Auth, which writes the row directly — the repository never sees the write, so
+Auth, which writes the row directly ΓÇö the repository never sees the write, so
 nothing evicted the entry (`setLogo`/`softDelete`/`restore` only). Fixed by
 exposing `invalidateCache(id)` on the repository and calling it from
 `OrganizationService.updateOrganization` after the gateway write. The bug
@@ -3962,11 +6554,11 @@ Verification:
 - Migration applied to disposable DB `ims_erp41_desc` via a one-off runner
   (`migrate-reset` + apply + `drizzle:seed` twice, idempotent); column
   `description text` present; database dropped afterwards.
-- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts` →
+- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts` ΓåÆ
   `OK: 0 cross-module refs, 0 timestamp gaps`.
-- Live (dev servers): create form order Name → Description → Slug with a
-  centered 128×128 dropzone above Name; submitted `Description Check` with a
-  dropped PNG logo and a two-line description → detail page rendered both
+- Live (dev servers): create form order Name ΓåÆ Description ΓåÆ Slug with a
+  centered 128├ù128 dropzone above Name; submitted `Description Check` with a
+  dropped PNG logo and a two-line description ΓåÆ detail page rendered both
   lines; edit page saved a new value and the detail page reflected it
   (PATCH 200 + fresh GET); the seed org without a description rendered `-`.
   Test org soft-deleted afterwards.
@@ -3975,7 +6567,7 @@ Verification:
 
 Cards were cramped: `lg:grid-cols-4` at a 1074px viewport gave **180px** cards
 (3-up is 246px), too narrow for the 40px logo, the three stat columns and the
-badge + `Restore` footer. The grid is now `1 / sm:2 / lg:3 / 2xl:4` — a fourth
+badge + `Restore` footer. The grid is now `1 / sm:2 / lg:3 / 2xl:4` ΓÇö a fourth
 column only appears at 1536px where it actually fits.
 
 The page header stacked badly too: `flex items-center justify-between` with no
@@ -3997,9 +6589,9 @@ the footer's top edge (verified on all four cards).
 ## 2026-11-13 - `/organizations` list: logos presigned server-side
 
 The list cards were broken because `GET /organizations` returned the stored
-**object key** (`organizations/<id>/logo.webp`) where the UI expects a URL — the
+**object key** (`organizations/<id>/logo.webp`) where the UI expects a URL ΓÇö the
 browser cannot sign a SigV4 GET, so every thumbnail was a broken image while the
-detail page (which presigns through `GET …/image-profile`) worked.
+detail page (which presigns through `GET ΓÇª/image-profile`) worked.
 
 - `OrganizationService.listOrganizations` now presigns `logo` per row
   (`row.logo ? presignObjectUrl(row.logo) : null`), matching `listMembers`,
@@ -4011,18 +6603,18 @@ detail page (which presigns through `GET …/image-profile`) worked.
   `loading='lazy'`/`decoding='async'` and `min-w-0` so long names truncate.
 
 Verified live (dev servers, seed admin): all four cards render
-`https://minio-s3.okifirsyah.my.id/ims-erp-local/organizations/<id>/logo.webp?X-Amz-Signature=…`
-with `naturalWidth > 0`; the seed org's image is 100×100, uploads 512×320.
+`https://minio-s3.okifirsyah.my.id/ims-erp-local/organizations/<id>/logo.webp?X-Amz-Signature=ΓÇª`
+with `naturalWidth > 0`; the seed org's image is 100├ù100, uploads 512├ù320.
 New unit test asserts the presign (raw key would fail the match) and that a
 `null` logo stays `null`: backend **839 pass / 0 fail**, web-admin **62 pass**,
 `tsc -b --noEmit` clean in both workspaces.
 
 `docs/database/` was reviewed and is unchanged: the fix is a read-path
-transformation (key → presigned URL), no table, column, index, constraint,
+transformation (key ΓåÆ presigned URL), no table, column, index, constraint,
 logical reference, or status vocabulary moved.
 
 Known limitation (pre-existing, not fixed here): `GET /organizations` sits
-behind `erpGuard`, so it 403s when the session has no active organization —
+behind `erpGuard`, so it 403s when the session has no active organization ΓÇö
 which is exactly the state after deleting the active organization
 (`deleteOrganization` calls `setActive(null)`). The list page then shows
 "No organizations yet" although rows exist; a re-login re-activates the first
@@ -4036,11 +6628,11 @@ the warehouse-organization tab.
 User decision: **no user/invite section on organization creation.** The page is
 now name + slug + logo only; the nested-users block (`NewUserRow`, `addUser`,
 `patchUser`, duplicate-email banner, `users` in the POST payload) is gone.
-`POST /organizations` still accepts `users` — backend contract, service, and its
-12 unit tests are untouched — but the UI no longer sends it, so an organization
+`POST /organizations` still accepts `users` ΓÇö backend contract, service, and its
+12 unit tests are untouched ΓÇö but the UI no longer sends it, so an organization
 is created empty and members are added from the detail page's invite dialog.
 
-**Layout.** One `max-w-2xl` card, `sm:grid-cols-[8rem_1fr]`: the 32×32 logo
+**Layout.** One `max-w-2xl` card, `sm:grid-cols-[8rem_1fr]`: the 32├ù32 logo
 dropzone on the left (it is an organization attribute, not a user field), name
 and slug on the right, actions in a bordered footer (`Cancel` / `Create`) instead
 of stacked inline. The slug line under the input shows the resulting path and
@@ -4048,10 +6640,10 @@ turns into `orgs.slugInvalid` as soon as the value fails the backend regex.
 
 **Image input hardening** (applies to the edit page too):
 
-- `encodeWebp(file, { maxSize = 512 })` downscales the longest side — a 4000px
+- `encodeWebp(file, { maxSize = 512 })` downscales the longest side ΓÇö a 4000px
   photo previously re-encoded at full size and tripped the server's 2MB cap.
-  Verified: a 1600×1000 source stored as **512×320, 1170 bytes**.
-- `image-file.ts` gained `rejectImageFile` → `'type' | 'size'`, so the dropzone
+  Verified: a 1600├ù1000 source stored as **512├ù320, 1170 bytes**.
+- `image-file.ts` gained `rejectImageFile` ΓåÆ `'type' | 'size'`, so the dropzone
   can distinguish "not an image" from "larger than 20MB" and the caller toasts
   the right message. Empty MIME types (Windows Explorer drags) now fall back to
   the extension.
@@ -4066,8 +6658,8 @@ turns into `orgs.slugInvalid` as soon as the value fails the backend regex.
 **Real bug found by verifying the create flow: the DiceBear fallback overwrote
 the uploaded logo.** The worker and the upload wrote the *same* key
 (`organizations/<id>/logo.webp`); the worker's `findById` check ran before the
-upload landed, so its DiceBear bytes were written last — the stored image was
-256×256 initials instead of the 512×320 upload. Fixed by construction:
+upload landed, so its DiceBear bytes were written last ΓÇö the stored image was
+256├ù256 initials instead of the 512├ù320 upload. Fixed by construction:
 
 - generated fallback moved to its own key,
   `organizations/<id>/logo-generated.webp` (`organizationGeneratedImageObjectKey`),
@@ -4077,11 +6669,11 @@ upload landed, so its DiceBear bytes were written last — the stored image was
 - the worker's lost race leaves an unreferenced generated object (bucket
   lifecycle rule's job, noted in the worker comment).
 
-Verified live (dev servers running, seed admin): drop 1600×1000 PNG on the
-create page → `POST /organizations` **201** with `members: []` (no `users` in the
-payload) → `POST …/image-profile` **200** →
-`GET …/image-profile` presigned key `/ims-erp-local/organizations/<id>/logo.webp`
-serving **512×320**; both test organizations deleted (`DELETE` → 200). Reject
+Verified live (dev servers running, seed admin): drop 1600├ù1000 PNG on the
+create page ΓåÆ `POST /organizations` **201** with `members: []` (no `users` in the
+payload) ΓåÆ `POST ΓÇª/image-profile` **200** ΓåÆ
+`GET ΓÇª/image-profile` presigned key `/ims-erp-local/organizations/<id>/logo.webp`
+serving **512├ù320**; both test organizations deleted (`DELETE` ΓåÆ 200). Reject
 path: dropping a `.txt` leaves the preview empty.
 
 Tests: backend **838 pass / 0 fail** (new worker case asserts the generated key
@@ -4098,7 +6690,7 @@ dev process; the live run above still used the old worker code.
 
 **Key layout changed to plural:** `organizationImageObjectKey` now returns
 `organizations/<organizationId>/logo.webp` (was singular), matching the user
-avatar convention `users/<id>/avatar.webp`. Callers needed no change — both
+avatar convention `users/<id>/avatar.webp`. Callers needed no change ΓÇö both
 `OrganizationService.setImage` and the DiceBear `processOrgLogoJob` go through
 the builder, and reads presign whatever key is stored in
 `auth.organizations.logo` (nothing parses the prefix). The worker's doc comment
@@ -4107,7 +6699,7 @@ data migration: ERP-0041 is unreleased, so a re-upload is enough.
 
 **Seed data fix.** `database/seeders/raw/organization/organization.json` pointed
 at `./entragate.webp`, a file that no longer exists in the tree; it now points
-at `./image/entragate-bg-white.png`. Note: no seeder code reads that JSON —
+at `./image/entragate-bg-white.png`. Note: no seeder code reads that JSON ΓÇö
 `organization.seeder.ts` creates Entragate through the Better Auth API and no
 `image_path` consumer exists, so the value is metadata only (left in place for
 whoever builds the missing uploader).
@@ -4121,16 +6713,16 @@ whoever builds the missing uploader).
   cannot read local files), fetched it in the page as a `File`
   (`image/png`, 6420 bytes) and dispatched a synthetic `drop` on
   `button[aria-label="Profile image"]` of the edit page.
-- `POST /organizations/:id/image-profile` → **200**,
+- `POST /organizations/:id/image-profile` ΓåÆ **200**,
   `imageKey: organizations/QJlMCRUQd4SgShQVK4t4PptOI909atvX/logo.webp`.
-- `GET …/image-profile` → 200, presigned URL path
+- `GET ΓÇª/image-profile` ΓåÆ 200, presigned URL path
   `/ims-erp-local/organizations/<id>/logo.webp`; the dropzone preview now
   renders from it (`100x100` natural, the real asset).
 - DB after: `logo = organizations/QJlMCRUQd4SgShQVK4t4PptOI909atvX/logo.webp`.
 - old object under the singular prefix is untouched/orphaned in the dev bucket
   (unreleased feature, no migration).
 
-Commands: backend `bun run test` → **837 pass / 0 fail** (58 files),
+Commands: backend `bun run test` ΓåÆ **837 pass / 0 fail** (58 files),
 `bunx tsc -b --noEmit` clean. Temporary server/check scripts deleted.
 
 ## 2026-11-12 - Org logo upload: icon dropzone with drag & drop (create + edit)
@@ -4152,32 +6744,32 @@ POSTed with a hand-written `fetch`. `request()` now skips the JSON header for
 
 Verified live (dev servers already running, seed admin):
 
-- edit page: dragging a canvas-encoded PNG onto the dropzone fired the upload —
-  `POST /organizations/:id/image-profile` → 200
+- edit page: dragging a canvas-encoded PNG onto the dropzone fired the upload ΓÇö
+  `POST /organizations/:id/image-profile` ΓåÆ 200
   `imageKey: organizations/<id>/logo.webp`, preview then rendered from the MinIO
   presigned URL (`32x32` natural size).
 - create page: dropping an image shows an object-URL preview and the file name;
-  submitting created the org (`POST /organizations` → 201) and uploaded the logo
-  right after (`POST …/image-profile` → 200), confirmed by
-  `GET …/image-profile` returning a presigned URL. The test org was deleted
-  afterwards (`DELETE /organizations/:id` → 200).
+  submitting created the org (`POST /organizations` ΓåÆ 201) and uploaded the logo
+  right after (`POST ΓÇª/image-profile` ΓåÆ 200), confirmed by
+  `GET ΓÇª/image-profile` returning a presigned URL. The test org was deleted
+  afterwards (`DELETE /organizations/:id` ΓåÆ 200).
 
 New locale keys (en + id): `orgImage.dropHint`, `orgImage.replaceHint`,
 `orgImage.invalidType`; the now-unused `orgImage.upload` / `orgImage.replace`
 were removed (dead-key guard green). Image type filtering lives in
-`apps/web-admin/src/lib/image-file.ts` (`pickImageFile`) with 3 unit tests —
+`apps/web-admin/src/lib/image-file.ts` (`pickImageFile`) with 3 unit tests ΓÇö
 web-admin has no DOM test environment, so the rule is tested as a pure
 function. Commands: `bun run test` in `apps/web-admin` (60 pass / 0 fail),
 `packages/locales` (82 pass), `bunx tsc -b --noEmit` clean, `bun run lint` no
-new warnings. `docs/database/` reviewed — unchanged (UI-only change).
+new warnings. `docs/database/` reviewed ΓÇö unchanged (UI-only change).
 
 ## 2026-11-12 - ERP-0041 bulk-invitation browser walk-through (multi-role)
 
-Walked the org-scoped invite dialog (`Add member` → `Bulk paste`) live against
+Walked the org-scoped invite dialog (`Add member` ΓåÆ `Bulk paste`) live against
 the running dev stack. Findings:
 
-1. **Dev DB was missing the `org_role` enum → text migration.** The multi-role
-   row inserted the role list as two params (`technician`,`sales`) → Postgres
+1. **Dev DB was missing the `org_role` enum ΓåÆ text migration.** The multi-role
+   row inserted the role list as two params (`technician`,`sales`) ΓåÆ Postgres
    rejected the insert. `information_schema.columns` showed
    `auth.user_invitations.org_role` = `USER-DEFINED` (`auth.organization_role`).
    `drizzle-kit migrate` cannot run here (pre-existing journal two-branch
@@ -4189,7 +6781,7 @@ the running dev stack. Findings:
    identical drizzle insert from a fresh process succeeded while the API kept
    failing: the long-lived server's prepared statements had been prepared
    against the `org_role` enum type and broke once the migration dropped it
-   (`ALTER COLUMN … TYPE text` + `DROP TYPE`). Touching a watched file
+   (`ALTER COLUMN ΓÇª TYPE text` + `DROP TYPE`). Touching a watched file
    restarted the dev backend and the same request returned 201 with
    `orgRole: "technician,sales"`. Not a code defect, but a deploy-order
    hazard: apply this migration, then restart the API process.
@@ -4209,12 +6801,12 @@ the running dev stack. Findings:
    while still sending the rows that parsed. `invite.rowsHint` now says the
    role joins with `|` and an unknown role fails the row (en + id).
 
-Verified after the fixes, same dialog: `walkthrough.multi@example.com` →
-`orgRole: "technician,sales"`, `EMP-00033`; `walkthrough.plain@example.com` →
+Verified after the fixes, same dialog: `walkthrough.multi@example.com` ΓåÆ
+`orgRole: "technician,sales"`, `EMP-00033`; `walkthrough.plain@example.com` ΓåÆ
 reused `EMP-00030`; the pending-invitations panel listed both as `pending`
 with expiry. Final check after the backend restart, two fresh rows in one
-bulk POST: `finalcheck.multi@example.com` → `technician,sales` / `EMP-00035`
-and `finalcheck.plain@example.com` → `member` / `EMP-00036`, both `ok: true`.
+bulk POST: `finalcheck.multi@example.com` ΓåÆ `technician,sales` / `EMP-00035`
+and `finalcheck.plain@example.com` ΓåÆ `member` / `EMP-00036`, both `ok: true`.
 Cleanup: the probe scripts (`apps/backend/.tmp/*`) and the walk-through
 pending invitations were removed (deleted through the org API, all 200); the
 pre-created pending users and their employee rows from the walk-through stay
@@ -4223,28 +6815,28 @@ in the dev database.
 Commands: `bun test test/unit/employee-invite.service.test.ts` (5 pass),
 `bun run test` in `apps/backend` (837 pass / 0 fail),
 `packages/locales` (82 pass), `apps/web-admin` (57 pass), `bunx tsc -b --noEmit`
-clean in `apps/backend` and `packages/locales`. `docs/database/` reviewed — no
+clean in `apps/backend` and `packages/locales`. `docs/database/` reviewed ΓÇö no
 schema change in this step.
 
 ## 2026-11-12 - ERP-0041 CI unblocking (three rounds, pushed to PR #82)
 
-CI (`Main Test and Build Backend`) failed 3× with unit tests timing out at
+CI (`Main Test and Build Backend`) failed 3├ù with unit tests timing out at
 5s; every root cause was a side effect of org/invite creation awaiting live
 infrastructure CI does not have:
 
-1. `await this.provisionRoles(...)` → seeder uses the real drizzle client
-   (`POSTGRES_CONNECTION_REFUSED` retries) → `void this.provisionRoles(...)`
+1. `await this.provisionRoles(...)` ΓåÆ seeder uses the real drizzle client
+   (`POSTGRES_CONNECTION_REFUSED` retries) ΓåÆ `void this.provisionRoles(...)`
    (commit `41232f4`).
-2. `await dispatchOrgLogoGeneration(...)` → BullMQ needs Redis → fire-and-
+2. `await dispatchOrgLogoGeneration(...)` ΓåÆ BullMQ needs Redis ΓåÆ fire-and-
    forget `void dispatchOrgLogoGeneration(...).catch(...)` (commit `c197505`).
-3. `InvitationService.ensureAvatar` → `await dispatchAvatarGeneration(...)`
-   → Redis; plus `organizationNameFor` dynamically imports Better Auth whose
-   `$context` needs Postgres → `void` dispatch + unit tests mock
+3. `InvitationService.ensureAvatar` ΓåÆ `await dispatchAvatarGeneration(...)`
+   ΓåÆ Redis; plus `organizationNameFor` dynamically imports Better Auth whose
+   `$context` needs Postgres ΓåÆ `void` dispatch + unit tests mock
    `@providers/better-auth/auth` with a throwing `$context` getter (commits
    `c197505`, `496c986`).
 
 All three paths were already documented as best-effort ("a queue outage
-never fails the invite"), so awaiting them bought nothing — marking
+never fails the invite"), so awaiting them bought nothing ΓÇö marking
 fire-and-forget is semantically honest, not just CI appeasement. Local
 836 pass after each fix; final CI run `43216792012` success (backend +
 web-admin). Lint warnings shown in CI are pre-existing, not from ERP-0041.
@@ -4257,10 +6849,10 @@ web-admin). Lint warnings shown in CI are pre-existing, not from ERP-0041.
   guard (submit blocked + inline message); per-item outcomes
   (`failed`/`skipped`) surfaced as toasts after redirect. Locale keys
   `orgs.usersTitle/addUser/removeUser/userEmail/userName/duplicateUserEmail`
-  (en+id; `orgs.userEmail` in `ALLOWED_IDENTICAL` — "Email" is legitimately
+  (en+id; `orgs.userEmail` in `ALLOWED_IDENTICAL` ΓÇö "Email" is legitimately
   identical).
 - **Image-profile UI.** New `org-image-card.tsx` on the org detail `info`
-  tab: upload (any image client-side → `encodeWebp` canvas encode, ERP-0041
+  tab: upload (any image client-side ΓåÆ `encodeWebp` canvas encode, ERP-0041
   decision that the client sends WebP), replace, clear; shows the presigned
   URL refreshed per mount (`staleTime` 60s, key `['org-image', id]`).
   Locale keys `orgImage.*` (en+id).
@@ -4283,28 +6875,28 @@ web-admin). Lint warnings shown in CI are pre-existing, not from ERP-0041.
 
 ## 2026-11-12 - ERP-0041: org CRUD robustness (backend slices)
 
-Status: **in-progress** — backend implemented + migration verified; frontend
+Status: **in-progress** ΓÇö backend implemented + migration verified; frontend
 slice (org create nested-users UI, image-profile upload UI, member multi-role
 edit) and new unit tests for the new paths still open.
 
-- **Schema** (`docs/database/docs.dbml` edited first — canonical):
+- **Schema** (`docs/database/docs.dbml` edited first ΓÇö canonical):
   `auth.user_invitations.org_role` documented as comma-joined `text`
   (multi-role, ERP-0041); the Postgres enum `auth.organization_role` is
   dropped. `bun docs/database/gen-logical-references.ts` +
-  `bun docs/database/validate-dbml.ts` → `OK: 265 tables, 0 cross-module
+  `bun docs/database/validate-dbml.ts` ΓåÆ `OK: 265 tables, 0 cross-module
   refs, 0 timestamp gaps`. Drizzle `role.schema.ts`: `pgEnum` removed,
   `orgRole: text('org_role')`; seeder `organization-roles.seeder.ts` is now a
   shape verifier (warns when the enum type still exists, logs
   "organization role catalog verified").
 - **Migration** `20261112150000_erp0041_org_role_text` (hand-written,
   append-only): guarded enum recreate (fresh DBs vs 20261107090000-applied
-  DBs) → `ALTER COLUMN org_role TYPE text USING org_role::text` →
+  DBs) ΓåÆ `ALTER COLUMN org_role TYPE text USING org_role::text` ΓåÆ
   `DROP TYPE`. **Verified** on a disposable database
   `ims_erp41_verify` (created with `bun .tmp/create-verify-db.ts`, then
-  `POSTGRES_DB=ims_erp41_verify bun run database/migrate-reset.ts` — full
+  `POSTGRES_DB=ims_erp41_verify bun run database/migrate-reset.ts` ΓÇö full
   migrate + seed OK, `org_role data_type: text`, `organization_role enum
   rows: 0` via `.tmp/verify-org-role.ts`), then `bun run drizzle:seed` twice
-  on the same DB — idempotent, second run `created: 0` / `inserted: 0`,
+  on the same DB ΓÇö idempotent, second run `created: 0` / `inserted: 0`,
   "organization role catalog verified" logged both times. Note: the
   pre-existing drizzle-kit journal two-branch conflict still blocks
   `bun run drizzle:migrate` (same situation as ERP-0034, see 2026-11-10
@@ -4313,7 +6905,7 @@ edit) and new unit tests for the new paths still open.
   string[]` (closed enum via `organizationRoleSchema`) on all three invite
   surfaces: app scope (`user/contracts/invitation.contract.ts`), org scope
   (`organization/contracts/organization-invitation.contract.ts`), HR
-  (`hr/contracts/hr.contract.ts` — hand-rolled enum literal replaced by the
+  (`hr/contracts/hr.contract.ts` ΓÇö hand-rolled enum literal replaced by the
   shared schema). `InvitationService.invite` dedupes preserving order,
   comma-joins, and stores the joined string; claim attaches the joined list
   through `attachMembership` (Better Auth native comma-joined
@@ -4324,13 +6916,13 @@ edit) and new unit tests for the new paths still open.
   joins, `updateMemberRole` joins and keeps the last-owner guard
   (`!input.roles.includes('owner')`); gateway `addMember`/`updateMemberRole`
   pass the joined string (cast to `'owner'` against Better Auth's inferred
-  literal type — custom runtime roles are valid). Member-list role filter is
+  literal type ΓÇö custom runtime roles are valid). Member-list role filter is
   comma-aware: `(',' || role || ',') LIKE '%,<role>,%'` (whole-entry match,
-  `sales` ≠ `sales_manager`).
+  `sales` Γëá `sales_manager`).
 - **Image-profile.** `POST/GET/DELETE /organizations/:id/image-profile`
   (guard `organization:update` on write/delete, `organization:read` on
-  read). Client sends WebP; server validates magic bytes (`isWebpBuffer` —
-  `RIFF`+`WEBP`) and size ≤ 2MB (`organizationImageFrom`,
+  read). Client sends WebP; server validates magic bytes (`isWebpBuffer` ΓÇö
+  `RIFF`+`WEBP`) and size Γëñ 2MB (`organizationImageFrom`,
   `utils/organization-image.ts`), stores under
   `organizations/<id>/logo.webp` (`constants/image-keys.ts`) via
   `IObjectStorage.put`, writes the object key into `auth.organizations.logo`
@@ -4340,28 +6932,28 @@ edit) and new unit tests for the new paths still open.
 - **DiceBear org avatar.** `queues/org-logo.queue.ts` (deterministic job id
   `org-logo-<id>`) + `queues/org-logo.worker.ts` (seed = slug, style
   `10.x/initials/webp`, 256px, 10s timeout, 3 attempts). Worker re-reads the
-  org first and skips when `logo` is already set or the org is deleted — a
+  org first and skips when `logo` is already set or the org is deleted ΓÇö a
   real upload always wins. Dispatched fire-and-forget from
   `OrganizationService.createOrganization`; `startOrgLogoWorker()` added to
   `startWorkers` in `src/index.ts`, exported from `organization/index.ts`.
 - **Nested users on create.** `createOrganizationSchema` extended with
-  `users: [{ email, name, roles[] }]` (max 100, duplicate-email refine →
+  `users: [{ email, name, roles[] }]` (max 100, duplicate-email refine ΓåÆ
   400) and `sendInvites` (default true). `createOrganization(headers, input,
   actor?, creatorEmail?)` returns `{ organization, members[] }` with
-  per-item isolated outcomes: creator email → `skipped` (already owner);
-  active user (`UserManagementRepository.findActiveByEmail` — excludes
-  pending placeholders) → direct `addMember` (`added`); other emails → the
+  per-item isolated outcomes: creator email ΓåÆ `skipped` (already owner);
+  active user (`UserManagementRepository.findActiveByEmail` ΓÇö excludes
+  pending placeholders) ΓåÆ direct `addMember` (`added`); other emails ΓåÆ the
   unified invite pipeline (`invited`) with email delivery skipped when
   `sendInvites: false` (new `deliver` flag on `InvitationService.invite`,
-  honored on both overwrite and fresh paths); a thrown error → `failed` with
+  honored on both overwrite and fresh paths); a thrown error ΓåÆ `failed` with
   the message, remaining rows still run. Bootstrap controller passes actor +
   creator email, returns the new shape. Cross-module access goes through
   `INVITATION_SERVICE_TOKEN` and `USER_MANAGEMENT_REPOSITORY_TOKEN` (user
-  module exports) — no repository reaching across schemas.
+  module exports) ΓÇö no repository reaching across schemas.
 - **Bulk multi-role parsing.** `packages/common invite-sheet.ts` and the
   web-admin paste parser both treat pipe `|` as the role separator inside
   the comma-separated field (`admin|finance`); an unknown role drops the row
-  with a row error (paste path now matches the sheet parser — the old
+  with a row error (paste path now matches the sheet parser ΓÇö the old
   "send unvalidated and let the backend default" behavior is gone). Template
   sample rows show `admin|finance`.
 - **Tests.** Backend 824 pass / 0 fail (updated `invitation.service.test.ts`
@@ -4379,7 +6971,7 @@ edit) and new unit tests for the new paths still open.
 ## 2026-11-12 - Organization info dashboard (dummy data)
 
 Status: implemented; lint/typecheck/tests green. No backend, schema or
-migration touched — `docs/database/` reviewed and unchanged (frontend-only
+migration touched ΓÇö `docs/database/` reviewed and unchanged (frontend-only
 UI slice over hardcoded dummy data).
 
 - Tab `info` of `/organizations/$organizationId` now renders
@@ -4390,7 +6982,7 @@ UI slice over hardcoded dummy data).
   6 months), inventory (totals + low-stock list), activity feed,
   profit & loss (revenue/expense BarChart), cash & bank (per-account
   balances + total). Charts use the existing `@ims-erp/ui/components/chart`
-  (Recharts v3, already in `packages/ui`) — no new dependency.
+  (Recharts v3, already in `packages/ui`) ΓÇö no new dependency.
 - Money formatted via `Intl.NumberFormat('id-ID', IDR)`.
 - Locale: new `orgDashboard.*` keys (en/id) in `packages/locales`; removed
   now-dead `orgDetail.details/name/slug`; added the composed-key prefixes
@@ -4400,10 +6992,10 @@ UI slice over hardcoded dummy data).
 - Verified: `bunx tsc --noEmit` (web-admin, clean), `bun run lint` (no new
   warnings), `bun run test` (backend 824 pass, locales 82 pass).
 
-Next executable task: none claimed — ERP-0041 (incl. its bulk-invitation
+Next executable task: none claimed ΓÇö ERP-0041 (incl. its bulk-invitation
 walk-through) is `verified`; the next candidate from `backlog.md` is the
 outstanding reviewer sign-off on ERP-0039/ERP-0041, or claiming the next
-unimplemented item (ERP-0002 / ERP-0003 / ERP-0007 / ERP-0027 / ERP-0036 —
+unimplemented item (ERP-0002 / ERP-0003 / ERP-0007 / ERP-0027 / ERP-0036 ΓÇö
 all still open per `backlog.md`).
 
 ## 2026-11-12 - Bulk invitations via CSV/XLSX file upload
@@ -4427,7 +7019,7 @@ browser walk-through pending. Committed on `fix/org-hardening`.
   `TCreateInvitationInput`; `InvitationService.invite` resolves it through
   the new `IOrganizationSlugResolverPort` (adapter
   `organization/adapters/organization-slug-resolver.ts` over a new
-  `OrganizationRepository.findBySlug` — live rows only). Unknown slug =
+  `OrganizationRepository.findBySlug` ΓÇö live rows only). Unknown slug =
   `InvalidInvitationError.unknownOrganizationSlug` (422, new locale key
   `invitation.unknownOrganizationSlug` en/id), reported per row by the bulk
   loop. Slug chosen because `auth.organizations` has no code column; slug is
@@ -4441,13 +7033,13 @@ browser walk-through pending. Committed on `fix/org-hardening`.
 - **Verification.** Root `bun run typecheck` (4/4), `bun run lint`
   (12 warnings, 0 errors), `bun run test` all green (backend 824/824,
   locales 82/82 incl. new keys, web-admin 55/55, common 8/8 via workspace
-  run). `docs/database/` reviewed — no schema change (slug already unique),
+  run). `docs/database/` reviewed ΓÇö no schema change (slug already unique),
   no DBML edit needed.
 
 ## 2026-11-12 - ERP-0034 follow-up: invite creates the employee; personal fields move to `auth.users`
 
 Status: implemented and unit-tested; migration written but **not yet run
-against any database** (no disposable Postgres credentials available —
+against any database** (no disposable Postgres credentials available ΓÇö
 `.env` lacks `POSTGRES_*`, role `postgres` absent on `localhost:5432`, no
 running containers). Branch `fix/org-hardening`, uncommitted on top of
 `5f21778` (PR #82 open).
@@ -4457,9 +7049,9 @@ running containers). Branch `fix/org-hardening`, uncommitted on top of
   (check `male`/`female`), `birth_date`, `birth_place`, `marital_status`
   now live on `Table auth.users`, dropped from `Table hr.employees`.
   `bun docs/database/gen-logical-references.ts` then
-  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs,
+  `bun docs/database/validate-dbml.ts` ΓåÆ `OK: 0 cross-module refs,
   0 timestamp gaps`. Drizzle schemas hand-edited
-  (`auth.schema.ts` + checks, `hr.schema.ts` −4 columns) and
+  (`auth.schema.ts` + checks, `hr.schema.ts` ΓêÆ4 columns) and
   `auth.options.ts` gained the four `user.additionalFields`
   (`input: false`; `auth:generate` NOT run, per hard rule).
 - **Migration** `20261112120000_erp0034_personal_fields_to_auth_users`
@@ -4471,11 +7063,11 @@ running containers). Branch `fix/org-hardening`, uncommitted on top of
 - **Cross-module port.** HR reads/writes the four fields through
   `IUserPersonalFieldsPort` (`user/contracts/user-personal-fields.port.ts`,
   adapter `user/adapters/user-personal-fields.ts`, token
-  `USER_PERSONAL_FIELDS_PORT_TOKEN`) — HR never touches the user repository.
+  `USER_PERSONAL_FIELDS_PORT_TOKEN`) ΓÇö HR never touches the user repository.
   API contract unchanged: the fields stay in the HR body/DTO, so the
   web-admin HR form needs no change.
 - **Invite creates the employee (one step).** New HR orchestrator
-  `EmployeeInviteService` (token `EMPLOYEE_INVITE_SERVICE_TOKEN`): per row —
+  `EmployeeInviteService` (token `EMPLOYEE_INVITE_SERVICE_TOKEN`): per row ΓÇö
   reject an email already an employee, run `InvitationService.invite`,
   reserve the code via `NumberingService.next('employee')`, insert the
   employee (defaults: `fullName` from the invite `name`, `active`/`permanent`/
@@ -4495,13 +7087,13 @@ running containers). Branch `fix/org-hardening`, uncommitted on top of
   `member: ['read']`, `invitation: ['create', 'cancel']`;
   org invitation routes guard on `invitation:create` (invite/resend) and
   `invitation:cancel` (cancel/delete). Web-admin gates moved:
-  `$organizationId.tsx` invite button/dialog → `invitation.create`, Members
-  tab + query → `member.read`; `pending-invitations-panel.tsx` resend →
-  `invitation.create`, cancel/delete → `invitation.cancel`
+  `$organizationId.tsx` invite button/dialog ΓåÆ `invitation.create`, Members
+  tab + query ΓåÆ `member.read`; `pending-invitations-panel.tsx` resend ΓåÆ
+  `invitation.create`, cancel/delete ΓåÆ `invitation.cancel`
   (`ADMIN_PERMISSIONS` gained `createInvitations`/`cancelInvitations`).
   No locale keys changed (no new strings).
 - **Verification.** `bun run --cwd apps/backend typecheck` clean;
-  `bun run --cwd apps/backend test` → **824 pass, 0 fail** (57 files; the
+  `bun run --cwd apps/backend test` ΓåÆ **824 pass, 0 fail** (57 files; the
   `schema "auth" does not exist` line is the known DB-less integration-test
   noise). New `test/unit/employee-invite.service.test.ts` covers success,
   email-taken (pre-invite and per-row in bulk), and rollback on insert
@@ -4510,17 +7102,17 @@ running containers). Branch `fix/org-hardening`, uncommitted on top of
   `bun run --cwd apps/web-admin test` 55/55; `packages/locales` guards
   82/82.
 - **Open items.** Migration untested on a disposable DB (pre-check fail path,
-  copy, drop). `hr.seeder.ts` writes no personal fields (safe — columns
+  copy, drop). `hr.seeder.ts` writes no personal fields (safe ΓÇö columns
   nullable). Members tab layout change unverified in the browser. `hr`
   seeder personal-field backfill optional.
 
 ## 2026-11-12 - ERP-0039: organization-scoped invitations + one shared invite dialog
 
-Status: implemented and browser-verified end to end (invite → email → claim →
+Status: implemented and browser-verified end to end (invite ΓåÆ email ΓåÆ claim ΓåÆ
 membership), unit-tested; reviewer sign-off and PR still open. Branch
 `fix/org-hardening` (based on the merged `89940c0`).
 
-- **Backend — org-scoped invitation surface.** New
+- **Backend ΓÇö org-scoped invitation surface.** New
   `app/organization/controllers/organization-invitation.controller.ts`
   (5 routes under `/organizations/:organizationId/invitations`:
   list, create/bulk, resend, cancel, delete) plus a local
@@ -4528,60 +7120,60 @@ membership), unit-tested; reviewer sign-off and PR still open. Branch
   `organizationModule()` and exported from `app/organization/index.ts`.
   It delegates to the user module's `InvitationService` through the DI token
   (no cross-module repository access). The **path** organization is
-  authoritative — `organizationId` is never read from the body on these
+  authoritative ΓÇö `organizationId` is never read from the body on these
   routes, and `assertPathOrganization` rejects a mismatch for non-global
   admins.
-- **Backend — tenant scoping on single-id actions.** `InvitationService`
+- **Backend ΓÇö tenant scoping on single-id actions.** `InvitationService`
   gained `TInvitationScope` and `assertScope()`; `resend`/`cancel`/
   `deleteUnclaimed`/`requirePending` accept an optional
   `scope: { organizationId }` and report an out-of-scope row as
   `InvitationNotFoundError` (404, so a probe cannot confirm another
   organization's invitation). Application admins call unscoped.
-- **Backend — duplicate rules** (`invite`): pending in org A + invite to org
-  B → 409 (`InvitationPendingExistsError`); app-level pending + org invite →
+- **Backend ΓÇö duplicate rules** (`invite`): pending in org A + invite to org
+  B ΓåÆ 409 (`InvitationPendingExistsError`); app-level pending + org invite ΓåÆ
   the existing row is **adopted** into the org context; org pending + app
-  invite → 409; app → app and same-org → same-org overwrite (new token).
-- **Backend — claim phone is E.164.** `claimInvitationSchema.phone` now
+  invite ΓåÆ 409; app ΓåÆ app and same-org ΓåÆ same-org overwrite (new token).
+- **Backend ΓÇö claim phone is E.164.** `claimInvitationSchema.phone` now
   validates with `isValidPhoneNumber` from `libphonenumber-js/min` and
-  normalizes (`+62 812-3456-7890` → `+6281234567890`). Library added to
+  normalizes (`+62 812-3456-7890` ΓåÆ `+6281234567890`). Library added to
   `apps/backend` and `apps/web-admin` (`libphonenumber-js@1.13.16`).
-- **Web admin — one dialog, two modes.**
+- **Web admin ΓÇö one dialog, two modes.**
   `components/invite/invite-dialog.tsx` (`mode: 'admin' | 'org'`) replaces
   `components/admin/invite-dialog.tsx` (deleted). Admin mode adds a searchable
-  organization picker with an explicit **“Tanpa organisasi (tingkat
-  aplikasi)”** item (a `null` selection, not an empty state) and hides the
+  organization picker with an explicit **ΓÇ£Tanpa organisasi (tingkat
+  aplikasi)ΓÇ¥** item (a `null` selection, not an empty state) and hides the
   role field while no organization is chosen. Org mode pins the organization
   from the page and never renders the picker. Bulk paste:
   `email, name, org-code, role` (admin) vs `email, name, role` (org);
   `parseBulkInviteRows` returns `{ rows, rowErrors, error }` so an unknown org
   code or bad email drops only that row. The selector lists live
   organizations only (an invite into a soft-deleted org cannot be claimed).
-- **Web admin — org admin manages its own invitations.** The
+- **Web admin ΓÇö org admin manages its own invitations.** The
   organization-detail Members tab gained `Tambah anggota` (opens the dialog)
   and the `PendingInvitationsPanel`, which was refactored to take a `source`
   prop (`{ queryOptions, resend, cancel, remove, invalidate }`). The old
   `/organizations/$organizationId/members/new` page route was deleted along
   with `memberNew.*` locale keys and `breadcrumb.memberNew`. Org admins
   therefore never need the application-admin-only `/admin/invitations`.
-- **Web admin — app-admin-only surfaces.** New `lib/use-is-app-admin.ts`,
+- **Web admin ΓÇö app-admin-only surfaces.** New `lib/use-is-app-admin.ts`,
   `adminOnly` flag on sidebar items (hides `Users` and `Audit log` from
   organization-only users, keeping `Organisasi` and `Pengaturan`), and a new
   `routes/_authed/admin.tsx` layout guard that renders an in-place 403
   (`accessDenied.*`) instead of redirecting.
-- **Web admin — country-code phone picker.**
+- **Web admin ΓÇö country-code phone picker.**
   `components/form/country-phone-field.tsx` (searchable shadcn `Combobox`,
   countries from `getCountries()` + `getCountryCallingCode()`, names via
   `Intl.DisplayNames([i18n.language])`, default `ID`/`+62`) + `lib/phone.ts`
   `toE164()`. Filtering is done in a `useMemo` over `onInputValueChange`
   rather than a `ComboboxList` function child: that child must be the list's
   **only** child, and the empty state also lives inside the list (a
-  mixed array renders nothing — observed in the browser).
+  mixed array renders nothing ΓÇö observed in the browser).
 - **Locales.** `en`/`id` gained `invite.organization*`, `invite.noOrganization`,
   `invite.rowsPlaceholderAdmin`, `invite.rowsHintAdmin`, `invite.rowsEmpty`,
   `accessDenied.*`, `claim.form.phoneCountry*`, `claim.form.phonePlaceholder`
-  (added to `ALLOWED_IDENTICAL` — a digit pattern, not prose); `memberNew.*`
+  (added to `ALLOWED_IDENTICAL` ΓÇö a digit pattern, not prose); `memberNew.*`
   and `nav:breadcrumb.memberNew` removed.
-- **`docs/database/` reviewed and unchanged.** The organization “code” the
+- **`docs/database/` reviewed and unchanged.** The organization ΓÇ£codeΓÇ¥ the
   admin dialog accepts is the existing `auth.organizations.slug`; no table,
   column, index, constraint, status vocabulary or logical reference changed,
   so `docs.dbml` needed no edit and `validate-dbml.ts` was not re-run.
@@ -4591,28 +7183,28 @@ membership), unit-tested; reviewer sign-off and PR still open. Branch
   `apps/web-admin/test/unit/invite-parse.test.ts` (10 pass: both bulk
   layouts, per-row isolation, `toE164`).
 - **Verified commands (repo root unless noted).**
-  `bun run typecheck` → 4 tasks successful; `bun run lint` →
+  `bun run typecheck` ΓåÆ 4 tasks successful; `bun run lint` ΓåÆ
   ui 19 / backend 7 / web-admin 11 warnings, 0 errors (no new warnings in the
-  changed files); `bun run test` → 5 tasks successful, backend 820 pass /
+  changed files); `bun run test` ΓåÆ 5 tasks successful, backend 820 pass /
   0 fail, web-admin 55 pass / 0 fail, locales 82 pass / 0 fail,
   react-email 5 pass / 0 fail (`schema "auth" does not exist` log noise is the
   mocked-DB unit tests' expected output).
 - **Browser verification (live stack, Firefox + Mailpit).**
-  App-level: `/admin/users` → dialog → organization `Tanpa organisasi` → role
-  field hidden → send → mail `You're invited to create your IMS ERP account`
-  → claim page → account created, lands on `/` with no organization; sidebar
+  App-level: `/admin/users` ΓåÆ dialog ΓåÆ organization `Tanpa organisasi` ΓåÆ role
+  field hidden ΓåÆ send ΓåÆ mail `You're invited to create your IMS ERP account`
+  ΓåÆ claim page ΓåÆ account created, lands on `/` with no organization; sidebar
   hides `Users`, keeps `Organisasi`/`Pengaturan`. Org-level: organization
-  Members tab → `Tambah anggota` (no org picker) → send → mail `You are
-  invited to join Entragate` → claim page with the country picker defaulting
-  to `Indonesia (+62)`, typing `Malay` narrows the list to `Malaysia (+60)` →
-  claim → `auth.members` row (role `member`, org Entragate),
+  Members tab ΓåÆ `Tambah anggota` (no org picker) ΓåÆ send ΓåÆ mail `You are
+  invited to join Entragate` ΓåÆ claim page with the country picker defaulting
+  to `Indonesia (+62)`, typing `Malay` narrows the list to `Malaysia (+60)` ΓåÆ
+  claim ΓåÆ `auth.members` row (role `member`, org Entragate),
   `auth.user_invitations.status='accepted'`, `auth.users.phone='+6281399887766'`.
   Panel actions as org admin (`admin_seed`, no platform role): resend extends
   expiry and reissues the token, cancel moves the row to `cancelled` and drops
   it from the pending list, delete soft-deletes both the invitation and the
   pending user (`deleted_at` set on both). Same account hitting `/admin/users`
   gets the in-place 403. `GET /organizations/:id/invitations` unauthenticated
-  → 401 envelope.
+  ΓåÆ 401 envelope.
 
 ## 2026-11-13 - ERP-0046: dependabot bun config moved to the workspace root
 
@@ -4655,21 +7247,21 @@ Status: in-progress - config changed, waiting on the next dependabot run.
 
 ## 2026-11-10 - ERP-0034: minimal HR employees + warehouse PIC (slices 1-8)
 
-Status: implemented and browser-verified (create → list → detail; seeder;
+Status: implemented and browser-verified (create ΓåÆ list ΓåÆ detail; seeder;
 picker). Commits: `8f5e8f3` (schema+module), `4594774` (numbering),
 `513948c` (warehouse PIC), slice 7 (web-admin), `eaf7c90` (seeder+guard).
 
-- **Slice 1 — schema/migration.** New `hr` Postgres schema, table
+- **Slice 1 ΓÇö schema/migration.** New `hr` Postgres schema, table
   `hr.employees`: nullable `organization_id` (NULL = company-level
   employee, permanent valid state), nullable `user_id` with partial unique
-  index (`hr_employees_user_uq`, one login ↔ one alive employee),
+  index (`hr_employees_user_uq`, one login Γåö one alive employee),
   `employee_code`, identity/contact fields, employment/work enums via
   CHECK constraints, internal `manager_employee_id` FK, soft deletes. No
   cross-schema FKs (rule 3.2). Date/timestamp columns are **bigint** (unix
-  ms) matching `drizzle/datatypes/unix-timestamp.ts` — an initial
+  ms) matching `drizzle/datatypes/unix-timestamp.ts` ΓÇö an initial
   timestamptz version caused insert 500s and was re-applied by dropping the
   schema (empty at the time) and journaling the corrected hash
-  (`973778ea8a2a…`) via a bun script. Migration is hand-written
+  (`973778ea8a2aΓÇª`) via a bun script. Migration is hand-written
   (`20261112000000_erp0034_hr_employees`) because the journal's
   pre-existing two-branch conflict blocks drizzle-kit; `--fix-conflicts`
   would discard 14 applied migrations.
@@ -4677,7 +7269,7 @@ picker). Commits: `8f5e8f3` (schema+module), `4594774` (numbering),
   pattern `{TYPE}-{SEQ:5}`, reset `never`) added to `DOCUMENT_TYPES`,
   codes, modules, and defaults; `numbering.service.test.ts` expects 28
   types.
-- **Slices 3-4 — module.** `/hr/employees` REST: paginated list (own org +
+- **Slices 3-4 ΓÇö module.** `/hr/employees` REST: paginated list (own org +
   company-level), detail, create, patch, archive, and `/picker`. Create is
   **invite-first**: one call resolves the target org, reserves the EMP code
   via `NumberingService`, runs the user module's `InvitationService.invite`
@@ -4687,30 +7279,30 @@ picker). Commits: `8f5e8f3` (schema+module), `4594774` (numbering),
   `isPlatformAdmin`). `ExportedHrService` exposes
   `findEmployeeById`/`findEmployeeByUserId` for cross-module consumers.
   Locale error keys `hr.*` (en/id).
-- **Slice 6 — warehouse PIC.** `WarehouseService.assertPicAssignable`:
+- **Slice 6 ΓÇö warehouse PIC.** `WarehouseService.assertPicAssignable`:
   unknown/terminated employees and org-scoped employees outside the
   warehouse's currently linked organizations are rejected with 422
   `inventory.warehousePicInvalid`; company-level always assignable. Wired
   into create and update.
-- **Slice 7 — web-admin.** `/hr/employees` list (search + status filter,
+- **Slice 7 ΓÇö web-admin.** `/hr/employees` list (search + status filter,
   server pagination), invite-first new form, detail page; stub removed.
   New `hr` locale namespace (en/id, flat dotted keys), i18next typing,
   parity/dead-key allowances for composed enum labels. Build/test/lint
   pass.
-- **Slice 8 — seeder + picker guard.** `seedHrEmployees` links seeded role
+- **Slice 8 ΓÇö seeder + picker guard.** `seedHrEmployees` links seeded role
   accounts (admin, operations_manager, hr, warehouse, finance, sales) to
   employee rows and adds 2 company-level staff; codes via the numbering
   service; 29 rows seeded and verified in the UI. Picker guard changed
-  from `warehouse:update` to `employee:read` — no organization role holds
+  from `warehouse:update` to `employee:read` ΓÇö no organization role holds
   `warehouse:*` (ADR-0008), so the original guard was unusable.
 - **Verification (Firefox @ localhost:5173, admin@local.com):** list empty
-  state → create Budi Santoso via form → success → detail
-  (EMP-00002) → seeder filled the list. Picker API 200 with admin session
+  state ΓåÆ create Budi Santoso via form ΓåÆ success ΓåÆ detail
+  (EMP-00002) ΓåÆ seeder filled the list. Picker API 200 with admin session
   (403 without `employee:read`).
 - **Not done / deferred:** manager picker UI on the form (API supports
   `managerEmployeeId`); export action; ERP-0034's remaining HR tables.
   Pre-existing: `multi-organization.test.ts` fails in the full suite
-  (fresh `ims_erp_test` lacks the `auth` schema) — environment issue, not
+  (fresh `ims_erp_test` lacks the `auth` schema) ΓÇö environment issue, not
   from this change.
 
 ## 2026-11-09 - warehouse: components split from products, materials counted from balances
@@ -4750,18 +7342,18 @@ picker). Commits: `8f5e8f3` (schema+module), `4594774` (numbering),
 
 ## 2026-11-09 - warehouse form: address section layout
 
-- `packages/locales` `inventory:address.street`: en "Street" → "Address", id "Jalan" → "Alamat". Key unchanged.
+- `packages/locales` `inventory:address.street`: en "Street" ΓåÆ "Address", id "Jalan" ΓåÆ "Alamat". Key unchanged.
 - `apps/web-admin/src/components/inventory/warehouse-form.tsx`: label field moved into its own group, separated from the rest of the address by `Separator` (`@ims-erp/ui/components/separator`). Street input is now `Textarea` (`rows={3}`), spanning all three grid columns (`sm:col-span-3`). rt, rw, postal code stay in the grid below. `id` and `htmlFor` unchanged.
 - Backend unchanged: `street` is still a plain string, multi-line values are stored as typed.
 - Verified: `bun run test` in `packages/locales` 70 pass / 0 fail (run after the label change). `bunx tsc -b` clean in `apps/web-admin` after the separator and column-span change. `bun test` in `apps/web-admin` 45 pass / 0 fail (run after the textarea change, before the layout change).
-- Verified in browser (Firefox via `firefox-devtools-mcp`, `--connect-existing`, logged-in profile, 1920×947 viewport): `/inventory/warehouses/new` renders the Label field, a separator, then the full-width Address textarea (1584×64 px, `TEXTAREA`), then RT, RW, Postal code, Province, Regency, District, Village. English only. Not checked: Indonesian locale, filled-in values, edit form `/inventory/warehouses/$id/edit`.
+- Verified in browser (Firefox via `firefox-devtools-mcp`, `--connect-existing`, logged-in profile, 1920├ù947 viewport): `/inventory/warehouses/new` renders the Label field, a separator, then the full-width Address textarea (1584├ù64 px, `TEXTAREA`), then RT, RW, Postal code, Province, Regency, District, Village. English only. Not checked: Indonesian locale, filled-in values, edit form `/inventory/warehouses/$id/edit`.
 - Commit: `4de16b3` on `feat/adjust-shadcn-theme` (not pushed).
 - `docs/database/` not changed (UI only). Backlog: no `ERP-*` status change.
 
 ## 2026-11-09 - warehouse list: status filter and sort (name, code, status)
 
 - Backend `inventory`: `warehouseListQuerySchema` gained `status` (`all | active | inactive | archived`), `sortBy` (`name | code | status`), `sortDir` (`asc | desc`). `status` overrides the legacy `includeArchived` / `isActive` flags when present.
-- `warehouse.repository.ts`: `lifecycleFilter(status)` maps `all` → alive, `active` → alive + `is_active = true`, `inactive` → alive + `is_active = false`, `archived` → `deleted_at IS NOT NULL`. Sort by `name` / `code` / `STATUS_RANK` (active 0, inactive 1, archived 2), then `name`, then `id` as tie-breakers so pages stay stable.
+- `warehouse.repository.ts`: `lifecycleFilter(status)` maps `all` ΓåÆ alive, `active` ΓåÆ alive + `is_active = true`, `inactive` ΓåÆ alive + `is_active = false`, `archived` ΓåÆ `deleted_at IS NOT NULL`. Sort by `name` / `code` / `STATUS_RANK` (active 0, inactive 1, archived 2), then `name`, then `id` as tie-breakers so pages stay stable.
 - Web-admin: `/inventory/warehouses` checkbox "Include archived" replaced by a `Funnel` popover (status, sort by, order) with draft/Apply/Reset, same pattern as `admin/users`. Route `validateSearch` and `listWarehouses` carry the new params.
 - i18n: `inventory:warehouses.{filters,filtersTitle,filterStatus,statusAll,statusArchived,sortBy,sortName,sortCode,sortStatus,sortOrder,sortAsc,sortDesc,reset,apply}` added in en and id. `inventory:warehouses.includeArchived` removed from both bundles (dead-keys guard green). `listWarehouses` in `lib/warehouse-api.ts` still accepts `includeArchived` as a param, but the warehouse list no longer passes it.
 - Parity allowlist: `inventory:warehouses.filterStatus` and `sortStatus` added to `ALLOWED_IDENTICAL` (the word "Status" is the same in Indonesian).
@@ -4850,7 +7442,7 @@ Verification (all green):
 ## Completed - merge of main into merge/main-sync (PR #58 conflicts), 2026-11-06/07
 
 Status: **implemented** (merge commit on `merge/main-sync`; not merged into
-main — PR #58 awaits programmer A's review). Backlog: ERP-0037 (the port,
+main ΓÇö PR #58 awaits programmer A's review). Backlog: ERP-0037 (the port,
 renumbered from ERP-0036, which main uses for assets).
 
 Owner decisions (2026-11-06): one numbering system, ours (ADR-0013); for
@@ -4866,7 +7458,7 @@ files):
   settings page + locales en/id); test double renders the real patterns
   (two asset tests' code regexes updated to `MNT-YYYY-#####` /
   `DSP-YYYY-#####`).
-- Migrations: the 18 ported migrations renamed to `20261106110000…111700`
+- Migrations: the 18 ported migrations renamed to `20261106110000ΓÇª111700`
   (same order; first snapshot's parent = main's leaf; it no longer creates
   the `organization` schema or `document_sequences`); new
   `20261106165521_merge_main_reconcile` (generated with rename hints,
@@ -4874,7 +7466,7 @@ files):
   schema changes".
 - Inventory: main's hardening kept (atomic non-negative `applyDelta`,
   audit writer, warehouse links, combobox adjustment form, three item kinds
-  — tools are assets, services are not items); re-applied: item categories,
+  ΓÇö tools are assets, services are not items); re-applied: item categories,
   unit list and category index, moving-average cost (`lockForCost` + cost on
   every movement and reversal), opening-stock unit cost on adjustments,
   inventory value, serial sale for delivery notes, document photo. The
@@ -4894,13 +7486,13 @@ Verification:
   dropped afterwards.
 - Dev DB `ims_erp_sync` rebuilt (drop / create / migrate / seed twice /
   `refresh-role-grants.ts`).
-- `bun run typecheck` (apps/backend) clean; `NODE_ENV=test bun test` → 681
+- `bun run typecheck` (apps/backend) clean; `NODE_ENV=test bun test` ΓåÆ 681
   pass, 0 fail; `bun run lint` no errors. Web: `bun run build` OK, lint no
-  errors, 45 pass. Locales: 66 pass. `validate-dbml.ts` → OK.
+  errors, 45 pass. Locales: 66 pass. `validate-dbml.ts` ΓåÆ OK.
 - HTTP smoke as the initial admin: 19 list endpoints across sales, finance,
   procurement, delivery, projects, tickets, licenses, stock, items, assets,
-  borrowings, numbering → 200; stock receipt → `MV-202611-000001`;
-  adjustment with opening cost → `0001/ADJ/DEV/XI/26`. Screens checked:
+  borrowings, numbering ΓåÆ 200; stock receipt ΓåÆ `MV-202611-000001`;
+  adjustment with opening cost ΓåÆ `0001/ADJ/DEV/XI/26`. Screens checked:
   numbering settings (22 types), stock adjustment form, asset borrowings,
   subscription.
 - `docs/database/`: `docs.dbml` merged (items checks, document_sequences
@@ -4910,10 +7502,10 @@ Next executable task: push `merge/main-sync`; programmer A reviews PR #58
 (ADR-0013, the inventory re-applications, the `/warehouses/linked` fix);
 then M08 employees & attendance (gate 1 and 2 with the owner).
 
-## Completed — M03 subscription & licensing, stage 2 (license API, T23), 2026-11-06
+## Completed ΓÇö M03 subscription & licensing, stage 2 (license API, T23), 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet accepted by the
-owner). Backlog ERP-0019 (stages 1–2; T24 pilot integration blocked).
+owner). Backlog ERP-0019 (stages 1ΓÇô2; T24 pilot integration blocked).
 
 Gate 1 (read): docs.dbml MODULE Licensing (`license_activations`,
 `license_events`, `license_entitlements` / `usages`, `subscription_schedules`
@@ -4945,16 +7537,16 @@ Gate 2 (manual grilling pass):
   key expiry; `ok` until it, `grace` up to end + 7, then `expired`; revoked
   key, suspended, terminated, draft / not started are refused; a `renewed`
   contract's leftover key is `expired`. Derived, never stored.
-- Seats: `license_activations` per (key, `instance_id`), active seats ≤
+- Seats: `license_activations` per (key, `instance_id`), active seats Γëñ
   `max_activations`, taken under a row lock on the key; activate is
   idempotent per installation; deactivate releases; staff can release.
 - Renewal on payment: Finance `InvoiceLookupService.paidTotal(order)` (live
   invoices' paid total; receipts are verified when recorded, reversals
-  already deducted) ≥ order grand total → the draft renewal activates (guard
+  already deducted) ΓëÑ order grand total ΓåÆ the draft renewal activates (guard
   `draft`, so a payment renews once), the old contract becomes `renewed`, its
   keys (and seats) move to the renewal and keys that expired with the old
   contract get the new end. Checked when the register is read and when a key
-  is validated / activated / released — no background job. A receipt reversed
+  is validated / activated / released ΓÇö no background job. A receipt reversed
   after that does not undo the renewal (staff suspend if needed).
 - Log: `license_events` (append-only) for every machine call (result code,
   instance, IP, API key) and staff overrides (suspend with optional reason,
@@ -4969,7 +7561,7 @@ Gate 2 (manual grilling pass):
 What landed:
 - `docs/database/docs.dbml`: `license_activations` and `license_events`
   rewritten (company-wide), new `application_api_keys`, refs; header note
-  (grace 7 days). `gen-logical-references.ts` re-run; `validate-dbml.ts` → OK.
+  (grace 7 days). `gen-logical-references.ts` re-run; `validate-dbml.ts` ΓåÆ OK.
 - Drizzle schema + migration `20261106161026_licensing_api` (generated,
   inspected, applied to `ims_erp_sync`).
 - Backend: `LicenseApiRepository`, `LicenseApiService`,
@@ -4980,7 +7572,7 @@ What landed:
   `/licenses/applications/:id/api-keys` (list / issue / revoke),
   `/licenses/events`, `/licenses/:id/activations/:activationId/release`;
   Finance `InvoiceLookupService.paidTotal`; permission `license:manage_api`
-  (`packages/common` rebuilt; `refresh-role-grants.ts` → 2 role rows).
+  (`packages/common` rebuilt; `refresh-role-grants.ts` ΓåÆ 2 role rows).
 - Web: `/subscription/api-keys` (own applications, issue with the secret
   shown once, revoke; replaces the stub), `/subscription/activations` (the
   validation & activation log; replaces the stub), contract detail with seats
@@ -4990,17 +7582,17 @@ What landed:
   with the endpoint documentation and the pilot integration note (T32).
 
 Verification:
-- `bun run typecheck` (apps/backend) → clean.
-- `NODE_ENV=test bun test` (apps/backend) → 678 pass, 0 fail (new
+- `bun run typecheck` (apps/backend) ΓåÆ clean.
+- `NODE_ENV=test bun test` (apps/backend) ΓåÆ 678 pass, 0 fail (new
   `license-api.service.test.ts` 12 tests; `licensing.service.test.ts` 11).
-- `bun run build` / `bun run lint` / `bun test` (apps/web-admin) → OK, no new
-  lint findings, 45 pass; `bun test` (packages/locales) → 62 pass.
+- `bun run build` / `bun run lint` / `bun test` (apps/web-admin) ΓåÆ OK, no new
+  lint findings, 45 pass; `bun test` (packages/locales) ΓåÆ 62 pass.
 - e2e (Playwright + HTTP, dev servers): issued an `elk_` key on the API Keys
-  screen (shown once); no key → 401, wrong key → 401; contract ended 3 days
-  ago → `grace` with warning; activate PC-001 → seat; PC-002 → 409 (1 seat);
-  validate with PC-002 → `not_activated`; unknown key → `unknown`; renewal
+  screen (shown once); no key ΓåÆ 401, wrong key ΓåÆ 401; contract ended 3 days
+  ago ΓåÆ `grace` with warning; activate PC-001 ΓåÆ seat; PC-002 ΓåÆ 409 (1 seat);
+  validate with PC-002 ΓåÆ `not_activated`; unknown key ΓåÆ `unknown`; renewal
   draft linked to SO 0012, finance invoiced the remainder, issued it and
-  recorded the full receipt → next validate returned `ok` until 2027-11-04
+  recorded the full receipt ΓåÆ next validate returned `ok` until 2027-11-04
   (renewal activated by payment, key moved, old contract `renewed`);
   deactivate PC-001 then PC-002 activates. Screens checked: detail (seats,
   log), activation log, API keys. The two test API keys were revoked after
@@ -5009,7 +7601,7 @@ Verification:
 
 Next executable task: superseded by the merge entry above.
 
-## Completed — M03 subscription & licensing, stage 1 (register), 2026-11-06
+## Completed ΓÇö M03 subscription & licensing, stage 1 (register), 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet accepted by the
 owner). Backlog ERP-0019 (stage 1 of 2).
@@ -5022,14 +7614,14 @@ cycle, value, auto-renew, `draft / active / expired / suspended / terminated
 `issued / active / suspended / expired / revoked`), activations,
 entitlements, `subscription_schedules`, events); the old branch's
 `licensing-subscription.md` (v5.1 M03: one pilot application, stage 1 manual
-register T09, stage 2 API T23–T24, activation tied to verified payments).
+register T09, stage 2 API T23ΓÇôT24, activation tied to verified payments).
 
 Owner decisions (2026-11-06):
 1. **Both kinds of license**: third-party software sold to customers (key
    typed in from the vendor, the ERP records and reminds) and the company's
    own pilot application (key generated by the ERP; the activation /
    validation API is stage 2, own application only).
-2. **Billing through the sales flow**: a contract comes from SPH → sales
+2. **Billing through the sales flow**: a contract comes from SPH ΓåÆ sales
    order and is invoiced from the order; a renewal is a new SPH / order
    started from the due list. No invoice directly from a contract.
 3. **Reminders in stage 1**: a due list (licenses ending in the next 30 days,
@@ -5042,16 +7634,16 @@ Gate 2 (manual grilling pass, within the owner decisions):
   (packages, activations, entitlements, usages, schedules, events) stay
   target-only until stage 2.
 - `licensable_applications` rewritten: code, name, vendor, `source`
-  (`third_party` — key typed in from the vendor — or `own` — key generated by
+  (`third_party` ΓÇö key typed in from the vendor ΓÇö or `own` ΓÇö key generated by
   the ERP), description, `active / retired`.
 - `license_contracts` rewritten: code (new numbering type `license_contract`,
   `LIC`), customer (CRM contract, active customer) + name snapshot,
   application, `package_name` (free text: edition / plan), optional
-  `sales_order_id` (the order that sold or renewed it — billing stays in the
+  `sales_order_id` (the order that sold or renewed it ΓÇö billing stays in the
   sales flow), start / end dates (end null = perpetual), `billing_cycle`
   (`monthly, quarterly, semi_annual, annual, one_time`, informative),
   `contract_value` (IDR minor units), `renewed_from_contract_id`, notes.
-  Status `draft → active ⇄ suspended → terminated`; `active → renewed` when
+  Status `draft ΓåÆ active Γçä suspended ΓåÆ terminated`; `active ΓåÆ renewed` when
   its renewal is activated. "Expired" and "due" are derived from the end date
   (active and ended / ending within N days), never a stored state, so no job
   is needed. A package table and auto-renew are dropped (not decided).
@@ -5086,13 +7678,13 @@ Gate 2 (manual grilling pass, within the owner decisions):
 What landed (2026-11-06):
 - `docs/database/docs.dbml` MODULE Licensing: the three stage-1 tables
   rewritten as above (company-wide), refs fixed; `gen-logical-references.ts`
-  re-run; `validate-dbml.ts` → OK.
+  re-run; `validate-dbml.ts` ΓåÆ OK.
 - Drizzle `drizzle/schemas/licensing.schema.ts`; migration
   `20261106152004_licensing_register` (generated, inspected, applied to
   `ims_erp_sync`).
 - Numbering type `license_contract` (`LIC`); permission `license:read_key`
   plus the grants above (`packages/common` rebuilt;
-  `bun scripts/refresh-role-grants.ts` → 5 system role rows updated).
+  `bun scripts/refresh-role-grants.ts` ΓåÆ 5 system role rows updated).
 - Backend module `apps/backend/src/app/licensing/` (contracts + zod,
   `LicensingRepository`, `LicensingService`, errors with `api` keys en + id,
   `LicensingController` at `/licenses`, `utils/license.ts`), registered in
@@ -5108,41 +7700,41 @@ What landed (2026-11-06):
   search by code / customer / application / key; replaces the coming-soon
   stub), `/subscription/new`, `/subscription/$contractId` (terms, keys,
   activate / suspend / reactivate / renew / terminate, add / copy / revoke
-  key, "Create SPH" → `/sales/quotes/new?customerId=`),
+  key, "Create SPH" ΓåÆ `/sales/quotes/new?customerId=`),
   `/subscription/$contractId/edit` (drafts), `/subscription/applications`;
   nav item and breadcrumbs; locale namespace `licensing` (en + id). The M01
   dashboard's subscriptions widget now reads `GET /licenses/summary` (only
   that widget; the rest of the dashboard stays dummy and keeps its banner).
 
 Verification:
-- `bun run typecheck` (root) → 3/3 tasks OK.
-- `NODE_ENV=test bun test` (apps/backend) → 665 pass, 0 fail (new
+- `bun run typecheck` (root) ΓåÆ 3/3 tasks OK.
+- `NODE_ENV=test bun test` (apps/backend) ΓåÆ 665 pass, 0 fail (new
   `test/unit/licensing.service.test.ts`, 10 tests; the numbering settings test
   now expects 16 document types).
-- `bun run test` (root) → backend 665, web-admin 45, locales 62 pass.
-- `bun run build` (apps/web-admin) → OK; `bun run lint` → no new findings.
+- `bun run test` (root) ΓåÆ backend 665, web-admin 45, locales 62 pass.
+- `bun run build` (apps/web-admin) ΓåÆ OK; `bun run lint` ΓåÆ no new findings.
 - Browser (Playwright, Chromium, `sales_manager` and `finance` seed
   accounts): created a third-party and an own application; a contract ending
-  in 20 days (badge "20 days left"), vendor key typed in, activated; renewed →
-  draft for the next period with the same terms, activated → the old one shows
+  in 20 days (badge "20 days left"), vendor key typed in, activated; renewed ΓåÆ
+  draft for the next period with the same terms, activated ΓåÆ the old one shows
   `Renewed` with a link; own-application contract with a generated key, ended
   5 days ago ("Expired", "Ended 5 days ago"); due list; dashboard widget
-  (0 ending soon, 1 expired); finance sees the key masked (`••••-XXXX`) and
+  (0 ending soon, 1 expired); finance sees the key masked (`ΓÇóΓÇóΓÇóΓÇó-XXXX`) and
   no actions. The test applications and contracts stay in the dev database
   `ims_erp_sync`.
 - `docs/database/` updated in this change (above).
 
-Next executable task: M08 employees & attendance — gate 1 (read
+Next executable task: M08 employees & attendance ΓÇö gate 1 (read
 `docs.dbml` MODULE HR) and gate 2 with the owner before code. Stage 2 of M03
 (activation / validation API for the own application) waits for the pilot
 application's source access (T24).
 
-## Completed — print margins of every document (owner feedback), 2026-11-06
+## Completed ΓÇö print margins of every document (owner feedback), 2026-11-06
 
 Status: **implemented** (web admin only; owner feedback on the acceptance
 walk-through: "mepet, tidak ada padding" on every printed document).
 
-- `@page` margins widened to at least 18 mm left/right and 15–16 mm top
+- `@page` margins widened to at least 18 mm left/right and 15ΓÇô16 mm top
   (SPH 16/18 mm, invoice and PO 16/18/20 mm, surat jalan 15/18 mm, BAST
   18/20/15/22 mm, warranty 15/20/15/22 mm); the on-screen sheet preview
   uses `p-12`.
@@ -5160,15 +7752,15 @@ walk-through: "mepet, tidak ada padding" on every printed document).
   phone and email in the dev company profile; they were cleared (dev DB
   only, never committed).
 
-## Completed — user guide (EN + ID) and UML flow diagrams, 2026-11-06
+## Completed ΓÇö user guide (EN + ID) and UML flow diagrams, 2026-11-06
 
 Status: **done** (documentation only; no code, migration or test change).
 Owner request: a user guide in English and Indonesian with notes, plus UML
 diagrams.
 
 - `docs/user-guide/en.md`, `docs/user-guide/id.md`: getting started, roles,
-  first-time setup, quotation → revision → Deal → sales order, invoices / DP
-  / receipts, PO → goods receipt → stock, opening stock and adjustments,
+  first-time setup, quotation ΓåÆ revision ΓåÆ Deal ΓåÆ sales order, invoices / DP
+  / receipts, PO ΓåÆ goods receipt ΓåÆ stock, opening stock and adjustments,
   inventory value, delivery notes, projects, BAST, warranty, service
   tickets, document numbering, and Notes (rules, required order, known
   limitations). Labels were checked against the `en` / `id` locale bundles
@@ -5182,10 +7774,10 @@ diagrams.
 - `docs/user-guide/README.md` index; `docs/architecture/README.md` points
   to it. Backlog: no `ERP-*` status change (documentation of ERP-0036).
 
-## Completed — ADR-0011 port step 6c: service tickets with the warranty check, 2026-11-06
+## Completed ΓÇö ADR-0011 port step 6c: service tickets with the warranty check, 2026-11-06
 
-Next executable task: the ADR-0011 port is complete (steps 1–6). Open the
-single pull request `merge/main-sync → main` for programmer A's review (the
+Next executable task: the ADR-0011 port is complete (steps 1ΓÇô6). Open the
+single pull request `merge/main-sync ΓåÆ main` for programmer A's review (the
 inventory changes flagged in steps 4b, 5a and 5b need his approval), after the
 owner's go; meanwhile the owner's acceptance walk-through of M02 / M05 / M07.
 
@@ -5198,8 +7790,8 @@ What landed:
 - After-Sales: `ServiceTicketRepository`, `ServiceTicketService`,
   `ServiceTicketController` (`/service-tickets`, `/warranty-check`,
   `/technicians`, `/:id`, assign / start / resolve / reopen / close);
-  `WarrantyService.check` (serial → shipment → live project → certificate,
-  in warranty while the report date ≤ the end date). Errors with `api` keys
+  `WarrantyService.check` (serial ΓåÆ shipment ΓåÆ live project ΓåÆ certificate,
+  in warranty while the report date Γëñ the end date). Errors with `api` keys
   en + id.
 - Contracts: Sales `findShipmentBySerial` (delivery-note lines, jsonb
   containment), Projects `liveProjectOfOrder` / `getProject`.
@@ -5210,18 +7802,18 @@ What landed:
 
 Found while testing: a `${JSON.stringify([...])}::jsonb` parameter in a
 Drizzle `sql` template did not match (the value arrived encoded twice with
-bun-sql); `jsonb_build_array(${value}::text)` is used instead — worth
+bun-sql); `jsonb_build_array(${value}::text)` is used instead ΓÇö worth
 remembering for any other jsonb containment query.
 
 Verification (2026-11-06):
 - `bun docs/database/gen-logical-references.ts` + `bun
-  docs/database/validate-dbml.ts` → `OK`. `docs/database/` updated
+  docs/database/validate-dbml.ts` ΓåÆ `OK`. `docs/database/` updated
   (`aftersales.service_tickets` rewritten, module note).
-- `NODE_ENV=development bun run drizzle:migrate` → applied.
-- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
-  pre-existing); `bun run test` → backend 655 pass (new
+- `NODE_ENV=development bun run drizzle:migrate` ΓåÆ applied.
+- `bun run typecheck` ΓåÆ 3/3; `bun run lint` ΓåÆ 0 errors (warnings
+  pre-existing); `bun run test` ΓåÆ backend 655 pass (new
   `service-ticket.service.test.ts`, warranty-check cases), web-admin 45,
-  locales 58, 0 fail; `bun run build` → built.
+  locales 58, 0 fail; `bun run build` ΓåÆ built.
 - Browser + API check (temporary Playwright script, deleted): a serialized
   unit received by a goods receipt, sold, shipped by a delivery note; project,
   BAST and warranty (to 2027-11-05). Customer service typed the serial in the
@@ -5232,16 +7824,16 @@ Verification (2026-11-06):
   resolved (Rp 150.000) through the UI, closing as technician 403; customer
   service closed with the customer's confirmation (WhatsApp); no browser
   errors.
-- Test data left in the dev DB: projects `0004`–`0006/PRJ/DEV/XI/26` with
-  their BAST / warranty, ticket `0001/TKT/DEV/XI/26`, serials `TK-…`.
+- Test data left in the dev DB: projects `0004`ΓÇô`0006/PRJ/DEV/XI/26` with
+  their BAST / warranty, ticket `0001/TKT/DEV/XI/26`, serials `TK-ΓÇª`.
 
 Gate 1 (read): docs.dbml `aftersales.service_tickets` (tenant-scoped scaffold:
 `open / assigned / in_progress / on_hold / resolved / closed / cancelled`,
 SLA, escalation, asset and employee references) and the Ticketing module
 note (customer-portal tickets are a different module, programmer A; they may
 escalate into an after-sales service ticket by logical reference);
-module-ownership §15; numbering type `service_ticket` (`TKT`); role catalog
-(`service_ticket:*` — customer service and project manager all, technician
+module-ownership ┬º15; numbering type `service_ticket` (`TKT`); role catalog
+(`service_ticket:*` ΓÇö customer service and project manager all, technician
 read / update / resolve, admin read / create / update / assign); the old
 branch's `service-ticket.service.ts` and tests (decisions of 2026-11-04);
 `aftersales.warranty_certificates` (step 6b); delivery-note lines carry the
@@ -5254,19 +7846,19 @@ Gate 2 (manual grilling pass):
   the customer), `serial_number`, `device_description`, `channel` (`phone,
   whatsapp, email, web, onsite, other`), reporter name / contact,
   `complaint`, `reported_at`; the warranty check stored on the ticket
-  (`in_warranty`, `warranty_ends_on`, `warranty_code`); `status` `new →
-  in_progress → resolved → closed` (resolved may reopen); assignee (must hold
+  (`in_warranty`, `warranty_ends_on`, `warranty_code`); `status` `new ΓåÆ
+  in_progress ΓåÆ resolved ΓåÆ closed` (resolved may reopen); assignee (must hold
   `service_ticket:update`, member of the caller's organization),
   `resolution`, `service_cost` (IDR minor units), resolved by / at, the
   customer's confirmation (name, channel, at) required to close, closed by /
   at. SLA, escalation, priority, asset and employee columns of the scaffold
   are dropped (not decided).
-- Warranty check (also a read endpoint for the form): serial → the shipped
-  delivery-note line carrying it (Sales contract `findShipmentBySerial`) →
-  the order's live project (Projects contract) → its warranty certificate;
-  in warranty when the report date ≤ the certificate's end date. Without a
+- Warranty check (also a read endpoint for the form): serial ΓåÆ the shipped
+  delivery-note line carrying it (Sales contract `findShipmentBySerial`) ΓåÆ
+  the order's live project (Projects contract) ΓåÆ its warranty certificate;
+  in warranty when the report date Γëñ the certificate's end date. Without a
   serial, the given project's certificate. A serial delivered to another
-  customer → 422.
+  customer ΓåÆ 422.
 - Visibility: holders of `service_ticket:assign` or `:close` see every
   ticket; others only tickets assigned to them (404). Start / resolve /
   reopen: the assignee or an assigner. Create `service_ticket:create`,
@@ -5275,7 +7867,7 @@ Gate 2 (manual grilling pass):
   live warranty badge), detail with assign / start / resolve / reopen /
   close; replaces the coming-soon stub.
 
-## Completed — ADR-0011 port step 6b: BAST and warranty certificate, 2026-11-06
+## Completed ΓÇö ADR-0011 port step 6b: BAST and warranty certificate, 2026-11-06
 
 Next executable task: step 6c (done, entry above).
 
@@ -5309,31 +7901,31 @@ What landed:
 
 Verification (2026-11-06):
 - `bun docs/database/gen-logical-references.ts` + `bun
-  docs/database/validate-dbml.ts` → `OK`. `docs/database/` updated (BAST
+  docs/database/validate-dbml.ts` ΓåÆ `OK`. `docs/database/` updated (BAST
   table rewritten, `aftersales.warranty_certificates` added, module notes).
-- `NODE_ENV=development bun run drizzle:migrate` → applied.
-- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
-  pre-existing); `bun run test` → backend 650 pass (new
+- `NODE_ENV=development bun run drizzle:migrate` ΓåÆ applied.
+- `bun run typecheck` ΓåÆ 3/3; `bun run lint` ΓåÆ 0 errors (warnings
+  pre-existing); `bun run test` ΓåÆ backend 650 pass (new
   `handover-warranty.test.ts`: period arithmetic, several BASTs, numbering,
   frozen after close, warranty needs an issued BAST, customer code, profile
-  texts), web-admin 45, locales 58, 0 fail; `bun run build` → built.
+  texts), web-admin 45, locales 58, 0 fail; `bun run build` ΓåÆ built.
 - Browser + API check (temporary Playwright script, deleted): deal shipped by
   a delivery note, project by the PM; the first BAST issued through the form
   (prefilled contract number from the customer PO, customer, "Project
-  Manager") → `002/BAST/DEV/XII/2025` dated 2025-12-24; a second BAST for
-  another contract → two on the project; the warranty form prefilled the
-  shipped device and the sample's texts with sub-items; saved →
-  `001/SG-GARANSI/DEV-SPHSKL8P/2026`, 2025-12-24 → 2026-12-23; a warranty on
-  the cancelled second BAST → 422; the technician issuing a BAST → 403; the
+  Manager") ΓåÆ `002/BAST/DEV/XII/2025` dated 2025-12-24; a second BAST for
+  another contract ΓåÆ two on the project; the warranty form prefilled the
+  shipped device and the sample's texts with sub-items; saved ΓåÆ
+  `001/SG-GARANSI/DEV-SPHSKL8P/2026`, 2025-12-24 ΓåÆ 2026-12-23; a warranty on
+  the cancelled second BAST ΓåÆ 422; the technician issuing a BAST ΓåÆ 403; the
   BAST list shows them; no browser errors. Both prints rendered to PDF and
   compared with the sample: BAST on one Letter page (title, number, date in
   words, parties, contract line, table, scope with bold, closing, two
   signatures), warranty on two pages (letterhead, number / date, company,
-  statement, project, A table, B period, page 2 C ✅ / ❌ lists with "o"
+  statement, project, A table, B period, page 2 C Γ£à / Γ¥î lists with "o"
   sub-items, D, closing, signatory). The dev company profile was filled for
   the print and restored afterwards.
-- Test data left in the dev DB: projects `0002`–`0003/PRJ/DEV/XI/26`, BASTs
-  `001`–`003/BAST/DEV/XII/2025`, warranty `001/SG-GARANSI/DEV-SPHSKL8P/2026`.
+- Test data left in the dev DB: projects `0002`ΓÇô`0003/PRJ/DEV/XI/26`, BASTs
+  `001`ΓÇô`003/BAST/DEV/XII/2025`, warranty `001/SG-GARANSI/DEV-SPHSKL8P/2026`.
 
 Owner decisions (2026-11-06, asked during this step): a project may have
 **several BASTs** (the sample has two for one project, one per contract);
@@ -5342,15 +7934,15 @@ the network topology page of the sample is **not** built into the system.
 Gate 1 (read): docs.dbml `projects.project_handover` (scaffold: tenant
 scoped, `draft / scheduled / completed / cancelled`, no content columns) and
 After-Sales (no certificate table; `warranty_policies` / `warranty_claims` are
-a different concept); module-ownership §9 / §15 (warranty belongs to
-After-Sales, BAST to Projects; numbering map `bast → projects`,
-`warranty → aftersales`); numbering patterns `{SEQ:3}/BAST/{COMPANY}/{MM_ROMAN}/{YYYY}`
+a different concept); module-ownership ┬º9 / ┬º15 (warranty belongs to
+After-Sales, BAST to Projects; numbering map `bast ΓåÆ projects`,
+`warranty ΓåÆ aftersales`); numbering patterns `{SEQ:3}/BAST/{COMPANY}/{MM_ROMAN}/{YYYY}`
 and `{SEQ:3}/SG-GARANSI/{COMPANY}-{CUSTOMER}/{YYYY}`; company profile
 (legal name, address, phone, email, logo, signature image, signatory,
 warranty coverage / exclusions / service terms); the old branch's
 `handover.service.ts` / `domain/handover.ts` defaults; the private sample
 (US Letter: BAST without letterhead, Times, date in words; warranty with the
-letterhead, sections A–D with sub-bullets and bold phrases, signature).
+letterhead, sections AΓÇôD with sub-bullets and bold phrases, signature).
 Skipped: `implementation-phases.md` (no unlanded dependency).
 
 Gate 2 (manual grilling pass):
@@ -5368,11 +7960,11 @@ Gate 2 (manual grilling pass):
   Projects contract (`ProjectHandoverContract`), `customer_id` through CRM
   (customer code in the number). Start = the chosen BAST's date; end = the
   day before the same date `months` later (clamped to month end); `months`
-  1–120 (default 12). Snapshot of product summary, project name / location /
+  1ΓÇô120 (default 12). Snapshot of product summary, project name / location /
   owner, items, and the coverage / exclusions / service-terms texts (from the
   company profile, else the sample's texts). Text syntax: one item per line,
   a line starting with `o ` or `- ` is a sub-item of the previous one,
-  `**…**` prints bold — needed to print the sample exactly. Editable while
+  `**ΓÇª**` prints bold ΓÇö needed to print the sample exactly. Editable while
   the project is not cancelled (also after closing).
 - Defaults: BAST from the order (lines with "Telah selesai terpasang dan
   berfungsi dengan baik", attention, customer PO as contract number), the
@@ -5382,11 +7974,11 @@ Gate 2 (manual grilling pass):
   day and date in words, the parties, "Dan berdasarkan kepada", the table, the
   scope list, the closing, two signature blocks); the BAST number is added
   under the title (the sample has none) as on the surat jalan. The warranty
-  copies sample pages 3–4 (letterhead, A–D, ✅ / ❌ headings, sub-bullets,
+  copies sample pages 3ΓÇô4 (letterhead, AΓÇôD, Γ£à / Γ¥î headings, sub-bullets,
   bold phrases, "Hormat kami," with the signature image and signatory). The
   sample's period sentence is printed as is.
 
-## Completed — ADR-0011 port step 6a: projects (M07 part 1), 2026-11-06
+## Completed ΓÇö ADR-0011 port step 6a: projects (M07 part 1), 2026-11-06
 
 Next executable task: step 6b (done, entry above).
 
@@ -5406,7 +7998,7 @@ What landed:
   id; `utils/project-files.ts` (type by magic bytes, 15 MB).
 - Sales: `SalesFulfilmentService` (live deals, shipped material value from
   `DeliveryNoteRepository.shippedValues`); cancelling an order with a live
-  project → 422 `sales.orderHasProject`.
+  project ΓåÆ 422 `sales.orderHasProject`.
 - Web: `/projects` (list, filter, search), `/projects/new` (deal picker,
   PIC), `/projects/$projectId` (stage stepper, edit, close, cancel, checklist
   with assignee / state per task, evidence upload and gallery, direct costs
@@ -5415,13 +8007,13 @@ What landed:
 
 Verification (2026-11-06):
 - `bun docs/database/gen-logical-references.ts` + `bun
-  docs/database/validate-dbml.ts` → `OK` (260 tables). `docs/database/`
+  docs/database/validate-dbml.ts` ΓåÆ `OK` (260 tables). `docs/database/`
   updated (projects rewritten, evidence and costs added, module note).
-- `NODE_ENV=development bun run drizzle:migrate` → applied.
-- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
-  pre-existing); `bun run test` → backend 646 pass (new
+- `NODE_ENV=development bun run drizzle:migrate` ΓåÆ applied.
+- `bun run typecheck` ΓåÆ 3/3; `bun run lint` ΓåÆ 0 errors (warnings
+  pre-existing); `bun run test` ΓåÆ backend 646 pass (new
   `project.service.test.ts`, sales-order guard), web-admin 45, locales 58,
-  0 fail; `bun run build` (web-admin) → built.
+  0 fail; `bun run build` (web-admin) ΓåÆ built.
 - Browser + API check (temporary Playwright script, deleted): deal by sales /
   owner; the project manager created `0001/PRJ/DEV/XI/26` through the UI
   (stage "Persiapan", six default tasks), a second project on the deal 409;
@@ -5430,28 +8022,28 @@ Verification (2026-11-06):
   PNG was refused with the Indonesian message) and saw no costs or close
   button; the PM recorded Rp 750.000 with a receipt (margin Rp 110.250.000
   against Rp 111.000.000); close stayed disabled until training and BAST
-  evidence existed, then closed → `closed / warranty`; finance reads costs
-  but recording one is 403; cancelling the order → 422; no browser errors.
-- Test data left in the dev DB: SPH / SO `Proyek uji …`, project
+  evidence existed, then closed ΓåÆ `closed / warranty`; finance reads costs
+  but recording one is 403; cancelling the order ΓåÆ 422; no browser errors.
+- Test data left in the dev DB: SPH / SO `Proyek uji ΓÇª`, project
   `0001/PRJ/DEV/XI/26` and its files in object storage.
 
 Gate 1 (read): docs.dbml MODULE Projects (scaffold: tenant-scoped
 `projects.projects` with `planned / in_progress / on_hold / completed /
 cancelled`, `project_tasks`, `project_handover`, no evidence or cost tables)
 and After-Sales (`warranty_policies`, `warranty_claims`, `service_tickets`);
-`module-ownership.md` §9 (Projects: zero intra-module foreign keys by design,
-the service validates its own hierarchy) and §15; the old branch's M07
+`module-ownership.md` ┬º9 (Projects: zero intra-module foreign keys by design,
+the service validates its own hierarchy) and ┬º15; the old branch's M07
 implementation (`feat/m05-inventory-purchasing`: `project.schema.ts`,
 `project.service.ts`, `handover.service.ts`, `service-ticket.service.ts`,
-tests, e2e spec — decisions of 2026-11-04); numbering type `project` (`PRJ`);
+tests, e2e spec ΓÇö decisions of 2026-11-04); numbering type `project` (`PRJ`);
 role catalog (`project:*` incl. `read_cost`, `task:*`; project manager,
 technician, finance); `OBJECT_STORAGE_TOKEN`; the BAST / warranty sample.
 Skipped: `implementation-phases.md` (no unlanded dependency).
 
 Gate 2 (manual grilling pass):
 - Ownership: new module `projects` (schema `projects`, programmer B, ADR-0011
-  §13). Company-wide like the deals it comes from (ADR-0011/0012): no
-  `organization_id`. Following module-ownership §9, no foreign keys inside the
+  ┬º13). Company-wide like the deals it comes from (ADR-0011/0012): no
+  `organization_id`. Following module-ownership ┬º9, no foreign keys inside the
   module either; the project service validates task / evidence / cost
   parents.
 - `projects.projects` rewritten to the decided model: one live project per
@@ -5470,7 +8062,7 @@ Gate 2 (manual grilling pass):
   other; JPG/PNG/WebP/PDF by magic bytes, 15 MB) and `project_costs`
   (material, transport, accommodation, subcontract, other; amount in IDR
   minor units, optional receipt; voided with a reason, never deleted).
-- Rules (old branch, decided 2026-11-04): visibility — holders of
+- Rules (old branch, decided 2026-11-04): visibility ΓÇö holders of
   `project:assign|read_cost|export` or `service_ticket:assign` see every
   project, others only projects they lead or have a task in (404). Only an
   active project changes. Close needs testing, training and BAST evidence and
@@ -5489,14 +8081,14 @@ Gate 2 (manual grilling pass):
   evidence and costs; replaces the coming-soon stub. BAST and tickets stay
   stubs until 6b / 6c.
 
-## Completed — ADR-0011 port step 5b: adjustment cost, opening stock, inventory value, 2026-11-06
+## Completed ΓÇö ADR-0011 port step 5b: adjustment cost, opening stock, inventory value, 2026-11-06
 
 Next executable task: step 6a (done, entry above).
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Step 5 (5a + 5b) is complete. Touches programmer
 A's adjustment workflow and inventory module: **review required** in the
-merge PR (ADR-0011 §6, §13) — `adjustment.service.ts` (`unitCost` kept on the
+merge PR (ADR-0011 ┬º6, ┬º13) ΓÇö `adjustment.service.ts` (`unitCost` kept on the
 line, increases post at it), `adjustment.controller.ts` (cost stripped in and
 out without `product:read_cost`), `adjustment-form.tsx` / `adjustment-detail.tsx`
 / `stock-list.tsx` (cost field and column, value link), new
@@ -5515,7 +8107,7 @@ What landed:
 Findings for programmer A (pre-existing, not changed here):
 - `adjustment-form.tsx` loads `/warehouses` (application-admin only,
   ADR-0008), so the warehouse and purchasing roles get 403 and cannot pick a
-  warehouse — they cannot raise adjustments (or opening stock) from the UI.
+  warehouse ΓÇö they cannot raise adjustments (or opening stock) from the UI.
   The receipt and delivery forms use their own warehouse endpoints for this.
 - Dev seed balances carry no cost (valued at Rp0); real opening stock must
   be entered through `opening_stock` adjustments. ITEM-013 (a serialized
@@ -5524,19 +8116,19 @@ Findings for programmer A (pre-existing, not changed here):
 
 Verification (2026-11-06):
 - `bun docs/database/gen-logical-references.ts` + `bun
-  docs/database/validate-dbml.ts` → `OK` (258 tables, 0 cross-module refs, 0
+  docs/database/validate-dbml.ts` ΓåÆ `OK` (258 tables, 0 cross-module refs, 0
   timestamp gaps). `docs/database/` updated (`stock_adjustment_items.unit_cost`).
-- `NODE_ENV=development bun run drizzle:migrate` → applied.
-- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (warnings
-  pre-existing); `bun run test` → backend 639 pass (new: opening-stock cost
+- `NODE_ENV=development bun run drizzle:migrate` ΓåÆ applied.
+- `bun run typecheck` ΓåÆ 3/3; `bun run lint` ΓåÆ 0 errors (warnings
+  pre-existing); `bun run test` ΓåÆ backend 639 pass (new: opening-stock cost
   test, `stock-valuation.service.test.ts`), web-admin 45, locales 54, 0 fail;
-  `bun run build` (web-admin) → built.
+  `bun run build` (web-admin) ΓåÆ built.
 - Browser + API check (temporary Playwright script, deleted): the owner
   raised opening stock through the adjustment form (cost field shown, Rp
-  25.000 → `unit_cost` 2,500,000, reason `opening_stock`), submitted,
-  approved and posted → balance `10.000 @ 2,500,000 = 25,000,000` and the
+  25.000 ΓåÆ `unit_cost` 2,500,000, reason `opening_stock`), submitted,
+  approved and posted ΓåÆ balance `10.000 @ 2,500,000 = 25,000,000` and the
   grand total rose by exactly 25,000,000; the warehouse role sees no cost
-  field, a cost it sends is stored as null, `/stock/valuation` → 403; the
+  field, a cost it sends is stored as null, `/stock/valuation` ΓåÆ 403; the
   value page lists the balances with per-warehouse totals; only browser
   errors: the two pre-existing `/warehouses` 403s above.
 - Test data left in the dev DB: opening-stock adjustments for ITEM-012 and
@@ -5546,7 +8138,7 @@ Gate 1 (read): docs.dbml `inventory.stock_adjustments` /
 `stock_adjustment_items` (no cost column), `stock_balances.average_cost` /
 `total_value` (step 4b); `AdjustmentService.create` / `buildLines` / `post`
 (posts `adjustment_in` / `adjustment_out` through `StockService.postMovement`,
-creator cannot approve — `SelfApprovalForbiddenError` already exists);
+creator cannot approve ΓÇö `SelfApprovalForbiddenError` already exists);
 `adjustment.controller.ts` grants (`stock_adjustment:create|approve|post`);
 role catalog (purchasing "prepares opening stock / adjustments with costs").
 Skipped: `logical-references.md` (no new cross-module link; same module),
@@ -5556,7 +8148,7 @@ Gate 2 (manual grilling pass):
 - `inventory.stock_adjustment_items.unit_cost` (bigint, nullable, IDR minor
   units): the cost an increase line enters stock at. Null = the current
   moving average (a recount surplus). Ignored for decreases (they always
-  leave at the average). This is the opening-stock use of ADR-0011 §6: an
+  leave at the average). This is the opening-stock use of ADR-0011 ┬º6: an
   `increase` adjustment with reason code `opening_stock` and a cost per
   line, through the existing approval chain (creator cannot approve). No
   second table, no new adjustment type.
@@ -5566,12 +8158,12 @@ Gate 2 (manual grilling pass):
 - Inventory value view: read-only `GET /stock/valuation` (inventory module,
   `stock:read` + `product:read_cost`): non-zero balances with item SKU /
   name / unit and warehouse code / name, quantity, average cost and value,
-  plus totals per warehouse and the grand total — computed in SQL from
+  plus totals per warehouse and the grand total ΓÇö computed in SQL from
   `stock_balances` (the ledger-maintained truth). Web `/inventory/stock/value`.
-- No journal entries (accounting module not ported; ADR-0011 §5 covers the
+- No journal entries (accounting module not ported; ADR-0011 ┬º5 covers the
   inventory value only).
 
-## Completed — ADR-0011 port step 5a: delivery notes (surat jalan), 2026-11-06
+## Completed ΓÇö ADR-0011 port step 5a: delivery notes (surat jalan), 2026-11-06
 
 Next executable task: step 5b (done, entry above).
 
@@ -5591,13 +8183,13 @@ What landed:
   `/deliverable-orders`, `/serials`, `/:id/ship|deliver|cancel`);
   `SalesOrderRepository.allocateDelivery` (row locks, open-quantity guard,
   line fulfilment) and `markInProgress`; cancelling an order with live notes
-  → 422 `sales.orderDelivered`. Errors with `api` keys en + id.
+  ΓåÆ 422 `sales.orderDelivered`. Errors with `api` keys en + id.
 - Shipping: stock-tracked lines post `issue` at the moving average (cost kept
   on the line, hidden without `product:read_cost`); serialized lines sell
-  their units (`in_stock → sold`, customer set; the item kind must allow
+  their units (`in_stock ΓåÆ sold`, customer set; the item kind must allow
   `sold`). The two item flags are handled independently: dev seed has
   serialized tools that are not stock-tracked (ITEM-013..016), which
-  contradicts `assertItemShape` — flagged for programmer A.
+  contradicts `assertItemShape` ΓÇö flagged for programmer A.
 - Web: `/sales/deliveries` (list, new with `?salesOrderId`, detail with
   ship / deliver / cancel, print), "Surat jalan" card on the sales order
   page, sidebar entry; print `delivery-note-document.tsx` in the sample's
@@ -5606,59 +8198,59 @@ What landed:
 
 Verification (2026-11-06):
 - `bun docs/database/gen-logical-references.ts` + `bun
-  docs/database/validate-dbml.ts` → `OK` (258 tables, 0 cross-module refs, 0
+  docs/database/validate-dbml.ts` ΓåÆ `OK` (258 tables, 0 cross-module refs, 0
   timestamp gaps). `docs/database/` updated (delivery notes rewritten, lines
   added, sales header note).
-- `NODE_ENV=development bun run drizzle:migrate` → applied.
-- `bun run typecheck` → 3/3; `bun run lint` → 0 errors (remaining warnings
-  pre-existing); `bun run test` → backend 637 pass, web-admin 45, locales 54,
-  0 fail; `bun run build` (web-admin) → built.
+- `NODE_ENV=development bun run drizzle:migrate` ΓåÆ applied.
+- `bun run typecheck` ΓåÆ 3/3; `bun run lint` ΓåÆ 0 errors (remaining warnings
+  pre-existing); `bun run test` ΓåÆ backend 637 pass, web-admin 45, locales 54,
+  0 fail; `bun run build` (web-admin) ΓåÆ built.
 - Browser + API check (temporary Playwright script, deleted): SPH by sales,
   approved by the owner, sales order; two serialized units received by a
   goods receipt; the warehouse role prepared a note through the UI (recipient
-  prefilled from the order, serials ticked from the in-stock list) →
+  prefilled from the order, serials ticked from the in-stock list) ΓåÆ
   `0005/SJ/DEV/XI/26`, order lines 3/4 partial, 2/2 and 1/1 fulfilled;
   over-delivery 422; cancelling the order 422; sales role reads notes 200;
   print rendered to PDF and compared with the sample (Letter, same blocks,
-  seven-row table, Catatan box, three signatures); ship through the UI →
-  balance `104.000 → 101.000`, value down exactly 3 × 7,272,727, both units
+  seven-row table, Catatan box, three signatures); ship through the UI ΓåÆ
+  balance `104.000 ΓåÆ 101.000`, value down exactly 3 ├ù 7,272,727, both units
   `sold`, line cost visible to the owner and null for the warehouse, order
   `in_progress`; delivered with the receiver name; a second note cancelled
   gave its quantity back; no browser errors.
-- Test data left in the dev DB: SPH/SO/PO `Uji SJ …`, notes
-  `0001`–`0006/SJ/DEV/XI/26`, serials `SJ-…`.
+- Test data left in the dev DB: SPH/SO/PO `Uji SJ ΓÇª`, notes
+  `0001`ΓÇô`0006/SJ/DEV/XI/26`, serials `SJ-ΓÇª`.
 
 Gate 1 (read): docs.dbml `sales.delivery_notes` (tenant-scoped scaffold, no
 lines, statuses `prepared / shipped / delivered / returned`),
 `sales.sales_orders` / `sales_order_items` (`quantity_delivered`,
 `fulfillment_status` already exist), `inventory.stock_movements` (no
 reference-type vocabulary except borrowing), `serial_tracked_items`
-(`status`, `warehouse_id`, `customer_id`, `stock_movement_id`); ADR-0011 §4
-(a shipped delivery note makes a unit `sold`), §5 (delivery notes post
-`issue` movements), §7 (every delivery document names its warehouse,
+(`status`, `warehouse_id`, `customer_id`, `stock_movement_id`); ADR-0011 ┬º4
+(a shipped delivery note makes a unit `sold`), ┬º5 (delivery notes post
+`issue` movements), ┬º7 (every delivery document names its warehouse,
 storage optional); numbering type `delivery_note` (`SJ`); grants
 `stock:issue` / `stock:read`; the private surat jalan sample (Letter size).
 Skipped: `implementation-phases.md` (no dependency on an unlanded step).
 
 Gate 2 (manual grilling pass):
 - Ownership: `sales.delivery_notes` + new `sales.delivery_note_items`, owned
-  by the sales module (programmer B, ADR-0011 §13). Company-wide like the
+  by the sales module (programmer B, ADR-0011 ┬º13). Company-wide like the
   orders (ADR-0011/0012): `organization_id` dropped. `warehouse_id`,
   `bin_id`, `item_id`, `stock_movement_id` are logical references validated
   through the inventory contracts (`StockService.resolveScope`,
   `WarehouseService.getWarehouse`, `ItemService.getItem`).
 - Lifecycle: `prepared` (numbered `SJ` on creation so the driver's copy can
-  be printed) → `shipped` (posts one `issue` movement per stock-tracked line
+  be printed) ΓåÆ `shipped` (posts one `issue` movement per stock-tracked line
   at the moving average, records the cost on the line, marks the listed
-  serial units `sold` to the order's customer) → `delivered` (receiver name
+  serial units `sold` to the order's customer) ΓåÆ `delivered` (receiver name
   and date). `prepared` may be `cancelled`; shipped notes are final
   (returns are `sales.sales_returns`, later). `returned` dropped from the
   vocabulary, `cancelled` added.
-- Quantities: a line ≤ what the order line still has open; open = ordered −
+- Quantities: a line Γëñ what the order line still has open; open = ordered ΓêÆ
   `quantity_delivered`, where `quantity_delivered` counts every live
   (non-cancelled) note, updated under a row lock on create and given back on
   cancel. Line fulfilment `partial` / `fulfilled`; the order goes
-  `confirmed → in_progress` on the first shipment. Custom lines (no item)
+  `confirmed ΓåÆ in_progress` on the first shipment. Custom lines (no item)
   and non-stock items print but post no movement.
 - Serials: serialized lines need one serial per unit at creation; shipping
   checks each unit is `in_stock` in that warehouse (atomic update guarded on
@@ -5678,13 +8270,13 @@ Gate 2 (manual grilling pass):
 - Permissions: create / ship / deliver / cancel with `stock:issue`
   (warehouse, owner); read with `stock:read` or `sales_order:read`. Cost on
   lines only with `product:read_cost`. Cancelling a sales order with live
-  delivery notes → 422.
+  delivery notes ΓåÆ 422.
 
-## Completed — ADR-0011 port step 4b: goods receipts and moving-average cost, 2026-11-06
+## Completed ΓÇö ADR-0011 port step 4b: goods receipts and moving-average cost, 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Touches programmer A's stock ledger: **review
-required** in the merge PR (ADR-0011 §5, §13) — `stock.service.ts`
+required** in the merge PR (ADR-0011 ┬º5, ┬º13) ΓÇö `stock.service.ts`
 (`postMovement` cost, `reverseMovement`, `recomputeFromLedger` cost replay),
 `balance.repository.ts` (`lockForCost`, `setCost`), `movement.repository.ts`
 (`ledgerRows`, ledger scope), `serial-unit.repository.ts`, `stock.controller.ts`
@@ -5698,9 +8290,9 @@ What landed:
 - Inventory: `utils/moving-average.ts` (`applyMovementCost`,
   `exVatUnitCost`), cost in `postMovement` under a `FOR UPDATE` balance lock,
   reversal at the original cost, ledger replay in `recomputeFromLedger`;
-  `ItemService.registerUnit(…, tx)` with PO line / movement links.
+  `ItemService.registerUnit(ΓÇª, tx)` with PO line / movement links.
 - `src/providers/database/transaction-runner.ts` (`TRANSACTION_RUNNER_TOKEN`)
-  — the receipt, PO progress, movements and serial units commit together.
+  ΓÇö the receipt, PO progress, movements and serial units commit together.
 - Procurement: `GoodsReceiptService` / `GoodsReceiptController`
   (`/goods-receipts`, `/goods-receipts/warehouses`,
   `/goods-receipts/receivable-orders`), `PurchaseOrderRepository.receive`
@@ -5711,7 +8303,7 @@ What landed:
 Pre-existing defects in programmer A's inventory code found and fixed here
 (flag in the review):
 1. `serial-unit.repository.create` never set `created_at` (NOT NULL, no
-   default) — every serial unit insert failed with 500. Now set on insert.
+   default) ΓÇö every serial unit insert failed with 500. Now set on insert.
 2. The `stock_balances` unique indexes treated `bin_id IS NULL` as distinct,
    so every `ON CONFLICT` upsert of a bin-less balance inserted a new row
    (one row per movement). Custom migration
@@ -5723,31 +8315,31 @@ Pre-existing defects in programmer A's inventory code found and fixed here
    notes updated.
 3. `recomputeFromLedger` selected movements by the movement's own
    `organization_id` (the poster), while balances are scoped by the
-   warehouse's organization — a tenant user receiving into a shared warehouse
+   warehouse's organization ΓÇö a tenant user receiving into a shared warehouse
    was dropped from the recompute. `ledgerTotals` / `ledgerRows` now select by
    the warehouse's scope (`balanceScopeFilter`).
 
 Verification (2026-11-06):
 - `bun docs/database/gen-logical-references.ts` + `bun
-  docs/database/validate-dbml.ts` → `OK` (257 tables, 0 cross-module refs, 0
+  docs/database/validate-dbml.ts` ΓåÆ `OK` (257 tables, 0 cross-module refs, 0
   timestamp gaps).
-- `NODE_ENV=development bun run drizzle:migrate` → applied (index definitions
+- `NODE_ENV=development bun run drizzle:migrate` ΓåÆ applied (index definitions
   checked with `pg_indexes`: `NULLS NOT DISTINCT`; 0 duplicate balance keys).
-- `bun run typecheck` → 3/3; `bun run lint` → 4/4; `bun run test` → backend
+- `bun run typecheck` ΓåÆ 3/3; `bun run lint` ΓåÆ 4/4; `bun run test` ΓåÆ backend
   630 pass, web-admin 45 pass, locales 54 pass, 0 fail; `bun run build`
-  (web-admin) → built.
+  (web-admin) ΓåÆ built.
 - Browser + API check (temporary Playwright script, deleted): recompute of
   the shared scope rebuilt `80.000 @ 5,000,000 = 400,000,000`; a partial
   receipt through the UI as the warehouse role (BPB numbered
   `0013/BPB/DEV/XI/26`, serials `in_stock`), over-receipt 422, the rest
-  received → PO `received`, cancel of a received PO 422; a second PO at
-  another price → one balance row `110.000 @ 7,272,727 = 800,000,000`
+  received ΓåÆ PO `received`, cancel of a received PO 422; a second PO at
+  another price ΓåÆ one balance row `110.000 @ 7,272,727 = 800,000,000`
   (expected value and average match); the warehouse role sees no cost fields;
   no browser errors.
 - `docs/database/` updated (DBML cost columns, goods receipts, balance index
   notes).
-- Test data left in the dev DB: several test POs `Uji BPB …` with their
-  receipts and serials `SN-…`.
+- Test data left in the dev DB: several test POs `Uji BPB ΓÇª` with their
+  receipts and serials `SN-ΓÇª`.
 
 Next executable task: step 5a (done, entry above).
 
@@ -5761,11 +8353,11 @@ corrections through adjustments; cost = ex-VAT unit price); numbering type
 `goods_receipt` (`BPB`); grants `stock:receive` (warehouse, owner).
 
 Gate 2 (manual grilling pass):
-- Cost (ADR-0011 §5 supersedes OPEN-3 for the inventory value; the journal
+- Cost (ADR-0011 ┬º5 supersedes OPEN-3 for the inventory value; the journal
   still waits for accounting): `stock_movements.unit_cost` (bigint, the cost
   each movement was valued at) and `stock_balances.average_cost` /
-  `total_value` (bigint) per balance row. Inbound with a cost →
-  `value += round(qty × cost)`, `average = round(value / qty)`; inbound
+  `total_value` (bigint) per balance row. Inbound with a cost ΓåÆ
+  `value += round(qty ├ù cost)`, `average = round(value / qty)`; inbound
   without a cost takes the current average; outbound takes the average, and
   the last unit out takes the exact remaining value (no drift). Reversals
   use the original movement's cost. The balance row is locked (`FOR
@@ -5774,19 +8366,19 @@ Gate 2 (manual grilling pass):
   rebuilt too (the test oracle). Cost columns reach the client only with
   `product:read_cost`.
 - Cross-module unit of work: new provider `TRANSACTION_RUNNER_TOKEN`
-  (`run(work(tx))`) — the procurement service runs the receipt, its PO
+  (`run(work(tx))`) ΓÇö the procurement service runs the receipt, its PO
   progress, the stock movements (`postMovement(input, tx)`) and serial units
-  (`registerUnit(…, tx)`, new optional `tx`) in one transaction (the old
+  (`registerUnit(ΓÇª, tx)`, new optional `tx`) in one transaction (the old
   branch's ADR-0009 rule). No service injects `DRIZZLE_TOKEN`.
 - Goods receipts (`procurement.goods_receipts`, company-wide): only for
   `sent` or `partially_received` POs; one warehouse (bin optional) per
   receipt; posted on creation (status `posted`, DBML `draft / cancelled`
   dropped), numbered `BPB` on creation, immutable (corrections are stock
-  adjustments); quantities ≤ what is still open per line; PO becomes
+  adjustments); quantities Γëñ what is still open per line; PO becomes
   `partially_received` / `received`; `receipt_date` business date,
   `supplier_delivery_ref` (supplier's surat jalan). Lines:
   `purchase_order_item_id` (same-module FK), item snapshot, `quantity`,
-  `unit_cost` = ex-VAT unit price (VAT-included POs: price × 10000 /
+  `unit_cost` = ex-VAT unit price (VAT-included POs: price ├ù 10000 /
   (10000 + rate), half-up), `serial_numbers` (jsonb array; one per unit for
   serialized items, which become `in_stock` units linked to the PO line and
   the movement). DBML `quantity_rejected` / `rejection_reason` / `lot_number`
@@ -5797,18 +8389,18 @@ Gate 2 (manual grilling pass):
 - Web: `/procurement/receipts` (list, detail, new from a PO), "Terima barang"
   on a sent PO. No print (no sample).
 
-## Completed — ADR-0011 port step 4a: suppliers and purchase orders, 2026-11-06
+## Completed ΓÇö ADR-0011 port step 4a: suppliers and purchase orders, 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Step 4 is
 split: 4a suppliers + purchase orders with the PO print, 4b goods receipts +
-moving-average cost (ADR-0011 §5).
+moving-average cost (ADR-0011 ┬º5).
 
 Gate 1 (read): docs.dbml Procurement module (`suppliers`, `supplier_contacts`,
 `supplier_addresses`, `purchase_orders`, `purchase_order_items`,
 `goods_receipts`, `goods_receipt_items`); the old branch's owner-approved
 purchasing (`purchasing.schema.ts`, `purchase-order.service.ts`,
-`po-totals.ts`, contracts); ADR-0011 §5 and §12 (module name `procurement`,
+`po-totals.ts`, contracts); ADR-0011 ┬º5 and ┬º12 (module name `procurement`,
 cost on the ledger); numbering (`PURCHASE_ORDER_PATTERN`
 `{TYPE}/{COMPANY}-{SUPPLIER}/{CATEGORY}/{MM}{YY}/{SEQ:3}`); role grants
 (`supplier:*` incl. `read_bank`, `purchase_order:*`); the private PO sample.
@@ -5818,7 +8410,7 @@ Gate 2 (manual grilling pass):
 - Ownership: new **Procurement** module (`app/procurement`, schema
   `procurement`), company-wide (no `organization_id`, ADR-0011).
 - Suppliers: DBML columns plus the owner-approved ones (`website`,
-  `address_line`, `village_id` → Location contract, `postal_code`,
+  `address_line`, `village_id` ΓåÆ Location contract, `postal_code`,
   `pic_name/phone/email/title` printed on the PO, `payment_term_note`);
   `code` upper-case letters/digits (it is `{SUPPLIER}` in the PO number),
   unique among live rows; statuses `active | inactive` (DBML `blocked`
@@ -5826,9 +8418,9 @@ Gate 2 (manual grilling pass):
   `supplier:read_bank` (dynamic resolver); others neither see nor overwrite
   them. `supplier_contacts` / `supplier_addresses` stay unbuilt (one PIC and
   one address are printed).
-- Purchase orders: `draft → submitted → approved → sent`, rejection returns
+- Purchase orders: `draft ΓåÆ submitted ΓåÆ approved ΓåÆ sent`, rejection returns
   to `draft` with the reason; `partially_received / received` come with 4b;
-  `draft | submitted | approved | sent → cancelled` with a reason while
+  `draft | submitted | approved | sent ΓåÆ cancelled` with a reason while
   nothing was received. One-level approval with `purchase_order:approve`,
   never by the PO's creator. Numbered on approval from the order date with
   the supplier code and the category code (`HW | SW | JS | LN`). Only drafts
@@ -5843,14 +8435,14 @@ Gate 2 (manual grilling pass):
   `created_by`, `submitted_by`, `sent_by`, `cancelled_by/at`, `deleted_at`.
   Dropped: `purchase_request_id`, `shipping_total`, `payment_terms_days`,
   `ship_to_address_text`, `closed_at`.
-- PO items: `item_id` → `inventory.items` (active items only, validated
+- PO items: `item_id` ΓåÆ `inventory.items` (active items only, validated
   through `ItemService.getActiveItems`); sku / name / specification / unit
   snapshot; `quantity numeric(18,3)`; `unit_price` defaults to the item's
-  purchase price; `line_total = round(quantity × unit_price)`;
+  purchase price; `line_total = round(quantity ├ù unit_price)`;
   `quantity_received` for 4b. Dropped: `tax_amount`, `unit_id`,
   `quantity_rejected` (VAT is per PO; units are a fixed list).
 - Money: bigint minor units; VAT `added` = on top, `included` = derived
-  from the total (DPP = total × 10000 / (10000 + rate)), half-up BigInt.
+  from the total (DPP = total ├ù 10000 / (10000 + rate)), half-up BigInt.
 - Print: exactly the company's PO sample. No PO approval history table
   (statuses carry who/when).
 - Web: `/procurement/suppliers` (list, form, detail), `/procurement/purchase-orders`
@@ -5860,7 +8452,7 @@ Gate 2 (manual grilling pass):
 What landed:
 - docs.dbml first (`procurement.suppliers`, `purchase_orders`,
   `purchase_order_items` company-wide; the stale `purchase_request_id` ref
-  removed); `gen-logical-references.ts` → 498 refs; `validate-dbml.ts` → OK.
+  removed); `gen-logical-references.ts` ΓåÆ 498 refs; `validate-dbml.ts` ΓåÆ OK.
 - Migration `20261105180613_procurement_suppliers_purchase_orders`
   (`CREATE SCHEMA procurement`, 3 tables, partial unique codes, checks), read
   and applied to `ims_erp_sync`.
@@ -5874,15 +8466,15 @@ What landed:
   breadcrumb labels, `procurement` locale namespace (en + id).
 
 Verification (2026-11-06):
-- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 619 pass
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` ΓåÆ 619 pass
   (`test/unit/procurement.service.test.ts`, 7 tests).
-- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass; locales
-  → 54 pass; lint: no warnings in new files.
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` ΓåÆ 45 pass; locales
+  ΓåÆ 54 pass; lint: no warnings in new files.
 - Browser (temporary Playwright script, deleted): `purchasing.seed` creates a
   supplier with bank details in the UI; `auditor.seed` reads it with the bank
   columns null (`bankVisible: false`); `purchasing.seed` creates a PO from
-  an inventory item (33 × Rp 1.900.000, PPN included), submits it and gets
-  no approve button; the owner approves → `PO/DEV-HIT9ND3/HW/1126/001`;
+  an inventory item (33 ├ù Rp 1.900.000, PPN included), submits it and gets
+  no approve button; the owner approves ΓåÆ `PO/DEV-HIT9ND3/HW/1126/001`;
   purchasing marks it sent. PO printed to PDF and compared with the sample
   (header, teal bar, facts grid, buyer/supplier blocks, navy item table,
   subtotal / PPN Included* / TOTAL PURCHASE ORDER, terbilang, numbered terms
@@ -5892,7 +8484,7 @@ Verification (2026-11-06):
 
 Next: step 4b (done, entry above).
 
-## Completed — ADR-0011 port step 3d-2: invoices, DP and receipts, 2026-11-06
+## Completed ΓÇö ADR-0011 port step 3d-2: invoices, DP and receipts, 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner).
@@ -5913,14 +8505,14 @@ Gate 2 (manual grilling pass):
 - Cross-module: Finance reads orders through a Sales contract
   (`SalesBillingService.getOrderForBilling` / `listOrdersForBilling`, live
   orders only); Sales asks Finance before cancelling an order
-  (`InvoiceLookupService.hasLiveInvoices`) — an order with live invoices
+  (`InvoiceLookupService.hasLiveInvoices`) ΓÇö an order with live invoices
   cannot be cancelled. Two small services, so no DI cycle.
 - Invoices (owner decisions 2026-10-31 / 2026-11-04): free billing terms per
-  invoice — percentage of the order tax base, a VAT-inclusive amount, the
+  invoice ΓÇö percentage of the order tax base, a VAT-inclusive amount, the
   remainder, or the next planned term; the term that reaches the order's tax
   base takes the exact remaining VAT (no rounding drift); terms are computed
-  under a per-order advisory lock. `draft` (no number) → `issued` (numbered
-  on issue, no gaps) → `partially_paid` → `paid`; unpaid `draft|issued` →
+  under a per-order advisory lock. `draft` (no number) ΓåÆ `issued` (numbered
+  on issue, no gaps) ΓåÆ `partially_paid` ΓåÆ `paid`; unpaid `draft|issued` ΓåÆ
   `void` with a reason. `term_kind` is derived: the first live invoice of an
   order that does not settle it is `down_payment` (the DP menu), the one
   that settles it `settlement`, others `installment`. DBML `overdue` is
@@ -5951,9 +8543,9 @@ Gate 2 (manual grilling pass):
 
 What landed:
 - docs.dbml first (`finance.invoices`, `finance.receipts` company-wide;
-  receipts → invoices `restrict`, the `payment_id` ref removed until
-  `finance.payments` exists); `gen-logical-references.ts` → 497 refs;
-  `validate-dbml.ts` → OK.
+  receipts ΓåÆ invoices `restrict`, the `payment_id` ref removed until
+  `finance.payments` exists); `gen-logical-references.ts` ΓåÆ 497 refs;
+  `validate-dbml.ts` ΓåÆ OK.
 - Migration `20261105173322_finance_invoices_receipts` (`CREATE SCHEMA
   finance`, 2 tables, partial unique code indexes, checks), read and applied
   to `ims_erp_sync`.
@@ -5963,7 +8555,7 @@ What landed:
   `/invoices/orders/:orderId/summary`, `ReceiptController` `/receipts`,
   `utils/invoice-terms.ts`, `errors/finance.errors.ts`), registered in
   `src/index.ts`, mounted in `app/app.ts`. Sales: `SalesBillingService`
-  (contract for Finance); cancelling an order with live invoices → 422
+  (contract for Finance); cancelling an order with live invoices ΓåÆ 422
   `sales.orderBilled`.
 - Web: `lib/invoice-api.ts`, `components/finance/{invoice-list,
   billing-card, invoice-document}.tsx`, routes `/sales/invoices`,
@@ -5972,18 +8564,18 @@ What landed:
   locale namespace (en + id).
 
 Verification (2026-11-06):
-- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 612 pass
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` ΓåÆ 612 pass
   (`test/unit/invoice.service.test.ts` 11 tests: odd-base 50/50 settles
   exactly, VAT-inclusive split, planned terms, DP/installment/settlement
   kinds, void frees the share, numbering on issue, due-before-issue,
   partial/full/over payment, reversal; sales-order billed guard).
-- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass; locales
-  → 50 pass; lint: no warnings in new files.
-- Browser (temporary Playwright script, deleted): SPH (DP 30% / BAST 70%) →
-  approved → order `0002/SO/DEV/XI/26`; `sales.seed` gets 403 on
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` ΓåÆ 45 pass; locales
+  ΓåÆ 50 pass; lint: no warnings in new files.
+- Browser (temporary Playwright script, deleted): SPH (DP 30% / BAST 70%) ΓåÆ
+  approved ΓåÆ order `0002/SO/DEV/XI/26`; `sales.seed` gets 403 on
   `/invoices`; `finance.seed` creates the DP from the order page, issues it
   (`0001/INV/DEV/XI/26`); the manager cannot cancel the billed order (422);
-  partial payment → `partially_paid`, overpayment → 422, rest → `paid`;
+  partial payment ΓåÆ `partially_paid`, overpayment ΓåÆ 422, rest ΓåÆ `paid`;
   the next term is `settlement` and DP + settlement = order total exactly;
   DP and receipt lists show them. Invoice printed to PDF (A4) and compared
   with the sample: page 1 company block / INVOICE / Ditujukan kepada /
@@ -5992,19 +8584,19 @@ Verification (2026-11-06):
   / Syarat dan ketentuan; "Halaman x dari 2". The company profile used for
   the print was restored afterwards.
 - Test data left in the dev DB: SPH `0006/QT/DEV/XI/26`, order
-  `0002/SO/DEV/XI/26`, invoices `0001`–`0002/INV/DEV/XI/26`, two receipts.
+  `0002/SO/DEV/XI/26`, invoices `0001`ΓÇô`0002/INV/DEV/XI/26`, two receipts.
 
 Deliberate differences from the invoice sample: table header text is white
 on the navy bar (the sample's dark text is unreadable); the terbilang is of
 the amount due (the sample's "sesuai dokumen asal" line spelled a
 different figure). No kwitansi print yet: there is no sample.
 
-Next executable task: ADR-0011 step 4 — procurement (suppliers, purchase
+Next executable task: ADR-0011 step 4 ΓÇö procurement (suppliers, purchase
 orders with the PO sample print) and moving-average cost; then step 5
 (delivery notes with the surat jalan sample, adjustments, inventory value)
 and step 6 (M07), then the PR to main.
 
-## Completed — ADR-0011 port step 3d-1: sales orders (SPH → Deal), 2026-11-06
+## Completed ΓÇö ADR-0011 port step 3d-1: sales orders (SPH ΓåÆ Deal), 2026-11-06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Step 3d is split: 3d-1 sales orders (this), 3d-2
@@ -6022,10 +8614,10 @@ Gate 2 (manual grilling pass):
   (`/sales/orders`). Company-wide like quotations (no `organization_id`).
 - Lifecycle (owner-approved 2026-11-04, mapped onto the DBML vocabulary):
   an order is created only from an `approved` or `sent` SPH and is
-  `confirmed` (active) at once — no separate approval; creating it marks the
-  SPH `won` ("Deal") in the same transaction; `confirmed → cancelled` with a
+  `confirmed` (active) at once ΓÇö no separate approval; creating it marks the
+  SPH `won` ("Deal") in the same transaction; `confirmed ΓåÆ cancelled` with a
   reason reopens the SPH to `sent` (or `approved` if never sent).
-  `in_progress / delivered / completed` stay in the CHECK for steps 4–5.
+  `in_progress / delivered / completed` stay in the CHECK for steps 4ΓÇô5.
   One live order per SPH (partial unique index). Cancelling an order that
   has live invoices is refused once invoices exist (3d-2 adds that guard
   through the finance contract).
@@ -6040,7 +8632,7 @@ Gate 2 (manual grilling pass):
   flow), `warehouse_id` (chosen on the delivery note, step 5),
   `approved_by/at` (no order approval).
 - Items: copied from the SPH lines (`quotation_item_id` same-module FK,
-  `item_id` → `inventory.items` logical, sku/name/specification/unit
+  `item_id` ΓåÆ `inventory.items` logical, sku/name/specification/unit
   snapshot, numeric quantity, money); `quantity_delivered` and
   `fulfillment_status` kept for delivery notes (step 5); `tax_amount` and
   `unit_id` dropped (VAT per document, fixed units).
@@ -6055,11 +8647,11 @@ Gate 2 (manual grilling pass):
 What landed:
 - docs.dbml first (three tables rewritten company-wide, refs to
   `quotations` / `quotation_items` as `restrict`);
-  `gen-logical-references.ts` → 497 refs; `validate-dbml.ts` → OK.
-- Migration `20261105172403_sales_orders` (3 × `CREATE TABLE`, indexes incl.
+  `gen-logical-references.ts` ΓåÆ 497 refs; `validate-dbml.ts` ΓåÆ OK.
+- Migration `20261105172403_sales_orders` (3 ├ù `CREATE TABLE`, indexes incl.
   the partial `sales_orders_live_quotation_uq`, FKs), read and applied to
-  `ims_erp_sync`; a second `drizzle:generate` → no changes.
-- Backend: `SalesOrderRepository` (create + SPH → `won`, cancel + SPH
+  `ims_erp_sync`; a second `drizzle:generate` ΓåÆ no changes.
+- Backend: `SalesOrderRepository` (create + SPH ΓåÆ `won`, cancel + SPH
   reopened, each with both history rows in one transaction),
   `SalesOrderService`, `SalesOrderController`, `errors/sales-order.errors.ts`
   (`sales.order*` keys, en + id). Quotation detail returns its live
@@ -6069,20 +8661,20 @@ What landed:
   breadcrumb label; SPH page buttons "Buat sales order" / "Sales order <no>".
 
 Verification (2026-11-06):
-- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 600 pass
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` ΓåÆ 600 pass
   (`test/unit/sales-order.service.test.ts`, 7 tests).
-- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` → 45 pass;
-  locales → 46 pass; lint: no warnings in new files.
+- Web `bun run build` OK, `bunx tsc -b` clean, `bun test` ΓåÆ 45 pass;
+  locales ΓåÆ 46 pass; lint: no warnings in new files.
 - Browser (temporary Playwright script, deleted): `sales.seed` creates an
   SPH, `sales_manager.seed` approves; the salesperson creates the order from
   the SPH page (`0001/SO/DEV/XI/26`, PO number kept, status Aktif, no cancel
   button for sales); the SPH shows Deal with a link to the order; revising
-  it → 409, a second order → 409; the manager cancels with a reason; the
+  it ΓåÆ 409, a second order ΓåÆ 409; the manager cancels with a reason; the
   SPH is `approved` again with no order link; the list shows the order.
 - Test data left in the dev DB: SPH `0005/QT/DEV/XI/26` (approved) and its
   cancelled order `0001/SO/DEV/XI/26`.
 
-## Completed — SPH print matches the company's sample; document images, 2026-11-06
+## Completed ΓÇö SPH print matches the company's sample; document images, 2026-11-06
 
 Status: **implemented** (module owner's request: "documentnya pakai yang ada di
 sample-private, contoh layoutnya harus dipersis"; not yet accepted by the
@@ -6102,16 +8694,16 @@ Gate 2 (owner answers, AskUserQuestion 2026-11-06):
   (varchar 120, null prints "QUOTATION").
 - Signature: `organization.company_profiles.signature_object_key` (signature
   with stamp above the signatory name), next to the existing logo key.
-- Images: PNG/JPG/WebP ≤ 2 MB, a fresh object key per upload so issued
+- Images: PNG/JPG/WebP Γëñ 2 MB, a fresh object key per upload so issued
   documents keep their picture; inline presigned URLs (1 h).
 - No new cross-module link (the photo key is copied as a value, like the
   other snapshot columns).
 
 What landed:
-- docs.dbml first (4 columns); `gen-logical-references.ts` → 502 refs;
-  `validate-dbml.ts` → OK. Migration `20261105170913_document_images`
-  (4 × `ADD COLUMN`, read and applied to `ims_erp_sync`); a second
-  `drizzle:generate` → no changes.
+- docs.dbml first (4 columns); `gen-logical-references.ts` ΓåÆ 502 refs;
+  `validate-dbml.ts` ΓåÆ OK. Migration `20261105170913_document_images`
+  (4 ├ù `ADD COLUMN`, read and applied to `ims_erp_sync`); a second
+  `drizzle:generate` ΓåÆ no changes.
 - Backend: `providers/s3/document-image.ts` (validation, storage, URL);
   `PUT|DELETE /company-profile/:kind` (`logo|signature`,
   `company_setting:update`), profile view gains `logoUrl` / `signatureUrl`;
@@ -6125,30 +8717,30 @@ What landed:
   amber heading bar, bold Kepada/Up/Telp/Hal and Date/Ref/Payment/Guaranty,
   item table NO / DESCRIPTION / Gambar / PRICE / QTY (2) / SUBTOTAL with a
   bold row per item and its specification + photo below, amounts as
-  "Rp 50,000,000", "Terbilang : … Rupiah." with Total in the last row (Sub
+  "Rp 50,000,000", "Terbilang : ΓÇª Rupiah." with Total in the last row (Sub
   Total / Diskon / PPN rows only when they apply), Term of Condition and
   "Hormat Kami," with the signature image. Sidebar and header are hidden
   when printing.
 
 Verification (2026-11-06):
-- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` → 593
+- Backend `bunx tsc --noEmit -p .` clean; `NODE_ENV=test bun test` ΓåÆ 593
   pass (company-profile image tests added; quotation photo snapshot test);
   lint: 5 warnings, all pre-existing.
-- Web `bunx tsc -b` clean, `bun run build` OK, `bun test` → 45 pass;
-  locales `bun test` → 46 pass.
+- Web `bunx tsc -b` clean, `bun run build` OK, `bun test` ΓåÆ 45 pass;
+  locales `bun test` ΓåÆ 46 pass.
 - Browser (temporary Playwright script, deleted): logo and signature
   uploaded on `/admin/settings`, photo on an item page; SPH printed to PDF
-  (A4) and compared with the sample: one-page and a 16-line three-page SPH —
+  (A4) and compared with the sample: one-page and a 16-line three-page SPH ΓÇö
   letterhead repeats on each page, an item never splits from its
   specification, VAT rows appear only with VAT. Test images removed from
-  the dev profile and items afterwards; test SPHs `0002`–`0004/QT/DEV/XI/26`
+  the dev profile and items afterwards; test SPHs `0002`ΓÇô`0004/QT/DEV/XI/26`
   remain in the dev DB.
 
 Known differences from the sample, deliberate: the last row reads "Total"
 (the sample's "Total Jum" is a cut-off cell); a discount shows as its own
 "Diskon" row (the sample has none).
 
-## Completed — ADR-0011 port step 3c: quotations (SPH), 2026-11-05/06
+## Completed ΓÇö ADR-0011 port step 3c: quotations (SPH), 2026-11-05/06
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner). Sales orders, invoices and receipts are step 3d.
@@ -6160,28 +8752,28 @@ Gate 1 (read): docs.dbml `sales.quotations`, `sales.quotation_items`,
 scaffold sales module and `test/authorization/authorization.test.ts`
 (drives the scaffold through `/sales/quotations` and `/sales/payments`);
 the old branch's owner-approved SPH service, contract and domain helpers.
-`logical-references.md` read for the new sales → crm / inventory links.
+`logical-references.md` read for the new sales ΓåÆ crm / inventory links.
 Skipped: `implementation-phases.md` steps other than S3 (nothing else is a
 prerequisite).
 
-Gate 2 (3c, manual grilling pass — `grilling` skill not installed):
+Gate 2 (3c, manual grilling pass ΓÇö `grilling` skill not installed):
 - Ownership: Sales module (`app/sales`), new `QuotationService` /
   `QuotationController` (`/sales/quotations`). The scaffold quotation code is
   replaced; the transitional payment endpoints (`/sales/payments`, approve /
   execute separation of duties) stay until S7, now validating the quotation
   through the new repository.
-- Tenant scope: none — quotations, items and status history are company-wide
-  like customers (ADR-0011 §2, ADR-0012). `sales.payments` keeps its
+- Tenant scope: none ΓÇö quotations, items and status history are company-wide
+  like customers (ADR-0011 ┬º2, ADR-0012). `sales.payments` keeps its
   `organization_id` (transitional, "do not extend").
-- Statuses (owner-approved, replace DBML `expired` / `cancelled`): `draft →
-  submitted → approved | rejected`, `approved → sent`; any open status →
+- Statuses (owner-approved, replace DBML `expired` / `cancelled`): `draft ΓåÆ
+  submitted ΓåÆ approved | rejected`, `approved ΓåÆ sent`; any open status ΓåÆ
   `lost` ("Batal", reason `price | competitor | project_cancelled |
   no_response | other`, `other` needs a note); `won` ("Deal") is reached
   only by creating its sales order (step 3d); revising a non-draft SPH marks
   it `superseded` and creates draft revision `<base>-R<n>`. Expiry is shown
   (end of the `valid_until` Jakarta day), never a status.
 - Separation of duties: the creator can never approve or reject their own
-  SPH; no amount limit (owner decision 2026-10-31) — main's scaffold
+  SPH; no amount limit (owner decision 2026-10-31) ΓÇö main's scaffold
   "approval limit configuration missing" denial is removed and its test
   rewritten.
 - Visibility: holders of `quotation:approve` or `quotation:export` see all;
@@ -6198,17 +8790,17 @@ Gate 2 (3c, manual grilling pass — `grilling` skill not installed):
   `vat_rate_bps` (VAT per document, default 1100), `sent_by`, `closed_by`,
   `closed_at`, `lost_reason`, `lost_note`. Dropped: `price_list_id` (no
   catalog module, ADR-0011), `organization_id`.
-- Items: `item_id` → `inventory.items.id` (logical reference, validated
+- Items: `item_id` ΓåÆ `inventory.items.id` (logical reference, validated
   through the new `ItemService.getActiveItems`); snapshot `sku`, `name`,
   `specification`, `unit` (fixed unit list); `quantity numeric(18,3)`;
-  money bigint minor units; `line_total = round(quantity × unit_price) −
+  money bigint minor units; `line_total = round(quantity ├ù unit_price) ΓêÆ
   discount_amount`, recomputed by the service; per-line `tax_amount` and
   `unit_id` dropped (VAT is per document, units are a fixed list). Custom
   lines (no item) carry their own name, unit and price.
-- Logical references: `customer_id`, `customer_contact_id` → CRM
-  (`CustomerService.getActiveCustomer` / contact check); `lead_id` → CRM
+- Logical references: `customer_id`, `customer_contact_id` ΓåÆ CRM
+  (`CustomerService.getActiveCustomer` / contact check); `lead_id` ΓåÆ CRM
   (`LeadService.noteQuotation`: moves `new/contacted/survey` to
-  `quotation`); `item_id` → Inventory; user ids → Identity.
+  `quotation`); `item_id` ΓåÆ Inventory; user ids ΓåÆ Identity.
 - Numbering: `NumberingService.next('quotation')` at creation (gaps
   accepted); revision codes append `-R<n>`. Code unique among live rows.
 - Status history: every transition appends a `quotation_status_history` row
@@ -6217,7 +8809,7 @@ Gate 2 (3c, manual grilling pass — `grilling` skill not installed):
   are Jakarta business dates (`date`, `YYYY-MM-DD` strings); operational
   timestamps unix ms.
 - Migration: one migration drops the scaffold `sales.quotations` (dev rows
-  are scaffold test data, no customer/items — discarded, as S3 allows),
+  are scaffold test data, no customer/items ΓÇö discarded, as S3 allows),
   creates the three tables and empties `sales.payments`.
 - Web: `/sales/quotes` list, new/edit form, detail with actions, print view
   with the company profile; `sales` locale namespace (en + id).
@@ -6226,14 +8818,14 @@ What landed:
 - `docs.dbml` first: `sales.quotations` / `quotation_items` /
   `quotation_status_history` rewritten to the shape above, company-wide;
   self-FK `previous_revision_id`. `bun docs/database/gen-logical-references.ts`
-  → 502 refs; `bun docs/database/validate-dbml.ts` → `OK` (257 tables,
+  ΓåÆ 502 refs; `bun docs/database/validate-dbml.ts` ΓåÆ `OK` (257 tables,
   0 cross-module refs, 0 timestamp gaps).
 - Migration `20261105164421_sales_quotations_target`: generated with
   all-`create` hints, then hand-edited to the S3 procedure (`DELETE FROM
   sales.payments`; `DROP TABLE sales.quotations`; `CREATE TABLE` target; two
   child tables, indexes, checks). Scaffold tables were empty on
   `ims_erp_sync` (0 quotations, 0 payments) before applying.
-  `bun run drizzle:migrate` applied; a second `drizzle:generate` → "No schema
+  `bun run drizzle:migrate` applied; a second `drizzle:generate` ΓåÆ "No schema
   changes". `drizzle:seed` run twice: both complete, unchanged.
 - `@ims-erp/common`: `domain/money.ts` (`bpsShare`, `quantityToMilli`,
   `quantityTimesPrice`, BigInt half-up) and `domain/business-date.ts`
@@ -6262,22 +8854,22 @@ What landed:
 
 Verification (2026-11-06):
 - `apps/backend`: `bunx tsc --noEmit -p .` clean; `bun run lint` no new
-  warnings; `NODE_ENV=test bun test` → 590 pass, 0 fail (incl.
+  warnings; `NODE_ENV=test bun test` ΓåÆ 590 pass, 0 fail (incl.
   `test/unit/quotation.service.test.ts`, 17 tests).
-- `apps/web-admin`: `bun run build` OK; `bunx tsc -b` clean; `bun test` →
+- `apps/web-admin`: `bun run build` OK; `bunx tsc -b` clean; `bun test` ΓåÆ
   45 pass (incl. `test/unit/quotation-helpers.test.ts`); lint no new
   warnings.
-- `packages/locales`: `bun test` → 46 pass (parity + dead keys).
+- `packages/locales`: `bun test` ΓåÆ 46 pass (parity + dead keys).
 - Browser (Playwright, temporary script, deleted): owner creates an SPH from
   an inventory item + a custom line (1.5 paket) with DP 30% / Terpasang 70%;
   printed payment line derived; submit; creator sees no approve button and
   the hint; `sales_manager.seed` approves; owner marks sent; history
-  Draf → Menunggu persetujuan → Disetujui → Terkirim; print view with
+  Draf ΓåÆ Menunggu persetujuan ΓåÆ Disetujui ΓåÆ Terkirim; print view with
   letterhead, PPN 11%, terbilang; another salesperson gets 404.
-- Live API on `ims_erp_sync`: revise sent → `-R1` draft with both lines,
+- Live API on `ims_erp_sync`: revise sent ΓåÆ `-R1` draft with both lines,
   original `superseded`; revising the superseded one 422; editing it 422;
   reject without reason 400, with reason 200; lost `other` without note 400,
-  `price` 200; revise lost → `-R2`; list shows only `-R2`.
+  `price` 200; revise lost ΓåÆ `-R2`; list shows only `-R2`.
 - Test data left in the dev DB: customer `SPH-SKL8P` and SPH
   `0001/QT/DEV/XI/26` (+R1, R2, all closed).
 
@@ -6285,17 +8877,17 @@ Open (3c): breadcrumb shows the raw id on detail pages (same as customers
 and leads); real-PG integration tests and e2e; a sales-order link and the
 `won` transition arrive with 3d.
 
-Next executable task: ADR-0011 step 3d — prints follow the private samples
-(invoice sample read 2026-11-06) — sales orders (`sales.sales_orders`,
-`sales_order_items`, `order_status_history`; SPH → `won` by creating its
+Next executable task: ADR-0011 step 3d ΓÇö prints follow the private samples
+(invoice sample read 2026-11-06) ΓÇö sales orders (`sales.sales_orders`,
+`sales_order_items`, `order_status_history`; SPH ΓåÆ `won` by creating its
 order, cancelling reopens), then invoices / DP / receipts in the finance
 module per docs.dbml, with prints. Gate 1 starts at docs.dbml `sales.sales_*`
 and `finance.invoices` / `receipts`.
 
-## Completed — restore multiple organizations (ADR-0012 multi-org), 2026-11-08
+## Completed ΓÇö restore multiple organizations (ADR-0012 multi-org), 2026-11-08
 
 Status: **implemented** (supersedes the 2026-11-05 single-organization entry;
-ADR-0012-multi-organization restores ADR-0007 §1).
+ADR-0012-multi-organization restores ADR-0007 ┬º1).
 
 - Backend: removed the `countActive()` 409 gate from
   `OrganizationService.createOrganization` and `restoreOrganization`;
@@ -6305,21 +8897,21 @@ ADR-0012-multi-organization restores ADR-0007 §1).
   through; restore no longer consults the live count).
 - Web admin: the "new organization" button on `/organizations` and in the
   sidebar switcher is shown again (switcher: application admins only).
-- Seeder: unchanged behavior — seeds only the first organization when none
+- Seeder: unchanged behavior ΓÇö seeds only the first organization when none
   is live; JSDoc updated.
 - Docs: `ADR-0012-single-organization.md` marked superseded;
   `security-and-access.md` notes multiple organizations are allowed.
 - Checks: backend 802 tests, web-admin 45 tests, lint, typecheck, build pass.
 
-## Completed — one company, one organization (ADR-0012), 2026-11-05
+## Completed ΓÇö one company, one organization (ADR-0012), 2026-11-05
 
 Status: **implemented** (module owner's decision; programmer A to acknowledge
 in the merge PR).
 
 - Owner: "dibikin 1 organisasi aja", seed it, hide the add button once it
-  exists. ADR-0012 written (amends ADR-0007 §1 and ADR-0010).
+  exists. ADR-0012 written (amends ADR-0007 ┬º1 and ADR-0010).
 - Backend: `OrganizationService.createOrganization` / `restoreOrganization`
-  → 409 `organization.singleCompany` (en/id) when a live organization
+  ΓåÆ 409 `organization.singleCompany` (en/id) when a live organization
   exists. `test/unit/single-organization.test.ts` (3 tests).
 - Seeders: `organization.seeder.ts` runs in every environment and skips when
   any live organization exists; `organization-members.seeder.ts` (role
@@ -6334,7 +8926,7 @@ in the merge PR).
   `organization.service.ts` (`getMemberRole` / `listMembers`).
 - docs/database reviewed: no structural change.
 
-## Completed — ADR-0011 port step 3b: leads, follow-ups, website API, 2026-11-05
+## Completed ΓÇö ADR-0011 port step 3b: leads, follow-ups, website API, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner).
@@ -6348,10 +8940,10 @@ dynamic permission resolver (`PERMISSION_RESOLVER_TOKEN`, roles from
 Gate 2 (3b):
 - Ownership: CRM module (`app/crm`); the website endpoints are a separate
   public controller in the same module (`/public/v1/rfq|contact|demo`).
-- Tenant scope: none — leads, activities and attachments are company-wide
-  (ADR-0011 §2). The website key still belongs to an organization (Better
+- Tenant scope: none ΓÇö leads, activities and attachments are company-wide
+  (ADR-0011 ┬º2). The website key still belongs to an organization (Better
   Auth `references: 'organization'`), which only authenticates the website.
-- `crm.leads`: docs.dbml shape adapted to the owner-approved M02 rules —
+- `crm.leads`: docs.dbml shape adapted to the owner-approved M02 rules ΓÇö
   statuses `new, contacted, survey, quotation, won, lost`; sources
   `website, whatsapp, instagram, phone, referral, walk_in, other`;
   `owner_user_id` = assigned salesperson; `customer_id` = converted
@@ -6363,7 +8955,7 @@ Gate 2 (3b):
 - `crm.lead_activities`: types `call, whatsapp, email, meeting, survey,
   note`; `occurred_at`, `created_by`; DBML `subject` / `next_action_*` /
   `assigned_to_user_id` dropped (the next follow-up lives on the lead).
-- New `crm.lead_attachments` (RFQ files: PDF/DWG/JPG/PNG, ≤10 × 25 MB;
+- New `crm.lead_attachments` (RFQ files: PDF/DWG/JPG/PNG, Γëñ10 ├ù 25 MB;
   storage key never leaves the server; downloads by 5-minute presigned URL).
 - Visibility: holders of `lead:assign` (resolved with the dynamic
   permission resolver, not the static catalog) see all leads and may
@@ -6410,10 +9002,10 @@ Implementation:
   pipeline status with lost reason, assignee select for managers,
   follow-up log, edit, convert to new/existing customer, archive);
   `lib/lead-api.ts`; date helpers in `lib/format.ts`; `crm` locale keys.
-- Checks: `bun run test` — backend 570 (9 new: lead + website inquiry),
+- Checks: `bun run test` ΓÇö backend 570 (9 new: lead + website inquiry),
   web-admin 41, locales 42; backend and web `tsc` clean; lint 0. Live
   public API (dev key created with the script, kept out of logs): no key /
-  bad key → 401 (Indonesian), contact 201 `MSG-2026-00001`, same
+  bad key ΓåÆ 401 (Indonesian), contact 201 `MSG-2026-00001`, same
   Idempotency-Key replay 200 with the same reference, invalid payload 400,
   RFQ multipart with a PDF 201 `RFQ-2026-00001` (file stored in MinIO).
   Browser (Playwright, Chromium 1161, id-ID, owner): website RFQ listed
@@ -6425,7 +9017,7 @@ Implementation:
   answer **400** with main's validation envelope (the M02 branch answered
   422 with a per-field list).
 
-## Completed — ADR-0011 port step 3a: customers and contacts, 2026-11-05
+## Completed ΓÇö ADR-0011 port step 3a: customers and contacts, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner).
@@ -6447,7 +9039,7 @@ note: the scaffold `sales.quotations` / `sales.payments` from
 
 Gate 2 (3a):
 - Ownership: CRM module (`app/crm`, schema `crm`).
-- Tenant scope: none — company-wide (ADR-0011 §2); docs.dbml notes the
+- Tenant scope: none ΓÇö company-wide (ADR-0011 ┬º2); docs.dbml notes the
   exception.
 - `crm.customers`: docs.dbml shape minus `organization_id` and
   `customer_group_id` (customer groups are out of scope; Ref removed), plus
@@ -6486,7 +9078,7 @@ Implementation:
   `/crm/customers/$customerId` detail (edit, activate/deactivate, contacts
   add/edit/remove with primary badge); dialogs reuse `LocationCascade`;
   new `crm` locale namespace (en/id).
-- Checks: `bun run test` — backend 561 (5 new), web-admin 41, locales 42;
+- Checks: `bun run test` ΓÇö backend 561 (5 new), web-admin 41, locales 42;
   backend and web `tsc` clean; lint 0; seed run twice OK. Live HTTP with
   `Accept-Language: id`: 404/409 messages in Indonesian. Browser
   (Playwright, Chromium 1161, id-ID, owner): create (code upper-cased, NPWP
@@ -6498,37 +9090,37 @@ Implementation:
   locale change, stop the processes on 3000/5173 and restart (a plain
   restart once kept serving old bundles).
 
-## Completed — ADR-0011 port step 2: item extensions, 2026-11-05
+## Completed ΓÇö ADR-0011 port step 2: item extensions, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A
 or accepted by the owner).
 
 Gate 1 (read): `docs.dbml` Inventory (`inventory.items`) and Catalog
-(`catalog.item_categories`, `catalog.units`, `catalog.items` — superseded /
+(`catalog.item_categories`, `catalog.units`, `catalog.items` ΓÇö superseded /
 unadopted) modules, Commerce (`commerce.catalog_publications`,
-`catalog_publication_items` — the website catalog's home). Skipped
+`catalog_publication_items` ΓÇö the website catalog's home). Skipped
 `implementation-phases.md` (no dependency on an unlanded phase step).
 
 Gate 2 (design pass; three answers from the module owner 2026-11-05):
 - Website catalog fields and item photos: **deferred to M04** (Commerce
-  module per docs.dbml) — owner's choice.
-- Active flag: **yes** — `inventory.items.is_active` (boolean, default
+  module per docs.dbml) ΓÇö owner's choice.
+- Active flag: **yes** ΓÇö `inventory.items.is_active` (boolean, default
   true). Not a `status` column: docs.dbml says status exists only on
   serialized units (ADR-0008). Inactive items stay listed (filter) but are
   not offered for new documents; archiving (`deleted_at`) is unchanged.
-- Categories: **flat** (one level) — owner's choice.
+- Categories: **flat** (one level) ΓÇö owner's choice.
 - Ownership: inventory core belongs to programmer A; these extensions are
-  programmer B's under A's review (ADR-0011 §13).
+  programmer B's under A's review (ADR-0011 ┬º13).
 - New table `inventory.item_categories`: company-wide, no `organization_id`
-  (ADR-0011 §2); `slug` (unique among live rows), `name`, `short_name`,
+  (ADR-0011 ┬º2); `slug` (unique among live rows), `name`, `short_name`,
   `sort_order`, `description`, `is_active`, timestamps, `deleted_at`.
-  `inventory.items.category_id` → same-module FK (`ON DELETE RESTRICT`);
+  `inventory.items.category_id` ΓåÆ same-module FK (`ON DELETE RESTRICT`);
   archiving a category with live items is refused (409). Replaces the
   free-text `category` column (dropped; no production data) and makes
   `catalog.item_categories` superseded.
 - Units: fixed list in code + CHECK on `inventory.items.unit_label`
   (`pcs, unit, set, paket, titik, m, roll, kg, jam, bulan, tahun, lic, lot,
-  pulau` — the M02 list plus the units programmer A's seeder uses),
+  pulau` ΓÇö the M02 list plus the units programmer A's seeder uses),
   `NOT NULL DEFAULT 'pcs'`; `catalog.units` superseded.
 - New columns: `brand varchar(100)`, `specification text` (printed on
   SPHs), `created_by text` (logical ref to auth.users, from the session).
@@ -6542,8 +9134,8 @@ Implementation:
   unit_label NOT NULL + CHECK, is_active, created_by), new
   `inventory.item_categories`, `catalog.item_categories` / `catalog.units`
   marked superseded; `validate-dbml.ts` allows the `item_categories` bare
-  name twice (same precedent as `items`). `gen-logical-references.ts` →
-  506 refs; `validate-dbml.ts` → OK (256 tables, 0 cross-module refs,
+  name twice (same precedent as `items`). `gen-logical-references.ts` ΓåÆ
+  506 refs; `validate-dbml.ts` ΓåÆ OK (256 tables, 0 cross-module refs,
   0 timestamp gaps).
 - Migration `20261105142244_polite_betty_brant` (generated with explicit
   `--hints` that the five columns are new, not renames of `category`),
@@ -6566,13 +9158,13 @@ Implementation:
   one, fixed unit select, brand, specification, active checkbox), item
   list (category name + "Nonaktif" badge), item detail (category, brand,
   active, specification); new `/inventory/categories` page (list, create /
-  edit dialog with fixed slug, archive confirm); sidebar "Barang → Kategori
+  edit dialog with fixed slug, archive confirm); sidebar "Barang ΓåÆ Kategori
   barang"; `lib/item-category-api.ts`. The unit-of-measure type is
   `TItemUnitLabel` / `ITEM_UNIT_LABELS` (`TItemUnit` already names a
   serialized unit).
-- Checks: `bun run test` — backend 556 (5 new), web-admin 41, locales 38;
+- Checks: `bun run test` ΓÇö backend 556 (5 new), web-admin 41, locales 38;
   web `tsc -p tsconfig.app.json` and backend `tsc` clean;
-  `drizzle:migrate-reset` + `drizzle:seed` again → 11 categories, items
+  `drizzle:migrate-reset` + `drizzle:seed` again ΓåÆ 11 categories, items
   linked, second run inserted 0 (idempotent). Browser (Playwright,
   Chromium 1161, id-ID, owner): category created; material item created
   with category, unit `m`, brand, two-line specification, inactive; list
@@ -6581,10 +9173,10 @@ Implementation:
   afterwards in `ims_erp_sync`. Pre-existing console warning (not from this
   change): Base UI `nativeButton` on link-buttons in the item detail page
   and item list.
-- Deferred (owner's choice): website catalog fields and item photos → M04
+- Deferred (owner's choice): website catalog fields and item photos ΓåÆ M04
   (Commerce module per docs.dbml).
 
-## Completed — ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
+## Completed ΓÇö ADR-0011 port step 1: numbering, company profile, role grants, 2026-11-05
 
 Status: **implemented** (backend + web admin; not yet reviewed by programmer A or
 accepted by the owner).
@@ -6603,7 +9195,7 @@ accepted by the owner).
   `ims_erp_sync`): `company_profiles` (singleton), `company_bank_accounts`
   (invoice usage vat/non_vat), `document_sequences` (one series per
   document type, atomic allocation). Company-wide, no `organization_id`
-  (ADR-0011 §2). `docs.dbml` updated; `bun docs/database/validate-dbml.ts`
+  (ADR-0011 ┬º2). `docs.dbml` updated; `bun docs/database/validate-dbml.ts`
   OK (255 tables, 0 cross-module refs, 0 timestamp gaps);
   `logical-references.md` regenerated. Both scripts now resolve paths next
   to themselves (they pointed at `B:/ims/erp/...`).
@@ -6616,10 +9208,10 @@ accepted by the owner).
   `numbering.*`) in en/id; `{COMPANY}` comes from the profile's
   `document_code`. Dev seeder `company-profile.seeder.ts` (idempotent,
   skipped in production).
-- Checks: `bun run test` — backend 549 pass (16 new), web-admin 41,
+- Checks: `bun run test` ΓÇö backend 549 pass (16 new), web-admin 41,
   locales 34; `bun run lint` 0; `bun run build` 0; backend `tsc` clean;
   seed run twice after `drizzle:migrate-reset` (idempotent). Live HTTP on
-  the dev server: profile required → 422 (id/en messages), save profile
+  the dev server: profile required ΓåÆ 422 (id/en messages), save profile
   200, numbering list 200 (`0001/QT/IMS/XI/26`), bad pattern 422 with the
   translated token message, PO pattern preview. 50 concurrent `allocate`
   calls against PostgreSQL returned 50 unique numbers; a new period
@@ -6643,7 +9235,7 @@ accepted by the owner).
   `0001/QT/IMS/XI/26`; invalid pattern shows "Token {FOO} tidak dikenal";
   preview `SPH/IMS/2026/001`; saved. The test pattern was reset to the
   default afterwards in `ims_erp_sync`.
-- Final checks: `bun run test` — backend 551, web-admin 41, locales 38;
+- Final checks: `bun run test` ΓÇö backend 551, web-admin 41, locales 38;
   `bun run lint` 0; `bun run build` 0; web `tsc -p tsconfig.app.json`
   clean.
 - Local note: the agent's shell has `NODE_ENV=production`; seeders and
@@ -6651,24 +9243,24 @@ accepted by the owner).
   letterhead (`logo_object_key`) is not wired yet; it comes with the
   printed documents in step 3.
 - Rules follow-up (same day, after re-reading main's AGENTS.md):
-  `CompanyProfileService` no longer injects `DRIZZLE_TOKEN` — the profile
+  `CompanyProfileService` no longer injects `DRIZZLE_TOKEN` ΓÇö the profile
   and its invoice accounts are saved in one transaction inside
   `CompanyProfileRepository.save`; `id/settings.ts` typed as
   `Record<keyof typeof en, string>`; `backlog.md` (ERP-0008 in-progress,
   ERP-0009 implemented, new ERP-0036) and `features.md` updated.
 - Gate 2 design pass for step 1, recorded after the fact (it should have
   come before coding; the decisions themselves were made in ADR-0011):
-  ownership — `organization` module per docs.dbml; tenant scope — none,
-  company-wide (ADR-0011 §2); soft delete — `deleted_at` on all three tables
-  with partial unique indexes; money — none; datetimes — bigint ms;
-  cross-module refs — `address_village_id` (location, not accepted by the
+  ownership ΓÇö `organization` module per docs.dbml; tenant scope ΓÇö none,
+  company-wide (ADR-0011 ┬º2); soft delete ΓÇö `deleted_at` on all three tables
+  with partial unique indexes; money ΓÇö none; datetimes ΓÇö bigint ms;
+  cross-module refs ΓÇö `address_village_id` (location, not accepted by the
   API yet, so no contract call needed) and `updated_by` (auth.users, written
-  from the session only); status vocabularies — `status` active/inactive,
+  from the session only); status vocabularies ΓÇö `status` active/inactive,
   `reset_policy`, `invoice_usage`, all CHECK-guarded. `docs/database/`
   updated and validated (see above).
 - Next: see step 2 above, then port step 3 (M02).
 
-## In progress — merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
+## In progress ΓÇö merge plan for M02/M05/M07 onto main (ADR-0011), 2026-11-05
 
 Status: **in-progress** (ADR-0011 accepted 2026-11-05 after discussion with
 programmer A and the owner, as reported by programmer B's module owner).
@@ -6689,7 +9281,7 @@ Porting starts on `merge/main-sync`.
   items (many warehouses + transfers, computed average HPP); then the port
   starts on `merge/main-sync` in the order the ADR lists.
 
-## Completed (this session — dummy dashboard view, 2026-11-06)
+## Completed (this session ΓÇö dummy dashboard view, 2026-11-06)
 ## 2026-11-08 - docs consistency: invoices owned by Sales, ADR-0012
 
 Status: **docs-only, not code.** Branch `fix/docs-consistency` from `main`.
@@ -6698,17 +9290,17 @@ aborted and split (see the open items below).
 
 - Invoices are owned by Sales (`sales.invoices`, plan D2). Updated
   `data-dictionary.md`, `implementation-phases.md`, `logical-references.md`
-  (`sales.invoices.id` → `resolveInvoice`), `module-ownership.md` (Finance no
+  (`sales.invoices.id` ΓåÆ `resolveInvoice`), `module-ownership.md` (Finance no
   longer owns invoices), `erp-module-plans/m02-crm-sales.md`,
   `erp-module-plans/m09-finance.md`, `plans/features.md`.
 - `ADR-0012-multi-organization.md` added: multiple organizations inside one
-  company (ADR-0007 §1), master data company-wide, transaction documents record
+  company (ADR-0007 ┬º1), master data company-wide, transaction documents record
   the issuing organization. `sales.invoices.organization_id` stays
   `NOT NULL`, and `docs.dbml` says so in its note.
 - Commands and outcomes:
-  - `bun docs/database/gen-logical-references.ts` → `regenerated: 522 refs
+  - `bun docs/database/gen-logical-references.ts` ΓåÆ `regenerated: 522 refs
     across 39 targets, 226 intra-module refs` (exit 0)
-  - `bun docs/database/validate-dbml.ts` → `parsed: 258 tables, 226 refs`,
+  - `bun docs/database/validate-dbml.ts` ΓåÆ `parsed: 258 tables, 226 refs`,
     `cross-module refs: 0`, `timestamp gaps: 0`, `OK` (exit 0)
 - Not verified: the rest of `docs/` against code. `plans/finance.md` still
   names `finance.invoices` in D2 and step 1 on purpose: those lines record the
@@ -6730,12 +9322,12 @@ Open items (not done):
 ## Completed (this session - M09 Finance Stage 1, F1..F9, 2026-11-07)
 
 Status: **implemented** (Stage 1). Master plan `docs/plan/plans/finance.md`,
-phases F1–F9 across commits `7a44dbd`, `06a1080`, `83ea8ad`, `903db39`,
-`12a8dd4`, `509743c` (+ this docs commit). Decisions D1–D12 pinned in the
+phases F1ΓÇôF9 across commits `7a44dbd`, `06a1080`, `83ea8ad`, `903db39`,
+`12a8dd4`, `509743c` (+ this docs commit). Decisions D1ΓÇôD12 pinned in the
 plan after a grilling session.
 
 - F1 schema/migration, F2 posting engine + COA + periods
-  (close→locked + audited owner-only reopen), F3 opening balances (batch
+  (closeΓåÆlocked + audited owner-only reopen), F3 opening balances (batch
   draft + one-shot post) + cash/bank with GL links, F4 sales-invoice AR
   postings + payments workflow + AR sub-ledger + aging, F5 supplier bills +
   AP sub-ledger + aging, F6 on-demand reports (P&L / balance sheet /
@@ -6745,8 +9337,8 @@ plan after a grilling session.
   i18n namespace, `bill:*` permissions added to the shared erpStatements
   catalog).
 - F9 docs sync: `docs/architecture/modules/finance.md` rewritten (the
-  NestJS-era "historical audit" warning removed — the module is implemented),
-  `features.md` M09 planned→done (Stage 1) with Stage-2 remainder,
+  NestJS-era "historical audit" warning removed ΓÇö the module is implemented),
+  `features.md` M09 plannedΓåÆdone (Stage 1) with Stage-2 remainder,
   this progress entry.
 - Money everywhere is exact integer minor units; corrections are append-only
   reversals; reports are computed from posted journal lines, never stored.
@@ -6764,7 +9356,7 @@ Materials, **Stock** (`/inventory/stock`), **Stock Adjustment**
 (`/inventory/stock/adjustments`), and New Item. The old Item Movements nav
 entry was dropped and its `nav:item.itemMovements` key removed from both
 bundles (dead-key guard); movements stay reachable from the Stock page. No
-route or schema change — `routeTree.gen.ts` and `docs/database/` untouched.
+route or schema change ΓÇö `routeTree.gen.ts` and `docs/database/` untouched.
 Gates: web-admin `tsc -b`, root lint + test green.
 
 ## Completed (this session - ERP-0031 Slice 3 admin link UI + member pickers, 2026-11-06)
@@ -6777,7 +9369,7 @@ instead of the application-admin-only one.
 What landed:
 
 - Audit vocabulary: `warehouse.linked` / `warehouse.unlinked` added to
-  `AUDIT_ACTIONS` (TS-only — the column is text, so no migration).
+  `AUDIT_ACTIONS` (TS-only ΓÇö the column is text, so no migration).
 - Port: `inventory/contracts/warehouse-borrowing-guard.port.ts`
   (`IWarehouseBorrowingGuard` + `NoopWarehouseBorrowingGuard`). Inventory
   cannot import Assets (the dependency points the other way), so the
@@ -6791,7 +9383,7 @@ What landed:
   soft-deleted pair because the partial unique forbids a second row) and
   `unlinkOrganization` (soft delete).
 - Service: `listWarehouseOrganizations`, `linkOrganization`,
-  `unlinkOrganization` — the last throws `WarehouseLinkConflictError` (409,
+  `unlinkOrganization` ΓÇö the last throws `WarehouseLinkConflictError` (409,
   key `inventory.warehouseLinkConflict`, locale bundles updated en+id) while
   open borrowings exist, and writes no link change when it refuses. Both link
   and unlink audit with the acting admin.
@@ -6806,13 +9398,13 @@ What landed:
   (ADR-0008), and the response is already scoped to the caller's own links, so
   the `erp` guard plus organization scope is sufficient. A `warehouse:read`
   grant was written, found to break that invariant test, and reverted together
-  with its data migration — nothing shipped.
+  with its data migration ΓÇö nothing shipped.
 - Web admin: new "Organizations" tab on `/inventory/warehouses/$warehouseId`
-  (`components/inventory/warehouse-organizations-tab.tsx`) — org picker from
+  (`components/inventory/warehouse-organizations-tab.tsx`) ΓÇö org picker from
   the organization API, link/unlink with confirmation, 409 surfaced as an
   error toast. API client gained the three link calls and
   `linkedWarehousesQueryOptions`. Asset place/transfer (`asset-detail.tsx`)
-  and the adjustment form now source warehouses from the linked endpoint —
+  and the adjustment form now source warehouses from the linked endpoint ΓÇö
   they previously called the admin-only list and failed for organization
   users.
 - Tests: 7 new cases in `warehouse.service.test.ts` (link creates + audits,
@@ -6822,11 +9414,11 @@ What landed:
   new constructor dependency.
 
 ```text
-bun run test (root)              → 536 pass, 0 fail, 993 expect (was 529)
-bun run lint (root)              → 0 errors (6 pre-existing warnings)
-bun run typecheck (root)         → green; web-admin `bunx tsc -b` green
-drizzle:migrate x2               → applied successfully (no new migration)
-drizzle:seed x2                  → clean, idempotent
+bun run test (root)              ΓåÆ 536 pass, 0 fail, 993 expect (was 529)
+bun run lint (root)              ΓåÆ 0 errors (6 pre-existing warnings)
+bun run typecheck (root)         ΓåÆ green; web-admin `bunx tsc -b` green
+drizzle:migrate x2               ΓåÆ applied successfully (no new migration)
+drizzle:seed x2                  ΓåÆ clean, idempotent
 DB end-state: GLOBAL-MAIN + WH-MAIN each linked to the dev org; 0 warehouses
 with non-null organization_id; system admin roles still carry stock
 [read,export] / stock_adjustment [read]
@@ -6852,15 +9444,15 @@ What landed:
 - Repository: `warehouse.repository.isLinked(warehouseId, organizationId)` and
   `listLinked(organizationId)` (alive links, alive warehouses, ordered by
   name); both added to `IWarehouseRepository`.
-- Service: `assertWarehouseReachableByOrg` body swapped — warehouse must exist
-  (404) and have an alive link (boolean, caller maps false→404). Signature
+- Service: `assertWarehouseReachableByOrg` body swapped ΓÇö warehouse must exist
+  (404) and have an alive link (boolean, caller maps falseΓåÆ404). Signature
   narrowed: the org param is no longer nullable. `listLinkedWarehouses` added.
   `createWarehouse` forces `organizationId: null` (D1 freeze at the service
   boundary too).
 - Assets: `assertLocation` throws `WarehouseNotFoundError` when the warehouse
-  is unlinked (404, not 403 — ids cannot be probed).
+  is unlinked (404, not 403 ΓÇö ids cannot be probed).
 - Routes: `GET /warehouses/linked` via a new `WarehouseController.linkedPlugin()`
-  (`erp` guard; the permission check was dropped in Slice 3 — see below),
+  (`erp` guard; the permission check was dropped in Slice 3 ΓÇö see below),
   mounted in `app.ts` **before** the admin `.plugin()` because the guards
   differ (session+admin vs erp).
 - Stock: `StockService.assertWarehouseLinkedFor(warehouseId, actorOrganizationId)`
@@ -6868,13 +9460,13 @@ What landed:
   controller (create) via an `assertWarehouseAccessible` helper. Global-admin
   bypass lives at the controller boundary (`session.user.role === 'admin'`).
   Internal writers (borrowing engine returning to `origin_warehouse_id`, seeded
-  opening stock) intentionally skip the check — system-established custody.
+  opening stock) intentionally skip the check ΓÇö system-established custody.
 - Grants: `erpRoleGrants.admin` gains `stock: ['read','export']` and
   `stock_adjustment: ['read']`; common rebuilt. Data-only migration
   `20261106065700_erp0031_slice2_admin_stock_grants` (hand-written, no schema
   change) syncs already-seeded system `admin` roles in `auth.roles.permissions`.
   Lesson: `permissions -> 'stock' ? 'read'` is NULL (not false) when the key is
-  missing — the WHERE needed `COALESCE(..., false)`; the first run silently
+  missing ΓÇö the WHERE needed `COALESCE(..., false)`; the first run silently
   matched zero rows and was caught only by verifying the DB end-state.
 - Seeder: both `GLOBAL-MAIN` and `WH-MAIN` are linked to the dev org.
 - Tests: `warehouse.service.test.ts` scope/is_default tests rewritten for D1
@@ -6883,27 +9475,27 @@ What landed:
   warehouse and stock test doubles gained `isLinked`/`listLinked`.
 
 ```text
-bun run test          → 529 pass, 0 fail (was 526)
-bun run lint/typecheck (root) → green
-migrate+seed twice on ims_erp_local → clean
+bun run test          ΓåÆ 529 pass, 0 fail (was 526)
+bun run lint/typecheck (root) ΓåÆ green
+migrate+seed twice on ims_erp_local ΓåÆ clean
 DB end-state: GLOBAL-MAIN + WH-MAIN each linked to dev org; 0 warehouses with
 non-null organization_id; system admin roles carry stock [read,export],
 stock_adjustment [read]
 ```
 
-## Completed (this session - ERP-0031 Slice 1 warehouse↔org link schema, 2026-11-06)
+## Completed (this session - ERP-0031 Slice 1 warehouseΓåöorg link schema, 2026-11-06)
 
-Status: **implemented**. Slice 1 of ERP-0031 (warehouse↔organization links +
+Status: **implemented**. Slice 1 of ERP-0031 (warehouseΓåöorganization links +
 scoped access); decisions D1 (keep + null `warehouses.organization_id`) and
-D2 (no WH-JKT/WH-SBY seeds — keep GLOBAL-MAIN/WH-MAIN) recorded.
+D2 (no WH-JKT/WH-SBY seeds ΓÇö keep GLOBAL-MAIN/WH-MAIN) recorded.
 
 What landed:
 
 - `docs.dbml` already carried `inventory.warehouse_organizations` (Slice 0
-  contract) — verified, unchanged; `gen-logical-references.ts` and
+  contract) ΓÇö verified, unchanged; `gen-logical-references.ts` and
   `validate-dbml.ts` both OK (255 tables, 228 refs, 0 cross-module).
 - Drizzle table `warehouse_organizations` added to
-  `drizzle/schemas/inventory.schema.ts`: uuidv7 id, `warehouse_id` FK →
+  `drizzle/schemas/inventory.schema.ts`: uuidv7 id, `warehouse_id` FK ΓåÆ
   warehouses (cascade), `organization_id` (logical ref to auth.organizations,
   cross-module FK omitted), soft-delete timestamps, partial unique
   `(warehouse_id, organization_id) WHERE deleted_at IS NULL`, indexes on both
@@ -6915,19 +9507,19 @@ What landed:
 - Seeder retargeted to D1: `WH-MAIN` is created **global**
   (`organization_id: null`) and linked to the dev org through a new idempotent
   `ensureWarehouseOrganizationLink` (revives soft-deleted links rather than
-  duplicating — the partial unique would reject a second alive row).
+  duplicating ΓÇö the partial unique would reject a second alive row).
   `assets.seeder.ts` looks `WH-MAIN` up by code alone. Note: the first
   migrate+seed run silently re-scoped WH-MAIN because the seeder predated the
-  freeze — fixed in this slice, which is why the seeder change ships with the
+  freeze ΓÇö fixed in this slice, which is why the seeder change ships with the
   migration (same pattern as ERP-0036 Slice 2).
 
 ```text
-bun docs/database/gen-logical-references.ts → regenerated, OK
-bun docs/database/validate-dbml.ts          → 255 tables, 228 refs, 0 cross-module, OK
-drizzle:migrate + drizzle:seed run twice on ims_erp_local → clean
+bun docs/database/gen-logical-references.ts ΓåÆ regenerated, OK
+bun docs/database/validate-dbml.ts          ΓåÆ 255 tables, 228 refs, 0 cross-module, OK
+drizzle:migrate + drizzle:seed run twice on ims_erp_local ΓåÆ clean
 DB end-state: WH-MAIN global (is_default false), 1 alive link to dev org,
 0 warehouses with non-null organization_id
-bun run lint / typecheck / test (root)      → green (backend 526 pass)
+bun run lint / typecheck / test (root)      ΓåÆ green (backend 526 pass)
 ```
 
 ## Completed (this session - web-admin page padding fix, 2026-11-06)
@@ -6949,8 +9541,8 @@ What landed:
   profiles path layouts.
 
 ```text
-bun run build (apps/web-admin) → clean
-bun run lint  (apps/web-admin) → 0 errors (pre-existing warnings only)
+bun run build (apps/web-admin) ΓåÆ clean
+bun run lint  (apps/web-admin) ΓåÆ 0 errors (pre-existing warnings only)
 ```
 
 ## Completed (this session - ERP-0036 Slice 5 UI/i18n/removals, 2026-11-06)
@@ -6970,7 +9562,7 @@ What landed:
   `TBorrowingLineInput.assetId`, `toolSetId` on create. `toDetail` now unwraps
   the flat service view (`{...borrowing, lines, events}`), which the previous
   nested-shape guess silently dropped.
-- New read endpoint `GET /assets/types` (`asset.repository.listTypes` →
+- New read endpoint `GET /assets/types` (`asset.repository.listTypes` ΓåÆ
   `AssetService.listTypes`, guarded `asset:read`) returns active types ordered
   by name. Register list gained an `assetType` filter and renders the lookup
   `name`; the register form and category list load the same options; `ASSET_TYPES`
@@ -6979,7 +9571,7 @@ What landed:
   disposed|lost`; movement types extended to the D3 vocabulary and rendered via
   `assets:movementType.*`.
 - Asset detail: custody/assign/return UI removed (`asset_assignments` is gone),
-  replaced by a location card with the place/transfer dialog (warehouse →
+  replaced by a location card with the place/transfer dialog (warehouse ΓåÆ
   storage picker over `/warehouses`), and a "Borrow" shortcut to
   `/assets/borrowings/new`.
 - Removals: `routes/_authed/inventory/tools/index.tsx`,
@@ -6987,7 +9579,7 @@ What landed:
   `components/assets/asset-loan-list.tsx`; warehouse Tools tab/stat; nav
   `item.tools`; `ITEM_KINDS` trimmed to `product|component|material` (item form
   service branch dropped).
-- Locales (en + id): borrowing copy moved `inventory:` → `assets:`;
+- Locales (en + id): borrowing copy moved `inventory:` ΓåÆ `assets:`;
   `inventory:tools.*`, `inventory:borrowings.*`, `assets:type.*`, `assets:loans.*`,
   `inventory:kind.tool`, `inventory:kind.service`, `inventory:form.serviceHint`,
   `inventory:warehouses.tools` and `nav:item.tools` deleted; new
@@ -6997,14 +9589,14 @@ What landed:
   `assets:borrowing*`, `assets:type.` dropped, `assets:movementType.` added.
 
 ```text
-bun run test (packages/locales)          → 38 pass, 0 fail (parity + dead keys)
-bun run build (apps/web-admin)           → tsc -b clean; vite build OK; routeTree
+bun run test (packages/locales)          ΓåÆ 38 pass, 0 fail (parity + dead keys)
+bun run build (apps/web-admin)           ΓåÆ tsc -b clean; vite build OK; routeTree
                                           regenerated (no inventory/borrowings,
                                           no inventory/tools, no assets/loans)
-bun run typecheck (root)                 → clean (backend + locales + ui)
-bun run lint (root)                      → 0 errors (6 pre-existing backend warnings)
-bun run test (root)                      → backend 526 pass, 0 fail; all workspaces green
-bun docs/database/validate-dbml.ts       → 255 tables, 228 refs, 0 cross-module,
+bun run typecheck (root)                 ΓåÆ clean (backend + locales + ui)
+bun run lint (root)                      ΓåÆ 0 errors (6 pre-existing backend warnings)
+bun run test (root)                      ΓåÆ backend 526 pass, 0 fail; all workspaces green
+bun docs/database/validate-dbml.ts       ΓåÆ 255 tables, 228 refs, 0 cross-module,
                                           0 timestamp gaps, OK
 ```
 
@@ -7024,16 +9616,16 @@ What landed:
 - `packages/common/src/authorization/erp-permissions.ts`: permission resource
   `borrowing` renamed `asset_borrowing` in all 10 role blocks that held it, with
   the same ten actions (`read/create/update/approve/issue/return/extend/
-  mark_late/mark_lost/export`) — B6, nothing added or removed.
+  mark_late/mark_lost/export`) ΓÇö B6, nothing added or removed.
 - Backend route guards plus the borrowing controller's `actorFor` capability
   probes use `asset_borrowing`; the same rename went into the service JSDoc.
 - `ASSET_DOC_TYPES.borrowing = 'asset_borrowing'`; `BorrowingService` allocates
   through it and keeps the `BRW-YYYYMM-####` format (D14). `AssetService`
-  allocates asset codes on the **global** (`null` → `''`) sequence (D13) so the
+  allocates asset codes on the **global** (`null` ΓåÆ `''`) sequence (D13) so the
   globally-unique `assets.code` index cannot collide across scopes.
 - Migration `20261105223616_erp0036_slice4_permission_rename` (custom,
   data-only, snapshot unchanged): idempotently moves `auth.roles.permissions`
-  `borrowing` → `asset_borrowing`, and renames the
+  `borrowing` ΓåÆ `asset_borrowing`, and renames the
   `organization.document_sequences` row so an allocated BRW number is kept, not
   restarted (a pre-existing target row deletes the stale source instead of
   violating the unique key).
@@ -7041,17 +9633,17 @@ What landed:
   `database/seeders/index.ts`: six `asset_types` upserts, six assets with
   warehouse/storage placement and `receipt` movements, the `TS-SEED-01` tool set
   with two members, and three borrowings (out, returned, out + `marked_lost`).
-  All anchors are fixed codes/notes and fixed dates — re-runs are no-ops.
+  All anchors are fixed codes/notes and fixed dates ΓÇö re-runs are no-ops.
 - `inventory-authorization.test.ts` retargeted to `asset_borrowing`.
 
 ```text
-bun run build (packages/common)         → clean (dist rebuilt; tests import dist)
-bun run typecheck                       → clean
-bun test (backend)                      → 526 pass, 0 fail (979 expects)
-bun run drizzle:migrate                 → migrations applied successfully
-bun run drizzle:seed                    → complete (run 1)
-bun run drizzle:seed                    → complete (run 2, idempotent)
-bun docs/database/validate-dbml.ts      → 255 tables, 228 refs, 0 cross-module,
+bun run build (packages/common)         ΓåÆ clean (dist rebuilt; tests import dist)
+bun run typecheck                       ΓåÆ clean
+bun test (backend)                      ΓåÆ 526 pass, 0 fail (979 expects)
+bun run drizzle:migrate                 ΓåÆ migrations applied successfully
+bun run drizzle:seed                    ΓåÆ complete (run 1)
+bun run drizzle:seed                    ΓåÆ complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts      ΓåÆ 255 tables, 228 refs, 0 cross-module,
                                           0 timestamp gaps, OK
 ```
 
@@ -7061,10 +9653,10 @@ one `borrowed`, one `lost`, four `ready`; movements 5 `receipt` + 3
 `borrow_out` + 1 `borrow_return` + 1 `lost`; 3 borrowings with one line each;
 every physical borrowing event carries `asset_movement_id` and
 `requested`/`approved` carry none; `TS-SEED-01` has 2 members.
-`docs/database/` reviewed — no change required (permission and numbering keys
+`docs/database/` reviewed ΓÇö no change required (permission and numbering keys
 are not part of the persistence contract).
 
-Note: the migration comment must stay ASCII-only — a `→` in a comment aborted
+Note: the migration comment must stay ASCII-only ΓÇö a `ΓåÆ` in a comment aborted
 the run with `character with byte sequence 0xe2 0x86 0x92 ... has no
 equivalent in encoding "WIN1252"`.
 
@@ -7091,8 +9683,8 @@ What landed:
   site kept real) through `WarehouseService`; Assets holds no inventory
   repository.
 - Tool-set lending expands to N lines and flips `tool_sets.status`
-  `available ↔ lent`; guest PII, approval chain and both sweeps unchanged.
-- Locale keys re-keyed `inventory:borrowing.*` → `assets:*` (en + id); audit
+  `available Γåö lent`; guest PII, approval chain and both sweeps unchanged.
+- Locale keys re-keyed `inventory:borrowing.*` ΓåÆ `assets:*` (en + id); audit
   actions are `asset.borrowed|returned|lost|moved|placed|transferred|disposed`.
 - Migration `20261105221923_erp0036_slice3_borrowing_engine` hand-edited:
   drop the manually-created
@@ -7100,29 +9692,29 @@ What landed:
   **before** `borrowing_lines`, since it never existed in Drizzle metadata.
   `serial_tracked_items.current_borrowing_line_id` stays superseded (D17).
 - Tests retargeted asset-shaped (borrowing service + authorization, asset
-  operations custody/location, kind×status matrix, item/inventory suites), and
+  operations custody/location, kind├ùstatus matrix, item/inventory suites), and
   `verify-inventory-constraints.ts` now probes `assets.borrowing*` plus `ready`.
 
 > **Superseded 2026-11-14:** that verifier was deleted after rotting to 14
 > failing checks; see the entry at the top of this file.
 
 ```text
-bun run typecheck                      → clean
-bun run test                           → 526 pass, 0 fail (27 files, 979 expects)
-bun run lint                           → 0 errors (6 pre-existing warnings)
-bunx --bun drizzle-kit generate --hints-file … 
-  → 20261105221923_erp0036_slice3_borrowing_engine
-bun run drizzle:migrate                → migrations applied successfully
-bun run drizzle:seed                   → complete (run 1)
-bun run drizzle:seed                   → complete (run 2, idempotent)
-bun docs/database/validate-dbml.ts     → 255 tables, 228 refs, 0 cross-module,
+bun run typecheck                      ΓåÆ clean
+bun run test                           ΓåÆ 526 pass, 0 fail (27 files, 979 expects)
+bun run lint                           ΓåÆ 0 errors (6 pre-existing warnings)
+bunx --bun drizzle-kit generate --hints-file ΓÇª 
+  ΓåÆ 20261105221923_erp0036_slice3_borrowing_engine
+bun run drizzle:migrate                ΓåÆ migrations applied successfully
+bun run drizzle:seed                   ΓåÆ complete (run 1)
+bun run drizzle:seed                   ΓåÆ complete (run 2, idempotent)
+bun docs/database/validate-dbml.ts     ΓåÆ 255 tables, 228 refs, 0 cross-module,
                                          0 timestamp gaps, OK
 ```
 
 Post-migration DB checks (`ims_erp_local`): only `assets.borrowing_events`,
 `assets.borrowing_lines`, `assets.borrowings` remain; `tool_set_id` exists;
 the old manual FK is gone; `serial_tracked_items_status_check` is
-`pre_order|in_stock|lost|sold|applied_warranty`. `docs/database/` reviewed —
+`pre_order|in_stock|lost|sold|applied_warranty`. `docs/database/` reviewed ΓÇö
 no change required (no table/column/link/vocabulary moved in Slice 3).
 
 ## Completed (this session - ERP-0036 Slice 2 schema + destructive migration, 2026-11-05)
@@ -7132,7 +9724,7 @@ Status: **verified** on the local database; **implemented** in code. Slice 2 of
 
 What landed:
 
-- `apps/backend/database/cleanup-tool-items.ts` — one-shot, `--dry-run` first,
+- `apps/backend/database/cleanup-tool-items.ts` ΓÇö one-shot, `--dry-run` first,
   refuses on mixed borrowings or adjustment lines, deletes `tool`/`service`
   items + units and their ledger rows behind a transaction, writing audit rows.
   Dry run on the old DB: `items: 8, byKind {tool: 4, service: 4}, units: 12,
@@ -7148,14 +9740,14 @@ What landed:
 - `apps/backend/database/seeders/seed/inventory.seeder.ts`: tool/service blocks
   deleted, kinds trimmed, faker doc rewritten.
 - `item.service.ts`, `asset.service.ts`, `asset-operations.service.ts`,
-  `asset.repository.interface.ts`: status/vocabulary moves (`in_stock`→`ready`,
-  `in_use`→`borrowed`, `loan`→`borrow_out`, `return`→`borrow_return`,
-  `assigned_at`→`borrowed_since`).
-- Tests updated: seeder data, kind×status matrix, item/asset operation suites,
+  `asset.repository.interface.ts`: status/vocabulary moves (`in_stock`ΓåÆ`ready`,
+  `in_use`ΓåÆ`borrowed`, `loan`ΓåÆ`borrow_out`, `return`ΓåÆ`borrow_return`,
+  `assigned_at`ΓåÆ`borrowed_since`).
+- Tests updated: seeder data, kind├ùstatus matrix, item/asset operation suites,
   and the manual `verify-inventory-constraints.ts` verifier.
 - New migration `20261105123204_faulty_ikaris`, hand-edited per plan: asset-type
   seed inserts before the FK adds, old status/movement CHECKs dropped before the
-  backfills and re-added after, idempotent `in_stock→ready` / `in_use→borrowed`
+  backfills and re-added after, idempotent `in_stockΓåÆready` / `in_useΓåÆborrowed`
   and `loan/return` backfills.
 
 **Deviations from the plan, recorded deliberately:**
@@ -7168,24 +9760,24 @@ What landed:
    one more slice. The contract (`docs.dbml`) still describes the target state.
 2. `database/seeders/index.ts` now imports `reflect-metadata` first. Both
    `drizzle:seed` and `drizzle:migrate-reset` crashed under Bun 1.4.4 with
-   “tsyringe requires a reflect polyfill” before this; the backend entrypoint
+   ΓÇ£tsyringe requires a reflect polyfillΓÇ¥ before this; the backend entrypoint
    already imported it, the seeder entrypoint did not.
 3. `docs.dbml` nullable-org/scoped-unique fixes for the eight asset tables and
    three index pairs landed here (they were drafted after the Slice 1 commit).
 
 ```text
-bun run typecheck                      → clean
-bun run test                           → 530 pass, 0 fail (27 files, 981 expects)
-bun run lint                           → 0 errors (6 pre-existing warnings)
+bun run typecheck                      ΓåÆ clean
+bun run test                           ΓåÆ 530 pass, 0 fail (27 files, 981 expects)
+bun run lint                           ΓåÆ 0 errors (6 pre-existing warnings)
 bun docs/database/gen-logical-references.ts
-  → regenerated: 513 refs across 37 targets, 228 intra-module refs
+  ΓåÆ regenerated: 513 refs across 37 targets, 228 intra-module refs
 bun docs/database/validate-dbml.ts
-  → parsed: 255 tables, 228 refs; cross-module refs: 0; timestamp gaps: 0; OK
+  ΓåÆ parsed: 255 tables, 228 refs; cross-module refs: 0; timestamp gaps: 0; OK
 bun run database/cleanup-tool-items.ts --apply
-  → items 8 (tool 4, service 4), units 12 deleted; Cleanup applied.
-bun run drizzle:migrate-reset          → migrations + seed complete
-bun run drizzle:migrate                → migrations applied successfully
-bun run drizzle:seed                   → complete (second run, idempotent)
+  ΓåÆ items 8 (tool 4, service 4), units 12 deleted; Cleanup applied.
+bun run drizzle:migrate-reset          ΓåÆ migrations + seed complete
+bun run drizzle:migrate                ΓåÆ migrations applied successfully
+bun run drizzle:seed                   ΓåÆ complete (second run, idempotent)
 ```
 
 Post-migration DB checks (`ims_erp_local`): item kinds are exactly
@@ -7205,7 +9797,7 @@ Drizzle schema, migration, seeder, service or UI touched yet.
   lookup, no `organization_id`, unique `code`); `assets.asset_categories` and
   `assets.assets` gain a real `Ref` to `assets.asset_types.code` and lose their
   `asset_type IN (...)` CHECKs; `assets.assets` gains `warehouse_id` /
-  `storage_id` (logical refs into `inventory`), renames `assigned_at` →
+  `storage_id` (logical refs into `inventory`), renames `assigned_at` ΓåÆ
   `borrowed_since`, drops `organization_id NOT NULL`, and switches the status
   CHECK to `ready|borrowed|maintenance|inactive|disposed|lost`.
 - **Uniqueness settled** (Stage 0 B5 / D13): `assets.code` is a single global
@@ -7225,8 +9817,8 @@ Drizzle schema, migration, seeder, service or UI touched yet.
   `stock_movements` borrowing vocabulary annotated as superseded (D17).
 - TableGroups updated for both modules (`inventory.borrowing*` out,
   `assets.asset_types` + `assets.borrowing*` in, `assets.asset_assignments` out).
-- `module-ownership.md`: Inventory 16→13 tables / 24→19 FKs / 31→12 logical
-  refs; Assets 11→14 / 11→16 / 26→33; module profiles rewritten (Inventory no
+- `module-ownership.md`: Inventory 16ΓåÆ13 tables / 24ΓåÆ19 FKs / 31ΓåÆ12 logical
+  refs; Assets 11ΓåÆ14 / 11ΓåÆ16 / 26ΓåÆ33; module profiles rewritten (Inventory no
   longer owns borrowing, Assets owns it, placement asserts listed with the
   ERP-0031 stub called out); the nullable-org carve-out now covers Inventory
   **and** Assets, not Inventory alone.
@@ -7234,13 +9826,13 @@ Drizzle schema, migration, seeder, service or UI touched yet.
   global-uniqueness exception, `assets.borrowing_events` added to the
   no-`deleted_at` list, new scope-split/expression index conventions,
   `warehouse_id`/`storage_id` generic columns, Assets glossary rewritten
-  (assignment → borrowing, location, movement, derived status).
+  (assignment ΓåÆ borrowing, location, movement, derived status).
 
 ```text
 bun docs/database/gen-logical-references.ts
-  → regenerated: 513 refs across 37 targets, 228 intra-module refs
+  ΓåÆ regenerated: 513 refs across 37 targets, 228 intra-module refs
 bun docs/database/validate-dbml.ts
-  → parsed: 255 tables, 228 refs
+  ΓåÆ parsed: 255 tables, 228 refs
     cross-module refs: 0
     timestamp gaps: 0
     OK
@@ -7249,12 +9841,12 @@ bun docs/database/validate-dbml.ts
 Two gate defects were found and fixed rather than worked around:
 
 1. **`docs.dbml` at `HEAD` did not parse.** `assets.assets.status` carried a
-   `[note: …]` setting on a `Checks` entry; `@dbml/core` rejects it with
+   `[note: ΓÇª]` setting on a `Checks` entry; `@dbml/core` rejects it with
    `Unknown check setting 'note'`. The same construct existed in three other
    checks I touched. All check-level notes were moved into table `Note:`
    strings; the file parses again.
 2. **The cross-module check was vacuous.** `validate-dbml.ts` iterated
-   `db.refs`, which `@dbml/core` v11 leaves undefined — the parse result keeps
+   `db.refs`, which `@dbml/core` v11 leaves undefined ΓÇö the parse result keeps
    all 228 refs on `schema.refs`. It now reads every ref and prefers
    `endpoint.schemaName` over the bare-name map (which is ambiguous because
    `items` exists in both `catalog` and `inventory`). First real run reported
@@ -7262,7 +9854,7 @@ Two gate defects were found and fixed rather than worked around:
 
 Also noted for later slices: `gen-logical-references.ts` anchors its regex at
 the start of a column note, so any cross-module note must **begin** with
-`Logical reference to …` or it is silently uncounted.
+`Logical reference to ΓÇª` or it is silently uncounted.
 
 `docs/database/` **was** changed (this is the contract slice).
 `docs/plan/plans/assets-equipment-location-and-borrowing.md` Slice 1 marked
@@ -7278,7 +9870,7 @@ seed touched).
   actual code before writing anything. Design holds; the plan as written was
   not executable. Nine defects found, six blocking:
   - **B1** D11's reachability rule needs `inventory.warehouse_organizations`,
-    which exists only in `docs.dbml:2268` — not in Drizzle, not migrated; it is
+    which exists only in `docs.dbml:2268` ΓÇö not in Drizzle, not migrated; it is
     backlog **ERP-0031**, still `planned`. Resolved by keeping global assets but
     stubbing `assertWarehouseReachableByOrg` to return `true` (all warehouses
     are global today), with a real call site so ERP-0031 is a body swap.
@@ -7286,7 +9878,7 @@ seed touched).
     would fail while seeded `tool`/`service` rows exist, and the cleanup script
     sat in Slice 4. Cleanup + seeder trim moved into Slice 2, before
     `drizzle:generate`.
-  - **B3** The `borrowing` → `asset_borrowing` rename would silently revoke
+  - **B3** The `borrowing` ΓåÆ `asset_borrowing` rename would silently revoke
     every role's access: grants are jsonb (`role.schema.ts:73`) and
     `organization-roles.seeder.ts` is insert-only. Added an idempotent jsonb
     key-rename data migration in the same slice.
@@ -7306,7 +9898,7 @@ seed touched).
   movement rows for disposal/maintenance and the `asset_types` seed before the
   FK is added; `reconcileStatus` needed explicit source rules; and the
   scheduler worker, warehouse `toolsCount`, borrowing errors living in
-  `inventory.errors.ts`, asset-type endpoints, the `in_stock→ready` backfill and
+  `inventory.errors.ts`, asset-type endpoints, the `in_stockΓåÆready` backfill and
   the affected tests were missing from the plan.
 - Migrations will need one **hand edit**: the
   `serial_tracked_items.current_borrowing_line_id` FK exists in the database and
@@ -7314,7 +9906,7 @@ seed touched).
   `drizzle:generate` cannot emit its `DROP CONSTRAINT`.
 - `docs/database/` was reviewed and is **unchanged** so far; it changes in
   Slice 1. `bun docs/database/validate-dbml.ts` not run (no edits yet).
-- Verified: nothing executed — reading only (`git status`, `Read`, ripgrep).
+- Verified: nothing executed ΓÇö reading only (`git status`, `Read`, ripgrep).
 
 ## Completed (this session - assets/equipment design plan, 2026-11-05)
 
@@ -7347,12 +9939,12 @@ Status: **design only** (no code, schema, migration or seed touched;
 ## Completed (this session - dummy dashboard view, 2026-11-06)
 
 Status: **implemented** (UI mock only; no backend, schema, migration, or seed
-touched — `docs/database/` reviewed, unchanged).
+touched ΓÇö `docs/database/` reviewed, unchanged).
 
 - **M01 dashboard dummy view** per the grill-me plan: all Stage-1 widget
   placeholders (sales, cash per account, provisional profit, inventory,
   projects by status, subscriptions) plus a 6-month invoiced-sales bar chart,
-  a sample activity feed, and quick links —
+  a sample activity feed, and quick links ΓÇö
   `apps/web-admin/src/components/dashboard/dashboard-page.tsx` (new),
   rendered by `_authed.index.tsx` (replaced the shadcn placeholder boxes).
   Persistent "sample data" banner; profit carries its "provisional" badge
@@ -7361,36 +9953,36 @@ touched — `docs/database/` reviewed, unchanged).
 - **`apps/web-admin/src/lib/dashboard-api.ts` (new)**: typed mock summary +
   `fetchDashboardSummary()` (async signature, ready to swap for the real
   `/dashboard/summary`), `dashboardQueryOptions()`, `formatIdr()` (integer
-  IDR minor units → `id-ID` currency string, pinned per ADR-0002). ponytail
+  IDR minor units ΓåÆ `id-ID` currency string, pinned per ADR-0002). ponytail
   comment marks the swap point and the server-side permission-gating rule.
 - **`packages/locales`**: new `dashboard` namespace (en/id, flat dot-keys)
   registered in `en/index.ts`, `id/index.ts`, `i18next.d.ts` and
   `NAMESPACES`. Quick links reuse `nav:item.*`; parity test's
   allowed-identical set gained `dashboard:widget.cash.total` ("Total" is the
   same word).
-- **Test**: `apps/web-admin/test/unit/dashboard-api.test.ts` (new) — mock
+- **Test**: `apps/web-admin/test/unit/dashboard-api.test.ts` (new) ΓÇö mock
   shape (all six widgets, integer minor units, provisional profit, 6-month
   series ending in the current month, route/nav-key sanity) and `formatIdr`
   output.
 
-Verification: `bun test` in `apps/web-admin` — 41/41; `bun test` in
-`packages/locales` — 34/34 (dead-key + parity guards pass); `bun run build`
-in `apps/web-admin` (tsc -b + vite) — passes; `bun run lint` — only the 9
+Verification: `bun test` in `apps/web-admin` ΓÇö 41/41; `bun test` in
+`packages/locales` ΓÇö 34/34 (dead-key + parity guards pass); `bun run build`
+in `apps/web-admin` (tsc -b + vite) ΓÇö passes; `bun run lint` ΓÇö only the 9
 pre-existing warnings, none in new files. Docs changed: `progress.md` (this
 entry), `plans/features.md` (M01 mock-scaffold note). Backlog: no status
 moves (a UI mock is not an ERP ID; M01 stays blocked on source modules).
 
-## UI — full ERP sidebar shell + placeholder routes (2026-11-05)
+## UI ΓÇö full ERP sidebar shell + placeholder routes (2026-11-05)
 
 Status: **implemented** (UI-first; no backend, schema, migration, or seed
 touched).
 
 - **`apps/web-admin/src/components/sidebar/nav-config.ts` (new)**: single
-  typed nav map covering the docs module plan M01–M12 plus Administration.
-  Sections: Dasbor; CRM & Penjualan (CRM → `/crm/*` and Penjualan →
+  typed nav map covering the docs module plan M01ΓÇôM12 plus Administration.
+  Sections: Dasbor; CRM & Penjualan (CRM ΓåÆ `/crm/*` and Penjualan ΓåÆ
   `/sales/*` split as sibling parents); Langganan & Lisensi; Integrasi (flat
-  — four items, no grouping parent); Inventaris & Pengadaan (Gudang, Stok,
-  Barang, Pengadaan → `/procurement/*`, Aset & Peralatan → `/assets/*` merged
+  ΓÇö four items, no grouping parent); Inventaris & Pengadaan (Gudang, Stok,
+  Barang, Pengadaan ΓåÆ `/procurement/*`, Aset & Peralatan ΓåÆ `/assets/*` merged
   in; Peminjaman stays at `/inventory/borrowings`); Proyek & Purnajual;
   Karyawan & Kehadiran; Keuangan (M09 + merged M10 Pajak at `/finance/tax/*`
   + merged M11 Bonus & Investor at `/finance/investors/*`; new Saldo Awal and
@@ -7402,7 +9994,7 @@ touched).
   Investors merged in as `/finance/tax/*` and `/finance/investors/*`).
 - **`coming-soon-page.tsx` (new)**: shared placeholder page (icon, title,
   "Segera hadir" badge) rendered by 55 thin route stubs under
-  `_authed/{sales,crm,subscription,integrations,procurement,assets,projects,hr,finance,tax→removed,investors→moved,reports,admin/settings}`.
+  `_authed/{sales,crm,subscription,integrations,procurement,assets,projects,hr,finance,taxΓåÆremoved,investorsΓåÆmoved,reports,admin/settings}`.
   Real implementations replace the stub body; the route shell stays.
 - **`sidebar-section.tsx`**: parent items with children now link to their
   hub route; sub-items get active highlighting (`activeProps` on the TanStack
@@ -7423,50 +10015,50 @@ touched).
   noun); `item.whatsappAi` given a real Indonesian translation.
 
 Verification: `bun run build` in `apps/web-admin` (tsc -b + vite, regenerates
-`routeTree.gen.ts`) — passes; `bun test` in `packages/locales` — 30/30.
+`routeTree.gen.ts`) ΓÇö passes; `bun test` in `packages/locales` ΓÇö 30/30.
 Docs changed: `progress.md` (this entry), `plans/features.md` (sidebar shell
 rollup note). Backlog: no status moves (UI shell is not an ERP ID; ERP-0005
 customer-slice UI remains `planned`).
 
-## Doc change — status rollup + plan-doc obligation (2026-11-05)
+## Doc change ΓÇö status rollup + plan-doc obligation (2026-11-05)
 
 Instructions/docs-only change; no code, schema, migration, or seed touched.
 Status: **implemented**.
 
 - **`docs/plan/plans/features.md` (new)**: feature status rollup grouped by
-  v5.1 module M01–M12, then backlog-only ERP IDs, then "Outside the plan"
-  (shipped features in neither the module plans nor a backlog ERP ID —
+  v5.1 module M01ΓÇôM12, then backlog-only ERP IDs, then "Outside the plan"
+  (shipped features in neither the module plans nor a backlog ERP ID ΓÇö
   invitations/claim, dynamic roles, audit, admin users, username login,
   account pages, forgot/reset password, avatar pipeline, Redis sessions,
   location lookup, backend + web i18n, sales payments, stock adjustments,
   worker registry, HTTP envelope, toast bus). Each row carries one line of
   evidence (module path + test file or progress.md date).
-- **`AGENTS.md` Hard rules**: "Statuses live in…" bullet replaced by
-  **"Every code update writes to the plan docs"** — code, migration, seeder,
+- **`AGENTS.md` Hard rules**: "Statuses live inΓÇª" bullet replaced by
+  **"Every code update writes to the plan docs"** ΓÇö code, migration, seeder,
   or test changes update `progress.md` + `backlog.md` in the same change,
   with `features.md` moving alongside any `backlog.md` status move.
-- **`AGENTS.md` → How to update these docs**: same-change paragraph for
+- **`AGENTS.md` ΓåÆ How to update these docs**: same-change paragraph for
   `progress.md`/`backlog.md` (a code change without either is incomplete;
   when neither applies, record one `progress.md` line instead of skipping).
-- **`AGENTS.md` → Definition of done item 5**: now requires
+- **`AGENTS.md` ΓåÆ Definition of done item 5**: now requires
   `docs/plan/plans/features.md` updated in the same change.
 - **`backlog.md` stale statuses fixed** (code had outrun the ledger):
-  ERP-0002 authorization core → `implemented` (2026-10-29 core, 2026-11-01
-  shared catalog), ERP-0003 auth module → `implemented` (2026-10-29 live
-  HTTP verified), ERP-0027 warehouses S2 → `implemented` (2026-11-03/04
-  hardening, 23 tests), ERP-0028 stock ledger S3 → `implemented` (GL
+  ERP-0002 authorization core ΓåÆ `implemented` (2026-10-29 core, 2026-11-01
+  shared catalog), ERP-0003 auth module ΓåÆ `implemented` (2026-10-29 live
+  HTTP verified), ERP-0027 warehouses S2 ΓåÆ `implemented` (2026-11-03/04
+  hardening, 23 tests), ERP-0028 stock ledger S3 ΓåÆ `implemented` (GL
   reconciliation portion of ERP-0014 still open via OPEN-3). ERP-0029's
   nonstandard "shipped" wording left as-is deliberately.
 - **`progress.md`**: rollup link added at the top; "Next executable task"
-  rewritten to the customer slice (ERP-0004/0005) — ERP-0002/0003 are no
+  rewritten to the customer slice (ERP-0004/0005) ΓÇö ERP-0002/0003 are no
   longer open, so the old "ERP-0002/3/4/5" framing was stale.
 
 Verification: `Select-String AGENTS.md -Pattern 'Every code update'` matches
 the Hard rules bullet and the docs-update section; `features.md` present at
 `docs/plan/plans/features.md`. `docs/database/` reviewed and **unchanged**
-(no schema change — docs only).
+(no schema change ΓÇö docs only).
 
-## Completed — org/inventory rebaseline design (ADR-0010) (2026-11-04)
+## Completed ΓÇö org/inventory rebaseline design (ADR-0010) (2026-11-04)
 
 Status: **implemented** (docs only; ADR-0010 `proposed`, owner sign-off
 pending; no code touched).
@@ -7476,7 +10068,7 @@ departments (one ledger, one tax identity); inventory rebaselined as built;
 warehouses all global with `inventory.warehouse_organizations` links as the
 only access rule (role in active org + link; unlinked 404; global admin
 bypass; org `admin` read-only stock); transfers as `transfer_out`/`transfer_in`
-pairs incl. storage→storage; `responsible_employee_id` display-only; borrowing
+pairs incl. storageΓåÆstorage; `responsible_employee_id` display-only; borrowing
 stays in `inventory` covering M06 loans; procurement own module; OPEN-1 and
 OPEN-3 closed. Backlog ERP-0031..0035 added.
 
@@ -7488,32 +10080,32 @@ warehouse notes), `logical-references.md` (regenerated),
 `features.md`. `erp-plan-en.md`/`-id.md` untouched until owner sign-off.
 
 ```text
-bun docs/database/gen-logical-references.ts → 509 refs, 228 intra-module
-bun docs/database/validate-dbml.ts          → 255 tables, 0 cross-module refs,
+bun docs/database/gen-logical-references.ts ΓåÆ 509 refs, 228 intra-module
+bun docs/database/validate-dbml.ts          ΓåÆ 255 tables, 0 cross-module refs,
                                               0 timestamp gaps, OK
 ```
 
-**Next executable task:** ERP-0032 (stock transfers) — ERP-0031 is now
+**Next executable task:** ERP-0032 (stock transfers) ΓÇö ERP-0031 is now
 implemented in full, so its dependency is satisfied. Start by reading the
 transfer requirements in `backlog.md` and the `inventory` tables in
 `docs/database/docs.dbml`; ERP-0031's remaining work is acceptance only
 (browser walk-through, reviewer confirmation before a non-local migration).
 
-## Completed — v5.1 per-module plans (2026-11-04)
+## Completed ΓÇö v5.1 per-module plans (2026-11-04)
 
 Status: **implemented** (docs only; not owner-reviewed).
 
 `docs/plan/erp-module-plans/` added: `README.md` (index, glossary, common
-DoD, `beyond-baseline` table) + `m01`–`m12` files restating
+DoD, `beyond-baseline` table) + `m01`ΓÇô`m12` files restating
 `docs/plan/erp-plan-en.md` v5.1 per module (scope, limits, tasks, SOPs,
 controls, acceptance, DoD, dependencies, current state vs plan). Inferred
 detail is marked _interpretation, needs owner confirmation_. Finding: build
 has drifted past v5.1 (multi-tenant organization, multi-warehouse, 24-module
-`docs.dbml` vs 12 plan modules, while M09 Finance — the end of the plan's
-main sequence — has no code). Cut/rebaseline decision is **open** for the
+`docs.dbml` vs 12 plan modules, while M09 Finance ΓÇö the end of the plan's
+main sequence ΓÇö has no code). Cut/rebaseline decision is **open** for the
 owner. `docs/database/` reviewed and **unchanged**; no code touched.
 
-## Completed — module directory cleanup: errors/, adapters/, utils/ (2026-11-04)
+## Completed ΓÇö module directory cleanup: errors/, adapters/, utils/ (2026-11-04)
 
 Status: **verified** (typecheck + full test suite + lint).
 
@@ -7524,28 +10116,28 @@ files and every file type has a dedicated home:
   `user.errors.ts`, `invitation.errors.ts`, `inventory.errors.ts`,
   `organization.errors.ts` moved out of `services/` (git mv, history kept).
 - **adapters/** (new dirs in `user`, `organization`): Better Auth wrappers
-  moved out of `services/` and renamed — `better-auth-user.gateway.ts` →
-  `adapters/better-auth-user.ts`, `better-auth-user-management.gateway.ts` →
+  moved out of `services/` and renamed ΓÇö `better-auth-user.gateway.ts` ΓåÆ
+  `adapters/better-auth-user.ts`, `better-auth-user-management.gateway.ts` ΓåÆ
   `adapters/better-auth-user-management.ts`,
-  `better-auth-organization.gateway.ts` →
-  `adapters/better-auth-organization.ts`, `logger-mailer.ts` →
+  `better-auth-organization.gateway.ts` ΓåÆ
+  `adapters/better-auth-organization.ts`, `logger-mailer.ts` ΓåÆ
   `adapters/logger-mailer.ts`. The `.gateway` suffix was dropped: "gateway"
   naming is reserved for future websocket gateways; external-system port
   implementations are adapters.
 - **user/utils/token.ts** moved out of `services/` (pure helpers).
 - **Contract split (user module only):** monolithic
-  `contracts/repositories.interface.ts` → per-domain
+  `contracts/repositories.interface.ts` ΓåÆ per-domain
   `invitation.repository.interface.ts`, `role.repository.interface.ts`,
   `user-management.repository.interface.ts` (+ `admin-listing.types.ts` for
-  shared listing types); `contracts/gateways.interface.ts` →
+  shared listing types); `contracts/gateways.interface.ts` ΓåÆ
   `user-management-auth.gateway.interface.ts` (with `TClaimTarget`) and
   `invitation-mailer.gateway.interface.ts`. All other `contracts/` files
   untouched. `middleware/` is a reserved optional module dir (documented,
   not created).
 - **Imports:** ~40 lines updated across services, controllers,
   repositories, `constants/di.ts`, both containers, plus 9 test files.
-- **Docs/skills synced:** `elysia-module` → v1.5.0,
-  `elysia-layered-architecture` → v1.4.0 (checklists, layer tree, port
+- **Docs/skills synced:** `elysia-module` ΓåÆ v1.5.0,
+  `elysia-layered-architecture` ΓåÆ v1.4.0 (checklists, layer tree, port
   implementations in `adapters/`), root `AGENTS.md` module-shape paragraph,
   `modules/organization.md` (stale `routes/`/`containers/` fixed), 
   `modules/user.md` (current layout note), `skills.md` inventory.
@@ -7553,21 +10145,21 @@ files and every file type has a dedicated home:
 Verification actually run (2026-11-04):
 
 ```text
-bun run typecheck (apps/backend)   → clean
-bun test (apps/backend)            → 530 pass / 0 fail (26 files)
-bun run lint (apps/backend)        → 0 errors; 2 warnings introduced by the
+bun run typecheck (apps/backend)   ΓåÆ clean
+bun test (apps/backend)            ΓåÆ 530 pass / 0 fail (26 files)
+bun run lint (apps/backend)        ΓåÆ 0 errors; 2 warnings introduced by the
                                      refactor were fixed, rest pre-existing
 ```
 
-`docs/database/` reviewed and **unchanged** (no schema change — code
+`docs/database/` reviewed and **unchanged** (no schema change ΓÇö code
 layout only).
 
-## Completed — admin users list presigns avatars (2026-11-03)
+## Completed ΓÇö admin users list presigns avatars (2026-11-03)
 
 Status: **verified** (unit test + live endpoint + presigned fetch).
 
 Root cause of "avatars show the fallback in the admin users table although
-the S3 objects exist": `UserAdminService.list` projected `image` **raw** —
+the S3 objects exist": `UserAdminService.list` projected `image` **raw** ΓÇö
 the S3 object key (`user/<id>/avatar.webp`), not a URL. The browser cannot
 load a relative object key as `<img src>`, so Radix `AvatarImage` errored
 and every row rendered the initials fallback. Only the profile path
@@ -7575,30 +10167,30 @@ and every row rendered the initials fallback. Only the profile path
 the convention.
 
 Fix: `apps/backend/src/app/user/services/user-admin.service.ts` `list()`
-now maps `image` through `presignObjectUrl` (null stays null) — the same
+now maps `image` through `presignObjectUrl` (null stays null) ΓÇö the same
 short-lived-URL convention as the profile path. Audit of all user-serving
 services confirmed this was the only raw-`image` leak.
 
 Verification actually run (2026-11-03):
 
 ```text
-bun run typecheck (apps/backend)                     → clean
-bun test test/unit/user-admin.service.test.ts        → 12 pass / 0 fail
-bun test (apps/backend)                              → 526 pass / 0 fail
-bun run lint                                         → pass
-GET /admin/users (live, dev server)                  → image = https://…/avatar.webp
-                                                       ?X-Amz-… (signed), not a key
-presigned URL fetch                                  → 200 image/webp
+bun run typecheck (apps/backend)                     ΓåÆ clean
+bun test test/unit/user-admin.service.test.ts        ΓåÆ 12 pass / 0 fail
+bun test (apps/backend)                              ΓåÆ 526 pass / 0 fail
+bun run lint                                         ΓåÆ pass
+GET /admin/users (live, dev server)                  ΓåÆ image = https://ΓÇª/avatar.webp
+                                                       ?X-Amz-ΓÇª (signed), not a key
+presigned URL fetch                                  ΓåÆ 200 image/webp
 ```
 
 Presigned URLs expire after 300s by design; react-query's refetch-on-focus
-re-presigns. Same behavior as the profile page — no change.
+re-presigns. Same behavior as the profile page ΓÇö no change.
 
 `docs/database/` reviewed and **unchanged** (no schema change).
 
-## Completed — avatar pipeline fix: DiceBear v10 + WebP (2026-11-03)
+## Completed ΓÇö avatar pipeline fix: DiceBear v10 + WebP (2026-11-03)
 
-Status: **verified** end to end (DB → S3 → presigned URL → format).
+Status: **verified** end to end (DB ΓåÆ S3 ΓåÆ presigned URL ΓåÆ format).
 
 Root cause of "no avatar on the web after seeding": the avatar worker's
 DiceBear URL sent `backgroundColor=transparent`. The DiceBear **v10** HTTP
@@ -7611,11 +10203,11 @@ fallback.
 Fix (`apps/backend`):
 
 - `src/app/user/queues/avatar.worker.ts`: style path
-  `10.x/initials/png` → `10.x/initials/webp`; **no `backgroundColor`
-  parameter at all** (per explicit decision — the style's seed-derived
+  `10.x/initials/png` ΓåÆ `10.x/initials/webp`; **no `backgroundColor`
+  parameter at all** (per explicit decision ΓÇö the style's seed-derived
   default applies; do not re-add it, including `00000000`);
-  `generateAvatarPng` → `generateAvatarWebp`; temp file `.webp`.
-- `src/providers/s3/s3.ts`: `avatarObjectKey` → `user/<id>/avatar.webp`.
+  `generateAvatarPng` ΓåÆ `generateAvatarWebp`; temp file `.webp`.
+- `src/providers/s3/s3.ts`: `avatarObjectKey` ΓåÆ `user/<id>/avatar.webp`.
 - `src/app/user/services/user.service.ts`: comment-only key references.
 - `test/unit/avatar.worker.test.ts`: WebP magic check (RIFF/WEBP), new
   guard test asserting `backgroundColor` is **absent** from the URL,
@@ -7624,29 +10216,29 @@ Fix (`apps/backend`):
 Verification actually run (2026-11-03):
 
 ```text
-bun run typecheck (apps/backend)                     → clean
-bun test test/unit/avatar.worker.test.ts             → 11 pass / 0 fail
-bun test (apps/backend)                              → 525 pass / 0 fail
-bun run lint                                         → pass (pre-existing warnings only)
+bun run typecheck (apps/backend)                     ΓåÆ clean
+bun test test/unit/avatar.worker.test.ts             ΓåÆ 11 pass / 0 fail
+bun test (apps/backend)                              ΓåÆ 525 pass / 0 fail
+bun run lint                                         ΓåÆ pass (pre-existing warnings only)
 drizzle:migrate-reset + reseed (user-run; a schema-reset
-  deadlock occurs when the dev server holds locks — stop the
-  server first for a scripted reset)                 → 17 seeded users all have
+  deadlock occurs when the dev server holds locks ΓÇö stop the
+  server first for a scripted reset)                 ΓåÆ 17 seeded users all have
                                                        image = user/<id>/avatar.webp
-presigned URL fetch                                  → 200, content-type image/webp
-avatar queue after drain                             → waiting: 0 (1 stale pre-fix failed
+presigned URL fetch                                  ΓåÆ 200, content-type image/webp
+avatar queue after drain                             ΓåÆ waiting: 0 (1 stale pre-fix failed
                                                        job for a dead user id; ages out)
 ```
 
 Pipeline confirmation: Better Auth `user.create.after` hook fires for
-seeded users (admin + 16 role accounts) → jobs enqueued at seed time →
-running dev-server worker drains them → S3 object written → key stored →
+seeded users (admin + 16 role accounts) ΓåÆ jobs enqueued at seed time ΓåÆ
+running dev-server worker drains them ΓåÆ S3 object written ΓåÆ key stored ΓåÆ
 presigned per request. Closes the ERP-0029 follow-up "worker not yet
 observed firing against real Redis".
 
 `docs/database/` reviewed and **unchanged** (no schema change; `image`
 remains a text key column).
 
-## Completed — faker-based seeders + faker skill (2026-11-03)
+## Completed ΓÇö faker-based seeders + faker skill (2026-11-03)
 
 Status: **implemented** for the skill/docs; the seeder run-twice idempotency
 and a full fresh-database `migrate-reset` were **verified**. Not `accepted`
@@ -7655,25 +10247,25 @@ and a full fresh-database `migrate-reset` were **verified**. Not `accepted`
 ### Encoding fix (WIN1252 vs emoji, 2026-11-03)
 
 `drizzle:migrate-reset` failed on a fresh database:
-`faker.person.bio()` emitted an emoji (🧣) and the WIN1252-encoded dev
+`faker.person.bio()` emitted an emoji (≡ƒºú) and the WIN1252-encoded dev
 PostgreSQL cannot store 4-byte UTF-8. Fix: `seedSafeText()` helper
 (`database/seeders/seed/faker-content.ts`) strips non-Latin-1 characters and
 collapses whitespace; applied to every faker text field in
 `organization-members.seeder.ts` (name, bio) and `inventory.seeder.ts`
 (item name, category, material). Anchors are ASCII and untouched. A
 char-code filter is used instead of a negated-class regex (oxlint
-`no-control-regex`). Skill §3.1 records the rule.
+`no-control-regex`). Skill ┬º3.1 records the rule.
 
 - **Dependency:** `@faker-js/faker@10.6.0` added as a devDependency of
   `apps/backend` (`bun add @faker-js/faker --cwd apps/backend --dev`,
   clean install).
 - **`apps/backend/database/seeders/seed/inventory.seeder.ts`**: curated
-  `SEED_ITEMS` fixture array replaced by `generateSeedItems()` — a
+  `SEED_ITEMS` fixture array replaced by `generateSeedItems()` ΓÇö a
   deterministic faker generator (`faker.seed(20261102)`, fixed constant),
-  4 items per kind × 5 kinds = 20 items. Kind invariants preserved (tools
+  4 items per kind ├ù 5 kinds = 20 items. Kind invariants preserved (tools
   serialized + unsellable; materials quantity-tracked with unit labels;
   services untracked). SKUs/serials are deterministic anchors
-  (`ITEM-001`…`ITEM-020`, `<SKU>-S00n`) so the natural-key idempotency
+  (`ITEM-001`ΓÇª`ITEM-020`, `<SKU>-S00n`) so the natural-key idempotency
   guards still hold; faker only fills names, categories, and integer-IDR
   prices per ADR-0002 (no `faker.finance.amount`). Opening-stock fixtures
   re-anchored to `ITEM-005` (first component) / `ITEM-009` (first material)
@@ -7681,12 +10273,12 @@ char-code filter is used instead of a negated-class regex (oxlint
   conventions respected; location seeder untouched (real administrative
   reference data is never faker-generated).
 - **`apps/backend/database/seeders/index.ts`**: stale final log message
-  fixed ("Location seeding complete" → "Seeding complete"). No orchestration
+  fixed ("Location seeding complete" ΓåÆ "Seeding complete"). No orchestration
   change; `migrate-reset.ts` reuse of `runSeeders()` unaffected.
 - **Skill:** `.agents/skills/faker/SKILL.md` created (v1.0.0, local,
   dependsOn `erp-database-schema`): deterministic seeding, anchor vs
   content fields, never faker-generate canonical reference data /
-  statuses / currency, money-datetime-quantity column mapping, 10–50
+  statuses / currency, money-datetime-quantity column mapping, 10ΓÇô50
   rows/module sizing, anti-patterns.
 - **Docs:** `AGENTS.md` backend skill table gained the `faker` row; the
   `drizzle:seed` command row notes faker-based deterministic seed content.
@@ -7695,14 +10287,14 @@ char-code filter is used instead of a negated-class regex (oxlint
 
 - **`apps/backend/database/seeders/seed/organization-members.seeder.ts`**
   (same session, 2026-11-03): the 16 role accounts' content fields are now
-  faker-generated — `name` (`faker.person.fullName()`), `bio`
+  faker-generated ΓÇö `name` (`faker.person.fullName()`), `bio`
   (`faker.person.bio()`), `phone` (fixed `+62811` prefix + role index +
   `faker.string.numeric(6)`, collision-free on `users_phone_live_idx`).
   Identity anchors (`<role>.seed@entragate.local`, `<role>_seed`,
   `<role>123456`) are unchanged. `FAKER_SEED = 20261103`, seeded once in
   `addSeedMembersTo()`. `phone` is an `input: false` Better Auth
   additionalField, so it is written directly via Drizzle on the creation
-  path — the same module-ownership rule the user-management module applies.
+  path ΓÇö the same module-ownership rule the user-management module applies.
   Existing accounts are reused as-is (never password/name/phone reset).
   `seedIdentity` no longer returns a `name`; role remains discoverable via
   email/username/membership role.
@@ -7710,48 +10302,48 @@ char-code filter is used instead of a negated-class regex (oxlint
 Verification actually run (2026-11-03):
 
 ```text
-bun run typecheck (apps/backend)                                → clean, no errors
-bun run drizzle:migrate-reset (fresh DB, after encoding fix)    → migrations + full seed OK:
+bun run typecheck (apps/backend)                                ΓåÆ clean, no errors
+bun run drizzle:migrate-reset (fresh DB, after encoding fix)    ΓåÆ migrations + full seed OK:
                                                                   16/16 role accounts created with
                                                                   faker name/bio/phone (emoji-safe),
                                                                   20 items, 4 opening-stock movements
-bun run drizzle:seed  (run 2, same DB)                          → created: 0, all guards skip;
+bun run drizzle:seed  (run 2, same DB)                          ΓåÆ created: 0, all guards skip;
                                                                   idempotent (DoD #4)
-DB spot-check (auth.users)                                      → 0 rows with non-Latin-1 text;
+DB spot-check (auth.users)                                      ΓåÆ 0 rows with non-Latin-1 text;
                                                                   member_seed bio = "adviser advocate,
                                                                   musician" (emoji stripped)
-bun -e determinism check (faker.seed 20261103, 16 accounts)     → deterministic: true, phones unique
-bun run lint   (apps/backend)                                   → pass; pre-existing warnings only
-bun test       (apps/backend)                                   → 524 pass / 0 fail
+bun -e determinism check (faker.seed 20261103, 16 accounts)     ΓåÆ deterministic: true, phones unique
+bun run lint   (apps/backend)                                   ΓåÆ pass; pre-existing warnings only
+bun test       (apps/backend)                                   ΓåÆ 524 pass / 0 fail
 ```
 
-Note: the dev DB still contains the old curated items (`CTRL-DOOR-01`, …)
-from previous seeds; the faker items coexist by design — anchors differ. A
+Note: the dev DB still contains the old curated items (`CTRL-DOOR-01`, ΓÇª)
+from previous seeds; the faker items coexist by design ΓÇö anchors differ. A
 fresh database gets only faker-generated items.
 
 `docs/database/` was reviewed and is **unchanged**: no table, column,
 index, constraint, cross-module link, status vocabulary, or money/quantity/
-date rule changed — seeders are data, not schema.
+date rule changed ΓÇö seeders are data, not schema.
 
 Next: the previous "next executable task" stands (unchanged by this
 data-only slice).
 
-## Doc change — feature module lifecycle gate (2026-11-02)
+## Doc change ΓÇö feature module lifecycle gate (2026-11-02)
 
 Instructions-only change; no code, schema, migration, or seed was touched.
-Status: **implemented** (not `verified` — nobody has yet confirmed an agent
+Status: **implemented** (not `verified` ΓÇö nobody has yet confirmed an agent
 follows the new gate end to end).
 
 - **`AGENTS.md`**: new `## Feature module lifecycle` section between `##
-Backend` and `## Internationalization`. Every backend feature work item —
+Backend` and `## Internationalization`. Every backend feature work item ΓÇö
   and specifically creating / updating / deleting `apps/backend/src/app/<module>/`
-  — must (1) read `docs/database/` in the `erp-database-schema` protocol order,
+  ΓÇö must (1) read `docs/database/` in the `erp-database-schema` protocol order,
   (2) run the `.agents/skills/grill-me` design interview before writing code,
   and (3) update `docs/database/` afterwards **when required** (table / column /
   index / constraint change, new cross-module logical reference, or a
   status / money / quantity / date / lifecycle rule change). Sync-back order is
-  `docs.dbml` → `gen-logical-references.ts` → `validate-dbml.ts`.
-- **`AGENTS.md`** `## Definition of done`: items 8–10 added (gates respected,
+  `docs.dbml` ΓåÆ `gen-logical-references.ts` ΓåÆ `validate-dbml.ts`.
+- **`AGENTS.md`** `## Definition of done`: items 8ΓÇô10 added (gates respected,
   `docs.dbml` updated-or-recorded + validator `OK`, module deletion leaves no
   orphans).
 - **`AGENTS.md`** `## How to update these docs`: paragraph making
@@ -7759,7 +10351,7 @@ Backend` and `## Internationalization`. Every backend feature work item —
 - **`.agents/docs/README.md`**: named the 5 companion MDs explicitly (the count
   was right; the list was implicit) and pointed at the new gate.
   **Correction:** an earlier edit in this same change bumped the count to "6"
-  on the assumption `implementation-phases.md` was uncounted. It was not —
+  on the assumption `implementation-phases.md` was uncounted. It was not ΓÇö
   `docs/database/` has exactly 5 MDs, and the "6" was wrong. Reverted.
 - **`.agents/docs/skills.md`**: `grill-me` added to the inventory as
   *present, not in lock*, with the honest caveat that its `SKILL.md` delegates
@@ -7768,9 +10360,9 @@ Backend` and `## Internationalization`. Every backend feature work item —
 Verification actually run:
 
 ```text
-Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   → 26 markers
-Test-Path .agents/skills/grilling                              → False (absent, as documented)
-bun docs/database/validate-dbml.ts                             → parsed: 253 tables, 0 standalone refs
+Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   ΓåÆ 26 markers
+Test-Path .agents/skills/grilling                              ΓåÆ False (absent, as documented)
+bun docs/database/validate-dbml.ts                             ΓåÆ parsed: 253 tables, 0 standalone refs
                                                                   cross-module refs: 0
                                                                   timestamp gaps: 0
                                                                   OK   (exit 0)
@@ -7784,8 +10376,8 @@ Known inaccuracy left in place, flagged not fixed: the new `## Feature module
 lifecycle` section describes the contract as 253 tables, the verified parser
 count; `docs/database/module-ownership.md`, `implementation-phases.md` and the
 `validate-dbml.ts` header comment still say **251** (`progress.md` line 481 above
-already recorded 253). The count is not the contract — a follow-up docs pass
-should reconcile 251 → 253 across the companions in one place.
+already recorded 253). The count is not the contract ΓÇö a follow-up docs pass
+should reconcile 251 ΓåÆ 253 across the companions in one place.
 
 Also verified while checking: `gen-logical-references.ts` writes
 `logical-references.md` from `docs.dbml` using **absolute** paths
@@ -7793,22 +10385,22 @@ Also verified while checking: `gen-logical-references.ts` writes
 this change (`docs/database/` was unchanged), so this was not exercised; the
 hardcoded root is a portability defect worth fixing separately.
 
-## Doc change — feature module lifecycle gate (2026-11-02)
+## Doc change ΓÇö feature module lifecycle gate (2026-11-02)
 
 Instructions-only change; no code, schema, migration, or seed was touched.
-Status: **implemented** (not `verified` — nobody has yet confirmed an agent
+Status: **implemented** (not `verified` ΓÇö nobody has yet confirmed an agent
 follows the new gate end to end).
 
 - **`AGENTS.md`**: new `## Feature module lifecycle` section between `##
-Backend` and `## Internationalization`. Every backend feature work item —
+Backend` and `## Internationalization`. Every backend feature work item ΓÇö
   and specifically creating / updating / deleting `apps/backend/src/app/<module>/`
-  — must (1) read `docs/database/` in the `erp-database-schema` protocol order,
+  ΓÇö must (1) read `docs/database/` in the `erp-database-schema` protocol order,
   (2) run the `.agents/skills/grill-me` design interview before writing code,
   and (3) update `docs/database/` afterwards **when required** (table / column /
   index / constraint change, new cross-module logical reference, or a
   status / money / quantity / date / lifecycle rule change). Sync-back order is
-  `docs.dbml` → `gen-logical-references.ts` → `validate-dbml.ts`.
-- **`AGENTS.md`** `## Definition of done`: items 8–10 added (gates respected,
+  `docs.dbml` ΓåÆ `gen-logical-references.ts` ΓåÆ `validate-dbml.ts`.
+- **`AGENTS.md`** `## Definition of done`: items 8ΓÇô10 added (gates respected,
   `docs.dbml` updated-or-recorded + validator `OK`, module deletion leaves no
   orphans).
 - **`AGENTS.md`** `## How to update these docs`: paragraph making
@@ -7816,7 +10408,7 @@ Backend` and `## Internationalization`. Every backend feature work item —
 - **`.agents/docs/README.md`**: named the 5 companion MDs explicitly (the count
   was right; the list was implicit) and pointed at the new gate.
   **Correction:** an earlier edit in this same change bumped the count to "6"
-  on the assumption `implementation-phases.md` was uncounted. It was not —
+  on the assumption `implementation-phases.md` was uncounted. It was not ΓÇö
   `docs/database/` has exactly 5 MDs, and the "6" was wrong. Reverted.
 - **`.agents/docs/skills.md`**: `grill-me` added to the inventory as
   *present, not in lock*, with the honest caveat that its `SKILL.md` delegates
@@ -7825,9 +10417,9 @@ Backend` and `## Internationalization`. Every backend feature work item —
 Verification actually run:
 
 ```text
-Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   → 26 markers
-Test-Path .agents/skills/grilling                              → False (absent, as documented)
-bun docs/database/validate-dbml.ts                             → parsed: 253 tables, 0 standalone refs
+Select-String docs/database/docs.dbml -Pattern '^// MODULE:'   ΓåÆ 26 markers
+Test-Path .agents/skills/grilling                              ΓåÆ False (absent, as documented)
+bun docs/database/validate-dbml.ts                             ΓåÆ parsed: 253 tables, 0 standalone refs
                                                                   cross-module refs: 0
                                                                   timestamp gaps: 0
                                                                   OK   (exit 0)
@@ -7841,8 +10433,8 @@ Known inaccuracy left in place, flagged not fixed: the new `## Feature module
 lifecycle` section describes the contract as 253 tables, the verified parser
 count; `docs/database/module-ownership.md`, `implementation-phases.md` and the
 `validate-dbml.ts` header comment still say **251** (`progress.md` line 481 above
-already recorded 253). The count is not the contract — a follow-up docs pass
-should reconcile 251 → 253 across the companions in one place.
+already recorded 253). The count is not the contract ΓÇö a follow-up docs pass
+should reconcile 251 ΓåÆ 253 across the companions in one place.
 
 Also verified while checking: `gen-logical-references.ts` writes
 `logical-references.md` from `docs.dbml` using **absolute** paths
@@ -7850,18 +10442,18 @@ Also verified while checking: `gen-logical-references.ts` writes
 this change (`docs/database/` was unchanged), so this was not exercised; the
 hardcoded root is a portability defect worth fixing separately.
 
-## Completed (this session — inventory S4 borrowing, 2026-11-03)
+## Completed (this session ΓÇö inventory S4 borrowing, 2026-11-03)
 
-**Nothing committed yet** — uncommitted working-tree state on top of S0–S3.
-Design: `docs/plan/plans/inventory.md` §5–§11, D19–D22.
+**Nothing committed yet** ΓÇö uncommitted working-tree state on top of S0ΓÇôS3.
+Design: `docs/plan/plans/inventory.md` ┬º5ΓÇô┬º11, D19ΓÇôD22.
 
-### S4 — borrowing: state machine, sweeps, API, UI
+### S4 ΓÇö borrowing: state machine, sweeps, API, UI
 
 - **Step 1 was already done.** `borrowings`, `borrowing_lines`,
   `borrowing_events`, their constraints, and all 23 indexes were already in
   `inventory.schema.ts` and applied by `20261102133850_talented_jubilee`; every
-  §6 `borrowing:*` permission was already granted in `erp-permissions.ts`. The
-  plan doc's step 1 ("schema + ALTER for the circular FK") understated this —
+  ┬º6 `borrowing:*` permission was already granted in `erp-permissions.ts`. The
+  plan doc's step 1 ("schema + ALTER for the circular FK") understated this ΓÇö
   only the FK was genuinely missing.
 - **Migration `20261102174836_colorful_rattler`** adds
   `serial_tracked_items.current_borrowing_line_id` + its index (generated) and,
@@ -7870,7 +10462,7 @@ Design: `docs/plan/plans/inventory.md` §5–§11, D19–D22.
   the cycle. Applied to the live database and verified: `confdeltype = 'n'`.
 - **`StockService.postMovement` gained an optional `tx`.** It previously opened
   its own `database.transaction()`, so borrowing could not commit custody,
-  movement, balance, and event together — a nested call is a savepoint, so an
+  movement, balance, and event together ΓÇö a nested call is a savepoint, so an
   outer rollback would have left a committed movement behind.
 - **`BorrowingService`** (new): transition matrix as data, `BRW-YYYYMM-####`
   codes, skippable approval keyed on `borrowing:issue`/`:approve`, per-line
@@ -7904,7 +10496,7 @@ Design: `docs/plan/plans/inventory.md` §5–§11, D19–D22.
 | `bun run build` (web-admin) | built; `_borrowingId` and `new` chunks emitted |
 | `bunx --bun drizzle-kit generate` | `20261102174836_colorful_rattler` |
 | `bunx --bun drizzle-kit migrate` | applied successfully |
-| `bun run drizzle:seed` ×2 | second run wrote nothing (idempotent) |
+| `bun run drizzle:seed` ├ù2 | second run wrote nothing (idempotent) |
 
 **Not yet done:** no browser walk-through of the new screens; the worker has
 not been observed firing against a real Redis. Both are worth doing before S4
@@ -7912,19 +10504,19 @@ is called accepted.
 
 ## Completed (this session - inventory module S0 + S1, 2026-11-02)
 
-Branch `feat/inventory-module`, base `4fd67b4`. **Nothing committed yet** — all
+Branch `feat/inventory-module`, base `4fd67b4`. **Nothing committed yet** ΓÇö all
 of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md`
-(D1–D24), ADR-0008, ADR-0009.
+(D1ΓÇôD24), ADR-0008, ADR-0009.
 
-### S0 — contract and permission model
+### S0 ΓÇö contract and permission model
 
 - **ADR-0008** (nullable-organization inventory) and **ADR-0009** (serialized
   units and borrowing custody) written under `.agents/docs/decisions/`.
-  ADR-0008 explicitly amends ADR-0007 §2 (which forbade `organization_id` on
+  ADR-0008 explicitly amends ADR-0007 ┬º2 (which forbade `organization_id` on
   master tables) for `inventory` only.
 - `docs/database/docs.dbml` inventory block rewritten to match the migration
   exactly: +`inventory.items`, `warehouse_addresses`, `borrowings`,
-  `borrowing_lines`, `borrowing_events`; −`warehouse_zones`, `lot_batches`,
+  `borrowing_lines`, `borrowing_events`; ΓêÆ`warehouse_zones`, `lot_batches`,
   `cycle_counts`, `cycle_count_items`; nullable `organization_id` everywhere;
   partial-index pairs; 23 intra-module `Ref:` lines. `catalog.items` marked
   SUPERSEDED. TableGroup "Inventory" corrected (it still listed the three
@@ -7941,7 +10533,7 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
   `borrowing_events` added to the timestamp exemptions.
 - `packages/common/src/authorization/erp-permissions.ts`: `borrowing` statement
   (10 actions) added; `warehouse:*` **stripped from every organization role**,
-  including `owner` — which spreads `...allErpStatements`, so
+  including `owner` ΓÇö which spreads `...allErpStatements`, so
   `warehouse: []` is set explicitly *after* the spread.
 - `.agents/docs/backlog.md`: ERP-0014 re-scoped and sliced into ERP-0027 (S2
   warehouses), ERP-0028 (S3 stock ledger), ERP-0029 (S4 borrowing).
@@ -7949,9 +10541,9 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
   NestJS backend); `.agents/docs/modules/warehouse.md` reduced to a pointer at
   Inventory.
 
-### S1 — items and serialized units
+### S1 ΓÇö items and serialized units
 
-- `apps/backend/drizzle/schemas/inventory.schema.ts` — 10 tables, vocabularies,
+- `apps/backend/drizzle/schemas/inventory.schema.ts` ΓÇö 10 tables, vocabularies,
   partial-unique pairs, CHECKs; registered in `drizzle/db.ts`.
 - Migration `database/migrations/20261102133850_talented_jubilee/` (66
   statements). **Regenerated** after index renames: `items_org_sku_uq`,
@@ -7971,17 +10563,17 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
 
 ### Verification (commands and exact outcomes)
 
-- `apps/backend`: `bunx tsc --noEmit -p tsconfig.json` → clean;
-  `bun test` → **214 pass / 0 fail** (403 expect calls, 15 files).
-- `packages/locales`: `bun test` → **30 pass / 0 fail** (parity + dead-keys).
-- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (the plain
+- `apps/backend`: `bunx tsc --noEmit -p tsconfig.json` ΓåÆ clean;
+  `bun test` ΓåÆ **214 pass / 0 fail** (403 expect calls, 15 files).
+- `packages/locales`: `bun test` ΓåÆ **30 pass / 0 fail** (parity + dead-keys).
+- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` ΓåÆ clean (the plain
   `tsc --noEmit` checks *nothing* here: `files: []` plus project references);
-  `bun run build` → succeeds, inventory chunks emitted.
-- `docs/database/validate-dbml.ts` → `parsed: 254 tables`, `cross-module
+  `bun run build` ΓåÆ succeeds, inventory chunks emitted.
+- `docs/database/validate-dbml.ts` ΓåÆ `parsed: 254 tables`, `cross-module
   refs: 0`, `timestamp gaps: 0`, **OK**.
 - Real PostgreSQL 18 (throwaway `postgres:18-alpine`, since removed;
   **no containers left**):
-  - `database/verify-inventory-constraints.ts` → **ALL CHECKS PASSED**, run
+  - `database/verify-inventory-constraints.ts` ΓåÆ **ALL CHECKS PASSED**, run
     twice consecutively (the script now drops `inventory` and replays the
     migration, so it is repeatable).
 
@@ -7989,13 +10581,13 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
     > its own checks and could no longer run twice (the `DROP` list never grew
     > past six schemas). The "repeatable" claim above held on 2026-11-06 only.
   - The **entire migration chain** (all 8 directories, in order) replays on a
-    fresh database with `ON_ERROR_STOP=1` → 0 failures.
+    fresh database with `ON_ERROR_STOP=1` ΓåÆ 0 failures.
   - `pg_indexes` shows **zero** duplicate index names across schemas, and the
     five `inventory.items` indexes carry the `inventory_items_*` names.
 
 ### Known follow-ups (deliberate, not forgotten)
 
-- Circular FK `serial_tracked_items.current_borrowing_line_id` →
+- Circular FK `serial_tracked_items.current_borrowing_line_id` ΓåÆ
   `borrowing_lines` arrives in a later `ALTER TABLE` migration (S4); the column
   is intentionally absent from the schema today.
 - All 11 `catalog.*` satellite tables left in place (OPEN-1). `item_variants`
@@ -8010,7 +10602,7 @@ of this is uncommitted working-tree state. Design: `docs/plan/plans/inventory.md
   single type-discriminated entity. The item master is now `inventory.items`
   (ADR-0008); a pointer was added there.
 
-## Completed (this session — user-management → user merge, 2026-11-03)
+## Completed (this session ΓÇö user-management ΓåÆ user merge, 2026-11-03)
 
 The deferred repository/contracts/tokens merge is done; `app/user-management/`
 is deleted. All names kept verbatim (no token collisions existed):
@@ -8033,43 +10625,43 @@ is deleted. All names kept verbatim (no token collisions existed):
   controllers.
 - `tsc --noEmit` clean; 301 unit tests pass.
 
-## Completed (this session — backend tidy-up W1–W4, 2026-11-02)
+## Completed (this session ΓÇö backend tidy-up W1ΓÇôW4, 2026-11-02)
 
 Conformance pass against the `/elysia-module`, `/elysia-tsyringe`,
-`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1–W9 done;
-W8 (docs pass) complete. **URLs changed** — backend and web-admin moved
+`/elysia-layered-architecture` and `/tsyringe` skills. Waves W1ΓÇôW9 done;
+W8 (docs pass) complete. **URLs changed** ΓÇö backend and web-admin moved
 together, nothing pushed.
 
 Remaining known follow-up (deliberately deferred, not forgotten): ~~the
 `user-management` **repositories/contracts/tokens** have not yet been merged
-into `user`; `user-management/container.ts` is the seam.~~ **Done** — see
-"Completed (this session — user-management → user merge, 2026-11-03)" below.
+into `user`; `user-management/container.ts` is the seam.~~ **Done** ΓÇö see
+"Completed (this session ΓÇö user-management ΓåÆ user merge, 2026-11-03)" below.
 
-### W1 — DI tokens have one home (`03625fc`)
+### W1 ΓÇö DI tokens have one home (`03625fc`)
 
 - `src/di/tokens.ts` is the single definition site for `DRIZZLE_TOKEN` and
   `REDIS_TOKEN`; `provider.ts` imports and re-exports them (pure alias, never
   a second `Symbol(...)` call), so modules needing only a token avoid pulling
   the Drizzle/Redis clients into their import chain.
-- `organization/containers/organization.container.ts` → `organization/container.ts`
-  (matches every other module); its imports changed `../x` → `./x`.
+- `organization/containers/organization.container.ts` ΓåÆ `organization/container.ts`
+  (matches every other module); its imports changed `../x` ΓåÆ `./x`.
 - Deleted 0-byte dead files: `src/contracts/repositories/repository.interface.ts`
   (and the now-empty `src/contracts/` dir) plus five unused drizzle schemas
   (`warehouse`, `inventory`, `employee`, `document`, `project`).
 
-### W2 — no SQL in services (`03625fc`)
+### W2 ΓÇö no SQL in services (`03625fc`)
 
 - Deleted `user-management/services/role.service.ts`; `findMemberRole` folded
   into `RoleRepository` + `IRoleRepository`, and `InvitationService` now
-  injects `ROLE_REPOSITORY_TOKEN` — it was the only reason the service held a
+  injects `ROLE_REPOSITORY_TOKEN` ΓÇö it was the only reason the service held a
   Drizzle handle.
 - `TAuditEntry` moved to `contracts/repositories.interface.ts` (it is the
   repository's write DTO); `AuditRepository.insert()` added; `AuditService`
   now goes through `AUDIT_REPOSITORY_TOKEN` + `pinoLogger`.
 - Gate: `Select-String -Path src/app/*/services/*.ts -Pattern DRIZZLE_TOKEN`
-  → **CLEAN, no service injects the DB**.
+  ΓåÆ **CLEAN, no service injects the DB**.
 
-### W3 — one shared HTTP layer (`c9d8cd3`, `69f53e9`)
+### W3 ΓÇö one shared HTTP layer (`c9d8cd3`, `69f53e9`)
 
 New `src/http/` with `response.ts` (`buildMeta`/`ok`/`created`/`noContent`/
 `okPaginated`/`errorEnvelope`), `errors.ts` (`AppError`, `DomainHttpError`,
@@ -8086,13 +10678,13 @@ New `src/http/` with `response.ts` (`buildMeta`/`ok`/`created`/`noContent`/
   declared privately and identically in three controllers and is now one class.
 - **Bug fixed**: `createPayment` threw a bare 404 meaning "referenced
   quotation not found", and the controller re-labelled every `SalesStateError`
-  404 as `sales.quotationNotFound` — telling the client the wrong resource was
+  404 as `sales.quotationNotFound` ΓÇö telling the client the wrong resource was
   missing. New `ReferencedQuotationNotFoundError` + a dedicated onError arm.
 - `QuotationRepository.list` now returns `TPaginationResult<T>` (was
   `{data,total}`, which forced the controller to hand-compute `totalPages`).
 - `test/unit/http-response.test.ts` (7 tests) pins the wire shapes.
 
-### W4 — `/admin` URL restructure (`69f53e9`)
+### W4 ΓÇö `/admin` URL restructure (`69f53e9`)
 
 | Surface | Before | After |
 |---|---|---|
@@ -8111,22 +10703,22 @@ New `src/http/` with `response.ts` (`buildMeta`/`ok`/`created`/`noContent`/
   no longer shares a plugin with the admin-gated invitation routes;
   `UsernameCheckController` moved off `/users/username-available`, which
   collided with `UserController`'s `/:userId` parameter route.
-- `src/index.ts`: the mount-order comment is gone — with the `/admin` prefix
+- `src/index.ts`: the mount-order comment is gone ΓÇö with the `/admin` prefix
   the old `GET /users` collision cannot recur, so ordering no longer matters.
 - **SECURITY FIX (found while migrating)**: `GET /users/:userId` was declared
-  `erp: {}` — no permission at all. `auth.users` is Better Auth-owned and has
+  `erp: {}` ΓÇö no permission at all. `auth.users` is Better Auth-owned and has
   no organization column, so **any authenticated member could read any user's
   profile across tenants**. Now `{ erp: { policy: requireGlobalAdmin } }`,
   matching every other route on that controller. No web-admin consumer of the
   id lookup existed to break.
 - web-admin: `lib/admin-api.ts` paths, both sidebars (`nav-admin.tsx` and the
-  unused `sidebar.tsx`), routes moved `_authed/{users,roles,audit}` →
+  unused `sidebar.tsx`), routes moved `_authed/{users,roles,audit}` ΓåÆ
   `_authed/admin/*`, `routeTree.gen.ts` regenerated by the TanStack router
   Vite plugin during `bun run build` (no dev server needed).
 - `scripts/smoke-admin-api.ts`: 23 endpoint references updated + 2 new checks
   for the `/users/:userId` guard.
 
-### W5 — typed DI tokens (`94a43fc`)
+### W5 ΓÇö typed DI tokens (`94a43fc`)
 
 `sales` and `organization` were the last two modules on bare `Symbol(...)`.
 Both now declare `InjectionToken<T>`, so `container.register(TOKEN, {useClass})`
@@ -8136,7 +10728,7 @@ infers `T` instead of `unknown`.
 Typing the tokens immediately caught **two real defects** in
 `test/authorization/test-app.ts`, both invisible while the tokens were `any`:
 
-1. The sales fakes were loose object literals registered via `useValue` — they
+1. The sales fakes were loose object literals registered via `useValue` ΓÇö they
    compiled only because nothing checked them against the repository contracts.
 2. The quotation fake's `list()` still returned the **pre-refactor**
    `{ total, data }` shape, while `QuotationRepository.list` had moved to
@@ -8144,14 +10736,14 @@ Typing the tokens immediately caught **two real defects** in
 
 Both fakes are now annotated with the real contract types.
 
-### W6 — audit module extracted (`94a43fc`)
+### W6 ΓÇö audit module extracted (`94a43fc`)
 
 New `src/app/audit/`: `container.ts`, `index.ts`,
 `contracts/{audit.repository.interface,audit.contract}.ts`, `constants/di.ts`,
 `repositories/audit.repository.ts`,
 `services/{audit,audit-query}.service.ts`, `controllers/audit.controller.ts`.
 
-- The ledger is cross-cutting — every module writes to it — while
+- The ledger is cross-cutting ΓÇö every module writes to it ΓÇö while
   `user-management` only happened to be its first writer. Moving it gives
   future modules a module to inject instead of reaching into user-management.
 - `GET /admin/audit` moved out of `UserAdminController` into a dedicated
@@ -8162,13 +10754,13 @@ New `src/app/audit/`: `container.ts`, `index.ts`,
   `TAuditEntry`, `IAuditRepository`) removed from
   `user-management/contracts/` and `constants/di.ts`.
 
-### W7 — user-management services merged into `user`
+### W7 ΓÇö user-management services merged into `user`
 
-The seven service files moved `user-management/services/` →
+The seven service files moved `user-management/services/` ΓåÆ
 `user/services/`: `invitation.service.ts`, `role-management.service.ts`,
 `user-admin.service.ts`, `invitation.errors.ts`,
 `better-auth-user-management.gateway.ts`, `logger-mailer.ts`, `token.ts`.
-**Repositories, contracts and tokens stay in `user-management`** — the
+**Repositories, contracts and tokens stay in `user-management`** ΓÇö the
 repository merge was deliberately deferred, so `user-management/container.ts`
 is now the documented seam where the two halves still meet.
 
@@ -8180,7 +10772,7 @@ is now the documented seam where the two halves still meet.
   removed the name collision the merge would otherwise have created.
 - **CACHE-INVALIDATION BUG FIXED.** `UserRepository` caches `auth.users` rows
   in Redis for 300s (`user:id:<id>`, `user:all`), but
-  `UserManagementRepository` — the admin lifecycle path — wrote `status` and
+  `UserManagementRepository` ΓÇö the admin lifecycle path ΓÇö wrote `status` and
   `deletedAt` to the same table **without evicting anything**. Consequences
   before the fix: a soft-deleted user kept serving from the cache on the
   self-service read path for up to 5 minutes, and a deactivated user read back
@@ -8192,25 +10784,25 @@ is now the documented seam where the two halves still meet.
     `invalidate(id)` after `createPendingUser`, `setStatus`, `setClaimed`,
     `delete`, `restore` and `reactivate`.
   - Proven live by `scripts/smoke-cache-invalidation.ts` (9 checks):
-    deactivate → `GET /users/:id` immediately reports `deactivated`; restore →
-    immediately `active`; soft delete → immediately **404**. The script restores
+    deactivate ΓåÆ `GET /users/:id` immediately reports `deactivated`; restore ΓåÆ
+    immediately `active`; soft delete ΓåÆ immediately **404**. The script restores
     its fixture, so it is safe to re-run.
 
 ### Verification (all run this session)
 
-- `apps/backend`: `bunx tsc --noEmit` → exit 0; `bun test` → **131 pass,
-  0 fail**; `bunx oxlint` → 0 errors, 4 pre-existing warnings (no new ones).
-- `apps/web-admin`: `bun run build` (tsc -b + vite) → clean, admin routes
-  code-split; `bun test` → **21 pass, 0 fail**.
-- repo root: `bun run test` → 4/4 turbo tasks successful.
+- `apps/backend`: `bunx tsc --noEmit` ΓåÆ exit 0; `bun test` ΓåÆ **131 pass,
+  0 fail**; `bunx oxlint` ΓåÆ 0 errors, 4 pre-existing warnings (no new ones).
+- `apps/web-admin`: `bun run build` (tsc -b + vite) ΓåÆ clean, admin routes
+  code-split; `bun test` ΓåÆ **21 pass, 0 fail**.
+- repo root: `bun run test` ΓåÆ 4/4 turbo tasks successful.
 - **Live smoke** (`bun run scripts/smoke-admin-api.ts` against backend :3001):
   **18 passed, 0 failed**, stable across repeated runs.
 - **Live cache probe** (`bun run scripts/smoke-cache-invalidation.ts`):
   **9 passed, 0 failed**, idempotent across repeat runs.
-- Manual probes: `/username-availability` → 200; anon `/admin/users`,
-  `/users/me` → 401; anon `/invitations/claim/<bad>` → 422.
+- Manual probes: `/username-availability` ΓåÆ 200; anon `/admin/users`,
+  `/users/me` ΓåÆ 401; anon `/invitations/claim/<bad>` ΓåÆ 422.
 
-### W9 — controller mounting moved to `src/app/app.ts`
+### W9 ΓÇö controller mounting moved to `src/app/app.ts`
 
 `src/index.ts` no longer mounts controllers. It keeps the `register*`
 container calls, the i18n/CORS/logger plugins, `.listen()` and the avatar
@@ -8239,33 +10831,33 @@ tsyringe's CJS entry asserts `Reflect.getMetadata` at load; Bun's native
 too. The import is restored with a comment, and both skills now document the
 real mechanism instead of the "Bun needs no polyfill" myth.
 
-Skill bumps: `elysia-tsyringe` 1.0.0 → **1.1.0** (mount split + rule 2.5
-correction), `elysia-module` 1.1.0 → **1.2.0** (checklist §3.6 split),
-`tsyringe` 1.0.0 → **1.1.0** (rule 2.1 correction). Recorded in `skills.md`.
+Skill bumps: `elysia-tsyringe` 1.0.0 ΓåÆ **1.1.0** (mount split + rule 2.5
+correction), `elysia-module` 1.1.0 ΓåÆ **1.2.0** (checklist ┬º3.6 split),
+`tsyringe` 1.0.0 ΓåÆ **1.1.0** (rule 2.1 correction). Recorded in `skills.md`.
 
-Verification after the change: `bunx tsc --noEmit` → exit 0; `bun test` →
-**131 pass, 0 fail**; `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
-`smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
-`/docs` → 200, anon `/users/me` and `/admin/users` → 401.
+Verification after the change: `bunx tsc --noEmit` ΓåÆ exit 0; `bun test` ΓåÆ
+**131 pass, 0 fail**; `bunx oxlint` ΓåÆ 0 errors, same 4 pre-existing warnings;
+`smoke-admin-api.ts` ΓåÆ **18/18**; `smoke-cache-invalidation.ts` ΓåÆ **9/9**;
+`/docs` ΓåÆ 200, anon `/users/me` and `/admin/users` ΓåÆ 401.
 
-### W10 — avatar worker lifecycle owned by the user module
+### W10 ΓÇö avatar worker lifecycle owned by the user module
 
-`src/index.ts` imported `./app/user/queues/avatar.worker` — the user module's
-*internals* — and owned the worker's lifecycle (`.on('error')`, `.close()`,
+`src/index.ts` imported `./app/user/queues/avatar.worker` ΓÇö the user module's
+*internals* ΓÇö and owned the worker's lifecycle (`.on('error')`, `.close()`,
 SIGTERM). `app/user/` could not be lifted out without editing the composition
 root.
 
 Fixed without moving any file (the worker already lived in
 `app/user/queues/`):
 
-- `app/user/queues/avatar.worker.ts` — `startAvatarWorker()` now returns an
+- `app/user/queues/avatar.worker.ts` ΓÇö `startAvatarWorker()` now returns an
   `AvatarWorkerHandle` (`onError`, `close`) instead of a raw BullMQ `Worker`.
   The BullMQ event name, shutdown order and `Worker` type stay inside the
   module; `index.ts` no longer depends on BullMQ at all.
-- `app/user/index.ts` (new) — public entry re-exporting `registerUser`,
+- `app/user/index.ts` (new) ΓÇö public entry re-exporting `registerUser`,
   `startAvatarWorker`, `AvatarWorkerHandle` and `avatarUserCreateHook`.
   `index.ts` now imports `./app/user`, mirroring `./app/audit`.
-- `src/index.ts` — imports `{ registerUser, startAvatarWorker } from './app/user'`;
+- `src/index.ts` ΓÇö imports `{ registerUser, startAvatarWorker } from './app/user'`;
   also removed a duplicated JSDoc block above `const bootstrap` left by W9.
 
 **Rejected:** a `src/app/queue-worker.ts` with a generic `startBullQueue()`
@@ -8279,43 +10871,43 @@ connection is a shared provider, not the avatar worker's to close.
 **`docs/database/` reviewed, unchanged.** No table, column, index, constraint,
 cross-module reference or status vocabulary changed. The only column written is
 `auth.users.avatar_object_key` (already canonical at `docs.dbml:512`).
-`bun docs/database/validate-dbml.ts` → `parsed: 253 tables`, `cross-module
+`bun docs/database/validate-dbml.ts` ΓåÆ `parsed: 253 tables`, `cross-module
 refs: 0`, `timestamp gaps: 0`, `OK`, exit 0.
 
 `grill-me` gate: its `grilling` dependency is not installed in this repo, so the
-manual pass was run. Ownership → module owns worker lifecycle (above); tenant
+manual pass was run. Ownership ΓåÆ module owns worker lifecycle (above); tenant
 scoping / soft delete / money / datetime / status vocabulary / cross-module
-contracts → all unaffected by a lifecycle refactor.
+contracts ΓåÆ all unaffected by a lifecycle refactor.
 
-Skill: `elysia-module` 1.2.0 → **1.3.0** (§3.6 gained a worker-handle step and
+Skill: `elysia-module` 1.2.0 ΓåÆ **1.3.0** (┬º3.6 gained a worker-handle step and
 the "do not mount workers on `app/app.ts`" rule); `elysia-layered-architecture`
-1.1.0 → **1.2.0** (rule 1.2 reference now states the lifecycle contract).
+1.1.0 ΓåÆ **1.2.0** (rule 1.2 reference now states the lifecycle contract).
 
-Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **131 pass, 0 fail**;
-`bunx oxlint` → 0 errors, same 4 pre-existing warnings; `smoke-admin-api.ts` →
-**18/18**; `smoke-cache-invalidation.ts` → **9/9**; `/docs` → 200, anon
-`/users/me` → 401.
+Verification: `bunx tsc --noEmit` ΓåÆ exit 0; `bun test` ΓåÆ **131 pass, 0 fail**;
+`bunx oxlint` ΓåÆ 0 errors, same 4 pre-existing warnings; `smoke-admin-api.ts` ΓåÆ
+**18/18**; `smoke-cache-invalidation.ts` ΓåÆ **9/9**; `/docs` ΓåÆ 200, anon
+`/users/me` ΓåÆ 401.
 
-### W11 — background workers go through one registry
+### W11 ΓÇö background workers go through one registry
 
-Anticipated second queue (`elysia-module` §3.6 now requires this seam).
+Anticipated second queue (`elysia-module` ┬º3.6 now requires this seam).
 `src/index.ts` had one `const` per worker plus a `SIGTERM` branch per worker;
 adding a queue meant editing the composition root three times.
 
-New `src/providers/queue/worker-registry.ts` — a **collector, not a container**:
+New `src/providers/queue/worker-registry.ts` ΓÇö a **collector, not a container**:
 `startWorkers([...], onError)` attaches the shared failure sink, `stopWorkers()`
 closes them all. Modules still own their workers; the registry only delegates.
 
 - `QueueWorker` = `{ onError, close }` is the shared contract;
   `AvatarWorkerHandle` is now an alias of it, so the registry never imports the
   user module.
-- `stopWorkers()` uses `Promise.allSettled` — one worker hanging on `close()`
+- `stopWorkers()` uses `Promise.allSettled` ΓÇö one worker hanging on `close()`
   must not block the others or hold up exit. Failed closes are returned and
   logged.
 - `startWorkers()` throws on a second call instead of leaking the first set.
 - Construction stays at the call site (after `registerProvider` +
   `register<Module>`). A registry that resolved its own workers would move
-  correctness back into import order — the failure mode `createApp()` avoids.
+  correctness back into import order ΓÇö the failure mode `createApp()` avoids.
 - `closeQueueConnection()` stays in `index.ts` and still runs **after**
   `stopWorkers()`: the shared connection must outlive the workers draining.
 - Rejected the names `app/queue-worker.ts` and `startBullQueue()`: `app/` is
@@ -8328,31 +10920,31 @@ double-start rejection, restart-after-stop, `allSettled` isolation when one
 close throws, and the empty case.
 
 New live probe `scripts/smoke-avatar-worker.ts`: dispatches a job and asserts
-the worker **consumed** it. Important limitation found while writing it —
+the worker **consumed** it. Important limitation found while writing it ΓÇö
 avatar rendering calls DiceBear, exposed only as an internal Compose service
 (`http://dicebear:3000`, no published port), so a bare local `bun run dev`
 cannot complete a render: the job is consumed and then fails `ECONNREFUSED` to
 DiceBear. The probe therefore asserts consumption, not the rendered image, and
 the runbook documents why.
 
-**`docs/database/` reviewed, unchanged** — no schema change.
-`validate-dbml.ts` → `253 tables`, `0 cross-module refs`, `0 timestamp gaps`, `OK`.
+**`docs/database/` reviewed, unchanged** ΓÇö no schema change.
+`validate-dbml.ts` ΓåÆ `253 tables`, `0 cross-module refs`, `0 timestamp gaps`, `OK`.
 
 `grill-me` gate: `grilling` is not installed; manual pass run. No tenant
 scoping, soft delete, money/datetime, status vocabulary or cross-module
 contract is touched by a worker-lifecycle refactor.
 
-Skills: `elysia-module` 1.3.0 → **1.4.0** (§3.6 now names the registry and the
-shared `QueueWorker` shape); `elysia-layered-architecture` 1.2.0 → **1.3.0**
+Skills: `elysia-module` 1.3.0 ΓåÆ **1.4.0** (┬º3.6 now names the registry and the
+shared `QueueWorker` shape); `elysia-layered-architecture` 1.2.0 ΓåÆ **1.3.0**
 (rule 1.2 reference documents the registry contract and `allSettled`).
 
-Verification: `bunx tsc --noEmit` → exit 0; `bun test` → **137 pass, 0 fail**
-(131 + 6 new); `bunx oxlint` → 0 errors, same 4 pre-existing warnings;
-`smoke-admin-api.ts` → **18/18**; `smoke-cache-invalidation.ts` → **9/9**;
-`smoke-avatar-worker.ts` → **consumed**, re-runnable; `/docs` → 200, anon
-`/users/me` → 401.
+Verification: `bunx tsc --noEmit` ΓåÆ exit 0; `bun test` ΓåÆ **137 pass, 0 fail**
+(131 + 6 new); `bunx oxlint` ΓåÆ 0 errors, same 4 pre-existing warnings;
+`smoke-admin-api.ts` ΓåÆ **18/18**; `smoke-cache-invalidation.ts` ΓåÆ **9/9**;
+`smoke-avatar-worker.ts` ΓåÆ **consumed**, re-runnable; `/docs` ΓåÆ 200, anon
+`/users/me` ΓåÆ 401.
 
-## Completed (this session — multi-organization, 2026-11-02)
+## Completed (this session ΓÇö multi-organization, 2026-11-02)
 
 ADR: `.agents/docs/decisions/ADR-0007-multi-organization.md` (supersedes the
 single-organization reading of ADR-0001; the "one company" decision stands).
@@ -8362,32 +10954,32 @@ single-org invariant that ADR-0001 never required.
 
 - **Removed** `OrganizationAlreadyExistsError` + `existsAny()` (repository,
   interface, service) and the controller's 422 mapping/swagger text.
-- **`organization.auth.ts`** — `allowUserToCreateOrganization: (user) =>
+- **`organization.auth.ts`** ΓÇö `allowUserToCreateOrganization: (user) =>
   user.role === GLOBAL_ADMIN_ROLE` (defense-in-depth behind the HTTP gate;
   skipped by Better Auth for server-side `userId` creates, so seeders work).
 - **`createOrganization`** now forwards caller headers, so Better Auth
   enforces the admin gate AND activates the new org for that session; the
   creator becomes `owner` (`crud-org.mjs` behavior, verified live).
-- **Role provisioning** — `seedRolesForOrganization(organizationId)` extracted
+- **Role provisioning** ΓÇö `seedRolesForOrganization(organizationId)` extracted
   from `organization-roles.seeder.ts` and called on every create (best-effort,
   logs on failure) so API-created orgs get the real `auth.roles` catalog
   instead of silently falling back to the static catalog.
-- **Last-org guard** — `LastOrganizationError` (409) via
+- **Last-org guard** ΓÇö `LastOrganizationError` (409) via
   `repository.countActive()`. Because delete is a SOFT delete, Better Auth's
   own session cleanup never runs, so `deleteOrganization(headers, id)` also
   calls `gateway.setActive(headers, null)` to release the caller.
-- **Controller split (option a)** — `OrganizationBootstrapController.plugin()`
+- **Controller split (option a)** ΓÇö `OrganizationBootstrapController.plugin()`
   owns `POST /organizations` on `sessionGuard()` + `requireGlobalAdmin`, so a
   membershipless app admin can bootstrap the first org; every other route
   stays on `erpGuard`. `sessionGuard`'s `erpSession` macro gained an optional
   `policy` hook (and kept the existing `{ session: true }` flag form used by
   `user.controller.ts`).
-- **Seeders** — `organization.seeder.ts` skips in `prod`/`production` (new
+- **Seeders** ΓÇö `organization.seeder.ts` skips in `prod`/`production` (new
   `config/providers/env.ts` `isProductionEnv()`, first consumer of the
   never-read `instance.env`), keyed by slug via `ensureOrganization()`;
   `addSeedMembersTo(organizationId)` joins seeded accounts to any org; a
   missing org is now a no-op instead of throwing.
-- **Frontend** — switcher lists ALL live orgs for app admins (first-party
+- **Frontend** ΓÇö switcher lists ALL live orgs for app admins (first-party
   endpoint) and memberships otherwise; `useActiveOrganizationId()` dropped its
   `organizations[0]` fallback (cross-org leak) and returns `null`; create
   gated on `user.role === 'admin'`; stale single-org copy removed; create and
@@ -8396,17 +10988,17 @@ single-org invariant that ADR-0001 never required.
 Verification (2026-11-02):
 
 - `bun run typecheck` clean (backend); `bunx tsc -b` clean (web-admin).
-- `bun test` — backend 113 pass / 0 fail; web-admin 20 pass / 0 fail.
-- `bun run database/seeders/index.ts` — idempotent, org-aware skip logs.
+- `bun test` ΓÇö backend 113 pass / 0 fail; web-admin 20 pass / 0 fail.
+- `bun run database/seeders/index.ts` ΓÇö idempotent, org-aware skip logs.
 - Live smoke (server on :3001, seeded admin):
-  - create 2nd org → **201** (was 422); new org auto-activated; 19 role rows
+  - create 2nd org ΓåÆ **201** (was 422); new org auto-activated; 19 role rows
     provisioned in every org including API-created ones.
-  - org owner (`admin_seed`, global role `user`) create → **403
-    "Application administrator role required"**; anonymous → **401**.
-  - **membershipless** global admin (0 `members` rows) create → **201**, own
-    membership role `owner`, 19 roles provisioned — the bootstrap case works.
-  - delete non-last org → 200 and the caller's `activeOrganizationId`
-    switched off the deleted org; delete the final live org → **409**.
+  - org owner (`admin_seed`, global role `user`) create ΓåÆ **403
+    "Application administrator role required"**; anonymous ΓåÆ **401**.
+  - **membershipless** global admin (0 `members` rows) create ΓåÆ **201**, own
+    membership role `owner`, 19 roles provisioned ΓÇö the bootstrap case works.
+  - delete non-last org ΓåÆ 200 and the caller's `activeOrganizationId`
+    switched off the deleted org; delete the final live org ΓåÆ **409**.
   - Test users/orgs removed afterwards; DB back to the single `entragate` org.
 
 ## Completed (this session - user-management phase 4: admin UI + admin API, 2026-11-01)
@@ -8414,47 +11006,47 @@ Verification (2026-11-02):
 Plan: `docs/plan/plans/user-management.md`. Phase 4 of 7 complete (backend +
 admin UI; `/members` page enhancements + member role-change UI remain).
 
-Backend — new surface, all gated by the phase-3 dynamic guard:
+Backend ΓÇö new surface, all gated by the phase-3 dynamic guard:
 
-- `contracts/admin.contract.ts` — zod schemas for users/roles/audit.
+- `contracts/admin.contract.ts` ΓÇö zod schemas for users/roles/audit.
   `createRoleSchema`/`updateRoleSchema` `rank` accepts **1..100** (was
   `max(99)`). Rationale: schema validation must not cap below a rank the
-  escalation guard is responsible for rejecting — the guard, not the schema,
+  escalation guard is responsible for rejecting ΓÇö the guard, not the schema,
   is the authorization boundary. With `max(99)` an owner's `rank: 100` POST was
   rejected as a 400 *validation* error and the rank guard never ran.
-- `repositories/role.repository.ts` — Drizzle role CRUD: list (with live
+- `repositories/role.repository.ts` ΓÇö Drizzle role CRUD: list (with live
   member counts), findById/findByName/findByNameIncludingDeleted, create,
   update, softDelete, undelete, countMembers.
-- `repositories/audit.repository.ts`, `services/audit-query.service.ts` —
+- `repositories/audit.repository.ts`, `services/audit-query.service.ts` ΓÇö
   filterable audit reads (action, targetType, actor, org, from/to range;
   `created_at` is unix-seconds so ranges convert via
   `new Date(floor(ms/1000)*1000)`).
-- `services/role-management.service.ts` — rank/escalation guard (target rank
+- `services/role-management.service.ts` ΓÇö rank/escalation guard (target rank
   strictly below caller's), grant validation against the shared catalog
   vocabulary, system-role and in-use delete guards, soft-deleted name revive.
-- `services/user-admin.service.ts` — deactivate (revokes sessions, keeps
+- `services/user-admin.service.ts` ΓÇö deactivate (revokes sessions, keeps
   memberships), restore, soft delete, outrank checks.
-- `controllers/user-admin.controller.ts` — `/admin/users`, `/admin/roles`,
+- `controllers/user-admin.controller.ts` ΓÇö `/admin/users`, `/admin/roles`,
   `/admin/roles/permissions`, `/admin/audit` (the `/admin` prefix arrived in
   the W4 tidy-up; see the top entry); `callerRank()` = highest live role rank
   in the validated org, with app-admin-without-dynamic-role ceiling 80 (never
   owner).
-- Permission mapping: user list / role list / `/admin/roles/permissions` →
-  `member:read`; role create → `member:create`; user+role update,
-  deactivate/restore → `member:update`; delete → `member:delete`; audit list →
+- Permission mapping: user list / role list / `/admin/roles/permissions` ΓåÆ
+  `member:read`; role create ΓåÆ `member:create`; user+role update,
+  deactivate/restore ΓåÆ `member:update`; delete ΓåÆ `member:delete`; audit list ΓåÆ
   `audit_log:read`.
 
-Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
+Frontend (`apps/web-admin`) ΓÇö UX-only gating, backend enforces everything:
 
-- `lib/admin-api.ts` — users/roles/audit/invitations fetchers, `queryOptions`,
+- `lib/admin-api.ts` ΓÇö users/roles/audit/invitations fetchers, `queryOptions`,
   `parseBulkInviteRows` (resolves pasted role *names* to ids; unknowns fall
   through to the backend's `member` fallback), `BULK_INVITE_LIMIT = 100`,
   `ADMIN_PERMISSIONS`.
-- `lib/use-active-organization.ts` — resolves the active org from the session
+- `lib/use-active-organization.ts` ΓÇö resolves the active org from the session
   (the "first org" fallback was removed on 2026-11-02; it returns `null`
   instead, see the ADR-0007 entry at the top).
 - Routes `/_authed/admin/users`, `/_authed/admin/roles`, `/_authed/admin/audit`
-  (moved under `/admin` in the W4 tidy-up — see the entry at the top);
+  (moved under `/admin` in the W4 tidy-up ΓÇö see the entry at the top);
   components `admin/invite-dialog.tsx` (single + bulk paste),
   `admin/pending-invitations-panel.tsx` (expiry display, resend/cancel/delete).
 
@@ -8464,7 +11056,7 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
    for the `owner` row was a JSON **string** (a serialized object stored
    through an extra `JSON.stringify`), i.e. `jsonb_typeof = 'string'` with 3786
    numeric-index keys. `grantsAllow()` iterates `Object.entries(grant)`, which
-   on a string yields indices — so owner was denied **every** permission and
+   on a string yields indices ΓÇö so owner was denied **every** permission and
    all phase-4 endpoints 403'd. Repaired by `scripts/refresh-role-grants.ts`
    (`rolesUpdated: 1`). Hardened `sameGrants()` in
    `organization-roles.seeder.ts` to treat non-object/array values as drift so
@@ -8472,15 +11064,15 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
 2. **`GET /users` route shadowing + missing guard.** Two controllers register
    `GET /users`: the legacy `UserController` (prefix `/users`) and the new
    `UserAdminController`. With prefix-wrapped plugins the **FIRST** registration
-   wins (verified: `new Elysia().use(prefixed).use(literal)` → prefixed handler
+   wins (verified: `new Elysia().use(prefixed).use(literal)` ΓåÆ prefixed handler
    answers; reversing swaps the winner). The legacy listing was also declared
-   `erp: {}` — no permission — so **any authenticated member could enumerate
+   `erp: {}` ΓÇö no permission ΓÇö so **any authenticated member could enumerate
    the entire user base**. Fixed both: legacy `/` now uses
    `{ erp: { policy: requireGlobalAdmin } }` (matching every other route on
    that controller), and `UserAdminController.plugin()` is mounted **before**
    `UserController.plugin()` in `src/index.ts` so the permission-gated
    `member:read` listing wins.
-   → **Superseded structurally** by the W4 `/admin` prefix (see the top entry):
+   ΓåÆ **Superseded structurally** by the W4 `/admin` prefix (see the top entry):
    the admin listing is now `GET /admin/users`, so the two modules no longer
    register the same path and mount order is irrelevant. The legacy listing was
    subsequently removed outright, and the same class of hole on
@@ -8488,7 +11080,7 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
 3. **Revive path crashed with 500** (`undefined is not an object (evaluating
    'role.id')`). `RoleRepository.update()` filtered `.where(isNull(deletedAt))`,
    but `create()` revives a soft-deleted role by updating it *before*
-   `undelete` — the predicate matched zero rows, `.returning()` yielded
+   `undelete` ΓÇö the predicate matched zero rows, `.returning()` yielded
    `undefined`, and the caller dereferenced it. Removed the `deletedAt`
    predicate from `update`; who may edit is decided by the service (rank guard,
    system-role rules), not by the query.
@@ -8500,7 +11092,7 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
    handler, which returns bare user columns with no membership join. The two
    handlers do not actually collide: the legacy plugin is `prefix: '/users'`
    + `.get('/')`, so it registers the distinct path `/users/` while the admin
-   controller registers `/users` — and Elysia serves `/users/` for a bare
+   controller registers `/users` ΓÇö and Elysia serves `/users/` for a bare
    `/users` request. Reordering the mounts could never fix it (my earlier
    "first registration wins" note was measured on prefix-less toy plugins and
    is **wrong** for this case; the two routes simply never competed).
@@ -8510,7 +11102,7 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
    `user.organizations ?? []` defensively, and a unit test pins that the
    admin projection always emits the field.
 
-   → **Superseded structurally** by the W4 `/admin` prefix (see the top
+   ΓåÆ **Superseded structurally** by the W4 `/admin` prefix (see the top
    entry). The admin listing is now `GET /admin/users` and the legacy
    `UserController` no longer registers a collection route at all, so the
    `/users` vs `/users/` ambiguity this entry describes cannot recur. The
@@ -8519,18 +11111,18 @@ Frontend (`apps/web-admin`) — UX-only gating, backend enforces everything:
 
 ### Verification (exact commands)
 
-- `apps/backend` (follow-up fix): `bunx tsc --noEmit` → clean; `bun test` →
-  **113 pass / 0 fail**; `bun run scripts/smoke-admin-api.ts` → **16 passed, 0
+- `apps/backend` (follow-up fix): `bunx tsc --noEmit` ΓåÆ clean; `bun test` ΓåÆ
+  **113 pass / 0 fail**; `bun run scripts/smoke-admin-api.ts` ΓåÆ **16 passed, 0
   failed** (added a check that every `/users` row carries `organizations`;
   that surface is now `/admin/users` and the same check reads
-  `every /admin/users row carries an organizations array` — see the W4 entry).
-- `apps/backend`: `bun run scripts/smoke-admin-api.ts` → **15 passed, 0
+  `every /admin/users row carries an organizations array` ΓÇö see the W4 entry).
+- `apps/backend`: `bun run scripts/smoke-admin-api.ts` ΓåÆ **15 passed, 0
   failed**, stable across consecutive runs (the second run exercises the revive
-  path the same script would otherwise mask).- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` → clean (plain
-  `tsc --noEmit` checks NOTHING here — root `tsconfig.json` has `"files": []`);
-  `bun run build` → clean, all three routes code-split.
-- repo root: `bun run lint` → 0 errors (5 web-admin warnings + ui/backend
-  warnings are pre-existing); `bun run docs/database/validate-dbml.ts` → OK
+  path the same script would otherwise mask).- `apps/web-admin`: `bunx tsc --noEmit -p tsconfig.app.json` ΓåÆ clean (plain
+  `tsc --noEmit` checks NOTHING here ΓÇö root `tsconfig.json` has `"files": []`);
+  `bun run build` ΓåÆ clean, all three routes code-split.
+- repo root: `bun run lint` ΓåÆ 0 errors (5 web-admin warnings + ui/backend
+  warnings are pre-existing); `bun run docs/database/validate-dbml.ts` ΓåÆ OK
   (253 tables, 0 gaps).
 
 Scripts kept: `scripts/smoke-admin-api.ts`, `scripts/cleanup-smoke-roles.ts`,
@@ -8542,24 +11134,24 @@ throwaways deleted.
 Plan: `docs/plan/plans/user-management.md`. Phase 3 of 7 complete.
 
 - **Single grant source enforced**: `packages/common/src/authorization/
-  erp-permissions.ts` now owns the merged catalog — built-in organization
+  erp-permissions.ts` now owns the merged catalog ΓÇö built-in organization
   statements (`organization/member/invitation/ac`, via `builtInOrgStatements`)
   are folded INTO `erpRoleGrants` (owner = all ERP statements + full built-in
   org administration; admin = `organization:['read','update']`,
   `member:['create','read','update','delete']`, `invitation:['create','cancel']`,
   `ac:['read']` + prior catalog grants). Server `organization-ac.ts` and client
-  `erp-ac.ts` had their local `ownerGrants`/`adminOrgGrants` layering DELETED —
+  `erp-ac.ts` had their local `ownerGrants`/`adminOrgGrants` layering DELETED ΓÇö
   both build roles purely from `erpRoleGrants`; both spread the shared
   `builtInOrgStatements` into their statement vocabulary, so server/client/db
   seeds cannot drift. `packages/common` rebuilt.
-- **Guard DB seam**: `src/authorization/permission-resolver.ts` —
+- **Guard DB seam**: `src/authorization/permission-resolver.ts` ΓÇö
   `IPermissionResolver` interface + `PERMISSION_RESOLVER_TOKEN` +
   `grantsAllow()` (union-of-grants checker). No DB imports in this file.
-  `src/authorization/dynamic-permissions.ts` — `DynamicPermissionResolver`
+  `src/authorization/dynamic-permissions.ts` ΓÇö `DynamicPermissionResolver`
   (`@injectable`, `@inject(DRIZZLE_TOKEN)`) unions `auth.roles.permissions`
   jsonb of the member's live roles for the validated org; falls back to static
   `authorizeErpPermissions` ONLY when no live row matches the member's role
-  names. `src/authorization/container.ts` — `registerAuthorization()`
+  names. `src/authorization/container.ts` ΓÇö `registerAuthorization()`
   registered in `src/index.ts`. `elysia-auth.ts` `erpGuard()` resolves the
   resolver from the tsyringe container once at plugin build.
   `src/di/tokens.ts` split out of `provider.ts` (token-only, no DB client
@@ -8575,26 +11167,26 @@ Plan: `docs/plan/plans/user-management.md`. Phase 3 of 7 complete.
   `bun test` = **90 pass / 0 fail** (was 61/17).
 - **Seeder refresh path**: `organization-roles.seeder.ts` stays insert-only
   for re-runs (never overwrites admin-edited rows) but gained
-  `refreshSystemRoleGrants()` — re-syncs existing `isSystem=true` rows whose
+  `refreshSystemRoleGrants()` ΓÇö re-syncs existing `isSystem=true` rows whose
   permissions differ from the catalog (order-insensitive comparison), so a
   catalog change reaches already-seeded orgs on demand. Ops script
   `scripts/refresh-role-grants.ts` runs it. Custom roles are never touched.
 - **Live verification** (dev server :3001):
-  - `scripts/refresh-role-grants.ts` → 2 rows updated (owner/admin now carry
+  - `scripts/refresh-role-grants.ts` ΓåÆ 2 rows updated (owner/admin now carry
     the built-in org grants in `auth.roles.permissions`).
-  - owner `GET /organizations/:id/members` → **200** (dynamic; was 403 before
-    the catalog merge — root cause fixed).
-  - member `GET /sales/quotations` → **403** (dynamic deny).
+  - owner `GET /organizations/:id/members` ΓåÆ **200** (dynamic; was 403 before
+    the catalog merge ΓÇö root cause fixed).
+  - member `GET /sales/quotations` ΓåÆ **403** (dynamic deny).
   - `scripts/smoke-dynamic-authoritative.ts`: owner row narrowed to
-    `{dashboard:['read']}` → quotation read **403** even though the static
+    `{dashboard:['read']}` ΓåÆ quotation read **403** even though the static
     catalog grants it (dynamic set is authoritative); row restored.
-  - `scripts/smoke-fallback.ts`: owner row soft-deleted → quotation read
+  - `scripts/smoke-fallback.ts`: owner row soft-deleted ΓåÆ quotation read
     **200** via static catalog fallback; row restored.
 - `bunx tsc --noEmit` clean (backend); root `bun run typecheck` clean;
   `bun run lint` warnings pre-existing only; web-admin `bun run build` clean
   (consumes rebuilt common).
-- **Not done (next)**: phase 4 admin UI (users → invitations → roles →
-  members → audit), 5 username login tab, 6 deactivate/restore, 7 avatar
+- **Not done (next)**: phase 4 admin UI (users ΓåÆ invitations ΓåÆ roles ΓåÆ
+  members ΓåÆ audit), 5 username login tab, 6 deactivate/restore, 7 avatar
   claim hook check.
 
 ## Completed (this session - user-management phase 2: invitation module + claim flow, 2026-11-01)
@@ -8613,32 +11205,32 @@ Plan: `docs/plan/plans/user-management.md`. Phase 2 of 7 complete.
   text id, actor logical ref + denormalized email, AUDIT_ACTIONS vocabulary,
   target_type/target_id, nullable organization_id, meta jsonb, insert-only
   ledger. DBML entry REPLACED the stale aspirational one (was uuid/entity_id
-  shaped); `bun run docs/database/validate-dbml.ts` → OK, 253 tables.
+  shaped); `bun run docs/database/validate-dbml.ts` ΓåÆ OK, 253 tables.
 - **Better Auth internals learned (root-caused the claim 401)**:
   `auth.api.addMember` needs NO session when `organizationId` is in the body
   (orgMiddleware only), but `getFullOrganization` runs `orgSessionMiddleware`
   and 401s without a caller session. All org access moved into
-  `BetterAuthUserManagementGateway.attachMembership` — addMember inside
+  `BetterAuthUserManagementGateway.attachMembership` ΓÇö addMember inside
   `runWithEndpointContext`, org name via internal adapter
   `ctx.adapter.findOne({model:'organization'})`. Claim order:
-  claimCredentials → setClaimed → attachMembership → markStatus(accepted) →
+  claimCredentials ΓåÆ setClaimed ΓåÆ attachMembership ΓåÆ markStatus(accepted) ΓåÆ
   createSession, so a failed attach leaves the invitation retryable.
 - **Invite edge cases fixed**: repository gained `findAnyByEmail` +
-  `restore` (clears deletedAt, re-pends). Re-inviting a claimed email →
+  `restore` (clears deletedAt, re-pends). Re-inviting a claimed email ΓåÆ
   clean 409 `InvitationPendingExistsError` (was 500 `users_email_key`);
   soft-deleted wrong-email user is restored and re-invited.
 - **Live smoke (dev server, all via PowerShell Invoke-RestMethod)**: app-path
   claim + auto-login (newhire@entragate.test, set-cookie present), org-path
   claim with member role (fallback@entragate.test) and CUSTOM role
-  (tech2@entragate.test → membership row `role='technician'`), reused token
-  → 422, cancel → 200, delete claimed invitation → 409, resend kills old
-  token (old → 422, new → 200), duplicate pending overwrite (`overwritten:
-  true`, resentCount increments), bulk invite with bogus roleId → member
+  (tech2@entragate.test ΓåÆ membership row `role='technician'`), reused token
+  ΓåÆ 422, cancel ΓåÆ 200, delete claimed invitation ΓåÆ 409, resend kills old
+  token (old ΓåÆ 422, new ΓåÆ 200), duplicate pending overwrite (`overwritten:
+  true`, resentCount increments), bulk invite with bogus roleId ΓåÆ member
   fallback. Audit rows confirmed: invitation.sent 6, user.precreated 6,
   invitation.resent 1, invitation.cancelled 1
   (`bun run scripts/audit-summary.ts` from apps/backend).
 - **Verification scripts** (run from apps/backend cwd): `verify-claim.ts`,
-  `audit-summary.ts`. Note: PowerShell breaks backticks in `bun -e` — always
+  `audit-summary.ts`. Note: PowerShell breaks backticks in `bun -e` ΓÇö always
   write script files. Watch-mode logging can land in a different child than
   the shell output file; when responses look stale, kill all bun processes
   and restart clean.
@@ -8687,39 +11279,39 @@ database shape for the invitation-only user lifecycle.
   dynamic-role `hasPermission` guard (phase 3), admin UI (phase 4),
   login username tab (5), deactivate/restore (6), avatar claim hook check (7).
   Note: `@dbml/core` was missing from node_modules (progress line 618
-  overstated) — re-added as root devDependency to run the validator.
+  overstated) ΓÇö re-added as root devDependency to run the validator.
 
 ## Completed (this session - auth UX fixes: /users/me session guard + session org auto-activation + menu warnings, 2026-10-31)
 
 - **Bug**: `GET /users/me` sat behind the full `erpGuard`, which 403s when
   neither `x-organization-id` nor `session.activeOrganizationId` is present.
-  Fresh logins have no active org → sidebar showed `…` with no name/email.
-- **Fix A** — `sessionGuard()` in `src/authorization/elysia-auth.ts`: a
+  Fresh logins have no active org ΓåÆ sidebar showed `ΓÇª` with no name/email.
+- **Fix A** ΓÇö `sessionGuard()` in `src/authorization/elysia-auth.ts`: a
   session-only plugin (macro `erpSession`) resolving the Better Auth session
   and 401-ing when absent; no organization/membership resolution, so
   `ErpContext.organizationId`/`member` stay non-nullable for existing
   consumers. `/users/me` (user.controller.ts) opts in via
   `{ erpSession: { session: true } }` and `.use(sessionGuard())`.
-- **Fix B** — `sessionAutoActivateOrganizationHook`
+- **Fix B** ΓÇö `sessionAutoActivateOrganizationHook`
   (`src/providers/better-auth/options/session.auth.ts`, previously an empty
   placeholder), wired as `databaseHooks.session.create.before` in
   `auth.options.ts`: stamps the user's first `members` row as
   `activeOrganizationId` on session creation. Existing sessions unaffected
   (need one re-login or manual switch). See
-  `modules/organization.md` → "Session auto-activation".
+  `modules/organization.md` ΓåÆ "Session auto-activation".
 - **Elysia macro typing quirk (1.4.30)**: an EMPTY option object
   (`{ macroKey: {} }`) drops the macro's resolved context from handler
   types (TS2339 at the handler). Boolean `{ macroKey: true }` does NOT fix
   it; a NON-EMPTY object (`{ macroKey: { anything: true } }`) does. This
   mirrors the already-documented `erp: {}` vs `erp: { permission: [] }`.
-- **Frontend** — Base UI `MenuGroupContext` console warning on dropdown
+- **Frontend** ΓÇö Base UI `MenuGroupContext` console warning on dropdown
   open: `DropdownMenuLabel` renders `Menu.GroupLabel`, which requires a
   group context; wrapped labels in `DropdownMenuGroup` in
   `organization-switcher.tsx` and `nav-user.tsx` (unstyled
   `div[role=group]`, no visual change).
-- **Verified live** (backend :3001): fresh login → `GET /users/me` (no
-  header) → 200 `admin / admin@example.com`; `GET /organizations` (no
-  header) → 200, Entragate (auto-activated). `bun run typecheck` clean,
+- **Verified live** (backend :3001): fresh login ΓåÆ `GET /users/me` (no
+  header) ΓåÆ 200 `admin / admin@example.com`; `GET /organizations` (no
+  header) ΓåÆ 200, Entragate (auto-activated). `bun run typecheck` clean,
   `bun test` 78 pass / 0 fail, web-admin `bun run build` clean.
 
 ## Completed (this session - organization module + member CRUD + seeders, 2026-10-31)
@@ -8743,18 +11335,18 @@ Backlog: **ERP-0026** (implemented; live smoke verified).
   in `modules/organization.md`; soft delete +
   restore, last-owner 409, member list joined with users. Org DELETE never
   uses `auth.api.deleteOrganization`. (The single-org invariant present at
-  the time was removed on 2026-11-02 — see the ADR-0007 entry at the top.)
+  the time was removed on 2026-11-02 ΓÇö see the ADR-0007 entry at the top.)
 - **Seeders** `organization.seeder.ts` (Entragate + initial admin as owner via
   one `createOrganization({ userId })`) and `organization-members.seeder.ts`
   (16 internal-role accounts, `<role>.seed@entragate.local`, per-role dev
   password `<role>123456`).
   Registered after `seedAuth()` in `database/seeders/index.ts`.
-- **Web-admin**: `team-switcher.tsx` → `organization-switcher.tsx` (`git mv`,
+- **Web-admin**: `team-switcher.tsx` ΓåÆ `organization-switcher.tsx` (`git mv`,
   real org data, active-org switch, Manage/New entries); organization API
   client (`src/lib/organization-api.ts`); dedicated route pages
   `routes/_authed/organizations/` (index / new / $organizationId / .edit /
   members.new / members.$memberId.edit); minimal toast bus
-  (`components/toast.tsx`, `<Toaster />` in root) — sonner not installed.
+  (`components/toast.tsx`, `<Toaster />` in root) ΓÇö sonner not installed.
   Create button gated `organization.create` (now the application-admin role
   since 2026-11-02); edit/delete/member actions
   gated `organization.update|delete`, `member.create` (UX only).
@@ -8767,35 +11359,35 @@ Backlog: **ERP-0026** (implemented; live smoke verified).
   - `bun test` (backend) 78 pass / 0 fail (one permission-matrix assertion
     updated to catch an admin-grants regression found during the work).
   - `bun run build` (web-admin) clean.
-  - Migration applied; `bun run drizzle:seed` run twice — second run all
+  - Migration applied; `bun run drizzle:seed` run twice ΓÇö second run all
     skip (`created: 0`), idempotent.
   - Live smoke (dev server + seeded admin cookie + `x-organization-id`):
-    `GET /organizations` → 1 org "Entragate"; duplicate
-    `POST /organizations` → 422; `GET /members` → 17 members;
-    `PATCH .../members/:id` role change + revert → 200; `DELETE`
-    non-owner member → 200; re-add → 201; demote/remove last owner → 409.
-  - NOT yet verified in a browser: org pages end-to-end (login → switcher →
-    list → edit → members flows). Redis avatar-worker "Connection closed"
+    `GET /organizations` ΓåÆ 1 org "Entragate"; duplicate
+    `POST /organizations` ΓåÆ 422; `GET /members` ΓåÆ 17 members;
+    `PATCH .../members/:id` role change + revert ΓåÆ 200; `DELETE`
+    non-owner member ΓåÆ 200; re-add ΓåÆ 201; demote/remove last owner ΓåÆ 409.
+  - NOT yet verified in a browser: org pages end-to-end (login ΓåÆ switcher ΓåÆ
+    list ΓåÆ edit ΓåÆ members flows). Redis avatar-worker "Connection closed"
     boot warning is pre-existing (Redis not running locally), unrelated.
 
 ## Completed (this session - dashboard session user + tanstack-router-auth skill, 2026-10-30)
 
 - **New skill** `.agents/skills/tanstack-router-auth/` (present, not in
   lock): guide-derived pattern from
-  https://tanstack.com/router/latest/docs/guide/authenticated-routes —
+  https://tanstack.com/router/latest/docs/guide/authenticated-routes ΓÇö
   `_authed` guard with redirect preservation, `isRedirect` re-throw,
   login-side `redirect` param consumption, TanStack Query session-user
   flow, sidebar degradation rules.
 - **Backend** `GET /users/me`: self profile via guard-resolved session id
-  (server-side, `erp: {}` — self-scoped, no admin gate), declared before
+  (server-side, `erp: {}` ΓÇö self-scoped, no admin gate), declared before
   `/:userId`. Elysia typing quirk found: `erp: {}` (empty option object)
-  drops the macro's resolved `erp` from handler types — `/me` uses
-  `erp: { permission: [] }` with a NOTE comment. Verified: unauth curl →
+  drops the macro's resolved `erp` from handler types ΓÇö `/me` uses
+  `erp: { permission: [] }` with a NOTE comment. Verified: unauth curl ΓåÆ
   401 envelope; boot smoke clean.
 - **Web-admin**:
-  - `main.tsx`: `QueryClientProvider` mounted (was missing — `useQuery`
+  - `main.tsx`: `QueryClientProvider` mounted (was missing ΓÇö `useQuery`
     would have crashed anywhere).
-  - `_authed.tsx`: guard upgraded to guide spec — `search.redirect`
+  - `_authed.tsx`: guard upgraded to guide spec ΓÇö `search.redirect`
     preservation + `isRedirect(error)` re-throw (backend stays
     authoritative via `getSession()`).
   - `login/index.tsx`: `validateSearch` (`redirect` param); `LoginForm`
@@ -8804,21 +11396,21 @@ Backlog: **ERP-0026** (implemented; live smoke verified).
     60s stale, retry 1) unwrapping `TApiResponse<TSelfUser>`; local
     `TSelfUser` type mirrors backend `TUserProfile`.
   - `main-sidebar.tsx`: hardcoded sample user removed; `NavUser` fed by
-    `useSelfUser` (`useQuery(selfUserQueryOptions)`); loading → `…`
-    initials, error → degraded (no email/avatar).
+    `useSelfUser` (`useQuery(selfUserQueryOptions)`); loading ΓåÆ `ΓÇª`
+    initials, error ΓåÆ degraded (no email/avatar).
   - `nav-user.tsx`: real-name initials fallback (was hardcoded `CN`),
     placeholder items (Upgrade to Pro / Billing) removed, Log out wired
-    to `authClient.signOut()` → `/login`.
+    to `authClient.signOut()` ΓåÆ `/login`.
 - Verified (2026-10-30): backend `bun run typecheck` clean, `bun test`
   78/78, boot smoke + unauth curl 401; web-admin `bun run build`
   (tsc + vite) clean, lint no new warnings in touched files. NOT yet
-  manually verified in a browser: login → dashboard shows real
+  manually verified in a browser: login ΓåÆ dashboard shows real
   name/email/avatar; deep-link round-trip through the `redirect` param.
 
 ## Completed (this session - avatar queue moved into user module, 2026-10-30)
 
 - `src/providers/better-auth/avatar/` (queue + worker) moved to
-  `src/app/user/queues/` (`avatar.queue.ts`, `avatar.worker.ts`) —
+  `src/app/user/queues/` (`avatar.queue.ts`, `avatar.worker.ts`) ΓÇö
   avatar generation is user-domain logic, not provider infra; keeps the
   module folder pattern open for future queues.
 - One behavior fix in the move: `processAvatarJob` previously wrote
@@ -8843,45 +11435,45 @@ runtime (see below).**
 
 - **User module rebuilt to the location-module layered shape** (contracts/
   constants/ controllers/ services/ repositories/ container.ts):
-  - `contracts/user.contract.ts` — zod boundary schemas (list query,
+  - `contracts/user.contract.ts` ΓÇö zod boundary schemas (list query,
     create, update, ban, role, path params) + `z.infer` types.
-  - `contracts/user.repository.interface.ts` — `IUserRepository extends
+  - `contracts/user.repository.interface.ts` ΓÇö `IUserRepository extends
     IBaseRepository` + `paginate`; TSDoc pins the write-surface invariant:
     the repository touches ONLY `deletedAt`.
-  - `contracts/user-auth.gateway.interface.ts` — `IUserAuthGateway` port
+  - `contracts/user-auth.gateway.interface.ts` ΓÇö `IUserAuthGateway` port
     over the Better Auth admin API; all methods take the caller's
     `Headers` because `/admin/*` endpoints run Better Auth's own
     admin-authorization check (`requireHeaders`); only `/admin/create-user`
     is server-facing.
-  - `services/better-auth-user.gateway.ts` — wraps `auth.api.createUser`,
+  - `services/better-auth-user.gateway.ts` ΓÇö wraps `auth.api.createUser`,
     `adminUpdateUser`, `setRole`, `banUser`, `unbanUser`; translates
-    `APIError` 422→`UserEmailTakenError`, 404→`UserNotFoundError`.
-  - `services/user.service.ts` — orchestration + avatar mapping.
+    `APIError` 422ΓåÆ`UserEmailTakenError`, 404ΓåÆ`UserNotFoundError`.
+  - `services/user.service.ts` ΓÇö orchestration + avatar mapping.
     `getUser()` returns `TUserProfile` (`image` = short-lived presigned S3
     URL via `presignAvatarUrl`, or null; raw key never leaves the
     service). Replaces the old `getAvatarUrl()`/`GET /users/:userId/avatar`
     302 redirect. Invariant: soft delete = repo sets `deletedAt` AND
-    gateway bans (reason `deleted`) — Better Auth ignores `deletedAt`
+    gateway bans (reason `deleted`) ΓÇö Better Auth ignores `deletedAt`
     during auth, so the ban is what blocks logins; restore = unban +
     clear `deletedAt`.
-  - `repositories/user.repository.ts` — implements `IUserRepository`,
+  - `repositories/user.repository.ts` ΓÇö implements `IUserRepository`,
     soft-delete filtering (`isNull(users.deletedAt)`) on all reads,
     Redis cache-aside (5-min TTL, `user:all` / `user:id:<id>` keys,
     invalidated on `deletedAt` writes), never caches `paginate`.
-  - `controllers/user.controller.ts` — envelope helpers
+  - `controllers/user.controller.ts` ΓÇö envelope helpers
     (`ok`/`okPaginated`/`errorEnvelope` per `@ims-erp/common`), plugin-local
-    `onError({ as: 'local' })` mapping VALIDATION/PARSE/ZodError→400,
-    domain errors→404/409, non-admin→403. Authorization: `erpGuard()`
+    `onError({ as: 'local' })` mapping VALIDATION/PARSE/ZodErrorΓåÆ400,
+    domain errorsΓåÆ404/409, non-adminΓåÆ403. Authorization: `erpGuard()`
     session+membership on every route; mutations additionally gated by
     `erp: { policy: requireGlobalAdmin }` (session-resolved role ===
-    `admin`; no `user` resource exists in the org AC catalog — user admin
+    `admin`; no `user` resource exists in the org AC catalog ΓÇö user admin
     is Better Auth's global admin domain, with a second enforcement layer
     inside Better Auth itself).
-  - `constants/di.ts` — tokens typed `InjectionToken<T>`;
+  - `constants/di.ts` ΓÇö tokens typed `InjectionToken<T>`;
     `container.ts` registers repository + gateway + service.
 - **Endpoints** (prefix `/users`, self-service + Better Auth admin surface;
   the org-scoped admin lifecycle moved to `/admin/users` in the W4 tidy-up):
-  `GET /me` (self profile), `GET /:userId` (full profile, presigned image —
+  `GET /me` (self profile), `GET /:userId` (full profile, presigned image ΓÇö
   **global-admin gated** since W4), `POST /` (201), `PATCH /:userId`,
   `PATCH /:userId/role`, `POST /:userId/ban`, `POST /:userId/unban`,
   `DELETE /:userId` (soft delete), `POST /:userId/restore`.
@@ -8895,47 +11487,47 @@ runtime (see below).**
     as a hand-written append-only delta replicating the generated
     declaration; revisit when the CLI matches better-auth 1.7.
   - Deviation note: generated/auth-schema `deletedAt` is a plain
-    `timestamp`, not the project's `unixTimestampNullable` — Better Auth
+    `timestamp`, not the project's `unixTimestampNullable` ΓÇö Better Auth
     owns this file's shape.
 - **Migration**: `database/migrations/20261030230723_parched_human_cannonball/`
   (`ALTER TABLE "auth"."users" ADD COLUMN "deleted_at" timestamp;`),
   applied to the local dev DB via `bun run drizzle:migrate`.
-- Stale `auth:generate` script path fixed? NO — `package.json` still points
+- Stale `auth:generate` script path fixed? NO ΓÇö `package.json` still points
   at `./src/drizzle/schemas/auth.schema.ts`; output was passed explicitly.
   Left for ERP-0001 housekeeping.
 - Verified commands (2026-10-30, `apps/backend`):
-  - `bunx --bun @better-auth/cli@latest generate ... -y` → regressed (see
+  - `bunx --bun @better-auth/cli@latest generate ... -y` ΓåÆ regressed (see
     caveat); reverted, hand-applied instead.
-  - `bun run drizzle:generate` → migration emitted; inspected SQL before
-    applying; `bun run drizzle:migrate` → applied to local dev Postgres.
-  - `bun run typecheck` → clean (after fixes: `adminUpdateUser` endpoint
+  - `bun run drizzle:generate` ΓåÆ migration emitted; inspected SQL before
+    applying; `bun run drizzle:migrate` ΓåÆ applied to local dev Postgres.
+  - `bun run typecheck` ΓåÆ clean (after fixes: `adminUpdateUser` endpoint
     name, role-literal casts on `setRole`/`createUser` with `ponytail`
     notes, `erp: { policy }` instead of `beforeHandle` for typed ctx).
-  - `bun run lint` → no new warnings; `bun test` → 78 pass / 0 fail (was
+  - `bun run lint` ΓåÆ no new warnings; `bun test` ΓåÆ 78 pass / 0 fail (was
     67; +13 in rewritten `test/unit/user.service.test.ts`: image mapping
     presigned/null/absent, delete=ban+deletedAt pairing + no-write on
     missing user, restore=unban+clear, gateway delegation, null-prop).
-  - Boot smoke test: `bun src/index.ts` → `🦊 Elysia is running at
+  - Boot smoke test: `bun src/index.ts` ΓåÆ `≡ƒªè Elysia is running at
     localhost:3001`, clean shutdown.
 - NOT yet verified: e2e with a real admin session (create/ban/restore
   against live Better Auth runtime; permission catalog lacks a `user`
-  resource by design — global-admin policy is the first-party gate).
+  resource by design ΓÇö global-admin policy is the first-party gate).
 
 ## Completed (this session - avatar generation pipeline, 2026-10-29)
 
 **Status: implemented (unit-verified), NOT integration-verified against a
 running server + real S3.**
 
-- On user creation (email sign-up, OAuth, admin-created — anything through
+- On user creation (email sign-up, OAuth, admin-created ΓÇö anything through
   the Better Auth instance, incl. the auth seeder), the
   `databaseHooks.user.create.after` hook in
   `src/providers/better-auth/auth.options.ts` enqueues an `avatar` job
   (`src/providers/better-auth/avatar/avatar.queue.ts`). Enqueue errors are
-  logged and swallowed — sign-up never fails because of the queue.
+  logged and swallowed ΓÇö sign-up never fails because of the queue.
   Deterministic `jobId: avatar:<userId>` dedupes replays; 3 attempts,
   exponential backoff.
 - Worker (`avatar.worker.ts`): deterministic DiceBear `initials` avatar,
-  seed = user name (falls back to userId), 72×72; SVG→PNG via
+  seed = user name (falls back to userId), 72├ù72; SVGΓåÆPNG via
   `@dicebear/converter` (new dep; brings sharp/resvg); PNG written to
   `.tmp/avatars/<userId>.png` (repo-local temp dir, gitignored, always
   removed in `finally`); uploaded to S3 key `user/<userId>/avatar.png`;
@@ -8949,21 +11541,21 @@ running server + real S3.**
   `quit()`, never raw `redisClient.close()`).
 - Show endpoint (outside Better Auth routes):
   `GET /users/:userId/avatar` in `src/app/user/controllers/user.controller.ts`
-  — guarded by `erpGuard()` (session + org membership required, any member
+  ΓÇö guarded by `erpGuard()` (session + org membership required, any member
   role; no permission needed); 302 redirect to a freshly presigned S3 URL;
   404 when the user has no avatar key yet. Fills the previously empty user
   module (repository/service/container + DI tokens).
 - Verified commands (2026-10-29, `apps/backend`):
-  - `bun install` after adding `@dicebear/converter@10.7.0` → resolved,
+  - `bun install` after adding `@dicebear/converter@10.7.0` ΓåÆ resolved,
     21 packages installed.
-  - `bun run typecheck` → clean; `bun run lint` → no new warnings (only
+  - `bun run typecheck` ΓåÆ clean; `bun run lint` ΓåÆ no new warnings (only
     pre-existing stub-file warnings).
-  - `bun test` → 67 pass / 0 fail (was 54; +6 new: `test/unit/
+  - `bun test` ΓåÆ 67 pass / 0 fail (was 54; +6 new: `test/unit/
     avatar.worker.test.ts` PNG magic bytes, determinism, blank-name
     fallback, key pattern; `test/unit/user.service.test.ts` presigned URL
     contains signature, 404 path; 67 total incl. 7 pre-existing auth tests).
 - NOT yet verified (needs live server + reachable S3/Redis): end-to-end
-  sign-up → job processed → object in bucket → endpoint 302. The presign
+  sign-up ΓåÆ job processed ΓåÆ object in bucket ΓåÆ endpoint 302. The presign
   unit test runs against real local config (offline signing only; no S3
   request made).
 
@@ -9030,13 +11622,13 @@ running server + real S3.**
   live, route/query/how-to guides, approvals, escalation, audit, cache,
   seeding, gaps); ADR-0006 added.
 - **Verified commands (2026-10-29, from repo root unless noted)**:
-  - `bun run lint` → 3 tasks successful (remaining warnings pre-existing)
-  - `bun run test` → 2 tasks successful; backend 54 pass / 0 fail
-  - `bun run typecheck` → 2 tasks successful
-  - `bunx tsc -b` (apps/web-admin) → pass; `bun run build` (web-admin) → pass
-  - `bunx drizzle-kit generate` (apps/backend) → append-only migration
+  - `bun run lint` ΓåÆ 3 tasks successful (remaining warnings pre-existing)
+  - `bun run test` ΓåÆ 2 tasks successful; backend 54 pass / 0 fail
+  - `bun run typecheck` ΓåÆ 2 tasks successful
+  - `bunx tsc -b` (apps/web-admin) ΓåÆ pass; `bun run build` (web-admin) ΓåÆ pass
+  - `bunx drizzle-kit generate` (apps/backend) ΓåÆ append-only migration
     generated & inspected (sales schema + username columns)
-  - `bun run build` (packages/common) → pass
+  - `bun run build` (packages/common) ΓåÆ pass
 - NOT yet verified (needs disposable DB / running server): `drizzle:migrate`
   against a real database, live login/cookie flow through the mounted auth
   handler, seeder execution against a real DB. These remain Phase 2 exit
@@ -9056,16 +11648,16 @@ running server + real S3.**
   `auth.api.createUser` with inline `password` (single call; no
   `setUserPassword` follow-up needed).
 - **Verified against the real dev DB (2026-10-29)**:
-  - `bun run drizzle:migrate` → migrations applied successfully
+  - `bun run drizzle:migrate` ΓåÆ migrations applied successfully
     (sales schema + username columns).
-  - `bun run drizzle:seed` → initial admin created
+  - `bun run drizzle:seed` ΓåÆ initial admin created
     (`admin@example.com`, global role `admin`, username `admin`) + location
-    seeding; second run skipped the admin ("password NOT reset") →
+    seeding; second run skipped the admin ("password NOT reset") ΓåÆ
     idempotency confirmed by running twice.
   - DB row verified: user has role=admin, username/displayUsername set.
   - Live Better Auth flow via `auth.api`: `signInEmail` with seeded
-    credentials → 200 + `better-auth.session_token` cookie issued;
-    wrong password → `UNAUTHORIZED`.
+    credentials ΓåÆ 200 + `better-auth.session_token` cookie issued;
+    wrong password ΓåÆ `UNAUTHORIZED`.
 - Remaining Phase 2 exit item: boot `bun dev` and exercise cookie-based
   requests through the HTTP-mounted handler + `erpGuard` end-to-end
   (server-side `auth.api` verification above covers the credential/session
@@ -9089,28 +11681,28 @@ running server + real S3.**
     route tree regenerated (`routeTree.gen.ts`).
   - web-admin `tsc -b` + `vite build` pass.
 - **Live HTTP verification (bun dev on :3000, real requests)**:
-  - `POST /api/auth/sign-in/email` (correct creds) → 200 + session cookie.
-  - `GET /sales/quotations` without cookie → **401** (guard rejects before
-    handler); with cookie but no org membership (seeded global admin) →
-    **403** ("Organization context required") - global admin ≠ ERP access
+  - `POST /api/auth/sign-in/email` (correct creds) ΓåÆ 200 + session cookie.
+  - `GET /sales/quotations` without cookie ΓåÆ **401** (guard rejects before
+    handler); with cookie but no org membership (seeded global admin) ΓåÆ
+    **403** ("Organization context required") - global admin Γëá ERP access
     confirmed over real HTTP.
-  - `POST /api/auth/organization/set-active` (origin included) → 200;
+  - `POST /api/auth/organization/set-active` (origin included) ΓåÆ 200;
     `get-session` shows `activeOrganizationId`.
-  - `POST /sales/quotations` as org member (owner role) → **201**;
-    `GET` list → **200** (tenant-scoped row visible, `erp` context logged:
+  - `POST /sales/quotations` as org member (owner role) ΓåÆ **201**;
+    `GET` list ΓåÆ **200** (tenant-scoped row visible, `erp` context logged:
     organizationId/member.role resolved server-side).
-  - Foreign `x-organization-id` header with valid session → **403**
+  - Foreign `x-organization-id` header with valid session ΓåÆ **403**
     ("Organization membership required").
-  - Submit own quotation (200) then attempt own approval → **403**
+  - Submit own quotation (200) then attempt own approval ΓåÆ **403**
     ("Self-approval is not allowed") - SoD enforced over live HTTP.
-  - Wrong-password sign-in → 401 rejected.
+  - Wrong-password sign-in ΓåÆ 401 rejected.
 - Dev server stopped after verification. Backend typecheck + 54 tests +
   web-admin typecheck all pass after changes.
 
 ## Completed (this session - backend unit tests + husky pre-commit, 2026-10-28)
 
 - New local skill `bun-test` (`.agents/skills/bun-test/`, recorded in
-  `skills.md`): bun:test conventions — mock() / mock.module(), Drizzle DB and
+  `skills.md`): bun:test conventions ΓÇö mock() / mock.module(), Drizzle DB and
   Bun RedisClient always mocked via constructor injection, never real
   connections or connection strings. Reference: https://bun.com/docs/test.
 - `apps/backend`: `"test": "bun test"`, `"lint": "oxlint"` added;
@@ -9118,22 +11710,22 @@ running server + real S3.**
   `reflect-metadata` for tsyringe under the test runtime).
 - Shared mock helpers `test/helpers/mock-db.ts`: chainable Drizzle query
   builder mock (captures calls, resolves configured rows/count, supports
-  paginate-style count→rows alternation) and Redis mock (in-memory store,
+  paginate-style countΓåÆrows alternation) and Redis mock (in-memory store,
   TTL capture, deletion).
 - Unit tests (11, all offline, no network):
-  - `test/unit/location.service.test.ts` — pass-through delegation to the 4
+  - `test/unit/location.service.test.ts` ΓÇö pass-through delegation to the 4
     repository interfaces, null propagation.
-  - `test/unit/province.repository.test.ts` — cache-aside (miss→DB→set with
+  - `test/unit/province.repository.test.ts` ΓÇö cache-aside (missΓåÆDBΓåÆset with
     300s TTL, hit skips DB), cached `null` short-circuit, soft-delete `where`
     applied, create invalidates list+id cache keys.
 - `apps/backend` gained devDependency `reflect-metadata` + `oxlint`.
 - `.husky/pre-commit` uncommented: `bun run lint` + `bun run test` (`build`
-  stays commented — too slow for a hook). Turbo `test` task set
+  stays commented ΓÇö too slow for a hook). Turbo `test` task set
   `cache: false` so cached PASS cannot mask stale state.
 - Verified (exact commands, from repo root):
-  - `bun run lint` → 3 tasks successful
-  - `bun run test` → 2 tasks successful; `apps/backend`: 11 pass / 0 fail
-  - `bun test` in `apps/backend` run twice → identical pass (idempotent)
+  - `bun run lint` ΓåÆ 3 tasks successful
+  - `bun run test` ΓåÆ 2 tasks successful; `apps/backend`: 11 pass / 0 fail
+  - `bun test` in `apps/backend` run twice ΓåÆ identical pass (idempotent)
   - Remaining oxlint warnings are pre-existing (empty stub files, unused
     stub params in `src/app/user`, `src/providers/better-auth`); no
     warnings in new test files.
@@ -9151,22 +11743,22 @@ running server + real S3.**
   (`customer.*`, `sales.*`, ...), no cross-feature FKs/joins/table imports,
   cross-module access only via exported `External<X>Service` facade; Better
   Auth `auth-schema` tables are the explicit shared-infrastructure exception
-  (existing `erp.audit_logs.actor_id → auth users.id` FK allowed). Stop
+  (existing `erp.audit_logs.actor_id ΓåÆ auth users.id` FK allowed). Stop
   growing the shared `erp` schema; migrate existing feature tables as each
   feature is built.
 - Audit evidence: only cross-boundary DB references found are
-  `erp-schema.ts` → `auth-schema.ts` (`auditLogs.actorId` FK +
+  `erp-schema.ts` ΓåÆ `auth-schema.ts` (`auditLogs.actorId` FK +
   `erpRelations`); module repositories each import only their own domain's
   schema. No violations beyond the documented exceptions.
 - No code was changed; no database touched.
 
-- Audited the repository (see `project-audit.md`) — evidence-based
+- Audited the repository (see `project-audit.md`) ΓÇö evidence-based
   classification of all modules, with baseline commands executed.
 - Wrote this documentation set: `README.md`, `project-audit.md`,
   `stack-compatibility.md`, `skills.md`, `architecture.md`, `domain-map.md`,
   `data-model.md`, `api-conventions.md`, `security-and-access.md`,
   `plan.md`, `backlog.md`, `testing-strategy.md`, `runbook.md`,
-  `decisions/ADR-0001..0005`, `phases/phase-1..7` — plus rewrote root
+  `decisions/ADR-0001..0005`, `phases/phase-1..7` ΓÇö plus rewrote root
   `AGENTS.md` (Turborepo managed block preserved).
 - Pin decisions recorded: ADR-0001 (one company, internal multi-organization),
   ADR-0002 (money = integer IDR minor units), ADR-0003 (structured Indonesian
@@ -9182,7 +11774,7 @@ running server + real S3.**
 
 ## Blocked
 
-- ERP-0003 runtime sign-off needs a real dev server + DB (available locally —
+- ERP-0003 runtime sign-off needs a real dev server + DB (available locally ΓÇö
   unblocked for next session, pending execution).
 
 ## Latest checks (exact commands, 2026-10-25)
@@ -9190,27 +11782,27 @@ running server + real S3.**
 | Command (cwd) | Outcome |
 |---|---|
 | `bun run lint` (apps/backend) | pass, 6 warnings (empty `role-permission.ts`, unused imports/params) |
-| `bunx vitest run` (apps/backend) | 7 failed / 25 passed files; 2 failed / 25 passed tests — all pre-existing; causes in `project-audit.md` |
+| `bunx vitest run` (apps/backend) | 7 failed / 25 passed files; 2 failed / 25 passed tests ΓÇö all pre-existing; causes in `project-audit.md` |
 | `bun run test` (repo root) | fail (backend red) |
 
 ## Latest checks (exact commands, 2026-10-27)
 
 | Command (cwd) | Outcome |
 |---|---|
-| `bun run lint` (apps/backend) | pass, warnings (empty files, unused vars — pre-existing set) |
-| `bunx vitest run` (apps/backend) | **no spec files found** — all `src/**/*.spec.ts` gone from tree since 2026-10-25 baseline (only `test/app.e2e-spec.ts` remains, needs e2e config). Not caused by Dockerfile work. |
+| `bun run lint` (apps/backend) | pass, warnings (empty files, unused vars ΓÇö pre-existing set) |
+| `bunx vitest run` (apps/backend) | **no spec files found** ΓÇö all `src/**/*.spec.ts` gone from tree since 2026-10-25 baseline (only `test/app.e2e-spec.ts` remains, needs e2e config). Not caused by Dockerfile work. |
 | `bunx tsc -p tsconfig.build.json` (apps/backend) | pass; grep of fresh `dist/` shows zero `@providers/@config/@modules` alias imports |
-| `docker build -f apps/backend/Dockerfile .` (repo root) | **blocked** — Docker daemon not running during session; image build unverified |
+| `docker build -f apps/backend/Dockerfile .` (repo root) | **blocked** ΓÇö Docker daemon not running during session; image build unverified |
 
 ### Dockerfile slice (2026-10-27)
 
-- Wrote `apps/backend/Dockerfile` (bun 1.4-alpine multi-stage: deps →
-  `nest build` → prod-only runtime, non-root `USER bun`, port 3000) +
+- Wrote `apps/backend/Dockerfile` (bun 1.4-alpine multi-stage: deps ΓåÆ
+  `nest build` ΓåÆ prod-only runtime, non-root `USER bun`, port 3000) +
   `apps/backend/Dockerfile.dockerignore`.
 - Replaced 3 `@providers/...` alias imports with relative paths
   (`bootstrap.module.ts`, `mail-queue.service.ts`, `mail.processor.ts`) so
   compiled `dist/` resolves at runtime.
-- `config.loader.ts`: missing `.env` (ENOENT) no longer throws — compose
+- `config.loader.ts`: missing `.env` (ENOENT) no longer throws ΓÇö compose
   injects env vars; avoids hard dependency on a `.env` file in containers.
 - Image build + container boot **verified** (2026-10-27):
   `docker build -f apps/backend/Dockerfile .` succeeds; running the image
@@ -9221,7 +11813,7 @@ running server + real S3.**
   workspaces), `--ignore-scripts` needed (root `prepare: husky` fails in
   prod-only install), runtime must `COPY --from=build` (not host `dist/`).
 
-## Session 2026-10-28 — backend-nest removal
+## Session 2026-10-28 ΓÇö backend-nest removal
 
 - Deleted `apps/backend-nest/` (package `backend`) entirely; `bun install`
   regenerated `bun.lock` (workspace + `backend@workspace` entries gone).
@@ -9256,7 +11848,7 @@ verified history in this file.
   rule: never run `auth:generate` (1.4.x CLI regresses `auth.schema.ts`;
   hand-written append-only deltas instead). Reading order now includes
   `stack-compatibility.md` and `modules/`.
-- `runbook.md`: stale `apps/backend-elysia` paths → `apps/backend`; command
+- `runbook.md`: stale `apps/backend-elysia` paths ΓåÆ `apps/backend`; command
   statuses flipped from proposed to verified with dates; `auth:generate`
   removed with explanation; Docker section updated (compose now has
   backend + web-admin services; source-build Dockerfile still open backlog).
@@ -9292,7 +11884,7 @@ Permissions use the existing `tax` resource (D9): `tax:read`, `tax:update`,
   `tax.configuration.*`), plan doc permission names still `tax.configuration.*`.
 - `docs/database/` reviewed as part of this change (updated).
 
-## 2026-11-07 - ERP-0016 tax Phase 2 (frontend + CSV) — implemented
+## 2026-11-07 - ERP-0016 tax Phase 2 (frontend + CSV) ΓÇö implemented
 
 Builds on the Phase 1 commit `229b668`. Plan endpoints aligned to
 `docs/plan/plans/tax.md`; CSV columns remain a finance gate (D12).
@@ -9306,7 +11898,7 @@ Backend additions:
 - New `GET /tax/export.csv?year=&month=` under `tax:export`, served with a
   UTF-8 BOM so Excel opens it correctly. Placeholder columns: tax_code,
   taxable_base, tax_amount, correction_total, net_payable, filing_status, plus
-  a TOTAL footer row. **D12 is still open** — the column list needs finance
+  a TOTAL footer row. **D12 is still open** ΓÇö the column list needs finance
   sign-off.
 - Tests: `test/accounting/tax.service.test.ts` (11 tests: state machine,
   draft-only edits, corrections, overlap, preview, foreign-tenant behavior)
@@ -9339,18 +11931,18 @@ Still open: finance gates D12 (CSV columns), D14 (rounding), D18 (placeholder
 rates); Phase 3 XLSX via `exceljs`. Nothing is marked verified without finance
 review.
 
-## 2026-11-07 - ERP-0016 tax Phase 3 (XLSX export) — implemented
+## 2026-11-07 - ERP-0016 tax Phase 3 (XLSX export) ΓÇö implemented
 
-Closes the tax slice delivery (Phases 1–3). Dependency review first, per D12:
+Closes the tax slice delivery (Phases 1ΓÇô3). Dependency review first, per D12:
 
 - **Dependency:** `exceljs@4.4.0` added to `apps/backend`. Advisory check:
   four unpatched 2026 advisories (decompression DoS, prototype pollution via
-  cell notes, path traversal via `addImage`, CSV formula injection) — all on
+  cell notes, path traversal via `addImage`, CSV formula injection) ΓÇö all on
   the **read/parse path this module never calls**; the export is write-only.
   Two transitive moderates ride along (minimatch via archiver, uuid). Choice
   to use upstream over the `exceljs-hardened` fork confirmed with the user;
   recorded in the plan doc (D12).
-- Code: `utils/tax-xlsx.ts` (`recapToXlsx` — headers, numeric rupiah rows
+- Code: `utils/tax-xlsx.ts` (`recapToXlsx` ΓÇö headers, numeric rupiah rows
   divided from minor units, bold TOTAL footer, `#,##0.00` money formats) and
   `GET /tax/export.xlsx?year=&month=` under `tax:export`, mirroring the CSV
   route. Column layout still the placeholder set; **D12 sign-off still open**.
@@ -9371,7 +11963,7 @@ Still open: finance gates D12 (CSV/XLSX columns), D14 (rounding), D18
 ## 2026-11-07 - Fix: tax recap route placement and missing nav entry
 
 Corrects a Phase 2 miss: the `ComingSoonPage` stub at
-`routes/_authed/finance/tax/recap/` was never replaced — the recap component
+`routes/_authed/finance/tax/recap/` was never replaced ΓÇö the recap component
 had been mounted on the index route `/finance/tax` instead, while the sidebar
 still linked "Tax Recap" to the stub.
 
@@ -9380,7 +11972,7 @@ still linked "Tax Recap" to the stub.
   `beforeLoad` redirect to the recap so there is exactly one canonical URL for
   the active period (no duplicate render, no divergent `?year=&month=`).
 - Sidebar: added the missing "Tax Records" item (`/finance/tax/records`,
-  `item.taxRecords` en + id) — the page existed but was unreachable from nav.
+  `item.taxRecords` en + id) ΓÇö the page existed but was unreachable from nav.
 - Also cleared the three `react(purity)` lint warnings introduced in Phase 2
   (`new Date()` during render in `tax-recap.tsx` / `tax-record-list.tsx`;
   now computed once at module load). Web-admin warnings back at the 9
@@ -9421,16 +12013,16 @@ migrations, no seeders touched. `docs/database/` reviewed and updated.
   nullable issuing `organization_id` and per-org codes. ADR-0007/0008 headers
   cross-reference both.
 - `AGENTS.md`: hard rule "Cross-module references are nullable" added.
-- Companion docs aligned: `data-dictionary.md` (§1.2, §1.6),
-  `integrity-and-consistency.md` (§3.3, §3.5, §5.1), `logical-references.md`
+- Companion docs aligned: `data-dictionary.md` (┬º1.2, ┬º1.6),
+  `integrity-and-consistency.md` (┬º3.3, ┬º3.5, ┬º5.1), `logical-references.md`
   (rules 3, tenant scope, code uniqueness), `module-ownership.md` (counts,
   obligation 4), `implementation-phases.md`, `architecture.md`,
   `data-model.md`.
 - Backlog: ERP-0031..0034 moved to `proposed` (ADR-0010 still `proposed`);
   `backlog.md` status legend gained `proposed`. ERP-0037 added (ADR-0014 schema
   flip, `planned`). `features.md` moved to match.
-- Verified: `bun docs/database/gen-logical-references.ts` → `522 refs across 39
-  targets, 226 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+- Verified: `bun docs/database/gen-logical-references.ts` ΓåÆ `522 refs across 39
+  targets, 226 intra-module refs`. `bun docs/database/validate-dbml.ts` ΓåÆ
   `258 tables, 226 refs, 0 cross-module, 0 timestamp gaps, OK`.
 - Not verified: no code test run (none expected for docs). Git wrapper reported
   a clean tree while these edits exist on disk; commit state unconfirmed.
@@ -9452,8 +12044,8 @@ Status: in-progress (docs only, branch `fix/docs-consistency`, uncommitted).
 - `module-ownership.md` recounted from `docs.dbml`: Sales 15 tables / 11 FK /
   47 logical refs; Finance 16 / 14 / 46; total 258 / 225 / 523 / 25 schemas
   incl. empty `public`.
-- Verified: `bun docs/database/gen-logical-references.ts` → `523 refs across 39
-  targets, 225 intra-module refs`. `bun docs/database/validate-dbml.ts` →
+- Verified: `bun docs/database/gen-logical-references.ts` ΓåÆ `523 refs across 39
+  targets, 225 intra-module refs`. `bun docs/database/validate-dbml.ts` ΓåÆ
   `258 tables, 225 refs, 0 cross-module, 0 timestamp gaps, OK`.
 - Merge planning decisions (2026-11-08): base is `fix/docs-consistency`;
   `sales.invoices` is the only invoice table; ERP-0031..0034 stay `proposed`;
@@ -9486,22 +12078,27 @@ gates green (typecheck 4/4, lint 5/5, backend 1021 / web-admin 100 / locales 90
 / react-email 5 tests, `validate-dbml.ts` `OK`). The database gates were then
 run too: `drizzle:migrate` from empty, the seeder twice (second run inserted
 nothing) and a browser pass with a real attendance write and both NIK-masking
-directions — evidence in the 2026-11-15 entry. ERP-0053 stays `implemented`
+directions ΓÇö evidence in the 2026-11-15 entry. ERP-0053 stays `implemented`
 until the owner signs off; the only gate still unrun is
 `drizzle-kit push --explain`, which this merge does not need.
+
+The 2026-11-17 branding entry (dynamic company name + login onboarding image)
+is implemented and live-verified; it is unclaimed in `backlog.md` (no `ERP-*`
+covered company branding), so it needs a backlog row or fold into ERP-0008's
+company-profile line on the next pass.
 
 **ERP-0047 is verified** (2026-11-14, see the Phase 8 complete entry above). Nothing open in its plan. The docs changes for this step are uncommitted. The original Phase 8 scope, for reference:
 `bunx tsc -b --noEmit` in both apps, `bun run test`, `bun run lint`,
 `bun docs/database/validate-dbml.ts`, `bun run drizzle:migrate-reset` then seed
-twice, `apps/backend/test/notification/realtime.smoke.test.ts` (session cookie →
-producer → `{ type: 'notification.created', status: 'success', sentAt, data }`),
-and the manual two-session walkthrough (admin adds a registered user → that user
+twice, `apps/backend/test/notification/realtime.smoke.test.ts` (session cookie ΓåÆ
+producer ΓåÆ `{ type: 'notification.created', status: 'success', sentAt, data }`),
+and the manual two-session walkthrough (admin adds a registered user ΓåÆ that user
 sees the badge; a second notification arrives live). Phases 0-7 are done (see
 the 2026-11-14 entries); the browser pass already exercised the reconnect,
 live-delivery and locale paths by hand, so Phase 8 only has to automate the
 smoke test and re-run the reset.
 
-**Get reviewer sign-off on PR #82** (`fix/org-hardening`) — the organization
+**Get reviewer sign-off on PR #82** (`fix/org-hardening`) ΓÇö the organization
 `description` slice, the full-width create card, the create-style edit page,
 and the `findById` cache-invalidation fix are all in. Gates green: `bunx tsc
 -b --noEmit` clean in `apps/backend` + `apps/web-admin`, `bun run test`
@@ -9520,13 +12117,13 @@ Older, still-open follow-ups: docs merge of `merge/main-sync` into
 
 ## Previous next task (still open)
 
-**Finance review of the tax slice (D12/D14/D18)** — column list, rounding
+**Finance review of the tax slice (D12/D14/D18)** ΓÇö column list, rounding
 rule, and real rates. Then ERP-0016's other half: P&L, balance sheet, cash
 flow (T11).
 
 ## Previous next task (still open)
 
-**Customer slice (ERP-0004/0005)** — the last unstarted dependency root:
+**Customer slice (ERP-0004/0005)** ΓÇö the last unstarted dependency root:
 backend customer CRUD (`ERP-0004`) then the web-admin customer page
 (`ERP-0005`). HTTP bring-up + auth core are done (verified 2026-10-29);
 apply the `erp` macro + scoping patterns from `security-and-access.md`.

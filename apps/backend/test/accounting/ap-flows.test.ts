@@ -18,18 +18,19 @@ import type {
 	TCashBankTransactionSelect,
 	TSupplierBillSelect,
 } from '@drizzle/schemas/finance.schema';
-import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import { ArAccountResolverService } from '../../src/app/accounting/services/ar-account-resolver.service';
 import { CashBankService } from '../../src/app/accounting/services/cash-bank.service';
-import { PaymentService } from '../../src/app/accounting/services/payment.service';
+import { PaymentService } from '../../src/app/payment/services/payment.service';
 import { SupplierBillService } from '../../src/app/accounting/services/supplier-bill.service';
 import {
 	BillNotDraftError,
 	CashBankAccountInactiveError,
+} from '../../src/app/accounting/errors/ledger.errors';
+import {
 	PaymentOverAllocationError,
 	PaymentTargetNotIssuedError,
-} from '../../src/app/accounting/errors/ledger.errors';
+} from '../../src/app/payment/errors/payment.errors';
 
 const ORG = 'org-1';
 const ACTOR = 'user-1';
@@ -119,7 +120,7 @@ function makeHarness() {
 	const now = () => new Date();
 	const id = (p: string) => `${p}-${++seq}`;
 
-	const repo = {
+	const repoFake = {
 		findAccountById: async (_o: string, id: string) => accounts.get(id) ?? null,
 		findAccountByCode: async (_o: string, code: string) =>
 			[...accounts.values()].find((a) => a.code === code) ?? null,
@@ -284,7 +285,8 @@ function makeHarness() {
 			const row = allocations.find((a) => a.id === allocId);
 			if (row) row.updatedAt = now();
 		},
-	} as unknown as LedgerRepository;
+	};
+	const repo = repoFake;
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++seq).padStart(6, '0')}`,
@@ -295,11 +297,80 @@ function makeHarness() {
 		transaction: async (fn: (tx: never) => unknown) => fn(tx),
 	} as unknown as BunSQLDatabase;
 
-	const posting = new PostingService({} as unknown as BunSQLDatabase, repo, numbering);
-	const arResolver = new ArAccountResolverService(repo);
-	const cashBank = new CashBankService(dbLike, repo, posting, numbering);
-	const paymentService = new PaymentService(dbLike, repo, cashBank, arResolver, numbering);
-	const billService = new SupplierBillService(dbLike, repo, posting, arResolver, numbering, {} as never, { publish: async () => null } as never, { get: async () => null } as never);
+	// ADR-0024: the payment ledger moved to its own module. These adapters point
+	// the payment service at this fake through its own repository and through
+	// Accounting's settlement port, both backed by the same in-memory rows.
+	const paymentLedger = {
+		countOpen: async () =>
+			(await repoFake.listPayments()).data.filter((p) =>
+				['draft', 'submitted', 'approved'].includes(p.status as string),
+			).length,
+		list: () => repoFake.listPayments(),
+		findById: repoFake.findPaymentById,
+		insert: repoFake.insertPayment,
+		update: repoFake.updatePayment,
+		insertAllocations: repoFake.insertPaymentAllocations,
+		listAllocations: repoFake.listPaymentAllocations,
+		markAllocationExecuted: repoFake.markAllocationExecuted,
+	};
+	const settlement = {
+		findSalesInvoice: async () => null,
+		findArOpenItem: async () => null,
+		applyArSettlement: async () => undefined,
+		findSupplierBill: repo.findSupplierBillById,
+		findApOpenItem: repo.findApOpenItemByBill,
+		applyApSettlement: async (
+			org: string,
+			billId: string,
+			patch: { paidAmount: number; outstandingAmount: number; status: string },
+			_txIn: never,
+		) => {
+			await repo.updateApOpenItem(org, billId, patch);
+			await repo.updateSupplierBill(org, billId, {
+				paidTotal: patch.paidAmount,
+				outstandingTotal: patch.outstandingAmount,
+				status: patch.status,
+			});
+		},
+		postCashMovement: async (input: Record<string, unknown>, txIn: never) => {
+			const counterpartAccountId = await arResolver.resolve(
+				input.organizationId as string,
+				input.side === 'payable' ? 'ap' : 'ar',
+			);
+			await cashBank.postMovement(
+				{ organizationId: input.organizationId as string, actorUserId: input.actorUserId as string },
+				{
+					cashBankAccountId: input.cashBankAccountId as string,
+					transactionDate: input.businessDate as string,
+					direction: input.direction as 'in' | 'out',
+					amount: input.amount as number,
+					description: input.description as string,
+					referenceNumber: input.referenceNumber as string,
+					counterpartAccountId,
+					sourceType: input.sourceType as string,
+					sourceId: input.sourceId as string,
+				},
+				txIn,
+			);
+		},
+	};
+
+	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
+	const arResolver = new ArAccountResolverService(repo as never);
+	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
+	const paymentService = new PaymentService(dbLike, paymentLedger as never, settlement as never, numbering);
+	const billService = new SupplierBillService(
+		dbLike,
+		repo as never,
+		repo as never,
+		repo as never,
+		posting,
+		arResolver,
+		numbering,
+		{} as never,
+		{ publish: async () => null } as never,
+		{ get: async () => null } as never,
+	);
 
 	return {
 		posting,

@@ -1,0 +1,72 @@
+---
+import MockKpi from "./MockKpi.astro";
+
+/** Entragate Tickets window body (02.04). */
+interface Props {
+  variant: "desktop" | "mobile";
+}
+
+const { variant } = Astro.props;
+// `bar` / `mobileBar` are the drawn widths (% of track) from the design.
+const tiers = [
+  { name: "VIP", pct: 82, bar: 62, mobileBar: 87, color: "bg-navy-900" },
+  { name: "Festival", pct: 64, bar: 48, mobileBar: 68, color: "bg-blue-600" },
+  { name: "Regular", pct: 91, bar: 69, mobileBar: 96, color: "bg-cyan-400" },
+];
+const spark = [10, 14, 12, 20, 18, 26, 22, 30, 28, 36, 32, 40];
+---
+
+{
+  variant === "desktop" ? (
+    <>
+      <div class="flex gap-2">
+        <MockKpi label="Tickets sold" value="18,420" delta="+21%" />
+        <MockKpi label="Scanned at gates" value="12,906" />
+        <MockKpi label="Revenue" value="Rp 412.000.000" delta="+14%" />
+      </div>
+      <div class="flex min-h-0 flex-1 gap-2.5">
+        <div class="flex flex-1 flex-col gap-2.5 rounded-sm bg-white p-3 ring-1 ring-border ring-inset">
+          <span class="text-[10px] font-semibold text-fg">Jakarta Music Fest · Ticket tiers</span>
+          {tiers.map((t) => (
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between text-[9.5px]">
+                <span class="text-fg-secondary">{t.name}</span>
+                <span class="font-semibold text-fg">{t.pct}% sold</span>
+              </div>
+              <span class="h-1.5 rounded-pill bg-surface-2">
+                <span class:list={["block h-1.5 rounded-pill", t.color]} style={`width:${t.bar}%`} />
+              </span>
+            </div>
+          ))}
+        </div>
+        <div class="flex w-[170px] shrink-0 flex-col gap-2 rounded-sm bg-navy-900 p-3">
+          <span class="text-[10px] font-semibold text-white">Live gate scans</span>
+          <span class="font-heading text-[20px] font-bold text-white">312/min</span>
+          <div class="flex flex-1 items-end gap-[3px]">
+            {spark.map((h) => (
+              <span class="flex-1 rounded-xs bg-cyan-400" style={`height:${h}px`} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  ) : (
+    <>
+      <div class="flex gap-1.5">
+        <MockKpi variant="mobile" label="Sold" value="18,420" />
+        <MockKpi variant="mobile" label="Scanned" value="12,906" />
+      </div>
+      <div class="flex flex-1 flex-col gap-2 rounded-sm bg-white p-2.5 ring-1 ring-border ring-inset">
+        {tiers.map((t) => (
+          <div class="flex items-center gap-2 text-[9px]">
+            <span class="w-11 shrink-0 text-fg-secondary">{t.name}</span>
+            <span class="h-1.5 flex-1 rounded-pill bg-surface-2">
+              <span class:list={["block h-1.5 rounded-pill", t.color]} style={`width:${t.mobileBar}%`} />
+            </span>
+            <span class="font-semibold text-fg">{t.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}

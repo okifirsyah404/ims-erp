@@ -1,0 +1,59 @@
+---
+import { webUrl } from "../lib/urls";
+import Route from "@lucide/astro/icons/route";
+import AuthLayout from "../layouts/AuthLayout.astro";
+import LogoMark from "../components/customer/LogoMark.astro";
+import Media from "../components/customer/Media.astro";
+
+/** 04.00 Welcome — first launch / signed-out entry point. */
+---
+
+<AuthLayout title="Welcome" dark>
+  <div class="relative isolate flex h-[500px] flex-col">
+    <Media alt="" tone="dark" class="absolute inset-0 -z-10 size-full" />
+    <span
+      class="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2699_0%,#060F2600_30%,#060F2600_55%,#060F26_100%)]"
+      aria-hidden="true"></span>
+    <div class="flex items-center gap-2.5 px-6 py-2">
+      <span class="flex size-[38px] items-center justify-center rounded-md bg-white"><LogoMark size={34} /></span>
+      <span class="flex flex-col">
+        <span class="font-heading text-[16px] font-extrabold tracking-[1.6px] text-white">ENTRAGATE</span>
+        <span class="text-[11px] font-medium text-fg-on-dark-muted">by CV. Inti Multi Solusi</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-6 px-6 pb-[max(24px,env(safe-area-inset-bottom))]">
+    <div class="flex flex-col gap-3">
+      <h1 class="font-heading text-[32px] leading-[37px] font-extrabold tracking-[-1px] text-white">
+        Every entrance you own, in one app.
+      </h1>
+      <p class="text-[15px] leading-[22px] text-fg-on-dark-muted">
+        Track orders and installations, approve quotations, and get support from the Entragate team — anywhere.
+      </p>
+    </div>
+    <div class="flex gap-1.5" aria-hidden="true">
+      <span class="h-1.5 w-[22px] rounded-pill bg-cyan-400"></span>
+      <span class="size-1.5 rounded-pill bg-white/40"></span>
+      <span class="size-1.5 rounded-pill bg-white/40"></span>
+    </div>
+    <div class="flex flex-col gap-3 pt-2">
+      <a
+        href="/register"
+        class="flex h-[54px] items-center justify-center gap-2 rounded-control bg-blue-600 px-5 text-[16px] font-semibold text-white hover:bg-blue-700"
+      >
+        Create an account
+      </a>
+      <a
+        href="/login"
+        class="flex h-[54px] items-center justify-center gap-2 rounded-control bg-white/8 px-5 text-[16px] font-semibold text-white ring-1 ring-white/20 ring-inset hover:bg-white/12"
+      >
+        Sign in
+      </a>
+    </div>
+    <a href={`${webUrl}/track`} class="flex items-center justify-center gap-2 text-[14px] font-semibold text-cyan-400">
+      <Route size={16} aria-hidden="true" />
+      Track an order without signing in
+    </a>
+  </div>
+</AuthLayout>

@@ -73,12 +73,18 @@ class FakeProfiles implements ICompanyRepository {
 		return { record: this.record(), accounts: this.accounts };
 	}
 
-	async setImage(kind: 'logo' | 'signature', key: string | null) {
+	async setImage(
+		kind: 'logo' | 'signature' | 'onboarding',
+		key: string | null,
+	) {
 		if (!this.profile) return null;
-		Object.assign(
-			this.profile,
-			kind === 'logo' ? { logoObjectKey: key } : { signatureObjectKey: key },
-		);
+		const field =
+			kind === 'logo'
+				? { logoObjectKey: key }
+				: kind === 'signature'
+					? { signatureObjectKey: key }
+					: { onboardingObjectKey: key };
+		Object.assign(this.profile, field);
 		return this.record();
 	}
 
@@ -272,6 +278,17 @@ describe('CompanyService images', () => {
 		expect(second.signatureUrl).toContain('company/signature/');
 		expect(third.logoUrl).not.toBe(first.logoUrl);
 		expect((await service.setImage('logo', null, false)).logoUrl).toBeNull();
+	});
+
+	test('onboarding image upload lands under its own prefix and feeds the branding view', async () => {
+		const service = new CompanyService(new FakeProfiles(), storage);
+		expect(await service.getBranding()).toEqual({ name: null, onboardingUrl: null });
+		await service.save(input, 'user-1', true);
+		expect((await service.getBranding()).name).toBe('PT Inovasi Mitra Sejati');
+		const view = await service.setImage('onboarding', png(), false);
+		expect(view.onboardingUrl).toMatch(/^https:\/\/files\.test\/company\/onboarding\/[0-9a-f-]{36}\.webp$/);
+		expect((await service.getBranding()).onboardingUrl).toContain('company/onboarding/');
+		expect((await service.setImage('onboarding', null, false)).onboardingUrl).toBeNull();
 	});
 
 	test('the boundary checks shape and size; the format is decided on decode', async () => {

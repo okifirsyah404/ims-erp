@@ -1,0 +1,137 @@
+---
+import UserPlus from "@lucide/astro/icons/user-plus";
+import GitBranch from "@lucide/astro/icons/git-branch";
+import PenLine from "@lucide/astro/icons/pen-line";
+import MapPin from "@lucide/astro/icons/map-pin";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import Avatar from "../../components/customer/Avatar.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import AppButton from "../../components/customer/AppButton.astro";
+import InviteMemberSheet from "../../features/account/InviteMemberSheet";
+import ConfirmAction from "../../features/account/ConfirmAction";
+import { memberChip, memberDetail } from "../../features/account/memberRoles";
+import { customerService } from "../../services";
+
+/** 05.11 Company & team (+05.11b invite sheet). Owners/admins can invite and remove members. */
+const user = Astro.locals.user!;
+const account = await customerService.account(Astro.locals.tokens!);
+const company = account.company;
+const me = account.members.find((m) => m.email === user.email);
+const canManage = Boolean(me?.role === "owner" || me?.admin);
+const approvers = account.members.filter((m) => m.status === "active" && (m.role === "approver" || m.role === "owner")).length;
+const stats = [
+  { label: "Members", value: account.members.length },
+  { label: "Sites", value: account.sites.length },
+  { label: "Approvers", value: approvers },
+];
+---
+
+<CustomerLayout title="Company & team" tab="profile">
+  <TopBar title="Company & team" back="/profile">
+    {canManage && <IconButton slot="action" label="Invite a teammate" href="#invite"><UserPlus size={20} aria-hidden="true" /></IconButton>}
+  </TopBar>
+
+  <div class="flex flex-col gap-5 px-5 pt-1 pb-6">
+    {
+      company ? (
+        <>
+          <section class="flex flex-col gap-4 rounded-xl bg-surface p-5" aria-label="Company">
+            <div class="flex items-center gap-3.5">
+              <span class="flex size-14 shrink-0 items-center justify-center rounded-control bg-navy-900 font-heading text-[18px] font-extrabold text-cyan-400" aria-hidden="true">{company.shortName}</span>
+              <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
+                <h1 class="font-heading text-[17px] font-extrabold text-fg">{company.name}</h1>
+                {company.npwp && <p class="text-[13px] text-fg-muted">NPWP {company.npwp}</p>}
+                <StatusChip tone="success" label={company.verified ? "Business · Verified" : "Business · Verification pending"} class="!bg-white" />
+              </div>
+            </div>
+            <dl class="grid grid-cols-3 gap-2">
+              {stats.map((s) => (
+                <div class="flex flex-col-reverse items-center gap-0.5 rounded-md bg-white py-3">
+                  <dt class="text-[12px] font-medium text-fg-muted">{s.label}</dt>
+                  <dd class="font-heading text-[19px] font-extrabold text-fg">{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {canManage && (
+              <a href="/company/edit" class="flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-blue-600">
+                <PenLine size={14} aria-hidden="true" />Edit company profile
+              </a>
+            )}
+          </section>
+
+          {company.approvalRule && (
+            <p class="flex gap-3 rounded-lg bg-[#E7FAFD] p-3.5 text-[13.5px] leading-[1.45] font-medium text-[#132A5C]">
+              <GitBranch size={18} class="mt-px shrink-0 text-blue-600" aria-hidden="true" />
+              {company.approvalRule}
+            </p>
+          )}
+
+          <a href="/sites" class="flex items-center gap-3.5 rounded-card bg-white px-4 py-3.5 ring-1 ring-border ring-inset hover:bg-surface">
+            <span class="flex size-11 items-center justify-center rounded-md bg-surface text-fg-secondary" aria-hidden="true"><MapPin size={20} /></span>
+            <span class="flex flex-1 flex-col gap-[3px]">
+              <span class="text-[15px] font-semibold text-fg">Sites & addresses</span>
+              <span class="text-[13px] text-fg-muted">{account.sites.length} delivery & installation sites</span>
+            </span>
+            <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
+          </a>
+
+          <section class="flex flex-col gap-3.5" aria-labelledby="members-title">
+            <div class="flex items-center justify-between">
+              <h2 id="members-title" class="font-heading text-[17px] font-bold text-fg">Members</h2>
+              <details class="group relative">
+                <summary class="cursor-pointer list-none text-[14px] font-semibold text-blue-600 [&::-webkit-details-marker]:hidden">Roles</summary>
+                <div class="absolute top-7 right-0 z-10 flex w-[280px] flex-col gap-2.5 rounded-lg bg-white p-4 text-[13px] text-fg-secondary shadow-[0_16px_40px_#0A1A3F26] ring-1 ring-border">
+                  <p><strong class="text-fg">Owner · Admin</strong> — everything, incl. team & company settings.</p>
+                  <p><strong class="text-fg">Approver</strong> — accepts quotations up to their limit.</p>
+                  <p><strong class="text-fg">Finance</strong> — invoices, payments & tax documents.</p>
+                  <p><strong class="text-fg">Viewer</strong> — tracks orders, projects & tickets.</p>
+                </div>
+              </details>
+            </div>
+            <ul class="flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset">
+              {account.members.map((member) => {
+                const chip = memberChip(member);
+                const removable = canManage && member.role !== "owner";
+                return (
+                  <li class="flex items-center gap-3.5 px-4 py-3.5">
+                    <Avatar initials={member.initials} size={44} tone={member.status === "invited" ? "muted" : "gradient"} class="!text-[13px]" />
+                    <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span class="truncate text-[15px] font-semibold text-fg">{member.name ?? member.email}</span>
+                      <span class="text-[12.5px] leading-[17px] text-fg-muted">{memberDetail(member)}</span>
+                      {removable && (
+                        <ConfirmAction
+                          client:visible
+                          operation="removeMember"
+                          id={member.id}
+                          triggerLabel={member.status === "invited" ? "Cancel invitation" : "Remove"}
+                          triggerClassName="self-start mt-0.5 text-[12px]"
+                          title={member.status === "invited" ? "Cancel invitation?" : `Remove ${member.name ?? member.email}?`}
+                          description={member.status === "invited" ? `${member.email} won't be able to join with this invitation.` : "They'll lose access to orders, quotations and invoices for your company immediately."}
+                          confirmLabel={member.status === "invited" ? "Cancel invitation" : "Remove member"}
+                        />
+                      )}
+                    </span>
+                    <StatusChip label={chip.label} tone={chip.tone} />
+                  </li>
+                );
+              })}
+            </ul>
+            {canManage && <AppButton variant="soft" href="#invite" block><UserPlus slot="icon" size={18} aria-hidden="true" />Invite a teammate</AppButton>}
+          </section>
+        </>
+      ) : (
+        <section class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <BuildingComplex size={28} class="text-blue-600" aria-hidden="true" />
+          <h1 class="font-heading text-[17px] font-bold text-fg">Personal account</h1>
+          <p class="text-[14px] text-fg-secondary">Company profiles, approvers and team members are available on business accounts.</p>
+          <AppButton variant="outline" href="/support/new?category=other&subject=Upgrade%20to%20a%20business%20account" class="mt-1">Upgrade to business</AppButton>
+        </section>
+      )
+    }
+  </div>
+  {canManage && <InviteMemberSheet slot="overlay" client:idle />}
+</CustomerLayout>

@@ -139,7 +139,11 @@ function makeService(seed?: {
 		findNamesByIds: async (ids) =>
 			items
 				.filter((i) => ids.includes(i.id) && i.deletedAt === null)
-				.map((i) => ({ id: i.id, name: i.name })),
+				.map((i) => ({
+					id: i.id,
+					name: i.name,
+					imageObjectKey: i.imageObjectKey ?? null,
+				})),
 		countUnits: async (itemId) =>
 			units.filter((u) => u.itemId === itemId && u.deletedAt === null).length,
 	};
@@ -180,6 +184,9 @@ function makeService(seed?: {
 		},
 		listInStockSerials: async () => [],
 		sell: async () => [],
+		returnToSupplier: async () => [],
+		listSerialsInStatuses: async () => [],
+		receiveFromCustomer: async () => [],
 	};
 
 	return {
@@ -449,13 +456,14 @@ describe('ItemService — unit transitions', () => {
 		expect(units[0]!.status).toBe('sold');
 	});
 
-	test('refuses an illegal edge (sold → in_stock)', async () => {
+	// `sold → in_stock` became legal with customer returns (ERP-0065).
+	test('refuses an illegal edge (sold → applied_warranty)', async () => {
 		const { service, units } = makeService({
 			items: [makeItem({ itemKind: 'product' })],
 			units: [makeUnit({ status: 'sold' })],
 		});
 		await expect(
-			service.transitionUnit(units[0]!.id, 'in_stock'),
+			service.transitionUnit(units[0]!.id, 'applied_warranty'),
 		).rejects.toBeInstanceOf(InventoryRuleViolationError);
 	});
 });
