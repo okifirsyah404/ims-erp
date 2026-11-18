@@ -29,6 +29,26 @@ Each app has a `.env.example`. Copy it to `.env` in the same folder. `.env` is
 git-ignored; never commit it. The portal and the website reach the ERP
 **server to server** only (the browser never calls the ERP).
 
+`PUBLIC_*` variables are `context: client`, so they are inlined into the bundle
+at **build** time (Docker build args); the rest (`context: server`) are read at
+runtime.
+
+## Docker
+
+Both apps have a Dockerfile (root build context):
+
+```bash
+docker build -f apps/web-landing/Dockerfile .
+docker build -f apps/web-customer-portal/Dockerfile .
+```
+
+`docker-compose.yml` wires them as `web-landing` (:4321) and
+`web-customer-portal` (:4322); `docker-compose.local.yml` builds them from
+source. The runtime image carries a production `node_modules` because
+`dist/server/entry.mjs` imports npm packages (astro, react, zod, cookie, …) at
+runtime. The portal's server-side sessions live in `/app/.astro/session`, a
+named volume in compose.
+
 API reference: the backend serves the OpenAPI document at `/docs`
 (`@elysia/openapi`). The portal routes are documented in
 `docs/architecture/modules/customer-portal.md`, the website integration design

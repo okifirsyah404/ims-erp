@@ -142,6 +142,58 @@ services:
       # reverse proxy (e.g. Caddy). Override with WEB_ADMIN_PORT in .env.
       - "${WEB_ADMIN_PORT:-8080}:80"
 
+  # Public website (apps/web-landing). Node standalone server on 4321 inside
+  # the container. Reaches the ERP server-to-server over the internal network.
+  web-landing:
+    image: docker.io/okifirsyah404/ims-erp-web-landing:${IMAGE_TAG:-dev}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Asia/Jakarta}
+      # Runtime (server) settings. ERP_API_BASE_URL is the backend root reached
+      # from inside the compose network.
+      ERP_API_BASE_URL: ${WEB_LANDING_ERP_API_BASE_URL:-http://backend:3000}
+      ERP_API_TOKEN: ${WEB_LANDING_ERP_API_TOKEN:-}
+      WEB_DATA_SOURCE: ${WEB_LANDING_DATA_SOURCE:-erp}
+      # The backend wraps every response as { requestId, status, message, timestamp, data }.
+      ERP_RESPONSE_ENVELOPE: ${WEB_LANDING_ERP_RESPONSE_ENVELOPE:-data}
+      ERP_RFQ_PATH: ${WEB_LANDING_ERP_RFQ_PATH:-}
+      CUSTOMER_INTERNAL_URL: ${CUSTOMER_INTERNAL_URL:-http://web-customer-portal:4322}
+      WEB_HANDOFF_SECRET: ${WEB_HANDOFF_SECRET:-}
+    ports:
+      # Host 4321 matches the dev port. Override with WEB_LANDING_PORT in .env.
+      - "${WEB_LANDING_PORT:-4321}:4321"
+    depends_on:
+      backend:
+        condition: service_started
+    # Build-time client values are inlined into the bundle; the image is built
+    # with the same values (see docker-compose.local.yml), not read here.
+
+  # Customer portal (apps/web-customer-portal). Node standalone server on 4322.
+  # Sessions live in the server; the cookie holds only an opaque id.
+  web-customer-portal:
+    image: docker.io/okifirsyah404/ims-erp-web-customer-portal:${IMAGE_TAG:-dev}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ:-Asia/Jakarta}
+      ERP_API_BASE_URL: ${PORTAL_ERP_API_BASE_URL:-http://backend:3000}
+      ERP_API_TOKEN: ${PORTAL_ERP_API_TOKEN:-}
+      PORTAL_DATA_SOURCE: ${PORTAL_DATA_SOURCE:-erp}
+      ERP_RESPONSE_ENVELOPE: ${PORTAL_ERP_RESPONSE_ENVELOPE:-data}
+      ERP_ASSET_ORIGINS: ${PORTAL_ERP_ASSET_ORIGINS:-}
+      WEB_HANDOFF_SECRET: ${WEB_HANDOFF_SECRET:-}
+    ports:
+      # Host 4322 matches the dev port. Override with WEB_CUSTOMER_PORTAL_PORT in .env.
+      - "${WEB_CUSTOMER_PORTAL_PORT:-4322}:4322"
+    volumes:
+      # Server-side sessions (Astro's fsLite driver) persist across restarts.
+      - portal-sessions:/app/.astro/session
+    depends_on:
+      backend:
+        condition: service_started
+
 volumes:
   postgres-data:
   redis-data:
+  portal-sessions:

@@ -12,6 +12,68 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-18 - Website and portal get Dockerfiles, compose services and `.env.example` files
+
+Augments the two Astro apps (PR #107 branch) with the deployment surface the
+rest of the repo already has for backend and web-admin.
+
+**Added**
+- `apps/web-landing/Dockerfile` and `apps/web-customer-portal/Dockerfile`
+  (root build context, like the other apps): `deps` -> `build` (`astro build`)
+  -> `prod-deps` -> `runtime` (`node:22-alpine`), running
+  `node /app/dist/server/entry.mjs`.
+- `docker-compose.yml`: `web-landing` (:4321) and `web-customer-portal`
+  (:4322) services, plus the `portal-sessions` volume.
+- `docker-compose.local.yml`: source builds for both, with the `PUBLIC_*`
+  build args.
+- `.env.example` for both apps, rewritten to list every variable the code
+  actually reads and to say which ones are build-time (`PUBLIC_*`, inlined by
+  `astro:env`) versus runtime.
+- Root `.dockerignore`: `**/.astro`, `**/designs`, `**/*.pen`.
+
+**Two problems found by testing instead of guessing**
+
+1. **The runtime image needs `node_modules`.** `dist/server/entry.mjs` imports
+   npm packages at runtime (`astro`, `@astrojs/node`, `react`, `zod`, `send`,
+   `cookie`, `server-destroy`, ...). A runtime stage holding only `dist` starts
+   and immediately throws `ERR_MODULE_NOT_FOUND`. The Dockerfile therefore has
+   a `prod-deps` stage (`bun install --frozen-lockfile --production`) copied
+   next to `dist`.
+2. **`cookie` was missing from a production-only install.** Astro's built chunks
+   import `cookie` unscoped, while Astro itself declares `cookie ^2.0.2`. In
+   the full monorepo the root hoists `cookie@1.1.1` (from `elysia`, the
+   backend), so the app silently resolved the wrong major. An install with only
+   the Astro manifests produced no `cookie` at all. Fixed at the source by
+   adding `"cookie": "^2.0.2"` to both Astro manifests: root `cookie` is now
+   2.0.2, `elysia` keeps its nested `cookie@1.1.1` (`elysia/cookie` in the
+   lock), and the backend suite is unchanged at 1223 pass.
+
+**How the runtime was proven without a Docker daemon.** Docker is not running
+on this machine, so no image was built. Instead the exact image layout was
+reproduced on the host: `bun install --frozen-lockfile --production` with only
+the Astro manifests (the same set the Dockerfile copies), that `node_modules`
+copied beside `dist`, then `node dist/server/entry.mjs` with
+`NODE_ENV=production`. Both apps answered `HTTP 200` on `/`. Before the two
+fixes above the same harness failed with `ERR_MODULE_NOT_FOUND`
+(`piccolore`, then `cookie`) - the failures are what drove the design.
+
+**Compose validated without a daemon:** `docker compose config` exits 0 for
+the base file and for the local override; the two new services resolve with
+ports 4321/4322, their build args, and `portal-sessions:/app/.astro/session`.
+
+**Verification.** `bun run typecheck` 6/6 (`astro check` 173 + 150 files, 0
+errors); `bun run lint` 0 errors; `bun run test` backend 1223, web-admin 119,
+locales 98, react-email 6; `bun run build` 5/5; `validate-dbml.ts` OK. No
+schema change.
+
+**Still open.**
+- No image was actually built (`docker build`) or run (`docker compose up`):
+  the Docker daemon is not available here. First real build is unverified.
+- Live session persistence across a container restart (`portal-sessions`).
+- No CI workflow publishes these two images yet; `main-deploy-*.yml` covers
+  backend and web-admin only.
+- Dev servers and a browser walkthrough of either app remain unrun.
+
 ## 2026-11-18 - `packages/api-client` removed: contracts live in each app's `src/api/`
 
 The ERP contract clients were a shared workspace package imported by both Astro
