@@ -18,7 +18,7 @@ import type {
   TicketDetail,
   TicketSummary,
   WarrantyDetail,
-} from "@entragate/api-client";
+} from "@ims-erp/api-client";
 
 /**
  * Demo fixtures copied from the approved mobile frames (05.x, 07.x, 08.x). Used only

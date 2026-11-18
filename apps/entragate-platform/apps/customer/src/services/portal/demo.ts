@@ -1,4 +1,4 @@
-import type { AccountSettings, AuthTokens, OrderDetail, PortalSource, ProjectDetail, TicketDetail, TicketMessage, WishlistItem, RfqSummary } from "@entragate/api-client";
+import type { AccountSettings, AuthTokens, OrderDetail, PortalSource, ProjectDetail, TicketDetail, TicketMessage, WishlistItem, RfqSummary } from "@ims-erp/api-client";
 import * as data from "./demo-data";
 import * as accountData from "./demo-account";
 

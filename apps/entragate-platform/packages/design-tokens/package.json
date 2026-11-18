@@ -1,5 +1,5 @@
 {
-  "name": "@entragate/design-tokens",
+  "name": "@ims-erp/design-tokens",
   "version": "0.1.0",
   "private": true,
   "exports": {

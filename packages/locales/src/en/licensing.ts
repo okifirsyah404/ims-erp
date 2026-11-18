@@ -167,6 +167,8 @@ const licensing = {
 	'apiKeys.empty': 'No API keys yet.',
 	'apiKeys.start': 'Starts with',
 	'apiKeys.created': 'Created',
+	'apiKeys.issuedBy': 'Issued by',
+	'apiKeys.revokedBy': 'Revoked by {{name}}',
 	'apiKeys.lastUsed': 'Last used',
 	'apiKeys.revoked': 'API key revoked',
 } as const;

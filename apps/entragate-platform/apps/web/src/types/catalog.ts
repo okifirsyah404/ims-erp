@@ -1,4 +1,4 @@
-import type { CatalogProduct, CatalogStockStatus } from "@entragate/api-client";
+import type { CatalogProduct, CatalogStockStatus } from "@ims-erp/api-client";
 import type { IconName } from "../lib/icons";
 
 /**

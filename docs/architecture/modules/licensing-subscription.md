@@ -42,10 +42,26 @@ contract end and the key expiry), never stored; no background job.
   `SalesFulfilmentService.getLiveOrder`. Finance:
   `InvoiceLookupService.paidTotal` (receipts are verified when recorded;
   reversed receipts are already taken out). Organization: numbering
-  (`license_contract`, `LIC`), `listMembers` (the owner issues machine keys
-  in Better Auth on the ERP's behalf).
+  (`license_contract`, `LIC`), `listMembers` (names of who issued and who
+  revoked each machine key).
 - Better Auth API keys are reached only through
-  `adapters/better-auth-api-keys.ts`.
+  `adapters/better-auth-api-keys.ts`. **Since 2026-11-15 (PR #100 review)**
+  a key is issued and revoked **as the acting member**, not as the
+  organization owner:
+  - Better Auth checks that member's organization `apiKey` statement,
+    granted only to roles that hold `license:manage_api` (owner, sales
+    manager; a permission-matrix test keeps the two together).
+  - The key stays organization-owned (`reference_id` = organization), so it
+    survives the issuer leaving.
+  - The issuer is stored in the key's metadata (`issuedBy`) and on the
+    licensing row (`created_by` / `revoked_by`). The API keys screen shows
+    "Issued by" / "Revoked by".
+- The API key plugin's own HTTP routes (`/api/auth/api-key/create|get|list|update|delete|delete-all-expired-api-keys`)
+  are closed with Better Auth `disabledPaths`. Keys are managed only through
+  the ERP endpoints and `scripts/create-website-api-key.ts`, which call
+  `auth.api` server-side and are not affected. Before this, the owner could
+  mint keys of any config directly over HTTP; with the `apiKey` grant the
+  sales manager could have too.
 - Paid renewals are checked when the register is read (list, detail,
   summary) and when a key is validated, activated or released. Activation is
   guarded on `draft`, so one payment renews once.
@@ -53,7 +69,8 @@ contract end and the key expiry), never stored; no background job.
 ## Permissions
 
 `license:read | create | activate | extend | revoke | read_key | manage_api`.
-Owner and sales manager: all. Sales: read, create, extend, read_key.
+Owner and sales manager: all (plus Better Auth `apiKey: create, read, update`
+for issuing and revoking machine keys as themselves). Sales: read, create, extend, read_key.
 Customer service: read, read_key. Finance, admin, auditor: read. Keys are
 masked (last 4) without `read_key`.
 
@@ -64,7 +81,14 @@ the installed application; every request sends
 `Authorization: Bearer elk_…` (issued under **Subscription & Licensing →
 API Keys**, shown once). Rate limit: 120 calls per minute per key (429). A
 key only reaches licenses of its own application; others look unknown.
-JSON bodies; responses use the ERP envelope `{ success, message, data }`.
+JSON bodies; responses use the ERP envelope `{ requestId, status, message,
+timestamp, data }`, plus `errors[]` on an error (corrected 2026-11-14).
+
+The published reference for application teams is the guide
+`docs/architecture/modules/licensing-integration.md` plus the spec
+`docs/architecture/api/licensing.yaml` (both moved there when the separate docs site
+was removed in favour of `@elysia/openapi`, which serves the Better Auth schema
+at `/docs` — not these licensing routes).
 
 | Call | Body | Answer |
 |---|---|---|

@@ -34,6 +34,22 @@ export type TProjectPaginationRequest = TProjectListQuery & {
 };
 
 /**
+ * Counts for the M01 dashboard.
+ *
+ * @remarks
+ * `overdue` means an **active** project whose `target_end_date` is before
+ * `today` (Jakarta business date). `byStage` counts active projects only, so
+ * closed/cancelled projects never inflate a stage bar.
+ */
+export type TProjectStats = {
+	active: number;
+	closed: number;
+	cancelled: number;
+	overdue: number;
+	byStage: Array<{ stage: ProjectStage; count: number }>;
+};
+
+/**
  * Persistence port for `projects.*` (live rows only). There are no foreign
  * keys inside the module (module-ownership §9): every child query is scoped
  * by its `project_id`, and status changes are guarded on `status = 'active'`
@@ -41,7 +57,15 @@ export type TProjectPaginationRequest = TProjectListQuery & {
  */
 export interface IProjectRepository {
 	paginate(request: TProjectPaginationRequest): Promise<TPaginationResult<TProjectSelect>>;
+	/**
+	 * Dashboard counts over the same visibility rule as {@link paginate}:
+	 * pass `involvedUserId` and only projects that user leads or has a live
+	 * task in are counted.
+	 */
+	stats(request: { involvedUserId?: string; today: string }): Promise<TProjectStats>;
 	findById(id: string): Promise<TProjectSelect | null>;
+	/** A customer's live, not cancelled projects, newest first (portal, ERP-0022). */
+	listByCustomer(customerId: string): Promise<TProjectSelect[]>;
 	/** Whether the user leads the project or has a live task in it. */
 	isInvolved(projectId: string, userId: string): Promise<boolean>;
 	findLiveBySalesOrder(salesOrderId: string): Promise<TProjectSelect | null>;

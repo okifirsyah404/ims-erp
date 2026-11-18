@@ -1,4 +1,4 @@
-import type { CartLine, OrderConfirmation, PublicTracking, WebsiteSource } from "@entragate/api-client";
+import type { CartLine, OrderConfirmation, PublicTracking, WebsiteSource } from "@ims-erp/api-client";
 import { computeTotals } from "../../../data/checkout";
 import { demoCatalogSource } from "../catalog/demo";
 import { images } from "../../images";

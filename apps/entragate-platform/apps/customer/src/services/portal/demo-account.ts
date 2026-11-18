@@ -1,4 +1,4 @@
-import type { AccountSettings, InvoiceDetail, WishlistItem } from "@entragate/api-client";
+import type { AccountSettings, InvoiceDetail, WishlistItem } from "@ims-erp/api-client";
 
 /**
  * DEMO FIXTURES for account, company, wishlist and invoice detail screens (05.10, 05.11,

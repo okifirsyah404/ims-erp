@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown, Building2, Plus, Settings } from 'lucide-react';
+import { ChevronsUpDown, Building2, Check, Plus, Settings } from 'lucide-react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/components/toast';
@@ -13,6 +14,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
+	DropdownMenuShortcut,
 	DropdownMenuTrigger,
 } from '@ims-erp/ui/components/dropdown-menu';
 import {
@@ -22,6 +24,16 @@ import {
 	useSidebar,
 } from '@ims-erp/ui/components/sidebar';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { Spinner } from '@ims-erp/ui/components/spinner';
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from '@ims-erp/ui/components/empty';
+import { Button } from '@ims-erp/ui/components/button';
 import { hasRole } from '@ims-erp/common';
 import { getSession, useSession } from '@/lib/auth-client';
 import { canOpenPath } from '@/lib/route-guard';
@@ -30,6 +42,8 @@ import {
 	organizationsQueryOptions,
 } from '@/lib/organization-api';
 import { hasInternalRole } from '@/lib/internal-role';
+import { useOrganizationStore } from '@/lib/organization-store';
+import { humanizeIdentifier } from '@/lib/format';
 import { OrgLogo } from './org-logo';
 import { switchOrganization } from '@/lib/use-permission';
 
@@ -45,8 +59,10 @@ import { switchOrganization } from '@/lib/use-permission';
  *
  * Switching goes through `organization.setActive` (server-side session fact)
  * and invalidates permission queries via the `usePermission` query key. The
- * "Manage" entry routes to `/organizations`. Soft-deleted organizations are
- * never offered: they have no usable context.
+ * client store is set first so the dashboard follows the click immediately, and
+ * rolled back if the server rejects it. The "Manage" entry routes to
+ * `/organizations`. Soft-deleted organizations are never offered: they have no
+ * usable context.
  */
 export function OrganizationSwitcher() {
 	const { isMobile } = useSidebar();
@@ -57,19 +73,26 @@ export function OrganizationSwitcher() {
 	const { data: session, isPending: sessionPending } = useSession();
 	const isAppAdmin = hasRole(session?.user?.role, 'admin');
 
+	const activeOrganizationId = useOrganizationStore(
+		(state) => state.activeOrganizationId,
+	);
+	const setActiveOrganization = useOrganizationStore((state) => state.setActive);
+	const [switchingTo, setSwitchingTo] = useState<string | null>(null);
+
 	// Membership rows with role + logo. App admins get the same list, filtered
 	// to internal roles like everyone else (ADR-0017 §8).
 	const { data: myOrgs, isPending: orgsPending } = useQuery(myOrganizationsQueryOptions);
 
-	const activeOrganizationId = session?.session?.activeOrganizationId;
 	const organizations_ = (myOrgs ?? []).filter((org) => hasInternalRole(org.role));
-	const pending = orgsPending;
 	const activeOrganization = organizations_.find(
 		(org) => org.id === activeOrganizationId,
 	);
 
 	const handleSwitch = async (organizationId: string) => {
-		if (organizationId === activeOrganizationId) return;
+		if (organizationId === activeOrganizationId || switchingTo) return;
+		const previous = activeOrganizationId;
+		setSwitchingTo(organizationId);
+		setActiveOrganization(organizationId);
 		try {
 			await switchOrganization(organizationId);
 			// Permissions are organization-scoped: refresh both caches.
@@ -91,11 +114,14 @@ export function OrganizationSwitcher() {
 			}
 			toast.success(t('organization.switched'));
 		} catch {
+			setActiveOrganization(previous);
 			toast.error(t('organization.switchFailed'));
+		} finally {
+			setSwitchingTo(null);
 		}
 	};
 
-	if (sessionPending || (pending && !activeOrganization)) {
+	if (sessionPending || (orgsPending && !activeOrganization)) {
 		return (
 			<SidebarMenu>
 				<SidebarMenuItem>
@@ -106,26 +132,33 @@ export function OrganizationSwitcher() {
 	}
 
 	if (!activeOrganization) {
-		// No membership yet: route the user to the organizations page.
+		// No internal-role membership yet: an empty state, not a dead button.
 		return (
 			<SidebarMenu>
 				<SidebarMenuItem>
-					<SidebarMenuButton
-						size='lg'
-						onClick={() => navigate({ to: '/organizations' })}
-					>
-						<div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
-							<Building2 className='size-4' />
-						</div>
-						<div className='grid flex-1 text-left text-sm leading-tight'>
-							<span className='truncate font-medium'>
+					<Empty className='gap-3 rounded-md border p-3'>
+						<EmptyHeader className='gap-1'>
+							<EmptyMedia variant='icon'>
+								<Building2 />
+							</EmptyMedia>
+							<EmptyTitle className='text-xs'>
 								{t('organization.none')}
-							</span>
-							<span className='truncate text-xs text-muted-foreground'>
+							</EmptyTitle>
+							<EmptyDescription className='text-xs'>
 								{t('organization.setUp')}
-							</span>
-						</div>
-					</SidebarMenuButton>
+							</EmptyDescription>
+						</EmptyHeader>
+						<EmptyContent>
+							<Button
+								size='sm'
+								variant='outline'
+								className='w-full'
+								onClick={() => navigate({ to: '/organizations' })}
+							>
+								{t('organization.manage')}
+							</Button>
+						</EmptyContent>
+					</Empty>
 				</SidebarMenuItem>
 			</SidebarMenu>
 		);
@@ -169,18 +202,33 @@ export function OrganizationSwitcher() {
 							<DropdownMenuLabel className='text-xs text-muted-foreground'>
 								{t('breadcrumb.organizations')}
 							</DropdownMenuLabel>
-							{organizations_.map((org) => (
-								<DropdownMenuItem
-									key={org.id}
-									onClick={() => void handleSwitch(org.id)}
-									className='gap-2 p-2'
-								>
-									<div className='flex size-6 items-center justify-center rounded-md border'>
-										<OrgLogo src={org.logo} className='size-3.5 shrink-0' />
-									</div>
-									{org.name}
-								</DropdownMenuItem>
-							))}
+							{organizations_.map((org) => {
+								const isActive = org.id === activeOrganizationId;
+								const isSwitching = org.id === switchingTo;
+								return (
+									<DropdownMenuItem
+										key={org.id}
+										onClick={() => void handleSwitch(org.id)}
+										aria-current={isActive ? 'true' : undefined}
+										aria-busy={isSwitching || undefined}
+										disabled={switchingTo !== null}
+										className='gap-2 p-2'
+									>
+										<div className='flex size-6 items-center justify-center rounded-md border'>
+											<OrgLogo src={org.logo} className='size-3.5 shrink-0' />
+										</div>
+										<span className='truncate'>{org.name}</span>
+										{isSwitching ? (
+											<Spinner className='ml-auto size-3.5' />
+										) : isActive ? (
+											<Check className='ml-auto size-3.5' />
+										) : null}
+										<DropdownMenuShortcut>
+											{humanizeIdentifier(org.role.split(',')[0])}
+										</DropdownMenuShortcut>
+									</DropdownMenuItem>
+								);
+							})}
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem

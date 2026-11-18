@@ -7,10 +7,10 @@ a nested monorepo any more: its apps and packages are workspaces of the root
 
 | Path | Package | What | Dev port |
 | --- | --- | --- | --- |
-| `apps/web` | `@entragate/web` | Public website and landing page (Astro, SSR) | 4321 |
-| `apps/customer` | `@entragate/customer` | Customer portal (Astro + React islands, PWA) | 4322 |
-| `packages/api-client` | `@entragate/api-client` | Typed clients for the ERP `/public/v1` and `/portal/v1` APIs | — |
-| `packages/design-tokens` | `@entragate/design-tokens` | Shared design tokens | — |
+| `apps/web` | `@ims-erp/web` | Public website and landing page (Astro, SSR) | 4321 |
+| `apps/customer` | `@ims-erp/customer` | Customer portal (Astro + React islands, PWA) | 4322 |
+| `packages/api-client` | `@ims-erp/api-client` | Typed clients for the ERP `/public/v1` and `/portal/v1` APIs | — |
+| `packages/design-tokens` | `@ims-erp/design-tokens` | Shared design tokens | — |
 
 ## Commands (from the repo root)
 
@@ -27,8 +27,13 @@ bun run build                # turbo; the Astro apps run `astro build`
 
 Each app has a `.env.example`. Copy it to `.env` in the same folder. `.env` is
 git-ignored; never commit it. The portal and the website reach the ERP
-**server to server** only (the browser never calls the ERP). See the API
-reference in `apps/api-docs`.
+**server to server** only (the browser never calls the ERP).
+
+API reference: the backend serves the OpenAPI document at `/docs`
+(`@elysia/openapi`). The portal routes are documented in
+`docs/architecture/modules/customer-portal.md`, the website integration design
+in `docs/plan/plans/website-integration.md`, and the license API spec is
+`docs/architecture/api/licensing.yaml`.
 
 ## Design files
 

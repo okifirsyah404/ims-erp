@@ -1,6 +1,6 @@
 import { ActionError, defineAction, type ActionAPIContext } from "astro:actions";
 import { z } from "astro/zod";
-import { ApiError, PortalNotConfiguredError, type SettingsPatch } from "@entragate/api-client";
+import { ApiError, PortalNotConfiguredError, type SettingsPatch } from "@ims-erp/api-client";
 import { portal } from "../services/portal";
 import { signIn, signOut } from "../services/auth";
 import { SessionExpiredError, logUpstreamError } from "../services/errors";

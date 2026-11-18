@@ -3,14 +3,16 @@ import type {
 	TApiResponse,
 } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
+import { organizationHeaders } from './organization-store';
 
 /**
  * API client for the inventory item endpoints (`/items`).
  *
  * @remarks
- * Tenant scope is decided by the backend from the caller's membership, so
- * nothing here sends an `organizationId` for reads. `product:*` permissions
- * gate every call server-side; the UI only hides controls it knows will fail.
+ * Tenant scope comes from the `x-organization-id` header the backend prefers
+ * over the session value, so reads always hit the organization the UI is
+ * showing. `product:*` permissions gate every call server-side; the UI only
+ * hides controls it knows will fail.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
@@ -138,8 +140,10 @@ async function request<T>(
 ): Promise<TApiResponse<T>> {
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
-		headers:
-			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
+		headers: {
+			...organizationHeaders(),
+			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+		},
 		...init,
 	});
 	const envelope = (await response.json()) as TApiResponse<T>;
@@ -262,8 +266,8 @@ export const itemsQueryOptions = (params: {
 }) =>
 	queryOptions({
 		queryKey: ['inventory', 'items', params] as const,
-		queryFn: () =>
-			listItems({ ...params, limit: params.limit ?? 100 }),
+		// 24 is the list page size: a 3-column card grid with 8 rows.
+		queryFn: () => listItems({ ...params, limit: params.limit ?? 24 }),
 	});
 
 export function itemQueryOptions(itemId: string) {

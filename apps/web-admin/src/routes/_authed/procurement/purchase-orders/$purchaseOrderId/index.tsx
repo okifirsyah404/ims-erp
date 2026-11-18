@@ -70,7 +70,8 @@ function PurchaseOrderDetailPage() {
 		setBusy(true);
 		try {
 			await action();
-			await queryClient.invalidateQueries({ queryKey: ['procurement', 'purchase-orders'] });
+			// A cancelled PO frees its purchase request lines too.
+			await queryClient.invalidateQueries({ queryKey: ['procurement'] });
 			toast.success(message);
 			setDialog(null);
 			setReason('');
@@ -219,6 +220,15 @@ function PurchaseOrderDetailPage() {
 									<TableCell>
 										<div className='font-medium'>{item.name}</div>
 										<div className='text-xs text-muted-foreground'>{item.sku}</div>
+										{item.purchaseRequestId && (
+											<Link
+												to='/procurement/purchase-requests/$purchaseRequestId'
+												params={{ purchaseRequestId: item.purchaseRequestId }}
+												className='text-xs hover:underline'
+											>
+												{t('procurement:po.fromRequest', { request: item.purchaseRequestCode ?? '—' })}
+											</Link>
+										)}
 									</TableCell>
 									<TableCell className='text-right'>
 										{Number(item.quantity).toLocaleString(i18n.language === 'en' ? 'en-GB' : 'id-ID')} {item.unit}

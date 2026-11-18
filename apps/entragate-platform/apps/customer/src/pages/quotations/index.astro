@@ -18,7 +18,7 @@ import IconTile from "../../components/customer/IconTile.astro";
 import { portal } from "../../services/portal";
 import { formatRupiah } from "../../lib/format";
 import { quotationChip } from "../../lib/status";
-import type { QuotationStatus } from "@entragate/api-client";
+import type { QuotationStatus } from "@ims-erp/api-client";
 
 /** 05.05 My Quotations. The first quotation awaiting approval is promoted to a hero card. */
 const tab = ["open", "accepted", "all"].includes(Astro.url.searchParams.get("tab") ?? "") ? Astro.url.searchParams.get("tab")! : "open";

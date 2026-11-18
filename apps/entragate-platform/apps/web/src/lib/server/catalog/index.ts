@@ -1,4 +1,4 @@
-import { createErpCatalogSource, type CatalogRoutes, type CatalogSource } from "@entragate/api-client";
+import { createErpCatalogSource, type CatalogRoutes, type CatalogSource } from "@ims-erp/api-client";
 import { ERP_API_BASE_URL, ERP_API_TIMEOUT_MS, ERP_API_TOKEN, ERP_RESPONSE_ENVELOPE } from "astro:env/server";
 import { websiteMode } from "../website";
 import { demoCatalogSource } from "./demo";

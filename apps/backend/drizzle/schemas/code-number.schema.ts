@@ -74,6 +74,8 @@ export const CODE_TYPES = [
 	'item_product',
 	'item_material',
 	'item_component',
+	// Procurement (2026-11-15): purchase requests (`0001/PR/IMS/XI/26`).
+	'purchase_request',
 ] as const;
 export type CodeType = (typeof CODE_TYPES)[number];
 

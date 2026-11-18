@@ -1,4 +1,4 @@
-import type { AuthTokens } from "@entragate/api-client";
+import type { AuthTokens } from "@ims-erp/api-client";
 import { portal } from "./portal";
 
 /**

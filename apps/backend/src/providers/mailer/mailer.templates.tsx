@@ -6,13 +6,16 @@ import {
 } from '@ims-erp/locales';
 import {
 	AppInvitationEmail,
+	CodeEmail,
 	OrganizationInvitationEmail,
 	ResetPasswordEmail,
 	renderEmail,
 	VerificationEmail,
 } from '@ims-erp/react-email';
 import { createInstance } from 'i18next';
+import { container } from 'tsyringe';
 import { appConfig } from '@config/providers/config';
+import { COMPANY_SERVICE_TOKEN } from '@app/company';
 import type { MailPayload } from './mailer.transport';
 
 /**
@@ -27,7 +30,19 @@ import type { MailPayload } from './mailer.transport';
  * user's locale once it is stored on the user record.
  */
 
-const appName = () => appConfig.app.name ?? 'ERP';
+const appNameFallback = () => appConfig.app.name ?? 'ERP';
+
+/** The company display name (`tradingName ?? legalName`), or the env fallback. */
+async function appName(): Promise<string> {
+	try {
+		const company = container.resolve(COMPANY_SERVICE_TOKEN);
+		return (await company.getDisplayName()) ?? appNameFallback();
+	} catch {
+		// Better Auth hooks can run before the container is populated (tests,
+		// standalone scripts); the env name keeps emails working.
+		return appNameFallback();
+	}
+}
 
 type EmailKey = keyof typeof en.email & string;
 
@@ -61,14 +76,15 @@ export async function renderVerificationEmail({
 	url,
 	language = DEFAULT_LANGUAGE,
 }: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
 	const texts = {
 		greeting: t(language, 'email:verification.greeting', {
 			name: name ?? '',
 		}),
-		body: t(language, 'email:verification.body', { app: appName() }),
+		body: t(language, 'email:verification.body', { app }),
 		action: t(language, 'email:verification.action'),
 		fallback: t(language, 'email:verification.fallback'),
-		footer: t(language, 'email:footer.noReply', { app: appName() }),
+		footer: t(language, 'email:footer.noReply', { app }),
 	};
 	const { html, text } = await renderEmail(
 		<VerificationEmail url={url} texts={texts} />,
@@ -82,14 +98,15 @@ export async function renderResetPasswordEmail({
 	url,
 	language = DEFAULT_LANGUAGE,
 }: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
 	const texts = {
 		greeting: t(language, 'email:resetPassword.greeting', {
 			name: name ?? '',
 		}),
-		body: t(language, 'email:resetPassword.body', { app: appName() }),
+		body: t(language, 'email:resetPassword.body', { app }),
 		action: t(language, 'email:resetPassword.action'),
 		fallback: t(language, 'email:resetPassword.fallback'),
-		footer: t(language, 'email:footer.noReply', { app: appName() }),
+		footer: t(language, 'email:footer.noReply', { app }),
 	};
 	const { html, text } = await renderEmail(
 		<ResetPasswordEmail url={url} texts={texts} />,
@@ -103,23 +120,64 @@ export async function renderAppInvitationEmail({
 	url,
 	language = DEFAULT_LANGUAGE,
 }: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
 	const texts = {
 		greeting: t(language, 'email:appInvitation.greeting', {
 			name: name ?? '',
 		}),
-		body: t(language, 'email:appInvitation.body', { app: appName() }),
+		body: t(language, 'email:appInvitation.body', { app }),
 		action: t(language, 'email:appInvitation.action'),
 		fallback: t(language, 'email:appInvitation.fallback'),
-		footer: t(language, 'email:footer.noReply', { app: appName() }),
+		footer: t(language, 'email:footer.noReply', { app }),
 	};
 	const { html, text } = await renderEmail(
 		<AppInvitationEmail url={url} texts={texts} />,
 	);
 	return {
-		subject: t(language, 'email:appInvitation.subject', { app: appName() }),
+		subject: t(language, 'email:appInvitation.subject', { app }),
 		html,
 		text,
 	};
+}
+
+/**
+ * Customer-portal invitation (ERP-0022): the link sets the first password on
+ * the portal's `/reset-password` page. Reuses the app-invitation layout.
+ */
+export async function renderPortalInvitationEmail({
+	name,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:portalInvitation.greeting', { name: name ?? '' }),
+		body: t(language, 'email:portalInvitation.body', { app: appName() }),
+		action: t(language, 'email:portalInvitation.action'),
+		fallback: t(language, 'email:portalInvitation.fallback'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(<AppInvitationEmail url={url} texts={texts} />);
+	return { subject: t(language, 'email:portalInvitation.subject', { app: appName() }), html, text };
+}
+
+/** Customer-portal sign-up code (ERP-0022, owner decision D1). */
+export async function renderPortalSignupCodeEmail({
+	name,
+	code,
+	language = DEFAULT_LANGUAGE,
+}: {
+	name: string;
+	code: string;
+	language?: LanguageCode;
+}): Promise<Omit<MailPayload, 'to'>> {
+	const texts = {
+		greeting: t(language, 'email:portalSignupCode.greeting', { name }),
+		body: t(language, 'email:portalSignupCode.body', { app: appName() }),
+		expiry: t(language, 'email:portalSignupCode.expiry'),
+		footer: t(language, 'email:footer.noReply', { app: appName() }),
+	};
+	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
+	return { subject: t(language, 'email:portalSignupCode.subject', { app: appName(), code }), html, text };
 }
 
 /** Organization-invitation input; superset of the base template input. */
@@ -139,10 +197,11 @@ export async function renderOrganizationInvitationEmail({
 	roleName,
 	expiresAt,
 }: OrganizationInvitationTemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
 	const intro = t(language, 'email:organizationInvitation.intro', {
 		organization: organizationName,
 		role: roleName,
-		app: appName(),
+		app,
 	});
 	const expires = t(language, 'email:organizationInvitation.expires', {
 		expiresAt,
@@ -154,7 +213,7 @@ export async function renderOrganizationInvitationEmail({
 		body: intro,
 		action: t(language, 'email:organizationInvitation.action'),
 		fallback: t(language, 'email:organizationInvitation.fallback'),
-		footer: t(language, 'email:footer.noReply', { app: appName() }),
+		footer: t(language, 'email:footer.noReply', { app }),
 	};
 	const { html, text } = await renderEmail(
 		<OrganizationInvitationEmail

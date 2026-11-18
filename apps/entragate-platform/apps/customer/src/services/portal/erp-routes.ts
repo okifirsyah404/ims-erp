@@ -1,9 +1,10 @@
-import type { PortalRoutes } from "@entragate/api-client";
+import type { PortalRoutes } from "@ims-erp/api-client";
 
 /**
  * ERP endpoint map, relative to ERP_API_BASE_URL (the ERP backend root). Published by
  * the ERP in `docs/architecture/modules/customer-portal.md` (ERP-0022 stage 1,
- * 2026-11-14; readable reference: the ERP's `apps/api-docs`). Set ERP_RESPONSE_ENVELOPE=data:
+ * 2026-11-14; readable reference: the backend's OpenAPI document at `/docs`).
+ * Set ERP_RESPONSE_ENVELOPE=data:
  * the ERP answers `{ requestId, status, message, timestamp, data }`.
  *
  * `:id` placeholders are URL-encoded at call time; absolute URLs, `//` and `..` are

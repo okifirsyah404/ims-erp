@@ -14,8 +14,8 @@
 		"build": "turbo run build",
 		"build:libs": "bun --filter '@ims-erp/config' build && bun --filter '@ims-erp/lib-cache' build",
 		"dev": "turbo run dev",
-		"dev:website": "bun run --filter '@entragate/web' dev",
-		"dev:portal": "bun run --filter '@entragate/customer' dev",
+		"dev:website": "bun run --filter '@ims-erp/web' dev",
+		"dev:portal": "bun run --filter '@ims-erp/customer' dev",
 		"test": "turbo run test",
 		"lint": "turbo run lint",
 		"typecheck": "turbo run typecheck",
@@ -33,7 +33,7 @@
 		"@types/bun": "^1.4.4",
 		"drizzle-kit": "^1.0.0-rc.5",
 		"husky": "^9.1.7",
-		"turbo": "^2.10.13"
+		"turbo": "^2.11.11"
 	},
 	"peerDependencies": {
 		"typescript": "^6.0.3"

@@ -1,5 +1,5 @@
-type OrderConfirmation = import("@entragate/api-client").OrderConfirmation;
-type OrderQuote = import("@entragate/api-client").OrderQuote;
+type OrderConfirmation = import("@ims-erp/api-client").OrderConfirmation;
+type OrderQuote = import("@ims-erp/api-client").OrderQuote;
 
 declare namespace App {
   interface SessionData {

@@ -1,4 +1,4 @@
-import { ApiError, createErpPortalSource, type PortalSource } from "@entragate/api-client";
+import { ApiError, createErpPortalSource, type PortalSource } from "@ims-erp/api-client";
 import {
   ERP_API_BASE_URL,
   ERP_API_TIMEOUT_MS,

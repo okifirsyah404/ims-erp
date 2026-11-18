@@ -55,3 +55,30 @@ export class InvoiceNotPayableError extends AppError {
 		super(409, 'sales.invoiceNotPayable', 'Only issued or partially paid invoices can receive payments');
 	}
 }
+
+/** The sales order to bill is missing or cancelled. */
+export class InvoiceOrderUnavailableError extends AppError {
+	constructor() {
+		super(422, 'sales.invoiceOrderUnavailable', 'The sales order is missing or cancelled');
+	}
+}
+
+/** A billing term that cannot be drafted (nothing left, empty, more than is left, no planned term). */
+export class InvoiceTermError extends AppError {
+	constructor(problem: 'fullyInvoiced' | 'empty' | 'exceeds' | 'noPlannedTerm') {
+		const messages = {
+			fullyInvoiced: 'The order is fully invoiced',
+			empty: 'The term amount must be more than zero',
+			exceeds: 'The term is more than what is left to invoice',
+			noPlannedTerm: 'No planned term is left',
+		};
+		super(422, `sales.invoiceTerm.${problem}` as const, messages[problem]);
+	}
+}
+
+/** Only an unpaid draft or issued invoice can be voided (reverse its receipts first). */
+export class InvoiceNotVoidableError extends AppError {
+	constructor() {
+		super(409, 'sales.invoiceNotVoidable', 'Only an unpaid draft or issued invoice can be voided');
+	}
+}

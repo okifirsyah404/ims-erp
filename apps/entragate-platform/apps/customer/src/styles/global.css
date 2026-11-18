@@ -33,7 +33,7 @@
 }
 
 /* Entragate tokens (+ Tailwind mapping). Loaded after shadcn so token radii/colors win. */
-@import "@entragate/design-tokens/theme.css";
+@import "@ims-erp/design-tokens/theme.css";
 
 :root {
   --background: var(--eg-white);

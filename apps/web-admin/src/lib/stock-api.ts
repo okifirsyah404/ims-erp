@@ -54,6 +54,8 @@ export type TStockMovement = {
 	itemId: string;
 	/** Resolved item name; `null` when archived or unknown. */
 	itemName: string | null;
+	/** Item photo URL; `null` when the item has no photo. */
+	imageUrl?: string | null;
 	warehouseId: string;
 	/** Resolved warehouse name; `null` when archived or unknown. */
 	warehouseName: string | null;
@@ -78,6 +80,8 @@ export type TStockBalance = {
 	itemId: string;
 	/** Resolved item name; `null` when archived or unknown. */
 	itemName: string | null;
+	/** Item photo URL; `null` when the item has no photo. */
+	imageUrl?: string | null;
 	warehouseId: string;
 	/** Resolved warehouse name; `null` when archived or unknown. */
 	warehouseName: string | null;

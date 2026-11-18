@@ -1,4 +1,4 @@
-import type { CustomerAuth } from "@entragate/api-client";
+import type { CustomerAuth } from "@ims-erp/api-client";
 import { CUSTOMER_INTERNAL_URL, WEB_HANDOFF_SECRET } from "astro:env/server";
 import { customerUrl, safeReturnPath } from "../urls";
 

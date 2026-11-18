@@ -1,5 +1,5 @@
 import type { APIContext } from "astro";
-import type { AuthTokens, PortalUser } from "@entragate/api-client";
+import type { AuthTokens, PortalUser } from "@ims-erp/api-client";
 import { portal } from "../services/portal";
 import { logUpstreamError } from "./errors";
 

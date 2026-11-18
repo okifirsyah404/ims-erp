@@ -14,18 +14,21 @@ import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
 import {
-	LEDGER_REPOSITORY_TOKEN,
+	AR_LEDGER_PORT_TOKEN,
 	POSTING_SERVICE_TOKEN,
 	AR_ACCOUNT_RESOLVER_TOKEN,
 } from '../../accounting/constants/ar-di';
 import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
-import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
+import type {
+	TInvoiceRepository,
+	TInvoiceSummary,
+} from '../contracts/invoice.repository.interface';
 import type {
 	TCreateInvoiceInput,
 	TInvoiceItemInput,
 	TUpdateInvoiceInput,
 } from '../contracts/invoice.repository.interface';
-import type { LedgerRepository } from '../../accounting/repositories/ledger.repository';
+import type { IArLedgerPort } from '../../accounting/contracts/ar-ledger.port';
 import type { PostingService } from '../../accounting/services/posting.service';
 import type { ArAccountResolverService } from '../../accounting/services/ar-account-resolver.service';
 import {
@@ -68,8 +71,8 @@ export class InvoiceService {
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 		@inject(INVOICE_REPOSITORY_TOKEN)
 		private readonly repo: TInvoiceRepository,
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly ledgerRepo: LedgerRepository,
+		@inject(AR_LEDGER_PORT_TOKEN)
+		private readonly arLedger: IArLedgerPort,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: ArAccountResolverService,
@@ -84,10 +87,19 @@ export class InvoiceService {
 
 	async list(
 		organizationId: string,
-		filters: { status?: string; customerId?: string },
+		filters: { status?: string; customerId?: string; termKind?: string; search?: string; overdue?: boolean },
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<TInvoiceSelect>> {
-		return this.repo.list(organizationId, filters, pagination);
+		const { overdue, ...rest } = filters;
+		return this.repo.list(organizationId, { ...rest, ...(overdue ? { overdueOn: businessDateOf() } : {}) }, pagination);
+	}
+
+	/** Invoiced totals for one window (M01 dashboard); zero-filled per period. */
+	summary(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TInvoiceSummary> {
+		return this.repo.summary(organizationId, range);
 	}
 
 	async get(organizationId: string, id: string): Promise<{
@@ -193,16 +205,29 @@ export class InvoiceService {
 	 * `ar_open_items` row and the document registry (ERP-0044); `invoice.issued`
 	 * goes to n8n (M04) once that transaction has committed.
 	 */
-	async issue(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
-		const issued = await this.issueInTransaction(ctx, id);
+	async issue(
+		ctx: TInvoiceActionContext,
+		id: string,
+		dates: { issueDate: string | null; dueDate: string | null } = { issueDate: null, dueDate: null },
+	): Promise<TInvoiceSelect> {
+		const issued = await this.issueInTransaction(ctx, id, dates);
 		await this.outbox.publish('invoice.issued', { type: 'invoice', id: issued.id }, invoiceIssuedEvent(issued));
 		return issued;
 	}
 
-	private async issueInTransaction(ctx: TInvoiceActionContext, id: string): Promise<TInvoiceSelect> {
+	private async issueInTransaction(
+		ctx: TInvoiceActionContext,
+		id: string,
+		dates: { issueDate: string | null; dueDate: string | null },
+	): Promise<TInvoiceSelect> {
 		return this.database.transaction(async (tx) => {
-			const invoice = await this.mustFind(ctx.organizationId, id, tx);
-			if (invoice.status !== 'draft') throw new InvoiceNotDraftError();
+			const found = await this.mustFind(ctx.organizationId, id, tx);
+			if (found.status !== 'draft') throw new InvoiceNotDraftError();
+			// The web's issue form confirms the dates (M02); otherwise the draft's own.
+			const invoice =
+				dates.issueDate || dates.dueDate
+					? { ...found, issueDate: dates.issueDate ?? found.issueDate, dueDate: dates.dueDate ?? found.dueDate }
+					: found;
 
 			const items = await this.repo.listItems(ctx.organizationId, id, tx);
 			if (items.length === 0) throw new InvoiceNoItemsError();
@@ -254,9 +279,9 @@ export class InvoiceService {
 				lines,
 			});
 
-			await this.ledgerRepo.insertArOpenItem(
+			await this.arLedger.openItem(
+				ctx.organizationId,
 				{
-					organizationId: ctx.organizationId,
 					salesInvoiceId: invoice.id,
 					customerId: invoice.customerId,
 					invoiceDate: issueDate,
@@ -276,6 +301,7 @@ export class InvoiceService {
 				{
 					status: 'issued',
 					issueDate,
+					dueDate: invoice.dueDate,
 					issuedBy: ctx.actorUserId,
 					issuedAt: new Date(),
 					outstandingTotal: invoice.grandTotal,

@@ -6,9 +6,9 @@ import {
 	type TReportArchiveSelect,
 } from '@drizzle/schemas/accounting.schema';
 import { REPORT_ARCHIVE_REPOSITORY_TOKEN, REPORT_SERVICE_TOKEN } from '../constants/ar-di';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
+import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN } from '../constants/di';
+import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
 import type { ReportArchiveRepository } from '../repositories/report-archive.repository';
-import type { LedgerRepository } from '../repositories/ledger.repository';
 import type { ReportService } from './report.service';
 import {
 	ReportArchiveNotFoundError,
@@ -47,8 +47,8 @@ export class ReportArchiveService {
 	constructor(
 		@inject(REPORT_ARCHIVE_REPOSITORY_TOKEN)
 		private readonly repo: ReportArchiveRepository,
-		@inject(LEDGER_REPOSITORY_TOKEN)
-		private readonly ledger: LedgerRepository,
+		@inject(ACCOUNTING_PERIOD_REPOSITORY_TOKEN)
+		private readonly periods: IAccountingPeriodRepository,
 		@inject(REPORT_SERVICE_TOKEN)
 		private readonly reports: ReportService,
 	) {}
@@ -64,7 +64,7 @@ export class ReportArchiveService {
 		periodYear: number,
 		periodMonth: number,
 	): Promise<TReportArchiveSelect[]> {
-		const period = await this.ledger.findPeriodByMonth(
+		const period = await this.periods.findPeriodByMonth(
 			ctx.organizationId,
 			periodYear,
 			periodMonth,

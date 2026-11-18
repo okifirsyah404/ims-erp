@@ -1,6 +1,6 @@
 /*
  * Tailwind CSS v4 theme mapping for the Entragate tokens.
- * Usage (after `@import "tailwindcss";`):  @import "@entragate/design-tokens/theme.css";
+ * Usage (after `@import "tailwindcss";`):  @import "@ims-erp/design-tokens/theme.css";
  *
  * Naming: colors keep the .pen variable names (navy-900, blue-600, surface…);
  * text colors are exposed as `fg-*` to avoid `text-text-*` utilities.

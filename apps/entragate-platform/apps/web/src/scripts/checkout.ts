@@ -1,5 +1,5 @@
 import { actions, isInputError } from "astro:actions";
-import type { DeliveryMethod, OrderQuote, PaymentStatus } from "@entragate/api-client";
+import type { DeliveryMethod, OrderQuote, PaymentStatus } from "@ims-erp/api-client";
 import { enhanceValidation, validateForm } from "./form-validation";
 import { showDemoNotice } from "./action-form";
 import { computeTotals } from "../data/checkout";

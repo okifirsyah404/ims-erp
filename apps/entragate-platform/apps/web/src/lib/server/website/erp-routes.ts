@@ -1,4 +1,4 @@
-import type { WebsiteRoutes } from "@entragate/api-client";
+import type { WebsiteRoutes } from "@ims-erp/api-client";
 import { ERP_RFQ_PATH } from "astro:env/server";
 
 /**

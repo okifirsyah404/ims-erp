@@ -7,7 +7,7 @@ import {
   type CheckoutOrder,
   type OrderConfirmation,
   type RfqSubmission,
-} from "@entragate/api-client";
+} from "@ims-erp/api-client";
 import { getCustomer, toAuth } from "../lib/server/auth";
 import { platforms } from "../data/solutions";
 import { getProductsBySlugs } from "../lib/catalog";

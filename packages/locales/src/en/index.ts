@@ -21,6 +21,7 @@ import claim from './claim';
 import integrations from './integrations';
 import documents from './documents';
 import notifications from './notifications';
+import signatures from './signatures';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -50,6 +51,7 @@ export const en = {
 	integrations,
 	documents,
 	notifications,
+	signatures,
 } as const;
 
 export type Namespace = keyof typeof en;

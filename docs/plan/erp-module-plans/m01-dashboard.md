@@ -102,11 +102,41 @@ Common DoD in [README.md](README.md), plus:
   M08 payroll and M02/M09 gateway (Stage 2).
 - Provides: an entry point for S13.
 
-## Current state vs plan (checked 2026-11-04)
+## Current state vs plan (updated 2026-11-16)
 
 - Schema: none needed. `docs.dbml` has no dashboard schema, which is correct.
-- Code: no dashboard module in `apps/backend/src/app/` and no dashboard
-  route in `apps/web-admin/src/routes/_authed/`.
-- Status: **planned**. Blocked in practice, because most source modules
-  (finance, projects, licensing) have no code yet.
+- Code: no backend `dashboard` module, by decision (plan
+  `plans/dashboard-real-data.md`, D3). The dashboard is a **client composition**
+  of the owning modules' endpoints: `GET /invoices/summary` (sales),
+  `GET /projects/stats` (projects, added 2026-11-15), `GET /cash-bank/accounts`,
+  `GET /reports/profit-and-loss`, `GET /items`, `GET /stock/valuation`,
+  `GET /licenses/summary`, plus recent invoices and receipts.
+- Deviation from the contract above: there is no single `/dashboard/summary`
+  endpoint. The server-side gate the DoD asks for is enforced **per source
+  endpoint** (`invoice:read`, `cash_bank:read`, `financial_report:read`,
+  `product:read` / `product:read_cost`, `project:read`, `license:read`); a
+  caller without a source permission gets a 403 for that widget and nothing
+  else. The client hides the request as a convenience, not as the boundary.
+- Route: `/` (`_authed.index.tsx`) renders `DashboardPage` with real data; the
+  sample-data banner is removed.
+- Invoiced-sales chart: first card, full width, with presets 14 days, 1/3/6
+  months, 1/5 years and a custom date range (`packages/ui` `DateRangePicker`).
+  Presets are rolling windows ending today; buckets are daily up to 31 days and
+  monthly above. The Sales card keeps its own month-bucketed window. Choosing
+  Custom opens the two-month calendar immediately - there is no input to click
+  first.
+- Freshness: every dashboard query refetches every 60 s (`DASHBOARD_REFRESH_MS`);
+  the header Refresh button forces an immediate update.
+- Status: **in progress** (ERP-0060). Stage 1 widgets are on real data.
+  Stage 2 (gateway, payroll, verified subscriptions) is still planned.
+  Open quotations are not shown; the quotations page owns that list.
+- Verified in the browser (2026-11-15/16, `progress.md`): `/` on real data, the
+  organization switch across two organizations (widget data followed the active
+  organization), and single-card degradation (one endpoint failing leaves the
+  other widgets intact).
+- Not verified: permission denial in the browser (no working non-admin account
+  on the dev database). Server-side denial is covered by
+  `test/authorization/dashboard-aggregates.test.ts`.
 - `beyond-baseline`: none.
+
+

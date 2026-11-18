@@ -1,4 +1,4 @@
-import { ApiError, ErpContractError, PortalNotConfiguredError } from "@entragate/api-client";
+import { ApiError, ErpContractError, PortalNotConfiguredError } from "@ims-erp/api-client";
 
 /** The ERP rejected the session's access token; the user must sign in again. */
 export class SessionExpiredError extends Error {

@@ -74,6 +74,11 @@ class FakeBorrowingRepository implements IBorrowingRepository {
 		};
 	}
 
+	/** Card photos are decoration only; these tests never assert them. */
+	async listFirstAssetImages(borrowingIds: string[]) {
+		return borrowingIds.map((borrowingId) => ({ borrowingId, imageUrl: null }));
+	}
+
 	async findById(id: string, organizationId: string) {
 		const row = this.borrowings.get(id);
 		if (!row || row.organizationId !== organizationId) return null;

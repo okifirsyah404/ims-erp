@@ -1,4 +1,4 @@
-import type { CompanyMember } from "@entragate/api-client";
+import type { CompanyMember } from "@ims-erp/api-client";
 import { formatRupiah } from "../../lib/format";
 
 type Tone = "info" | "success" | "warning" | "neutral";

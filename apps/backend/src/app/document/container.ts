@@ -1,7 +1,14 @@
 import type { DependencyContainer } from 'tsyringe';
 import { DocumentRepository } from './repositories/document.repository';
 import { DocumentService } from './services/document.service';
-import { DOCUMENT_REPOSITORY_TOKEN, DOCUMENT_SERVICE_TOKEN } from './constants/di';
+import { SignatureRepository } from './repositories/signature.repository';
+import { SignatureService } from './services/signature.service';
+import {
+	DOCUMENT_REPOSITORY_TOKEN,
+	DOCUMENT_SERVICE_TOKEN,
+	SIGNATURE_REPOSITORY_TOKEN,
+	SIGNATURE_SERVICE_TOKEN,
+} from './constants/di';
 
 export * from './constants/di';
 
@@ -16,4 +23,6 @@ export * from './constants/di';
 export function registerDocument(container: DependencyContainer): void {
 	container.register(DOCUMENT_REPOSITORY_TOKEN, { useClass: DocumentRepository });
 	container.register(DOCUMENT_SERVICE_TOKEN, { useClass: DocumentService });
+	container.register(SIGNATURE_REPOSITORY_TOKEN, { useClass: SignatureRepository });
+	container.register(SIGNATURE_SERVICE_TOKEN, { useClass: SignatureService });
 }
