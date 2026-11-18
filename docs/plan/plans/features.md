@@ -250,7 +250,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   (`publishFollowUpNotices`), `sales/services/quotation.service.ts`,
   `test/unit/lead.service.test.ts`, `test/unit/quotation.service.test.ts`,
   `progress.md` 2026-11-16 (live ERP → n8n run). Gaps: after-sales
-  follow-ups (survey, maintenance, warranty) and document PDFs are next.
+  follow-ups (survey, maintenance, warranty) are next.
+
+### implemented (document PDFs)
+- Quotation (SPH) PDF on sending: rendered server-side from the print page
+  (headless Chromium), kept on the registry document with a 30-day revocable
+  link, carried by `quotation.sent` so n8n can send it to the customer
+  (customer messages off by default) — ERP-0067. Evidence:
+  `sales/services/quotation-delivery.service.ts`,
+  `test/unit/quotation-delivery.service.test.ts`,
+  `test/unit/document.service.test.ts`, `progress.md` 2026-11-17 (live
+  Chromium render). Gaps: other documents (SO, invoice, delivery note),
+  Chromium in the Docker image.
 
 ### planned
 - One template per document — T05. Evidence: dbml `documents` only.

@@ -276,6 +276,37 @@ export class DocumentService {
 		return this.fileView(row);
 	}
 
+	/**
+	 * Attaches a system-generated file (e.g. a rendered PDF) to the live
+	 * registry row of a source document (ERP-0067).
+	 *
+	 * @returns The registry document id; `null` when the source was never
+	 * registered (seeded or pre-ERP-0044 data) or is void
+	 */
+	async attachGeneratedFile(
+		source: { module: string; sourceType: string; sourceId: string },
+		file: File,
+		actorUserId: string | null,
+	): Promise<string | null> {
+		const document = await this.repository.findLiveBySource(source.module, source.sourceType, source.sourceId);
+		if (!document) return null;
+		const key = await storeDocumentFile(this.storage, `documents/${document.id}`, file);
+		const now = new Date();
+		await this.repository.insertFile({
+			organizationId: document.organizationId,
+			documentId: document.id,
+			fileName: file.name,
+			storageKey: key,
+			mimeType: file.type,
+			sizeBytes: file.size,
+			uploadedByUserId: actorUserId,
+			uploadedAt: now,
+			createdAt: now,
+			updatedAt: now,
+		});
+		return document.id;
+	}
+
 	/** Removes a file (soft delete) and records it on the trail. */
 	async deleteFile(id: string, fileId: string, actorUserId: string): Promise<void> {
 		const document = await this.repository.findById(id);
@@ -334,7 +365,7 @@ export class DocumentService {
 	async createShare(
 		id: string,
 		expiresInDays: number,
-		actorUserId: string,
+		actorUserId: string | null,
 	): Promise<TDocumentShareView> {
 		const document = await this.repository.findById(id);
 		if (!document) throw new DocumentNotFoundError();
@@ -392,13 +423,7 @@ export class DocumentService {
 	 * @throws {DocumentShareNotFoundError} The token is unknown, expired or revoked
 	 */
 	async resolvePublicShare(token: string): Promise<TPublicDocumentView> {
-		const share = await this.repository.findShareByToken(token);
-		if (!share) throw new DocumentShareNotFoundError();
-		if (share.expiresAt && share.expiresAt.getTime() <= Date.now()) {
-			throw new DocumentShareNotFoundError();
-		}
-		const document = await this.repository.findById(share.documentId);
-		if (!document || document.status === 'void') throw new DocumentShareNotFoundError();
+		const document = await this.sharedDocument(token);
 		const files = await this.repository.listFiles(document.id);
 		await this.repository.logAccess({
 			documentId: document.id,
@@ -423,6 +448,43 @@ export class DocumentService {
 				}),
 			})),
 		};
+	}
+
+	/**
+	 * A short-lived URL of the newest file of a shared document (ERP-0067:
+	 * the link n8n sends with a quotation PDF), with a `download` row on the
+	 * trail.
+	 *
+	 * @throws {DocumentShareNotFoundError} The token is unknown, expired or revoked
+	 * @throws {DocumentFileNotFoundError} The document has no live file
+	 */
+	async resolvePublicFile(token: string): Promise<string> {
+		const document = await this.sharedDocument(token);
+		const [file] = await this.repository.listFiles(document.id);
+		if (!file) throw new DocumentFileNotFoundError();
+		await this.repository.logAccess({
+			documentId: document.id,
+			organizationId: document.organizationId,
+			accessedByUserId: null,
+			action: 'download',
+		});
+		return this.storage.presignGet(file.storageKey, {
+			fileName: file.fileName,
+			inline: true,
+			expiresIn: DOWNLOAD_TTL_SECONDS,
+		});
+	}
+
+	/** The live document behind an unexpired, unrevoked public token. */
+	private async sharedDocument(token: string): Promise<TDocumentSelect> {
+		const share = await this.repository.findShareByToken(token);
+		if (!share) throw new DocumentShareNotFoundError();
+		if (share.expiresAt && share.expiresAt.getTime() <= Date.now()) {
+			throw new DocumentShareNotFoundError();
+		}
+		const document = await this.repository.findById(share.documentId);
+		if (!document || document.status === 'void') throw new DocumentShareNotFoundError();
+		return document;
 	}
 
 	/** One file row as the client sees it, with a presigned inline URL. */

@@ -160,6 +160,21 @@ export const IntegrationsConfigSchema = z.object({
 });
 
 /**
+ * ERP-0067: server-side PDFs of print views (headless Chromium).
+ *
+ * @remarks
+ * No Chromium path or no render base URL = PDFs are off and `quotation.sent`
+ * goes out without a link. `renderBaseUrl` is where Chromium opens the web
+ * admin's public print routes (defaults to `APP_WEB_URL`).
+ */
+export const PdfConfigSchema = z.object({
+	chromiumPath: z.string().min(1).nullable(),
+	renderBaseUrl: z.url().nullable(),
+	/** Days a generated PDF's public link stays valid. */
+	linkDays: z.number().int().min(1).max(365),
+});
+
+/**
  * Payment gateway (ERP-0020, ADR-0021). `provider` picks where new checkouts
  * are opened; every provider whose credentials are present can still receive
  * webhooks, so checkouts opened before a switch settle. Null provider = online
@@ -207,6 +222,7 @@ export const EnvConfigSchema = z.object({
 	scheduler: SchedulerConfigSchema,
 	paymentGateway: PaymentGatewayConfigSchema,
 	integrations: IntegrationsConfigSchema,
+	pdf: PdfConfigSchema,
 });
 
 export type TInstanceConfig = z.infer<typeof InstanceConfigSchema>;
@@ -217,5 +233,6 @@ export type TS3Config = z.infer<typeof S3ConfigSchema>;
 export type TMailConfig = z.infer<typeof MailConfigSchema>;
 export type TAuthConfig = z.infer<typeof AuthConfigSchema>;
 export type TSchedulerConfig = z.infer<typeof SchedulerConfigSchema>;
+export type TPdfConfig = z.infer<typeof PdfConfigSchema>;
 export type TPaymentGatewayConfig = z.infer<typeof PaymentGatewayConfigSchema>;
 export type TEnvConfig = z.infer<typeof EnvConfigSchema>;

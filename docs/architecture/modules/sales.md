@@ -54,6 +54,17 @@ approvals or fully automated CRM.
   the outstanding amount, in one transaction with the checkout row locked.
   Money that cannot be applied is kept `paid` with a note.
 
+## Quotation PDF (ERP-0067)
+
+Sending an approved SPH enqueues `quotation-sent`: the
+`QuotationDeliveryService` renders the web admin's public print view
+(`/print/quotations/:id`, the same `QuotationDocument` as the print page) to a
+PDF with headless Chromium, files it on the quotation's registry document,
+shares it for 30 days and publishes `quotation.sent` with the link
+(`automation.md`). The print view reads
+`GET /public/v1/render/quotations/:id?token=`; the token is a 2-minute HMAC
+over the quotation id, signed with `APP_SECRET`, and anything else answers 404.
+
 ## Dependencies and rules
 
 - Consumes customer + product catalogs via contracts; payment for

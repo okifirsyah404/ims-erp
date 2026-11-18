@@ -18,6 +18,8 @@ export const OUTBOX_TOPICS = [
 	// ERP-0066: daily sales follow-up reminders (weekdays).
 	'lead.follow_up_due',
 	'quotation.follow_up_due',
+	// ERP-0067: a quotation was sent; carries its PDF link when rendered.
+	'quotation.sent',
 	// ERP-0012: supplier bills booked, and the daily due reminders.
 	'supplier_bill.recorded',
 	'supplier_bill.due',

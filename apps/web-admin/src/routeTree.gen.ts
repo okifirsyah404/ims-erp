@@ -39,6 +39,7 @@ import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports
 import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/index'
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
+import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCodeNumbersIndexRouteImport } from './routes/_authed/admin/code-numbers/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -323,6 +324,12 @@ const AuthedSubscriptionNewRoute = AuthedSubscriptionNewRouteImport.update({
   path: '/subscription/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const PrintQuotationsQuotationIdRoute =
+  PrintQuotationsQuotationIdRouteImport.update({
+    id: '/print/quotations/$quotationId',
+    path: '/print/quotations/$quotationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
   id: '/audit/',
   path: '/audit/',
@@ -1107,6 +1114,7 @@ export interface FileRoutesByFullPath {
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
@@ -1267,6 +1275,7 @@ export interface FileRoutesByTo {
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/account': typeof AuthedAccountIndexRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
@@ -1431,6 +1440,7 @@ export interface FileRoutesById {
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
   '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
@@ -1595,6 +1605,7 @@ export interface FileRouteTypes {
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
+    | '/print/quotations/$quotationId'
     | '/account/'
     | '/assets/'
     | '/crm/'
@@ -1755,6 +1766,7 @@ export interface FileRouteTypes {
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
+    | '/print/quotations/$quotationId'
     | '/account'
     | '/assets'
     | '/crm'
@@ -1918,6 +1930,7 @@ export interface FileRouteTypes {
     | '/_authed/profiles/edit'
     | '/_authed/projects/new'
     | '/_authed/subscription/new'
+    | '/print/quotations/$quotationId'
     | '/_authed/account/'
     | '/_authed/assets/'
     | '/_authed/crm/'
@@ -2070,6 +2083,7 @@ export interface RootRouteChildren {
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
+  PrintQuotationsQuotationIdRoute: typeof PrintQuotationsQuotationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2283,6 +2297,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/subscription/new'
       preLoaderRoute: typeof AuthedSubscriptionNewRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/print/quotations/$quotationId': {
+      id: '/print/quotations/$quotationId'
+      path: '/print/quotations/$quotationId'
+      fullPath: '/print/quotations/$quotationId'
+      preLoaderRoute: typeof PrintQuotationsQuotationIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authed/admin/audit/': {
       id: '/_authed/admin/audit/'
@@ -3645,6 +3666,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,
+  PrintQuotationsQuotationIdRoute: PrintQuotationsQuotationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
