@@ -1,5 +1,5 @@
 {
-  "name": "@ims-erp/customer",
+  "name": "@ims-erp/web-customer-portal",
   "private": true,
   "type": "module",
   "version": "0.0.1",

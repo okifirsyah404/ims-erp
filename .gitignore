@@ -59,6 +59,6 @@ apps/web-admin/e2e/.results/
 apps/web-admin/e2e/.state/
 *.tsbuildinfo
 
-# Website + customer portal (apps/entragate-platform): the design source
-# (designs/*.pen, ~14 MB) and its exports stay out of git; see the folder README.
-apps/entragate-platform/designs/
+# Website + customer portal design source (designs/*.pen, ~14 MB) and exports stay out of git.
+apps/web-landing/designs/
+apps/web-customer-portal/designs/

@@ -4,7 +4,7 @@ import type { Money } from "./portal";
 import { parseOrThrow } from "./portal-schemas";
 
 /**
- * Public catalog contract (apps/web): products, categories, stock, pricing, software
+ * Public catalog contract (apps/web-landing): products, categories, stock, pricing, software
  * solutions, search and server-side cart pricing. Read-only, served with the website's
  * service token. Paths come from `CatalogRoutes` once the ERP team publishes them —
  * nothing is hard-coded here, and unmapped operations throw CatalogNotConfiguredError.

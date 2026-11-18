@@ -7,8 +7,7 @@ website operations, open owner decisions): `docs/plan/plans/website-integration.
 
 ## Purpose and boundary
 
-The API the customer portal (website repo `entragate-platform`,
-`apps/customer`) calls **from its server**. Stage 1 = M07 T26 (projects, BAST,
+The API the customer portal (`apps/web-customer-portal`) calls **from its server**. Stage 1 = M07 T26 (projects, BAST,
 own tickets) + the account part of M12 T25 + warranties.
 
 | Piece | Owner | Where |

@@ -1,7 +1,7 @@
 # Entragate Public Website
 
 Marketing site and online store for **entragate.com**. Astro SSR (Node standalone adapter),
-Tailwind v4 and shared design tokens. Deploys independently of `apps/customer`.
+Tailwind v4 and shared design tokens. Deploys independently of `apps/web-customer-portal`.
 
 ```sh
 bun run dev      # http://localhost:4321 (sample data, forms accepted locally)

@@ -8,7 +8,7 @@
   ADR-0020 when it was merged. ADR-0021 is the payment gateway (PR #99).
 - **Context:** M07 T26 (project status and own tickets) and the account part
   of M12 T25 need customers to sign in. The portal UI already exists in the
-  website repo (`entragate-platform`, `apps/customer`, Astro SSR): its server
+  website app (`apps/web-customer-portal`, Astro SSR; moved into this monorepo 2026-11-15): its server
   holds the session and calls the ERP through a `PortalSource` contract with
   configurable routes and no mapping layer. The permission catalog has an
   unused `customer` organization role. Customers must only ever see their own

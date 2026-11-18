@@ -12,6 +12,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-18 - Website and portal restructured flat: `apps/web-landing`, `apps/web-customer-portal`, `packages/api-client`, `packages/design-tokens`
+
+The website and portal were at `apps/entragate-platform/apps/{web,customer}`
+(nested, from PR #107), while a second copy with the same package names
+existed untracked at `apps/web-landing` and `apps/web-customer-portal`. The
+untracked copies were the newer work: `apps/web-customer-portal/src/services/auth.ts`
+adds `ensureFreshAuth` (refresh dedupe via `inflight`) and `safeNext`
+(same-origin `returnTo` check, blocks `//` and `/\`). The tracked copy had
+neither. Chosen source of truth: the untracked flat folders.
+
+**State found before editing.** `apps/entragate-platform/apps/{customer,web}`
+had 384 tracked files deleted in the working tree (unstaged). Those deletions
+matched HEAD exactly (166 + 218), nothing outside those two apps was missing,
+and the untracked folders were intact. Not caused by this session's commands;
+recorded as found.
+
+**Moves (staged as renames, 100% similar except two files).**
+- `apps/entragate-platform/packages/api-client` -> `packages/api-client` (`git mv`
+  failed once with "Permission denied" on the folder; a plain `Move-Item` then
+  succeeded, and the rename was staged afterwards).
+- `apps/entragate-platform/packages/design-tokens` -> `packages/design-tokens`.
+- `apps/entragate-platform/apps/customer` -> `apps/web-customer-portal`
+  (`package.json` R096, `auth.ts` replaced by the flat version).
+- `apps/entragate-platform/apps/web` -> `apps/web-landing` (`package.json` R095).
+- `apps/entragate-platform/README.md` rewritten as `docs/architecture/modules/website-and-portal.md`.
+- `apps/entragate-platform/` removed (its `.gitignore` duplicated the app-level and root rules).
+
+**Renamed packages.** `@ims-erp/web` -> `@ims-erp/web-landing`,
+`@ims-erp/customer` -> `@ims-erp/web-customer-portal`. `@ims-erp/api-client` and
+`@ims-erp/design-tokens` unchanged.
+
+**Workspaces.** Root `workspaces` is `apps/*`, `packages/*`, `modules/*`; the
+`apps/entragate-platform/*` globs are gone. `dev:website` and `dev:portal`
+filter the new names. Turbo stays `^2.11.11`.
+
+**Lockfile.** `bun install` added the four flat workspaces. Pins unchanged:
+`@lucide/astro` 1.61.0, `astro` 7.4.12.
+
+**Docs and comments updated (live references only).** `package.json`,
+`docs/architecture/runbook.md`, `docs/plan/backlog.md` (ERP-0022),
+`docs/plan/plans/features.md` (M07), `docs/architecture/modules/customer-portal.md`,
+`ADR-0022` (context line), `packages/api-client` service headers,
+`apps/backend` portal/crm comments and `.env.example`, `item-category.seeder.ts`,
+the two app READMEs, and `.gitignore` (designs paths).
+Not changed: historical entries in this file, and
+`docs/plan/plans/website-integration.md`, which describes the website repo's
+own layout and paths outside this monorepo.
+
+**Verification.**
+- `bun run typecheck` 6/6; `astro check` `@ims-erp/web-landing` 167 files and
+  `@ims-erp/web-customer-portal` 147 files, 0 errors / 0 warnings / 0 hints.
+- `bun run lint` 0 errors (backend 9, ui 19, web-admin 14 pre-existing warnings).
+- `bun run test`: backend 1223 pass / 0 fail, web-admin 119, locales 98, react-email 6.
+- `bun run build` 5/5; `bunx astro build` run directly in both apps: complete.
+- `bun docs/database/validate-dbml.ts`: OK (278 tables, 234 refs). No schema change.
+- `git ls-files`: no `.pen` file, no `.env` file other than `.env.example`.
+
+**Not verified.** `bun run dev:website` and `bun run dev:portal` (dev servers
+not started, no browser walkthrough). CI has no website or portal workflow.
+
 ## 2026-11-18 - PR #107 merged `main`; `@entragate/*` renamed to `@ims-erp/*`; Zudoku references removed
 
 Branch `chore/entragate-platform-workspace` (**PR #107**) merged `origin/main`

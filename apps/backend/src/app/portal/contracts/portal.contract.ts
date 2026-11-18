@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Request schemas and ports of the customer portal API (`/portal/v1`,
- * ERP-0022). The portal app (website repo, `apps/customer`) calls these from
+ * ERP-0022). The portal app (`apps/web-customer-portal`) calls these from
  * its server only; the shapes follow its `PortalSource` contract.
  */
 

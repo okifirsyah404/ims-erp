@@ -1,41 +1,39 @@
 {
-	"name": "ims-erp",
-	"type": "module",
-	"private": true,
-	"packageManager": "bun@1.4.2",
-	"workspaces": [
-		"apps/*",
-		"packages/*",
-		"modules/*",
-		"apps/entragate-platform/apps/*",
-		"apps/entragate-platform/packages/*"
-	],
-	"scripts": {
-		"build": "turbo run build",
-		"build:libs": "bun --filter '@ims-erp/config' build && bun --filter '@ims-erp/lib-cache' build",
-		"dev": "turbo run dev",
-		"dev:website": "bun run --filter '@ims-erp/web' dev",
-		"dev:portal": "bun run --filter '@ims-erp/customer' dev",
-		"test": "turbo run test",
-		"lint": "turbo run lint",
-		"typecheck": "turbo run typecheck",
-		"format": "turbo run format",
-		"prepare": "husky",
-		"backend:drizzle:generate": "bun run --filter '@ims-erp/backend' drizzle:generate",
-		"backend:drizzle:push": "bun run --filter '@ims-erp/backend' drizzle:push",
-		"backend:drizzle:reset": "bun run --filter '@ims-erp/backend' drizzle:migrate-reset",
-		"backend:drizzle:studio": "bun run --filter '@ims-erp/backend' drizzle:studio",
-		"backend:drizzle:seed": "bun run --filter '@ims-erp/backend' drizzle:seed",
-		"backend:drizzle:migrate-reset": "bun run --filter '@ims-erp/backend' drizzle:migrate-reset"
-	},
-	"devDependencies": {
-		"@dbml/core": "^12.0.0",
-		"@types/bun": "^1.4.4",
-		"drizzle-kit": "^1.0.0-rc.5",
-		"husky": "^9.1.7",
-		"turbo": "^2.11.11"
-	},
-	"peerDependencies": {
-		"typescript": "^6.0.3"
-	}
+  "name": "ims-erp",
+  "type": "module",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "modules/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "build:libs": "bun --filter '@ims-erp/config' build && bun --filter '@ims-erp/lib-cache' build",
+    "dev": "turbo run dev",
+    "dev:website": "bun run --filter '@ims-erp/web-landing' dev",
+    "dev:portal": "bun run --filter '@ims-erp/web-customer-portal' dev",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "turbo run format",
+    "prepare": "husky",
+    "backend:drizzle:generate": "bun run --filter '@ims-erp/backend' drizzle:generate",
+    "backend:drizzle:push": "bun run --filter '@ims-erp/backend' drizzle:push",
+    "backend:drizzle:reset": "bun run --filter '@ims-erp/backend' drizzle:migrate-reset",
+    "backend:drizzle:studio": "bun run --filter '@ims-erp/backend' drizzle:studio",
+    "backend:drizzle:seed": "bun run --filter '@ims-erp/backend' drizzle:seed",
+    "backend:drizzle:migrate-reset": "bun run --filter '@ims-erp/backend' drizzle:migrate-reset"
+  },
+  "devDependencies": {
+    "@dbml/core": "^12.0.0",
+    "@types/bun": "^1.4.4",
+    "drizzle-kit": "^1.0.0-rc.5",
+    "husky": "^9.1.7",
+    "turbo": "^2.11.11"
+  },
+  "peerDependencies": {
+    "typescript": "^6.0.3"
+  }
 }

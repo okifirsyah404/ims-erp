@@ -5,7 +5,7 @@ import type { Money } from "./portal";
 import { httpsUrl, parseOrThrow } from "./portal-schemas";
 
 /**
- * Public-website contract (apps/web). Every operation the marketing site sends to or
+ * Public-website contract (apps/web-landing). Every operation the marketing site sends to or
  * reads from the ERP. Paths are supplied through `WebsiteRoutes` once the ERP team
  * publishes them; nothing is hard-coded here.
  */

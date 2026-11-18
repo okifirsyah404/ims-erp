@@ -1,7 +1,7 @@
 # Entragate Customer Portal
 
 Mobile-first PWA for Entragate customers, served at **https://customer.entragate.com**.
-Astro SSR (Node standalone adapter) with React islands. It deploys independently of `apps/web`.
+Astro SSR (Node standalone adapter) with React islands. It deploys independently of `apps/web-landing`.
 
 ```sh
 bun run dev      # http://localhost:4322 (demo data)

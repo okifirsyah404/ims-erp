@@ -2,7 +2,7 @@ import { ApiError, createApiClient, type ApiClient, type ApiClientOptions } from
 import { authTokensSchema, loginFailureFrom, loginSuccessSchema, parseOrThrow, paymentIntentSchema, sessionSchema } from "./portal-schemas";
 
 /**
- * Customer-portal contract (apps/customer). Types describe what the portal needs; the
+ * Customer-portal contract (apps/web-customer-portal). Types describe what the portal needs; the
  * ERP adapter maps them onto ERP endpoints whose paths are supplied via `PortalRoutes`.
  * No path is hard-coded here — the ERP API contract has not been published yet.
  */
