@@ -1,24 +1,4 @@
-import type {
-  DocumentLibrary,
-  HomeSummary,
-  InvoiceSummary,
-  OrderDetail,
-  OrderSummary,
-  PaymentMethod,
-  PortalNotification,
-  PortalUser,
-  ProfileSummary,
-  ProjectDetail,
-  ProjectSummary,
-  QuotationDetail,
-  QuotationSummary,
-  RegisteredProduct,
-  ServiceDay,
-  ServiceType,
-  TicketDetail,
-  TicketSummary,
-  WarrantyDetail,
-} from "@ims-erp/api-client";
+import { type DocumentLibrary, type HomeSummary, type InvoiceSummary, type OrderDetail, type OrderSummary, type PaymentMethod, type PortalNotification, type PortalUser, type ProfileSummary, type ProjectDetail, type ProjectSummary, type QuotationDetail, type QuotationSummary, type RegisteredProduct, type ServiceDay, type ServiceType, type TicketDetail, type TicketSummary, type WarrantyDetail } from "@/api/portal";
 
 /**
  * Demo fixtures copied from the approved mobile frames (05.x, 07.x, 08.x). Used only

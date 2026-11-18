@@ -1,4 +1,5 @@
-import { ApiError, createErpPortalSource, type PortalSource } from "@ims-erp/api-client";
+import { ApiError } from "@/api/client";
+import { createErpPortalSource, type PortalSource } from "@/api/portal";
 import {
   ERP_API_BASE_URL,
   ERP_API_TIMEOUT_MS,

@@ -1,4 +1,4 @@
-import type { AuthTokens, PortalUser } from '@ims-erp/api-client';
+import { type AuthTokens, type PortalUser } from "@/api/portal";
 import type { APIContext } from 'astro';
 import { logUpstreamError } from './errors';
 import { portal } from './portal';

@@ -1,4 +1,4 @@
-import type { TicketPriority } from "@ims-erp/api-client";
+import { type TicketPriority } from "@/api/portal";
 
 /** Target first-reply time per ticket priority (shown on 08.02 / 08.02b). */
 export const firstReply: Record<TicketPriority, string> = { low: "< 1 working day", normal: "< 4 hours", urgent: "< 1 hour" };

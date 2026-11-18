@@ -1,13 +1,9 @@
 import { ActionError, defineAction, type ActionAPIContext } from "astro:actions";
 import { z } from "astro/zod";
-import {
-  ApiError,
-  ErpContractError,
-  WebsiteNotConfiguredError,
-  type CheckoutOrder,
-  type OrderConfirmation,
-  type RfqSubmission,
-} from "@ims-erp/api-client";
+import { ApiError } from "@/api/client";
+import { ErpContractError } from "@/api/contract-schemas";
+import { WebsiteNotConfiguredError, type CheckoutOrder, type OrderConfirmation } from "@/api/website";
+import { type RfqSubmission } from "@/api/rfq";
 import { getCustomer, toAuth } from "../lib/server/auth";
 import { platforms } from "../data/solutions";
 import { getProductsBySlugs } from "../lib/catalog";

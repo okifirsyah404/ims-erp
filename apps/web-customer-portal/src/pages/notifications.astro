@@ -12,7 +12,7 @@ import TopBar from "../components/customer/TopBar.astro";
 import IconButton from "../components/customer/IconButton.astro";
 import Segmented from "../components/customer/Segmented.astro";
 import { portal } from "../services/portal";
-import type { PortalNotification } from "@ims-erp/api-client";
+import { type PortalNotification } from "@/api/portal";
 import { safePath } from "../lib/safe-url";
 
 /** 05.02 Notifications. "Orders" covers commerce events; "Support" covers tickets and warranty. */

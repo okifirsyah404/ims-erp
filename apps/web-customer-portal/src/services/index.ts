@@ -1,4 +1,4 @@
-import type { AuthTokens } from "@ims-erp/api-client";
+import { type AuthTokens } from "@/api/portal";
 import { portal } from "./portal";
 
 /**

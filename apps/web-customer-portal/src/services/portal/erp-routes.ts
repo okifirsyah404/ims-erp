@@ -1,4 +1,4 @@
-import type { PortalRoutes } from "@ims-erp/api-client";
+import { type PortalRoutes } from "@/api/portal";
 
 /**
  * ERP endpoint map, relative to ERP_API_BASE_URL (the ERP backend root). Published by

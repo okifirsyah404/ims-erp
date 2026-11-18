@@ -1,4 +1,4 @@
-import { ApiError, createApiClient, type ApiClient, type ApiClientOptions } from "../client";
+import { ApiError, createApiClient, type ApiClient, type ApiClientOptions } from "./client";
 import { authTokensSchema, loginFailureFrom, loginSuccessSchema, parseOrThrow, paymentIntentSchema, sessionSchema } from "./portal-schemas";
 
 /**

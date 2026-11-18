@@ -1,4 +1,4 @@
-import type { CheckoutPaymentMethod, DeliveryMethod } from "@ims-erp/api-client";
+import { type CheckoutPaymentMethod, type DeliveryMethod } from "@/api/website";
 
 /**
  * Checkout options (03.03). Fees mirror the approved frame and are SAMPLE values until

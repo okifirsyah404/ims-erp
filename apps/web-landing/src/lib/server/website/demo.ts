@@ -1,4 +1,4 @@
-import type { CartLine, OrderConfirmation, PublicTracking, WebsiteSource } from "@ims-erp/api-client";
+import { type CartLine, type OrderConfirmation, type PublicTracking, type WebsiteSource } from "@/api/website";
 import { computeTotals } from "../../../data/checkout";
 import { demoCatalogSource } from "../catalog/demo";
 import { images } from "../../images";

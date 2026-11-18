@@ -585,9 +585,9 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Customer-facing UI in the monorepo: the public website and the customer
   portal (Astro) moved from the separate `entragate-platform` repository into
   `apps/` as root workspaces — `@ims-erp/web-landing` (:4321),
-  `@ims-erp/web-customer-portal` (:4322), `@ims-erp/api-client`,
-  `@ims-erp/design-tokens`; one `bun.lock`, `astro check`/`astro build` wired
-  into turbo. Evidence: `progress.md` 2026-11-15 (astro check 0 errors, astro
+  `@ims-erp/web-customer-portal` (:4322), `@ims-erp/design-tokens`; one
+  `bun.lock`, `astro check`/`astro build` wired into turbo. The ERP contract
+  clients live in each app (`src/api/`), not in a shared package. Evidence: `progress.md` 2026-11-15 (astro check 0 errors, astro
   build passes) and 2026-11-18 (rename to `@ims-erp/*`, merge onto main).
 - Projects from a deal: PIC, targets, stage, default checklist with
   assignees, testing / training / BAST evidence (closing rule), direct costs

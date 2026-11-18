@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { ApiError, createApiClient, type ApiClientOptions } from "../client";
-import type { Money } from "./portal";
-import { parseOrThrow } from "./portal-schemas";
+import { ApiError, createApiClient, type ApiClientOptions } from "./client";
+import type { Money } from "./money";
+import { parseOrThrow } from "./contract-schemas";
 
 /**
  * Public catalog contract (apps/web-landing): products, categories, stock, pricing, software

@@ -1,8 +1,8 @@
 /// <reference types="vite-plugin-pwa/info" />
 /// <reference types="vite-plugin-pwa/client" />
 
-type PortalUser = import("@ims-erp/api-client").PortalUser;
-type AuthTokens = import("@ims-erp/api-client").AuthTokens;
+type PortalUser = import("@/api/portal").PortalUser;
+type AuthTokens = import("@/api/portal").AuthTokens;
 
 declare namespace App {
   interface SessionData {

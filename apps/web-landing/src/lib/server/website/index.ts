@@ -1,4 +1,4 @@
-import { createErpWebsiteSource, type WebsiteSource } from "@ims-erp/api-client";
+import { createErpWebsiteSource, type WebsiteSource } from "@/api/website";
 import { ERP_API_BASE_URL, ERP_API_TIMEOUT_MS, ERP_API_TOKEN, ERP_RESPONSE_ENVELOPE, WEB_DATA_SOURCE } from "astro:env/server";
 import { demoWebsiteSource } from "./demo";
 import { erpRoutes } from "./erp-routes";

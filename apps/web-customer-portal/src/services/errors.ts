@@ -1,4 +1,6 @@
-import { ApiError, ErpContractError, PortalNotConfiguredError } from "@ims-erp/api-client";
+import { ApiError } from "@/api/client";
+import { ErpContractError } from "@/api/portal-schemas";
+import { PortalNotConfiguredError } from "@/api/portal";
 
 /** The ERP rejected the session's access token; the user must sign in again. */
 export class SessionExpiredError extends Error {

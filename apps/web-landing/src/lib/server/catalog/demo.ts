@@ -1,4 +1,4 @@
-import type { CatalogListQuery, CatalogProduct, CatalogSort, CatalogSource } from "@ims-erp/api-client";
+import { type CatalogListQuery, type CatalogProduct, type CatalogSort, type CatalogSource } from "@/api/catalog";
 import { catalogCategories, products } from "../../../data/catalog";
 import { platforms } from "../../../data/solutions";
 

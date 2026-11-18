@@ -1,4 +1,4 @@
-import type { PortalSource } from "@ims-erp/api-client";
+import { type PortalSource } from "@/api/portal";
 import { defineMiddleware } from "astro:middleware";
 import { ERP_API_BASE_URL, ERP_ASSET_ORIGINS } from "astro:env/server";
 import { ensureFreshAuth, safeNext, signOut } from "./services/auth";

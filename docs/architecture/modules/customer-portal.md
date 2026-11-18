@@ -33,7 +33,7 @@ internal notes or staff ids in any response.
 emails link to `<PORTAL_URL>/reset-password?token=…`; without it invitations
 answer 503. The portal sets `ERP_API_BASE_URL` to the ERP and these routes.
 
-## Route map for `PortalRoutes` (website `packages/api-client`)
+## Route map for `PortalRoutes` (`apps/web-customer-portal/src/api/portal.ts`)
 
 Responses use the ERP envelope `{ requestId, status, message, timestamp, data }`
 (errors add `errors[]`) — configure the

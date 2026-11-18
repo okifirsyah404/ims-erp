@@ -1,4 +1,4 @@
-import type { CompanyMember } from "@ims-erp/api-client";
+import { type CompanyMember } from "@/api/portal";
 import { formatRupiah } from "../../lib/format";
 
 type Tone = "info" | "success" | "warning" | "neutral";

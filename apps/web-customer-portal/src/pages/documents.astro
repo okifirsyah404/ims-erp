@@ -15,7 +15,7 @@ import LargeHeader from "../components/customer/LargeHeader.astro";
 import IconButton from "../components/customer/IconButton.astro";
 import SectionHeader from "../components/customer/SectionHeader.astro";
 import { customerService } from "../services";
-import type { DocumentFolder } from "@ims-erp/api-client";
+import { type DocumentFolder } from "@/api/portal";
 import { safeHref } from "../lib/safe-url";
 
 /** 05.08 Documents. `?folder=` narrows to one folder, `?q=` searches file names, `?sort=name` sorts A–Z. */

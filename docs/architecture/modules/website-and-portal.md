@@ -8,7 +8,8 @@ workspaces: one `bun install`, one `bun.lock`. It was the separate
 | --- | --- | --- | --- |
 | `apps/web-landing` | `@ims-erp/web-landing` | Public website and landing page (Astro, SSR) | 4321 |
 | `apps/web-customer-portal` | `@ims-erp/web-customer-portal` | Customer portal (Astro + React islands, PWA) | 4322 |
-| `packages/api-client` | `@ims-erp/api-client` | Typed clients for the ERP `/public/v1` and `/portal/v1` APIs | - |
+| `apps/web-landing/src/api/` | — | ERP contract clients and schemas for the website (`client.ts`, `website.ts`, `catalog.ts`, `rfq.ts`) | - |
+| `apps/web-customer-portal/src/api/` | — | ERP contract clients and schemas for the portal (`client.ts`, `portal.ts`, `portal-schemas.ts`) | - |
 | `packages/design-tokens` | `@ims-erp/design-tokens` | Shared design tokens | - |
 
 ## Commands (from the repo root)

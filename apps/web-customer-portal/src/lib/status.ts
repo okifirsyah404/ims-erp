@@ -1,4 +1,4 @@
-import type { OrderStatus, QuotationStatus, TicketSummary, RegisteredProduct, ProjectSummary } from "@ims-erp/api-client";
+import { type OrderStatus, type QuotationStatus, type TicketSummary, type RegisteredProduct, type ProjectSummary } from "@/api/portal";
 
 /** Status → chip (label + tone) mappings shared by list and detail screens. */
 type Chip = { label: string; tone: "info" | "success" | "warning" | "danger" | "neutral" };

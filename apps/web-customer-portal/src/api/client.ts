@@ -1,3 +1,8 @@
+/**
+ * Duplicated on purpose: the website (apps/web-landing) and the portal
+ * (apps/web-customer-portal) are separate Astro deployments and may not import
+ * from each other. Keep the two copies of this file identical.
+ */
 export type ApiClientOptions = {
   baseUrl: string;
   fetcher?: typeof fetch;

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { ApiError, createApiClient, type ApiClientOptions } from "../client";
+import { ApiError, createApiClient, type ApiClientOptions } from "./client";
 import type { RfqReceipt, RfqSubmission } from "./rfq";
-import type { Money } from "./portal";
-import { httpsUrl, parseOrThrow } from "./portal-schemas";
+import type { Money } from "./money";
+import { httpsUrl, parseOrThrow } from "./contract-schemas";
 
 /**
  * Public-website contract (apps/web-landing). Every operation the marketing site sends to or

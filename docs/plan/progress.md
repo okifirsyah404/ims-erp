@@ -12,6 +12,60 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-18 - `packages/api-client` removed: contracts live in each app's `src/api/`
+
+The ERP contract clients were a shared workspace package imported by both Astro
+apps. Both are separate deployments that must not import each other, and
+`packages/common` holds no HTTP client code (its 35 exports and `api-client`'s
+117 share zero names), so the package was not replaced by `common` — it was
+deleted and its files were split by consumer.
+
+**Where each file went.**
+
+| Source (`packages/api-client`) | Landing (`apps/web-landing/src/api/`) | Portal (`apps/web-customer-portal/src/api/`) |
+|---|---|---|
+| `client.ts` | copy | copy (moved) |
+| `website.ts`, `catalog.ts`, `rfq.ts` | moved | — |
+| `portal.ts` | — | moved |
+| `portal-schemas.ts` | `contract-schemas.ts` (`httpsUrl`, `ErpContractError`, `parseOrThrow`) | moved whole |
+| `Money` (from `portal.ts`) | `money.ts` (one line) | still in `portal.ts` |
+
+**Why the split is not perfectly clean.** `website.ts` and `catalog.ts` need
+`Money` and the two schema helpers, which lived in the portal files. Copying the
+609-line `portal.ts` into the website would have duplicated 60 exports to use
+one line, so the website carries `money.ts` plus a 24-line `contract-schemas.ts`
+instead. `client.ts` is duplicated in full (~170 lines each): the only piece
+both apps genuinely need and cannot share without a package. Both copies carry
+a header saying they must stay identical.
+
+**Import style.** Both apps use Astro's path alias: `@/*` -> `./src/*`. The
+portal already had it; `apps/web-landing/tsconfig.json` gained the same
+`baseUrl`/`paths` block. 43 import sites across 40 files (`.ts`, `.astro`,
+`env.d.ts`) now import from `@/api/...`.
+
+**Manifests.** `@ims-erp/api-client` removed from both `package.json`;
+`zod` `^4.6.7` added to both, because the moved schemas import it. Lockfile:
+one package removed, pins unchanged (`@lucide/astro` 1.61.0, `astro` 7.4.12).
+
+**What broke and was fixed while moving.** Two script bugs of my own: a
+multi-line import regex that spanned across statements (pulled `ActionError`
+from `astro:actions` into the rewrite), and a name detector that ignored
+`export interface` (`CatalogSource`). Neither reached a commit.
+
+**Verification.**
+- `bun run typecheck` 6/6; `astro check` `@ims-erp/web-landing` 173 files and
+  `@ims-erp/web-customer-portal` 150 files, 0 errors / 0 warnings / 0 hints.
+- `bun run lint` 0 errors (backend 9, ui 19, web-admin 14 pre-existing warnings).
+- `bun run test`: backend 1223 pass / 0 fail, web-admin 119, locales 98,
+  react-email 6.
+- `bun run build` 5/5; `bunx astro build` in both apps: complete.
+- `bun docs/database/validate-dbml.ts`: OK (278 tables, 234 refs). No schema change.
+- No `@ims-erp/api-client` import left in `apps/` or `packages/`; no `.pen` or
+  `.env` file tracked.
+
+**Not verified.** Dev servers and a browser walkthrough of either app. CI still
+has no website or portal workflow.
+
 ## 2026-11-18 - Website and portal restructured flat: `apps/web-landing`, `apps/web-customer-portal`, `packages/api-client`, `packages/design-tokens`
 
 The website and portal were at `apps/entragate-platform/apps/{web,customer}`

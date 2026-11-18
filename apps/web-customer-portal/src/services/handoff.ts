@@ -1,4 +1,4 @@
-import type { AuthTokens, PortalUser } from "@ims-erp/api-client";
+import { type AuthTokens, type PortalUser } from "@/api/portal";
 import { WEB_HANDOFF_SECRET } from "astro:env/server";
 
 /**

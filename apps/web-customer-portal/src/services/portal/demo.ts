@@ -1,4 +1,4 @@
-import type { AccountSettings, AuthTokens, OrderDetail, PortalSource, ProjectDetail, TicketDetail, TicketMessage, WishlistItem, RfqSummary } from "@ims-erp/api-client";
+import { type AccountSettings, type AuthTokens, type OrderDetail, type PortalSource, type ProjectDetail, type TicketDetail, type TicketMessage, type WishlistItem, type RfqSummary } from "@/api/portal";
 import * as data from "./demo-data";
 import * as accountData from "./demo-account";
 

@@ -1,4 +1,4 @@
-import type { AccountSettings, InvoiceDetail, WishlistItem } from "@ims-erp/api-client";
+import { type AccountSettings, type InvoiceDetail, type WishlistItem } from "@/api/portal";
 
 /**
  * DEMO FIXTURES for account, company, wishlist and invoice detail screens (05.10, 05.11,

@@ -1,4 +1,4 @@
-import type { ApiClient } from "../client";
+import type { ApiClient } from "./client";
 
 /**
  * Request-for-quotation payload sent from the public website.
