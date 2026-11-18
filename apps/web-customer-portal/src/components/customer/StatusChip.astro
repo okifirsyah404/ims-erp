@@ -1,0 +1,35 @@
+---
+/** App / Status Chip (LnChK). */
+export type ChipTone = "info" | "success" | "warning" | "danger" | "neutral" | "cyan" | "white";
+
+interface Props {
+  label: string;
+  tone?: ChipTone;
+  dot?: boolean;
+  size?: "md" | "sm";
+  class?: string;
+}
+
+const { label, tone = "info", dot = true, size = "md", class: className } = Astro.props;
+const tones: Record<ChipTone, string> = {
+  info: "bg-blue-50 text-blue-700 [--dot:var(--eg-blue-600)]",
+  success: "bg-success-bg text-success [--dot:var(--eg-success)]",
+  warning: "bg-warning-bg text-warning [--dot:var(--eg-warning)]",
+  danger: "bg-danger-bg text-danger [--dot:var(--eg-danger)]",
+  neutral: "bg-surface-2 text-fg-muted [--dot:var(--eg-text-muted)]",
+  cyan: "bg-cyan-400/15 text-cyan-400 [--dot:var(--eg-cyan-400)]",
+  white: "bg-white/90 text-success [--dot:var(--eg-success)]",
+};
+---
+
+<span
+  class:list={[
+    "inline-flex shrink-0 items-center gap-1.5 rounded-pill font-semibold whitespace-nowrap",
+    size === "md" ? "px-2.5 py-[5px] text-[12px]" : "px-2 py-[3px] text-[11px]",
+    tones[tone],
+    className,
+  ]}
+>
+  {dot && <span class="size-1.5 rounded-full bg-(--dot)" aria-hidden="true" />}
+  {label}
+</span>

@@ -1,0 +1,120 @@
+---
+import FlaskConical from "@lucide/astro/icons/flask-conical";
+import Sparkles from "@lucide/astro/icons/sparkles";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import MoveHorizontal from "@lucide/astro/icons/move-horizontal";
+import TeamMemberCard from "./TeamMemberCard.astro";
+import { leadership, teamGroups } from "../../data/about";
+import { routes } from "../../data/site";
+
+/**
+ * 09.01 · Meet Our Team. The design ships this section with a "Demo content" label —
+ * keep it until real names, portraits and bios are provided.
+ */
+const pad = (n: number) => String(n).padStart(2, "0");
+const allGroups = [leadership, ...teamGroups];
+---
+
+<section id="team" class="scroll-mt-20 bg-surface" aria-labelledby="team-title">
+  <div class="flex flex-col gap-8 py-12 xl:container-page xl:gap-16 xl:py-28">
+    <div class="container-page flex flex-col gap-3 xl:max-w-none xl:flex-row xl:items-end xl:justify-between xl:px-0">
+      <div class="flex flex-col gap-3 xl:w-[720px] xl:gap-4">
+        <div class="flex items-center gap-2.5 xl:gap-3">
+          <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px] xl:tracking-[1.6px]">Meet our team</p>
+          <span
+            class="flex items-center gap-[5px] rounded-pill bg-warning-bg px-2 py-[3px] text-[10px] font-bold tracking-[0.8px] text-warning ring-1 ring-warning-border ring-inset xl:gap-1.5 xl:px-2.5 xl:py-1 xl:text-[11px] xl:tracking-[1px]"
+          >
+            <FlaskConical size={13} class="size-[11px] xl:size-[13px]" aria-hidden="true" />
+            DEMO CONTENT
+          </span>
+        </div>
+        <h2
+          id="team-title"
+          class="font-heading text-[28px] leading-8 font-bold tracking-[-0.7px] text-navy-900 xl:text-[44px] xl:leading-[48px] xl:tracking-[-1.2px]"
+        >
+          The people behind every secure entrance
+        </h2>
+        <p class="text-[14.5px] leading-[23px] text-fg-secondary xl:hidden">
+          One accountable team across Jakarta, Surabaya and Medan. Names, portraits and bios are illustrative demo content.
+        </p>
+      </div>
+      <div class="hidden w-[400px] flex-col gap-3.5 xl:flex">
+        <p class="text-[16px] leading-[26px] text-fg-secondary">
+          Engineers, developers and account managers across Jakarta, Surabaya and Medan — one accountable team from survey to
+          support.
+        </p>
+        <p class="text-[12.5px] text-fg-muted italic">Names, portraits and bios shown here are illustrative demo content.</p>
+      </div>
+    </div>
+
+    <!-- Desktop -->
+    <div class="hidden flex-col gap-7 xl:flex">
+      <div class="flex items-center gap-4 border-b-2 border-navy-900 pb-5">
+        <h3 class="font-heading text-[24px] leading-[27px] font-bold tracking-[-0.75px] text-navy-900">{leadership.title}</h3>
+        <span class="text-[13px] font-bold text-fg-muted">{pad(leadership.members.length)}</span>
+        <span class="flex-1"></span>
+        <p class="text-[14px] text-fg-secondary">{leadership.description}</p>
+      </div>
+      <div class="grid grid-cols-4 gap-6">
+        {leadership.members.map((member) => <TeamMemberCard member={member} size="lead" />)}
+      </div>
+    </div>
+    {
+      teamGroups.map((group, index) => (
+        <div class="hidden gap-12 border-t border-border pt-9 xl:flex">
+          <div class="flex w-[300px] shrink-0 flex-col gap-3">
+            <p class="text-[12px] font-bold tracking-[1.2px] text-fg-muted uppercase">{pad(group.members.length)} people</p>
+            <h3 class="font-heading text-[24px] leading-[29px] font-bold tracking-[-0.75px] text-navy-900">{group.title}</h3>
+            <p class="text-[14px] leading-[22px] text-fg-secondary">{group.description}</p>
+          </div>
+          <div class="grid flex-1 grid-cols-3 gap-6">
+            {group.members.map((member) => <TeamMemberCard member={member} size="member" />)}
+            {index === teamGroups.length - 1 && group.members.length < 3 && (
+              <aside class="flex flex-col justify-between rounded-lg bg-navy-900 p-7">
+                <div class="flex flex-col gap-3.5">
+                  <span class="flex size-11 items-center justify-center rounded-md bg-white/8 text-cyan-400">
+                    <Sparkles size={20} aria-hidden="true" />
+                  </span>
+                  <h3 class="font-heading text-[22px] leading-[26px] font-bold tracking-[-0.687px] text-white">
+                    Join the team behind Entragate
+                  </h3>
+                  <p class="text-[14px] leading-[22px] text-fg-on-dark-muted">
+                    We’re hiring field engineers and IoT developers in Jakarta and Surabaya.
+                  </p>
+                </div>
+                <a href={routes.careers} class="flex w-fit items-center gap-2 text-[14px] font-semibold text-white hover:underline">
+                  View open positions
+                  <ArrowRight size={16} class="text-cyan-400" aria-hidden="true" />
+                </a>
+              </aside>
+            )}
+          </div>
+        </div>
+      ))
+    }
+
+    <!-- Mobile -->
+    {
+      allGroups.map((group) => (
+        <div class="flex flex-col gap-3.5 xl:hidden">
+          <div class="container-page flex items-center gap-2.5">
+            <h3 class="font-heading text-[18px] leading-5 font-bold tracking-[-0.56px] text-navy-900">{group.title}</h3>
+            <span class="h-px flex-1 bg-border" aria-hidden="true" />
+            <span class="text-[12px] font-semibold text-fg-muted">{group.members.length} people</span>
+          </div>
+          <ul class="scrollbar-none flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 md:scroll-px-8 md:px-8">
+            {group.members.map((member) => (
+              <li class="w-[250px] shrink-0 snap-start">
+                <TeamMemberCard member={member} size={group === leadership ? "lead" : "member"} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))
+    }
+    <p class="flex items-center justify-center gap-1.5 text-[12px] text-fg-muted xl:hidden">
+      <MoveHorizontal size={14} aria-hidden="true" />
+      Swipe each row to meet the team
+    </p>
+  </div>
+</section>

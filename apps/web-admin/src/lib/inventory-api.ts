@@ -267,8 +267,8 @@ export const itemsQueryOptions = (params: {
 }) =>
 	queryOptions({
 		queryKey: ['inventory', 'items', params] as const,
-		queryFn: () =>
-			listItems({ ...params, limit: params.limit ?? 100 }),
+		// 24 is the list page size: a 3-column card grid with 8 rows.
+		queryFn: () => listItems({ ...params, limit: params.limit ?? 24 }),
 	});
 
 export function itemQueryOptions(itemId: string) {

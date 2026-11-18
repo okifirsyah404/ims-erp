@@ -1,0 +1,74 @@
+---
+import Search from "@lucide/astro/icons/search";
+import SlidersHorizontal from "@lucide/astro/icons/sliders-horizontal";
+import type { CatalogQuery } from "../../lib/catalog";
+
+/**
+ * Catalog search (live, debounced via scripts/catalog.ts). `desktop` = Catalog Search
+ * (480 × 56; the ⌘K hint opens the site-wide command palette);
+ * `mobile` = Search Row with the filter button that opens the filter sheet.
+ */
+interface Props {
+  query: CatalogQuery;
+  variant: "desktop" | "mobile";
+}
+
+const { query, variant } = Astro.props;
+---
+
+{
+  variant === "desktop" ? (
+    <form action="/products" method="get" role="search" class="w-[480px]">
+      {query.sort !== "popular" && <input type="hidden" name="sort" value={query.sort} />}
+      <label class="flex h-14 items-center gap-3 rounded-md bg-white pr-2 pl-[18px] shadow-[0_4px_14px_#0A1A3F0A] ring-1 ring-border ring-inset focus-within:ring-blue-600">
+        <Search size={18} class="text-fg-muted" aria-hidden="true" />
+        <span class="sr-only">Search products</span>
+        <input
+          type="search"
+          name="q"
+          value={query.q}
+          placeholder="Search products, models or SKU…"
+          class="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted"
+          autocomplete="off"
+          enterkeyhint="search"
+          data-catalog-search
+        />
+        <button
+          type="button"
+          class="rounded-sm bg-surface px-2 py-1 font-body text-[12px] font-semibold text-fg-muted ring-1 ring-border ring-inset hover:text-fg"
+          aria-label="Search the whole site"
+          title="Search the whole site"
+          data-open-search
+        >
+          <kbd class="font-body" data-shortcut-hint>⌘ K</kbd>
+        </button>
+      </label>
+    </form>
+  ) : (
+    <div class="flex gap-2.5">
+      <form action="/products" method="get" role="search" class="flex-1">
+        {query.sort !== "popular" && <input type="hidden" name="sort" value={query.sort} />}
+        <label class="flex h-12 items-center gap-3 rounded-md bg-white pr-2 pl-[18px] shadow-[0_4px_14px_#0A1A3F0A] ring-1 ring-border ring-inset focus-within:ring-blue-600">
+          <Search size={18} class="text-fg-muted" aria-hidden="true" />
+          <span class="sr-only">Search products</span>
+          <input
+            type="search"
+            name="q"
+            value={query.q}
+            placeholder="Search products…"
+            class="h-full min-w-0 flex-1 bg-transparent text-[14px] text-fg outline-none placeholder:text-fg-muted"
+          />
+        </label>
+      </form>
+      <button
+        type="button"
+        class="flex size-12 shrink-0 items-center justify-center rounded-md bg-navy-900 text-white"
+        aria-label="Filters"
+        aria-haspopup="dialog"
+        data-open-filters
+      >
+        <SlidersHorizontal size={18} aria-hidden="true" />
+      </button>
+    </div>
+  )
+}

@@ -1,0 +1,67 @@
+---
+import Check from "@lucide/astro/icons/check";
+import { rfqSteps } from "../../data/rfq";
+
+/**
+ * RFQ stepper (03.02): pill steps on desktop, progress bars on mobile.
+ * State lives in `data-state` (done | active | upcoming) so the form script can update it.
+ */
+interface Props {
+  current: number;
+}
+
+const { current } = Astro.props;
+const state = (id: number) => (id < current ? "done" : id === current ? "active" : "upcoming");
+---
+
+<nav aria-label="Quotation steps" data-rfq-stepper>
+  <ol class="hidden items-center gap-2.5 xl:flex">
+    {
+      rfqSteps.map((step, index) => (
+        <>
+          {index > 0 && (
+            <li
+              aria-hidden="true"
+              class="h-0.5 w-6 bg-border data-[state=done]:bg-blue-600 data-[state=active]:bg-blue-600"
+              data-step-sep={step.id}
+              data-state={state(step.id)}
+            />
+          )}
+          <li>
+            <button
+              type="button"
+              class="group flex items-center gap-2.5 rounded-pill bg-surface py-2.5 pr-4 pl-2.5 text-[14px] font-semibold text-fg-muted disabled:cursor-default data-[state=active]:bg-navy-900 data-[state=active]:text-white data-[state=done]:bg-blue-50 data-[state=done]:text-blue-700"
+              data-step-pill={step.id}
+              data-state={state(step.id)}
+              aria-current={step.id === current ? "step" : undefined}
+              disabled={step.id >= current}
+            >
+              <span class="flex size-7 items-center justify-center rounded-pill bg-white text-[13px] font-bold text-fg-muted group-data-[state=active]:bg-cyan-400 group-data-[state=active]:text-navy-900 group-data-[state=done]:bg-blue-600 group-data-[state=done]:text-white">
+                <span class="group-data-[state=done]:hidden">{step.id}</span>
+                <Check size={14} class="hidden group-data-[state=done]:block" aria-hidden="true" />
+              </span>
+              {step.label}
+            </button>
+          </li>
+        </>
+      ))
+    }
+  </ol>
+
+  <div class="flex flex-col gap-2 xl:hidden">
+    <div class="flex items-center gap-1.5" aria-hidden="true">
+      {
+        rfqSteps.map((step) => (
+          <span
+            class="h-1 flex-1 rounded-xs bg-surface-2 data-[state=active]:bg-blue-600 data-[state=done]:bg-blue-600"
+            data-step-bar={step.id}
+            data-state={state(step.id)}
+          />
+        ))
+      }
+    </div>
+    <p class="text-[12.5px] font-semibold text-fg-muted" data-step-caption>
+      Step {current} of {rfqSteps.length} · {rfqSteps[current - 1].label}
+    </p>
+  </div>
+</nav>

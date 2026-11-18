@@ -1,0 +1,106 @@
+---
+import Share from "@lucide/astro/icons/share-2";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import ShieldX from "@lucide/astro/icons/shield-x";
+import Cpu from "@lucide/astro/icons/cpu";
+import HardHat from "@lucide/astro/icons/hard-hat";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import ZapOff from "@lucide/astro/icons/zap-off";
+import CalendarClock from "@lucide/astro/icons/calendar-clock";
+import Check from "@lucide/astro/icons/check";
+import X from "@lucide/astro/icons/x";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import ProgressRing from "../../components/customer/ProgressRing.astro";
+import SectionHeader from "../../components/customer/SectionHeader.astro";
+import Timeline from "../../components/customer/Timeline.astro";
+import DocumentRow from "../../components/customer/DocumentRow.astro";
+import Media from "../../components/customer/Media.astro";
+import BottomActionBar from "../../components/customer/BottomActionBar.astro";
+import { portal } from "../../services/portal";
+
+/** 08.07 Warranty Information. */
+const warranty = await portal.getWarranty(Astro.locals.tokens!, Astro.params.productId ?? "");
+if (!warranty) return Astro.rewrite("/404");
+
+const expiring = warranty.monthsRemaining <= 1;
+const id = encodeURIComponent(warranty.productId);
+const coverageIcons = { parts: Cpu, labor: HardHat, firmware: RefreshCw, damage: ZapOff };
+---
+
+<CustomerLayout title={`Warranty · ${warranty.productName}`} actionBar section="profile">
+  <TopBar title="Warranty" back="/products">
+    <IconButton slot="action" label="Share warranty details" data-share={`${warranty.productName} · warranty ${warranty.certificate}`}>
+      <Share size={20} aria-hidden="true" />
+    </IconButton>
+  </TopBar>
+
+  <div class="flex flex-col gap-5 px-5 pt-2 pb-6">
+    <section class="flex flex-col overflow-hidden rounded-xl bg-surface">
+      <Media alt="" class="h-[170px] w-full bg-surface-2" />
+      <div class="flex flex-col gap-3 p-[18px]">
+        <div class="flex items-center justify-between gap-2.5">
+          <StatusChip label={warranty.plan} tone={expiring ? "warning" : "success"} class="!bg-white" />
+          <span class="text-[12px] font-semibold text-fg-muted">{warranty.certificate}</span>
+        </div>
+        <h1 class="font-heading text-[22px] font-extrabold tracking-[-0.4px] text-fg">{warranty.productName}</h1>
+        <p class="text-[13px] text-fg-secondary">{warranty.serial}</p>
+      </div>
+    </section>
+
+    <section class="flex items-center gap-4 rounded-card p-[18px] ring-1 ring-border ring-inset">
+      <ProgressRing
+        value={warranty.termMonths ? warranty.monthsRemaining / warranty.termMonths : 0}
+        tone="success"
+        label={String(warranty.monthsRemaining)}
+      />
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <p class="text-[16px] font-extrabold text-fg">{warranty.monthsRemaining} month{warranty.monthsRemaining === 1 ? "" : "s"} remaining</p>
+        <p class="text-[13px] text-fg-secondary">{warranty.periodLabel}</p>
+        {warranty.extendLabel && <a href={`/support/new?product=${id}&category=warranty`} class="text-[13px] font-semibold text-blue-600">{warranty.extendLabel}</a>}
+      </div>
+    </section>
+
+    <SectionHeader title="What’s covered" />
+    <ul class="flex flex-col gap-3 rounded-card bg-white p-4 ring-1 ring-border ring-inset">
+      {
+        warranty.coverage.map((item) => {
+          const Icon = item.icon ? coverageIcons[item.icon] : item.covered ? ShieldCheck : ShieldX;
+          return (
+          <li class="flex gap-3">
+            <span class:list={["flex size-9 shrink-0 items-center justify-center rounded-md", item.covered ? "bg-success-bg text-success" : "bg-danger-bg text-danger"]} aria-hidden="true">
+              <Icon size={17} />
+            </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="text-[14px] font-semibold text-fg">{item.title}</span>
+              <span class="text-[12.5px] text-fg-muted">{item.detail}</span>
+            </span>
+            <span class:list={["pt-0.5", item.covered ? "text-success" : "text-danger"]}>
+              {item.covered ? <Check size={16} aria-hidden="true" /> : <X size={16} aria-hidden="true" />}
+              <span class="sr-only">{item.covered ? "Covered" : "Not covered"}</span>
+            </span>
+          </li>
+          );
+        })
+      }
+    </ul>
+
+    <SectionHeader title="Service history" linkLabel="All" href={`/support?tab=all`} />
+    <Timeline steps={warranty.history.map((h) => ({ title: h.title, description: h.detail, dateLabel: h.dateLabel, state: "done" as const }))} />
+
+    <div class="flex flex-col rounded-card bg-white py-1 ring-1 ring-border ring-inset">
+      <DocumentRow document={warranty.certificateFile} />
+    </div>
+  </div>
+
+  <BottomActionBar slot="overlay">
+    <a href={`/support/book?product=${id}`} class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset gap-2"><CalendarClock size={18} aria-hidden="true" />Book service</a>
+    <a href={`/support/new?product=${id}&category=warranty`} class="flex h-[54px] flex-1 items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white gap-2"><ShieldCheck size={18} aria-hidden="true" />Claim warranty</a>
+  </BottomActionBar>
+</CustomerLayout>
+
+<script>
+  import "../../scripts/share";
+</script>

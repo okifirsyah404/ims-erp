@@ -1,0 +1,35 @@
+---
+import { safeHref } from "../../lib/safe-url";
+
+/**
+ * Image slot. The .pen references generated photos that aren't in the repo; until
+ * real assets exist a neutral placeholder keeps the designed box.
+ */
+interface Props {
+  src?: string;
+  alt: string;
+  class?: string;
+  tone?: "light" | "dark";
+}
+
+const { src: rawSrc, alt, class: className, tone = "light" } = Astro.props;
+const src = safeHref(rawSrc);
+---
+
+{
+  src ? (
+    <img src={src} alt={alt} loading="lazy" decoding="async" class:list={["object-cover", className]} />
+  ) : (
+    <div
+      role={alt ? "img" : undefined}
+      aria-label={alt || undefined}
+      aria-hidden={alt ? undefined : "true"}
+      class:list={[
+        tone === "light"
+          ? "bg-[linear-gradient(135deg,var(--eg-blue-50)_0%,var(--eg-surface-2)_60%,var(--eg-cyan-50)_100%)]"
+          : "bg-[linear-gradient(135deg,var(--eg-navy-800)_0%,var(--eg-navy-900)_100%)]",
+        className,
+      ]}
+    />
+  )
+}

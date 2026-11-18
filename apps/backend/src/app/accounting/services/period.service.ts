@@ -1,12 +1,14 @@
 import type { TAccountingPeriodSelect } from '@drizzle/schemas/accounting.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNT_BALANCE_REPOSITORY_TOKEN } from '../constants/di';
 import {
 	PeriodNotFoundError,
 	PeriodTransitionError,
 } from '../errors/ledger.errors';
+import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
+import type { IJournalRepository } from '../contracts/journal.repository.interface';
+import type { IAccountBalanceRepository } from '../contracts/account-balance.repository.interface';
 
 export type TPeriodTransitionContext = {
 	organizationId: string;
@@ -35,21 +37,23 @@ const PERIOD_TRANSITIONS: Record<string, readonly string[]> = {
 @injectable()
 export class PeriodService {
 	constructor(
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(ACCOUNTING_PERIOD_REPOSITORY_TOKEN) private readonly periods: IAccountingPeriodRepository,
+		@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
+		@inject(ACCOUNT_BALANCE_REPOSITORY_TOKEN) private readonly balances: IAccountBalanceRepository,
 	) {}
 
 	async listPeriods(
 		organizationId: string,
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<TAccountingPeriodSelect>> {
-		return this.repo.listPeriods(organizationId, pagination);
+		return this.periods.listPeriods(organizationId, pagination);
 	}
 
 	async getPeriod(
 		organizationId: string,
 		id: string,
 	): Promise<TAccountingPeriodSelect> {
-		const row = await this.repo.findPeriodById(organizationId, id);
+		const row = await this.periods.findPeriodById(organizationId, id);
 		if (!row) throw new PeriodNotFoundError();
 		return row;
 	}
@@ -60,7 +64,7 @@ export class PeriodService {
 		year: number,
 		month: number,
 	): Promise<TAccountingPeriodSelect> {
-		const existing = await this.repo.findPeriodByMonth(
+		const existing = await this.periods.findPeriodByMonth(
 			organizationId,
 			year,
 			month,
@@ -71,7 +75,7 @@ export class PeriodService {
 		const endDate = new Date(Date.UTC(year, month, 0))
 			.toISOString()
 			.slice(0, 10);
-		return this.repo.insertPeriod({
+		return this.periods.insertPeriod({
 			organizationId,
 			code: `${year}-${String(month).padStart(2, '0')}`,
 			periodYear: year,
@@ -95,7 +99,7 @@ export class PeriodService {
 		to: 'closed' | 'locked' | 'open',
 		ctx: TPeriodTransitionContext,
 	): Promise<TAccountingPeriodSelect> {
-		const period = await this.repo.findPeriodById(organizationId, periodId);
+		const period = await this.periods.findPeriodById(organizationId, periodId);
 		if (!period) throw new PeriodNotFoundError();
 
 		const allowed = PERIOD_TRANSITIONS[period.status] ?? [];
@@ -106,7 +110,7 @@ export class PeriodService {
 		if (to === 'closed') {
 			await this.snapshotBalances(organizationId, period);
 			return (
-				(await this.repo.updatePeriodStatus(organizationId, period.id, {
+				(await this.periods.updatePeriodStatus(organizationId, period.id, {
 					status: 'closed',
 					closedBy: ctx.actorUserId,
 					closedAt: now,
@@ -115,14 +119,14 @@ export class PeriodService {
 		}
 		if (to === 'locked') {
 			return (
-				(await this.repo.updatePeriodStatus(organizationId, period.id, {
+				(await this.periods.updatePeriodStatus(organizationId, period.id, {
 					status: 'locked',
 				})) ?? period
 			);
 		}
 		// reopen
 		return (
-			(await this.repo.updatePeriodStatus(organizationId, period.id, {
+			(await this.periods.updatePeriodStatus(organizationId, period.id, {
 				status: 'open',
 				reopenedBy: ctx.actorUserId,
 				reopenedAt: now,
@@ -139,13 +143,13 @@ export class PeriodService {
 		organizationId: string,
 		period: TAccountingPeriodSelect,
 	): Promise<void> {
-		const totals = await this.repo.accountTotalsForPeriod(
+		const totals = await this.journal.accountTotalsForPeriod(
 			organizationId,
 			period.id,
 		);
 		const calculatedAt = new Date();
 		for (const total of totals) {
-			await this.repo.upsertAccountBalance({
+			await this.balances.upsertAccountBalance({
 				organizationId,
 				accountId: total.accountId,
 				accountingPeriodId: period.id,

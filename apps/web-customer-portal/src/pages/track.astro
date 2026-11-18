@@ -1,0 +1,136 @@
+---
+import PackageSearch from "@lucide/astro/icons/package-search";
+import Search from "@lucide/astro/icons/search";
+import Lock from "@lucide/astro/icons/lock";
+import CircleAlert from "@lucide/astro/icons/circle-alert";
+import AuthLayout from "../layouts/AuthLayout.astro";
+import Logo from "../components/customer/Logo.astro";
+import StatusChip from "../components/customer/StatusChip.astro";
+import { ordersService } from "../services";
+import { logUpstreamError } from "../services/errors";
+import { orderChip } from "../lib/status";
+
+/**
+ * 07.05 Public tracking → app hand-off. Sign-in-free: `?order=` returns a minimal status
+ * (no prices, addresses or contacts). Lookups are rate limited per client address.
+ */
+const WINDOW_MS = 10 * 60 * 1000;
+const MAX_LOOKUPS = 20;
+const globalStore = globalThis as typeof globalThis & { __egTrackLimiter?: Map<string, { count: number; reset: number }> };
+const limiter = (globalStore.__egTrackLimiter ??= new Map());
+
+const query = (Astro.url.searchParams.get("order") ?? "").trim().slice(0, 40);
+const signedIn = Boolean(Astro.locals.user);
+let status: Awaited<ReturnType<typeof ordersService.lookupPublic>> = null;
+let error: string | undefined;
+
+if (query) {
+  let client = "unknown";
+  try {
+    client = Astro.clientAddress;
+  } catch {}
+  const now = Date.now();
+  if (limiter.size > 5000) for (const [key, value] of limiter) if (value.reset <= now) limiter.delete(key);
+  const entry = limiter.get(client);
+  const bucket = entry && entry.reset > now ? entry : { count: 0, reset: now + WINDOW_MS };
+  bucket.count += 1;
+  limiter.set(client, bucket);
+
+  if (bucket.count > MAX_LOOKUPS) {
+    error = "Too many lookups. Please wait a few minutes and try again.";
+    Astro.response.status = 429;
+  } else if (query.replace(/[^a-z0-9]/gi, "").length < 7) {
+    error = "Enter the full order number or AWB from your confirmation email.";
+  } else {
+    try {
+      status = await ordersService.lookupPublic(query);
+      if (!status) error = "We couldn't find that order. Check the number on your confirmation email.";
+    } catch (e) {
+      logUpstreamError("public.track", e);
+      error = "Tracking is temporarily unavailable. Please try again shortly.";
+    }
+  }
+}
+const chip = status ? orderChip(status.status, status.statusLabel) : undefined;
+const next = status ? `/tracking` : "/";
+---
+
+<AuthLayout title="Track your order">
+  <header class="flex h-16 items-center justify-between border-b border-border px-5">
+    <a href={signedIn ? "/" : "/welcome"} aria-label="Entragate"><Logo /></a>
+    {signedIn ? <a href="/tracking" class="text-[14px] font-semibold text-blue-600">My tracking</a> : <a href="/login" class="text-[14px] font-semibold text-blue-600">Sign in</a>}
+  </header>
+
+  <div class="flex flex-col gap-5 px-5 py-6">
+    <div class="flex flex-col items-start gap-1.5">
+      <StatusChip tone="neutral" label="Public · no sign-in" class="!text-fg-secondary" />
+      <h1 class="font-heading text-[28px] font-extrabold tracking-[-0.6px] text-fg">Track your order</h1>
+      <p class="text-[14.5px] leading-[21px] text-fg-secondary">Enter your order number or AWB from your confirmation email.</p>
+    </div>
+
+    <form method="get" action="/track" class="flex flex-col gap-5" role="search">
+      <div class="flex flex-col gap-2">
+        <label for="order" class:list={["text-[13px] font-semibold", error ? "text-danger" : "text-fg-secondary"]}>Order no. / AWB</label>
+        <div class:list={["flex h-[54px] items-center gap-2.5 rounded-md px-4 ring-inset", error ? "bg-white ring-[1.5px] ring-danger" : "bg-white ring-[1.5px] ring-border focus-within:ring-blue-600"]}>
+          <PackageSearch size={18} class="text-fg-muted" aria-hidden="true" />
+          <input
+            id="order"
+            name="order"
+            value={query}
+            required
+            minlength={7}
+            maxlength={40}
+            autocomplete="off"
+            autocapitalize="characters"
+            placeholder="ENT-2026-0418"
+            aria-invalid={error ? "true" : undefined}
+            aria-describedby={error ? "order-error" : undefined}
+            class="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted"
+          />
+        </div>
+        {error && <p id="order-error" class="flex items-center gap-1.5 text-[12.5px] font-medium text-danger"><CircleAlert size={14} aria-hidden="true" />{error}</p>}
+      </div>
+      <button type="submit" class="flex h-[54px] items-center justify-center gap-2 rounded-control bg-navy-900 text-[16px] font-semibold text-white hover:bg-navy-800">
+        <Search size={18} aria-hidden="true" />Track order
+      </button>
+    </form>
+
+    {
+      status && chip && (
+        <section class="app-card flex flex-col gap-3.5 p-[18px]" aria-live="polite" aria-label="Order status">
+          <div class="flex items-center justify-between gap-2.5">
+            <span class="text-[13px] font-semibold text-fg-muted">{status.orderNumber.startsWith("#") ? status.orderNumber : `#${status.orderNumber}`}</span>
+            <StatusChip label={chip.label} tone={chip.tone} />
+          </div>
+          <h2 class="font-heading text-[20px] font-extrabold tracking-[-0.4px] text-fg">{status.arrivalLabel}</h2>
+          <span class="h-2 overflow-hidden rounded-pill bg-surface-2" role="progressbar" aria-valuenow={Math.round(status.progress * 100)} aria-valuemin="0" aria-valuemax="100" aria-label="Delivery progress">
+            <span class="block h-full rounded-pill bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]" style={`width:${status.progress * 100}%`} />
+          </span>
+          <p class="text-[13px] font-medium text-fg-secondary">Step {status.step} of {status.stepCount} · {status.stepLabel}</p>
+          {!signedIn && (
+            <ul class="flex flex-col gap-2.5 rounded-control bg-surface p-3.5" aria-label="Available after signing in">
+              {["Live courier map & driver contact", "Full timeline, invoices & delivery note", "Chat with Entragate support"].map((item) => (
+                <li class="flex items-center gap-2 text-[13px] font-medium text-fg-secondary"><Lock size={14} class="text-fg-muted" aria-hidden="true" />{item}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )
+    }
+
+    {
+      signedIn ? (
+        status && <a href={next} class="flex h-[50px] items-center justify-center rounded-control bg-blue-600 text-[15px] font-semibold text-white">Open in tracking</a>
+      ) : (
+        <section class="flex flex-col gap-3.5 rounded-card bg-[linear-gradient(130.9deg,var(--eg-navy-900)_19.5%,var(--eg-blue-700)_80.5%)] p-5">
+          <h2 class="font-heading text-[17px] font-extrabold text-white">See everything in the Customer App</h2>
+          <p class="text-[13.5px] leading-5 text-fg-on-dark-muted">Sign in to unlock live tracking, documents and support for this order.</p>
+          <div class="flex gap-2.5">
+            <a href={`/login?next=${encodeURIComponent("/tracking")}`} class="flex h-[46px] flex-1 items-center justify-center rounded-md bg-white text-[14px] font-bold text-navy-900">Sign in</a>
+            <a href="/register" class="flex h-[46px] flex-1 items-center justify-center rounded-md bg-white/12 text-[14px] font-bold text-white hover:bg-white/20">Create account</a>
+          </div>
+        </section>
+      )
+    }
+  </div>
+</AuthLayout>

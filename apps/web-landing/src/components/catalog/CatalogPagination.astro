@@ -1,0 +1,104 @@
+---
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import { catalogHref, type CatalogQuery } from "../../lib/catalog";
+
+/** Pagination row (02.01): "Load more" + numbered pages; mobile shows the full-width Load More. */
+interface Props {
+  query: CatalogQuery;
+  page: number;
+  pageCount: number;
+}
+
+const { query, page, pageCount } = Astro.props;
+const href = (p: number) => catalogHref(query, { page: p });
+const hasNext = page < pageCount;
+
+/** 1 2 3 … N style window. */
+function pageWindow(current: number, total: number): (number | "gap")[] {
+  if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total, current, current - 1, current + 1].filter((p) => p >= 1 && p <= total));
+  if (current <= 3) [2, 3].forEach((p) => pages.add(p));
+  const sorted = [...pages].sort((a, b) => a - b);
+  return sorted.flatMap((p, i) => (i > 0 && p - sorted[i - 1] > 1 ? ["gap" as const, p] : [p]));
+}
+
+const box = "flex size-10 items-center justify-center rounded-md text-[14px] font-semibold";
+const idle = "bg-white text-fg ring-1 ring-border ring-inset hover:ring-border-strong";
+---
+
+<nav aria-label="Pagination" class="hidden items-center justify-between pt-4 xl:flex">
+  {
+    hasNext ? (
+      <a
+        href={href(page + 1)}
+        class="group flex items-center justify-center gap-2 rounded-md bg-white px-[18px] py-3 text-[14px] font-semibold text-fg ring-1 ring-border transition-colors ring-inset hover:bg-surface aria-busy:pointer-events-none aria-busy:opacity-70"
+        data-load-more
+      >
+        Load more products
+        <RefreshCw size={14} class="group-aria-busy:animate-spin" aria-hidden="true" />
+      </a>
+    ) : (
+      <span />
+    )
+  }
+  <ul class="flex items-center gap-1.5">
+    <li>
+      {
+        page > 1 ? (
+          <a href={href(page - 1)} class:list={[box, idle, "text-fg-secondary"]} aria-label="Previous page">
+            <ChevronLeft size={16} aria-hidden="true" />
+          </a>
+        ) : (
+          <span class:list={[box, "bg-white text-fg-disabled ring-1 ring-border ring-inset"]} aria-disabled="true">
+            <ChevronLeft size={16} aria-hidden="true" />
+            <span class="sr-only">Previous page</span>
+          </span>
+        )
+      }
+    </li>
+    {
+      pageWindow(page, pageCount).map((p) =>
+        p === "gap" ? (
+          <li class:list={[box, "bg-white text-fg ring-1 ring-border ring-inset"]} aria-hidden="true">…</li>
+        ) : (
+          <li>
+            {p === page ? (
+              <span class:list={[box, "bg-navy-900 text-white"]} aria-current="page">{p}</span>
+            ) : (
+              <a href={href(p)} class:list={[box, idle]}>{p}</a>
+            )}
+          </li>
+        ),
+      )
+    }
+    <li>
+      {
+        hasNext ? (
+          <a href={href(page + 1)} class:list={[box, idle, "text-fg-secondary"]} aria-label="Next page">
+            <ChevronRight size={16} aria-hidden="true" />
+          </a>
+        ) : (
+          <span class:list={[box, "bg-white text-fg-disabled ring-1 ring-border ring-inset"]} aria-disabled="true">
+            <ChevronRight size={16} aria-hidden="true" />
+            <span class="sr-only">Next page</span>
+          </span>
+        )
+      }
+    </li>
+  </ul>
+</nav>
+
+{
+  hasNext && (
+    <a
+      href={href(page + 1)}
+      class="group flex w-full items-center justify-center gap-2 rounded-md bg-white px-[22px] py-3.5 text-[15px] font-semibold text-fg ring-1 ring-border ring-inset aria-busy:pointer-events-none aria-busy:opacity-70 xl:hidden"
+      data-load-more
+    >
+      Load more products
+      <RefreshCw size={16} class="group-aria-busy:animate-spin" aria-hidden="true" />
+    </a>
+  )
+}

@@ -11,8 +11,20 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export const TICKET_STATUSES = ['new', 'in_progress', 'resolved', 'closed'] as const;
 export type TTicketStatus = (typeof TICKET_STATUSES)[number];
-export const TICKET_CHANNELS = ['phone', 'whatsapp', 'email', 'web', 'onsite', 'other'] as const;
+export const TICKET_CHANNELS = ['phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other'] as const;
 export type TTicketChannel = (typeof TICKET_CHANNELS)[number];
+/** Channels staff may pick; `portal` is set only by the customer portal (ERP-0022). */
+export const STAFF_TICKET_CHANNELS = TICKET_CHANNELS.filter((channel) => channel !== 'portal');
+
+/** A message on the ticket thread (ERP-0022). `customer` comments are visible in the portal. */
+export type TTicketComment = {
+	id: string;
+	authorType: 'staff' | 'customer';
+	authorName: string;
+	body: string;
+	visibility: 'internal' | 'customer';
+	createdAt: number;
+};
 
 export const TICKET_STATUS_VARIANT: Record<TTicketStatus, 'default' | 'secondary' | 'outline'> = {
 	new: 'default',
@@ -131,3 +143,14 @@ export const resolveTicket = (id: string, input: { resolution: string; serviceCo
 export const reopenTicket = (id: string) => send<TServiceTicket>(`/service-tickets/${id}/reopen`, 'POST');
 export const closeTicket = (id: string, input: { confirmedByName: string; confirmationChannel: TTicketChannel }) =>
 	send<TServiceTicket>(`/service-tickets/${id}/close`, 'POST', input);
+
+export function ticketCommentsQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ['tickets', 'comments', id] as const,
+		queryFn: async () => (await request<TTicketComment[]>(`/service-tickets/${id}/comments`)).data ?? [],
+	});
+}
+
+export async function addTicketComment(id: string, input: { body: string; visibility: 'internal' | 'customer' }) {
+	return (await request<TTicketComment>(`/service-tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(input) })).data;
+}

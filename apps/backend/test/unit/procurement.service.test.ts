@@ -17,12 +17,14 @@ import type {
 	IPurchaseOrderRepository,
 	ISupplierRepository,
 } from '../../src/app/procurement/contracts/procurement.repository.interface';
+import type { TPurchaseOrderWrite } from '../../src/app/procurement/contracts/procurement.repository.interface';
 import { purchaseOrderBodySchema } from '../../src/app/procurement/contracts/purchase-order.contract';
 import { createSupplierSchema, updateSupplierSchema } from '../../src/app/procurement/contracts/supplier.contract';
 import {
 	PurchaseOrderItemUnavailableError,
 	PurchaseOrderSelfApprovalError,
 	PurchaseOrderStateError,
+	PurchaseRequestLineUnavailableError,
 	PurchaseOrderSupplierUnavailableError,
 	SupplierCodeTakenError,
 } from '../../src/app/procurement/errors/procurement.errors';
@@ -71,17 +73,24 @@ class FakeOrders implements IPurchaseOrderRepository {
 	async findItems(id: string) {
 		return this.items.get(id) ?? [];
 	}
-	async create(header: Parameters<IPurchaseOrderRepository['create']>[0], items: Parameters<IPurchaseOrderRepository['create']>[1]) {
+	async create(header: Parameters<IPurchaseOrderRepository['create']>[0], items: Parameters<IPurchaseOrderRepository['create']>[1]): Promise<TPurchaseOrderWrite> {
 		const row = { ...header, id: crypto.randomUUID(), code: null, status: 'draft' } as TPurchaseOrderSelect;
 		this.rows.push(row);
 		this.items.set(row.id, items as TPurchaseOrderItemSelect[]);
-		return row;
+		return { ok: true as const, order: row };
 	}
 	async replaceDraft(id: string, header: object, items: unknown[]) {
 		const row = await this.findById(id);
-		if (!row || row.status !== 'draft') return null;
+		if (!row || row.status !== 'draft') return { ok: false as const, reason: 'notDraft' as const };
 		this.items.set(id, items as TPurchaseOrderItemSelect[]);
-		return Object.assign(row, header);
+		return { ok: true as const, order: Object.assign(row, header) };
+	}
+	async findItemRequests() {
+		return [];
+	}
+	synced: string[] = [];
+	async syncRequestsOfOrder(id: string) {
+		this.synced.push(id);
 	}
 	async transition(id: string, from: readonly PurchaseOrderStatus[], to: PurchaseOrderStatus, patch: object) {
 		const row = await this.findById(id);
@@ -244,6 +253,19 @@ describe('purchase orders', () => {
 		expect((await orders.cancel('owner', order.id, 'Salah pemasok')).status).toBe('cancelled');
 		// ERP-0044: a cancelled PO is voided in the registry.
 		expect(voided).toEqual([`procurement/purchase_order/${order.id}`]);
+		// Its purchase request lines are open for ordering again.
+		expect(orderRepo.synced).toEqual([order.id]);
 		await expect(orders.cancel('owner', order.id, 'lagi')).rejects.toBeInstanceOf(PurchaseOrderStateError);
+	});
+
+	test('a line may order a purchase request line; a refused claim names the PO line', async () => {
+		const supplier = await suppliers.create(supplierInput(), 'purchasing', true);
+		const requestLine = crypto.randomUUID();
+		const order = await orders.create('purchasing', body(supplier.id, { lines: [{ itemId: ITEM, quantity: 2, purchaseRequestItemId: requestLine }] }));
+		expect((await orderRepo.findItems(order.id))[0]).toMatchObject({ purchaseRequestItemId: requestLine });
+		orderRepo.create = async () => ({ ok: false as const, reason: 'requestLine' as const, line: 1 });
+		const refused = orders.create('purchasing', body(supplier.id, { lines: [{ itemId: ITEM, quantity: 2, purchaseRequestItemId: requestLine }] }));
+		await expect(refused).rejects.toBeInstanceOf(PurchaseRequestLineUnavailableError);
+		await expect(refused).rejects.toMatchObject({ params: { line: 1 } });
 	});
 });

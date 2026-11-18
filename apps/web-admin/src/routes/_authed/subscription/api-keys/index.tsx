@@ -111,6 +111,7 @@ function ApplicationKeys({ application }: { application: TLicensableApplication 
 								<TableHead>{t('licensing:field.name')}</TableHead>
 								<TableHead>{t('licensing:apiKeys.start')}</TableHead>
 								<TableHead>{t('licensing:apiKeys.created')}</TableHead>
+								<TableHead>{t('licensing:apiKeys.issuedBy')}</TableHead>
 								<TableHead>{t('licensing:apiKeys.lastUsed')}</TableHead>
 								<TableHead>{t('licensing:field.status')}</TableHead>
 								<TableHead />
@@ -124,6 +125,14 @@ function ApplicationKeys({ application }: { application: TLicensableApplication 
 										<code className='font-mono text-xs'>{key.keyStart ? `${key.keyStart}…` : '—'}</code>
 									</TableCell>
 									<TableCell>{formatDateTime(key.createdAt, i18n.language)}</TableCell>
+									<TableCell>
+										{key.createdByName ?? '—'}
+										{key.status === 'revoked' && key.revokedByName && (
+											<div className='text-xs text-muted-foreground'>
+												{t('licensing:apiKeys.revokedBy', { name: key.revokedByName })}
+											</div>
+										)}
+									</TableCell>
 									<TableCell>{key.lastUsedAt ? formatDateTime(key.lastUsedAt, i18n.language) : '—'}</TableCell>
 									<TableCell>
 										<Badge variant={key.status === 'active' ? 'default' : 'outline'}>{t(`licensing:keys.status.${key.status}`)}</Badge>

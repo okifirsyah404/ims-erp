@@ -1,0 +1,168 @@
+---
+import { webUrl } from "../../lib/urls";
+import Search from "@lucide/astro/icons/search";
+import Plus from "@lucide/astro/icons/plus";
+import Package from "@lucide/astro/icons/package";
+import Truck from "@lucide/astro/icons/truck";
+import FolderKanban from "@lucide/astro/icons/folder-kanban";
+import CircleAlert from "@lucide/astro/icons/circle-alert";
+import Route from "@lucide/astro/icons/route";
+import Flag from "@lucide/astro/icons/flag";
+import PackageOpen from "@lucide/astro/icons/package-open";
+import { type OrderSummary, type ProjectSummary } from "@/api/portal";
+import AppButton from "../../components/customer/AppButton.astro";
+import Segmented from "../../components/customer/Segmented.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import SectionHeader from "../../components/customer/SectionHeader.astro";
+import IconTile from "../../components/customer/IconTile.astro";
+import Media from "../../components/customer/Media.astro";
+import Pagination from "../../components/customer/Pagination.astro";
+import type { Page } from "../../lib/paginate";
+import { formatRupiah } from "../../lib/format";
+import { orderChip, projectChip } from "../../lib/status";
+
+/** 06.02 Orders & Projects — Desktop 1440. */
+interface Props {
+  page: Page<OrderSummary>;
+  all: OrderSummary[];
+  projects: ProjectSummary[];
+  tab: string;
+  q: string;
+  tabs: { key: string; label: string; href: string }[];
+}
+
+const { page, all, projects, tab, q, tabs } = Astro.props;
+const active = all.filter((o) => o.status !== "delivered" && o.status !== "cancelled");
+const delivered = all.filter((o) => o.status === "delivered").length;
+const activeProjects = projects.filter((p) => p.status !== "handed_over");
+const stats = [
+  { value: active.length, label: "Active orders", icon: Package, tone: "info" },
+  { value: all.filter((o) => o.status === "shipped").length, label: "In transit", icon: Truck, tone: "info" },
+  { value: activeProjects.length, label: "Active projects", icon: FolderKanban, tone: "success" },
+  { value: activeProjects.filter((p) => p.status === "action_needed").length, label: "Needs your input", icon: CircleAlert, tone: "warning" },
+] as const;
+const trackable = (o: OrderSummary) => o.status === "shipped" || o.status === "installing";
+const card = "rounded-card bg-white shadow-[0_6px_18px_#0A1A3F0A] ring-1 ring-border ring-inset";
+---
+
+<div class="flex flex-col gap-7">
+  <div class="flex items-end justify-between gap-2.5">
+    <div class="flex flex-col gap-1">
+      <h1 class="font-heading text-[34px] font-extrabold tracking-[-1px] text-fg">Orders &amp; projects</h1>
+      <p class="text-[14px] text-fg-muted">{active.length} active orders · {projects.length} projects · {delivered} delivered</p>
+    </div>
+    <div class="flex gap-2.5">
+      <form method="get" action="/orders" role="search" class="w-80">
+        <input type="hidden" name="tab" value={tab} />
+        <label class="flex h-12 items-center gap-2.5 rounded-md bg-white px-4 ring-1 ring-border ring-inset focus-within:ring-[1.5px] focus-within:ring-blue-600">
+          <Search size={18} class="text-fg-muted" aria-hidden="true" />
+          <span class="sr-only">Search orders</span>
+          <input type="search" name="q" value={q} placeholder="Search orders, SKU, AWB" class="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted" />
+        </label>
+      </form>
+      <AppButton href={`${webUrl}/products`} class="h-12"><Plus slot="icon" size={18} aria-hidden="true" />New order</AppButton>
+    </div>
+  </div>
+
+  <ul class="grid grid-cols-4 gap-4">
+    {
+      stats.map(({ value, label, icon: Icon, tone }) => (
+        <li class="flex items-center gap-3 rounded-card bg-white p-5 ring-1 ring-border ring-inset">
+          <IconTile tone={tone} size={48}><Icon size={22} /></IconTile>
+          <span class="flex flex-col gap-0.5">
+            <span class="font-heading text-[24px] font-extrabold text-fg">{value}</span>
+            <span class="text-[13px] font-medium text-fg-muted">{label}</span>
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <Segmented label="Order status" active={tab} items={tabs} class="w-[480px]" />
+
+  {
+    page.items.length === 0 ? (
+      <div class="flex flex-col items-center gap-3 rounded-card bg-white px-6 py-14 text-center ring-1 ring-border ring-inset">
+        <PackageOpen size={28} class="text-blue-600" aria-hidden="true" />
+        <p class="font-heading text-[17px] font-bold text-fg">{q ? "No matching orders" : "No orders here yet"}</p>
+        <p class="text-[14px] text-fg-secondary">{q ? "Try another order number or product name." : "Orders appear here as soon as a quotation is accepted."}</p>
+      </div>
+    ) : (
+      <ul class="grid grid-cols-2 gap-5">
+        {page.items.map((order) => {
+          const chip = orderChip(order.status, order.statusLabel);
+          const done = order.status === "delivered";
+          return (
+            <li class:list={[card, "flex flex-col gap-4 p-5"]}>
+              <a href={`/orders/${order.id}`} class="flex items-center gap-4">
+                <Media src={order.image} alt="" class="size-[72px] shrink-0 rounded-lg bg-surface" />
+                <span class="flex min-w-0 flex-1 flex-col gap-1">
+                  <span class="text-[12.5px] font-semibold text-fg-muted">{order.number}</span>
+                  <span class="font-heading text-[17px] font-bold text-fg">{order.title}</span>
+                </span>
+                <StatusChip label={chip.label} tone={chip.tone} />
+              </a>
+              <div class="flex flex-col gap-2">
+                <span class="h-2 overflow-hidden rounded-pill bg-surface-2">
+                  <span class:list={["block h-full rounded-pill", done ? "bg-success" : "bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]"]} style={`width:${order.progress * 100}%`} />
+                </span>
+                <span class="flex justify-between gap-2.5 text-[13px]">
+                  <span class="font-medium text-fg-secondary">{done ? order.stepLabel : `Step ${order.step} of ${order.stepCount} · ${order.stepLabel}`}</span>
+                  <span class:list={["font-semibold", done ? "text-success" : "text-blue-600"]}>{order.etaLabel}</span>
+                </span>
+              </div>
+              <span class="h-px bg-border" aria-hidden="true" />
+              <div class="flex items-center justify-between gap-2.5">
+                <span class="font-heading text-[18px] font-extrabold text-navy-900">{formatRupiah(order.total)}</span>
+                {trackable(order) ? (
+                  <AppButton href={`/tracking?order=${order.id}`} class="h-[42px]"><Route slot="icon" size={18} aria-hidden="true" />Track</AppButton>
+                ) : done ? (
+                  <AppButton variant="outline" href={`${webUrl}/quote?reorder=${encodeURIComponent(order.number)}`} class="h-[42px]">Reorder</AppButton>
+                ) : (
+                  <AppButton variant="outline" href={`/orders/${order.id}`} class="h-[42px]">Details</AppButton>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+  <Pagination {...page} noun="orders" />
+
+  {
+    projects.length > 0 && (
+      <>
+        <SectionHeader title="Projects" linkLabel="View all projects" href="/projects" />
+        <ul class="grid grid-cols-2 gap-5">
+          {projects.slice(0, 2).map((project) => {
+            const chip = projectChip[project.status];
+            return (
+              <li>
+                <a href={`/projects/${project.id}`} class:list={[card, "flex h-full overflow-hidden transition-shadow hover:shadow-[0_10px_28px_#0A1A3F14]"]}>
+                  <Media alt="" class="w-[220px] shrink-0" />
+                  <span class="flex flex-1 flex-col items-start gap-3 p-[22px]">
+                    <StatusChip label={chip.label} tone={chip.tone} />
+                    <span class="font-heading text-[19px] font-extrabold text-fg">{project.name}</span>
+                    <span class="text-[13px] text-fg-muted">{project.site} · {project.code}</span>
+                    <span class="flex w-full justify-between gap-2.5 text-[13px]">
+                      <span class="font-medium text-fg-secondary">Stage {project.stage} of {project.stageCount} · {project.stageLabel}</span>
+                      <span class="font-bold text-fg">{Math.round(project.progress * 100)}%</span>
+                    </span>
+                    <span class="h-2 w-full overflow-hidden rounded-pill bg-surface-2">
+                      <span class="block h-full rounded-pill bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]" style={`width:${project.progress * 100}%`} />
+                    </span>
+                    <span class="flex w-full items-center gap-2 rounded-md bg-surface px-3 py-2.5 text-[12.5px] font-medium text-fg-secondary">
+                      <Flag size={14} class:list={["shrink-0", project.status === "action_needed" ? "text-warning" : "text-blue-600"]} aria-hidden="true" />
+                      {project.nextLabel}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </>
+    )
+  }
+</div>

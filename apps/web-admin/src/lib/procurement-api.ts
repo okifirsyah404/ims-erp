@@ -122,6 +122,10 @@ export type TPurchaseOrderItem = {
 	unitPrice: number;
 	lineTotal: number;
 	quantityReceived: string;
+	/** The purchase request line this line orders, and its request (PR → PO). */
+	purchaseRequestItemId: string | null;
+	purchaseRequestId: string | null;
+	purchaseRequestCode: string | null;
 };
 
 export type TPurchaseOrderDetail = TPurchaseOrder & { items: TPurchaseOrderItem[]; taxBase: number };
@@ -141,7 +145,92 @@ export type TPurchaseOrderInput = {
 	paymentTerms: string | null;
 	terms: string | null;
 	notes: string | null;
-	lines: { itemId: string; quantity: string; unitPrice: number | null; specification: string | null }[];
+	lines: {
+		itemId: string;
+		quantity: string;
+		unitPrice: number | null;
+		specification: string | null;
+		purchaseRequestItemId: string | null;
+	}[];
+};
+
+/* --------------------------- purchase requests --------------------------- */
+
+export const PURCHASE_REQUEST_STATUSES = ['draft', 'submitted', 'approved', 'ordered', 'cancelled'] as const;
+export type TPurchaseRequestStatus = (typeof PURCHASE_REQUEST_STATUSES)[number];
+export const PR_STATUS_VARIANT: Record<TPurchaseRequestStatus, 'default' | 'secondary' | 'outline'> = {
+	draft: 'outline',
+	submitted: 'secondary',
+	approved: 'default',
+	ordered: 'secondary',
+	cancelled: 'outline',
+};
+
+/** A purchase request (company-wide); money in IDR minor units. */
+export type TPurchaseRequest = {
+	id: string;
+	code: string | null;
+	requestedBy: string | null;
+	requestedByName: string | null;
+	subject: string;
+	justification: string | null;
+	projectName: string | null;
+	/** `YYYY-MM-DD` (Asia/Jakarta). */
+	requestDate: string;
+	neededBy: string | null;
+	status: TPurchaseRequestStatus;
+	estimatedTotal: number;
+	rejectionReason: string | null;
+	cancelledReason: string | null;
+	approvedBy: string | null;
+	createdAt: string;
+};
+
+export type TPurchaseRequestLine = {
+	id: string;
+	/** Null for a free-text line. */
+	itemId: string | null;
+	sku: string | null;
+	name: string;
+	specification: string | null;
+	unit: string;
+	quantity: string;
+	estimatedUnitPrice: number;
+	estimatedTotal: number;
+	notes: string | null;
+	/** The live purchase order ordering this line, if any. */
+	purchaseOrderId: string | null;
+	purchaseOrderCode: string | null;
+	purchaseOrderStatus: TPurchaseOrderStatus | null;
+};
+
+export type TPurchaseRequestDetail = TPurchaseRequest & { lines: TPurchaseRequestLine[] };
+
+export type TPurchaseRequestInput = {
+	subject: string;
+	justification: string | null;
+	projectName: string | null;
+	requestDate: string;
+	neededBy: string | null;
+	lines: {
+		itemId: string | null;
+		name: string | null;
+		unit: string | null;
+		quantity: string;
+		estimatedUnitPrice: number | null;
+		specification: string | null;
+		notes: string | null;
+	}[];
+};
+
+/** An approved request line not yet on a live purchase order. */
+export type TOpenRequestLine = Omit<TPurchaseRequestLine, 'purchaseOrderId' | 'purchaseOrderCode' | 'purchaseOrderStatus'> & {
+	purchaseRequestId: string;
+	purchaseRequestCode: string | null;
+	purchaseRequestSubject: string;
+	projectName: string | null;
+	neededBy: string | null;
+	requestedByName: string | null;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {
@@ -226,6 +315,66 @@ export const cancelPurchaseOrder = (id: string, reason: string) =>
 	send<TPurchaseOrder>(`/purchase-orders/${id}/cancel`, 'POST', { reason });
 
 /** Totals as the server computes them (UX preview). */
+export function purchaseRequestsQueryOptions(params: {
+	page?: number;
+	limit?: number;
+	search?: string;
+	status?: TPurchaseRequestStatus;
+	mine?: boolean;
+}) {
+	return queryOptions({
+		queryKey: ['procurement', 'purchase-requests', params] as const,
+		queryFn: async () => {
+			const envelope = (await request<TPurchaseRequest[]>(`/purchase-requests${query(params)}`)) as TApiPaginatedResponse<TPurchaseRequest>;
+			return { rows: envelope.data, pagination: envelope.pagination };
+		},
+	});
+}
+
+export function purchaseRequestQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ['procurement', 'purchase-requests', id] as const,
+		queryFn: async () => (await request<TPurchaseRequestDetail>(`/purchase-requests/${id}`)).data as TPurchaseRequestDetail,
+		retry: false,
+	});
+}
+
+export function openRequestLinesQueryOptions(params: { search?: string; purchaseRequestId?: string }, enabled = true) {
+	return queryOptions({
+		queryKey: ['procurement', 'purchase-requests', 'open-lines', params] as const,
+		queryFn: async () => (await request<TOpenRequestLine[]>(`/purchase-requests/open-lines${query(params)}`)).data as TOpenRequestLine[],
+		enabled,
+	});
+}
+
+/** An item a requester may ask for (requesters hold no `product:read`). */
+export type TRequestableItem = {
+	id: string;
+	sku: string;
+	name: string;
+	unitLabel: string;
+	specification: string | null;
+	purchasePrice: number;
+};
+
+export function requestableItemsQueryOptions(search: string) {
+	return queryOptions({
+		queryKey: ['procurement', 'purchase-requests', 'items', search] as const,
+		queryFn: async () => (await request<TRequestableItem[]>(`/purchase-requests/items${query({ search })}`)).data as TRequestableItem[],
+		enabled: search !== '',
+	});
+}
+
+export const createPurchaseRequest = (input: TPurchaseRequestInput) => send<TPurchaseRequest>('/purchase-requests', 'POST', input);
+export const updatePurchaseRequest = (id: string, input: TPurchaseRequestInput) =>
+	send<TPurchaseRequest>(`/purchase-requests/${id}`, 'PATCH', input);
+export const submitPurchaseRequest = (id: string) => send<TPurchaseRequest>(`/purchase-requests/${id}/submit`, 'POST');
+export const approvePurchaseRequest = (id: string) => send<TPurchaseRequest>(`/purchase-requests/${id}/approve`, 'POST');
+export const rejectPurchaseRequest = (id: string, reason: string) =>
+	send<TPurchaseRequest>(`/purchase-requests/${id}/reject`, 'POST', { reason });
+export const cancelPurchaseRequest = (id: string, reason: string) =>
+	send<TPurchaseRequest>(`/purchase-requests/${id}/cancel`, 'POST', { reason });
+
 export function previewPoTotals(lineTotals: number[], vatMode: TPoVatMode, vatRateBps: number) {
 	const subtotal = lineTotals.reduce((sum, value) => sum + value, 0);
 	if (vatMode === 'none' || vatRateBps === 0) return { subtotal, taxTotal: 0, grandTotal: subtotal };

@@ -51,7 +51,7 @@ export interface IPurchaseOrderReceiving {
 	 */
 	receive(purchaseOrderId: string, lines: TReceivedQuantity[], tx: TTx): Promise<TReceiveResult>;
 	/**
-	 * Purchase returns (ERP-0064): locks the PO, takes the returned
+	 * Purchase returns (ERP-0068): locks the PO, takes the returned
 	 * quantities off `quantity_received` and moves a `received` or
 	 * `partially_received` PO back to `partially_received` (or `sent` when
 	 * nothing stays received), so the replacement is received normally.

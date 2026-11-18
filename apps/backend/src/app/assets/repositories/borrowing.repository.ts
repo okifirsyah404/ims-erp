@@ -1,5 +1,6 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
+	assets,
 	borrowingEvents,
 	borrowingLines,
 	borrowings,
@@ -94,6 +95,44 @@ export class BorrowingRepository implements IBorrowingRepository {
 			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
 			data,
 		};
+	}
+
+	/**
+	 * Resolves one display photo per borrowing: the first line's asset image.
+	 *
+	 * @param borrowingIds - The page's borrowing ids
+	 * @remarks
+	 * One query for the whole page; lines are ordered so "first" is stable
+	 * (`created_at`, then id). A borrowing with no lines or image-less assets
+	 * simply has no entry.
+	 */
+	async listFirstAssetImages(
+		borrowingIds: string[],
+	): Promise<Array<{ borrowingId: string; imageUrl: string | null }>> {
+		if (borrowingIds.length === 0) return [];
+		const rows = await this.database
+			.select({
+				borrowingId: borrowingLines.borrowingId,
+				imageUrl: assets.imageUrl,
+			})
+			.from(borrowingLines)
+			.innerJoin(assets, eq(assets.id, borrowingLines.assetId))
+			.where(
+				and(
+					inArray(borrowingLines.borrowingId, borrowingIds),
+					isNull(borrowingLines.deletedAt),
+				),
+			)
+			.orderBy(asc(borrowingLines.createdAt), asc(borrowingLines.id));
+
+		const first = new Map<string, string | null>();
+		for (const row of rows) {
+			if (!first.has(row.borrowingId)) first.set(row.borrowingId, row.imageUrl);
+		}
+		return [...first].map(([borrowingId, imageUrl]) => ({
+			borrowingId,
+			imageUrl,
+		}));
 	}
 
 	/** Fetches one alive borrowing by id, scoped to its tenant. */

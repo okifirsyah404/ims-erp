@@ -18,6 +18,7 @@ export * from './controllers/invitation.controller';
 import Elysia from 'elysia';
 
 import { InvitationClaimController, InvitationController, UsernameCheckController } from './controllers/invitation.controller';
+import { PortalAccountController } from './controllers/portal-account.controller';
 import { UserAdminController } from './controllers/user-admin.controller';
 import { UserController } from './controllers/user.controller';
 
@@ -34,6 +35,7 @@ import { UserController } from './controllers/user.controller';
 export function userModule() {
 	return new Elysia({ name: 'user' })
 		.use(UserAdminController.plugin())
+		.use(PortalAccountController.plugin())
 		.use(UserController.plugin())
 		.use(InvitationController.plugin())
 		// Public, sessionless claim flow: token-gated, deliberately outside

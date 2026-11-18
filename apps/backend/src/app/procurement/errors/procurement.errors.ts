@@ -134,3 +134,42 @@ export class PurchaseReturnCodeTakenError extends AppError {
 		super(409, 'procurement.returnCodeTaken', `Return number ${code} is already used`, { code });
 	}
 }
+
+export class PurchaseRequestNotFoundError extends AppError {
+	constructor() {
+		super(404, 'procurement.purchaseRequestNotFound', 'Purchase request not found');
+	}
+}
+
+/** A transition that does not start from the request's status (also races). */
+export class PurchaseRequestStateError extends AppError {
+	constructor(kind: 'notDraft' | 'notSubmitted' | 'notCancellable') {
+		super(422, `procurement.prState.${kind}` as const, `Purchase request state: ${kind}`);
+	}
+}
+
+/** Only the requester edits, submits or cancels their own request. */
+export class PurchaseRequestNotOwnerError extends AppError {
+	constructor() {
+		super(403, 'procurement.prNotOwner', 'Only the requester can change this purchase request');
+	}
+}
+
+export class PurchaseRequestCodeTakenError extends AppError {
+	constructor(code: string) {
+		super(409, 'procurement.prCodeTaken', `PR number ${code} is already used`, { code });
+	}
+}
+
+export class PurchaseRequestSelfApprovalError extends AppError {
+	constructor() {
+		super(403, 'procurement.prSelfApproval', 'You cannot approve or reject your own purchase request');
+	}
+}
+
+/** A PO line points at a request line that is not approved, unknown, or already ordered. */
+export class PurchaseRequestLineUnavailableError extends AppError {
+	constructor(line: number) {
+		super(422, 'procurement.prLineUnavailable', `Line ${line}: the purchase request line is not open for ordering`, { line });
+	}
+}

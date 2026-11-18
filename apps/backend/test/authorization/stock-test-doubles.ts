@@ -329,6 +329,8 @@ export function installStockDoubles(): void {
 			balances,
 			warehouses,
 			items,
+			// Photo URLs are decoration only; these doubles never assert them.
+			{ urlFor: () => null } as never,
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,

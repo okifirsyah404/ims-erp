@@ -244,11 +244,46 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ### planned
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
-- Payment gateway callbacks + reconciliation — T22, ERP-0020. Evidence: none
-  (payment ledger is `finance.payments`, M09; `sales.payments` is scheduled
-  for removal at step S7 in `docs/database/implementation-phases.md`).
+- Gateway reconciliation (fees, gross / net settlement) — T22, ERP-0020.
+  Evidence: none (payment ledger is `finance.payments`, M09; `sales.payments`
+  is scheduled for removal at step S7 in
+  `docs/database/implementation-phases.md`).
+- Document renderer + template editor — T05. Evidence: `GET/POST
+  /documents/templates` exist, no render step, `documents/templates.tsx` is a
+  stub. Print stays browser-print (no PDF library); `pdfmake` is the candidate
+  only if an automatic PDF file is ever needed.
+- External signers on the signature flow (customer/partner via a public token
+  link) — `document.signatures.signer_type` and the `document.shares` token
+  pattern are the upgrade path. Evidence: internal-only V1 ships (below).
+- Drawing the signature on a canvas at signing time (slice 3 of the image
+  question): today the signer uploads an image and reuses it.
+- Generating a PDF from the app's own HTML layouts: the signed-PDF slice stamps
+  an *uploaded* PDF only; print browser stays the default.
+
+### in-progress
+- Online payment of invoices (payment gateway) — T21/T22, ERP-0020, ADR-0021.
+  Evidence: `apps/backend/src/app/payment` (`GatewayPaymentService`,
+  `adapters/` Xendit / SingaPay / fake), `payment.gateway_payments`
+  (ADR-0023; migration `20261117172959_erp0020_payment_gateway`),
+  `test/unit/payment-gateway.test.ts`, invoice page card, `progress.md`
+  2026-11-14 (API e2e 24/24, browser). Gaps: no provider sandbox yet,
+  reconciliation, portal pay button.
 
 ### implemented
+- Document signature requests (ask internal users to sign, sign/decline,
+  cancel, immutable evidence), the per-user signature image, and placing that
+  signature on a PDF uploaded to the document — T05, ERP-0048 / ERP-0049.
+  Evidence: `apps/backend/src/app/document` (`signature.service.ts`,
+  `signature.controller.ts`, `repositories/signature.repository.ts`),
+  `document.signature_requests` + `document.user_signatures` + the three
+  placement columns on `document.signatures` (migrations
+  `20261116112133_erp0048_signature_requests`,
+  `20261116173810_erp0048_signed_pdf`),
+  `test/unit/signature.service.test.ts` (33 tests) + 15 route-guard tests,
+  `/documents/signatures/{documents,request,mine}` pages, the placement page
+  `…/mine/$requestId/place` and the Signatures card on
+  `/documents/files/$documentId`, `progress.md` 2026-11-16 and 2026-11-17.
+  Gaps: no committed e2e, external signers, canvas-drawn signatures.
 - Customers + contacts — T05, ERP-0004/0005. Evidence: `apps/backend/src/app/crm`,
   `test/unit/customer.service.test.ts`, `/crm/customers` pages, `progress.md`
   2026-11-05 (ADR-0011 step 3a). Gaps: real-PG integration tests, e2e.
@@ -278,12 +313,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   review of the serial-unit contract, real-PG integration tests, returns.
 - Invoices with free billing terms, DP, receipts (kwitansi), invoice print
   in the company's exact layout — T05, ERP-0011. Evidence:
-  `apps/backend/src/app/finance`, `test/unit/invoice.service.test.ts`,
+  `apps/backend/src/app/sales` (`InvoiceService` with the journal +
+  `InvoiceBillingService` for terms, restored 2026-11-14 after the PR #68
+  merge had dropped them), `test/unit/invoice-billing.service.test.ts`,
   `/sales/invoices`, `/sales/down-payments`, `/sales/receipts`,
-  `progress.md` 2026-11-06 (ADR-0011 step 3d-2). Gaps: real-PG integration
-  tests, e2e, kwitansi print (no sample), `finance.payments` ledger (S7).
-  Since the PR #68 merge the Sales invoice API on main no longer matches the
-  web billing card / void calls (`progress.md` 2026-11-12, "UAT scripts").
+  `progress.md` 2026-11-06 (ADR-0011 step 3d-2) and 2026-11-14 (fix, API
+  e2e 19/19, browser check). Gaps: kwitansi print (no sample),
+  `finance.payments` ledger (S7).
 
 ## M03 Subscription and Licensing
 
@@ -296,6 +332,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   Evidence: `progress.md` 2026-11-06 (M03 stage 2): `/licensing/v1`,
   `/subscription/api-keys`, `/subscription/activations`; 12 + 11 unit tests,
   e2e. Not yet accepted by the owner.
+
+- License API docs for own applications (gym, e-ticketing, visitor, …) —
+  T24 groundwork, ERP-0019. Evidence: `docs/architecture/modules/licensing-integration.md`
+  + `docs/architecture/api/licensing.yaml` (moved into `docs/architecture/` from a separate docs site
+  site), `progress.md` 2026-11-14.
+
+- License API keys issued as the acting member — ERP-0019, PR #104. Evidence:
+  `progress.md` 2026-11-15; keys stay organization-owned but Better Auth is
+  called as the signing member (`issuedBy` in metadata, "Issued by" /
+  "Revoked by" on `/subscription/api-keys`), Better Auth `/api-key/*` HTTP
+  routes closed, refusals map to `403 licensing.apiKey.notPermitted`. Not yet
+  accepted by the owner.
 
 ### blocked
 - Pilot application licensing integration — T24. Needs pilot app source access.
@@ -414,7 +462,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   programmer A's review; the adjustment form's warehouse list is admin-only.
 - Purchase returns (retur pembelian) from a BPB, replacement only: one-level
   approval, `return_out` stock movement and serial units `returned` on
-  shipping, the PO re-opened for the replacement — ERP-0064. Evidence:
+  shipping, the PO re-opened for the replacement — ERP-0068. Evidence:
   `procurement/services/purchase-return.service.ts`,
   `test/unit/purchase-return.service.test.ts`, `/procurement/purchase-returns`,
   `progress.md` 2026-11-15 (API e2e 34/34, browser walk-through). Gaps:
@@ -436,6 +484,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `plans/warehouse-hardening.md` phases 1/2/2b done, UI
   `/inventory/warehouses/*`. Note: multi-warehouse rebaselined by ADR-0010
   (proposed 2026-11-04, owner sign-off pending).
+- Inventory & asset list UX — ERP-0063 (2026-11-16). Products/Components/
+  Materials and the asset register are card grids with the entity photo
+  (`components/item-thumb.tsx`, initials fallback); create moved into a dialog on
+  each list page (`ItemForm.compact` + `defaultItemKind`, `AssetForm`
+  `onSuccess`/`onCancel`), and both `/new` routes were deleted along with
+  `nav:item.newItem`; `page` is a URL search param on all six lists with the
+  page size fixed at 24 in the client, so `limit` never appears in the address
+  bar, and `useClampPage` rewrites a stale `page` back into range. Stock balances/movements and borrowings show the item/asset photo, which
+  the backend now projects (`findNamesByIds` returns `imageObjectKey`,
+  `ItemImageService.urlFor`, `IBorrowingRepository.listFirstAssetImages`).
+  Evidence: `progress.md` 2026-11-16. Gaps: the pager is unverified beyond one
+  page (seeded lists fit a single page).
 
 ### proposed (ADR-0010)
 - Warehouse↔organization links + scoped access — ERP-0031. Code landed
@@ -450,6 +510,12 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   to implemented 2026-11-10 (see above).
 
 ### implemented
+- Purchase requests (PR → PO by lines, free-text lines mapped on the PO,
+  one-level approval, company-wide) — T07, ERP-0063 (2026-11-15). Evidence:
+  `procurement/services/purchase-request.service.ts`,
+  `repositories/request-ordering.ts`, `test/unit/purchase-request.service.test.ts`,
+  `/procurement/purchase-requests`, `progress.md` 2026-11-15 (API e2e 32/32,
+  browser). Not yet accepted by the owner.
 - Minimal HR employees + warehouse PIC — ERP-0034 (2026-11-10). Invite-first
   employee CRUD (`/hr/employees`: list/detail/create/patch/archive + picker),
   `hr.employees` with nullable organization (company-level rows) and
@@ -512,10 +578,24 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M07 Projects and After-Sales
 
-### planned
-- Portal: project/BAST status + own tickets — T26, ERP-0022. Evidence: none.
-
 ### implemented
+- Customer portal stage 1 — T26 + the account part of T25, ERP-0022
+  (ADR-0022): one login per customer contact with a role, staff invitations,
+  owners manage colleagues, individuals sign up with an emailed code, the web
+  admin refuses customer logins; `/portal/v1` sign-in (lockout), projects
+  with milestones/BASTs/files (no costs), service tickets opened, discussed
+  and confirmed by the customer (staff thread with internal notes), devices
+  and warranties. Evidence: `src/app/portal`,
+  `test/unit/customer-portal.test.ts`, `progress.md` 2026-11-14 (e2e 50/50).
+  Gaps: the website adapter routes not wired; stage 2 (orders, quotations,
+  invoices, documents, attachments) planned.
+- Customer-facing UI in the monorepo: the public website and the customer
+  portal (Astro) moved from the separate `entragate-platform` repository into
+  `apps/` as root workspaces — `@ims-erp/web-landing` (:4321),
+  `@ims-erp/web-customer-portal` (:4322), `@ims-erp/design-tokens`; one
+  `bun.lock`, `astro check`/`astro build` wired into turbo. The ERP contract
+  clients live in each app (`src/api/`), not in a shared package. Evidence: `progress.md` 2026-11-15 (astro check 0 errors, astro
+  build passes) and 2026-11-18 (rename to `@ims-erp/*`, merge onto main).
 - Projects from a deal: PIC, targets, stage, default checklist with
   assignees, testing / training / BAST evidence (closing rule), direct costs
   with receipts, shipped material value and margin (cost-restricted) — T08,
@@ -704,6 +784,19 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - ERP-0037 Port M02/M05/M07 onto main (ADR-0011): steps 1-2 implemented
 
 ### implemented
+- ERP-0064 Dynamic company branding + login onboarding image (2026-11-17).
+  `company.profiles.onboarding_object_key` (WebP via `storeDocumentImage`,
+  S3/MinIO); `PUT/DELETE /company/profile/onboarding`; public
+  `GET /company/branding` -> `{ name, onboardingUrl }` (no guard);
+  `ICompanyService.getDisplayName()`; emails and the tax XLSX creator take
+  `tradingName ?? legalName` over `APP_NAME` env (fallback `'ERP'`); the
+  login page subtitle and hero image come from branding
+  (`/hero.png` fallback). Upload fields live on an "Images" card on
+  `/settings/company` (user request; supersedes the ERP-0045c logo
+  placement on `/settings/documents`, which now holds the document settings
+  only and gains an `open: true` nav leaf). Evidence: `progress.md`
+  2026-11-17; backend 1133 tests, web-admin 119, locales 98; live HTTP +
+  browser verified.
 - ERP-0045c Settings section (2026-11-13). Sidebar `Settings` after
   Administration: Company, Code numbering, Document. `/settings/company`,
   `/settings/code-numbers`, `/settings/documents`; `/admin/company` and

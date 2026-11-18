@@ -1,0 +1,54 @@
+---
+import Headset from "@lucide/astro/icons/headset";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import { routes } from "../../data/site";
+
+/** "Not sure what fits?" consultation card (02.01 · Help Card). */
+interface Props {
+  variant: "sidebar" | "mobile";
+  class?: string;
+}
+
+const { variant, class: className } = Astro.props;
+const href = `${routes.contact}?topic=consultation`;
+---
+
+{
+  variant === "sidebar" ? (
+    <aside class:list={["flex flex-col gap-3 rounded-lg bg-navy-900 p-[22px]", className]}>
+      <span class="flex size-10 items-center justify-center rounded-md bg-white/10 text-cyan-400">
+        <Headset size={20} aria-hidden="true" />
+      </span>
+      <h2 class="font-heading text-[17px] font-bold text-white">Not sure what fits your site?</h2>
+      <p class="text-[13px] leading-5 text-fg-on-dark-muted">
+        Our engineers will recommend the right gates for your traffic and space.
+      </p>
+      <a
+        href={href}
+        class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-3.5 py-[11px] text-[14px] font-semibold text-white shadow-cta hover:bg-blue-700"
+      >
+        Free consultation
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
+    </aside>
+  ) : (
+    <aside class:list={["flex flex-col gap-3 rounded-lg bg-navy-900 p-[22px]", className]}>
+      <div class="flex items-center gap-3">
+        <span class="flex size-10 items-center justify-center rounded-md bg-white/10 text-cyan-400">
+          <Headset size={20} aria-hidden="true" />
+        </span>
+        <h2 class="font-heading text-[17px] font-bold text-white">Not sure what fits?</h2>
+      </div>
+      <p class="text-[14px] leading-[22px] text-fg-on-dark-muted">
+        Our engineers will recommend the right gates for your traffic and space.
+      </p>
+      <a
+        href={href}
+        class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta"
+      >
+        Free consultation
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
+    </aside>
+  )
+}

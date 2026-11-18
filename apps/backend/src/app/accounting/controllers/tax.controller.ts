@@ -1,5 +1,6 @@
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
+import { COMPANY_SERVICE_TOKEN, type ICompanyService } from '@app/company';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import {
@@ -166,7 +167,10 @@ export class TaxController {
 				'/export.xlsx',
 				async ({ query, erp, set }) => {
 					const { year, month } = recapQuerySchema.parse(query);
-					const { lines } = await tax.recap(erp.organizationId, year, month);
+					const [{ lines }, company] = await Promise.all([
+						tax.recap(erp.organizationId, year, month),
+						container.resolve<ICompanyService>(COMPANY_SERVICE_TOKEN).getProfile(),
+					]);
 					const buffer = await recapToXlsx(
 						lines.map((line) => ({
 							code: line.code,
@@ -177,6 +181,7 @@ export class TaxController {
 							filingStatus: line.filingStatus,
 						})),
 						{ year, month },
+						company,
 					);
 					set.status = 200;
 					set.headers['content-type'] =

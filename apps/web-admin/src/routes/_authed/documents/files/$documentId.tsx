@@ -33,6 +33,7 @@ import {
 	uploadDocumentFile,
 } from '@/lib/documents-api';
 import { formatDateTime } from '@/lib/format';
+import { documentSignatureSectionQueryOptions } from '@/lib/signature-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/documents/files/$documentId` — one registry document with its files and links. */
@@ -52,17 +53,22 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 }
 
 function DocumentDetailPage() {
-	const { t, i18n } = useTranslation(['documents', 'common']);
+	const { t, i18n } = useTranslation(['documents', 'signatures', 'common']);
 	const { documentId } = Route.useParams();
 	const queryClient = useQueryClient();
 	const canRead = usePermission('document.read');
 	const canUpdate = usePermission('document.update');
 	const canDownload = usePermission('document.download');
+	const canRequestSignature = usePermission('document.signature_request');
 	const fileInput = useRef<HTMLInputElement>(null);
 	const [expiresInDays, setExpiresInDays] = useState(30);
 
 	const { data, isPending, isError, error } = useQuery({
 		...documentDetailQueryOptions(documentId),
+		enabled: canRead,
+	});
+	const signatureSection = useQuery({
+		...documentSignatureSectionQueryOptions(documentId),
 		enabled: canRead,
 	});
 
@@ -311,6 +317,70 @@ function DocumentDetailPage() {
 							</TableBody>
 						</Table>
 					)}
+				</CardContent>
+			</Card>
+
+			<Card>
+				<CardHeader className='flex flex-row items-center justify-between'>
+					<div>
+						<CardTitle>{t('signatures:entries')}</CardTitle>
+						<CardDescription>{t('signatures:registerDescription')}</CardDescription>
+					</div>
+					{canRequestSignature && data.status !== 'void' && (
+						<Link
+							to='/documents/signatures/request'
+							className='text-sm font-medium text-primary hover:underline'
+						>
+							{t('signatures:requestTitle')}
+						</Link>
+					)}
+				</CardHeader>
+				<CardContent className='flex flex-col gap-4'>
+					{signatureSection.isError && (
+						<p className='text-sm text-destructive'>{signatureSection.error.message}</p>
+					)}
+					<div>
+						<h3 className='mb-2 text-sm font-medium'>{t('signatures:signaturesOnDocument')}</h3>
+						{(signatureSection.data?.signatures ?? []).length === 0 ? (
+							<p className='text-sm text-muted-foreground'>{t('signatures:empty')}</p>
+						) : (
+							<ul className='flex flex-col gap-1 text-sm'>
+								{(signatureSection.data?.signatures ?? []).map((signature) => (
+									<li key={signature.id} className='flex flex-wrap justify-between gap-3'>
+										<span>
+											{signature.signerName} ·{' '}
+											{t(`signatures:methodOption.${signature.method}`)}
+										</span>
+										<span className='text-xs text-muted-foreground'>
+											{formatDateTime(signature.signedAt, i18n.language)}
+										</span>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
+					<div>
+						<h3 className='mb-2 text-sm font-medium'>{t('signatures:outgoing')}</h3>
+						{(signatureSection.data?.requests ?? []).length === 0 ? (
+							<p className='text-sm text-muted-foreground'>{t('signatures:outgoingEmpty')}</p>
+						) : (
+							<ul className='flex flex-col gap-1 text-sm'>
+								{(signatureSection.data?.requests ?? []).map((request) => (
+									<li key={request.id} className='flex flex-wrap items-center justify-between gap-3'>
+										<span>
+											{request.signerName}
+											{request.expiresAt
+												? ` · ${t('signatures:expiresAt')} ${formatDateTime(request.expiresAt, i18n.language)}`
+												: ''}
+										</span>
+										<Badge variant={request.effectiveStatus === 'pending' ? 'secondary' : 'outline'}>
+											{t(`signatures:status.${request.effectiveStatus}`)}
+										</Badge>
+									</li>
+								))}
+							</ul>
+						)}
+					</div>
 				</CardContent>
 			</Card>
 

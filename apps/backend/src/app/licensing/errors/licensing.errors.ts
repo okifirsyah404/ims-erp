@@ -82,15 +82,15 @@ export class LicenseRefusedError extends AppError {
 	}
 }
 
-/** API keys are for own applications, issued on behalf of the organization owner. */
+/** API keys are for own applications, issued and revoked as the acting member. */
 export class ApiKeyIssueError extends AppError {
-	constructor(kind: 'ownOnly' | 'noOwner' | 'notFound') {
+	constructor(kind: 'ownOnly' | 'notPermitted' | 'notFound') {
 		const messages = {
 			ownOnly: 'API keys are only for the company’s own, active applications',
-			noOwner: 'The organization has no owner to issue the key',
+			notPermitted: 'Your role cannot issue or revoke license API keys',
 			notFound: 'API key not found',
 		};
-		super(kind === 'notFound' ? 404 : 422, `licensing.apiKey.${kind}` as const, messages[kind]);
+		super(kind === 'notFound' ? 404 : kind === 'notPermitted' ? 403 : 422, `licensing.apiKey.${kind}` as const, messages[kind]);
 	}
 }
 

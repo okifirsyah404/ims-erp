@@ -1,0 +1,89 @@
+---
+import Heart from "@lucide/astro/icons/heart";
+import ShoppingCart from "@lucide/astro/icons/shopping-cart";
+import FileText from "@lucide/astro/icons/file-text";
+import Bell from "@lucide/astro/icons/bell";
+import Media from "../ui/Media.astro";
+import { stockBadges } from "./stock";
+import { routes } from "../../data/site";
+import { formatRupiah } from "../../lib/format";
+import type { ProductSummary } from "../../types/catalog";
+
+/** Product Card / Compact (HfuBq) — mobile catalog grid and related-products scroller. */
+interface Props {
+  product: ProductSummary;
+  class?: string;
+}
+
+const { product, class: className } = Astro.props;
+const href = `${routes.products}/${product.slug}`;
+const onRequest = product.price === null;
+const notifyHref = `${routes.contact}?topic=restock&product=${product.slug}`;
+const badge = stockBadges[product.stock];
+---
+
+<article class:list={["group/card relative flex flex-col rounded-lg bg-white p-1.5 ring-1 ring-border transition-shadow duration-300 ring-inset hover:shadow-[0_12px_28px_#0A1A3F14]", className]} data-reveal>
+  <div class="relative h-[150px] overflow-hidden rounded-md">
+    <Media src={product.image} alt={product.name} class="absolute inset-0 size-full transition-transform duration-500 ease-out group-hover/card:scale-[1.04] motion-reduce:transition-none" />
+    <div class="relative flex items-start justify-between p-2">
+      <span class="flex items-center gap-1 rounded-pill bg-white/90 px-[7px] py-[3px]">
+        <span class:list={["size-[5px] rounded-full", badge.dot]}></span>
+        <span class:list={["text-[10px] font-semibold", badge.text]}>{badge.shortLabel}</span>
+      </span>
+      <button
+        type="button"
+        class="relative z-10 flex size-[26px] items-center justify-center rounded-pill bg-white/90 text-fg-secondary transition-colors hover:text-danger aria-pressed:text-danger [&[aria-pressed=true]_svg]:fill-current"
+        aria-label={`Save ${product.name} to wishlist`}
+        aria-pressed="false"
+        data-wishlist={product.slug}
+      >
+        <Heart size={13} aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+  <div class="flex flex-1 flex-col gap-1 px-1.5 pt-3 pb-1.5">
+    <p class="text-[10px] font-bold tracking-[0.8px] text-blue-600 uppercase">{product.shortCategory}</p>
+    <h3 class="font-heading text-[14px] leading-[18px] font-bold text-fg">
+      <a href={href} class="after:absolute after:inset-0">{product.name}</a>
+    </h3>
+    <div class="mt-auto flex items-center justify-between gap-1 pt-2">
+      <span
+        class:list={[
+          "font-heading font-extrabold whitespace-nowrap",
+          onRequest ? "text-[13px] text-blue-600" : "text-[15px] text-navy-900",
+        ]}
+      >
+        {product.price === null ? "Request Price" : formatRupiah(product.price)}
+      </span>
+      {
+        onRequest ? (
+          <a
+            href={`${routes.quote}?product=${product.slug}`}
+            class="relative z-10 flex size-[34px] shrink-0 items-center justify-center rounded-md bg-blue-600 text-white"
+            aria-label={`Request a quotation for ${product.name}`}
+          >
+            <FileText size={15} aria-hidden="true" />
+          </a>
+        ) : product.stock === "out" ? (
+          <a
+            href={notifyHref}
+            class="relative z-10 flex size-[34px] shrink-0 items-center justify-center rounded-md bg-surface-2 text-fg-secondary"
+            aria-label={`Notify me when ${product.name} is back in stock`}
+          >
+            <Bell size={15} aria-hidden="true" />
+          </a>
+        ) : (
+          <button
+            type="button"
+            class="relative z-10 flex size-[34px] shrink-0 items-center justify-center rounded-md bg-navy-900 text-white"
+            aria-label={`Add ${product.name} to cart`}
+            data-add-to-cart={product.slug}
+            data-product-name={product.name}
+          >
+            <ShoppingCart size={15} aria-hidden="true" />
+          </button>
+        )
+      }
+    </div>
+  </div>
+</article>

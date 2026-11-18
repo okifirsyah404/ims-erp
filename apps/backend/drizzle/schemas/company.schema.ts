@@ -101,6 +101,8 @@ export const companyProfiles = companySchema.table(
 		logoObjectKey: text('logo_object_key'),
 		/** Object-storage key of the signature and stamp image above the signatory name. */
 		signatureObjectKey: text('signature_object_key'),
+		/** Object-storage key of the onboarding image shown on the login page. */
+		onboardingObjectKey: text('onboarding_object_key'),
 		signatoryName: varchar('signatory_name', { length: 200 }),
 		signatoryTitle: varchar('signatory_title', { length: 100 }),
 		/** Prefilled into new quotations. */

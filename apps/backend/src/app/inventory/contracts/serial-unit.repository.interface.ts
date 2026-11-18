@@ -87,7 +87,7 @@ export interface ISerialUnitRepository {
 	): Promise<string[]>;
 
 	/**
-	 * Marks the listed units returned to the supplier (ERP-0064), guarded on
+	 * Marks the listed units returned to the supplier (ERP-0068), guarded on
 	 * `status = 'in_stock'` and the warehouse inside the update; custody
 	 * leaves the warehouse.
 	 *

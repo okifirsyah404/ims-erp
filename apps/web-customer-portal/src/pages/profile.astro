@@ -1,0 +1,177 @@
+---
+import QrCode from "@lucide/astro/icons/qr-code";
+import Settings from "@lucide/astro/icons/settings";
+import PenLine from "@lucide/astro/icons/pen-line";
+import FileText from "@lucide/astro/icons/file-text";
+import CreditCard from "@lucide/astro/icons/credit-card";
+import Package from "@lucide/astro/icons/package";
+import Cpu from "@lucide/astro/icons/cpu";
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import CalendarClock from "@lucide/astro/icons/calendar-clock";
+import FolderOpen from "@lucide/astro/icons/folder-open";
+import MapPin from "@lucide/astro/icons/map-pin";
+import Bell from "@lucide/astro/icons/bell";
+import LogOut from "@lucide/astro/icons/log-out";
+import UserRound from "@lucide/astro/icons/user-round";
+import Heart from "@lucide/astro/icons/heart";
+import ProfileDesktop from "../features/account/ProfileDesktop.astro";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import Avatar from "../components/customer/Avatar.astro";
+import StatusChip from "../components/customer/StatusChip.astro";
+import ListRow from "../components/customer/ListRow.astro";
+import IconTile, { type TileTone } from "../components/customer/IconTile.astro";
+import { customerService } from "../services";
+import { unlessNotConnected } from "../services/errors";
+import { type ProfileSummary } from "@/api/portal";
+import { formatRupiah } from "../lib/format";
+import { version } from "../../package.json";
+
+/** 05.09 Profile (mobile) · 06.07 Profile & settings (desktop). */
+const user = Astro.locals.user!;
+// The profile counters may not be connected in the ERP yet: show zeros rather than an error page.
+const emptyProfile: ProfileSummary = {
+  stats: { orders: 0, projects: 0, devices: 0, tickets: 0 },
+  quotationsAwaiting: 0,
+  outstanding: 0,
+  orderCount: 0,
+  memberSince: "",
+  deviceCount: 0,
+  siteCount: 0,
+  warrantyExpiring: 0,
+  documentCount: 0,
+  memberCount: 0,
+  approverCount: 0,
+};
+const [profile, account] = await Promise.all([
+  unlessNotConnected(customerService.profile(Astro.locals.tokens!), emptyProfile, "profile.summary"),
+  customerService.account(Astro.locals.tokens!),
+]);
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+type Row = { title: string; subtitle: string; icon: typeof Package; tone: TileTone; href?: string; trailing?: string };
+const groups: { label: string; rows: Row[] }[] = [
+  {
+    label: "Commerce",
+    rows: [
+      {
+        title: "Quotations",
+        subtitle: profile.quotationsAwaiting ? `${profile.quotationsAwaiting} awaiting approval` : "No quotations awaiting approval",
+        icon: FileText,
+        tone: "warning",
+        href: "/quotations",
+        trailing: profile.quotationsAwaiting ? String(profile.quotationsAwaiting) : undefined,
+      },
+      { title: "Invoices & payments", subtitle: `${formatRupiah(profile.outstanding)} outstanding`, icon: CreditCard, tone: "info", href: "/payments" },
+      { title: "Order history", subtitle: `${plural(profile.orderCount, "order")} since ${profile.memberSince}`, icon: Package, tone: "surface", href: "/orders" },
+    ],
+  },
+  {
+    label: "After-sales",
+    rows: [
+      { title: "My registered products", subtitle: `${plural(profile.deviceCount, "device")} across ${plural(profile.siteCount, "site")}`, icon: Cpu, tone: "success", href: "/products" },
+      {
+        title: "Warranty",
+        subtitle: profile.warrantyExpiring ? `${profile.warrantyExpiring} expiring soon` : "All warranties active",
+        icon: ShieldCheck,
+        tone: "success",
+        href: "/products",
+      },
+      { title: "Service bookings", subtitle: profile.nextBookingLabel ? `Next: ${profile.nextBookingLabel}` : "No upcoming visits", icon: CalendarClock, tone: "info", href: "/support/book" },
+      { title: "Documents", subtitle: plural(profile.documentCount, "file"), icon: FolderOpen, tone: "neutral", href: "/documents" },
+    ],
+  },
+  {
+    label: "Account",
+    rows: [
+      { title: "Personal details", subtitle: user.email, icon: UserRound, tone: "neutral", href: "/profile/personal" },
+      { title: "Company & team", subtitle: `${plural(profile.memberCount, "member")} · ${plural(profile.approverCount, "approver")}`, icon: BuildingComplex, tone: "neutral", href: "/company" },
+      { title: "Sites & addresses", subtitle: plural(profile.siteCount, "site"), icon: MapPin, tone: "neutral", href: "/sites" },
+      { title: "Wishlist", subtitle: "Products saved from entragate.com", icon: Heart, tone: "neutral", href: "/wishlist" },
+      { title: "Notifications", subtitle: "Inbox · push, email & WhatsApp in Settings", icon: Bell, tone: "neutral", href: "/notifications" },
+      { title: "Settings", subtitle: "Security, language, privacy", icon: Settings, tone: "neutral", href: "/settings" },
+    ],
+  },
+];
+const stats = [
+  { label: "Orders", value: profile.stats.orders },
+  { label: "Projects", value: profile.stats.projects },
+  { label: "Devices", value: profile.stats.devices },
+  { label: "Tickets", value: profile.stats.tickets },
+];
+---
+
+<CustomerLayout title="Profile" tab="profile" desktop="full">
+  <div class="hidden xl:block"><ProfileDesktop profile={profile} account={account} /></div>
+  <div class="xl:hidden">
+  <header class="flex items-center justify-between gap-2.5 px-5 py-1.5">
+    <h1 class="font-heading text-[28px] font-extrabold tracking-[-0.6px] text-fg">Profile</h1>
+    <div class="flex items-center gap-2.5">
+      <IconButton label="Scan a device QR" href="/products/register"><QrCode size={20} aria-hidden="true" /></IconButton>
+      <IconButton label="Settings" href="/settings"><Settings size={20} aria-hidden="true" /></IconButton>
+    </div>
+  </header>
+
+  <div class="flex flex-col gap-[22px] px-5 pt-3.5 pb-6">
+    <section class="relative isolate flex flex-col gap-[18px] overflow-hidden rounded-xl bg-[linear-gradient(137.3deg,var(--eg-navy-950)_17.6%,var(--eg-navy-800)_63%,var(--eg-blue-700)_82.4%)] p-5">
+      <span class="absolute -top-[100px] left-[210px] -z-10 size-[240px] rounded-full bg-[radial-gradient(closest-side,#22D3EE40,#22D3EE00)]" aria-hidden="true"></span>
+      <div class="flex items-center gap-3.5">
+        <Avatar initials={user.initials} size={64} class="!text-[22px] ring-3 ring-white/30" />
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <p class="font-heading text-[20px] font-extrabold text-white">{user.name}</p>
+          <p class="text-[12.5px] leading-[18px] text-fg-on-dark-muted">{[user.jobTitle, user.company?.name].filter(Boolean).join(" · ") || user.email}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <StatusChip
+          tone="cyan"
+          label={`${user.accountType === "business" ? "Business" : "Personal"}${user.verified ? " · Verified" : ""}`}
+        />
+        <a href="/profile/personal" class="flex items-center gap-[5px] rounded-pill bg-white/12 px-2.5 py-[5px] text-[12px] font-semibold text-white hover:bg-white/20">
+          <PenLine size={12} aria-hidden="true" />
+          Edit profile
+        </a>
+      </div>
+      <dl class="flex border-t border-white/15 pt-3.5">
+        {
+          stats.map((s) => (
+            <div class="flex flex-1 flex-col-reverse items-center gap-0.5">
+              <dt class="text-[11.5px] font-medium text-fg-on-dark-muted">{s.label}</dt>
+              <dd class="font-heading text-[18px] font-extrabold text-white">{s.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+
+    {
+      groups.map((group) => (
+        <section class="flex flex-col gap-2.5">
+          <h2 class="text-[11.5px] font-bold tracking-[1px] text-fg-muted uppercase">{group.label}</h2>
+          <div class="flex flex-col rounded-card bg-white py-1 ring-1 ring-border ring-inset">
+            {group.rows.map((row, index) => (
+              <>
+                {index > 0 && <span class="h-px bg-border" />}
+                <ListRow title={row.title} subtitle={row.subtitle} href={row.href} trailing={row.trailing}>
+                  <IconTile slot="icon" tone={row.tone}>
+                    <row.icon size={20} />
+                  </IconTile>
+                </ListRow>
+              </>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+
+    <form method="post" action="/logout">
+      <button type="submit" class="flex h-[52px] w-full items-center justify-center gap-2 rounded-control bg-danger-bg text-[15px] font-semibold text-danger">
+        <LogOut size={18} aria-hidden="true" />
+        Sign out
+      </button>
+    </form>
+    <p class="text-center text-[12px] font-medium text-fg-muted">Entragate Customer App {version} · CV. Inti Multi Solusi</p>
+  </div>
+  </div>
+</CustomerLayout>

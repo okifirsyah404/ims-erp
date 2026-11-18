@@ -1,0 +1,38 @@
+---
+import Hourglass from "@lucide/astro/icons/hourglass";
+import House from "@lucide/astro/icons/house";
+import Headset from "@lucide/astro/icons/headset";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+
+/**
+ * Shown instead of an error page when a screen needs an ERP operation that is not
+ * connected yet (PortalNotConfiguredError, see the middleware). The ERP ships the portal
+ * in stages; the routes that exist are in ./services/portal/erp-routes.ts.
+ */
+Astro.response.status = 200;
+---
+
+<CustomerLayout title="Coming soon">
+  <section class="flex flex-col items-center gap-6 px-6 py-16 text-center">
+    <span class="flex size-[104px] items-center justify-center rounded-pill bg-blue-50/70" aria-hidden="true">
+      <span class="flex size-[84px] items-center justify-center rounded-pill bg-blue-50 text-blue-600"><Hourglass size={36} /></span>
+    </span>
+    <div class="flex max-w-md flex-col gap-2">
+      <h1 class="font-heading text-[26px] font-extrabold tracking-[-0.6px] text-fg">Coming soon</h1>
+      <p class="text-[15px] leading-[22px] text-fg-secondary">
+        This part of the portal isn't available for your account yet. Your projects, warranties and support tickets are
+        already here, and we're adding the rest step by step.
+      </p>
+    </div>
+    <div class="flex w-full max-w-md flex-col gap-3 sm:flex-row">
+      <a href="/" class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-blue-600 px-5 text-[16px] font-semibold text-white transition-colors hover:bg-blue-700">
+        <House size={18} aria-hidden="true" />
+        Back to home
+      </a>
+      <a href="/support" class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control border border-border bg-surface px-5 text-[16px] font-semibold text-fg transition-colors hover:bg-surface-2">
+        <Headset size={18} aria-hidden="true" />
+        Contact support
+      </a>
+    </div>
+  </section>
+</CustomerLayout>

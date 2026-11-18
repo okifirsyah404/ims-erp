@@ -1,0 +1,35 @@
+---
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+
+/** Breadcrumb (kR0Zw). The last item is the current page. */
+interface Props {
+  items: { label: string; href?: string }[];
+  class?: string;
+}
+
+const { items, class: className } = Astro.props;
+---
+
+<nav aria-label="Breadcrumb" class={className}>
+  <ol class="flex flex-wrap items-center gap-2 text-[13px]">
+    {
+      items.map((item, index) => {
+        const current = index === items.length - 1;
+        return (
+          <li class="flex items-center gap-2">
+            {current ? (
+              <span aria-current="page" class="font-semibold text-fg">
+                {item.label}
+              </span>
+            ) : (
+              <a href={item.href} class="text-fg-muted hover:text-fg">
+                {item.label}
+              </a>
+            )}
+            {!current && <ChevronRight size={13} class="text-fg-muted" aria-hidden="true" />}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>

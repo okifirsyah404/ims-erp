@@ -1,6 +1,12 @@
 import { LoginForm } from '@/components/form/login-form';
 import { z } from 'zod';
-import { createFileRoute, useRouter } from '@tanstack/react-router';
+import {
+	createFileRoute,
+	isRedirect,
+	redirect,
+	useRouter,
+} from '@tanstack/react-router';
+import { getSession } from '@/lib/auth-client';
 
 /**
  * `redirect` carries the URL the user originally requested (set by the
@@ -12,6 +18,19 @@ const loginSearchSchema = z.object({
 
 export const Route = createFileRoute('/login/')({
 	validateSearch: loginSearchSchema,
+	// Inverse of the `_authed` guard: a user who already has a session has
+	// no business on the login page. Honors the `redirect` param (full URL)
+	// set by the guard, otherwise goes to the app root.
+	beforeLoad: async ({ search }) => {
+		try {
+			const { data } = await getSession();
+			if (data) throw redirect({ href: search.redirect ?? '/' });
+		} catch (error) {
+			// A failed session check (e.g. network) must not block the login
+			// form — only real redirects are re-thrown.
+			if (isRedirect(error)) throw error;
+		}
+	},
 	component: LoginPage,
 });
 

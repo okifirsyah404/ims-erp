@@ -1,0 +1,47 @@
+---
+import LegalPage from "../components/ui/LegalPage.astro";
+
+/** Privacy policy (linked from every form). Aligns with Indonesia's PDP Law (UU 27/2022). */
+const sections = [
+  {
+    title: "Who we are",
+    body: ["Entragate is a brand of CV. Inti Multi Solusi (IMS). This policy explains how we handle personal data collected on entragate.com and in our forms."],
+  },
+  {
+    title: "Data we collect",
+    body: [
+      "Contact details you submit (name, company, email, phone or WhatsApp), project information in quotation, demo and contact requests, and order details at checkout.",
+      "Basic technical data such as browser type and pages visited, used to keep the site secure and working.",
+    ],
+  },
+  {
+    title: "How we use it",
+    body: [
+      "To answer your request, prepare quotations, process and deliver orders, schedule demos and site surveys, and provide support.",
+      "We do not sell personal data. We only send marketing messages if you ask us to.",
+    ],
+  },
+  {
+    title: "Sharing",
+    body: ["We share data only with service providers that help us operate — payment processors, couriers and our hosting provider in Indonesia — under contracts that protect it."],
+  },
+  {
+    title: "Storage & security",
+    body: [
+      "Data is stored on servers in Indonesia and protected with encryption in transit and access controls.",
+      "Items you add to the cart, quotation list or saved checkout address stay in your own browser until you submit them.",
+    ],
+  },
+  {
+    title: "Your rights",
+    body: ["You can ask to access, correct or delete your personal data, or withdraw consent, by emailing us. We respond within 3 x 24 hours as required by the PDP Law."],
+  },
+];
+---
+
+<LegalPage
+  title="Privacy Policy"
+  description="How CV. Inti Multi Solusi collects, uses and protects personal data on the Entragate website."
+  updated="1 October 2026"
+  sections={sections}
+/>

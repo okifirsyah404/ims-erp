@@ -1,0 +1,54 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Award from "@lucide/astro/icons/award";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import ContactCta from "../../components/home/ContactCta.astro";
+import { trainingCourses } from "../../data/knowledge";
+import { routes } from "../../data/site";
+import { icons } from "../../lib/icons";
+
+/** Knowledge Center · Training & Certification (tab shown in 01.03/01.04). */
+const enquire = (title: string) => `${routes.contact}?topic=partnership&subject=${encodeURIComponent(`${title} training`)}`;
+---
+
+<PublicLayout title="Training & Certification | Entragate Knowledge Center" description="Certified installer, administrator and developer courses for Entragate partners and customers.">
+  <KnowledgeTabs active="training" />
+  <PageHero
+    title="Training & Certification"
+    description="Hands-on courses for installers, operators and developers — run by the engineers who build Entragate."
+    mobileDescription="Courses for installers, operators and developers."
+    breadcrumb={[{ label: "Home", href: routes.home }, { label: "Support", href: routes.help }, { label: "Training & Certification" }]}
+  />
+  <section class="container-page flex flex-col gap-6 py-8 xl:py-16">
+    <ul class="grid gap-5 md:grid-cols-2 xl:gap-6">
+      {
+        trainingCourses.map((course) => {
+          const Icon = icons[course.icon];
+          return (
+            <li class="flex flex-col gap-4 rounded-card bg-white p-6 ring-1 ring-border ring-inset xl:p-8">
+              <div class="flex items-center justify-between">
+                <span class="flex size-12 items-center justify-center rounded-md bg-blue-50 text-blue-600"><Icon size={22} aria-hidden="true" /></span>
+                <span class="rounded-pill bg-surface px-3 py-1 text-[12px] font-semibold text-fg-secondary">{course.level}</span>
+              </div>
+              <div class="flex flex-col gap-2">
+                <h2 class="font-heading text-[20px] font-bold text-navy-900">{course.title}</h2>
+                <p class="text-[14px] font-semibold text-blue-600">{course.duration}</p>
+                <p class="text-[15px] leading-6 text-fg-secondary">{course.description}</p>
+              </div>
+              <a href={enquire(course.title)} class="mt-auto flex w-fit items-center gap-2 text-[14px] font-bold text-blue-600 hover:underline">
+                Register interest <ArrowRight size={15} aria-hidden="true" />
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+    <p class="flex items-center gap-2 text-[14px] text-fg-secondary">
+      <Award size={16} class="text-blue-600" aria-hidden="true" />
+      Graduates receive an Entragate certificate valid for two years and priority access to partner files.
+    </p>
+  </section>
+  <ContactCta />
+</PublicLayout>

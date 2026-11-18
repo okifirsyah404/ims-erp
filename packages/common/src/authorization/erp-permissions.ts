@@ -42,7 +42,7 @@ export const erpStatements = {
 	supplier: ['read', 'create', 'update', 'archive', 'read_bank'],
 	purchase_request: ['read', 'create', 'update', 'submit', 'approve', 'reject'],
 	purchase_order: ['read', 'create', 'update', 'submit', 'approve', 'send', 'cancel', 'export'],
-	/** ERP-0064: goods sent back to the supplier for replacement; `ship` posts the stock out. */
+	/** ERP-0068: goods sent back to the supplier for replacement; `ship` posts the stock out. */
 	purchase_return: ['read', 'create', 'update', 'submit', 'approve', 'ship', 'cancel'],
 
 	// Projects and technicians
@@ -111,6 +111,8 @@ export const erpStatements = {
 
 	// After-sales and assets
 	service_ticket: ['read', 'create', 'update', 'assign', 'resolve', 'close'],
+	// Customer portal logins (ERP-0022): invite a customer, resend, revoke.
+	portal_account: ['read', 'invite', 'revoke'],
 	warranty_claim: ['read', 'create', 'update', 'approve', 'reject', 'close'],
 	asset: ['read', 'create', 'update', 'assign', 'return', 'maintain', 'dispose', 'export'],
 
@@ -185,6 +187,11 @@ export const builtInOrgStatements = {
 	member: ['create', 'read', 'update', 'delete'],
 	invitation: ['create', 'cancel'],
 	ac: ['create', 'read', 'update', 'delete'],
+	// Better Auth `apiKey` plugin, organization-owned keys: the key is issued
+	// and revoked as the acting member, so Better Auth checks (and the ERP
+	// records) the real issuer. Granted with `license:manage_api` only; the
+	// plugin's own HTTP routes are disabled (`auth.options.ts`).
+	apiKey: ['create', 'read', 'update', 'delete'],
 } as const satisfies Record<string, readonly string[]>;
 
 /** Restricted portal statement vocabularies (not internal back-office). */export const portalStatements = {
@@ -391,11 +398,13 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		organization: ['create', 'read', 'update', 'delete'],
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
+		apiKey: ['create', 'read', 'update', 'delete'],
 	},
 
 	// Organization administration + non-sensitive master data. No payroll,
 	// payment execution, accounting, investor-finance, or integration secrets.
 	admin: {
+		portal_account: ['read', 'invite', 'revoke'],
 		organization: ['read', 'update'],
 		member: ['create', 'read', 'update', 'delete'],
 		invitation: ['create', 'cancel'],
@@ -485,6 +494,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	},
 
 	sales_manager: {
+		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],
@@ -499,6 +509,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		catalog: ['read', 'create', 'update', 'publish', 'archive'],
 		// M03 license register and its API keys (decisions 2026-11-06).
 		license: ['read', 'create', 'activate', 'extend', 'revoke', 'read_key', 'manage_api'],
+		// Issues the license API keys as themselves (pairs with `manage_api`).
+		apiKey: ['create', 'read', 'update'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
 		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
@@ -592,7 +604,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		stock: ['read', 'receive', 'issue', 'transfer', 'export'],
 		stock_adjustment: ['read', 'create', 'submit'],
-		// ERP-0064: hands the goods to the supplier (stock out).
+		// ERP-0068: hands the goods to the supplier (stock out).
 		purchase_return: ['read', 'ship'],
 		asset_borrowing: [
 			'read',
@@ -691,6 +703,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 	},
 
 	customer_service: {
+		portal_account: ['read', 'invite', 'revoke'],
 		ac: ['read'],
 		asset_borrowing: ['read', 'create'],
 		dashboard: ['read'],

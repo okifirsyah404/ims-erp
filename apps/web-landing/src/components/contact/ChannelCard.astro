@@ -1,0 +1,42 @@
+---
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import type { AstroComponent } from "@lucide/astro";
+
+/** 09.02 · Contact channel card (Sales hotline / WhatsApp / Email). */
+interface Props {
+  icon: AstroComponent;
+  label: string;
+  value: string;
+  note?: string;
+  href: string;
+  tone?: "blue" | "success";
+  external?: boolean;
+}
+
+const { icon: Icon, label, value, note, href, tone = "blue", external = false } = Astro.props;
+---
+
+<a
+  href={href}
+  target={external ? "_blank" : undefined}
+  rel={external ? "noopener noreferrer" : undefined}
+  class="group flex items-center gap-3.5 rounded-lg bg-white p-4 ring-1 ring-border ring-inset transition-shadow hover:shadow-[0_8px_24px_#0A1A3F14] xl:gap-0 xl:p-5 xl:shadow-[0_8px_24px_#0A1A3F0D]"
+>
+  <span
+    class:list={[
+      "flex size-11 shrink-0 items-center justify-center rounded-md xl:size-12",
+      tone === "success" ? "bg-success-bg text-success" : "bg-blue-50 text-blue-600",
+    ]}
+    aria-hidden="true"
+  >
+    <Icon size={22} class="size-5 xl:size-[22px]" />
+  </span>
+  <span class="flex min-w-0 flex-1 flex-col gap-0.5 xl:gap-[3px] xl:pl-4">
+    <span class="text-[12.5px] font-semibold text-fg-muted xl:text-[13px]">{label}</span>
+    <span class="text-[15px] font-bold text-fg xl:font-heading xl:text-[17px]">{value}</span>
+    {note && <span class="hidden text-[13px] text-fg-muted xl:block">{note}</span>}
+  </span>
+  <ChevronRight size={18} class="shrink-0 text-fg-muted xl:hidden" aria-hidden="true" />
+  <ArrowUpRight size={18} class="hidden shrink-0 text-fg-muted group-hover:text-blue-600 xl:block" aria-hidden="true" />
+</a>

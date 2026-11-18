@@ -1,0 +1,282 @@
+---
+import { webUrl } from "../lib/urls";
+import Search from "@lucide/astro/icons/search";
+import Bell from "@lucide/astro/icons/bell";
+import Ellipsis from "@lucide/astro/icons/ellipsis";
+import CalendarCheck from "@lucide/astro/icons/calendar-check";
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import Truck from "@lucide/astro/icons/truck";
+import Check from "@lucide/astro/icons/check";
+import FileText from "@lucide/astro/icons/file-text";
+import CreditCard from "@lucide/astro/icons/credit-card";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import FolderOpen from "@lucide/astro/icons/folder-open";
+import CalendarClock from "@lucide/astro/icons/calendar-clock";
+import Cpu from "@lucide/astro/icons/cpu";
+import MessageSquarePlus from "@lucide/astro/icons/message-square-plus";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import Wrench from "@lucide/astro/icons/wrench";
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Circle from "@lucide/astro/icons/circle";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import PackageOpen from "@lucide/astro/icons/package-open";
+import CustomerLayout from "../layouts/CustomerLayout.astro";
+import Logo from "../components/customer/Logo.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import Avatar from "../components/customer/Avatar.astro";
+import StatusChip from "../components/customer/StatusChip.astro";
+import SectionHeader from "../components/customer/SectionHeader.astro";
+import QuickAction from "../components/customer/QuickAction.astro";
+import ListRow from "../components/customer/ListRow.astro";
+import { safePath } from "../lib/safe-url";
+import IconTile from "../components/customer/IconTile.astro";
+import AllServicesSheet from "../features/home/AllServicesSheet";
+import HomeDesktop from "../features/home/HomeDesktop.astro";
+import { customerService, invoicesService, ordersService, quotationsService } from "../services";
+import { unlessNotConnected } from "../services/errors";
+import { formatRupiah } from "../lib/format";
+import { greeting, quotationChip } from "../lib/status";
+
+/** 05.01 Home (+05.01d new-account state when there is no activity yet). */
+const user = Astro.locals.user!;
+const tokens = Astro.locals.tokens!;
+// Orders, invoices and quotations may not be connected in the ERP yet: show them empty.
+const [home, orders, invoices, quotations] = await Promise.all([
+  customerService.home(tokens),
+  unlessNotConnected(ordersService.list(tokens), [], "home.orders"),
+  unlessNotConnected(invoicesService.list(tokens), { outstanding: 0, paidThisYear: 0, overdue: 0, invoices: [] }, "home.invoices"),
+  unlessNotConnected(quotationsService.list(tokens), [], "home.quotations"),
+]);
+const ordersInProgress = orders.filter((o) => o.status !== "delivered" && o.status !== "cancelled").slice(0, 2);
+const openInvoice = invoices.invoices.find((i) => i.status !== "paid");
+const isNewAccount = !home.activeProject && !home.nextDelivery && home.quotations.length === 0;
+const project = home.activeProject;
+const delivery = home.nextDelivery;
+const activityIcon = { payment: { icon: BadgeCheck, tone: "success" }, shipment: { icon: Truck, tone: "info" }, quotation: { icon: FileText, tone: "warning" } } as const;
+---
+
+<CustomerLayout title="Home" tab="home" desktop="full">
+  <div class="hidden xl:block"><HomeDesktop home={home} orders={ordersInProgress} invoice={openInvoice} quotations={quotations} /></div>
+  <div class="xl:hidden">
+  <header class="flex items-center justify-between px-5 pt-1">
+    <Logo />
+    <div class="flex items-center gap-2.5">
+      <IconButton label="Search" href="/search"><Search size={20} aria-hidden="true" /></IconButton>
+      <IconButton label={home.unreadNotifications ? `Notifications, ${home.unreadNotifications} unread` : "Notifications"} href="/notifications" dot={home.unreadNotifications > 0}>
+        <Bell size={20} aria-hidden="true" />
+      </IconButton>
+    </div>
+  </header>
+
+  <div class="flex flex-col gap-7 px-5 pt-5 pb-7">
+    <div class="flex items-center gap-3.5">
+      <Avatar initials={user.initials} size={52} class="!text-[15px]" />
+      <div class="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p class="text-[14px] font-medium text-fg-muted">{greeting()}</p>
+        <p class="truncate font-heading text-[24px] font-extrabold tracking-[-0.5px] text-fg">{user.name}</p>
+      </div>
+      <StatusChip label={user.accountType === "business" ? "Business" : "Personal"} />
+    </div>
+
+    {
+      isNewAccount && home.onboarding && (
+        <section class="flex flex-col gap-4 rounded-xl bg-[linear-gradient(141deg,var(--eg-navy-900)_16%,var(--eg-navy-800)_57%,var(--eg-blue-700)_84%)] p-5 shadow-[0_16px_32px_#0A1A3F40]">
+          <div class="flex items-center justify-between">
+            <h2 class="font-heading text-[18px] font-extrabold text-white">Welcome to Entragate</h2>
+            <span class="text-[13px] font-bold text-cyan-400">{home.onboarding.done} of {home.onboarding.total}</span>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-pill bg-white/15">
+            <div class="h-full rounded-pill bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]" style={`width:${(home.onboarding.done / home.onboarding.total) * 100}%`}></div>
+          </div>
+          <ul class="flex flex-col gap-3">
+            {home.onboarding.steps.map((step) => (
+              <li>
+                <a href={safePath(step.href) ?? "/"} class="flex items-center gap-2.5 text-[14px]">
+                  {step.done ? <CircleCheck size={18} class="text-cyan-400" aria-hidden="true" /> : <Circle size={18} class="text-fg-on-dark-muted" aria-hidden="true" />}
+                  <span class:list={["flex-1", step.done ? "text-fg-on-dark-muted" : "font-semibold text-white"]}>{step.label}</span>
+                  {!step.done && <ChevronRight size={18} class="text-fg-on-dark-muted" aria-hidden="true" />}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    {
+      project && (
+        <section aria-label="Active project" class="flex flex-col items-center">
+          <span class="h-2.5 w-[286px] rounded-t-md bg-navy-800/35" aria-hidden="true" />
+          <span class="h-2.5 w-[318px] rounded-t-control bg-navy-800/65" aria-hidden="true" />
+          <div class="relative isolate flex w-full flex-col gap-[18px] overflow-hidden rounded-xl bg-[linear-gradient(141.5deg,var(--eg-navy-900)_16.3%,var(--eg-navy-800)_56.7%,var(--eg-blue-700)_83.7%)] p-[22px] shadow-[0_16px_32px_#0A1A3F40]">
+            <span class="absolute -top-[90px] left-[200px] -z-10 size-60 rounded-full bg-[radial-gradient(closest-side,#22D3EE59,#22D3EE00)]" aria-hidden="true" />
+            <div class="flex items-center justify-between">
+              <StatusChip tone="cyan" label={`Active project · ${project.index} of ${project.total}`} />
+              <Ellipsis size={20} class="text-fg-on-dark-muted" aria-hidden="true" />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <h2 class="font-heading text-[22px] leading-[26px] font-extrabold tracking-[-0.4px] text-white">{project.name}</h2>
+              <p class="text-[13px] leading-[19px] text-fg-on-dark-muted">{project.site} · {project.id}</p>
+            </div>
+            <div class="flex flex-col gap-2.5">
+              <div class="flex items-end justify-between">
+                <span class="text-[13px] font-medium text-fg-on-dark-muted">Stage {project.stage} of {project.stageCount} · {project.stageLabel}</span>
+                <span class="font-heading text-[22px] font-extrabold text-white">{Math.round(project.progress * 100)}%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-pill bg-white/15" role="progressbar" aria-valuenow={Math.round(project.progress * 100)} aria-valuemin="0" aria-valuemax="100" aria-label="Project progress">
+                <div class="h-full rounded-pill bg-[linear-gradient(90deg,var(--eg-blue-600),var(--eg-cyan-400))]" style={`width:${project.progress * 100}%`}></div>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-2 text-[13px] font-semibold text-white">
+                <CalendarCheck size={16} class="text-cyan-400" aria-hidden="true" />
+                {project.completionLabel}
+              </span>
+              <a href={`/projects/${project.id}`} class="flex items-center gap-1.5 rounded-pill bg-white px-3.5 py-[9px] text-[13px] font-bold text-navy-900">
+                View
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </a>
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    {
+      delivery && (
+        <a href={`/tracking?order=${delivery.id}`} class="flex flex-col gap-4 rounded-card bg-white p-[18px] shadow-[0_6px_18px_#0A1A3F0A] ring-1 ring-border ring-inset">
+          <div class="flex items-center gap-3">
+            <IconTile tone="surface" size={48} radius="lg"><Truck size={22} /></IconTile>
+            <div class="flex min-w-0 flex-1 flex-col gap-[3px]">
+              <span class="text-[15px] font-bold text-fg">{delivery.title}</span>
+              <span class="text-[12.5px] text-fg-muted">{delivery.arrivesLabel}</span>
+            </div>
+            <StatusChip label={delivery.statusLabel} />
+          </div>
+          <ol class="flex" aria-label="Delivery progress">
+            {delivery.stages.map((stage, index) => {
+              const done = index < delivery.currentStage;
+              const current = index === delivery.currentStage;
+              return (
+                <li class="flex flex-1 flex-col gap-2">
+                  <span class="flex items-center">
+                    <span class:list={["h-[3px] flex-1", index === 0 ? "bg-transparent" : index <= delivery.currentStage ? "bg-blue-600" : "bg-surface-2"]} />
+                    {done ? (
+                      <span class="flex size-5 items-center justify-center rounded-pill bg-blue-600 text-white"><Check size={12} stroke-width={3} aria-hidden="true" /></span>
+                    ) : current ? (
+                      <span class="size-5 rounded-pill bg-white ring-[5px] ring-blue-600 ring-inset" />
+                    ) : (
+                      <span class="size-5 rounded-pill bg-surface-2" />
+                    )}
+                    <span class:list={["h-[3px] flex-1", index === delivery.stages.length - 1 ? "bg-transparent" : index < delivery.currentStage ? "bg-blue-600" : "bg-surface-2"]} />
+                  </span>
+                  <span class:list={["text-center text-[11px]", current ? "font-bold text-blue-600" : done ? "font-medium text-fg-secondary" : "font-medium text-fg-muted"]}>
+                    {stage}
+                    {current && <span class="sr-only"> (current)</span>}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </a>
+      )
+    }
+
+    <section class="flex flex-col gap-7" aria-labelledby="qa-title">
+      <div class="flex items-center justify-between">
+        <h2 id="qa-title" class="font-heading text-[17px] font-bold text-fg">Quick actions</h2>
+        <span class="text-[14px] font-semibold text-blue-600/50" title="Customising quick actions is coming soon">Edit</span>
+      </div>
+      <div class="grid grid-cols-4 justify-items-center gap-y-4">
+        <QuickAction label="Quotations" href="/quotations"><FileText /></QuickAction>
+        <QuickAction label="Payments" href="/payments"><CreditCard /></QuickAction>
+        <QuickAction label="Warranty" href="/products"><ShieldCheck /></QuickAction>
+        <QuickAction label="Documents" href="/documents"><FolderOpen /></QuickAction>
+        <QuickAction label="Book Service" href="/support/book"><CalendarClock /></QuickAction>
+        <QuickAction label="My Products" href="/products"><Cpu /></QuickAction>
+        <QuickAction label="New Ticket" href="/support/new"><MessageSquarePlus /></QuickAction>
+        <AllServicesSheet client:idle />
+      </div>
+    </section>
+
+    {
+      isNewAccount ? (
+        <section class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-7 text-center">
+          <span class="flex size-14 items-center justify-center rounded-pill bg-white text-blue-600" aria-hidden="true"><PackageOpen size={26} /></span>
+          <h2 class="font-heading text-[17px] font-bold text-fg">No orders yet</h2>
+          <p class="text-[14px] leading-[1.5] text-fg-secondary">Your orders, deliveries and installations will appear here with live tracking.</p>
+          <div class="flex gap-2.5 pt-1">
+            <a href={`${webUrl}/products`} class="flex h-11 items-center rounded-md bg-white px-4 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset">Browse catalog</a>
+            <a href={`${webUrl}/quote`} class="flex h-11 items-center rounded-md bg-blue-600 px-4 text-[14px] font-semibold text-white">Get a quote</a>
+          </div>
+        </section>
+      ) : (
+        <>
+          {home.quotations.length > 0 && (
+            <section class="flex flex-col gap-7">
+              <SectionHeader title="Recent quotations" linkLabel="See all" href="/quotations" />
+              <ul class="scrollbar-none -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5">
+                {home.quotations.map((quote) => {
+                  const chip = quotationChip[quote.status];
+                  return (
+                    <li class="w-[262px] shrink-0 snap-start">
+                      <a href={`/quotations/${quote.id}`} class="flex h-full flex-col gap-3.5 rounded-card bg-surface p-[18px]">
+                        <span class="flex items-center justify-between gap-2.5">
+                          <span class="text-[12px] font-semibold text-fg-muted">{quote.number}</span>
+                          <StatusChip label={chip.label} tone={chip.tone} />
+                        </span>
+                        <span class="text-[15px] leading-[22px] font-bold text-fg">{quote.shortTitle ?? quote.title}</span>
+                        <span class="mt-auto flex items-center justify-between gap-2.5">
+                          <span class="font-heading text-[20px] font-extrabold whitespace-nowrap text-navy-900">{formatRupiah(quote.total)}</span>
+                          {quote.expiresInDays && <span class="text-[12px] font-medium whitespace-nowrap text-fg-muted">Valid {quote.expiresInDays} days</span>}
+                        </span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
+
+          {home.openTickets.length > 0 && (
+            <section class="flex flex-col gap-7">
+              <SectionHeader title="Open support tickets" linkLabel={`${home.openTickets.length} open`} href="/support" />
+              <div class="flex flex-col rounded-card bg-white py-1 shadow-[0_6px_18px_#0A1A3F0A] ring-1 ring-border ring-inset">
+                {home.openTickets.map((ticket, index) => (
+                  <>
+                    {index > 0 && <span class="mx-4 h-px bg-border" />}
+                    <ListRow
+                      href={`/support/${ticket.id}`}
+                      title={ticket.shortSubject ?? ticket.subject}
+                      subtitle={`${ticket.number} · ${ticket.status === "awaiting_you" ? `Support replied ${ticket.lastMessage?.ago} ago` : ticket.status === "in_progress" ? "Technician assigned" : "Awaiting assignment"}`}
+                      trailing={ticket.lastMessage?.unread ? "New" : undefined}
+                      trailingClass="text-danger text-[12px]"
+                    >
+                      <IconTile slot="icon" tone={ticket.status === "awaiting_you" ? "warning" : "success"}>
+                        {ticket.status === "awaiting_you" ? <MessageCircle size={20} /> : <Wrench size={20} />}
+                      </IconTile>
+                    </ListRow>
+                  </>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section class="flex flex-col gap-1">
+            <SectionHeader title="Recent activity" linkLabel="See all" href="/notifications" class="mb-4" />
+            {home.activity.map((item) => {
+              const { icon: Icon, tone } = activityIcon[item.kind];
+              return (
+                <ListRow title={item.title} subtitle={item.detail} padding="flush">
+                  <IconTile slot="icon" tone={tone} radius="full"><Icon size={20} /></IconTile>
+                </ListRow>
+              );
+            })}
+          </section>
+        </>
+      )
+    }
+  </div>
+  </div>
+</CustomerLayout>

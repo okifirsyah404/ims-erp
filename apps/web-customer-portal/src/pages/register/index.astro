@@ -1,0 +1,100 @@
+---
+import { actions } from "astro:actions";
+import UserRound from "@lucide/astro/icons/user-round";
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import Check from "@lucide/astro/icons/check";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { authBrands } from "../../layouts/auth-brand";
+import TopBar from "../../components/customer/TopBar.astro";
+import StepBars from "../../components/customer/StepBars.astro";
+import { safeNext } from "../../services/auth";
+
+/** 04.02 Register · Account type. */
+// Keep `next` (e.g. the website checkout hand-off) through registration and verification.
+const nextParam = Astro.url.searchParams.get("next");
+if (nextParam && safeNext(nextParam) !== "/") Astro.session?.set("returnTo", safeNext(nextParam));
+const result = Astro.getActionResult(actions.auth.chooseAccountType);
+if (result?.data) return Astro.redirect("/register/details", 303);
+
+const selected = (await Astro.session?.get("registerAccountType")) ?? "business";
+const options = [
+  {
+    value: "individual",
+    title: "Individual",
+    description: "For homeowners & personal purchases",
+    icon: UserRound,
+    perks: ["Order tracking & warranty", "Service booking"],
+    perkTone: "text-success",
+  },
+  {
+    value: "business",
+    title: "Business",
+    description: "For companies, developers & facilities",
+    icon: BuildingComplex,
+    perks: ["Team members & approvals", "Quotations, invoices & projects", "Tax invoice (Faktur Pajak)"],
+    perkTone: "text-blue-600",
+  },
+] as const;
+---
+
+<AuthLayout title="Create account" brand={authBrands.register}>
+  <TopBar title="Create account" back="/welcome" />
+  <form method="POST" action={actions.auth.chooseAccountType} class="flex flex-1 flex-col gap-6 px-6 pt-2 pb-[max(16px,env(safe-area-inset-bottom))]" data-account-form>
+    <StepBars step={1} total={3} label="Account type" />
+    <div class="flex flex-col gap-2">
+      <h1 class="font-heading text-[26px] leading-[31px] font-extrabold tracking-[-0.6px] text-fg">How will you use Entragate?</h1>
+      <p class="text-[15px] leading-[22px] text-fg-secondary">You can invite teammates or switch later.</p>
+    </div>
+
+    <fieldset class="flex flex-col gap-6">
+      <legend class="sr-only">Account type</legend>
+      {
+        options.map((option) => {
+          const Icon = option.icon;
+          return (
+            <label class="group cursor-pointer">
+              <input type="radio" name="account_type" value={option.value} checked={option.value === selected} class="peer sr-only" />
+              <span class="flex flex-col gap-3.5 rounded-card bg-white p-[18px] ring-1 ring-border ring-inset transition-colors peer-checked:bg-blue-50 peer-checked:ring-2 peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600 [&_[data-icon]]:peer-checked:bg-blue-600 [&_[data-icon]]:peer-checked:text-white [&_[data-radio]]:peer-checked:bg-blue-600 [&_[data-radio]]:peer-checked:ring-0 [&_[data-check]]:peer-checked:block">
+                <span class="flex items-center gap-3.5">
+                  <span data-icon class="flex size-12 shrink-0 items-center justify-center rounded-control bg-surface text-fg-secondary">
+                    <Icon size={22} aria-hidden="true" />
+                  </span>
+                  <span class="flex flex-1 flex-col gap-[3px]">
+                    <span class="font-heading text-[17px] font-bold text-fg">{option.title}</span>
+                    <span class="text-[13px] leading-[19px] text-fg-muted">{option.description}</span>
+                  </span>
+                  <span data-radio class="flex size-6 shrink-0 items-center justify-center rounded-pill bg-white ring-2 ring-border ring-inset">
+                    <Check data-check size={14} stroke-width={3} class="hidden text-white" aria-hidden="true" />
+                  </span>
+                </span>
+                <span class="flex flex-col gap-2 pl-[62px]">
+                  {option.perks.map((perk) => (
+                    <span class="flex items-center gap-2 text-[13px] font-medium text-fg-secondary">
+                      <Check size={14} class={option.perkTone} aria-hidden="true" />
+                      {perk}
+                    </span>
+                  ))}
+                </span>
+              </span>
+            </label>
+          );
+        })
+      }
+    </fieldset>
+
+    <div class="flex flex-col gap-3.5 pt-2">
+      <button type="submit" class="flex h-[54px] items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white hover:bg-blue-700">
+        Continue as <span class="ml-1 capitalize" data-account-label>{selected}</span>
+      </button>
+      <p class="text-center text-[14px] text-fg-muted">Already have an account? <a href="/login" class="font-bold text-blue-600">Sign in</a></p>
+    </div>
+  </form>
+</AuthLayout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-account-form]");
+  form?.addEventListener("change", () => {
+    const value = form.querySelector<HTMLInputElement>("input[name=account_type]:checked")?.value ?? "business";
+    form.querySelector("[data-account-label]")!.textContent = value;
+  });
+</script>

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -23,26 +23,97 @@ import { Search } from 'lucide-react';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { listItems, type TItem } from '@/lib/inventory-api';
 import {
+	openRequestLinesQueryOptions,
 	PO_VAT_MODES,
 	previewPoTotals,
 	PURCHASE_CATEGORIES,
 	suppliersQueryOptions,
+	type TOpenRequestLine,
 	type TPoVatMode,
 	type TPurchaseCategory,
 	type TPurchaseOrderDetail,
 	type TPurchaseOrderInput,
 } from '@/lib/procurement-api';
 
-type TLineDraft = { key: string; itemId: string; sku: string; name: string; unit: string; quantity: string; unitPrice: string; specification: string };
+type TLineDraft = {
+	key: string;
+	/** Empty while a free-text purchase request line is not mapped to an item yet. */
+	itemId: string;
+	sku: string;
+	name: string;
+	unit: string;
+	quantity: string;
+	unitPrice: string;
+	specification: string;
+	/** The purchase request line this line orders (PR → PO), and what it asked for. */
+	purchaseRequestItemId: string | null;
+	requestLabel: string | null;
+};
+
+/** Item search used to map a free-text request line to an item of the master. */
+function ItemMapper({ id, onPick }: { id: string; onPick: (item: TItem) => void }) {
+	const { t } = useTranslation(['procurement']);
+	const [search, setSearch] = useState('');
+	const deferred = useDeferredValue(search.trim());
+	const items = useQuery({
+		queryKey: ['inventory', 'items', 'po-mapper', deferred] as const,
+		queryFn: () => listItems({ search: deferred || undefined, activeOnly: true, limit: 10 }),
+		enabled: deferred !== '',
+	});
+	return (
+		<div className='flex flex-col gap-2 rounded-md border border-dashed border-amber-500 p-2'>
+			<FieldLabel htmlFor={id}>{t('procurement:po.mapItem')}</FieldLabel>
+			<Input id={id} type='search' placeholder={t('procurement:po.itemSearchHint')} value={search} onChange={(event) => setSearch(event.target.value)} />
+			{deferred !== '' && (
+				<ul className='flex max-h-40 flex-col overflow-y-auto rounded-md border'>
+					{(items.data?.rows ?? []).map((item) => (
+						<li key={item.id}>
+							<button
+								type='button'
+								className='flex w-full justify-between gap-4 px-3 py-2 text-left text-sm hover:bg-muted'
+								onClick={() => onPick(item)}
+							>
+								<span>
+									<span className='font-medium'>{item.name}</span>
+									<span className='text-muted-foreground'> · {item.sku}</span>
+								</span>
+								<span className='text-muted-foreground'>{formatIdr(item.purchasePrice)}</span>
+							</button>
+						</li>
+					))}
+				</ul>
+			)}
+		</div>
+	);
+}
+
+/** A purchase order line drafted from an open purchase request line. */
+function fromRequestLine(line: TOpenRequestLine): TLineDraft {
+	return {
+		key: crypto.randomUUID(),
+		itemId: line.itemId ?? '',
+		sku: line.sku ?? '',
+		name: line.name,
+		unit: line.unit,
+		quantity: String(Number(line.quantity)),
+		unitPrice: minorToRupiah(line.estimatedUnitPrice),
+		specification: line.specification ?? '',
+		purchaseRequestItemId: line.id,
+		requestLabel: `${line.purchaseRequestCode ?? '—'} · ${line.name}`,
+	};
+}
 
 /** Create/edit form for a purchase order; totals are a preview, the server recomputes. */
 export function PurchaseOrderForm({
 	order,
+	fromRequestId,
 	submitting,
 	onSubmit,
 	onCancel,
 }: {
 	order: TPurchaseOrderDetail | null;
+	/** Prefills the open lines of this approved purchase request (new PO only). */
+	fromRequestId?: string;
 	submitting: boolean;
 	onSubmit: (input: TPurchaseOrderInput) => void;
 	onCancel: () => void;
@@ -73,8 +144,25 @@ export function PurchaseOrderForm({
 			quantity: String(Number(item.quantity)),
 			unitPrice: minorToRupiah(item.unitPrice),
 			specification: item.specification ?? '',
+			purchaseRequestItemId: item.purchaseRequestItemId,
+			requestLabel: item.purchaseRequestCode,
 		})),
 	);
+	const [requestSearch, setRequestSearch] = useState('');
+	const [showRequests, setShowRequests] = useState(false);
+	const deferredRequest = useDeferredValue(requestSearch.trim());
+	const openLines = useQuery(openRequestLinesQueryOptions({ search: deferredRequest || undefined }, showRequests));
+	const prefill = useQuery(openRequestLinesQueryOptions({ purchaseRequestId: fromRequestId }, !!fromRequestId && !order));
+	const prefilled = useRef(false);
+	useEffect(() => {
+		if (prefilled.current || !prefill.data || prefill.data.length === 0) return;
+		prefilled.current = true;
+		const first = prefill.data[0]!;
+		setLines((current) => [...current, ...prefill.data.map(fromRequestLine)]);
+		setSubject((current) => current || first.purchaseRequestSubject.slice(0, 200));
+		setProjectName((current) => current || (first.projectName ?? ''));
+	}, [prefill.data]);
+	const usedRequestLines = new Set(lines.map((line) => line.purchaseRequestItemId).filter(Boolean));
 	const [itemSearch, setItemSearch] = useState('');
 	const deferredSupplier = useDeferredValue(supplierSearch.trim());
 	const deferredItem = useDeferredValue(itemSearch.trim());
@@ -104,10 +192,25 @@ export function PurchaseOrderForm({
 				quantity: '1',
 				unitPrice: minorToRupiah(item.purchasePrice),
 				specification: item.specification ?? '',
+				purchaseRequestItemId: null,
+				requestLabel: null,
 			},
 		]);
 		setItemSearch('');
 	}
+
+	/** Maps a free-text request line to an item: name, SKU and unit come from the master. */
+	function mapItem(key: string, item: TItem) {
+		patch(key, {
+			itemId: item.id,
+			sku: item.sku,
+			name: item.name,
+			unit: item.unitLabel,
+			specification: item.specification ?? '',
+		});
+	}
+
+	const unmapped = lines.some((line) => !line.itemId);
 
 	const text = (value: string) => value.trim() || null;
 	const input = (id: string, label: string, value: string, set: (value: string) => void, props: React.ComponentProps<typeof Input> = {}) => (
@@ -142,6 +245,7 @@ export function PurchaseOrderForm({
 						quantity: line.quantity,
 						unitPrice: rupiahToMinor(line.unitPrice),
 						specification: text(line.specification),
+						purchaseRequestItemId: line.purchaseRequestItemId,
 					})),
 				});
 			}}
@@ -229,12 +333,23 @@ export function PurchaseOrderForm({
 						<div key={line.key} className='grid gap-3 rounded-md border p-3 sm:grid-cols-6'>
 							<div className='flex items-center justify-between sm:col-span-6'>
 								<span className='text-sm font-medium'>
-									{index + 1}. {line.name} · {line.sku}
+									{index + 1}. {line.name}
+									{line.sku ? ` · ${line.sku}` : ''}
+									{line.requestLabel && (
+										<span className='ml-2 rounded bg-muted px-1.5 py-0.5 text-xs font-normal text-muted-foreground'>
+											{t('procurement:po.fromRequest', { request: line.requestLabel })}
+										</span>
+									)}
 								</span>
 								<Button type='button' variant='ghost' size='sm' onClick={() => setLines((current) => current.filter((row) => row.key !== line.key))}>
 									{t('procurement:po.removeLine')}
 								</Button>
 							</div>
+							{!line.itemId && (
+								<div className='sm:col-span-6'>
+									<ItemMapper id={`po-map-${line.key}`} onPick={(item) => mapItem(line.key, item)} />
+								</div>
+							)}
 							<Field className='sm:col-span-6'>
 								<FieldLabel htmlFor={`po-spec-${line.key}`}>{t('procurement:po.specification')}</FieldLabel>
 								<Textarea
@@ -279,6 +394,51 @@ export function PurchaseOrderForm({
 							</div>
 						</div>
 					))}
+					<div className='flex flex-col gap-2 rounded-md border border-dashed p-3'>
+						<div className='flex items-center justify-between gap-2'>
+							<span className='text-sm font-medium'>{t('procurement:po.fromRequests')}</span>
+							<Button type='button' variant='outline' size='sm' onClick={() => setShowRequests((value) => !value)}>
+								{showRequests ? t('procurement:po.hideRequests') : t('procurement:po.showRequests')}
+							</Button>
+						</div>
+						{showRequests && (
+							<>
+								<Input
+									id='po-request-search'
+									type='search'
+									aria-label={t('procurement:po.requestSearchHint')}
+									placeholder={t('procurement:po.requestSearchHint')}
+									value={requestSearch}
+									onChange={(event) => setRequestSearch(event.target.value)}
+								/>
+								<ul className='flex max-h-64 flex-col overflow-y-auto rounded-md border'>
+									{(openLines.data ?? [])
+										.filter((line) => !usedRequestLines.has(line.id))
+										.map((line) => (
+											<li key={line.id}>
+												<button
+													type='button'
+													className='flex w-full justify-between gap-4 px-3 py-2 text-left text-sm hover:bg-muted'
+													onClick={() => setLines((current) => [...current, fromRequestLine(line)])}
+												>
+													<span>
+														<span className='font-medium'>{line.name}</span>
+														<span className='text-muted-foreground'>
+															{' '}
+															· {Number(line.quantity)} {line.unit} · {line.purchaseRequestCode ?? '—'} · {line.requestedByName ?? '—'}
+														</span>
+													</span>
+													<span className='text-muted-foreground'>{line.itemId ? formatIdr(line.estimatedUnitPrice) : t('procurement:pr.freeText')}</span>
+												</button>
+											</li>
+										))}
+									{openLines.data?.filter((line) => !usedRequestLines.has(line.id)).length === 0 && (
+										<li className='px-3 py-2 text-sm text-muted-foreground'>{t('procurement:po.noOpenRequests')}</li>
+									)}
+								</ul>
+							</>
+						)}
+					</div>
 					<div className='flex flex-col gap-2 rounded-md border border-dashed p-3'>
 						<FieldLabel htmlFor='po-item-search'>{t('procurement:po.addItem')}</FieldLabel>
 						<InputGroup>
@@ -384,7 +544,8 @@ export function PurchaseOrderForm({
 				<Button type='button' variant='outline' onClick={onCancel}>
 					{t('common:action.cancel')}
 				</Button>
-				<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId}>
+				{unmapped && <span className='self-center text-sm text-amber-600'>{t('procurement:po.unmappedHint')}</span>}
+				<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId || unmapped}>
 					{t('common:action.save')}
 				</Button>
 			</div>

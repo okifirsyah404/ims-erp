@@ -1,5 +1,5 @@
 /**
- * Purchase returns (ERP-0064): a return comes from one goods receipt, never
+ * Purchase returns (ERP-0068): a return comes from one goods receipt, never
  * takes more than is left on the receipt line after live returns, names the
  * receipt's own in-stock serials, is approved by someone else and numbered
  * then, and on shipping posts `return_out`, returns the serial units and
