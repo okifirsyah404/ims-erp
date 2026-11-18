@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
 import { toast } from '@/components/toast';
 import { DOCUMENT_IMAGE_MAX_BYTES } from '@/lib/document-image-api';
 import { encodeWebp, rejectImageFile } from '@/lib/image-file';
@@ -72,10 +73,8 @@ export function DocumentImageField({
 	}
 
 	return (
-		<div className='flex flex-col gap-2'>
-			<label htmlFor={id} className='text-sm font-medium'>
-				{label}
-			</label>
+		<Field>
+			<FieldLabel htmlFor={id}>{label}</FieldLabel>
 			<label
 				htmlFor={id}
 				className={`flex h-32 w-full max-w-xs cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-md border border-dashed bg-muted/30 px-3 text-center transition-colors ${
@@ -141,7 +140,7 @@ export function DocumentImageField({
 					)}
 				</div>
 			)}
-			<p className='text-xs text-muted-foreground'>{hint ?? t('image.hint')}</p>
-		</div>
+			<FieldDescription>{hint ?? t('image.hint')}</FieldDescription>
+		</Field>
 	);
 }

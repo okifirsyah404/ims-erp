@@ -23,6 +23,19 @@ import { betterAuthPlugins } from './plugin.auth.js';
 
 export const betterAuthOptions = {
 	baseURL: appConfig.app.url!,
+	// The API key plugin's HTTP routes are closed. Keys are issued and revoked
+	// only through ERP endpoints (license keys: `license:manage_api`) and the
+	// website-key script, which call `auth.api` server-side; Better Auth's
+	// `disabledPaths` applies to HTTP requests only. Without this, any member
+	// holding the `apiKey` statement could mint keys of any config directly.
+	disabledPaths: [
+		'/api-key/create',
+		'/api-key/get',
+		'/api-key/list',
+		'/api-key/update',
+		'/api-key/delete',
+		'/api-key/delete-all-expired-api-keys',
+	],
 	secret: appConfig.app.secret,
 	database: drizzleAdapter(drizzleDB, {
 		provider: 'pg',

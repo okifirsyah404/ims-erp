@@ -1,0 +1,121 @@
+---
+import { webUrl } from "../../lib/urls";
+import { actions, isInputError } from "astro:actions";
+import BuildingComplex from "@lucide/astro/icons/building-complex";
+import Hash from "@lucide/astro/icons/hash";
+import Factory from "@lucide/astro/icons/factory";
+import ChevronDown from "@lucide/astro/icons/chevron-down";
+import Mail from "@lucide/astro/icons/mail";
+import Phone from "@lucide/astro/icons/phone";
+import Lock from "@lucide/astro/icons/lock";
+import UserRound from "@lucide/astro/icons/user-round";
+import Check from "@lucide/astro/icons/check";
+import CircleAlert from "@lucide/astro/icons/circle-alert";
+import AuthLayout from "../../layouts/AuthLayout.astro";
+import { authBrands } from "../../layouts/auth-brand";
+import TopBar from "../../components/customer/TopBar.astro";
+import StepBars from "../../components/customer/StepBars.astro";
+import AppField from "../../components/customer/AppField.astro";
+import PasswordStrength from "../../components/customer/PasswordStrength.astro";
+
+/** 04.03 Register · Business details (individual accounts reuse the layout with a name field). */
+const result = Astro.getActionResult(actions.auth.register);
+if (result?.data) return Astro.redirect("/verify-email", 303);
+
+const accountType = (await Astro.session?.get("registerAccountType")) ?? "business";
+const business = accountType === "business";
+const errors = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+const industries = [
+  "Logistics & Warehousing",
+  "Office & Commercial Real Estate",
+  "Retail & Malls",
+  "Hospitality",
+  "Healthcare",
+  "Education",
+  "Government",
+  "Sports & Events",
+  "Residential",
+  "Other",
+];
+---
+
+<AuthLayout title="Create account" brand={authBrands.business}>
+  <TopBar title="Create account" back="/register" />
+  <form method="POST" action={actions.auth.register} class="flex flex-1 flex-col" novalidate>
+    <div class="flex flex-col gap-[22px] px-6 pt-2 pb-[140px]">
+      <StepBars step={2} total={3} label={business ? "Company details" : "Your details"} />
+      <h1 class="font-heading text-[26px] leading-[31px] font-extrabold tracking-[-0.6px] text-fg">
+        {business ? "Tell us about your company" : "Tell us about you"}
+      </h1>
+
+      {
+        formError && (
+          <div role="alert" class="flex gap-3 rounded-md bg-danger-bg p-3.5 ring-1 ring-danger-border ring-inset">
+            <CircleAlert size={18} class="shrink-0 text-danger" aria-hidden="true" />
+            <p class="text-[14px] font-bold text-danger">{formError}</p>
+          </div>
+        )
+      }
+
+      {
+        business ? (
+          <>
+            <AppField label="Company name" name="company_name" autocomplete="organization" required placeholder="PT Maju Logistik Nusantara" error={errors.company_name?.[0]}>
+              <BuildingComplex slot="icon" />
+            </AppField>
+            <AppField label="NPWP (Tax ID)" name="npwp" inputmode="numeric" placeholder="01.234.567.8-901.000" error={errors.npwp?.[0]}>
+              <Hash slot="icon" />
+            </AppField>
+            <div class="flex flex-col gap-2">
+              <label for="f-industry" class="text-[13px] font-semibold text-fg-secondary">Industry</label>
+              <div class="relative flex h-[54px] items-center gap-2.5 rounded-md bg-surface px-4 ring-1 ring-border ring-inset focus-within:bg-white focus-within:ring-[1.5px] focus-within:ring-blue-600">
+                <Factory size={18} class="shrink-0 text-fg-muted" aria-hidden="true" />
+                <select id="f-industry" name="industry" class="h-full flex-1 appearance-none bg-transparent text-[15px] text-fg outline-none">
+                  {industries.map((industry) => <option value={industry}>{industry}</option>)}
+                </select>
+                <ChevronDown size={18} class="pointer-events-none shrink-0 text-fg-muted" aria-hidden="true" />
+              </div>
+            </div>
+          </>
+        ) : (
+          <AppField label="Full name" name="name" autocomplete="name" required placeholder="Your full name" error={errors.name?.[0]}>
+            <UserRound slot="icon" />
+          </AppField>
+        )
+      }
+
+      <AppField label={business ? "Business email" : "Email address"} name="email" type="email" autocomplete="email" inputmode="email" required placeholder="you@company.co.id" error={errors.email?.[0]}>
+        <Mail slot="icon" />
+      </AppField>
+      <AppField label="Phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required placeholder="+62 812 3456 7890" error={errors.phone?.[0]}>
+        <Phone slot="icon" />
+      </AppField>
+      <div class="flex flex-col gap-2.5">
+        <AppField label="Create password" name="password" type="password" autocomplete="new-password" required minlength={12} error={errors.password?.[0]}>
+          <Lock slot="icon" />
+        </AppField>
+        <PasswordStrength for="password" />
+      </div>
+      <label class="flex cursor-pointer items-start gap-2.5">
+        <input type="checkbox" name="terms" class="peer sr-only" required />
+        <span class="flex size-[22px] shrink-0 items-center justify-center rounded-sm bg-white text-transparent ring-[1.5px] ring-border-strong ring-inset peer-checked:bg-blue-600 peer-checked:text-white peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600">
+          <Check size={14} stroke-width={3} aria-hidden="true" />
+        </span>
+        <span class="flex-1 text-[13px] leading-[19px] text-fg-secondary">
+          I agree to the <a href={`${webUrl}/terms`} class="font-semibold text-blue-600">Terms of Service</a> and
+          <a href={`${webUrl}/privacy`} class="font-semibold text-blue-600">Privacy Policy</a> of CV. Inti Multi Solusi.
+        </span>
+      </label>
+      {errors.terms?.[0] && <p class="-mt-3 text-[12.5px] font-medium text-danger">{errors.terms[0]}</p>}
+    </div>
+
+    <div class="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/96 shadow-[0_-8px_24px_#0A1A3F14] backdrop-blur-[10px]">
+      <div class="app-column px-5 pt-3.5 pb-safe">
+        <button type="submit" class="flex h-[54px] w-full items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white hover:bg-blue-700">
+          {business ? "Create business account" : "Create account"}
+        </button>
+      </div>
+    </div>
+  </form>
+</AuthLayout>

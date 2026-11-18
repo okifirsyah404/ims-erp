@@ -1,0 +1,192 @@
+---
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import Share from "@lucide/astro/icons/share-2";
+import Ellipsis from "@lucide/astro/icons/ellipsis";
+import Check from "@lucide/astro/icons/check";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleDashed from "@lucide/astro/icons/circle-dashed";
+import UserRound from "@lucide/astro/icons/user-round";
+import Phone from "@lucide/astro/icons/phone";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import ProgressRing from "../../components/customer/ProgressRing.astro";
+import ProgressBar from "../../components/customer/ProgressBar.astro";
+import SectionHeader from "../../components/customer/SectionHeader.astro";
+import DocumentRow from "../../components/customer/DocumentRow.astro";
+import ListRow from "../../components/customer/ListRow.astro";
+import IconTile from "../../components/customer/IconTile.astro";
+import Media from "../../components/customer/Media.astro";
+import BottomActionBar from "../../components/customer/BottomActionBar.astro";
+import { portal } from "../../services/portal";
+import { projectChip } from "../../lib/status";
+
+/** 07.03 Project Details. */
+const project = await portal.getProject(Astro.locals.tokens!, Astro.params.id ?? "");
+if (!project) return Astro.rewrite("/404");
+
+const chip = projectChip[project.status];
+const stats = [
+  { value: `${project.stage}/${project.stageCount}`, label: "Stage" },
+  { value: String(project.daysLeft), label: "Days left" },
+  { value: String(project.openTasks), label: "Open tasks" },
+];
+const phone = project.manager.phone?.replace(/[^\d+]/g, "");
+---
+
+<CustomerLayout title={project.name} actionBar section="orders">
+  <header class="relative isolate flex h-[250px] flex-col justify-between px-5 pt-1.5 pb-5">
+    <Media alt="" tone="dark" class="absolute inset-0 -z-10 size-full" />
+    <span class="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2633_0%,#060F26CC_100%)]" aria-hidden="true"></span>
+    <div class="flex items-center justify-between">
+      <IconButton label="Back" href="/projects" tone="glass" data-back><ChevronLeft size={20} aria-hidden="true" /></IconButton>
+      <div class="flex gap-2.5">
+        <IconButton label="Share project" tone="glass" data-share={`${project.name} · ${project.code}`}><Share size={20} aria-hidden="true" /></IconButton>
+        <IconButton label="More options" tone="glass" disabled title="More options are coming soon" class="opacity-60"><Ellipsis size={20} aria-hidden="true" /></IconButton>
+      </div>
+    </div>
+    <div class="flex flex-col items-start gap-2">
+      <StatusChip label={`${chip.label} · ${project.id}`} tone={chip.tone} class="!bg-white" />
+      <h1 class="font-heading text-[26px] leading-[1.15] font-extrabold tracking-[-0.6px] text-white">{project.name}</h1>
+      <p class="text-[13px] text-white/80">{project.site}</p>
+    </div>
+  </header>
+
+  <div class="flex flex-col gap-5 px-5 pt-5 pb-6">
+    <div class="flex items-center gap-2.5">
+      <ProgressRing value={project.progress} label={`${Math.round(project.progress * 100)}%`} />
+      <dl class="flex flex-1 gap-2">
+        {
+          stats.map((s) => (
+            <div class="flex flex-1 flex-col-reverse items-center gap-0.5 rounded-lg bg-surface py-3">
+              <dt class="text-[11.5px] font-medium text-fg-muted">{s.label}</dt>
+              <dd class="font-heading text-[18px] font-extrabold text-fg">{s.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+
+    <SectionHeader title="Milestones" linkLabel="Gantt view" />
+    <ol class="flex flex-col">
+      {
+        project.milestones.map((m, index) => {
+          const last = index === project.milestones.length - 1;
+          const next = project.milestones[index + 1];
+          const photos = m.photos;
+          return (
+            <li class="flex gap-3.5" aria-current={m.state === "current" ? "step" : undefined}>
+              <div class="flex w-6 shrink-0 flex-col items-center">
+                {m.state === "done" ? (
+                  <span class="mt-[3px] flex size-6 items-center justify-center rounded-pill bg-success text-white">
+                    <Check size={14} stroke-width={3} aria-hidden="true" />
+                  </span>
+                ) : m.state === "current" ? (
+                  <span class="mt-3.5 flex size-6 items-center justify-center rounded-pill bg-blue-600 ring-4 ring-blue-100">
+                    <span class="size-1.5 rounded-full bg-white" />
+                  </span>
+                ) : (
+                  <span class="mt-[3px] size-6 rounded-pill bg-white ring-2 ring-border ring-inset" />
+                )}
+                {!last && <span class:list={["w-0.5 flex-1", m.state === "done" && next?.state === "done" ? "bg-success" : "bg-[#D5DCE8]"]} />}
+              </div>
+              {m.state === "current" ? (
+                <div class:list={["mb-5 flex min-w-0 flex-1 flex-col gap-3 rounded-card p-4 ring-[1.5px] ring-blue-600 ring-inset"]}>
+                  <div class="flex items-center justify-between gap-2.5">
+                    <span class="text-[15px] font-bold text-fg">{m.title}</span>
+                    <StatusChip label="In progress" tone="info" />
+                  </div>
+                  {m.tasksTotal !== undefined && (
+                    <>
+                      <ProgressBar value={(m.tasksDone ?? 0) / m.tasksTotal} height={6} label={`${m.title} tasks`} />
+                      <div class="flex items-center justify-between text-[12px]">
+                        <span class="text-fg-muted">{m.tasksDone} of {m.tasksTotal} tasks</span>
+                        <span class="font-semibold text-blue-600">{m.dateLabel}</span>
+                      </div>
+                    </>
+                  )}
+                  {m.tasks && (
+                    <ul class="flex flex-col gap-2">
+                      {m.tasks.map((t) => (
+                        <li class:list={["flex items-center gap-2 text-[13px]", t.done ? "text-fg-secondary" : "font-semibold text-fg"]}>
+                          {t.done ? <CircleCheck size={16} class="text-success" aria-hidden="true" /> : <CircleDashed size={16} class="text-fg-muted" aria-hidden="true" />}
+                          {t.label}
+                          <span class="sr-only">{t.done ? "(done)" : "(pending)"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {photos && photos.total > 0 && (
+                    <div class="flex flex-col gap-2">
+                      <span class="text-[12px] text-fg-muted">{photos.label}</span>
+                      <div class="grid grid-cols-3 gap-2">
+                        {Array.from({ length: Math.min(2, photos.total) }, (_, i) => (
+                          <Media src={photos.urls[i]} alt={`Site photo ${i + 1}`} class="aspect-[94/72] w-full rounded-md bg-surface" />
+                        ))}
+                        {photos.total > 2 && (
+                          <span class="flex aspect-[94/72] items-center justify-center rounded-md bg-navy-900 text-[15px] font-bold text-white">+{photos.total - 2}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div class:list={["flex min-w-0 flex-1 flex-col gap-1 pt-[5px]", !last && "pb-[22px]"]}>
+                  <div class="flex items-center justify-between gap-3">
+                    <span class:list={["text-[15px] font-semibold", m.state === "upcoming" ? "text-fg-muted" : "text-fg"]}>{m.title}</span>
+                    <span class="shrink-0 text-[12px] font-medium text-fg-muted">{m.dateLabel}</span>
+                  </div>
+                  {m.description && <p class="text-[13px] leading-[1.45] text-fg-secondary">{m.description}</p>}
+                  <span class="sr-only">{m.state === "done" ? "Completed" : "Upcoming"}</span>
+                </div>
+              )}
+            </li>
+          );
+        })
+      }
+    </ol>
+
+    {
+      project.documents.length > 0 && (
+        <>
+          <SectionHeader title="Project documents" linkLabel="All" href="/documents" />
+          <div class="flex flex-col rounded-card bg-white py-1 ring-1 ring-border ring-inset">
+            {project.documents.map((doc, index) => (
+              <>
+                {index > 0 && <span class="h-px bg-border" />}
+                <DocumentRow document={doc} />
+              </>
+            ))}
+          </div>
+        </>
+      )
+    }
+
+    <div class="flex flex-col rounded-card bg-white py-1 ring-1 ring-border ring-inset">
+      <ListRow title={project.manager.name} subtitle={project.manager.role}>
+        <IconTile slot="icon" tone="navy" radius="full"><UserRound size={20} /></IconTile>
+      </ListRow>
+    </div>
+  </div>
+
+  <BottomActionBar slot="overlay">
+    {
+      phone ? (
+        <a href={`tel:${phone}`} class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset">
+          <Phone size={18} aria-hidden="true" />
+          Call PM
+        </a>
+      ) : null
+    }
+    <a href="/support/new?category=installation" class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-blue-600 text-[16px] font-semibold text-white">
+      <MessageCircle size={18} aria-hidden="true" />
+      Message PM
+    </a>
+  </BottomActionBar>
+</CustomerLayout>
+
+<script>
+  import "../../scripts/back";
+  import "../../scripts/share";
+</script>

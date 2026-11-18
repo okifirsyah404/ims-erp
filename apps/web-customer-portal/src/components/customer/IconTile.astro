@@ -1,0 +1,32 @@
+---
+/** Tinted square/round icon tile used by list rows, quick actions and cards. */
+export type TileTone = "info" | "success" | "warning" | "danger" | "neutral" | "surface" | "white" | "navy";
+
+interface Props {
+  tone?: TileTone;
+  size?: number;
+  radius?: "md" | "lg" | "full" | "xl";
+  class?: string;
+}
+
+const { tone = "info", size = 44, radius = "md", class: className } = Astro.props;
+const tones: Record<TileTone, string> = {
+  info: "bg-blue-50 text-blue-600",
+  success: "bg-success-bg text-success",
+  warning: "bg-warning-bg text-warning",
+  danger: "bg-danger-bg text-danger",
+  neutral: "bg-surface text-fg-secondary",
+  surface: "bg-surface text-blue-600",
+  white: "bg-white text-blue-600 ring-1 ring-border ring-inset",
+  navy: "bg-navy-900 text-white",
+};
+const radii = { md: "rounded-md", lg: "rounded-control", xl: "rounded-lg", full: "rounded-pill" };
+---
+
+<span
+  class:list={["flex shrink-0 items-center justify-center", tones[tone], radii[radius], className]}
+  style={`width:${size}px;height:${size}px`}
+  aria-hidden="true"
+>
+  <slot />
+</span>

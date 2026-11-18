@@ -26,7 +26,7 @@ import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inve
 
 /** Statuses a kind may hold, per ADR-0008. Source of truth for the assertions. */
 const EXPECTED: Record<ItemKind, readonly UnitStatus[]> = {
-	// ERP-0064: any stocked unit can go back to its supplier.
+	// ERP-0068: any stocked unit can go back to its supplier.
 	product: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
 	component: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
 	material: ['pre_order', 'in_stock', 'lost', 'sold', 'applied_warranty', 'returned', 'damaged'],
@@ -91,7 +91,7 @@ describe('item kind × status matrix', () => {
 			}
 		});
 
-		it('treats returned as terminal (ERP-0064)', () => {
+		it('treats returned as terminal (ERP-0068)', () => {
 			for (const to of UNIT_STATUSES) {
 				expect(() => assertTransitionAllowed('product', 'returned', to)).toThrow(
 					InventoryRuleViolationError,

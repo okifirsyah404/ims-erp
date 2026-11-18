@@ -1,0 +1,188 @@
+---
+import MapPin from "@lucide/astro/icons/map-pin";
+import CalendarCheck from "@lucide/astro/icons/calendar-check";
+import Building from "@lucide/astro/icons/building-complex";
+import Check from "@lucide/astro/icons/check";
+import Quote from "@lucide/astro/icons/quote";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import Media from "../../components/ui/Media.astro";
+import SectionHeading from "../../components/ui/SectionHeading.astro";
+import ProjectCard from "../../components/projects/ProjectCard.astro";
+import RelatedProducts from "../../components/product/RelatedProducts.astro";
+import ContactCta from "../../components/home/ContactCta.astro";
+import { getProject, projects } from "../../data/projects";
+import { platforms } from "../../data/solutions";
+import { routes, solutionHref } from "../../data/site";
+import { getProductsBySlugs } from "../../lib/catalog";
+import { icons } from "../../lib/icons";
+
+/**
+ * Project case study. No dedicated frame exists: composed from the 01.02 featured story,
+ * the 02.02 engineering band and the shared section patterns.
+ */
+export function getStaticPaths() {
+  return projects.map((project) => ({ params: { slug: project.slug } }));
+}
+
+const project = getProject(Astro.params.slug!)!;
+const products = await getProductsBySlugs(project.products);
+const usedSolutions = platforms.filter((p) => project.solutions.includes(p.slug));
+const more = projects.filter((p) => p.slug !== project.slug && (p.industry === project.industry || p.solutions.some((s) => project.solutions.includes(s)))).slice(0, 3);
+const facts = [
+  { icon: Building, label: "Client", value: project.client },
+  { icon: MapPin, label: "Location", value: project.location },
+  { icon: CalendarCheck, label: "Completed", value: String(project.year) },
+];
+const story = [
+  { title: "The challenge", body: project.challenge },
+  { title: "Our solution", body: project.solution },
+  { title: "The outcome", body: project.outcome },
+];
+---
+
+<PublicLayout title={`${project.title} — ${project.client} | Entragate Projects`} description={project.summary}>
+  <section class="border-b border-border bg-surface xl:bg-[radial-gradient(ellipse_45%_100%_at_90%_0%,#DCE6FFCC_0%,#F5F7FB00_100%)]">
+    <div class="container-page flex flex-col gap-5 py-5 xl:gap-8 xl:py-10">
+      <Breadcrumb items={[{ label: "Home", href: routes.home }, { label: "Portfolio", href: routes.projects }, { label: project.title }]} />
+      <div class="flex flex-col gap-3 xl:max-w-[900px]">
+        <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase xl:text-[13px]">{project.eyebrow}</p>
+        <h1 class="font-heading text-[32px] leading-[1.1] font-extrabold tracking-[-1px] text-navy-900 xl:text-[52px] xl:tracking-[-1.8px]">
+          {project.title}
+        </h1>
+        <p class="text-[15px] leading-6 text-fg-secondary xl:text-[17px] xl:leading-[27px]">{project.summary}</p>
+      </div>
+      <ul class="flex flex-wrap gap-x-6 gap-y-2">
+        {
+          facts.map(({ icon: Icon, label, value }) => (
+            <li class="flex items-center gap-2 text-[14px]">
+              <Icon size={16} class="text-blue-600" aria-hidden="true" />
+              <span class="text-fg-muted">{label}:</span>
+              <span class="font-semibold text-fg">{value}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="container-page flex flex-col gap-6 pt-6 xl:gap-8 xl:pt-12">
+    <div class="relative isolate flex h-[260px] flex-col justify-end overflow-hidden rounded-card p-5 md:h-[420px] xl:h-[560px] xl:rounded-xl xl:p-8">
+      <Media src={project.image} alt={`${project.title} at ${project.client}`} loading="eager" class="absolute inset-0 -z-10 size-full" />
+      <span class="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2600_45%,#060F26CC_100%)]" aria-hidden="true"></span>
+      <dl class="grid grid-cols-3 gap-3 rounded-lg bg-white/95 p-4 backdrop-blur-[10px] xl:flex xl:gap-0 xl:p-7">
+        {
+          project.metrics.map((metric, index) => (
+            <div class:list={["flex flex-col-reverse gap-1 xl:flex-1 xl:px-8", index > 0 && "xl:border-l xl:border-border"]}>
+              <dt class="text-[12px] text-fg-secondary xl:text-[14px]">{metric.label}</dt>
+              <dd class="font-heading text-[22px] font-extrabold tracking-[-0.5px] text-navy-900 xl:text-[40px] xl:tracking-[-1px]">{metric.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <section class="container-page grid gap-10 py-12 xl:grid-cols-[1fr_400px] xl:gap-24 xl:py-24">
+    <div class="flex flex-col gap-10">
+      {
+        story.map((part, index) => (
+          <div class="flex gap-5">
+            <span class="font-heading text-[15px] font-bold text-blue-600">{String(index + 1).padStart(2, "0")}</span>
+            <div class="flex flex-col gap-2.5">
+              <h2 class="font-heading text-[24px] font-bold tracking-[-0.5px] text-navy-900 xl:text-[28px]">{part.title}</h2>
+              <p class="text-[15px] leading-[26px] text-fg-secondary xl:text-[16px] xl:leading-[27px]">{part.body}</p>
+            </div>
+          </div>
+        ))
+      }
+      {
+        project.quote && (
+          <figure class="flex flex-col gap-4 rounded-xl bg-navy-900 p-7 xl:p-10">
+            <Quote size={28} class="text-cyan-400" aria-hidden="true" />
+            <blockquote class="font-heading text-[20px] leading-[30px] font-semibold text-white xl:text-[24px] xl:leading-[34px]">
+              “{project.quote.text}”
+            </blockquote>
+            <figcaption class="text-[14px] text-fg-on-dark-muted">
+              <span class="font-bold text-white">{project.quote.author}</span> — {project.quote.role}
+            </figcaption>
+          </figure>
+        )
+      }
+    </div>
+
+    <aside class="flex flex-col gap-6">
+      <div class="flex flex-col gap-4 rounded-card bg-surface p-6 xl:p-7">
+        <h2 class="font-heading text-[18px] font-bold text-navy-900">Project scope</h2>
+        <ul class="flex flex-col gap-2.5">
+          {
+            project.scope.map((item) => (
+              <li class="flex items-start gap-2.5 text-[14px] font-medium text-fg">
+                <Check size={16} class="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+                {item}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      {
+        usedSolutions.length > 0 && (
+          <div class="flex flex-col gap-3 rounded-card bg-white p-6 ring-1 ring-border ring-inset xl:p-7">
+            <h2 class="font-heading text-[18px] font-bold text-navy-900">Software used</h2>
+            {usedSolutions.map((platform) => {
+              const Icon = icons[platform.icon];
+              return (
+                <a href={solutionHref(platform.slug)} class="flex items-center gap-3 rounded-md p-2 hover:bg-surface">
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                    <Icon size={20} aria-hidden="true" />
+                  </span>
+                  <span class="flex-1 text-[14px] font-semibold text-fg">{platform.name}</span>
+                  <ArrowRight size={16} class="text-fg-muted" aria-hidden="true" />
+                </a>
+              );
+            })}
+          </div>
+        )
+      }
+      <a href={`${routes.quote}`} class="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700">
+        Plan a similar project
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
+    </aside>
+  </section>
+
+  {
+    project.gallery.length > 1 && (
+      <section class="container-page flex flex-col gap-6 pb-12 xl:pb-24" aria-labelledby="gallery-title">
+        <h2 id="gallery-title" class="font-heading text-[24px] font-bold tracking-[-0.5px] text-navy-900 xl:text-[32px]">On site</h2>
+        <ul class="grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-5">
+          {project.gallery.map((src, index) => (
+            <li>
+              <Media src={src} alt={`${project.title} — photo ${index + 1}`} class="aspect-[4/3] w-full rounded-lg" />
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <RelatedProducts products={products} />
+
+  {
+    more.length > 0 && (
+      <section class="container-page flex flex-col gap-6 py-12 xl:gap-10 xl:py-24" aria-labelledby="more-title">
+        <SectionHeading eyebrow="More projects" title="Trusted at entrances like yours" />
+        <ul class="grid gap-[18px] md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+          {more.map((p) => (
+            <li>
+              <ProjectCard project={p} class="h-full" />
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <ContactCta />
+</PublicLayout>

@@ -1,0 +1,63 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import SolutionWindow from "./SolutionWindow.astro";
+import { routes } from "../../data/site";
+import type { Platform } from "../../data/solutions";
+import { icons } from "../../lib/icons";
+
+/** Solution card (02.04 · Solutions): product-UI preview window + copy + CTA. */
+interface Props {
+  platform: Platform;
+}
+
+const { platform } = Astro.props;
+const Icon = icons[platform.icon];
+const previewBg = { blue: "bg-blue-50", cyan: "bg-cyan-50", gray: "bg-surface-2" }[platform.preview];
+const href = `${routes.solutions}/${platform.slug}`;
+---
+
+<article
+  class="flex flex-col overflow-hidden rounded-lg bg-white ring-1 ring-border ring-inset xl:rounded-card"
+  data-platform={platform.key}
+  data-reveal
+>
+  <SolutionWindow platform={platform} class:list={["h-[210px] xl:h-[340px]", previewBg]} />
+
+  <div class="flex flex-1 flex-col gap-3.5 p-5 xl:gap-5 xl:p-8">
+    <div class="flex items-center gap-3 xl:gap-3.5">
+      <span class="flex size-[38px] shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600 xl:size-11">
+        <Icon size={22} class="size-[19px] xl:size-[22px]" aria-hidden="true" />
+      </span>
+      <h3
+        class="max-w-[250px] font-heading text-[19px] leading-[23px] font-bold tracking-[-0.3px] text-navy-900 xl:max-w-none xl:text-[24px] xl:leading-[normal] xl:tracking-[-0.4px]"
+      >
+        {platform.name}
+      </h3>
+    </div>
+    <p class="text-[14px] leading-[22px] text-fg-secondary xl:text-[15px] xl:leading-6">
+      <span class="xl:hidden">{platform.mobileDescription}</span>
+      <span class="hidden xl:inline">{platform.description}</span>
+    </p>
+    <ul class="flex flex-wrap gap-1.5 xl:gap-2">
+      {
+        platform.tags.map((tag, index) => (
+          <li class="rounded-pill bg-surface px-2.5 py-[5px] text-[11px] font-medium text-fg-secondary ring-1 ring-border ring-inset xl:px-3 xl:py-1.5 xl:text-[12px]">
+            <span class="xl:hidden">{platform.mobileTags[index] ?? tag}</span>
+            <span class="hidden xl:inline">{tag}</span>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="mt-auto flex items-center justify-between xl:pt-2">
+      <a
+        href={href}
+        class="flex w-full items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 xl:w-auto"
+      >
+        Explore Solution
+        <ArrowRight size={16} aria-hidden="true" />
+        <span class="sr-only">: {platform.name}</span>
+      </a>
+      <span class="hidden text-[13px] font-medium text-fg-muted xl:inline">{platform.meta}</span>
+    </div>
+  </div>
+</article>

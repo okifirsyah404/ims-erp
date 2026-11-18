@@ -14,7 +14,6 @@ import type {
 	TJournalEntrySelect,
 	TJournalLineSelect,
 } from '@drizzle/schemas/accounting.schema';
-import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import { ReportService } from '../../src/app/accounting/services/report.service';
 import { BankReconciliationService } from '../../src/app/accounting/services/bank-reconciliation.service';
@@ -240,7 +239,7 @@ function makeHarness() {
 			Object.assign(row, patch);
 			return row;
 		},
-	} as unknown as LedgerRepository;
+	};
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++seq).padStart(6, '0')}`,
@@ -251,11 +250,12 @@ function makeHarness() {
 		transaction: async (fn: (tx: never) => unknown) => fn(tx),
 	} as unknown as BunSQLDatabase;
 
-	const posting = new PostingService({} as unknown as BunSQLDatabase, repo, numbering);
-	const reports = new ReportService(repo);
+	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
+	const reports = new ReportService(repo as never, repo as never);
 	const reconciliationsService = new BankReconciliationService(
 		dbLike,
-		repo,
+		repo as never,
+		repo as never,
 		numbering,
 	);
 

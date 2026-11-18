@@ -2,8 +2,10 @@ import type { BetterAuthOptions } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { drizzleDB } from '../../../../drizzle/db';
 import { members, users } from '../../../../drizzle/schemas/auth.schema';
-import { asc, eq } from 'drizzle-orm';
+import { portalIdentities } from '../../../../drizzle/schemas/portal.schema';
+import { and, asc, eq, isNull } from 'drizzle-orm';
 import { hasInternalOrgRole, isWebAdminAllowed } from '../ac/login-gate';
+import { PORTAL_SIGNIN_HEADER, PORTAL_SIGNIN_NONCE } from '../portal-signin';
 
 type SessionCreateBefore = NonNullable<
 	NonNullable<
@@ -77,10 +79,36 @@ export async function isWebAdminSessionAllowed(userId: string): Promise<boolean>
 }
 
 /**
+ * Whether this session is the customer portal's own sign-in (ERP-0022,
+ * ADR-0022): the request carries the portal module's per-process nonce and the
+ * user holds an active portal identity. Such a session is for `/portal/v1`
+ * only; it never gets an organization, and `sessionGuard` / `erpGuard` keep
+ * refusing it on every web-admin route through the login gate.
+ */
+async function isPortalSignIn(userId: string, context: unknown): Promise<boolean> {
+	const request = context as { headers?: Headers; request?: Request } | null | undefined;
+	const headers = request?.headers ?? request?.request?.headers;
+	if (headers?.get(PORTAL_SIGNIN_HEADER) !== PORTAL_SIGNIN_NONCE) return false;
+	const [identity] = await drizzleDB
+		.select({ id: portalIdentities.id })
+		.from(portalIdentities)
+		.where(
+			and(
+				eq(portalIdentities.userId, userId),
+				eq(portalIdentities.status, 'active'),
+				isNull(portalIdentities.deletedAt),
+			),
+		)
+		.limit(1);
+	return !!identity;
+}
+
+/**
  * Login gate and default organization on session creation.
  *
  * @remarks
- * Runs in `session.create.before` (ADR-0017 §8-9):
+ * Runs in `session.create.before` (ADR-0017 §8-9; the portal exception is
+ * ADR-0022):
  * - Rejects the session when the gate is closed (throws FORBIDDEN).
  * - When no organization is active, selects the first membership with an
  *   internal organization role. Memberships without one are never chosen.
@@ -90,7 +118,10 @@ export async function isWebAdminSessionAllowed(userId: string): Promise<boolean>
  */
 export const sessionAutoActivateOrganizationHook: SessionCreateBefore = async (
 	session,
+	context,
 ) => {
+	// The customer portal's sign-in passes the gate, without an organization.
+	if (await isPortalSignIn(session.userId, context)) return;
 	await assertWebAdminAllowed(session.userId);
 	if (session.activeOrganizationId) return;
 	const memberships = await loadMembershipsForGate(session.userId);

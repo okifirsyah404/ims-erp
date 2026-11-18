@@ -51,6 +51,7 @@ export const CODE_TYPE_CODES: Record<CodeType, string> = {
 	item_component: 'CMP',
 	purchase_return: 'RTB',
 	sales_return: 'RTJ',
+	purchase_request: 'PR',
 };
 
 /** Module that owns each code type (`code_number.series.module`). */
@@ -89,6 +90,7 @@ export const CODE_TYPE_MODULES: Record<CodeType, string> = {
 	item_component: 'inventory',
 	purchase_return: 'procurement',
 	sales_return: 'sales',
+	purchase_request: 'procurement',
 };
 
 export const DEFAULT_PATTERN = '{SEQ:4}/{TYPE}/{COMPANY}/{MM_ROMAN}/{YY}';

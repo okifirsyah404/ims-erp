@@ -13,4 +13,7 @@ test
 .env
 .env.*
 !.env.example
+# host-specific CORS allowlist never bakes into image layers
+cors.json
+cors.example.json
 *.log

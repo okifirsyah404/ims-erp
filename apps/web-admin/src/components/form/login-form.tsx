@@ -3,6 +3,8 @@ import { cn } from 'cn';
 import LanguageSwitcher from '@/components/language-switcher';
 import { PasswordInput } from '@/components/password-input';
 import { authClient } from '@/lib/auth-client';
+import { companyBrandingQueryOptions } from '@/lib/company-api';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
@@ -56,6 +58,10 @@ export function LoginForm({
 	const [pending, setPending] = useState(false);
 	const [googlePending, setGooglePending] = useState(false);
 	const { t } = useTranslation(['auth', 'common']);
+	// Public endpoint (no session): the company display name and the onboarding
+	// image. Falls back to the bundled hero and the env app name while absent.
+	const { data: branding } = useQuery(companyBrandingQueryOptions());
+	const appName = branding?.name ?? 'Entragate';
 
 	async function handleGoogleSignIn() {
 		setError(null);
@@ -111,7 +117,7 @@ export function LoginForm({
 							<div className='flex flex-col items-center gap-2 text-center'>
 								<h1 className='text-2xl font-bold'>{t('login.title')}</h1>
 								<p className='text-balance text-muted-foreground'>
-									{t('login.subtitle')}
+									{t('login.subtitle', { app: appName })}
 								</p>
 							</div>
 							<Field>
@@ -182,8 +188,8 @@ export function LoginForm({
 					</form>
 					<div className='relative hidden bg-muted md:block'>
 						<img
-							src='/hero.png'
-							alt='Entragate'
+							src={branding?.onboardingUrl ?? '/hero.png'}
+							alt={appName}
 							className='absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale'
 						/>
 					</div>

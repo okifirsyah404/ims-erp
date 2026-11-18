@@ -13,6 +13,14 @@ import type { UserService } from '../services/user.service';
 import type { IUserPersonalFieldsPort } from '../contracts/user-personal-fields.port';
 import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
 import type { IOrganizationSlugResolverPort } from '../contracts/organization-slug-resolver.port';
+import type { IPortalAuthGateway, IPortalIdentityRepository, IPortalMailer } from '../contracts/portal-account.contract';
+import type { PortalAccountService } from '../services/portal-account.service';
+
+/** Customer-portal logins (ERP-0022). `PORTAL_ACCOUNT_SERVICE_TOKEN` is the contract other modules use. */
+export const PORTAL_IDENTITY_REPOSITORY_TOKEN: InjectionToken<IPortalIdentityRepository> = Symbol('PORTAL_IDENTITY_REPOSITORY');
+export const PORTAL_AUTH_GATEWAY_TOKEN: InjectionToken<IPortalAuthGateway> = Symbol('PORTAL_AUTH_GATEWAY');
+export const PORTAL_MAILER_TOKEN: InjectionToken<IPortalMailer> = Symbol('PORTAL_MAILER');
+export const PORTAL_ACCOUNT_SERVICE_TOKEN: InjectionToken<PortalAccountService> = Symbol('PORTAL_ACCOUNT_SERVICE');
 
 /** Cross-module port: slug → id for bulk invite files. */
 export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =

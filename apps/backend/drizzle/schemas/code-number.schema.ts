@@ -74,10 +74,12 @@ export const CODE_TYPES = [
 	'item_product',
 	'item_material',
 	'item_component',
-	// Purchase returns (ERP-0064): `0001/RTB/IMS/XI/26`, numbered on approval.
+	// Purchase returns (ERP-0068): `0001/RTB/IMS/XI/26`, numbered on approval.
 	'purchase_return',
 	// Sales returns (ERP-0065): `0001/RTJ/IMS/XI/26`, numbered on approval.
 	'sales_return',
+	// Procurement (2026-11-15): purchase requests (`0001/PR/IMS/XI/26`).
+	'purchase_request',
 ] as const;
 export type CodeType = (typeof CODE_TYPES)[number];
 

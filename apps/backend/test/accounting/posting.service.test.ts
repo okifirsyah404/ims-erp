@@ -10,7 +10,6 @@ import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { CodeNumberService } from '@app/code-number';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import type {
 	TAccountingPeriodSelect,
@@ -160,7 +159,7 @@ function makeHarness() {
 				entry.reversedByEntryId = reversedBy;
 			}
 		},
-	} as unknown as LedgerRepository;
+	};
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++allocSeq).padStart(6, '0')}`,
@@ -168,7 +167,9 @@ function makeHarness() {
 
 	const service = new PostingService(
 		{} as unknown as BunSQLDatabase, // unused by these rules; tx doubles cover I/O
-		repo,
+		repo as never,
+		repo as never,
+		repo as never,
 		numbering,
 	);
 	return { service, entries, lines };

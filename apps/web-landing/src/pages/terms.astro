@@ -1,0 +1,47 @@
+---
+import LegalPage from "../components/ui/LegalPage.astro";
+
+/** Terms of sale (accepted at 03.03 Checkout). */
+const sections = [
+  {
+    title: "Orders",
+    body: [
+      "Online orders are available for ready-stock products. Project items, custom finishes and quantities above stock are sold through a formal quotation.",
+      "An order is confirmed when you receive an order number by email. We may cancel and refund an order if stock or pricing changes before payment.",
+    ],
+  },
+  {
+    title: "Prices & payment",
+    body: [
+      "Prices are in Indonesian Rupiah and exclude PPN 11%, which is added at checkout. Shipping and installation are shown before you pay.",
+      "Virtual-account and QRIS payments must be completed within 24 hours. NET 14 invoices are subject to credit approval.",
+    ],
+  },
+  {
+    title: "Delivery & installation",
+    body: [
+      "Delivery times are estimates. Risk passes to you on delivery; please inspect crates and report damage within 48 hours.",
+      "Installation is scheduled after delivery and requires the site to meet our readiness checklist.",
+    ],
+  },
+  {
+    title: "Returns",
+    body: ["Unopened ready-stock items can be returned within 14 days. Custom and project items are non-returnable."],
+  },
+  {
+    title: "Warranty",
+    body: ["Products are covered by the Entragate warranty described on our Warranty page. Your statutory rights are not affected."],
+  },
+  {
+    title: "Governing law",
+    body: ["These terms are governed by the laws of the Republic of Indonesia."],
+  },
+];
+---
+
+<LegalPage
+  title="Terms of Sale"
+  description="The terms that apply when you buy Entragate products online or through a quotation."
+  updated="1 October 2026"
+  sections={sections}
+/>

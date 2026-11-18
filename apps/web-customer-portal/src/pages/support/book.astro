@@ -1,0 +1,32 @@
+---
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import BookServiceForm from "../../features/support/BookServiceForm";
+import { portal } from "../../services/portal";
+
+/** 08.04 Service Booking. `?product=` preselects a device; `?ticket=` links the visit to a ticket. */
+const tokens = Astro.locals.tokens!;
+const [options, products] = await Promise.all([portal.getBookingOptions(tokens), portal.listProducts(tokens)]);
+const ticketParam = Astro.url.searchParams.get("ticket");
+const ticket = ticketParam ? await portal.getTicket(tokens, ticketParam) : null;
+const productParam = Astro.url.searchParams.get("product");
+const initialDevice = products.some((p) => p.id === productParam) ? productParam! : undefined;
+---
+
+<CustomerLayout title="Book a service" actionBar section="support">
+  <TopBar title="Book a service" back={ticket ? `/support/${ticket.id}` : "/support"} />
+  <BookServiceForm
+    client:load
+    types={options.types}
+    days={options.days}
+    site={options.site}
+    devices={products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      detail: ticket ? `${p.serialLabel} · ${ticket.id}` : `${p.serialLabel} · ${p.site}`,
+      underWarranty: p.warrantyStatus !== "expired",
+    }))}
+    initialDevice={initialDevice}
+    returnTo={ticket ? `/support/${ticket.id}` : "/support"}
+  />
+</CustomerLayout>

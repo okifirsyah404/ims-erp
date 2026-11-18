@@ -15,7 +15,7 @@ export const OUTBOX_TOPICS = [
 	'license.due',
 	'service_ticket.updated',
 	'whatsapp.handoff',
-	// ERP-0064: purchase return approvals, shipping and cancellations.
+	// ERP-0068: purchase return approvals, shipping and cancellations.
 	'purchase_return.updated',
 	// ERP-0065: sales return approvals, receipts and cancellations.
 	'sales_return.updated',

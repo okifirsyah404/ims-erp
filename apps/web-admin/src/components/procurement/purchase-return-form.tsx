@@ -62,7 +62,7 @@ function withOwnLines(receipts: TReturnableReceipt[], initial?: TPurchaseReturnD
 	return [merged, ...receipts.filter((receipt) => receipt.id !== initial.goodsReceiptId)];
 }
 
-/** Create or edit a draft purchase return (ERP-0064). */
+/** Create or edit a draft purchase return (ERP-0068). */
 export function PurchaseReturnForm({
 	receipts,
 	initial,

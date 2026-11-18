@@ -111,13 +111,17 @@ export interface IItemRepository {
 	archive(id: string): Promise<TItemSelect | null>;
 
 	/**
-	 * Fetches alive items by id, returning `{ id, name }` pairs.
+	 * Fetches alive items by id, returning `{ id, name, imageObjectKey }` rows.
 	 *
 	 * @remarks
-	 * Used to decorate stock rows with human-readable item names — balances
-	 * and movements otherwise carry only the raw `itemId`.
+	 * Used to decorate stock rows with a human-readable item name and picture —
+	 * balances and movements otherwise carry only the raw `itemId`. The object
+	 * key is turned into a URL by the caller (`ItemImageService.urlFor`), never
+	 * here.
 	 */
-	findNamesByIds(ids: string[]): Promise<Array<{ id: string; name: string }>>;
+	findNamesByIds(
+		ids: string[],
+	): Promise<Array<{ id: string; name: string; imageObjectKey: string | null }>>;
 
 	/** Counts alive units of an item, used before archive. */
 	countUnits(itemId: string): Promise<number>;

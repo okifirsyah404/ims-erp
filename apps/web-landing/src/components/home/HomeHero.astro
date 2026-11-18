@@ -1,0 +1,166 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
+import ScanFace from "@lucide/astro/icons/scan-face";
+import Button from "../ui/Button.astro";
+import Media from "../ui/Media.astro";
+import { routes } from "../../data/site";
+import { heroStats } from "../../data/home";
+import { images } from "../../lib/images";
+
+/** 01.01 Home · Hero (desktop boz6T / mobile C86PNR). */
+const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
+---
+
+<section
+  class="bg-white bg-[radial-gradient(ellipse_80%_45%_at_100%_10%,#DCE6FFCC_0%,#FFFFFF00_100%)] xl:bg-[radial-gradient(ellipse_55%_70%_at_85%_35%,#DCE6FFCC_0%,#FFFFFF00_100%)]"
+>
+  <div class="container-page flex flex-col gap-[22px] pt-7 pb-9 xl:flex-row xl:items-center xl:gap-14 xl:pt-[72px] xl:pb-[88px]">
+    <div class="flex flex-col gap-[22px] xl:w-[620px] xl:shrink-0 xl:gap-7">
+      <a
+        href={`${routes.products}/eg-face-pro-2`}
+        class="flex w-fit items-center gap-2 rounded-pill bg-white py-[5px] pr-3 pl-[5px] ring-1 ring-border ring-inset xl:gap-2.5 xl:py-1.5 xl:pr-3.5 xl:pl-1.5"
+      >
+        <span
+          class="rounded-pill bg-navy-900 px-2 py-[3px] text-[10px] font-bold tracking-[1px] text-white xl:px-2.5 xl:py-1 xl:text-[11px]"
+        >
+          NEW
+        </span>
+        <span class="text-[12px] font-medium text-fg-secondary xl:text-[13px]">
+          <span class="xl:hidden">EG-Face Pro 2 is here</span>
+          <span class="hidden xl:inline">EG-Face Pro 2 — contactless access in 0.2 seconds</span>
+        </span>
+        <ArrowRight size={14} class="size-3 text-blue-600 xl:size-3.5" aria-hidden="true" />
+      </a>
+
+      <h1
+        class="font-heading text-[40px] leading-[43px] font-extrabold tracking-[-1.4px] text-navy-900 xl:text-[60px] xl:leading-[64px] xl:tracking-[-2.4px]"
+      >
+        <span class="block">Smart Access.</span>
+        <span class="text-gradient-accent block">Seamless Automation.</span>
+        <span class="block">Better Business.</span>
+      </h1>
+
+      <p class="text-[16px] leading-[26px] text-fg-secondary xl:w-[520px] xl:text-[18px] xl:leading-[29px]">
+        <span class="xl:hidden">Integrated Hardware &amp; Software Solutions for Modern Businesses.</span>
+        <span class="hidden xl:inline">
+          Integrated Hardware &amp; Software Solutions for Modern Businesses — from the gate at your entrance to the
+          dashboard on your screen.
+        </span>
+      </p>
+
+      <div class="flex flex-col gap-2.5 md:flex-row xl:gap-3">
+        <Button href={routes.products} size="lg" icon={ArrowRight} class="w-full md:w-auto">Explore Products</Button>
+        <Button href={routes.solutions} size="lg" variant="secondary" icon={ArrowUpRight} class="w-full md:w-auto">
+          Explore Solutions
+        </Button>
+      </div>
+
+      <!-- Desktop trust row (mobile variant renders after the visual) -->
+      <dl class="hidden items-center gap-8 pt-3 xl:flex">
+        {
+          heroStats.map((stat) => (
+            <div class="flex flex-col-reverse gap-0.5">
+              <dt class="text-[13px] text-fg-muted">{stat.label}</dt>
+              <dd class="font-heading text-[24px] font-extrabold text-navy-900">{stat.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+
+    <!-- Desktop visual -->
+    <div class="relative hidden h-[600px] min-w-0 flex-1 xl:block" aria-hidden="true">
+      <Media
+        src={images.officeLobby}
+        alt=""
+        loading="eager"
+        class="absolute top-0 right-0 left-10 h-[560px] rounded-xl shadow-photo"
+      />
+      <div
+        class="absolute top-9 right-[38px] flex items-center gap-2.5 rounded-pill bg-white/95 py-2 pr-3.5 pl-2 shadow-[0_12px_30px_#0A1A3F26]"
+      >
+        <Media src={images.faceTerminal} alt="" class="size-9 rounded-pill" />
+        <span class="flex flex-col">
+          <span class="text-[13px] font-bold text-fg">EG-Face Pro 2</span>
+          <span class="text-[11px] text-fg-muted">Installed on 6 lanes</span>
+        </span>
+      </div>
+      <div
+        class="absolute top-[300px] left-0 flex w-[250px] flex-col gap-3 rounded-lg bg-white/95 p-4 shadow-float ring-1 ring-white ring-inset backdrop-blur-[8px]"
+      >
+        <div class="flex items-center gap-3">
+          <span class="flex size-11 items-center justify-center rounded-md bg-cyan-50 text-blue-600">
+            <ScanFace size={24} />
+          </span>
+          <span class="flex flex-col gap-0.5">
+            <span class="font-heading text-[15px] font-bold text-fg">Access Granted</span>
+            <span class="text-[12px] text-fg-muted">Lobby Gate 02 · 08:41</span>
+          </span>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <div class="flex justify-between text-[12px]">
+            <span class="text-fg-secondary">Face match</span>
+            <span class="font-bold text-success">99.8%</span>
+          </div>
+          <div class="h-1.5 rounded-pill bg-surface-2">
+            <div class="h-1.5 w-[94%] rounded-pill bg-[linear-gradient(90deg,#1F5BFF_0%,#22D3EE_100%)]"></div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="absolute top-[420px] right-2.5 flex w-[250px] flex-col gap-3.5 rounded-lg bg-navy-900 p-[18px] shadow-[0_24px_48px_#0A1A3F40]"
+      >
+        <div class="flex items-center justify-between">
+          <span class="text-[12px] text-fg-on-dark-muted">Today's entries</span>
+          <span class="flex items-center gap-[5px] text-[11px] font-semibold text-cyan-400">
+            <span class="size-1.5 rounded-full bg-cyan-400"></span>Live
+          </span>
+        </div>
+        <span class="font-heading text-[30px] font-extrabold text-white">2,846</span>
+        <div class="flex h-12 items-end gap-1.5">
+          {
+            trafficBars.map((height, index) => (
+              <span
+                class:list={["flex-1 rounded-xs", index === 7 ? "bg-cyan-400" : "bg-white/18"]}
+                style={`height:${height}px`}
+              />
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile visual -->
+    <div class="relative h-[380px] w-full xl:hidden" aria-hidden="true">
+      <Media src={images.officeLobby} alt="" loading="eager" class="absolute inset-x-0 top-0 h-[340px] rounded-card" />
+      <div
+        class="absolute top-[262px] left-4 flex w-[220px] items-center gap-2.5 rounded-control bg-white/96 p-3 shadow-[0_16px_32px_#0A1A3F2E]"
+      >
+        <span class="flex size-10 items-center justify-center rounded-md bg-cyan-50 text-blue-600">
+          <ScanFace size={22} />
+        </span>
+        <span class="flex flex-col gap-0.5">
+          <span class="font-heading text-[14px] font-bold text-fg">Access Granted</span>
+          <span class="text-[11px] text-success">Match 99.8% · Gate 02</span>
+        </span>
+      </div>
+      <span
+        class="absolute top-4 right-3 flex items-center gap-1.5 rounded-pill bg-navy-900 px-3 py-2 text-[12px] font-semibold text-white"
+      >
+        <span class="size-1.5 rounded-full bg-cyan-400"></span>2,846 entries
+      </span>
+    </div>
+
+    <dl class="flex justify-between xl:hidden">
+      {
+        heroStats.map((stat) => (
+          <div class="flex flex-col-reverse gap-0.5">
+            <dt class="text-[12px] text-fg-muted">{stat.shortLabel}</dt>
+            <dd class="font-heading text-[22px] font-extrabold text-navy-900">{stat.value}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>

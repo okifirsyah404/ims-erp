@@ -2,7 +2,8 @@
  * Procurement domain schema — owns the `procurement` Postgres schema.
  *
  * Suppliers and purchase orders (ADR-0011 port step 4a), goods receipts
- * (step 4b) and purchase returns (ERP-0064).
+ * (step 4b), purchase requests (PR -> PO by lines, 2026-11-15) and purchase
+ * returns (ERP-0068).
  *
  * House rules honoured here:
  * - **Company-wide, no `organization_id`** (ADR-0011 §2, ADR-0012).
@@ -74,7 +75,15 @@ export const PURCHASE_ORDER_STATUSES = [
 export type PurchaseOrderStatus = (typeof PURCHASE_ORDER_STATUSES)[number];
 
 /**
- * Purchase returns (ERP-0064): draft → submitted → approved → shipped;
+ * draft → submitted → approved → ordered; rejection returns to draft;
+ * cancelled while no line is on a live purchase order. `ordered` goes back to
+ * `approved` when such a purchase order is cancelled.
+ */
+export const PURCHASE_REQUEST_STATUSES = ['draft', 'submitted', 'approved', 'ordered', 'cancelled'] as const;
+export type PurchaseRequestStatus = (typeof PURCHASE_REQUEST_STATUSES)[number];
+
+/**
+ * Purchase returns (ERP-0068): draft → submitted → approved → shipped;
  * rejection returns to draft; cancelled before shipped.
  */
 export const PURCHASE_RETURN_STATUSES = ['draft', 'submitted', 'approved', 'shipped', 'cancelled'] as const;
@@ -153,6 +162,91 @@ export const suppliers = procurementSchema.table(
 		check('suppliers_type_check', sql`${table.supplierType} IN ('company', 'individual', 'government')`),
 		check('suppliers_status_check', sql`${table.status} IN ('active', 'inactive')`),
 		check('suppliers_payment_terms_check', sql`${table.paymentTermsDays} >= 0`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * procurement.purchase_requests (company-wide, owner decision 2026-11-15)
+ * ------------------------------------------------------------------------ */
+
+export const purchaseRequests = procurementSchema.table(
+	'purchase_requests',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** e.g. 0001/PR/IMS/XI/26; null until submitted. */
+		code: varchar('code', { length: 40 }),
+		/** Logical reference to auth.organizations.id: the requester's active organization (information). */
+		organizationId: text('organization_id'),
+		/** Logical reference to auth.users.id. */
+		requestedBy: text('requested_by'),
+		requestedByName: varchar('requested_by_name', { length: 120 }),
+		subject: varchar('subject', { length: 200 }).notNull(),
+		justification: text('justification'),
+		projectName: varchar('project_name', { length: 200 }),
+		requestDate: date('request_date').notNull(),
+		neededBy: date('needed_by'),
+		status: text('status').$type<PurchaseRequestStatus>().notNull().default('draft'),
+		estimatedTotal: bigint('estimated_total', { mode: 'number' }).notNull().default(0),
+		currencyCode: varchar('currency_code', { length: 3 }).notNull().default('IDR'),
+		rejectionReason: text('rejection_reason'),
+		submittedAt: unixTimestampNullable('submitted_at'),
+		/** Logical references to auth.users.id — cross-module FK omitted. */
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		cancelledBy: text('cancelled_by'),
+		cancelledAt: unixTimestampNullable('cancelled_at'),
+		cancelledReason: text('cancelled_reason'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('purchase_requests_code_uq')
+			.on(table.code)
+			.where(sql`deleted_at IS NULL AND code IS NOT NULL`),
+		index('purchase_requests_status_idx').on(table.status),
+		index('purchase_requests_requested_by_idx').on(table.requestedBy),
+		check(
+			'purchase_requests_status_check',
+			sql`${table.status} IN ('draft', 'submitted', 'approved', 'ordered', 'cancelled')`,
+		),
+		check('purchase_requests_estimated_total_check', sql`${table.estimatedTotal} >= 0`),
+		check(
+			'purchase_requests_needed_by_check',
+			sql`${table.neededBy} IS NULL OR ${table.neededBy} >= ${table.requestDate}`,
+		),
+	],
+);
+
+export const purchaseRequestItems = procurementSchema.table(
+	'purchase_request_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		purchaseRequestId: uuid('purchase_request_id')
+			.notNull()
+			.references(() => purchaseRequests.id, { onDelete: 'cascade' }),
+		/** Logical reference to inventory.items.id; null for a free-text line. */
+		itemId: uuid('item_id'),
+		sku: varchar('sku', { length: 64 }),
+		name: text('name').notNull(),
+		specification: text('specification'),
+		unit: varchar('unit', { length: 32 }).notNull(),
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull().default('1'),
+		estimatedUnitPrice: bigint('estimated_unit_price', { mode: 'number' }).notNull().default(0),
+		/** round(quantity × estimated_unit_price). */
+		estimatedTotal: bigint('estimated_total', { mode: 'number' }).notNull().default(0),
+		notes: text('notes'),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...timestamps,
+	},
+	(table) => [
+		index('purchase_request_items_request_sort_idx').on(table.purchaseRequestId, table.sortOrder),
+		check(
+			'purchase_request_items_amounts_check',
+			sql`${table.quantity} > 0 AND ${table.estimatedUnitPrice} >= 0 AND ${table.estimatedTotal} >= 0`,
+		),
 	],
 );
 
@@ -251,11 +345,16 @@ export const purchaseOrderItems = procurementSchema.table(
 		/** round(quantity × unit_price). */
 		lineTotal: bigint('line_total', { mode: 'number' }).notNull().default(0),
 		quantityReceived: numeric('quantity_received', { precision: 18, scale: 3 }).notNull().default('0'),
+		/** The purchase request line this line orders (same module). */
+		purchaseRequestItemId: uuid('purchase_request_item_id').references(() => purchaseRequestItems.id, {
+			onDelete: 'restrict',
+		}),
 		sortOrder: integer('sort_order').notNull().default(0),
 		...timestamps,
 	},
 	(table) => [
 		index('purchase_order_items_order_sort_idx').on(table.purchaseOrderId, table.sortOrder),
+		index('purchase_order_items_purchase_request_item_id_idx').on(table.purchaseRequestItemId),
 		check(
 			'purchase_order_items_amounts_check',
 			sql`${table.quantity} > 0 AND ${table.unitPrice} >= 0 AND ${table.lineTotal} >= 0 AND ${table.quantityReceived} >= 0`,
@@ -334,7 +433,7 @@ export const goodsReceiptItems = procurementSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * procurement.purchase_returns (ERP-0064, replacement only)
+ * procurement.purchase_returns (ERP-0068, replacement only)
  * ------------------------------------------------------------------------ */
 
 export const purchaseReturns = procurementSchema.table(
@@ -437,8 +536,24 @@ export const purchaseReturnItems = procurementSchema.table(
 );
 
 export const procurementRelations = defineRelationsPart(
-	{ suppliers, purchaseOrders, purchaseOrderItems, goodsReceipts, goodsReceiptItems, purchaseReturns, purchaseReturnItems },
+	{
+		suppliers,
+		purchaseRequests,
+		purchaseRequestItems,
+		purchaseOrders,
+		purchaseOrderItems,
+		goodsReceipts,
+		goodsReceiptItems,
+		purchaseReturns,
+		purchaseReturnItems,
+	},
 	(r) => ({
+		purchaseRequests: {
+			items: r.many.purchaseRequestItems({ from: r.purchaseRequests.id, to: r.purchaseRequestItems.purchaseRequestId }),
+		},
+		purchaseRequestItems: {
+			purchaseRequest: r.one.purchaseRequests({ from: r.purchaseRequestItems.purchaseRequestId, to: r.purchaseRequests.id }),
+		},
 		purchaseOrders: {
 			supplier: r.one.suppliers({ from: r.purchaseOrders.supplierId, to: r.suppliers.id }),
 			items: r.many.purchaseOrderItems({ from: r.purchaseOrders.id, to: r.purchaseOrderItems.purchaseOrderId }),
@@ -463,3 +578,7 @@ export type TPurchaseReturnInsert = typeof purchaseReturns.$inferInsert;
 export type TPurchaseReturnSelect = typeof purchaseReturns.$inferSelect;
 export type TPurchaseReturnItemInsert = typeof purchaseReturnItems.$inferInsert;
 export type TPurchaseReturnItemSelect = typeof purchaseReturnItems.$inferSelect;
+export type TPurchaseRequestInsert = typeof purchaseRequests.$inferInsert;
+export type TPurchaseRequestSelect = typeof purchaseRequests.$inferSelect;
+export type TPurchaseRequestItemInsert = typeof purchaseRequestItems.$inferInsert;
+export type TPurchaseRequestItemSelect = typeof purchaseRequestItems.$inferSelect;

@@ -1,0 +1,50 @@
+---
+import { missions, vision } from "../../data/about";
+
+/** 09.01 · Vision & Mission (navy band). */
+---
+
+<section class="bg-navy-950" aria-label="Vision and mission">
+  <div class="container-page flex flex-col gap-6 py-12 xl:flex-row xl:gap-24 xl:py-28">
+    <div class="flex flex-col gap-6 xl:flex-1 xl:gap-7">
+      <h2 class="text-[12px] font-bold tracking-[1.4px] text-cyan-400 uppercase xl:text-[13px] xl:tracking-[1.6px]">Our vision</h2>
+      <blockquote class="flex flex-col gap-6 xl:gap-7">
+        <p
+          class="font-heading text-[23px] leading-[30px] font-semibold tracking-[-0.4px] text-white xl:text-[38px] xl:leading-[48px] xl:tracking-[-0.8px]"
+        >
+          {vision.statement}
+        </p>
+        <footer class="flex items-center gap-3 xl:gap-3.5 xl:pt-3">
+          <span
+            class="flex size-10 items-center justify-center rounded-pill bg-blue-600 text-[14px] font-bold text-white xl:size-12 xl:font-heading xl:text-[16px]"
+            aria-hidden="true"
+          >
+            {vision.initials}
+          </span>
+          <span class="flex flex-col gap-0.5">
+            <cite class="text-[14px] font-bold text-white not-italic xl:text-[15px]">{vision.name}</cite>
+            <span class="text-[12px] text-fg-on-dark-muted xl:text-[13px]">{vision.role}</span>
+          </span>
+        </footer>
+      </blockquote>
+    </div>
+    <div class="flex flex-col border-t border-white/12 pt-4 xl:w-[560px] xl:shrink-0 xl:border-t-0 xl:pt-0">
+      <h2 class="pt-2 pb-1 text-[12px] font-bold tracking-[1.4px] text-cyan-400 uppercase xl:pt-0 xl:pb-3 xl:text-[13px] xl:tracking-[1.6px]">
+        Our mission
+      </h2>
+      <ol class="flex flex-col">
+        {
+          missions.map((mission, index) => (
+            <li class="flex gap-4 border-b border-white/12 py-4 xl:gap-6 xl:py-6">
+              <span class="font-heading text-[14px] font-bold text-cyan-400 xl:text-[15px]">{String(index + 1).padStart(2, "0")}</span>
+              <span class="flex-1 text-[15px] leading-[23px] text-white xl:text-[17px] xl:leading-[26px]">
+                <span class="xl:hidden">{mission.mobileText}</span>
+                <span class="hidden xl:inline">{mission.text}</span>
+              </span>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </div>
+</section>

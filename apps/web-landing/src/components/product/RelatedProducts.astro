@@ -1,0 +1,97 @@
+---
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import ProductCard from "./ProductCard.astro";
+import ProductCardCompact from "./ProductCardCompact.astro";
+import { routes } from "../../data/site";
+import type { ProductSummary } from "../../types/catalog";
+
+/** Related Products (02.02): 4-up carousel on desktop, compact scroller on mobile. */
+interface Props {
+  products: ProductSummary[];
+  seeAllHref?: string;
+  /** Optional link to 02.03 Product Comparison for this product and its alternatives. */
+  compareHref?: string;
+}
+
+const { products, seeAllHref = routes.products, compareHref } = Astro.props;
+---
+
+{
+  products.length > 0 && (
+    <section class="bg-surface" aria-labelledby="related-title" data-related>
+      <div class="container-page flex flex-col gap-[18px] pt-10 pb-12 xl:gap-9 xl:py-24">
+        <div class="flex items-end justify-between">
+          <div class="flex flex-col gap-2.5">
+            <p class="hidden text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:block">Complete the system</p>
+            <h2
+              id="related-title"
+              class="font-heading text-[22px] font-extrabold tracking-[-0.5px] text-navy-900 xl:text-[36px] xl:tracking-[-1.2px]"
+            >
+              Related products
+            </h2>
+          </div>
+          <a href={seeAllHref} class="text-[14px] font-semibold text-blue-600 xl:hidden">
+            See all
+          </a>
+          <div class="hidden items-center gap-2 xl:flex">
+            {compareHref && (
+              <a href={compareHref} class="mr-3 rounded-md bg-white px-4 py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset hover:bg-surface">
+                Compare side by side
+              </a>
+            )}
+            <button
+              type="button"
+              class="flex size-12 items-center justify-center rounded-pill bg-white text-fg ring-1 ring-border ring-inset hover:ring-border-strong"
+              aria-label="Previous products"
+              data-related-prev
+            >
+              <ArrowLeft size={18} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="flex size-12 items-center justify-center rounded-pill bg-white text-fg ring-1 ring-border ring-inset hover:ring-border-strong"
+              aria-label="Next products"
+              data-related-next
+            >
+              <ArrowRight size={18} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <ul
+          class="scrollbar-none hidden snap-x snap-mandatory gap-5 overflow-x-auto xl:flex"
+          data-related-track
+        >
+          {products.map((product) => (
+            <li class="flex w-[calc((100%-60px)/4)] shrink-0 snap-start">
+              <ProductCard product={product} class="w-full" />
+            </li>
+          ))}
+        </ul>
+
+        <ul class="scrollbar-none -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 md:-mx-8 md:scroll-px-8 md:px-8 xl:hidden">
+          {products.map((product) => (
+            <li class="flex w-[170px] shrink-0 snap-start">
+              <ProductCardCompact product={product} class="w-full" />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  for (const section of document.querySelectorAll<HTMLElement>("[data-related]")) {
+    const track = section.querySelector<HTMLElement>("[data-related-track]");
+    if (!track) continue;
+    const step = () => (track.firstElementChild as HTMLElement | null)?.offsetWidth ?? track.clientWidth;
+    section.querySelector("[data-related-prev]")?.addEventListener("click", () =>
+      track.scrollBy({ left: -(step() + 20), behavior: "smooth" }),
+    );
+    section.querySelector("[data-related-next]")?.addEventListener("click", () =>
+      track.scrollBy({ left: step() + 20, behavior: "smooth" }),
+    );
+  }
+</script>

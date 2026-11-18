@@ -335,7 +335,7 @@ Used by `finance.payments`, `payroll.payroll_payments`, `sales.sales_returns`,
 draft → submitted → approved → executed
 ```
 
-`procurement.purchase_returns` names its executed state `shipped` (ERP-0064):
+`procurement.purchase_returns` names its executed state `shipped` (ERP-0068):
 `draft → submitted → approved → shipped`, rejection back to `draft`,
 `cancelled` before shipping.
 `sales.sales_returns` names it `received` (ERP-0065): `draft -> submitted ->
@@ -389,6 +389,7 @@ Used by the content tables: `commerce.web_pages`, `document.documents`,
 | Term | Meaning |
 |---|---|
 | company profile | the legal identity of the company. The company is deployed once; it is not per organization. |
+| onboarding image | the picture shown on the login page (`company.profiles.onboarding_object_key`), stored in object storage as WebP like the other profile images. |
 | branch | an office or operating site. |
 | department | an internal unit, hierarchical. |
 | position | a job definition, used by HR contracts and payroll. |

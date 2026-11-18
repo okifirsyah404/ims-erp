@@ -1,0 +1,187 @@
+---
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Plus from "@lucide/astro/icons/plus";
+import Minus from "@lucide/astro/icons/minus";
+import Check from "@lucide/astro/icons/check";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import Button from "../../components/ui/Button.astro";
+import SectionHeading from "../../components/ui/SectionHeading.astro";
+import SolutionWindow from "../../components/solutions/SolutionWindow.astro";
+import IntegrationBand from "../../components/solutions/IntegrationBand.astro";
+import SolutionsCta from "../../components/solutions/SolutionsCta.astro";
+import ProjectCard from "../../components/projects/ProjectCard.astro";
+import RelatedProducts from "../../components/product/RelatedProducts.astro";
+import { platforms } from "../../data/solutions";
+import { solutionDetails } from "../../data/solution-details";
+import { projects } from "../../data/projects";
+import { routes, solutionHref } from "../../data/site";
+import { getProductsBySlugs } from "../../lib/catalog";
+import { icons } from "../../lib/icons";
+
+/**
+ * Software solution detail (Gym, E-Ticketing, Visitor, Library, Parking, Access Control).
+ * No dedicated frame: composed from the 02.04 hero, solution card window, integration band
+ * and CTA, plus shared section patterns.
+ */
+export function getStaticPaths() {
+  return platforms.map((platform) => ({ params: { slug: platform.slug } }));
+}
+
+const platform = platforms.find((p) => p.slug === Astro.params.slug)!;
+const detail = solutionDetails[platform.slug];
+const Icon = icons[platform.icon];
+const hardware = await getProductsBySlugs(detail.hardware);
+const caseStudies = detail.projects.map((slug) => projects.find((p) => p.slug === slug)).filter((p) => p !== undefined);
+const others = platforms.filter((p) => p.slug !== platform.slug);
+const previewBg = { blue: "bg-blue-50", cyan: "bg-cyan-50", gray: "bg-surface-2" }[platform.preview];
+const demoHref = `${routes.demo}?solution=${platform.slug}`;
+---
+
+<PublicLayout title={`${platform.name} — Entragate Software`} description={platform.description}>
+  <section class="bg-white bg-[radial-gradient(ellipse_80%_60%_at_90%_10%,#EEF3FFFF_0%,#FFFFFF00_100%)] xl:bg-[radial-gradient(ellipse_60%_70%_at_85%_20%,#EEF3FFFF_0%,#FFFFFF00_100%)]">
+    <div class="container-page flex flex-col gap-7 pt-6 pb-12 xl:flex-row xl:items-center xl:gap-16 xl:pt-12 xl:pb-24">
+      <div class="flex flex-col gap-5 xl:w-[560px] xl:shrink-0 xl:gap-7">
+        <Breadcrumb items={[{ label: "Home", href: routes.home }, { label: "Software Solutions", href: routes.solutions }, { label: platform.name }]} />
+        <p class="flex w-fit items-center gap-2 rounded-pill bg-white py-1.5 pr-3 pl-1.5 text-[12px] font-semibold text-fg-secondary ring-1 ring-border ring-inset xl:text-[13px]">
+          <span class="flex size-6 items-center justify-center rounded-pill bg-blue-50 text-blue-600"><Icon size={14} aria-hidden="true" /></span>
+          {platform.name}
+        </p>
+        <h1 class="font-heading text-[32px] leading-[37px] font-extrabold tracking-[-1px] text-navy-900 xl:text-[50px] xl:leading-[55px] xl:tracking-[-1.6px]">
+          {detail.headline}
+        </h1>
+        <p class="text-[15px] leading-6 text-fg-secondary xl:text-[17px] xl:leading-[27px]">{detail.intro}</p>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <Button href={demoHref} size="adaptive" icon={ArrowRight}>Book a live demo</Button>
+          <Button href={`${routes.build}?solution=${platform.slug}`} variant="secondary" size="adaptive">Build your solution</Button>
+        </div>
+        <p class="text-[13px] text-fg-muted">{detail.pricingNote}</p>
+      </div>
+      <SolutionWindow platform={platform} class:list={["h-[260px] min-w-0 flex-1 rounded-card md:h-[380px] xl:h-[460px] xl:rounded-xl", previewBg]} />
+    </div>
+    <div class="container-page pb-12 xl:pb-24">
+      <dl class="grid grid-cols-3 gap-3 rounded-lg bg-surface p-4 xl:rounded-xl xl:px-10 xl:py-8">
+        {
+          detail.stats.map((stat, index) => (
+            <div class:list={["flex flex-col-reverse gap-1", index > 0 && "xl:border-l xl:border-border xl:pl-10"]}>
+              <dt class="text-[12px] text-fg-muted xl:text-[14px] xl:font-medium">{stat.label}</dt>
+              <dd class="font-heading text-[22px] font-extrabold tracking-[-0.5px] text-navy-900 xl:text-[36px] xl:tracking-[-1px]">{stat.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <section class="bg-surface" aria-labelledby="modules-title">
+    <div class="container-page flex flex-col gap-6 py-14 xl:gap-14 xl:py-28">
+      <SectionHeading eyebrow="What's inside" title={`Everything ${platform.layerLabel} needs, in one platform`} class="xl:max-w-[760px]" />
+      <ul class="grid gap-px overflow-hidden rounded-card bg-border ring-1 ring-border md:grid-cols-2 xl:grid-cols-3">
+        {
+          detail.modules.map((module) => {
+            const ModuleIcon = icons[module.icon];
+            return (
+              <li class="flex flex-col gap-3.5 bg-white p-6 xl:p-9">
+                <span class="flex size-12 items-center justify-center rounded-md bg-blue-50 text-blue-600"><ModuleIcon size={22} aria-hidden="true" /></span>
+                <h3 class="font-heading text-[18px] font-bold text-navy-900 xl:text-[19px]">{module.title}</h3>
+                <p class="text-[14px] leading-[22px] text-fg-secondary">{module.description}</p>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="bg-white" aria-labelledby="workflow-title">
+    <div class="container-page flex flex-col gap-8 py-14 xl:gap-14 xl:py-28">
+      <SectionHeading eyebrow="How it works" title="From first visit to daily operations" />
+      <ol class="grid gap-6 border-t-2 border-navy-900 md:grid-cols-2 xl:grid-cols-4 xl:gap-0">
+        {
+          detail.workflow.map((step, index) => (
+            <li class:list={["flex flex-col gap-3 pt-6 xl:pt-7", index > 0 && "xl:border-l xl:border-border xl:pl-7", "xl:pr-7"]}>
+              <span class="font-heading text-[14px] font-bold text-blue-600">{String(index + 1).padStart(2, "0")}</span>
+              <h3 class="font-heading text-[20px] font-bold tracking-[-0.4px] text-navy-900 xl:text-[24px]">{step.title}</h3>
+              <p class="text-[14px] leading-[22px] text-fg-secondary xl:text-[15px] xl:leading-6">{step.description}</p>
+            </li>
+          ))
+        }
+      </ol>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-[13px] font-semibold text-fg-muted">Built for</span>
+        {detail.industries.map((industry) => <span class="flex items-center gap-1.5 rounded-pill bg-surface px-3 py-1.5 text-[13px] font-medium text-fg"><Check size={13} class="text-success" aria-hidden="true" />{industry}</span>)}
+      </div>
+    </div>
+  </section>
+
+  <RelatedProducts products={hardware} seeAllHref={routes.products} />
+
+  {
+    caseStudies.length > 0 && (
+      <section class="bg-white" aria-labelledby="cases-title">
+        <div class="container-page flex flex-col gap-6 py-14 xl:gap-10 xl:py-28">
+          <div class="flex items-end justify-between gap-6">
+            <SectionHeading eyebrow="In the field" title={`${platform.layerLabel} at work`} />
+            <a href={routes.projects} class="hidden items-center gap-2 text-[15px] font-semibold text-blue-600 hover:underline xl:flex">All projects <ArrowRight size={16} aria-hidden="true" /></a>
+          </div>
+          <ul class="grid gap-[18px] md:grid-cols-2 xl:grid-cols-3 xl:gap-6">
+            {caseStudies.map((project) => (
+              <li>
+                <ProjectCard project={project} class="h-full" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )
+  }
+
+  <IntegrationBand />
+
+  <section class="bg-white" aria-labelledby="solution-faq-title">
+    <div class="container-page flex flex-col gap-6 py-14 xl:flex-row xl:gap-20 xl:py-28">
+      <div class="flex flex-col gap-4 xl:w-[400px] xl:shrink-0">
+        <SectionHeading eyebrow="FAQ" title="Questions we hear often" />
+        <a href={routes.help} class="flex items-center gap-2 text-[15px] font-semibold text-blue-600 hover:underline">Visit the Help Center <ArrowRight size={16} aria-hidden="true" /></a>
+      </div>
+      <div class="flex-1 border-t border-border">
+        {
+          detail.faq.map((item, index) => (
+            <details class="group border-b border-border" open={index === 0}>
+              <summary class="flex cursor-pointer list-none items-center gap-5 py-5 xl:py-6 [&::-webkit-details-marker]:hidden">
+                <span class="flex-1 font-heading text-[16px] font-bold text-navy-900 xl:text-[18px]">{item.question}</span>
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-pill bg-surface text-fg group-open:bg-blue-600 group-open:text-white" aria-hidden="true">
+                  <Plus size={14} class="group-open:hidden" /><Minus size={14} class="hidden group-open:block" />
+                </span>
+              </summary>
+              <p class="pb-6 text-[15px] leading-[26px] text-fg-secondary">{item.answer}</p>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="bg-surface" aria-labelledby="other-title">
+    <div class="container-page flex flex-col gap-6 py-14 xl:py-20">
+      <h2 id="other-title" class="font-heading text-[22px] font-bold tracking-[-0.5px] text-navy-900 xl:text-[28px]">Explore the rest of the suite</h2>
+      <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {
+          others.map((other) => {
+            const OtherIcon = icons[other.icon];
+            return (
+              <li>
+                <a href={solutionHref(other.slug)} class="flex h-full items-center gap-3 rounded-lg bg-white p-4 ring-1 ring-border ring-inset hover:ring-blue-600">
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600"><OtherIcon size={20} aria-hidden="true" /></span>
+                  <span class="text-[14px] font-semibold text-fg">{other.layerLabel}</span>
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </div>
+  </section>
+
+  <SolutionsCta demoHref={demoHref} />
+</PublicLayout>

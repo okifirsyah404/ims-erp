@@ -1,0 +1,345 @@
+---
+import { actions } from "astro:actions";
+import ScanFace from "@lucide/astro/icons/scan-face";
+import Check from "@lucide/astro/icons/check";
+import Plus from "@lucide/astro/icons/plus";
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import CalendarCheck from "@lucide/astro/icons/calendar-check";
+import Timer from "@lucide/astro/icons/timer";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Lock from "@lucide/astro/icons/lock";
+import Quote from "@lucide/astro/icons/quote";
+import PublicLayout from "../../layouts/PublicLayout.astro";
+import Breadcrumb from "../../components/ui/Breadcrumb.astro";
+import FormField from "../../components/ui/FormField.astro";
+import Alert from "../../components/ui/Alert.astro";
+import Media from "../../components/ui/Media.astro";
+import { company, routes } from "../../data/site";
+import { images } from "../../lib/images";
+
+/** 02.05 Request Software Demo (desktop EkCb9 / mobile lN2ot). */
+export const prerender = false;
+
+const result = Astro.getActionResult(actions.demo.request);
+const booked = result && !result.error ? result.data : undefined;
+const formError = result?.error?.message;
+
+const interests = [
+  { value: "access-cloud", label: "Access cloud", mobileLabel: "Access cloud", selected: true },
+  { value: "face-recognition", label: "Face recognition", mobileLabel: "Face recognition", selected: true },
+  { value: "visitor-passes", label: "Visitor passes", mobileLabel: "Visitors" },
+  { value: "parking-lpr", label: "Parking LPR", mobileLabel: "Parking" },
+  { value: "member-app", label: "Member app", mobileLabel: "Member app", selected: true },
+  { value: "api", label: "API & integrations", mobileLabel: "API", desktopOnly: true },
+];
+/** Solution pages link here with `?solution=`; preselect what that visitor came to see. */
+const solutionInterests: Record<string, string[]> = {
+  "gym-management": ["face-recognition", "member-app"],
+  "e-ticketing": ["access-cloud", "api"],
+  "visitor-management": ["visitor-passes", "face-recognition"],
+  "library-management": ["access-cloud", "member-app"],
+  "smart-parking": ["parking-lpr"],
+  "access-control": ["access-cloud", "face-recognition"],
+};
+const preselected = solutionInterests[Astro.url.searchParams.get("solution") ?? ""];
+const isSelected = (item: (typeof interests)[number]) => (preselected ? preselected.includes(item.value) : Boolean(item.selected));
+const formats = [
+  { value: "online", label: "Online (Zoom)", mobileLabel: "Online" },
+  { value: "onsite", label: "On-site visit", mobileLabel: "On-site" },
+  { value: "showroom", label: "IMS showroom", mobileLabel: "Showroom" },
+];
+const agenda = [
+  { minutes: "05′", title: "Discovery", mobileTitle: "Discovery", description: "Your sites, entrances, member volume and current pain points." },
+  { minutes: "15′", title: "Live platform walkthrough", mobileTitle: "Live demo", description: "Access rules, face & QR enrollment, visitor passes and live dashboards.", highlight: true },
+  { minutes: "10′", title: "Integration, pricing & next steps", mobileTitle: "Q&A & pricing", description: "HRIS / membership API, hardware fit and a tailored proposal." },
+];
+const nextSteps = [
+  { title: "Confirmation within 1 hour", description: "Your solutions engineer confirms the slot on WhatsApp and email, with a calendar invite." },
+  { title: "Pre-demo questionnaire", description: "Share floor plans or member counts (optional) so we can model your real entrances." },
+  { title: "Live tailored session", description: "Walk through Entragate with your scenarios — record it to share with your team." },
+  { title: "Proposal in 48 hours", description: "Receive a hardware + software proposal with pricing, timeline and SLA options." },
+];
+
+/** Next 8 business days in WIB, from tomorrow; two "weeks" of four days like the frame. */
+const SLOTS = ["09:00", "10:30", "13:00", "14:30", "16:00"];
+/** Sample availability until the ERP exposes engineer calendars: 14:30 is fully booked. */
+const unavailable = new Set(["14:30"]);
+const wib = (date: Date) => new Date(date.getTime() + 7 * 3_600_000);
+const days: { iso: string; weekday: string; day: number; month: string }[] = [];
+for (let cursor = wib(new Date()); days.length < 8; ) {
+  cursor = new Date(cursor.getTime() + 86_400_000);
+  const dow = cursor.getUTCDay();
+  if (dow === 0 || dow === 6) continue;
+  days.push({
+    iso: cursor.toISOString().slice(0, 10),
+    weekday: cursor.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }),
+    day: cursor.getUTCDate(),
+    month: cursor.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" }),
+  });
+}
+const weeks = [days.slice(0, 4), days.slice(4, 8)];
+const defaultDay = days[1];
+const defaultTime = "10:30";
+const weekLabel = (week: typeof days) => `${week[0].month} ${week[0].day} – ${week[3].day}`;
+const label = (day: (typeof days)[number], time: string) => `${day.weekday} ${day.day} ${day.month}, ${time}`;
+---
+
+<PublicLayout title="Request a Software Demo | Entragate" description="Book a 30-minute live demo of Entragate software with an IMS solutions engineer — tailored to your sites.">
+  <section class="bg-white bg-[radial-gradient(ellipse_50%_50%_at_15%_0%,#EEF3FF_0%,#FFFFFF00_100%)]">
+    <div class="container-page flex flex-col gap-6 pt-6 xl:flex-row xl:gap-16 xl:pt-[72px] xl:pb-28">
+      <!-- Pitch -->
+      <div class="flex flex-1 flex-col gap-5 xl:gap-9">
+        <Breadcrumb class="hidden xl:block" items={[{ label: "Home", href: routes.home }, { label: "Software Solutions", href: routes.solutions }, { label: "Request a Demo" }]} />
+        <div class="flex flex-col gap-3 xl:gap-[18px]">
+          <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:text-[13px]">Request a software demo</p>
+          <h1 class="font-heading text-[30px] leading-[35px] font-bold tracking-[-1px] text-navy-900 xl:text-[50px] xl:leading-[53px] xl:tracking-[-1.5px]">
+            <span class="xl:hidden">See Entragate run your entrances — live.</span>
+            <span class="hidden xl:inline">See Entragate run your entrances — live, on your use case.</span>
+          </h1>
+          <p class="text-[14px] leading-[21px] text-fg-secondary xl:text-[17px] xl:leading-[27px]">
+            <span class="xl:hidden">30 minutes with an IMS solutions engineer, tailored to your sites and hardware.</span>
+            <span class="hidden xl:inline">A 30-minute session with an IMS solutions engineer, tailored to your sites, members and existing hardware. No obligation, no generic slide deck.</span>
+          </p>
+        </div>
+        <div class="relative isolate flex h-[190px] items-end overflow-hidden rounded-card p-2.5 ring-1 ring-border ring-inset xl:h-[280px] xl:p-5">
+          <Media src={images.faceTerminal} alt="Entragate face recognition terminal verifying a member" loading="eager" class="absolute inset-0 -z-10 size-full" />
+          <span class="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#060F2600_40%,#060F26CC_100%)]" aria-hidden="true"></span>
+          <div class="flex items-center gap-3 rounded-md bg-white/92 px-3 py-2 backdrop-blur-[8px] xl:px-4 xl:py-3">
+            <span class="flex size-7 items-center justify-center rounded-md bg-success-bg text-success xl:size-9"><ScanFace size={16} aria-hidden="true" /></span>
+            <span class="flex flex-col">
+              <span class="text-[12.5px] font-bold text-fg xl:text-[13.5px]"><span class="xl:hidden">Face verified · Gate 3 in 0.4s</span><span class="hidden xl:inline">Face verified · Gate 3 opened in 0.4s</span></span>
+              <span class="hidden text-[12px] text-fg-muted xl:block">Live demo from FitLife Kemang, 08:42</span>
+            </span>
+          </div>
+        </div>
+        <!-- Agenda: chips on mobile, list on desktop -->
+        <ol class="grid grid-cols-3 gap-2 xl:hidden" aria-label="Demo agenda">
+          {agenda.map((a) => (
+            <li class:list={["flex flex-col gap-0.5 rounded-md px-3 py-2.5", a.highlight ? "bg-blue-600 text-white" : "bg-surface"]}>
+              <span class:list={["text-[11px] font-bold", a.highlight ? "text-white/80" : "text-blue-600"]}>{a.minutes}</span>
+              <span class:list={["text-[12.5px] font-semibold", a.highlight ? "text-white" : "text-fg"]}>{a.mobileTitle}</span>
+            </li>
+          ))}
+        </ol>
+        <div class="hidden flex-col xl:flex">
+          <h2 class="pb-4 font-heading text-[15px] font-bold text-navy-900">What we’ll cover in 30 minutes</h2>
+          <ol>
+            {agenda.map((a) => (
+              <li class="flex gap-[18px] border-t border-border py-4">
+                <span class:list={["flex h-8 w-[52px] shrink-0 items-center justify-center rounded-sm text-[13px] font-bold", a.highlight ? "bg-blue-600 text-white" : "bg-surface text-navy-900"]}>{a.minutes}</span>
+                <span class="flex flex-col gap-[3px]">
+                  <span class="text-[15px] font-bold text-fg">{a.title}</span>
+                  <span class="text-[14px] leading-[21px] text-fg-secondary">{a.description}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <figure class="hidden gap-4 border-t border-border pt-6 xl:flex">
+          <Quote size={24} class="shrink-0 text-blue-600" aria-hidden="true" />
+          <div class="flex flex-col gap-2.5">
+            <blockquote class="text-[16px] leading-[25px] font-medium text-fg italic">“The demo used our own floor plan and member data. We signed off 14 gyms the following week.”</blockquote>
+            <figcaption class="text-[13px] text-fg-muted">Andreas Gunawan — Head of Operations, FitLife Gym Chain</figcaption>
+          </div>
+        </figure>
+      </div>
+
+      <!-- Form card -->
+      <div class="-mx-5 bg-surface px-5 py-7 md:-mx-8 md:px-8 xl:mx-0 xl:w-[560px] xl:shrink-0 xl:bg-transparent xl:p-0">
+        <div id="demo-success" tabindex="-1" class="flex flex-col items-start gap-4 rounded-xl bg-white p-7 shadow-[0_24px_60px_#0A1A3F14] ring-1 ring-border ring-inset outline-none" hidden={!booked}>
+          <CircleCheck size={32} class="text-success" aria-hidden="true" />
+          <h2 class="font-heading text-[24px] font-bold tracking-[-0.6px] text-navy-900">Your demo request is in</h2>
+          <p class="text-[15px] leading-6 text-fg-secondary">
+            A solutions engineer will confirm your slot on WhatsApp and email within 1 business hour. Reference <strong class="text-fg" data-success-ref>{booked?.reference}</strong>.
+          </p>
+          {(booked as { demo?: boolean } | undefined)?.demo && <p class="rounded-md bg-warning-bg px-3 py-2 text-[13px] font-semibold text-warning" data-demo-notice>Demo mode — nothing was sent to Entragate. This reference is a sample.</p>}
+          <a href={routes.solutions} class="text-[14px] font-bold text-blue-600 hover:underline">Explore the software while you wait →</a>
+        </div>
+
+        <form
+          method="POST"
+          action={actions.demo.request}
+          data-action-form="demo.request"
+          data-success-target="demo-success"
+          class="flex flex-col gap-[18px] xl:gap-[22px] xl:rounded-xl xl:bg-white xl:p-9 xl:shadow-[0_24px_60px_#0A1A3F14] xl:ring-1 xl:ring-border xl:ring-inset"
+          hidden={Boolean(booked)}
+          novalidate
+          data-demo-form
+        >
+          <div class="flex flex-col gap-1.5">
+            <h2 class="font-heading text-[22px] leading-[26px] font-bold tracking-[-0.7px] text-navy-900 xl:text-[26px] xl:leading-[29px] xl:tracking-[-0.8px]">Book your demo</h2>
+            <p class="text-[13px] text-fg-secondary xl:text-[14px]"><span class="xl:hidden">Confirmed within 1 business hour.</span><span class="hidden xl:inline">We’ll confirm your slot within 1 business hour.</span></p>
+          </div>
+          <Alert tone="danger" title="We couldn't book your demo" description={formError ?? ""} hidden={!formError} data-form-error />
+
+          <div class="grid grid-cols-2 gap-3.5">
+            <FormField label="Full name" asterisk name="name" required maxlength={120} autocomplete="name" placeholder="Your name" class="col-span-2 xl:col-span-1" />
+            <FormField label="Job title" name="job_title" maxlength={120} autocomplete="organization-title" placeholder="e.g. IT Manager" class="hidden xl:flex" />
+            <FormField label="Work email" asterisk name="email" type="email" required maxlength={160} autocomplete="email" placeholder="name@company.co.id" class="col-span-2 xl:col-span-1" />
+            <FormField label="WhatsApp" asterisk name="whatsapp" type="tel" required maxlength={24} autocomplete="tel" placeholder="+62 8…" data-phone="mobile" class="order-last xl:order-none" />
+            <FormField label="Organisation" asterisk name="organisation" required maxlength={160} autocomplete="organization" placeholder="Company / campus" />
+            <FormField label="Industry" name="industry" maxlength={80} placeholder="e.g. Education / campus" class="hidden xl:flex" />
+          </div>
+
+          <fieldset class="flex flex-col gap-2.5">
+            <legend class="mb-2.5 text-[13px] font-semibold text-fg">What would you like to see?</legend>
+            <div class="flex flex-wrap gap-2">
+              {interests.map((item) => (
+                <label class:list={["group cursor-pointer", item.desktopOnly && "hidden xl:block"]}>
+                  <input type="checkbox" name="interests" value={item.value} checked={isSelected(item)} class="peer sr-only" />
+                  <span class="flex items-center gap-[7px] rounded-pill bg-white px-3 py-[7px] text-[13px] font-medium text-fg ring-1 ring-border ring-inset peer-checked:bg-blue-600 peer-checked:font-semibold peer-checked:text-white peer-checked:ring-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                    <Check size={14} class="hidden group-has-checked:block" aria-hidden="true" />
+                    <Plus size={14} class="text-fg-muted group-has-checked:hidden xl:hidden" aria-hidden="true" />
+                    <span class="xl:hidden">{item.mobileLabel}</span><span class="hidden xl:inline">{item.label}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <div class="hidden grid-cols-2 gap-3.5 xl:grid">
+            <FormField label="Number of sites" name="sites" maxlength={60} placeholder="e.g. 3 campuses" />
+            <FormField label="Daily entries" name="daily_entries" maxlength={60} placeholder="e.g. ~18,000" />
+          </div>
+
+          <fieldset class="flex flex-col gap-2.5">
+            <legend class="mb-2.5 text-[13px] font-semibold text-fg">Demo format</legend>
+            <div class="flex gap-1 rounded-md bg-surface p-1 ring-1 ring-border ring-inset">
+              {formats.map((f, index) => (
+                <label class="flex-1 cursor-pointer">
+                  <input type="radio" name="format" value={f.value} checked={index === 0} class="peer sr-only" />
+                  <span class="block rounded-[9px] px-2 py-[9px] text-center text-[13.5px] font-medium text-fg-secondary peer-checked:bg-white peer-checked:font-semibold peer-checked:text-navy-900 peer-checked:shadow-[0_2px_6px_#0A1A3F14] peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                    <span class="xl:hidden">{f.mobileLabel}</span><span class="hidden xl:inline">{f.label}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <legend class="text-[13px] font-semibold text-fg">Preferred date &amp; time (WIB)</legend>
+              <div class="hidden items-center gap-2 xl:flex" data-week-nav hidden>
+                <button type="button" class="flex size-6 items-center justify-center rounded-sm text-fg-muted hover:bg-surface disabled:opacity-40" aria-label="Previous week" data-week-prev><ChevronLeft size={15} aria-hidden="true" /></button>
+                <span class="text-[12.5px] font-semibold text-fg-secondary" data-week-label>{weekLabel(weeks[0])}</span>
+                <button type="button" class="flex size-6 items-center justify-center rounded-sm text-fg-muted hover:bg-surface disabled:opacity-40" aria-label="Next week" data-week-next><ChevronRight size={15} aria-hidden="true" /></button>
+              </div>
+            </div>
+            {weeks.map((week, weekIndex) => (
+              <div class="grid grid-cols-4 gap-2" data-week={weekIndex} data-week-label-text={weekLabel(week)}>
+                {week.map((day) => (
+                  <label class="group cursor-pointer">
+                    <input type="radio" name="date" value={day.iso} checked={day.iso === defaultDay.iso} required class="peer sr-only" data-day-label={`${day.weekday} ${day.day} ${day.month}`} />
+                    <span class="flex flex-col items-center gap-0.5 rounded-md bg-white py-2.5 ring-1 ring-border ring-inset peer-checked:bg-navy-900 peer-checked:ring-navy-900 peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                      <span class="text-[12px] font-medium text-fg-muted group-has-checked:text-fg-on-dark-muted">{day.weekday}</span>
+                      <span class="font-heading text-[18px] leading-5 font-bold tracking-[-0.5px] text-navy-900 group-has-checked:text-white">{day.day}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ))}
+            <div class="grid grid-cols-4 gap-2 xl:grid-cols-5">
+              {SLOTS.map((time, index) => (
+                <label class:list={["cursor-pointer has-disabled:cursor-not-allowed", index === SLOTS.length - 1 && "hidden xl:block"]}>
+                  <input type="radio" name="time" value={time} checked={time === defaultTime} disabled={unavailable.has(time)} required class="peer sr-only" />
+                  <span class="block rounded-md bg-white py-[9px] text-center text-[13px] font-semibold text-fg ring-1 ring-border ring-inset peer-checked:bg-blue-50 peer-checked:text-blue-600 peer-checked:ring-[1.5px] peer-checked:ring-blue-600 peer-disabled:bg-surface peer-disabled:text-fg-muted peer-focus-visible:outline-2 peer-focus-visible:outline-blue-600">
+                    {time}<span class="sr-only">{unavailable.has(time) ? " (fully booked)" : ""}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p class="text-[12.5px] font-semibold text-danger" data-error-for="date" hidden></p>
+            <p class="text-[12.5px] font-semibold text-danger" data-error-for="time" hidden></p>
+          </fieldset>
+
+          <label class="flex cursor-pointer items-start gap-2.5">
+            <input type="checkbox" name="consent" required checked class="mt-px size-[18px] shrink-0 rounded-[4px] accent-blue-600" data-required-message="Please agree to be contacted about this request" />
+            <span class="text-[13px] leading-5 text-fg-secondary">
+              I agree to be contacted by IMS about this request.<span class="hidden xl:inline"> See our <a href={routes.privacy} class="underline hover:text-fg">Privacy Policy</a>.</span>
+            </span>
+          </label>
+          <p class="-mt-3 text-[12.5px] font-semibold text-danger" data-error-for="consent" hidden></p>
+
+          <button type="submit" data-busy-label="Booking…" class="flex items-center justify-center gap-2 rounded-md bg-blue-600 px-[22px] py-3.5 text-[15px] font-semibold text-white shadow-cta hover:bg-blue-700 disabled:opacity-60">
+            <span data-label data-demo-label>Request demo · {label(defaultDay, defaultTime)}</span>
+            <CalendarCheck size={16} aria-hidden="true" />
+          </button>
+          <ul class="flex justify-center gap-4 text-[12.5px] text-fg-secondary">
+            <li class="flex items-center gap-1.5"><Timer size={14} class="text-success" aria-hidden="true" /><span class="xl:hidden">30 min</span><span class="hidden xl:inline">30 minutes</span></li>
+            <li class="flex items-center gap-1.5"><CircleCheck size={14} class="text-success" aria-hidden="true" />No obligation</li>
+            <li class="flex items-center gap-1.5"><Lock size={14} class="text-success" aria-hidden="true" /><span class="xl:hidden">Private</span><span class="hidden xl:inline">Data stays private</span></li>
+          </ul>
+        </form>
+        <p class="mt-4 text-center text-[13px] text-fg-muted xl:hidden">
+          Prefer WhatsApp? <a href={company.whatsappHref} target="_blank" rel="noopener noreferrer" class="font-semibold text-blue-600">Message us</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <figure class="container-page flex flex-col gap-3 py-8 xl:hidden">
+    <Quote size={24} class="text-blue-600" aria-hidden="true" />
+    <blockquote class="text-[15px] leading-[22px] font-medium text-fg italic">“The demo used our own floor plan and member data. We signed off 14 gyms the following week.”</blockquote>
+    <figcaption class="text-[12.5px] text-fg-muted">Andreas Gunawan — FitLife Gym Chain</figcaption>
+  </figure>
+
+  <section class="hidden bg-surface xl:block" aria-labelledby="next-title">
+    <div class="container-page flex flex-col gap-12 py-24">
+      <div class="flex items-end justify-between">
+        <div class="flex flex-col gap-3">
+          <p class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">After you book</p>
+          <h2 id="next-title" class="font-heading text-[40px] font-bold tracking-[-1.2px] text-navy-900">What happens next</h2>
+        </div>
+        <dl class="flex gap-6">
+          <div class="flex flex-col-reverse gap-0.5"><dt class="text-[13px] text-fg-muted">demos run in {new Date().getFullYear()}</dt><dd class="font-heading text-[30px] font-bold text-navy-900">320+</dd></div>
+          <div class="flex flex-col-reverse gap-0.5"><dt class="text-[13px] text-fg-muted">session rating</dt><dd class="font-heading text-[30px] font-bold text-navy-900">4.9/5</dd></div>
+        </dl>
+      </div>
+      <ol class="flex border-t-2 border-navy-900">
+        {nextSteps.map((step, index) => (
+          <li class:list={["flex flex-1 flex-col gap-3.5 pt-7", index > 0 ? "border-l border-border px-7" : "pr-7"]}>
+            <span class="text-[13px] font-bold text-blue-600">{String(index + 1).padStart(2, "0")}</span>
+            <h3 class="font-heading text-[20px] font-bold text-navy-900">{step.title}</h3>
+            <p class="text-[14px] leading-[22px] text-fg-secondary">{step.description}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</PublicLayout>
+
+<script>
+  import { initActionForms } from "../../scripts/action-form";
+
+  initActionForms();
+  const form = document.querySelector<HTMLFormElement>("[data-demo-form]");
+  if (form) {
+    const weeks = [...form.querySelectorAll<HTMLElement>("[data-week]")];
+    const nav = form.querySelector<HTMLElement>("[data-week-nav]");
+    const prev = form.querySelector<HTMLButtonElement>("[data-week-prev]");
+    const next = form.querySelector<HTMLButtonElement>("[data-week-next]");
+    const weekLabel = form.querySelector<HTMLElement>("[data-week-label]");
+    const submitLabel = form.querySelector<HTMLElement>("[data-demo-label]");
+    let week = 0;
+    const showWeek = (index: number) => {
+      week = index;
+      weeks.forEach((el, i) => (el.hidden = i !== index));
+      if (weekLabel) weekLabel.textContent = weeks[index].dataset.weekLabelText ?? "";
+      if (prev) prev.disabled = index === 0;
+      if (next) next.disabled = index === weeks.length - 1;
+    };
+    // Without JS both weeks are listed; with JS one week shows at a time with arrows.
+    if (nav) nav.hidden = false;
+    showWeek(0);
+    prev?.addEventListener("click", () => showWeek(Math.max(0, week - 1)));
+    next?.addEventListener("click", () => showWeek(Math.min(weeks.length - 1, week + 1)));
+
+    const updateLabel = () => {
+      const day = form.querySelector<HTMLInputElement>("input[name=date]:checked");
+      const time = form.querySelector<HTMLInputElement>("input[name=time]:checked");
+      if (submitLabel && day && time) submitLabel.textContent = `Request demo · ${day.dataset.dayLabel}, ${time.value}`;
+    };
+    form.addEventListener("change", updateLabel);
+  }
+</script>

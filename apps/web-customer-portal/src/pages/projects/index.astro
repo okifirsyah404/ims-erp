@@ -1,0 +1,121 @@
+---
+import { webUrl } from "../../lib/urls";
+import Plus from "@lucide/astro/icons/plus";
+import Flag from "@lucide/astro/icons/flag";
+import FolderKanban from "@lucide/astro/icons/folder-kanban";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import LargeHeader from "../../components/customer/LargeHeader.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import Segmented from "../../components/customer/Segmented.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import ProgressRing from "../../components/customer/ProgressRing.astro";
+import ProgressBar from "../../components/customer/ProgressBar.astro";
+import Media from "../../components/customer/Media.astro";
+import { portal } from "../../services/portal";
+import { projectChip } from "../../lib/status";
+
+/** 07.02 My Projects. */
+const all = await portal.listProjects(Astro.locals.tokens!);
+const active = all.filter((p) => p.status !== "handed_over");
+const handedOver = all.filter((p) => p.status === "handed_over");
+const tab = ["active", "handed_over", "all"].includes(Astro.url.searchParams.get("tab") ?? "") ? Astro.url.searchParams.get("tab")! : "active";
+const list = tab === "active" ? active : tab === "handed_over" ? handedOver : all;
+const overall = active.length ? active.reduce((sum, p) => sum + p.progress, 0) / active.length : 1;
+const milestonesDone = active.reduce((sum, p) => sum + Math.max(0, p.stage - 1), 0);
+const needInput = active.filter((p) => p.status === "action_needed").length;
+const nextHandover = active
+  .map((p) => p.completionLabel.match(/(\d{1,2}) ([A-Z][a-z]{2})/))
+  .filter(Boolean)
+  .map((m) => m![2])[0];
+const stats = [
+  { value: String(milestonesDone), label: "Milestones", tone: "text-success" },
+  { value: String(needInput), label: "Need input", tone: "text-warning" },
+  { value: nextHandover ?? "—", label: "Handover", tone: "text-blue-600" },
+];
+---
+
+<CustomerLayout title="My Projects" tab="orders">
+  <LargeHeader eyebrow={`${active.length} active · ${handedOver.length} handed over`} title="My Projects">
+    <IconButton slot="action" label="Request a new project" href={`${webUrl}/quote`}><Plus size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-5 px-5 pt-3 pb-6">
+    <section class="flex items-center gap-[18px] rounded-card bg-surface p-[18px]">
+      <ProgressRing value={overall} label={`${Math.round(overall * 100)}%`} />
+      <div class="flex flex-1 flex-col gap-2.5">
+        <h2 class="text-[15px] font-bold text-fg">Overall progress</h2>
+        <dl class="flex gap-[18px]">
+          {
+            stats.map((s) => (
+              <div class="flex flex-col-reverse gap-0.5">
+                <dt class="text-[11px] font-medium text-fg-muted">{s.label}</dt>
+                <dd class:list={["font-heading text-[17px] font-extrabold", s.tone]}>{s.value}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </section>
+
+    <Segmented
+      label="Project status"
+      active={tab}
+      items={[
+        { key: "active", label: `Active · ${active.length}`, href: "/projects" },
+        { key: "handed_over", label: "Handed over", href: "/projects?tab=handed_over" },
+        { key: "all", label: "All", href: "/projects?tab=all" },
+      ]}
+    />
+
+    {
+      list.length === 0 ? (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <FolderKanban size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">No projects here</p>
+          <p class="text-[14px] text-fg-secondary">Installation projects appear here once an order is scheduled.</p>
+        </div>
+      ) : (
+        <ul class="flex flex-col gap-5">
+          {list.map((project) => {
+            const chip = projectChip[project.status];
+            const team = project.team ?? [];
+            return (
+              <li>
+                <a href={`/projects/${project.id}`} class="app-card flex flex-col overflow-hidden">
+                  <span class="relative flex h-[132px] flex-col justify-between p-3.5">
+                    <Media alt="" tone="dark" class="absolute inset-0 size-full" />
+                    <span class="absolute inset-0 bg-[linear-gradient(180deg,#060F2600_30%,#060F26B3_100%)]" aria-hidden="true" />
+                    <span class="relative flex items-center justify-between gap-2.5">
+                      <StatusChip label={chip.label} tone={chip.tone} class="!bg-white" />
+                      {team.length > 0 && (
+                        <span class="flex -space-x-2" aria-label={`Team: ${team.map((m) => m.name).join(", ")}`}>
+                          {team.slice(0, 2).map((m, i) => (
+                            <span class:list={["flex size-7 items-center justify-center rounded-pill text-[10px] font-bold text-white ring-2 ring-white", i === 0 ? "bg-blue-600" : "bg-navy-800"]}>{m.initials}</span>
+                          ))}
+                          {team.length > 2 && <span class="flex size-7 items-center justify-center rounded-pill bg-cyan-400 text-[10px] font-bold text-navy-900 ring-2 ring-white">+{team.length - 2}</span>}
+                        </span>
+                      )}
+                    </span>
+                    <span class="relative text-[12.5px] font-semibold text-white">{project.site} · {project.code}</span>
+                  </span>
+                  <span class="flex flex-col gap-3 p-4">
+                    <span class="font-heading text-[17px] leading-[25px] font-extrabold tracking-[-0.3px] text-fg">{project.name}</span>
+                    <span class="flex items-center justify-between gap-2.5">
+                      <span class="text-[12.5px] font-medium text-fg-secondary">Stage {project.stage} of {project.stageCount} · {project.stageLabel}</span>
+                      <span class="text-[13px] font-bold text-fg">{Math.round(project.progress * 100)}%</span>
+                    </span>
+                    <ProgressBar value={project.progress} label={`${project.name} progress`} />
+                    <span class="flex items-center gap-2 rounded-md bg-surface px-3 py-2.5 text-[12.5px] leading-[18px] font-medium text-fg-secondary">
+                      <Flag size={14} class="shrink-0 text-blue-600" aria-hidden="true" />
+                      {project.nextLabel}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </div>
+</CustomerLayout>

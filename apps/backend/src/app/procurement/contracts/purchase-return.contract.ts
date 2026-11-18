@@ -3,7 +3,7 @@ import { quantityToMilli } from '@utils/money.util';
 import { z } from 'zod';
 
 /**
- * Request schemas for purchase returns (`/purchase-returns`, ERP-0064).
+ * Request schemas for purchase returns (`/purchase-returns`, ERP-0068).
  * Quantities carry at most three decimals; business dates are Jakarta
  * `YYYY-MM-DD` strings.
  */

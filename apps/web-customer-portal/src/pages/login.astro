@@ -1,0 +1,169 @@
+---
+import { actions, isInputError } from "astro:actions";
+import Mail from "@lucide/astro/icons/mail";
+import Lock from "@lucide/astro/icons/lock";
+import ScanFace from "@lucide/astro/icons/scan-face";
+import CircleAlert from "@lucide/astro/icons/circle-alert";
+import CircleHelp from "@lucide/astro/icons/circle-question-mark";
+import AuthLayout from "../layouts/AuthLayout.astro";
+import { authBrands } from "../layouts/auth-brand";
+import TopBar from "../components/customer/TopBar.astro";
+import IconButton from "../components/customer/IconButton.astro";
+import LogoMark from "../components/customer/LogoMark.astro";
+import AppField from "../components/customer/AppField.astro";
+import GoogleGlyph from "../components/customer/GoogleGlyph.astro";
+import Flash from "../components/customer/Flash.astro";
+import { safeNext } from "../services/auth";
+import { portalMode } from "../services/portal";
+import { DEMO_CREDENTIALS } from "../services/portal/demo";
+
+/** 04.01 Login · 04.08 Login error state. */
+const next = safeNext(Astro.url.searchParams.get("next"));
+const result = Astro.getActionResult(actions.auth.login);
+// Keep `next` on the POST URL (the bare action URL `?_action=…` would drop it).
+const loginAction = next !== "/" ? `/login?next=${encodeURIComponent(next)}&${String(actions.auth.login).replace(/^\?/, "")}` : actions.auth.login;
+if (result && !result.error) return Astro.redirect(next, 303);
+
+const accountType = Astro.url.searchParams.get("type") === "individual" ? "individual" : "business";
+const fieldErrors = result?.error && isInputError(result.error) ? result.error.fields : {};
+const [errorTitle, errorDetail] = result?.error && !isInputError(result.error) ? result.error.message.split("|") : [];
+const credentialError = Boolean(errorTitle);
+const emailLabel = accountType === "business" ? "Business email" : "Email address";
+const storedFlash = await Astro.session?.get("flash");
+if (storedFlash) Astro.session?.delete("flash");
+const flash =
+  storedFlash ??
+  (Astro.url.searchParams.get("reason") === "expired" && !result
+    ? { tone: "info" as const, title: "Your session has ended", description: "Please sign in again to continue." }
+    : undefined);
+---
+
+<AuthLayout title="Sign in" brand={authBrands.login}>
+  <TopBar back="/welcome">
+    <IconButton slot="action" label="Help" href="mailto:support@entragate.co.id">
+      <CircleHelp size={20} aria-hidden="true" />
+    </IconButton>
+  </TopBar>
+
+  {flash && <Flash {...flash} />}
+  <div class="flex flex-1 flex-col gap-6 px-6 pt-3 pb-[max(24px,env(safe-area-inset-bottom))]">
+    <div class="flex flex-col gap-2.5">
+      <span class="size-[52px]"><LogoMark size={40} /></span>
+      <h1 class="font-heading text-[28px] font-extrabold tracking-[-0.6px] text-fg">Welcome back</h1>
+      <p class="text-[15px] leading-[22px] text-fg-secondary">Sign in to manage your orders, projects and support.</p>
+    </div>
+
+    <nav aria-label="Account type" class="flex h-11 gap-1 rounded-md bg-surface-2 p-1">
+      {
+        (["individual", "business"] as const).map((type) => (
+          <a
+            href={`/login?type=${type}${next !== "/" ? `&next=${encodeURIComponent(next)}` : ""}`}
+            aria-current={type === accountType ? "true" : undefined}
+            class:list={[
+              "flex flex-1 items-center justify-center rounded-md text-[14px] capitalize",
+              type === accountType ? "bg-white font-semibold text-fg shadow-[0_2px_6px_#0A1A3F14]" : "font-medium text-fg-muted",
+            ]}
+          >
+            {type}
+          </a>
+        ))
+      }
+    </nav>
+
+    {
+      credentialError && (
+        <div role="alert" class="flex gap-3 rounded-md bg-danger-bg p-3.5 ring-1 ring-danger-border ring-inset">
+          <CircleAlert size={18} class="mt-px shrink-0 text-danger" aria-hidden="true" />
+          <div class="flex flex-col gap-0.5">
+            <p class="text-[14px] font-bold text-danger">{errorTitle}</p>
+            {errorDetail && <p class="text-[12.5px] text-fg-secondary">{errorDetail}</p>}
+          </div>
+        </div>
+      )
+    }
+
+    <form method="POST" action={loginAction} class="flex flex-col gap-6" novalidate>
+      <input type="hidden" name="account_type" value={accountType} />
+      <div class="flex flex-col gap-4">
+        <AppField
+          label={emailLabel}
+          name="email"
+          type="email"
+          autocomplete="username"
+          inputmode="email"
+          required
+          placeholder="you@company.co.id"
+          error={fieldErrors.email?.[0]}
+        >
+          <Mail slot="icon" />
+        </AppField>
+        <AppField
+          label="Password"
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required
+          placeholder="Your password"
+          error={fieldErrors.password?.[0]}
+          invalid={credentialError}
+        >
+          <Lock slot="icon" />
+        </AppField>
+        <div class="flex items-center justify-between gap-2.5">
+          <label class="flex cursor-pointer items-center gap-2 text-[13.5px] font-medium text-fg-secondary">
+            <input type="checkbox" name="remember" checked class="peer sr-only" />
+            <span
+              class="flex h-6 w-10 items-center rounded-pill bg-surface-2 p-0.5 transition-colors peer-checked:justify-end peer-checked:bg-blue-600 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-blue-600"
+              aria-hidden="true"
+            >
+              <span class="size-5 rounded-full bg-white shadow-sm"></span>
+            </span>
+            Keep me signed in
+          </label>
+          <a href="/forgot-password" class="text-[13.5px] font-semibold text-blue-600">Forgot password?</a>
+        </div>
+      </div>
+      <button type="submit" class="flex h-[54px] items-center justify-center rounded-control bg-blue-600 text-[16px] font-semibold text-white hover:bg-blue-700">
+        Sign in
+      </button>
+    </form>
+
+    <div class="flex items-center gap-3" aria-hidden="true">
+      <span class="h-px flex-1 bg-border"></span>
+      <span class="text-[13px] font-medium text-fg-muted">or</span>
+      <span class="h-px flex-1 bg-border"></span>
+    </div>
+    <div class="flex gap-3">
+      <button
+        type="button"
+        disabled
+        title="Face ID sign-in is coming soon"
+        class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset disabled:cursor-not-allowed"
+      >
+        <ScanFace size={18} aria-hidden="true" />
+        Face ID
+      </button>
+      <button
+        type="button"
+        disabled
+        title="Google sign-in is coming soon"
+        class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset disabled:cursor-not-allowed"
+      >
+        <GoogleGlyph />
+        Google
+      </button>
+    </div>
+
+    <p class="mt-auto text-center text-[14px] text-fg-muted">
+      New to Entragate? <a href={next !== "/" ? `/register?next=${encodeURIComponent(next)}` : "/register"} class="font-semibold text-blue-600">Create account</a>
+    </p>
+    {
+      portalMode === "demo" && (
+        <p class="rounded-md bg-surface p-3 text-center text-[12px] text-fg-muted">
+          Demo mode · sign in with <strong class="text-fg">{DEMO_CREDENTIALS.email}</strong> /{" "}
+          <strong class="text-fg">{DEMO_CREDENTIALS.password}</strong>
+        </p>
+      )
+    }
+  </div>
+</AuthLayout>

@@ -100,7 +100,7 @@ export const UNIT_STATUSES = [
 	'lost',
 	'sold',
 	'applied_warranty',
-	/** Sent back to the supplier on a purchase return (ERP-0064); terminal. */
+	/** Sent back to the supplier on a purchase return (ERP-0068); terminal. */
 	'returned',
 	/** Back from a customer but not sellable (ERP-0065); never delivered. */
 	'damaged',

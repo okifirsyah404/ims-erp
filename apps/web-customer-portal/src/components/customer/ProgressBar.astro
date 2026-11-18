@@ -1,0 +1,31 @@
+---
+/** App / Progress Bar (qFSqp): gradient fill on a surface track. */
+interface Props {
+  value: number; // 0..1
+  height?: number;
+  tone?: "gradient" | "success" | "warning" | "onDark";
+  label?: string;
+  class?: string;
+}
+
+const { value, height = 8, tone = "gradient", label, class: className } = Astro.props;
+const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+const fills = {
+  gradient: "bg-[linear-gradient(90deg,var(--eg-blue-600)_0%,var(--eg-cyan-400)_100%)]",
+  success: "bg-success",
+  warning: "bg-warning",
+  onDark: "bg-[linear-gradient(90deg,var(--eg-blue-600)_0%,var(--eg-cyan-400)_100%)]",
+};
+---
+
+<div
+  role="progressbar"
+  aria-valuenow={pct}
+  aria-valuemin="0"
+  aria-valuemax="100"
+  aria-label={label}
+  class:list={["overflow-hidden rounded-pill", tone === "onDark" ? "bg-white/15" : "bg-surface-2", className]}
+  style={`height:${height}px`}
+>
+  <div class:list={["h-full rounded-pill", fills[tone]]} style={`width:${pct}%`}></div>
+</div>

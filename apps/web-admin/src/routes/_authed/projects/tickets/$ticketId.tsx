@@ -17,6 +17,7 @@ import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { TicketThread } from '@/components/aftersales/ticket-thread';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
@@ -26,7 +27,7 @@ import {
 	reopenTicket,
 	resolveTicket,
 	startTicket,
-	TICKET_CHANNELS,
+	STAFF_TICKET_CHANNELS,
 	TICKET_STATUS_VARIANT,
 	techniciansQueryOptions,
 	ticketQueryOptions,
@@ -213,6 +214,8 @@ function TicketDetailPage() {
 				</Card>
 			)}
 
+			<TicketThread ticketId={data.id} canWrite={canUpdate} closed={data.status === 'closed'} />
+
 			<Dialog open={dialog !== null} onOpenChange={(next) => !next && setDialog(null)}>
 				<DialogContent>
 					<form
@@ -257,7 +260,7 @@ function TicketDetailPage() {
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
-												{TICKET_CHANNELS.map((value) => (
+												{STAFF_TICKET_CHANNELS.map((value) => (
 													<SelectItem key={value} value={value}>
 														{t(`projects:channel.${value}`)}
 													</SelectItem>

@@ -1,0 +1,150 @@
+---
+import Plus from "@lucide/astro/icons/plus";
+import Search from "@lucide/astro/icons/search";
+import MessageSquarePlus from "@lucide/astro/icons/message-square-plus";
+import MessageCircle from "@lucide/astro/icons/message-circle";
+import CalendarClock from "@lucide/astro/icons/calendar-clock";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import LifeBuoy from "@lucide/astro/icons/life-buoy";
+import { PUBLIC_SUPPORT_WHATSAPP } from "astro:env/client";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import LargeHeader from "../../components/customer/LargeHeader.astro";
+import IconButton from "../../components/customer/IconButton.astro";
+import Segmented from "../../components/customer/Segmented.astro";
+import StatusChip from "../../components/customer/StatusChip.astro";
+import Avatar from "../../components/customer/Avatar.astro";
+import ListRow from "../../components/customer/ListRow.astro";
+import IconTile from "../../components/customer/IconTile.astro";
+import SupportDesktop from "../../features/support/SupportDesktop.astro";
+import { supportService } from "../../services";
+import { filterTickets } from "../../lib/support";
+import { ticketChip } from "../../lib/status";
+
+/** 08.01 Support Tickets. Search filters tickets by number or subject across all statuses. */
+const tokens = Astro.locals.tokens!;
+const all = await supportService.list(tokens);
+const { query, tab, open, list } = filterTickets(all, Astro.url);
+const selected = list[0] ? await supportService.get(tokens, list[0].id) : null;
+const active = list.filter((t) => t.status !== "resolved");
+const resolved = list.filter((t) => t.status === "resolved");
+const whatsapp = PUBLIC_SUPPORT_WHATSAPP ? `https://wa.me/${PUBLIC_SUPPORT_WHATSAPP.replace(/\D/g, "")}` : undefined;
+const channel = "flex h-10 flex-1 items-center justify-center gap-1.5 rounded-md bg-white text-[12.5px] font-semibold text-fg";
+---
+
+<CustomerLayout title="Support" tab="support" desktop="full">
+  <div class="hidden xl:block"><SupportDesktop list={list} openCount={open.length} tab={tab} query={query} ticket={selected} whatsapp={whatsapp} /></div>
+  <div class="xl:hidden">
+  <LargeHeader eyebrow="Avg. first reply · 12 min" title="Support">
+    <IconButton slot="action" label="New ticket" href="/support/new"><Plus size={20} aria-hidden="true" /></IconButton>
+  </LargeHeader>
+
+  <div class="flex flex-col gap-5 px-5 pt-3 pb-6">
+    <section class="flex flex-col gap-3.5 rounded-card bg-[linear-gradient(143.3deg,var(--eg-blue-50)_21%,#E7FAFD_79%)] p-[18px]">
+      <h2 class="font-heading text-[17px] font-extrabold text-fg">How can we help today?</h2>
+      <form method="get" action="/support" role="search">
+        <label class="flex h-[46px] items-center gap-2.5 rounded-md bg-white px-4 focus-within:ring-[1.5px] focus-within:ring-blue-600">
+          <Search size={18} class="shrink-0 text-fg-muted" aria-hidden="true" />
+          <span class="sr-only">Search tickets</span>
+          <input type="search" name="q" value={query} maxlength="80" placeholder="Search help articles & tickets" class="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted" />
+        </label>
+      </form>
+      <div class="flex gap-2">
+        <a href="/support/new" class={channel}><MessageSquarePlus size={15} class="text-blue-600" aria-hidden="true" />New ticket</a>
+        {
+          whatsapp ? (
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer" class={channel}><MessageCircle size={15} class="text-success" aria-hidden="true" />WhatsApp</a>
+          ) : (
+            <span class:list={[channel, "opacity-60"]} title="WhatsApp support is not configured"><MessageCircle size={15} class="text-success" aria-hidden="true" />WhatsApp</span>
+          )
+        }
+        <a href="/support/book" class={channel}><CalendarClock size={15} class="text-navy-900" aria-hidden="true" />Book visit</a>
+      </div>
+    </section>
+
+    {
+      query ? (
+        <p class="flex items-center justify-between gap-3 text-[14px] text-fg-secondary">
+          <span>{list.length} result{list.length === 1 ? "" : "s"} for “{query}”</span>
+          <a href="/support" class="font-semibold text-blue-600">Clear</a>
+        </p>
+      ) : (
+        <Segmented
+          label="Ticket status"
+          active={tab}
+          items={[
+            { key: "open", label: `Open · ${open.length}`, href: "/support" },
+            { key: "resolved", label: "Resolved", href: "/support?tab=resolved" },
+            { key: "all", label: "All", href: "/support?tab=all" },
+          ]}
+        />
+      )
+    }
+
+    {
+      list.length === 0 && (
+        <div class="flex flex-col items-center gap-3 rounded-card bg-surface px-6 py-10 text-center">
+          <LifeBuoy size={28} class="text-blue-600" aria-hidden="true" />
+          <p class="font-heading text-[17px] font-bold text-fg">{query ? "No matching tickets" : "No tickets here"}</p>
+          <p class="text-[14px] text-fg-secondary">Something not working? Open a ticket and our team will get back to you.</p>
+        </div>
+      )
+    }
+
+    {
+      active.map((ticket) => {
+        const chip = ticketChip[ticket.status];
+        const last = ticket.lastMessage;
+        return (
+          <a href={`/support/${ticket.id}`} class="app-card flex flex-col gap-3 p-4">
+            <span class="flex items-center justify-between gap-2.5">
+              <span class="flex items-center gap-2">
+                <span class="text-[12px] font-semibold text-fg-muted">{ticket.number}</span>
+                {ticket.priority === "urgent" && <span class="rounded-[8px] bg-danger-bg px-1.5 py-0.5 text-[10.5px] font-bold tracking-[0.4px] text-danger">HIGH</span>}
+              </span>
+              <StatusChip label={chip.label} tone={chip.tone} />
+            </span>
+            <span class="text-[15.5px] leading-[22px] font-bold text-fg">{ticket.subject}</span>
+            {last && (
+              <span class="flex gap-2.5 rounded-md bg-surface p-3">
+                <Avatar initials={last.initials} size={28} class="!text-[11px]" />
+                <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span class="flex items-center justify-between gap-2.5">
+                    <span class="text-[12.5px] font-semibold text-fg">{last.author} · {last.role}</span>
+                    <span class="text-[11.5px] font-medium text-fg-muted">{last.ago}</span>
+                  </span>
+                  <span class="text-[13px] leading-[19px] text-fg-secondary">{last.text}</span>
+                </span>
+                {last.unread > 0 && (
+                  <span class="flex size-5 shrink-0 items-center justify-center rounded-pill bg-blue-600 text-[11px] font-bold text-white">
+                    {last.unread}
+                    <span class="sr-only"> unread</span>
+                  </span>
+                )}
+              </span>
+            )}
+          </a>
+        );
+      })
+    }
+
+    {
+      resolved.length > 0 && (
+        <div class="app-card flex flex-col py-1">
+          {resolved.map((ticket, index) => (
+            <>
+              {index > 0 && <span class="mx-4 h-px bg-border" />}
+              <ListRow
+                title={`${ticket.number} · ${ticket.subject}`}
+                subtitle={[ticket.resolvedLabel ?? "Resolved", ticket.rating ? `Rated ${"★".repeat(ticket.rating)}` : undefined].filter(Boolean).join(" · ")}
+                href={`/support/${ticket.id}`}
+              >
+                <IconTile slot="icon" tone="success"><CircleCheck size={20} /></IconTile>
+              </ListRow>
+            </>
+          ))}
+        </div>
+      )
+    }
+  </div>
+  </div>
+</CustomerLayout>

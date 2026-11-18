@@ -17,8 +17,20 @@ import type { TicketChannel, TServiceTicketSelect } from '@drizzle/schemas/after
 import { businessDateOf } from '@utils/business-date.util';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { SERVICE_TICKET_REPOSITORY_TOKEN, WARRANTY_SERVICE_TOKEN } from '../constants/di';
-import type { IServiceTicketRepository, TCreateTicketRequest, TTicketListQuery } from '../contracts/service-ticket.contract';
+import type { TServiceTicketCommentSelect } from '@drizzle/schemas/aftersales.schema';
+import { SERVICE_TICKET_COMMENT_REPOSITORY_TOKEN, SERVICE_TICKET_REPOSITORY_TOKEN, WARRANTY_SERVICE_TOKEN } from '../constants/di';
+import type {
+	IServiceTicketCommentRepository,
+	IServiceTicketRepository,
+	TCreateTicketRequest,
+	TPortalActor,
+	TPortalTicket,
+	TPortalTicketDetail,
+	TPortalTicketMessage,
+	TPortalTicketRequest,
+	TTicketCommentRequest,
+	TTicketListQuery,
+} from '../contracts/service-ticket.contract';
 import {
 	TicketAssigneeError,
 	TicketForbiddenError,
@@ -39,6 +51,7 @@ export type TTicketContext = {
 
 export type TPerson = { userId: string; name: string };
 export type TTicketView = TServiceTicketSelect & { assignee: TPerson | null };
+export type TTicketComment = TServiceTicketCommentSelect;
 
 /**
  * Service tickets (tiket servis, M07, ADR-0011 step 6c; decisions of
@@ -66,6 +79,8 @@ export class ServiceTicketService {
 		@inject(OUTBOX_SERVICE_TOKEN) private readonly outbox: Pick<OutboxService, 'publish'>,
 		/** ERP-0044: finished tickets are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
+		/** ERP-0022: the ticket's message thread (staff notes and replies, customer messages). */
+		@inject(SERVICE_TICKET_COMMENT_REPOSITORY_TOKEN) private readonly comments: IServiceTicketCommentRepository,
 	) {}
 
 	private async view(ticket: TServiceTicketSelect): Promise<TTicketView> {
@@ -127,6 +142,11 @@ export class ServiceTicketService {
 	}
 
 	async create(ctx: TTicketContext, body: TCreateTicketRequest): Promise<TTicketView> {
+		return this.view(await this.open(ctx.actorUserId, body));
+	}
+
+	/** Opens a ticket: customer and project checked, warranty checked and stored, numbered. */
+	private async open(actorUserId: string, body: TCreateTicketRequest): Promise<TServiceTicketSelect> {
 		const customer = await this.customers.getActiveCustomer(body.customerId);
 		if (!customer) throw new TicketReferenceError('customer');
 		if (body.projectId) {
@@ -152,7 +172,7 @@ export class ServiceTicketService {
 			inWarranty: check.inWarranty,
 			warrantyEndsOn: check.warrantyEndsOn,
 			warrantyCode: check.warrantyCode,
-			createdBy: ctx.actorUserId,
+			createdBy: actorUserId,
 		});
 		return this.changed(ticket, 'created');
 	}
@@ -217,5 +237,146 @@ export class ServiceTicketService {
 			issuedByUserId: ctx.actorUserId,
 		});
 		return this.changed(updated, 'closed');
+	}
+	/* -------------------------------------------------------------------- *
+	 * Message thread (ERP-0022)
+	 * -------------------------------------------------------------------- */
+
+	/** Every comment of a ticket the caller may see (staff view: internal notes included). */
+	async listComments(ctx: TTicketContext, id: string): Promise<TTicketComment[]> {
+		await this.require(ctx, id);
+		return this.comments.list(id);
+	}
+
+	/** A staff note (`internal`) or a reply the customer sees in the portal (`customer`). */
+	async addComment(ctx: TTicketContext, id: string, body: TTicketCommentRequest): Promise<TTicketComment> {
+		const ticket = await this.require(ctx, id);
+		if (ticket.status === 'closed') throw new TicketStateError('comment');
+		const author = await this.users.getUser(ctx.actorUserId);
+		return this.comments.create({
+			serviceTicketId: ticket.id,
+			authorType: 'staff',
+			authorUserId: ctx.actorUserId,
+			authorName: author?.name ?? 'Staff',
+			body: body.body,
+			visibility: body.visibility,
+		});
+	}
+
+	/* -------------------------------------------------------------------- *
+	 * Customer portal (ERP-0022): scoped to the portal login's customer
+	 * -------------------------------------------------------------------- */
+
+	/** The customer's tickets, newest first. Another customer's ticket never appears. */
+	async listForCustomer(customerId: string): Promise<TPortalTicket[]> {
+		const tickets = await this.tickets.listByCustomer(customerId);
+		const latest = await this.comments.latestCustomerVisible(tickets.map((ticket) => ticket.id));
+		return Promise.all(
+			tickets.map(async (ticket) => {
+				const thread = latest.get(ticket.id);
+				return this.portalTicket(ticket, thread?.count ?? 0, thread ? this.portalMessage(thread.latest) : null);
+			}),
+		);
+	}
+
+	/** One of the customer's tickets with its customer-visible messages; 404 for anyone else's. */
+	async getForCustomer(customerId: string, id: string): Promise<TPortalTicketDetail> {
+		const ticket = await this.requireOwned(customerId, id);
+		const messages = (await this.comments.list(ticket.id, 'customer')).map((comment) => this.portalMessage(comment));
+		const last = messages.length > 0 ? messages[messages.length - 1] : null;
+		return { ...(await this.portalTicket(ticket, messages.length, last)), messages };
+	}
+
+	/** The customer reports a problem from the portal: channel `portal`, reporter = the portal login. */
+	async createFromPortal(actor: TPortalActor, body: TPortalTicketRequest): Promise<TPortalTicketDetail> {
+		const ticket = await this.open(actor.userId, {
+			customerId: actor.customerId,
+			projectId: body.projectId,
+			serialNumber: body.serialNumber,
+			deviceDescription: body.deviceDescription,
+			channel: 'portal',
+			reporterName: actor.name,
+			reporterContact: actor.email,
+			complaint: `${body.subject}\n\n${body.description}`.trim(),
+			reportedAt: null,
+		});
+		return this.getForCustomer(actor.customerId, ticket.id);
+	}
+
+	/** A customer message on the thread (always customer-visible). */
+	async addCustomerMessage(actor: TPortalActor, id: string, text: string): Promise<TPortalTicketMessage> {
+		const ticket = await this.requireOwned(actor.customerId, id);
+		if (ticket.status === 'closed') throw new TicketStateError('comment');
+		const comment = await this.comments.create({
+			serviceTicketId: ticket.id,
+			authorType: 'customer',
+			authorUserId: actor.userId,
+			authorName: actor.name,
+			body: text,
+			visibility: 'customer',
+		});
+		return this.portalMessage(comment);
+	}
+
+	/**
+	 * The customer confirms the fix in the portal: resolved → closed, the
+	 * confirmation recorded with channel `portal` (it replaces the
+	 * staff-recorded confirmation for these tickets).
+	 */
+	async confirmFromPortal(actor: TPortalActor, id: string): Promise<TPortalTicketDetail> {
+		const ticket = await this.requireOwned(actor.customerId, id);
+		const now = new Date();
+		const updated = await this.tickets.transition(ticket.id, ['resolved'], {
+			status: 'closed',
+			confirmedByName: actor.name,
+			confirmationChannel: 'portal',
+			confirmedAt: now,
+			closedBy: actor.userId,
+			closedAt: now,
+		});
+		if (!updated) throw new TicketStateError('close');
+		await this.documents.register({
+			code: updated.code,
+			documentType: 'service_ticket',
+			module: 'aftersales',
+			sourceType: 'service_ticket',
+			sourceId: updated.id,
+			organizationId: null,
+			issuedOn: businessDateOf(now),
+			issuedByUserId: actor.userId,
+		});
+		return this.getForCustomer(actor.customerId, updated.id);
+	}
+
+	private async requireOwned(customerId: string, id: string): Promise<TServiceTicketSelect> {
+		const ticket = await this.tickets.findById(id);
+		if (!ticket || ticket.customerId !== customerId) throw new TicketNotFoundError();
+		return ticket;
+	}
+
+	private portalMessage(comment: TServiceTicketCommentSelect): TPortalTicketMessage {
+		return { id: comment.id, authorType: comment.authorType, authorName: comment.authorName, body: comment.body, createdAt: comment.createdAt };
+	}
+
+	private async portalTicket(ticket: TServiceTicketSelect, messageCount: number, lastMessage: TPortalTicketMessage | null): Promise<TPortalTicket> {
+		const assignee = ticket.assigneeUserId ? await this.users.getUser(ticket.assigneeUserId) : null;
+		return {
+			id: ticket.id,
+			code: ticket.code,
+			status: ticket.status,
+			complaint: ticket.complaint,
+			serialNumber: ticket.serialNumber,
+			deviceDescription: ticket.deviceDescription,
+			projectId: ticket.projectId,
+			inWarranty: ticket.inWarranty,
+			warrantyEndsOn: ticket.warrantyEndsOn,
+			reportedAt: ticket.reportedAt,
+			resolution: ticket.resolution,
+			resolvedAt: ticket.resolvedAt,
+			closedAt: ticket.closedAt,
+			assigneeName: assignee?.name ?? null,
+			messageCount,
+			lastMessage,
+		};
 	}
 }

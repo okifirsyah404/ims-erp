@@ -5,7 +5,7 @@ import type { TPurchaseReturnRow } from '../contracts/purchase-return.repository
 export type PurchaseReturnChange = 'submitted' | 'approved' | 'rejected' | 'shipped' | 'cancelled';
 
 /**
- * The `purchase_return.updated` event data sent to n8n (ERP-0064): enough
+ * The `purchase_return.updated` event data sent to n8n (ERP-0068): enough
  * to ask the approver, tell the warehouse to ship, or tell the supplier's PIC
  * the goods are on their way. Amounts are integer IDR minor units.
  */

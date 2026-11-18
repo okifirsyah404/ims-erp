@@ -1,0 +1,65 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import type { AstroComponent } from "@lucide/astro";
+
+/**
+ * Button/Primary (bZYeO), Button/Secondary (T34UCG), Button/Dark (Mc1YO)
+ * plus the translucent variant used on navy CTA cards.
+ */
+type Variant = "primary" | "secondary" | "dark" | "glass";
+type Size = "sm" | "md" | "lg" | "adaptive";
+
+type Props = {
+  variant?: Variant;
+  size?: Size;
+  href?: string;
+  icon?: AstroComponent;
+  block?: boolean;
+  class?: string;
+  type?: "button" | "submit" | "reset";
+} & Omit<HTMLAttributes<"a">, "class" | "type">;
+
+const {
+  variant = "primary",
+  size = "md",
+  href,
+  icon: Icon,
+  block = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const variants: Record<Variant, string> = {
+  primary: "bg-blue-600 text-white shadow-cta hover:bg-blue-700",
+  secondary: "bg-white text-fg ring-1 ring-inset ring-border hover:bg-surface",
+  dark: "bg-navy-900 text-white hover:bg-navy-800",
+  glass: "bg-white/8 text-white ring-1 ring-inset ring-white/20 hover:bg-white/12",
+};
+
+const sizes: Record<Size, string> = {
+  sm: "px-[18px] py-[11px] text-[14px]",
+  md: "px-[22px] py-3.5 text-[15px]",
+  lg: "px-5 py-4 text-[15px] xl:px-[26px]",
+  /** 16px vertical padding on mobile frames, 14px on desktop (02.04 CTAs). */
+  adaptive: "px-[22px] py-4 text-[15px] xl:py-3.5",
+};
+
+const iconSize = size === "sm" ? 15 : 16;
+const Tag = href ? "a" : "button";
+---
+
+<Tag
+  href={href}
+  type={Tag === "button" ? (rest.type ?? "button") : undefined}
+  class:list={[
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-semibold transition-[background-color,color,box-shadow,transform] duration-200 active:scale-[0.98] motion-reduce:active:scale-100",
+    variants[variant],
+    sizes[size],
+    block && "w-full",
+    className,
+  ]}
+  {...rest}
+>
+  <slot />
+  {Icon && <Icon size={iconSize} aria-hidden="true" />}
+</Tag>

@@ -17,27 +17,26 @@ import type {
 	TArOpenItemSelect,
 	TCashBankAccountSelect,
 	TCashBankTransactionSelect,
-	TPaymentAllocationSelect,
-	TPaymentSelect,
 } from '@drizzle/schemas/finance.schema';
+import type { TPaymentAllocationSelect, TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TInvoiceItemSelect, TInvoiceSelect } from '@drizzle/schemas/sales.schema';
-import type { LedgerRepository } from '../../src/app/accounting/repositories/ledger.repository';
 import type { TInvoiceRepository } from '../../src/app/sales/contracts/invoice.repository.interface';
-import { LedgerRepository as RealLedgerRepo } from '../../src/app/accounting/repositories/ledger.repository';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import { ArAccountResolverService } from '../../src/app/accounting/services/ar-account-resolver.service';
 import { CashBankService } from '../../src/app/accounting/services/cash-bank.service';
-import { PaymentService } from '../../src/app/accounting/services/payment.service';
+import { PaymentService } from '../../src/app/payment/services/payment.service';
 import { InvoiceService } from '../../src/app/sales/services/invoice.service';
 import {
 	ArAccountNotConfiguredError,
 	CashBankAccountInactiveError,
+} from '../../src/app/accounting/errors/ledger.errors';
+import {
 	PaymentAllocationMismatchError,
 	PaymentInvalidTransitionError,
 	PaymentOverAllocationError,
 	PaymentTargetNotIssuedError,
 	PaymentVoidNotAllowedError,
-} from '../../src/app/accounting/errors/ledger.errors';
+} from '../../src/app/payment/errors/payment.errors';
 import {
 	InvoiceNoItemsError,
 	InvoiceNotDraftError,
@@ -120,7 +119,7 @@ function makeHarness() {
 	const now = () => new Date();
 	const id = (p: string) => `${p}-${++seq}`;
 
-	const repo = {
+	const repoFake = {
 		findAccountById: async (_o: string, id: string) => accounts.get(id) ?? null,
 		findAccountByCode: async (_o: string, code: string) =>
 			[...accounts.values()].find((a) => a.code === code) ?? null,
@@ -263,7 +262,7 @@ function makeHarness() {
 			const row = allocations.find((a) => a.id === allocId);
 			if (row) row.updatedAt = now();
 		},
-	} as unknown as LedgerRepository;
+	};
 
 	const numbering = {
 		next: async (type: string) => `${type}-${String(++seq).padStart(6, '0')}`,
@@ -274,10 +273,70 @@ function makeHarness() {
 		transaction: async (fn: (tx: never) => unknown) => fn(tx),
 	} as unknown as BunSQLDatabase;
 
-	const posting = new PostingService({} as unknown as BunSQLDatabase, repo, numbering);
-	const arResolver = new ArAccountResolverService(repo as unknown as RealLedgerRepo);
-	const cashBank = new CashBankService(dbLike, repo, posting, numbering);
-	const paymentService = new PaymentService(dbLike, repo, cashBank, arResolver, numbering);
+	const repo = repoFake;
+	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
+	const arResolver = new ArAccountResolverService(repo as never);
+	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
+	// ADR-0024: the payment ledger moved to its own module. These adapters point
+	// the payment service at this fake through its own repository and through
+	// Accounting's settlement port, both backed by the same in-memory rows.
+	const paymentLedger = {
+		countOpen: async () =>
+			(await repoFake.listPayments()).data.filter((p) =>
+				['draft', 'submitted', 'approved'].includes(p.status as string),
+			).length,
+		list: () => repoFake.listPayments(),
+		findById: repoFake.findPaymentById,
+		insert: repoFake.insertPayment,
+		update: repoFake.updatePayment,
+		insertAllocations: repoFake.insertPaymentAllocations,
+		listAllocations: repoFake.listPaymentAllocations,
+		markAllocationExecuted: repoFake.markAllocationExecuted,
+	};
+	const settlement = {
+		findSalesInvoice: repo.findSalesInvoiceById,
+		findArOpenItem: repo.findArOpenItemByInvoice,
+		applyArSettlement: async (
+			org: string,
+			invoiceId: string,
+			patch: { paidAmount: number; outstandingAmount: number; status: string },
+			_txIn: never,
+		) => {
+			await repo.updateArOpenItem(org, invoiceId, patch);
+			await repo.updateSalesInvoiceTotals(org, invoiceId, {
+				paidTotal: patch.paidAmount,
+				outstandingTotal: patch.outstandingAmount,
+				status: patch.status,
+			});
+		},
+		// AR-only suite: no payable payment is executed here.
+		findSupplierBill: async () => null,
+		findApOpenItem: async () => null,
+		applyApSettlement: async () => undefined,
+		postCashMovement: async (input: Record<string, unknown>, txIn: never) => {
+			const counterpartAccountId = await arResolver.resolve(
+				input.organizationId as string,
+				input.side === 'payable' ? 'ap' : 'ar',
+			);
+			await cashBank.postMovement(
+				{ organizationId: input.organizationId as string, actorUserId: input.actorUserId as string },
+				{
+					cashBankAccountId: input.cashBankAccountId as string,
+					transactionDate: input.businessDate as string,
+					direction: input.direction as 'in' | 'out',
+					amount: input.amount as number,
+					description: input.description as string,
+					referenceNumber: input.referenceNumber as string,
+					counterpartAccountId,
+					sourceType: input.sourceType as string,
+					sourceId: input.sourceId as string,
+				},
+				txIn,
+			);
+		},
+	};
+
+	const paymentService = new PaymentService(dbLike, paymentLedger as never, settlement as never, numbering);
 
 	const invoiceRepo = {
 		findById: async (_o: string, id: string) => invoicesRows.get(id) ?? null,
@@ -315,10 +374,18 @@ function makeHarness() {
 
 	// n8n events (M04): recorded so the flows can assert on them.
 	const events: { topic: string; data: Record<string, unknown> }[] = [];
+	const arLedger = {
+		openItem: async (org: string, input: Record<string, unknown>) => {
+			await repo.insertArOpenItem({ organizationId: org, ...input } as never);
+		},
+		setOpenItemStatus: async () => undefined,
+		findPostedEntryForSource: async () => null,
+	};
+
 	const invoiceService = new InvoiceService(
 		dbLike,
 		invoiceRepo,
-		repo,
+		arLedger as never,
 		posting,
 		arResolver,
 		numbering,

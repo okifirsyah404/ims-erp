@@ -14,12 +14,18 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import type { TranslationKey } from '@ims-erp/locales';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { ItemThumb } from '@/components/item-thumb';
 import {
 	movementsQueryOptions,
 	OUTBOUND_MOVEMENT_TYPES,
 	reverseMovement,
 	type TStockMovement,
 } from '@/lib/stock-api';
+import { useClampPage } from '@/lib/use-clamp-page';
+
+/** Rows per page: 24 keeps a full-height page without endless scrolling. */
+const PAGE_SIZE = 24;
 
 /**
  * The movement ledger.
@@ -36,12 +42,21 @@ import {
  *   one removes stock and may go negative. The backend refuses that, so the
  *   error is surfaced rather than pre-empted here with a stale balance.
  */
-export function MovementList() {
+export function MovementList({
+	page,
+	onPageChange,
+}: {
+	/** Current page, owned by the route's `page` search param. */
+	page: number;
+	onPageChange: (page: number) => void;
+}) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
-	const { data, isPending, isError, error } = useQuery(
-		movementsQueryOptions({ limit: 100 }),
-	);
+	const { data, isPending, isError, error } = useQuery({
+		...movementsQueryOptions({ page, limit: PAGE_SIZE }),
+		// Keeps the current page visible while the next one loads.
+		placeholderData: (previous) => previous,
+	});
 
 	const reversal = useMutation({
 		mutationFn: (movementId: string) => reverseMovement(movementId),
@@ -51,6 +66,12 @@ export function MovementList() {
 			void queryClient.invalidateQueries({ queryKey: ['stock'] });
 		},
 	});
+
+	// A shrinking result set must not leave the ledger on a page that no longer
+	// exists.
+	const pagination = data?.pagination;
+	useClampPage(page, pagination?.totalPages, onPageChange);
+	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
 	if (isPending) {
 		return (
@@ -133,6 +154,12 @@ export function MovementList() {
 					</CardContent>
 				</Card>
 			)}
+
+			<PaginationControls
+				page={effectivePage}
+				totalPages={pagination?.totalPages ?? 1}
+				onPageChange={onPageChange}
+			/>
 		</div>
 	);
 }
@@ -161,17 +188,20 @@ function MovementRow({
 				})}
 			</TableCell>
 			<TableCell>
-				<Link
-					to='/inventory/items/$itemId'
-					params={{ itemId: row.itemId }}
-					className='hover:underline'
-				>
-					{row.itemName ?? (
-						<span className='font-mono text-xs text-muted-foreground'>
-							{row.itemId}
-						</span>
-					)}
-				</Link>
+				<div className='flex items-center gap-2'>
+					<ItemThumb src={row.imageUrl} name={row.itemName ?? row.itemId} />
+					<Link
+						to='/inventory/items/$itemId'
+						params={{ itemId: row.itemId }}
+						className='hover:underline'
+					>
+						{row.itemName ?? (
+							<span className='font-mono text-xs text-muted-foreground'>
+								{row.itemId}
+							</span>
+						)}
+					</Link>
+				</div>
 			</TableCell>
 			<TableCell className='text-right font-mono'>
 				{outbound ? '−' : '+'}
