@@ -1,16 +1,19 @@
 import { LOCATION_SERVICE_TOKEN } from '@app/location/constants/di';
 import type { LocationService } from '@app/location/services/location.service';
+import { randomBytes } from 'node:crypto';
 import { isUniqueViolation } from '@drizzle/errors';
 import type { TCustomerContactSelect, TCustomerSelect } from '@drizzle/schemas/crm.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 import { CUSTOMER_CONTACT_REPOSITORY_TOKEN, CUSTOMER_REPOSITORY_TOKEN } from '../constants/di';
-import type {
-	TCreateContactInput,
-	TCreateCustomerInput,
-	TCustomerListQuery,
-	TUpdateContactInput,
-	TUpdateCustomerInput,
+import {
+	createCustomerSchema,
+	customerContactSchema,
+	type TCreateContactInput,
+	type TCreateCustomerInput,
+	type TCustomerListQuery,
+	type TUpdateContactInput,
+	type TUpdateCustomerInput,
 } from '../contracts/customer.contract';
 import type {
 	ICustomerContactRepository,
@@ -90,6 +93,27 @@ export class CustomerService {
 			if (isUniqueViolation(error)) throw new CustomerCodeTakenError(input.code);
 			throw error;
 		}
+	}
+
+	/**
+	 * Contract for the customer portal (ERP-0022, owner decision D1): an
+	 * individual who signed up and verified their email becomes an active
+	 * `individual` customer (code `PRT-…`, unassigned) with one primary contact.
+	 */
+	async createFromPortalSignup(
+		input: { name: string; email: string; phone: string | null },
+		actorUserId: string,
+	): Promise<{ customer: TCustomerSelect; contact: TCustomerContactSelect }> {
+		const code = `PRT-${Date.now().toString(36).toUpperCase()}${randomBytes(2).toString('hex').toUpperCase()}`;
+		const customer = await this.create(
+			createCustomerSchema.parse({ code, customerType: 'individual', name: input.name, email: input.email, phone: input.phone }),
+			actorUserId,
+		);
+		const contact = await this.contacts.create(
+			customer.id,
+			customerContactSchema.parse({ name: input.name, email: input.email, phone: input.phone, isPrimary: true }),
+		);
+		return { customer, contact };
 	}
 
 	async update(id: string, patch: TUpdateCustomerInput): Promise<TCustomerSelect> {

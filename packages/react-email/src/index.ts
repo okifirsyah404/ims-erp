@@ -17,3 +17,4 @@ export { VerificationEmail } from '../emails/verification-email';
 export { ResetPasswordEmail } from '../emails/reset-password-email';
 export { AppInvitationEmail } from '../emails/app-invitation-email';
 export { OrganizationInvitationEmail } from '../emails/organization-invitation-email';
+export { CodeEmail } from '../emails/code-email';

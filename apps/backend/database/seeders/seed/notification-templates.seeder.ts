@@ -65,6 +65,20 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 			'{{requesterName}} requested your signature on {{documentName}}.',
 		variables: ['requesterName', 'documentName'],
 	},
+	{
+		code: 'document.signature_signed',
+		name: 'Signature signed',
+		subjectTemplate: 'Document signed: {{documentName}}',
+		bodyTemplate: '{{signerName}} signed {{documentName}}.',
+		variables: ['signerName', 'documentName'],
+	},
+	{
+		code: 'document.signature_declined',
+		name: 'Signature declined',
+		subjectTemplate: 'Signature declined: {{documentName}}',
+		bodyTemplate: '{{signerName}} declined to sign {{documentName}}.',
+		variables: ['signerName', 'documentName'],
+	},
 ];
 
 /**

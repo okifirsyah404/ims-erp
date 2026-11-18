@@ -5,13 +5,14 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TPaginationResult } from '@ims-erp/common';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
-import { LEDGER_REPOSITORY_TOKEN } from '../constants/di';
-import type { LedgerRepository } from '../repositories/ledger.repository';
+import { BANK_RECONCILIATION_REPOSITORY_TOKEN, CASH_BANK_REPOSITORY_TOKEN } from '../constants/di';
 import {
 	BankReconciliationNotFoundError,
 	BankReconciliationStateError,
 	CashBankAccountNotFoundError,
 } from '../errors/ledger.errors';
+import type { IBankReconciliationRepository } from '../contracts/bank-reconciliation.repository.interface';
+import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
 
 export type TReconciliationActionContext = {
 	organizationId: string;
@@ -49,7 +50,8 @@ export type TReconciliationItemInput = {
 export class BankReconciliationService {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
-		@inject(LEDGER_REPOSITORY_TOKEN) private readonly repo: LedgerRepository,
+		@inject(BANK_RECONCILIATION_REPOSITORY_TOKEN) private readonly reconciliations: IBankReconciliationRepository,
+		@inject(CASH_BANK_REPOSITORY_TOKEN) private readonly cashBank: ICashBankRepository,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: CodeNumberService,
 	) {}
@@ -59,11 +61,11 @@ export class BankReconciliationService {
 		filters: { cashBankAccountId?: string; status?: string },
 		pagination: { page: number; limit: number },
 	): Promise<TPaginationResult<unknown>> {
-		return this.repo.listBankReconciliations(organizationId, filters, pagination);
+		return this.reconciliations.listBankReconciliations(organizationId, filters, pagination);
 	}
 
 	async get(organizationId: string, id: string): Promise<unknown> {
-		const reconciliation = await this.repo.findBankReconciliationById(
+		const reconciliation = await this.reconciliations.findBankReconciliationById(
 			organizationId,
 			id,
 		);
@@ -76,7 +78,7 @@ export class BankReconciliationService {
 		input: TCreateReconciliationInput,
 	): Promise<unknown> {
 		return this.database.transaction(async (tx) => {
-			const account = await this.repo.findCashBankAccountById(
+			const account = await this.cashBank.findCashBankAccountById(
 				ctx.organizationId,
 				input.cashBankAccountId,
 				tx,
@@ -88,7 +90,7 @@ export class BankReconciliationService {
 				tx,
 			});
 			const bookBalance = account.currentBalance;
-			return this.repo.insertBankReconciliation(
+			return this.reconciliations.insertBankReconciliation(
 				{
 					organizationId: ctx.organizationId,
 					code,
@@ -116,7 +118,7 @@ export class BankReconciliationService {
 			if (reconciliation.status !== 'draft') {
 				throw new BankReconciliationStateError();
 			}
-			return this.repo.insertBankReconciliationItems(
+			return this.reconciliations.insertBankReconciliationItems(
 				items.map((item) => ({
 					organizationId: ctx.organizationId,
 					bankReconciliationId: id,
@@ -146,7 +148,7 @@ export class BankReconciliationService {
 			) {
 				throw new BankReconciliationStateError();
 			}
-			const updated = await this.repo.updateBankReconciliationItem(
+			const updated = await this.reconciliations.updateBankReconciliationItem(
 				ctx.organizationId,
 				itemId,
 				{ isMatched: true, cashBankTransactionId },
@@ -154,7 +156,7 @@ export class BankReconciliationService {
 			);
 			if (!updated) throw new BankReconciliationNotFoundError();
 			if (reconciliation.status === 'draft') {
-				await this.repo.updateBankReconciliation(
+				await this.reconciliations.updateBankReconciliation(
 					ctx.organizationId,
 					reconciliationId,
 					{ status: 'in_progress' },
@@ -181,7 +183,7 @@ export class BankReconciliationService {
 			) {
 				throw new BankReconciliationStateError();
 			}
-			const items = (await this.repo.listBankReconciliationItems(
+			const items = (await this.reconciliations.listBankReconciliationItems(
 				ctx.organizationId,
 				id,
 				tx,
@@ -206,7 +208,7 @@ export class BankReconciliationService {
 					'matched statement items do not add up to the statement balance',
 				);
 			}
-			return this.repo.updateBankReconciliation(
+			return this.reconciliations.updateBankReconciliation(
 				ctx.organizationId,
 				id,
 				{
@@ -227,7 +229,7 @@ export class BankReconciliationService {
 			if (reconciliation.status !== 'reconciled') {
 				throw new BankReconciliationStateError();
 			}
-			return this.repo.updateBankReconciliation(
+			return this.reconciliations.updateBankReconciliation(
 				ctx.organizationId,
 				id,
 				{ status: 'closed' },
@@ -246,7 +248,7 @@ export class BankReconciliationService {
 		statementBalance: number;
 		bookBalance: number;
 	}> {
-		const reconciliation = await this.repo.findBankReconciliationById(
+		const reconciliation = await this.reconciliations.findBankReconciliationById(
 			organizationId,
 			id,
 			tx,

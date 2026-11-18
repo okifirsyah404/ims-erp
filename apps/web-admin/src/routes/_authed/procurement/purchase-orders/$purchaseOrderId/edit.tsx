@@ -37,7 +37,7 @@ function EditPurchaseOrderPage() {
 						setSubmitting(true);
 						try {
 							await updatePurchaseOrder(purchaseOrderId, input);
-							await queryClient.invalidateQueries({ queryKey: ['procurement', 'purchase-orders'] });
+							await queryClient.invalidateQueries({ queryKey: ['procurement'] });
 							toast.success(t('procurement:pos.saved'));
 							back();
 						} catch (cause) {

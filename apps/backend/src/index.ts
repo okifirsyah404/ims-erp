@@ -8,6 +8,7 @@ import { registerProjects } from '@app/projects';
 import { registerAftersales } from '@app/aftersales';
 import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
+import { registerPortal } from '@app/portal';
 import { registerCatalog } from '@app/catalog';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
@@ -35,6 +36,7 @@ import { createApp } from './app/app';
 import { registerAudit } from './app/audit';
 import { registerLocation } from './app/location/container';
 import { registerSales } from './app/sales/container';
+import { registerPayment } from './app/payment';
 import { registerUser, startAvatarWorker } from './app/user';
 import { registerOrganization, startOrgLogoWorker } from './app/organization';
 import {
@@ -51,6 +53,9 @@ import { registerAuthorization } from './authorization/container';
 registerProvider(container);
 registerLocation(container);
 registerSales(container);
+// ADR-0023: payment owns `payment.gateway_payments`; it reads invoices and
+// records receipts through sales' port, so sales must be registered first.
+registerPayment(container);
 // Company first, then code numbers: CodeNumberService reads the company
 // document code ({COMPANY}) through COMPANY_SERVICE_TOKEN. Both are injected
 // into the document services of every module.
@@ -73,6 +78,8 @@ registerProjects(container);
 registerAftersales(container);
 registerHr(container);
 registerLicensing(container);
+// Customer portal (ERP-0022): composes user, CRM, projects and after-sales.
+registerPortal(container);
 registerAccounting(container);
 registerCatalog(container);
 registerUser(container);
@@ -124,9 +131,19 @@ const bootstrap = new Elysia()
 		cors({
 			// Browser cross-origin requests from the web-admin dev server need
 			// credentialed CORS; never use a wildcard alongside credentials.
+			// Origins come from the gitignored `cors.json` (template:
+			// `cors.example.json`) with `allow`/`blacklist` lists. Without a
+			// file, only the web app's own origin is allowed; an empty
+			// effective allowlist (blacklist-only file) blocks every origin.
 			origin: appConfig.app.corsOrigins?.length
 				? appConfig.app.corsOrigins
-				: [appConfig.app.url ?? 'http://localhost:5173'],
+				: appConfig.app.corsOrigins != null
+					? [] // blacklist-only file: allow nothing
+					: [
+							appConfig.app.webUrl ??
+								appConfig.app.url ??
+								'http://localhost:5173',
+						],
 			credentials: true,
 			allowedHeaders: ['Content-Type', 'x-organization-id', 'Accept-Language'],
 			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

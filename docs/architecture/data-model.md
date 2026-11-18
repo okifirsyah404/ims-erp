@@ -5,16 +5,21 @@ Schema, keys, constraints, and conventions. Current declarations:
 `apps/backend/drizzle/datatypes/unix-timestamp.ts`.
 
 > 2026-11-13: `apps/backend-elysia` is now `apps/backend`. The schema list
-> below matches `docs/database/docs.dbml`: 27 modules, one Postgres schema each
-> (ERP-0042, ADR-0015; `notification` added by ADR-0016). `docs.dbml` is
-> canonical if the two disagree.
+> below matches `docs/database/docs.dbml`: 28 modules, one Postgres schema each
+> (ERP-0042, ADR-0015; `notification` added by ADR-0016; `payment` added by
+> ADR-0023). `docs.dbml` is canonical if the two disagree.
 
 ## PostgreSQL schemas
 
 - **`auth`** — Better Auth-owned: `users`, `accounts`, `sessions`, `passkeys`,
   `organizations` (unique `slug`), `members`, `invitations`, phone/OTP/magic-link
   tables as generated. Timestamps are bigint milliseconds. FKs cascade to
-  `users.id` for auth-owned tables.
+  `users.id` for auth-owned tables. ERP-owned extension tables in the same
+  schema include `user_invitations` and `portal_identities` (ERP-0022,
+  ADR-0022): a customer-portal login → `linked_entity_id` (logical reference
+  to `crm.customers.id`) and `contact_id` (→ `crm.customer_contacts.id`),
+  both nullable per ADR-0014, `portal_role owner|approver|finance|viewer`,
+  status `active|suspended|revoked`, one live row per contact and per user.
 - **`company`** — the one legal company of the application (ADR-0011, ERP-0042):
   - `profiles` — legal and trading name, `document_code` (the `{COMPANY}`
     numbering token), tagline, tax id, letterhead logo and signature object
@@ -157,6 +162,10 @@ Schema, keys, constraints, and conventions. Current declarations:
 
 - **`notification`** — the caller's own inbox (ADR-0016): notification rows
   and the seeded templates, read-through on a single realtime socket.
+
+- **`payment`** — online checkout of a sales invoice through a
+  provider-neutral gateway (ERP-0020, ADR-0023): `gateway_payments`, with the
+  invoice and receipt as nullable logical references to `sales`.
 
 ## Conventions (pinned decisions)
 

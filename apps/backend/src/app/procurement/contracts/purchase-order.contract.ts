@@ -41,6 +41,8 @@ export const purchaseOrderLineSchema = z.object({
 	unitPrice: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullish(),
 	/** Overrides the item specification printed on the PO. */
 	specification: optionalText(4000),
+	/** The approved purchase request line this line orders (PR → PO). */
+	purchaseRequestItemId: z.uuid().nullish().transform((value) => value ?? null),
 });
 
 export const purchaseOrderBodySchema = z.object({

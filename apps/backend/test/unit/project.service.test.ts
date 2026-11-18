@@ -11,6 +11,7 @@ import type {
 	TProjectSelect,
 	TProjectTaskSelect,
 } from '@drizzle/schemas/projects.schema';
+import { PROJECT_STAGES } from '@drizzle/schemas/projects.schema';
 import type { TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
 import type { IProjectRepository } from '../../src/app/projects/contracts/project.repository.interface';
 import {
@@ -58,7 +59,26 @@ function fakeRepository(): IProjectRepository {
 			const data = rows.filter((row) => !request.involvedUserId || row.picUserId === request.involvedUserId);
 			return { meta: { page: 1, limit: 20, total: data.length, totalPages: 1 }, data };
 		},
+		async stats(request) {
+			// Same visibility rule as `paginate`: PIC or a live task. Overdue =
+			// active project whose target date has passed.
+			const involved = (id: string, userId: string) =>
+				rows.find((row) => row.id === id)?.picUserId === userId ||
+				tasks.some((task) => task.projectId === id && task.assigneeUserId === userId && !task.deletedAt);
+			const visible = rows.filter(
+				(row) => !row.deletedAt && (!request.involvedUserId || involved(row.id, request.involvedUserId)),
+			);
+			const active = visible.filter((row) => row.status === 'active');
+			return {
+				active: active.length,
+				closed: visible.filter((row) => row.status === 'closed').length,
+				cancelled: visible.filter((row) => row.status === 'cancelled').length,
+				overdue: active.filter((row) => row.targetEndDate !== null && row.targetEndDate < request.today).length,
+				byStage: PROJECT_STAGES.map((stage) => ({ stage, count: active.filter((row) => row.stage === stage).length })),
+			};
+		},
 		findById: async (id) => live(id),
+		listByCustomer: async (customerId) => rows.filter((row) => row.customerId === customerId && !row.deletedAt && row.status !== 'cancelled'),
 		isInvolved: async (projectId, userId) =>
 			live(projectId)?.picUserId === userId || tasks.some((task) => task.projectId === projectId && task.assigneeUserId === userId && !task.deletedAt),
 		findLiveBySalesOrder: async (salesOrderId) => rows.find((row) => row.salesOrderId === salesOrderId && row.status !== 'cancelled') ?? null,
@@ -201,8 +221,35 @@ describe('projects', () => {
 		await expect(service.setTaskStatus(tech, project.id, other.id, 'done')).rejects.toBeInstanceOf(ProjectForbiddenError);
 	});
 
-	test('files are checked by content; closing needs testing, training and BAST evidence', async () => {
+	test('dashboard stats count only what the caller may see, and only active projects are overdue', async () => {
 		const project = await createProject();
+		// Nobody is involved yet: a manager sees it, a technician does not.
+		const manager = await service.stats(pm);
+		expect(manager).toMatchObject({ active: 1, closed: 0, cancelled: 0, overdue: 0 });
+		expect(manager.byStage).toHaveLength(7);
+		expect(manager.byStage.find((row) => row.stage === 'preparation')).toEqual({ stage: 'preparation', count: 1 });
+		expect((await service.stats(tech)).active).toBe(0);
+
+		// Assigning a task makes it visible to that technician, and only then.
+		const testing = tasks.find((task) => task.stage === 'testing')!;
+		await service.updateTask(pm, project.id, testing.id, { title: testing.title, stage: 'testing', assigneeUserId: 'tech', dueDate: null });
+		expect((await service.stats(tech)).active).toBe(1);
+
+		// Overdue needs an active project whose target date has passed.
+		const overdue = (await service.stats(pm)).overdue;
+		await service.update(pm, project.id, {
+			picUserId: 'pm',
+			siteName: null,
+			targetStartDate: null,
+			targetEndDate: '2000-01-01',
+			stage: 'preparation',
+			notes: null,
+		});
+		expect((await service.stats(pm)).overdue).toBe(overdue + 1);
+		await service.close(pm, project.id).catch(() => undefined);
+	});
+
+	test('files are checked by content; closing needs testing, training and BAST evidence', async () => {		const project = await createProject();
 		await expect(upload('testing', new Uint8Array(new TextEncoder().encode('not an image')))).rejects.toBeInstanceOf(ProjectFileError);
 		await upload('testing');
 		await upload('training');

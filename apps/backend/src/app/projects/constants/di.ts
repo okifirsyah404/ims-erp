@@ -5,6 +5,7 @@
  * Every token carries an `InjectionToken<T>` annotation so registrations
  * and resolutions type-check against the contract.
  */
+import type { ProjectPortalService } from '../services/project-portal.service';
 import type { InjectionToken } from 'tsyringe';
 import type { IProjectRepository } from '../contracts/project.repository.interface';
 import type { ProjectLookupService } from '../services/project-lookup.service';
@@ -25,4 +26,7 @@ export const PROJECT_LOOKUP_SERVICE_TOKEN: InjectionToken<ProjectLookupService> 
 export const HANDOVER_REPOSITORY_TOKEN: InjectionToken<IHandoverRepository> = Symbol('HANDOVER_REPOSITORY_TOKEN');
 
 /** Token resolving to the {@link HandoverService} (BAST; Projects contract for After-Sales). */
+/** Customer-portal view of projects (ERP-0022): the contract the portal module uses. */
+export const PROJECT_PORTAL_SERVICE_TOKEN: InjectionToken<ProjectPortalService> = Symbol('PROJECT_PORTAL_SERVICE_TOKEN');
+
 export const HANDOVER_SERVICE_TOKEN: InjectionToken<HandoverService> = Symbol('HANDOVER_SERVICE_TOKEN');

@@ -1,10 +1,10 @@
 /**
  * Finance domain schema — owns the `finance` Postgres schema (M09 Stage 1).
  *
- * The single payment ledger (`finance.payments`), payment allocations,
- * cash/bank accounts and their transaction ledger, bank reconciliation,
- * supplier bills, payment terms (receipts/kwitansi live in `sales`), and the
- * AR/AP open-item sub-ledgers.
+ * Cash/bank accounts and their transaction ledger, bank reconciliation,
+ * supplier bills, payment terms, expense settlements/claims, credit memos,
+ * and the AR/AP open-item sub-ledgers. The single payment ledger and its
+ * allocations live in `payment` (ADR-0024); receipts/kwitansi live in `sales`.
  *
  * House rules honoured here:
  * - Money is exact integer IDR minor units in `bigint` (ADR-0002). Never a
@@ -20,8 +20,8 @@
  * - Deferred entities (ERP plan finance.md D6): expense settlements/claims,
  *   employee advances, credit memos and journal templates are intentionally
  *   NOT built in this slice.
- * - `sales.payments` is a separate transitional scaffold owned by the Sales
- *   module (finance plan D12); it is untouched here.
+ * - The single payment ledger moved to `payment.payments` (ADR-0024); Finance
+ *   keeps the cash/bank master and the AR/AP mirrors it settles.
  */
 import { sql } from 'drizzle-orm';
 import {
@@ -50,46 +50,6 @@ export const financeSchema = pgSchema('finance');
  * ------------------------------------------------------------------------ */
 
 /** Payment kinds. `advance_disbursement`, `payroll` etc. are Stage 2 values. */
-export const PAYMENT_TYPES = [
-	'receipt',
-	'disbursement',
-	'refund',
-	'advance_disbursement',
-	'payroll',
-	'profit_distribution',
-	'investment',
-] as const;
-export type PaymentType = (typeof PAYMENT_TYPES)[number];
-
-/** Money direction of a payment relative to the company. */
-export const PAYMENT_DIRECTIONS = ['in', 'out'] as const;
-export type PaymentDirection = (typeof PAYMENT_DIRECTIONS)[number];
-
-/**
- * Payment lifecycle. `reversed` / `void` / `cancelled` exist in the
- * vocabulary and CHECK; reversal/void handling lands with the posting
- * engine slice (F2/F4).
- */
-export const PAYMENT_STATUSES = [
-	'draft',
-	'submitted',
-	'approved',
-	'executed',
-	'reversed',
-	'void',
-	'cancelled',
-] as const;
-export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
-
-export const PAYMENT_METHODS = [
-	'bank_transfer',
-	'cash',
-	'card',
-	'e_wallet',
-	'cheque',
-	'offset',
-] as const;
-export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 /** Cash/bank account kinds. `clearing` is used by gateway postings (Stage 2). */
 export const CASH_BANK_ACCOUNT_TYPES = [
@@ -268,116 +228,6 @@ export const cashBankTransactions = financeSchema.table(
 		check('cash_bank_transactions_direction_check', sql`direction IN ('in', 'out')`),
 		check('cash_bank_transactions_amount_check', sql`amount > 0`),
 		check('cash_bank_transactions_status_check', sql`status IN ('posted', 'reversed')`),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
- * finance.payments — THE single payment ledger
- * ------------------------------------------------------------------------ */
-
-export const payments = financeSchema.table(
-	'payments',
-	{
-		id: uuid('id').primaryKey().default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		code: varchar('code', { length: 32 }).notNull(),
-		paymentType: text('payment_type').notNull(),
-		direction: text('direction').notNull(),
-		counterpartyType: text('counterparty_type'),
-		counterpartyId: text('counterparty_id'),
-		/** Plain id refs; validated through owning module contracts. */
-		salesInvoiceId: uuid('sales_invoice_id'),
-		supplierBillId: uuid('supplier_bill_id'),
-		employeeAdvanceId: uuid('employee_advance_id'),
-		amount: bigint('amount', { mode: 'number' }).notNull(),
-		currencyCode: currencyCode(),
-		paymentMethod: text('payment_method').notNull().default('bank_transfer'),
-		paymentDate: date('payment_date'),
-		status: text('status').notNull().default('draft'),
-		requestedBy: text('requested_by'),
-		requestedAt: unixTimestampNullable('requested_at'),
-		submittedAt: unixTimestampNullable('submitted_at'),
-		approvedBy: text('approved_by'),
-		approvedAt: unixTimestampNullable('approved_at'),
-		executedBy: text('executed_by'),
-		executedAt: unixTimestampNullable('executed_at'),
-		cashBankAccountId: uuid('cash_bank_account_id').references(
-			() => cashBankAccounts.id,
-			{ onDelete: 'restrict' },
-		),
-		referenceNumber: text('reference_number'),
-		notes: text('notes'),
-		voidedAt: unixTimestampNullable('voided_at'),
-		voidReason: text('void_reason'),
-		createdAt: unixTimestamp('created_at').notNull(),
-		updatedAt: unixTimestamp('updated_at')
-			.notNull()
-			.$onUpdate(() => new Date()),
-		deletedAt: unixTimestampNullable('deleted_at'),
-	},
-	(table) => [
-		uniqueIndex('payments_org_code_uq').on(table.organizationId, table.code),
-		index('payments_sales_invoice_id_idx').on(table.salesInvoiceId),
-		index('payments_supplier_bill_id_idx').on(table.supplierBillId),
-		index('payments_status_idx').on(table.status),
-		index('payments_counterparty_idx').on(
-			table.organizationId,
-			table.counterpartyType,
-			table.counterpartyId,
-		),
-		index('payments_cash_bank_account_id_idx').on(table.cashBankAccountId),
-		check(
-			'payments_type_check',
-			sql`payment_type IN ('receipt', 'disbursement', 'refund', 'advance_disbursement', 'payroll', 'profit_distribution', 'investment')`,
-		),
-		check('payments_direction_check', sql`direction IN ('in', 'out')`),
-		check(
-			'payments_status_check',
-			sql`status IN ('draft', 'submitted', 'approved', 'executed', 'reversed', 'void', 'cancelled')`,
-		),
-		check('payments_amount_check', sql`amount > 0`),
-		check(
-			'payments_method_check',
-			sql`payment_method IN ('bank_transfer', 'cash', 'card', 'e_wallet', 'cheque', 'offset')`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
- * finance.payment_allocations
- * ------------------------------------------------------------------------ */
-
-export const paymentAllocations = financeSchema.table(
-	'payment_allocations',
-	{
-		id: uuid('id').primaryKey().default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		paymentId: uuid('payment_id')
-			.notNull()
-			.references(() => payments.id, { onDelete: 'cascade' }),
-		/** Target document of the allocation: sales invoice or supplier bill. */
-		targetType: text('target_type').notNull(),
-		salesInvoiceId: uuid('sales_invoice_id'),
-		supplierBillId: uuid('supplier_bill_id'),
-		amount: bigint('amount', { mode: 'number' }).notNull(),
-		createdAt: unixTimestamp('created_at').notNull(),
-		updatedAt: unixTimestamp('updated_at')
-			.notNull()
-			.$onUpdate(() => new Date()),
-	},
-	(table) => [
-		index('payment_allocations_payment_id_idx').on(table.paymentId),
-		index('payment_allocations_sales_invoice_id_idx').on(table.salesInvoiceId),
-		index('payment_allocations_supplier_bill_id_idx').on(table.supplierBillId),
-		check(
-			'payment_allocations_target_check',
-			sql`target_type IN ('sales_invoice', 'supplier_bill')`,
-		),
-		check(
-			'payment_allocations_target_present_check',
-			sql`(target_type = 'sales_invoice' AND sales_invoice_id IS NOT NULL) OR (target_type = 'supplier_bill' AND supplier_bill_id IS NOT NULL)`,
-		),
-		check('payment_allocations_amount_check', sql`amount > 0`),
 	],
 );
 
@@ -612,10 +462,6 @@ export type TCashBankTransactionSelect =
 	typeof cashBankTransactions.$inferSelect;
 export type TCashBankTransactionInsert =
 	typeof cashBankTransactions.$inferInsert;
-export type TPaymentSelect = typeof payments.$inferSelect;
-export type TPaymentInsert = typeof payments.$inferInsert;
-export type TPaymentAllocationSelect = typeof paymentAllocations.$inferSelect;
-export type TPaymentAllocationInsert = typeof paymentAllocations.$inferInsert;
 export type TBankReconciliationSelect =
 	typeof bankReconciliations.$inferSelect;
 export type TBankReconciliationInsert =
