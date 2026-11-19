@@ -18,7 +18,7 @@ import PricingPanel from "../components/rfq/PricingPanel.astro";
 import { projectTypes } from "../data/rfq";
 import { indicativeQuote } from "../data/pricing";
 import { authRoutes, customerPortal, routes } from "../data/site";
-import { platforms } from "../data/solutions";
+import { getSolutions } from "../lib/server/content/solutions";
 import { getCustomer } from "../lib/server/auth";
 import { products } from "../data/catalog";
 import { getProduct } from "../lib/catalog";
@@ -27,6 +27,7 @@ import { formatRupiah } from "../lib/format";
 /** 03.02 RFQ & Pricing — on demand so it can prefill from ?product= and handle the action result. */
 export const prerender = false;
 
+const { platforms } = await getSolutions();
 const params = Astro.url.searchParams;
 const initial = params.get("product") ? await getProduct(params.get("product")!) : null;
 const initialQty = Math.min(999, Math.max(1, Number.parseInt(params.get("qty") ?? "1", 10) || 1));

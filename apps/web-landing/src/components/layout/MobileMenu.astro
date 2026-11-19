@@ -11,7 +11,7 @@ import SocialLinks from "../ui/SocialLinks.astro";
 import { customerPortal, routes } from "../../data/site";
 import { isActivePath } from "../../lib/nav";
 import { catalogCategories } from "../../data/catalog";
-import { platforms } from "../../data/solutions";
+import { getSolutions } from "../../lib/server/content/solutions";
 // ERP-0071: identity and menus come from the ERP (or the built-in defaults).
 const { company, mainNav } = Astro.locals.site;
 
@@ -23,6 +23,7 @@ interface Props {
 
 const { id, pathname } = Astro.props;
 const productLinks = catalogCategories.map((c) => ({ label: c.name, href: `${routes.products}?category=${c.slug}` }));
+const { platforms } = await getSolutions();
 const solutionLinks = platforms.map((p) => ({ label: p.name, href: `${routes.solutions}/${p.slug}` }));
 ---
 

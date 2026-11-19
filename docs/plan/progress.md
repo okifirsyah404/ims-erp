@@ -12,6 +12,41 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - ERP-0071 stage 3: solutions, projects and testimonials on the website from the ERP
+
+Same branch, after stage 2 (`4669143c`). Website-only change: the ERP side
+(types `solution`, `project`, `testimonial`, editor, seed) landed in stage 2.
+`docs/database/` reviewed and unchanged (no table, column or vocabulary
+change).
+
+**Changes (`apps/web-landing`).**
+- `src/lib/server/content/solutions.ts`: published ERP solutions replace the
+  built-in six, in ERP order; each entry's `key` picks the product mockup and
+  the built-in solution with that key fills any empty field (card and detail).
+- `src/lib/server/content/projects.ts` (from stage 2) now also feeds the
+  portfolio, the case studies and search.
+- Read from the ERP: `/solutions`, `/solutions/[slug]` (unknown slug → 404),
+  header mega menu, mobile menu, integration band, home software showcase
+  (design order kept, limited to published solutions, extra ERP solutions
+  appended), quote page solution list and the RFQ action's slug check;
+  `/projects` (an ERP portfolio is listed in ERP order; the built-in grid
+  keeps its design order), `/projects/[slug]` (testimonials linked to the
+  project replace the built-in quote), site search (projects).
+
+**Verification.**
+- `astro check` (website): 0 errors, 0 warnings.
+- ERP mode, seeded content: `/`, `/solutions`, `/solutions/gym-management`,
+  `/solutions/smart-parking`, `/projects`, `/projects?industry=parking`,
+  `/projects/grand-indonesia-smart-parking`, `/quote`, `/search?q=parking`
+  → 200; `/projects/nope` → 404.
+- Probe on the dev database (reverted): a project title and a testimonial
+  quote changed in `commerce.web_pages` showed on the case study, the
+  portfolio and the home testimonials after the one-minute cache.
+
+**Next executable task:** ERP-0071 stage 4 (about, careers and roles, news,
+help topics / articles / FAQ / documents / videos / training, legal,
+warranty, installation from the ERP).
+
 ## 2026-11-19 - ERP-0071 stage 2: website content in the ERP (shared foundation + home page)
 
 Same branch, after stage 1 (`436e9525`).

@@ -12,9 +12,8 @@ import IntegrationBand from "../../components/solutions/IntegrationBand.astro";
 import SolutionsCta from "../../components/solutions/SolutionsCta.astro";
 import ProjectCard from "../../components/projects/ProjectCard.astro";
 import RelatedProducts from "../../components/product/RelatedProducts.astro";
-import { platforms } from "../../data/solutions";
-import { solutionDetails } from "../../data/solution-details";
-import { projects } from "../../data/projects";
+import { getSolutions } from "../../lib/server/content/solutions";
+import { getProjects } from "../../lib/server/content/projects";
 import { routes, solutionHref } from "../../data/site";
 import { getProductsBySlugs } from "../../lib/catalog";
 import { icons } from "../../lib/icons";
@@ -24,10 +23,12 @@ import { icons } from "../../lib/icons";
  * No dedicated frame: composed from the 02.04 hero, solution card window, integration band
  * and CTA, plus shared section patterns.
  */
-// Rendered on request (ERP-0071): an unknown slug is the 404 page.
+// Rendered on request (ERP-0071): an unknown slug is the 404 page. Solutions and projects
+// come from the ERP (or the built-in content).
+const [{ platforms, details }, projects] = await Promise.all([getSolutions(), getProjects()]);
 const platform = platforms.find((p) => p.slug === Astro.params.slug);
 if (!platform) return Astro.rewrite("/404");
-const detail = solutionDetails[platform.slug];
+const detail = details[platform.slug]!;
 const Icon = icons[platform.icon];
 const hardware = await getProductsBySlugs(detail.hardware);
 const caseStudies = detail.projects.map((slug) => projects.find((p) => p.slug === slug)).filter((p) => p !== undefined);

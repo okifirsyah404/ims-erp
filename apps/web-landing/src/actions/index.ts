@@ -5,7 +5,7 @@ import { ErpContractError } from "@/api/contract-schemas";
 import { WebsiteNotConfiguredError, type CheckoutOrder, type OrderConfirmation } from "@/api/website";
 import { type RfqSubmission } from "@/api/rfq";
 import { getCustomer, toAuth } from "../lib/server/auth";
-import { platforms } from "../data/solutions";
+import { getSolutions } from "../lib/server/content/solutions";
 import { getProductsBySlugs } from "../lib/catalog";
 import { website, websiteMode } from "../lib/server/website";
 import { isIndonesianPhone, normalizeIndonesianPhone } from "../lib/phone";
@@ -134,7 +134,7 @@ export const server = {
         if (input.item.length === 0 && input.solutions.length === 0) {
           throw new ActionError({ code: "BAD_REQUEST", message: "Add at least one product or software solution to quote." });
         }
-        const solutionSlugs = new Set(platforms.map((p) => p.slug));
+        const solutionSlugs = new Set((await getSolutions()).platforms.map((p) => p.slug));
         if (input.solutions.some((slug) => !solutionSlugs.has(slug))) {
           throw new ActionError({ code: "BAD_REQUEST", message: "Some software solutions are no longer available." });
         }

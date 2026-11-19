@@ -6,18 +6,25 @@ import Media from "../../components/ui/Media.astro";
 import EmptyState from "../../components/ui/EmptyState.astro";
 import ProjectCard from "../../components/projects/ProjectCard.astro";
 import ContactCta from "../../components/home/ContactCta.astro";
-import { industryFilters, portfolioGrid, portfolioStats, projects, type Industry } from "../../data/projects";
+import { industryFilters, portfolioGrid, portfolioStats, projects as builtInProjects, type Industry } from "../../data/projects";
+import { getProjects } from "../../lib/server/content/projects";
 import { routes } from "../../data/site";
 
 /** 01.02 Project Portfolio (desktop d9ygCl / mobile qIbSA). `?industry=` filters server-side. */
 export const prerender = false;
 
+// ERP-0071 stage 3: the portfolio comes from the ERP (or the built-in sample). The built-in
+// grid keeps its design order; an ERP portfolio is shown in ERP order.
+const projects = await getProjects();
+const fromErp = projects !== builtInProjects;
 const requested = Astro.url.searchParams.get("industry");
 const industry = industryFilters.some((f) => f.value === requested && f.value !== "all") ? (requested as Industry) : "all";
 const featured = industry === "all" ? projects.find((p) => p.featured) : undefined;
 const list =
   industry === "all"
-    ? portfolioGrid.map((slug) => projects.find((p) => p.slug === slug)!)
+    ? fromErp
+      ? projects.filter((p) => p !== featured)
+      : portfolioGrid.map((slug) => projects.find((p) => p.slug === slug)!)
     : projects.filter((p) => p.industry === industry);
 const filterHref = (value: string) => (value === "all" ? routes.projects : `${routes.projects}?industry=${value}`);
 ---

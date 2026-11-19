@@ -5,11 +5,13 @@ import SolutionsHero from "../../components/solutions/SolutionsHero.astro";
 import SolutionCard from "../../components/solutions/SolutionCard.astro";
 import IntegrationBand from "../../components/solutions/IntegrationBand.astro";
 import SolutionsCta from "../../components/solutions/SolutionsCta.astro";
-import { platforms } from "../../data/solutions";
+import { getSolutions } from "../../lib/server/content/solutions";
 import { routes } from "../../data/site";
 import { icons } from "../../lib/icons";
 
 /** 02.04 Software Solutions. */
+// ERP-0071 stage 3: the solutions come from the ERP (or the built-in six).
+const { platforms } = await getSolutions();
 const chipPlatforms = platforms.filter((p) => p.key !== "access");
 ---
 

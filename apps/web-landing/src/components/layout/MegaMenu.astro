@@ -6,9 +6,12 @@ import FileText from "@lucide/astro/icons/file-text";
 import Boxes from "@lucide/astro/icons/boxes";
 import MonitorPlay from "@lucide/astro/icons/monitor-play";
 import { catalogCategories } from "../../data/catalog";
-import { platforms } from "../../data/solutions";
 import { routes, solutionHref } from "../../data/site";
 import { icons } from "../../lib/icons";
+import { getSolutions } from "../../lib/server/content/solutions";
+
+// ERP-0071 stage 3: the solutions come from the ERP (or the built-in six).
+const { platforms } = await getSolutions();
 
 /**
  * Header dropdowns for "Products" and "Software Solutions". Not drawn in the .pen file;

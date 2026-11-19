@@ -2,10 +2,12 @@
 import Cpu from "@lucide/astro/icons/cpu";
 import Check from "@lucide/astro/icons/check";
 import Media from "../ui/Media.astro";
-import { hardwareLayer, integrationBenefits, platforms } from "../../data/solutions";
+import { hardwareLayer, integrationBenefits } from "../../data/solutions";
 import { icons } from "../../lib/icons";
+import { getSolutions } from "../../lib/server/content/solutions";
 
 /** Integration Band (02.04): hardware layer → Entragate Core → software layer, plus benefits. */
+const { platforms } = await getSolutions();
 const mobileHardware = hardwareLayer.filter((h) => h.mobileLabel);
 ---
 
