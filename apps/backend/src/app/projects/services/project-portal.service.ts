@@ -83,6 +83,12 @@ export class ProjectPortalService {
 		};
 	}
 
+	/** The live project delivering a sales order (public order tracking, ERP-0073), or `null`. */
+	async findForSalesOrder(salesOrderId: string): Promise<TPortalProject | null> {
+		const project = await this.projects.findLiveBySalesOrder(salesOrderId);
+		return project && project.status !== 'cancelled' ? this.summary(project) : null;
+	}
+
 	private async summary(project: Awaited<ReturnType<IProjectRepository['findById']>> & {}): Promise<TPortalProject> {
 		const [tasks, manager] = await Promise.all([this.projects.listTasks(project.id), this.users.getUser(project.picUserId)]);
 		return {

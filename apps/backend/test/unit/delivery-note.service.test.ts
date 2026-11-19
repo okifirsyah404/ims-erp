@@ -81,6 +81,7 @@ beforeEach(() => {
 			findById: async (id: string) => findNote(id),
 			findItems: async (id: string) => findNote(id)?.items ?? [],
 			hasLiveNotes: async () => false,
+			listForSalesOrder: async () => [],
 			shippedValues: async () => [],
 			shippedLines: async () => [],
 			findShipmentBySerial: async () => null,

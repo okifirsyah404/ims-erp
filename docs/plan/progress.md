@@ -12,6 +12,59 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0073: public order tracking
+
+Same branch, after ERP-0072 (`7a54353c`). `docs/database/` reviewed and
+unchanged: no table or column; tracking reads existing sales, projects and
+CRM data through their services.
+
+**Gate 2 (manual `grill-me` fallback).**
+- Ownership: Sales exposes `OrderTrackingService.findByNumber` (order with
+  items, paid amount, "all issued invoices paid", live delivery notes);
+  Projects `ProjectPortalService.findForSalesOrder`; CRM the customer's
+  current email/phone; the portal module composes and owns the public routes.
+- Who sees what: the website (key) gets the full status only when the
+  visitor gives the order number **and** the order's email (exact) or whole
+  phone (any 0/62/+62 form, at least 8 digits; last digits alone refused);
+  unknown order and wrong contact answer the same 404. The portal's
+  sign-in-free lookup has no key and gets a minimal status with no customer,
+  prices or addresses (title "Order of N item(s)"), 30 lookups per 10
+  minutes per client address (cache counter) on top of the portal's own limit.
+- Stages: received; paid (issued invoices exist and all paid); production
+  (order past `confirmed`); qc (a delivery note exists); shipped (a note
+  shipped/delivered); installation (only when a project exists, with task
+  progress); completed (order completed or project closed). The headline
+  names what happens now ("Awaiting payment"), the timeline each step.
+
+**Changes.**
+- Sales: `ISalesOrderRepository.findByCode`,
+  `IDeliveryNoteRepository.listForSalesOrder`, `OrderTrackingService`
+  (`ORDER_TRACKING_SERVICE_TOKEN`). Projects:
+  `ProjectPortalService.findForSalesOrder`.
+- Portal: `PublicTrackingService` (contact check, rate limit),
+  `utils/tracking-presenter.ts`, `PublicTrackingController`
+  (`/public/v1/orders`), error `portal.tooManyLookups`, labels
+  `tracking.*` (en/id), dead-key prefixes for the composed stage labels.
+- Fix (ERP-0070): portal order `progress` was 0..100 while the portal draws
+  `progress * 100`% — now 0..1 like every other portal progress value.
+- Website `erp-routes.ts` maps `trackOrder`; portal `erp-routes.ts` maps
+  `lookupPublicOrder`; README and `customer-portal.md` route table.
+
+**Verification.**
+- Unit: `public-tracking.test.ts` 8 new; backend typecheck 0; `astro
+  check` website 0, portal 0; locales 98 pass.
+- Live (dev order `0001/SO/DEV/XI/26`, website key from the local `.env`,
+  not printed): track with the order email → 200, status `paid` current,
+  progress 1/6, "Awaiting payment"; with `Accept-Language: id` →
+  "Menunggu pembayaran"-style Indonesian labels; wrong contact → 404; no key
+  → 401; portal status → 200 `{ title: "Order of 1 item(s)", status:
+  confirmed, progress: 0.25 }` with no customer data; unknown number → 404.
+  The website's `tracking.lookup` action returned the tracking for the
+  right email and its not-found message for a wrong one.
+- Not done: browser walk-through of `/track` on the website and the portal.
+
+**Next executable task:** ERP-0074 account cart and wishlist.
+
 ## 2026-11-20 - ERP-0072: website forms and RFQs in the customer portal
 
 Same branch, after ERP-0071 (`4b547e2a`). Numbers checked after `git fetch`

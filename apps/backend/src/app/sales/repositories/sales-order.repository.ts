@@ -124,6 +124,15 @@ export class SalesOrderRepository implements ISalesOrderRepository {
 		return row ?? null;
 	}
 
+	async findByCode(code: string): Promise<TSalesOrderSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(salesOrders)
+			.where(and(eq(salesOrders.code, code), isNull(salesOrders.deletedAt)))
+			.limit(1);
+		return row ?? null;
+	}
+
 	findItems(salesOrderId: string): Promise<TSalesOrderItemSelect[]> {
 		return this.database
 			.select()

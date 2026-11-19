@@ -125,4 +125,5 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
   (`/public/v1/contact`, `/demo`, `/rfq`; a signed-in customer's RFQ also sends their portal
   session and joins their account, ERP-0072) and checkout (`quoteOrder`, `placeOrder`,
   `getPaymentStatus`, ERP-0070). Promo codes are not built in the ERP: `applyPromo` is unmapped
-  and the checkout hides the promo field. Still unmapped: `trackOrder`, `getCart`, `syncCart`.
+  and the checkout hides the promo field. Order tracking (`trackOrder`, ERP-0073) answers only when
+  the email or the whole phone number matches the order. Still unmapped: `getCart`, `syncCart`.

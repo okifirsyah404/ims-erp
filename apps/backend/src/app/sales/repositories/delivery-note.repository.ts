@@ -83,6 +83,12 @@ export class DeliveryNoteRepository implements IDeliveryNoteRepository {
 			.orderBy(asc(deliveryNoteItems.sortOrder), asc(deliveryNoteItems.id));
 	}
 
+	listForSalesOrder(salesOrderId: string): Promise<TDeliveryNoteRow[]> {
+		return this.select()
+			.where(and(eq(deliveryNotes.salesOrderId, salesOrderId), isNull(deliveryNotes.deletedAt), ne(deliveryNotes.status, 'cancelled')))
+			.orderBy(asc(deliveryNotes.createdAt));
+	}
+
 	async hasLiveNotes(salesOrderId: string): Promise<boolean> {
 		const [row] = await this.database
 			.select({ id: deliveryNotes.id })

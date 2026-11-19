@@ -156,7 +156,8 @@ export function orderSummary(p: TPresenter, order: TSalesOrderSelect) {
 		step,
 		stepCount: ORDER_STEP_COUNT,
 		stepLabel: statusLabel,
-		progress: Math.round((step / ORDER_STEP_COUNT) * 100),
+		// 0..1, like every other portal progress value (the portal draws `progress * 100`%).
+		progress: step / ORDER_STEP_COUNT,
 		etaLabel: order.deliveryDate ? p.t('portal.sales.order.eta', { date: dateLabel(p, order.deliveryDate) }) : p.t('portal.sales.order.etaOpen'),
 		total: toMoney(order.grandTotal),
 		placedAt: order.orderDate,

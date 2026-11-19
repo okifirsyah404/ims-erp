@@ -13,8 +13,8 @@ import { type PortalRoutes } from "@/api/portal";
  * - `refreshSession` on purpose: ERP sessions are Better Auth's 7-day sessions and
  *   there is no refresh token; the portal signs the user out when they expire.
  * - not built in the ERP yet: onboarding, notifications, device lookup/registration,
- *   service booking, profile, documents, personal/company/settings updates, sites,
- *   wishlist and public order lookup.
+ *   service booking, profile, documents, personal/company/settings updates, sites
+ *   and wishlist.
  *
  * Ordering itself happens on the website (catalog + checkout, user decision 2026-11-19);
  * the order arrives here as a quotation "in review" (ERP-0070).
@@ -67,4 +67,7 @@ export const erpRoutes: PortalRoutes = {
   listRfqs: "/portal/v1/rfqs",
   requestRfqClaim: "/portal/v1/rfqs/claim",
   confirmRfqClaim: "/portal/v1/rfqs/claim/confirm",
+
+  // Sign-in-free order lookup (ERP-0073): minimal status, no customer, prices or addresses
+  lookupPublicOrder: "/public/v1/orders/:id/status",
 };

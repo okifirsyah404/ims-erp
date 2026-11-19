@@ -20,6 +20,8 @@ export const erpRoutes: WebsiteRoutes = {
   submitRfq: ERP_RFQ_PATH || "/public/v1/rfq",
   sendContactMessage: "/public/v1/contact",
   requestDemo: "/public/v1/demo",
+  // Order tracking (ERP-0073): the full status when the email or phone matches the order.
+  trackOrder: "/public/v1/orders/track",
   quoteOrder: "/portal/v1/checkout/quote",
   placeOrder: "/portal/v1/checkout/orders",
   getPaymentStatus: "/portal/v1/checkout/orders/:orderNumber",

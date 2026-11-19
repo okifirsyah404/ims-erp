@@ -48,6 +48,8 @@ export interface IDeliveryNoteRepository {
 	findItems(deliveryNoteId: string): Promise<TDeliveryNoteItemSelect[]>;
 	/** Whether the order has any prepared, shipped or delivered note. */
 	hasLiveNotes(salesOrderId: string): Promise<boolean>;
+	/** The order's live (not cancelled) delivery notes, oldest first (ERP-0073). */
+	listForSalesOrder(salesOrderId: string): Promise<TDeliveryNoteRow[]>;
 	create(
 		header: TDeliveryNoteHeaderData,
 		items: TDeliveryNoteItemData[],

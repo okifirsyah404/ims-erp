@@ -624,6 +624,10 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Public order tracking — ERP-0073 (2026-11-20): website `/track` shows the
+  full status when the email or phone matches the sales order; the portal's
+  sign-in-free lookup shows a minimal status. Evidence:
+  `test/unit/public-tracking.test.ts` (8), `progress.md` 2026-11-20 ERP-0073.
 - Website forms and RFQs in the customer portal — ERP-0072 (2026-11-20):
   contact, demo and RFQ forms reach the ERP as leads; a signed-in RFQ joins
   the customer's account; guest RFQs are claimed with an emailed code; promo

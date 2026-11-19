@@ -79,3 +79,10 @@ export class PortalRfqClaimCodeInvalidError extends AppError {
 		super(400, 'portal.rfqClaimCodeInvalid', 'The code is wrong or has expired');
 	}
 }
+
+/** Too many sign-in-free order lookups from one address (ERP-0073). */
+export class PublicTrackingRateLimitedError extends AppError {
+	constructor() {
+		super(429, 'portal.tooManyLookups', 'Too many lookups. Please wait a few minutes and try again.');
+	}
+}

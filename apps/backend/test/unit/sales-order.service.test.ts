@@ -45,6 +45,9 @@ class FakeOrders implements ISalesOrderRepository {
 	async findById(id: string) {
 		return this.rows.find((row) => row.id === id) ?? null;
 	}
+	async findByCode(code: string) {
+		return this.rows.find((row) => row.code === code) ?? null;
+	}
 	async findItems(id: string) {
 		return this.items.get(id) ?? [];
 	}

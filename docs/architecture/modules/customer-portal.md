@@ -108,13 +108,15 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | `listRfqs` | `GET /portal/v1/rfqs` | website RFQs of the account (ERP-0072): submitted signed in (`origin: account`) or claimed (`claimed_guest`); status `received` (new), `in_review` (contacted/survey), `quoted` (quotation stage or a non-draft SPH for the lead, `quotationId`), `closed` (won/lost) |
 | `requestRfqClaim` | `POST /portal/v1/rfqs/claim` | `{ reference }` → `{ reference, maskedEmail, expiresInMinutes: 15 }`; a 6-digit code is mailed to the RFQ's address; 404 unknown, already in an account, or no email |
 | `confirmRfqClaim` | `POST /portal/v1/rfqs/claim/confirm` | `{ reference, code }` → 200; 400 wrong/expired code (5 attempts, then start over); the code is bound to the account that asked |
+| `lookupPublicOrder` | `GET /public/v1/orders/:id/status` | no session, no key (ERP-0073): sales order number URL-encoded → `PublicOrderStatus` without customer, prices or addresses (title "Order of N item(s)"); 404 unknown; 429 after 30 lookups / 10 minutes per address |
+| website `trackOrder` | `POST /public/v1/orders/track` | website key; `{ orderNumber, contact }` → `PublicTracking` when `contact` is the order's email (exact) or whole phone (0/62/+62 forms); unknown order and wrong contact both 404. Stages: received, paid (all issued invoices paid), production (order past `confirmed`), qc (a delivery note), shipped (a shipped/delivered note), installation (only with a project; task progress), completed |
 | website `submitRfq` (signed in) | `POST /public/v1/rfq` | website key **and** the customer's session cookie → the RFQ joins that account (`linkedToAccount: true`); a guest RFQ answers `false` |
 
 Not built yet (routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
 `completeOnboarding`, notifications, device registration and lookup, service
 booking, profile, documents, `updatePersonal`/`updateCompany`/`updateSettings`,
-sites, wishlist, public order lookup, the website's account cart
+sites, wishlist, the website's account cart
 (`getCart`/`syncCart`; the cart stays on the device).
 
 ## Staff side

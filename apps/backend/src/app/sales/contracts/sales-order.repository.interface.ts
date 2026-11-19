@@ -35,6 +35,9 @@ export interface ISalesOrderRepository {
 
 	findById(id: string): Promise<TSalesOrderSelect | null>;
 
+	/** The live order with this number (public order tracking, ERP-0073). */
+	findByCode(code: string): Promise<TSalesOrderSelect | null>;
+
 	findItems(salesOrderId: string): Promise<TSalesOrderItemSelect[]>;
 
 	/** Oldest first. */

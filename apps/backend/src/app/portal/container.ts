@@ -7,11 +7,13 @@ import {
 	PORTAL_SALES_SERVICE_TOKEN,
 	PORTAL_SERVICE_TOKEN,
 	PORTAL_SESSION_GATEWAY_TOKEN,
+	PUBLIC_TRACKING_SERVICE_TOKEN,
 } from './constants/di';
 import { PortalAuthService } from './services/portal-auth.service';
 import { PortalService } from './services/portal.service';
 import { PortalSalesService } from './services/portal-sales.service';
 import { PortalRfqService } from './services/portal-rfq.service';
+import { PublicTrackingService } from './services/public-tracking.service';
 
 export * from './constants/di';
 
@@ -29,4 +31,5 @@ export function registerPortal(container: DependencyContainer): void {
 	container.register(PORTAL_SERVICE_TOKEN, { useClass: PortalService });
 	container.register(PORTAL_SALES_SERVICE_TOKEN, { useClass: PortalSalesService });
 	container.register(PORTAL_RFQ_SERVICE_TOKEN, { useClass: PortalRfqService });
+	container.register(PUBLIC_TRACKING_SERVICE_TOKEN, { useClass: PublicTrackingService });
 }
