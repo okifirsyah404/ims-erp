@@ -24,11 +24,12 @@ import { Link } from '@tanstack/react-router';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
+	assetDepreciationsQueryOptions,
 	assetDetailQueryOptions,
 	formatMoney,
 	placeAsset,
 	transferAsset,
-	type TAsset,
+	type TAssetCore,
 } from '@/lib/asset-api';
 import { linkedWarehousesQueryOptions } from '@/lib/warehouse-api';
 import { usePermission } from '@/lib/use-permission';
@@ -47,6 +48,8 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 		...assetDetailQueryOptions(assetId),
 		placeholderData: (previous) => previous,
 	});
+	// Depreciation is finance-owned now, so it is its own endpoint.
+	const depreciations = useQuery(assetDepreciationsQueryOptions(assetId));
 
 	if (isError) {
 		return (
@@ -69,7 +72,18 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 		);
 	}
 
-	const { asset, history } = data;
+	// The history endpoint answers `null` for a unit unknown to this tenant.
+	if (data === null) {
+		return (
+			<EmptyState
+				icon={CircleAlert}
+				title={t('assets:detail.title')}
+				description={t('assets:detail.notFound')}
+			/>
+		);
+	}
+
+	const { item: asset, history } = data;
 
 	return (
 		<div className='space-y-6'>
@@ -179,7 +193,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 				<HistorySection
 					title={t('assets:detail.depreciations')}
 					empty={t('assets:detail.noHistory')}
-					rows={history.depreciations.map((entry) => ({
+					rows={(depreciations.data?.rows ?? []).map((entry) => ({
 						id: entry.id,
 						left: `${entry.periodYear}-${String(entry.periodMonth).padStart(2, '0')}`,
 						right: formatMoney(entry.depreciationAmount, entry.currencyCode),
@@ -191,7 +205,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 					rows={history.documents.map((document) => ({
 						id: document.id,
 						left: document.documentType,
-						right: document.documentId,
+						right: document.fileName,
 					}))}
 				/>
 			</div>
@@ -207,7 +221,7 @@ function LocationCard({
 	canUpdate,
 }: {
 	assetId: string;
-	asset: TAsset;
+	asset: TAssetCore;
 	canUpdate: boolean;
 }) {
 	const { t } = useTranslation(['assets', 'common']);

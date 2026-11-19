@@ -33,7 +33,8 @@ const routeApi = getRouteApi('/_authed/assets/depreciation/');
 
 /**
  * Depreciation entries page (Phase A-4 / D14): the manual monthly
- * depreciation log. Entries are recorded per asset from the record dialog;
+ * depreciation log, now owned by finance (`POST /finance/depreciations`).
+ * Entries are recorded per asset from the record dialog;
  * the list itself is the register with book values, so operators pick a row
  * and record the period entry against it.
  */
@@ -158,6 +159,7 @@ function RecordDepreciationDialog({
 			toast.success(t('depreciated'));
 			onClose();
 			await queryClient.invalidateQueries({ queryKey: ['assets'] });
+			await queryClient.invalidateQueries({ queryKey: ['asset-depreciations'] });
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});

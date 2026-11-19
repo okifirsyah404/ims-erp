@@ -12,6 +12,16 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - Frontend slice 1: inventory, assets, borrowing wrappers (ERP-0090 frontend, web-admin)
+
+- `lib/asset-api.ts`, `lib/borrowing-api.ts` and `components/assets/*` now call `/inventory/items`, `/inventory/item-categories`, `/inventory/borrowing-requests`, `/inventory/borrowings`, `/inventory/disposals`, `/inventory/tool-sets` and `/finance/depreciations`. Asset types lookup removed (static `ITEM_KINDS`); borrowing is the request/issue split.
+- `lib/inventory-api`, `stock-api`, `adjustment-api`, `warehouse-api`, `stock-valuation-api`, `item-category-api`, `catalog-api` follow products/product-categories/product-listings (`productKind`, `productCategoryId`, `productId`; address `addressLine`; new movement types). Frontend route paths unchanged; `$itemId` is now a product id.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` in `apps/web-admin` 0 errors; `bun run lint` 0 errors; `bun run test` 5/5 tasks green (web-admin 119, locales 98, backend 1232). Endpoint prefixes checked against the backend controllers by reading. No live UI run.
+- Finding: the root `bun run typecheck` does not cover web-admin (no `typecheck` script); the real check is `tsc -p tsconfig.app.json` (also part of `build`).
+- Open: approved borrowing requests have no inline buttons (list cannot tell issued from not); backend `createUnitSchema` requires `serialNumber` while `ProductService.registerUnit` mints one for `pre_order` (unreachable over HTTP); `stock-api`/`warehouse-api` do not send `organizationHeaders()` (pre-existing).
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 2 (sale + procurement wrappers: returns, delivery notes, goods receipts, suppliers).
 ## 2026-11-19 - P8: cutover, backend (ERP-0088)
 
 - Seeders rewritten on the new schemas: `inventory` (product categories, products, serials, tool fleet as `items`, opening stock as `receipt` movements + `stocks`), new `finance` (cash/bank accounts, replaces `company.bank_accounts`), `company` (`company.addresses`), `hr` (own numbering service). `assets` and `item-category` seeders removed.

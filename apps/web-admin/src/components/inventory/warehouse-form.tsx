@@ -64,7 +64,7 @@ export function WarehouseForm({
 
 	// Address sub-form.
 	const [label, setLabel] = useState(warehouse?.address?.label ?? '');
-	const [street, setStreet] = useState(warehouse?.address?.street ?? '');
+	const [street, setStreet] = useState(warehouse?.address?.addressLine ?? '');
 	const [rt, setRt] = useState(warehouse?.address?.rt ?? '');
 	const [rw, setRw] = useState(warehouse?.address?.rw ?? '');
 	const [postalCode, setPostalCode] = useState(
@@ -80,7 +80,7 @@ export function WarehouseForm({
 		const address = street.trim()
 			? {
 					label: label || null,
-					street,
+					addressLine: street,
 					rt: rt || null,
 					rw: rw || null,
 					postalCode: postalCode || null,

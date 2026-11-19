@@ -139,7 +139,7 @@ function InventoryValuePage() {
 									</TableHeader>
 									<TableBody>
 										{data.data.map((row) => (
-											<TableRow key={`${row.itemId}-${row.warehouseId}-${row.binCode ?? ''}`}>
+											<TableRow key={`${row.productId}-${row.warehouseId}-${row.binCode ?? ''}`}>
 												<TableCell>
 													<div className='font-medium'>{row.name}</div>
 													<div className='text-xs text-muted-foreground'>{row.sku}</div>

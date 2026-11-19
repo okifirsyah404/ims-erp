@@ -24,7 +24,7 @@ import { Textarea } from '@ims-erp/ui/components/textarea';
 import { Search } from 'lucide-react';
 import { customerQueryOptions, customersQueryOptions } from '@/lib/customer-api';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
-import { ITEM_UNIT_LABELS, listItems, type TItem, type TItemUnitLabel } from '@/lib/inventory-api';
+import { ITEM_UNIT_LABELS, listProducts, type TItemUnitLabel, type TProduct } from '@/lib/inventory-api';
 import {
 	DEFAULT_VAT_RATE_BPS,
 	previewLineTotal,
@@ -119,7 +119,7 @@ export function QuotationForm({
 	const customer = useQuery({ ...customerQueryOptions(customerId), enabled: customerId !== '' });
 	const items = useQuery({
 		queryKey: ['inventory', 'items', 'quotation-picker', deferredItemSearch] as const,
-		queryFn: () => listItems({ search: deferredItemSearch || undefined, activeOnly: true, limit: 20 }),
+		queryFn: () => listProducts({ search: deferredItemSearch || undefined, activeOnly: true, limit: 20 }),
 		enabled: deferredItemSearch !== '',
 	});
 
@@ -144,7 +144,7 @@ export function QuotationForm({
 	const patchLine = (key: string, patch: Partial<TLineDraft>) =>
 		setLines((current) => current.map((line) => (line.key === key ? { ...line, ...patch } : line)));
 
-	function addItem(item: TItem) {
+	function addItem(item: TProduct) {
 		setLines((current) => [
 			...current,
 			{

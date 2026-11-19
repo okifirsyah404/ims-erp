@@ -201,7 +201,7 @@ function WarehouseDetail() {
 						{warehouse.address ? (
 							<p className='text-muted-foreground'>
 								{[
-									warehouse.address.street,
+									warehouse.address.addressLine,
 									warehouse.address.rt && `RT ${warehouse.address.rt}`,
 									warehouse.address.rw && `RW ${warehouse.address.rw}`,
 									warehouse.address.postalCode,
@@ -221,7 +221,7 @@ function WarehouseDetail() {
 				</Card>
 
 				{/* Tabs ------------------------------------------------------- */}
-				{/* Item tabs read `/inventory/items`, which is organization
+				{/* Product tabs read `/inventory/products`, which is organization
 				    permission-gated; a PIC grant confers no stock reads, so they
 				    are hidden for anyone but an app admin. */}
 				<Tabs defaultValue={isAppAdmin ? 'products' : 'storage'}>

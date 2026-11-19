@@ -281,11 +281,11 @@ export function dashboardProfitQueryOptions(
 	});
 }
 
-/** Item count: the `total` of a one-row page (`GET /items`). */
+/** Product count: the `total` of a one-row page (`GET /inventory/products`). */
 export function dashboardItemCountQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'items', organizationId] as const,
-		queryFn: async () => (await getPage('/items', { page: '1', limit: '1' })).total,
+		queryFn: async () => (await getPage('/inventory/products', { page: '1', limit: '1' })).total,
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,

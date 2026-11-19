@@ -7,7 +7,7 @@ import {
 	type TAdjustmentLineInput,
 	type TAdjustmentType,
 } from '@/lib/adjustment-api';
-import { itemsQueryOptions } from '@/lib/inventory-api';
+import { productsQueryOptions } from '@/lib/inventory-api';
 import { balancesQueryOptions } from '@/lib/stock-api';
 import { linkedWarehousesQueryOptions } from '@/lib/warehouse-api';
 import { Button } from '@ims-erp/ui/components/button';
@@ -90,7 +90,7 @@ export function AdjustmentForm() {
 	const [lines, setLines] = useState<TLineDraft[]>([blankLine()]);
 
 	const warehouses = useQuery(linkedWarehousesQueryOptions());
-	const items = useQuery(itemsQueryOptions({}));
+	const items = useQuery(productsQueryOptions({}));
 	// The system's belief, so the counter sees what they are counting against.
 	// Only meaningful once a warehouse is chosen: a balance is per warehouse.
 	const balances = useQuery({
@@ -134,7 +134,7 @@ export function AdjustmentForm() {
 		const payloadLines = lines
 			.filter((line) => line.itemId !== '' && line.quantityAfter !== '')
 			.map((line) => ({
-				itemId: line.itemId,
+				productId: line.itemId,
 				binId: line.binId === '' ? null : line.binId,
 				quantityAfter: Number(line.quantityAfter),
 				// Rupiah as typed → IDR minor units (ADR-0002).
@@ -176,7 +176,7 @@ export function AdjustmentForm() {
 		if (itemId === '') return null;
 		const match = balanceRows.find(
 			(row) =>
-				row.itemId === itemId && row.binId === (binId === '' ? null : binId),
+				row.productId === itemId && row.binId === (binId === '' ? null : binId),
 		);
 		return match?.quantityOnHand ?? '0';
 	}

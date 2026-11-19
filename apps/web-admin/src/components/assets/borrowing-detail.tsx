@@ -19,11 +19,15 @@ import {
 } from '@ims-erp/ui/components/table';
 import {
 	borrowingQueryOptions,
+	borrowingStatusOf,
+	closeBorrowing,
 	extendBorrowing,
-	markBorrowingLineLost,
+	extendBorrowingRequest,
+	markBorrowingItemLost,
 	returnBorrowing,
 	transitionBorrowing,
-	type TBorrowingLine,
+	type TBorrowingAction,
+	type TBorrowingItem,
 	type TBorrowingStatus,
 } from '@/lib/borrowing-api';
 import { toast } from '@/components/toast';
@@ -47,11 +51,16 @@ const STATUS_VARIANT: Record<
  * One borrowing with its units, its timeline, and the actions its status allows.
  *
  * @remarks
+ * The page is keyed by the **request id**; once the request is issued the view
+ * carries the issue document as `borrowing`, and the actions that belong to it
+ * (return, extend, mark lost, close) address `borrowing.id`.
+ *
  * **The timeline is the point of this page.** Every `issued`, `returned`, and
- * `marked_lost` entry shows the `assetMovementId` it wrote, because that link is
+ * `marked_lost` entry shows the `movementId` it wrote, because that link is
  * what distinguishes a real custody change from a claimed one — the backend's
  * CHECK constraint makes the link mandatory, so a rendered entry without a
- * movement id is either an automated `marked_late` or a bug.
+ * movement id is either an automated `marked_late`, a request-half event, or a
+ * bug.
  *
  * **Redaction is rendered, not assumed.** When the server withholds the guest
  * identity fields it says so with `guestIdentityRedacted`, and the page shows a
@@ -69,9 +78,8 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 	};
 
 	const transition = useMutation({
-		mutationFn: (
-			action: 'submit' | 'approve' | 'reject' | 'issue' | 'cancel' | 'close',
-		) => transitionBorrowing(borrowingId, action),
+		mutationFn: (action: TBorrowingAction) =>
+			transitionBorrowing(borrowingId, action),
 		onSuccess: (_data, action) => {
 			// Each key is spelled out rather than looked up, so the compiler and
 			// the dead-key scan see exactly which translations are used.
@@ -83,8 +91,28 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		onError: (mutationError) => toast.error(mutationError.message),
 	});
 
+	const close = useMutation({
+		mutationFn: (issuedBorrowingId: string) =>
+			closeBorrowing(issuedBorrowingId),
+		onSuccess: () => {
+			toast.success(t('assets:borrowingActions.closed'));
+			invalidate();
+		},
+		onError: (mutationError) => toast.error(mutationError.message),
+	});
+
 	const extend = useMutation({
-		mutationFn: (dueAt: string) => extendBorrowing(borrowingId, dueAt),
+		mutationFn: ({
+			issuedBorrowingId,
+			dueAt,
+		}: {
+			/** `null` extends the not-yet-issued request instead. */
+			issuedBorrowingId: string | null;
+			dueAt: string;
+		}) =>
+			issuedBorrowingId
+				? extendBorrowing(issuedBorrowingId, dueAt)
+				: extendBorrowingRequest(borrowingId, dueAt),
 		onSuccess: () => {
 			toast.success(t('assets:borrowingActions.extended'));
 			invalidate();
@@ -92,10 +120,16 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		onError: (mutationError) => toast.error(mutationError.message),
 	});
 
-	const returnLines = useMutation({
-		mutationFn: (lineId?: string) =>
-			returnBorrowing(borrowingId, {
-				...(lineId ? { lineId } : {}),
+	const returnItems = useMutation({
+		mutationFn: ({
+			issuedBorrowingId,
+			borrowingItemId,
+		}: {
+			issuedBorrowingId: string;
+			borrowingItemId?: string;
+		}) =>
+			returnBorrowing(issuedBorrowingId, {
+				...(borrowingItemId ? { borrowingItemId } : {}),
 				condition: 'good',
 			}),
 		onSuccess: () => {
@@ -106,8 +140,13 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 	});
 
 	const markLost = useMutation({
-		mutationFn: (lineId: string) =>
-			markBorrowingLineLost(borrowingId, { lineId }),
+		mutationFn: ({
+			issuedBorrowingId,
+			borrowingItemId,
+		}: {
+			issuedBorrowingId: string;
+			borrowingItemId: string;
+		}) => markBorrowingItemLost(issuedBorrowingId, { borrowingItemId }),
 		onSuccess: () => {
 			toast.success(t('assets:borrowingActions.lost'));
 			invalidate();
@@ -135,7 +174,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		);
 	}
 
-	if (data === null) {
+	if (!data) {
 		return (
 			<Card>
 				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
@@ -145,13 +184,19 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		);
 	}
 
-	const { borrowing, lines, events } = data;
-	const openLines = lines.filter(
-		(line) => line.issuedAt !== null && line.returnedAt === null && line.markedLostAt === null,
+	const { borrowing, items, events } = data;
+	const status = borrowingStatusOf(data);
+	const dueAt = borrowing?.dueAt ?? data.dueAt;
+	const openItems = items.filter(
+		(item) =>
+			item.issuedAt !== null &&
+			item.returnedAt === null &&
+			item.markedLostAt === null,
 	);
 	const busy =
 		transition.isPending ||
-		returnLines.isPending ||
+		close.isPending ||
+		returnItems.isPending ||
 		markLost.isPending ||
 		extend.isPending;
 
@@ -169,7 +214,10 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 		if (!input) return;
 		const parsed = new Date(input);
 		if (Number.isNaN(parsed.getTime())) return;
-		extend.mutate(parsed.toISOString());
+		extend.mutate({
+			issuedBorrowingId: borrowing?.id ?? null,
+			dueAt: parsed.toISOString(),
+		});
 	}
 
 	return (
@@ -177,20 +225,22 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 			<div className='flex flex-wrap items-start justify-between gap-3'>
 				<div>
 					<div className='flex items-center gap-2'>
-						<h2 className='font-mono text-lg font-semibold'>{borrowing.code}</h2>
-						<Badge variant={STATUS_VARIANT[borrowing.status]}>
+						<h2 className='font-mono text-lg font-semibold'>
+							{borrowing?.code ?? data.code}
+						</h2>
+						<Badge variant={STATUS_VARIANT[status]}>
 							{t(
-								`assets:borrowingStatus.${borrowing.status}` as 'assets:borrowingStatus.requested',
+								`assets:borrowingStatus.${status}` as 'assets:borrowingStatus.requested',
 							)}
 						</Badge>
 					</div>
 					<p className='text-sm text-muted-foreground'>
 						{t('assets:borrowings.dueAt')}:{' '}
-						{new Date(borrowing.dueAt).toLocaleDateString()}
+						{new Date(dueAt).toLocaleDateString()}
 					</p>
 				</div>
 				<div className='flex flex-wrap gap-2'>
-					{borrowing.status === 'draft' ? (
+					{status === 'draft' ? (
 						<Button
 							size='sm'
 							disabled={busy}
@@ -199,7 +249,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							{t('assets:borrowingActions.submit')}
 						</Button>
 					) : null}
-					{borrowing.status === 'requested' ? (
+					{status === 'requested' ? (
 						<>
 							<Button
 								size='sm'
@@ -218,7 +268,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							</Button>
 						</>
 					) : null}
-					{borrowing.status === 'requested' || borrowing.status === 'approved' ? (
+					{status === 'requested' || status === 'approved' ? (
 						<Button
 							size='sm'
 							disabled={busy}
@@ -227,18 +277,20 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							{t('assets:borrowingActions.issue')}
 						</Button>
 					) : null}
-					{openLines.length > 1 ? (
+					{borrowing && openItems.length > 1 ? (
 						<Button
 							size='sm'
 							disabled={busy}
-							onClick={() => returnLines.mutate(undefined)}
+							onClick={() =>
+								returnItems.mutate({ issuedBorrowingId: borrowing.id })
+							}
 						>
 							{t('assets:borrowingActions.returnAll')}
 						</Button>
 					) : null}
-					{borrowing.status === 'issued' ||
-					borrowing.status === 'partially_returned' ||
-					borrowing.status === 'approved' ? (
+					{status === 'issued' ||
+					status === 'partially_returned' ||
+					status === 'approved' ? (
 						<Button
 							size='sm'
 							variant='secondary'
@@ -248,16 +300,16 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							{t('assets:borrowingActions.extend')}
 						</Button>
 					) : null}
-					{borrowing.status === 'returned' ? (
+					{borrowing && status === 'returned' ? (
 						<Button
 							size='sm'
 							disabled={busy}
-							onClick={() => transition.mutate('close')}
+							onClick={() => close.mutate(borrowing.id)}
 						>
 							{t('assets:borrowingActions.close')}
 						</Button>
 					) : null}
-					{borrowing.status === 'requested' || borrowing.status === 'approved' ? (
+					{status === 'requested' || status === 'approved' ? (
 						<Button
 							size='sm'
 							variant='ghost'
@@ -270,7 +322,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 				</div>
 			</div>
 
-			<BorrowerCard borrowing={borrowing} />
+			<BorrowerCard borrowing={data} />
 
 			<Card>
 				<CardHeader>
@@ -296,13 +348,26 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{lines.map((line) => (
-								<LineRow
-									key={line.id}
-									line={line}
+							{items.map((item) => (
+								<ItemRow
+									key={item.id}
+									item={item}
 									busy={busy}
-									onReturn={() => returnLines.mutate(line.id)}
-									onMarkLost={() => markLost.mutate(line.id)}
+									canAct={borrowing !== null}
+									onReturn={() =>
+										borrowing &&
+										returnItems.mutate({
+											issuedBorrowingId: borrowing.id,
+											borrowingItemId: item.id,
+										})
+									}
+									onMarkLost={() =>
+										borrowing &&
+										markLost.mutate({
+											issuedBorrowingId: borrowing.id,
+											borrowingItemId: item.id,
+										})
+									}
 								/>
 							))}
 						</TableBody>
@@ -331,14 +396,14 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 									<span className='text-xs text-muted-foreground'>
 										{new Date(event.occurredAt).toLocaleString()}
 									</span>
-									<Badge variant={event.assetMovementId ? 'default' : 'outline'}>
+									<Badge variant={event.movementId ? 'default' : 'outline'}>
 										{t(
 											`assets:borrowingEvent.${event.eventType}` as 'assets:borrowingEvent.issued',
 										)}
 									</Badge>
-									{event.assetMovementId ? (
+									{event.movementId ? (
 										<span className='font-mono text-xs text-muted-foreground'>
-											{t('assets:borrowings.movement')}: {event.assetMovementId}
+											{t('assets:borrowings.movement')}: {event.movementId}
 										</span>
 									) : null}
 									{event.actorUserId === null ? (
@@ -436,57 +501,62 @@ function BorrowerCard({
 	);
 }
 
-/** One unit line plus the per-line actions it allows. */
-function LineRow({
-	line,
+/** One borrowed unit plus the per-item actions it allows. */
+function ItemRow({
+	item,
 	busy,
+	canAct,
 	onReturn,
 	onMarkLost,
 }: {
-	line: TBorrowingLine;
+	item: TBorrowingItem;
 	busy: boolean;
+	/** `false` before issue: there is no borrowing to return against. */
+	canAct: boolean;
 	onReturn: () => void;
 	onMarkLost: () => void;
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 
-	// A line is "open" only once issued and while neither returned nor lost.
+	// An item is "open" only once issued and while neither returned nor lost.
 	const open =
-		line.issuedAt !== null && line.returnedAt === null && line.markedLostAt === null;
+		item.issuedAt !== null &&
+		item.returnedAt === null &&
+		item.markedLostAt === null;
 
 	return (
 		<TableRow>
 			<TableCell className='font-mono text-xs'>
-				{line.assetId}
-				{line.markedLateAt ? (
+				{item.itemId}
+				{item.markedLateAt ? (
 					<Badge variant='destructive' className='ml-2'>
 						{t('assets:borrowings.late')}
 					</Badge>
 				) : null}
-				{line.markedLostAt ? (
+				{item.markedLostAt ? (
 					<Badge variant='destructive' className='ml-2'>
 						{t('assets:borrowings.lost')}
 					</Badge>
 				) : null}
 			</TableCell>
 			<TableCell className='font-mono text-xs text-muted-foreground'>
-				{line.originWarehouseId}
+				{item.originWarehouseId ?? '—'}
 			</TableCell>
 			<TableCell className='text-xs'>
-				{line.issuedAt ? new Date(line.issuedAt).toLocaleDateString() : '—'}
+				{item.issuedAt ? new Date(item.issuedAt).toLocaleDateString() : '—'}
 			</TableCell>
 			<TableCell className='text-xs'>
-				{line.returnedAt ? new Date(line.returnedAt).toLocaleDateString() : '—'}
+				{item.returnedAt ? new Date(item.returnedAt).toLocaleDateString() : '—'}
 			</TableCell>
 			<TableCell className='text-xs text-muted-foreground'>
-				{line.returnedCondition
+				{item.returnedCondition
 					? t(
-							`assets:borrowingCondition.${line.returnedCondition}` as 'assets:borrowingCondition.good',
+							`assets:borrowingCondition.${item.returnedCondition}` as 'assets:borrowingCondition.good',
 						)
 					: '—'}
 			</TableCell>
 			<TableCell className='text-right'>
-				{open ? (
+				{open && canAct ? (
 					<>
 						<Button size='sm' disabled={busy} onClick={onReturn}>
 							{t('assets:borrowingActions.return')}

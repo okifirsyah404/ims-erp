@@ -8,10 +8,12 @@ import { queryOptions } from '@tanstack/react-query';
  * API client for the warehouse endpoints (`/warehouses`).
  *
  * @remarks
- * Every warehouse call is **application-admin-only**: the backend gates them
- * with `sessionGuard` + `requireGlobalAdmin`, and no organization role holds
- * any `warehouse:*` permission (ADR-0008). A non-admin gets 403 on reads too,
- * not an empty list.
+ * The list, create, organization-link and manager-assignment calls are
+ * **application-admin-only** (`requireGlobalAdmin`); no organization role holds
+ * any `warehouse:*` permission (ADR-0008), and a non-admin gets 403 on reads
+ * too, not an empty list. Per-warehouse read/update/archive/storage calls are
+ * also open to that warehouse's person in charge (ADR-0017), and
+ * `/warehouses/mine` and `/warehouses/linked` are scoped reads.
  *
  * Nothing here sends an organization id on reads; write scope is decided by
  * `organizationId` on the create body, where **omitted means global**.
@@ -40,7 +42,8 @@ export type TWarehouseAddress = {
 	id: string;
 	warehouseId: string;
 	label: string | null;
-	street: string;
+	/** Street line (`address_line` column; the key is `addressLine`). */
+	addressLine: string;
 	rt: string | null;
 	rw: string | null;
 	postalCode: string | null;
@@ -80,7 +83,8 @@ export type TWarehouseDetail = TWarehouse &
 /** Address fields the form submits. */
 export type TWarehouseAddressInput = {
 	label?: string | null;
-	street: string;
+	/** Required by the backend's strict address schema. */
+	addressLine: string;
 	rt?: string | null;
 	rw?: string | null;
 	postalCode?: string | null;
@@ -93,7 +97,8 @@ export type TWarehouseAddressInput = {
 export type TWarehouseCreateInput = {
 	/** Omit (or `null`) for a global warehouse. */
 	organizationId?: string | null;
-	code: string;
+	/** Omit to let the numbering authority allocate `WH-0001`. */
+	code?: string | null;
 	name: string;
 	responsibleEmployeeId?: string | null;
 	isDefault: boolean;
@@ -228,12 +233,27 @@ export async function searchWarehouseManagerCandidates(search?: string) {
 	return envelope.data ?? [];
 }
 
-/** Grants a user person-in-charge access to a warehouse (admin only). */
+/** The raw grant row `POST /warehouses/:id/managers` answers with (no name/email). */
+export type TWarehouseManagerAssignment = {
+	id: string;
+	warehouseId: string;
+	userId: string | null;
+	assignedBy: string | null;
+	createdAt: string;
+};
+
+/**
+ * Grants a user person-in-charge access to a warehouse (admin only).
+ *
+ * @remarks
+ * Answers with the stored grant row; refetch {@link listWarehouseManagers} for
+ * the resolved name and email.
+ */
 export async function assignWarehouseManager(
 	warehouseId: string,
 	userId: string,
 ) {
-	const envelope = await request<TWarehouseManager>(
+	const envelope = await request<TWarehouseManagerAssignment>(
 		`/warehouses/${warehouseId}/managers`,
 		{ method: 'POST', body: JSON.stringify({ userId }) },
 	);

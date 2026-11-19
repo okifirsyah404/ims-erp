@@ -12,7 +12,7 @@ import { organizationHeaders } from './organization-store';
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export type TStockValuationRow = {
-	itemId: string;
+	productId: string;
 	sku: string;
 	name: string;
 	unit: string;

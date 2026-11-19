@@ -21,7 +21,7 @@ import {
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { Search } from 'lucide-react';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
-import { listItems, type TItem } from '@/lib/inventory-api';
+import { listProducts, type TProduct } from '@/lib/inventory-api';
 import {
 	openRequestLinesQueryOptions,
 	PO_VAT_MODES,
@@ -51,13 +51,13 @@ type TLineDraft = {
 };
 
 /** Item search used to map a free-text request line to an item of the master. */
-function ItemMapper({ id, onPick }: { id: string; onPick: (item: TItem) => void }) {
+function ItemMapper({ id, onPick }: { id: string; onPick: (item: TProduct) => void }) {
 	const { t } = useTranslation(['procurement']);
 	const [search, setSearch] = useState('');
 	const deferred = useDeferredValue(search.trim());
 	const items = useQuery({
 		queryKey: ['inventory', 'items', 'po-mapper', deferred] as const,
-		queryFn: () => listItems({ search: deferred || undefined, activeOnly: true, limit: 10 }),
+		queryFn: () => listProducts({ search: deferred || undefined, activeOnly: true, limit: 10 }),
 		enabled: deferred !== '',
 	});
 	return (
@@ -169,7 +169,7 @@ export function PurchaseOrderForm({
 	const suppliers = useQuery(suppliersQueryOptions({ status: 'active', search: deferredSupplier || undefined, limit: 20 }));
 	const items = useQuery({
 		queryKey: ['inventory', 'items', 'po-picker', deferredItem] as const,
-		queryFn: () => listItems({ search: deferredItem || undefined, activeOnly: true, limit: 20 }),
+		queryFn: () => listProducts({ search: deferredItem || undefined, activeOnly: true, limit: 20 }),
 		enabled: deferredItem !== '',
 	});
 
@@ -180,7 +180,7 @@ export function PurchaseOrderForm({
 	const patch = (key: string, value: Partial<TLineDraft>) =>
 		setLines((current) => current.map((line) => (line.key === key ? { ...line, ...value } : line)));
 
-	function addItem(item: TItem) {
+	function addItem(item: TProduct) {
 		setLines((current) => [
 			...current,
 			{
@@ -200,7 +200,7 @@ export function PurchaseOrderForm({
 	}
 
 	/** Maps a free-text request line to an item: name, SKU and unit come from the master. */
-	function mapItem(key: string, item: TItem) {
+	function mapItem(key: string, item: TProduct) {
 		patch(key, {
 			itemId: item.id,
 			sku: item.sku,

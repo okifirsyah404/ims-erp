@@ -7,7 +7,7 @@ type TAssetsRegisterSearch = {
 	page?: number;
 	search?: string;
 	status?: string;
-	assetType?: string;
+	itemKind?: string;
 	includeArchived?: boolean;
 };
 
@@ -20,8 +20,8 @@ export const Route = createFileRoute('/_authed/assets/register/')({
 				? search.search
 				: undefined,
 		status: typeof search.status === 'string' ? search.status : undefined,
-		assetType:
-			typeof search.assetType === 'string' ? search.assetType : undefined,
+		itemKind:
+			typeof search.itemKind === 'string' ? search.itemKind : undefined,
 		includeArchived:
 			search.includeArchived === true || search.includeArchived === 'true'
 				? true

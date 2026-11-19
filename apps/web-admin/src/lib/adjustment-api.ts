@@ -73,7 +73,7 @@ export type TStockAdjustmentItem = {
 	id: string;
 	organizationId: string;
 	stockAdjustmentId: string;
-	itemId: string;
+	productId: string;
 	binId: string | null;
 	quantityBefore: string;
 	quantityAfter: string;
@@ -93,7 +93,7 @@ export type TStockAdjustmentDetail = {
 
 /** One line as the form submits it. */
 export type TAdjustmentLineInput = {
-	itemId: string;
+	productId: string;
 	binId?: string | null;
 	/** The counted total. */
 	quantityAfter: number;

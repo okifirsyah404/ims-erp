@@ -14,9 +14,12 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import {
-	borrowingsQueryOptions,
+	borrowingDocumentsQueryOptions,
+	borrowingRequestsQueryOptions,
+	closeBorrowing,
 	transitionBorrowing,
-	type TBorrowing,
+	type TBorrowingDocument,
+	type TBorrowingRequest,
 	type TBorrowingStatus,
 } from '@/lib/borrowing-api';
 import { ItemThumb } from '@/components/item-thumb';
@@ -26,6 +29,9 @@ import { useClampPage } from '@/lib/use-clamp-page';
 
 /** Rows per page: 24 keeps a full-height page without endless scrolling. */
 const PAGE_SIZE = 24;
+
+/** Which half of the lifecycle the list shows. */
+export type TBorrowingListTab = 'requests' | 'issued';
 
 /**
  * Badge emphasis per status.
@@ -50,38 +56,54 @@ const STATUS_VARIANT: Record<
 	cancelled: 'outline',
 };
 
-/** The transitions this list offers. Each is gated server-side independently. */
-type TListAction = 'approve' | 'reject' | 'issue' | 'cancel' | 'close';
+/** The request transitions this list offers. Each is gated server-side independently. */
+type TListAction = 'approve' | 'reject' | 'issue' | 'cancel';
 
 /**
- * The borrowing list, with the workflow actions available per status.
+ * The borrowing list: requests on one tab, issued borrowings on the other.
  *
  * @remarks
- * The buttons mirror the backend state machine; the machine stays authoritative,
- * so an illegal edge is refused server-side no matter what this table renders.
- * Rendering only legal actions keeps the common path from producing a
- * predictable 422.
+ * A borrowing is a request (`/inventory/borrowing-requests`) until it is issued
+ * and an issue document (`/inventory/borrowings`) afterwards, and the backend
+ * lists the two separately, so the screen does too. Every row links to the
+ * detail page by its **request id**.
  *
- * `issue` is offered from `requested` as well as `approved` because approval is
- * skippable for a caller holding `asset_borrowing:issue` — the backend decides whether
- * *this* caller may skip it, and a caller who may not gets a 422 with an
- * explanation rather than a hidden button.
+ * The inline buttons mirror the backend state machine; the machine stays
+ * authoritative, so an illegal edge is refused server-side no matter what this
+ * table renders. They are only offered on `requested` rows: a request keeps the
+ * `approved` status after it is issued and the list cannot tell the two apart,
+ * so approved rows are acted on from the detail page, which knows whether a
+ * borrowing exists. `issue` is offered from `requested` because approval is
+ * skippable for a caller holding `asset_borrowing:issue` — the backend decides
+ * whether *this* caller may skip it.
  */
 export function BorrowingList({
 	page,
+	tab,
 	onPageChange,
+	onTabChange,
 }: {
 	/** Current page, owned by the route's `page` search param. */
 	page: number;
+	/** Current tab, owned by the route's `tab` search param. */
+	tab: TBorrowingListTab;
 	onPageChange: (page: number) => void;
+	onTabChange: (tab: TBorrowingListTab) => void;
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 	const queryClient = useQueryClient();
-	const { data, isPending, isError, error } = useQuery({
-		...borrowingsQueryOptions({ page, limit: PAGE_SIZE }),
+	const requests = useQuery({
+		...borrowingRequestsQueryOptions({ page, limit: PAGE_SIZE }),
+		enabled: tab === 'requests',
 		// Keeps the current page visible while the next one loads.
 		placeholderData: (previous) => previous,
 	});
+	const issued = useQuery({
+		...borrowingDocumentsQueryOptions({ page, limit: PAGE_SIZE }),
+		enabled: tab === 'issued',
+		placeholderData: (previous) => previous,
+	});
+	const active = tab === 'requests' ? requests : issued;
 
 	const transition = useMutation({
 		mutationFn: ({ id, action }: { id: string; action: TListAction }) =>
@@ -102,10 +124,18 @@ export function BorrowingList({
 				case 'cancel':
 					toast.success(t('assets:borrowingActions.cancelled'));
 					break;
-				case 'close':
-					toast.success(t('assets:borrowingActions.closed'));
-					break;
 			}
+			void queryClient.invalidateQueries({ queryKey: ['assets'] });
+		},
+		onError: (mutationError) => {
+			toast.error(mutationError.message);
+		},
+	});
+
+	const close = useMutation({
+		mutationFn: (borrowingId: string) => closeBorrowing(borrowingId),
+		onSuccess: () => {
+			toast.success(t('assets:borrowingActions.closed'));
 			void queryClient.invalidateQueries({ queryKey: ['assets'] });
 		},
 		onError: (mutationError) => {
@@ -115,11 +145,46 @@ export function BorrowingList({
 
 	// A shrinking result set must not leave the list on a page that no longer
 	// exists.
-	const pagination = data?.pagination;
+	const pagination = active.data?.pagination;
 	useClampPage(page, pagination?.totalPages, onPageChange);
 	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
-	if (isPending) {
+	const header = (
+		<div className='flex flex-wrap items-start justify-between gap-3'>
+			<div>
+				<h2 className='text-lg font-semibold'>
+					{t('assets:borrowings.title')}
+				</h2>
+				<p className='max-w-prose text-sm text-muted-foreground'>
+					{t('assets:borrowings.description')}
+				</p>
+			</div>
+			<Button size='sm' render={<Link to='/assets/borrowings/new' />}>
+				{t('assets:borrowings.new')}
+			</Button>
+		</div>
+	);
+
+	const tabs = (
+		<div className='flex gap-2'>
+			<Button
+				size='sm'
+				variant={tab === 'requests' ? 'default' : 'outline'}
+				onClick={() => onTabChange('requests')}
+			>
+				{t('assets:borrowings.tabRequests')}
+			</Button>
+			<Button
+				size='sm'
+				variant={tab === 'issued' ? 'default' : 'outline'}
+				onClick={() => onTabChange('issued')}
+			>
+				{t('assets:borrowings.tabIssued')}
+			</Button>
+		</div>
+	);
+
+	if (active.isPending) {
 		return (
 			<Card>
 				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
@@ -129,69 +194,39 @@ export function BorrowingList({
 		);
 	}
 
-	if (isError) {
+	if (active.isError) {
 		return (
 			<Card>
-				<CardContent className='py-8 text-center text-sm text-destructive'>
-					{error.message}
+				<CardContent className='space-y-4 pt-6'>
+					{tabs}
+					<p className='py-4 text-center text-sm text-destructive'>
+						{active.error.message}
+					</p>
 				</CardContent>
 			</Card>
 		);
 	}
 
-	const rows = data?.rows ?? [];
-
 	return (
 		<Card>
 			<CardContent className='space-y-4 pt-6'>
-				<div className='flex flex-wrap items-start justify-between gap-3'>
-					<div>
-						<h2 className='text-lg font-semibold'>
-							{t('assets:borrowings.title')}
-						</h2>
-						<p className='max-w-prose text-sm text-muted-foreground'>
-							{t('assets:borrowings.description')}
-						</p>
-					</div>
-					<Button size='sm' render={<Link to='/assets/borrowings/new' />}>
-						{t('assets:borrowings.new')}
-					</Button>
-				</div>
+				{header}
+				{tabs}
 
-				{rows.length === 0 ? (
-					<p className='py-6 text-center text-sm text-muted-foreground'>
-						{t('assets:borrowings.empty')}
-					</p>
+				{tab === 'requests' ? (
+					<RequestTable
+						rows={requests.data?.rows ?? []}
+						pendingId={
+							transition.isPending ? transition.variables?.id : undefined
+						}
+						onAction={(id, action) => transition.mutate({ id, action })}
+					/>
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('assets:borrowings.code')}</TableHead>
-								<TableHead>{t('assets:borrowings.borrower')}</TableHead>
-								<TableHead>{t('assets:borrowings.purpose')}</TableHead>
-								<TableHead>{t('assets:borrowings.dueAt')}</TableHead>
-								<TableHead>{t('assets:borrowings.status')}</TableHead>
-								<TableHead className='text-right'>
-									{t('assets:borrowings.actions')}
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((row) => (
-								<BorrowingRow
-									key={row.id}
-									row={row}
-									pending={
-										transition.isPending &&
-										transition.variables?.id === row.id
-									}
-									onAction={(action) =>
-										transition.mutate({ id: row.id, action })
-									}
-								/>
-							))}
-						</TableBody>
-					</Table>
+					<IssuedTable
+						rows={issued.data?.rows ?? []}
+						pendingId={close.isPending ? close.variables : undefined}
+						onClose={(id) => close.mutate(id)}
+					/>
 				)}
 
 				<PaginationControls
@@ -204,13 +239,61 @@ export function BorrowingList({
 	);
 }
 
-/** One list row plus the actions its current status allows. */
-function BorrowingRow({
+/** The request half: raised, approved, rejected or cancelled documents. */
+function RequestTable({
+	rows,
+	pendingId,
+	onAction,
+}: {
+	rows: TBorrowingRequest[];
+	pendingId: string | undefined;
+	onAction: (id: string, action: TListAction) => void;
+}) {
+	const { t } = useTranslation(['assets', 'common']);
+
+	if (rows.length === 0) {
+		return (
+			<p className='py-6 text-center text-sm text-muted-foreground'>
+				{t('assets:borrowings.empty')}
+			</p>
+		);
+	}
+
+	return (
+		<Table>
+			<TableHeader>
+				<TableRow>
+					<TableHead>{t('assets:borrowings.code')}</TableHead>
+					<TableHead>{t('assets:borrowings.borrower')}</TableHead>
+					<TableHead>{t('assets:borrowings.purpose')}</TableHead>
+					<TableHead>{t('assets:borrowings.dueAt')}</TableHead>
+					<TableHead>{t('assets:borrowings.status')}</TableHead>
+					<TableHead className='text-right'>
+						{t('assets:borrowings.actions')}
+					</TableHead>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{rows.map((row) => (
+					<RequestRow
+						key={row.id}
+						row={row}
+						pending={pendingId === row.id}
+						onAction={(action) => onAction(row.id, action)}
+					/>
+				))}
+			</TableBody>
+		</Table>
+	);
+}
+
+/** One request row plus the actions its status allows. */
+function RequestRow({
 	row,
 	pending,
 	onAction,
 }: {
-	row: TBorrowing;
+	row: TBorrowingRequest;
 	pending: boolean;
 	onAction: (action: TListAction) => void;
 }) {
@@ -273,44 +356,107 @@ function BorrowingRow({
 						</Button>
 						<Button
 							size='sm'
+							variant='secondary'
+							disabled={pending}
+							onClick={() => onAction('issue')}
+						>
+							{t('assets:borrowingActions.issue')}
+						</Button>
+						<Button
+							size='sm'
 							variant='ghost'
 							disabled={pending}
 							onClick={() => onAction('reject')}
 						>
 							{t('assets:borrowingActions.reject')}
 						</Button>
+						<Button
+							size='sm'
+							variant='ghost'
+							disabled={pending}
+							onClick={() => onAction('cancel')}
+						>
+							{t('assets:borrowingActions.cancel')}
+						</Button>
 					</>
-				) : null}
-				{row.status === 'approved' || row.status === 'requested' ? (
-					<Button
-						size='sm'
-						variant={row.status === 'approved' ? 'default' : 'secondary'}
-						disabled={pending}
-						onClick={() => onAction('issue')}
-					>
-						{t('assets:borrowingActions.issue')}
-					</Button>
-				) : null}
-				{row.status === 'requested' || row.status === 'approved' ? (
-					<Button
-						size='sm'
-						variant='ghost'
-						disabled={pending}
-						onClick={() => onAction('cancel')}
-					>
-						{t('assets:borrowingActions.cancel')}
-					</Button>
-				) : null}
-				{row.status === 'returned' ? (
-					<Button
-						size='sm'
-						disabled={pending}
-						onClick={() => onAction('close')}
-					>
-						{t('assets:borrowingActions.close')}
-					</Button>
 				) : null}
 			</TableCell>
 		</TableRow>
+	);
+}
+
+/** The issued half: issue documents, linked to their request's detail page. */
+function IssuedTable({
+	rows,
+	pendingId,
+	onClose,
+}: {
+	rows: TBorrowingDocument[];
+	pendingId: string | undefined;
+	onClose: (borrowingId: string) => void;
+}) {
+	const { t } = useTranslation(['assets', 'common']);
+
+	if (rows.length === 0) {
+		return (
+			<p className='py-6 text-center text-sm text-muted-foreground'>
+				{t('assets:borrowings.emptyIssued')}
+			</p>
+		);
+	}
+
+	return (
+		<Table>
+			<TableHeader>
+				<TableRow>
+					<TableHead>{t('assets:borrowings.code')}</TableHead>
+					<TableHead>{t('assets:borrowings.issuedAt')}</TableHead>
+					<TableHead>{t('assets:borrowings.dueAt')}</TableHead>
+					<TableHead>{t('assets:borrowings.status')}</TableHead>
+					<TableHead className='text-right'>
+						{t('assets:borrowings.actions')}
+					</TableHead>
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{rows.map((row) => (
+					<TableRow key={row.id}>
+						<TableCell>
+							<Link
+								to='/assets/borrowings/$borrowingId'
+								params={{ borrowingId: row.borrowingRequestId }}
+								className='font-mono text-xs underline-offset-4 hover:underline'
+							>
+								{row.code}
+							</Link>
+						</TableCell>
+						<TableCell className='text-xs'>
+							{row.issuedAt ? new Date(row.issuedAt).toLocaleDateString() : '—'}
+						</TableCell>
+						<TableCell className='text-xs'>
+							{new Date(row.dueAt).toLocaleDateString()}
+						</TableCell>
+						<TableCell>
+							<Badge variant={STATUS_VARIANT[row.status]}>
+								{t(
+									`assets:borrowingStatus.${row.status}` as 'assets:borrowingStatus.issued',
+								)}
+							</Badge>
+						</TableCell>
+						<TableCell className='text-right'>
+							{row.status === 'returned' ? (
+								<Button
+									size='sm'
+									disabled={pendingId === row.id}
+									onClick={() => onClose(row.id)}
+								>
+									{t('assets:borrowingActions.close')}
+								</Button>
+							) : null}
+						</TableCell>
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 }

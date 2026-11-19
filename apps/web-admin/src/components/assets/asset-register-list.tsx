@@ -32,9 +32,9 @@ import { useClampPage } from '@/lib/use-clamp-page';
 import {
 	archiveAsset,
 	assetsQueryOptions,
-	assetTypesQueryOptions,
 	ASSET_STATUSES,
 	formatMoney,
+	ITEM_KINDS,
 	type TAssetStatus,
 } from '@/lib/asset-api';
 import { usePermission } from '@/lib/use-permission';
@@ -71,14 +71,11 @@ export function AssetRegisterList() {
 			limit: PAGE_SIZE,
 			search: search.search,
 			status: search.status as TAssetStatus | undefined,
-			assetType: search.assetType,
+			itemKind: search.itemKind,
 			includeArchived: search.includeArchived,
 		}),
 		placeholderData: (previous) => previous,
 	});
-	const types = useQuery(assetTypesQueryOptions());
-	const typeName = (code: string) =>
-		types.data?.find((row) => row.code === code)?.name ?? code;
 
 	const archive = useMutationSafe(archiveAsset, queryClient);
 
@@ -165,13 +162,13 @@ export function AssetRegisterList() {
 					</SelectContent>
 				</Select>
 				<Select
-					value={search.assetType ?? 'all'}
+					value={search.itemKind ?? 'all'}
 					onValueChange={(value: string | null) =>
 						void navigate({
 							search: (prev) => ({
 								...prev,
 								page: 1,
-								assetType: value === 'all' ? undefined : (value ?? undefined),
+								itemKind: value === 'all' ? undefined : (value ?? undefined),
 							}),
 						})
 					}
@@ -183,9 +180,9 @@ export function AssetRegisterList() {
 						<SelectItem value='all'>
 							{t('assets:register.filterAllTypes')}
 						</SelectItem>
-						{(types.data ?? []).map((type) => (
-							<SelectItem key={type.code} value={type.code}>
-								{type.name}
+						{ITEM_KINDS.map((kind) => (
+							<SelectItem key={kind} value={kind}>
+								{t(`assets:itemKind.${kind}`)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -257,7 +254,7 @@ export function AssetRegisterList() {
 									<span className='text-muted-foreground'>
 										{t('assets:register.type')}:{' '}
 									</span>
-									{typeName(asset.assetType)}
+									{t(`assets:itemKind.${asset.itemKind}`)}
 								</p>
 								<p>
 									<span className='text-muted-foreground'>
