@@ -98,7 +98,7 @@ function AcceptSheet({ id, number, shortTitle, total, downPaymentRate, downPayme
         </button>
         <p className="flex items-center justify-center gap-1.5 text-[12.5px] font-medium text-fg-muted">
           <ShieldCheck className="size-3.5" aria-hidden="true" />
-          A proforma invoice will be issued instantly
+          Your order is confirmed at once; the invoice follows from our team
         </p>
       </form>
     </BottomSheet>

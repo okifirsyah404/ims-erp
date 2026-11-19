@@ -4,16 +4,21 @@ import { websiteMode } from "../website";
 import { demoCatalogSource } from "./demo";
 
 /**
- * ERP catalog endpoints, relative to ERP_API_BASE_URL. Intentionally empty until the ERP
- * team publishes them (the ERP repository is not modified from here). Unmapped operations
- * raise CatalogNotConfiguredError, which the catalog and search show as "unavailable".
- *
- * Example:
- *   listProducts: "/public/catalog/products",
- *   getProduct: "/public/catalog/products/:slug",
- *   search: "/public/catalog/search",
+ * ERP catalog endpoints, relative to ERP_API_BASE_URL (`/public/v1/catalog`, authenticated
+ * with the website API key `ERP_API_TOKEN`). Unmapped operations raise
+ * CatalogNotConfiguredError, which the catalog and search show as "unavailable".
  */
-export const catalogRoutes: CatalogRoutes = {};
+export const catalogRoutes: CatalogRoutes = {
+  listProducts: "/public/v1/catalog/products",
+  getProduct: "/public/v1/catalog/products/:slug",
+  listCategories: "/public/v1/catalog/categories",
+  getFacets: "/public/v1/catalog/facets",
+  getStock: "/public/v1/catalog/stock",
+  getPricing: "/public/v1/catalog/pricing",
+  listSolutions: "/public/v1/catalog/solutions",
+  search: "/public/v1/catalog/search",
+  priceCart: "/public/v1/catalog/cart/price",
+};
 
 function createSource(): CatalogSource {
   if (websiteMode === "demo") return demoCatalogSource;

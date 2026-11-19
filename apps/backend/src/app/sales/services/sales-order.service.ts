@@ -22,7 +22,7 @@ import { DELIVERY_NOTE_REPOSITORY_TOKEN, QUOTATION_REPOSITORY_TOKEN, SALES_ORDER
 import type { IDeliveryNoteRepository } from '../contracts/delivery-note.repository.interface';
 import { SalesOrderDeliveredError } from '../errors/delivery-note.errors';
 import type { IQuotationRepository } from '../contracts/quotation.repository.interface';
-import type { TCreateSalesOrderRequest, TSalesOrderListQuery } from '../contracts/sales-order.contract';
+import { salesOrderListQuerySchema, type TCreateSalesOrderRequest, type TSalesOrderListQuery } from '../contracts/sales-order.contract';
 import type { ISalesOrderRepository } from '../contracts/sales-order.repository.interface';
 import { QuotationNotFoundError } from '../errors/quotation.errors';
 import {
@@ -106,7 +106,33 @@ export class SalesOrderService {
 	}
 
 	async get(ctx: TSalesOrderContext, id: string): Promise<TSalesOrderDetail> {
-		const order = await this.requireVisible(ctx, id);
+		return this.detail(await this.requireVisible(ctx, id));
+	}
+
+	/** A customer's sales orders for the customer portal (ERP-0070): every page, newest first. */
+	async listForCustomer(customerId: string): Promise<TSalesOrderSelect[]> {
+		const rows: TSalesOrderSelect[] = [];
+		for (let page = 1; ; page += 1) {
+			const result = await this.orders.paginate(salesOrderListQuerySchema.parse({ customerId, page, limit: 100 }));
+			rows.push(...result.data);
+			if (page >= result.meta.totalPages) break;
+		}
+		return rows;
+	}
+
+	/**
+	 * One sales order of a customer for the portal; another customer's answers 404.
+	 *
+	 * @throws {SalesOrderNotFoundError}
+	 */
+	async getForCustomer(customerId: string, id: string): Promise<TSalesOrderDetail> {
+		const order = await this.orders.findById(id);
+		if (!order || order.customerId !== customerId) throw new SalesOrderNotFoundError();
+		return this.detail(order);
+	}
+
+	private async detail(order: TSalesOrderSelect): Promise<TSalesOrderDetail> {
+		const id = order.id;
 		const [items, history] = await Promise.all([this.orders.findItems(id), this.orders.findHistory(id)]);
 		const people = await this.people([order.salesPersonUserId, ...history.map((entry) => entry.changedBy)]);
 		const person = (userId: string | null) => (userId ? (people.get(userId) ?? null) : null);

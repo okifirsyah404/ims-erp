@@ -12,10 +12,12 @@ import { type PortalRoutes } from "@/api/portal";
  * show as an error and actions as "This feature isn't connected yet":
  * - `refreshSession` on purpose: ERP sessions are Better Auth's 7-day sessions and
  *   there is no refresh token; the portal signs the user out when they expire.
- * - stage 2 (not built in the ERP yet): onboarding, notifications, orders, quotations,
- *   invoices and payments, device lookup/registration, service booking, profile,
- *   documents, personal/company/settings updates, sites, wishlist, public order
- *   lookup and RFQs.
+ * - not built in the ERP yet: onboarding, notifications, device lookup/registration,
+ *   service booking, profile, documents, personal/company/settings updates, sites,
+ *   wishlist, public order lookup and RFQs.
+ *
+ * Ordering itself happens on the website (catalog + checkout, user decision 2026-11-19);
+ * the order arrives here as a quotation "in review" (ERP-0070).
  */
 export const erpRoutes: PortalRoutes = {
   // Account and session
@@ -48,4 +50,16 @@ export const erpRoutes: PortalRoutes = {
   // Devices and warranty
   listProducts: "/portal/v1/products",
   getWarranty: "/portal/v1/products/:id/warranty",
+
+  // Quotations, orders, invoices and payment (ERP-0070)
+  listQuotations: "/portal/v1/quotations",
+  getQuotation: "/portal/v1/quotations/:id",
+  acceptQuotation: "/portal/v1/quotations/:id/accept",
+  requestQuotationRevision: "/portal/v1/quotations/:id/revision",
+  listOrders: "/portal/v1/orders",
+  getOrder: "/portal/v1/orders/:id",
+  listInvoices: "/portal/v1/invoices",
+  getInvoice: "/portal/v1/invoices/:id",
+  listPaymentMethods: "/portal/v1/payment-methods",
+  payInvoice: "/portal/v1/invoices/:id/pay",
 };

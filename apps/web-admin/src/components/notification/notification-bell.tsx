@@ -49,6 +49,11 @@ function navigateToSource(
 	}
 	if (notification.sourceType === 'organization_member') {
 		void navigate({ to: '/organizations' });
+		return;
+	}
+	// ERP-0070: online orders and customer answers point at the SPH.
+	if (notification.sourceType === 'quotation' && notification.sourceId) {
+		void navigate({ to: '/sales/quotes/$quotationId', params: { quotationId: notification.sourceId } });
 	}
 }
 

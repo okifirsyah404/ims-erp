@@ -34,6 +34,7 @@ import type {
 	TQuotationListQuery,
 	TQuotationLostRequest,
 } from '../contracts/quotation.contract';
+import { quotationListQuerySchema } from '../contracts/quotation.contract';
 import type {
 	IQuotationRepository,
 	TQuotationHeaderData,
@@ -297,7 +298,41 @@ export class QuotationService {
 	}
 
 	async get(ctx: TQuotationContext, id: string): Promise<TQuotationDetail> {
-		const quotation = await this.requireVisible(ctx, id);
+		return this.detail(await this.requireVisible(ctx, id));
+	}
+
+	/**
+	 * A customer's SPHs for the customer portal (ERP-0070): every page,
+	 * newest first, without superseded revisions. The customer id is the only
+	 * scope; no staff visibility rule applies.
+	 */
+	async listForCustomer(customerId: string): Promise<TQuotationView[]> {
+		const rows: TQuotationSelect[] = [];
+		for (let page = 1; ; page += 1) {
+			const result = await this.quotations.paginate({
+				...quotationListQuerySchema.parse({ customerId, page, limit: 100 }),
+				excludeSuperseded: true,
+			});
+			rows.push(...result.data);
+			if (page >= result.meta.totalPages) break;
+		}
+		return rows.map(withValidity);
+	}
+
+	/**
+	 * One SPH of a customer for the portal; another customer's SPH and a
+	 * superseded revision answer 404.
+	 *
+	 * @throws {QuotationNotFoundError}
+	 */
+	async getForCustomer(customerId: string, id: string): Promise<TQuotationDetail> {
+		const quotation = await this.quotations.findById(id);
+		if (!quotation || quotation.customerId !== customerId || quotation.status === 'superseded') throw new QuotationNotFoundError();
+		return this.detail(quotation);
+	}
+
+	private async detail(quotation: TQuotationSelect): Promise<TQuotationDetail> {
+		const id = quotation.id;
 		const [items, revisions, history, order] = await Promise.all([
 			this.quotations.findItems(id),
 			this.quotations.findRevisions(quotation.baseCode),

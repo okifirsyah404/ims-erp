@@ -621,12 +621,18 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M07 Projects and After-Sales
 
 ### planned
-- Customer portal stage 2: ordering from the portal and the website,
-  quotations, sales orders, invoices and gateway payment — ERP-0070.
-- Website identity and navigation from the ERP (dynamic landing, stage 1) —
-  ERP-0071.
+- Dynamic website configured in the ERP, in stages (1 identity + navigation +
+  website API key, 2 home sections, 3 solutions/projects/testimonials, 4 other
+  content pages) — ERP-0071.
 
 ### implemented
+- Customer portal stage 2 (ERP-0070, 2026-11-19): online order (website
+  checkout) → draft SPH owned by the account manager or the default
+  salesperson, customer accepts a sent SPH → sales order, orders, issued
+  invoices and gateway payment in the portal, role gates. Evidence:
+  `apps/backend/src/app/portal/services/portal-sales.service.ts`,
+  `apps/backend/src/app/sales/services/customer-sales.service.ts`,
+  `test/unit/portal-sales.test.ts` (14), `progress.md` 2026-11-19.
 - Customer portal session (ERP-0069, ADR-0024, 2026-11-19): Better Auth
   session cookie held by the portal server (never in a body or a browser),
   global `customer` role required by the guard, sign-in and sign-up,

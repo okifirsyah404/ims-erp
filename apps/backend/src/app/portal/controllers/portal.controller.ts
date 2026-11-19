@@ -4,7 +4,8 @@ import { requestBodyDoc } from '@http/openapi';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
-import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { quotationSummary } from '../utils/portal-sales-presenter';
 import { portalMemberInviteSchema, portalSignupSchema } from '@app/user/contracts/portal-account.contract';
 import {
 	portalChangePasswordSchema,
@@ -156,6 +157,7 @@ export class PortalController {
 	static plugin() {
 		const auth = container.resolve(PORTAL_AUTH_SERVICE_TOKEN);
 		const service = container.resolve(PORTAL_SERVICE_TOKEN);
+		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		// A malformed id is answered 404 like an unknown one: the portal reads 404 as "not found".
 		const id = (params: unknown) => {
 			const parsed = portalIdParamSchema.safeParse(params);
@@ -227,25 +229,31 @@ export class PortalController {
 				'/home',
 				async (ctx) => {
 					const p = presenter(ctx);
-					const [projects, tickets] = await Promise.all([service.listProjects(ctx.portal), service.listTickets(ctx.portal)]);
+					const [projects, tickets, quotations] = await Promise.all([
+						service.listProjects(ctx.portal),
+						service.listTickets(ctx.portal),
+						sales.awaitingQuotations(ctx.portal),
+					]);
 					const active = projects.filter((project) => project.status === 'active');
 					return ok({
 						...(active[0] ? { activeProject: { ...projectSummary(p, active[0]), index: 1, total: active.length } } : {}),
-						quotations: [],
+						quotations: quotations
+							.slice(0, 3)
+							.map((row) => quotationSummary(p, row, row.items.length, row.creator?.name ?? '', row.salesOrder?.code ?? null)),
 						openTickets: tickets.filter((ticket) => ticket.status !== 'closed').slice(0, 3).map((ticket) => ticketSummary(p, ticket)),
 						activity: [],
 						unreadNotifications: 0,
 					});
 				},
-				{ portal: true, detail: { summary: 'Home screen', description: 'Home screen: active project and open tickets (orders and quotations come in stage 2)' } },
+				{ portal: true, detail: { summary: 'Home screen', description: 'Home screen: active project, quotations waiting for an answer and open tickets' } },
 			)
 			.get(
 				'/badges',
 				async ({ portal }) => {
-					const tickets = await service.listTickets(portal);
+					const [tickets, counts] = await Promise.all([service.listTickets(portal), sales.counts(portal)]);
 					return ok({
-						activeOrders: 0,
-						quotationsAwaiting: 0,
+						activeOrders: counts.activeOrders,
+						quotationsAwaiting: counts.quotationsAwaiting,
 						openTickets: tickets.filter((ticket) => ticket.status !== 'closed').length,
 						unreadNotifications: 0,
 					});

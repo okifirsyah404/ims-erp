@@ -90,7 +90,8 @@ const SCREEN_OPERATIONS: [RegExp, (keyof PortalSource)[]][] = [
   [/^\/tracking\/?$/, ["listOrders", "getOrder"]],
   [/^\/payments\/?$/, ["listInvoices", "listPaymentMethods"]],
   [/^\/payments\/[^/]+\/?$/, ["getInvoice", "listOrders", "listPaymentMethods"]],
-  [/^\/quotations\/?$/, ["listQuotations", "listRfqs"]],
+  // `listRfqs` is optional on this screen (the page shows quotations without it).
+  [/^\/quotations\/?$/, ["listQuotations"]],
   [/^\/quotations\/(?!claim\/?$)[^/]+\/?$/, ["getQuotation"]],
   [/^\/support\/book\/?$/, ["getBookingOptions"]],
   [/^\/documents\/?$/, ["listDocuments"]],

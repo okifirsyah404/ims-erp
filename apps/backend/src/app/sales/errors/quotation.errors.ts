@@ -57,3 +57,21 @@ export class QuotationSelfApprovalError extends AppError {
 		super(403, 'sales.selfApproval', 'Self-approval is not allowed');
 	}
 }
+
+/**
+ * Online ordering has no salesperson to own the SPH: the customer has no
+ * account manager and `sales / online_order_owner_user_id` is not set to an
+ * active user (ERP-0070).
+ */
+export class OnlineOrderNotConfiguredError extends AppError {
+	constructor() {
+		super(503, 'sales.onlineOrderNotConfigured', 'Online ordering is not configured');
+	}
+}
+
+/** The SPH is not waiting for the customer's answer (it must be `sent`). */
+export class QuotationNotAwaitingCustomerError extends AppError {
+	constructor() {
+		super(409, 'sales.quotationNotAwaitingCustomer', 'This quotation is not waiting for your answer');
+	}
+}

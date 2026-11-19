@@ -231,7 +231,7 @@ export const server = {
       handler: async (input, context) => {
         const tokens = requireAuth(context);
         await call(() => portal.acceptQuotation(tokens, input.id, { poNumber: input.po_number, approverId: input.approver }));
-        context.session?.set("flash", { tone: "success", title: "Quotation accepted", description: "A proforma invoice for the down payment has been issued." });
+        context.session?.set("flash", { tone: "success", title: "Quotation accepted", description: "Your order is confirmed. Our team will send the invoice for the first payment." });
         return { ok: true };
       },
     }),

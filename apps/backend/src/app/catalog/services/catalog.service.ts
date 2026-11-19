@@ -7,7 +7,7 @@ import { isUniqueViolation } from '@drizzle/errors';
 import type { TWebListingSelect } from '@drizzle/schemas/catalog.schema';
 import { inject, injectable } from 'tsyringe';
 import { LISTING_REPOSITORY_TOKEN } from '../constants/di';
-import type { IListingRepository, TListingBody, TProductQuery } from '../contracts/catalog.contract';
+import type { IListingRepository, TListingBody, TOrderLine, TProductQuery } from '../contracts/catalog.contract';
 import { CatalogNotFoundError, ListingConflictError } from '../errors/catalog.errors';
 import { queryProducts, stockStatus, type TCatalogProduct, toRupiah } from '../utils/catalog';
 
@@ -260,6 +260,35 @@ export class CatalogService {
 			};
 		});
 		return { lines: priced, subtotal: priced.reduce((sum, line) => sum + line.lineTotal, 0) };
+	}
+
+	/**
+	 * Cart lines resolved for an online order (ERP-0070): each published
+	 * slug's inventory item and its list price in minor units. A line is
+	 * orderable only for a published, list-priced product that is not out of
+	 * stock; anything else comes back with `orderable: false` and no item.
+	 */
+	async orderLines(lines: { productSlug: string; quantity: number }[]): Promise<TOrderLine[]> {
+		const rows = await this.listings.listPublished();
+		const bySlug = new Map(rows.map((row) => [row.slug, row]));
+		const ids = linkedItems(rows.filter((row) => lines.some((line) => line.productSlug === row.slug)));
+		const [items, available] = await Promise.all([this.inventory.items(ids), this.inventory.available(ids)]);
+		const byId = new Map(items.map((item) => [item.id, item]));
+		return lines.map((line) => {
+			const row = bySlug.get(line.productSlug);
+			const item = row?.itemId ? byId.get(row.itemId) : undefined;
+			const listed = !!row && !!item && row.priceMode === 'list' && item.sellingPrice > 0;
+			const stock = item ? stockStatus(item.isStockTracked, available.get(item.id) ?? 0, row!.outOfStockMode) : 'out';
+			const orderable = listed && stock !== 'out';
+			return {
+				productSlug: line.productSlug,
+				quantity: line.quantity,
+				orderable,
+				itemId: orderable ? item!.id : null,
+				name: item?.name ?? null,
+				unitPrice: orderable ? item!.sellingPrice : null,
+			};
+		});
 	}
 
 	/** Short-lived URL of a published product's photo (the public image redirect). */

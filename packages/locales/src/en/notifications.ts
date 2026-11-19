@@ -20,6 +20,14 @@ const notifications = {
 	'template.sales.invoiceIssued.title': 'Invoice {{invoiceNumber}} issued',
 	'template.sales.invoiceIssued.body':
 		'Invoice {{invoiceNumber}} for {{customerName}} was issued for {{amount}}.',
+	'template.sales.onlineOrderReceived.title': 'Online order {{quotationNumber}} from {{customerName}}',
+	'template.sales.onlineOrderReceived.body':
+		'{{customerName}} ordered online ({{amount}}). Review and submit draft SPH {{quotationNumber}}.',
+	'template.sales.quotationAccepted.title': '{{customerName}} accepted {{quotationNumber}}',
+	'template.sales.quotationAccepted.body':
+		'{{customerName}} accepted {{quotationNumber}} in the customer portal. Sales order {{orderNumber}} was created.',
+	'template.sales.quotationRevisionRequested.title': '{{customerName}} asked to revise {{quotationNumber}}',
+	'template.sales.quotationRevisionRequested.body': '{{customerName}} asked to revise {{quotationNumber}}: {{message}}',
 	'template.document.signatureRequested.title':
 		'Signature requested: {{documentName}}',
 	'template.document.signatureRequested.body':

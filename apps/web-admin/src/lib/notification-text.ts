@@ -55,6 +55,42 @@ export function notificationText(
 					amount: variables.amount ?? '',
 				}),
 			};
+		case 'sales.online_order_received':
+			return {
+				title: t('template.sales.onlineOrderReceived.title', {
+					quotationNumber: variables.quotationNumber ?? '',
+					customerName: variables.customerName ?? '',
+				}),
+				body: t('template.sales.onlineOrderReceived.body', {
+					quotationNumber: variables.quotationNumber ?? '',
+					customerName: variables.customerName ?? '',
+					amount: variables.amount ?? '',
+				}),
+			};
+		case 'sales.quotation_accepted':
+			return {
+				title: t('template.sales.quotationAccepted.title', {
+					quotationNumber: variables.quotationNumber ?? '',
+					customerName: variables.customerName ?? '',
+				}),
+				body: t('template.sales.quotationAccepted.body', {
+					quotationNumber: variables.quotationNumber ?? '',
+					customerName: variables.customerName ?? '',
+					orderNumber: variables.orderNumber ?? '',
+				}),
+			};
+		case 'sales.quotation_revision_requested':
+			return {
+				title: t('template.sales.quotationRevisionRequested.title', {
+					quotationNumber: variables.quotationNumber ?? '',
+					customerName: variables.customerName ?? '',
+				}),
+				body: t('template.sales.quotationRevisionRequested.body', {
+					quotationNumber: variables.quotationNumber ?? '',
+					customerName: variables.customerName ?? '',
+					message: variables.message ?? '',
+				}),
+			};
 		case 'document.signature_requested':
 			return {
 				title: t('template.document.signatureRequested.title', {

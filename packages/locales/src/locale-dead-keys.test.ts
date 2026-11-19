@@ -188,6 +188,8 @@ const DYNAMIC_PREFIXES = [
 	// Customer portal (ERP-0022): stage and evidence labels are composed from
 	// the server value in `portal-presenter.ts`.
 	'portal.stage.',
+	// Portal order status labels compose `portal.sales.order.${status}` (ERP-0070).
+	'portal.sales.order.',
 	'portal.evidence.',
 	'portal.role.',
 	'crm:portal.role.',

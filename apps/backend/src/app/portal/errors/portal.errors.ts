@@ -51,3 +51,17 @@ export class PortalNotFoundError extends AppError {
 		super(404, 'common.notFound', 'Not found');
 	}
 }
+
+/** The caller's portal role may not do this (e.g. a viewer placing an order, ERP-0070). */
+export class PortalRoleForbiddenError extends AppError {
+	constructor() {
+		super(403, 'portal.roleForbidden', 'Your role in this account cannot do this');
+	}
+}
+
+/** No orderable line, or the prices changed since the checkout quote (ERP-0070). */
+export class PortalCheckoutChangedError extends AppError {
+	constructor() {
+		super(409, 'portal.checkoutChanged', 'Prices or availability changed. Please review your order again.');
+	}
+}

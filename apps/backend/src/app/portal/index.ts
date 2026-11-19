@@ -4,10 +4,11 @@
  */
 import Elysia from 'elysia';
 import { PortalAuthController, PortalController } from './controllers/portal.controller';
+import { PortalSalesController } from './controllers/portal-sales.controller';
 
 export * from './container';
 
-/** Mounts `/portal/v1/auth/*` (no session) and `/portal/v1/*` (portal guard). */
+/** Mounts `/portal/v1/auth/*` (no session) and `/portal/v1/*` (portal guard; ordering and sales ERP-0070). */
 export function portalModule() {
-	return new Elysia({ name: 'portal' }).use(PortalAuthController.plugin()).use(PortalController.plugin());
+	return new Elysia({ name: 'portal' }).use(PortalAuthController.plugin()).use(PortalController.plugin()).use(PortalSalesController.plugin());
 }

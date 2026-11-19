@@ -62,6 +62,9 @@ describe('locale values', () => {
 		const ALLOWED_IDENTICAL = new Set([
 			// "Target" is the Indonesian word too (customer portal, ERP-0022).
 			'api:portal.label.target',
+			// "Subtotal" and "Total" are the Indonesian invoice terms too (ERP-0070).
+			'api:portal.sales.subtotal',
+			'api:portal.sales.total',
 			// `JSON` is the format name in both languages.
 			'settings:settings.type.json',
 			// `Logo` is the same word in Indonesian.

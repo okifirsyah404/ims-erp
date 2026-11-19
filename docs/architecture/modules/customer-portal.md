@@ -74,12 +74,44 @@ document at `/docs` (tag "Customer portal").
 | `inviteMember` | `POST /portal/v1/account/members` | owner only: `{ email, name?, role: approver\|finance\|viewer }` → `CompanyMember`; 403 other roles |
 | `removeMember` | `DELETE /portal/v1/account/members/:id` | owner only; 422 for oneself |
 
-Not built yet (stage 2, routes left unset so the adapter throws
+### Ordering, quotations, orders, invoices and payment (ERP-0070)
+
+Decisions (owner 2026-11-14, user 2026-11-19): ordering uses the **website's**
+catalog and checkout (one cart); the checkout calls these routes as the
+signed-in customer (hand-off session). An order becomes a **draft SPH** owned
+by the customer's account manager — a staff user, never a portal login —
+else by the company setting `sales` / `online_order_owner_user_id` (503
+`sales.onlineOrderNotConfigured` when neither is an active staff user); the
+salesperson gets the `sales.online_order_received` notification. Sales
+reviews, approves and sends the SPH as usual; the customer accepts a `sent`
+SPH and that creates the sales order. Invoices stay organization-scoped in
+Sales; a customer sees its issued invoices in every organization. Only
+list-priced, published, in-stock products can be ordered; the checkout VAT is
+the standard 11 % estimate (the SPH is authoritative). Roles: owner/approver
+order, accept and ask for revisions; owner/finance pay; viewer reads.
+Services: `PortalSalesService` (portal) over `CustomerSalesService`
+(sales), `CatalogService.orderLines`, `GatewayPaymentService.open`.
+
+| Operation | Method and ERP path | Notes |
+| --- | --- | --- |
+| website `quoteOrder` | `POST /portal/v1/checkout/quote` | `{ items[{productSlug, quantity}] }` (the website's `CheckoutOrder`; other fields ignored) → `OrderQuote` with `quoteId` |
+| website `placeOrder` | `POST /portal/v1/checkout/orders` | the order + `quoteId` (+ `poNumber`, `notes`, `source: web`) → `{ orderNumber: <SPH code>, total, paymentStatus: pending_approval }`; 409 changed prices/availability, 403 viewer/finance |
+| website `getPaymentStatus` | `GET /portal/v1/checkout/orders/:orderNumber` | the SPH number URL-encoded (it contains `/`) |
+| `listQuotations` | `GET /portal/v1/quotations` | `QuotationSummary[]`; status `in_review` (draft→approved), `needs_approval` (sent), `expired`, `accepted` (won), `rejected` (lost); superseded revisions hidden |
+| `getQuotation` | `GET /portal/v1/quotations/:id` | `QuotationDetail` with `approvers` (active owners/approvers) |
+| `acceptQuotation` | `POST /portal/v1/quotations/:id/accept` | `{ approverId (= caller's identity), poNumber? }` → creates the sales order; 409 not `sent` |
+| `requestQuotationRevision` | `POST /portal/v1/quotations/:id/revision` | `{ topics[], message }` → notifies the salesperson; attachments 422 |
+| `listOrders` / `getOrder` | `GET /portal/v1/orders`, `/orders/:id` | sales orders → `OrderSummary` / `OrderDetail` (4-step bar) |
+| `listInvoices` / `getInvoice` | `GET /portal/v1/invoices`, `/invoices/:id` | issued, partially paid and paid invoices only |
+| `listPaymentMethods` | `GET /portal/v1/payment-methods` | the active gateway as one method (`id` = provider); empty when none |
+| `payInvoice` | `POST /portal/v1/invoices/:id/pay` | `{ methodId }` → `{ instructionsUrl, reference }` (gateway checkout, reused while pending) |
+
+Not built yet (routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
-`completeOnboarding`, notifications, orders, quotations, invoices, payments,
-device registration and lookup, service booking, profile, documents,
-`updatePersonal`/`updateCompany`/`updateSettings`, sites, wishlist, public
-order lookup, RFQs.
+`completeOnboarding`, notifications, device registration and lookup, service
+booking, profile, documents, `updatePersonal`/`updateCompany`/`updateSettings`,
+sites, wishlist, public order lookup, RFQs, the website's account cart
+(`getCart`/`syncCart`; the cart stays on the device).
 
 ## Staff side
 
@@ -93,6 +125,8 @@ order lookup, RFQs.
 
 ## Tests
 
+`test/unit/portal-sales.test.ts` (ERP-0070: SPH owner resolution, customer
+scoping, sent-only answers, checkout 409s, portal roles, gateway payment);
 `test/unit/customer-portal.test.ts` (invitations and refusals, sign-in and
 lockout, cross-customer denial for projects/tickets/devices, no internal notes
 or costs, confirmation, the guard on a real route). E2E against a disposable

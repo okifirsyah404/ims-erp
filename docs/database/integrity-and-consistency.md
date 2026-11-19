@@ -81,6 +81,14 @@ legally point at a row of tenant B.
 **Every query filters on `organization_id`.** Every write sets
 `organization_id` from the request context, never from the client body.
 
+Exception (ERP-0070, 2026-11-19): the customer portal has no organization
+context; its session's customer id is the scope. `sales.invoices` is read
+for a customer in **every** organization
+(`listIssuedForCustomer` / `findIssuedForCustomer`: `customer_id` + issued,
+partially paid or paid + live rows only), and a payment checkout is then
+opened in the invoice's own `organization_id`. Nothing is written with an
+organization taken from the client.
+
 ### 3.3 The database backstop, inside a module
 
 A composite foreign key ties the parent and the child to the same tenant:

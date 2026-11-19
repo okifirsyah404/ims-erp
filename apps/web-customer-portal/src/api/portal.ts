@@ -127,7 +127,8 @@ export type ProjectDetail = ProjectSummary & {
 };
 
 // ── Quotations ────────────────────────────────────────────────────────────
-export type QuotationStatus = "needs_approval" | "revised" | "accepted" | "expired" | "rejected";
+/** `in_review`: an online order (ERP-0070) that sales is still preparing; nothing to answer yet. */
+export type QuotationStatus = "in_review" | "needs_approval" | "revised" | "accepted" | "expired" | "rejected";
 
 export type QuotationSummary = {
   id: string;

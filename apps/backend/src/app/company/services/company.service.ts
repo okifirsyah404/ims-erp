@@ -205,6 +205,11 @@ export class CompanyService {
 		}));
 	}
 
+	/** The value of one setting (plain text), or `null` when unset or cleared. */
+	async getSettingValue(group: string, key: string): Promise<string | null> {
+		return (await this.repository.findSetting(group, key))?.settingValue ?? null;
+	}
+
 	/**
 	 * Creates or replaces one setting. `isSecret` is never set here: the column
 	 * stays `false` until the dynamic-secret feature exists (ERP-0045 decision).

@@ -86,3 +86,69 @@ export interface IPortalSessionGateway {
 /** Failed sign-in counter per email (Redis); the lock lasts {@link PORTAL_LOCK_SECONDS}. */
 export const PORTAL_MAX_FAILED_LOGINS = 5;
 export const PORTAL_LOCK_SECONDS = 15 * 60;
+
+/* ------------------------------------------------------------------------ *
+ * Ordering, quotations, invoices and payment (ERP-0070)
+ * ------------------------------------------------------------------------ */
+
+/** Cart lines from the website's checkout (`CheckoutOrder.items`). */
+const checkoutItemsSchema = z
+	.array(
+		z.object({
+			productSlug: z.string().trim().min(1).max(120),
+			quantity: z.number().int().min(1).max(9999),
+		}),
+	)
+	.min(1)
+	.max(50);
+
+/**
+ * A checkout as the website sends it (`CheckoutOrder`). Only the lines, the
+ * customer's note and PO number are used: delivery, installation and tax
+ * are settled by sales on the SPH. Unknown fields are ignored.
+ */
+export const portalCheckoutSchema = z.object({
+	items: checkoutItemsSchema,
+	poNumber: z.string().trim().max(60).optional(),
+	shipping: z.object({ notes: z.string().trim().max(1000).optional() }).partial().optional(),
+	notes: z.string().trim().max(1000).optional(),
+	/** `web` from the website's checkout; anything else counts as the portal. */
+	source: z.string().max(20).optional(),
+});
+
+/** Placing the order: the checkout plus the quote id it was reviewed with. */
+export const portalPlaceOrderSchema = portalCheckoutSchema.extend({ quoteId: z.string().min(1).max(128) });
+
+export const portalAcceptQuotationSchema = z.object({
+	poNumber: z.string().trim().max(60).optional(),
+	/** The member approving; must be the caller (owner or approver). */
+	approverId: z.string().min(1).max(128),
+});
+
+export const portalRevisionSchema = z.object({
+	topics: z.array(z.string().trim().min(1).max(60)).max(10).default([]),
+	message: z.string().trim().min(1).max(2000),
+});
+
+export const portalPayInvoiceSchema = z.object({ methodId: z.string().trim().min(1).max(40) });
+
+export const portalOrderNumberParamSchema = z.object({ orderNumber: z.string().trim().min(1).max(64) });
+
+export type TPortalCheckout = z.output<typeof portalCheckoutSchema>;
+
+/** A checkout estimate in whole rupiah, as the website's `OrderQuote` expects (ERP-0070). */
+export type TCheckoutQuote = {
+	lines: { productSlug: string; quantity: number; unitPrice: number; lineTotal: number; available: boolean }[];
+	subtotal: number;
+	discount: number;
+	shipping: number;
+	installation: number;
+	tax: number;
+	total: number;
+	quoteId: string;
+	expiresAt: string;
+};
+
+/** The website's payment-status poll of an online order (its SPH). */
+export type TOnlineOrderState = 'pending_approval' | 'cancelled';
+export type TPortalPlaceOrder = z.output<typeof portalPlaceOrderSchema>;

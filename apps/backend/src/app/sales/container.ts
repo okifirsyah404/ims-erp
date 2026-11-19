@@ -4,6 +4,7 @@ import { ExportedInvoiceService } from './services/exported-invoice.service';
 import { QuotationRepository } from './repositories/quotation.repository';
 import { PaymentRepository } from './repositories/payment.repository';
 import { QuotationService } from './services/quotation.service';
+import { CustomerSalesService } from './services/customer-sales.service';
 import { SalesOrderRepository } from './repositories/sales-order.repository';
 import { SalesOrderService } from './services/sales-order.service';
 import { SalesBillingService } from './services/sales-billing.service';
@@ -22,6 +23,7 @@ import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
 	QUOTATION_SERVICE_TOKEN,
+	CUSTOMER_SALES_SERVICE_TOKEN,
 	SALES_ORDER_REPOSITORY_TOKEN,
 	SALES_ORDER_SERVICE_TOKEN,
 	SALES_BILLING_SERVICE_TOKEN,
@@ -91,4 +93,6 @@ export function registerSales(container: DependencyContainer): void {
 	container.register(SALES_FULFILMENT_SERVICE_TOKEN, { useClass: SalesFulfilmentService });
 	container.register(QUOTATION_SENT_DISPATCHER_TOKEN, { useClass: BullQuotationSentDispatcher });
 	container.register(QUOTATION_DELIVERY_SERVICE_TOKEN, { useClass: QuotationDeliveryService });
+	// ERP-0070: the customer portal's view of sales (online orders, SPHs, orders, invoices).
+	container.register(CUSTOMER_SALES_SERVICE_TOKEN, { useClass: CustomerSalesService });
 }

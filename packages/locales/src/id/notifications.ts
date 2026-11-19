@@ -20,6 +20,14 @@ const notifications = {
 	'template.sales.invoiceIssued.title': 'Invoice {{invoiceNumber}} diterbitkan',
 	'template.sales.invoiceIssued.body':
 		'Invoice {{invoiceNumber}} untuk {{customerName}} diterbitkan sebesar {{amount}}.',
+	'template.sales.onlineOrderReceived.title': 'Pesanan online {{quotationNumber}} dari {{customerName}}',
+	'template.sales.onlineOrderReceived.body':
+		'{{customerName}} memesan secara online ({{amount}}). Periksa dan ajukan draf SPH {{quotationNumber}}.',
+	'template.sales.quotationAccepted.title': '{{customerName}} menyetujui {{quotationNumber}}',
+	'template.sales.quotationAccepted.body':
+		'{{customerName}} menyetujui {{quotationNumber}} di portal pelanggan. Sales order {{orderNumber}} telah dibuat.',
+	'template.sales.quotationRevisionRequested.title': '{{customerName}} meminta revisi {{quotationNumber}}',
+	'template.sales.quotationRevisionRequested.body': '{{customerName}} meminta revisi {{quotationNumber}}: {{message}}',
 	'template.document.signatureRequested.title':
 		'Tanda tangan diminta: {{documentName}}',
 	'template.document.signatureRequested.body':

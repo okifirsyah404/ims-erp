@@ -12,6 +12,146 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - ERP-0070 portal stage 2: online order → SPH → order → invoice → gateway payment
+
+Same branch (`feat/erp-0069-portal-session`, after commits `1c9ec651` and
+`8745d5a4`).
+
+**User decisions (2026-11-19), on top of the owner flow of 2026-11-14:** the
+SPH of an online order belongs to the customer's account manager, else a
+default salesperson set in the ERP; ordering from the portal uses the
+website's catalog and checkout (one cart), the order shows in the portal's
+quotations. Resolved without asking (sensible defaults, recorded in
+`docs/architecture/modules/customer-portal.md`): owner/approver order and
+accept in their own name, owner/finance pay, viewer reads; a customer sees
+its issued invoices in every organization; the gateway is shown as one
+"online payment" method; checkout VAT is the standard 11 % estimate.
+
+**Gate 1 (`docs/database/`).** Honest note: before coding only the Drizzle
+schemas were read; the required reading (`module-ownership.md`,
+`logical-references.md`, the Sales / Notification / Company / Catalog
+sections of `docs.dbml`, `integrity-and-consistency.md`) was done afterwards
+in a review pass, before committing. Result: no table, column, index or
+constraint changed (notification template codes are `varchar`; the default
+salesperson is a `company.settings` row; quotations / orders are company-wide
+per ADR-0011; creating the order from a `sent` SPH follows the documented
+lifecycle). One documented exception was added to
+`integrity-and-consistency.md` §3.2: portal invoice reads are scoped by
+customer across organizations. `validate-dbml.ts` printed `OK`.
+`data-dictionary.md` and `implementation-phases.md` skipped: no column
+convention or pending step involved.
+
+**Gate 2 (manual `grill-me` fallback; `grilling` is not installed).**
+- Module ownership: Sales owns SPH, order and invoice logic
+  (`CustomerSalesService`); Catalog owns pricing (`orderLines`); Payment owns
+  the checkout; Portal owns no data and only orchestrates.
+- Tenant scoping: SPH and orders are company-wide (no `organization_id`);
+  invoices are read per customer in every organization (exception above);
+  the checkout opens in the invoice's organization.
+- Soft delete: every new read filters `deleted_at IS NULL`; nothing is
+  deleted.
+- Money / types: Sales keeps integer minor units; whole rupiah only in the
+  portal/website responses (their `Money` contract); the checkout VAT is an
+  estimate, the SPH is authoritative.
+- Cross-module contracts: portal → `CUSTOMER_SALES_SERVICE_TOKEN`,
+  `CATALOG_SERVICE_TOKEN`, `GATEWAY_PAYMENT_SERVICE_TOKEN`,
+  `PORTAL_ACCOUNT_SERVICE_TOKEN`; sales → `CUSTOMER_SERVICE_TOKEN`,
+  `COMPANY_SERVICE_TOKEN`, `USER_SERVICE_TOKEN`,
+  `EXPORTED_NOTIFICATION_SERVICE_TOKEN`; no cycles.
+- Status vocabulary: unchanged in the database; the portal maps
+  draft/submitted/approved/rejected → `in_review`, sent → `needs_approval`
+  (or `expired`), won → `accepted`, lost → `rejected`; superseded hidden.
+- `created_by` meaning: the SPH and the sales order of an online order are
+  recorded with the **salesperson** as actor (they own the deal); the
+  customer's act (who ordered, who accepted, PO number) is written into the
+  notes.
+
+**Review pass before committing (AGENTS.md + backend skills).** Found and
+fixed: business rules in the controllers (paid total per order, online-order
+state, badge counts) moved into `PortalSalesService`; portal reads no longer
+use a fake staff context — `QuotationService.listForCustomer|getForCustomer`
+and `SalesOrderService.listForCustomer|getForCustomer` (all pages, no silent
+100-row cut); types and the Indonesian SPH copy moved to
+`sales/contracts/customer-sales.contract.ts` and `TCheckoutQuote` to
+`portal.contract.ts`; ownership tests added (another customer's order,
+invoice and payment → 404). Left as known: `listQuotations` in the portal
+loads each SPH's detail (one query per SPH; fine for a customer's handful).
+
+**Backend.**
+- `sales`: `CustomerSalesService` (+ `CUSTOMER_SALES_SERVICE_TOKEN`):
+  `requestOrder` (draft SPH through `QuotationService.create`, owner = staff
+  account manager or setting `sales / online_order_owner_user_id`, 503
+  otherwise), `listQuotations`/`getQuotation` (customer-scoped, superseded
+  hidden), `acceptQuotation` (only `sent`, creates the order as the
+  salesperson), `requestRevision`, `listOrders`/`getOrder`,
+  `listInvoices`/`getInvoice`; invoice repository
+  `listIssuedForCustomer`/`findIssuedForCustomer`; errors
+  `sales.onlineOrderNotConfigured`, `sales.quotationNotAwaitingCustomer`;
+  notification templates `sales.online_order_received`,
+  `sales.quotation_accepted`, `sales.quotation_revision_requested` (schema
+  list, seeder, en/id locales, web-admin notification text, bell link to the
+  SPH).
+- `catalog`: `CatalogService.orderLines` (slug → item and list price,
+  orderable only when published, list-priced and not out of stock).
+- `company`: `CompanyService.getSettingValue`.
+- `portal`: `PortalSalesService` + `PortalSalesController` (14 routes, each
+  with summary and documented body), `portal-sales-presenter.ts`; home and
+  badges now count quotations waiting and active orders; errors
+  `portal.roleForbidden`, `portal.checkoutChanged`.
+- Found and fixed while testing: a self-signed-up customer is the owner of
+  its own CRM customer, so "account manager" first resolved to the customer
+  (SPH "prepared by" the customer); the owner must now be a non-`customer`
+  login. The SPH number contains `/`, so `GET /checkout/orders/:orderNumber`
+  decodes the parameter. Role-checked methods are `async` (a synchronous
+  throw escaped the promise).
+
+**Portal and website.** Portal routes for quotations, orders, invoices,
+payment methods and pay; status `in_review` (chip, open tab, tile); the
+quotations screen no longer requires `listRfqs`; accept copy no longer
+promises an instant proforma invoice. Website: checkout routes
+(`quoteOrder`, `placeOrder`, `getPaymentStatus`) and the nine public catalog
+routes mapped.
+
+**Verification.**
+- `bun test test/unit/portal-sales.test.ts` 15 pass (after the review pass); `bun test` (backend)
+  see the final run below; `packages/locales` 98 pass (dead-key prefix
+  `portal.sales.order.`, identical-allowed `portal.sales.subtotal|total`);
+  `apps/web-admin` 119 pass; typecheck clean (backend, web-admin);
+  `astro check` 0 errors (portal, website); backend lint 0 errors;
+  `validate-dbml.ts` OK. Seeder run twice (3 templates inserted, then 0).
+- Live API (dev database `ims_erp_main`): two catalog listings created
+  (`list` and `rfq`), default salesperson set; quote prices the list item,
+  flags the rfq one; placing with the rfq line, a stale `quoteId` or a
+  changed price → 409; a valid order → draft `0002/QT/…` owned by the sales
+  user, notification in the salesperson's inbox; staff submit → manager
+  approve → send → portal `needs_approval`; accept → `0001/SO/…` with the PO
+  number; second accept → 409; invoice from the order issued → listed in the
+  portal (outstanding Rp 141.922) → pay with the `fake` gateway returns the
+  hosted checkout URL, a second pay reuses it; wrong method → 404.
+- Website adapter (`createErpWebsiteSource`) against the ERP with the
+  customer's session cookie: quote → place (`pending_approval`) → status.
+- Browser (headless Chrome, portal in ERP mode): home, quotations (in review
+  / needs approval / accepted), quotation detail, accepting through the sheet
+  (→ "Quotation accepted"), orders, order detail, payments, invoice detail.
+
+**Local only (not committed).** On `ims_erp_main`: listings
+`reader-akses-pro` / `gate-barrier-custom`, the default-salesperson setting,
+accounts `1-1300` / `4-1000` / `2-1000`, and the accounting period 2026-11
+inserted by SQL because `accounting_period:create` is still missing from the
+permission catalog (reported 2026-11-14). `apps/backend/.env` gained
+`PAYMENT_GATEWAY_PROVIDER=fake` + a generated fake secret, and
+`.claude/launch.json` runs the dev server with `NODE_ENV=development` (the
+session's shell exports `production`, which refuses the fake gateway).
+
+**Not built.** The website's account cart (`getCart`/`syncCart`: the cart
+stays on the device; checkout works without it), issuing the website API key
+that `/public/v1/catalog/*` needs (moved into ERP-0071 stage 1), gateway
+webhook → receipt was not exercised end to end here (covered by ERP-0020's
+tests).
+
+**Next executable task:** ERP-0071 stage 1 (website identity, navigation,
+default SEO and the website API key, configured in the ERP).
+
 ## 2026-11-19 - ERP-0069 customer portal session: server-held cookie, `customer` role, documented bodies
 
 Branch `feat/erp-0069-portal-session` (from `main` `929209c6`, carrying the

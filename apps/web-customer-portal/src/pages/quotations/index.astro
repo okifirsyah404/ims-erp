@@ -27,13 +27,14 @@ const [all, rfqs] = await Promise.all([
   portal.listRfqs(Astro.locals.tokens!).catch(() => null),
 ]);
 const rfqChip = { received: "info", in_review: "warning", quoted: "success", closed: "neutral" } as const;
-const isOpen = (s: QuotationStatus) => s === "needs_approval" || s === "revised";
+const isOpen = (s: QuotationStatus) => s === "in_review" || s === "needs_approval" || s === "revised";
 const open = all.filter((q) => isOpen(q.status));
 const needsApproval = all.filter((q) => q.status === "needs_approval");
 const list = tab === "open" ? open : tab === "accepted" ? all.filter((q) => q.status === "accepted") : all;
 const hero = tab !== "accepted" ? list.find((q) => q.status === "needs_approval") : undefined;
 const rest = list.filter((q) => q !== hero);
 const tile = {
+  in_review: { icon: FileText, tone: "info" },
   revised: { icon: FilePen, tone: "info" },
   accepted: { icon: FileCheck, tone: "success" },
   expired: { icon: FileX, tone: "neutral" },

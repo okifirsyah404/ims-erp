@@ -13,6 +13,7 @@
  * with a tsyringe "cannot resolve" error.
  */
 import type { InjectionToken } from 'tsyringe';
+import type { CustomerSalesService } from '../services/customer-sales.service';
 import type { SalesService } from '../services/sales.service';
 import type { IQuotationRepository } from '../contracts/quotation.repository.interface';
 import type { QuotationService } from '../services/quotation.service';
@@ -82,3 +83,6 @@ export const QUOTATION_DELIVERY_SERVICE_TOKEN: InjectionToken<QuotationDeliveryS
 
 /** Token resolving to the queue that delivers sent quotations (ERP-0067). */
 export const QUOTATION_SENT_DISPATCHER_TOKEN: InjectionToken<IQuotationSentDispatcher> = Symbol('QUOTATION_SENT_DISPATCHER_TOKEN');
+
+/** Sales as one customer sees it (ERP-0070): online orders, SPHs, orders, invoices; consumed by the portal. */
+export const CUSTOMER_SALES_SERVICE_TOKEN: InjectionToken<CustomerSalesService> = Symbol('CUSTOMER_SALES_SERVICE_TOKEN');

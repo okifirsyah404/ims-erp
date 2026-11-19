@@ -9,6 +9,7 @@ export const orderChip = (status: OrderStatus, label: string): Chip => ({
 });
 
 export const quotationChip: Record<QuotationStatus, Chip> = {
+  in_review: { label: "In review", tone: "info" },
   needs_approval: { label: "Needs approval", tone: "warning" },
   revised: { label: "Revised", tone: "info" },
   accepted: { label: "Accepted", tone: "success" },

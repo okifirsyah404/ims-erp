@@ -58,6 +58,29 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		variables: ['invoiceNumber', 'customerName', 'amount'],
 	},
 	{
+		code: 'sales.online_order_received',
+		name: 'Online order received',
+		subjectTemplate: 'Online order {{quotationNumber}} from {{customerName}}',
+		bodyTemplate:
+			'{{customerName}} ordered online ({{amount}}). Review and submit draft SPH {{quotationNumber}}.',
+		variables: ['quotationNumber', 'customerName', 'amount'],
+	},
+	{
+		code: 'sales.quotation_accepted',
+		name: 'Quotation accepted by the customer',
+		subjectTemplate: '{{customerName}} accepted {{quotationNumber}}',
+		bodyTemplate:
+			'{{customerName}} accepted {{quotationNumber}} in the customer portal. Sales order {{orderNumber}} was created.',
+		variables: ['quotationNumber', 'customerName', 'orderNumber'],
+	},
+	{
+		code: 'sales.quotation_revision_requested',
+		name: 'Quotation revision requested by the customer',
+		subjectTemplate: '{{customerName}} asked to revise {{quotationNumber}}',
+		bodyTemplate: '{{customerName}} asked to revise {{quotationNumber}}: {{message}}',
+		variables: ['quotationNumber', 'customerName', 'message'],
+	},
+	{
 		code: 'document.signature_requested',
 		name: 'Signature requested',
 		subjectTemplate: 'Signature requested: {{documentName}}',

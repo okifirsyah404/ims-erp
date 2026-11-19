@@ -80,3 +80,17 @@ export interface IListingRepository {
 	update(id: string, data: Partial<TWebListingInsert>): Promise<TWebListingSelect | null>;
 	remove(id: string): Promise<boolean>;
 }
+
+/**
+ * A cart line resolved for an online order (ERP-0070). `itemId` and
+ * `unitPrice` (IDR minor units, the item's selling price) are set only when
+ * the line is orderable: a published, list-priced product not out of stock.
+ */
+export type TOrderLine = {
+	productSlug: string;
+	quantity: number;
+	orderable: boolean;
+	itemId: string | null;
+	name: string | null;
+	unitPrice: number | null;
+};

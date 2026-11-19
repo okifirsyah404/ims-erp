@@ -103,6 +103,14 @@ export type TInvoiceRepository = {
 		pagination: { page: number; limit: number },
 	): Promise<{ data: TInvoiceSelect[]; meta: { page: number; limit: number; total: number; totalPages: number } }>;
 	/**
+	 * A customer's issued invoices (`issued`, `partially_paid`, `paid`) in
+	 * every organization, newest first (ERP-0070: the customer portal has no
+	 * organization; the customer id is the scope).
+	 */
+	listIssuedForCustomer(customerId: string, limit: number): Promise<TInvoiceSelect[]>;
+	/** One issued invoice of a customer, any organization; `null` otherwise. */
+	findIssuedForCustomer(customerId: string, id: string): Promise<TInvoiceSelect | null>;
+	/**
 	 * Invoiced totals per period inside `[from, to]`, oldest first, every
 	 * period present. Counts only {@link INVOICED_STATUSES} and rows with an
 	 * `issue_date`.

@@ -40,6 +40,9 @@ import { paymentStatus } from '../utils/payment-status';
 import { fillSummary } from '../utils/invoice-summary';
 import { INVOICED_STATUSES } from '../contracts/invoice.repository.interface';
 
+/** What a customer may see of their invoices: never drafts, voided or cancelled ones. */
+const CUSTOMER_VISIBLE_INVOICE_STATUSES = ['issued', 'partially_paid', 'paid'] as const;
+
 /**
  * Drizzle implementation of the invoice repository (M09 F4).
  *
@@ -66,6 +69,37 @@ export class InvoiceRepository implements TInvoiceRepository {
 				and(
 					eq(invoices.id, id),
 					eq(invoices.organizationId, organizationId),
+					isNull(invoices.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	listIssuedForCustomer(customerId: string, limit: number): Promise<TInvoiceSelect[]> {
+		return this.database
+			.select()
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.customerId, customerId),
+					inArray(invoices.status, CUSTOMER_VISIBLE_INVOICE_STATUSES),
+					isNull(invoices.deletedAt),
+				),
+			)
+			.orderBy(desc(invoices.issueDate), desc(invoices.createdAt))
+			.limit(limit);
+	}
+
+	async findIssuedForCustomer(customerId: string, id: string): Promise<TInvoiceSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.id, id),
+					eq(invoices.customerId, customerId),
+					inArray(invoices.status, CUSTOMER_VISIBLE_INVOICE_STATUSES),
 					isNull(invoices.deletedAt),
 				),
 			)
