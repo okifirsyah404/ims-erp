@@ -8,10 +8,12 @@ import ArrowRight from "@lucide/astro/icons/arrow-right";
 import Phone from "@lucide/astro/icons/phone";
 import Button from "../ui/Button.astro";
 import SocialLinks from "../ui/SocialLinks.astro";
-import { company, customerPortal, mainNav, routes } from "../../data/site";
+import { customerPortal, routes } from "../../data/site";
 import { isActivePath } from "../../lib/nav";
 import { catalogCategories } from "../../data/catalog";
 import { platforms } from "../../data/solutions";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { company, mainNav } = Astro.locals.site;
 
 /** 01.05 Guest Menu (open) — Mobile 390. */
 interface Props {

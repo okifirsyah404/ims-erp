@@ -9,11 +9,9 @@ import { helpArticles, helpTopics } from "../../../data/knowledge";
 import { routes } from "../../../data/site";
 
 /** Help article page (linked from 01.03 topics, search and FAQ answers). */
-export function getStaticPaths() {
-  return helpArticles.map((article) => ({ params: { slug: article.slug } }));
-}
-
-const article = helpArticles.find((a) => a.slug === Astro.params.slug)!;
+// Rendered on request (ERP-0071): an unknown slug is the 404 page.
+const article = helpArticles.find((a) => a.slug === Astro.params.slug);
+if (!article) return Astro.rewrite("/404");
 const topic = helpTopics.find((t) => t.slug === article.topic)!;
 const related = helpArticles.filter((a) => a.topic === article.topic && a.slug !== article.slug);
 const topicHref = `${routes.help}/topics/${topic.slug}`;

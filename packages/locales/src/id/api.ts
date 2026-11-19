@@ -309,6 +309,7 @@ const api: Record<keyof typeof en, string> = {
 	'portal.ownerOnly': 'Hanya pemilik akun yang bisa mengelola anggota',
 	'portal.removeSelf': 'Anda tidak bisa mencabut akses Anda sendiri',
 	'portal.contactUnavailable': 'Kontak tidak ada atau milik pelanggan lain',
+	'commerce.websiteKeyNotFound': 'API key website tidak ditemukan',
 	'portal.roleForbidden': 'Peran Anda di akun ini tidak dapat melakukan ini',
 	'portal.checkoutChanged': 'Harga atau ketersediaan berubah. Silakan periksa kembali pesanan Anda.',
 	'portal.sales.status.accepted': 'Disetujui',

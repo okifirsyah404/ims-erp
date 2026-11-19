@@ -95,7 +95,8 @@ export const company = {
   },
 };
 
-export type SocialKey = "instagram" | "linkedin" | "youtube" | "whatsapp";
+/** Networks the ERP can set (ERP-0071); the built-in list uses the first four. */
+export type SocialKey = "instagram" | "linkedin" | "youtube" | "whatsapp" | "facebook" | "tiktok" | "x";
 
 /** TODO(content): official social profile URLs. Empty entries render as non-link icons. */
 export const socials: { key: SocialKey; label: string; href?: string }[] = [

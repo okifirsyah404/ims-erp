@@ -353,6 +353,12 @@ tenant-scoped schema.
 
 - **Owns** public web pages, menus and menu items, catalog publications and
   their items, promotions and rules, public shop orders and their items.
+- **Built (ERP-0071 stage 1, ADR-0025):** `web_sites` (identity, contact,
+  social links, default SEO), `web_menus`, `web_menu_items` —
+  company-wide, no `organization_id` (ADR-0012). Backend module
+  `src/app/commerce`: `WebsiteService`, web admin `/website/*`, public
+  `GET /public/v1/site` (website API key). Website keys are Better Auth API
+  keys (config `website`), issued through `IWebsiteKeyIssuer`.
 - A commerce order is **not** a sales order. The Sales module owns the
   confirmed order.
 

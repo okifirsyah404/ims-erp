@@ -1,6 +1,8 @@
 ---
 import SocialIcon from "./SocialIcon.astro";
-import { socials, type SocialKey } from "../../data/site";
+import { type SocialKey } from "../../data/site";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { socials } = Astro.locals.site;
 
 /** Row of social icon buttons. Entries without a URL render as non-interactive icons. */
 interface Props {

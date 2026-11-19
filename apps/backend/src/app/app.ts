@@ -10,6 +10,7 @@ import { assetsModule } from './assets';
 import { auditModule } from './audit';
 import { automationModule } from './automation';
 import { catalogModule } from './catalog';
+import { commerceModule } from './commerce';
 import { codeNumberModule } from './code-number';
 import { companyModule } from './company';
 import { crmModule } from './crm';
@@ -95,6 +96,8 @@ export function createApp() {
 			.use(portalModule())
 			.use(licensingModule())
 			.use(catalogModule())
+			// Website identity and navigation (ERP-0071): `/website` + `/public/v1/site`.
+			.use(commerceModule())
 			.use(automationModule())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant

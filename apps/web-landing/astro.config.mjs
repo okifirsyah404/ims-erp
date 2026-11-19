@@ -12,6 +12,10 @@ const isDevServer = Boolean(/** @type {any} */ (globalThis).process?.argv?.inclu
 export default defineConfig({
   site: "https://entragate.com",
 
+  // ERP-0071: every page is rendered on request so the header, footer and SEO follow the
+  // ERP configuration (cached for a minute) without a rebuild.
+  output: "server",
+
   adapter: node({
     mode: "standalone",
   }),

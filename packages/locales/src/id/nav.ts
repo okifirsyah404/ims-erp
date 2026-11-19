@@ -38,6 +38,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.licenseApplications': 'Aplikasi',
 	'item.activations': 'Validasi & Aktivasi',
 	'item.websiteCatalog': 'Katalog Website',
+	'item.websiteSettings': 'Pengaturan Website',
 	'item.whatsappAi': 'WhatsApp AI (otomatisasi)',
 	'item.notifications': 'Notifikasi',
 	'item.webhooks': 'Webhook (n8n)',

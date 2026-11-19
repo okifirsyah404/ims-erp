@@ -13,6 +13,7 @@ import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQ
 import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/accounting';
 import { registerPortal } from '@app/portal';
 import { registerCatalog } from '@app/catalog';
+import { registerCommerce } from '@app/commerce';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerAssets } from '@app/assets';
 import { registerAccounting } from '@app/accounting';
@@ -85,6 +86,8 @@ registerLicensing(container);
 registerPortal(container);
 registerAccounting(container);
 registerCatalog(container);
+// ERP-0071: the public website's identity, navigation and keys.
+registerCommerce(container);
 registerUser(container);
 registerAuthorization(container);
 

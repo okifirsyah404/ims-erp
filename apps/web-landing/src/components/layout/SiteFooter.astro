@@ -4,7 +4,9 @@ import Phone from "@lucide/astro/icons/phone";
 import Mail from "@lucide/astro/icons/mail";
 import Logo from "../brand/Logo.astro";
 import SocialLinks from "../ui/SocialLinks.astro";
-import { routes, company, footerColumns, mobileFooterColumns } from "../../data/site";
+import { routes } from "../../data/site";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { company, footerColumns, mobileFooterColumns } = Astro.locals.site;
 
 /** Footer (FbYPG) from xl up, Mobile Footer (r1UR5t) below. */
 interface Props {

@@ -10,11 +10,9 @@ import { routes } from "../../../data/site";
 import { icons } from "../../../lib/icons";
 
 /** Help topic: article list for one card of 01.03 · Browse by topic. */
-export function getStaticPaths() {
-  return helpTopics.map((topic) => ({ params: { topic: topic.slug } }));
-}
-
-const topic = helpTopics.find((t) => t.slug === Astro.params.topic)!;
+// Rendered on request (ERP-0071): an unknown slug is the 404 page.
+const topic = helpTopics.find((t) => t.slug === Astro.params.topic);
+if (!topic) return Astro.rewrite("/404");
 const articles = helpArticles.filter((a) => a.topic === topic.slug);
 const others = helpTopics.filter((t) => t.slug !== topic.slug);
 ---

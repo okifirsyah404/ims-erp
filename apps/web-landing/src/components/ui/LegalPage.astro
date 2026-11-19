@@ -1,7 +1,9 @@
 ---
 import PublicLayout from "../../layouts/PublicLayout.astro";
 import PageHero from "./PageHero.astro";
-import { company, routes } from "../../data/site";
+import { routes } from "../../data/site";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { company } = Astro.locals.site;
 
 /** Shared layout for policy pages (privacy, terms of sale): hero + numbered sections + contact. */
 interface Props {

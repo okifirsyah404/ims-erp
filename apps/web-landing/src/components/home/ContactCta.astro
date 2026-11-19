@@ -5,7 +5,9 @@ import Phone from "@lucide/astro/icons/phone";
 import Mail from "@lucide/astro/icons/mail";
 import MapPin from "@lucide/astro/icons/map-pin";
 import Button from "../ui/Button.astro";
-import { company, routes } from "../../data/site";
+import { routes } from "../../data/site";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { company } = Astro.locals.site;
 
 /** Contact CTA (01.01 desktop O9GQU3 / mobile sGCK0) — reused on other public pages. */
 const contacts = [

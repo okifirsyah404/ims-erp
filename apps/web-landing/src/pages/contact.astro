@@ -12,8 +12,10 @@ import Alert from "../components/ui/Alert.astro";
 import Media from "../components/ui/Media.astro";
 import ChannelCard from "../components/contact/ChannelCard.astro";
 import CustomerBand from "../components/contact/CustomerBand.astro";
-import { company, routes } from "../data/site";
+import { routes } from "../data/site";
 import { images } from "../lib/images";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { company } = Astro.locals.site;
 
 /** 09.02 Contact (desktop bGyCw / mobile AJA0e). Rendered on demand for the form result. */
 export const prerender = false;

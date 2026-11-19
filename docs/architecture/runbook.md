@@ -108,6 +108,14 @@ bun run drizzle:seed       # seed runners (database/seeders) — verified idempo
 generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
 stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 
+**Observed 2026-11-19 (ERP-0071, branch `feat/erp-0069-portal-session`, based
+on `main` `929209c6`):** `bunx --bun drizzle-kit generate --name
+erp0071_commerce_site` produced a clean migration containing only the new
+`commerce` schema, and `bun run drizzle:migrate` applied it to an existing
+dev database; `migrate-reset` replayed all migrations from empty on a scratch
+database. The squashed baseline (ADR-0019) appears to have cleared the
+conflict; re-verify before relying on it and update the status table above.
+
 **State on main (verified 2026-11-12):** `drizzle-kit generate` and
 `drizzle-kit migrate` stop with "Conflicting migrations detected" (the
 snapshot chain branches; see `project-audit.md`, "Pre-existing issues").

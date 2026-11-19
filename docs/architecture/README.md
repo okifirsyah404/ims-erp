@@ -60,3 +60,4 @@ applies to backlog `ERP-*` IDs.
 | [ADR-0022](decisions/ADR-0022-customer-portal-api.md) | Customer Portal: Portal Identities and the `/portal/v1` API | proposed (2026-11-14; renumbered from 0018, then 0020) |
 | [ADR-0023](decisions/ADR-0023-payment-module-owns-gateway-checkouts.md) | Payment Module Owns Gateway Checkouts | accepted (2026-11-18) |
 | [ADR-0024](decisions/ADR-0024-portal-session-cookie-and-customer-role.md) | Customer Portal: Server-Held Session Cookie and the `customer` Role | proposed (2026-11-19; amends ADR-0022) |
+| [ADR-0025](decisions/ADR-0025-website-configured-in-the-erp.md) | The Public Website Is Configured in the ERP (Commerce Module) | proposed (2026-11-19) |

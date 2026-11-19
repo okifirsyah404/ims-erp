@@ -8,9 +8,11 @@ import Media from "../components/ui/Media.astro";
 import SectionHeading from "../components/ui/SectionHeading.astro";
 import ContactCta from "../components/home/ContactCta.astro";
 import { careerPerks, openRoles } from "../data/company-pages";
-import { company, routes } from "../data/site";
+import { routes } from "../data/site";
 import { icons } from "../lib/icons";
 import { images } from "../lib/images";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { company } = Astro.locals.site;
 
 /** Careers (footer · Company). Composed from the 09.01 About page patterns. */
 const apply = (title: string) => `${routes.contact}?topic=careers&subject=${encodeURIComponent(title)}`;

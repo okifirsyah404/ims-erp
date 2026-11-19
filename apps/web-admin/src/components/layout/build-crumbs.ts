@@ -73,6 +73,7 @@ const LABELS: Record<string, NavKey> = {
 	'/projects/tickets/new': 'breadcrumb.ticketNew',
 	'/subscription': 'item.subscription',
 	'/integrations/website-catalog': 'item.websiteCatalog',
+	'/integrations/website': 'item.websiteSettings',
 	'/integrations/webhooks': 'item.webhooks',
 	'/integrations/whatsapp-ai': 'item.whatsappAi',
 	'/integrations/whatsapp-ai/faq': 'breadcrumb.whatsappFaq',

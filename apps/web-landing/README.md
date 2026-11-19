@@ -17,7 +17,7 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
 | --- | --- |
 | `WEB_DATA_SOURCE` | `demo` (sample data, forms answered locally) or `erp`. Defaults to `demo` in development and `erp` in production. |
 | `ERP_API_BASE_URL` | External NestJS ERP API root. Must be https. |
-| `ERP_API_TOKEN` | Service token for server-to-server calls. Never sent to the browser. |
+| `ERP_API_TOKEN` | Website API key (`ewk_…`) for server-to-server calls, created in the ERP web admin under **Integrations → Website Settings → API keys** (shown once). Never sent to the browser. |
 | `ERP_API_TIMEOUT_MS`, `ERP_RESPONSE_ENVELOPE` | Request timeout; set the envelope to `data` if the ERP wraps bodies as `{ data }`. |
 | `ERP_RFQ_PATH` | Legacy RFQ path. Other routes live in `src/lib/server/website/erp-routes.ts`. |
 | `PUBLIC_CUSTOMER_URL` | Customer Portal origin (sign-in, tickets, orders). |
@@ -31,12 +31,18 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
 - **Catalog contract.** `CatalogSource` in `packages/api-client/src/services/catalog.ts`:
   `listProducts`, `getProduct`, `listCategories`, `getFacets`, `getStock`, `getPricing`,
   `listSolutions`, `search` and `priceCart` (zod-validated product payloads). The web
-  adapter lives in `src/lib/server/catalog/` — `catalogRoutes` is empty until the ERP
-  publishes paths. Demo mode uses the labelled sample (`demo.ts`, "Sample data" badge);
+  adapter lives in `src/lib/server/catalog/`; `catalogRoutes` maps the nine operations to
+  `/public/v1/catalog/*` (ERP-0070). Demo mode uses the labelled sample (`demo.ts`, "Sample data" badge);
   in ERP mode an unmapped route shows "catalog temporarily unavailable" instead of
   falling back to sample data.
-- **Endpoints.** Set the relative paths in `erp-routes.ts`. Until then, production returns
+- **Endpoints.** Relative paths live in `erp-routes.ts`; checkout (`quoteOrder`, `placeOrder`,
+  `getPaymentStatus`) runs as the signed-in customer (ERP-0070). Unmapped operations return
   "not connected yet" messages instead of guessing endpoints.
+- **Site configuration (ERP-0071 stage 1, ADR-0025).** Identity, contact, social links,
+  default SEO, the header menu and the footer columns come from `GET /public/v1/site`
+  (`src/lib/server/site/`), put on `Astro.locals.site` by `src/middleware.ts` and cached
+  for a minute; unset fields keep the defaults in `src/data/site.ts`. Every page renders on
+  request (`output: "server"`) so changes show without a rebuild.
 - **Server-side only.** All calls run in Astro Actions, so the token never reaches the browser.
 - **Order pricing.** Prices are always recomputed on the server from the catalog
   (`computeTotals` in `src/data/checkout.ts`).

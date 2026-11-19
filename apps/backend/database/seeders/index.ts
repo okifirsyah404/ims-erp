@@ -17,6 +17,7 @@ import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
+import { seedCommerceWebsite } from './seed/commerce-website.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
 
 const logger = pino({
@@ -64,6 +65,8 @@ export async function runSeeders(): Promise<void> {
 	// `seedAuth` created above.
 	await seedNotificationTemplates();
 	await seedNotificationDemo();
+	// ERP-0071: the website identity and menus the site shows today (dev only).
+	await seedCommerceWebsite();
 
 	const finishedAt = DateTime.now();
 	const elapsed = Duration.fromObject({

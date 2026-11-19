@@ -39,6 +39,7 @@ const nav = {
 	'item.licenseApplications': 'Applications',
 	'item.activations': 'Validation & Activation',
 	'item.websiteCatalog': 'Website Catalog',
+	'item.websiteSettings': 'Website Settings',
 	'item.whatsappAi': 'WhatsApp AI',
 	'item.notifications': 'Notifications',
 	'item.webhooks': 'Webhooks (n8n)',

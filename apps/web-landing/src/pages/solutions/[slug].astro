@@ -24,11 +24,9 @@ import { icons } from "../../lib/icons";
  * No dedicated frame: composed from the 02.04 hero, solution card window, integration band
  * and CTA, plus shared section patterns.
  */
-export function getStaticPaths() {
-  return platforms.map((platform) => ({ params: { slug: platform.slug } }));
-}
-
-const platform = platforms.find((p) => p.slug === Astro.params.slug)!;
+// Rendered on request (ERP-0071): an unknown slug is the 404 page.
+const platform = platforms.find((p) => p.slug === Astro.params.slug);
+if (!platform) return Astro.rewrite("/404");
 const detail = solutionDetails[platform.slug];
 const Icon = icons[platform.icon];
 const hardware = await getProductsBySlugs(detail.hardware);

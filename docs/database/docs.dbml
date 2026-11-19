@@ -7199,7 +7199,38 @@ Ref: investor.profit_shares.investor_id > investor.investors.id [delete: restric
 // MODULE: Commerce  (schema: commerce)
 // Public website content, menus, catalog publications, promotions and the
 // web shop orders. Tenant scoped.
+// Built so far (ERP-0071 stage 1, 2026-11-19): `web_sites`, `web_menus` and
+// `web_menu_items` — company-wide like `catalog.web_listings` (ADR-0012: the
+// public website belongs to the company, not to one organization), so they
+// carry no organization_id. `web_menu_items.web_page_id` lands with
+// `web_pages` (ERP-0071 stage 4). Everything else here is target-only.
 // ---------------------------------------------------------------------------
+
+Table commerce.web_sites {
+  id uuid [pk, default: `uuidv7()`]
+  site_key varchar(32) [not null, default: 'default', note: "One live row per website; 'default' is the public site."]
+  brand_name text [not null]
+  legal_name text
+  tagline text
+  address text
+  phone varchar(40)
+  email varchar(254)
+  whatsapp varchar(40)
+  hotline_hours text
+  support_email varchar(254)
+  support_whatsapp varchar(40)
+  social_links jsonb [not null, default: `'[]'::jsonb`, note: "[{ key: instagram|linkedin|youtube|facebook|tiktok|x|whatsapp, url }]"]
+  default_seo_title text
+  default_seo_description text
+  updated_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Identity, contact, social links and default SEO of the public website (ERP-0071 stage 1, company-wide)."
+  Indexes {
+    site_key [unique, name: 'web_sites_site_key_uq', note: 'live rows only: WHERE deleted_at IS NULL']
+  }
+}
 
 Table commerce.web_pages {
   id uuid [pk, default: `uuidv7()`]
@@ -7230,8 +7261,7 @@ Table commerce.web_pages {
 
 Table commerce.web_menus {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [not null, note: "Stable code the website asks for: 'main' (header), 'footer' (its child menus are the footer columns)."]
   name text [not null]
   parent_menu_id uuid
   position integer [not null, default: 0]
@@ -7239,9 +7269,9 @@ Table commerce.web_menus {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Navigation menu of the public website."
+  Note: "Navigation menu of the public website (company-wide, ERP-0071). A child menu (parent_menu_id) is a column or group of its parent."
   Indexes {
-    (organization_id, code) [unique, name: 'web_menus_org_code_uq']
+    code [unique, name: 'web_menus_code_uq', note: 'live rows only: WHERE deleted_at IS NULL']
     parent_menu_id [name: 'web_menus_parent_menu_id_idx']
   }
 }
@@ -7249,16 +7279,15 @@ Table commerce.web_menus {
 Table commerce.web_menu_items {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   web_menu_id uuid [not null]
   label text [not null]
-  url text
-  web_page_id uuid
+  url text [note: "A site path ('/products?category=x') or an absolute https URL."]
+  web_page_id uuid [note: "Lands with commerce.web_pages (ERP-0071 stage 4)."]
   position integer [not null, default: 0]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Entry of a navigation menu."
+  Note: "Entry of a navigation menu (company-wide, ERP-0071)."
   Indexes {
     web_menu_id [name: 'web_menu_items_menu_id_idx']
     web_page_id [name: 'web_menu_items_page_id_idx']

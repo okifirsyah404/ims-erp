@@ -22,11 +22,9 @@ import { icons } from "../../lib/icons";
  * Project case study. No dedicated frame exists: composed from the 01.02 featured story,
  * the 02.02 engineering band and the shared section patterns.
  */
-export function getStaticPaths() {
-  return projects.map((project) => ({ params: { slug: project.slug } }));
-}
-
-const project = getProject(Astro.params.slug!)!;
+// Rendered on request (ERP-0071): an unknown slug is the 404 page.
+const project = getProject(Astro.params.slug ?? "");
+if (!project) return Astro.rewrite("/404");
 const products = await getProductsBySlugs(project.products);
 const usedSolutions = platforms.filter((p) => project.solutions.includes(p.slug));
 const more = projects.filter((p) => p.slug !== project.slug && (p.industry === project.industry || p.solutions.some((s) => project.solutions.includes(s)))).slice(0, 3);

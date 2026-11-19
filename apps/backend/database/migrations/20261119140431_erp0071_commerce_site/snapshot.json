@@ -1,0 +1,1009 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "e16c7b61-aebd-41be-9023-790e8d1596da",
+  "prevIds": [
+    "28316dbe-5163-4567-b65f-b6970622e434"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "commerce"
+      ],
+      "writes": [
+        "s|sch|commerce",
+        "n|sch|commerce",
+        "e|sch|commerce"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "commerce",
+        "web_menu_items"
+      ],
+      "writes": [
+        "s|tbl|commerce.web_menu_items",
+        "n|tbl|commerce.web_menu_items",
+        "e|tbl|commerce.web_menu_items",
+        "n|rel|commerce.web_menu_items",
+        "n|type|commerce.web_menu_items",
+        "n|rel|commerce.web_menu_items_pkey"
+      ],
+      "reads": [
+        "n|sch|commerce"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "commerce",
+        "web_menus"
+      ],
+      "writes": [
+        "s|tbl|commerce.web_menus",
+        "n|tbl|commerce.web_menus",
+        "e|tbl|commerce.web_menus",
+        "n|rel|commerce.web_menus",
+        "n|type|commerce.web_menus",
+        "n|rel|commerce.web_menus_pkey"
+      ],
+      "reads": [
+        "n|sch|commerce"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "commerce",
+        "web_sites"
+      ],
+      "writes": [
+        "s|tbl|commerce.web_sites",
+        "n|tbl|commerce.web_sites",
+        "e|tbl|commerce.web_sites",
+        "n|rel|commerce.web_sites",
+        "n|type|commerce.web_sites",
+        "n|rel|commerce.web_sites_pkey"
+      ],
+      "reads": [
+        "n|sch|commerce"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "commerce",
+        "web_menu_items",
+        "web_menu_items_menu_id_idx"
+      ],
+      "writes": [
+        "s|idx|commerce.web_menu_items_menu_id_idx",
+        "n|idx|commerce.web_menu_items_menu_id_idx",
+        "e|idx|commerce.web_menu_items_menu_id_idx",
+        "n|rel|commerce.web_menu_items_menu_id_idx"
+      ],
+      "reads": [
+        "n|tbl|commerce.web_menu_items",
+        "n|sch|commerce",
+        "n|col|commerce.web_menu_items.web_menu_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "commerce",
+        "web_menus",
+        "web_menus_code_uq"
+      ],
+      "writes": [
+        "s|idx|commerce.web_menus_code_uq",
+        "n|idx|commerce.web_menus_code_uq",
+        "e|idx|commerce.web_menus_code_uq",
+        "n|rel|commerce.web_menus_code_uq"
+      ],
+      "reads": [
+        "n|tbl|commerce.web_menus",
+        "n|sch|commerce",
+        "n|col|commerce.web_menus.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "commerce",
+        "web_menus",
+        "web_menus_parent_menu_id_idx"
+      ],
+      "writes": [
+        "s|idx|commerce.web_menus_parent_menu_id_idx",
+        "n|idx|commerce.web_menus_parent_menu_id_idx",
+        "e|idx|commerce.web_menus_parent_menu_id_idx",
+        "n|rel|commerce.web_menus_parent_menu_id_idx"
+      ],
+      "reads": [
+        "n|tbl|commerce.web_menus",
+        "n|sch|commerce",
+        "n|col|commerce.web_menus.parent_menu_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "commerce",
+        "web_sites",
+        "web_sites_site_key_uq"
+      ],
+      "writes": [
+        "s|idx|commerce.web_sites_site_key_uq",
+        "n|idx|commerce.web_sites_site_key_uq",
+        "e|idx|commerce.web_sites_site_key_uq",
+        "n|rel|commerce.web_sites_site_key_uq"
+      ],
+      "reads": [
+        "n|tbl|commerce.web_sites",
+        "n|sch|commerce",
+        "n|col|commerce.web_sites.site_key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "commerce",
+        "web_menu_items"
+      ],
+      "writes": [
+        "s|fk|commerce.web_menu_items.web_menu_items_web_menu_id_web_menus_id_fkey",
+        "n|fk|commerce.web_menu_items.web_menu_items_web_menu_id_web_menus_id_fkey",
+        "e|fk|commerce.web_menu_items.web_menu_items_web_menu_id_web_menus_id_fkey",
+        "n|con|commerce.web_menu_items.web_menu_items_web_menu_id_web_menus_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|commerce.web_menu_items",
+        "n|sch|commerce",
+        "n|tbl|commerce.web_menus",
+        "n|sch|commerce",
+        "n|col|commerce.web_menu_items.web_menu_id",
+        "n|col|commerce.web_menus.id",
+        "e|uniqueness|commerce.web_menus.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "commerce",
+        "web_menus"
+      ],
+      "writes": [
+        "s|fk|commerce.web_menus.web_menus_parent_menu_id_fk",
+        "n|fk|commerce.web_menus.web_menus_parent_menu_id_fk",
+        "e|fk|commerce.web_menus.web_menus_parent_menu_id_fk",
+        "n|con|commerce.web_menus.web_menus_parent_menu_id_fk"
+      ],
+      "reads": [
+        "n|tbl|commerce.web_menus",
+        "n|sch|commerce",
+        "n|tbl|commerce.web_menus",
+        "n|sch|commerce",
+        "n|col|commerce.web_menus.parent_menu_id",
+        "n|col|commerce.web_menus.id",
+        "e|uniqueness|commerce.web_menus.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "commerce",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "name": "web_menu_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "name": "web_menus",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "name": "web_sites",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "web_menu_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "label",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "url",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "position",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "parent_menu_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "position",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "site_key",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'default'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "brand_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "legal_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "tagline",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "address",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "phone",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "email",
+        "type": "varchar(254)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "whatsapp",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "hotline_hours",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "support_email",
+        "type": "varchar(254)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "support_whatsapp",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "social_links",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'[]'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "default_seo_title",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "default_seo_description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "updated_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "web_menu_items_menu_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "web_menu_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "web_menus_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "web_menus_parent_menu_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "parent_menu_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "web_sites_site_key_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "site_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "web_menu_items_web_menu_id_web_menus_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "web_menu_id"
+        ],
+        "schemaTo": "commerce",
+        "tableTo": "web_menus",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "web_menus_parent_menu_id_fk",
+        "nameExplicit": true,
+        "columns": [
+          "parent_menu_id"
+        ],
+        "schemaTo": "commerce",
+        "tableTo": "web_menus",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menu_items",
+        "name": "web_menu_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_menus",
+        "name": "web_menus_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "commerce",
+        "table": "web_sites",
+        "name": "web_sites_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

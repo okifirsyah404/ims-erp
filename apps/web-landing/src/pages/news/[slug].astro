@@ -8,11 +8,9 @@ import { newsArticles } from "../../data/company-pages";
 import { routes } from "../../data/site";
 
 /** News article. */
-export function getStaticPaths() {
-  return newsArticles.map((article) => ({ params: { slug: article.slug } }));
-}
-
-const article = newsArticles.find((a) => a.slug === Astro.params.slug)!;
+// Rendered on request (ERP-0071): an unknown slug is the 404 page.
+const article = newsArticles.find((a) => a.slug === Astro.params.slug);
+if (!article) return Astro.rewrite("/404");
 const more = newsArticles.filter((a) => a.slug !== article.slug).slice(0, 2);
 const date = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${article.date}T00:00:00Z`));
 ---

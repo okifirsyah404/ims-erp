@@ -2,6 +2,11 @@ type OrderConfirmation = import("@/api/website").OrderConfirmation;
 type OrderQuote = import("@/api/website").OrderQuote;
 
 declare namespace App {
+  interface Locals {
+    /** Identity, contact, socials, default SEO and menus (ERP-0071; ERP or built-in defaults). */
+    site: import("./lib/server/site").SiteConfig;
+  }
+
   interface SessionData {
     /**
      * Signed-in customer from the Customer Portal hand-off. Server-side only; the

@@ -84,6 +84,7 @@ import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/pa
 import { Route as AuthedHrTasksIndexRouteImport } from './routes/_authed/hr/tasks/index'
 import { Route as AuthedIntegrationsWebhooksIndexRouteImport } from './routes/_authed/integrations/webhooks/index'
 import { Route as AuthedIntegrationsWebsiteCatalogIndexRouteImport } from './routes/_authed/integrations/website-catalog/index'
+import { Route as AuthedIntegrationsWebsiteIndexRouteImport } from './routes/_authed/integrations/website/index'
 import { Route as AuthedIntegrationsWhatsappAiIndexRouteImport } from './routes/_authed/integrations/whatsapp-ai/index'
 import { Route as AuthedIntegrationsWhatsappAiConversationIdRouteImport } from './routes/_authed/integrations/whatsapp-ai/$conversationId'
 import { Route as AuthedIntegrationsWhatsappAiFaqRouteImport } from './routes/_authed/integrations/whatsapp-ai/faq'
@@ -578,6 +579,12 @@ const AuthedIntegrationsWebsiteCatalogIndexRoute =
   AuthedIntegrationsWebsiteCatalogIndexRouteImport.update({
     id: '/integrations/website-catalog/',
     path: '/integrations/website-catalog/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedIntegrationsWebsiteIndexRoute =
+  AuthedIntegrationsWebsiteIndexRouteImport.update({
+    id: '/integrations/website/',
+    path: '/integrations/website/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedIntegrationsWhatsappAiIndexRoute =
@@ -1194,6 +1201,7 @@ export interface FileRoutesByFullPath {
   '/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  '/integrations/website/': typeof AuthedIntegrationsWebsiteIndexRoute
   '/integrations/whatsapp-ai/': typeof AuthedIntegrationsWhatsappAiIndexRoute
   '/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
@@ -1355,6 +1363,7 @@ export interface FileRoutesByTo {
   '/hr/tasks': typeof AuthedHrTasksIndexRoute
   '/integrations/webhooks': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  '/integrations/website': typeof AuthedIntegrationsWebsiteIndexRoute
   '/integrations/whatsapp-ai': typeof AuthedIntegrationsWhatsappAiIndexRoute
   '/inventory/categories': typeof AuthedInventoryCategoriesIndexRoute
   '/inventory/components': typeof AuthedInventoryComponentsIndexRoute
@@ -1520,6 +1529,7 @@ export interface FileRoutesById {
   '/_authed/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/_authed/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/_authed/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  '/_authed/integrations/website/': typeof AuthedIntegrationsWebsiteIndexRoute
   '/_authed/integrations/whatsapp-ai/': typeof AuthedIntegrationsWhatsappAiIndexRoute
   '/_authed/inventory/categories/': typeof AuthedInventoryCategoriesIndexRoute
   '/_authed/inventory/components/': typeof AuthedInventoryComponentsIndexRoute
@@ -1685,6 +1695,7 @@ export interface FileRouteTypes {
     | '/hr/tasks/'
     | '/integrations/webhooks/'
     | '/integrations/website-catalog/'
+    | '/integrations/website/'
     | '/integrations/whatsapp-ai/'
     | '/inventory/categories/'
     | '/inventory/components/'
@@ -1846,6 +1857,7 @@ export interface FileRouteTypes {
     | '/hr/tasks'
     | '/integrations/webhooks'
     | '/integrations/website-catalog'
+    | '/integrations/website'
     | '/integrations/whatsapp-ai'
     | '/inventory/categories'
     | '/inventory/components'
@@ -2010,6 +2022,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/tasks/'
     | '/_authed/integrations/webhooks/'
     | '/_authed/integrations/website-catalog/'
+    | '/_authed/integrations/website/'
     | '/_authed/integrations/whatsapp-ai/'
     | '/_authed/inventory/categories/'
     | '/_authed/inventory/components/'
@@ -2611,6 +2624,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations/website-catalog'
       fullPath: '/integrations/website-catalog/'
       preLoaderRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/integrations/website/': {
+      id: '/_authed/integrations/website/'
+      path: '/integrations/website'
+      fullPath: '/integrations/website/'
+      preLoaderRoute: typeof AuthedIntegrationsWebsiteIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/integrations/whatsapp-ai/': {
@@ -3402,6 +3422,7 @@ interface AuthedRouteChildren {
   AuthedHrTasksIndexRoute: typeof AuthedHrTasksIndexRoute
   AuthedIntegrationsWebhooksIndexRoute: typeof AuthedIntegrationsWebhooksIndexRoute
   AuthedIntegrationsWebsiteCatalogIndexRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRoute
+  AuthedIntegrationsWebsiteIndexRoute: typeof AuthedIntegrationsWebsiteIndexRoute
   AuthedIntegrationsWhatsappAiIndexRoute: typeof AuthedIntegrationsWhatsappAiIndexRoute
   AuthedInventoryCategoriesIndexRoute: typeof AuthedInventoryCategoriesIndexRoute
   AuthedInventoryComponentsIndexRoute: typeof AuthedInventoryComponentsIndexRoute
@@ -3560,6 +3581,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIntegrationsWebhooksIndexRoute: AuthedIntegrationsWebhooksIndexRoute,
   AuthedIntegrationsWebsiteCatalogIndexRoute:
     AuthedIntegrationsWebsiteCatalogIndexRoute,
+  AuthedIntegrationsWebsiteIndexRoute: AuthedIntegrationsWebsiteIndexRoute,
   AuthedIntegrationsWhatsappAiIndexRoute:
     AuthedIntegrationsWhatsappAiIndexRoute,
   AuthedInventoryCategoriesIndexRoute: AuthedInventoryCategoriesIndexRoute,

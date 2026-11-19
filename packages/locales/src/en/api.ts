@@ -312,6 +312,7 @@ const api = {
 	'portal.ownerOnly': 'Only an account owner can manage members',
 	'portal.removeSelf': 'You cannot remove your own access',
 	'portal.contactUnavailable': 'The contact is missing or belongs to another customer',
+	'commerce.websiteKeyNotFound': 'Website key not found',
 	'portal.roleForbidden': 'Your role in this account cannot do this',
 	'portal.checkoutChanged': 'Prices or availability changed. Please review your order again.',
 	'portal.sales.status.accepted': 'Accepted',

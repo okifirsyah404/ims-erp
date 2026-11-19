@@ -17,6 +17,9 @@ const { name, size = 16 } = Astro.props;
 {
   name === "whatsapp" ? (
     <MessageCircle size={size} aria-hidden="true" />
+  ) : name === "facebook" || name === "tiktok" || name === "x" ? (
+    // No brand glyph in the design for these networks: their initial (ERP-0071).
+    <span aria-hidden="true" class="text-[0.8em] leading-none font-bold">{name === "x" ? "X" : name === "facebook" ? "f" : "T"}</span>
   ) : (
     <svg
       width={size}

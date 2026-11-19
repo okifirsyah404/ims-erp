@@ -11,8 +11,10 @@ import MobileMenu from "./MobileMenu.astro";
 import PortalMenu from "./PortalMenu.astro";
 import MegaMenu from "./MegaMenu.astro";
 import CommandPalette from "./CommandPalette.astro";
-import { customerPortal, mainNav, routes } from "../../data/site";
+import { customerPortal, routes } from "../../data/site";
 import { isActivePath } from "../../lib/nav";
+// ERP-0071: identity and menus come from the ERP (or the built-in defaults).
+const { mainNav } = Astro.locals.site;
 
 /**
  * Nav Header (OocRi) on desktop, Mobile Header (yzg4r) + Guest Menu (01.05) below the
