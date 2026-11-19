@@ -1,18 +1,19 @@
 /**
- * Customer-portal guard (ERP-0022).
+ * Customer-portal guard (ERP-0022; session transport ERP-0069, ADR-0024).
  *
  * One plugin, one macro: `portalGuard()` registers the `portal` macro. A
  * route with `portal: true`:
  *
- *   1. reads `Authorization: Bearer <access token>` (the token the portal's
- *      server received from `POST /portal/v1/auth/login`);
- *   2. asks the {@link IPortalSessionResolver} (the portal module) for the
- *      Better Auth session behind it AND an active customer portal identity;
+ *   1. hands the request headers to the {@link IPortalSessionResolver} (the
+ *      portal module), which reads Better Auth's session cookie from them -
+ *      the cookie the portal's server stored after `POST /portal/v1/auth/login`
+ *      and forwards on every call (the browser never holds it);
+ *   2. gets back the caller only when the session is live, its user carries
+ *      the `customer` role AND an active customer portal identity exists;
  *   3. answers 401 otherwise.
  *
- * The bearer token is honoured only here: Better Auth's `bearer` plugin is
- * deliberately not installed, so the same token is useless on every ERP
- * route (and a portal user is never an organization member anyway).
+ * Staff never pass: they have no `customer` role and no portal identity,
+ * and a customer never passes the ERP guards (no organization membership).
  */
 import { Elysia } from 'elysia';
 import type { InjectionToken } from 'tsyringe';
@@ -28,30 +29,22 @@ export type PortalContext = {
 	contactId: string | null;
 	role: 'owner' | 'approver' | 'finance' | 'viewer';
 	user: { id: string; name: string; email: string };
-	/** The access token of this request (for logout / password change). */
-	accessToken: string;
+	/** The Better Auth session token of this request (for logout / password change). */
+	sessionToken: string;
 };
 
-/** Implemented by the portal module: bearer token → portal context, or `null`. */
+/** Implemented by the portal module: request headers (session cookie) → portal context, or `null`. */
 export interface IPortalSessionResolver {
-	resolve(accessToken: string): Promise<PortalContext | null>;
+	resolve(headers: Headers): Promise<PortalContext | null>;
 }
 
 export const PORTAL_SESSION_RESOLVER_TOKEN: InjectionToken<IPortalSessionResolver> = Symbol('PORTAL_SESSION_RESOLVER');
 
-/** No valid portal session (missing, expired or revoked token, or no active customer identity). */
+/** No valid portal session (missing, expired or revoked session, no `customer` role, or no active identity). */
 export class PortalUnauthenticatedError extends AppError {
 	constructor() {
 		super(401, 'portal.unauthenticated', 'Portal session required');
 	}
-}
-
-/** The bearer token of a request, or `null`. */
-export function bearerToken(headers: Headers): string | null {
-	const header = headers.get('authorization');
-	if (!header || header.slice(0, 7).toLowerCase() !== 'bearer ') return null;
-	const token = header.slice(7).trim();
-	return token.length > 0 && token.length <= 8192 ? token : null;
 }
 
 export function portalGuard() {
@@ -60,8 +53,7 @@ export function portalGuard() {
 		portal: (enabled: boolean) => ({
 			resolve: async ({ request }: { request: Request }): Promise<{ portal: PortalContext }> => {
 				if (!enabled) return { portal: undefined as never };
-				const token = bearerToken(request.headers);
-				const portal = token ? await resolver.resolve(token) : null;
+				const portal = await resolver.resolve(request.headers);
 				if (!portal) throw new PortalUnauthenticatedError();
 				return { portal };
 			},

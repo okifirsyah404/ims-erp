@@ -149,15 +149,16 @@ export async function renderPortalInvitationEmail({
 	url,
 	language = DEFAULT_LANGUAGE,
 }: TemplateInput): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
 	const texts = {
 		greeting: t(language, 'email:portalInvitation.greeting', { name: name ?? '' }),
-		body: t(language, 'email:portalInvitation.body', { app: appName() }),
+		body: t(language, 'email:portalInvitation.body', { app }),
 		action: t(language, 'email:portalInvitation.action'),
 		fallback: t(language, 'email:portalInvitation.fallback'),
-		footer: t(language, 'email:footer.noReply', { app: appName() }),
+		footer: t(language, 'email:footer.noReply', { app }),
 	};
 	const { html, text } = await renderEmail(<AppInvitationEmail url={url} texts={texts} />);
-	return { subject: t(language, 'email:portalInvitation.subject', { app: appName() }), html, text };
+	return { subject: t(language, 'email:portalInvitation.subject', { app }), html, text };
 }
 
 /** Customer-portal sign-up code (ERP-0022, owner decision D1). */
@@ -170,14 +171,15 @@ export async function renderPortalSignupCodeEmail({
 	code: string;
 	language?: LanguageCode;
 }): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
 	const texts = {
 		greeting: t(language, 'email:portalSignupCode.greeting', { name }),
-		body: t(language, 'email:portalSignupCode.body', { app: appName() }),
+		body: t(language, 'email:portalSignupCode.body', { app }),
 		expiry: t(language, 'email:portalSignupCode.expiry'),
-		footer: t(language, 'email:footer.noReply', { app: appName() }),
+		footer: t(language, 'email:footer.noReply', { app }),
 	};
 	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
-	return { subject: t(language, 'email:portalSignupCode.subject', { app: appName(), code }), html, text };
+	return { subject: t(language, 'email:portalSignupCode.subject', { app, code }), html, text };
 }
 
 /** Organization-invitation input; superset of the base template input. */

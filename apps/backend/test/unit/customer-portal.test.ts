@@ -9,6 +9,10 @@
  * refused, lockout), cross-customer denial for projects, tickets and devices,
  * internal notes and costs never reaching the portal, the customer's
  * messages and confirmation, and the `portal` guard on a real Elysia route.
+ *
+ * ERP-0069 (ADR-0024): every portal login carries the global `customer`
+ * role, the guard requires it, and the session travels as Better Auth's
+ * session cookie (never a bearer token).
  */
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
@@ -78,7 +82,7 @@ const customers = {
  * ------------------------------------------------------------------------ */
 
 let identities: TPortalIdentitySelect[];
-let users: { id: string; name: string; email: string; emailVerified: boolean; member: boolean; password: string | null }[];
+let users: { id: string; name: string; email: string; emailVerified: boolean; member: boolean; password: string | null; roles?: string[] }[];
 let mails: { kind: string; to: string; url?: string; code?: string }[];
 let revokedSessions: string[];
 let cache: Map<string, unknown>;
@@ -132,6 +136,10 @@ function fakeAuthGateway(): IPortalAuthGateway {
 			revokedSessions.push(userId);
 		},
 		isOrganizationMember: async (userId) => users.find((user) => user.id === userId)?.member ?? false,
+		async grantCustomerRole(userId) {
+			const user = users.find((item) => item.id === userId)!;
+			user.roles = [...new Set([...(user.roles ?? []), 'customer'])];
+		},
 	};
 }
 
@@ -301,14 +309,23 @@ describe('portal sign-in', () => {
 		await accounts.invite('staff-1', { customerId: CUST_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		users.find((user) => user.email === 'budi@alfa.co.id')!.password = FAKE_PASSWORD_2;
 		signedOut = [];
+		const session = (userId: string): TPortalSession => ({
+			token: `session-${userId}`,
+			userId,
+			roles: users.find((user) => user.id === userId)?.roles ?? [],
+			expiresAt: new Date(Date.now() + 3600_000),
+		});
 		const sessions: IPortalSessionGateway = {
 			async signIn(email, password) {
 				const user = users.find((item) => item.email === email);
 				if (!user || user.password !== password) return null;
-				return { token: `session-${user.id}`, userId: user.id, expiresAt: new Date(Date.now() + 3600_000) } satisfies TPortalSession;
+				return session(user.id);
 			},
-			createSession: async (userId) => ({ token: `session-${userId}`, userId, expiresAt: new Date(Date.now() + 3600_000) }),
-			getSession: async (token) => (token.startsWith('session-') ? { token, userId: token.slice(8), expiresAt: new Date(Date.now() + 3600_000) } : null),
+			createSession: async (userId) => session(userId),
+			getSession: async (token) => (token.startsWith('session-') ? session(token.slice(8)) : null),
+			tokenFromHeaders: async (headers) => /(?:^|;\s*)sid=([^;]+)/.exec(headers.get('cookie') ?? '')?.[1] ?? null,
+			sessionCookie: async (value) => `sid=${value.token}; Path=/; HttpOnly`,
+			clearedSessionCookie: async () => 'sid=; Path=/; Max-Age=0',
 			signOut: async (token) => {
 				signedOut.push(token);
 			},
@@ -318,18 +335,39 @@ describe('portal sign-in', () => {
 		auth = new PortalAuthService(sessions, accounts, fakeCache());
 	});
 
-	test('the customer signs in and the token resolves to their customer and role', async () => {
-		const { context } = await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers());
+	test('the customer signs in and the session cookie resolves to their customer and role', async () => {
+		const { context, session } = await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers());
 		expect(context.customerId).toBe(CUST_A);
 		expect(context.role).toBe('owner');
-		expect((await auth.resolve(context.accessToken))?.customerId).toBe(CUST_A);
+		expect(session.roles).toContain('customer');
+		const setCookie = await auth.sessionCookie(session);
+		const cookie = new Headers({ cookie: setCookie.split(';')[0]! });
+		expect((await auth.resolve(cookie))?.customerId).toBe(CUST_A);
 		expect(identities[0]!.lastLoginAt).not.toBeNull();
+	});
+
+	test('an invitation grants the customer role to the login', () => {
+		expect(users.find((user) => user.email === 'budi@alfa.co.id')!.roles).toEqual(['customer']);
+	});
+
+	test('no cookie, an unknown cookie or a bearer header resolves to nothing', async () => {
+		expect(await auth.resolve(new Headers())).toBeNull();
+		expect(await auth.resolve(new Headers({ cookie: 'sid=nope' }))).toBeNull();
+		const budi = users.find((user) => user.email === 'budi@alfa.co.id')!;
+		expect(await auth.resolve(new Headers({ authorization: `Bearer session-${budi.id}` }))).toBeNull();
 	});
 
 	test('a staff login gets the same 401 and keeps no session', async () => {
 		await expect(auth.login({ email: 'staff@entragate.local', password: FAKE_PASSWORD_4 }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
 		expect(signedOut).toEqual(['session-staff-1']);
-		expect(await auth.resolve('session-staff-1')).toBeNull();
+		expect(await auth.resolve(new Headers({ cookie: 'sid=session-staff-1' }))).toBeNull();
+	});
+
+	test('a login without the customer role is refused even with a live portal identity', async () => {
+		const budi = users.find((user) => user.email === 'budi@alfa.co.id')!;
+		budi.roles = [];
+		await expect(auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
+		expect(await auth.resolve(new Headers({ cookie: `sid=session-${budi.id}` }))).toBeNull();
 	});
 
 	test('five wrong passwords lock the email, even for the right password', async () => {
@@ -345,7 +383,8 @@ describe('portal sign-in', () => {
 		const code = mails.find((mail) => mail.kind === 'code')!.code!;
 		const { context } = await auth.verifySignup('dewi@mail.id', code);
 		expect(context.role).toBe('owner');
-		expect((await auth.resolve(context.accessToken))?.customerId).toBe(context.customerId);
+		expect(users.find((user) => user.email === 'dewi@mail.id')!.roles).toEqual(['customer']);
+		expect((await auth.resolve(new Headers({ cookie: `sid=${context.sessionToken}` })))?.customerId).toBe(context.customerId);
 	});
 });
 
@@ -570,11 +609,13 @@ describe('portal devices', () => {
  * ------------------------------------------------------------------------ */
 
 describe('portal guard', () => {
-	test('no token or an unknown token is 401; a known token reaches the handler with its customer', async () => {
+	test('no cookie or an unknown cookie is 401; a known session cookie reaches the handler with its customer', async () => {
 		container.register(PORTAL_SESSION_RESOLVER_TOKEN, {
 			useValue: {
-				resolve: async (token: string) =>
-					token === 'good-token' ? ({ userId: 'u-a', identityId: 'i', customerId: CUST_A, user: { id: 'u-a', name: 'Budi', email: 'b@a.id' }, accessToken: token } as PortalContext) : null,
+				resolve: async (headers: Headers) =>
+					headers.get('cookie') === 'sid=good-session'
+						? ({ userId: 'u-a', identityId: 'i', customerId: CUST_A, user: { id: 'u-a', name: 'Budi', email: 'b@a.id' }, sessionToken: 'good-session' } as unknown as PortalContext)
+						: null,
 			},
 		});
 		const { domainPlugin } = await import('../../src/http/plugin');
@@ -583,9 +624,9 @@ describe('portal guard', () => {
 		});
 		const call = (headers: Record<string, string> = {}) => app.handle(new Request('http://localhost/portal/v1/whoami', { headers }));
 		expect((await call()).status).toBe(401);
-		expect((await call({ authorization: 'Bearer wrong' })).status).toBe(401);
-		expect((await call({ authorization: 'Basic good-token' })).status).toBe(401);
-		const ok = await call({ authorization: 'Bearer good-token' });
+		expect((await call({ cookie: 'sid=wrong' })).status).toBe(401);
+		expect((await call({ authorization: 'Bearer good-session' })).status).toBe(401);
+		const ok = await call({ cookie: 'sid=good-session' });
 		expect(ok.status).toBe(200);
 		expect(await ok.json()).toEqual({ customerId: CUST_A });
 	});

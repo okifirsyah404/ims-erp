@@ -12,6 +12,108 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - ERP-0069 customer portal session: server-held cookie, `customer` role, documented bodies
+
+Branch `feat/erp-0069-portal-session` (from `main` `929209c6`, carrying the
+uncommitted `fix/portal-vite-pwa-v2` changes below). Numbers checked first:
+highest on `origin/main`, every remote branch and the last 40 PR heads were
+ERP-0068 / ADR-0023, so this takes ERP-0069 and ADR-0024 and reserves ERP-0070
+(portal stage 2, ordering) and ERP-0071 (website identity and navigation)
+as `planned` rows. `gh` is not installed, so open PRs were read from
+`refs/pull/*/head`, not the PR list.
+
+**User decisions (2026-11-19; design questions asked before code, the
+`grill-me` skill's manual fallback):** D1 the session is stored on the
+portal's server, not in the browser; D2 only Better Auth's global `customer`
+role may use the portal; D3 validation in the portal (the ERP re-validates);
+D4 ordering from the portal **and** the website (ERP-0070, owner flow of
+2026-11-14 unchanged); D5 the landing page starts with identity and
+navigation from the ERP (ERP-0071). Decisions recorded in ADR-0024.
+
+**Gate 1 (`docs/database/`).** Read `module-ownership.md` (Identity owns
+`auth.portal_identities`; portal module has no tables) and the Identity
+section of `docs.dbml`. No table, column, index or constraint changed: the
+`customer` role value already exists (ADR-0018) and the migration is data
+only. `docs/database/` reviewed, unchanged; `bun docs/database/validate-dbml.ts`
+printed `OK` (drizzle parity drift 0).
+
+**Backend.**
+- `src/authorization/portal-auth.ts`: the guard hands the request headers to
+  the resolver; `PortalContext.accessToken` -> `sessionToken`; no bearer.
+- `src/app/portal`: `IPortalSessionGateway` gains `tokenFromHeaders`,
+  `sessionCookie`, `clearedSessionCookie`; `TPortalSession.roles`;
+  `PortalAuthService` requires the `customer` role in `login`, `verifySignup`
+  and `resolve`; login / verify-email answer `Set-Cookie` (Better Auth's name
+  and attributes) and `{ user, session: { expiresAt } }`; logout clears it.
+- `src/app/user`: `IPortalAuthGateway.grantCustomerRole` (keeps other roles,
+  drops the default `user`), called after an invitation and a verified
+  sign-up.
+- Migration `20261119120000_erp0069_portal_customer_role` (hand-written, data
+  only, idempotent): `customer` appended to the role of every user with a
+  live customer identity.
+- New password 12-128 (`portalNewPasswordSchema`, sign-up) to match the
+  portal's form rule.
+- `src/http/openapi.ts` (`requestBodyDoc`, `queryParamsDoc`): publishes the
+  zod schema a handler parses as the OpenAPI `requestBody`; every
+  `/portal/v1` route now has a `summary` (23/23) and a documented body
+  (10/12; logout and ticket confirm take none).
+- Fixed on the way: the portal invitation and sign-up-code emails passed an
+  unawaited `appName()` into i18n, so subjects read
+  `"... is your [object Promise] portal code"`.
+
+**Portal and website.**
+- `apps/web-customer-portal/src/api/client.ts` (kept identical in
+  `apps/web-landing`): `sessionCookie` option sent as `Cookie`, `onResponse`
+  hook, ERP envelope `errors[].message` read into `ApiError.messages`.
+- `src/api/portal.ts`: `AuthTokens.sessionCookie` (was `accessToken`); the
+  ERP adapter reads the session from `Set-Cookie` on login / verify-email;
+  schemas read `session.expiresAt`.
+- Website hand-off (`/api/connect/token`, `apps/web-landing` auth, website
+  `CustomerAuth`, `env.d.ts`): `sessionCookie` instead of `accessToken`.
+
+**Verification.**
+- `bun run typecheck` (backend) clean; `bun run lint` (backend) 0 errors, 9
+  warnings, all in files this change does not touch.
+- `bun test test/unit/customer-portal.test.ts`: 27 pass (new: cookie
+  resolution, bearer refused, role granted on invitation and sign-up, a live
+  identity without the role refused).
+- `bun test` (backend): first 1272 pass, 5 fail on the local Bun 1.4.1
+  (`toWebp`, `CompanyService images`: `Image: decode failed` on the 1x1
+  fixtures; files untouched). The repo pins `bun@1.4.2` and CI runs 1.4.4, so
+  the local Bun was installed at 1.4.4 (official installer, user approved);
+  re-run: **1277 pass, 0 fail**. 10 signature-grant failures seen first were a
+  stale `packages/common/dist`, gone after `bun run build` there.
+- Commits: the pre-commit hook (lint, test, build, `graphify update .`)
+  passed lint, test and build; `graphify` is not installed on this machine,
+  so the two commits used `--no-verify` with the user's approval.
+- `astro check`: portal 0 errors, website 0 errors.
+- Migration from empty: `NODE_ENV=development bun run drizzle:migrate-reset`
+  on the dev database `ims_erp_main` (journal shows
+  `20261119120000_erp0069_portal_customer_role`), then
+  `NODE_ENV=development bun run drizzle:seed` (second run inserted nothing).
+- Live API (`curl`, backend on 3001): register -> verify-email answers
+  `Set-Cookie` (HttpOnly, SameSite=Lax); login body has no token;
+  `GET /portal/v1/me` 200 with the cookie; the same value as `Bearer` 401;
+  the cookie on an ERP route 403; a staff login on the portal 401; the
+  customer on the web-admin sign-in 403 ("requires an internal organization
+  role"); logout clears the cookie and the next call is 401; the user row
+  reads `role = customer`.
+- Browser (headless Chrome, portal on 4322 in ERP mode): customer sign-in
+  lands on `/`; the browser holds only `eg_session` (HttpOnly), no ERP
+  cookie; `/support`, `/support/new`, `/projects`, `/products`, `/settings`,
+  `/company` render; a ticket created from the form appears as
+  `0001/TKT/DEV/XI/26`; a staff login shows "Incorrect email or password";
+  `/orders` and `/quotations` stay "Coming soon" (ERP-0070).
+
+**Local only (not committed).** `ims_erp_main` was reset and re-seeded; a
+demo customer login `dewi.portal@example.com` and one ticket exist there.
+The Astro dev server did not pick up file edits reliably (Vite watcher on
+Windows); a full dev-server restart was needed after each portal change.
+
+**Next executable task:** ERP-0070 portal stage 2, starting with the
+`/portal/v1` catalog + cart -> draft quotation operation and the portal's
+quotations screens; then ERP-0071.
+
 ## 2026-11-19 - Portal and website broken on `main` by Dependabot bumps; fixed on `fix/portal-vite-pwa-v2`
 
 `bun run dev` on `main` (`929209c6`) failed: `@ims-erp/web-customer-portal`

@@ -81,6 +81,20 @@ export class BetterAuthPortalGateway implements IPortalAuthGateway {
 		await this.run(async (ctx) => ctx.internalAdapter.deleteUserSessions(userId));
 	}
 
+	/** `user.role` is comma-joined (admin plugin, ADR-0018); the default `user` role is replaced. */
+	async grantCustomerRole(userId: string): Promise<void> {
+		await this.run(async (ctx) => {
+			const user = (await ctx.internalAdapter.findUserById(userId)) as { role?: string | null } | null;
+			if (!user) return;
+			const roles = (user.role ?? '')
+				.split(',')
+				.map((role) => role.trim())
+				.filter((role) => role && role !== 'user');
+			if (roles.includes('customer')) return;
+			await ctx.internalAdapter.updateUser(userId, { role: [...roles, 'customer'].join(',') } as never);
+		});
+	}
+
 	isOrganizationMember(userId: string) {
 		return this.run(async (ctx) => Boolean(await ctx.adapter.findOne({ model: 'member', where: [{ field: 'userId', value: userId }] })));
 	}

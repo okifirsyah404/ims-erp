@@ -3,12 +3,31 @@ import { runWithEndpointContext } from '@better-auth/core/context';
 import type { AuthEndpointContext } from '@better-auth/core/context';
 import { auth } from '@providers/better-auth/auth';
 import { PORTAL_SIGNIN_HEADER, PORTAL_SIGNIN_NONCE } from '@providers/better-auth/portal-signin';
-import { parseSetCookieHeader } from 'better-auth/cookies';
+import { parseCookies, parseSetCookieHeader } from 'better-auth/cookies';
 import { injectable } from 'tsyringe';
 import type { IPortalSessionGateway, TPortalSession } from '../contracts/portal.contract';
 
 async function sessionCookieName(): Promise<string> {
 	return (await auth.$context).authCookies.sessionToken.name;
+}
+
+/** The roles of a Better Auth user (`user.role` is comma-joined by the admin plugin). */
+function rolesOf(user: { role?: string | null }): string[] {
+	return (user.role ?? '')
+		.split(',')
+		.map((role) => role.trim())
+		.filter(Boolean);
+}
+
+/** `Set-Cookie` for Better Auth's session cookie, using its own name and attributes. */
+async function serializeSessionCookie(value: string, maxAgeSeconds: number): Promise<string> {
+	const { name, attributes } = (await auth.$context).authCookies.sessionToken;
+	const parts = [`${name}=${encodeURIComponent(value)}`, `Path=${attributes.path || '/'}`, `Max-Age=${Math.max(0, Math.floor(maxAgeSeconds))}`];
+	if (attributes.domain) parts.push(`Domain=${attributes.domain}`);
+	if (attributes.httpOnly) parts.push('HttpOnly');
+	if (attributes.secure) parts.push('Secure');
+	if (attributes.sameSite) parts.push(`SameSite=${attributes.sameSite[0]!.toUpperCase()}${attributes.sameSite.slice(1).toLowerCase()}`);
+	return parts.join('; ');
 }
 
 /** Request headers carrying the access token as Better Auth's session cookie. */
@@ -28,14 +47,15 @@ function portalHeaders(from?: Headers): Headers {
 }
 
 /**
- * Better Auth implementation of {@link IPortalSessionGateway} (ERP-0022).
+ * Better Auth implementation of {@link IPortalSessionGateway} (ERP-0022,
+ * session transport ERP-0069 / ADR-0024).
  *
- * The access token handed to the portal is Better Auth's signed session
- * cookie value (`<token>.<base64 HMAC-SHA256>`); it is turned back into a
- * cookie header here, so sessions, expiry and revocation stay entirely Better
- * Auth's. No `bearer` plugin is installed: other routes never accept the
- * token. Sessions created here carry the portal sign-in marker, which the web
- * admin's sign-in never has.
+ * The portal's server receives Better Auth's own session cookie
+ * (`<token>.<base64 HMAC-SHA256>`, same name and attributes) as a
+ * `Set-Cookie`, keeps it in its server-side session and sends it back as a
+ * `Cookie` header, so sessions, expiry and revocation stay entirely Better
+ * Auth's. Sessions created here carry the portal sign-in marker, which the
+ * web admin's sign-in never has.
  */
 @injectable()
 export class BetterAuthPortalSessionGateway implements IPortalSessionGateway {
@@ -65,7 +85,29 @@ export class BetterAuthPortalSessionGateway implements IPortalSessionGateway {
 			.getSession({ headers: await sessionHeaders(token), query: { disableCookieCache: true } })
 			.catch(() => null);
 		if (!result) return null;
-		return { token, userId: result.user.id, expiresAt: new Date(result.session.expiresAt) };
+		return {
+			token,
+			userId: result.user.id,
+			roles: rolesOf(result.user as { role?: string | null }),
+			expiresAt: new Date(result.session.expiresAt),
+		};
+	}
+
+	async tokenFromHeaders(headers: Headers): Promise<string | null> {
+		const cookie = headers.get('cookie');
+		if (!cookie) return null;
+		const value = parseCookies(cookie).get(await sessionCookieName());
+		if (!value) return null;
+		const token = decodeURIComponent(value);
+		return token.length > 0 && token.length <= 8192 ? token : null;
+	}
+
+	sessionCookie(session: TPortalSession): Promise<string> {
+		return serializeSessionCookie(session.token, (session.expiresAt.getTime() - Date.now()) / 1000);
+	}
+
+	clearedSessionCookie(): Promise<string> {
+		return serializeSessionCookie('', 0);
 	}
 
 	async signOut(token: string): Promise<void> {

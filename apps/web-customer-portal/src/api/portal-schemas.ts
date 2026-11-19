@@ -16,10 +16,13 @@ export const httpsUrl = z.url().refine((value) => {
 const isoDate = z.string().refine((value) => !Number.isNaN(Date.parse(value)), "Expected an ISO date");
 
 export const authTokensSchema = z.object({
-  accessToken: z.string().min(16).max(8192),
+  sessionCookie: z.string().min(16).max(8192),
   refreshToken: z.string().min(16).max(8192).optional(),
   expiresAt: isoDate,
 }) satisfies z.ZodType<AuthTokens>;
+
+/** The session part of a sign-in body; the session itself arrives as `Set-Cookie` (ADR-0024). */
+const sessionInfoSchema = z.object({ expiresAt: isoDate });
 
 export const portalUserSchema = z.object({
   id: z.string().min(1).max(128),
@@ -35,9 +38,9 @@ export const portalUserSchema = z.object({
     .optional(),
 }) satisfies z.ZodType<PortalUser>;
 
-export const sessionSchema = z.object({ user: portalUserSchema, tokens: authTokensSchema });
+export const sessionSchema = z.object({ user: portalUserSchema, session: sessionInfoSchema });
 
-export const loginSuccessSchema = z.object({ ok: z.literal(true), user: portalUserSchema, tokens: authTokensSchema });
+export const loginSuccessSchema = z.object({ ok: z.literal(true), user: portalUserSchema, session: sessionInfoSchema });
 
 /**
  * Login failures arrive as NestJS error bodies. Accept our documented shape when the ERP

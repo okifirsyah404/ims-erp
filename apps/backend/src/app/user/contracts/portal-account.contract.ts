@@ -38,7 +38,8 @@ export const portalSignupSchema = z.object({
 		.regex(/^[0-9+()\-\s]*$/)
 		.optional()
 		.transform((value) => (value ? value : null)),
-	password: z.string().min(8).max(128),
+	/** Same rule as `portalNewPasswordSchema` and the portal's form (ERP-0069). */
+	password: z.string().min(12).max(128),
 });
 export type TPortalSignup = z.output<typeof portalSignupSchema>;
 
@@ -104,6 +105,8 @@ export interface IPortalAuthGateway {
 	issuePasswordToken(userId: string, ttlSeconds: number): Promise<string>;
 	revokeSessions(userId: string): Promise<void>;
 	isOrganizationMember(userId: string): Promise<boolean>;
+	/** Adds the global `customer` role (kept beside any other role); the portal guard requires it (ADR-0024). */
+	grantCustomerRole(userId: string): Promise<void>;
 }
 
 /** Mail port: invitation, password reset and sign-up code emails. */

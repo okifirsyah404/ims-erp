@@ -14,7 +14,7 @@ own tickets) + the account part of M12 T25 + warranties.
 | --- | --- | --- |
 | Portal logins (`auth.portal_identities`), invite / resend / revoke | Identity | `src/app/user` (`PortalAccountService`, `/admin/portal-accounts`) |
 | Sign-in, sessions, passwords, lockout; the `/portal/v1` routes | Portal (no tables) | `src/app/portal` |
-| Bearer → session → customer guard | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
+| Session cookie → `customer` role → identity guard (ADR-0024) | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
 | Project view without costs | Projects | `ProjectPortalService` |
 | Tickets, message thread, customer confirmation | After-sales | `ServiceTicketService.*ForCustomer / *FromPortal`, `service_ticket_comments` |
 | Devices and warranty | After-sales | `WarrantyService.listForCustomer / getForCustomer` |
@@ -27,6 +27,12 @@ the web admin refuses its sign-in; every read is scoped to the customer of
 the session; another customer's record is 404; no costs, contract values,
 internal notes or staff ids in any response.
 
+Session and role (ADR-0024, ERP-0069, 2026-11-19): every portal login carries
+the global Better Auth role `customer`; the guard requires it **and** an
+active identity. The session is Better Auth's own session cookie, handed to
+the portal's **server** as `Set-Cookie` and sent back as a `Cookie` header;
+it never reaches a browser and never appears in a response body.
+
 ## Configuration
 
 `PORTAL_URL` (backend `.env`) = the portal's base URL. Invitation and reset
@@ -38,18 +44,20 @@ answer 503. The portal sets `ERP_API_BASE_URL` to the ERP and these routes.
 Responses use the ERP envelope `{ requestId, status, message, timestamp, data }`
 (errors add `errors[]`) — configure the
 adapter with `unwrap` for `data`. Send `Accept-Language: id` or `en` for the
-labels. Authenticated routes need `Authorization: Bearer <accessToken>`.
+labels. Authenticated routes need the session cookie from sign-in as the `Cookie` header
+(`Authorization: Bearer` is refused). Request bodies are published in the OpenAPI
+document at `/docs` (tag "Customer portal").
 
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
-| `login` | `POST /portal/v1/auth/login` | `{ email, password, accountType? }` → `{ ok: true, user, tokens: { accessToken, expiresAt } }`; 401 wrong credentials, 423 locked (5 failures, 15 min) |
-| `register` | `POST /portal/v1/auth/register` | `{ accountType, name, email, phone?, password }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
-| `verifyEmail` | `POST /portal/v1/auth/verify-email` | `{ email, code }` → `{ user, tokens }` (creates customer, contact, owner login); 400 wrong/expired (5 attempts, 10 min) |
+| `login` | `POST /portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` (session) + `{ ok: true, user, session: { expiresAt } }`; 401 wrong credentials or no `customer` role, 423 locked (5 failures, 15 min) |
+| `register` | `POST /portal/v1/auth/register` | `{ accountType, name, email, phone?, password (12-128) }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
+| `verifyEmail` | `POST /portal/v1/auth/verify-email` | `{ email, code }` → `Set-Cookie` (session) + `{ user, session: { expiresAt } }` (creates customer, contact, owner login with the `customer` role); 400 wrong/expired (5 attempts, 10 min) |
 | `resendVerification` | `POST /portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
 | `requestPasswordReset` | `POST /portal/v1/auth/password-reset` | `{ email }`; always 200 |
-| `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | `{ token, password }`; 400 invalid/expired. Also sets the first password after an invitation |
-| `logout` | `POST /portal/v1/auth/logout` | bearer |
-| `changePassword` | `POST /portal/v1/account/password` | `{ current, next }`; 400 wrong current |
+| `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | `{ token, password (12-128) }`; 400 invalid/expired. Also sets the first password after an invitation |
+| `logout` | `POST /portal/v1/auth/logout` | session cookie; answers a clearing `Set-Cookie` |
+| `changePassword` | `POST /portal/v1/account/password` | `{ current, next (12-128) }`; 400 wrong current |
 | — (session user) | `GET /portal/v1/me` | `PortalUser` |
 | `getHome` | `GET /portal/v1/home` | active project + open tickets; quotations/activity empty in stage 1 |
 | `getBadges` | `GET /portal/v1/badges` | `openTickets`; the rest 0 in stage 1 |

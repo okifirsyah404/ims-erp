@@ -191,6 +191,7 @@ export class PortalAccountService {
 			portalRole: 'owner',
 			createdBy: null,
 		});
+		await this.authGateway.grantCustomerRole(identity.userId);
 		await this.cache.del(key);
 		const resolved = await this.resolveCustomer(identity.userId);
 		if (!resolved) throw new PortalInvalidCodeError();
@@ -275,6 +276,7 @@ export class PortalAccountService {
 			if ((error as { code?: string } | null)?.code === '23505') throw new PortalAccountExistsError();
 			throw error;
 		}
+		await this.authGateway.grantCustomerRole(user.id);
 		await this.sendInvitation(user, link);
 		return this.view(identity);
 	}

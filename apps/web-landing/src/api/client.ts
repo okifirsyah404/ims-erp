@@ -6,8 +6,13 @@
 export type ApiClientOptions = {
   baseUrl: string;
   fetcher?: typeof fetch;
-  /** Bearer token sent with every request (server-side only). */
+  /** Bearer token sent with every request (server-side only), e.g. the website's API key. */
   token?: string;
+  /**
+   * ERP session cookie (`name=value`) sent as the `Cookie` header with every request
+   * (server-side only): the customer portal session (ERP-0069, ADR-0024).
+   */
+  sessionCookie?: string;
   /** Request timeout in milliseconds. */
   timeoutMs?: number;
   /** Extra attempts for idempotent requests (GET) on network errors and 502/503/504. */
@@ -29,13 +34,15 @@ export type RequestOptions = {
   signal?: AbortSignal;
   /** Sent as `Idempotency-Key` so the ERP can de-duplicate retried mutations. */
   idempotencyKey?: string;
+  /** Called with the successful response before its body is read (e.g. to read `Set-Cookie`). */
+  onResponse?: (response: Response) => void;
 };
 
 /** Error thrown for non-2xx ERP responses and network failures (`status` 0). */
 export class ApiError extends Error {
   readonly status: number;
   readonly body: unknown;
-  /** Human-readable messages from a NestJS error body (`message: string | string[]`). */
+  /** Human-readable messages from an ERP error body (`errors[].message`, or `message`). */
   readonly messages: string[];
   readonly requestId?: string;
 
@@ -44,14 +51,24 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
     this.body = body;
-    this.messages = nestMessages(body);
+    this.messages = errorMessages(body);
     this.requestId = requestId;
   }
 }
 
-/** Reads `{ statusCode, message, error }` (NestJS HttpException) into a list of messages. */
-function nestMessages(body: unknown): string[] {
+/**
+ * Reads an ERP error body into a list of messages: the envelope's `errors[].message`
+ * (`{ status, message, errors }`) first, else a NestJS-style `message: string | string[]`.
+ */
+function errorMessages(body: unknown): string[] {
   if (!body || typeof body !== "object") return [];
+  const errors = (body as { errors?: unknown }).errors;
+  if (Array.isArray(errors)) {
+    const listed = errors
+      .map((item) => (item && typeof item === "object" ? (item as { message?: unknown }).message : undefined))
+      .filter((m): m is string => typeof m === "string" && m.length > 0);
+    if (listed.length > 0) return listed;
+  }
   const message = (body as { message?: unknown }).message;
   if (typeof message === "string") return [message];
   if (Array.isArray(message)) return message.filter((m): m is string => typeof m === "string");
@@ -60,7 +77,7 @@ function nestMessages(body: unknown): string[] {
 
 /**
  * Joins `path` onto `baseUrl` and refuses anything that would leave the ERP origin
- * (absolute URLs, `//host`, `..` tricks), so the bearer token can't be sent elsewhere.
+ * (absolute URLs, `//host`, `..` tricks), so credentials can't be sent elsewhere.
  */
 function buildUrl(baseUrl: string, path: string, query?: RequestOptions["query"]): string {
   const base = new URL(baseUrl);
@@ -94,13 +111,14 @@ export function createApiClient({
   baseUrl,
   fetcher = fetch,
   token,
+  sessionCookie,
   timeoutMs = 15_000,
   retries = 1,
   defaultHeaders = {},
   unwrap = (body) => body,
 }: ApiClientOptions) {
   async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { method = "GET", query, body, headers = {}, signal, idempotencyKey } = options;
+    const { method = "GET", query, body, headers = {}, signal, idempotencyKey, onResponse } = options;
     const isForm = typeof FormData !== "undefined" && body instanceof FormData;
     const url = buildUrl(baseUrl, path, query);
     const requestId = crypto.randomUUID();
@@ -119,8 +137,9 @@ export function createApiClient({
             ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
             ...defaultHeaders,
             ...headers,
-            // Last so callers can't override or drop it by accident.
+            // Last so callers can't override or drop them by accident.
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(sessionCookie ? { Cookie: sessionCookie } : {}),
           },
           body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
           cache: "no-store",
@@ -146,6 +165,7 @@ export function createApiClient({
       if (!response.ok) {
         throw new ApiError(`ERP API error: ${response.status}`, response.status, payload, requestId);
       }
+      onResponse?.(response);
       return unwrap(payload) as T;
     }
   }

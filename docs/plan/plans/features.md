@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15. Full inventory of what has no code yet:
+Last synced: 2026-11-15 (M07 portal rows: 2026-11-19). Full inventory of what has no code yet:
 `plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
 "missing feature" claims that actually ship, e.g. the report API and the
 assets operations surface). §7 item 3 (statement exports + monthly archive +
@@ -620,7 +620,21 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M07 Projects and After-Sales
 
+### planned
+- Customer portal stage 2: ordering from the portal and the website,
+  quotations, sales orders, invoices and gateway payment — ERP-0070.
+- Website identity and navigation from the ERP (dynamic landing, stage 1) —
+  ERP-0071.
+
 ### implemented
+- Customer portal session (ERP-0069, ADR-0024, 2026-11-19): Better Auth
+  session cookie held by the portal server (never in a body or a browser),
+  global `customer` role required by the guard, sign-in and sign-up,
+  new-password rule aligned (12-128), documented request bodies for every
+  `/portal/v1` route. Evidence: `apps/backend/src/app/portal`,
+  `src/authorization/portal-auth.ts`, migration
+  `20261119120000_erp0069_portal_customer_role`,
+  `test/unit/customer-portal.test.ts` (27), `progress.md` 2026-11-19.
 - Customer portal stage 1 — T26 + the account part of T25, ERP-0022
   (ADR-0022): one login per customer contact with a role, staff invitations,
   owners manage colleagues, individuals sign up with an emailed code, the web
