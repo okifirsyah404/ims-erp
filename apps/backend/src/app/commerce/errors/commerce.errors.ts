@@ -48,3 +48,10 @@ export class WebAssetNotFoundError extends AppError {
 		super(404, 'commerce.webAssetNotFound', 'Image not found');
 	}
 }
+
+/** The saved product is not the customer's or was already removed (ERP-0074). */
+export class WishlistItemNotFoundError extends AppError {
+	constructor() {
+		super(404, 'commerce.wishlistItemNotFound', 'Saved product not found');
+	}
+}

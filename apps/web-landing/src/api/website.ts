@@ -160,6 +160,11 @@ export interface WebsiteSource {
    * the larger quantity, so repeating a merge is harmless); `replace` overwrites it.
    */
   syncCart(auth: CustomerAuth, lines: CartLine[], mode: "merge" | "replace"): Promise<CartLine[]>;
+  /**
+   * The customer's saved products (product slugs). `merge` adds the device's list to the
+   * account, `replace` makes the account match it. Returns the saved slugs.
+   */
+  syncWishlist(auth: CustomerAuth, slugs: string[], mode: "merge" | "replace"): Promise<string[]>;
   /** Validates prices, stock, tax, shipping and discounts before an order is created. */
   quoteOrder(order: CheckoutOrder, auth: CustomerAuth): Promise<OrderQuote>;
   /** Creates the order and payment. `idempotencyKey` makes retries return the same order. */
@@ -302,6 +307,7 @@ export function createErpWebsiteSource(config: ErpWebsiteConfig): WebsiteSource 
     },
     getCart: (auth) => customerClient(auth).get(path("getCart")),
     syncCart: (auth, lines, mode) => customerClient(auth).post(path("syncCart"), { lines, mode }),
+    syncWishlist: (auth, slugs, mode) => customerClient(auth).post(path("syncWishlist"), { slugs, mode }),
     async quoteOrder(order, auth) {
       return parseOrThrow("quoteOrder", orderQuoteSchema, await customerClient(auth).post(path("quoteOrder"), order));
     },

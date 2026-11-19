@@ -78,6 +78,7 @@ const normalize = (value: string) => value.replace(/[^a-z0-9]/gi, "").toLowerCas
 /** In-memory demo state, on globalThis so actions and pages share it in `astro dev`. */
 type DemoState = {
   carts: Map<string, CartLine[]>;
+  wishlists?: Map<string, string[]>;
   orders: Map<string, { customerId: string; confirmation: OrderConfirmation }>;
   byKey: Map<string, OrderConfirmation>;
 };
@@ -120,6 +121,13 @@ export const demoWebsiteSource: WebsiteSource = {
     const next = [...merged.values()].filter((l) => l.quantity > 0).slice(0, 50);
     demoState.carts.set(auth.customerId, next);
     return structuredClone(next);
+  },
+  async syncWishlist(auth, slugs, mode) {
+    demoState.wishlists ??= new Map();
+    const current = mode === "merge" ? (demoState.wishlists.get(auth.customerId) ?? []) : [];
+    const next = [...new Set([...current, ...slugs])].slice(0, 100);
+    demoState.wishlists.set(auth.customerId, next);
+    return [...next];
   },
   async quoteOrder(order) {
     // Sample catalog prices + the published checkout rules (no live ERP pricing in demo).

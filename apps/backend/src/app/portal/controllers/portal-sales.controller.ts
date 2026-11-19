@@ -4,6 +4,8 @@ import { requestBodyDoc } from '@http/openapi';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
+import { ACCOUNT_SHOP_SERVICE_TOKEN } from '@app/commerce/constants/di';
+import { cartSyncSchema, wishlistSyncSchema } from '@app/commerce/contracts/account-shop.contract';
 import { PORTAL_RFQ_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import {
 	portalAcceptQuotationSchema,
@@ -17,7 +19,7 @@ import {
 	portalRfqClaimSchema,
 } from '../contracts/portal.contract';
 import { PortalNotFoundError, PortalRfqClaimCodeInvalidError, PortalRfqNotClaimableError } from '../errors/portal.errors';
-import { rfqSummary } from '../utils/portal-presenter';
+import { rfqSummary, wishlistItem } from '../utils/portal-presenter';
 import { formPayload } from '../utils/form-payload';
 import type { TPresenter } from '../utils/portal-presenter';
 import {
@@ -48,6 +50,7 @@ export class PortalSalesController {
 		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		const portalService = container.resolve(PORTAL_SERVICE_TOKEN);
 		const rfqs = container.resolve(PORTAL_RFQ_SERVICE_TOKEN);
+		const shop = container.resolve(ACCOUNT_SHOP_SERVICE_TOKEN);
 		const id = (params: unknown) => {
 			const parsed = portalIdParamSchema.safeParse(params);
 			if (!parsed.success) throw new PortalNotFoundError();
@@ -55,6 +58,43 @@ export class PortalSalesController {
 		};
 
 		return domainPlugin({ name: 'portal-sales', prefix: '/portal/v1', tags: ['Customer portal'], guards: 'portal' })
+			.get('/cart', async ({ portal }) => ok(await shop.getCart(portal.customerId)), {
+				portal: true,
+				detail: { summary: 'Account cart', description: 'The website cart saved on the customer account (ERP-0074), published products only' },
+			})
+			.post('/cart/sync', async ({ portal, body }) => ok(await shop.syncCart(portal.customerId, cartSyncSchema.parse(body))), {
+				portal: true,
+				detail: {
+					summary: 'Save the cart to the account',
+					description:
+						'merge folds the device cart in (same product and options keep the larger quantity); replace makes the account cart the device cart. Unknown or unpublished products are dropped; at most 50 lines. Returns the saved cart.',
+					...requestBodyDoc(cartSyncSchema),
+				},
+			})
+			.get(
+				'/wishlist',
+				async (ctx) => {
+					const p = presenter(ctx);
+					return ok((await shop.listWishlist(ctx.portal.customerId)).map((entry) => wishlistItem(p, entry)));
+				},
+				{ portal: true, detail: { summary: 'Saved products', description: 'Products saved on the website (ERP-0074) that are still published, oldest first' } },
+			)
+			.post('/wishlist/sync', async ({ portal, body }) => ok(await shop.syncWishlist(portal.customerId, wishlistSyncSchema.parse(body))), {
+				portal: true,
+				detail: {
+					summary: 'Save the website wishlist to the account',
+					description: 'merge adds the device saved products; replace makes the account match the device. Returns the saved slugs (at most 100).',
+					...requestBodyDoc(wishlistSyncSchema),
+				},
+			})
+			.delete(
+				'/wishlist/:id',
+				async ({ portal, params }) => {
+					await shop.removeWishlistItem(portal.customerId, id(params));
+					return noContent();
+				},
+				{ portal: true, detail: { summary: 'Remove a saved product', description: '404 when it is not this account’s or already removed' } },
+			)
 			.get(
 				'/rfqs',
 				async (ctx) => {

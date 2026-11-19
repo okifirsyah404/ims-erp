@@ -624,6 +624,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Website account cart and wishlist — ERP-0074 (2026-11-20): a signed-in
+  customer's cart and saved products follow the account across devices; the
+  portal lists and removes saved products. Evidence: migration
+  `20261119192024_erp0074_cart_wishlist`, `test/unit/account-shop.test.ts`
+  (6), `progress.md` 2026-11-20 ERP-0074.
 - Public order tracking — ERP-0073 (2026-11-20): website `/track` shows the
   full status when the email or phone matches the sales order; the portal's
   sign-in-free lookup shows a minimal status. Evidence:

@@ -367,6 +367,11 @@ tenant-scoped schema.
   `WebContentService`, web admin `/website/pages` + `/website/assets`,
   public `GET /public/v1/site/pages/:type[/:slug]` (key) and
   `/public/v1/site/assets/:id` (no key, 302).
+- **Built (ERP-0074):** `cart_items` and `wishlist_items` — the website's
+  account cart and saved products per customer (company-wide; `customer_id`
+  is a nullable logical reference to `crm.customers`, always set by the
+  service from the portal guard). Lines are keyed by the catalog's published
+  slug; `AccountShopService` (exported token) is called by the portal routes.
 - A commerce order is **not** a sales order. The Sales module owns the
   confirmed order.
 

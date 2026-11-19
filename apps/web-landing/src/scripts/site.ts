@@ -4,7 +4,8 @@
  * Everything degrades to plain HTML without JavaScript.
  */
 import { addToCart } from "../lib/client/cart";
-import { isWishlisted, toggleWishlist } from "../lib/client/wishlist";
+import { actions } from "astro:actions";
+import { getWishlist, isWishlisted, setWishlist, toggleWishlist } from "../lib/client/wishlist";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -72,6 +73,27 @@ export function syncWishlist(root: ParentNode = document) {
   });
 }
 
+/**
+ * Signed-in customers keep the wishlist on their account (ERP-0074): the device list is merged
+ * into the account once per browser session, then each toggle replaces the account list.
+ * A failed save leaves the device list as it is.
+ */
+const customerId = document.body.dataset.customerId ?? "";
+const WISHLIST_MERGED = "entragate:wishlist-merged:";
+
+async function saveWishlist(mode: "merge" | "replace") {
+  if (!customerId) return;
+  const { data, error } = await actions.wishlist.sync({ mode, slugs: getWishlist() });
+  if (error) return;
+  setWishlist(data);
+  sessionStorage.setItem(WISHLIST_MERGED + customerId, "1");
+  syncWishlist();
+}
+
+function initAccountWishlist() {
+  if (customerId && !sessionStorage.getItem(WISHLIST_MERGED + customerId)) void saveWishlist("merge");
+}
+
 function initDelegatedControls() {
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
@@ -80,7 +102,8 @@ function initDelegatedControls() {
     if (heart && !heart.hasAttribute("data-wishlist-local")) {
       const saved = toggleWishlist(heart.dataset.wishlist!);
       document.querySelectorAll<HTMLButtonElement>(`[data-wishlist="${CSS.escape(heart.dataset.wishlist!)}"]`).forEach((b) => b.setAttribute("aria-pressed", String(saved)));
-      toast(saved ? "Saved to your wishlist on this device" : "Removed from your wishlist", { tone: "info" });
+      toast(saved ? (customerId ? "Saved to your wishlist" : "Saved to your wishlist on this device") : "Removed from your wishlist", { tone: "info" });
+      void saveWishlist("replace");
       return;
     }
 
@@ -113,6 +136,7 @@ function initBackToTop() {
 document.documentElement.classList.add("motion-ready");
 observeReveal();
 syncWishlist();
+initAccountWishlist();
 initDelegatedControls();
 initBackToTop();
 window.addEventListener("storage", () => syncWishlist());

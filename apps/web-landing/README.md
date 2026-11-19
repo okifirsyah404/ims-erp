@@ -126,4 +126,6 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
   session and joins their account, ERP-0072) and checkout (`quoteOrder`, `placeOrder`,
   `getPaymentStatus`, ERP-0070). Promo codes are not built in the ERP: `applyPromo` is unmapped
   and the checkout hides the promo field. Order tracking (`trackOrder`, ERP-0073) answers only when
-  the email or the whole phone number matches the order. Still unmapped: `getCart`, `syncCart`.
+  the email or the whole phone number matches the order. The account cart and the wishlist hearts
+  follow a signed-in customer (`getCart`, `syncCart`, `syncWishlist`, ERP-0074); guests keep them on
+  the device.

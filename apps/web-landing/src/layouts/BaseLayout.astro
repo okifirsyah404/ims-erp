@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { getCustomer } from "../lib/server/auth";
 
 export interface Props {
   title: string;
@@ -11,6 +12,8 @@ export interface Props {
 
 // ERP-0071: the default description and the site name come from the ERP (or the built-in defaults).
 const { company, seo } = Astro.locals.site;
+// ERP-0074: tells the page script to keep the wishlist on the signed-in customer's account.
+const customer = await getCustomer(Astro.session);
 const {
   title,
   description = seo.description ??
@@ -44,7 +47,7 @@ const ogImage = image ? new URL(image, Astro.site) : undefined;
     <meta property="og:url" content={canonical} />
     {ogImage && <meta property="og:image" content={ogImage} />}
   </head>
-  <body>
+  <body data-customer-id={customer?.id}>
     <slot />
   </body>
 </html>

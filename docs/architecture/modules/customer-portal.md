@@ -110,14 +110,17 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | `confirmRfqClaim` | `POST /portal/v1/rfqs/claim/confirm` | `{ reference, code }` → 200; 400 wrong/expired code (5 attempts, then start over); the code is bound to the account that asked |
 | `lookupPublicOrder` | `GET /public/v1/orders/:id/status` | no session, no key (ERP-0073): sales order number URL-encoded → `PublicOrderStatus` without customer, prices or addresses (title "Order of N item(s)"); 404 unknown; 429 after 30 lookups / 10 minutes per address |
 | website `trackOrder` | `POST /public/v1/orders/track` | website key; `{ orderNumber, contact }` → `PublicTracking` when `contact` is the order's email (exact) or whole phone (0/62/+62 forms); unknown order and wrong contact both 404. Stages: received, paid (all issued invoices paid), production (order past `confirmed`), qc (a delivery note), shipped (a shipped/delivered note), installation (only with a project; task progress), completed |
+| website `getCart` / `syncCart` | `GET /portal/v1/cart`, `POST /portal/v1/cart/sync` | as the signed-in customer (ERP-0074): `{ lines[{productSlug, quantity, options?}], mode: merge|replace }` → the saved cart; merge keeps the larger quantity per product + options; unknown/unpublished products dropped; 50 lines |
+| website `syncWishlist` | `POST /portal/v1/wishlist/sync` | `{ slugs[], mode }` → saved slugs (100 max); merge once after sign-in, replace after each heart toggle |
+| `listWishlist` / `removeWishlistItem` | `GET /portal/v1/wishlist`, `DELETE /portal/v1/wishlist/:id` | saved products still published (`WishlistItem`: name, category, price label, stock, image); removing another account's item → 404 |
 | website `submitRfq` (signed in) | `POST /public/v1/rfq` | website key **and** the customer's session cookie → the RFQ joins that account (`linkedToAccount: true`); a guest RFQ answers `false` |
 
 Not built yet (routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
 `completeOnboarding`, notifications, device registration and lookup, service
 booking, profile, documents, `updatePersonal`/`updateCompany`/`updateSettings`,
-sites, wishlist, the website's account cart
-(`getCart`/`syncCart`; the cart stays on the device).
+sites. Deferred by owner decision (2026-11-20): device registration and service
+booking, promo codes.
 
 ## Staff side
 

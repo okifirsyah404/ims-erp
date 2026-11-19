@@ -7,6 +7,7 @@
  * (`Accept-Language`, en/id), dates on the Asia/Jakarta clock. Pure
  * functions, no I/O; business rules stay in the services.
  */
+import type { TWishlistEntry } from '@app/commerce/services/account-shop.service';
 import type { TPortalRfqView } from '../services/portal-rfq.service';
 import type { TPortalTicket, TPortalTicketDetail } from '@app/aftersales/contracts/service-ticket.contract';
 import type { TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
@@ -330,5 +331,20 @@ export function rfqSummary(p: TPresenter, rfq: TPortalRfqView) {
 		itemCount: rfq.itemCount,
 		...(rfq.quotationId ? { quotationId: rfq.quotationId } : {}),
 		origin: rfq.origin,
+	};
+}
+
+/** A saved product in the portal's `WishlistItem` shape (ERP-0074). */
+export function wishlistItem(p: TPresenter, entry: TWishlistEntry) {
+	const { product } = entry;
+	return {
+		id: entry.id,
+		productSlug: entry.productSlug,
+		name: product.name,
+		category: product.category,
+		priceLabel: product.price !== null ? `Rp ${product.price.toLocaleString('id-ID')}` : product.priceCaption || p.t('portal.wishlist.priceOnRequest'),
+		stock: product.stock === 'out' ? ('request' as const) : product.stock,
+		...(product.image ? { image: product.image } : {}),
+		addedLabel: p.t('portal.wishlist.added', { date: dateLabel(p, entry.addedAt) }),
 	};
 }

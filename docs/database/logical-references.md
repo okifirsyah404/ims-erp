@@ -55,7 +55,7 @@ Table crm.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 544 |
+| Logical reference columns | 546 |
 | Distinct targets | 42 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 242 |
@@ -68,7 +68,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.users.id` | Identity | 200 || `auth.organizations.id` | Identity | 175 || `hr.employees.id` | HR | 19 || `crm.customers.id` | CRM | 18 || `document.documents.id` | Document | 17 || `inventory.items.id` | Inventory | 10 || `catalog.items.id` | Catalog | 9 || `location.villages.id` | Location | 9 || `projects.projects.id` | Projects | 8 || `inventory.warehouses.id` | Inventory | 7 || `inventory.warehouse_storages.id` | Inventory | 6 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `organization.departments.id` | Organization | 5 || `crm.customer_contacts.id` | CRM | 4 || `procurement.suppliers.id` | Procurement | 4 || `organization.positions.id` | Organization | 3 || `sales.invoices.id` | Sales | 3 || `sales.sales_orders.id` | Sales | 3 || `auth.portal_identities.id` | Identity | 2 || `crm.leads.id` | CRM | 2 || `inventory.stock_movements.id` | Inventory | 2 || `organization.branches.id` | Organization | 2 || `organization.cost_centers.id` | Organization | 2 || `payment.payments.id` | Payment | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `assets.assets.id` | Assets | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.item_variants.id` | Catalog | 1 || `catalog.units.id` | Catalog | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.payment_terms.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 || `procurement.purchase_order_items.id` | Procurement | 1 || `projects.project_handover.id` | Projects | 1 |
+| `auth.users.id` | Identity | 200 || `auth.organizations.id` | Identity | 175 || `crm.customers.id` | CRM | 20 || `hr.employees.id` | HR | 19 || `document.documents.id` | Document | 17 || `inventory.items.id` | Inventory | 10 || `catalog.items.id` | Catalog | 9 || `location.villages.id` | Location | 9 || `projects.projects.id` | Projects | 8 || `inventory.warehouses.id` | Inventory | 7 || `inventory.warehouse_storages.id` | Inventory | 6 || `location.districts.id` | Location | 5 || `location.provinces.id` | Location | 5 || `location.regencies.id` | Location | 5 || `organization.departments.id` | Organization | 5 || `crm.customer_contacts.id` | CRM | 4 || `procurement.suppliers.id` | Procurement | 4 || `organization.positions.id` | Organization | 3 || `sales.invoices.id` | Sales | 3 || `sales.sales_orders.id` | Sales | 3 || `auth.portal_identities.id` | Identity | 2 || `crm.leads.id` | CRM | 2 || `inventory.stock_movements.id` | Inventory | 2 || `organization.branches.id` | Organization | 2 || `organization.cost_centers.id` | Organization | 2 || `payment.payments.id` | Payment | 2 || `procurement.purchase_orders.id` | Procurement | 2 || `accounting.chart_of_accounts.id` | Accounting | 1 || `accounting.journal_entries.id` | Accounting | 1 || `aftersales.service_tickets.id` | After-Sales | 1 || `assets.assets.id` | Assets | 1 || `catalog.item_categories.id` | Catalog | 1 || `catalog.item_variants.id` | Catalog | 1 || `catalog.units.id` | Catalog | 1 || `crm.customer_groups.id` | CRM | 1 || `finance.cash_bank_accounts.id` | Finance | 1 || `finance.cash_bank_transactions.id` | Finance | 1 || `finance.payment_terms.id` | Finance | 1 || `hr.bank_accounts.id` | HR | 1 || `payroll.salary_components.id` | Payroll | 1 || `procurement.purchase_order_items.id` | Procurement | 1 || `projects.project_handover.id` | Projects | 1 |
 ## The 42 targets in full
 
 ### `auth.users.id` - owner Identity, 200 referring columns
@@ -452,6 +452,29 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `ticket.ticket_status_history`  ->  `organization_id`
 - `ticket.tickets`  ->  `organization_id`
 
+### `crm.customers.id` - owner CRM, 20 referring columns
+
+- `aftersales.maintenance_plans`  ->  `customer_id`
+- `aftersales.satisfaction_surveys`  ->  `customer_id`
+- `aftersales.service_contracts`  ->  `customer_id`
+- `aftersales.service_tickets`  ->  `customer_id`
+- `aftersales.warranty_certificates`  ->  `customer_id`
+- `aftersales.warranty_claims`  ->  `customer_id`
+- `assets.borrowings`  ->  `borrower_customer_id`
+- `commerce.cart_items`  ->  `customer_id`
+- `commerce.commerce_orders`  ->  `customer_id`
+- `commerce.wishlist_items`  ->  `customer_id`
+- `finance.ar_open_items`  ->  `customer_id`
+- `finance.credit_memos`  ->  `customer_id`
+- `licensing.license_contracts`  ->  `customer_id`
+- `projects.projects`  ->  `customer_id`
+- `sales.contracts`  ->  `customer_id`
+- `sales.invoices`  ->  `customer_id`
+- `sales.quotations`  ->  `customer_id`
+- `sales.sales_orders`  ->  `customer_id`
+- `sales.sales_returns`  ->  `customer_id`
+- `ticket.tickets`  ->  `customer_id`
+
 ### `hr.employees.id` - owner HR, 19 referring columns
 
 - `aftersales.maintenance_schedules`  ->  `default_assignee_employee_id`
@@ -473,27 +496,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `projects.project_daily_reports`  ->  `technician_employee_id`
 - `projects.project_kpi_evaluations`  ->  `employee_id`
 - `projects.project_site_assignments`  ->  `employee_id`
-
-### `crm.customers.id` - owner CRM, 18 referring columns
-
-- `aftersales.maintenance_plans`  ->  `customer_id`
-- `aftersales.satisfaction_surveys`  ->  `customer_id`
-- `aftersales.service_contracts`  ->  `customer_id`
-- `aftersales.service_tickets`  ->  `customer_id`
-- `aftersales.warranty_certificates`  ->  `customer_id`
-- `aftersales.warranty_claims`  ->  `customer_id`
-- `assets.borrowings`  ->  `borrower_customer_id`
-- `commerce.commerce_orders`  ->  `customer_id`
-- `finance.ar_open_items`  ->  `customer_id`
-- `finance.credit_memos`  ->  `customer_id`
-- `licensing.license_contracts`  ->  `customer_id`
-- `projects.projects`  ->  `customer_id`
-- `sales.contracts`  ->  `customer_id`
-- `sales.invoices`  ->  `customer_id`
-- `sales.quotations`  ->  `customer_id`
-- `sales.sales_orders`  ->  `customer_id`
-- `sales.sales_returns`  ->  `customer_id`
-- `ticket.tickets`  ->  `customer_id`
 
 ### `document.documents.id` - owner Document, 17 referring columns
 

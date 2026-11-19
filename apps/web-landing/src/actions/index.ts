@@ -397,6 +397,25 @@ export const server = {
     }),
   },
 
+  wishlist: {
+    /**
+     * Saves the browser's wishlist on the signed-in customer's account (ERP-0074): `merge`
+     * once after sign-in, `replace` after each heart toggle. Unknown products are dropped.
+     */
+    sync: defineAction({
+      accept: "json",
+      input: z.object({ mode: z.enum(["merge", "replace"]), slugs: z.array(z.string().min(1).max(120)).max(100) }),
+      handler: async (input, context) => {
+        const customer = await getCustomer(context.session);
+        if (!customer) throw new ActionError({ code: "UNAUTHORIZED", message: "Sign in to save your wishlist to your account." });
+        return call("wishlist.sync", () => website.syncWishlist(toAuth(customer), input.slugs, input.mode), {
+          notConnected: "Your account wishlist isn't connected yet.",
+          failed: "We couldn't save your wishlist to your account. It is still on this device.",
+        });
+      },
+    }),
+  },
+
   tracking: {
     /** 07.04 Public Tracking Entry. POST keeps the phone/email out of URLs and logs. */
     lookup: defineAction({

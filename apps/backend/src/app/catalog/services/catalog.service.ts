@@ -155,6 +155,12 @@ export class CatalogService {
 		return queryProducts(await this.products(), query);
 	}
 
+	/** The published products among these slugs (unknown or unpublished slugs are left out). */
+	async productsBySlugs(slugs: string[]): Promise<TCatalogProduct[]> {
+		const wanted = new Set(slugs);
+		return (await this.products()).filter((product) => wanted.has(product.slug));
+	}
+
 	async getProduct(slug: string): Promise<TCatalogProduct> {
 		const product = (await this.products()).find((row) => row.slug === slug);
 		if (!product) throw new CatalogNotFoundError('product');

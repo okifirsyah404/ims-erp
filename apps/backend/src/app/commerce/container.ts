@@ -1,6 +1,8 @@
 import type { DependencyContainer } from 'tsyringe';
 import { BetterAuthWebsiteKeys } from './adapters/better-auth-website-keys';
 import {
+	ACCOUNT_SHOP_REPOSITORY_TOKEN,
+	ACCOUNT_SHOP_SERVICE_TOKEN,
 	WEB_CONTENT_REPOSITORY_TOKEN,
 	WEB_CONTENT_SERVICE_TOKEN,
 	WEBSITE_KEY_ISSUER_TOKEN,
@@ -11,6 +13,8 @@ import { WebContentRepository } from './repositories/web-content.repository';
 import { WebContentService } from './services/web-content.service';
 import { WebsiteRepository } from './repositories/website.repository';
 import { WebsiteService } from './services/website.service';
+import { AccountShopRepository } from './repositories/account-shop.repository';
+import { AccountShopService } from './services/account-shop.service';
 
 export * from './constants/di';
 
@@ -22,4 +26,7 @@ export function registerCommerce(container: DependencyContainer): void {
 	// Stages 2-4: website pages, collection entries and uploaded images.
 	container.register(WEB_CONTENT_REPOSITORY_TOKEN, { useClass: WebContentRepository });
 	container.register(WEB_CONTENT_SERVICE_TOKEN, { useClass: WebContentService });
+	// ERP-0074: the website's account cart and wishlist.
+	container.register(ACCOUNT_SHOP_REPOSITORY_TOKEN, { useClass: AccountShopRepository });
+	container.register(ACCOUNT_SHOP_SERVICE_TOKEN, { useClass: AccountShopService });
 }

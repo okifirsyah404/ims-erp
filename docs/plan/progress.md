@@ -12,6 +12,69 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0074: website account cart and wishlist
+
+Same branch, after ERP-0073 (`17e58e4a`).
+
+**Gate 1 (`docs/database/`).** Read: `docs.dbml` Commerce and Catalog
+(`web_listings`), `module-ownership.md` §22, `logical-references.md`
+(commerce), `integrity-and-consistency.md` (soft delete, live-row unique,
+nullable cross-module ids). Skipped: `data-dictionary.md` (conventions as
+in ERP-0071), `implementation-phases.md`.
+
+**Gate 2 (manual `grill-me` fallback).**
+- Ownership: `commerce` owns `cart_items` and `wishlist_items`; the
+  portal module exposes the routes (portal guard → customer id); the website
+  calls them with the customer's session.
+- Scope: one cart and one wishlist per **customer** (every login of a
+  business account shares them, per the 2026-11-20 decision), company-wide.
+- Keys: the catalog's published slug (what the website and both contracts
+  use); a slug that stops resolving drops out of the cart on the next sync
+  and is hidden from the wishlist — no cross-module id to keep in step.
+  `customer_id` is a nullable logical reference to `crm.customers`
+  (ADR-0014), always set by the service.
+- Uniqueness: live-row unique `(customer_id, product_slug, options_key)`
+  (canonical sorted options) and `(customer_id, product_slug)`; quantity
+  1..999; at most 50 cart lines / 100 saved products (service).
+- Writes: the cart is rewritten in one transaction (ids are not exposed);
+  the wishlist is diffed so saved rows keep their id (the portal removes by id).
+
+**Changes.**
+- `docs.dbml` (+2 tables, notes start with the standard logical-reference
+  sentence so the generator lists them); references regenerated (546);
+  validate OK. Drizzle `cartItems` / `wishlistItems`; migration
+  `20261119192024_erp0074_cart_wishlist` (drizzle-kit, inspected; header).
+- Commerce: `account-shop.contract.ts`, `AccountShopRepository`,
+  `AccountShopService` (`ACCOUNT_SHOP_SERVICE_TOKEN`), error
+  `commerce.wishlistItemNotFound` (en/id). Catalog:
+  `CatalogService.productsBySlugs`.
+- Portal: `GET /portal/v1/cart`, `POST /cart/sync`, `GET /wishlist`,
+  `POST /wishlist/sync`, `DELETE /wishlist/:id`; `wishlistItem` presenter,
+  labels `portal.wishlist.*` (en/id).
+- Website: `WebsiteSource.syncWishlist` (ERP + demo), routes for
+  `getCart` / `syncCart` / `syncWishlist`, action `wishlist.sync`,
+  `BaseLayout` marks the signed-in customer (`data-customer-id`, id only),
+  `scripts/site.ts` merges the device wishlist once per browser session and
+  saves each heart toggle; README.
+- Portal app: `listWishlist`, `removeWishlistItem` mapped.
+- `module-ownership.md` §22, `customer-portal.md` route table.
+
+**Verification.**
+- `POSTGRES_DB=ims_erp_scratch NODE_ENV=development bun run
+  drizzle:migrate-reset` and `NODE_ENV=development bun run drizzle:migrate`.
+- Unit: `account-shop.test.ts` 6 new; backend typecheck 0; `astro check`
+  website 0, portal 0.
+- Live (dev portal login; the scratch reset cleared Redis, so it signed in
+  again): cart replace with an unknown slug → only the published line;
+  merge → larger quantity kept and the new line added; `GET /cart` equal;
+  wishlist merge with an unknown slug → the two published slugs; list → name,
+  category, "Rp 42.619", stock, "Saved 20 Nov 2026"; remove → 200, again →
+  404; no session → 401; cart and wishlist emptied afterwards.
+- Not done: browser walk-through of the hearts and the cart merge.
+
+**Next executable task:** ERP-0075 portal account pages (profile, company,
+sites, settings, notifications, documents, onboarding).
+
 ## 2026-11-20 - ERP-0073: public order tracking
 
 Same branch, after ERP-0072 (`7a54353c`). `docs/database/` reviewed and

@@ -170,6 +170,46 @@ export const webAssets = commerceSchema.table(
 	],
 );
 
+/** Account cart of the public website (ERP-0074): one live line per product + options per customer. */
+export const cartItems = commerceSchema.table(
+	'cart_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** Logical reference to crm.customers.id (ADR-0014, nullable; the service always sets it). */
+		customerId: uuid('customer_id'),
+		/** Published catalog listing slug, as the website shows it. */
+		productSlug: varchar('product_slug', { length: 120 }).notNull(),
+		options: jsonb('options').$type<Record<string, string>>().notNull().default({}),
+		/** Canonical options (sorted `name=value` pairs) for the live-line uniqueness. */
+		optionsKey: varchar('options_key', { length: 500 }).notNull().default(''),
+		quantity: integer('quantity').notNull().default(1),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('cart_items_customer_line_uq').on(table.customerId, table.productSlug, table.optionsKey).where(sql`deleted_at IS NULL`),
+		check('cart_items_quantity_check', sql`${table.quantity} BETWEEN 1 AND 999`),
+	],
+);
+
+/** Products a customer saved on the website (ERP-0074), shown in the customer portal. */
+export const wishlistItems = commerceSchema.table(
+	'wishlist_items',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		/** Logical reference to crm.customers.id (ADR-0014, nullable; the service always sets it). */
+		customerId: uuid('customer_id'),
+		productSlug: varchar('product_slug', { length: 120 }).notNull(),
+		...timestamps,
+	},
+	(table) => [uniqueIndex('wishlist_items_customer_slug_uq').on(table.customerId, table.productSlug).where(sql`deleted_at IS NULL`)],
+);
+
+export type TCartItemSelect = typeof cartItems.$inferSelect;
+export type TWishlistItemSelect = typeof wishlistItems.$inferSelect;
 export type TWebPageSelect = typeof webPages.$inferSelect;
 export type TWebPageInsert = typeof webPages.$inferInsert;
 export type TWebAssetSelect = typeof webAssets.$inferSelect;

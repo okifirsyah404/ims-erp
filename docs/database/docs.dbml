@@ -7289,6 +7289,38 @@ Table commerce.web_assets {
   }
 }
 
+Table commerce.cart_items {
+  id uuid [pk, default: `uuidv7()`]
+  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract. The customer whose account cart this is (every login of the customer shares it)."]
+  product_slug varchar(120) [not null, note: "Published catalog listing slug (catalog.web_listings.slug) as the website shows it; a line whose slug no longer resolves is dropped on the next read."]
+  options jsonb [not null, default: '{}', note: "Chosen product options (name -> value)."]
+  options_key varchar(500) [not null, default: '', note: "Canonical form of options (sorted name=value pairs) for the live-line uniqueness."]
+  quantity integer [not null, default: 1]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Account cart of the public website (ERP-0074, company-wide, ADR-0025): the website merges the device cart into it once after sign-in and keeps it in sync. At most 50 live lines per customer (service rule)."
+  Indexes {
+    (customer_id, product_slug, options_key) [unique, name: 'cart_items_customer_line_uq', note: 'live rows only: WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `quantity BETWEEN 1 AND 999`
+  }
+}
+
+Table commerce.wishlist_items {
+  id uuid [pk, default: `uuidv7()`]
+  customer_id uuid [note: "Logical reference to crm.customers.id. Cross-module FK intentionally omitted. Validated through the CRM module contract. The customer account the saved product belongs to."]
+  product_slug varchar(120) [not null, note: "Published catalog listing slug (catalog.web_listings.slug); hidden while it does not resolve."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Products a customer saved on the website (ERP-0074, company-wide, ADR-0025), shown in the customer portal. At most 100 live rows per customer (service rule)."
+  Indexes {
+    (customer_id, product_slug) [unique, name: 'wishlist_items_customer_slug_uq', note: 'live rows only: WHERE deleted_at IS NULL']
+  }
+}
+
 Table commerce.web_menus {
   id uuid [pk, default: `uuidv7()`]
   code varchar(32) [not null, note: "Stable code the website asks for: 'main' (header), 'footer' (its child menus are the footer columns)."]

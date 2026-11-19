@@ -9,7 +9,7 @@ import { ERP_RFQ_PATH } from "astro:env/server";
  * Checkout (ERP-0070) runs as the signed-in customer with the session from the portal
  * hand-off: the order becomes a draft quotation that sales reviews, so `placeOrder`
  * answers `pending_approval` and nothing is charged at checkout. The account cart
- * (`getCart`/`syncCart`) is not built in the ERP; the cart stays on the device.
+ * (`getCart`/`syncCart`) and the wishlist are saved on the customer account (ERP-0074).
  *
  * Website forms (ERP-0072) become CRM leads through `/public/v1/*` with the website key;
  * a signed-in customer's RFQ also carries their portal session and joins their account.
@@ -25,4 +25,8 @@ export const erpRoutes: WebsiteRoutes = {
   quoteOrder: "/portal/v1/checkout/quote",
   placeOrder: "/portal/v1/checkout/orders",
   getPaymentStatus: "/portal/v1/checkout/orders/:orderNumber",
+  // Account cart and wishlist, as the signed-in customer (ERP-0074)
+  getCart: "/portal/v1/cart",
+  syncCart: "/portal/v1/cart/sync",
+  syncWishlist: "/portal/v1/wishlist/sync",
 };
