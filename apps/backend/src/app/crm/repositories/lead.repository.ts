@@ -91,6 +91,34 @@ export class LeadRepository implements ILeadRepository {
 			.orderBy(asc(leads.nextFollowUpAt));
 	}
 
+	async listPortalRfqs(customerId: string): Promise<TLeadSelect[]> {
+		return this.database
+			.select()
+			.from(leads)
+			.where(and(eq(leads.portalCustomerId, customerId), eq(leads.channel, 'rfq'), isNull(leads.deletedAt)))
+			.orderBy(desc(leads.createdAt))
+			.limit(200);
+	}
+
+	async findRfqByReference(reference: string): Promise<TLeadSelect | null> {
+		const [row] = await this.database
+			.select()
+			.from(leads)
+			.where(and(eq(leads.reference, reference), eq(leads.channel, 'rfq'), isNull(leads.deletedAt)))
+			.limit(1);
+		return row ?? null;
+	}
+
+	async linkPortalCustomer(id: string, customerId: string, via: 'account' | 'claim'): Promise<TLeadSelect | null> {
+		const now = new Date();
+		const [row] = await this.database
+			.update(leads)
+			.set({ portalCustomerId: customerId, portalLinkedVia: via, portalLinkedAt: now, updatedAt: now })
+			.where(and(eq(leads.id, id), isNull(leads.portalCustomerId), isNull(leads.deletedAt)))
+			.returning();
+		return row ?? null;
+	}
+
 	async findByIdempotencyKey(idempotencyKey: string): Promise<TLeadSelect | null> {
 		const [row] = await this.database.select().from(leads).where(eq(leads.idempotencyKey, idempotencyKey)).limit(1);
 		return row ?? null;
@@ -108,9 +136,18 @@ export class LeadRepository implements ILeadRepository {
 	createInquiry(data: TInquiryCreateData, attachments: TLeadAttachmentData[]): Promise<TLeadSelect> {
 		return this.database.transaction(async (tx) => {
 			const now = new Date();
+			const { portalCustomerId, ...lead } = data;
 			const [row] = await tx
 				.insert(leads)
-				.values({ ...data, source: 'website', status: 'new', ownerUserId: null, createdAt: now, updatedAt: now })
+				.values({
+					...lead,
+					source: 'website',
+					status: 'new',
+					ownerUserId: null,
+					...(portalCustomerId ? { portalCustomerId, portalLinkedVia: 'account', portalLinkedAt: now } : {}),
+					createdAt: now,
+					updatedAt: now,
+				})
 				.returning();
 			if (attachments.length > 0) {
 				await tx

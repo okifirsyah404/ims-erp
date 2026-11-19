@@ -174,6 +174,7 @@ beforeEach(() => {
 			sendSignupCode: async (input) => {
 				mails.push({ kind: 'code', to: input.to, code: input.code });
 			},
+			sendRfqClaimCode: async () => {},
 		},
 		customers,
 		fakeCache(),

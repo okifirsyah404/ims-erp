@@ -14,7 +14,7 @@ import { type PortalRoutes } from "@/api/portal";
  *   there is no refresh token; the portal signs the user out when they expire.
  * - not built in the ERP yet: onboarding, notifications, device lookup/registration,
  *   service booking, profile, documents, personal/company/settings updates, sites,
- *   wishlist, public order lookup and RFQs.
+ *   wishlist and public order lookup.
  *
  * Ordering itself happens on the website (catalog + checkout, user decision 2026-11-19);
  * the order arrives here as a quotation "in review" (ERP-0070).
@@ -62,4 +62,9 @@ export const erpRoutes: PortalRoutes = {
   getInvoice: "/portal/v1/invoices/:id",
   listPaymentMethods: "/portal/v1/payment-methods",
   payInvoice: "/portal/v1/invoices/:id/pay",
+
+  // Website RFQs: signed-in RFQs and guest RFQs claimed with an emailed code (ERP-0072)
+  listRfqs: "/portal/v1/rfqs",
+  requestRfqClaim: "/portal/v1/rfqs/claim",
+  confirmRfqClaim: "/portal/v1/rfqs/claim/confirm",
 };

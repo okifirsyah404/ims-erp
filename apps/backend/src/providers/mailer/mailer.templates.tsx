@@ -182,6 +182,29 @@ export async function renderPortalSignupCodeEmail({
 	return { subject: t(language, 'email:portalSignupCode.subject', { app, code }), html, text };
 }
 
+/** Code that proves a guest RFQ belongs to the person adding it to a portal account (ERP-0072). */
+export async function renderPortalRfqClaimCodeEmail({
+	name,
+	code,
+	reference,
+	language = DEFAULT_LANGUAGE,
+}: {
+	name: string;
+	code: string;
+	reference: string;
+	language?: LanguageCode;
+}): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
+	const texts = {
+		greeting: t(language, 'email:portalRfqClaimCode.greeting', { name }),
+		body: t(language, 'email:portalRfqClaimCode.body', { app, reference }),
+		expiry: t(language, 'email:portalRfqClaimCode.expiry'),
+		footer: t(language, 'email:footer.noReply', { app }),
+	};
+	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
+	return { subject: t(language, 'email:portalRfqClaimCode.subject', { code, reference }), html, text };
+}
+
 /** Organization-invitation input; superset of the base template input. */
 export type OrganizationInvitationTemplateInput = TemplateInput & {
 	organizationName: string;

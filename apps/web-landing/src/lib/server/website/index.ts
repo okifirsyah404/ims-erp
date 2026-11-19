@@ -19,6 +19,11 @@ function createSource(): WebsiteSource {
   });
 }
 
+/** Whether an operation reaches a backend: always in demo mode, in ERP mode only when mapped. */
+export function isConnected(operation: keyof WebsiteSource): boolean {
+  return websiteMode === "demo" || Boolean(erpRoutes[operation]);
+}
+
 /** Created on first use so builds don't need ERP secrets. */
 let source: WebsiteSource | undefined;
 export const website: WebsiteSource = new Proxy({} as WebsiteSource, {

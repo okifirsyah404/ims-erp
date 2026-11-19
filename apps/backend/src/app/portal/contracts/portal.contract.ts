@@ -132,6 +132,10 @@ export const portalRevisionSchema = z.object({
 
 export const portalPayInvoiceSchema = z.object({ methodId: z.string().trim().min(1).max(40) });
 
+/** A website RFQ reference (e.g. `RFQ-2026-00012`) for a claim (ERP-0072). */
+export const portalRfqClaimSchema = z.object({ reference: z.string().trim().min(3).max(40) });
+export const portalRfqClaimConfirmSchema = portalRfqClaimSchema.extend({ code: z.string().trim().regex(/^d{6}$/) });
+
 export const portalOrderNumberParamSchema = z.object({ orderNumber: z.string().trim().min(1).max(64) });
 
 export type TPortalCheckout = z.output<typeof portalCheckoutSchema>;

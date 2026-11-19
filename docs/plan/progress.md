@@ -12,6 +12,86 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0072: website forms and RFQs in the customer portal
+
+Same branch, after ERP-0071 (`4b547e2a`). Numbers checked after `git fetch`
+on main, every remote branch and open PRs: highest ERP-0071, ADR-0025.
+
+**User decisions (2026-11-20).** Finish what the website and the portal still
+miss. Promo codes: deferred (hide the field). Public order tracking: full
+data from the ERP (ERP-0073). Account cart and wishlist: new commerce tables
+(ERP-0074). Device registration and service booking: deferred.
+
+**Gate 1 (`docs/database/`).** Read: `docs.dbml` CRM (`crm.leads`,
+`crm.customers`), `module-ownership.md` (CRM, portal owns no tables),
+`integrity-and-consistency.md` (intra-module FKs, checks). Skipped:
+`data-dictionary.md` (conventions known: uuid, bigint ms),
+`logical-references.md` (no cross-module link added),
+`implementation-phases.md` (no pending step).
+
+**Gate 2 (manual `grill-me` fallback).**
+- Ownership: CRM owns the RFQ (lead) and its portal link; the portal module
+  composes CRM (RFQs), Sales (the SPH per lead) and Identity (mailer); the
+  claim code lives in the cache (Redis), hashed.
+- Why not `leads.customer_id`: it means "converted into" (status `won`);
+  the portal link is a separate fact (`portal_customer_id`, intra-module FK
+  to `crm.customers`), with `portal_linked_via` `account | claim` and
+  `portal_linked_at` (bigint ms); a check keeps id and via set together.
+- Tenant: leads are company-wide (ADR-0011); no organization column.
+- Signed-in RFQ: the website sends its API key **and** the customer's
+  session cookie; the key authorises the website, the session (resolved by
+  the portal guard's resolver: `customer` role + active identity) names
+  the customer. A session alone is still 401.
+- Claim: 6-digit code to the RFQ's own email, 15 minutes, 5 attempts,
+  bound to the asking account and the reference; unknown, already-linked
+  and email-less RFQs answer 404 without mailing.
+- Status shown: `new`→received, `contacted|survey`→in_review,
+  `quotation` or a non-draft SPH with that `lead_id`→quoted,
+  `won|lost`→closed.
+
+**Changes.**
+- `docs.dbml` `crm.leads` (+3 columns, index, two checks, FK); references
+  regenerated; validate OK. Drizzle `crm.schema.ts`; migration
+  `20261119185938_erp0072_lead_portal_link` (drizzle-kit, inspected: only
+  `crm.leads`; header added).
+- CRM: `LeadRepository.listPortalRfqs` / `findRfqByReference` /
+  `linkPortalCustomer`; `WebsiteInquiryService.submitRfq(…, portalCustomerId)`,
+  `listPortalRfqs`, `findClaimableRfq`, `claimRfq` (exported with the
+  token); `POST /public/v1/rfq` resolves an optional portal session.
+- Portal: `PortalRfqService`, `GET /portal/v1/rfqs`, `POST
+  /portal/v1/rfqs/claim`, `POST /portal/v1/rfqs/claim/confirm`, errors
+  `portal.rfqNotClaimable` / `portal.rfqClaimCodeInvalid`, labels
+  `portal.rfq.*` (en/id).
+- Identity: `IPortalMailer.sendRfqClaimCode`, email
+  `portalRfqClaimCode.*` (en/id).
+- Website: `erp-routes.ts` maps contact, demo and RFQ (`ERP_RFQ_PATH` still
+  overrides); a signed-in RFQ uses key + session; `isConnected()`; the
+  checkout hides the promo field while `applyPromo` is unmapped; README.
+- Portal app: `erp-routes.ts` maps `listRfqs`, `requestRfqClaim`,
+  `confirmRfqClaim`.
+- `docs/architecture/modules/customer-portal.md` route table.
+
+**Verification.**
+- `POSTGRES_DB=ims_erp_scratch NODE_ENV=development bun run
+  drizzle:migrate-reset` (all migrations from empty, seed complete);
+  `NODE_ENV=development bun run drizzle:migrate` on `ims_erp_main`.
+- Unit: `portal-rfq.test.ts` 7 new, `lead.service.test.ts` 2 new (14 pass),
+  `customer-portal.test.ts` green; backend typecheck 0; `astro check`
+  website 0 and portal 0.
+- Live API (website key from the local `.env`, not printed; the dev portal
+  login `dewi.portal@example.com` got a new dev-only password): contact →
+  201 `MSG-2026-00001`; demo → 201 `DEMO-2026-00001`; guest RFQ → 201
+  `linkedToAccount: false`; RFQ with key + session → 201
+  `linkedToAccount: true`; `GET /portal/v1/rfqs` → the signed-in RFQ only
+  (status Received); claim of the guest RFQ → 200 `d***@example.com`, 15
+  minutes; wrong code → 400; claim of an RFQ already in an account → 404;
+  RFQ with a session but no key → 401.
+- Not done: the code email itself (mail transport is off in development, the
+  queue drops it), a browser walk-through of the portal RFQ pages.
+
+**Next executable task:** ERP-0073 public order tracking (website `/track`
+and the portal's public lookup).
+
 ## 2026-11-20 - ERP-0071 stage 4: about, careers, news, help, legal, warranty and installation from the ERP
 
 Same branch, after stage 3 (`93f9742a`). Website change plus one web admin

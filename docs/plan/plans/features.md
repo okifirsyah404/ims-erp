@@ -624,6 +624,12 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Website forms and RFQs in the customer portal — ERP-0072 (2026-11-20):
+  contact, demo and RFQ forms reach the ERP as leads; a signed-in RFQ joins
+  the customer's account; guest RFQs are claimed with an emailed code; promo
+  codes deferred (field hidden). Evidence: migration
+  `20261119185938_erp0072_lead_portal_link`, `test/unit/portal-rfq.test.ts`
+  (7), `progress.md` 2026-11-20 ERP-0072.
 - Dynamic website configured in the ERP — ERP-0071 (ADR-0025), stages 1-4
   implemented 2026-11-19/20 (not accepted; browser walk-through of the
   content editor open). Stage 1

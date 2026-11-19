@@ -195,6 +195,8 @@ const DYNAMIC_PREFIXES = [
 	'portal.stage.',
 	// Portal order status labels compose `portal.sales.order.${status}` (ERP-0070).
 	'portal.sales.order.',
+	// Website RFQ status labels compose `portal.rfq.status.${status}` (ERP-0072).
+	'portal.rfq.status.',
 	// Website settings (ERP-0071) label socials and menus by their server code.
 	'website.social.',
 	'website.menu.title.',

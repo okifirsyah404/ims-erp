@@ -1,5 +1,10 @@
 import { dispatchMail } from '@providers/mailer/mailer.queue';
-import { renderPortalInvitationEmail, renderPortalSignupCodeEmail, renderResetPasswordEmail } from '@providers/mailer/mailer.templates';
+import {
+	renderPortalInvitationEmail,
+	renderPortalRfqClaimCodeEmail,
+	renderPortalSignupCodeEmail,
+	renderResetPasswordEmail,
+} from '@providers/mailer/mailer.templates';
 import type { IPortalMailer } from '../contracts/portal-account.contract';
 
 /**
@@ -19,5 +24,9 @@ export class QueuePortalMailer implements IPortalMailer {
 
 	async sendSignupCode(input: { to: string; name: string; code: string }): Promise<void> {
 		await dispatchMail({ to: input.to, ...(await renderPortalSignupCodeEmail({ name: input.name, code: input.code })) });
+	}
+
+	async sendRfqClaimCode(input: { to: string; name: string; code: string; reference: string }): Promise<void> {
+		await dispatchMail({ to: input.to, ...(await renderPortalRfqClaimCodeEmail({ name: input.name, code: input.code, reference: input.reference })) });
 	}
 }

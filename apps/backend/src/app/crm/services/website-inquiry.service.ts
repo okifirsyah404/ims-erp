@@ -1,7 +1,7 @@
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import { isUniqueViolation } from '@drizzle/errors';
-import type { LeadChannel } from '@drizzle/schemas/crm.schema';
+import type { LeadChannel, LeadStatus, TLeadSelect } from '@drizzle/schemas/crm.schema';
 import type { CodeType } from '@drizzle/schemas/code-number.schema';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
@@ -26,7 +26,24 @@ export type TInquiryReceipt = {
 	reference: string;
 	/** True when an earlier request with the same Idempotency-Key answered. */
 	replayed: boolean;
+	/** True when the RFQ belongs to a customer portal account (ERP-0072). */
+	linkedToAccount?: boolean;
 };
+
+/** A website RFQ as the customer portal shows it (ERP-0072). */
+export type TPortalRfq = {
+	id: string;
+	reference: string;
+	title: string;
+	siteLocation: string;
+	status: LeadStatus;
+	submittedAt: Date;
+	itemCount: number;
+	origin: 'account' | 'claimed_guest';
+};
+
+/** What a guest-RFQ claim needs to know about the RFQ (ERP-0072). */
+export type TClaimableRfq = { id: string; reference: string; email: string | null; name: string; linked: boolean };
 
 const REFERENCE_TYPE: Record<LeadChannel, CodeType> = {
 	rfq: 'web_rfq',
@@ -56,6 +73,24 @@ const DEMO_FORMAT_LABEL: Record<TDemoRequest['format'], string> = {
 
 const lines = (...parts: (string | false | undefined)[]) =>
 	parts.filter((part): part is string => Boolean(part)).join('\n');
+
+/** A lead from a website RFQ in the portal's shape; the RFQ payload is the one validated at submit. */
+function portalRfq(lead: TLeadSelect): TPortalRfq {
+	const submission = (lead.submission ?? {}) as Partial<TRfqSubmission>;
+	const items = submission.items?.length ?? 0;
+	const solutions = submission.solutions?.length ?? 0;
+	const site = submission.project?.siteName ?? null;
+	return {
+		id: lead.id,
+		reference: lead.reference ?? '',
+		title: site || lead.companyName || lead.name,
+		siteLocation: submission.project?.siteLocation ?? '',
+		status: lead.status as LeadStatus,
+		submittedAt: lead.createdAt,
+		itemCount: items + solutions,
+		origin: lead.portalLinkedVia === 'claim' ? 'claimed_guest' : 'account',
+	};
+}
 
 /** Readable summary stored as the lead's `needs` (max 2000 chars). */
 function rfqNeeds(s: TRfqSubmission): string {
@@ -115,7 +150,7 @@ const CONTENT_TYPES: Record<string, string> = {
 export class WebsiteInquiryService {
 	constructor(
 		@inject(LEAD_REPOSITORY_TOKEN)
-		private readonly leads: Pick<ILeadRepository, 'createInquiry' | 'findByIdempotencyKey'>,
+		private readonly leads: Pick<ILeadRepository, 'createInquiry' | 'findByIdempotencyKey' | 'listPortalRfqs' | 'findRfqByReference' | 'linkPortalCustomer'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
 		private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(OBJECT_STORAGE_TOKEN)
@@ -124,7 +159,11 @@ export class WebsiteInquiryService {
 		private readonly outbox: Pick<OutboxService, 'publish'>,
 	) {}
 
-	async submitRfq(submission: TRfqSubmission, files: File[], idempotencyKey: string | null) {
+	/**
+	 * A website RFQ becomes a lead. `portalCustomerId` (the signed-in portal
+	 * customer, ERP-0072) puts it in that customer's portal account at once.
+	 */
+	async submitRfq(submission: TRfqSubmission, files: File[], idempotencyKey: string | null, portalCustomerId: string | null = null) {
 		this.assertAttachments(files);
 		return this.capture(
 			idempotencyKey,
@@ -137,9 +176,29 @@ export class WebsiteInquiryService {
 				email: submission.company.email,
 				needs: rfqNeeds(submission),
 				submission: submission as Record<string, unknown>,
+				portalCustomerId,
 			},
 			files,
 		);
+	}
+
+	/* Customer portal (ERP-0072) ---------------------------------------- */
+
+	/** The website RFQs in a customer's portal account, newest first. */
+	async listPortalRfqs(customerId: string): Promise<TPortalRfq[]> {
+		return (await this.leads.listPortalRfqs(customerId)).map(portalRfq);
+	}
+
+	/** The RFQ behind a public reference, for a claim; `null` when there is none. */
+	async findClaimableRfq(reference: string): Promise<TClaimableRfq | null> {
+		const lead = await this.leads.findRfqByReference(reference.trim().toUpperCase());
+		if (!lead?.reference) return null;
+		return { id: lead.id, reference: lead.reference, email: lead.email, name: lead.name, linked: lead.portalCustomerId !== null };
+	}
+
+	/** Puts a guest RFQ into a customer's portal account; `false` when it was already linked (race). */
+	async claimRfq(id: string, customerId: string): Promise<boolean> {
+		return (await this.leads.linkPortalCustomer(id, customerId, 'claim')) !== null;
 	}
 
 	sendContactMessage(message: TContactMessage, idempotencyKey: string | null) {
@@ -200,12 +259,14 @@ export class WebsiteInquiryService {
 			}
 			throw error;
 		}
-		return { reference, replayed: false };
+		return { reference, replayed: false, linkedToAccount: Boolean(lead.portalCustomerId) };
 	}
 
 	private async replay(idempotencyKey: string): Promise<TInquiryReceipt | null> {
 		const existing = await this.leads.findByIdempotencyKey(idempotencyKey);
-		return existing?.reference ? { reference: existing.reference, replayed: true } : null;
+		return existing?.reference
+			? { reference: existing.reference, replayed: true, linkedToAccount: Boolean(existing.portalCustomerId) }
+			: null;
 	}
 
 	private upload(files: File[]): Promise<TLeadAttachmentData[]> {

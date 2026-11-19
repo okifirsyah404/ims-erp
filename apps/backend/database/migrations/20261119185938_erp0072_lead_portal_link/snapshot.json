@@ -1,0 +1,261 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "bd395103-211a-4dff-94f1-563ee3338dcf",
+  "prevIds": [
+    "471165e9-5cde-467c-bd16-d4e6acc57edd"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "crm",
+        "leads",
+        "portal_customer_id"
+      ],
+      "writes": [
+        "s|col|crm.leads.portal_customer_id",
+        "n|col|crm.leads.portal_customer_id",
+        "e|col|crm.leads.portal_customer_id"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "crm",
+        "leads",
+        "portal_linked_via"
+      ],
+      "writes": [
+        "s|col|crm.leads.portal_linked_via",
+        "n|col|crm.leads.portal_linked_via",
+        "e|col|crm.leads.portal_linked_via"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "crm",
+        "leads",
+        "portal_linked_at"
+      ],
+      "writes": [
+        "s|col|crm.leads.portal_linked_at",
+        "n|col|crm.leads.portal_linked_at",
+        "e|col|crm.leads.portal_linked_at"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "crm",
+        "leads",
+        "leads_portal_customer_id_idx"
+      ],
+      "writes": [
+        "s|idx|crm.leads_portal_customer_id_idx",
+        "n|idx|crm.leads_portal_customer_id_idx",
+        "e|idx|crm.leads_portal_customer_id_idx",
+        "n|rel|crm.leads_portal_customer_id_idx"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm",
+        "n|col|crm.leads.portal_customer_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "crm",
+        "leads"
+      ],
+      "writes": [
+        "s|fk|crm.leads.leads_portal_customer_id_customers_id_fkey",
+        "n|fk|crm.leads.leads_portal_customer_id_customers_id_fkey",
+        "e|fk|crm.leads.leads_portal_customer_id_customers_id_fkey",
+        "n|con|crm.leads.leads_portal_customer_id_customers_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm",
+        "n|tbl|crm.customers",
+        "n|sch|crm",
+        "n|col|crm.leads.portal_customer_id",
+        "n|col|crm.customers.id",
+        "e|uniqueness|crm.customers.id"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "crm",
+        "leads"
+      ],
+      "writes": [
+        "s|ck|crm.leads.leads_portal_linked_via_check",
+        "n|ck|crm.leads.leads_portal_linked_via_check",
+        "e|ck|crm.leads.leads_portal_linked_via_check",
+        "n|con|crm.leads.leads_portal_linked_via_check"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm",
+        "n|col|crm.leads.portal_linked_via"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "crm",
+        "leads"
+      ],
+      "writes": [
+        "s|ck|crm.leads.leads_portal_link_check",
+        "n|ck|crm.leads.leads_portal_link_check",
+        "e|ck|crm.leads.leads_portal_link_check",
+        "n|con|crm.leads.leads_portal_link_check"
+      ],
+      "reads": [
+        "n|tbl|crm.leads",
+        "n|sch|crm",
+        "n|col|crm.leads.portal_customer_id",
+        "n|col|crm.leads.portal_linked_via"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "portal_customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "portal_linked_via",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "portal_linked_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "leads_portal_customer_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "portal_customer_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "leads_portal_customer_id_customers_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "portal_customer_id"
+        ],
+        "schemaTo": "crm",
+        "tableTo": "customers",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "leads_portal_linked_via_check",
+        "value": "\"portal_linked_via\" IS NULL OR \"portal_linked_via\" IN ('account', 'claim')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "crm",
+        "table": "leads",
+        "name": "leads_portal_link_check",
+        "value": "(\"portal_customer_id\" IS NULL) = (\"portal_linked_via\" IS NULL)",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

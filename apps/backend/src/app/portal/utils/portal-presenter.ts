@@ -7,6 +7,7 @@
  * (`Accept-Language`, en/id), dates on the Asia/Jakarta clock. Pure
  * functions, no I/O; business rules stay in the services.
  */
+import type { TPortalRfqView } from '../services/portal-rfq.service';
 import type { TPortalTicket, TPortalTicketDetail } from '@app/aftersales/contracts/service-ticket.contract';
 import type { TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
 import type { TPortalAccountView } from '@app/user/contracts/portal-account.contract';
@@ -314,5 +315,20 @@ export function warrantyDetail(p: TPresenter, device: TPortalDevice) {
 			meta: dateLabel(p, certificate.issueDate),
 			kind: 'file' as const,
 		},
+	};
+}
+
+/** A website RFQ in the portal's `RfqSummary` shape (ERP-0072). */
+export function rfqSummary(p: TPresenter, rfq: TPortalRfqView) {
+	return {
+		reference: rfq.reference,
+		title: rfq.title,
+		siteLocation: rfq.siteLocation,
+		status: rfq.portalStatus,
+		statusLabel: p.t(`portal.rfq.status.${rfq.portalStatus}` as const),
+		submittedLabel: p.t('portal.rfq.submittedOn', { date: dateLabel(p, rfq.submittedAt) }),
+		itemCount: rfq.itemCount,
+		...(rfq.quotationId ? { quotationId: rfq.quotationId } : {}),
+		origin: rfq.origin,
 	};
 }

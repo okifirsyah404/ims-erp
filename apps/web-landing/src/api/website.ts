@@ -259,6 +259,22 @@ export function createErpWebsiteSource(config: ErpWebsiteConfig): WebsiteSource 
     return form;
   };
 
+  /**
+   * The website key and the customer's session together: the ERP authorises the website and
+   * attributes the request to the customer (a signed-in RFQ joins their account, ERP-0072).
+   */
+  const websiteForCustomer = (auth: CustomerAuth) =>
+    createApiClient({
+      baseUrl: config.baseUrl,
+      token: config.token,
+      sessionCookie: auth.sessionCookie,
+      fetcher: config.fetcher,
+      timeoutMs: config.timeoutMs,
+      retries: config.retries,
+      unwrap: config.unwrap,
+      defaultHeaders: config.defaultHeaders,
+    });
+
   /** Same base URL and transport, but authenticated as the customer instead of the service. */
   const customerClient = (auth: CustomerAuth) =>
     createApiClient({
@@ -273,7 +289,7 @@ export function createErpWebsiteSource(config: ErpWebsiteConfig): WebsiteSource 
 
   return {
     submitRfq: (submission, attachments, auth) =>
-      (auth ? customerClient(auth) : client).post(path("submitRfq"), withFiles(submission, attachments, "attachments"), { idempotencyKey: crypto.randomUUID() }),
+      (auth ? websiteForCustomer(auth) : client).post(path("submitRfq"), withFiles(submission, attachments, "attachments"), { idempotencyKey: crypto.randomUUID() }),
     sendContactMessage: (message) => client.post(path("sendContactMessage"), message),
     requestDemo: (request) => client.post(path("requestDemo"), request, { idempotencyKey: crypto.randomUUID() }),
     async applyPromo(code, subtotal) {

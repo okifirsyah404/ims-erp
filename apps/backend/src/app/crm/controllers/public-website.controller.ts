@@ -1,4 +1,5 @@
 import { publicApiGuard } from '@authorization/public-api-auth';
+import { PORTAL_SESSION_RESOLVER_TOKEN } from '@authorization/portal-auth';
 import { container } from 'tsyringe';
 import type { z } from 'zod';
 import { domainPlugin } from '@http/plugin';
@@ -53,19 +54,28 @@ function receipt<T>(replayed: boolean, data: T, status: (code: 201, body: unknow
 export class PublicWebsiteController {
 	static plugin() {
 		const inquiries = container.resolve(WEBSITE_INQUIRY_SERVICE_TOKEN);
+		const portalSessions = container.resolve(PORTAL_SESSION_RESOLVER_TOKEN);
 		const parse = <S extends z.ZodType>(schema: S, input: unknown): z.output<S> => schema.parse(input);
 
 		return domainPlugin({ name: 'public-website', prefix: '/public/v1', tags: ['Public Website'] })
 			.use(publicApiGuard())
 			.post(
 				'/rfq',
-				async ({ body, headers, status }) => {
+				async ({ body, headers, request, status }) => {
 					const { payload, files } = rfqParts(body);
-					const result = await inquiries.submitRfq(parse(rfqSubmissionSchema, payload), files, idempotencyKey(headers));
-					// Customer-portal linking arrives with the portal (M02 stage 2).
-					return receipt(result.replayed, { reference: result.reference, linkedToAccount: false }, status);
+					// ERP-0072: the website forwards the signed-in customer's portal session
+					// cookie next to its API key; a live customer session links the RFQ.
+					const customer = await portalSessions.resolve(request.headers);
+					const result = await inquiries.submitRfq(parse(rfqSubmissionSchema, payload), files, idempotencyKey(headers), customer?.customerId ?? null);
+					return receipt(result.replayed, { reference: result.reference, linkedToAccount: result.linkedToAccount ?? false }, status);
 				},
-				{ publicApi: true, detail: { description: 'Website request for quotation (JSON or multipart)' } },
+				{
+					publicApi: true,
+					detail: {
+						description:
+							'Website request for quotation (JSON or multipart). Sent with the customer portal session cookie as well as the website key, the RFQ joins that customer account (linkedToAccount true).',
+					},
+				},
 			)
 			.post(
 				'/contact',

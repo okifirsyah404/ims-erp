@@ -182,6 +182,11 @@ export const leads = crmSchema.table(
 		/** The website payload as received, for audit. */
 		submission: jsonb('submission').$type<Record<string, unknown>>(),
 		idempotencyKey: varchar('idempotency_key', { length: 100 }),
+		/** Customer portal account the website RFQ belongs to (ERP-0072); not the conversion `customerId`. */
+		portalCustomerId: uuid('portal_customer_id').references(() => customers.id, { onDelete: 'restrict' }),
+		/** How the RFQ joined the portal account: `account` (submitted signed in) or `claim` (email code). */
+		portalLinkedVia: text('portal_linked_via'),
+		portalLinkedAt: unixTimestampNullable('portal_linked_at'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		createdBy: text('created_by'),
 		...timestamps,
@@ -190,6 +195,7 @@ export const leads = crmSchema.table(
 		index('leads_owner_user_id_idx').on(table.ownerUserId),
 		index('leads_status_idx').on(table.status),
 		index('leads_next_follow_up_at_idx').on(table.nextFollowUpAt),
+		index('leads_portal_customer_id_idx').on(table.portalCustomerId),
 		uniqueIndex('leads_reference_uq')
 			.on(table.reference)
 			.where(sql`reference IS NOT NULL`),
@@ -205,6 +211,8 @@ export const leads = crmSchema.table(
 			sql`${table.status} IN ('new', 'contacted', 'survey', 'quotation', 'won', 'lost')`,
 		),
 		check('leads_channel_check', sql`${table.channel} IS NULL OR ${table.channel} IN ('rfq', 'contact', 'demo')`),
+		check('leads_portal_linked_via_check', sql`${table.portalLinkedVia} IS NULL OR ${table.portalLinkedVia} IN ('account', 'claim')`),
+		check('leads_portal_link_check', sql`(${table.portalCustomerId} IS NULL) = (${table.portalLinkedVia} IS NULL)`),
 	],
 );
 

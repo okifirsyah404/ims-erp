@@ -114,4 +114,6 @@ export interface IPortalMailer {
 	sendInvitation(input: { to: string; name: string; url: string }): Promise<void>;
 	sendPasswordReset(input: { to: string; name: string; url: string }): Promise<void>;
 	sendSignupCode(input: { to: string; name: string; code: string }): Promise<void>;
+	/** The code that confirms a guest RFQ may join a portal account (ERP-0072). */
+	sendRfqClaimCode(input: { to: string; name: string; code: string; reference: string }): Promise<void>;
 }

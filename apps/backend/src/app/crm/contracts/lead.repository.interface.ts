@@ -51,6 +51,8 @@ export type TInquiryCreateData = {
 	submission: Record<string, unknown>;
 	reference: string;
 	idempotencyKey: string | null;
+	/** Set when a signed-in portal customer submitted the RFQ (ERP-0072). */
+	portalCustomerId?: string | null;
 };
 
 export type TLeadAttachmentData = {
@@ -95,6 +97,15 @@ export interface ILeadRepository {
 	softDelete(id: string): Promise<boolean>;
 
 	listAttachments(leadId: string): Promise<TLeadAttachmentSelect[]>;
+
+	/** Website RFQs that belong to a portal account (ERP-0072), newest first. */
+	listPortalRfqs(customerId: string): Promise<TLeadSelect[]>;
+
+	/** The live website RFQ with this public reference, or `null`. */
+	findRfqByReference(reference: string): Promise<TLeadSelect | null>;
+
+	/** Links an unlinked RFQ to a portal account; `null` when it is gone or already linked (race). */
+	linkPortalCustomer(id: string, customerId: string, via: 'account' | 'claim'): Promise<TLeadSelect | null>;
 }
 
 /** Persistence port for `crm.lead_activities`. */

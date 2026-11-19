@@ -105,12 +105,16 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | `listInvoices` / `getInvoice` | `GET /portal/v1/invoices`, `/invoices/:id` | issued, partially paid and paid invoices only |
 | `listPaymentMethods` | `GET /portal/v1/payment-methods` | the active gateway as one method (`id` = provider); empty when none |
 | `payInvoice` | `POST /portal/v1/invoices/:id/pay` | `{ methodId }` → `{ instructionsUrl, reference }` (gateway checkout, reused while pending) |
+| `listRfqs` | `GET /portal/v1/rfqs` | website RFQs of the account (ERP-0072): submitted signed in (`origin: account`) or claimed (`claimed_guest`); status `received` (new), `in_review` (contacted/survey), `quoted` (quotation stage or a non-draft SPH for the lead, `quotationId`), `closed` (won/lost) |
+| `requestRfqClaim` | `POST /portal/v1/rfqs/claim` | `{ reference }` → `{ reference, maskedEmail, expiresInMinutes: 15 }`; a 6-digit code is mailed to the RFQ's address; 404 unknown, already in an account, or no email |
+| `confirmRfqClaim` | `POST /portal/v1/rfqs/claim/confirm` | `{ reference, code }` → 200; 400 wrong/expired code (5 attempts, then start over); the code is bound to the account that asked |
+| website `submitRfq` (signed in) | `POST /public/v1/rfq` | website key **and** the customer's session cookie → the RFQ joins that account (`linkedToAccount: true`); a guest RFQ answers `false` |
 
 Not built yet (routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
 `completeOnboarding`, notifications, device registration and lookup, service
 booking, profile, documents, `updatePersonal`/`updateCompany`/`updateSettings`,
-sites, wishlist, public order lookup, RFQs, the website's account cart
+sites, wishlist, public order lookup, the website's account cart
 (`getCart`/`syncCart`; the cart stays on the device).
 
 ## Staff side

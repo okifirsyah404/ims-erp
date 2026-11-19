@@ -4,7 +4,7 @@ import { requestBodyDoc } from '@http/openapi';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
-import { PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { PORTAL_RFQ_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import {
 	portalAcceptQuotationSchema,
 	portalCheckoutSchema,
@@ -13,8 +13,11 @@ import {
 	portalPayInvoiceSchema,
 	portalPlaceOrderSchema,
 	portalRevisionSchema,
+	portalRfqClaimConfirmSchema,
+	portalRfqClaimSchema,
 } from '../contracts/portal.contract';
-import { PortalNotFoundError } from '../errors/portal.errors';
+import { PortalNotFoundError, PortalRfqClaimCodeInvalidError, PortalRfqNotClaimableError } from '../errors/portal.errors';
+import { rfqSummary } from '../utils/portal-presenter';
 import { formPayload } from '../utils/form-payload';
 import type { TPresenter } from '../utils/portal-presenter';
 import {
@@ -44,6 +47,7 @@ export class PortalSalesController {
 	static plugin() {
 		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		const portalService = container.resolve(PORTAL_SERVICE_TOKEN);
+		const rfqs = container.resolve(PORTAL_RFQ_SERVICE_TOKEN);
 		const id = (params: unknown) => {
 			const parsed = portalIdParamSchema.safeParse(params);
 			if (!parsed.success) throw new PortalNotFoundError();
@@ -51,6 +55,53 @@ export class PortalSalesController {
 		};
 
 		return domainPlugin({ name: 'portal-sales', prefix: '/portal/v1', tags: ['Customer portal'], guards: 'portal' })
+			.get(
+				'/rfqs',
+				async (ctx) => {
+					const p = presenter(ctx);
+					return ok((await rfqs.list(ctx.portal)).map((rfq) => rfqSummary(p, rfq)));
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Website RFQs of the account',
+						description: 'RFQs submitted on the website while signed in, plus guest RFQs claimed with a code (ERP-0072), newest first, with the SPH sent for each',
+					},
+				},
+			)
+			.post(
+				'/rfqs/claim',
+				async ({ portal, body }) => {
+					const challenge = await rfqs.requestClaim(portal, portalRfqClaimSchema.parse(body).reference);
+					if (!challenge) throw new PortalRfqNotClaimableError();
+					return ok(challenge);
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Start a guest-RFQ claim',
+						description:
+							'Emails a 6-digit code (15 minutes, 5 attempts) to the address on the RFQ. 404 when the reference is unknown, already in an account, or has no email.',
+						...requestBodyDoc(portalRfqClaimSchema),
+					},
+				},
+			)
+			.post(
+				'/rfqs/claim/confirm',
+				async ({ portal, body }) => {
+					const input = portalRfqClaimConfirmSchema.parse(body);
+					if (!(await rfqs.confirmClaim(portal, input.reference, input.code))) throw new PortalRfqClaimCodeInvalidError();
+					return noContent();
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Confirm a guest-RFQ claim',
+						description: 'Adds the RFQ to this account when the code matches; 400 when it is wrong or expired',
+						...requestBodyDoc(portalRfqClaimConfirmSchema),
+					},
+				},
+			)
 			.post('/checkout/quote', async ({ body }) => ok(await sales.quote(portalCheckoutSchema.parse(body))), {
 				portal: true,
 				detail: {

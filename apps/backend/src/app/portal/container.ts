@@ -1,10 +1,17 @@
 import { PORTAL_SESSION_RESOLVER_TOKEN } from '@authorization/portal-auth';
 import type { DependencyContainer } from 'tsyringe';
 import { BetterAuthPortalSessionGateway } from './adapters/better-auth-portal-session';
-import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN, PORTAL_SESSION_GATEWAY_TOKEN } from './constants/di';
+import {
+	PORTAL_AUTH_SERVICE_TOKEN,
+	PORTAL_RFQ_SERVICE_TOKEN,
+	PORTAL_SALES_SERVICE_TOKEN,
+	PORTAL_SERVICE_TOKEN,
+	PORTAL_SESSION_GATEWAY_TOKEN,
+} from './constants/di';
 import { PortalAuthService } from './services/portal-auth.service';
 import { PortalService } from './services/portal.service';
 import { PortalSalesService } from './services/portal-sales.service';
+import { PortalRfqService } from './services/portal-rfq.service';
 
 export * from './constants/di';
 
@@ -21,4 +28,5 @@ export function registerPortal(container: DependencyContainer): void {
 	container.register(PORTAL_SESSION_RESOLVER_TOKEN, { useToken: PORTAL_AUTH_SERVICE_TOKEN });
 	container.register(PORTAL_SERVICE_TOKEN, { useClass: PortalService });
 	container.register(PORTAL_SALES_SERVICE_TOKEN, { useClass: PortalSalesService });
+	container.register(PORTAL_RFQ_SERVICE_TOKEN, { useClass: PortalRfqService });
 }

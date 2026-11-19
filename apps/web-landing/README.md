@@ -121,7 +121,8 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
   location, products and/or software, requirements, attachments). Signed-in RFQs are linked to
   the account; guest RFQs get a portal link (`/quotations/claim?reference=…`) where the owner
   proves ownership with a code emailed to the RFQ's address.
-- **ERP operations still to map** (`WebsiteRoutes`): `getCart`, `syncCart`, `quoteOrder`,
-  `placeOrder` (customer token + Idempotency-Key), `getPaymentStatus` (`:orderNumber`),
-  `submitRfq` (accepts an optional customer token), plus the existing contact/demo/promo/tracking
-  routes and the catalog routes.
+- **ERP routes** (`src/lib/server/website/erp-routes.ts`): contact, demo and RFQ forms
+  (`/public/v1/contact`, `/demo`, `/rfq`; a signed-in customer's RFQ also sends their portal
+  session and joins their account, ERP-0072) and checkout (`quoteOrder`, `placeOrder`,
+  `getPaymentStatus`, ERP-0070). Promo codes are not built in the ERP: `applyPromo` is unmapped
+  and the checkout hides the promo field. Still unmapped: `trackOrder`, `getCart`, `syncCart`.

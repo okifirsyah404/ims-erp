@@ -1165,6 +1165,9 @@ Table crm.leads {
   reference varchar(40) [note: "Public reference handed back to the website visitor (document numbering web_*)."]
   submission jsonb [note: "The website payload as received, for audit."]
   idempotency_key varchar(100) [note: "Website Idempotency-Key; a replay returns the original reference."]
+  portal_customer_id uuid [note: "Customer account the website RFQ belongs to in the customer portal: set when a signed-in customer submits it (account) or when the RFQ email owner claims it with a code (claim). Not the conversion customer_id."]
+  portal_linked_via text [note: "How the RFQ joined the portal account: account or claim."]
+  portal_linked_at bigint
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -1174,11 +1177,14 @@ Table crm.leads {
     owner_user_id [name: 'leads_owner_user_id_idx']
     status [name: 'leads_status_idx']
     next_follow_up_at [name: 'leads_next_follow_up_at_idx']
+    portal_customer_id [name: 'leads_portal_customer_id_idx']
   }
   Checks {
     `source IN ('website', 'whatsapp', 'instagram', 'phone', 'referral', 'walk_in', 'other')`
     `status IN ('new', 'contacted', 'survey', 'quotation', 'won', 'lost')`
     `channel IS NULL OR channel IN ('rfq', 'contact', 'demo')`
+    `portal_linked_via IS NULL OR portal_linked_via IN ('account', 'claim')`
+    `(portal_customer_id IS NULL) = (portal_linked_via IS NULL)`
   }
 }
 
@@ -1597,6 +1603,7 @@ Table catalog.item_cost_histories {
 Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.customer_addresses.customer_id > crm.customers.id [delete: cascade]
 Ref: crm.leads.customer_id > crm.customers.id [delete: restrict]
+Ref: crm.leads.portal_customer_id > crm.customers.id [delete: restrict]
 Ref: crm.lead_activities.lead_id > crm.leads.id [delete: restrict]
 Ref: crm.lead_attachments.lead_id > crm.leads.id [delete: restrict]
 Ref: crm.customer_segment_members.segment_id > crm.customer_segments.id [delete: cascade]

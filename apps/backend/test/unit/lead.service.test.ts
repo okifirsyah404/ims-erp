@@ -81,7 +81,18 @@ class FakeLeads implements ILeadRepository {
 			this.rows.push({ ...data, id: crypto.randomUUID(), reference: 'RFQ-FIRST' } as unknown as TLeadSelect);
 			throw Object.assign(new Error('duplicate'), { code: '23505' });
 		}
-		const row = { ...data, id: crypto.randomUUID(), source: 'website', status: 'new', ownerUserId: null, createdAt: new Date() } as unknown as TLeadSelect;
+		const { portalCustomerId = null, ...lead } = data;
+		const row = {
+			...lead,
+			id: crypto.randomUUID(),
+			source: 'website',
+			status: 'new',
+			ownerUserId: null,
+			portalCustomerId,
+			portalLinkedVia: portalCustomerId ? 'account' : null,
+			deletedAt: null,
+			createdAt: new Date(),
+		} as unknown as TLeadSelect;
 		this.rows.push(row);
 		this.attachments.push(...files.map((file) => ({ ...file, id: crypto.randomUUID(), leadId: row.id })));
 		return row;
@@ -116,6 +127,17 @@ class FakeLeads implements ILeadRepository {
 	}
 	async listAttachments(leadId: string) {
 		return this.attachments.filter((a) => a.leadId === leadId) as never;
+	}
+	async listPortalRfqs(customerId: string) {
+		return this.rows.filter((row) => row.portalCustomerId === customerId && row.channel === 'rfq');
+	}
+	async findRfqByReference(reference: string) {
+		return this.rows.find((row) => row.reference === reference && row.channel === 'rfq') ?? null;
+	}
+	async linkPortalCustomer(id: string, customerId: string, via: 'account' | 'claim') {
+		const row = await this.findById(id);
+		if (!row || row.portalCustomerId) return null;
+		return Object.assign(row, { portalCustomerId: customerId, portalLinkedVia: via });
 	}
 }
 
@@ -256,7 +278,7 @@ describe('WebsiteInquiryService', () => {
 
 	test('an RFQ becomes an unassigned website lead with its files and a readable summary', async () => {
 		const receipt = await service.submitRfq(rfq, [file('denah.pdf'), file('foto.JPG')], 'key-0001');
-		expect(receipt).toEqual({ reference: 'RFQ-2026-00001', replayed: false });
+		expect(receipt).toEqual({ reference: 'RFQ-2026-00001', replayed: false, linkedToAccount: false });
 		const [lead] = leads.rows;
 		expect(lead).toMatchObject({ source: 'website', ownerUserId: null, channel: 'rfq', email: 'sari@example.com' });
 		expect(lead.needs).toContain('Produk: swing-barrier-gate x2');
@@ -267,14 +289,14 @@ describe('WebsiteInquiryService', () => {
 	test('a replayed Idempotency-Key returns the first reference without a second lead or upload', async () => {
 		await service.submitRfq(rfq, [file('denah.pdf')], 'key-0001');
 		const replay = await service.submitRfq(rfq, [file('denah.pdf')], 'key-0001');
-		expect(replay).toEqual({ reference: 'RFQ-2026-00001', replayed: true });
+		expect(replay).toEqual({ reference: 'RFQ-2026-00001', replayed: true, linkedToAccount: false });
 		expect(leads.rows).toHaveLength(1);
 		expect(stored).toHaveLength(1);
 	});
 
 	test('a concurrent duplicate key answers with the winner reference', async () => {
 		leads.raceOnNextInquiry = true;
-		expect(await service.submitRfq(rfq, [], 'key-0002')).toEqual({ reference: 'RFQ-FIRST', replayed: true });
+		expect(await service.submitRfq(rfq, [], 'key-0002')).toEqual({ reference: 'RFQ-FIRST', replayed: true, linkedToAccount: false });
 	});
 
 	test('attachment limits: count, size, and type', async () => {
@@ -285,6 +307,31 @@ describe('WebsiteInquiryService', () => {
 		);
 		await expect(service.submitRfq(rfq, [file('virus.exe')], null)).rejects.toBeInstanceOf(WebsiteInquiryError);
 		expect(leads.rows).toHaveLength(0);
+	});
+
+	test('ERP-0072: an RFQ from a signed-in customer joins that portal account; a guest RFQ does not', async () => {
+		const linked = await service.submitRfq(rfq, [], 'key-0003', 'customer-1');
+		expect(linked.linkedToAccount).toBe(true);
+		const guest = await service.submitRfq(rfq, [], 'key-0004');
+		expect(guest.linkedToAccount).toBe(false);
+		// A replay keeps answering as linked.
+		expect((await service.submitRfq(rfq, [], 'key-0003', 'customer-1')).linkedToAccount).toBe(true);
+
+		const mine = await service.listPortalRfqs('customer-1');
+		expect(mine).toHaveLength(1);
+		expect(mine[0]).toMatchObject({ reference: linked.reference, siteLocation: 'Jakarta', itemCount: 1, origin: 'account', status: 'new' });
+		expect(await service.listPortalRfqs('customer-2')).toEqual([]);
+	});
+
+	test('ERP-0072: a guest RFQ is claimed once; references are matched case-insensitively', async () => {
+		const guest = await service.submitRfq(rfq, [], 'key-0005');
+		const claimable = await service.findClaimableRfq(guest.reference.toLowerCase());
+		expect(claimable).toMatchObject({ reference: guest.reference, email: 'sari@example.com', linked: false });
+		expect(await service.claimRfq(claimable!.id, 'customer-1')).toBe(true);
+		expect(await service.claimRfq(claimable!.id, 'customer-2')).toBe(false);
+		expect((await service.listPortalRfqs('customer-1'))[0]!.origin).toBe('claimed_guest');
+		expect((await service.findClaimableRfq(guest.reference))!.linked).toBe(true);
+		expect(await service.findClaimableRfq('RFQ-NOPE')).toBeNull();
 	});
 });
 

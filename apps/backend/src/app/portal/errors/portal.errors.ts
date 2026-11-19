@@ -65,3 +65,17 @@ export class PortalCheckoutChangedError extends AppError {
 		super(409, 'portal.checkoutChanged', 'Prices or availability changed. Please review your order again.');
 	}
 }
+
+/** The RFQ reference is unknown, already in an account, or has no email to send a code to (ERP-0072). */
+export class PortalRfqNotClaimableError extends AppError {
+	constructor() {
+		super(404, 'portal.rfqNotClaimable', 'This request cannot be added to your account');
+	}
+}
+
+/** The claim code is wrong or expired (ERP-0072). */
+export class PortalRfqClaimCodeInvalidError extends AppError {
+	constructor() {
+		super(400, 'portal.rfqClaimCodeInvalid', 'The code is wrong or has expired');
+	}
+}
