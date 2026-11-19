@@ -12,6 +12,73 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - Portal and website broken on `main` by Dependabot bumps; fixed on `fix/portal-vite-pwa-v2`
+
+`bun run dev` on `main` (`929209c6`) failed: `@ims-erp/web-customer-portal`
+exited with "The requested module '@vite-pwa/astro' does not provide an export
+named 'default'", and turbo stopped every other app with it.
+
+**Causes (both from Dependabot merges, no app code was adjusted).**
+- PR #127 bumped `@vite-pwa/astro` to 2.0.2, a rewrite on `@unplugin-pwa/*`
+  that only exports the named `AstroPWAIntegration`.
+- `@lucide/astro` 1.73.0 renamed three icons and kept the old names only as
+  deprecated aliases in its barrel, not as `icons/*` subpaths:
+  `circle-alert` -> `circle-exclamation-point`, `triangle-alert` ->
+  `triangle-exclamation-point`, `square-parking` -> `square-letter-p`. That
+  broke 6 portal pages and 2 website files (`astro check`: 6 errors, ts2307).
+
+**Changes.**
+- `apps/web-customer-portal/astro.config.mjs`: named import
+  `AstroPWAIntegration as AstroPWA`; the deprecated `workbox` option renamed to
+  `generateSW` (same type in v2); `includeManifestIcons` and
+  `includeManifestShortcutIcons` set to `false`, because v2 adds those icons on
+  top of the `icons/*.png` glob and listed `/icons/pwa-192.png` five times.
+- Icon import paths updated in the portal (`Flash`, `OrdersDesktop`,
+  `ProductsDesktop`, `login`, `track`, `register/details`) and the website
+  (`components/ui/Alert.astro`, `lib/icons.ts`; the `"square-parking"` lookup
+  key is unchanged).
+- `bun.lock`: `bun install` dropped the orphaned
+  `@vite-pwa/astro/vite-plugin-pwa@1.3.0` entry left by PR #128.
+
+**Verification.**
+- `astro check` in both apps: 0 errors, 0 warnings (portal 150 files).
+- `bun run build` for the portal: no deprecation or duplicate warnings, 58
+  precache entries, each `pwa-*.png` listed once; `sw.js` keeps the NetworkOnly
+  navigation route with the `/offline` precache fallback.
+- `bun run build` for the website: complete.
+- `bun run dev` from the root: backend `GET /api/auth/ok` 200 on 3001,
+  web-admin 200 on 5173, website 200 on 4321, portal 303 (login redirect) on
+  4322, react-email preview 200 on 3000.
+- Neither Astro app has `lint` or `test` scripts; root lint/test were not run
+  (no backend, web-admin or package code changed).
+
+**Local setup note (not committed).** The local `apps/backend/.env` had
+`APP_PORT=3000`, which clashes with the react-email preview on 3000. It was
+moved to 3001, as in `.env.example`, together with the portal's
+`ERP_API_BASE_URL`; `apps/web-admin/.env` was created from its example.
+
+**Web admin blank page on an older local setup (also local, not committed).**
+- `/api/auth/get-session` hung because the `ims-erp-postgres-1` /
+  `ims-erp-redis-1` containers were stopped; the backend keeps a dead Redis
+  connection until it restarts. `docker start` on both, then a backend restart.
+- CORS then blocked `localhost:5173`: the backend no longer reads
+  `CORS_ORIGINS`; without `cors.json` it allows only `APP_WEB_URL` (falling
+  back to `APP_URL`). Added `APP_WEB_URL=http://localhost:5173` and copied
+  `cors.example.json` to `cors.json`.
+- `/company/branding` returned 500 (missing columns): `main`'s migration chain
+  was rebuilt (31 folders from `create_*_schema`), so a database migrated on
+  the old chain (45 entries in `drizzle.__drizzle_migrations`) cannot move
+  forward. A new `ims_erp_main` database was created and `bun run
+  drizzle:migrate-reset` run there (the old database is kept untouched).
+- The shell this session ran in exported `NODE_ENV=production`, which beats
+  `.env` and made the seeders skip demo data; `NODE_ENV=development bun run
+  drizzle:seed` was run twice (second run inserted nothing new).
+- Result: admin login from `http://localhost:5173` reaches the dashboard
+  (headless Chrome), session cookies `secure=false`, `/company/branding` 200.
+
+No backlog item claimed: this repairs dependency upgrades and adds no feature.
+`docs/database/` reviewed, unchanged (no schema touched).
+
 ## 2026-11-19 - PR #114 merged `main` in (ERP-0039 n8n workflow); the dependency notes are now obsolete
 
 `origin/main` (`5bd6fc9d`, #116 and #117 merged) was merged into

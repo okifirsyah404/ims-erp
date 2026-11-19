@@ -2,7 +2,7 @@ import { defineConfig, envField } from "astro/config";
 import node from "@astrojs/node";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
-import AstroPWA from "@vite-pwa/astro";
+import { AstroPWAIntegration as AstroPWA } from "@vite-pwa/astro";
 
 // `astro dev` (even when launched with NODE_ENV=production) serves plain http on localhost.
 const isDevServer = process.argv.includes("dev");
@@ -67,6 +67,10 @@ export default defineConfig({
       // (src/components/app/PwaStatus.astro), so in-progress forms are never reloaded away.
       registerType: "prompt",
       injectRegister: false,
+      // Icons are precached by the `icons/*.png` glob below; letting the plugin add the
+      // manifest and shortcut icons too lists /icons/pwa-192.png several times.
+      includeManifestIcons: false,
+      includeManifestShortcutIcons: false,
 
       manifest: {
         id: "/",
@@ -104,7 +108,7 @@ export default defineConfig({
         ],
       },
 
-      workbox: {
+      generateSW: {
         // Precache only the static, user-agnostic shell: hashed build assets, icons and the
         // prerendered offline page (precached as "/offline"). Fonts: Latin subsets only.
         globPatterns: ["_astro/**/*.{js,css}", "_astro/**/*-latin-*.woff2", "icons/*.png", "favicon.{svg,ico}", "offline/index.html"],
