@@ -1,7 +1,7 @@
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
-import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
-import type { CustomerService } from '@app/crm/services/customer.service';
+import { CUSTOMER_SERVICE_TOKEN } from '@app/customer/constants/di';
+import type { CustomerService } from '@app/customer/services/customer.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
 import type { CodeNumberService } from '@app/code-number';

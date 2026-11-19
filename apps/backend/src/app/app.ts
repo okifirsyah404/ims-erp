@@ -6,13 +6,12 @@ import Elysia from 'elysia';
 
 import { accountingModule } from './accounting';
 import { aftersalesModule } from './aftersales';
-import { assetsModule } from './assets';
 import { auditModule } from './audit';
 import { automationModule } from './automation';
-import { catalogModule } from './catalog';
 import { codeNumberModule } from './code-number';
 import { companyModule } from './company';
-import { crmModule } from './crm';
+import { supplierModule } from './supplier';
+import { customerModule } from './customer';
 import { documentModule } from './document';
 import { hrModule } from './hr';
 import { inventoryModule } from './inventory';
@@ -21,8 +20,8 @@ import { locationModule } from './location';
 import { notificationModule } from './notification';
 import { organizationModule } from './organization';
 import { paymentModule } from './payment';
-import { portalModule } from './portal';
 import { procurementModule } from './procurement';
+import { projectModule } from './project';
 import { projectsModule } from './projects';
 import { salesModule } from './sales';
 import { userModule } from './user';
@@ -91,10 +90,7 @@ export function createApp() {
 			.use(procurementModule())
 			.use(projectsModule())
 			.use(aftersalesModule())
-			// Customer portal API (ERP-0022): `/portal/v1`, bearer sessions, own guard.
-			.use(portalModule())
 			.use(licensingModule())
-			.use(catalogModule())
 			.use(automationModule())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant
@@ -110,13 +106,15 @@ export function createApp() {
 			.use(notificationModule())
 			.use(organizationModule())
 			.use(companyModule())
+			.use(supplierModule())
 			.use(codeNumberModule())
 			.use(documentModule())
-			.use(crmModule())
+			// Customer master and the customer portal (ADR-0024 Q28: `/customers/portal/v1`,
+			// bearer sessions, own guard).
+			.use(customerModule())
+			// Leads and the website inquiry API (ADR-0024 Q12).
+			.use(projectModule())
 			.use(inventoryModule())
-			// Assets owns equipment and borrowing (ERP-0036); `/borrowings`
-			// moved here from inventory.
-			.use(assetsModule())
 			.use(accountingModule())
 			.use(hrModule())
 	);

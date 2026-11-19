@@ -1,5 +1,5 @@
-import { LEAD_SERVICE_TOKEN } from '@app/crm/constants/di';
-import type { LeadService } from '@app/crm/services/lead.service';
+import { LEAD_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { LeadService } from '@app/project/services/lead.service';
 import type { HandoffReason, MessageAuthor, TConversationSelect, TWhatsappMessageSelect } from '@drizzle/schemas/automation.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { pinoLogger } from '@providers/logger/logger';

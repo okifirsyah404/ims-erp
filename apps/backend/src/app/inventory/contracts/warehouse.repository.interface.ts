@@ -76,7 +76,7 @@ export type TWarehouseCreateData = Omit<
 	 */
 	address?: {
 		label?: string | null;
-		street: string;
+		addressLine: string;
 		rt?: string | null;
 		rw?: string | null;
 		postalCode?: string | null;

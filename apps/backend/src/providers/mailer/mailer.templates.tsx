@@ -15,7 +15,7 @@ import {
 import { createInstance } from 'i18next';
 import { container } from 'tsyringe';
 import { appConfig } from '@config/providers/config';
-import { COMPANY_SERVICE_TOKEN } from '@app/company';
+import { EXPORTED_COMPANY_SERVICE_TOKEN } from '@app/company';
 import type { MailPayload } from './mailer.transport';
 
 /**
@@ -35,7 +35,7 @@ const appNameFallback = () => appConfig.app.name ?? 'ERP';
 /** The company display name (`tradingName ?? legalName`), or the env fallback. */
 async function appName(): Promise<string> {
 	try {
-		const company = container.resolve(COMPANY_SERVICE_TOKEN);
+		const company = container.resolve(EXPORTED_COMPANY_SERVICE_TOKEN);
 		return (await company.getDisplayName()) ?? appNameFallback();
 	} catch {
 		// Better Auth hooks can run before the container is populated (tests,

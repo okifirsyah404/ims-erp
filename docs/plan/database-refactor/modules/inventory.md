@@ -40,7 +40,8 @@ Schema `inventory` · folder `src/app/inventory` (absorbs `assets` and
 | borrowing_requests | draft -> requested -> approved / rejected / cancelled; purpose, borrower (user/customer/guest), due_at, requested/approved by; `tool_set_id` (nullable FK) when a whole kit is requested - its items become the request's `borrowing_items` |
 | borrowings | issued -> partially_returned -> returned / closed; borrowing_request_id FK (unique, Q26); borrower snapshot copied from the request |
 | borrowing_items | was `borrowing_lines` (`asset_id` -> `item_id`); borrowing_request_id FK (not null, the requested unit) + borrowing_id FK (null until issued) - no separate request-lines table |
-| borrowing_events | unchanged, `asset_movement_id` -> `movement_id` |
+| borrowing_events | issued-side timeline (issued, returned, marked_late, marked_lost, due_date_extended, closed); `asset_movement_id` -> `movement_id` |
+| borrowing_request_events | **new (review 2026-11-19)**: request-side timeline (requested, approved, rejected, cancelled, due_date_extended); no movement |
 | maintenances, condition_checks, disposals | was `asset_*`, `asset_id` -> `item_id` |
 | tool_sets | was `assets.tool_sets` (Q37): code, name, custodian_employee_id, status (available/lent/maintenance/retired) |
 | tool_set_items | was `assets.tool_set_items`: tool_set_id FK, `item_id` FK (was `asset_id`); unique (tool_set_id, item_id) |
@@ -91,3 +92,5 @@ and `accumulated_depreciation` are written only through
 
 Moving average, serial lifecycle, borrowing issue/return and disposal tests
 pass on the new repositories; no code references `assets`/`catalog` schemas.
+
+**Status 2026-11-19:** backend done (steps 1-5; `assets` and `catalog` removed, `ExportedInventoryService` live). Step 6 (web-admin, web-landing, locales) and the inventory seeder are deferred to P8.

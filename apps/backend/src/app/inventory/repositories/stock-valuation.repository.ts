@@ -1,5 +1,5 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { items, stockBalances, warehouses, warehouseStorages } from '@drizzle/schemas/inventory.schema';
+import { products, stocks, warehouses, warehouseStorages } from '@drizzle/schemas/inventory.schema';
 import { likePattern } from '@drizzle/search';
 import { and, asc, count, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -13,7 +13,7 @@ import type {
 
 /**
  * Drizzle implementation of {@link IStockValuationRepository}: reads
- * `stock_balances` (kept by the ledger, with moving-average cost since
+ * `stocks` (kept by the ledger, with moving-average cost since
  * ADR-0011 step 4b) joined to the item and warehouse names.
  */
 @injectable()
@@ -23,35 +23,35 @@ export class StockValuationRepository implements IStockValuationRepository {
 	async rows(query: TStockValuationQuery): Promise<{ rows: TStockValuationRow[]; total: number }> {
 		const { page, limit, warehouseId, search } = query;
 		const where = and(
-			ne(stockBalances.quantityOnHand, '0'),
-			warehouseId ? eq(stockBalances.warehouseId, warehouseId) : undefined,
-			search ? or(ilike(items.sku, likePattern(search)), ilike(items.name, likePattern(search))) : undefined,
+			ne(stocks.quantityOnHand, '0'),
+			warehouseId ? eq(stocks.warehouseId, warehouseId) : undefined,
+			search ? or(ilike(products.sku, likePattern(search)), ilike(products.name, likePattern(search))) : undefined,
 		);
 		const [{ value: total }] = await this.database
 			.select({ value: count() })
-			.from(stockBalances)
-			.innerJoin(items, eq(items.id, stockBalances.itemId))
+			.from(stocks)
+			.innerJoin(products, eq(products.id, stocks.productId))
 			.where(where);
 		const rows = await this.database
 			.select({
-				itemId: stockBalances.itemId,
-				sku: items.sku,
-				name: items.name,
-				unit: items.unitLabel,
-				warehouseId: stockBalances.warehouseId,
+				productId: stocks.productId,
+				sku: products.sku,
+				name: products.name,
+				unit: products.unitLabel,
+				warehouseId: stocks.warehouseId,
 				warehouseCode: warehouses.code,
 				warehouseName: warehouses.name,
 				binCode: warehouseStorages.code,
-				quantityOnHand: stockBalances.quantityOnHand,
-				averageCost: stockBalances.averageCost,
-				totalValue: stockBalances.totalValue,
+				quantityOnHand: stocks.quantityOnHand,
+				averageCost: stocks.averageCost,
+				totalValue: stocks.totalValue,
 			})
-			.from(stockBalances)
-			.innerJoin(items, eq(items.id, stockBalances.itemId))
-			.innerJoin(warehouses, eq(warehouses.id, stockBalances.warehouseId))
-			.leftJoin(warehouseStorages, eq(warehouseStorages.id, stockBalances.binId))
+			.from(stocks)
+			.innerJoin(products, eq(products.id, stocks.productId))
+			.innerJoin(warehouses, eq(warehouses.id, stocks.warehouseId))
+			.leftJoin(warehouseStorages, eq(warehouseStorages.id, stocks.binId))
 			.where(where)
-			.orderBy(asc(warehouses.code), asc(items.sku), asc(warehouseStorages.code))
+			.orderBy(asc(warehouses.code), asc(products.sku), asc(warehouseStorages.code))
 			.limit(limit)
 			.offset((page - 1) * limit);
 		return { rows, total };
@@ -64,11 +64,11 @@ export class StockValuationRepository implements IStockValuationRepository {
 				code: warehouses.code,
 				name: warehouses.name,
 				balances: count(),
-				totalValue: sql<string>`coalesce(sum(${stockBalances.totalValue}), 0)`,
+				totalValue: sql<string>`coalesce(sum(${stocks.totalValue}), 0)`,
 			})
-			.from(stockBalances)
-			.innerJoin(warehouses, eq(warehouses.id, stockBalances.warehouseId))
-			.where(and(ne(stockBalances.quantityOnHand, '0'), warehouseId ? eq(stockBalances.warehouseId, warehouseId) : undefined))
+			.from(stocks)
+			.innerJoin(warehouses, eq(warehouses.id, stocks.warehouseId))
+			.where(and(ne(stocks.quantityOnHand, '0'), warehouseId ? eq(stocks.warehouseId, warehouseId) : undefined))
 			.groupBy(warehouses.id, warehouses.code, warehouses.name)
 			.orderBy(asc(warehouses.code));
 		// `sum(bigint)` is numeric in Postgres; values stay within 2^53 for IDR minor units.

@@ -33,13 +33,65 @@ assets operations surface). §7 item 3 (statement exports + monthly archive +
 
 Plan: `docs/plan/database-refactor/`. Decision: ADR-0024 (`proposed`).
 
+### in-progress
+- ERP-0076 inventory: **backend done** (steps 1, 2a-2c); web-admin, web-landing and seeders open (P8). Item operations under /inventory/items/:id, /inventory/disposals, /inventory/tool-sets; website catalog is /inventory/product-listings and /inventory/public/v1/catalog (alias /public/v1/catalog); `assets` and `catalog` modules deleted.
+  categories, item serials, stocks, movements, adjustments, valuation and the
+  warehouse family run on the new schema (`/inventory/products`,
+  `/inventory/product-categories`), numbering through
+  `InventoryNumberingService`; 106 unit tests pass, `src/app/inventory`
+  typechecks. Open: absorb `assets` (items, borrowing, maintenance, disposal,
+  tool sets) and `catalog`, `ExportedInventoryService`, web-admin/web-landing.
+- ERP-0075 supplier **backend done, consumers pending**: `src/app/supplier/`
+  (2 repositories, service, `ExportedSupplierService`, `/suppliers` controller,
+  container, entry), registered in `src/index.ts` and mounted in
+  `src/app/app.ts` after `companyModule()`. 8 unit tests pass
+  (`test/unit/supplier.service.test.ts`). Remaining: delete the old
+  `procurement/controllers/supplier.controller.ts` + `supplier.service.ts`
+  (P4, they compile against the removed `procurement.suppliers`), re-point
+  `finance.supplier_bills` / `ap_open_items` (P5), web-admin `supplier-api.ts`
+  + PO form pickers (step 6).
+- ERP-0074 customer **backend done, consumers pending**: `src/app/customer/`
+  (companies/people/addresses repositories, `CustomerService`,
+  `ExportedCustomerService`, and the portal absorbed from the deleted `portal`
+  module: `PortalAccountService`, `PortalAuthService`, `PortalService`,
+  `/customers/portal/v1`, `/admin/customers/portal-accounts`; the login is the
+  person's `customer.customers` row). `crm` deleted; its leads and website
+  inquiries moved early into the new `src/app/project/` (`/projects/leads`,
+  `/public/v1` URL kept until the Q34 cut-over). Unit tests: portal accounts and
+  sign-in (18), customer (9), lead + website inquiry (12). Open: portal data
+  reads (projects, tickets, devices) wait for the P6 ticket/project exported
+  services (8 type errors, `test/unit/portal-data.test.ts` blocked); web-admin
+  and web-customer-portal URL/shape changes.
+- ERP-0073 company **backend done, consumers pending**: four repositories (one
+  per table), `ExportedCompanyService`, `/companies`, invoice bank accounts
+  removed (they live in finance, P5). 19 unit tests pass.
+- ERP-0072 user: `ExportedUserService` added, portal accounts removed from the
+  module, `role.schema` imports fixed; compiles clean.
+- ERP-0070 P0 **code done, not accepted**: `docs/database/docs.dbml` rewritten
+  to the ADR-0024 target (18 schemas, 188 tables; note normalization and the
+  ADR-0014 nullable flip landed 2026-11-19), the Drizzle schema layer
+  rewritten (18 files: 7 new — `customer`, `supplier`, `sale`, `tax`, `project`,
+  `ticket`, `human-resource`; 11 rewritten; 13 deleted — `accounting`,
+  `aftersales`, `asset`, `catalog`, `code-number`, `crm`, `hr`, `licensing`,
+  `organization`, `portal`, `projects`, `role`, `sales`), and
+  `src/shared/numbering/` added (`domain`, `table`, `repository-base`).
+  `drizzle/db.ts` no longer registers relation parts (no repository used
+  `db.query.*`). Evidence: `progress.md` 2026-11-19 "P0 schema contract".
+- ERP-0071 location **partially done**: `findVillagePaths` batched join,
+  `ExportedLocationService` (`assertVillage`, `resolveVillagePath`), token and
+  container registration. Consumers not wired yet.
+- ERP-0072 organization: the cross-module import in
+  `organization/repositories/organization.repository.ts` (inventory schema) is
+  removed; `warehousesCount` is 0 until `ExportedInventoryService` (P3) is
+  injected into the service.
+
 ### planned
-- ERP-0070 P0 (ADR, numbering helper, dbml + Drizzle rewrite); ERP-0071..0087
-  per-module refactor (location, auth, company, customer, supplier, inventory,
-  sale, procurement, finance, tax, payment, project, ticket, human-resource,
-  document, notification, audit + automation); ERP-0089 `webhook` module
-  (no schema); ERP-0088 cutover (baseline migrations, seeders, URL aliases).
-  Evidence: plan only (`progress.md` 2026-11-19, revised same day); no code.
+- ERP-0071..0087 remaining per-module refactor (auth, company, customer,
+  supplier, inventory, sale, procurement, finance, tax, payment, project,
+  ticket, human-resource, document, notification, audit + automation);
+  ERP-0089 `webhook` module (no schema); ERP-0088 cutover (baseline
+  migrations, seeders, URL aliases).
+  Evidence: plan only (`progress.md` 2026-11-19, revised same day).
 
 ---
 

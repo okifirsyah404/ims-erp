@@ -11,12 +11,14 @@ import {
 	VillageRepository,
 } from './repositories/village.repository';
 import { LocationService } from './services/location.service';
+import { ExportedLocationService } from './services/exported-location.service';
 import {
 	PROVINCE_REPOSITORY_TOKEN,
 	REGENCY_REPOSITORY_TOKEN,
 	DISTRICT_REPOSITORY_TOKEN,
 	VILLAGE_REPOSITORY_TOKEN,
 	LOCATION_SERVICE_TOKEN,
+	EXPORTED_LOCATION_SERVICE_TOKEN,
 } from './constants/di';
 import { DependencyContainer } from 'tsyringe';
 
@@ -48,5 +50,8 @@ export function registerLocation(container: DependencyContainer): void {
 	});
 	container.register(LOCATION_SERVICE_TOKEN, {
 		useClass: LocationService,
+	});
+	container.register(EXPORTED_LOCATION_SERVICE_TOKEN, {
+		useClass: ExportedLocationService,
 	});
 }

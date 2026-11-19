@@ -267,7 +267,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 		storageRepository,
 		new AuditWriterDouble(),
 		// ERP-0031: no borrowings in these tests — the guard never blocks.
-		{ async countOpenBorrowings() { return 0; } },
+		{ async countOpenByOriginWarehouse() { return 0; } },
 		// No assets in these tests — equipment counts resolve to zero.
 		{ countByWarehouse: async () => [] } as never,
 		// ERP-0034: no HR rows in these tests — every PIC lookup misses, so
@@ -341,7 +341,7 @@ describe('warehouse↔organization links (ERP-0031 slice 3)', () => {
 		// Override the guard for this test: the org still holds custody.
 		const guarded = Object.assign(Object.create(Object.getPrototypeOf(service)), service, {});
 		Object.defineProperty(guarded, 'borrowingGuard', {
-			value: { async countOpenBorrowings() { return 2; } },
+			value: { async countOpenByOriginWarehouse() { return 2; } },
 		});
 
 		await expect(

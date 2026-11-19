@@ -2,7 +2,7 @@ import type { BetterAuthOptions } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { drizzleDB } from '../../../../drizzle/db';
 import { members, users } from '../../../../drizzle/schemas/auth.schema';
-import { portalIdentities } from '../../../../drizzle/schemas/portal.schema';
+import { customers } from '../../../../drizzle/schemas/customer.schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import { hasInternalOrgRole, isWebAdminAllowed } from '../ac/login-gate';
 import { PORTAL_SIGNIN_HEADER, PORTAL_SIGNIN_NONCE } from '../portal-signin';
@@ -90,13 +90,13 @@ async function isPortalSignIn(userId: string, context: unknown): Promise<boolean
 	const headers = request?.headers ?? request?.request?.headers;
 	if (headers?.get(PORTAL_SIGNIN_HEADER) !== PORTAL_SIGNIN_NONCE) return false;
 	const [identity] = await drizzleDB
-		.select({ id: portalIdentities.id })
-		.from(portalIdentities)
+		.select({ id: customers.id })
+		.from(customers)
 		.where(
 			and(
-				eq(portalIdentities.userId, userId),
-				eq(portalIdentities.status, 'active'),
-				isNull(portalIdentities.deletedAt),
+				eq(customers.userId, userId),
+				eq(customers.portalStatus, 'active'),
+				isNull(customers.deletedAt),
 			),
 		)
 		.limit(1);

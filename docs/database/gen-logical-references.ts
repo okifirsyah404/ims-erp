@@ -44,12 +44,15 @@ for (const r of refs) {
 const sortedTargets = [...byTarget.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
 
 const MODULE_LABELS = {
-  auth: "Identity", hr: "HR", crm: "CRM", org: "Organization",
-  aftersales: "After-Sales",
+  auth: "Identity",
+  human_resource: "Human Resource",
+  project: "Project",
+  sale: "Sale",
+  tax: "Tax",
 };
 const moduleLabel = (t) => {
   const s = t.split(".")[0];
-  return MODULE_LABELS[s] ?? (s === "warehouse" || s === "inventory" ? "Inventory" : s[0].toUpperCase() + s.slice(1));
+  return MODULE_LABELS[s] ?? (s[0].toUpperCase() + s.slice(1));
 };
 
 const tableOf = (t) => {
@@ -71,7 +74,7 @@ gen += `Counts are re-derived on every run of \`validate-dbml.ts\`, which parses
 
 gen += `\n## Distribution of the referring columns per target\n\n| Target | Owner | Referring columns |\n|---|---|---|\n`;
 for (const [target, list] of sortedTargets) {
-  gen += `| \`${target}.id\` | ${moduleLabel(target)} | ${list.length} |`;
+  gen += `| \`${target}.id\` | ${moduleLabel(target)} | ${list.length} |\n`;
 }
 
 gen += `\n## The ${byTarget.size} targets in full\n`;

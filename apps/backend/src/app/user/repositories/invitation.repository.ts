@@ -13,8 +13,8 @@ import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	TUserInvitationSelect,
-} from '@drizzle/schemas/role.schema';
-import { userInvitations } from '@drizzle/schemas/role.schema';
+} from '@drizzle/schemas/auth.schema';
+import { userInvitations } from '@drizzle/schemas/auth.schema';
 import type {
 	IInvitationRepository,
 	TInvitationCreate,
@@ -111,6 +111,7 @@ export class InvitationRepository implements IInvitationRepository {
 	}
 
 	async create(input: TInvitationCreate): Promise<TUserInvitationSelect> {
+		const now = new Date();
 		const [row] = await this.database
 			.insert(userInvitations)
 			.values({
@@ -124,6 +125,8 @@ export class InvitationRepository implements IInvitationRepository {
 				status: 'pending',
 				invitedBy: input.invitedBy,
 				expiresAt: input.expiresAt,
+				createdAt: now,
+				updatedAt: now,
 			})
 			.returning();
 		return row;

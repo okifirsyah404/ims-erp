@@ -8,24 +8,26 @@
  * atomic), and website capture (idempotent replays, attachment limits).
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
+import type { TCustomerSelect } from '@drizzle/schemas/customer.schema';
+import type { TTx } from '@drizzle/types';
 import type {
 	LeadStatus,
-	TCustomerSelect,
 	TLeadActivitySelect,
 	TLeadSelect,
-} from '@drizzle/schemas/crm.schema';
+} from '@drizzle/schemas/project.schema';
 import type { ErpPermissionRequest } from '@ims-erp/common';
-import { createLeadSchema } from '../../src/app/crm/contracts/lead.contract';
+import { createLeadSchema } from '../../src/app/project/contracts/lead.contract';
 import type {
 	ILeadActivityRepository,
+	ILeadAttachmentRepository,
 	ILeadRepository,
 	TInquiryCreateData,
 	TLeadAttachmentData,
 	TLeadCreateData,
 	TLeadPaginationRequest,
 	TLeadUpdateData,
-} from '../../src/app/crm/contracts/lead.repository.interface';
-import { rfqSubmissionSchema } from '../../src/app/crm/contracts/website-inquiry.contract';
+} from '../../src/app/project/contracts/lead.repository.interface';
+import { rfqSubmissionSchema } from '../../src/app/project/contracts/website-inquiry.contract';
 import {
 	LeadAlreadyConvertedError,
 	LeadAssigneeInvalidError,
@@ -35,9 +37,9 @@ import {
 	LeadLostError,
 	LeadNotFoundError,
 	WebsiteInquiryError,
-} from '../../src/app/crm/errors/crm.errors';
-import { LeadService, type TLeadContext } from '../../src/app/crm/services/lead.service';
-import { WebsiteInquiryService } from '../../src/app/crm/services/website-inquiry.service';
+} from '../../src/app/project/errors/lead.errors';
+import { LeadService, type TLeadContext } from '../../src/app/project/services/lead.service';
+import { WebsiteInquiryService } from '../../src/app/project/services/website-inquiry.service';
 
 const ORG = 'org-sales';
 const MANAGER: TLeadContext = { organizationId: ORG, actorUserId: 'manager', canManage: true };
@@ -49,7 +51,6 @@ const ACTIVE_CUSTOMER = '01920000-0000-7000-8000-0000000000c1';
 
 class FakeLeads implements ILeadRepository {
 	rows: TLeadSelect[] = [];
-	attachments: (TLeadAttachmentData & { id: string; leadId: string })[] = [];
 	raceOnNextInquiry = false;
 
 	async paginate(request: TLeadPaginationRequest) {
@@ -74,7 +75,7 @@ class FakeLeads implements ILeadRepository {
 		this.rows.push(row);
 		return row;
 	}
-	async createInquiry(data: TInquiryCreateData, files: TLeadAttachmentData[]) {
+	async createInquiry(data: TInquiryCreateData, _tx?: TTx) {
 		if (this.raceOnNextInquiry) {
 			this.raceOnNextInquiry = false;
 			// The concurrent request committed first with the same key.
@@ -83,7 +84,6 @@ class FakeLeads implements ILeadRepository {
 		}
 		const row = { ...data, id: crypto.randomUUID(), source: 'website', status: 'new', ownerUserId: null, createdAt: new Date() } as unknown as TLeadSelect;
 		this.rows.push(row);
-		this.attachments.push(...files.map((file) => ({ ...file, id: crypto.randomUUID(), leadId: row.id })));
 		return row;
 	}
 	async update(id: string, patch: TLeadUpdateData) {
@@ -114,8 +114,15 @@ class FakeLeads implements ILeadRepository {
 		if (index >= 0) this.rows.splice(index, 1);
 		return index >= 0;
 	}
-	async listAttachments(leadId: string) {
-		return this.attachments.filter((a) => a.leadId === leadId) as never;
+}
+
+class FakeAttachments implements ILeadAttachmentRepository {
+	rows: (TLeadAttachmentData & { id: string; leadId: string })[] = [];
+	async listByLead(leadId: string) {
+		return this.rows.filter((a) => a.leadId === leadId) as never;
+	}
+	async createMany(leadId: string, files: TLeadAttachmentData[], _tx?: TTx) {
+		this.rows.push(...files.map((file) => ({ ...file, id: crypto.randomUUID(), leadId })));
 	}
 }
 
@@ -150,9 +157,10 @@ describe('LeadService', () => {
 		service = new LeadService(
 			leads,
 			activities,
+			new FakeAttachments(),
 			{
 				getActiveCustomer: async (id: string) => (id === ACTIVE_CUSTOMER ? ({ id } as TCustomerSelect) : null),
-				create: async (input: { code: string }) => {
+				createCustomer: async (input: { code: string }) => {
 					createdCustomers.push(input.code);
 					return { id: '01920000-0000-7000-8000-0000000000c9' } as TCustomerSelect;
 				},
@@ -230,6 +238,7 @@ describe('LeadService', () => {
 
 describe('WebsiteInquiryService', () => {
 	let leads: FakeLeads;
+	let attachments: FakeAttachments;
 	let stored: string[];
 	let service: WebsiteInquiryService;
 	let sequence: number;
@@ -244,11 +253,14 @@ describe('WebsiteInquiryService', () => {
 
 	beforeEach(() => {
 		leads = new FakeLeads();
+		attachments = new FakeAttachments();
 		stored = [];
 		sequence = 0;
 		service = new WebsiteInquiryService(
 			leads,
+			attachments,
 			{ next: async () => `RFQ-2026-${String(++sequence).padStart(5, '0')}` },
+			{ run: <T>(work: (tx: TTx) => Promise<T>) => work({} as TTx) },
 			{ put: async (key: string) => void stored.push(key) },
 			outbox,
 		);
@@ -261,7 +273,7 @@ describe('WebsiteInquiryService', () => {
 		expect(lead).toMatchObject({ source: 'website', ownerUserId: null, channel: 'rfq', email: 'sari@example.com' });
 		expect(lead.needs).toContain('Produk: swing-barrier-gate x2');
 		expect(stored).toHaveLength(2);
-		expect(leads.attachments.map((a) => a.contentType)).toEqual(['application/pdf', 'image/jpeg']);
+		expect(attachments.rows.map((a) => a.contentType)).toEqual(['application/pdf', 'image/jpeg']);
 	});
 
 	test('a replayed Idempotency-Key returns the first reference without a second lead or upload', async () => {
@@ -304,6 +316,7 @@ describe('LeadService follow-up reminders (ERP-0066)', () => {
 		const service = new LeadService(
 			repo,
 			new FakeActivities(),
+			new FakeAttachments(),
 			{} as never,
 			{} as never,
 			{} as never,

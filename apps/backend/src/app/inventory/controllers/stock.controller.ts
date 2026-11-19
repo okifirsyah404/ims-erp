@@ -10,7 +10,7 @@ import {
 	receiptSchema,
 	recomputeSchema,
 } from '../contracts/stock.contract';
-import { idParamSchema } from '../contracts/item.contract';
+import { idParamSchema } from '../contracts/product.contract';
 import { STOCK_SERVICE_TOKEN } from '../constants/di';
 import type { StockService } from '../services/stock.service';
 import {
@@ -121,7 +121,7 @@ export class StockController {
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
 						binId: parsed.binId ?? null,
-						itemId: parsed.itemId,
+						productId: parsed.productId,
 						movementType: 'receipt',
 						quantity: parsed.quantity,
 						occurredAt: parsed.occurredAt
@@ -148,7 +148,7 @@ export class StockController {
 						actorOrganizationId: erp.organizationId,
 						warehouseId: parsed.warehouseId,
 						binId: parsed.binId ?? null,
-						itemId: parsed.itemId,
+						productId: parsed.productId,
 						movementType: 'issue',
 						quantity: parsed.quantity,
 						occurredAt: parsed.occurredAt

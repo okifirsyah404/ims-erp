@@ -1,27 +1,34 @@
-import type {
-	TBankAccountSelect,
-} from '@drizzle/schemas/company.schema';
-import type { TTx } from '@drizzle/types';
 import { documentImageUrl, storeDocumentImage } from '@providers/s3/document-image';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
+import {
+	type ITransactionRunner,
+	TRANSACTION_RUNNER_TOKEN,
+} from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { COMPANY_REPOSITORY_TOKEN } from '../constants/di';
+import {
+	COMPANY_ADDRESS_REPOSITORY_TOKEN,
+	COMPANY_CONTACT_REPOSITORY_TOKEN,
+	COMPANY_PROFILE_REPOSITORY_TOKEN,
+	COMPANY_SETTING_REPOSITORY_TOKEN,
+} from '../constants/di';
 import type {
 	TCompanyBranding,
 	TCompanyImageKind,
 	TCompanyProfileInput,
 	TCompanyProfilePatch,
-	TCompanyProfileSnapshot,
 	TCompanyProfileView,
 	TCompanySettingInput,
 	TCompanySettingView,
-	TInvoiceBankAccount,
 } from '../contracts/company.contract';
 import type {
-	ICompanyRepository,
+	ICompanyAddressRepository,
+	ICompanyContactRepository,
+	ICompanyProfileRepository,
+	ICompanySettingRepository,
 	TCompanyProfileRecord,
 } from '../contracts/company.repository.interface';
 import { CompanyProfileRequiredError, CompanySettingInvalidError } from '../errors/company.errors';
+import { toContactChannels, toFlat } from '../utils/profile-mapper';
 
 /** Checks a raw setting value against its declared type; `null` is always allowed (cleared). */
 function assertSettingValue(valueType: TCompanySettingInput['valueType'], value: string | null): void {
@@ -43,68 +50,26 @@ function assertSettingValue(valueType: TCompanySettingInput['valueType'], value:
 	if (!valid[valueType](value)) throw new CompanySettingInvalidError(valueType);
 }
 
-function toAccount(row: TBankAccountSelect | undefined): TInvoiceBankAccount | null {
-	return row
-		? {
-				bankName: row.bankName,
-				accountNumber: row.accountNumber,
-				accountHolder: row.accountHolder,
-			}
-		: null;
-}
-
-/** Flat view of the split storage (profile + primary address + contacts). */
-function toFlat(
-	record: TCompanyProfileRecord,
-): Omit<TCompanyProfileSnapshot, 'logoObjectKey' | 'signatureObjectKey' | 'onboardingObjectKey'> {
-	const { profile, address, contacts } = record;
-	const contact = (type: string) => contacts.find((c) => c.contactType === type)?.value ?? null;
-	return {
-		legalName: profile.legalName,
-		tradingName: profile.tradingName,
-		documentCode: profile.documentCode,
-		tagline: profile.tagline,
-		taxId: profile.taxId,
-		addressLine: address?.addressLine ?? null,
-		postalCode: address?.postalCode ?? null,
-		phone: contact('phone'),
-		email: contact('email'),
-		website: contact('other'),
-		signatoryName: profile.signatoryName,
-		signatoryTitle: profile.signatoryTitle,
-		defaultQuotationTerms: profile.defaultQuotationTerms,
-		defaultInvoiceTerms: profile.defaultInvoiceTerms,
-		warrantyCoverage: profile.warrantyCoverage,
-		warrantyExclusions: profile.warrantyExclusions,
-		warrantyServiceTerms: profile.warrantyServiceTerms,
-	};
-}
-
-function toSnapshot(record: TCompanyProfileRecord): TCompanyProfileSnapshot {
-	return {
-		...toFlat(record),
-		logoObjectKey: record.profile.logoObjectKey,
-		signatureObjectKey: record.profile.signatureObjectKey,
-		onboardingObjectKey: record.profile.onboardingObjectKey,
-	};
-}
-
-function toView(
-	record: TCompanyProfileRecord,
-	accounts: TBankAccountSelect[] | null,
-	storage: IObjectStorage,
-): TCompanyProfileView {
+function toView(record: TCompanyProfileRecord, storage: IObjectStorage): TCompanyProfileView {
 	return {
 		...toFlat(record),
 		logoUrl: documentImageUrl(storage, record.profile.logoObjectKey),
 		signatureUrl: documentImageUrl(storage, record.profile.signatureObjectKey),
 		onboardingUrl: documentImageUrl(storage, record.profile.onboardingObjectKey),
-		bankAccounts: accounts
-			? {
-					vat: toAccount(accounts.find((a) => a.invoiceUsage === 'vat')),
-					nonVat: toAccount(accounts.find((a) => a.invoiceUsage === 'non_vat')),
-				}
-			: null,
+	};
+}
+
+function toSettingView(row: {
+	settingGroup: string;
+	settingKey: string;
+	valueType: string;
+	settingValue: string | null;
+}): TCompanySettingView {
+	return {
+		settingGroup: row.settingGroup,
+		settingKey: row.settingKey,
+		valueType: row.valueType as TCompanySettingView['valueType'],
+		value: row.settingValue,
 	};
 }
 
@@ -113,43 +78,42 @@ function toView(
  *
  * @remarks
  * Readable by every organization member because every print needs the
- * letterhead; the invoice bank accounts only when `includeBanks` (decided by
- * the controller from the caller's grants). The profile and its two invoice
- * accounts are saved in one transaction; omitted accounts, or accounts sent by
- * a caller without bank access, are left unchanged.
+ * letterhead. The profile, its primary address and its contacts commit in one
+ * transaction. Other modules read the letterhead through
+ * `ExportedCompanyService`, never this class. Invoice bank accounts are served
+ * by `finance` (`/finance/cash-bank-accounts`), not by company.
  */
 @injectable()
 export class CompanyService {
 	constructor(
-		@inject(COMPANY_REPOSITORY_TOKEN)
-		private readonly repository: ICompanyRepository,
+		@inject(COMPANY_PROFILE_REPOSITORY_TOKEN)
+		private readonly profiles: ICompanyProfileRepository,
+		@inject(COMPANY_ADDRESS_REPOSITORY_TOKEN)
+		private readonly addresses: ICompanyAddressRepository,
+		@inject(COMPANY_CONTACT_REPOSITORY_TOKEN)
+		private readonly contacts: ICompanyContactRepository,
+		@inject(COMPANY_SETTING_REPOSITORY_TOKEN)
+		private readonly settings: ICompanySettingRepository,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: IObjectStorage,
+		@inject(TRANSACTION_RUNNER_TOKEN)
+		private readonly transactions: ITransactionRunner,
 	) {}
 
-	/**
-	 * The letterhead snapshot other modules render.
-	 *
-	 * @remarks
-	 * `tx` lets a caller read inside its own transaction (e.g. a number issued
-	 * while a document is created).
-	 */
-	async getProfile(tx?: TTx): Promise<TCompanyProfileSnapshot | null> {
-		const record = await this.repository.findProfile(tx);
-		return record ? toSnapshot(record) : null;
-	}
-
-	/** Display name for user-facing surfaces: `tradingName ?? legalName`. */
-	async getDisplayName(): Promise<string | null> {
-		const record = await this.repository.findProfile();
-		return record ? (record.profile.tradingName ?? record.profile.legalName) : null;
+	private async readRecord(tx?: Parameters<ICompanyProfileRepository['find']>[0]): Promise<TCompanyProfileRecord | null> {
+		const profile = await this.profiles.find(tx);
+		if (!profile) return null;
+		const [address, contacts] = await Promise.all([
+			this.addresses.findPrimary(tx),
+			this.contacts.findAll(tx),
+		]);
+		return { profile, address, contacts };
 	}
 
 	/** The profile, or `null` before it was first saved. */
-	async get(includeBanks: boolean): Promise<TCompanyProfileView | null> {
-		const record = await this.repository.findProfile();
-		if (!record) return null;
-		return toView(record, includeBanks ? await this.repository.findInvoiceAccounts() : null, this.storage);
+	async get(): Promise<TCompanyProfileView | null> {
+		const record = await this.readRecord();
+		return record ? toView(record, this.storage) : null;
 	}
 
 	/**
@@ -157,52 +121,41 @@ export class CompanyService {
 	 * name and the onboarding image URL. Only non-sensitive fields.
 	 */
 	async getBranding(): Promise<TCompanyBranding> {
-		const record = await this.repository.findProfile();
-		const name = record
-			? (record.profile.tradingName ?? record.profile.legalName)
-			: null;
+		const profile = await this.profiles.find();
 		return {
-			name,
-			onboardingUrl: record
-				? documentImageUrl(this.storage, record.profile.onboardingObjectKey)
-				: null,
+			name: profile ? (profile.tradingName ?? profile.legalName) : null,
+			onboardingUrl: profile ? documentImageUrl(this.storage, profile.onboardingObjectKey) : null,
 		};
 	}
 
-	async save(
-		patch: TCompanyProfilePatch,
-		actorUserId: string,
-		includeBanks: boolean,
-	): Promise<TCompanyProfileView> {
-		const { bankAccounts, ...fields } = patch;
+	/**
+	 * Saves the profile, its primary address and its contacts together.
+	 *
+	 * @throws {CompanyProfileRequiredError} When the first save lacks `legalName` or `documentCode`
+	 */
+	async save(patch: TCompanyProfilePatch, actorUserId: string): Promise<TCompanyProfileView> {
 		// Merge over the stored profile so omitted fields keep their value.
-		const current = await this.repository.findProfile();
-		const sent = Object.fromEntries(Object.entries(fields).filter(([, v]) => v !== undefined));
+		const current = await this.readRecord();
+		const sent = Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
 		const merged = { ...(current ? toFlat(current) : {}), ...sent } as TCompanyProfileInput;
 		if (!merged.legalName || !merged.documentCode) throw new CompanyProfileRequiredError();
-		// Callers who may not see the accounts may not change them either.
-		const saved = await this.repository.save(
-			{ ...merged, updatedBy: actorUserId },
-			includeBanks ? bankAccounts : undefined,
-		);
-		return toView(saved.record, includeBanks ? saved.accounts : null, this.storage);
+
+		const { addressLine, postalCode, phone, email, website, ...columns } = merged;
+		const record = await this.transactions.run(async (tx) => {
+			await this.profiles.save({ ...columns, updatedBy: actorUserId }, tx);
+			await this.addresses.savePrimary({ addressLine, postalCode }, tx);
+			await this.contacts.syncChannels(toContactChannels({ phone, email, website }), tx);
+			const saved = await this.readRecord(tx);
+			if (!saved) throw new Error('Company profile disappeared inside its own transaction');
+			return saved;
+		});
+		await this.profiles.invalidate();
+		return toView(record, this.storage);
 	}
 
-	/**
-	 * Replaces (or, with `null`, removes) one profile image. A new key every
-	 * time, so nothing already printed changes.
-	 *
-	 * @throws {CompanyProfileRequiredError} Before the profile was first saved
-	 */
 	/** Every company setting. Values are plain text; typing is checked on write. */
 	async listSettings(): Promise<TCompanySettingView[]> {
-		const rows = await this.repository.findSettings();
-		return rows.map((row) => ({
-			settingGroup: row.settingGroup,
-			settingKey: row.settingKey,
-			valueType: row.valueType as TCompanySettingView['valueType'],
-			value: row.settingValue,
-		}));
+		return (await this.settings.findAll()).map(toSettingView);
 	}
 
 	/**
@@ -216,17 +169,12 @@ export class CompanyService {
 		actorUserId: string,
 	): Promise<TCompanySettingView> {
 		assertSettingValue(input.valueType, input.value);
-		const row = await this.repository.upsertSetting(group, key, {
+		const row = await this.settings.upsert(group, key, {
 			valueType: input.valueType,
 			value: input.value,
 			updatedBy: actorUserId,
 		});
-		return {
-			settingGroup: row.settingGroup,
-			settingKey: row.settingKey,
-			valueType: row.valueType as TCompanySettingView['valueType'],
-			value: row.settingValue,
-		};
+		return toSettingView(row);
 	}
 
 	/**
@@ -235,15 +183,13 @@ export class CompanyService {
 	 *
 	 * @throws {CompanyProfileRequiredError} Before the profile was first saved
 	 */
-	async setImage(
-		kind: TCompanyImageKind,
-		file: File | null,
-		includeBanks: boolean,
-	): Promise<TCompanyProfileView> {
-		if (!(await this.repository.findProfile())) throw new CompanyProfileRequiredError();
+	async setImage(kind: TCompanyImageKind, file: File | null): Promise<TCompanyProfileView> {
+		if (!(await this.profiles.find())) throw new CompanyProfileRequiredError();
 		const key = file ? await storeDocumentImage(this.storage, `company/${kind}`, file) : null;
-		const record = await this.repository.setImage(kind, key);
+		const profile = await this.profiles.setImage(kind, key);
+		if (!profile) throw new CompanyProfileRequiredError();
+		const record = await this.readRecord();
 		if (!record) throw new CompanyProfileRequiredError();
-		return toView(record, includeBanks ? await this.repository.findInvoiceAccounts() : null, this.storage);
+		return toView(record, this.storage);
 	}
 }

@@ -1,16 +1,23 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { stockMovements, warehouses } from '@drizzle/schemas/inventory.schema';
+import { movements, warehouses } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import {
 	OUTBOUND_TYPES,
 	isOutbound,
 } from '../constants/movement-direction';
-import type { IMovementRepository, TMovementCreateData, TMovementPaginationRequest } from '../contracts/movement.repository.interface';
+import type {
+	IMovementRepository,
+	TMovementCreateData,
+	TMovementPaginationRequest,
+	TProductMovementSelect,
+} from '../contracts/movement.repository.interface';
 import type { TTx } from '@drizzle/types';
-import type { TStockMovementSelect } from '@drizzle/schemas/inventory.schema';
+
+/** Stock-ledger rows only: item (asset) movements share the table but never count here. */
+const productMovement = and(isNotNull(movements.productId), isNotNull(movements.warehouseId));
 
 /**
  * SQL for a movement's signed contribution to a balance.
@@ -26,12 +33,12 @@ import type { TStockMovementSelect } from '@drizzle/schemas/inventory.schema';
  */
 const signedQuantitySql = sql<string>`
 	CASE
-		WHEN ${stockMovements.status} = 'draft' THEN 0
-		WHEN ${stockMovements.movementType} IN (${sql.join(
+		WHEN ${movements.status} = 'draft' THEN 0
+		WHEN ${movements.movementType} IN (${sql.join(
 			OUTBOUND_TYPES.map((type) => sql`${type}`),
 			sql`, `,
-		)}) THEN -${stockMovements.quantity}
-		ELSE ${stockMovements.quantity}
+		)}) THEN -${movements.quantity}
+		ELSE ${movements.quantity}
 	END
 `;
 
@@ -85,13 +92,13 @@ export class MovementRepository implements IMovementRepository {
 	/** Fetches one filtered page of the ledger, newest first. */
 	async paginate(
 		request: TMovementPaginationRequest,
-	): Promise<TPaginationResult<TStockMovementSelect>> {
+	): Promise<TPaginationResult<TProductMovementSelect>> {
 		const {
 			page,
 			limit,
 			scopeOrganizationId,
 			warehouseId,
-			itemId,
+			productId,
 			movementType,
 			status,
 			occurredFrom,
@@ -100,81 +107,82 @@ export class MovementRepository implements IMovementRepository {
 		} = request;
 
 		const where = and(
+			productMovement,
 			...scopeFilter(scopeOrganizationId),
-			warehouseId ? eq(stockMovements.warehouseId, warehouseId) : undefined,
-			itemId ? eq(stockMovements.itemId, itemId) : undefined,
+			warehouseId ? eq(movements.warehouseId, warehouseId) : undefined,
+			productId ? eq(movements.productId, productId) : undefined,
 			movementType
-				? eq(stockMovements.movementType, movementType)
+				? eq(movements.movementType, movementType)
 				: undefined,
-			status ? eq(stockMovements.status, status) : undefined,
+			status ? eq(movements.status, status) : undefined,
 			referenceType
-				? eq(stockMovements.referenceType, referenceType)
+				? eq(movements.referenceType, referenceType)
 				: undefined,
-			occurredFrom ? gte(stockMovements.occurredAt, occurredFrom) : undefined,
-			occurredTo ? lte(stockMovements.occurredAt, occurredTo) : undefined,
+			occurredFrom ? gte(movements.occurredAt, occurredFrom) : undefined,
+			occurredTo ? lte(movements.occurredAt, occurredTo) : undefined,
 		);
 
 		const [{ value: total }] = await this.database
 			.select({ value: count() })
-			.from(stockMovements)
+			.from(movements)
 			.where(where);
 
 		const data = await this.database
 			.select()
-			.from(stockMovements)
+			.from(movements)
 			.where(where)
-			.orderBy(desc(stockMovements.occurredAt), desc(stockMovements.id))
+			.orderBy(desc(movements.occurredAt), desc(movements.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
 
 		return {
 			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
+			data: data as TProductMovementSelect[],
 		};
 	}
 
 	/** Fetches one movement by id. */
-	async findById(id: string): Promise<TStockMovementSelect | null> {
+	async findById(id: string): Promise<TProductMovementSelect | null> {
 		const [row] = await this.database
 			.select()
-			.from(stockMovements)
-			.where(eq(stockMovements.id, id))
+			.from(movements)
+			.where(and(eq(movements.id, id), productMovement))
 			.limit(1);
-		return row ?? null;
+		return (row as TProductMovementSelect | undefined) ?? null;
 	}
 
 	/** Appends one movement row. */
 	async create(
 		data: TMovementCreateData,
 		tx?: TTx,
-	): Promise<TStockMovementSelect> {
+	): Promise<TProductMovementSelect> {
 		const db = tx ?? this.database;
 		const [row] = await db
-			.insert(stockMovements)
+			.insert(movements)
 			.values({
 				...data,
 				status: data.status ?? 'posted',
 				createdAt: data.createdAt ?? new Date(),
 			})
 			.returning();
-		return row;
+		return row as TProductMovementSelect;
 	}
 
 	/** Finds the reversal row already pointing at `movementId`, if any. */
 	async findReversalOf(
 		movementId: string,
-	): Promise<TStockMovementSelect | null> {
+	): Promise<TProductMovementSelect | null> {
 		const [row] = await this.database
 			.select()
-			.from(stockMovements)
+			.from(movements)
 			.where(
 				and(
-					eq(stockMovements.referenceType, 'reversal'),
-					eq(stockMovements.referenceId, movementId),
+					eq(movements.referenceType, 'reversal'),
+					eq(movements.referenceId, movementId),
 				),
 			)
 			.limit(1);
-		return row ?? null;
+		return (row as TProductMovementSelect | undefined) ?? null;
 	}
 
 	/**
@@ -188,32 +196,33 @@ export class MovementRepository implements IMovementRepository {
 	async claimForReversal(
 		id: string,
 		tx?: TTx,
-	): Promise<TStockMovementSelect | null> {
+	): Promise<TProductMovementSelect | null> {
 		const db = tx ?? this.database;
 		const [row] = await db
-			.update(stockMovements)
+			.update(movements)
 			.set({ status: 'reversed' })
 			.where(
-				and(eq(stockMovements.id, id), eq(stockMovements.status, 'posted')),
+				and(eq(movements.id, id), eq(movements.status, 'posted')),
 			)
 			.returning();
-		return row ?? null;
+		return (row as TProductMovementSelect | undefined) ?? null;
 	}
 
 	/** Every posted movement of one balance scope, in posting order. */
-	ledgerRows(scopeOrganizationId: string | null) {
-		return this.database
+	async ledgerRows(scopeOrganizationId: string | null) {
+		const rows = await this.database
 			.select({
-				itemId: stockMovements.itemId,
-				warehouseId: stockMovements.warehouseId,
-				binId: stockMovements.binId,
-				movementType: stockMovements.movementType,
-				quantity: stockMovements.quantity,
-				unitCost: stockMovements.unitCost,
+				productId: movements.productId,
+				warehouseId: movements.warehouseId,
+				binId: movements.binId,
+				movementType: movements.movementType,
+				quantity: movements.quantity,
+				unitCost: movements.unitCost,
 			})
-			.from(stockMovements)
-			.where(and(balanceScopeFilter(scopeOrganizationId), ne(stockMovements.status, 'draft')))
-			.orderBy(asc(stockMovements.occurredAt), asc(stockMovements.createdAt), asc(stockMovements.id));
+			.from(movements)
+			.where(and(productMovement, balanceScopeFilter(scopeOrganizationId), ne(movements.status, 'draft')))
+			.orderBy(asc(movements.occurredAt), asc(movements.createdAt), asc(movements.id));
+		return rows as Array<(typeof rows)[number] & { productId: string; warehouseId: string }>;
 	}
 
 	/** Sums signed quantities per `(item, warehouse, bin)` of one balance scope. */
@@ -221,33 +230,35 @@ export class MovementRepository implements IMovementRepository {
 		scopeOrganizationId: string | null,
 	): Promise<
 		Array<{
-			itemId: string;
+			productId: string;
 			warehouseId: string;
 			binId: string | null;
 			quantity: string;
 		}>
 	> {
-		return this.database
+		const rows = await this.database
 			.select({
-				itemId: stockMovements.itemId,
-				warehouseId: stockMovements.warehouseId,
-				binId: stockMovements.binId,
+				productId: movements.productId,
+				warehouseId: movements.warehouseId,
+				binId: movements.binId,
 				quantity: sql<string>`sum(${signedQuantitySql})`,
 			})
-			.from(stockMovements)
+			.from(movements)
 			.where(
 				and(
+					productMovement,
 					balanceScopeFilter(scopeOrganizationId),
 					// A draft movement was never posted, so it must not appear in
 					// the ledger's totals at all.
-					ne(stockMovements.status, 'draft'),
+					ne(movements.status, 'draft'),
 				),
 			)
 			.groupBy(
-				stockMovements.itemId,
-				stockMovements.warehouseId,
-				stockMovements.binId,
+				movements.productId,
+				movements.warehouseId,
+				movements.binId,
 			);
+		return rows as Array<(typeof rows)[number] & { productId: string; warehouseId: string }>;
 	}
 }
 
@@ -260,8 +271,8 @@ function scopeFilter(scopeOrganizationId: string | null | undefined) {
 	if (scopeOrganizationId === undefined) return [];
 	return [
 		scopeOrganizationId === null
-			? isNull(stockMovements.organizationId)
-			: eq(stockMovements.organizationId, scopeOrganizationId),
+			? isNull(movements.organizationId)
+			: eq(movements.organizationId, scopeOrganizationId),
 	];
 }
 
@@ -279,7 +290,7 @@ function scopeFilter(scopeOrganizationId: string | null | undefined) {
  */
 function balanceScopeFilter(scopeOrganizationId: string | null) {
 	return inArray(
-		stockMovements.warehouseId,
+		movements.warehouseId,
 		sql`(select ${warehouses.id} from ${warehouses} where ${
 			scopeOrganizationId === null
 				? isNull(warehouses.organizationId)

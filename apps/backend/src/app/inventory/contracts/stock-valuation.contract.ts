@@ -15,7 +15,7 @@ export type TStockValuationQuery = z.output<typeof stockValuationQuerySchema>;
 
 /** One balance at cost. */
 export type TStockValuationRow = {
-	itemId: string;
+	productId: string;
 	sku: string;
 	name: string;
 	unit: string;

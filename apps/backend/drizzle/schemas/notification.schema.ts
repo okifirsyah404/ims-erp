@@ -74,7 +74,7 @@ const timestamps = {
  * ------------------------------------------------------------------------ */
 
 export const notificationTemplates = notificationSchema.table(
-	'notification_templates',
+	'push_notification_templates',
 	{
 		id: uuid('id')
 			.primaryKey()
@@ -92,12 +92,12 @@ export const notificationTemplates = notificationSchema.table(
 		...timestamps,
 	},
 	(table) => [
-		uniqueIndex('notification_templates_code_uq')
+		uniqueIndex('push_notification_templates_code_uq')
 			.on(table.code)
 			.where(sql`deleted_at IS NULL`),
-		index('notification_templates_channel_idx').on(table.channel),
+		index('push_notification_templates_channel_idx').on(table.channel),
 		check(
-			'notification_templates_channel_check',
+			'push_notification_templates_channel_check',
 			sql`${table.channel} IN ('email', 'whatsapp', 'in_app', 'webhook')`,
 		),
 	],
@@ -108,7 +108,7 @@ export const notificationTemplates = notificationSchema.table(
  * ------------------------------------------------------------------------ */
 
 export const notifications = notificationSchema.table(
-	'notifications',
+	'push_notifications',
 	{
 		id: uuid('id')
 			.primaryKey()
@@ -139,17 +139,17 @@ export const notifications = notificationSchema.table(
 		...timestamps,
 	},
 	(table) => [
-		index('notifications_user_id_idx').on(table.userId),
-		index('notifications_user_status_idx').on(table.userId, table.status),
-		index('notifications_status_idx').on(table.status),
-		index('notifications_created_at_idx').on(table.createdAt),
-		index('notifications_template_id_idx').on(table.notificationTemplateId),
+		index('push_notifications_user_id_idx').on(table.userId),
+		index('push_notifications_user_status_idx').on(table.userId, table.status),
+		index('push_notifications_status_idx').on(table.status),
+		index('push_notifications_created_at_idx').on(table.createdAt),
+		index('push_notifications_template_id_idx').on(table.notificationTemplateId),
 		check(
-			'notifications_channel_check',
+			'push_notifications_channel_check',
 			sql`${table.channel} IN ('email', 'whatsapp', 'in_app', 'webhook')`,
 		),
 		check(
-			'notifications_status_check',
+			'push_notifications_status_check',
 			sql`${table.status} IN ('queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'cancelled')`,
 		),
 	],

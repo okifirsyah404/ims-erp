@@ -4,18 +4,20 @@ import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
+import { EXPORTED_SUPPLIER_SERVICE_TOKEN } from '@app/supplier';
+import type { ExportedSupplierService } from '@app/supplier';
+import type { TSupplierCompanySelect } from '@drizzle/schemas/supplier.schema';
 import { isUniqueViolation } from '@drizzle/errors';
 import {
 	PURCHASE_CATEGORY_CODES,
 	type TPoSupplierSnapshot,
 	type TPurchaseOrderItemSelect,
 	type TPurchaseOrderSelect,
-	type TSupplierSelect,
 } from '@drizzle/schemas/procurement.schema';
 import { businessDateOf } from '@utils/business-date.util';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { PURCHASE_ORDER_REPOSITORY_TOKEN, SUPPLIER_SERVICE_TOKEN } from '../constants/di';
+import { PURCHASE_ORDER_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	IPurchaseOrderRepository,
 	TPurchaseOrderHeaderData,
@@ -37,7 +39,6 @@ import {
 	PurchaseRequestLineUnavailableError,
 } from '../errors/procurement.errors';
 import { computePoTotals, DEFAULT_PO_VAT_RATE_BPS, poLineTotal } from '../utils/po-totals';
-import type { SupplierService } from './supplier.service';
 
 export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
 	items: (TPurchaseOrderItemSelect & { purchaseRequestId: string | null; purchaseRequestCode: string | null })[];
@@ -45,18 +46,18 @@ export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
 	taxBase: number;
 };
 
-function snapshotOf(supplier: TSupplierSelect): TPoSupplierSnapshot {
+function snapshotOf(supplier: TSupplierCompanySelect): TPoSupplierSnapshot {
 	return {
 		code: supplier.code,
 		name: supplier.legalName ?? supplier.name,
-		address: [supplier.addressLine, supplier.postalCode].filter(Boolean).join(' ') || null,
+		address: null,
 		taxId: supplier.taxId,
 		phone: supplier.phone,
 		email: supplier.email,
-		picName: supplier.picName,
-		picTitle: supplier.picTitle,
-		picPhone: supplier.picPhone,
-		picEmail: supplier.picEmail,
+		picName: null,
+		picTitle: null,
+		picPhone: null,
+		picEmail: null,
 	};
 }
 
@@ -77,8 +78,11 @@ export class PurchaseOrderService {
 	constructor(
 		@inject(PURCHASE_ORDER_REPOSITORY_TOKEN)
 		private readonly orders: IPurchaseOrderRepository,
-		@inject(SUPPLIER_SERVICE_TOKEN)
-		private readonly suppliers: Pick<SupplierService, 'getActiveSupplier'>,
+		@inject(EXPORTED_SUPPLIER_SERVICE_TOKEN)
+		private readonly suppliers: Pick<
+			ExportedSupplierService,
+			'assertActiveCompany'
+		>,
 		@inject(ITEM_SERVICE_TOKEN)
 		private readonly items: Pick<ItemService, 'getActiveItems'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN)
@@ -95,8 +99,7 @@ export class PurchaseOrderService {
 	}
 
 	private async build(body: TPurchaseOrderBody): Promise<{ header: TPurchaseOrderHeaderData; items: TPurchaseOrderItemData[] }> {
-		const supplier = await this.suppliers.getActiveSupplier(body.supplierId);
-		if (!supplier) throw new PurchaseOrderSupplierUnavailableError();
+		const supplier = await this.suppliers.assertActiveCompany(body.supplierId);
 		const found = new Map((await this.items.getActiveItems(body.lines.map((line) => line.itemId))).map((item) => [item.id, item]));
 		const items: TPurchaseOrderItemData[] = body.lines.map((line, index) => {
 			const item = found.get(line.itemId);
@@ -118,7 +121,7 @@ export class PurchaseOrderService {
 		const totals = computePoTotals(items.map((item) => item.lineTotal!), body.vatMode, vatRateBps);
 		return {
 			header: {
-				supplierId: supplier.id,
+				supplierCompanyId: supplier.id,
 				supplierSnapshot: snapshotOf(supplier),
 				category: body.category,
 				subject: body.subject,

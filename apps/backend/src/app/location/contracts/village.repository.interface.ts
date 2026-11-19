@@ -20,6 +20,25 @@ export type TVillagePaginationRequest = TPaginationRequest &
 	Partial<Pick<TVillageInsert, 'code' | 'name' | 'districtId'>>;
 
 /**
+ * One village with its full administrative path.
+ *
+ * @remarks
+ * Address tables store only `village_id` (ADR-0024 Q10); this is the shape
+ * `ExportedLocationService.resolveVillagePath` returns so a caller can render
+ * village -> district -> regency -> province without joining location tables.
+ */
+export type TVillagePath = {
+	villageId: string;
+	villageName: string;
+	districtId: string | null;
+	districtName: string | null;
+	regencyId: string | null;
+	regencyName: string | null;
+	provinceId: string | null;
+	provinceName: string | null;
+};
+
+/**
  * Data-access contract for villages within a district.
  *
  * @remarks
@@ -73,4 +92,17 @@ export interface IVillageRepository extends IBaseRepository<
 	 * @returns The villages; results from different districts are not grouped
 	 */
 	findByDistrictCodes(districtCodes: string[]): Promise<TVillageSelect[]>;
+
+	/**
+	 * Fetches the full administrative path of the given villages.
+	 *
+	 * @remarks
+	 * One batched join (village -> district -> regency -> province) inside the
+	 * location schema; soft-deleted parents simply come back as null names.
+	 * Used by every address-owning module through `ExportedLocationService`.
+	 *
+	 * @param villageIds - The village identifiers to resolve
+	 * @returns One path per known village; unknown ids are omitted
+	 */
+	findVillagePaths(villageIds: string[]): Promise<TVillagePath[]>;
 }

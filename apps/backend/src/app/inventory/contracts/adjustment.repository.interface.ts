@@ -40,7 +40,7 @@ export type TAdjustmentCreateData = {
 
 /** One requested line, as submitted by the client. */
 export type TAdjustmentLineInput = {
-	itemId: string;
+	productId: string;
 	binId?: string | null;
 	/**
 	 * What the count says the quantity is.

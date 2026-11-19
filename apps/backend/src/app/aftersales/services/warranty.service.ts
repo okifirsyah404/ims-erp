@@ -1,5 +1,5 @@
-import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
-import type { CustomerService } from '@app/crm/services/customer.service';
+import { CUSTOMER_SERVICE_TOKEN } from '@app/customer/constants/di';
+import type { CustomerService } from '@app/customer/services/customer.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { COMPANY_SERVICE_TOKEN } from '@app/company';
 import type { CompanyService } from '@app/company';

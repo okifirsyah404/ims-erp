@@ -12,7 +12,11 @@ absorbs `licensing`, leads from `crm`, warranty from `aftersales`) · URL
   application_api_keys, license_activations, license_events; repositories
   licensing, license-api; controllers `/licenses`, `/licensing/v1` (external
   app API).
-- `crm`: leads, lead_activities, lead_attachments; controllers `/leads`,
+- **Done early in P2 (2026-11-19):** leads, activities, attachments, the
+  follow-up queue and the website inquiry service already live in
+  `src/app/project/` (`/projects/leads`; `/public/v1` URL pending the Q34 alias).
+  Only the rest of this file is left for P6.
+- `crm` (was): leads, lead_activities, lead_attachments; controllers `/leads`,
   `/public/v1` inquiries (website RFQ/contact/demo).
 - `aftersales.warranty_certificates`; controller `/warranty-certificates`.
 - Consumers: web-admin `project-api.ts`, `handover-api.ts`, `license-api.ts`

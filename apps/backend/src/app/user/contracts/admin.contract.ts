@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { USER_INVITATION_STATUSES } from '@drizzle/schemas/role.schema';
+import { USER_INVITATION_STATUSES } from '@drizzle/schemas/auth.schema';
 
 /**
  * Request/response contracts for the user-management admin API (phase 4).

@@ -258,8 +258,9 @@ export function installAuthMock(): void {
 
 import type { IQuotationRepository } from '../../src/app/sales/contracts/quotation.repository.interface';
 import type { TPaymentRepository } from '../../src/app/sales/contracts/payment.repository.interface';
-import { CUSTOMER_SERVICE_TOKEN, LEAD_SERVICE_TOKEN } from '../../src/app/crm/constants/di';
-import { ITEM_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
+import { CUSTOMER_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
+import { LEAD_SERVICE_TOKEN } from '../../src/app/project/constants/di';
+import { PRODUCT_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
 import { CODE_NUMBER_SERVICE_TOKEN } from '../../src/app/code-number';
 import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
 import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
@@ -272,7 +273,7 @@ export function quotationBody(title = 'Penawaran access door') {
 	return {
 		customerId: TEST_CUSTOMER_ID,
 		title,
-		lines: [{ itemId: TEST_ITEM_ID, quantity: 2 }],
+		lines: [{ productId: TEST_ITEM_ID, quantity: 2 }],
 	};
 }
 
@@ -365,7 +366,7 @@ export function installSalesMocks() {
 		} as never,
 	});
 	container.register(LEAD_SERVICE_TOKEN, { useValue: { noteQuotation: async () => true } as never });
-	container.register(ITEM_SERVICE_TOKEN, {
+	container.register(PRODUCT_SERVICE_TOKEN, {
 		useValue: {
 			async getActiveItems(ids: string[]) {
 				return ids.includes(TEST_ITEM_ID)

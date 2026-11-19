@@ -318,7 +318,8 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-		WAREHOUSE_BORROWING_GUARD_TOKEN,
+		BORROWING_REQUEST_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
 		WAREHOUSE_MANAGER_SERVICE_TOKEN,
@@ -339,9 +340,6 @@ beforeAll(async () => {
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
-	const { EXPORTED_ASSET_SERVICE_TOKEN } = await import(
-		'../../src/app/assets/constants/di'
-	);
 	const { EXPORTED_HR_SERVICE_TOKEN } = await import(
 		'../../src/app/hr/constants/di'
 	);
@@ -358,12 +356,12 @@ beforeAll(async () => {
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
 	});
-	// ERP-0031: the unlink guard port — noop here (no borrowings under test).
-	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
-		useValue: { async countOpenBorrowings() { return 0; } },
+	// ERP-0031: the unlink guard reads the borrowing request repository - noop here.
+	container.register(BORROWING_REQUEST_REPOSITORY_TOKEN, {
+		useValue: { async countOpenByOriginWarehouse() { return 0; } } as never,
 	});
-	// Equipment counts come from the assets module's export facade — noop here.
-	container.register(EXPORTED_ASSET_SERVICE_TOKEN, {
+	// Equipment counts come from the item repository - noop here.
+	container.register(ITEM_REPOSITORY_TOKEN, {
 		useValue: { async countByWarehouse() { return []; } } as never,
 	});
 	// Warehouse PIC validation goes through the HR module's export facade —

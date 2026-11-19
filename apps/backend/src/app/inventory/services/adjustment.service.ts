@@ -13,21 +13,21 @@ import type {
 	TAdjustmentLineInput,
 	TAdjustmentPaginationRequest,
 } from '../contracts/adjustment.repository.interface';
-import type { IItemRepository } from '../contracts/item.repository.interface';
+import type { IProductRepository } from '../contracts/product.repository.interface';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
-	ITEM_REPOSITORY_TOKEN,
+	PRODUCT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 } from '../constants/di';
 import type { StockService } from './stock.service';
 import type { TTx } from '@drizzle/types';
-import type { CodeNumberService } from '@app/code-number';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import { INVENTORY_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { InventoryNumberingService } from './inventory-numbering.service';
 import {
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
 	AdjustmentTransitionError,
-	ItemNotFoundError,
+	ProductNotFoundError,
 	SelfApprovalForbiddenError,
 } from '../errors/inventory.errors';
 import { InventoryAuditWriter } from './inventory-audit.writer';
@@ -135,7 +135,7 @@ export type TAdjustmentDetail = {
  * 3. **A line stores counted totals, not deltas.** `quantity_after` comes from
  *    the client, `quantity_before` is snapshotted from the live balance, and the
  *    movement direction is derived from their difference. A line where the two
- *    are equal writes **no** movement: `stock_movements_quantity_check` forbids
+ *    are equal writes **no** movement: `movements_quantity_check` forbids
  *    `quantity = 0`, and "the count agreed with the system" is not a movement.
  *
  * Posting takes the balance scope from the **warehouse** (via
@@ -148,16 +148,16 @@ export class AdjustmentService {
 	constructor(
 		@inject(ADJUSTMENT_REPOSITORY_TOKEN)
 		private readonly adjustmentRepository: IAdjustmentRepository,
-		@inject(ITEM_REPOSITORY_TOKEN)
-		private readonly itemRepository: IItemRepository,
+		@inject(PRODUCT_REPOSITORY_TOKEN)
+		private readonly itemRepository: IProductRepository,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stockService: StockService,
 		/**
 		 * ERP-0009 numbering authority: adjustment codes are sequence-allocated
 		 * inside the creating transaction (hardening plan D4).
 		 */
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
@@ -195,7 +195,7 @@ export class AdjustmentService {
 	 * @param actor - Who is raising it
 	 * @throws {WarehouseNotFoundError} When the warehouse is absent
 	 * @throws {AdjustmentHasNoLinesError} When no lines are supplied
-	 * @throws {ItemNotFoundError} When a line references an unknown item
+	 * @throws {ProductNotFoundError} When a line references an unknown item
 	 */
 	async create(
 		organizationId: string,
@@ -416,7 +416,7 @@ export class AdjustmentService {
 				const current = await this.stockService.balanceFor(
 					scopeOrganizationId,
 					adjustment.warehouseId,
-					line.itemId,
+					line.productId,
 					line.binId,
 				);
 
@@ -435,7 +435,7 @@ export class AdjustmentService {
 						actorOrganizationId: organizationId,
 						warehouseId: adjustment.warehouseId,
 						binId: line.binId,
-						itemId: line.itemId,
+						productId: line.productId,
 						movementType,
 						// postMovement takes an unsigned quantity; direction is the type.
 						quantity: Math.abs(delta).toFixed(3),
@@ -543,7 +543,7 @@ export class AdjustmentService {
 	 * @param organizationId - The raising tenant
 	 * @param adjustmentId - The header the lines belong to
 	 * @param inputs - Lines as supplied by the client
-	 * @throws {ItemNotFoundError} When an item is unknown or the client sent
+	 * @throws {ProductNotFoundError} When an item is unknown or the client sent
 	 *   the same item twice for one bin, which would make the result order
 	 *   dependent
 	 */
@@ -559,7 +559,7 @@ export class AdjustmentService {
 		const seen = new Set<string>();
 		const lines = [];
 		for (const input of inputs) {
-			const key = `${input.itemId}::${input.binId ?? ''}`;
+			const key = `${input.productId}::${input.binId ?? ''}`;
 			if (seen.has(key)) {
 				// Two lines for one item/bin would make the posted total depend on
 				// iteration order; refuse rather than silently collapse them.
@@ -567,22 +567,22 @@ export class AdjustmentService {
 			}
 			seen.add(key);
 
-			const item = await this.itemRepository.findById(input.itemId);
-			if (!item) throw new ItemNotFoundError();
+			const item = await this.itemRepository.findById(input.productId);
+			if (!item) throw new ProductNotFoundError();
 
 			// Snapshot the system's current quantity. Not just for audit: showing
 			// the counter what the system believed makes a recount reviewable.
 			const current = await this.stockService.balanceFor(
 				scopeOrganizationId,
 				warehouseId,
-				input.itemId,
+				input.productId,
 				input.binId ?? null,
 			);
 
 			lines.push({
 				organizationId,
 				stockAdjustmentId: adjustmentId,
-				itemId: input.itemId,
+				productId: input.productId,
 				binId: input.binId ?? null,
 				quantityBefore: current?.quantityOnHand ?? '0',
 				quantityAfter: input.quantityAfter,
@@ -607,6 +607,6 @@ export class AdjustmentService {
 		tx: TTx,
 		_organizationId: string,
 	): Promise<string> {
-		return this.numbering.next('stock_adjustment', { tx });
+		return this.numbering.next('stock_adjustment', tx);
 	}
 }

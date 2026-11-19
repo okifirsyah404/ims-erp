@@ -10,7 +10,7 @@ import type { MovementType } from '@drizzle/schemas/inventory.schema';
  * importing one from the other would create a cycle.
  *
  * A movement row stores an **unsigned** quantity; direction is a property of its
- * type, never of the number's sign. That is what makes `stock_movements_quantity_check`
+ * type, never of the number's sign. That is what makes `movements_quantity_check`
  * (`quantity <> 0`) meaningful and what stops a negative quantity from smuggling
  * an outbound move past an inbound guard.
  */
@@ -20,8 +20,7 @@ const OUTBOUND_TYPES = [
 	'adjustment_out',
 	'return_out',
 	'consumption',
-	'borrowing_out',
-] as const satisfies readonly MovementType[];
+	] as const satisfies readonly MovementType[];
 
 /**
  * The outbound movement types, for callers that need to enumerate them.

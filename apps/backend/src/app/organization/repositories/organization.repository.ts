@@ -5,7 +5,6 @@ import {
 	users,
 	organizations,
 } from '@drizzle/schemas/auth.schema';
-import { warehouseOrganizations } from '@drizzle/schemas/inventory.schema';
 import { TPaginationResult } from '@ims-erp/common';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
@@ -115,16 +114,21 @@ export class OrganizationRepository implements IOrganizationRepository {
 	/**
 	 * Enriches a page of organization rows with aggregate counts.
 	 *
-	 * Grouped queries limited to the page's org ids (no N+1): live member rows
-	 * and live warehouse links (`warehouseOrganizations`). `projectCount` is
-	 * a reserved placeholder (0) until a projects concept exists.
+	 * @remarks
+	 * Grouped query limited to the page's org ids (no N+1): live member rows.
+	 *
+	 * `warehousesCount` is **not** computed here any more: this repository used
+	 * to import `inventory.schema`, which is a cross-module boundary violation
+	 * (ADR-0024 P1). Warehouse links are read through
+	 * `ExportedWarehouseService` (inventory) injected into the service, and the
+	 * service fills the count. Until that wiring lands the value stays 0.
+	 * `projectCount` is a reserved placeholder until a projects concept exists.
 	 */
 	private async attachCounts(
 		rows: TOrganizationSelect[],
 	): Promise<TOrganizationWithCounts[]> {
 		const ids = rows.map((row) => row.id);
 		const membersCount = new Map<string, number>();
-		const warehousesCount = new Map<string, number>();
 
 		if (ids.length > 0) {
 			const memberRows = await this.db
@@ -138,29 +142,12 @@ export class OrganizationRepository implements IOrganizationRepository {
 			for (const row of memberRows) {
 				membersCount.set(row.organizationId, Number(row.value));
 			}
-
-			const warehouseRows = await this.db
-				.select({
-					organizationId: warehouseOrganizations.organizationId,
-					value: count(),
-				})
-				.from(warehouseOrganizations)
-				.where(
-					and(
-						inArray(warehouseOrganizations.organizationId, ids),
-						isNull(warehouseOrganizations.deletedAt),
-					),
-				)
-				.groupBy(warehouseOrganizations.organizationId);
-			for (const row of warehouseRows) {
-				warehousesCount.set(row.organizationId, Number(row.value));
-			}
 		}
 
 		return rows.map((row) => ({
 			...row,
 			membersCount: membersCount.get(row.id) ?? 0,
-			warehousesCount: warehousesCount.get(row.id) ?? 0,
+			warehousesCount: 0,
 			projectCount: 0,
 		}));
 	}

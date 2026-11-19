@@ -309,6 +309,7 @@ const api = {
 	'portal.invalidCode': 'The code is wrong or has expired',
 	'portal.ownerOnly': 'Only an account owner can manage members',
 	'portal.removeSelf': 'You cannot remove your own access',
+	'portal.noCompany': 'This account has no company to invite members to',
 	'portal.contactUnavailable': 'The contact is missing or belongs to another customer',
 	'portal.role.owner': 'Owner',
 	'portal.role.approver': 'Approver',

@@ -3,7 +3,7 @@
  *
  * @remarks
  * Re-exports the composition-root registration, the controller and the
- * exported service contract so consumers only import from `@app/company`.
+ * exported facade so consumers only import from `@app/company`.
  */
 import Elysia from 'elysia';
 
@@ -12,12 +12,11 @@ import { CompanyController } from './controllers/company.controller';
 export * from './container';
 export * from './controllers/company.controller';
 export type { CompanyService } from './services/company.service';
-export type { ICompanyService } from './contracts/company.service.interface';
+export type { ExportedCompanyService } from './services/exported-company.service';
 export type {
 	TCompanyBranding,
 	TCompanyProfileSnapshot,
 	TCompanyProfileView,
-	TInvoiceBankAccount,
 } from './contracts/company.contract';
 
 /** Elysia instance mounting the company controller. */

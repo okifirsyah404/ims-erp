@@ -1,7 +1,7 @@
-import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
-import type { CustomerService } from '@app/crm/services/customer.service';
-import { LEAD_SERVICE_TOKEN } from '@app/crm/constants/di';
-import type { LeadService } from '@app/crm/services/lead.service';
+import { CUSTOMER_SERVICE_TOKEN } from '@app/customer/constants/di';
+import type { CustomerService } from '@app/customer/services/customer.service';
+import { LEAD_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { LeadService } from '@app/project/services/lead.service';
 import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ItemService } from '@app/inventory/services/item.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';

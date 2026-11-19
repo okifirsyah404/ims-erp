@@ -1,82 +1,55 @@
 /**
- * Company service unit tests (ported from the M02 branch, ADR-0011).
+ * Company service unit tests (ADR-0011, ADR-0024 Q19/Q21).
  *
  * @remarks
- * The profile is company-wide; the two invoice bank accounts are only
- * returned when the caller may see them, and saving hands the profile and
- * both accounts to one repository call (one transaction there). Storage is
- * split since ERP-0042, so the repository returns the profile row with its
- * primary address and contacts.
+ * The profile is company-wide and stored across `profiles`, `addresses` and
+ * `contacts`; one repository per table, committed together through the
+ * transaction runner. Invoice bank accounts live in `finance` now and are not
+ * part of this module.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
-	BankAccountInvoiceUsage,
-	TBankAccountSelect,
+	TCompanyAddressSelect,
 	TCompanyProfileSelect,
 	TCompanySettingSelect,
 	TContactSelect,
-	THeadOfficeAddressSelect,
 } from '@drizzle/schemas/company.schema';
+import type { TTx } from '@drizzle/types';
 import {
 	companyProfilePatchSchema,
 	companyProfileSchema,
 	companySettingInputSchema,
 	type TCompanySettingValueType,
-	type TInvoiceBankAccount,
 } from '../../src/app/company/contracts/company.contract';
 import type {
-	ICompanyRepository,
-	TCompanyProfileData,
-	TCompanyProfileRecord,
-	TInvoiceAccountsData,
+	ICompanyAddressRepository,
+	ICompanyContactRepository,
+	ICompanyProfileRepository,
+	ICompanySettingRepository,
+	TCompanyProfileColumns,
+	TContactChannel,
 } from '../../src/app/company/contracts/company.repository.interface';
 import { CompanyProfileRequiredError } from '../../src/app/company/errors/company.errors';
 import { CompanyService } from '../../src/app/company/services/company.service';
+import { ExportedCompanyService } from '../../src/app/company/services/exported-company.service';
 import { DocumentImageInvalidError, documentImageFrom } from '../../src/providers/s3/document-image';
 
-class FakeProfiles implements ICompanyRepository {
+class FakeProfiles implements ICompanyProfileRepository {
 	profile: TCompanyProfileSelect | null = null;
-	address: THeadOfficeAddressSelect | null = null;
-	contacts: TContactSelect[] = [];
-	accounts: TBankAccountSelect[] = [];
 	saves = 0;
+	invalidations = 0;
 
-	async findProfile() {
-		return this.profile ? this.record() : null;
+	async find() {
+		return this.profile;
 	}
 
-	async findInvoiceAccounts() {
-		return this.accounts;
-	}
-
-	async save(data: TCompanyProfileData, accounts?: TInvoiceAccountsData) {
+	async save(data: TCompanyProfileColumns) {
 		this.saves += 1;
 		this.profile = { ...this.profile, ...data } as TCompanyProfileSelect;
-		if (data.addressLine) {
-			this.address = { addressLine: data.addressLine, postalCode: data.postalCode } as THeadOfficeAddressSelect;
-		}
-		const contact = (type: string, value: string | null) => {
-			this.contacts = this.contacts.filter((c) => c.contactType !== type);
-			if (value) this.contacts.push({ contactType: type, value } as TContactSelect);
-		};
-		contact('phone', data.phone);
-		contact('email', data.email);
-		contact('other', data.website);
-		if (accounts) {
-			const set = (usage: BankAccountInvoiceUsage, account: TInvoiceBankAccount | null) => {
-				this.accounts = this.accounts.filter((a) => a.invoiceUsage !== usage);
-				if (account) this.accounts.push({ ...account, invoiceUsage: usage } as TBankAccountSelect);
-			};
-			set('vat', accounts.vat);
-			set('non_vat', accounts.nonVat);
-		}
-		return { record: this.record(), accounts: this.accounts };
+		return this.profile;
 	}
 
-	async setImage(
-		kind: 'logo' | 'signature' | 'onboarding',
-		key: string | null,
-	) {
+	async setImage(kind: 'logo' | 'signature' | 'onboarding', key: string | null) {
 		if (!this.profile) return null;
 		const field =
 			kind === 'logo'
@@ -85,24 +58,57 @@ class FakeProfiles implements ICompanyRepository {
 					? { signatureObjectKey: key }
 					: { onboardingObjectKey: key };
 		Object.assign(this.profile, field);
-		return this.record();
+		return this.profile;
 	}
 
-	private record(): TCompanyProfileRecord {
-		return { profile: this.profile!, address: this.address, contacts: this.contacts };
+	async invalidate() {
+		this.invalidations += 1;
+	}
+}
+
+class FakeAddresses implements ICompanyAddressRepository {
+	address: TCompanyAddressSelect | null = null;
+
+	async findPrimary() {
+		return this.address;
 	}
 
+	async savePrimary(data: { addressLine: string | null; postalCode: string | null }) {
+		this.address = data.addressLine
+			? ({ addressLine: data.addressLine, postalCode: data.postalCode } as TCompanyAddressSelect)
+			: null;
+	}
+}
+
+class FakeContacts implements ICompanyContactRepository {
+	rows: TContactSelect[] = [];
+
+	async findAll() {
+		return this.rows;
+	}
+
+	async syncChannels(channels: Array<TContactChannel | { contactType: string; value: null }>) {
+		for (const channel of channels) {
+			this.rows = this.rows.filter((c) => c.contactType !== channel.contactType);
+			if (channel.value) {
+				this.rows.push({ contactType: channel.contactType, value: channel.value } as TContactSelect);
+			}
+		}
+	}
+}
+
+class FakeSettings implements ICompanySettingRepository {
 	settings: TCompanySettingSelect[] = [];
 
-	async findSettings() {
+	async findAll() {
 		return this.settings;
 	}
 
-	async findSetting(group: string, key: string) {
+	async find(group: string, key: string) {
 		return this.settings.find((s) => s.settingGroup === group && s.settingKey === key) ?? null;
 	}
 
-	async upsertSetting(
+	async upsert(
 		group: string,
 		key: string,
 		data: { valueType: TCompanySettingValueType; value: string | null; updatedBy: string },
@@ -135,23 +141,29 @@ const storage = {
 	presignGet: (key: string) => `https://files.test/${key}`,
 };
 
+const transactions = { run: <T>(work: (tx: TTx) => Promise<T>) => work({} as TTx) };
+
 const input = companyProfileSchema.parse({
 	legalName: 'PT Inovasi Mitra Sejati',
 	documentCode: 'ims',
 	email: '',
-	bankAccounts: {
-		vat: { bankName: 'BCA', accountNumber: '123 456 7890', accountHolder: 'PT IMS' },
-		nonVat: null,
-	},
 });
 
+function build() {
+	const profiles = new FakeProfiles();
+	const addresses = new FakeAddresses();
+	const contacts = new FakeContacts();
+	const settings = new FakeSettings();
+	const service = new CompanyService(profiles, addresses, contacts, settings, storage, transactions);
+	const exported = new ExportedCompanyService(profiles, addresses, contacts);
+	return { profiles, addresses, contacts, settings, service, exported };
+}
+
 describe('CompanyService', () => {
-	let repository: FakeProfiles;
-	let service: CompanyService;
+	let ctx: ReturnType<typeof build>;
 
 	beforeEach(() => {
-		repository = new FakeProfiles();
-		service = new CompanyService(repository, storage);
+		ctx = build();
 	});
 
 	test('input is normalised: upper-case document code, empty text becomes null', () => {
@@ -162,90 +174,68 @@ describe('CompanyService', () => {
 	});
 
 	test('nothing saved yet reads as null', async () => {
-		expect(await service.get(true)).toBeNull();
-		expect(await service.getProfile()).toBeNull();
+		expect(await ctx.service.get()).toBeNull();
+		expect(await ctx.exported.getLetterhead()).toBeNull();
+		expect(await ctx.exported.getDocumentCode()).toBeNull();
 	});
 
-	test('saves the profile and both accounts in one repository call', async () => {
-		const view = await service.save(input, 'user-1', true);
-		expect(repository.saves).toBe(1);
-		expect(repository.profile?.updatedBy).toBe('user-1');
-		expect(view.bankAccounts).toEqual({
-			vat: { bankName: 'BCA', accountNumber: '123 456 7890', accountHolder: 'PT IMS' },
-			nonVat: null,
-		});
-	});
-
-	test('the exported snapshot carries the letterhead without bank accounts', async () => {
-		await service.save(input, 'user-1', true);
-		const snapshot = await service.getProfile();
-		expect(snapshot).toMatchObject({ legalName: 'PT Inovasi Mitra Sejati', documentCode: 'IMS' });
-		expect(snapshot).not.toHaveProperty('bankAccounts');
-		expect(snapshot).not.toHaveProperty('logoUrl');
-	});
-
-	test('bank accounts are hidden from callers without access', async () => {
-		await service.save(input, 'user-1', true);
-		expect((await service.save(input, 'user-2', false)).bankAccounts).toBeNull();
-		expect((await service.get(false))?.bankAccounts).toBeNull();
-		expect((await service.get(true))?.bankAccounts?.vat?.bankName).toBe('BCA');
-		expect((await service.get(false))?.legalName).toBe('PT Inovasi Mitra Sejati');
-	});
-});
-
-describe('CompanyService without bank accounts in the input', () => {
-	test('saving the profile alone leaves the accounts untouched', async () => {
-		const repository = new FakeProfiles();
-		const service = new CompanyService(repository, storage);
-		await service.save(input, 'user-1', true);
-		const { bankAccounts: _omitted, ...profileOnly } = input;
-		const view = await service.save({ ...profileOnly, tagline: 'Baru' }, 'user-2', true);
-		expect(view.tagline).toBe('Baru');
-		expect(view.bankAccounts?.vat?.bankName).toBe('BCA');
-	});
-
-	test('a caller without bank access cannot change the accounts', async () => {
-		const repository = new FakeProfiles();
-		const service = new CompanyService(repository, storage);
-		await service.save(input, 'user-1', true);
-		await service.save(
-			{ ...input, bankAccounts: { vat: null, nonVat: null } },
-			'user-2',
-			false,
+	test('saves profile, address and contacts together and evicts the cache after commit', async () => {
+		const view = await ctx.service.save(
+			{ ...input, addressLine: 'Jl. Merdeka 1', phone: '021-555', website: 'ims.test' },
+			'user-1',
 		);
-		expect((await service.get(true))?.bankAccounts?.vat?.bankName).toBe('BCA');
+		expect(ctx.profiles.saves).toBe(1);
+		expect(ctx.profiles.invalidations).toBe(1);
+		expect(ctx.profiles.profile?.updatedBy).toBe('user-1');
+		expect(view).toMatchObject({ addressLine: 'Jl. Merdeka 1', phone: '021-555', website: 'ims.test' });
+		expect(view).not.toHaveProperty('bankAccounts');
+	});
+
+	test('the exported letterhead carries the flat profile without view URLs', async () => {
+		await ctx.service.save(input, 'user-1');
+		const letterhead = await ctx.exported.getLetterhead();
+		expect(letterhead).toMatchObject({ legalName: 'PT Inovasi Mitra Sejati', documentCode: 'IMS' });
+		expect(letterhead).not.toHaveProperty('logoUrl');
+		expect(await ctx.exported.getDocumentCode()).toBe('IMS');
+	});
+
+	test('display name prefers the trading name', async () => {
+		await ctx.service.save({ ...input, tradingName: 'IMS' }, 'user-1');
+		expect(await ctx.exported.getDisplayName()).toBe('IMS');
 	});
 });
 
 describe('CompanyService partial update (PUT sends only changed fields)', () => {
 	test('omitted fields keep their stored value', async () => {
-		const repository = new FakeProfiles();
-		const service = new CompanyService(repository, storage);
-		await service.save(
-			{ ...input, signatoryName: 'Budi', defaultInvoiceTerms: 'Net 14' },
-			'user-1',
-			true,
-		);
-		const view = await service.save({ tagline: 'Baru' }, 'user-2', true);
+		const { service } = build();
+		await service.save({ ...input, signatoryName: 'Budi', defaultInvoiceTerms: 'Net 14' }, 'user-1');
+		const view = await service.save({ tagline: 'Baru' }, 'user-2');
 		expect(view.tagline).toBe('Baru');
 		expect(view.legalName).toBe('PT Inovasi Mitra Sejati');
 		expect(view.documentCode).toBe('IMS');
 		expect(view.signatoryName).toBe('Budi');
 		expect(view.defaultInvoiceTerms).toBe('Net 14');
-		expect(view.bankAccounts?.vat?.bankName).toBe('BCA');
 	});
 
 	test('an explicit null clears a text field', async () => {
-		const repository = new FakeProfiles();
-		const service = new CompanyService(repository, storage);
-		await service.save({ ...input, tagline: 'Baru' }, 'user-1', true);
-		expect((await service.save({ tagline: null }, 'user-2', true)).tagline).toBeNull();
+		const { service } = build();
+		await service.save({ ...input, tagline: 'Baru' }, 'user-1');
+		expect((await service.save({ tagline: null }, 'user-2')).tagline).toBeNull();
+	});
+
+	test('clearing the address line soft-deletes the primary address', async () => {
+		const { service, addresses } = build();
+		await service.save({ ...input, addressLine: 'Jl. Merdeka 1' }, 'user-1');
+		expect(addresses.address).not.toBeNull();
+		await service.save({ addressLine: null }, 'user-2');
+		expect(addresses.address).toBeNull();
 	});
 
 	test('a patch without legalName or documentCode on an empty profile is rejected', async () => {
-		const repository = new FakeProfiles();
-		const service = new CompanyService(repository, storage);
-		expect(service.save({ tagline: 'Baru' }, 'user-1', true)).rejects.toThrow();
+		const { service } = build();
+		await expect(service.save({ tagline: 'Baru' }, 'user-1')).rejects.toBeInstanceOf(
+			CompanyProfileRequiredError,
+		);
 	});
 
 	test('the patch schema accepts a subset and still normalises the document code', () => {
@@ -263,32 +253,32 @@ describe('CompanyService images', () => {
 	const png = () => new File([PNG_BYTES], 'logo.png', { type: 'image/png' });
 
 	test('needs a saved profile first', async () => {
-		const service = new CompanyService(new FakeProfiles(), storage);
-		await expect(service.setImage('logo', png(), false)).rejects.toBeInstanceOf(CompanyProfileRequiredError);
+		const { service } = build();
+		await expect(service.setImage('logo', png())).rejects.toBeInstanceOf(CompanyProfileRequiredError);
 	});
 
 	test('every upload gets a fresh key (printed documents keep theirs); removal clears it', async () => {
-		const service = new CompanyService(new FakeProfiles(), storage);
-		await service.save(input, 'user-1', true);
-		const first = await service.setImage('logo', png(), false);
-		const second = await service.setImage('signature', png(), false);
-		const third = await service.setImage('logo', png(), false);
+		const { service } = build();
+		await service.save(input, 'user-1');
+		const first = await service.setImage('logo', png());
+		const second = await service.setImage('signature', png());
+		const third = await service.setImage('logo', png());
 		// Server normalises every upload to WebP, whatever the client sent.
 		expect(first.logoUrl).toMatch(/^https:\/\/files\.test\/company\/logo\/[0-9a-f-]{36}\.webp$/);
 		expect(second.signatureUrl).toContain('company/signature/');
 		expect(third.logoUrl).not.toBe(first.logoUrl);
-		expect((await service.setImage('logo', null, false)).logoUrl).toBeNull();
+		expect((await service.setImage('logo', null)).logoUrl).toBeNull();
 	});
 
 	test('onboarding image upload lands under its own prefix and feeds the branding view', async () => {
-		const service = new CompanyService(new FakeProfiles(), storage);
+		const { service } = build();
 		expect(await service.getBranding()).toEqual({ name: null, onboardingUrl: null });
-		await service.save(input, 'user-1', true);
+		await service.save(input, 'user-1');
 		expect((await service.getBranding()).name).toBe('PT Inovasi Mitra Sejati');
-		const view = await service.setImage('onboarding', png(), false);
+		const view = await service.setImage('onboarding', png());
 		expect(view.onboardingUrl).toMatch(/^https:\/\/files\.test\/company\/onboarding\/[0-9a-f-]{36}\.webp$/);
 		expect((await service.getBranding()).onboardingUrl).toContain('company/onboarding/');
-		expect((await service.setImage('onboarding', null, false)).onboardingUrl).toBeNull();
+		expect((await service.setImage('onboarding', null)).onboardingUrl).toBeNull();
 	});
 
 	test('the boundary checks shape and size; the format is decided on decode', async () => {
@@ -298,21 +288,19 @@ describe('CompanyService images', () => {
 		).toThrow(DocumentImageInvalidError);
 		expect(documentImageFrom({ file: png() }).name).toBe('logo.png');
 		// A PDF passes the size/shape check but cannot be decoded to WebP.
-		const service = new CompanyService(new FakeProfiles(), storage);
-		await service.save(input, 'user-1', true);
+		const { service } = build();
+		await service.save(input, 'user-1');
 		await expect(
-			service.setImage('logo', new File(['x'], 'a.pdf', { type: 'application/pdf' }), false),
+			service.setImage('logo', new File(['x'], 'a.pdf', { type: 'application/pdf' })),
 		).rejects.toBeInstanceOf(DocumentImageInvalidError);
 	});
 });
 
 describe('CompanyService settings (ERP-0045)', () => {
-	let repository: FakeProfiles;
-	let service: CompanyService;
+	let ctx: ReturnType<typeof build>;
 
 	beforeEach(() => {
-		repository = new FakeProfiles();
-		service = new CompanyService(repository, storage);
+		ctx = build();
 	});
 
 	test('rejects a value that does not match its type, and writes nothing', async () => {
@@ -326,14 +314,14 @@ describe('CompanyService settings (ERP-0045)', () => {
 		];
 		for (const [valueType, value] of cases) {
 			await expect(
-				service.upsertSetting('invoice', 'due_days', { valueType, value }, 'user-1'),
+				ctx.service.upsertSetting('invoice', 'due_days', { valueType, value }, 'user-1'),
 			).rejects.toThrow();
 		}
-		expect(repository.settings).toHaveLength(0);
+		expect(ctx.settings.settings).toHaveLength(0);
 	});
 
 	test('accepts a valid value for each type and null (cleared)', async () => {
-		const ok: Array<[TCompanySettingValueType, string | null]> = [
+		const valid: Array<[TCompanySettingValueType, string | null]> = [
 			['string', 'anything at all'],
 			['number', '-3.5'],
 			['boolean', 'false'],
@@ -341,28 +329,28 @@ describe('CompanyService settings (ERP-0045)', () => {
 			['date', '2026-11-13'],
 			['number', null],
 		];
-		for (const [i, [valueType, value]] of ok.entries()) {
-			await service.upsertSetting('invoice', `k_${i}`, { valueType, value }, 'user-1');
+		for (const [i, [valueType, value]] of valid.entries()) {
+			await ctx.service.upsertSetting('invoice', `k_${i}`, { valueType, value }, 'user-1');
 		}
-		expect(repository.settings).toHaveLength(ok.length);
+		expect(ctx.settings.settings).toHaveLength(valid.length);
 	});
 
 	test('upsert replaces the row for the same group and key, not a second row', async () => {
-		await service.upsertSetting('invoice', 'due_days', { valueType: 'number', value: '14' }, 'user-1');
-		const second = await service.upsertSetting(
+		await ctx.service.upsertSetting('invoice', 'due_days', { valueType: 'number', value: '14' }, 'user-1');
+		const second = await ctx.service.upsertSetting(
 			'invoice',
 			'due_days',
 			{ valueType: 'number', value: '30' },
 			'user-2',
 		);
-		expect(repository.settings).toHaveLength(1);
+		expect(ctx.settings.settings).toHaveLength(1);
 		expect(second.value).toBe('30');
-		expect(repository.settings[0].updatedBy).toBe('user-2');
+		expect(ctx.settings.settings[0].updatedBy).toBe('user-2');
 	});
 
 	test('list returns the stored settings as views', async () => {
-		await service.upsertSetting('ui', 'theme', { valueType: 'string', value: 'dark' }, 'user-1');
-		expect(await service.listSettings()).toEqual([
+		await ctx.service.upsertSetting('ui', 'theme', { valueType: 'string', value: 'dark' }, 'user-1');
+		expect(await ctx.service.listSettings()).toEqual([
 			{ settingGroup: 'ui', settingKey: 'theme', valueType: 'string', value: 'dark' },
 		]);
 	});

@@ -1,132 +1,132 @@
 import { z } from 'zod';
 import {
+	ITEM_STATUSES,
 	ITEM_KINDS,
-	ITEM_UNITS,
-	UNIT_STATUSES,
+	DEPRECIATION_METHODS,
 } from '@drizzle/schemas/inventory.schema';
 
-/**
- * Request/response schemas for the item and unit endpoints.
- *
- * @remarks
- * Parsed at the controller boundary; the service refines. Pagination follows
- * `api-conventions.md`: 1-based `page`, `limit` capped at 100.
- */
+/** Shared `:id` param. */
+export const itemIdParamSchema = z.object({ id: z.string().uuid() });
 
-/** Pagination shared by every list endpoint in this module. */
-export const inventoryPaginationSchema = z.object({
-	page: z.coerce.number().int().min(1).default(1),
-	limit: z.coerce.number().int().min(1).max(100).default(20),
+export const itemCategoryCreateSchema = z.object({
+	organizationId: z.string().optional(),
+	code: z.string().min(1).max(32),
+	name: z.string().min(1),
+	parentCategoryId: z.string().uuid().nullish(),
+	itemKind: z.enum(ITEM_KINDS).default('equipment'),
+	defaultUsefulLifeMonths: z.number().int().positive().nullish(),
+	defaultDepreciationMethod: z.enum(DEPRECIATION_METHODS).default('straight_line'),
+	isActive: z.boolean().default(true),
 });
 
-/** List filter for items. */
-export const itemListQuerySchema = inventoryPaginationSchema.extend({
-	search: z.string().min(1).optional(),
-	itemKind: z.enum(ITEM_KINDS).optional(),
-	categoryId: z.uuid().optional(),
-	/** `true` = only items offered for new documents (pickers). */
-	activeOnly: z
-		.union([z.boolean(), z.enum(['true', 'false'])])
-		.transform((value) => value === true || value === 'true')
-		.optional(),
-	/**
-	 * Scope the list to items with at least one live unit in this warehouse.
-	 * Used by the warehouse detail page's kind tabs.
-	 */
-	warehouseId: z.uuid().optional(),
-	includeArchived: z
-		.union([z.boolean(), z.enum(['true', 'false'])])
-		.transform((value) => value === true || value === 'true')
-		.optional(),
-});
-
-/**
- * Body for creating an item.
- *
- * @remarks
- * `code` is deliberately absent: ERP-0043 allocates it from the numbering
- * authority (`PRD-`/`MAT-`/`CMP-` per kind), and `.strict()` rejects a client
- * that tries to send one. `sku` stays user-typed and required.
- */
-export const createItemSchema = z
+export const itemCategoryUpdateSchema = z
 	.object({
-		organizationId: z.string().min(1).nullable().optional(),
-		sku: z.string().min(1).max(64),
-		serialNumber: z.string().trim().max(200).nullable().optional(),
-		name: z.string().min(1),
-		description: z.string().nullable().optional(),
-		itemKind: z.enum(ITEM_KINDS),
-		categoryId: z.uuid().nullable().optional(),
-		brand: z.string().trim().max(100).nullable().optional(),
-		specification: z.string().max(4000).nullable().optional(),
-		unitLabel: z.enum(ITEM_UNITS).default('pcs'),
-		isActive: z.boolean().default(true),
-		isSerialized: z.boolean().default(false),
-		isStockTracked: z.boolean().default(true),
-		/** Stored as `numeric(18,3)`, so the insert value is a decimal string. */
-		minStockQty: z.coerce
-			.number()
-			.min(0)
-			.default(0)
-			.transform((value) => value.toFixed(3)),
-		barcode: z.string().nullable().optional(),
-		sellingPrice: z.coerce.number().int().min(0).default(0),
-		purchasePrice: z.coerce.number().int().min(0).default(0),
-		currencyCode: z.string().length(3).default('IDR'),
+		name: z.string().min(1).optional(),
+		parentCategoryId: z.string().uuid().nullable().optional(),
+		itemKind: z.enum(ITEM_KINDS).optional(),
+		defaultUsefulLifeMonths: z.number().int().positive().nullable().optional(),
+		defaultDepreciationMethod: z.enum(DEPRECIATION_METHODS).optional(),
+		isActive: z.boolean().optional(),
 	})
-	.strict();
+	.refine((data) => Object.keys(data).length > 0, {
+		message: 'At least one field is required',
+	});
 
-/** Body for updating an item. `code`, `sku` and `itemKind` are immutable. */
+export const itemCategoryListQuerySchema = z.object({
+	page: z.coerce.number().int().positive().default(1),
+	limit: z.coerce.number().int().positive().max(100).default(20),
+	search: z.string().optional(),
+	itemKind: z.string().optional(),
+	includeArchived: z
+		.enum(['true', 'false'])
+		.default('false')
+		.transform((value) => value === 'true'),
+});
+
+export const createItemSchema = z.object({
+	name: z.string().min(1),
+	description: z.string().nullish(),
+	itemCategoryId: z.string().uuid().nullish(),
+	itemKind: z.enum(ITEM_KINDS).default('equipment'),
+	serialNumber: z.string().nullish(),
+	barcode: z.string().nullish(),
+	acquisitionDate: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/)
+		.nullish(),
+	acquisitionCost: z.number().int().min(0).default(0),
+	salvageValue: z.number().int().min(0).default(0),
+	currencyCode: z.string().length(3).default('IDR'),
+	usefulLifeMonths: z.number().int().positive().nullish(),
+	depreciationMethod: z.enum(DEPRECIATION_METHODS).default('straight_line'),
+	depreciationStartedOn: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/)
+		.nullish(),
+	condition: z.enum(['new', 'good', 'fair', 'poor', 'damaged']).default('good'),
+	locationDescription: z.string().nullish(),
+	/** Optional display image URL for the asset card. */
+	imageUrl: z.url().max(2048).nullish(),
+	custodianEmployeeId: z.string().uuid().nullish(),
+	supplierCompanyId: z.string().uuid().nullish(),
+	purchaseOrderId: z.string().uuid().nullish(),
+	documentId: z.string().uuid().nullish(),
+});
+
 export const updateItemSchema = z
 	.object({
 		name: z.string().min(1).optional(),
 		description: z.string().nullable().optional(),
-		serialNumber: z.string().trim().max(200).nullable().optional(),
-		categoryId: z.uuid().nullable().optional(),
-		brand: z.string().trim().max(100).nullable().optional(),
-		specification: z.string().max(4000).nullable().optional(),
-		unitLabel: z.enum(ITEM_UNITS).optional(),
-		isActive: z.boolean().optional(),
-		isSerialized: z.boolean().optional(),
-		isStockTracked: z.boolean().optional(),
-		minStockQty: z.coerce
-			.number()
-			.min(0)
-			.optional()
-			.transform((value) => value?.toFixed(3)),
+		itemCategoryId: z.string().uuid().nullable().optional(),
+		serialNumber: z.string().nullable().optional(),
 		barcode: z.string().nullable().optional(),
-		sellingPrice: z.coerce.number().int().min(0).optional(),
-		purchasePrice: z.coerce.number().int().min(0).optional(),
+		acquisitionDate: z
+			.string()
+			.regex(/^\d{4}-\d{2}-\d{2}$/)
+			.nullable()
+			.optional(),
+		acquisitionCost: z.number().int().min(0).optional(),
+		salvageValue: z.number().int().min(0).optional(),
 		currencyCode: z.string().length(3).optional(),
+		usefulLifeMonths: z.number().int().positive().nullable().optional(),
+		depreciationMethod: z.enum(DEPRECIATION_METHODS).optional(),
+		depreciationStartedOn: z
+			.string()
+			.regex(/^\d{4}-\d{2}-\d{2}$/)
+			.nullable()
+			.optional(),
+		locationDescription: z.string().nullable().optional(),
+		/** Optional display image URL for the asset card. */
+		imageUrl: z.url().max(2048).nullable().optional(),
+		custodianEmployeeId: z.string().uuid().nullable().optional(),
+		supplierCompanyId: z.string().uuid().nullable().optional(),
+		purchaseOrderId: z.string().uuid().nullable().optional(),
+		documentId: z.string().uuid().nullable().optional(),
 	})
-	.strict();
+	.refine((data) => Object.keys(data).length > 0, {
+		message: 'At least one field is required',
+	});
 
-/** List filter for units. */
-export const unitListQuerySchema = inventoryPaginationSchema.extend({
-	itemId: z.uuid().optional(),
-	status: z.enum(UNIT_STATUSES).optional(),
-	warehouseId: z.uuid().optional(),
+export const itemListQuerySchema = z.object({
+	page: z.coerce.number().int().positive().default(1),
+	limit: z.coerce.number().int().positive().max(100).default(20),
+	search: z.string().optional(),
+	status: z.enum(ITEM_STATUSES).optional(),
+	itemKind: z.string().optional(),
+	itemCategoryId: z.string().uuid().optional(),
+	includeArchived: z
+		.enum(['true', 'false'])
+		.default('false')
+		.transform((value) => value === 'true'),
 });
 
-/** Body for registering a unit. */
-export const createUnitSchema = z
-	.object({
-		serialNumber: z.string().min(1),
-		organizationId: z.string().min(1).nullable().optional(),
-		status: z.enum(UNIT_STATUSES).default('in_stock'),
-		warehouseId: z.uuid().nullable().optional(),
-		binId: z.uuid().nullable().optional(),
-		assetTag: z.string().nullable().optional(),
-		acquiredOn: z.iso.date().nullable().optional(),
-		warrantyExpiresOn: z.iso.date().nullable().optional(),
-		notes: z.string().nullable().optional(),
-	})
-	.strict();
+export const itemDeactivateSchema = z.object({
+	reason: z.string().min(1).max(500),
+});
 
-/** Body for replacing a provisional serial. */
-export const replaceSerialSchema = z
-	.object({ serialNumber: z.string().min(1) })
-	.strict();
-
-/** Path params carrying a uuid id. */
-export const idParamSchema = z.object({ id: z.uuid() });
+export type TItemCreateInput = z.infer<typeof createItemSchema>;
+export type TItemUpdateInput = z.infer<typeof updateItemSchema>;
+export type TItemListQuery = z.infer<typeof itemListQuerySchema>;
+export type TItemCategoryCreateInput = z.infer<typeof itemCategoryCreateSchema>;
+export type TItemCategoryUpdateInput = z.infer<typeof itemCategoryUpdateSchema>;
+export type TItemCategoryListQuery = z.infer<typeof itemCategoryListQuerySchema>;

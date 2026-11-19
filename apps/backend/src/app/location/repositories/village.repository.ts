@@ -3,6 +3,8 @@ import {
 	TVillageInsert,
 	TVillageSelect,
 	district,
+	province,
+	regency,
 	village,
 } from '@drizzle/schemas/location.schema';
 import { TPaginationResult } from '@ims-erp/common';
@@ -14,6 +16,7 @@ import type { ICacheClient } from '@cache/cache.client';
 import type {
 	IVillageRepository,
 	TVillagePaginationRequest,
+	TVillagePath,
 } from '../contracts/village.repository.interface';
 
 /**
@@ -291,6 +294,38 @@ export class VillageRepository implements IVillageRepository {
 		if (parents.length === 0) return [];
 
 		return this.findByDistrictIds(parents.map((row) => row.id));
+	}
+
+	/**
+	 * Fetches the full administrative path of the given villages.
+	 *
+	 * @remarks
+	 * One batched left join inside the location schema; a soft-deleted parent
+	 * yields a null name rather than dropping the village row.
+	 */
+	async findVillagePaths(villageIds: string[]): Promise<TVillagePath[]> {
+		if (villageIds.length === 0) return [];
+
+		const rows = await this.database
+			.select({
+				villageId: village.id,
+				villageName: village.name,
+				districtId: district.id,
+				districtName: district.name,
+				regencyId: regency.id,
+				regencyName: regency.name,
+				provinceId: province.id,
+				provinceName: province.name,
+			})
+			.from(village)
+			.leftJoin(district, eq(village.districtId, district.id))
+			.leftJoin(regency, eq(district.regencyId, regency.id))
+			.leftJoin(province, eq(regency.provinceId, province.id))
+			.where(
+				and(inArray(village.id, villageIds), isNull(village.deletedAt)),
+			);
+
+		return rows;
 	}
 
 	/**

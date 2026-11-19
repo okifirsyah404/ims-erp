@@ -3,14 +3,14 @@
  *
  * @remarks
  * The one legal company behind every organization (ADR-0011): profile,
- * head office addresses, contacts, bank accounts and company-wide settings.
- * Every table is company-wide — no `organization_id` column in this schema,
- * because one letterhead, one set of bank accounts and one contact list serve
- * all internal organizations.
+ * addresses, contacts and company-wide settings. Every table is company-wide —
+ * no `organization_id` column in this schema, because one letterhead and one
+ * contact list serve all internal organizations.
  *
- * Split out of the `organization` schema in ERP-0042. References to other
- * modules (`auth`, `location`) are plain id columns — cross-module FKs are
- * forbidden (elysia-module rule 3.2).
+ * `company.head_office_addresses` is now `company.addresses` (ADR-0024 Q21) and
+ * `company.bank_accounts` moved to `finance.cash_bank_accounts` (Q19).
+ * Addresses store only `village_id`; the path is resolved through
+ * `ExportedLocationService` (Q10).
  */
 import {
 	unixTimestamp,
@@ -36,11 +36,6 @@ export const companySchema = pgSchema('company');
 
 export const COMPANY_PROFILE_STATUSES = ['active', 'inactive'] as const;
 export type CompanyProfileStatus = (typeof COMPANY_PROFILE_STATUSES)[number];
-
-/** Which invoices print a bank account: with VAT and without VAT. */
-export const BANK_ACCOUNT_INVOICE_USAGES = ['vat', 'non_vat'] as const;
-export type BankAccountInvoiceUsage =
-	(typeof BANK_ACCOUNT_INVOICE_USAGES)[number];
 
 /** Kind of a company contact channel. */
 export const CONTACT_TYPES = [
@@ -81,8 +76,6 @@ const timestamps = {
  *
  * @remarks
  * One live row for the whole company (partial unique index on a constant).
- * Addresses, phone, email and website live in `company.head_office_addresses`
- * and `company.contacts` since ERP-0042.
  */
 export const companyProfiles = companySchema.table(
 	'profiles',
@@ -109,10 +102,7 @@ export const companyProfiles = companySchema.table(
 		defaultQuotationTerms: text('default_quotation_terms'),
 		/** Printed on invoices. */
 		defaultInvoiceTerms: text('default_invoice_terms'),
-		/**
-		 * Warranty certificate sections (coverage, exclusions, service terms),
-		 * one item per line; empty = built-in sample text.
-		 */
+		/** Warranty certificate sections, one item per line. */
 		warrantyCoverage: text('warranty_coverage'),
 		warrantyExclusions: text('warranty_exclusions'),
 		warrantyServiceTerms: text('warranty_service_terms'),
@@ -137,18 +127,19 @@ export const companyProfiles = companySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * company.head_office_addresses
+ * company.addresses
  * ------------------------------------------------------------------------ */
 
 /**
- * Office address of the company, company-wide (ADR-0011).
+ * Office address of the company, company-wide.
  *
  * @remarks
  * The `is_primary` address is the one printed on the letterhead; at most one
- * live primary row (partial unique index).
+ * live primary row (partial unique index). Only `village_id` is stored - the
+ * district/regency/province path is derived (ADR-0024 Q10).
  */
-export const headOfficeAddresses = companySchema.table(
-	'head_office_addresses',
+export const companyAddresses = companySchema.table(
+	'addresses',
 	{
 		id: uuid('id')
 			.primaryKey()
@@ -164,7 +155,7 @@ export const headOfficeAddresses = companySchema.table(
 		...timestamps,
 	},
 	(table) => [
-		uniqueIndex('head_office_addresses_primary_uq')
+		uniqueIndex('addresses_primary_uq')
 			.on(table.isPrimary)
 			.where(sql`deleted_at IS NULL AND is_primary`),
 	],
@@ -201,62 +192,14 @@ export const contacts = companySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * company.bank_accounts
- * ------------------------------------------------------------------------ */
-
-/**
- * Company-owned bank account (master reference; finance keeps its own
- * operational cash and bank accounts).
- *
- * @remarks
- * `invoice_usage` picks the account printed on an invoice: at most one live
- * account per usage.
- */
-export const bankAccounts = companySchema.table(
-	'bank_accounts',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		code: varchar('code', { length: 32 }).notNull(),
-		bankName: varchar('bank_name', { length: 100 }).notNull(),
-		bankCode: varchar('bank_code', { length: 20 }),
-		branchName: varchar('branch_name', { length: 100 }),
-		accountNumber: varchar('account_number', { length: 50 }).notNull(),
-		accountHolder: varchar('account_holder', { length: 200 }).notNull(),
-		currencyCode: varchar('currency_code', { length: 3 })
-			.notNull()
-			.default('IDR'),
-		invoiceUsage: text('invoice_usage'),
-		isPrimary: boolean('is_primary').notNull().default(false),
-		isActive: boolean('is_active').notNull().default(true),
-		...timestamps,
-	},
-	(table) => [
-		uniqueIndex('bank_accounts_code_uq')
-			.on(table.code)
-			.where(sql`deleted_at IS NULL`),
-		uniqueIndex('bank_accounts_invoice_usage_uq')
-			.on(table.invoiceUsage)
-			.where(sql`deleted_at IS NULL AND invoice_usage IS NOT NULL`),
-		index('bank_accounts_account_number_idx').on(table.accountNumber),
-		check(
-			'bank_accounts_invoice_usage_check',
-			sql`${table.invoiceUsage} IS NULL OR ${table.invoiceUsage} IN ('vat', 'non_vat')`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
  * company.settings
  * ------------------------------------------------------------------------ */
 
 /**
- * Company-wide configuration key value store (ERP-0042).
+ * Company-wide configuration key value store.
  *
  * @remarks
- * Organization-scoped settings live in `organization.settings`. Secret values
- * are never read back by the client.
+ * Organization-scoped settings live in `auth.organization_settings`.
  */
 export const companySettings = companySchema.table(
 	'settings',
@@ -275,11 +218,11 @@ export const companySettings = companySchema.table(
 		...timestamps,
 	},
 	(table) => [
-		uniqueIndex('settings_scope_uq')
+		uniqueIndex('company_settings_scope_uq')
 			.on(table.settingGroup, table.settingKey)
 			.where(sql`deleted_at IS NULL`),
 		check(
-			'settings_value_type_check',
+			'company_settings_value_type_check',
 			sql`${table.valueType} IN ('string', 'number', 'boolean', 'json', 'date')`,
 		),
 	],
@@ -287,13 +230,9 @@ export const companySettings = companySchema.table(
 
 export type TCompanyProfileSelect = typeof companyProfiles.$inferSelect;
 export type TCompanyProfileInsert = typeof companyProfiles.$inferInsert;
-export type THeadOfficeAddressSelect =
-	typeof headOfficeAddresses.$inferSelect;
-export type THeadOfficeAddressInsert =
-	typeof headOfficeAddresses.$inferInsert;
+export type TCompanyAddressSelect = typeof companyAddresses.$inferSelect;
+export type TCompanyAddressInsert = typeof companyAddresses.$inferInsert;
 export type TContactSelect = typeof contacts.$inferSelect;
 export type TContactInsert = typeof contacts.$inferInsert;
-export type TBankAccountSelect = typeof bankAccounts.$inferSelect;
-export type TBankAccountInsert = typeof bankAccounts.$inferInsert;
 export type TCompanySettingSelect = typeof companySettings.$inferSelect;
 export type TCompanySettingInsert = typeof companySettings.$inferInsert;

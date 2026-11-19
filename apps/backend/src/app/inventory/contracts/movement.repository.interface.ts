@@ -1,10 +1,17 @@
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	MovementType,
-	TStockMovementInsert,
-	TStockMovementSelect,
+	TMovementInsert,
+	TMovementSelect,
 } from '@drizzle/schemas/inventory.schema';
 import type { TTx } from '@drizzle/types';
+
+/**
+ * A stock-ledger movement: the product and warehouse columns are set. Item (asset)
+ * movements share inventory.movements (ADR-0024 Q24) but never reach the stock
+ * ledger, so this repository reads only the product side.
+ */
+export type TProductMovementSelect = TMovementSelect & { productId: string; warehouseId: string };
 /**
  * Pagination + filters for the movement ledger.
  *
@@ -26,7 +33,7 @@ export type TMovementPaginationRequest = {
 	/** Exact warehouse filter. */
 	warehouseId?: string;
 	/** Exact item filter. */
-	itemId?: string;
+	productId?: string;
 	/** Exact movement-type filter. */
 	movementType?: MovementType;
 	/** Exact posting-state filter. */
@@ -41,7 +48,7 @@ export type TMovementPaginationRequest = {
 
 /** Fields the service supplies when appending a movement. */
 export type TMovementCreateData = Omit<
-	TStockMovementInsert,
+	TMovementInsert,
 	'id' | 'createdAt' | 'status'
 > & {
 	createdAt?: Date;
@@ -62,16 +69,16 @@ export interface IMovementRepository {
 	/** Fetches one filtered page of the ledger, newest first. */
 	paginate(
 		request: TMovementPaginationRequest,
-	): Promise<TPaginationResult<TStockMovementSelect>>;
+	): Promise<TPaginationResult<TProductMovementSelect>>;
 
 	/** Fetches one movement by id. */
-	findById(id: string): Promise<TStockMovementSelect | null>;
+	findById(id: string): Promise<TProductMovementSelect | null>;
 
 	/** Appends one movement row, optionally inside a caller's transaction. */
 	create(
 		data: TMovementCreateData,
 		tx?: TTx,
-	): Promise<TStockMovementSelect>;
+	): Promise<TProductMovementSelect>;
 
 	/**
 	 * Finds the reversal row that already points at `movementId`, if any.
@@ -80,7 +87,7 @@ export interface IMovementRepository {
 	 * Used to refuse a second reversal. Reversals point at their original via
 	 * `referenceType = 'reversal'` and `referenceId = <original id>`.
 	 */
-	findReversalOf(movementId: string): Promise<TStockMovementSelect | null>;
+	findReversalOf(movementId: string): Promise<TProductMovementSelect | null>;
 
 	/**
 	 * Atomically marks a `posted` movement as `reversed`.
@@ -93,7 +100,7 @@ export interface IMovementRepository {
 	claimForReversal(
 		id: string,
 		tx?: TTx,
-	): Promise<TStockMovementSelect | null>;
+	): Promise<TProductMovementSelect | null>;
 
 	/**
 	 * Sums signed quantities per `(item, warehouse, bin)` scope.
@@ -110,13 +117,13 @@ export interface IMovementRepository {
 	 */
 	ledgerRows(
 		scopeOrganizationId: string | null,
-	): Promise<Pick<TStockMovementSelect, 'itemId' | 'warehouseId' | 'binId' | 'movementType' | 'quantity' | 'unitCost'>[]>;
+	): Promise<Pick<TProductMovementSelect, 'productId' | 'warehouseId' | 'binId' | 'movementType' | 'quantity' | 'unitCost'>[]>;
 
 	ledgerTotals(
 		scopeOrganizationId: string | null,
 	): Promise<
 		Array<{
-			itemId: string;
+			productId: string;
 			warehouseId: string;
 			binId: string | null;
 			quantity: string;

@@ -28,23 +28,24 @@ for (const schema of db.schemas) {
 const allRefs = db.schemas.flatMap((s) => s.refs ?? []);
 console.log(`parsed: ${tables.length} tables, ${allRefs.length} refs`);
 
-// module mapping: schemas belonging to one module
-const moduleOf = (s) =>
-  s === "warehouse" || s === "inventory" ? "Inventory" : s;
+// module mapping: one schema per module (ADR-0024). `auth` is shared by the
+// `user` and `organization` modules, which is why it is one entry here too.
+const moduleOf = (s) => s;
 
 // unique bare table names (so refs resolve unambiguously)
 const nameMap = new Map();
 let dups = 0;
-// Bare-name duplicates that are tolerated because the surviving name is
-// unambiguous in practice. `items` was superseded by inventory.items
-// (ADR-0008): catalog.items is retained only until the catalogue satellites
-// are adopted, and no new ref may target it.
-// "item_categories": inventory.item_categories supersedes the unbuilt
-// catalog.item_categories (ADR-0011), the same way inventory.items does.
-// "bank_accounts": company.bank_accounts (company master, ERP-0042) and
-// hr.bank_accounts (employee salary accounts) are different entities; refs
-// always use the schema-qualified name.
-const DUP_ALLOWED = new Set(["payments", "items", "item_categories", "bank_accounts", "settings"]);
+// Bare-name duplicates that are tolerated because refs always use the
+// schema-qualified name (ADR-0024): several schemas own a table with one of
+// these names by design.
+const DUP_ALLOWED = new Set([
+  "settings",
+  "code_numberings",
+  "addresses",
+  "company_addresses",
+  "companies",
+  "documents",
+]);
 for (const t of tables) {
   if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && !DUP_ALLOWED.has(t.name)) {
     console.error(`DUPLICATE table name: ${t.schema}.${t.name} also in ${nameMap.get(t.name)}`); dups++;
@@ -71,28 +72,17 @@ console.log(`cross-module refs: ${cross}`);
 
 // timestamp coverage
 // Better Auth core tables only (the 9 adapter-managed tables); the ERP-owned
-// auth.* extension tables (user_profiles, portal_identities, ...) are checked
+// auth.* extension tables (user_invitations, organization_settings) are checked
 // like every other business table.
 const AUTH_CORE = new Set(["users", "sessions", "accounts", "verifications",
   "organizations", "members", "invitations", "passkeys", "apikeys"]);
 const TIMESTAMP_EXEMPT = new Set([
   // Better Auth managed core tables (own conventions, adapter contract)
   ...tables.filter(t => t.schema === "auth" && AUTH_CORE.has(t.name)).map(t => `auth.${t.name}`),
-  // transitional live scaffold, replaced in step S3/S7
-  "sales.quotations", "sales.payments",
-  // append-only ledger / history (deleted_at meaningless, documented in notes)
-  "inventory.stock_movements", "ticket.ticket_status_history", "audit.audit_logs",
-  // append-only business timeline (never edited, never soft-deleted)
-  "assets.borrowing_events",
-  // projection
-  "inventory.stock_balances",
-  // serial/lot rows are stock facts closed by disposition, not business entities
-  "inventory.serial_tracked_items", "inventory.lot_batches",
-  // allocation line of a payment: cascade-deleted with the payment, never
-  // soft-deleted on its own
-  "payment.payment_allocations",
-  // open-item sub-ledgers: running balances cleared by status, not soft-deleted
-  "finance.ar_open_items", "finance.ap_open_items",
+  // append-only ledgers (deleted_at meaningless, documented in notes)
+  "inventory.movements", "audit.audit_logs", "inventory.borrowing_events", "inventory.borrowing_request_events",
+  // projections: running balances cleared by status, not soft-deleted
+  "inventory.stocks", "finance.ar_open_items", "finance.ap_open_items",
 ]);
 
 const gaps = [];

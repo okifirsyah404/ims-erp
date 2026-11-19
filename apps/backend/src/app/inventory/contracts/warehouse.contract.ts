@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { inventoryPaginationSchema, idParamSchema } from './item.contract';
+import { inventoryPaginationSchema, idParamSchema } from './product.contract';
 
 /**
  * Request schemas for the warehouse, address, and storage endpoints.
@@ -57,7 +57,7 @@ export const warehouseLinkSchema = z.object({
 /** Address body, nested inside a warehouse create or sent to `PUT`. */export const warehouseAddressSchema = z
 	.object({
 		label: z.string().max(255).nullable().optional(),
-		street: z.string().min(1),
+		addressLine: z.string().min(1),
 		rt: z.string().max(8).nullable().optional(),
 		rw: z.string().max(8).nullable().optional(),
 		postalCode: z.string().max(10).nullable().optional(),
