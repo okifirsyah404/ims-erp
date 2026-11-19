@@ -5,8 +5,8 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import { CLOSE_CHECKLIST_REPOSITORY_TOKEN, AR_OPEN_ITEM_REPOSITORY_TOKEN, AP_OPEN_ITEM_REPOSITORY_TOKEN, SUPPLIER_BILL_REPOSITORY_TOKEN, BANK_ACCOUNT_LINK_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN } from '../constants/di';
 import { CASH_BANK_SERVICE_TOKEN } from '../constants/ar-di';
 // elysia-module rule 3.4: token and contract type only, never Sales' services or repositories.
-import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sales/constants/ar-di';
-import type { IExportedInvoiceService } from '@app/sales/contracts/exported-invoice.contract';
+import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sale/constants/ar-di';
+import type { IExportedInvoiceService } from '@app/sale/contracts/exported-invoice.contract';
 import type { CashBankService } from './cash-bank.service';
 import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 // elysia-module rule 3.4: cross-module imports are the DI token and the contract

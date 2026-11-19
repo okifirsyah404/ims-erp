@@ -13,8 +13,8 @@
  * this endpoint; the evidence is recorded in `progress.md` 2026-11-15.
  */
 import { describe, expect, test } from 'bun:test';
-import { InvoiceRepository } from '../../src/app/sales/repositories/invoice.repository';
-import { fillSummary, periodKeys } from '../../src/app/sales/utils/invoice-summary';
+import { InvoiceRepository } from '../../src/app/sale/repositories/invoice.repository';
+import { fillSummary, periodKeys } from '../../src/app/sale/utils/invoice-summary';
 import { mockDb } from '../helpers/mock-db';
 
 const ORG = '0190a1b2-0000-7000-8000-0000000000aa';

@@ -8,7 +8,7 @@
  * exclusion list fails here, not in production.
  */
 import { describe, expect, test } from 'bun:test';
-import { InvoiceRepository } from '../../src/app/sales/repositories/invoice.repository';
+import { InvoiceRepository } from '../../src/app/sale/repositories/invoice.repository';
 import { mockDb } from '../helpers/mock-db';
 
 const ORDER = '0190a1b2-0000-7000-8000-0000000000bb';

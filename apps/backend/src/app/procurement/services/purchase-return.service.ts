@@ -1,12 +1,12 @@
-import { ITEM_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ItemService } from '@app/inventory/services/item.service';
+import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ProductService } from '@app/inventory/services/product.service';
 import type { StockService } from '@app/inventory/services/stock.service';
 import type { WarehouseService } from '@app/inventory/services/warehouse.service';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { CodeNumberService } from '@app/code-number';
+import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { ProcurementNumberingService } from './procurement-numbering.service';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
-import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
 import { isUniqueViolation } from '@drizzle/errors';
 import type {
@@ -60,7 +60,7 @@ export type TPurchaseReturnDetail = TPurchaseReturnRow & {
 
 /** A goods receipt goods can be returned from, with what is left per line. */
 export type TReturnableReceipt = Pick<TGoodsReceiptRow, 'id' | 'code' | 'receiptDate' | 'purchaseOrderId' | 'purchaseOrderCode' | 'supplierName'> & {
-	items: (Pick<TGoodsReceiptItemSelect, 'id' | 'itemId' | 'sku' | 'name' | 'unit' | 'quantity'> & {
+	items: (Pick<TGoodsReceiptItemSelect, 'id' | 'productId' | 'sku' | 'name' | 'unit' | 'quantity'> & {
 		returnableQuantity: string;
 		/** Serials of this receipt line still in stock and not on another return. */
 		serialNumbers: string[];
@@ -98,12 +98,12 @@ export class PurchaseReturnService {
 		private readonly orders: Pick<IPurchaseOrderRepository, 'findById' | 'unreceive'>,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement'>,
-		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getItem' | 'supplierReturnableSerials' | 'returnUnits'>,
+		@inject(PRODUCT_SERVICE_TOKEN)
+		private readonly items: Pick<ProductService, 'getProduct' | 'supplierReturnableSerials' | 'returnUnits'>,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<WarehouseService, 'getWarehouse'>,
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 		/** ERP-0044: approved returns are recorded in the document registry. */
@@ -166,12 +166,12 @@ export class PurchaseReturnService {
 		return Promise.all(
 			lines.map(async (line) => {
 				const used: TReturnedOnLine = taken.get(line.id) ?? { quantityMilli: 0n, serialNumbers: [] };
-				const item = await this.items.getItem(line.itemId).catch(() => null);
+				const item = await this.items.getProduct(line.productId).catch(() => null);
 				const isSerialized = item?.isSerialized ?? false;
 				let serialNumbers: string[] = [];
 				if (isSerialized) {
 					// ERP-0065: units a customer returned damaged go back too.
-					const inStock = new Set(await this.items.supplierReturnableSerials(line.itemId, receipt.warehouseId));
+					const inStock = new Set(await this.items.supplierReturnableSerials(line.productId, receipt.warehouseId));
 					const onReturns = new Set(used.serialNumbers);
 					serialNumbers = (line.serialNumbers ?? []).filter((serial) => inStock.has(serial) && !onReturns.has(serial));
 				}
@@ -196,7 +196,7 @@ export class PurchaseReturnService {
 				.filter(({ returnableMilli }) => returnableMilli > 0n)
 				.map(({ line, isSerialized, serialNumbers, returnableMilli }) => ({
 					id: line.id,
-					itemId: line.itemId,
+					productId: line.productId,
 					sku: line.sku,
 					name: line.name,
 					unit: line.unit,
@@ -261,7 +261,7 @@ export class PurchaseReturnService {
 			return {
 				goodsReceiptItemId: receiptLine.id,
 				purchaseOrderItemId: receiptLine.purchaseOrderItemId,
-				itemId: receiptLine.itemId,
+				productId: receiptLine.productId,
 				sku: receiptLine.sku,
 				name: receiptLine.name,
 				unit: receiptLine.unit,
@@ -275,7 +275,7 @@ export class PurchaseReturnService {
 			header: {
 				goodsReceiptId: receipt.id,
 				purchaseOrderId: receipt.purchaseOrderId,
-				supplierId: order.supplierId,
+				supplierCompanyId: order.supplierCompanyId,
 				warehouseId: receipt.warehouseId,
 				binId: receipt.binId,
 				returnDate: body.returnDate ?? businessDateOf(),
@@ -399,7 +399,7 @@ export class PurchaseReturnService {
 						actorOrganizationId: actor.organizationId,
 						warehouseId: row.warehouseId,
 						binId: row.binId,
-						itemId: line.itemId,
+						productId: line.productId,
 						movementType: 'return_out',
 						quantity: line.quantity,
 						unitCost: line.unitCost,
@@ -415,9 +415,9 @@ export class PurchaseReturnService {
 				const serials = line.serialNumbers ?? [];
 				if (serials.length) {
 					const missing = await this.items.returnUnits(
-						line.itemId,
+						line.productId,
 						serials,
-						{ warehouseId: row.warehouseId, stockMovementId: posted.movement.id },
+						{ warehouseId: row.warehouseId, movementId: posted.movement.id },
 						tx,
 					);
 					if (missing.length) throw new PurchaseReturnLineError('notInStock', index + 1);

@@ -1,12 +1,12 @@
-import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ItemService } from '@app/inventory/services/item.service';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { CodeNumberService } from '@app/code-number';
-import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import { PRODUCT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ProductService } from '@app/inventory/services/product.service';
+import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { ProcurementNumberingService } from './procurement-numbering.service';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
 import { EXPORTED_SUPPLIER_SERVICE_TOKEN } from '@app/supplier';
 import type { ExportedSupplierService } from '@app/supplier';
-import type { TSupplierCompanySelect } from '@drizzle/schemas/supplier.schema';
+import type { TSupplierCompanySelect, TSupplierSelect } from '@drizzle/schemas/supplier.schema';
 import { isUniqueViolation } from '@drizzle/errors';
 import {
 	PURCHASE_CATEGORY_CODES,
@@ -46,7 +46,7 @@ export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
 	taxBase: number;
 };
 
-function snapshotOf(supplier: TSupplierCompanySelect): TPoSupplierSnapshot {
+function snapshotOf(supplier: TSupplierCompanySelect, pic: TSupplierSelect | null): TPoSupplierSnapshot {
 	return {
 		code: supplier.code,
 		name: supplier.legalName ?? supplier.name,
@@ -54,10 +54,10 @@ function snapshotOf(supplier: TSupplierCompanySelect): TPoSupplierSnapshot {
 		taxId: supplier.taxId,
 		phone: supplier.phone,
 		email: supplier.email,
-		picName: null,
-		picTitle: null,
-		picPhone: null,
-		picEmail: null,
+		picName: pic?.name ?? null,
+		picTitle: pic?.title ?? null,
+		picPhone: pic?.phone ?? null,
+		picEmail: pic?.email ?? null,
 	};
 }
 
@@ -81,12 +81,12 @@ export class PurchaseOrderService {
 		@inject(EXPORTED_SUPPLIER_SERVICE_TOKEN)
 		private readonly suppliers: Pick<
 			ExportedSupplierService,
-			'assertActiveCompany'
+			'assertActiveCompany' | 'findPerson'
 		>,
-		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getActiveItems'>,
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(PRODUCT_SERVICE_TOKEN)
+		private readonly items: Pick<ProductService, 'getActiveProducts'>,
+		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
 		/** ERP-0044: approved purchase orders are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
@@ -99,14 +99,17 @@ export class PurchaseOrderService {
 	}
 
 	private async build(body: TPurchaseOrderBody): Promise<{ header: TPurchaseOrderHeaderData; items: TPurchaseOrderItemData[] }> {
-		const supplier = await this.suppliers.assertActiveCompany(body.supplierId);
-		const found = new Map((await this.items.getActiveItems(body.lines.map((line) => line.itemId))).map((item) => [item.id, item]));
+		const supplier = await this.suppliers.assertActiveCompany(body.supplierCompanyId);
+		if (supplier.status !== 'active') throw new PurchaseOrderSupplierUnavailableError();
+		const pic = body.supplierPicId ? await this.suppliers.findPerson(body.supplierPicId) : null;
+		if (body.supplierPicId && (!pic || pic.companyId !== supplier.id)) throw new PurchaseOrderSupplierUnavailableError();
+		const found = new Map((await this.items.getActiveProducts(body.lines.map((line) => line.productId))).map((item) => [item.id, item]));
 		const items: TPurchaseOrderItemData[] = body.lines.map((line, index) => {
-			const item = found.get(line.itemId);
+			const item = found.get(line.productId);
 			if (!item) throw new PurchaseOrderItemUnavailableError(index + 1);
 			const unitPrice = line.unitPrice ?? item.purchasePrice;
 			return {
-				itemId: item.id,
+				productId: item.id,
 				sku: item.sku,
 				name: item.name,
 				specification: line.specification ?? item.specification,
@@ -122,7 +125,8 @@ export class PurchaseOrderService {
 		return {
 			header: {
 				supplierCompanyId: supplier.id,
-				supplierSnapshot: snapshotOf(supplier),
+				supplierPicId: pic?.id ?? null,
+				supplierSnapshot: snapshotOf(supplier, pic),
 				category: body.category,
 				subject: body.subject,
 				orderDate: body.orderDate ?? businessDateOf(),

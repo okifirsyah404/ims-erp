@@ -1,11 +1,11 @@
-import { ITEM_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { WarehouseService } from '@app/inventory/services/warehouse.service';
-import type { ItemService } from '@app/inventory/services/item.service';
+import type { ProductService } from '@app/inventory/services/product.service';
 import type { StockService } from '@app/inventory/services/stock.service';
 import { exVatUnitCost } from '@app/inventory/utils/moving-average';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { CodeNumberService } from '@app/code-number';
-import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { ProcurementNumberingService } from './procurement-numbering.service';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
 import type {
 	TGoodsReceiptItemSelect,
@@ -48,7 +48,7 @@ export type TReceivingWarehouse = {
 /** A PO the warehouse can receive against, with what is still open per line. */
 export type TReceivableOrder = Pick<TPurchaseOrderSelect, 'id' | 'code' | 'subject' | 'status' | 'orderDate'> & {
 	supplierName: string;
-	items: (Pick<TPurchaseOrderItemSelect, 'id' | 'itemId' | 'sku' | 'name' | 'unit' | 'quantity' | 'quantityReceived'> & {
+	items: (Pick<TPurchaseOrderItemSelect, 'id' | 'productId' | 'sku' | 'name' | 'unit' | 'quantity' | 'quantityReceived'> & {
 		openQuantity: string;
 		isSerialized: boolean;
 	})[];
@@ -76,10 +76,10 @@ export class GoodsReceiptService {
 		private readonly orders: Pick<IPurchaseOrderRepository, 'findById' | 'findItems' | 'paginate' | 'receive'>,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement' | 'resolveScope'>,
-		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getItem' | 'registerUnit'>,
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(PRODUCT_SERVICE_TOKEN)
+		private readonly items: Pick<ProductService, 'getProduct' | 'registerUnit'>,
+		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
@@ -142,14 +142,14 @@ export class GoodsReceiptService {
 				const withKind = await Promise.all(
 					lines.map(async (line) => ({
 						id: line.id,
-						itemId: line.itemId,
+						productId: line.productId,
 						sku: line.sku,
 						name: line.name,
 						unit: line.unit,
 						quantity: line.quantity,
 						quantityReceived: line.quantityReceived,
 						openQuantity: open(line),
-						isSerialized: (await this.items.getItem(line.itemId).catch(() => null))?.isSerialized ?? false,
+						isSerialized: (await this.items.getProduct(line.productId).catch(() => null))?.isSerialized ?? false,
 					})),
 				);
 				return {
@@ -191,7 +191,7 @@ export class GoodsReceiptService {
 				const poItem = poItems.get(line.purchaseOrderItemId);
 				if (!poItem) throw new GoodsReceiptLineError('unknown', index + 1);
 				if (quantityToMilli(line.quantity) > quantityToMilli(open(poItem))) throw new GoodsReceiptLineError('over', index + 1);
-				const item = await this.items.getItem(poItem.itemId);
+				const item = await this.items.getProduct(poItem.productId);
 				const serials = line.serialNumbers ?? [];
 				if (item.isSerialized) {
 					const units = Number(line.quantity);
@@ -230,7 +230,7 @@ export class GoodsReceiptService {
 				},
 				lines.map(({ line, poItem, serials }) => ({
 					purchaseOrderItemId: poItem.id,
-					itemId: poItem.itemId,
+					productId: poItem.productId,
 					sku: poItem.sku,
 					name: poItem.name,
 					unit: poItem.unit,
@@ -247,7 +247,7 @@ export class GoodsReceiptService {
 						actorOrganizationId: actor.organizationId,
 						warehouseId: body.warehouseId,
 						binId: body.binId ?? null,
-						itemId: poItem.itemId,
+						productId: poItem.productId,
 						movementType: 'receipt',
 						quantity: row.quantity,
 						unitCost: row.unitCost,
@@ -262,7 +262,7 @@ export class GoodsReceiptService {
 				await this.receipts.setMovement(row.id, posted.movement.id, tx);
 				for (const serialNumber of serials) {
 					await this.items.registerUnit(
-						poItem.itemId,
+						poItem.productId,
 						{
 							serialNumber,
 							organizationId: item.organizationId,
@@ -271,7 +271,7 @@ export class GoodsReceiptService {
 							binId: body.binId ?? null,
 							acquiredOn: receiptDate,
 							purchaseOrderLineId: poItem.id,
-							stockMovementId: posted.movement.id,
+							movementId: posted.movement.id,
 						},
 						tx,
 					);

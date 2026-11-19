@@ -23,7 +23,7 @@ import { paymentModule } from './payment';
 import { procurementModule } from './procurement';
 import { projectModule } from './project';
 import { projectsModule } from './projects';
-import { salesModule } from './sales';
+import { salesModule } from './sale';
 import { userModule } from './user';
 
 /**

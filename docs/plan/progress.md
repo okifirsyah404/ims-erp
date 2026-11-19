@@ -12,6 +12,27 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - P4 step 2: sale on the new schema (ERP-0077 backend)
+
+- Folder `src/app/sales` -> `src/app/sale` (git mv; imports `@app/sale`). Schema renames applied: `sales_orders`/`items` -> `orders`/`order_items`, `sales_returns`/`items` -> `returns`/`return_items`; FK columns `order_id`, `order_item_id`, `return_id`, `invoice_id` (receipts), `product_id`, `movement_id`; types `TOrder*`, `TReturn*`, `TCustomerSnapshot`.
+- Removed the legacy `sales.payments` flow (`SalesService`, `/sales` payment controller, payment repository/contract/token).
+- Quotations: person `customer_id` plus optional `company_id` (replaces `customer_contact_id`); the snapshot comes from `ExportedCustomerService.getSnapshot`; orders copy `company_id` and `lead_id` from the quotation. `QUOTATION_OPEN_STATUSES` now lives in the quotation contract.
+- Own numbering: `sale.code_numberings` (`SaleCodeNumberingRepository`, `SaleNumberingService`); code types `quotation`, `order`, `delivery_note`, `invoice`, `receipt`, `return`; document registry module is `sale` and types `order`/`invoice`/`return`.
+- Items via `ProductService` (`getActiveProducts`, `getProduct`, `inStockSerials`, `sellUnits`, `receiveCustomerUnits`); company letterhead via `CompanyService.get()`.
+- URLs: `/sales/quotations|orders|delivery-notes|returns|invoices|receipts`; SPH render `/sales/public/v1/render/quotations` plus alias `/public/v1/render/quotations` (links already sent).
+- New `ExportedOrderService` (repository-only: `findOrder`, `isOrderOpen`) for project (P6).
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/app/sale`, `src/index.ts`, `src/app/app.ts`; `bun test` delivery-note, invoice-has-live, invoice-summary, sales-*, quotation* -> 63 pass / 0 fail; `validate-dbml.ts` -> OK. Blocked: `test/unit/invoice-billing.service.test.ts` cannot load (the accounting ledger contract imports the removed accounting schema; P5). Header+items repositories kept (not one per table).
+- Still open: web-admin (quotation, sales-order, delivery-note, sales-return, invoice, dashboard wrappers, routes, sidebar), sale seeder (P8); consumers in payment (P5), aftersales/projects/licensing (P6) still use old names.
+## 2026-11-19 - P4 step 1: procurement on the new schema (ERP-0078 backend; ERP-0075 supplier cleanup)
+
+- Supplier master removed from `procurement` (controller, service, repository, contract, errors, tokens). POs carry `supplier_company_id` + optional `supplier_pic_id` (PIC must belong to the company; inactive company refused); the printed snapshot fills the PIC block.
+- Own numbering: `procurement.code_numberings` (`ProcurementCodeNumberingRepository`, `ProcurementNumberingService`, same `next(type, {date, context, tx})` shape as the old `CodeNumberService`); `{SUPPLIER}`/`{CATEGORY}` context kept for POs.
+- Items now `ProductService` (`product_id`, `getProduct`, `getActiveProducts`, `registerUnit`, `supplierReturnableSerials`, `returnUnits`); `stock_movement_id` -> `movement_id`.
+- URLs `/procurement/purchase-requests|purchase-orders|goods-receipts|purchase-returns`; supplier CRUD only under the supplier module.
+- `PurchaseBillingService.TBillableOrder.supplierId` -> `supplierCompanyId`; accounting's `SUPPLIER_SERVICE_TOKEN` import from `@app/procurement` is gone and is fixed in P5.
+- Shared: `CODE_TYPES` exported from `@shared/numbering`; `document.contract.ts` re-pointed to it; procurement imports `DOCUMENT_SERVICE_TOKEN` from `@app/document/constants/di` (the module index still pulls the legacy `code-number` module until P7).
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/app/procurement` and its tests; `bun test` procurement, purchase-request, purchase-return, goods-receipt -> 32 pass / 0 fail; `validate-dbml.ts` -> OK. Deviation: header+items repositories are kept (not one per table).
+- Still open: web-admin (`procurement-api.ts`, `goods-receipt-api.ts`, `purchase-return-api.ts`, supplier pages), procurement seeder (P8), `ExportedPurchaseOrderService` for finance (P5).
 ## 2026-11-19 - P3 step 2c: item operations, catalog absorbed, `assets` and `catalog` deleted (ERP-0076, backend done)
 
 - Added `MaintenanceService`, `DisposalService`, `ItemDocumentService`, `ToolSetService`, `ItemService.applyDepreciation()` (finance hook, P5), `ItemOperationsController` (`/inventory/items/:id/{place,transfer,movements,condition-checks,maintenances,documents,disposals,history}`, `/inventory/disposals`, `/inventory/tool-sets`).

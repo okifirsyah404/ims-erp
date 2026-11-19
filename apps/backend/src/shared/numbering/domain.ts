@@ -78,6 +78,12 @@ export const CODE_TYPES_BY_SCHEMA = {
 	document: ['document'],
 } as const;
 
+/** Every code type, flattened (for enums such as the document registry's documentType). */
+export const CODE_TYPES = Object.values(CODE_TYPES_BY_SCHEMA).flat() as unknown as readonly [
+	CodeType,
+	...CodeType[],
+];
+
 export type CodeNumberingSchema = keyof typeof CODE_TYPES_BY_SCHEMA;
 export type CodeType = (typeof CODE_TYPES_BY_SCHEMA)[CodeNumberingSchema][number];
 

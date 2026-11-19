@@ -1,7 +1,7 @@
-import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ItemService } from '@app/inventory/services/item.service';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { CodeNumberService } from '@app/code-number';
+import { PRODUCT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ProductService } from '@app/inventory/services/product.service';
+import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { ProcurementNumberingService } from './procurement-numbering.service';
 import { isUniqueViolation } from '@drizzle/errors';
 import type { TPurchaseRequestSelect } from '@drizzle/schemas/procurement.schema';
 import { businessDateOf } from '@utils/business-date.util';
@@ -62,10 +62,10 @@ export class PurchaseRequestService {
 	constructor(
 		@inject(PURCHASE_REQUEST_REPOSITORY_TOKEN)
 		private readonly requests: IPurchaseRequestRepository,
-		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getActiveItems' | 'paginate'>,
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(PRODUCT_SERVICE_TOKEN)
+		private readonly items: Pick<ProductService, 'getActiveProducts' | 'paginate'>,
+		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
 	) {}
 
 	private async require(id: string): Promise<TPurchaseRequestSelect> {
@@ -81,15 +81,15 @@ export class PurchaseRequestService {
 	}
 
 	private async build(body: TPurchaseRequestBody): Promise<{ header: TPurchaseRequestHeaderData; items: TPurchaseRequestItemData[] }> {
-		const ids = body.lines.flatMap((line) => (line.itemId ? [line.itemId] : []));
-		const found = new Map((ids.length ? await this.items.getActiveItems(ids) : []).map((item) => [item.id, item]));
+		const ids = body.lines.flatMap((line) => (line.productId ? [line.productId] : []));
+		const found = new Map((ids.length ? await this.items.getActiveProducts(ids) : []).map((item) => [item.id, item]));
 		const items: TPurchaseRequestItemData[] = body.lines.map((line, index) => {
-			if (line.itemId) {
-				const item = found.get(line.itemId);
+			if (line.productId) {
+				const item = found.get(line.productId);
 				if (!item) throw new PurchaseOrderItemUnavailableError(index + 1);
 				const price = line.estimatedUnitPrice ?? item.purchasePrice;
 				return {
-					itemId: item.id,
+					productId: item.id,
 					sku: item.sku,
 					name: item.name,
 					specification: line.specification ?? item.specification,
@@ -102,7 +102,7 @@ export class PurchaseRequestService {
 			}
 			const price = line.estimatedUnitPrice ?? 0;
 			return {
-				itemId: null,
+				productId: null,
 				sku: null,
 				name: line.name!,
 				specification: line.specification,

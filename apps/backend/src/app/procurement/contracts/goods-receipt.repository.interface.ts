@@ -12,7 +12,7 @@ import type { TGoodsReceiptListQuery } from './goods-receipt.contract';
 export type TGoodsReceiptHeaderData = Omit<TGoodsReceiptInsert, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
 export type TGoodsReceiptItemData = Omit<
 	TGoodsReceiptItemInsert,
-	'id' | 'goodsReceiptId' | 'stockMovementId' | 'createdAt' | 'updatedAt' | 'deletedAt'
+	'id' | 'goodsReceiptId' | 'movementId' | 'createdAt' | 'updatedAt' | 'deletedAt'
 >;
 
 /** A receipt as listed: with its PO number and supplier. */
@@ -32,7 +32,7 @@ export interface IGoodsReceiptRepository {
 		items: TGoodsReceiptItemSelect[];
 	}>;
 	/** Links a receipt line to the stock movement it posted. */
-	setMovement(goodsReceiptItemId: string, stockMovementId: string, tx: TTx): Promise<void>;
+	setMovement(goodsReceiptItemId: string, movementId: string, tx: TTx): Promise<void>;
 }
 
 /** What one receipt adds to each PO line. */

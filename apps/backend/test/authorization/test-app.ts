@@ -13,7 +13,7 @@ import {
 	QUOTATION_REPOSITORY_TOKEN,
 	PAYMENT_REPOSITORY_TOKEN,
 	SALES_ORDER_REPOSITORY_TOKEN,
-} from '../../src/app/sales/constants/di';
+} from '../../src/app/sale/constants/di';
 import {
 	PERMISSION_RESOLVER_TOKEN,
 	type IPermissionResolver,
@@ -256,8 +256,8 @@ export function installAuthMock(): void {
 	}));
 }
 
-import type { IQuotationRepository } from '../../src/app/sales/contracts/quotation.repository.interface';
-import type { TPaymentRepository } from '../../src/app/sales/contracts/payment.repository.interface';
+import type { IQuotationRepository } from '../../src/app/sale/contracts/quotation.repository.interface';
+import type { TPaymentRepository } from '../../src/app/sale/contracts/payment.repository.interface';
 import { CUSTOMER_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
 import { LEAD_SERVICE_TOKEN } from '../../src/app/project/constants/di';
 import { PRODUCT_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
@@ -447,21 +447,21 @@ export async function buildTestApp() {
 	installPermissionResolverMock();
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).
 	const { SalesService } = await import(
-		'../../src/app/sales/services/sales.service'
+		'../../src/app/sale/services/sales.service'
 	);
 	const { SALES_SERVICE_TOKEN } = await import(
-		'../../src/app/sales/constants/di'
+		'../../src/app/sale/constants/di'
 	);
 	const { SalesController } = await import(
-		'../../src/app/sales/controllers/sales.controller'
+		'../../src/app/sale/controllers/sales.controller'
 	);
-	const { QuotationService } = await import('../../src/app/sales/services/quotation.service');
+	const { QuotationService } = await import('../../src/app/sale/services/quotation.service');
 	const { QuotationController } = await import(
-		'../../src/app/sales/controllers/quotation.controller'
+		'../../src/app/sale/controllers/quotation.controller'
 	);
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
-	const { QUOTATION_SERVICE_TOKEN } = await import('../../src/app/sales/constants/di');
+	const { QUOTATION_SERVICE_TOKEN } = await import('../../src/app/sale/constants/di');
 	// ERP-0044: the registry is a side effect; this suite only needs it to exist.
 	const { DOCUMENT_SERVICE_TOKEN } = await import(
 		'../../src/app/document/constants/di'
@@ -514,7 +514,7 @@ export async function buildTestApp() {
 	const { OUTBOX_SERVICE_TOKEN } = await import('../../src/app/automation/constants/di');
 	container.register(OUTBOX_SERVICE_TOKEN, { useValue: { publish: async () => null } as never });
 	// ERP-0067: the sent-quotation queue; not exercised here.
-	const { QUOTATION_SENT_DISPATCHER_TOKEN } = await import('../../src/app/sales/constants/di');
+	const { QUOTATION_SENT_DISPATCHER_TOKEN } = await import('../../src/app/sale/constants/di');
 	container.register(QUOTATION_SENT_DISPATCHER_TOKEN, { useValue: { enqueue: async () => {} } });
 	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });

@@ -2,14 +2,14 @@ import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
 import { CUSTOMER_SERVICE_TOKEN } from '@app/customer/constants/di';
 import type { CustomerService } from '@app/customer/services/customer.service';
-import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sales/constants/di';
-import type { InvoiceLookupService } from '@app/sales/services/invoice-lookup.service';
+import { INVOICE_LOOKUP_SERVICE_TOKEN } from '@app/sale/constants/di';
+import type { InvoiceLookupService } from '@app/sale/services/invoice-lookup.service';
 import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import type { CodeNumberService } from '@app/code-number';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
 import type { DocumentService } from '@app/document';
-import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
-import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
+import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sale/constants/di';
+import type { SalesFulfilmentService } from '@app/sale/services/sales-fulfilment.service';
 import { isUniqueViolation } from '@drizzle/errors';
 import type {
 	LicenseEventType,

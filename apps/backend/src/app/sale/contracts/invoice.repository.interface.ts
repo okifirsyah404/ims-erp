@@ -1,0 +1,233 @@
+import type {
+	TInvoiceItemSelect,
+	TInvoiceSelect,
+	TReceiptInsert,
+	TReceiptSelect,
+} from '@drizzle/schemas/sale.schema';
+import type { TPaginationResult } from '@ims-erp/common';
+import type { TReceiptListQuery } from './invoice.contract';
+import type { TTermAmounts } from '../utils/invoice-terms';
+
+/** Invoice list filters (web: status, down payments, search, overdue). */
+export type TInvoiceListFilters = {
+	status?: string;
+	customerId?: string;
+	termKind?: string;
+	search?: string;
+	/** `today` (Jakarta) when only overdue invoices are wanted. */
+	overdueOn?: string;
+};
+
+/**
+ * Invoice statuses that count as invoiced revenue (M01).
+ *
+ * @remarks
+ * `overdue` is deliberately absent: it is **derived from `due_date` at read
+ * time and never stored** (`sales.schema.ts`), so an overdue invoice is still
+ * `issued`/`partially_paid`/`paid` in the column. `draft`, `void` and
+ * `cancelled` never count.
+ */
+export const INVOICED_STATUSES = ['issued', 'partially_paid', 'paid'] as const;
+
+/** One bucket of {@link TInvoiceSummary}; `period` is `YYYY-MM` or `YYYY-MM-DD`. */
+export type TInvoiceSummaryBucket = {
+	period: string;
+	invoiced: number;
+	count: number;
+};
+
+/** Invoiced totals for one window, every period present (zero-filled). */
+export type TInvoiceSummary = {
+	from: string;
+	to: string;
+	groupBy: 'month' | 'day';
+	totalInvoiced: number;
+	invoiceCount: number;
+	buckets: TInvoiceSummaryBucket[];
+};
+
+/** Server-computed totals for a draft invoice (client never sends them). */
+export type TInvoiceTotals = {
+	subtotal: number;
+	discountTotal: number;
+	taxTotal: number;
+	grandTotal: number;
+};
+
+/** One invoice line as accepted from the client (draft only). */
+export type TInvoiceItemInput = {
+	productId: string | null;
+	description: string | null;
+	quantity: number;
+	unitPrice: number;
+	discountAmount: number;
+	taxAmount: number;
+};
+
+export type TCreateInvoiceInput = {
+	invoiceType: 'sales' | 'proforma' | 'recurring';
+	customerId: string | null;
+	orderId: string | null;
+	paymentTermId: string | null;
+	issueDate: string | null;
+	dueDate: string | null;
+	currencyCode: string;
+	notes: string | null;
+	items: TInvoiceItemInput[];
+};
+
+export type TUpdateInvoiceInput = {
+	customerId?: string | null;
+	paymentTermId?: string | null;
+	issueDate?: string | null;
+	dueDate?: string | null;
+	notes?: string | null;
+	items?: TInvoiceItemInput[];
+};
+
+/** Data access for `sales.invoices` / `sales.invoice_items` (F4). */
+export type TInvoiceRepository = {
+	findById(
+		organizationId: string,
+		id: string,
+		tx?: unknown,
+	): Promise<TInvoiceSelect | null>;
+	findByCode(
+		organizationId: string,
+		code: string,
+		tx?: unknown,
+	): Promise<TInvoiceSelect | null>;
+	list(
+		organizationId: string,
+		filters: TInvoiceListFilters,
+		pagination: { page: number; limit: number },
+	): Promise<{ data: TInvoiceSelect[]; meta: { page: number; limit: number; total: number; totalPages: number } }>;
+	/**
+	 * Invoiced totals per period inside `[from, to]`, oldest first, every
+	 * period present. Counts only {@link INVOICED_STATUSES} and rows with an
+	 * `issue_date`.
+	 */
+	summary(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TInvoiceSummary>;
+	/**
+	 * How many invoices are still `draft` and were created inside a window.
+	 *
+	 * @remarks
+	 * Consumed by Accounting's month-end close checklist through
+	 * `ExportedInvoiceService`: the count belongs to this module, so it is
+	 * answered here instead of another module reading `sales.invoices`.
+	 */
+	countDraftsInWindow(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<number>;
+	insert(
+		row: Record<string, unknown>,
+		tx?: unknown,
+	): Promise<TInvoiceSelect>;
+	update(
+		organizationId: string,
+		id: string,
+		patch: Record<string, unknown>,
+		tx?: unknown,
+	): Promise<TInvoiceSelect | null>;
+	listItems(
+		organizationId: string,
+		invoiceId: string,
+		tx?: unknown,
+	): Promise<TInvoiceItemSelect[]>;
+	replaceItems(
+		organizationId: string,
+		invoiceId: string,
+		rows: Array<Record<string, unknown>>,
+		tx?: unknown,
+	): Promise<TInvoiceItemSelect[]>;
+	/** Every non-deleted invoice of a sales order, oldest first (includes void). */
+	listByOrder(orderId: string): Promise<TInvoiceSelect[]>;
+	/** True while the order has an invoice that is neither void nor cancelled. */
+	hasLiveInvoices(orderId: string): Promise<boolean>;
+	/**
+	 * Drafts one billing term of an order under a per-order lock (two clicks
+	 * never bill the same term twice). `build` sees what the order's live
+	 * invoices already bill and returns the invoice row and its lines; it
+	 * runs inside the transaction (numbering may use `tx`).
+	 */
+	/**
+	 * Runs `work` in one transaction with the invoice row locked
+	 * (`SELECT … FOR UPDATE`); `null` when the invoice is missing.
+	 */
+	withLockedInvoice<T>(organizationId: string, id: string, work: (invoice: TInvoiceSelect, tx: unknown) => Promise<T>): Promise<T | null>;
+	createTermDraftLocked(
+		orderId: string,
+		build: (billed: TTermAmounts, liveCount: number, tx: unknown) => Promise<{ row: Record<string, unknown>; items: Array<Record<string, unknown>> }>,
+	): Promise<TInvoiceSelect>;
+	/** One live receipt of this organization by id. */
+	findReceipt(organizationId: string, id: string): Promise<TReceiptSelect | null>;
+	/** All live receipts of an invoice, oldest first. */
+	listReceipts(
+		organizationId: string,
+		invoiceId: string,
+	): Promise<TReceiptSelect[]>;
+	/** Paginated receipts joined with their invoice code and customer name. */
+	paginateReceipts(
+		organizationId: string,
+		request: TReceiptListQuery,
+	): Promise<
+		TPaginationResult<
+			TReceiptSelect & { invoiceCode: string | null; customerName: string }
+		>
+	>;
+	/**
+	 * Records a receipt and updates the invoice's paid / outstanding / status
+	 * in ONE transaction. The invoice must belong to the same organization as
+	 * the receipt. Returns null when the invoice is not payable or the amount
+	 * exceeds the outstanding total.
+	 *
+	 * `tx` joins the caller's transaction (gateway settlement, ERP-0020);
+	 * `capToOutstanding` records at most what is still owed instead of
+	 * refusing an overpayment (money already received online).
+	 */
+	addReceipt(
+		data: TReceiptData,
+		options?: { tx?: unknown; capToOutstanding?: boolean },
+	): Promise<TReceiptSelect | null>;
+	/**
+	 * Reverses a posted receipt (status `posted` only) and restores the
+	 * invoice's paid / outstanding / status in ONE transaction. Returns null
+	 * when the receipt is missing, foreign, or already reversed.
+	 */
+	reverseReceipt(
+		organizationId: string,
+		id: string,
+		actorUserId: string,
+		reason: string,
+	): Promise<TReceiptSelect | null>;
+};
+
+/** Receipt insert payload (status and audit stamps are server-computed). */
+export type TReceiptData = Omit<
+	TReceiptInsert,
+	'id' | 'status' | 'createdAt' | 'updatedAt' | 'deletedAt'
+> & {
+	amount: number;
+};
+
+/** Computes totals from line inputs; pure, integer minor units (ADR-0002). */
+export function computeInvoiceTotals(
+	items: TInvoiceItemInput[],
+): TInvoiceTotals {
+	let subtotal = 0;
+	let discountTotal = 0;
+	let taxTotal = 0;
+	for (const item of items) {
+		const gross = item.quantity * item.unitPrice;
+		subtotal += gross;
+		discountTotal += item.discountAmount;
+		taxTotal += item.taxAmount;
+	}
+	const grandTotal = subtotal - discountTotal + taxTotal;
+	return { subtotal, discountTotal, taxTotal, grandTotal };
+}

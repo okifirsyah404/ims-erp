@@ -11,8 +11,8 @@ import {
 	INVOICE_PAYMENT_PORT_TOKEN,
 	InvoiceNotFoundError,
 	InvoiceNotPayableError,
-} from '@app/sales';
-import type { IInvoicePaymentPort } from '@app/sales';
+} from '@app/sale';
+import type { IInvoicePaymentPort } from '@app/sale';
 import {
 	GATEWAY_PAYMENT_REPOSITORY_TOKEN,
 	PAYMENT_GATEWAY_REGISTRY_TOKEN,

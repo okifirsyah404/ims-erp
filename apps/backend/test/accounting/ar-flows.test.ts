@@ -20,12 +20,12 @@ import type {
 } from '@drizzle/schemas/finance.schema';
 import type { TPaymentAllocationSelect, TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TInvoiceItemSelect, TInvoiceSelect } from '@drizzle/schemas/sales.schema';
-import type { TInvoiceRepository } from '../../src/app/sales/contracts/invoice.repository.interface';
+import type { TInvoiceRepository } from '../../src/app/sale/contracts/invoice.repository.interface';
 import { PostingService } from '../../src/app/accounting/services/posting.service';
 import { ArAccountResolverService } from '../../src/app/accounting/services/ar-account-resolver.service';
 import { CashBankService } from '../../src/app/accounting/services/cash-bank.service';
 import { PaymentService } from '../../src/app/payment/services/payment.service';
-import { InvoiceService } from '../../src/app/sales/services/invoice.service';
+import { InvoiceService } from '../../src/app/sale/services/invoice.service';
 import {
 	ArAccountNotConfiguredError,
 	CashBankAccountInactiveError,
@@ -40,7 +40,7 @@ import {
 import {
 	InvoiceNoItemsError,
 	InvoiceNotDraftError,
-} from '../../src/app/sales/errors/invoice.errors';
+} from '../../src/app/sale/errors/invoice.errors';
 
 const ORG = 'org-1';
 const ACTOR = 'user-1';

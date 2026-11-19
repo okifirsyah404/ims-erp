@@ -1,7 +1,7 @@
 import {
 	CODE_TYPES,
 	type CodeType,
-} from '@drizzle/schemas/code-number.schema';
+} from '@shared/numbering';
 import {
 	DOCUMENT_STATUSES,
 	type DocumentAccessAction,

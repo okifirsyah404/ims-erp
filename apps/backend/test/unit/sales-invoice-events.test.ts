@@ -4,9 +4,9 @@
  * payment; a refused receipt publishes nothing.
  */
 import { describe, expect, test } from 'bun:test';
-import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sales.schema';
-import { InvoiceService } from '../../src/app/sales/services/invoice.service';
-import { invoiceIssuedEvent } from '../../src/app/sales/utils/invoice-events';
+import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sale.schema';
+import { InvoiceService } from '../../src/app/sale/services/invoice.service';
+import { invoiceIssuedEvent } from '../../src/app/sale/utils/invoice-events';
 
 const invoice = {
 	id: 'inv-1',

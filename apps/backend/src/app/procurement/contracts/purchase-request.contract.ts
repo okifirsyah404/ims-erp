@@ -36,7 +36,7 @@ const quantity = z
  */
 export const purchaseRequestLineSchema = z
 	.object({
-		itemId: z.uuid().nullish().transform((value) => value ?? null),
+		productId: z.uuid().nullish().transform((value) => value ?? null),
 		/** Required for a free-text line; ignored for an item (the item's name is used). */
 		name: optionalText(300),
 		unit: optionalText(32),
@@ -46,7 +46,7 @@ export const purchaseRequestLineSchema = z
 		specification: optionalText(4000),
 		notes: optionalText(1000),
 	})
-	.refine((line) => line.itemId !== null || (line.name !== null && line.unit !== null), {
+	.refine((line) => line.productId !== null || (line.name !== null && line.unit !== null), {
 		message: 'A free-text line needs a name and a unit',
 		path: ['name'],
 	});

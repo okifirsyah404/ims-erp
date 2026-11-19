@@ -8,12 +8,12 @@
  * voided; a paid one cannot be voided.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TInvoiceSelect, TReceiptSelect, TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
-import { invoiceTermCreateSchema } from '../../src/app/sales/contracts/invoice.contract';
-import type { TInvoiceRepository } from '../../src/app/sales/contracts/invoice.repository.interface';
-import { InvoiceNotVoidableError, InvoiceOrderUnavailableError, InvoiceTermError } from '../../src/app/sales/errors/invoice.errors';
-import { InvoiceBillingService } from '../../src/app/sales/services/invoice-billing.service';
-import { computeTerm, nextPlannedTerm, sumTerms } from '../../src/app/sales/utils/invoice-terms';
+import type { TInvoiceSelect, TReceiptSelect, TOrderSelect } from '@drizzle/schemas/sale.schema';
+import { invoiceTermCreateSchema } from '../../src/app/sale/contracts/invoice.contract';
+import type { TInvoiceRepository } from '../../src/app/sale/contracts/invoice.repository.interface';
+import { InvoiceNotVoidableError, InvoiceOrderUnavailableError, InvoiceTermError } from '../../src/app/sale/errors/invoice.errors';
+import { InvoiceBillingService } from '../../src/app/sale/services/invoice-billing.service';
+import { computeTerm, nextPlannedTerm, sumTerms } from '../../src/app/sale/utils/invoice-terms';
 
 const ORDER = '0190a1b2-0000-7000-8000-00000000b001';
 const ORG = 'org-1';
@@ -22,7 +22,7 @@ const ctx = { organizationId: ORG, actorUserId: 'finance' };
 let rows: TInvoiceSelect[];
 let items: Record<string, unknown>[];
 let receipts: TReceiptSelect[];
-let current: TSalesOrderSelect;
+let current: TOrderSelect;
 let sequence: number;
 let reversed: { entryId: string; entryDate?: string }[];
 let arUpdates: { invoiceId: string; patch: Record<string, unknown> }[];
@@ -36,8 +36,8 @@ type TBillingRepo = Pick<TInvoiceRepository, 'findById' | 'listByOrder' | 'listR
 function fakeRepo(): TInvoiceRepository {
 	const repo: TBillingRepo = {
 		findById: async (_org, id) => rows.find((row) => row.id === id) ?? null,
-		listByOrder: async (orderId) => rows.filter((row) => row.salesOrderId === orderId),
-		listReceipts: async (_org, invoiceId) => receipts.filter((row) => row.salesInvoiceId === invoiceId),
+		listByOrder: async (orderId) => rows.filter((row) => row.orderId === orderId),
+		listReceipts: async (_org, invoiceId) => receipts.filter((row) => row.invoiceId === invoiceId),
 		async update(_org, id, patch) {
 			const row = rows.find((item) => item.id === id);
 			return row ? Object.assign(row, patch) : null;
@@ -47,7 +47,7 @@ function fakeRepo(): TInvoiceRepository {
 			return row ? work(row, 'tx') : null;
 		},
 		async createTermDraftLocked(orderId, build) {
-			const liveRows = rows.filter((row) => row.salesOrderId === orderId && live(row));
+			const liveRows = rows.filter((row) => row.orderId === orderId && live(row));
 			const billed = sumTerms(liveRows.map((row) => ({ taxBase: row.subtotal, vatAmount: row.taxTotal, total: row.grandTotal })));
 			const built = await build(billed, liveRows.length, 'tx');
 			const row = { ...built.row, id: crypto.randomUUID(), createdAt: new Date() } as unknown as TInvoiceSelect;
@@ -60,7 +60,7 @@ function fakeRepo(): TInvoiceRepository {
 }
 
 /** Rp 1.000.000,01 tax base (odd on purpose), 11% VAT. */
-function order(overrides: Partial<TSalesOrderSelect> = {}): TSalesOrderSelect {
+function order(overrides: Partial<TOrderSelect> = {}): TOrderSelect {
 	return {
 		id: ORDER,
 		code: '0001/SO/IMS/XI/26',
@@ -81,11 +81,11 @@ function order(overrides: Partial<TSalesOrderSelect> = {}): TSalesOrderSelect {
 			{ label: 'Terpasang', percentBps: 7000 },
 		],
 		...overrides,
-	} as TSalesOrderSelect;
+	} as TOrderSelect;
 }
 
 const draft = (term: unknown, extra: Record<string, unknown> = {}) =>
-	service.createFromTerm(ctx, invoiceTermCreateSchema.parse({ salesOrderId: ORDER, term, ...extra }));
+	service.createFromTerm(ctx, invoiceTermCreateSchema.parse({ orderId: ORDER, term, ...extra }));
 
 beforeEach(() => {
 	rows = [];
@@ -221,7 +221,7 @@ describe('summary and detail', () => {
 	test('the invoice page: receipts mapped to the web shape, schedule of issued terms', async () => {
 		const dp = await draft({ mode: 'next' });
 		Object.assign(dp, { status: 'paid', paidTotal: dp.grandTotal, outstandingTotal: 0 });
-		receipts.push({ id: 'r1', code: 'KW-1', salesInvoiceId: dp.id, receivedDate: '2026-11-02', amount: dp.grandTotal, method: 'bank_transfer', reference: null, notes: null, status: 'posted', reversalReason: null } as TReceiptSelect);
+		receipts.push({ id: 'r1', code: 'KW-1', invoiceId: dp.id, receivedDate: '2026-11-02', amount: dp.grandTotal, method: 'bank_transfer', reference: null, notes: null, status: 'posted', reversalReason: null } as TReceiptSelect);
 		await draft({ mode: 'next' }); // a draft: not in the schedule
 		const detail = await service.detail(ctx, dp.id);
 		expect(detail.receipts).toEqual([expect.objectContaining({ id: 'r1', invoiceId: dp.id, amount: dp.grandTotal })]);

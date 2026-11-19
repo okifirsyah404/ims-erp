@@ -184,7 +184,7 @@ export class PurchaseReturnRepository implements IPurchaseReturnRepository {
 		return row;
 	}
 
-	async setMovement(purchaseReturnItemId: string, stockMovementId: string, tx: TTx): Promise<void> {
-		await tx.update(purchaseReturnItems).set({ stockMovementId }).where(eq(purchaseReturnItems.id, purchaseReturnItemId));
+	async setMovement(purchaseReturnItemId: string, movementId: string, tx: TTx): Promise<void> {
+		await tx.update(purchaseReturnItems).set({ movementId }).where(eq(purchaseReturnItems.id, purchaseReturnItemId));
 	}
 }

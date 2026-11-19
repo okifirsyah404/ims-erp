@@ -83,7 +83,7 @@ const body = (extra: Record<string, unknown> = {}) =>
 		requestDate: '2026-11-15',
 		neededBy: '2026-11-20',
 		lines: [
-			{ itemId: ITEM, quantity: '2' },
+			{ productId: ITEM, quantity: '2' },
 			{ name: 'Kabel UTP Cat6 roll 305m', unit: 'roll', quantity: '1.5', estimatedUnitPrice: 150_000_000 },
 		],
 		...extra,
@@ -96,7 +96,7 @@ beforeEach(() => {
 	service = new PurchaseRequestService(
 		repo,
 		{
-			getActiveItems: async (ids: string[]) => (ids.includes(ITEM) ? ([QR50] as never) : []),
+			getActiveProducts: async (ids: string[]) => (ids.includes(ITEM) ? ([QR50] as never) : []),
 			paginate: async (request) => {
 				searched.push(request);
 				return { meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [{ ...QR50, isActive: true, imageUrl: 'x' }] as never };
@@ -115,8 +115,8 @@ describe('drafting', () => {
 	test('item lines take the master snapshot and price; free-text lines keep what was typed', async () => {
 		const request = await service.create(REQUESTER, body());
 		const lines = repo.lines.get(request.id)!;
-		expect(lines[0]).toMatchObject({ itemId: ITEM, sku: 'QR50', name: 'QR50 Mifare', unit: 'pcs', estimatedUnitPrice: 190_000_000, estimatedTotal: 380_000_000 });
-		expect(lines[1]).toMatchObject({ itemId: null, sku: null, name: 'Kabel UTP Cat6 roll 305m', unit: 'roll', estimatedTotal: 225_000_000 });
+		expect(lines[0]).toMatchObject({ productId: ITEM, sku: 'QR50', name: 'QR50 Mifare', unit: 'pcs', estimatedUnitPrice: 190_000_000, estimatedTotal: 380_000_000 });
+		expect(lines[1]).toMatchObject({ productId: null, sku: null, name: 'Kabel UTP Cat6 roll 305m', unit: 'roll', estimatedTotal: 225_000_000 });
 		expect(request).toMatchObject({
 			estimatedTotal: 605_000_000,
 			requestedBy: 'tech-1',
@@ -130,12 +130,12 @@ describe('drafting', () => {
 	test('a free-text line needs a name and a unit; needed-by cannot precede the request date', () => {
 		expect(() => body({ lines: [{ quantity: '1' }] })).toThrow();
 		expect(() => body({ neededBy: '2026-11-01' })).toThrow();
-		expect(() => body({ lines: [{ itemId: ITEM, quantity: '0' }] })).toThrow();
+		expect(() => body({ lines: [{ productId: ITEM, quantity: '0' }] })).toThrow();
 	});
 
 	test('an inactive or unknown item is refused with its line number', async () => {
 		await expect(
-			service.create(REQUESTER, body({ lines: [{ itemId: '0190a1b2-0000-7000-8000-00000000e999', quantity: '1' }] })),
+			service.create(REQUESTER, body({ lines: [{ productId: '0190a1b2-0000-7000-8000-00000000e999', quantity: '1' }] })),
 		).rejects.toBeInstanceOf(PurchaseOrderItemUnavailableError);
 	});
 

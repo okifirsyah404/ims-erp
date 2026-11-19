@@ -8,20 +8,20 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
-	SalesReturnStatus,
+	ReturnStatus,
 	TDeliveryNoteItemSelect,
-	TSalesReturnItemSelect,
-	TSalesReturnSelect,
-} from '@drizzle/schemas/sales.schema';
+	TReturnItemSelect,
+	TReturnSelect,
+} from '@drizzle/schemas/sale.schema';
 import { quantityToMilli } from '@utils/money.util';
-import { salesReturnBodySchema } from '../../src/app/sales/contracts/sales-return.contract';
-import type { ISalesReturnRepository, TReturnedOnDeliveryLine } from '../../src/app/sales/contracts/sales-return.repository.interface';
+import { salesReturnBodySchema } from '../../src/app/sale/contracts/sales-return.contract';
+import type { ISalesReturnRepository, TReturnedOnDeliveryLine } from '../../src/app/sale/contracts/sales-return.repository.interface';
 import {
 	SalesReturnDeliveryError,
 	SalesReturnSelfApprovalError,
 	SalesReturnStateError,
-} from '../../src/app/sales/errors/sales-return.errors';
-import { SalesReturnService } from '../../src/app/sales/services/sales-return.service';
+} from '../../src/app/sale/errors/sales-return.errors';
+import { SalesReturnService } from '../../src/app/sale/services/sales-return.service';
 
 const CREATOR = 'user-sales';
 const APPROVER = 'user-manager';
@@ -36,31 +36,31 @@ const CABLE = '0190a1b2-0000-7000-8000-0000000000b1';
 const READER = '0190a1b2-0000-7000-8000-0000000000b2';
 const SERVICE = '0190a1b2-0000-7000-8000-0000000000b3';
 
-const noteLine = (id: string, itemId: string, quantity: string, unitPrice: number, unitCost: number, serials: string[] | null) =>
+const noteLine = (id: string, productId: string, quantity: string, unitPrice: number, unitCost: number, serials: string[] | null) =>
 	({
 		id,
 		deliveryNoteId: NOTE,
-		salesOrderItemId: `${id}-so`,
-		itemId,
+		orderItemId: `${id}-so`,
+		productId,
 		sku: 'SKU',
-		name: itemId,
+		name: productId,
 		unit: 'pcs',
 		quantity,
 		unitPrice,
 		unitCost,
 		serialNumbers: serials,
 		remarks: null,
-		stockMovementId: null,
+		movementId: null,
 	}) as unknown as TDeliveryNoteItemSelect;
 
 class FakeReturns implements ISalesReturnRepository {
-	rows: (TSalesReturnSelect & { items: TSalesReturnItemSelect[] })[] = [];
+	rows: (TReturnSelect & { items: TReturnItemSelect[] })[] = [];
 	async paginate() {
 		return { meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] };
 	}
 	async findById(id: string) {
 		const row = this.rows.find((r) => r.id === id);
-		return row ? { ...row, deliveryNoteCode: '0001/SJ/IMS/XI/26', salesOrderCode: 'SO-1', customerName: 'PT Gym' } : null;
+		return row ? { ...row, deliveryNoteCode: '0001/SJ/IMS/XI/26', orderCode: 'SO-1', customerName: 'PT Gym' } : null;
 	}
 	async findItems(id: string) {
 		return this.rows.find((r) => r.id === id)?.items ?? [];
@@ -73,20 +73,20 @@ class FakeReturns implements ISalesReturnRepository {
 			code: null,
 			status: 'draft',
 			rejectionReason: null,
-			items: items.map((item, index) => ({ ...item, id: `${id}-${index}`, salesReturnId: id, condition: null, binId: null, stockMovementId: null, sortOrder: index })),
-		} as unknown as TSalesReturnSelect & { items: TSalesReturnItemSelect[] };
+			items: items.map((item, index) => ({ ...item, id: `${id}-${index}`, returnId: id, condition: null, binId: null, movementId: null, sortOrder: index })),
+		} as unknown as TReturnSelect & { items: TReturnItemSelect[] };
 		this.rows.push(row);
 		return row;
 	}
 	async replaceDraft() {
 		return null;
 	}
-	async transition(id: string, from: readonly SalesReturnStatus[], to: SalesReturnStatus, patch: object) {
+	async transition(id: string, from: readonly ReturnStatus[], to: ReturnStatus, patch: object) {
 		const row = this.rows.find((r) => r.id === id);
 		if (!row || !from.includes(row.status)) return null;
 		return Object.assign(row, patch, { status: to });
 	}
-	async returnedOnLines(ids: string[], statuses: readonly SalesReturnStatus[], exclude?: string) {
+	async returnedOnLines(ids: string[], statuses: readonly ReturnStatus[], exclude?: string) {
 		const map = new Map<string, TReturnedOnDeliveryLine>();
 		for (const row of this.rows) {
 			if (!statuses.includes(row.status) || row.id === exclude) continue;
@@ -104,8 +104,8 @@ class FakeReturns implements ISalesReturnRepository {
 		const row = this.rows.find((r) => r.id === id);
 		return row && row.status === 'approved' ? row : null;
 	}
-	async setReceived(itemId: string, data: object) {
-		for (const row of this.rows) for (const item of row.items) if (item.id === itemId) Object.assign(item, data);
+	async setReceived(productId: string, data: object) {
+		for (const row of this.rows) for (const item of row.items) if (item.id === productId) Object.assign(item, data);
 	}
 }
 
@@ -113,7 +113,7 @@ let returns: FakeReturns;
 let noteStatus: string;
 let sold: string[];
 let movements: { movementType: string; quantity: string; unitCost: number | null | undefined; binId: string | null | undefined }[];
-let released: { salesOrderItemId: string; quantity: string }[];
+let released: { orderItemId: string; quantity: string }[];
 let reopened: number;
 let units: { serial: string; status: string }[];
 let events: string[];
@@ -138,7 +138,7 @@ beforeEach(() => {
 		{
 			async findById(id: string) {
 				return id === NOTE
-					? ({ id: NOTE, code: '0001/SJ/IMS/XI/26', status: noteStatus, salesOrderId: ORDER, customerId: 'customer-1', warehouseId: WAREHOUSE } as never)
+					? ({ id: NOTE, code: '0001/SJ/IMS/XI/26', status: noteStatus, orderId: ORDER, customerId: 'customer-1', warehouseId: WAREHOUSE } as never)
 					: null;
 			},
 			async findItems() {
@@ -149,7 +149,7 @@ beforeEach(() => {
 			},
 		},
 		{
-			async allocateDelivery(_order: string, input: { salesOrderItemId: string; quantity: string }[]) {
+			async allocateDelivery(_order: string, input: { orderItemId: string; quantity: string }[]) {
 				released.push(...input);
 				return { ok: true as const };
 			},
@@ -170,7 +170,7 @@ beforeEach(() => {
 			},
 		},
 		{
-			async getItem(id: string) {
+			async getProduct(id: string) {
 				return { id, isSerialized: id === READER, isStockTracked: id !== SERVICE } as never;
 			},
 			async receiveCustomerUnits(_itemId: string, serials: readonly string[], data: { status: string }) {
@@ -214,7 +214,7 @@ describe('creating a sales return', () => {
 		expect(created.totalAmount).toBe(15_000_00);
 		const [item] = await returns.findItems(created.id);
 		expect(item?.unitCost).toBe(5_000_00);
-		expect(item?.salesOrderItemId).toBe(`${CABLE_LINE}-so`);
+		expect(item?.orderItemId).toBe(`${CABLE_LINE}-so`);
 	});
 
 	test('only from a shipped or delivered note', async () => {
@@ -273,8 +273,8 @@ describe('approving and receiving', () => {
 			{ serial: 'SN-2', status: 'damaged' },
 		]);
 		expect(released).toEqual([
-			{ salesOrderItemId: `${CABLE_LINE}-so`, quantity: '3' },
-			{ salesOrderItemId: `${READER_LINE}-so`, quantity: '2' },
+			{ orderItemId: `${CABLE_LINE}-so`, quantity: '3' },
+			{ orderItemId: `${READER_LINE}-so`, quantity: '2' },
 		]);
 		expect(reopened).toBe(1);
 		expect((await returns.findItems(row.id)).map((item) => item.condition)).toEqual(['good', 'damaged']);

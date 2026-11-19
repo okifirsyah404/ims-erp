@@ -8,10 +8,10 @@
 import type { InjectionToken } from 'tsyringe';
 import type {
 	IPurchaseOrderRepository,
-	ISupplierRepository,
 } from '../contracts/procurement.repository.interface';
 import type { PurchaseOrderService } from '../services/purchase-order.service';
-import type { SupplierService } from '../services/supplier.service';
+import type { ProcurementCodeNumberingRepository } from '../repositories/code-numbering.repository';
+import type { ProcurementNumberingService } from '../services/procurement-numbering.service';
 import type { IGoodsReceiptRepository } from '../contracts/goods-receipt.repository.interface';
 import type { GoodsReceiptService } from '../services/goods-receipt.service';
 import type { PurchaseBillingService } from '../services/purchase-billing.service';
@@ -20,8 +20,8 @@ import type { PurchaseReturnService } from '../services/purchase-return.service'
 import type { IPurchaseRequestRepository } from '../contracts/procurement.repository.interface';
 import type { PurchaseRequestService } from '../services/purchase-request.service';
 
-export const SUPPLIER_REPOSITORY_TOKEN: InjectionToken<ISupplierRepository> = Symbol('SUPPLIER_REPOSITORY');
-export const SUPPLIER_SERVICE_TOKEN: InjectionToken<SupplierService> = Symbol('SUPPLIER_SERVICE');
+export const PROCUREMENT_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<ProcurementCodeNumberingRepository> = Symbol('PROCUREMENT_CODE_NUMBERING_REPOSITORY');
+export const PROCUREMENT_NUMBERING_SERVICE_TOKEN: InjectionToken<ProcurementNumberingService> = Symbol('PROCUREMENT_NUMBERING_SERVICE');
 export const PURCHASE_ORDER_REPOSITORY_TOKEN: InjectionToken<IPurchaseOrderRepository> = Symbol('PURCHASE_ORDER_REPOSITORY');
 export const PURCHASE_ORDER_SERVICE_TOKEN: InjectionToken<PurchaseOrderService> = Symbol('PURCHASE_ORDER_SERVICE');
 export const GOODS_RECEIPT_REPOSITORY_TOKEN: InjectionToken<IGoodsReceiptRepository> = Symbol('GOODS_RECEIPT_REPOSITORY');

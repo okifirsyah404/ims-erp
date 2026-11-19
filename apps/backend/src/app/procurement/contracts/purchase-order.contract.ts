@@ -35,7 +35,7 @@ const quantity = z
 	}, 'Quantity must be above 0 with at most three decimals');
 
 export const purchaseOrderLineSchema = z.object({
-	itemId: z.uuid(),
+	productId: z.uuid(),
 	quantity,
 	/** Defaults to the item's purchase price. */
 	unitPrice: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullish(),
@@ -46,7 +46,8 @@ export const purchaseOrderLineSchema = z.object({
 });
 
 export const purchaseOrderBodySchema = z.object({
-	supplierId: z.uuid(),
+	supplierCompanyId: z.uuid(),
+	supplierPicId: z.uuid().nullish(),
 	category: z.enum(PURCHASE_CATEGORIES),
 	subject: z.string().trim().min(1).max(200),
 	/** Defaults to today (Jakarta). */
@@ -82,7 +83,7 @@ export const purchaseOrderListQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 	search: z.string().trim().max(100).optional(),
 	status: z.enum(PURCHASE_ORDER_STATUSES).optional(),
-	supplierId: z.uuid().optional(),
+	supplierCompanyId: z.uuid().optional(),
 });
 
 export type TPurchaseOrderBody = z.output<typeof purchaseOrderBodySchema>;

@@ -13,12 +13,12 @@ import { and, eq, inArray, isNull, ne, sql, type SQL } from 'drizzle-orm';
  * order (not cancelled, not deleted) references it.
  */
 
-/** `EXISTS` a live PO line ordering the request line `itemId`. */
-export function liveOrderLineExists(itemId: SQL | typeof purchaseRequestItems.id): SQL {
+/** `EXISTS` a live PO line ordering the request line `productId`. */
+export function liveOrderLineExists(productId: SQL | typeof purchaseRequestItems.id): SQL {
 	return sql`EXISTS (
 		SELECT 1 FROM ${purchaseOrderItems}
 		JOIN ${purchaseOrders} ON ${purchaseOrders.id} = ${purchaseOrderItems.purchaseOrderId}
-		WHERE ${purchaseOrderItems.purchaseRequestItemId} = ${itemId}
+		WHERE ${purchaseOrderItems.purchaseRequestItemId} = ${productId}
 			AND ${purchaseOrderItems.deletedAt} IS NULL
 			AND ${purchaseOrders.deletedAt} IS NULL
 			AND ${purchaseOrders.status} <> 'cancelled'

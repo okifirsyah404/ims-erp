@@ -24,7 +24,7 @@ let order: TPurchaseOrderSelect;
 let poItems: TPurchaseOrderItemSelect[];
 let receipts: (TGoodsReceiptSelect & { items: TGoodsReceiptItemSelect[] })[];
 let movements: { unitCost?: number | null; quantity: string; referenceType?: string | null }[];
-let units: { serialNumber?: string; purchaseOrderLineId?: string | null; stockMovementId?: string | null }[];
+let units: { serialNumber?: string; purchaseOrderLineId?: string | null; movementId?: string | null }[];
 let committed: boolean;
 /** Registry calls made by the service (ERP-0044). */
 let registered: { code: string; sourceId: string }[];
@@ -33,8 +33,8 @@ let service: GoodsReceiptService;
 beforeEach(() => {
 	order = { id: PO, code: 'PO/IMS-HIT/HW/1126/001', status: 'sent', vatMode: 'included', vatRateBps: 1100, supplierSnapshot: { name: 'PT HIT' } } as TPurchaseOrderSelect;
 	poItems = [
-		{ id: LINE_A, itemId: 'item-a', sku: 'CBL', name: 'Kabel', unit: 'm', quantity: '100.000', quantityReceived: '0.000', unitPrice: 11_100 },
-		{ id: LINE_S, itemId: 'item-s', sku: 'QR50', name: 'QR50', unit: 'pcs', quantity: '2.000', quantityReceived: '0.000', unitPrice: 190_000_000 },
+		{ id: LINE_A, productId: 'item-a', sku: 'CBL', name: 'Kabel', unit: 'm', quantity: '100.000', quantityReceived: '0.000', unitPrice: 11_100 },
+		{ id: LINE_S, productId: 'item-s', sku: 'QR50', name: 'QR50', unit: 'pcs', quantity: '2.000', quantityReceived: '0.000', unitPrice: 190_000_000 },
 	] as TPurchaseOrderItemSelect[];
 	receipts = [];
 	movements = [];
@@ -85,7 +85,7 @@ beforeEach(() => {
 			},
 		},
 		{
-			getItem: async (id: string) => ({ id, isSerialized: id === 'item-s', organizationId: null }) as never,
+			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', organizationId: null }) as never,
 			async registerUnit(_itemId: string, data: (typeof units)[number]) {
 				units.push(data);
 				return {} as never;
@@ -149,8 +149,8 @@ describe('goods receipts', () => {
 			]),
 		);
 		expect(units).toEqual([
-			expect.objectContaining({ serialNumber: 'SN1', status: 'in_stock', purchaseOrderLineId: LINE_S, stockMovementId: 'mv-1' }),
-			expect.objectContaining({ serialNumber: 'SN2', stockMovementId: 'mv-1' }),
+			expect.objectContaining({ serialNumber: 'SN1', status: 'in_stock', purchaseOrderLineId: LINE_S, movementId: 'mv-1' }),
+			expect.objectContaining({ serialNumber: 'SN2', movementId: 'mv-1' }),
 		]);
 		expect(order.status).toBe('received');
 	});

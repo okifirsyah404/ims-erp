@@ -5,32 +5,15 @@ import type {
 	TPurchaseRequestItemInsert,
 	TPurchaseRequestItemSelect,
 	TPurchaseRequestSelect,
-	SupplierStatus,
 	TPurchaseOrderInsert,
 	TPurchaseOrderItemInsert,
 	TPurchaseOrderItemSelect,
 	TPurchaseOrderSelect,
-	TSupplierInsert,
-	TSupplierSelect,
 } from '@drizzle/schemas/procurement.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { IPurchaseOrderReceiving } from './goods-receipt.repository.interface';
 import type { TPurchaseOrderListQuery } from './purchase-order.contract';
 import type { TOpenLinesQuery, TPurchaseRequestListQuery } from './purchase-request.contract';
-import type { TSupplierListQuery, TUpdateSupplierInput } from './supplier.contract';
-
-export type TSupplierCreateData = Omit<TSupplierInsert, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
-
-/** Persistence port for `procurement.suppliers` (live rows only). */
-export interface ISupplierRepository {
-	paginate(query: TSupplierListQuery): Promise<TPaginationResult<TSupplierSelect>>;
-	findById(id: string): Promise<TSupplierSelect | null>;
-	findByCode(code: string): Promise<TSupplierSelect | null>;
-	create(data: TSupplierCreateData): Promise<TSupplierSelect>;
-	update(id: string, patch: TUpdateSupplierInput): Promise<TSupplierSelect | null>;
-	/** `from` → `to`; `null` when the supplier was not in `from`. */
-	transitionStatus(id: string, from: SupplierStatus, to: SupplierStatus): Promise<TSupplierSelect | null>;
-}
 
 /** Header fields the service derives (supplier snapshot, totals). */
 export type TPurchaseOrderHeaderData = Omit<

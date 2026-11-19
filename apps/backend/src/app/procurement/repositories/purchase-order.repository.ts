@@ -47,11 +47,11 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 	}
 
 	async paginate(query: TPurchaseOrderListQuery): Promise<TPaginationResult<TPurchaseOrderSelect>> {
-		const { page, limit, search, status, supplierId } = query;
+		const { page, limit, search, status, supplierCompanyId } = query;
 		const where = and(
 			isNull(purchaseOrders.deletedAt),
 			status ? eq(purchaseOrders.status, status) : undefined,
-			supplierId ? eq(purchaseOrders.supplierId, supplierId) : undefined,
+			supplierCompanyId ? eq(purchaseOrders.supplierCompanyId, supplierCompanyId) : undefined,
 			search
 				? or(
 						ilike(purchaseOrders.code, likePattern(search)),

@@ -11,11 +11,10 @@ import type {
 	TQuotationItemSelect,
 	TQuotationSelect,
 	TQuotationStatusHistorySelect,
-} from '@drizzle/schemas/sales.schema';
-import type { IQuotationRepository } from '../../src/app/sales/contracts/quotation.repository.interface';
-import { quotationBodySchema, quotationLostSchema } from '../../src/app/sales/contracts/quotation.contract';
+} from '@drizzle/schemas/sale.schema';
+import type { IQuotationRepository } from '../../src/app/sale/contracts/quotation.repository.interface';
+import { quotationBodySchema, quotationLostSchema } from '../../src/app/sale/contracts/quotation.contract';
 import {
-	QuotationContactInvalidError,
 	QuotationCustomerUnavailableError,
 	QuotationDiscountTooLargeError,
 	QuotationItemUnavailableError,
@@ -23,10 +22,10 @@ import {
 	QuotationNotFoundError,
 	QuotationSelfApprovalError,
 	QuotationStateError,
-} from '../../src/app/sales/errors/quotation.errors';
-import { QuotationService, type TQuotationContext } from '../../src/app/sales/services/quotation.service';
-import { computeTotals } from '../../src/app/sales/utils/quotation-totals';
-import { isQuotationExpired, quotationExpiresAt } from '../../src/app/sales/utils/quotation-validity';
+} from '../../src/app/sale/errors/quotation.errors';
+import { QuotationService, type TQuotationContext } from '../../src/app/sale/services/quotation.service';
+import { computeTotals } from '../../src/app/sale/utils/quotation-totals';
+import { isQuotationExpired, quotationExpiresAt } from '../../src/app/sale/utils/quotation-validity';
 
 const CUSTOMER = '0190a1b2-0000-7000-8000-0000000000c1';
 const INACTIVE = '0190a1b2-0000-7000-8000-0000000000c2';
@@ -158,7 +157,7 @@ function body(overrides: Record<string, unknown> = {}) {
 	return quotationBodySchema.parse({
 		customerId: CUSTOMER,
 		title: 'Penawaran swing gate',
-		lines: [{ itemId: ITEM, quantity: 2 }],
+		lines: [{ productId: ITEM, quantity: 2 }],
 		...overrides,
 	});
 }
@@ -177,8 +176,8 @@ beforeEach(() => {
 		repo,
 		{
 			getActiveCustomer: async (id: string) => (id === CUSTOMER ? (customer as never) : null),
-			getContact: async (customerId: string, id: string) =>
-				customerId === CUSTOMER && id === CONTACT ? ({ id, name: 'Bu Rina' } as never) : null,
+			getActiveCompany: async (id: string) => (id === CONTACT ? ({ id, name: 'PT Maju' } as never) : null),
+			getSnapshot: async () => ({ code: 'PT-MAJU', name: 'PT Maju', type: 'company', email: 'a@maju.id', phone: null, whatsapp: '0812', taxId: '0123456789012345', addressLine: 'Jl. Merdeka 1', postalCode: '10110' }),
 		},
 		{
 			noteQuotation: async (id: string) => {
@@ -187,7 +186,7 @@ beforeEach(() => {
 			},
 		},
 		{
-			getActiveItems: async (ids: string[]) =>
+			getActiveProducts: async (ids: string[]) =>
 				ids.includes(ITEM)
 					? ([
 							{
@@ -251,8 +250,8 @@ describe('money rules', () => {
 	});
 
 	test('quantity with more than three decimals or zero is a 400 at the contract', () => {
-		expect(() => body({ lines: [{ itemId: ITEM, quantity: '1.2345' }] })).toThrow();
-		expect(() => body({ lines: [{ itemId: ITEM, quantity: 0 }] })).toThrow();
+		expect(() => body({ lines: [{ productId: ITEM, quantity: '1.2345' }] })).toThrow();
+		expect(() => body({ lines: [{ productId: ITEM, quantity: 0 }] })).toThrow();
 		expect(() => body({ lines: [] })).toThrow();
 		expect(() => body({ lines: [{ name: 'Jasa', quantity: 1 }] })).toThrow(); // custom line needs unit + price
 	});
@@ -285,40 +284,40 @@ describe('create', () => {
 			expect.objectContaining({
 				code: '1376/QT/IMS/XI/26',
 				documentType: 'quotation',
-				module: 'sales',
+				module: 'sale',
 				sourceType: 'quotation',
 				sourceId: created.id,
 			}),
 		]);
 	});
 
-	test('VAT off, custom line, per-line discount; attention defaults to the contact', async () => {
+	test('VAT off, custom line, per-line discount; attention defaults to the customer person', async () => {
 		const created = await service.create(
 			sales,
 			body({
 				vatEnabled: false,
-				customerContactId: CONTACT,
+				companyId: CONTACT,
 				lines: [{ name: 'Jasa instalasi', unit: 'paket', quantity: '1.5', unitPrice: 200_000_00, discountAmount: 10_000_00 }],
 			}),
 		);
-		expect(created.attention).toBe('Bu Rina');
+		expect(created.attention).toBe('PT Maju');
 		expect(created.vatRateBps).toBe(0);
 		expect(created.taxTotal).toBe(0);
 		expect(created.grandTotal).toBe(290_000_00);
 	});
 
-	test('rejects an inactive customer, a foreign contact, an unknown item and an oversized discount', async () => {
+	test('rejects an inactive customer, an inactive company, an unknown item and an oversized discount', async () => {
 		await expect(service.create(sales, body({ customerId: INACTIVE }))).rejects.toBeInstanceOf(
 			QuotationCustomerUnavailableError,
 		);
-		await expect(service.create(sales, body({ customerContactId: INACTIVE }))).rejects.toBeInstanceOf(
-			QuotationContactInvalidError,
+		await expect(service.create(sales, body({ companyId: INACTIVE }))).rejects.toBeInstanceOf(
+			QuotationCustomerUnavailableError,
 		);
 		await expect(
-			service.create(sales, body({ lines: [{ itemId: INACTIVE, quantity: 1 }] })),
+			service.create(sales, body({ lines: [{ productId: INACTIVE, quantity: 1 }] })),
 		).rejects.toBeInstanceOf(QuotationItemUnavailableError);
 		await expect(
-			service.create(sales, body({ lines: [{ itemId: ITEM, quantity: 1, discountAmount: 2_000_000_000 }] })),
+			service.create(sales, body({ lines: [{ productId: ITEM, quantity: 1, discountAmount: 2_000_000_000 }] })),
 		).rejects.toBeInstanceOf(QuotationDiscountTooLargeError);
 		expect(repo.rows).toHaveLength(0);
 	});
@@ -403,7 +402,7 @@ describe('lost ("Batal") and revisions', () => {
 		const lost = await service.markLost(sales, quotation.id, { reason: 'price', note: 'Terlalu mahal' });
 		expect(lost).toMatchObject({ status: 'lost', lostReason: 'price', closedBy: 'sales-1' });
 		// ERP-0044: the registry copy of a lost SPH is voided.
-		expect(voided).toEqual([`sales/quotation/${quotation.id}`]);
+		expect(voided).toEqual([`sale/quotation/${quotation.id}`]);
 		await expect(service.markLost(sales, quotation.id, { reason: 'price' })).rejects.toBeInstanceOf(
 			QuotationStateError,
 		);

@@ -35,6 +35,8 @@ Plan: `docs/plan/database-refactor/`. Decision: ADR-0024 (`proposed`).
 
 ### in-progress
 - ERP-0076 inventory: **backend done** (steps 1, 2a-2c); web-admin, web-landing and seeders open (P8). Item operations under /inventory/items/:id, /inventory/disposals, /inventory/tool-sets; website catalog is /inventory/product-listings and /inventory/public/v1/catalog (alias /public/v1/catalog); `assets` and `catalog` modules deleted.
+- ERP-0078 procurement: **backend done** (supplier master gone, own numbering, products, `/procurement/*`); web-admin, seeder and `ExportedPurchaseOrderService` (P5) open.
+- ERP-0077 sale: **backend done** (folder `sale`, `/sales/*`, own numbering, quotation person + company, legacy payments removed); web-admin, customer portal and seeder open; invoice-billing test blocked on P5.
   categories, item serials, stocks, movements, adjustments, valuation and the
   warehouse family run on the new schema (`/inventory/products`,
   `/inventory/product-categories`), numbering through

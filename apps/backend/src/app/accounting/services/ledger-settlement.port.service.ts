@@ -7,8 +7,8 @@ import {
 	SUPPLIER_BILL_REPOSITORY_TOKEN,
 } from '../constants/di';
 // elysia-module rule 3.4: token and contract type only, never Sales' services or repositories.
-import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sales/constants/ar-di';
-import type { IExportedInvoiceService } from '@app/sales/contracts/exported-invoice.contract';
+import { EXPORTED_INVOICE_SERVICE_TOKEN } from '@app/sale/constants/ar-di';
+import type { IExportedInvoiceService } from '@app/sale/contracts/exported-invoice.contract';
 import type { CashBankService } from '../services/cash-bank.service';
 import type { ArAccountResolverService } from '../services/ar-account-resolver.service';
 import type {

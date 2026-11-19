@@ -15,14 +15,14 @@ import { FakePaymentGateway } from '../../src/app/payment/adapters/fake-payment-
 import { PaymentGatewayRegistry } from '../../src/app/payment/adapters/payment-gateway-registry';
 import { SingapayPaymentGateway, type TSingapayConfig } from '../../src/app/payment/adapters/singapay-payment-gateway';
 import { XenditPaymentGateway } from '../../src/app/payment/adapters/xendit-payment-gateway';
-import type { IInvoicePaymentPort } from '../../src/app/sales/contracts/invoice-payment.port';
+import type { IInvoicePaymentPort } from '../../src/app/sale/contracts/invoice-payment.port';
 import type {
 	IGatewayPaymentRepository,
 	IPaymentGateway,
 	IPaymentGatewayRegistry,
 	TCheckoutRequest,
 } from '../../src/app/payment/contracts/payment-gateway.contract';
-import { InvoiceNotPayableError } from '../../src/app/sales/errors/invoice.errors';
+import { InvoiceNotPayableError } from '../../src/app/sale/errors/invoice.errors';
 import {
 	GatewayNotConfiguredError,
 	GatewayProviderError,

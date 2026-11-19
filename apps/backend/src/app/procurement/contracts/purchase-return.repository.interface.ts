@@ -12,12 +12,12 @@ import type { TPurchaseReturnListQuery } from './purchase-return.contract';
 /** Header fields the service derives from the goods receipt. */
 export type TPurchaseReturnHeaderData = Pick<
 	TPurchaseReturnInsert,
-	'goodsReceiptId' | 'purchaseOrderId' | 'supplierId' | 'warehouseId' | 'binId' | 'returnDate' | 'reason' | 'notes' | 'totalAmount'
+	'goodsReceiptId' | 'purchaseOrderId' | 'supplierCompanyId' | 'warehouseId' | 'binId' | 'returnDate' | 'reason' | 'notes' | 'totalAmount'
 >;
 
 export type TPurchaseReturnItemData = Omit<
 	TPurchaseReturnItemInsert,
-	'id' | 'purchaseReturnId' | 'stockMovementId' | 'sortOrder' | 'createdAt' | 'updatedAt' | 'deletedAt'
+	'id' | 'purchaseReturnId' | 'movementId' | 'sortOrder' | 'createdAt' | 'updatedAt' | 'deletedAt'
 >;
 
 /** Columns a transition may set besides the status. */
@@ -80,5 +80,5 @@ export interface IPurchaseReturnRepository {
 	 */
 	claimForShip(id: string, tx: TTx): Promise<TPurchaseReturnSelect | null>;
 	/** Links a return line to the stock movement it posted. */
-	setMovement(purchaseReturnItemId: string, stockMovementId: string, tx: TTx): Promise<void>;
+	setMovement(purchaseReturnItemId: string, movementId: string, tx: TTx): Promise<void>;
 }

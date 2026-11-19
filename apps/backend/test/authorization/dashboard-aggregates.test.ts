@@ -27,9 +27,9 @@ beforeAll(async () => {
 	installPermissionResolverMock();
 	// Import after the module mocks are installed (bun mock.module is hoist-sensitive).
 	const { INVOICE_SERVICE_TOKEN, INVOICE_BILLING_SERVICE_TOKEN } = await import(
-		'../../src/app/sales/constants/ar-di'
+		'../../src/app/sale/constants/ar-di'
 	);
-	const { InvoiceController } = await import('../../src/app/sales/controllers/invoice.controller');
+	const { InvoiceController } = await import('../../src/app/sale/controllers/invoice.controller');
 	const { PROJECT_SERVICE_TOKEN, HANDOVER_SERVICE_TOKEN } = await import(
 		'../../src/app/projects/constants/di'
 	);
