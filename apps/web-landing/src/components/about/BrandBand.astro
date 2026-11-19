@@ -3,7 +3,10 @@ import ArrowRight from "@lucide/astro/icons/arrow-right";
 import Logo from "../brand/Logo.astro";
 import Button from "../ui/Button.astro";
 import Media from "../ui/Media.astro";
-import { brandChips } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { brandChips } = await getAbout();
 import { routes } from "../../data/site";
 import { images } from "../../lib/images";
 

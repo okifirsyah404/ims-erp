@@ -1,5 +1,8 @@
 ---
-import { values } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { values } = await getAbout();
 import { icons } from "../../lib/icons";
 
 /** 09.01 · Company Values. */

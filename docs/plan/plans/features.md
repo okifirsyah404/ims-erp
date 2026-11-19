@@ -620,12 +620,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 
 ## M07 Projects and After-Sales
 
-### planned
-- Dynamic website, stage 4 (about, careers, news, help, legal, warranty,
-  installation) — ERP-0071.
-
 ### in-progress
-- Dynamic website configured in the ERP — ERP-0071 (ADR-0025). Stage 1
+- None.
+
+### implemented
+- Dynamic website configured in the ERP — ERP-0071 (ADR-0025), stages 1-4
+  implemented 2026-11-19/20 (not accepted; browser walk-through of the
+  content editor open). Stage 1
   implemented 2026-11-19: identity, contact, social links, default SEO,
   header and footer menus and website API keys in the web admin
   (Integrations → Website Settings), read by the website through
@@ -639,8 +640,8 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `website-content-labels.test.ts` (4), `progress.md` 2026-11-19 stage 2.
   Stage 3 implemented 2026-11-19: solutions, portfolio, case studies and
   testimonials on the website from the ERP (`progress.md` stage 3).
-
-### implemented
+  Stage 4 implemented 2026-11-20: about, careers, news, help centre, legal,
+  warranty and installation from the ERP (`progress.md` 2026-11-20).
 - Customer portal stage 2 (ERP-0070, 2026-11-19): online order (website
   checkout) → draft SPH owned by the account manager or the default
   salesperson, customer accepts a sent SPH → sales order, orders, issued

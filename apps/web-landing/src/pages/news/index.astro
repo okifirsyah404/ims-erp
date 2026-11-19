@@ -4,7 +4,10 @@ import PublicLayout from "../../layouts/PublicLayout.astro";
 import PageHero from "../../components/ui/PageHero.astro";
 import Media from "../../components/ui/Media.astro";
 import ContactCta from "../../components/home/ContactCta.astro";
-import { newsArticles } from "../../data/company-pages";
+import { getNews } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: news comes from the ERP (or the built-in articles).
+const newsArticles = await getNews();
 import { routes } from "../../data/site";
 
 /** News & Insights (footer · Company). Cards follow the 01.02 project-card pattern. */

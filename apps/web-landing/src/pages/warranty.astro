@@ -12,12 +12,14 @@ import SectionHeading from "../components/ui/SectionHeading.astro";
 import Button from "../components/ui/Button.astro";
 import CustomerBand from "../components/contact/CustomerBand.astro";
 import { customerPortal, routes } from "../data/site";
+import { icons } from "../lib/icons";
+import { getSinglePage } from "../lib/server/content/pages";
 
 /**
  * Warranty & claims (footer · Support → Warranty Claim). Coverage copy mirrors the
  * customer app's 08.07 Warranty screen; claims are filed in the Customer Portal.
  */
-const coverage = [
+const builtInCoverage = [
   { title: "Parts & components", detail: "Motors, controllers, arms, sensors and readers", covered: true },
   { title: "Labour & on-site visits", detail: "Within Jabodetabek, response < 24h", covered: true },
   { title: "Firmware updates", detail: "Over-the-air, for the life of the product", covered: true },
@@ -25,15 +27,36 @@ const coverage = [
   { title: "Power surge & vandalism", detail: "Not covered · optional protection add-on", covered: false },
   { title: "Consumables", detail: "Cards, fobs, printer paper and batteries", covered: false },
 ];
-const steps = [
+const builtInSteps = [
   { icon: QrCode, title: "Register your device", text: "Scan the QR label in the Customer Portal to activate warranty." },
   { icon: Headset, title: "Open a claim", text: "Describe the fault and add photos or a video — urgent tickets get a reply within 1 hour." },
   { icon: Wrench, title: "We fix it", text: "Remote diagnosis first; on-site repair or replacement when needed." },
 ];
-const plans = [
+const builtInPlans: { name: string; term: string; price: string; features: string[]; highlight?: boolean }[] = [
   { name: "Standard", term: "2 years", price: "Included", features: ["Parts & labour in Jabodetabek", "Next-business-day response", "Lifetime firmware updates"] },
   { name: "Extended", term: "5 years", price: "From 6% of hardware value", features: ["Everything in Standard", "Nationwide on-site labour", "Same-day urgent response", "Preventive visits twice a year"], highlight: true },
 ];
+
+// ERP-0071 stage 4: coverage, claim steps and plans written in the ERP replace the built-in lists.
+type ErpWarranty = {
+  coverage: { title: string; detail?: string; covered?: boolean }[];
+  steps: { icon?: string; title: string; text?: string }[];
+  plans: { name: string; term?: string; price?: string; features?: string[]; highlight?: boolean }[];
+};
+const erp = await getSinglePage<ErpWarranty>("warranty");
+const coverage = erp.coverage?.length
+  ? erp.coverage.map((item) => ({ title: item.title, detail: item.detail ?? "", covered: item.covered ?? false }))
+  : builtInCoverage;
+const steps = erp.steps?.length
+  ? erp.steps.map((step, index) => ({
+      icon: (step.icon && icons[step.icon as keyof typeof icons]) || builtInSteps[index % builtInSteps.length]!.icon,
+      title: step.title,
+      text: step.text ?? "",
+    }))
+  : builtInSteps;
+const plans = erp.plans?.length
+  ? erp.plans.map((plan) => ({ name: plan.name, term: plan.term ?? "", price: plan.price ?? "", features: plan.features ?? [], highlight: plan.highlight ?? false }))
+  : builtInPlans;
 ---
 
 <PublicLayout title="Warranty & claims | Entragate" description="What the Entragate warranty covers, how to register devices and how to raise a claim.">

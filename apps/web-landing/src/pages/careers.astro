@@ -7,7 +7,7 @@ import PageHero from "../components/ui/PageHero.astro";
 import Media from "../components/ui/Media.astro";
 import SectionHeading from "../components/ui/SectionHeading.astro";
 import ContactCta from "../components/home/ContactCta.astro";
-import { careerPerks, openRoles } from "../data/company-pages";
+import { getCareers } from "../lib/server/content/pages";
 import { routes } from "../data/site";
 import { icons } from "../lib/icons";
 import { images } from "../lib/images";
@@ -15,6 +15,8 @@ import { images } from "../lib/images";
 const { company } = Astro.locals.site;
 
 /** Careers (footer · Company). Composed from the 09.01 About page patterns. */
+// ERP-0071 stage 4: perks, the section heading and open roles come from the ERP (or the built-in copy).
+const { heading, perks: careerPerks, roles: openRoles } = await getCareers();
 const apply = (title: string) => `${routes.contact}?topic=careers&subject=${encodeURIComponent(title)}`;
 ---
 
@@ -29,11 +31,15 @@ const apply = (title: string) => `${routes.contact}?topic=careers&subject=${enco
   <section class="container-page grid gap-8 py-12 xl:grid-cols-2 xl:items-center xl:gap-16 xl:py-24">
     <Media src={images.engineeringTeam} alt="The IMS engineering team at work" class="h-[240px] w-full rounded-card md:h-[380px] xl:h-[460px] xl:rounded-xl" />
     <div class="flex flex-col gap-8">
-      <SectionHeading eyebrow="Why IMS" title="Work that people walk through every day." />
+      <SectionHeading
+        eyebrow={heading?.eyebrow ?? "Why IMS"}
+        title={heading?.title ?? "Work that people walk through every day."}
+        description={heading?.description}
+      />
       <ul class="grid gap-5 sm:grid-cols-2">
         {
           careerPerks.map((perk) => {
-            const Icon = icons[perk.icon];
+            const Icon = icons[perk.icon] ?? icons.layers;
             return (
               <li class="flex flex-col gap-2.5">
                 <span class="flex size-11 items-center justify-center rounded-md bg-blue-50 text-blue-600"><Icon size={20} aria-hidden="true" /></span>
@@ -57,10 +63,11 @@ const apply = (title: string) => `${routes.contact}?topic=careers&subject=${enco
         {
           openRoles.map((role) => (
             <li>
-              <a href={apply(role.title)} class="group flex flex-col gap-2 p-5 hover:bg-surface xl:flex-row xl:items-center xl:gap-6 xl:px-7">
+              <a href={role.applyUrl ?? apply(role.title)} class="group flex flex-col gap-2 p-5 hover:bg-surface xl:flex-row xl:items-center xl:gap-6 xl:px-7">
                 <span class="flex flex-1 flex-col gap-1">
                   <span class="font-heading text-[18px] font-bold text-navy-900 group-hover:text-blue-600">{role.title}</span>
                   <span class="text-[14px] text-fg-secondary">{role.team}</span>
+                  {role.description && <span class="text-[14px] leading-[22px] text-fg-muted">{role.description}</span>}
                 </span>
                 <span class="flex items-center gap-1.5 text-[14px] text-fg-secondary"><MapPin size={15} aria-hidden="true" />{role.location}</span>
                 <span class="flex items-center gap-1.5 text-[14px] text-fg-secondary"><Briefcase size={15} aria-hidden="true" />{role.type}</span>

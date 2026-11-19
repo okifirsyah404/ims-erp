@@ -257,7 +257,7 @@ function Editor({ page, pageType }: { page: TWebPage | null; pageType: TWebsiteC
 								setDraft((current) => ({ ...current, slug: event.target.value }));
 							}}
 						/>
-						<FieldDescription>{t('website.content.meta.slugHint')}</FieldDescription>
+						<FieldDescription>{pageType === 'legal' ? t('website.content.meta.legalHint') : t('website.content.meta.slugHint')}</FieldDescription>
 					</Field>
 					{definition.singleton ? null : (
 						<Field>

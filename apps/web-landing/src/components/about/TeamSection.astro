@@ -4,7 +4,10 @@ import Sparkles from "@lucide/astro/icons/sparkles";
 import ArrowRight from "@lucide/astro/icons/arrow-right";
 import MoveHorizontal from "@lucide/astro/icons/move-horizontal";
 import TeamMemberCard from "./TeamMemberCard.astro";
-import { leadership, teamGroups } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { leadership, teamGroups } = await getAbout();
 import { routes } from "../../data/site";
 
 /**

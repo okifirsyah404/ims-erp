@@ -1,5 +1,6 @@
 ---
 import LegalPage from "../components/ui/LegalPage.astro";
+import { getLegal } from "../lib/server/content/pages";
 
 /** Privacy policy (linked from every form). Aligns with Indonesia's PDP Law (UU 27/2022). */
 const sections = [
@@ -37,11 +38,13 @@ const sections = [
     body: ["You can ask to access, correct or delete your personal data, or withdraw consent, by emailing us. We respond within 3 x 24 hours as required by the PDP Law."],
   },
 ];
+// ERP-0071 stage 4: a legal page written in the ERP (slug `privacy`) replaces this text.
+const page = await getLegal("privacy", {
+  title: "Privacy Policy",
+  description: "How CV. Inti Multi Solusi collects, uses and protects personal data on the Entragate website.",
+  updated: "1 October 2026",
+  sections,
+});
 ---
 
-<LegalPage
-  title="Privacy Policy"
-  description="How CV. Inti Multi Solusi collects, uses and protects personal data on the Entragate website."
-  updated="1 October 2026"
-  sections={sections}
-/>
+<LegalPage title={page.title} description={page.description} updated={page.updated} sections={page.sections} />

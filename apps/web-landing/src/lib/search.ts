@@ -1,6 +1,5 @@
 import { getProjects } from "./server/content/projects";
-import { documents, helpArticles } from "../data/knowledge";
-import { newsArticles } from "../data/company-pages";
+import { getKnowledge, getNews } from "./server/content/pages";
 import { routes, solutionHref } from "../data/site";
 import { formatRupiah } from "./format";
 import { catalogSource } from "./server/catalog";
@@ -35,7 +34,7 @@ export async function searchSite(rawQuery: string, limit = 50): Promise<SearchRe
   if (!terms.length) return { q, groups: [], total: 0, catalogAvailable: true };
   const hit = (...fields: (string | undefined)[]) => terms.every((t) => fields.join(" ").toLowerCase().includes(t));
 
-  const projects = await getProjects();
+  const [projects, { documents, helpArticles }, newsArticles] = await Promise.all([getProjects(), getKnowledge(), getNews()]);
   let catalogAvailable = true;
   // `.then` so a missing ERP configuration (thrown while creating the source) is caught too.
   const catalog = await Promise.resolve()

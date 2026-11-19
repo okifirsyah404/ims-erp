@@ -1,5 +1,8 @@
 ---
-import { missions, vision } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { missions, vision } = await getAbout();
 
 /** 09.01 · Vision & Mission (navy band). */
 ---

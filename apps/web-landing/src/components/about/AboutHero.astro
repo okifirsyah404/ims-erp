@@ -2,7 +2,10 @@
 import Download from "@lucide/astro/icons/download";
 import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
 import Media from "../ui/Media.astro";
-import { aboutStats } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { aboutStats } = await getAbout();
 import { routes } from "../../data/site";
 import { images } from "../../lib/images";
 

@@ -1,5 +1,8 @@
 ---
-import { companyFacts } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { companyFacts } = await getAbout();
 
 /** 09.01 · Company Overview: positioning, history and key facts. */
 const pairs = [companyFacts.slice(0, 2), companyFacts.slice(2, 4), companyFacts.slice(4, 6)];

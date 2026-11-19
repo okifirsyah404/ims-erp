@@ -48,7 +48,9 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
   through `src/lib/server/content/` (published only, cached for a minute, images as URLs).
   `null` from a loader means "nothing in the ERP": the page keeps its built-in content
   from `src/data/*.ts`, merged field by field. The home page uses `content/home.ts`;
-  projects and testimonials use `content/projects.ts`.
+  projects and testimonials use `content/projects.ts`, solutions `content/solutions.ts`, and
+  the other pages (about, careers, news, help, legal `privacy` / `terms`, warranty,
+  installation) `content/pages.ts`.
 - **Server-side only.** All calls run in Astro Actions, so the token never reaches the browser.
 - **Order pricing.** Prices are always recomputed on the server from the catalog
   (`computeTotals` in `src/data/checkout.ts`).

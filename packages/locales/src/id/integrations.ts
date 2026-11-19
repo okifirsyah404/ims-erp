@@ -222,6 +222,7 @@ const integrations: Record<keyof typeof en, string> = {
 	'website.content.meta.title': 'Entri',
 	'website.content.meta.slug': 'Alamat (slug)',
 	'website.content.meta.slugHint': 'Huruf kecil, angka, dan tanda hubung; bagian dari tautan halaman.',
+	'website.content.meta.legalHint': 'Website menampilkan dua halaman legal: alamat privacy (Kebijakan Privasi) dan terms (Syarat Penjualan).',
 	'website.content.meta.seoTitle': 'Judul pencarian',
 	'website.content.meta.seoDescription': 'Deskripsi pencarian',
 	'website.content.fields.title': 'Isi',

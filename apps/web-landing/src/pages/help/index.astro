@@ -15,7 +15,11 @@ import CircleUserRound from "@lucide/astro/icons/circle-user-round";
 import PublicLayout from "../../layouts/PublicLayout.astro";
 import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
 import EmptyState from "../../components/ui/EmptyState.astro";
-import { faqGroups, helpArticles, helpTopics, popularSearches } from "../../data/knowledge";
+import { popularSearches } from "../../data/knowledge";
+import { getKnowledge } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: help content comes from the ERP (or the built-in copy).
+const { faqGroups, helpArticles, helpTopics } = await getKnowledge();
 import { company, customerPortal, routes } from "../../data/site";
 import { icons } from "../../lib/icons";
 

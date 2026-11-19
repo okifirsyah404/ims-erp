@@ -12,6 +12,49 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0071 stage 4: about, careers, news, help, legal, warranty and installation from the ERP
+
+Same branch, after stage 3 (`93f9742a`). Website change plus one web admin
+hint; the ERP types landed in stage 2. `docs/database/` reviewed and
+unchanged (no table, column or vocabulary change).
+
+**Changes.**
+- `apps/web-landing/src/lib/server/content/pages.ts`: `getAbout` (single
+  page merged field by field over `data/about.ts`; office phone links
+  derived), `getCareers` (heading, perks, open roles with optional
+  description and apply link), `getNews`, `getKnowledge` (help topics,
+  articles, FAQ groups, documents, videos, training courses), `getLegal`
+  (`legal` entries `privacy` / `terms` replace the built-in text),
+  `getSinglePage` (warranty, installation: coverage / steps / plans,
+  services / process / cities; ERP icons by name, else the built-in icon).
+- Read from the ERP: the eleven about sections, `/careers`, `/news`,
+  `/news/[slug]`, `/help`, `/help/topics/[topic]`,
+  `/help/articles/[slug]`, `/help/documents`, `/help/videos`,
+  `/help/training`, `/privacy`, `/terms`, `/warranty`, `/installation`,
+  site search (help articles, documents, news).
+- Web admin: the address field of a legal page explains the two addresses
+  the website shows (`website.content.meta.legalHint`, en/id).
+
+**Verification.**
+- `bun run test` (root): backend 1312, web-admin 123, locales 98 pass,
+  0 fail; `bun run lint` 0 errors; `bun run typecheck` clean; `astro
+  check` 0 errors; website `bun run build` complete.
+- ERP mode: `/about`, `/careers`, `/news`, `/news/eg-face-pro-2-launch`,
+  `/help`, `/help/documents`, `/help/videos`, `/help/training`,
+  `/help/topics/orders-delivery`, `/help/articles/track-your-order`,
+  `/privacy`, `/terms`, `/warranty`, `/installation`, search → 200;
+  `/news/nope`, `/help/topics/nope` → 404.
+- Probe on the dev database (rows soft-deleted and names restored after):
+  a published `legal/privacy` entry replaced the privacy page (title,
+  date, sections), a `warranty` entry replaced the coverage list, and a
+  renamed news article showed on `/news` and in search after the cache.
+- Not done: a browser walk-through of the web admin editor and of the
+  website pages after the change (HTTP checks only).
+
+**Next executable task:** review of branch `feat/erp-0069-portal-session`
+(ERP-0069/0070/0071) with the owner, including a browser walk-through of
+Integrations → Website Content; then the remaining items in `backlog.md`.
+
 ## 2026-11-19 - ERP-0071 stage 3: solutions, projects and testimonials on the website from the ERP
 
 Same branch, after stage 2 (`4669143c`). Website-only change: the ERP side

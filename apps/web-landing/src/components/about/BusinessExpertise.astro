@@ -1,7 +1,10 @@
 ---
 import Check from "@lucide/astro/icons/check";
 import Media from "../ui/Media.astro";
-import { pillars } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { pillars } = await getAbout();
 import { icons } from "../../lib/icons";
 import { images } from "../../lib/images";
 

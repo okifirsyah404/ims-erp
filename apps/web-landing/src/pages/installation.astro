@@ -13,21 +13,41 @@ import Media from "../components/ui/Media.astro";
 import ContactCta from "../components/home/ContactCta.astro";
 import { routes } from "../data/site";
 import { images } from "../lib/images";
+import { icons } from "../lib/icons";
+import { getSinglePage } from "../lib/server/content/pages";
 
 /** Installation & services (footer · Support → Installation). */
-const services = [
+const builtInServices = [
   { icon: Ruler, title: "Site survey", text: "Free in Jabodetabek. Our engineer measures lanes, power, network and cable routes, then updates your quotation.", time: "1–2 hours per entrance" },
   { icon: HardHat, title: "Installation & commissioning", text: "Certified IMS technicians anchor, wire and commission every lane, then integrate it with your software.", time: "1–3 days per entrance group" },
   { icon: GraduationCap, title: "Operator training", text: "Hands-on training for security, reception and admins — plus recorded guides in the Customer Portal.", time: "Half-day on site" },
   { icon: CalendarClock, title: "Maintenance contracts", text: "Scheduled preventive visits, priority response and discounted spare parts.", time: "Quarterly or bi-annual" },
 ];
-const process = [
+const builtInProcess = [
   { title: "Survey", text: "We visit your site and confirm the bill of materials." },
   { title: "Prepare", text: "You complete power and network points from our readiness checklist." },
   { title: "Install", text: "Lanes are anchored, wired and tested — usually outside your peak hours." },
   { title: "Handover", text: "Training, documentation and warranty activation." },
 ];
-const cities = ["Jakarta & Jabodetabek", "Surabaya", "Medan", "Makassar", "Bandung", "Semarang", "Denpasar", "Balikpapan"];
+const builtInCities = ["Jakarta & Jabodetabek", "Surabaya", "Medan", "Makassar", "Bandung", "Semarang", "Denpasar", "Balikpapan"];
+
+// ERP-0071 stage 4: services, process steps and cities written in the ERP replace the built-in lists.
+type ErpInstallation = {
+  services: { icon?: string; title: string; text?: string; time?: string }[];
+  process: { title: string; text?: string }[];
+  cities: string[];
+};
+const erp = await getSinglePage<ErpInstallation>("installation");
+const services = erp.services?.length
+  ? erp.services.map((service, index) => ({
+      icon: (service.icon && icons[service.icon as keyof typeof icons]) || builtInServices[index % builtInServices.length]!.icon,
+      title: service.title,
+      text: service.text ?? "",
+      time: service.time ?? "",
+    }))
+  : builtInServices;
+const process = erp.process?.length ? erp.process.map((step) => ({ title: step.title, text: step.text ?? "" })) : builtInProcess;
+const cities = erp.cities?.length ? erp.cities : builtInCities;
 ---
 
 <PublicLayout title="Installation & services | Entragate" description="Site surveys, professional installation, training and maintenance by certified IMS technicians.">

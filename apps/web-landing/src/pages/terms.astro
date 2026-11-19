@@ -1,5 +1,6 @@
 ---
 import LegalPage from "../components/ui/LegalPage.astro";
+import { getLegal } from "../lib/server/content/pages";
 
 /** Terms of sale (accepted at 03.03 Checkout). */
 const sections = [
@@ -37,11 +38,13 @@ const sections = [
     body: ["These terms are governed by the laws of the Republic of Indonesia."],
   },
 ];
+// ERP-0071 stage 4: a legal page written in the ERP (slug `terms`) replaces this text.
+const page = await getLegal("terms", {
+  title: "Terms of Sale",
+  description: "The terms that apply when you buy Entragate products online or through a quotation.",
+  updated: "1 October 2026",
+  sections,
+});
 ---
 
-<LegalPage
-  title="Terms of Sale"
-  description="The terms that apply when you buy Entragate products online or through a quotation."
-  updated="1 October 2026"
-  sections={sections}
-/>
+<LegalPage title={page.title} description={page.description} updated={page.updated} sections={page.sections} />

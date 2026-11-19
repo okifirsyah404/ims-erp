@@ -18,7 +18,11 @@ import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
 import Breadcrumb from "../../components/ui/Breadcrumb.astro";
 import Media from "../../components/ui/Media.astro";
 import EmptyState from "../../components/ui/EmptyState.astro";
-import { docCategories, docFormats, docKits, docLanguages, docSortOptions, docTypes, documents, type DocumentRecord, type DocType } from "../../data/knowledge";
+import { docCategories, docFormats, docKits, docLanguages, docSortOptions, docTypes, type DocumentRecord, type DocType } from "../../data/knowledge";
+import { getKnowledge } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: help content comes from the ERP (or the built-in copy).
+const { documents } = await getKnowledge();
 import { company, customerPortal, routes } from "../../data/site";
 import { icons } from "../../lib/icons";
 

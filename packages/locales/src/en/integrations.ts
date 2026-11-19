@@ -220,6 +220,7 @@ const integrations = {
 	'website.content.meta.title': 'Entry',
 	'website.content.meta.slug': 'Address (slug)',
 	'website.content.meta.slugHint': 'Lowercase letters, digits and dashes; part of the page link.',
+	'website.content.meta.legalHint': 'The website shows two legal pages: address privacy (Privacy Policy) and terms (Terms of Sale).',
 	'website.content.meta.seoTitle': 'Search title',
 	'website.content.meta.seoDescription': 'Search description',
 	'website.content.fields.title': 'Content',

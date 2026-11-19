@@ -5,7 +5,10 @@ import PublicLayout from "../../layouts/PublicLayout.astro";
 import KnowledgeTabs from "../../components/knowledge/KnowledgeTabs.astro";
 import PageHero from "../../components/ui/PageHero.astro";
 import ContactCta from "../../components/home/ContactCta.astro";
-import { trainingCourses } from "../../data/knowledge";
+import { getKnowledge } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: help content comes from the ERP (or the built-in copy).
+const { trainingCourses } = await getKnowledge();
 import { routes } from "../../data/site";
 import { icons } from "../../lib/icons";
 

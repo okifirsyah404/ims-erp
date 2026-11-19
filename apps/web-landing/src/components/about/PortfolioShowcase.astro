@@ -2,7 +2,10 @@
 import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
 import Button from "../ui/Button.astro";
 import Media from "../ui/Media.astro";
-import { portfolio } from "../../data/about";
+import { getAbout } from "../../lib/server/content/pages";
+
+// ERP-0071 stage 4: the about page's content comes from the ERP (or the built-in copy).
+const { portfolio } = await getAbout();
 import { routes } from "../../data/site";
 
 /** 09.01 · Project Portfolio: feature + 2×2 grid on desktop, swipeable cards on mobile. */
