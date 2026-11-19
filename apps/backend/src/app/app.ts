@@ -6,23 +6,21 @@ import Elysia from 'elysia';
 
 import { financeModule } from './finance';
 import { taxModule } from './tax';
-import { aftersalesModule } from './aftersales';
 import { auditModule } from './audit';
 import { automationModule } from './automation';
 import { companyModule } from './company';
 import { supplierModule } from './supplier';
 import { customerModule } from './customer';
 import { documentModule } from './document';
-import { hrModule } from './hr';
 import { inventoryModule } from './inventory';
-import { licensingModule } from './licensing';
 import { locationModule } from './location';
 import { notificationModule } from './notification';
 import { organizationModule } from './organization';
 import { paymentModule } from './payment';
 import { procurementModule } from './procurement';
 import { projectModule } from './project';
-import { projectsModule } from './projects';
+import { ticketModule } from './ticket';
+import { humanResourceModule } from './human-resource';
 import { salesModule } from './sale';
 import { userModule } from './user';
 
@@ -88,10 +86,7 @@ export function createApp() {
 			// receipts stay Sales' (ADR-0023).
 			.use(paymentModule())
 			.use(procurementModule())
-			.use(projectsModule())
-			.use(aftersalesModule())
-			.use(licensingModule())
-			.use(automationModule())
+												.use(automationModule())
 			// Admin surfaces share the `/admin` prefix, so their routes no longer
 			// overlap the self-service `/users/*` routes: mount order is irrelevant
 			// here (before the split, both modules registered `GET /users` and the
@@ -113,9 +108,10 @@ export function createApp() {
 			.use(customerModule())
 			// Leads and the website inquiry API (ADR-0024 Q12).
 			.use(projectModule())
+			.use(ticketModule())
+			.use(humanResourceModule())
 			.use(inventoryModule())
 			.use(financeModule())
 			.use(taxModule())
-			.use(hrModule())
-	);
+				);
 }

@@ -38,10 +38,10 @@ beforeEach(() => {
 	applied = [];
 	service = new DepreciationService(
 		{
-			findPeriod: async (itemId, year, month) =>
+			findPeriod: async (itemId: string, year: number, month: number) =>
 				entries.find((row) => row.itemId === itemId && row.periodYear === year && row.periodMonth === month) ?? null,
-			create: async (data) => {
-				const row = { id: `dep-${entries.length + 1}`, ...data } as TAssetDepreciationSelect;
+			create: async (data: Record<string, unknown>) => {
+				const row = { id: `dep-${entries.length + 1}`, ...data } as unknown as TAssetDepreciationSelect;
 				entries.push(row);
 				return row;
 			},

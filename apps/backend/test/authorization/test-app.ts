@@ -11,7 +11,6 @@ import { container } from 'tsyringe';
 import { mock } from 'bun:test';
 import {
 	QUOTATION_REPOSITORY_TOKEN,
-	PAYMENT_REPOSITORY_TOKEN,
 	SALES_ORDER_REPOSITORY_TOKEN,
 } from '../../src/app/sale/constants/di';
 import {
@@ -257,11 +256,10 @@ export function installAuthMock(): void {
 }
 
 import type { IQuotationRepository } from '../../src/app/sale/contracts/quotation.repository.interface';
-import type { TPaymentRepository } from '../../src/app/sale/contracts/payment.repository.interface';
-import { CUSTOMER_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
+import { EXPORTED_CUSTOMER_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
+import { SALE_NUMBERING_SERVICE_TOKEN } from '../../src/app/sale/constants/di';
 import { LEAD_SERVICE_TOKEN } from '../../src/app/project/constants/di';
 import { PRODUCT_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
-import { CODE_NUMBER_SERVICE_TOKEN } from '../../src/app/code-number';
 import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
 import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
 
@@ -342,7 +340,7 @@ export function installSalesMocks() {
 		},
 	};
 
-	container.register(CUSTOMER_SERVICE_TOKEN, {
+	container.register(EXPORTED_CUSTOMER_SERVICE_TOKEN, {
 		useValue: {
 			async getActiveCustomer(id: string) {
 				return id === TEST_CUSTOMER_ID
@@ -360,15 +358,28 @@ export function installSalesMocks() {
 						}
 					: null;
 			},
-			async getContact() {
-				return null;
+			async getActiveCompany(id: string) {
+				return id === TEST_CUSTOMER_ID ? { id, code: 'PT-UJI', name: 'PT Uji' } : null;
+			},
+			async getSnapshot() {
+				return {
+					code: 'PT-UJI',
+					name: 'PT Uji',
+					type: 'company',
+					email: null,
+					phone: null,
+					whatsapp: null,
+					taxId: null,
+					addressLine: null,
+					postalCode: null,
+				};
 			},
 		} as never,
 	});
 	container.register(LEAD_SERVICE_TOKEN, { useValue: { noteQuotation: async () => true } as never });
 	container.register(PRODUCT_SERVICE_TOKEN, {
 		useValue: {
-			async getActiveItems(ids: string[]) {
+			async getActiveProducts(ids: string[]) {
 				return ids.includes(TEST_ITEM_ID)
 					? [
 							{
@@ -384,58 +395,16 @@ export function installSalesMocks() {
 			},
 		} as never,
 	});
-	container.register(Symbol.for('CODE_NUMBER_SERVICE_TOKEN'), {
+	container.register(SALE_NUMBERING_SERVICE_TOKEN, {
 		useValue: { next: async () => `${sequence + 1}/QT/IMS/XI/26` } as never,
 	});
 	container.register(USER_SERVICE_TOKEN, { useValue: { getUser: async () => null } as never });
 	container.register(OBJECT_STORAGE_TOKEN, { useValue: { presignGet: () => '', put: async () => undefined } as never });
 
-	const payments: Record<string, Record<string, unknown>> = {};
-	let paySeq = 0;
-	/** Typed as the real contract - see {@link quotationRepository}. */
-	const paymentRepository: TPaymentRepository = {
-		async create(input) {
-			const id = `p-${++paySeq}`;
-			const row = { id, ...input, status: 'pending' };
-			payments[id] = row;
-			return row as never;
-		},
-		async findById(organizationId, id) {
-			const row = payments[id];
-			if (!row || row.organizationId !== organizationId) return null;
-			return row as never;
-		},
-		async approve(organizationId, id, actorUserId) {
-			const row = payments[id];
-			if (!row || row.organizationId !== organizationId) return null;
-			if (row.status !== 'pending') return null;
-			const updated = {
-				...row,
-				status: 'approved',
-				approvedBy: actorUserId,
-			};
-			payments[id] = updated;
-			return updated as never;
-		},
-		async execute(organizationId, id, actorUserId) {
-			const row = payments[id];
-			if (!row || row.organizationId !== organizationId) return null;
-			if (row.status !== 'approved') return null;
-			const updated = {
-				...row,
-				status: 'executed',
-				executedBy: actorUserId,
-			};
-			payments[id] = updated;
-			return updated as never;
-		},
-	};
-
 	container.register(QUOTATION_REPOSITORY_TOKEN, { useValue: quotationRepository });
 	container.register(SALES_ORDER_REPOSITORY_TOKEN, { useValue: { findLiveByQuotation: async () => null } as never });
-	container.register(PAYMENT_REPOSITORY_TOKEN, { useValue: paymentRepository });
 
-	return { quotationStore, payments };
+	return { quotationStore };
 }
 
 /**
@@ -446,15 +415,6 @@ export async function buildTestApp() {
 	installSalesMocks();
 	installPermissionResolverMock();
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).
-	const { SalesService } = await import(
-		'../../src/app/sale/services/sales.service'
-	);
-	const { SALES_SERVICE_TOKEN } = await import(
-		'../../src/app/sale/constants/di'
-	);
-	const { SalesController } = await import(
-		'../../src/app/sale/controllers/sales.controller'
-	);
 	const { QuotationService } = await import('../../src/app/sale/services/quotation.service');
 	const { QuotationController } = await import(
 		'../../src/app/sale/controllers/quotation.controller'
@@ -516,7 +476,6 @@ export async function buildTestApp() {
 	// ERP-0067: the sent-quotation queue; not exercised here.
 	const { QUOTATION_SENT_DISPATCHER_TOKEN } = await import('../../src/app/sale/constants/di');
 	container.register(QUOTATION_SENT_DISPATCHER_TOKEN, { useValue: { enqueue: async () => {} } });
-	container.register(SALES_SERVICE_TOKEN, { useClass: SalesService });
 	container.register(QUOTATION_SERVICE_TOKEN, { useClass: QuotationService });
 
 	const { SignatureController, DocumentSignatureController } = await import(
@@ -526,7 +485,6 @@ export async function buildTestApp() {
 	return new Elysia()
 		.use(erpGuard())
 		.use(QuotationController.plugin())
-		.use(SalesController.plugin())
 		.use(SignatureController.plugin())
 		.use(DocumentSignatureController.plugin());
 }

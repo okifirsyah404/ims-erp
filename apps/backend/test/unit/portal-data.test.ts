@@ -10,14 +10,15 @@
  */
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TServiceTicketCommentSelect, TServiceTicketSelect, TWarrantyCertificateSelect } from '@drizzle/schemas/aftersales.schema';
-import type { TProjectEvidenceSelect, TProjectHandoverSelect, TProjectSelect, TProjectTaskSelect } from '@drizzle/schemas/projects.schema';
-import { TicketNotFoundError, TicketStateError } from '../../src/app/aftersales/errors/service-ticket.errors';
-import { ServiceTicketService } from '../../src/app/aftersales/services/service-ticket.service';
+import type { TTicketMessageSelect, TTicketSelect } from '@drizzle/schemas/ticket.schema';
+import type { TWarrantySelect } from '@drizzle/schemas/project.schema';
+import type { TEvidenceSelect, THandoverSelect, TProjectSelect, TTaskSelect } from '@drizzle/schemas/project.schema';
+import { TicketNotFoundError, TicketStateError } from '../../src/app/ticket/errors/ticket.errors';
+import { TicketService } from '../../src/app/ticket/services/ticket.service';
 import { PortalProductNotFoundError } from '../../src/app/customer/errors/portal.errors';
 import { PortalService } from '../../src/app/customer/services/portal.service';
 import { projectDetail, ticketDetail, ticketSummary, type TPresenter } from '../../src/app/customer/utils/portal-presenter';
-import { ProjectPortalService } from '../../src/app/projects/services/project-portal.service';
+import { ProjectPortalService } from '../../src/app/project/services/project-portal.service';
 import type { PortalContext } from '../../src/authorization/portal-auth';
 
 const CUST_A = '0190a1b2-0000-7000-8000-0000000000a1';
@@ -33,17 +34,17 @@ const customers = {
  * Tickets
  * ------------------------------------------------------------------------ */
 
-let tickets: TServiceTicketSelect[];
-let comments: TServiceTicketCommentSelect[];
+let tickets: TTicketSelect[];
+let comments: TTicketMessageSelect[];
 
-function ticketService(): ServiceTicketService {
-	return new ServiceTicketService(
+function ticketService(): TicketService {
+	return new TicketService(
 		{
 			paginate: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
 			findById: async (id) => tickets.find((row) => row.id === id) ?? null,
 			listByCustomer: async (customerId) => tickets.filter((row) => row.customerId === customerId),
 			async create(data) {
-				const row = { ...data, id: crypto.randomUUID(), status: 'new', assigneeUserId: null, resolvedAt: null, closedAt: null, resolution: null } as TServiceTicketSelect;
+				const row = { ...data, id: crypto.randomUUID(), status: 'new', assigneeUserId: null, resolvedAt: null, closedAt: null, resolution: null } as TTicketSelect;
 				tickets.push(row);
 				return row;
 			},
@@ -65,17 +66,17 @@ function ticketService(): ServiceTicketService {
 		{ publish: async () => {} } as never,
 		{ register: async () => ({}) as never },
 		{
-			list: async (ticketId, visibility) => comments.filter((row) => row.serviceTicketId === ticketId && (!visibility || row.visibility === visibility)),
+			list: async (ticketId, visibility) => comments.filter((row) => row.ticketId === ticketId && (!visibility || row.visibility === visibility)),
 			async latestCustomerVisible(ticketIds) {
-				const result = new Map<string, { latest: TServiceTicketCommentSelect; count: number }>();
-				for (const row of comments.filter((item) => ticketIds.includes(item.serviceTicketId) && item.visibility === 'customer')) {
-					result.set(row.serviceTicketId, { latest: row, count: (result.get(row.serviceTicketId)?.count ?? 0) + 1 });
+				const result = new Map<string, { latest: TTicketMessageSelect; count: number }>();
+				for (const row of comments.filter((item) => ticketIds.includes(item.ticketId) && item.visibility === 'customer')) {
+					result.set(row.ticketId, { latest: row, count: (result.get(row.ticketId)?.count ?? 0) + 1 });
 				}
 				return result;
 			},
 			async create(data) {
 				const now = new Date();
-				const row = { ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now, deletedAt: null } as TServiceTicketCommentSelect;
+				const row = { ...data, id: crypto.randomUUID(), createdAt: now, updatedAt: now, deletedAt: null } as TTicketMessageSelect;
 				comments.push(row);
 				return row;
 			},
@@ -180,11 +181,11 @@ describe('portal projects', () => {
 	const evidence = [
 		{ id: 'e1', projectId: 'p1', kind: 'bast', storageKey: 'k1', fileName: 'bast.pdf', contentType: 'application/pdf', sizeBytes: 10, createdAt: new Date() },
 		{ id: 'e2', projectId: 'p1', kind: 'other', storageKey: 'k2', fileName: 'internal.xlsx', contentType: 'application/vnd.ms-excel', sizeBytes: 10, createdAt: new Date() },
-	] as TProjectEvidenceSelect[];
+	] as TEvidenceSelect[];
 	const tasks = [
 		{ projectId: 'p1', title: 'Survey', stage: 'preparation', status: 'done', dueDate: '2026-11-02', doneAt: new Date() },
 		{ projectId: 'p1', title: 'Pasang', stage: 'installation', status: 'in_progress', dueDate: '2026-11-20', doneAt: null },
-	] as TProjectTaskSelect[];
+	] as TTaskSelect[];
 	const service = new ProjectPortalService(
 		{
 			listByCustomer: async (customerId: string) => projects.filter((row) => row.customerId === customerId && row.status !== 'cancelled'),
@@ -192,7 +193,7 @@ describe('portal projects', () => {
 			listTasks: async (projectId: string) => tasks.filter((task) => task.projectId === projectId),
 			listEvidence: async (projectId: string) => evidence.filter((file) => file.projectId === projectId),
 		} as never,
-		{ list: async () => [{ id: 'b1', code: 'BAST-1', bastDate: '2026-11-25', workTitle: 'Swing gate', status: 'issued' }, { id: 'b2', code: 'BAST-2', bastDate: '2026-11-26', workTitle: 'X', status: 'cancelled' }] as TProjectHandoverSelect[] },
+		{ list: async () => [{ id: 'b1', code: 'BAST-1', bastDate: '2026-11-25', workTitle: 'Swing gate', status: 'issued' }, { id: 'b2', code: 'BAST-2', bastDate: '2026-11-26', workTitle: 'X', status: 'cancelled' }] as THandoverSelect[] },
 		{ getUser: async (id: string) => ({ id, name: 'Andi PM' }) as never },
 		{ presignGet: (key: string) => `https://files/${key}?signed` },
 	);
@@ -225,7 +226,7 @@ describe('portal devices', () => {
 		projectId: 'p1',
 		customerId: CUST_A,
 		items: [{ description: 'Swing gate', volume: '2 unit', remarks: 'SN-1, SN-2' }],
-	} as unknown as TWarrantyCertificateSelect;
+	} as unknown as TWarrantySelect;
 	const portal = (customerId: string) => ({ customerId, companyId: customerId }) as PortalContext;
 	const service = new PortalService(
 		{} as never,

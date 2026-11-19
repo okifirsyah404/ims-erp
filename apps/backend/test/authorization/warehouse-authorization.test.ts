@@ -116,7 +116,7 @@ const ROUTES: ReadonlyArray<{
 	{
 		method: 'PUT',
 		path: `/warehouses/${WAREHOUSE_ID}/address`,
-		body: { street: 'Jl. Sudirman 1' },
+		body: { addressLine: 'Jl. Sudirman 1' },
 	},
 	{ method: 'DELETE', path: `/warehouses/${WAREHOUSE_ID}/address` },
 	{ method: 'GET', path: `/warehouses/${WAREHOUSE_ID}/storages` },
@@ -327,8 +327,8 @@ beforeAll(async () => {
 	const { WAREHOUSE_PIC_RESOLVER_TOKEN } = await import(
 		'../../src/authorization/warehouse-pic-resolver'
 	);
-	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
-		'../../src/app/code-number/constants/di'
+	const { INVENTORY_NUMBERING_SERVICE_TOKEN } = await import(
+		'../../src/app/inventory/constants/di'
 	);
 	const { WarehouseService } = await import(
 		'../../src/app/inventory/services/warehouse.service'
@@ -340,8 +340,8 @@ beforeAll(async () => {
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
-	const { EXPORTED_HR_SERVICE_TOKEN } = await import(
-		'../../src/app/hr/constants/di'
+	const { EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN } = await import(
+		'../../src/app/human-resource/constants/di'
 	);
 
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
@@ -366,7 +366,7 @@ beforeAll(async () => {
 	});
 	// Warehouse PIC validation goes through the HR module's export facade —
 	// noop here (the authorization tests never submit a PIC employee id).
-	container.register(EXPORTED_HR_SERVICE_TOKEN, {
+	container.register(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN, {
 		useValue: {
 			async findEmployeeById() {
 				return undefined;
@@ -376,7 +376,7 @@ beforeAll(async () => {
 			},
 		} as never,
 	});
-	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+	container.register(INVENTORY_NUMBERING_SERVICE_TOKEN, {
 		useValue: { next: async () => 'WH-00001' } as never,
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });

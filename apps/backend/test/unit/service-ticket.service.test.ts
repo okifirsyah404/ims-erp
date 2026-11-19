@@ -5,15 +5,15 @@
  * customer's confirmation to close.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TServiceTicketSelect } from '@drizzle/schemas/aftersales.schema';
-import { createTicketSchema } from '../../src/app/aftersales/contracts/service-ticket.contract';
+import type { TTicketSelect } from '@drizzle/schemas/ticket.schema';
+import { createTicketSchema } from '../../src/app/ticket/contracts/ticket.contract';
 import {
 	TicketAssigneeError,
 	TicketNotFoundError,
 	TicketReferenceError,
 	TicketStateError,
-} from '../../src/app/aftersales/errors/service-ticket.errors';
-import { ServiceTicketService, type TTicketContext } from '../../src/app/aftersales/services/service-ticket.service';
+} from '../../src/app/ticket/errors/ticket.errors';
+import { TicketService, type TTicketContext } from '../../src/app/ticket/services/ticket.service';
 
 const CUSTOMER = '0190a1b2-0000-7000-8000-00000000c001';
 const OTHER = '0190a1b2-0000-7000-8000-00000000c002';
@@ -22,10 +22,10 @@ const PROJECT = '0190a1b2-0000-7000-8000-00000000c0a1';
 const cs: TTicketContext = { organizationId: 'org', actorUserId: 'cs', canManage: true };
 const tech: TTicketContext = { organizationId: 'org', actorUserId: 'tech', canManage: false };
 
-let tickets: TServiceTicketSelect[];
+let tickets: TTicketSelect[];
 /** Registry calls made by the service (ERP-0044). */
 let registered: { code: string; sourceId: string; documentType: string }[];
-let service: ServiceTicketService;
+let service: TicketService;
 let published: Record<string, unknown>[];
 
 beforeEach(() => {
@@ -33,7 +33,7 @@ beforeEach(() => {
 	published = [];
 	registered = [];
 	const roles: Record<string, string> = { cs: 'customer_service', tech: 'technician', sales: 'sales' };
-	service = new ServiceTicketService(
+	service = new TicketService(
 		{
 			paginate: async (query) => {
 				const data = tickets.filter((row) => !query.assigneeUserId || row.assigneeUserId === query.assigneeUserId);
@@ -42,7 +42,7 @@ beforeEach(() => {
 			findById: async (id) => tickets.find((row) => row.id === id) ?? null,
 			listByCustomer: async (customerId) => tickets.filter((row) => row.customerId === customerId),
 			async create(data) {
-				const row = { ...data, id: crypto.randomUUID(), status: 'new', assigneeUserId: null } as TServiceTicketSelect;
+				const row = { ...data, id: crypto.randomUUID(), status: 'new', assigneeUserId: null } as TTicketSelect;
 				tickets.push(row);
 				return row;
 			},
@@ -128,7 +128,7 @@ describe('service tickets', () => {
 		expect(published[published.length - 1]).toMatchObject({ status: 'closed', resolution: 'Ganti sensor + kabel', serviceCost: 20_000_000 });
 		// ERP-0044: the closed ticket is registered once (opening and resolving are not).
 		expect(registered).toEqual([
-			expect.objectContaining({ code: '0001/TKT/IMS/XI/26', documentType: 'service_ticket', sourceId: ticket.id }),
+			expect.objectContaining({ code: '0001/TKT/IMS/XI/26', documentType: 'ticket', sourceId: ticket.id }),
 		]);
 	});
 

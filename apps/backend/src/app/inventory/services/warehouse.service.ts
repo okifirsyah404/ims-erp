@@ -33,8 +33,8 @@ import {
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
-import { EXPORTED_HR_SERVICE_TOKEN } from '@app/hr/constants/di';
-import type { ExportedHrService } from '@app/hr/services/exported-hr.service';
+import { EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN } from '@app/human-resource/constants/di';
+import type { ExportedEmployeeService } from '@app/human-resource/services/exported-employee.service';
 import {
 	InventoryRuleViolationError,
 	StorageCodeTakenError,
@@ -115,8 +115,8 @@ export class WarehouseService {
 		@inject(ITEM_REPOSITORY_TOKEN)
 		private readonly itemRepository: Pick<IItemRepository, 'countByWarehouse'>,
 		/** PIC validation reads hr.employees through the HR export facade. */
-		@inject(EXPORTED_HR_SERVICE_TOKEN)
-		private readonly exportedHrService: ExportedHrService,
+		@inject(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN)
+		private readonly exportedHrService: ExportedEmployeeService,
 		/** Codes of warehouses created without an explicit one (ERP-0042). */
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,

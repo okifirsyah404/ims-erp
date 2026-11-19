@@ -31,9 +31,9 @@ beforeAll(async () => {
 	);
 	const { InvoiceController } = await import('../../src/app/sale/controllers/invoice.controller');
 	const { PROJECT_SERVICE_TOKEN, HANDOVER_SERVICE_TOKEN } = await import(
-		'../../src/app/projects/constants/di'
+		'../../src/app/project/constants/di'
 	);
-	const { ProjectController } = await import('../../src/app/projects/controllers/project.controller');
+	const { ProjectController } = await import('../../src/app/project/controllers/project.controller');
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
 	container.register(INVOICE_SERVICE_TOKEN, {
@@ -76,21 +76,21 @@ beforeEach(() => resetFixture());
 
 describe('dashboard aggregates authorization', () => {
 	test('invoices summary: 401 without a session', async () => {
-		const response = await app.handle(jsonRequest('/invoices/summary?from=2026-06-01&to=2026-11-30'));
+		const response = await app.handle(jsonRequest('/sales/invoices/summary?from=2026-06-01&to=2026-11-30'));
 		expect(response.status).toBe(401);
 	});
 
 	test('invoices summary: 403 for a role without invoice:read', async () => {
 		// `technician` holds project:read but no invoice permission.
 		const response = await app.handle(
-			jsonRequest('/invoices/summary?from=2026-06-01&to=2026-11-30', 'technician'),
+			jsonRequest('/sales/invoices/summary?from=2026-06-01&to=2026-11-30', 'technician'),
 		);
 		expect(response.status).toBe(403);
 	});
 
 	test('invoices summary: 200 for finance and the organization id comes from the guard', async () => {
 		const response = await app.handle(
-			jsonRequest('/invoices/summary?from=2026-06-01&to=2026-11-30', 'finance'),
+			jsonRequest('/sales/invoices/summary?from=2026-06-01&to=2026-11-30', 'finance'),
 		);
 		expect(response.status).toBe(200);
 		const body = (await response.json()) as { data: { organizationId: string } };
@@ -99,7 +99,7 @@ describe('dashboard aggregates authorization', () => {
 
 	test('invoices summary: an inverted window is rejected', async () => {
 		const response = await app.handle(
-			jsonRequest('/invoices/summary?from=2026-11-30&to=2026-06-01', 'finance'),
+			jsonRequest('/sales/invoices/summary?from=2026-11-30&to=2026-06-01', 'finance'),
 		);
 		expect(response.status).toBe(400);
 	});

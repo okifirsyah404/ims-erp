@@ -16,6 +16,7 @@ import type {
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
+	TProductMovementSelect,
 	TMovementCreateData,
 	TMovementPaginationRequest,
 } from '../../src/app/inventory/contracts/movement.repository.interface';
@@ -111,13 +112,13 @@ export function installStockDoubles(): void {
 		async findById() {
 			return null;
 		},
-		async create(data: TMovementCreateData) {
+		async create(data: TMovementCreateData, _tx?: unknown) {
 			// The ledger row records the ACTING organization (who did it), which
 			// is what a caller-identity assertion needs — it is not the balance
 			// scope, which follows the warehouse.
 			capture.postedMovement = data as unknown as TPostMovementInput;
 			capture.movementActorOrganizationId = data.organizationId ?? null;
-			return { ...data, id: 'movement-1' } as TMovementSelect;
+			return { ...data, id: 'movement-1' } as TProductMovementSelect;
 		},
 		async findReversalOf() {
 			return null;

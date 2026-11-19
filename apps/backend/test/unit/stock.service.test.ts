@@ -29,6 +29,7 @@ import type {
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
+	TProductMovementSelect,
 	TMovementCreateData,
 	TMovementPaginationRequest,
 } from '../../src/app/inventory/contracts/movement.repository.interface';
@@ -101,8 +102,8 @@ const keyOf = (key: TStockKey): string =>
  * `claimForReversal` mirrors the real SQL: it only succeeds on a row whose
  * status is still `posted`, which is what makes a double reversal impossible.
  */
-function fakeMovements(): IMovementRepository & { rows: TMovementSelect[] } {
-	const rows: TMovementSelect[] = [];
+function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[] } {
+	const rows: TProductMovementSelect[] = [];
 	let sequence = 0;
 
 	return {
@@ -121,14 +122,14 @@ function fakeMovements(): IMovementRepository & { rows: TMovementSelect[] } {
 		async findById(id) {
 			return rows.find((row) => row.id === id) ?? null;
 		},
-		async create(data: TMovementCreateData) {
+		async create(data: TMovementCreateData, _tx?: never) {
 			sequence += 1;
 			const row = {
 				id: `movement-${sequence}`,
 				...data,
 				status: data.status ?? 'posted',
 				createdAt: data.createdAt ?? new Date(),
-			} as TMovementSelect;
+			} as TProductMovementSelect;
 			rows.push(row);
 			return row;
 		},
@@ -141,7 +142,7 @@ function fakeMovements(): IMovementRepository & { rows: TMovementSelect[] } {
 				) ?? null
 			);
 		},
-		async claimForReversal(id) {
+		async claimForReversal(id: string, _tx?: never) {
 			const row = rows.find((row) => row.id === id);
 			// Exactly the SQL predicate: a row that is no longer `posted` cannot
 			// be claimed.
@@ -149,7 +150,7 @@ function fakeMovements(): IMovementRepository & { rows: TMovementSelect[] } {
 			row.status = 'reversed';
 			return row;
 		},
-		async ledgerRows(scopeOrganizationId) {
+		async ledgerRows(scopeOrganizationId: string | null) {
 			return rows
 				.filter(
 					(row) => (WAREHOUSES.find((w) => w.id === row.warehouseId)?.organizationId ?? null) === scopeOrganizationId,
@@ -332,6 +333,18 @@ function fakeItems(): IProductRepository {
 		},
 		async countUnits() {
 			return 0;
+		},
+		async listListed() {
+			return [];
+		},
+		async listPublished() {
+			return [];
+		},
+		async findBySlug() {
+			return null;
+		},
+		async findPublishedBySlug() {
+			return null;
 		},
 	};
 }

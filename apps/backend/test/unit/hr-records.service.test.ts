@@ -10,22 +10,22 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
 	TAttendanceSelect,
-	TBankAccountSelect,
+	TEmployeeSalarySelect,
 	TEmployeeSelect,
 	TLeaveRequestSelect,
 	TLeaveTypeSelect,
-	TOvertimeSelect,
-	TSalarySummarySelect,
-} from '@drizzle/schemas/hr.schema';
-import { leaveBodySchema, salaryBodySchema, type THrScope } from '../../src/app/hr/contracts/hr-records.contract';
-import type { IHrPeopleRepository, TAttendanceUpsert } from '../../src/app/hr/contracts/hr-records.repository.interface';
-import { EmployeeStateError, HrNotFoundError, LeaveInvalidError, SalaryStateError, SelfDecisionError } from '../../src/app/hr/errors/hr.errors';
-import { AttendanceService } from '../../src/app/hr/services/attendance.service';
-import { EmployeeService } from '../../src/app/hr/services/employee.service';
-import { LeaveService } from '../../src/app/hr/services/leave.service';
-import { HrPeopleService, worksOn } from '../../src/app/hr/services/people.service';
-import { SalaryService } from '../../src/app/hr/services/salary.service';
-import { isBusinessDate, jakartaTime, leaveDates, maskTail, netPay, periodRange, previousPeriod, toJakartaTime } from '../../src/app/hr/utils/hr';
+	TOvertimeRequestSelect,
+	TEmployeeSalaryRecordSelect,
+} from '@drizzle/schemas/human-resource.schema';
+import { leaveBodySchema, salaryBodySchema, type THrScope } from '../../src/app/human-resource/contracts/hr-records.contract';
+import type { IHrPeopleRepository, TAttendanceUpsert } from '../../src/app/human-resource/contracts/hr-records.repository.interface';
+import { EmployeeStateError, HrNotFoundError, LeaveInvalidError, SalaryStateError, SelfDecisionError } from '../../src/app/human-resource/errors/hr.errors';
+import { AttendanceService } from '../../src/app/human-resource/services/attendance.service';
+import { EmployeeService } from '../../src/app/human-resource/services/employee.service';
+import { LeaveService } from '../../src/app/human-resource/services/leave.service';
+import { HrPeopleService, worksOn } from '../../src/app/human-resource/services/people.service';
+import { SalaryService } from '../../src/app/human-resource/services/salary.service';
+import { isBusinessDate, jakartaTime, leaveDates, maskTail, netPay, periodRange, previousPeriod, toJakartaTime } from '../../src/app/human-resource/utils/hr';
 
 const E1 = '0190a1b2-0000-7000-8000-0000000000e1';
 const E2 = '0190a1b2-0000-7000-8000-0000000000e2';
@@ -37,12 +37,12 @@ const OTHER_ORG = 'org-other';
 const scope: THrScope = { organizationId: ORG, all: false };
 
 let staff: TEmployeeSelect[];
-let banks: Map<string, TBankAccountSelect>;
+let banks: Map<string, TEmployeeSalarySelect>;
 let types: TLeaveTypeSelect[];
 let leaves: TLeaveRequestSelect[];
-let overtime: TOvertimeSelect[];
+let overtime: TOvertimeRequestSelect[];
 let attendance: TAttendanceSelect[];
-let salaries: TSalarySummarySelect[];
+let salaries: TEmployeeSalaryRecordSelect[];
 
 /** Jakarta midnight of a business date, as ERP-0034 stores dates. */
 const day = (value: string) => new Date(`${value}T00:00:00+07:00`);
@@ -71,7 +71,7 @@ const peopleRepository: IHrPeopleRepository = {
 	findByCodes: async (codes, scoped) => staff.filter((row) => codes.includes(row.employeeCode.toUpperCase()) && visible(row, scoped)),
 	findBank: async (employeeId) => banks.get(employeeId) ?? null,
 	saveBank: async (employeeId, data) => {
-		const row = { ...data, employeeId, id: crypto.randomUUID() } as TBankAccountSelect;
+		const row = { ...data, employeeId, id: crypto.randomUUID() } as TEmployeeSalarySelect;
 		banks.set(employeeId, row);
 		return row;
 	},
@@ -129,7 +129,7 @@ function leaveService() {
 			},
 			findOvertime: async (id) => overtime.find((row) => row.id === id) ?? null,
 			createOvertime: async (data) => {
-				const row = { ...data, id: crypto.randomUUID() } as TOvertimeSelect;
+				const row = { ...data, id: crypto.randomUUID() } as TOvertimeRequestSelect;
 				overtime.push(row);
 				return row;
 			},
@@ -177,7 +177,7 @@ function salaryService() {
 				const existing = salaries.find((row) => row.period === data.period && row.employeeId === data.employeeId);
 				if (existing?.status === 'approved') return null;
 				if (existing) return Object.assign(existing, data);
-				const row = { ...data, id: crypto.randomUUID(), status: 'draft' } as TSalarySummarySelect;
+				const row = { ...data, id: crypto.randomUUID(), status: 'draft' } as TEmployeeSalaryRecordSelect;
 				salaries.push(row);
 				return row;
 			},
@@ -245,9 +245,9 @@ describe('employee scope and bank account', () => {
 
 	test('the bank account number is masked without employee:read_private', async () => {
 		const ctx = { actorUserId: 'hr', scope, canReadPrivate: true };
-		await people().saveBank(ctx, E1, { bankName: 'BCA', accountNumber: '1234567890', accountHolder: 'Person' });
-		expect(await people().bank({ ...ctx, canReadPrivate: false }, E1)).toMatchObject({ accountNumber: '••••••7890', masked: true });
-		expect((await people().bank(ctx, E1))?.accountNumber).toBe('1234567890');
+		await people().saveBank(ctx, E1, { bankName: 'BCA', bankAccountNumber: '1234567890', bankAccountHolder: 'Person' });
+		expect(await people().bank({ ...ctx, canReadPrivate: false }, E1)).toMatchObject({ bankAccountNumber: '••••••7890', masked: true });
+		expect((await people().bank(ctx, E1))?.bankAccountNumber).toBe('1234567890');
 	});
 
 	test('ERP-0034 employee reads mask the NIK without employee:read_private and never write it back', async () => {
@@ -386,7 +386,7 @@ describe('attendance', () => {
 describe('salary summaries', () => {
 	test('net pay is computed; generate copies last month; approval locks the period', async () => {
 		const service = salaryService();
-		salaries.push({ id: 'prev', period: '2026-10', employeeId: E2, employeeName: 'Person EMP-0002', baseSalary: 4_000_000_00, allowances: 300_000_00, status: 'approved' } as TSalarySummarySelect);
+		salaries.push({ id: 'prev', period: '2026-10', employeeId: E2, employeeName: 'Person EMP-0002', baseSalary: 4_000_000_00, allowances: 300_000_00, status: 'approved' } as TEmployeeSalaryRecordSelect);
 		const saved = await service.save(scope, 'hr', salaryBodySchema.parse({ period: '2026-11', employeeId: E1, baseSalary: 5_000_000_00, allowances: 500_000_00, deductions: 100_000_00 }));
 		expect(saved.netPay).toBe(5_400_000_00);
 		await expect(

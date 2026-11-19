@@ -1,5 +1,5 @@
-import { LICENSING_SERVICE_TOKEN } from '@app/licensing/constants/di';
-import type { LicensingService } from '@app/licensing/services/licensing.service';
+import { LICENSING_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { LicensingService } from '@app/project/services/licensing.service';
 import { appConfig } from '@config/providers/config';
 import { isUniqueViolation } from '@drizzle/errors';
 import type { TProductCategorySelect, TProductSelect } from '@drizzle/schemas/inventory.schema';

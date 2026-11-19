@@ -227,7 +227,7 @@ describe('stock routes — grants decide access', () => {
 		const write = await app.handle(
 			jsonRequest('POST', '/stock/receipts', READ_ONLY_USER, {
 				warehouseId: WAREHOUSE_ID,
-				itemId: ITEM_ID,
+				productId: ITEM_ID,
 				quantity: 5,
 			}),
 		);
@@ -289,7 +289,7 @@ describe('stock routes — scope is never taken from the request', () => {
 		const response = await app.handle(
 			jsonRequest('POST', '/stock/receipts', WAREHOUSE_USER, {
 				warehouseId: WAREHOUSE_ID,
-				itemId: ITEM_ID,
+				productId: ITEM_ID,
 				quantity: 5,
 				// Not part of the schema: stripped by parse, never trusted.
 				organizationId: fixture.orgB,

@@ -207,7 +207,7 @@ function world() {
 			return null;
 		},
 	};
-	const toolSetItems = { listItemIds: async () => [] as string[] };
+	const toolSetItems = { listItemIds: async () => [] as string[] } as never;
 	const numbering = { next: async (type: string) => `${type}-${++codes}` };
 	const audit = { record: async () => {} } as never;
 	const transactions = { run: <T>(work: (tx: TTx) => Promise<T>) => work({} as TTx) };
@@ -327,7 +327,7 @@ describe('borrowing request', () => {
 				{ append: async () => ({}) as never, listByRequest: async () => [] } as never,
 				{ listByBorrowing: async () => [] } as never,
 				{ findById: async (uid: string) => w.units.get(uid) ?? null } as never,
-				{ listItemIds: async () => [a.id, b.id] },
+				{ listItemIds: async () => [a.id, b.id] } as never,
 				{ next: async () => 'BRW-1' },
 				{ record: async () => {} } as never,
 				{ run: <T>(work: (tx: TTx) => Promise<T>) => work({} as TTx) },

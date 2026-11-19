@@ -51,11 +51,15 @@ function receipt<T>(replayed: boolean, data: T, status: (code: 201, body: unknow
  * map points at; payload shapes follow the website's fixed contracts.
  */
 export class PublicWebsiteController {
-	static plugin() {
+	/**
+	 * @param prefix - The website API path: `/projects/public/v1` (primary) or the
+	 * `/public/v1` alias the deployed website still calls (ADR-0024 Q34).
+	 */
+	static plugin(prefix = '/projects/public/v1') {
 		const inquiries = container.resolve(WEBSITE_INQUIRY_SERVICE_TOKEN);
 		const parse = <S extends z.ZodType>(schema: S, input: unknown): z.output<S> => schema.parse(input);
 
-		return domainPlugin({ name: 'public-website', prefix: '/public/v1', tags: ['Public Website'] })
+		return domainPlugin({ name: `public-website:${prefix}`, prefix, tags: ['Public Website'] })
 			.use(publicApiGuard())
 			.post(
 				'/rfq',

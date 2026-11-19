@@ -1,12 +1,13 @@
-import { SERVICE_TICKET_SERVICE_TOKEN, WARRANTY_SERVICE_TOKEN } from '@app/aftersales/constants/di';
-import type { TPortalTicket, TPortalTicketDetail, TPortalTicketMessage } from '@app/aftersales/contracts/service-ticket.contract';
-import type { ServiceTicketService } from '@app/aftersales/services/service-ticket.service';
-import type { WarrantyService } from '@app/aftersales/services/warranty.service';
-import { PROJECT_PORTAL_SERVICE_TOKEN } from '@app/projects/constants/di';
-import type { ProjectPortalService, TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
+import { TICKET_SERVICE_TOKEN } from '@app/ticket/constants/di';
+import type { TPortalTicket, TPortalTicketDetail, TPortalTicketMessage } from '@app/ticket/contracts/ticket.contract';
+import type { TicketService } from '@app/ticket/services/ticket.service';
+import { WARRANTY_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { WarrantyService } from '@app/project/services/warranty.service';
+import { PROJECT_PORTAL_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectPortalService, TPortalProject, TPortalProjectDetail } from '@app/project/services/project-portal.service';
 import type { PortalContext } from '@authorization/portal-auth';
 import type { TCustomerCompanySelect, TCustomerSelect } from '@drizzle/schemas/customer.schema';
-import type { TWarrantyCertificateSelect } from '@drizzle/schemas/aftersales.schema';
+import type { TWarrantySelect } from '@drizzle/schemas/project.schema';
 import { inject, injectable } from 'tsyringe';
 import { COMPANY_REPOSITORY_TOKEN, CUSTOMER_PERSON_REPOSITORY_TOKEN, PORTAL_ACCOUNT_SERVICE_TOKEN } from '../constants/di';
 import type { ICompanyRepository, ICustomerPersonRepository } from '../contracts/customer.repository.interface';
@@ -19,7 +20,7 @@ import type { PortalAccountService } from './portal-account.service';
 export type TPortalSubject = { person: TCustomerSelect; company: TCustomerCompanySelect | null };
 
 /** A device the customer owns: one line of one of their warranty certificates. */
-export type TPortalDevice = { id: string; certificate: TWarrantyCertificateSelect; line: number };
+export type TPortalDevice = { id: string; certificate: TWarrantySelect; line: number };
 
 /**
  * Customer-portal use cases (ERP-0022). Owns no data: every read and write
@@ -31,9 +32,9 @@ export type TPortalDevice = { id: string; certificate: TWarrantyCertificateSelec
 export class PortalService {
 	constructor(
 		@inject(PROJECT_PORTAL_SERVICE_TOKEN) private readonly projects: Pick<ProjectPortalService, 'listForCustomer' | 'getForCustomer'>,
-		@inject(SERVICE_TICKET_SERVICE_TOKEN)
+		@inject(TICKET_SERVICE_TOKEN)
 		private readonly tickets: Pick<
-			ServiceTicketService,
+			TicketService,
 			'listForCustomer' | 'getForCustomer' | 'createFromPortal' | 'addCustomerMessage' | 'confirmFromPortal'
 		>,
 		@inject(WARRANTY_SERVICE_TOKEN) private readonly warranties: Pick<WarrantyService, 'listForCustomer' | 'getForCustomer'>,

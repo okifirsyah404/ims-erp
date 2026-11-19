@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - P6: project absorbs licensing + warranty, ticket replaces aftersales, human-resource (ERP-0082/0083/0084 backend)
+
+- `src/app/projects` and `src/app/licensing` merged into `src/app/project` (git mv; one module, one schema). Tables renamed `project_tasks|costs|evidence|handover` -> `tasks|costs|evidence|handover`; `projects` gains `company_id`, `lead_id`, `order_id`/`order_code`, `address_id`; `warranty_certificates` -> `warranties` with `handover_id`; `licensable_applications` -> `license_applications`, `application_api_keys` -> `license_api_keys`, `license_contracts` gains `license_application_id`/`company_id`/`order_id`.
+- URLs: `/projects`, `/projects/handovers`, `/projects/leads`, `/projects/warranties`, `/projects/licenses/*`; machine license API `/projects/api/v1/licenses/*` plus the `/licensing/v1/*` alias; website API `/projects/public/v1/*` plus the `/public/v1` alias (Q34).
+- `src/app/aftersales` -> `src/app/ticket` (git mv): `service_tickets` -> `tickets`, `service_ticket_comments` -> `ticket_messages`; own numbering (`ticket.code_numberings`, `TicketNumberingService`); `/tickets`; warranty moved to project, so a ticket checks it through `WARRANTY_SERVICE_TOKEN` (project).
+- `src/app/hr` -> `src/app/human-resource`: `hr.attendance_records` -> `human_resource.attendances`, `salary_summaries` -> `employee_salary_records`, `bank_accounts` absorbed into `employee_salaries` (Q39: base salary, fixed allowances, bank account masked without `employee:read_private`); own numbering; `ExportedHrService` -> `ExportedEmployeeService`; URLs `/human-resources/{employees,attendances,employee-tasks,salary-records}`.
+- Numbering call shape unified: `next(type, tx?, date?, context?)`; project, BAST and warranty pass the date and the `{CUSTOMER}` token through it.
+- Consumers re-pointed: the `customer` portal reads tickets through `TICKET_SERVICE_TOKEN` and warranties through the project module; inventory's warehouse PIC validation uses `EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN`; `src/index.ts` and `src/app/app.ts` register and mount `project`, `ticket`, `human-resource`.
+- Test harnesses updated for the new URLs and vocabularies (`/inventory/products`, `/taxes*`, `/sales/invoices`, `/human-resources/*`), the removed legacy `/sales/payments` flow, and the per-module numbering services.
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/` and `test/` (24 seeder errors remain, P8); `bun test test/unit` -> 790 pass / 0 fail; `bun test test/finance test/tax test/authorization` -> 439 pass / 0 fail; `bun docs/database/validate-dbml.ts` -> OK.
+- Still open: web-admin (`project-api.ts`, `handover-api.ts`, `license-api.ts`, `lead-api.ts`, `service-ticket-api.ts` -> `ticket-api.ts`, `hr-api.ts`, `hr-records-api.ts`), web-customer-portal ticket calls, web-landing form endpoints, seeders (P8), ticket templates and sub-tickets (Q29, target-only in dbml).
 ## 2026-11-19 - P5: finance absorbs accounting, tax split, payment rework (ERP-0079/0080/0081 backend)
 
 - `src/app/accounting` -> `src/app/finance` (git mv, `registerFinance`/`financeModule`, schema `finance`, `@drizzle/schemas/finance.schema`). `accounting.schema.ts` is gone; every module imports `finance.schema.ts` instead.

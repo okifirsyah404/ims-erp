@@ -1,10 +1,10 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { EmployeeInviteService } from '../../src/app/hr/services/employee-invite.service';
+import { EmployeeInviteService } from '../../src/app/human-resource/services/employee-invite.service';
 import type { InvitationService, TActor } from '../../src/app/user/services/invitation.service';
-import type { IEmployeeRepository } from '../../src/app/hr/contracts/employee.repository.interface';
+import type { IEmployeeRepository } from '../../src/app/human-resource/contracts/employee.repository.interface';
 import type { IUserPersonalFieldsPort } from '../../src/app/user/contracts/user-personal-fields.port';
-import type { CodeNumberService } from '../../src/app/code-number';
-import { EmployeeEmailTakenError, EmployeeInviteError } from '../../src/app/hr/errors/hr.errors';
+
+import { EmployeeEmailTakenError, EmployeeInviteError } from '../../src/app/human-resource/errors/hr.errors';
 
 /**
  * Unit tests for the invite-creates-employee orchestration (ERP-0034).
@@ -40,7 +40,7 @@ function makeDeps(overrides: {
 	const service = new EmployeeInviteService(
 		invitations as unknown as InvitationService,
 		employees as unknown as IEmployeeRepository,
-		numbering as unknown as CodeNumberService,
+		numbering as never,
 		personalFields as unknown as IUserPersonalFieldsPort,
 	);
 	return { service, invitations, employees, personalFields };

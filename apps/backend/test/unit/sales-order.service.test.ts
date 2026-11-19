@@ -25,7 +25,7 @@ import {
 	SalesOrderNotFoundError,
 	SalesOrderQuotationNotReadyError,
 } from '../../src/app/sale/errors/sales-order.errors';
-import { SalesOrderHasProjectError } from '../../src/app/projects/errors/project.errors';
+import { SalesOrderHasProjectError } from '../../src/app/project/errors/project.errors';
 import { SalesOrderDeliveredError } from '../../src/app/sale/errors/delivery-note.errors';
 import { SalesOrderService, type TSalesOrderContext } from '../../src/app/sale/services/sales-order.service';
 

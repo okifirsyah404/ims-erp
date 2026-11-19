@@ -126,7 +126,10 @@ beforeAll(async () => {
 		async countUnits() {
 			return 0;
 		},
-		async findNamesByIds() {
+		listListed: async () => [],
+		listPublished: async () => [],
+		findBySlug: async () => null,
+		findPublishedBySlug: async () => null,		async findNamesByIds() {
 			return [];
 		},
 	};
@@ -200,11 +203,9 @@ beforeAll(async () => {
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
 	});
-	// ERP-0043: item codes come from the numbering authority.
-	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
-		'../../src/app/code-number/constants/di'
-	);
-	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+	// ADR-0024 Q6: item codes come from the module's own numbering series.
+	const { INVENTORY_NUMBERING_SERVICE_TOKEN } = await import('../../src/app/inventory/constants/di');
+	container.register(INVENTORY_NUMBERING_SERVICE_TOKEN, {
 		useValue: { next: async () => 'PRD-00001' } as never,
 	});
 	container.register(PRODUCT_SERVICE_TOKEN, { useClass: ProductService });
@@ -220,13 +221,13 @@ beforeEach(() => {
 
 describe('item routes — authentication', () => {
 	test('GET /items without a session returns 401', async () => {
-		const response = await app.handle(jsonRequest('GET', '/items'));
+		const response = await app.handle(jsonRequest('GET', '/inventory/products'));
 		expect(response.status).toBe(401);
 	});
 
 	test('POST /items without a session returns 401', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/items', undefined, {
+			jsonRequest('POST', '/inventory/products', undefined, {
 				organizationId: fixture.orgA,
 				sku: 'X',
 				name: 'X',
@@ -240,14 +241,14 @@ describe('item routes — authentication', () => {
 describe('item routes — organization scope', () => {
 	test('a global admin without membership is refused (403, not bypass)', async () => {
 		const response = await app.handle(
-			jsonRequest('GET', '/items', 'globalAdmin'),
+			jsonRequest('GET', '/inventory/products', 'globalAdmin'),
 		);
 		expect(response.status).toBe(403);
 	});
 
 	test('an owner can read items', async () => {
 		const response = await app.handle(
-			jsonRequest('GET', '/items', 'owner', undefined, fixture.orgA),
+			jsonRequest('GET', '/inventory/products', 'owner', undefined, fixture.orgA),
 		);
 		expect(response.status).toBe(200);
 		const body = await response.json();
@@ -258,7 +259,7 @@ describe('item routes — organization scope', () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
-				'/items',
+				'/inventory/products',
 				'owner',
 				{
 					organizationId: fixture.orgA,
@@ -280,7 +281,7 @@ describe('item routes — organization scope', () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
-				'/items',
+				'/inventory/products',
 				'member',
 				{
 					organizationId: fixture.orgA,
@@ -300,7 +301,7 @@ describe('item routes — validation', () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
-				'/items',
+				'/inventory/products',
 				'owner',
 				{
 					organizationId: fixture.orgA,
@@ -316,7 +317,7 @@ describe('item routes — validation', () => {
 
 	test('rejects an invalid uuid path param with 400', async () => {
 		const response = await app.handle(
-			jsonRequest('GET', '/items/not-a-uuid', 'owner', undefined, fixture.orgA),
+			jsonRequest('GET', '/inventory/products/not-a-uuid', 'owner', undefined, fixture.orgA),
 		);
 		expect(response.status).toBe(400);
 	});

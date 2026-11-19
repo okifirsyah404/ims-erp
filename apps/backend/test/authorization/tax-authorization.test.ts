@@ -52,11 +52,11 @@ const ROUTES: ReadonlyArray<{
 	path: string;
 	body?: unknown;
 }> = [
-	{ method: 'GET', path: '/tax/types' },
-	{ method: 'GET', path: `/tax/types/${TAX_TYPE_ID}` },
+	{ method: 'GET', path: '/taxes' },
+	{ method: 'GET', path: `/taxes/${TAX_TYPE_ID}` },
 	{
 		method: 'POST',
-		path: '/tax/types',
+		path: '/taxes',
 		body: {
 			code: 'PPN',
 			name: 'PPN',
@@ -65,53 +65,53 @@ const ROUTES: ReadonlyArray<{
 			effectiveFrom: '2026-01-01',
 		},
 	},
-	{ method: 'PATCH', path: `/tax/types/${TAX_TYPE_ID}`, body: { name: 'PPN' } },
-	{ method: 'DELETE', path: `/tax/types/${TAX_TYPE_ID}` },
-	{ method: 'GET', path: '/tax/recap', body: undefined },
-	{ method: 'GET', path: '/tax/export.csv' },
-	{ method: 'GET', path: '/tax/export.xlsx' },
-	{ method: 'GET', path: '/tax/records' },
-	{ method: 'GET', path: `/tax/records/${TAX_RECORD_ID}` },
+	{ method: 'PATCH', path: `/taxes/${TAX_TYPE_ID}`, body: { name: 'PPN' } },
+	{ method: 'DELETE', path: `/taxes/${TAX_TYPE_ID}` },
+	{ method: 'GET', path: '/taxes/recap', body: undefined },
+	{ method: 'GET', path: '/taxes/export.csv' },
+	{ method: 'GET', path: '/taxes/export.xlsx' },
+	{ method: 'GET', path: '/taxes/records' },
+	{ method: 'GET', path: `/taxes/records/${TAX_RECORD_ID}` },
 	{
 		method: 'POST',
-		path: '/tax/records',
+		path: '/taxes/records',
 		body: { taxTypeId: TAX_TYPE_ID, periodYear: 2026, periodMonth: 1, taxableBase: 1 },
 	},
 	{
 		method: 'POST',
-		path: '/tax/records/preview',
+		path: '/taxes/records/preview',
 		body: { taxTypeId: TAX_TYPE_ID, taxableBase: 1, date: '2026-01-01' },
 	},
 	{
 		method: 'PATCH',
-		path: `/tax/records/${TAX_RECORD_ID}`,
+		path: `/taxes/records/${TAX_RECORD_ID}`,
 		body: { taxableBase: 1 },
 	},
 	{
 		method: 'POST',
-		path: `/tax/records/${TAX_RECORD_ID}/transition`,
+		path: `/taxes/records/${TAX_RECORD_ID}/transition`,
 		body: { to: 'verified' },
 	},
 	{
 		method: 'POST',
-		path: `/tax/records/${TAX_RECORD_ID}/corrections`,
+		path: `/taxes/records/${TAX_RECORD_ID}/corrections`,
 		body: { amount: 0, reason: 'x' },
 	},
-	{ method: 'GET', path: `/tax/records/${TAX_RECORD_ID}/corrections` },
-	{ method: 'GET', path: '/tax/withholding' },
+	{ method: 'GET', path: `/taxes/records/${TAX_RECORD_ID}/corrections` },
+	{ method: 'GET', path: '/taxes/withholding' },
 	{
 		method: 'POST',
-		path: '/tax/withholding',
+		path: '/taxes/withholdings',
 		body: { code: 'WHT-1', taxTypeId: TAX_TYPE_ID, baseAmount: 1, taxAmount: 0 },
 	},
 	{
 		method: 'PATCH',
-		path: `/tax/withholding/${WITHHOLDING_ID}`,
+		path: `/taxes/withholdings/${WITHHOLDING_ID}`,
 		body: { taxAmount: 0 },
 	},
 	{
 		method: 'POST',
-		path: `/tax/withholding/${WITHHOLDING_ID}/transition`,
+		path: `/taxes/withholdings/${WITHHOLDING_ID}/transition`,
 		body: { to: 'verified' },
 	},
 ];
@@ -122,7 +122,7 @@ beforeAll(async () => {
 
 	const { container } = await import('tsyringe');
 	const { TAX_SERVICE_TOKEN } = await import(
-		'../../src/app/finance/constants/di'
+		'../../src/app/tax/constants/di'
 	);
 
 	const noop = async () => ({});
@@ -152,7 +152,7 @@ beforeAll(async () => {
 	});
 
 	const { TaxController } = await import(
-		'../../src/app/finance/controllers/tax.controller'
+		'../../src/app/tax/controllers/tax.controller'
 	);
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
@@ -179,7 +179,7 @@ describe('tax routes — finance can read and export only', () => {
 		async ({ method, path, body }) => {
 			const response = await app.handle(jsonRequest(method, path, FINANCE, body));
 			expect(response.status).not.toBe(401);
-			if (method === 'GET' || path === '/tax/records/preview') {
+			if (method === 'GET' || path === '/taxes/records/preview') {
 				// read + export are granted to finance; preview persists nothing
 				// and is deliberately guarded by tax:read.
 				expect(response.status).not.toBe(403);

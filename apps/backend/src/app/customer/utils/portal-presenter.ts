@@ -7,11 +7,11 @@
  * (`Accept-Language`, en/id), dates on the Asia/Jakarta clock. Pure
  * functions, no I/O; business rules stay in the services.
  */
-import type { TPortalTicket, TPortalTicketDetail } from '@app/aftersales/contracts/service-ticket.contract';
-import type { TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
+import type { TPortalTicket, TPortalTicketDetail } from '@app/ticket/contracts/ticket.contract';
+import type { TPortalProject, TPortalProjectDetail } from '@app/project/services/project-portal.service';
 import type { TPortalAccountView } from '../contracts/portal-account.contract';
 import type { PortalContext } from '@authorization/portal-auth';
-import { PROJECT_STAGES, type ProjectStage } from '@drizzle/schemas/projects.schema';
+import { PROJECT_STAGES, type ProjectStage } from '@drizzle/schemas/project.schema';
 import type { ApiKey } from '@providers/i18n/translator';
 import type { LanguageCode } from '@ims-erp/locales';
 import type { TPortalDevice, TPortalSubject } from '../services/portal.service';

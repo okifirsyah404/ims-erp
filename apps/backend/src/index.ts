@@ -4,11 +4,10 @@
 import { registerInventory } from '@app/inventory';
 import { registerCustomer } from '@app/customer';
 import { registerProcurement } from '@app/procurement';
-import { registerProjects } from '@app/projects';
-import { registerAftersales } from '@app/aftersales';
-import { registerHr } from '@app/hr';
-import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
+import { registerLicenseDueSchedule, startLicenseDueWorker } from '@app/project';
 import { registerLeadFollowUpSchedule, registerProject, startLeadFollowUpWorker } from '@app/project';
+import { registerTicket } from '@app/ticket';
+import { registerHumanResource } from '@app/human-resource';
 import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
 import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
@@ -76,11 +75,9 @@ registerAutomation(container);
 // service at resolve time; project (leads) needs customer and company.
 registerCustomer(container);
 registerProject(container);
+registerTicket(container);
+registerHumanResource(container);
 registerProcurement(container);
-registerProjects(container);
-registerAftersales(container);
-registerHr(container);
-registerLicensing(container);
 registerFinance(container);
 registerTax(container);
 registerUser(container);

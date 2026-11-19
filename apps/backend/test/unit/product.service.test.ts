@@ -146,6 +146,10 @@ function makeService(seed?: {
 				})),
 		countUnits: async (productId) =>
 			units.filter((u) => u.productId === productId && u.deletedAt === null).length,
+		listListed: async () => [],
+		listPublished: async () => [],
+		findBySlug: async () => null,
+		findPublishedBySlug: async () => null,
 	};
 
 	const serialUnitRepository: IItemSerialRepository = {

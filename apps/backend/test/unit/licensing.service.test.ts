@@ -5,12 +5,12 @@
  * masked without `license:read_key`) and the pure date rules.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TLicensableApplicationSelect, TLicenseContractSelect, TLicenseKeySelect } from '@drizzle/schemas/licensing.schema';
+import type { TLicenseApplicationSelect, TLicenseContractSelect, TLicenseKeySelect } from '@drizzle/schemas/project.schema';
 import { businessDateOf } from '@utils/business-date.util';
-import { contractBodySchema, keyBodySchema, type TContractRow } from '../../src/app/licensing/contracts/licensing.contract';
-import { ContractInvalidError, ContractStateError, LicenseKeyError } from '../../src/app/licensing/errors/licensing.errors';
-import { LicensingService, type TLicenseContext } from '../../src/app/licensing/services/licensing.service';
-import { addDays, contractTiming, dueNoticeThreshold, generateLicenseKey, maskLicenseKey, renewalPeriod } from '../../src/app/licensing/utils/license';
+import { contractBodySchema, keyBodySchema, type TContractRow } from '../../src/app/project/contracts/licensing.contract';
+import { ContractInvalidError, ContractStateError, LicenseKeyError } from '../../src/app/project/errors/licensing.errors';
+import { LicensingService, type TLicenseContext } from '../../src/app/project/services/licensing.service';
+import { addDays, contractTiming, dueNoticeThreshold, generateLicenseKey, maskLicenseKey, renewalPeriod } from '../../src/app/project/utils/license';
 
 const CUSTOMER = '0190a1b2-0000-7000-8000-00000000c001';
 const OTHER = '0190a1b2-0000-7000-8000-00000000c002';
@@ -23,7 +23,7 @@ const RENEWAL_ORDER = '0190a1b2-0000-7000-8000-00000000d002';
 const manager: TLicenseContext = { actorUserId: 'manager', canReadKeys: true };
 const finance: TLicenseContext = { actorUserId: 'finance', canReadKeys: false };
 
-let applications: TLicensableApplicationSelect[];
+let applications: TLicenseApplicationSelect[];
 let contracts: TLicenseContractSelect[];
 let keys: TLicenseKeySelect[];
 let numbers: number;
@@ -37,10 +37,10 @@ let notices: { data: Record<string, unknown>; dedupeKey?: string }[];
 let dedupeKeys: Set<string>;
 
 const app = (id: string, source: 'own' | 'third_party', status: 'active' | 'retired' = 'active') =>
-	({ id, code: id.slice(-4), name: `App ${id.slice(-4)}`, source, status }) as TLicensableApplicationSelect;
+	({ id, code: id.slice(-4), name: `App ${id.slice(-4)}`, source, status }) as TLicenseApplicationSelect;
 
 const row = (contract: TLicenseContractSelect): TContractRow => {
-	const application = applications.find((item) => item.id === contract.licensableApplicationId)!;
+	const application = applications.find((item) => item.id === contract.licenseApplicationId)!;
 	return { ...contract, applicationCode: application.code, applicationName: application.name, applicationSource: application.source };
 };
 
@@ -97,7 +97,7 @@ beforeEach(() => {
 						item.status === 'draft' &&
 						item.renewedFromContractId &&
 						(!from || item.renewedFromContractId === from) &&
-						item.salesOrderId &&
+						item.orderId &&
 						item.startDate,
 				),
 			async moveKeys(from, to, oldEnd, newEnd) {
@@ -155,7 +155,7 @@ const draft = (extra: Record<string, unknown> = {}) =>
 		manager,
 		contractBodySchema.parse({
 			customerId: CUSTOMER,
-			licensableApplicationId: VENDOR_APP,
+			licenseApplicationId: VENDOR_APP,
 			startDate: '2026-01-01',
 			endDate: '2026-12-31',
 			billingCycle: 'annual',
@@ -166,21 +166,21 @@ const draft = (extra: Record<string, unknown> = {}) =>
 
 describe('license contracts', () => {
 	test('a draft is numbered and keeps the customer name', async () => {
-		const contract = await draft({ salesOrderId: ORDER });
-		expect(contract).toMatchObject({ code: '0001/LIC/IMS/XI/26', status: 'draft', customerName: 'Customer c001', salesOrderId: ORDER });
+		const contract = await draft({ orderId: ORDER });
+		expect(contract).toMatchObject({ code: '0001/LIC/IMS/XI/26', status: 'draft', customerName: 'Customer c001', orderId: ORDER });
 	});
 
 	test('references are checked', async () => {
 		await expect(draft({ customerId: '0190a1b2-0000-7000-8000-00000000c0ff' })).rejects.toBeInstanceOf(ContractInvalidError);
-		await expect(draft({ licensableApplicationId: RETIRED_APP })).rejects.toBeInstanceOf(ContractInvalidError);
-		await expect(draft({ customerId: OTHER, salesOrderId: ORDER })).rejects.toBeInstanceOf(ContractInvalidError);
+		await expect(draft({ licenseApplicationId: RETIRED_APP })).rejects.toBeInstanceOf(ContractInvalidError);
+		await expect(draft({ customerId: OTHER, orderId: ORDER })).rejects.toBeInstanceOf(ContractInvalidError);
 		await expect(draft({ startDate: '2026-02-01', endDate: '2026-01-01' })).rejects.toBeInstanceOf(ContractInvalidError);
 	});
 
 	test('draft → active → suspended → active → terminated; only drafts are edited', async () => {
 		const { id } = await draft();
 		expect((await service.activate(manager, id)).status).toBe('active');
-		await expect(service.update(id, contractBodySchema.parse({ customerId: CUSTOMER, licensableApplicationId: VENDOR_APP, billingCycle: 'annual', contractValue: 0 }))).rejects.toBeInstanceOf(ContractStateError);
+		await expect(service.update(id, contractBodySchema.parse({ customerId: CUSTOMER, licenseApplicationId: VENDOR_APP, billingCycle: 'annual', contractValue: 0 }))).rejects.toBeInstanceOf(ContractStateError);
 		await expect(service.activate(manager, id)).rejects.toBeInstanceOf(ContractStateError);
 		expect((await service.suspend(manager, id, 'Unpaid')).status).toBe('suspended');
 		await expect(service.suspend(manager, id, null)).rejects.toBeInstanceOf(ContractStateError);
@@ -210,8 +210,8 @@ describe('license contracts', () => {
 			renewal.id,
 			contractBodySchema.parse({
 				customerId: CUSTOMER,
-				licensableApplicationId: VENDOR_APP,
-				salesOrderId: RENEWAL_ORDER,
+				licenseApplicationId: VENDOR_APP,
+				orderId: RENEWAL_ORDER,
 				startDate: renewal.startDate,
 				endDate: renewal.endDate,
 				billingCycle: 'annual',
@@ -257,7 +257,7 @@ describe('license keys', () => {
 		expect(typed).toMatchObject({ licenseKey: 'VENDOR-KEY-0001', keySource: 'vendor', expiresOn: '2026-12-31', masked: false });
 		await expect(service.addKey(manager, vendor.id, keyBodySchema.parse({ licenseKey: 'VENDOR-KEY-0001' }))).rejects.toBeInstanceOf(LicenseKeyError);
 
-		const own = await draft({ licensableApplicationId: OWN_APP });
+		const own = await draft({ licenseApplicationId: OWN_APP });
 		const generated = await service.addKey(manager, own.id, keyBodySchema.parse({ maxActivations: 5 }));
 		expect(generated.keySource).toBe('generated');
 		expect(generated.licenseKey).toMatch(/^[A-Z2-9]{5}(-[A-Z2-9]{5}){3}$/);

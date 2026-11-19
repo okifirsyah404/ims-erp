@@ -211,13 +211,9 @@ describe('cross-organization foreign keys', () => {
 		);
 		const { data } = (await create.json()) as { data: { id: string } };
 
-		// ...then tries to create a payment scoped to org B referencing it:
-		// the quotation does not exist in org B -> 404, FK rejected.
+		// ...and the same quotation is invisible to org B (never a 200 with foreign data).
 		const response = await app.handle(
-			jsonRequest('POST', '/sales/payments', 'owner', {
-				quotationId: data.id,
-				amount: 100,
-			}, fixture.orgB),
+			jsonRequest('GET', `/sales/quotations/${data.id}`, 'owner', undefined, fixture.orgB),
 		);
 		expect([403, 404]).toContain(response.status);
 	});
@@ -294,66 +290,19 @@ describe('multi-role self-approval', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 10. Payments: no execution before approval
+// 10. The legacy sales payment flow is gone (ADR-0024 Q18)
 // ---------------------------------------------------------------------------
-describe('payment execution requires approval', () => {
-	test('execute before approval returns 422 state error', async () => {
-		// owner creates quotation + payment
-		const q = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
-		);
-		const { data: quotation } = (await q.json()) as { data: { id: string } };
-
-		const p = await app.handle(
-			jsonRequest('POST', '/sales/payments', 'owner', {
-				quotationId: quotation.id,
-				amount: 100,
-			}),
-		);
-		expect(p.status).toBe(201);
-		const { data: payment } = (await p.json()) as { data: { id: string } };
-
-		// finance-role user executes before approval
-		const response = await app.handle(
-			jsonRequest('POST', `/sales/payments/${payment.id}/execute`, 'salesFinance'),
-		);
-		expect(response.status).toBe(422);
-	});
-
-	test('payment creator cannot execute their own payment (SoD)', async () => {
-		const q = await app.handle(
-			jsonRequest('POST', '/sales/quotations', 'owner', quotationBody()),
-		);
-		const { data: quotation } = (await q.json()) as { data: { id: string } };
-		const p = await app.handle(
-			jsonRequest('POST', '/sales/payments', 'owner', {
-				quotationId: quotation.id,
-				amount: 100,
-			}),
-		);
-		const { data: payment } = (await p.json()) as { data: { id: string } };
-
-		// approve by another user first
-		const approval = await app.handle(
-			jsonRequest('POST', `/sales/payments/${payment.id}/approve`, 'salesFinance'),
-		);
-		expect(approval.status).toBe(200);
-
-		// creator (owner) attempts execution
-		const response = await app.handle(
-			jsonRequest('POST', `/sales/payments/${payment.id}/execute`, 'owner'),
-		);
-		expect(response.status).toBe(403);
-	});
-
-	test('member without payment permissions cannot execute (403)', async () => {
-		const response = await app.handle(
-			jsonRequest('POST', '/sales/payments/p-none/execute', 'member'),
-		);
-		expect(response.status).toBe(403);
+// ---------------------------------------------------------------------------
+// 10. The legacy sales payment flow is gone (ADR-0024 Q18)
+// ---------------------------------------------------------------------------
+describe('legacy sales payments', () => {
+	test('the old /sales/payments routes no longer exist', async () => {
+		// The ledger moved to the payment module (`/payments`) with polymorphic
+		// allocations; a stale client gets a 404 instead of a half-working flow.
+		const response = await app.handle(jsonRequest('POST', '/sales/payments', 'owner', { amount: 100 }));
+		expect(response.status).toBe(404);
 	});
 });
-
 // ---------------------------------------------------------------------------
 // 11. Membership/permission revocation
 // ---------------------------------------------------------------------------

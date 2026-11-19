@@ -15,7 +15,7 @@ describe('stock valuation', () => {
 				return {
 					rows: [
 						{
-							itemId: 'i1',
+							productId: 'i1',
 							sku: 'CBL',
 							name: 'Kabel',
 							unit: 'm',

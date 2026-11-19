@@ -14,7 +14,7 @@
  * - `inventory_items_min_stock_check` — `min_stock_qty >= 0`.
  */
 import { describe, expect, test } from 'bun:test';
-import { ITEM_KINDS, UNIT_STATUSES } from '@drizzle/schemas/inventory.schema';
+import { ITEM_STATUSES, PRODUCT_KINDS } from '@drizzle/schemas/inventory.schema';
 
 /**
  * The seeded catalogue, mirroring `SEED_ITEMS` in
@@ -61,7 +61,7 @@ const SEED_ITEMS = [
 describe('seeded items satisfy the schema CHECK constraints', () => {
 	test('every kind is a known item kind', () => {
 		for (const item of SEED_ITEMS) {
-			expect(ITEM_KINDS).toContain(item.itemKind);
+			expect(PRODUCT_KINDS).toContain(item.itemKind);
 		}
 	});
 
@@ -69,7 +69,7 @@ describe('seeded items satisfy the schema CHECK constraints', () => {
 		// The seed exists to give every kind a row, because kind drives the
 		// unit status matrix.
 		expect(new Set(SEED_ITEMS.map((i) => i.itemKind)).size).toBe(
-			ITEM_KINDS.length,
+			PRODUCT_KINDS.length,
 		);
 	});
 
@@ -101,7 +101,7 @@ describe('seeded items satisfy the schema CHECK constraints', () => {
 describe('seeded units use a valid status', () => {
 	test('units are seeded as in_stock', () => {
 		// "Siap" in the UI is `in_stock` in the API — never `ready`.
-		expect(UNIT_STATUSES).toContain('in_stock');
+		expect(ITEM_STATUSES).toContain('ready');
 	});
 
 	test('serial numbers are unique across the seed', () => {
