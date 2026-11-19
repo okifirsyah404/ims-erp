@@ -6,7 +6,7 @@ import type { TQuotationCustomerSnapshot } from './quotation-api';
 import type { TSalesOrderItem } from './sales-order-api';
 
 /**
- * API client for invoices and receipts (`/invoices`, `/receipts`, ADR-0011
+ * API client for invoices and receipts (`/sales/invoices`, `/sales/receipts`, ADR-0011
  * step 3d-2). The server computes every amount; previews here are UX only.
  */
 
@@ -32,12 +32,14 @@ export type TInvoice = {
 	id: string;
 	code: string | null;
 	termKind: TInvoiceTermKind;
-	customerSnapshot: TQuotationCustomerSnapshot;
-	salesOrderId: string;
-	salesOrderCode: string;
-	quotationCode: string;
-	title: string;
-	description: string;
+	customerId: string | null;
+	companyId: string | null;
+	customerSnapshot: TQuotationCustomerSnapshot | null;
+	orderId: string | null;
+	orderCode: string | null;
+	quotationCode: string | null;
+	title: string | null;
+	description: string | null;
 	percentageBps: number | null;
 	issueDate: string | null;
 	dueDate: string | null;
@@ -72,7 +74,7 @@ export type TReceipt = {
 export type TScheduleRow = {
 	id: string;
 	code: string | null;
-	description: string;
+	description: string | null;
 	percentageBps: number | null;
 	grandTotal: number;
 	status: TInvoiceStatus;
@@ -80,6 +82,16 @@ export type TScheduleRow = {
 };
 
 export type TInvoiceDetail = TInvoice & {
+	items: {
+		id: string;
+		productId: string | null;
+		description: string | null;
+		quantity: string;
+		unitPrice: number;
+		discountAmount: number;
+		taxAmount: number;
+		lineTotal: number;
+	}[];
 	receipts: TReceipt[];
 	order: {
 		id: string;
@@ -99,8 +111,8 @@ export type TInvoiceDetail = TInvoice & {
 export type TPlannedTerm = { index: number; label: string; percentBps: number; last: boolean; description: string };
 
 export type TBillingSummary = {
-	salesOrderId: string;
-	salesOrderCode: string;
+	orderId: string;
+	orderCode: string;
 	grandTotal: number;
 	taxBase: number;
 	invoiced: number;
@@ -157,7 +169,7 @@ export function invoicesQueryOptions(params: {
 	return queryOptions({
 		queryKey: ['finance', 'invoices', params] as const,
 		queryFn: async () => {
-			const envelope = (await request<TInvoice[]>(`/invoices${query(params)}`)) as TApiPaginatedResponse<TInvoice>;
+			const envelope = (await request<TInvoice[]>(`/sales/invoices${query(params)}`)) as TApiPaginatedResponse<TInvoice>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
 	});
@@ -166,7 +178,7 @@ export function invoicesQueryOptions(params: {
 export function invoiceQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['finance', 'invoices', id] as const,
-		queryFn: async () => (await request<TInvoiceDetail>(`/invoices/${id}`)).data as TInvoiceDetail,
+		queryFn: async () => (await request<TInvoiceDetail>(`/sales/invoices/${id}`)).data as TInvoiceDetail,
 		retry: false,
 	});
 }
@@ -174,7 +186,7 @@ export function invoiceQueryOptions(id: string) {
 export function billingSummaryQueryOptions(orderId: string, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['finance', 'billing', orderId] as const,
-		queryFn: async () => (await request<TBillingSummary>(`/invoices/orders/${orderId}/summary`)).data as TBillingSummary,
+		queryFn: async () => (await request<TBillingSummary>(`/sales/invoices/orders/${orderId}/summary`)).data as TBillingSummary,
 		enabled,
 		retry: false,
 	});
@@ -185,7 +197,7 @@ export function receiptsQueryOptions(params: { page?: number; limit?: number; se
 		queryKey: ['finance', 'receipts', params] as const,
 		queryFn: async () => {
 			const envelope = (await request<(TReceipt & { invoiceCode: string | null; customerName: string })[]>(
-				`/receipts${query(params)}`,
+				`/sales/receipts${query(params)}`,
 			)) as TApiPaginatedResponse<TReceipt & { invoiceCode: string | null; customerName: string }>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
@@ -193,20 +205,20 @@ export function receiptsQueryOptions(params: { page?: number; limit?: number; se
 }
 
 export const createInvoice = (input: {
-	salesOrderId: string;
+	orderId: string;
 	term: TTermInput;
 	description: string | null;
 	dueDate: string | null;
 	notes: string | null;
-}) => send<TInvoice>('/invoices', 'POST', input);
+}) => send<TInvoice>('/sales/invoices', 'POST', input);
 export const issueInvoice = (id: string, input: { issueDate: string; dueDate: string | null }) =>
-	send<TInvoice>(`/invoices/${id}/issue`, 'POST', input);
-export const voidInvoice = (id: string, reason: string) => send<TInvoice>(`/invoices/${id}/void`, 'POST', { reason });
+	send<TInvoice>(`/sales/invoices/${id}/issue`, 'POST', input);
+export const voidInvoice = (id: string, reason: string) => send<TInvoice>(`/sales/invoices/${id}/void`, 'POST', { reason });
 export const addReceipt = (
 	id: string,
 	input: { amount: number; receivedDate: string; method: TReceiptMethod; reference: string | null; notes: string | null },
-) => send<TReceipt>(`/invoices/${id}/receipts`, 'POST', input);
-export const reverseReceipt = (id: string, reason: string) => send<TReceipt>(`/receipts/${id}/reverse`, 'POST', { reason });
+) => send<TReceipt>(`/sales/invoices/${id}/receipts`, 'POST', input);
+export const reverseReceipt = (id: string, reason: string) => send<TReceipt>(`/sales/receipts/${id}/reverse`, 'POST', { reason });
 
 /* ------------------------- online payment (ERP-0020) ------------------------- */
 
@@ -219,10 +231,11 @@ export const GATEWAY_STATUS_VARIANT: Record<TGatewayPaymentStatus, 'default' | '
 	failed: 'destructive',
 };
 
-/** A hosted checkout of an invoice at the payment gateway; amounts in IDR minor units. */
+/** A hosted checkout of an invoice: a `channel = gateway` row of the one payment ledger (`/payments`); amounts in IDR minor units. */
 export type TGatewayPayment = {
 	id: string;
-	salesInvoiceId: string;
+	code: string;
+	channel: string;
 	provider: 'xendit' | 'singapay' | 'fake';
 	providerReference: string | null;
 	paymentUrl: string | null;
@@ -241,7 +254,7 @@ export function gatewayStatusQueryOptions() {
 	return queryOptions({
 		queryKey: ['finance', 'gateway-status'] as const,
 		queryFn: async () =>
-			(await request<{ enabled: boolean; provider: string | null }>('/gateway-payments/status')).data as {
+			(await request<{ enabled: boolean; provider: string | null }>('/payments/checkouts/status')).data as {
 				enabled: boolean;
 				provider: string | null;
 			},
@@ -252,12 +265,12 @@ export function gatewayStatusQueryOptions() {
 export function gatewayPaymentsQueryOptions(invoiceId: string) {
 	return queryOptions({
 		queryKey: ['finance', 'invoices', invoiceId, 'gateway-payments'] as const,
-		queryFn: async () => (await request<TGatewayPayment[]>(`/invoices/${invoiceId}/gateway-payments`)).data as TGatewayPayment[],
+		queryFn: async () => (await request<TGatewayPayment[]>(`/payments/checkouts/invoices/${invoiceId}`)).data as TGatewayPayment[],
 	});
 }
 
 /** Opens (or reuses) a checkout of the outstanding amount. */
-export const openGatewayPayment = (invoiceId: string) => send<TGatewayPayment>(`/invoices/${invoiceId}/gateway-payments`, 'POST');
+export const openGatewayPayment = (invoiceId: string) => send<TGatewayPayment>(`/payments/checkouts/invoices/${invoiceId}`, 'POST');
 
 /** Overdue: issued and unpaid with a due date before today (shown, never stored). */
 export function isOverdue(invoice: Pick<TInvoice, 'status' | 'dueDate'>, today: string): boolean {

@@ -84,6 +84,8 @@ const DYNAMIC_PREFIXES = [
 	'settings:numbering.reset.',
 	// Customer type and status labels come from server values.
 	'crm:customerType.',
+	// Address kinds (company: billing/shipping/., person: residence/office/.) come from the server.
+	'crm:address.kind.',
 	'crm:customerStatus.',
 	'crm:leadStatus.',
 	'crm:leadSource.',

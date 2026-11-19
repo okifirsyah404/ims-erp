@@ -51,19 +51,19 @@ const recipientOf = (order: TDeliverableOrder | undefined): TRecipient => ({
 /** In-stock serials of one line's item in the chosen warehouse, as checkboxes. */
 function SerialPicker({
 	lineId,
-	itemId,
+	productId,
 	warehouseId,
 	value,
 	onChange,
 }: {
 	lineId: string;
-	itemId: string;
+	productId: string;
 	warehouseId: string;
 	value: string[];
 	onChange: (serials: string[]) => void;
 }) {
 	const { t } = useTranslation('sales');
-	const serials = useQuery(inStockSerialsQueryOptions(itemId, warehouseId));
+	const serials = useQuery(inStockSerialsQueryOptions(productId, warehouseId));
 	if (!warehouseId) return <FieldDescription>{t('deliveries.noSerials')}</FieldDescription>;
 	return (
 		<div className='flex flex-col gap-2'>
@@ -147,7 +147,7 @@ function NewDeliveryNotePage() {
 					setSubmitting(true);
 					try {
 						const created = await createDeliveryNote({
-							salesOrderId,
+							orderId: salesOrderId,
 							warehouseId,
 							binId: binId || null,
 							deliveryDate,
@@ -161,7 +161,7 @@ function NewDeliveryNotePage() {
 							vehicleNumber: text(vehicleNumber),
 							notes: text(notes),
 							lines: chosen.map(({ item, line }) => ({
-								salesOrderItemId: item.id,
+								orderItemId: item.id,
 								quantity: line.quantity,
 								serialNumbers: item.isSerialized ? line.serials : null,
 								remarks: text(line.remarks),
@@ -334,12 +334,12 @@ function NewDeliveryNotePage() {
 												onChange={(event) => setLine(item.id, { remarks: event.target.value })}
 											/>
 										</Field>
-										{item.isSerialized && item.itemId && Number(draft(item.id).quantity) > 0 && (
+										{item.isSerialized && item.productId && Number(draft(item.id).quantity) > 0 && (
 											<Field className='sm:col-span-3'>
 												<FieldLabel>{t('sales:delivery.serialNumbers')}</FieldLabel>
 												<SerialPicker
 													lineId={item.id}
-													itemId={item.itemId}
+													productId={item.productId}
 													warehouseId={warehouseId}
 													value={draft(item.id).serials}
 													onChange={(serials) => setLine(item.id, { serials })}

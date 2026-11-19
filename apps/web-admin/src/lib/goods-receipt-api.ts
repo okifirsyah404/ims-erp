@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for goods receipts (`/goods-receipts`, ADR-0011 step 4b).
+ * API client for goods receipts (`/procurement/goods-receipts`, ADR-0011 step 4b).
  * Posted on creation: stock, moving-average cost and serial units are
  * written by the server in one transaction. `unitCost` is 0 for callers
  * without `product:read_cost`.
@@ -58,7 +58,7 @@ export type TReceivableOrder = {
 	supplierName: string;
 	items: {
 		id: string;
-		itemId: string;
+		productId: string;
 		sku: string;
 		name: string;
 		unit: string;
@@ -105,7 +105,7 @@ export function goodsReceiptsQueryOptions(params: { page?: number; limit?: numbe
 				if (value !== undefined && value !== '') search.set(key, String(value));
 			}
 			const envelope = (await request<TGoodsReceipt[]>(
-				`/goods-receipts${search.size ? `?${search}` : ''}`,
+				`/procurement/goods-receipts${search.size ? `?${search}` : ''}`,
 			)) as TApiPaginatedResponse<TGoodsReceipt>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
@@ -115,7 +115,7 @@ export function goodsReceiptsQueryOptions(params: { page?: number; limit?: numbe
 export function goodsReceiptQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['procurement', 'goods-receipts', id] as const,
-		queryFn: async () => (await request<TGoodsReceiptDetail>(`/goods-receipts/${id}`)).data as TGoodsReceiptDetail,
+		queryFn: async () => (await request<TGoodsReceiptDetail>(`/procurement/goods-receipts/${id}`)).data as TGoodsReceiptDetail,
 		retry: false,
 	});
 }
@@ -123,18 +123,18 @@ export function goodsReceiptQueryOptions(id: string) {
 export function receivableOrdersQueryOptions() {
 	return queryOptions({
 		queryKey: ['procurement', 'receivable-orders'] as const,
-		queryFn: async () => (await request<TReceivableOrder[]>('/goods-receipts/receivable-orders')).data as TReceivableOrder[],
+		queryFn: async () => (await request<TReceivableOrder[]>('/procurement/goods-receipts/receivable-orders')).data as TReceivableOrder[],
 	});
 }
 
 export async function createGoodsReceipt(input: TGoodsReceiptInput): Promise<TGoodsReceiptDetail> {
-	return (await request<TGoodsReceiptDetail>('/goods-receipts', { method: 'POST', body: JSON.stringify(input) }))
+	return (await request<TGoodsReceiptDetail>('/procurement/goods-receipts', { method: 'POST', body: JSON.stringify(input) }))
 		.data as TGoodsReceiptDetail;
 }
 
 export function receivingWarehousesQueryOptions() {
 	return queryOptions({
 		queryKey: ['procurement', 'receiving-warehouses'] as const,
-		queryFn: async () => (await request<TReceivingWarehouse[]>('/goods-receipts/warehouses')).data as TReceivingWarehouse[],
+		queryFn: async () => (await request<TReceivingWarehouse[]>('/procurement/goods-receipts/warehouses')).data as TReceivingWarehouse[],
 	});
 }

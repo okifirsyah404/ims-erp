@@ -1,7 +1,9 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
 	DialogContent,
@@ -19,49 +21,37 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import {
-	EMPTY_LOCATION_SELECTION,
-	LocationCascade,
-	type TLocationSelection,
-} from '@/components/inventory/location-cascade';
-import {
-	CUSTOMER_TYPES,
-	type TCustomer,
-	type TCustomerInput,
-	type TCustomerType,
-} from '@/lib/customer-api';
+import { companiesQueryOptions, type TCustomer, type TCustomerInput } from '@/lib/customer-api';
 
 /**
- * Create/edit dialog for a customer. The server normalises the code
- * (upper case) and the NPWP (digits only) and checks the village.
+ * Create/edit dialog for a customer person. A person with a company is a
+ * `contact` of it, one without is an `individual` buyer. The server
+ * normalises the code (upper case).
  */
 export function CustomerFormDialog({
 	customer,
+	defaultCompanyId = null,
 	submitting,
 	onClose,
 	onSave,
 }: {
 	customer: TCustomer | null;
+	defaultCompanyId?: string | null;
 	submitting: boolean;
 	onClose: () => void;
 	onSave: (input: TCustomerInput) => void;
 }) {
 	const { t } = useTranslation(['crm', 'common']);
 	const [code, setCode] = useState(customer?.code ?? '');
-	const [customerType, setCustomerType] = useState<TCustomerType>(customer?.customerType ?? 'company');
+	const [companyId, setCompanyId] = useState(customer?.companyId ?? defaultCompanyId ?? '');
 	const [name, setName] = useState(customer?.name ?? '');
-	const [legalName, setLegalName] = useState(customer?.legalName ?? '');
-	const [taxId, setTaxId] = useState(customer?.taxId ?? '');
+	const [position, setPosition] = useState(customer?.position ?? '');
 	const [email, setEmail] = useState(customer?.email ?? '');
 	const [phone, setPhone] = useState(customer?.phone ?? '');
 	const [whatsapp, setWhatsapp] = useState(customer?.whatsapp ?? '');
-	const [addressLine, setAddressLine] = useState(customer?.addressLine ?? '');
-	const [postalCode, setPostalCode] = useState(customer?.postalCode ?? '');
+	const [isPrimary, setIsPrimary] = useState(customer?.isPrimary ?? false);
 	const [notes, setNotes] = useState(customer?.notes ?? '');
-	const [location, setLocation] = useState<TLocationSelection>({
-		...EMPTY_LOCATION_SELECTION,
-		villageId: customer?.villageId ?? null,
-	});
+	const companies = useQuery(companiesQueryOptions({ page: 1, limit: 100, status: 'active' }));
 
 	const text = (value: string) => value.trim() || null;
 
@@ -73,16 +63,14 @@ export function CustomerFormDialog({
 						event.preventDefault();
 						onSave({
 							code: code.trim(),
-							customerType,
+							companyId: companyId || null,
+							customerType: companyId ? 'contact' : 'individual',
 							name: name.trim(),
-							legalName: text(legalName),
-							taxId: text(taxId),
+							position: text(position),
 							email: text(email),
 							phone: text(phone),
 							whatsapp: text(whatsapp),
-							addressLine: text(addressLine),
-							villageId: location.villageId,
-							postalCode: text(postalCode),
+							isPrimary: companyId ? isPrimary : false,
 							notes: text(notes),
 						});
 					}}
@@ -106,18 +94,19 @@ export function CustomerFormDialog({
 								<FieldDescription>{t('crm:customer.codeHint')}</FieldDescription>
 							</Field>
 							<Field className='sm:col-span-2'>
-								<FieldLabel htmlFor='customer-type'>{t('crm:customer.customerType')}</FieldLabel>
+								<FieldLabel htmlFor='customer-company'>{t('crm:customer.company')}</FieldLabel>
 								<Select
-									value={customerType}
-									onValueChange={(value: string | null) => setCustomerType(value as TCustomerType)}
+									value={companyId || 'none'}
+									onValueChange={(value: string | null) => setCompanyId(value === null || value === 'none' ? '' : value)}
 								>
-									<SelectTrigger id='customer-type' className='w-full'>
+									<SelectTrigger id='customer-company' className='w-full'>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										{CUSTOMER_TYPES.map((type) => (
-											<SelectItem key={type} value={type}>
-												{t(`crm:customerType.${type}`)}
+										<SelectItem value='none'>{t('crm:customer.noCompany')}</SelectItem>
+										{(companies.data?.rows ?? []).map((company) => (
+											<SelectItem key={company.id} value={company.id}>
+												{company.code} - {company.name}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -136,38 +125,25 @@ export function CustomerFormDialog({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='customer-legal-name'>{t('crm:customer.legalName')}</FieldLabel>
+								<FieldLabel htmlFor='customer-position'>{t('crm:customer.position')}</FieldLabel>
 								<Input
-									id='customer-legal-name'
-									maxLength={200}
-									value={legalName}
-									onChange={(event) => setLegalName(event.target.value)}
+									id='customer-position'
+									maxLength={100}
+									value={position}
+									onChange={(event) => setPosition(event.target.value)}
 								/>
 							</Field>
 						</div>
-						<div className='grid gap-4 sm:grid-cols-2'>
-							<Field>
-								<FieldLabel htmlFor='customer-tax-id'>{t('crm:customer.taxId')}</FieldLabel>
-								<Input
-									id='customer-tax-id'
-									inputMode='numeric'
-									maxLength={25}
-									value={taxId}
-									onChange={(event) => setTaxId(event.target.value)}
-								/>
-								<FieldDescription>{t('crm:customer.taxIdHint')}</FieldDescription>
-							</Field>
-							<Field>
-								<FieldLabel htmlFor='customer-email'>{t('crm:customer.email')}</FieldLabel>
-								<Input
-									id='customer-email'
-									type='email'
-									maxLength={254}
-									value={email}
-									onChange={(event) => setEmail(event.target.value)}
-								/>
-							</Field>
-						</div>
+						<Field>
+							<FieldLabel htmlFor='customer-email'>{t('crm:customer.email')}</FieldLabel>
+							<Input
+								id='customer-email'
+								type='email'
+								maxLength={254}
+								value={email}
+								onChange={(event) => setEmail(event.target.value)}
+							/>
+						</Field>
 						<div className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='customer-phone'>{t('crm:customer.phone')}</FieldLabel>
@@ -190,32 +166,12 @@ export function CustomerFormDialog({
 								/>
 							</Field>
 						</div>
-						<Field>
-							<FieldLabel htmlFor='customer-address'>{t('crm:customer.address')}</FieldLabel>
-							<Textarea
-								id='customer-address'
-								rows={2}
-								maxLength={500}
-								value={addressLine}
-								onChange={(event) => setAddressLine(event.target.value)}
-							/>
-						</Field>
-						<LocationCascade
-							value={location}
-							initialVillageId={customer?.villageId ?? null}
-							onChange={setLocation}
-						/>
-						<Field className='sm:max-w-48'>
-							<FieldLabel htmlFor='customer-postal-code'>{t('crm:customer.postalCode')}</FieldLabel>
-							<Input
-								id='customer-postal-code'
-								inputMode='numeric'
-								pattern='[0-9]*'
-								maxLength={10}
-								value={postalCode}
-								onChange={(event) => setPostalCode(event.target.value)}
-							/>
-						</Field>
+						{companyId && (
+							<label className='flex items-center gap-2 text-sm'>
+								<Checkbox checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
+								{t('crm:contacts.isPrimary')}
+							</label>
+						)}
 						<Field>
 							<FieldLabel htmlFor='customer-notes'>{t('crm:customer.notes')}</FieldLabel>
 							<Textarea

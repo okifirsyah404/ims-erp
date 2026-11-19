@@ -48,7 +48,7 @@ function withOwnLines(receipts: TReturnableReceipt[], initial?: TPurchaseReturnD
 		} else {
 			merged.items.push({
 				id: line.goodsReceiptItemId,
-				itemId: line.itemId,
+				productId: line.productId,
 				sku: line.sku,
 				name: line.name,
 				unit: line.unit,

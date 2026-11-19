@@ -31,6 +31,7 @@ export type TSalesOrder = {
 	quotationId: string;
 	quotationCode: string;
 	customerId: string;
+	companyId: string | null;
 	customerSnapshot: TQuotationCustomerSnapshot;
 	customerPoNumber: string | null;
 	title: string;
@@ -56,6 +57,7 @@ export type TSalesOrder = {
 
 export type TSalesOrderItem = {
 	id: string;
+	productId: string | null;
 	sku: string | null;
 	name: string;
 	specification: string | null;
@@ -65,6 +67,7 @@ export type TSalesOrderItem = {
 	discountAmount: number;
 	lineTotal: number;
 	quantityDelivered: string;
+	fulfillmentStatus: 'pending' | 'reserved' | 'partial' | 'fulfilled' | 'cancelled';
 };
 
 export type TSalesOrderDetail = TSalesOrder & {
@@ -76,7 +79,7 @@ export type TSalesOrderDetail = TSalesOrder & {
 export type TSalesOrderInput = {
 	quotationId: string;
 	customerPoNumber: string | null;
-	orderDate: string;
+	orderDate: string | null;
 	deliveryDate: string | null;
 	notes: string | null;
 };
@@ -98,7 +101,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 	return envelope;
 }
 
-export function salesOrdersQueryOptions(params: { page?: number; limit?: number; search?: string; status?: TSalesOrderStatus }) {
+export function salesOrdersQueryOptions(params: { page?: number; limit?: number; search?: string; status?: TSalesOrderStatus; customerId?: string }) {
 	return queryOptions({
 		queryKey: ['sales', 'orders', params] as const,
 		queryFn: async () => {

@@ -16,7 +16,7 @@ import { usePermission } from '@/lib/use-permission';
 export function DeliveryCard({ orderId, deliverable }: { orderId: string; deliverable: boolean }) {
 	const { t, i18n } = useTranslation(['sales', 'common']);
 	const canIssue = usePermission('stock.issue');
-	const notes = useQuery(deliveryNotesQueryOptions({ salesOrderId: orderId, limit: 50 }));
+	const notes = useQuery(deliveryNotesQueryOptions({ orderId, limit: 50 }));
 
 	return (
 		<Card>

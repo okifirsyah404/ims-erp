@@ -102,7 +102,7 @@ function DeliveryNoteListPage() {
 													{note.code}
 												</Link>
 											</TableCell>
-											<TableCell>{note.salesOrderCode}</TableCell>
+											<TableCell>{note.orderCode}</TableCell>
 											<TableCell>
 												<div>{note.recipientName}</div>
 												{note.projectName && <div className='text-xs text-muted-foreground'>{note.projectName}</div>}

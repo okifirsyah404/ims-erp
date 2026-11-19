@@ -30,3 +30,10 @@ export class SupplierCompanyCodeTakenError extends AppError {
 		});
 	}
 }
+
+/** The caller tried to write bank details without supplier:read_bank. */
+export class SupplierBankForbiddenError extends AppError {
+	constructor() {
+		super(403, 'supplier.bankForbidden', 'You may not read or change supplier bank details');
+	}
+}

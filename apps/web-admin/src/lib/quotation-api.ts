@@ -71,7 +71,8 @@ export type TQuotation = {
 	/** Coloured-bar title on the print; null prints "QUOTATION". */
 	heading: string | null;
 	customerId: string;
-	customerContactId: string | null;
+	/** The billed company, when the person acts for one. */
+	companyId: string | null;
 	customerSnapshot: TQuotationCustomerSnapshot;
 	leadId: string | null;
 	attention: string | null;
@@ -103,7 +104,7 @@ export type TQuotation = {
 
 export type TQuotationItem = {
 	id: string;
-	itemId: string | null;
+	productId: string | null;
 	sku: string | null;
 	name: string;
 	specification: string | null;
@@ -138,7 +139,7 @@ export type TQuotationDetail = TQuotation & {
 };
 
 export type TQuotationLineInput = {
-	itemId: string | null;
+	productId: string | null;
 	name: string | null;
 	specification: string | null;
 	unit: TItemUnitLabel | null;
@@ -149,7 +150,8 @@ export type TQuotationLineInput = {
 
 export type TQuotationInput = {
 	customerId: string;
-	customerContactId: string | null;
+	companyId: string | null;
+	leadId?: string | null;
 	title: string;
 	heading: string | null;
 	attention: string | null;
@@ -170,6 +172,7 @@ export type TQuotationListParams = {
 	limit?: number;
 	search?: string;
 	status?: TQuotationStatus;
+	customerId?: string;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {

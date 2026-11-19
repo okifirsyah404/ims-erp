@@ -240,7 +240,7 @@ export function salesSummaryQueryOptions(organizationId: string | null, window: 
 	return queryOptions({
 		queryKey: ['dashboard', 'sales', organizationId, window.from, window.to, window.groupBy] as const,
 		queryFn: () =>
-			getJson<TInvoiceSummary>('/invoices/summary', {
+			getJson<TInvoiceSummary>('/sales/invoices/summary', {
 				from: window.from,
 				to: window.to,
 				groupBy: window.groupBy,
@@ -330,7 +330,7 @@ export function dashboardSubscriptionsQueryOptions(organizationId: string | null
 export function dashboardRecentInvoicesQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'recent-invoices', organizationId] as const,
-		queryFn: () => getPage<TInvoice>('/invoices', { page: '1', limit: '5' }),
+		queryFn: () => getPage<TInvoice>('/sales/invoices', { page: '1', limit: '5' }),
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
@@ -342,7 +342,7 @@ export function dashboardRecentReceiptsQueryOptions(organizationId: string | nul
 	return queryOptions({
 		queryKey: ['dashboard', 'recent-receipts', organizationId] as const,
 		queryFn: () =>
-			getPage<TReceipt & { invoiceCode: string | null; customerName: string }>('/receipts', {
+			getPage<TReceipt & { invoiceCode: string | null; customerName: string }>('/sales/receipts', {
 				page: '1',
 				limit: '5',
 			}),

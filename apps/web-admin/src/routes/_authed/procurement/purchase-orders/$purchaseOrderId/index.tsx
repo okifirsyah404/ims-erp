@@ -181,7 +181,6 @@ function PurchaseOrderDetailPage() {
 					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
 						<Detail label={t('procurement:po.supplier')} value={`${supplier.code} — ${supplier.name}`} />
 						<Detail label={t('procurement:supplier.picName')} value={[supplier.picName, supplier.picTitle && `(${supplier.picTitle})`].filter(Boolean).join(' ')} />
-						<Detail label={t('procurement:supplier.addressLine')} value={supplier.address} />
 						<Detail label={t('procurement:supplier.phone')} value={supplier.phone} />
 					</CardContent>
 				</Card>

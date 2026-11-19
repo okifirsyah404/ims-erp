@@ -36,7 +36,7 @@ import {
 /** A line while it is being edited: money as typed rupiah strings. */
 type TLineDraft = {
 	key: string;
-	itemId: string | null;
+	productId: string | null;
 	sku: string | null;
 	name: string;
 	specification: string;
@@ -75,7 +75,6 @@ export function QuotationForm({
 	const { t } = useTranslation(['sales', 'common']);
 	const [customerId, setCustomerId] = useState(quotation?.customerId ?? initialCustomerId ?? '');
 	const [customerSearch, setCustomerSearch] = useState('');
-	const [contactId, setContactId] = useState(quotation?.customerContactId ?? '');
 	const [title, setTitle] = useState(quotation?.title ?? '');
 	const [heading, setHeading] = useState(quotation?.heading ?? '');
 	const [attention, setAttention] = useState(quotation?.attention ?? '');
@@ -99,7 +98,7 @@ export function QuotationForm({
 	const [lines, setLines] = useState<TLineDraft[]>(
 		(quotation?.items ?? []).map((item) => ({
 			key: newKey(),
-			itemId: item.itemId,
+			productId: item.productId,
 			sku: item.sku,
 			name: item.name,
 			specification: item.specification ?? '',
@@ -129,7 +128,7 @@ export function QuotationForm({
 
 	const vatRateBps = Math.round(Number(vatPercent || '0') * 100);
 	const inputLines = lines.map((line) => ({
-		itemId: line.itemId,
+		productId: line.productId,
 		name: line.name.trim() || null,
 		specification: line.specification.trim() || null,
 		unit: line.unit,
@@ -149,7 +148,7 @@ export function QuotationForm({
 			...current,
 			{
 				key: newKey(),
-				itemId: item.id,
+				productId: item.id,
 				sku: item.sku,
 				name: item.name,
 				specification: item.specification ?? '',
@@ -165,7 +164,7 @@ export function QuotationForm({
 	function addCustomLine() {
 		setLines((current) => [
 			...current,
-			{ key: newKey(), itemId: null, sku: null, name: '', specification: '', unit: 'paket', quantity: '1', unitPrice: '', discount: '' },
+			{ key: newKey(), productId: null, sku: null, name: '', specification: '', unit: 'paket', quantity: '1', unitPrice: '', discount: '' },
 		]);
 	}
 
@@ -176,7 +175,8 @@ export function QuotationForm({
 				event.preventDefault();
 				onSubmit({
 					customerId,
-					customerContactId: contactId || null,
+					// The billed company is the chosen person's (a contact of it), if any.
+					companyId: chosen ? chosen.companyId : (quotation?.companyId ?? null),
 					leadId: quotation ? quotation.leadId : (leadId ?? null),
 					title: title.trim(),
 					heading: heading.trim() || null,
@@ -224,7 +224,6 @@ export function QuotationForm({
 								value={customerId === '' ? 'none' : customerId}
 								onValueChange={(value: string | null) => {
 									setCustomerId(value == null || value === 'none' ? '' : value);
-									setContactId('');
 								}}
 							>
 								<SelectTrigger id='quotation-customer' className='w-full'>
@@ -240,32 +239,6 @@ export function QuotationForm({
 									{customerOptions.map((row) => (
 										<SelectItem key={row.id} value={row.id}>
 											{row.code} — {row.name}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</Field>
-						<Field>
-							<FieldLabel htmlFor='quotation-contact'>{t('sales:quotation.contact')}</FieldLabel>
-							<Select
-								value={contactId === '' ? 'none' : contactId}
-								disabled={!chosen || chosen.contacts.length === 0}
-								onValueChange={(value: string | null) => {
-									const next = value == null || value === 'none' ? '' : value;
-									setContactId(next);
-									const contact = chosen?.contacts.find((row) => row.id === next);
-									if (contact && attention.trim() === '') setAttention(contact.name);
-								}}
-							>
-								<SelectTrigger id='quotation-contact' className='w-full'>
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value='none'>{t('sales:form.noContact')}</SelectItem>
-									{chosen?.contacts.map((contact) => (
-										<SelectItem key={contact.id} value={contact.id}>
-											{contact.name}
-											{contact.position ? ` (${contact.position})` : ''}
 										</SelectItem>
 									))}
 								</SelectContent>

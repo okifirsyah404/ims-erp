@@ -12,6 +12,16 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Frontend slice 2: sale, customer, procurement, supplier wrappers + supplier bank gate (web-admin, backend fix)
+
+- Sale/customer (2A): `quotation-api`, `sales-order-api`, `delivery-note-api`, `sales-return-api`, `invoice-api`, `customer-api`, `portal-account-api` and three `dashboard-api` URLs now use `/sales/*`, `/payments/checkouts/*`, `/customers/people|companies`, `/admin/customers/portal-accounts`. `customer_contacts` is gone: people are customers; CRM screens rebuilt around a company form + person form + address dialog (`contact-form-dialog` deleted). Quotations drop `customerContactId`, add `companyId`; lines use `productId`.
+- Procurement/supplier (2B): new `lib/supplier-api.ts` (`/suppliers/companies`, `/suppliers/people`); PO/PR/receipt/return wrappers under `/procurement/*` with `supplierCompanyId`, optional `supplierPicId` and `productId`. Supplier form lost individual type, address and postal code (no backend endpoint); PICs are a "Contact people" card.
+- Backend security fix found by 2B: `SupplierController` only checked `supplier:read`, so `GET /suppliers/companies*` returned bank columns to every reader and create/update accepted bank fields without `supplier:read_bank`. Now bank columns are stripped from every company response and a bank write without the permission is a 403 (`SupplierBankForbiddenError`, locale key `supplier.bankForbidden` en/id). Same pattern as `product:read_cost` in `stock.controller.ts`. No dedicated controller test yet (the helpers are closure-local); covered only by typecheck and the existing supplier service tests.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; backend `tsc` 0 errors; `bun run lint` 0 errors; `bun run test` 5/5 tasks green; `bun test test/unit/supplier.service.test.ts` 8 pass. Routes, params and fields checked by reading backend controllers/contracts; no live UI run.
+- Open: no UI for invoice cancel/patch, free-item invoices and `/payments` ledger screens; address editing has no UI; `finance-api.ts` still sends `supplierId` to `/bills` (slice 3); `project-api.ts` still declares `salesOrderId` (slice 4); company detail uses `?kind=company` instead of a new route (avoids hand-editing `routeTree.gen.ts`).
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 3 (finance, tax, payment wrappers + gateway settings page + company bank tab).
 ## 2026-11-19 - Frontend slice 1: inventory, assets, borrowing wrappers (ERP-0090 frontend, web-admin)
 
 - `lib/asset-api.ts`, `lib/borrowing-api.ts` and `components/assets/*` now call `/inventory/items`, `/inventory/item-categories`, `/inventory/borrowing-requests`, `/inventory/borrowings`, `/inventory/disposals`, `/inventory/tool-sets` and `/finance/depreciations`. Asset types lookup removed (static `ITEM_KINDS`); borrowing is the request/issue split.

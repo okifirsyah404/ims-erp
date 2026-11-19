@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for sales returns (`/sales-returns`, ERP-0065): goods a
+ * API client for sales returns (`/sales/returns`, ERP-0065): goods a
  * customer sends back from a shipped delivery note, for replacement.
  * Receiving books the stock back in per line condition and re-opens the
  * order. `unitCost` is 0 for callers without `product:read_cost`.
@@ -28,8 +28,8 @@ export type TSalesReturn = {
 	code: string | null;
 	deliveryNoteId: string;
 	deliveryNoteCode: string;
-	salesOrderId: string;
-	salesOrderCode: string;
+	orderId: string;
+	orderCode: string;
 	customerName: string;
 	warehouseId: string;
 	status: TSalesReturnStatus;
@@ -46,7 +46,8 @@ export type TSalesReturn = {
 export type TSalesReturnItem = {
 	id: string;
 	deliveryNoteItemId: string;
-	itemId: string;
+	orderItemId: string;
+	productId: string;
 	sku: string | null;
 	name: string;
 	unit: string;
@@ -68,13 +69,13 @@ export type TReturnableDelivery = {
 	id: string;
 	code: string;
 	deliveryDate: string;
-	salesOrderId: string;
-	salesOrderCode: string;
+	orderId: string;
+	orderCode: string;
 	customerName: string;
 	warehouseId: string;
 	items: {
 		id: string;
-		itemId: string | null;
+		productId: string | null;
 		sku: string | null;
 		name: string;
 		unit: string;
@@ -87,14 +88,15 @@ export type TReturnableDelivery = {
 
 export type TSalesReturnInput = {
 	deliveryNoteId: string;
-	returnDate: string;
+	warehouseId?: string | null;
+	returnDate: string | null;
 	reason: string;
 	notes: string | null;
 	lines: { deliveryNoteItemId: string; quantity: string; serialNumbers: string[] | null }[];
 };
 
 export type TSalesReturnReceiveInput = {
-	receivedDate: string;
+	receivedDate: string | null;
 	lines: { salesReturnItemId: string; condition: TSalesReturnCondition; binId: string | null }[];
 };
 
@@ -123,7 +125,7 @@ export function salesReturnsQueryOptions(params: { page?: number; limit?: number
 			for (const [key, value] of Object.entries(params)) {
 				if (value !== undefined && value !== '') search.set(key, String(value));
 			}
-			const envelope = (await request<TSalesReturn[]>(`/sales-returns${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TSalesReturn>;
+			const envelope = (await request<TSalesReturn[]>(`/sales/returns${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TSalesReturn>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
 	});
@@ -132,7 +134,7 @@ export function salesReturnsQueryOptions(params: { page?: number; limit?: number
 export function salesReturnQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['sales', 'sales-returns', id] as const,
-		queryFn: async () => (await request<TSalesReturnDetail>(`/sales-returns/${id}`)).data as TSalesReturnDetail,
+		queryFn: async () => (await request<TSalesReturnDetail>(`/sales/returns/${id}`)).data as TSalesReturnDetail,
 		retry: false,
 	});
 }
@@ -140,30 +142,30 @@ export function salesReturnQueryOptions(id: string) {
 export function returnableDeliveriesQueryOptions() {
 	return queryOptions({
 		queryKey: ['sales', 'returnable-deliveries'] as const,
-		queryFn: async () => (await request<TReturnableDelivery[]>('/sales-returns/returnable-deliveries')).data as TReturnableDelivery[],
+		queryFn: async () => (await request<TReturnableDelivery[]>('/sales/returns/returnable-deliveries')).data as TReturnableDelivery[],
 	});
 }
 
 export async function createSalesReturn(input: TSalesReturnInput): Promise<TSalesReturn> {
-	return (await request<TSalesReturn>('/sales-returns', { method: 'POST', body: JSON.stringify(input) })).data as TSalesReturn;
+	return (await request<TSalesReturn>('/sales/returns', { method: 'POST', body: JSON.stringify(input) })).data as TSalesReturn;
 }
 
 export async function updateSalesReturn(id: string, input: TSalesReturnInput): Promise<TSalesReturn> {
-	return (await request<TSalesReturn>(`/sales-returns/${id}`, { method: 'PATCH', body: JSON.stringify(input) })).data as TSalesReturn;
+	return (await request<TSalesReturn>(`/sales/returns/${id}`, { method: 'PATCH', body: JSON.stringify(input) })).data as TSalesReturn;
 }
 
 export async function submitSalesReturn(id: string): Promise<void> {
-	await request(`/sales-returns/${id}/submit`, { method: 'POST' });
+	await request(`/sales/returns/${id}/submit`, { method: 'POST' });
 }
 
 export async function decideSalesReturn(id: string, decision: 'approve' | 'reject', reason?: string): Promise<void> {
-	await request(`/sales-returns/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, reason }) });
+	await request(`/sales/returns/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, reason }) });
 }
 
 export async function receiveSalesReturn(id: string, input: TSalesReturnReceiveInput): Promise<void> {
-	await request(`/sales-returns/${id}/receive`, { method: 'POST', body: JSON.stringify(input) });
+	await request(`/sales/returns/${id}/receive`, { method: 'POST', body: JSON.stringify(input) });
 }
 
 export async function cancelSalesReturn(id: string, reason: string): Promise<void> {
-	await request(`/sales-returns/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+	await request(`/sales/returns/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
 }

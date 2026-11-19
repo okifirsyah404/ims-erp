@@ -37,7 +37,8 @@ export function InvoiceDocument({ invoice, profile }: { invoice: TInvoiceDetail;
 	const { i18n } = useTranslation();
 	const t = i18n.getFixedT('id', 'finance');
 	const order = invoice.order;
-	const customer = invoice.customerSnapshot;
+	// A free-items invoice has no snapshot; the document then prints dashes.
+	const customer = invoice.customerSnapshot ?? { name: '-', email: null, phone: null, whatsapp: null, addressLine: null, postalCode: null, taxId: null };
 	const discountBps = order && order.subtotal > 0 ? Math.round((order.discountTotal * 10_000) / order.subtotal) : 0;
 	const banks = profile?.bankAccounts;
 	const vatPercent = percent(invoice.vatRateBps || 1100);
@@ -228,7 +229,7 @@ export function InvoiceDocument({ invoice, profile }: { invoice: TInvoiceDetail;
 								<td className={cell}>{index + 1}</td>
 								<td className={cell}>{payment ? formatBusinessDate(payment.receivedDate, 'id') : '-'}</td>
 								<td className={cell}>{term.percentageBps ? `${percent(term.percentageBps)}%` : '-'}</td>
-								<td className={cell}>{stage(term.description)}</td>
+								<td className={cell}>{stage(term.description ?? '')}</td>
 								<td className={cell}>{payment ? t(`method.${payment.method}` as const) : '-'}</td>
 								<td className={cell}>{rp(payment ? payment.amount : term.grandTotal)}</td>
 							</tr>

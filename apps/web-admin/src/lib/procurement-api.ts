@@ -4,45 +4,13 @@ import { currentLanguage } from '@/i18n';
 import type { TItemUnitLabel } from './inventory-api';
 
 /**
- * API client for suppliers and purchase orders (`/suppliers`,
- * `/purchase-orders`, ADR-0011 step 4a). Company-wide; the server decides
- * bank visibility (`supplier:read_bank`) and recomputes every total.
+ * API client for purchase requests and purchase orders
+ * (`/procurement/purchase-requests`, `/procurement/purchase-orders`).
+ * Company-wide; the server recomputes every total. The supplier master lives
+ * in `supplier-api.ts`.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
-
-export const SUPPLIER_TYPES = ['company', 'individual', 'government'] as const;
-export type TSupplierType = (typeof SUPPLIER_TYPES)[number];
-
-export type TSupplier = {
-	id: string;
-	code: string;
-	supplierType: TSupplierType;
-	name: string;
-	legalName: string | null;
-	taxId: string | null;
-	email: string | null;
-	phone: string | null;
-	whatsapp: string | null;
-	website: string | null;
-	addressLine: string | null;
-	postalCode: string | null;
-	picName: string | null;
-	picTitle: string | null;
-	picPhone: string | null;
-	picEmail: string | null;
-	paymentTermsDays: number;
-	paymentTermNote: string | null;
-	bankName: string | null;
-	bankAccountNumber: string | null;
-	bankAccountHolder: string | null;
-	/** False when the caller may not see bank details. */
-	bankVisible: boolean;
-	status: 'active' | 'inactive';
-	notes: string | null;
-};
-
-export type TSupplierInput = Omit<TSupplier, 'id' | 'status' | 'bankVisible'>;
 
 export const PURCHASE_CATEGORIES = ['hardware', 'software', 'service', 'other'] as const;
 export type TPurchaseCategory = (typeof PURCHASE_CATEGORIES)[number];
@@ -84,7 +52,9 @@ export type TPoSupplierSnapshot = {
 export type TPurchaseOrder = {
 	id: string;
 	code: string | null;
-	supplierId: string;
+	/** supplier.companies id; the PIC is supplier.suppliers. */
+	supplierCompanyId: string;
+	supplierPicId: string | null;
 	supplierSnapshot: TPoSupplierSnapshot;
 	category: TPurchaseCategory;
 	subject: string;
@@ -113,7 +83,7 @@ export type TPurchaseOrder = {
 
 export type TPurchaseOrderItem = {
 	id: string;
-	itemId: string;
+	productId: string;
 	sku: string;
 	name: string;
 	specification: string | null;
@@ -131,7 +101,8 @@ export type TPurchaseOrderItem = {
 export type TPurchaseOrderDetail = TPurchaseOrder & { items: TPurchaseOrderItem[]; taxBase: number };
 
 export type TPurchaseOrderInput = {
-	supplierId: string;
+	supplierCompanyId: string;
+	supplierPicId: string | null;
 	category: TPurchaseCategory;
 	subject: string;
 	orderDate: string;
@@ -146,7 +117,7 @@ export type TPurchaseOrderInput = {
 	terms: string | null;
 	notes: string | null;
 	lines: {
-		itemId: string;
+		productId: string;
 		quantity: string;
 		unitPrice: number | null;
 		specification: string | null;
@@ -188,8 +159,8 @@ export type TPurchaseRequest = {
 
 export type TPurchaseRequestLine = {
 	id: string;
-	/** Null for a free-text line. */
-	itemId: string | null;
+	/** inventory.products id; null for a free-text line. */
+	productId: string | null;
 	sku: string | null;
 	name: string;
 	specification: string | null;
@@ -213,7 +184,7 @@ export type TPurchaseRequestInput = {
 	requestDate: string;
 	neededBy: string | null;
 	lines: {
-		itemId: string | null;
+		productId: string | null;
 		name: string | null;
 		unit: string | null;
 		quantity: string;
@@ -261,35 +232,12 @@ function query(params: Record<string, unknown>) {
 	return search.size ? `?${search}` : '';
 }
 
-export function suppliersQueryOptions(params: { page?: number; limit?: number; search?: string; status?: 'active' | 'inactive' }) {
-	return queryOptions({
-		queryKey: ['procurement', 'suppliers', params] as const,
-		queryFn: async () => {
-			const envelope = (await request<TSupplier[]>(`/suppliers${query(params)}`)) as TApiPaginatedResponse<TSupplier>;
-			return { rows: envelope.data, pagination: envelope.pagination };
-		},
-	});
-}
-
-export function supplierQueryOptions(id: string) {
-	return queryOptions({
-		queryKey: ['procurement', 'suppliers', id] as const,
-		queryFn: async () => (await request<TSupplier>(`/suppliers/${id}`)).data as TSupplier,
-		retry: false,
-	});
-}
-
-export const createSupplier = (input: TSupplierInput) => send<TSupplier>('/suppliers', 'POST', input);
-export const updateSupplier = (id: string, input: Partial<TSupplierInput>) => send<TSupplier>(`/suppliers/${id}`, 'PATCH', input);
-export const setSupplierActive = (id: string, active: boolean) =>
-	send<TSupplier>(`/suppliers/${id}/${active ? 'activate' : 'deactivate'}`, 'POST');
-
-export function purchaseOrdersQueryOptions(params: { page?: number; limit?: number; search?: string; status?: TPurchaseOrderStatus }) {
+export function purchaseOrdersQueryOptions(params: { page?: number; limit?: number; search?: string; status?: TPurchaseOrderStatus; supplierCompanyId?: string }) {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-orders', params] as const,
 		queryFn: async () => {
 			const envelope = (await request<TPurchaseOrder[]>(
-				`/purchase-orders${query(params)}`,
+				`/procurement/purchase-orders${query(params)}`,
 			)) as TApiPaginatedResponse<TPurchaseOrder>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
@@ -299,20 +247,20 @@ export function purchaseOrdersQueryOptions(params: { page?: number; limit?: numb
 export function purchaseOrderQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-orders', id] as const,
-		queryFn: async () => (await request<TPurchaseOrderDetail>(`/purchase-orders/${id}`)).data as TPurchaseOrderDetail,
+		queryFn: async () => (await request<TPurchaseOrderDetail>(`/procurement/purchase-orders/${id}`)).data as TPurchaseOrderDetail,
 		retry: false,
 	});
 }
 
-export const createPurchaseOrder = (input: TPurchaseOrderInput) => send<TPurchaseOrder>('/purchase-orders', 'POST', input);
+export const createPurchaseOrder = (input: TPurchaseOrderInput) => send<TPurchaseOrder>('/procurement/purchase-orders', 'POST', input);
 export const updatePurchaseOrder = (id: string, input: TPurchaseOrderInput) =>
-	send<TPurchaseOrder>(`/purchase-orders/${id}`, 'PATCH', input);
-export const submitPurchaseOrder = (id: string) => send<TPurchaseOrder>(`/purchase-orders/${id}/submit`, 'POST');
+	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}`, 'PATCH', input);
+export const submitPurchaseOrder = (id: string) => send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/submit`, 'POST');
 export const decidePurchaseOrder = (id: string, decision: 'approve' | 'reject', reason?: string) =>
-	send<TPurchaseOrder>(`/purchase-orders/${id}/decision`, 'POST', { decision, reason });
-export const sendPurchaseOrder = (id: string) => send<TPurchaseOrder>(`/purchase-orders/${id}/send`, 'POST');
+	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/decision`, 'POST', { decision, reason });
+export const sendPurchaseOrder = (id: string) => send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/send`, 'POST');
 export const cancelPurchaseOrder = (id: string, reason: string) =>
-	send<TPurchaseOrder>(`/purchase-orders/${id}/cancel`, 'POST', { reason });
+	send<TPurchaseOrder>(`/procurement/purchase-orders/${id}/cancel`, 'POST', { reason });
 
 /** Totals as the server computes them (UX preview). */
 export function purchaseRequestsQueryOptions(params: {
@@ -325,7 +273,7 @@ export function purchaseRequestsQueryOptions(params: {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-requests', params] as const,
 		queryFn: async () => {
-			const envelope = (await request<TPurchaseRequest[]>(`/purchase-requests${query(params)}`)) as TApiPaginatedResponse<TPurchaseRequest>;
+			const envelope = (await request<TPurchaseRequest[]>(`/procurement/purchase-requests${query(params)}`)) as TApiPaginatedResponse<TPurchaseRequest>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
 	});
@@ -334,7 +282,7 @@ export function purchaseRequestsQueryOptions(params: {
 export function purchaseRequestQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-requests', id] as const,
-		queryFn: async () => (await request<TPurchaseRequestDetail>(`/purchase-requests/${id}`)).data as TPurchaseRequestDetail,
+		queryFn: async () => (await request<TPurchaseRequestDetail>(`/procurement/purchase-requests/${id}`)).data as TPurchaseRequestDetail,
 		retry: false,
 	});
 }
@@ -342,7 +290,7 @@ export function purchaseRequestQueryOptions(id: string) {
 export function openRequestLinesQueryOptions(params: { search?: string; purchaseRequestId?: string }, enabled = true) {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-requests', 'open-lines', params] as const,
-		queryFn: async () => (await request<TOpenRequestLine[]>(`/purchase-requests/open-lines${query(params)}`)).data as TOpenRequestLine[],
+		queryFn: async () => (await request<TOpenRequestLine[]>(`/procurement/purchase-requests/open-lines${query(params)}`)).data as TOpenRequestLine[],
 		enabled,
 	});
 }
@@ -360,20 +308,20 @@ export type TRequestableItem = {
 export function requestableItemsQueryOptions(search: string) {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-requests', 'items', search] as const,
-		queryFn: async () => (await request<TRequestableItem[]>(`/purchase-requests/items${query({ search })}`)).data as TRequestableItem[],
+		queryFn: async () => (await request<TRequestableItem[]>(`/procurement/purchase-requests/items${query({ search })}`)).data as TRequestableItem[],
 		enabled: search !== '',
 	});
 }
 
-export const createPurchaseRequest = (input: TPurchaseRequestInput) => send<TPurchaseRequest>('/purchase-requests', 'POST', input);
+export const createPurchaseRequest = (input: TPurchaseRequestInput) => send<TPurchaseRequest>('/procurement/purchase-requests', 'POST', input);
 export const updatePurchaseRequest = (id: string, input: TPurchaseRequestInput) =>
-	send<TPurchaseRequest>(`/purchase-requests/${id}`, 'PATCH', input);
-export const submitPurchaseRequest = (id: string) => send<TPurchaseRequest>(`/purchase-requests/${id}/submit`, 'POST');
-export const approvePurchaseRequest = (id: string) => send<TPurchaseRequest>(`/purchase-requests/${id}/approve`, 'POST');
+	send<TPurchaseRequest>(`/procurement/purchase-requests/${id}`, 'PATCH', input);
+export const submitPurchaseRequest = (id: string) => send<TPurchaseRequest>(`/procurement/purchase-requests/${id}/submit`, 'POST');
+export const approvePurchaseRequest = (id: string) => send<TPurchaseRequest>(`/procurement/purchase-requests/${id}/approve`, 'POST');
 export const rejectPurchaseRequest = (id: string, reason: string) =>
-	send<TPurchaseRequest>(`/purchase-requests/${id}/reject`, 'POST', { reason });
+	send<TPurchaseRequest>(`/procurement/purchase-requests/${id}/reject`, 'POST', { reason });
 export const cancelPurchaseRequest = (id: string, reason: string) =>
-	send<TPurchaseRequest>(`/purchase-requests/${id}/cancel`, 'POST', { reason });
+	send<TPurchaseRequest>(`/procurement/purchase-requests/${id}/cancel`, 'POST', { reason });
 
 export function previewPoTotals(lineTotals: number[], vatMode: TPoVatMode, vatRateBps: number) {
 	const subtotal = lineTotals.reduce((sum, value) => sum + value, 0);

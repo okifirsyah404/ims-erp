@@ -176,8 +176,8 @@ function SalesReturnDetailPage() {
 					</div>
 					<div>
 						<div className='text-muted-foreground'>{t('sales:return.order')}</div>
-						<Link to='/sales/orders/$orderId' params={{ orderId: data.salesOrderId }} className='hover:underline'>
-							{data.salesOrderCode}
+						<Link to='/sales/orders/$orderId' params={{ orderId: data.orderId }} className='hover:underline'>
+							{data.orderCode}
 						</Link>
 					</div>
 					<Detail label={t('sales:return.customer')} value={data.customerName} />

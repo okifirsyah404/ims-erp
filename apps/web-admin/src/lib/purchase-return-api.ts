@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for purchase returns (`/purchase-returns`, ERP-0068): goods
+ * API client for purchase returns (`/procurement/purchase-returns`, ERP-0068): goods
  * from a goods receipt go back to the supplier for replacement. Shipping
  * posts the stock out and re-opens the purchase order. Costs are 0 for
  * callers without `product:read_cost`.
@@ -47,7 +47,7 @@ export type TPurchaseReturn = {
 export type TPurchaseReturnItem = {
 	id: string;
 	goodsReceiptItemId: string;
-	itemId: string;
+	productId: string;
 	sku: string;
 	name: string;
 	unit: string;
@@ -72,7 +72,7 @@ export type TReturnableReceipt = {
 	supplierName: string;
 	items: {
 		id: string;
-		itemId: string;
+		productId: string;
 		sku: string;
 		name: string;
 		unit: string;
@@ -117,7 +117,7 @@ export function purchaseReturnsQueryOptions(params: { page?: number; limit?: num
 				if (value !== undefined && value !== '') search.set(key, String(value));
 			}
 			const envelope = (await request<TPurchaseReturn[]>(
-				`/purchase-returns${search.size ? `?${search}` : ''}`,
+				`/procurement/purchase-returns${search.size ? `?${search}` : ''}`,
 			)) as TApiPaginatedResponse<TPurchaseReturn>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
@@ -127,7 +127,7 @@ export function purchaseReturnsQueryOptions(params: { page?: number; limit?: num
 export function purchaseReturnQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['procurement', 'purchase-returns', id] as const,
-		queryFn: async () => (await request<TPurchaseReturnDetail>(`/purchase-returns/${id}`)).data as TPurchaseReturnDetail,
+		queryFn: async () => (await request<TPurchaseReturnDetail>(`/procurement/purchase-returns/${id}`)).data as TPurchaseReturnDetail,
 		retry: false,
 	});
 }
@@ -135,31 +135,31 @@ export function purchaseReturnQueryOptions(id: string) {
 export function returnableReceiptsQueryOptions() {
 	return queryOptions({
 		queryKey: ['procurement', 'returnable-receipts'] as const,
-		queryFn: async () => (await request<TReturnableReceipt[]>('/purchase-returns/returnable-receipts')).data as TReturnableReceipt[],
+		queryFn: async () => (await request<TReturnableReceipt[]>('/procurement/purchase-returns/returnable-receipts')).data as TReturnableReceipt[],
 	});
 }
 
 export async function createPurchaseReturn(input: TPurchaseReturnInput): Promise<TPurchaseReturn> {
-	return (await request<TPurchaseReturn>('/purchase-returns', { method: 'POST', body: JSON.stringify(input) })).data as TPurchaseReturn;
+	return (await request<TPurchaseReturn>('/procurement/purchase-returns', { method: 'POST', body: JSON.stringify(input) })).data as TPurchaseReturn;
 }
 
 export async function updatePurchaseReturn(id: string, input: TPurchaseReturnInput): Promise<TPurchaseReturn> {
-	return (await request<TPurchaseReturn>(`/purchase-returns/${id}`, { method: 'PATCH', body: JSON.stringify(input) }))
+	return (await request<TPurchaseReturn>(`/procurement/purchase-returns/${id}`, { method: 'PATCH', body: JSON.stringify(input) }))
 		.data as TPurchaseReturn;
 }
 
 export async function submitPurchaseReturn(id: string): Promise<void> {
-	await request(`/purchase-returns/${id}/submit`, { method: 'POST' });
+	await request(`/procurement/purchase-returns/${id}/submit`, { method: 'POST' });
 }
 
 export async function decidePurchaseReturn(id: string, decision: 'approve' | 'reject', reason?: string): Promise<void> {
-	await request(`/purchase-returns/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, reason }) });
+	await request(`/procurement/purchase-returns/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision, reason }) });
 }
 
 export async function shipPurchaseReturn(id: string, shipDate: string): Promise<void> {
-	await request(`/purchase-returns/${id}/ship`, { method: 'POST', body: JSON.stringify({ shipDate }) });
+	await request(`/procurement/purchase-returns/${id}/ship`, { method: 'POST', body: JSON.stringify({ shipDate }) });
 }
 
 export async function cancelPurchaseReturn(id: string, reason: string): Promise<void> {
-	await request(`/purchase-returns/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+	await request(`/procurement/purchase-returns/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
 }

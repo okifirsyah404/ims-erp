@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link, useParams } from '@tanstack/react-router';
+import { createFileRoute, Link, useParams, useSearch } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -16,25 +16,40 @@ import {
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { ContactFormDialog } from '@/components/crm/contact-form-dialog';
+import { AddressFormDialog, type TAddressFormValues } from '@/components/crm/address-form-dialog';
+import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PortalAccountCard } from '@/components/crm/portal-account-card';
 import { toast } from '@/components/toast';
 import {
-	addContact,
+	addCompanyAddress,
+	addCustomerAddress,
+	COMPANY_ADDRESS_KINDS,
+	companyQueryOptions,
+	CUSTOMER_ADDRESS_KINDS,
+	createCustomer,
 	customerQueryOptions,
-	removeContact,
+	customersQueryOptions,
+	removeCompanyAddress,
+	removeCustomerAddress,
+	setCompanyActive,
 	setCustomerActive,
-	type TContactInput,
-	type TCustomerContact,
+	type TCompanyAddress,
+	type TCompanyInput,
+	type TCustomerAddress,
 	type TCustomerInput,
-	updateContact,
+	updateCompany,
 	updateCustomer,
 } from '@/lib/customer-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/crm/customers/$customerId` — one customer with its contacts. */
+/**
+ * `/crm/customers/$customerId` - one customer person, or (with
+ * `?kind=company`) one customer company with its people and addresses.
+ */
 export const Route = createFileRoute('/_authed/crm/customers/$customerId')({
+	validateSearch: (search: Record<string, unknown>): { kind?: 'company' } =>
+		search.kind === 'company' ? { kind: 'company' } : {},
 	component: CustomerDetailPage,
 });
 
@@ -42,30 +57,106 @@ function Detail({ label, value }: { label: string; value: string | null }) {
 	return (
 		<div>
 			<div className='text-muted-foreground'>{label}</div>
-			<div className='whitespace-pre-line'>{value || '—'}</div>
+			<div className='whitespace-pre-line'>{value || '-'}</div>
 		</div>
 	);
 }
 
 function CustomerDetailPage() {
+	const { kind } = useSearch({ from: Route.id });
+	return kind === 'company' ? <CompanyDetail /> : <PersonDetail />;
+}
+
+type TAddress = TCompanyAddress | TCustomerAddress;
+
+function AddressList({
+	addresses,
+	canUpdate,
+	onAdd,
+	onRemove,
+}: {
+	addresses: TAddress[];
+	canUpdate: boolean;
+	onAdd: () => void;
+	onRemove: (address: TAddress) => void;
+}) {
 	const { t } = useTranslation(['crm', 'common']);
-	const { customerId } = useParams({ from: Route.id });
+	return (
+		<Card>
+			<CardHeader className='flex flex-row items-center justify-between'>
+				<CardTitle>{t('crm:customers.addresses')}</CardTitle>
+				{canUpdate && (
+					<Button size='sm' variant='outline' onClick={onAdd}>
+						{t('crm:address.add')}
+					</Button>
+				)}
+			</CardHeader>
+			<CardContent className='flex flex-col gap-2 text-sm'>
+				{addresses.length === 0 && <p className='text-muted-foreground'>{t('crm:customers.noAddresses')}</p>}
+				{addresses.map((address) => (
+					<div key={address.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
+						<div>
+							<div className='font-medium'>
+								{t(`crm:address.kind.${address.kind}` as 'address.kind.other')}
+								{address.label ? ` - ${address.label}` : ''}
+								{address.isPrimary && (
+									<Badge variant='secondary' className='ml-2'>
+										{t('crm:contacts.primary')}
+									</Badge>
+								)}
+							</div>
+							<div className='whitespace-pre-line text-muted-foreground'>
+								{[address.addressLine, address.postalCode].filter(Boolean).join(' ')}
+							</div>
+						</div>
+						{canUpdate && (
+							<Button size='sm' variant='outline' onClick={() => onRemove(address)}>
+								{t('crm:address.remove')}
+							</Button>
+						)}
+					</div>
+				))}
+			</CardContent>
+		</Card>
+	);
+}
+
+function RemoveAddressDialog({
+	address,
+	onCancel,
+	onConfirm,
+}: {
+	address: TAddress | null;
+	onCancel: () => void;
+	onConfirm: (address: TAddress) => void;
+}) {
+	const { t } = useTranslation(['crm', 'common']);
+	return (
+		<AlertDialog open={address !== null} onOpenChange={(open) => !open && onCancel()}>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>{t('crm:address.remove')}</AlertDialogTitle>
+					<AlertDialogDescription>{t('crm:address.removeConfirm', { address: address?.addressLine ?? '' })}</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel>{t('common:action.cancel')}</AlertDialogCancel>
+					<AlertDialogAction onClick={() => address && onConfirm(address)}>{t('crm:address.remove')}</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
+}
+
+/** Runs a mutation, refreshes the customer queries and toasts the outcome. */
+function useRunner() {
+	const { t } = useTranslation(['crm', 'common']);
 	const queryClient = useQueryClient();
-	const canUpdate = usePermission('customer.update');
-	const canArchive = usePermission('customer.archive');
-	const { data: customer, isPending, isError } = useQuery(customerQueryOptions(customerId));
-	const [editing, setEditing] = useState(false);
-	const [contact, setContact] = useState<TCustomerContact | 'new' | null>(null);
-	const [removing, setRemoving] = useState<TCustomerContact | null>(null);
 	const [submitting, setSubmitting] = useState(false);
-
-	const refresh = () => queryClient.invalidateQueries({ queryKey: ['crm', 'customers'] });
-
 	async function run(action: () => Promise<unknown>, success: string, done?: () => void) {
 		setSubmitting(true);
 		try {
 			await action();
-			await refresh();
+			await queryClient.invalidateQueries({ queryKey: ['crm', 'customers'] });
 			toast.success(success);
 			done?.();
 		} catch (cause) {
@@ -74,6 +165,20 @@ function CustomerDetailPage() {
 			setSubmitting(false);
 		}
 	}
+	return { run, submitting };
+}
+
+function PersonDetail() {
+	const { t } = useTranslation(['crm', 'common']);
+	const { customerId } = useParams({ from: Route.id });
+	const canUpdate = usePermission('customer.update');
+	const canArchive = usePermission('customer.archive');
+	const { data: customer, isPending, isError } = useQuery(customerQueryOptions(customerId));
+	const company = useQuery({ ...companyQueryOptions(customer?.companyId ?? '', !!customer?.companyId) });
+	const [editing, setEditing] = useState(false);
+	const [adding, setAdding] = useState(false);
+	const [removing, setRemoving] = useState<TAddress | null>(null);
+	const { run, submitting } = useRunner();
 
 	if (isPending) return null;
 	if (isError || !customer) {
@@ -85,7 +190,7 @@ function CustomerDetailPage() {
 	return (
 		<div className='flex flex-col gap-6'>
 			<Link to='/crm/customers' className='text-sm text-muted-foreground hover:underline'>
-				← {t('crm:customers.back')}
+				{t('crm:customers.back')}
 			</Link>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
 				<div>
@@ -124,67 +229,44 @@ function CustomerDetailPage() {
 				</CardHeader>
 				<CardContent className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
 					<Detail label={t('crm:customer.customerType')} value={t(`crm:customerType.${customer.customerType}`)} />
-					<Detail label={t('crm:customer.legalName')} value={customer.legalName} />
-					<Detail label={t('crm:customer.taxId')} value={customer.taxId} />
+					<div>
+						<div className='text-muted-foreground'>{t('crm:customer.company')}</div>
+						<div>
+							{customer.companyId ? (
+								<Link
+									to='/crm/customers/$customerId'
+									params={{ customerId: customer.companyId }}
+									search={{ kind: 'company' }}
+									className='hover:underline'
+								>
+									{company.data?.name ?? '-'}
+								</Link>
+							) : (
+								'-'
+							)}
+						</div>
+					</div>
+					<Detail label={t('crm:customer.position')} value={customer.position} />
 					<Detail label={t('crm:customer.email')} value={customer.email} />
 					<Detail label={t('crm:customer.phone')} value={customer.phone} />
 					<Detail label={t('crm:customer.whatsapp')} value={customer.whatsapp} />
-					<Detail label={t('crm:customer.postalCode')} value={customer.postalCode} />
-					<div className='col-span-2 sm:col-span-4'>
-						<Detail label={t('crm:customer.address')} value={customer.addressLine} />
-					</div>
 					<div className='col-span-2 sm:col-span-4'>
 						<Detail label={t('crm:customer.notes')} value={customer.notes} />
 					</div>
 				</CardContent>
 			</Card>
 
-			<Card>
-				<CardHeader className='flex flex-row items-center justify-between'>
-					<CardTitle>{t('crm:contacts.title')}</CardTitle>
-					{canUpdate && (
-						<Button size='sm' variant='outline' onClick={() => setContact('new')}>
-							{t('crm:contacts.add')}
-						</Button>
-					)}
-				</CardHeader>
-				<CardContent className='flex flex-col gap-2 text-sm'>
-					{customer.contacts.length === 0 && <p className='text-muted-foreground'>{t('crm:contacts.empty')}</p>}
-					{customer.contacts.map((person) => (
-						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
-							<div>
-								<div className='font-medium'>
-									{person.name}
-									{person.isPrimary && (
-										<Badge variant='secondary' className='ml-2'>
-											{t('crm:contacts.primary')}
-										</Badge>
-									)}
-								</div>
-								<div className='text-muted-foreground'>
-									{[person.position, person.phone, person.whatsapp, person.email].filter(Boolean).join(' · ') || '—'}
-								</div>
-							</div>
-							{canUpdate && (
-								<div className='flex gap-2'>
-									<Button size='sm' variant='outline' onClick={() => setContact(person)}>
-										{t('common:action.edit')}
-									</Button>
-									<Button size='sm' variant='outline' onClick={() => setRemoving(person)}>
-										{t('crm:contacts.remove')}
-									</Button>
-								</div>
-							)}
-						</div>
-					))}
-				</CardContent>
-			</Card>
-
-			<PortalAccountCard
-				customerId={customer.id}
-				defaultName={customer.contacts.find((item) => item.isPrimary)?.name ?? customer.name}
-				defaultEmail={customer.contacts.find((item) => item.isPrimary)?.email ?? customer.email}
+			<AddressList
+				addresses={customer.addresses}
+				canUpdate={canUpdate}
+				onAdd={() => setAdding(true)}
+				onRemove={setRemoving}
 			/>
+
+			{/* Contacts of a company get their login through the company's card. */}
+			{!customer.companyId && (
+				<PortalAccountCard scope={{ customerId: customer.id }} defaultName={customer.name} defaultEmail={customer.email} />
+			)}
 
 			{editing && (
 				<CustomerFormDialog
@@ -196,46 +278,196 @@ function CustomerDetailPage() {
 					}
 				/>
 			)}
-			{contact && (
-				<ContactFormDialog
-					contact={contact === 'new' ? null : contact}
+			{adding && (
+				<AddressFormDialog
+					kinds={CUSTOMER_ADDRESS_KINDS}
 					submitting={submitting}
-					onClose={() => setContact(null)}
-					onSave={(input: TContactInput) =>
+					onClose={() => setAdding(false)}
+					onSave={(values: TAddressFormValues) =>
 						void run(
-							() =>
-								contact === 'new'
-									? addContact(customer.id, input)
-									: updateContact(customer.id, contact.id, input),
-							t('crm:contacts.saved'),
-							() => setContact(null),
+							() => addCustomerAddress(customer.id, { ...values, kind: values.kind as TCustomerAddress['kind'] }),
+							t('crm:address.saved'),
+							() => setAdding(false),
 						)
 					}
 				/>
 			)}
-			<AlertDialog open={removing !== null} onOpenChange={(open) => !open && setRemoving(null)}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>{t('crm:contacts.remove')}</AlertDialogTitle>
-						<AlertDialogDescription>
-							{t('crm:contacts.removeConfirm', { name: removing?.name ?? '' })}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>{t('common:action.cancel')}</AlertDialogCancel>
-						<AlertDialogAction
+			<RemoveAddressDialog
+				address={removing}
+				onCancel={() => setRemoving(null)}
+				onConfirm={(address) =>
+					void run(() => removeCustomerAddress(customer.id, address.id), t('crm:address.removed'), () => setRemoving(null))
+				}
+			/>
+		</div>
+	);
+}
+
+function CompanyDetail() {
+	const { t } = useTranslation(['crm', 'common']);
+	const { customerId: companyId } = useParams({ from: Route.id });
+	const canUpdate = usePermission('customer.update');
+	const canArchive = usePermission('customer.archive');
+	const { data: company, isPending, isError } = useQuery(companyQueryOptions(companyId));
+	const people = useQuery(customersQueryOptions({ page: 1, limit: 100, companyId }));
+	const [editing, setEditing] = useState(false);
+	const [addingPerson, setAddingPerson] = useState(false);
+	const [adding, setAdding] = useState(false);
+	const [removing, setRemoving] = useState<TAddress | null>(null);
+	const { run, submitting } = useRunner();
+
+	if (isPending) return null;
+	if (isError || !company) {
+		return <p className='text-sm text-muted-foreground'>{t('crm:customers.notFound')}</p>;
+	}
+
+	const active = company.status === 'active';
+	const primary = people.data?.rows.find((person) => person.isPrimary);
+
+	return (
+		<div className='flex flex-col gap-6'>
+			<Link to='/crm/customers' className='text-sm text-muted-foreground hover:underline'>
+				{t('crm:customers.back')}
+			</Link>
+			<div className='flex flex-wrap items-start justify-between gap-2'>
+				<div>
+					<div className='flex items-center gap-2'>
+						<h1 className='text-2xl font-bold'>{company.name}</h1>
+						<Badge variant={active ? 'secondary' : 'outline'}>{t(`crm:customerStatus.${company.status}`)}</Badge>
+					</div>
+					<p className='font-mono text-xs text-muted-foreground'>{company.code}</p>
+				</div>
+				<div className='flex gap-2'>
+					{canUpdate && (
+						<Button variant='outline' onClick={() => setEditing(true)}>
+							{t('common:action.edit')}
+						</Button>
+					)}
+					{canArchive && (
+						<Button
+							variant='outline'
+							disabled={submitting}
 							onClick={() =>
-								removing &&
-								void run(() => removeContact(customer.id, removing.id), t('crm:contacts.removed'), () =>
-									setRemoving(null),
+								void run(
+									() => setCompanyActive(company.id, !active),
+									active ? t('crm:customers.deactivated') : t('crm:customers.activated'),
 								)
 							}
 						>
-							{t('crm:contacts.remove')}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+							{active ? t('crm:customers.deactivate') : t('crm:customers.activate')}
+						</Button>
+					)}
+				</div>
+			</div>
+
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('crm:customers.details')}</CardTitle>
+				</CardHeader>
+				<CardContent className='grid grid-cols-2 gap-4 text-sm sm:grid-cols-4'>
+					<Detail label={t('crm:customer.customerType')} value={t(`crm:customerType.${company.companyType}`)} />
+					<Detail label={t('crm:customer.legalName')} value={company.legalName} />
+					<Detail label={t('crm:customer.taxId')} value={company.taxId} />
+					<Detail label={t('crm:customer.website')} value={company.website} />
+					<Detail label={t('crm:customer.email')} value={company.email} />
+					<Detail label={t('crm:customer.phone')} value={company.phone} />
+					<Detail label={t('crm:customer.whatsapp')} value={company.whatsapp} />
+					<div className='col-span-2 sm:col-span-4'>
+						<Detail label={t('crm:customer.notes')} value={company.notes} />
+					</div>
+				</CardContent>
+			</Card>
+
+			<AddressList
+				addresses={company.addresses}
+				canUpdate={canUpdate}
+				onAdd={() => setAdding(true)}
+				onRemove={setRemoving}
+			/>
+
+			<Card>
+				<CardHeader className='flex flex-row items-center justify-between'>
+					<CardTitle>{t('crm:contacts.title')}</CardTitle>
+					{canUpdate && (
+						<Button size='sm' variant='outline' onClick={() => setAddingPerson(true)}>
+							{t('crm:contacts.add')}
+						</Button>
+					)}
+				</CardHeader>
+				<CardContent className='flex flex-col gap-2 text-sm'>
+					{(people.data?.rows.length ?? 0) === 0 && <p className='text-muted-foreground'>{t('crm:contacts.empty')}</p>}
+					{people.data?.rows.map((person) => (
+						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
+							<div>
+								<Link
+									to='/crm/customers/$customerId'
+									params={{ customerId: person.id }}
+									className='font-medium hover:underline'
+								>
+									{person.name}
+								</Link>
+								{person.isPrimary && (
+									<Badge variant='secondary' className='ml-2'>
+										{t('crm:contacts.primary')}
+									</Badge>
+								)}
+								<div className='text-muted-foreground'>
+									{[person.position, person.phone, person.whatsapp, person.email].filter(Boolean).join(' · ') || '-'}
+								</div>
+							</div>
+						</div>
+					))}
+				</CardContent>
+			</Card>
+
+			<PortalAccountCard
+				scope={{ companyId: company.id }}
+				defaultName={primary?.name ?? company.name}
+				defaultEmail={primary?.email ?? company.email}
+			/>
+
+			{editing && (
+				<CompanyFormDialog
+					company={company}
+					submitting={submitting}
+					onClose={() => setEditing(false)}
+					onSave={(input: TCompanyInput) =>
+						void run(() => updateCompany(company.id, input), t('crm:customers.saved'), () => setEditing(false))
+					}
+				/>
+			)}
+			{addingPerson && (
+				<CustomerFormDialog
+					customer={null}
+					defaultCompanyId={company.id}
+					submitting={submitting}
+					onClose={() => setAddingPerson(false)}
+					onSave={(input: TCustomerInput) =>
+						void run(() => createCustomer(input), t('crm:contacts.saved'), () => setAddingPerson(false))
+					}
+				/>
+			)}
+			{adding && (
+				<AddressFormDialog
+					kinds={COMPANY_ADDRESS_KINDS}
+					submitting={submitting}
+					onClose={() => setAdding(false)}
+					onSave={(values: TAddressFormValues) =>
+						void run(
+							() => addCompanyAddress(company.id, { ...values, kind: values.kind as TCompanyAddress['kind'], contactName: null, contactPhone: null }),
+							t('crm:address.saved'),
+							() => setAdding(false),
+						)
+					}
+				/>
+			)}
+			<RemoveAddressDialog
+				address={removing}
+				onCancel={() => setRemoving(null)}
+				onConfirm={(address) =>
+					void run(() => removeCompanyAddress(company.id, address.id), t('crm:address.removed'), () => setRemoving(null))
+				}
+			/>
 		</div>
 	);
 }

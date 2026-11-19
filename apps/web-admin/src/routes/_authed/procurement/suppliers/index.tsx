@@ -30,7 +30,7 @@ import {
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
 import { toast } from '@/components/toast';
-import { createSupplier, suppliersQueryOptions, type TSupplierInput } from '@/lib/procurement-api';
+import { createSupplierCompany, supplierCompaniesQueryOptions, type TSupplierCompanyInput } from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
 
 const PAGE_SIZE = 20;
@@ -53,13 +53,13 @@ function SupplierListPage() {
 	const [submitting, setSubmitting] = useState(false);
 	const deferredSearch = useDeferredValue(search.trim());
 	const { data, isPending, isError, error } = useQuery(
-		suppliersQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined }),
+		supplierCompaniesQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined }),
 	);
 
-	async function handleCreate(input: Partial<TSupplierInput>) {
+	async function handleCreate(input: Partial<TSupplierCompanyInput>) {
 		setSubmitting(true);
 		try {
-			const created = await createSupplier(input as TSupplierInput);
+			const created = await createSupplierCompany(input);
 			await queryClient.invalidateQueries({ queryKey: ['procurement', 'suppliers'] });
 			toast.success(t('procurement:suppliers.saved'));
 			void navigate({ to: '/procurement/suppliers/$supplierId', params: { supplierId: created.id } });
@@ -126,7 +126,7 @@ function SupplierListPage() {
 								<TableHeader>
 									<TableRow>
 										<TableHead>{t('procurement:supplier.name')}</TableHead>
-										<TableHead>{t('procurement:supplier.picName')}</TableHead>
+										<TableHead>{t('procurement:supplier.email')}</TableHead>
 										<TableHead>{t('procurement:supplier.phone')}</TableHead>
 										<TableHead>{t('procurement:supplier.status')}</TableHead>
 									</TableRow>
@@ -144,7 +144,7 @@ function SupplierListPage() {
 												</Link>
 												<div className='text-xs text-muted-foreground'>{supplier.code}</div>
 											</TableCell>
-											<TableCell>{supplier.picName ?? '—'}</TableCell>
+											<TableCell>{supplier.email ?? '—'}</TableCell>
 											<TableCell>{supplier.phone ?? supplier.whatsapp ?? '—'}</TableCell>
 											<TableCell>
 												<Badge variant={supplier.status === 'active' ? 'default' : 'outline'}>

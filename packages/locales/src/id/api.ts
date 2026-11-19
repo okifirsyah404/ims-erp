@@ -242,6 +242,7 @@ const api: Record<keyof typeof en, string> = {
 	'organization.notFound': 'Organisasi tidak ditemukan',
 	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
+	'supplier.bankForbidden': 'Anda tidak boleh melihat atau mengubah data bank pemasok',
 	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
 	'document.notFound': 'Dokumen tidak ditemukan',
 	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',

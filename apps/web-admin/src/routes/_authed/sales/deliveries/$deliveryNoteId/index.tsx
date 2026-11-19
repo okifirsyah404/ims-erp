@@ -157,8 +157,8 @@ function DeliveryNoteDetailPage() {
 					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
 						<div>
 							<div className='text-muted-foreground'>{t('sales:delivery.order')}</div>
-							<Link to='/sales/orders/$orderId' params={{ orderId: data.salesOrderId }} className='hover:underline'>
-								{data.salesOrderCode}
+							<Link to='/sales/orders/$orderId' params={{ orderId: data.orderId }} className='hover:underline'>
+								{data.orderCode}
 							</Link>
 						</div>
 						<Detail label={t('sales:delivery.customer')} value={data.customerName} />

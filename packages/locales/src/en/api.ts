@@ -247,6 +247,7 @@ const api = {
 	'organization.notFound': 'Organization not found',
 	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
+	'supplier.bankForbidden': 'You may not read or change supplier bank details',
 	'company.settingInvalid': 'The value does not match its type',
 	'document.notFound': 'Document not found',
 	'document.notVoidable': 'This document cannot be voided',
