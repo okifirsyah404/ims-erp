@@ -1,10 +1,9 @@
-import type { CodeType } from '@drizzle/schemas/code-number.schema';
-import { CODE_TYPE_CODES, defaultPattern, renderNumber } from '../../src/app/code-number/domain/code-number';
-import type { CodeNumberService } from '../../src/app/code-number';
+import { CODE_TYPE_CODES, type CodeType, defaultPattern, renderNumber } from '@shared/numbering';
 
 /**
- * In-memory double for the {@link CodeNumberService} (`next`), the one
- * numbering authority (ERP-0009).
+ * In-memory double for the per-module numbering services (`next`):
+ * `InventoryNumberingService`, `SaleNumberingService`,
+ * `ProcurementNumberingService`, `FinanceNumberingService`, ...
  *
  * @remarks
  * Mirrors the real contract: strictly monotonic per code type (the property
@@ -12,10 +11,10 @@ import type { CodeNumberService } from '../../src/app/code-number';
  * pattern. Each `createNumberingDouble()` starts fresh at 1, matching a new
  * series row.
  */
-export class CodeNumberServiceDouble {
+export class NumberingDouble {
 	private readonly counters = new Map<string, number>();
 
-	async next(codeType: CodeType): Promise<string> {
+	async next(codeType: CodeType, _options?: unknown): Promise<string> {
 		const seq = (this.counters.get(codeType) ?? 0) + 1;
 		this.counters.set(codeType, seq);
 		return renderNumber(defaultPattern(codeType), {
@@ -28,6 +27,6 @@ export class CodeNumberServiceDouble {
 }
 
 /** Creates a fresh numbering double starting at 1 for every series. */
-export function createNumberingDouble(): Pick<CodeNumberService, 'next'> {
-	return new CodeNumberServiceDouble() as unknown as Pick<CodeNumberService, 'next'>;
+export function createNumberingDouble(): NumberingDouble {
+	return new NumberingDouble();
 }

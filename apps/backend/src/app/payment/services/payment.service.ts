@@ -4,12 +4,11 @@ import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { CodeNumberService } from '@app/code-number';
-import { LEDGER_SETTLEMENT_PORT_TOKEN } from '@app/accounting/constants/ar-di';
-import type { ILedgerSettlementPort } from '@app/accounting/contracts/ledger-settlement.port';
-import { PAYMENT_REPOSITORY_TOKEN } from '../constants/di';
+import { LEDGER_SETTLEMENT_PORT_TOKEN } from '@app/finance/constants/ar-di';
+import type { ILedgerSettlementPort } from '@app/finance/contracts/ledger-settlement.port';
+import { PAYMENT_NUMBERING_SERVICE_TOKEN, PAYMENT_REPOSITORY_TOKEN } from '../constants/di';
 import type { IPaymentRepository } from '../contracts/payment.repository.interface';
+import type { PaymentNumberingService } from './payment-numbering.service';
 import type {
 	IPaymentService,
 	TAllocationInput,
@@ -28,8 +27,8 @@ import {
 
 /** Which side of the ledger a payment type settles. */
 const PAYMENT_SIDE: Record<TCreatePaymentInput['paymentType'], 'receivable' | 'payable'> = {
-	customer_payment: 'receivable',
-	supplier_payment: 'payable',
+	receipt: 'receivable',
+	disbursement: 'payable',
 };
 
 @injectable()
@@ -39,7 +38,7 @@ export class PaymentService implements IPaymentService {
 		@inject(PAYMENT_REPOSITORY_TOKEN) private readonly repo: IPaymentRepository,
 		/** Accounting/Finance effects of a settled payment (mirrors, cash/bank). */
 		@inject(LEDGER_SETTLEMENT_PORT_TOKEN) private readonly settlement: ILedgerSettlementPort,
-		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: CodeNumberService,
+		@inject(PAYMENT_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<PaymentNumberingService, 'next'>,
 	) {}
 
 	async get(organizationId: string, id: string): Promise<TPaymentSelect> {
@@ -111,17 +110,7 @@ export class PaymentService implements IPaymentService {
 				allocations,
 				tx,
 			);
-			await this.repo.insertAllocations(
-				allocations.map((a) => ({
-					organizationId: ctx.organizationId,
-					paymentId: payment.id,
-					targetType: a.supplierBillId ? 'supplier_bill' : 'sales_invoice',
-					salesInvoiceId: a.salesInvoiceId ?? null,
-					supplierBillId: a.supplierBillId ?? null,
-					amount: a.amount,
-				})),
-				tx,
-			);
+			await this.repo.syncAllocations(ctx.organizationId, payment.id, allocations, tx);
 			return payment;
 		});
 	}
@@ -170,32 +159,18 @@ export class PaymentService implements IPaymentService {
 				ctx.organizationId,
 				payment.paymentType as TCreatePaymentInput['paymentType'],
 				payment.amount,
-				allocations.map((a) =>
-					a.salesInvoiceId
-						? { salesInvoiceId: a.salesInvoiceId, amount: a.amount }
-						: { supplierBillId: a.supplierBillId!, amount: a.amount },
-				),
+				allocations.map((a) => ({ payableType: a.payableType as TAllocationInput['payableType'], payableId: a.payableId, amount: a.amount })),
 				tx,
 			);
 
 			for (const allocation of allocations) {
-				if (allocation.supplierBillId) {
-					await this.applyBillAllocation(
-						ctx.organizationId,
-						allocation.supplierBillId,
-						allocation.amount,
-						allocation.id,
-						tx,
-					);
-					continue;
+				if (allocation.payableType === 'supplier_bill') {
+					await this.applyBillAllocation(ctx.organizationId, allocation.payableId, allocation.amount, tx);
+				} else if (allocation.payableType === 'sale_invoice') {
+					await this.applyInvoiceAllocation(ctx.organizationId, allocation.payableId, allocation.amount, tx);
+				} else {
+					throw new PaymentTargetNotIssuedError();
 				}
-				await this.applyInvoiceAllocation(
-					ctx.organizationId,
-					allocation.salesInvoiceId!,
-					allocation.amount,
-					allocation.id,
-					tx,
-				);
 			}
 
 			const side = PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']];
@@ -263,11 +238,15 @@ export class PaymentService implements IPaymentService {
 		if (total !== amount) throw new PaymentAllocationMismatchError();
 		const expectsPayable = PAYMENT_SIDE[paymentType] === 'payable';
 		for (const allocation of allocations) {
-			if (expectsPayable !== Boolean(allocation.supplierBillId)) {
+			// Resolver map: only the payables of the two ledger sides are wired so far.
+			if (allocation.payableType !== 'sale_invoice' && allocation.payableType !== 'supplier_bill') {
 				throw new PaymentTargetNotIssuedError();
 			}
-			if (allocation.salesInvoiceId) {
-				const invoice = await this.settlement.findSalesInvoice(organizationId, allocation.salesInvoiceId, tx);
+			if (expectsPayable !== (allocation.payableType === 'supplier_bill')) {
+				throw new PaymentTargetNotIssuedError();
+			}
+			if (allocation.payableType === 'sale_invoice') {
+				const invoice = await this.settlement.findSalesInvoice(organizationId, allocation.payableId, tx);
 				if (!invoice) throw new PaymentTargetNotIssuedError();
 				if (invoice.status !== 'issued' && invoice.status !== 'partially_paid') {
 					throw new PaymentTargetNotIssuedError();
@@ -275,7 +254,7 @@ export class PaymentService implements IPaymentService {
 				if (allocation.amount > invoice.outstandingTotal) throw new PaymentOverAllocationError();
 				continue;
 			}
-			const bill = await this.settlement.findSupplierBill(organizationId, allocation.supplierBillId!, tx);
+			const bill = await this.settlement.findSupplierBill(organizationId, allocation.payableId, tx);
 			if (!bill) throw new PaymentTargetNotIssuedError();
 			if (bill.status !== 'approved' && bill.status !== 'partially_paid') {
 				throw new PaymentTargetNotIssuedError();
@@ -289,7 +268,6 @@ export class PaymentService implements IPaymentService {
 		organizationId: string,
 		invoiceId: string,
 		amount: number,
-		allocationId: string,
 		tx: TTx,
 	): Promise<void> {
 		const item = await this.settlement.findArOpenItem(organizationId, invoiceId, tx);
@@ -303,7 +281,6 @@ export class PaymentService implements IPaymentService {
 			{ paidAmount, outstandingAmount, status },
 			tx,
 		);
-		await this.repo.markAllocationExecuted(organizationId, allocationId, tx);
 	}
 
 	/** Applies one settled allocation to the AP mirror + `finance.supplier_bills`. */
@@ -311,7 +288,6 @@ export class PaymentService implements IPaymentService {
 		organizationId: string,
 		billId: string,
 		amount: number,
-		allocationId: string,
 		tx: TTx,
 	): Promise<void> {
 		const item = await this.settlement.findApOpenItem(organizationId, billId, tx);
@@ -325,6 +301,5 @@ export class PaymentService implements IPaymentService {
 			{ paidAmount, outstandingAmount, status },
 			tx,
 		);
-		await this.repo.markAllocationExecuted(organizationId, allocationId, tx);
 	}
 }

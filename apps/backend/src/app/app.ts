@@ -4,11 +4,11 @@ import { OpenAPI } from '@providers/better-auth/open-api-extractor.auth';
 import { realtimeGateway } from '@providers/realtime/realtime.gateway';
 import Elysia from 'elysia';
 
-import { accountingModule } from './accounting';
+import { financeModule } from './finance';
+import { taxModule } from './tax';
 import { aftersalesModule } from './aftersales';
 import { auditModule } from './audit';
 import { automationModule } from './automation';
-import { codeNumberModule } from './code-number';
 import { companyModule } from './company';
 import { supplierModule } from './supplier';
 import { customerModule } from './customer';
@@ -107,15 +107,15 @@ export function createApp() {
 			.use(organizationModule())
 			.use(companyModule())
 			.use(supplierModule())
-			.use(codeNumberModule())
-			.use(documentModule())
+						.use(documentModule())
 			// Customer master and the customer portal (ADR-0024 Q28: `/customers/portal/v1`,
 			// bearer sessions, own guard).
 			.use(customerModule())
 			// Leads and the website inquiry API (ADR-0024 Q12).
 			.use(projectModule())
 			.use(inventoryModule())
-			.use(accountingModule())
+			.use(financeModule())
+			.use(taxModule())
 			.use(hrModule())
 	);
 }

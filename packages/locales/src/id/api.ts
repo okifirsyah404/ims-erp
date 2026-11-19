@@ -547,6 +547,8 @@ const api: Record<keyof typeof en, string> = {
 	'sales.invoiceNotPayable':
 		'Hanya faktur berstatus terbit atau sebagian dibayar yang dapat menerima pembayaran',
 	'sales.gatewayNotConfigured': 'Pembayaran online belum dikonfigurasi',
+	'payment.gatewayNotFound': 'Gateway pembayaran tidak ditemukan',
+	'payment.gatewaySecretUnavailable': 'Rahasia gateway pembayaran tidak tersedia',
 	'sales.gatewayProviderUnknown': 'Penyedia pembayaran tidak dikenal',
 	'sales.gatewayProvider': 'Penyedia pembayaran tidak menerima permintaan',
 	'sales.gatewayWebhookUnauthorized': 'Tanda tangan webhook tidak valid',

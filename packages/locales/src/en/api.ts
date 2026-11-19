@@ -543,6 +543,8 @@ const api = {
 	'sales.invoiceNotPayable':
 		'Only issued or partially paid invoices can receive payments',
 	'sales.gatewayNotConfigured': 'Online payment is not configured',
+	'payment.gatewayNotFound': 'Payment gateway not found',
+	'payment.gatewaySecretUnavailable': 'The payment gateway secret is not available',
 	'sales.gatewayProviderUnknown': 'Unknown payment provider',
 	'sales.gatewayProvider': 'The payment provider did not accept the request',
 	'sales.gatewayWebhookUnauthorized': 'Invalid webhook signature',

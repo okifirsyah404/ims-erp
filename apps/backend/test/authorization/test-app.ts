@@ -384,7 +384,7 @@ export function installSalesMocks() {
 			},
 		} as never,
 	});
-	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+	container.register(Symbol.for('CODE_NUMBER_SERVICE_TOKEN'), {
 		useValue: { next: async () => `${sequence + 1}/QT/IMS/XI/26` } as never,
 	});
 	container.register(USER_SERVICE_TOKEN, { useValue: { getUser: async () => null } as never });

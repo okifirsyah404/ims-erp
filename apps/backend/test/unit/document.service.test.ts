@@ -141,11 +141,7 @@ function lastTrail() {
 }
 
 function serviceWith(repo: FakeRepository) {
-	return new DocumentService(
-		repo as unknown as IDocumentRepository,
-		{ next: async () => 'INV-00009' } as never,
-		storage,
-	);
+	return new DocumentService(repo as unknown as IDocumentRepository, storage);
 }
 
 beforeEach(() => {

@@ -3,25 +3,20 @@
  * documented wire formats with faked HTTP (no sandbox accounts yet) — Xendit
  * Invoice API + x-callback-token, SingaPay signed access token, Payment Link
  * v2 and the HMAC-SHA512 webhook signature with its replay window — the
- * registry (fake never in production), and the service: opening or reusing a
- * checkout, and the webhook posting exactly one receipt, capped at the
- * outstanding amount, with replays, unapplicable money and status changes.
+ * and the checkout service: opening or reusing a checkout on a gateway row,
+ * and the webhook posting exactly one receipt, capped at the outstanding
+ * amount, with replays, unapplicable money and status changes.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TGatewayPaymentSelect } from '@drizzle/schemas/payment.schema';
-import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sales.schema';
-import type { TPaymentGatewayConfig } from '@config/schemas/config.schema';
+import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
+import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sale.schema';
 import { FakePaymentGateway } from '../../src/app/payment/adapters/fake-payment-gateway';
-import { PaymentGatewayRegistry } from '../../src/app/payment/adapters/payment-gateway-registry';
 import { SingapayPaymentGateway, type TSingapayConfig } from '../../src/app/payment/adapters/singapay-payment-gateway';
 import { XenditPaymentGateway } from '../../src/app/payment/adapters/xendit-payment-gateway';
 import type { IInvoicePaymentPort } from '../../src/app/sale/contracts/invoice-payment.port';
-import type {
-	IGatewayPaymentRepository,
-	IPaymentGateway,
-	IPaymentGatewayRegistry,
-	TCheckoutRequest,
-} from '../../src/app/payment/contracts/payment-gateway.contract';
+import type { IPaymentGateway, TCheckoutRequest } from '../../src/app/payment/contracts/payment-gateway.contract';
+import type { IPaymentRepository } from '../../src/app/payment/contracts/payment.repository.interface';
+import type { TGatewaySelect } from '@drizzle/schemas/payment.schema';
 import { InvoiceNotPayableError } from '../../src/app/sale/errors/invoice.errors';
 import {
 	GatewayNotConfiguredError,
@@ -29,7 +24,7 @@ import {
 	GatewayProviderUnknownError,
 	GatewayWebhookUnauthorizedError,
 } from '../../src/app/payment/errors/payment-gateway.errors';
-import { GatewayPaymentService } from '../../src/app/payment/services/gateway-payment.service';
+import { GatewayCheckoutService } from '../../src/app/payment/services/gateway-checkout.service';
 import { canonicalJson, hmacHex, minorToChargeRupiah, rupiahToMinor } from '../../src/app/payment/utils/gateway-signature';
 import { businessDateOf } from '@utils/business-date.util';
 
@@ -274,7 +269,7 @@ describe('SingaPay adapter', () => {
 	});
 });
 
-describe('fake adapter and registry', () => {
+describe('fake adapter', () => {
 	test('the fake webhook needs the HMAC of the body', async () => {
 		const gateway = new FakePaymentGateway('local-secret-0123456789');
 		const body = { reference: request.reference, status: 'paid' as const, amount: 1000 };
@@ -283,24 +278,6 @@ describe('fake adapter and registry', () => {
 		);
 		const event = await gateway.parseWebhook({ method: 'POST', path: '/', headers: headers({ 'x-fake-signature': gateway.sign(body) }), body });
 		expect(event).toMatchObject({ status: 'paid', paidAmountRupiah: 1000 });
-	});
-
-	const base: TPaymentGatewayConfig = { provider: 'fake', expiryHours: 24, fake: { secret: 'local-secret-0123456789' } };
-
-	test('fake works locally and is never built in production', () => {
-		expect(new PaymentGatewayRegistry(base, 'local').active()?.provider).toBe('fake');
-		expect(new PaymentGatewayRegistry(base, 'production').active()).toBeNull();
-		expect(new PaymentGatewayRegistry(base, 'prod').get('fake')).toBeNull();
-	});
-
-	test('a provider without credentials is off; others still take webhooks', () => {
-		const registry = new PaymentGatewayRegistry(
-			{ ...base, provider: 'singapay', xendit: { baseUrl: 'https://api.xendit.test', secretKey: 's', callbackToken: 't' } },
-			'local',
-		);
-		expect(registry.active()).toBeNull();
-		expect(registry.get('xendit')?.provider).toBe('xendit');
-		expect(new PaymentGatewayRegistry({ expiryHours: 24 }, 'local').active()).toBeNull();
 	});
 });
 
@@ -311,7 +288,8 @@ const INVOICE = '0190a1b2-0000-7000-8000-00000000d001';
 const ctx = { organizationId: ORG, actorUserId: 'finance' };
 
 let invoice: TInvoiceSelect;
-let rows: TGatewayPaymentSelect[];
+let rows: TPaymentSelect[];
+let allocations: { paymentId: string; payableType: string; payableId: string; amount: number }[];
 let receipts: TReceiptSelect[];
 let receiptCalls: { amount: number; capToOutstanding?: boolean; tx?: unknown }[];
 let documents: string[];
@@ -319,28 +297,20 @@ let events: string[];
 let checkouts: TCheckoutRequest[];
 let failCheckout: boolean;
 let gateway: IPaymentGateway;
-let active: IPaymentGateway | null;
-let service: GatewayPaymentService;
+let active: TGatewaySelect | null;
+let service: GatewayCheckoutService;
 
 function makeService() {
-	const repo: IGatewayPaymentRepository = {
-		listByInvoice: async (_org, id) => rows.filter((row) => row.salesInvoiceId === id),
-		findReusable: async (_org, id, provider, amount, until) =>
-			rows.find(
-				(row) =>
-					row.salesInvoiceId === id &&
-					row.provider === provider &&
-					row.amount === amount &&
-					row.status === 'pending' &&
-					row.paymentUrl != null &&
-					row.expiresAt != null &&
-					row.expiresAt > until,
-			) ?? null,
+	const payments: IPaymentRepository = {
+		findById: async (_org, id) => rows.find((row) => row.id === id) ?? null,
+		list: async () => ({ data: rows, meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 } }),
+		countOpen: async () => 0,
 		async insert(data) {
 			const row = {
+				...data,
+				id: crypto.randomUUID(),
 				providerReference: null,
 				paymentUrl: null,
-				expiresAt: null,
 				paidAt: null,
 				paidAmount: null,
 				paymentChannel: null,
@@ -348,21 +318,38 @@ function makeService() {
 				receiptId: null,
 				settlementNote: null,
 				lastEvent: null,
-				requestedBy: null,
-				currencyCode: 'IDR',
-				...data,
-				id: crypto.randomUUID(),
-				status: 'pending',
 				createdAt: new Date(),
 				updatedAt: new Date(),
 				deletedAt: null,
-			} as TGatewayPaymentSelect;
+			} as TPaymentSelect;
 			rows.push(row);
 			return row;
 		},
-		async update(id, patch) {
-			const row = rows.find((item) => item.id === id)!;
-			return Object.assign(row, patch);
+		async update(_org, id, patch) {
+			const row = rows.find((item) => item.id === id);
+			return row ? Object.assign(row, patch) : null;
+		},
+		async syncAllocations(_org, paymentId, wanted) {
+			for (const row of wanted) allocations.push({ paymentId, ...row });
+			return [] as never;
+		},
+		listAllocations: async (_org, paymentId) => allocations.filter((row) => row.paymentId === paymentId) as never,
+		listCheckoutsOf: async (_org, _type, payableId) =>
+			rows.filter((row) => row.channel === 'gateway' && allocations.some((a) => a.paymentId === row.id && a.payableId === payableId)),
+		async findReusableCheckout(_org, _type, payableId, provider, amount, openUntil) {
+			return (
+				rows.find(
+					(row) =>
+						row.channel === 'gateway' &&
+						row.provider === provider &&
+						row.amount === amount &&
+						row.status === 'pending' &&
+						row.paymentUrl != null &&
+						row.expiresAt != null &&
+						row.expiresAt > openUntil &&
+						allocations.some((a) => a.paymentId === row.id && a.payableId === payableId),
+				) ?? null
+			);
 		},
 		async withLocked(id, work) {
 			const row = rows.find((item) => item.id === id);
@@ -386,23 +373,26 @@ function makeService() {
 			events.push(`receipt.recorded:${receipt.id}`);
 		},
 	};
-	const registry: IPaymentGatewayRegistry = {
-		checkout: { expiryHours: 24, successRedirectUrl: null },
-		active: () => active,
-		get: (provider) => (provider === gateway.provider ? gateway : null),
-	};
+	// The gateway configuration is a row with a decrypted adapter: the service
+	// never reads the environment or the ciphertext itself.
+	const gateways = {
+		findDefault: async () => active,
+		findActiveByProvider: async (_org: string | null, provider: string) =>
+			active && active.provider === provider ? active : null,
+		adapterOf: () => gateway,
+	} as never;
 	let sequence = 0;
-	return new GatewayPaymentService(
-		repo,
-		registry,
+	return new GatewayCheckoutService(
+		payments,
+		gateways,
 		invoices,
 		{ next: async () => `KW-202611-${String(++sequence).padStart(5, '0')}` },
 		{
-			register: async (input) => {
+			register: async (input: { code: string }) => {
 				documents.push(input.code);
 				return {} as never;
 			},
-		},
+		} as never,
 	);
 }
 
@@ -410,7 +400,13 @@ const SECRET = 'local-secret-0123456789';
 const fake = new FakePaymentGateway(SECRET);
 
 function webhook(body: Record<string, unknown>, provider: 'fake' | 'xendit' = 'fake') {
-	return service.handleWebhook(provider, { method: 'POST', path: '/', headers: headers({ 'x-fake-signature': fake.sign(body) }), body });
+	return service.handleWebhook({
+		provider,
+		method: 'POST',
+		path: '/webhooks/fake',
+		headers: headers({ 'x-fake-signature': fake.sign(body) }),
+		body,
+	});
 }
 
 beforeEach(() => {
@@ -427,6 +423,7 @@ beforeEach(() => {
 		customerSnapshot: { name: 'PT Pelanggan', email: 'billing@pelanggan.test', phone: null, whatsapp: '0812' },
 	} as unknown as TInvoiceSelect;
 	rows = [];
+	allocations = [];
 	receipts = [];
 	receiptCalls = [];
 	documents = [];
@@ -442,14 +439,14 @@ beforeEach(() => {
 		},
 		parseWebhook: (input) => fake.parseWebhook(input),
 	};
-	active = gateway;
+	active = { id: 'gw-1', provider: 'fake', code: 'FAKE', mode: 'sandbox', config: null } as unknown as TGatewaySelect;
 	service = makeService();
 });
 
 describe('opening a checkout', () => {
-	test('refused when no provider is configured', async () => {
+	test('refused when no default gateway is configured', async () => {
 		active = null;
-		expect(service.status()).toEqual({ enabled: false, provider: null });
+		expect(await service.status(ORG)).toEqual({ enabled: false, provider: null });
 		await expect(service.open(ctx, INVOICE)).rejects.toBeInstanceOf(GatewayNotConfiguredError);
 	});
 
@@ -464,9 +461,18 @@ describe('opening a checkout', () => {
 		const row = await service.open(ctx, INVOICE);
 		expect(checkouts[0]).toMatchObject({ reference: row.id, amountRupiah: 1_110_001, description: 'INV-202611-00001 - CCTV' });
 		expect(checkouts[0]!.customer).toEqual({ name: 'PT Pelanggan', email: 'billing@pelanggan.test', phone: '0812' });
-		expect(row).toMatchObject({ amount: 111_000_100, status: 'pending', providerReference: `fake-${row.id}`, requestedBy: 'finance' });
+		expect(row).toMatchObject({
+			amount: 111_000_100,
+			status: 'pending',
+			channel: 'gateway',
+			provider: 'fake',
+			providerReference: `fake-${row.id}`,
+			requestedBy: 'finance',
+		});
 		expect(row.paymentUrl).toContain(row.id);
 		expect('lastEvent' in row).toBe(false);
+		// The checkout is a payment row allocated to the invoice it pays.
+		expect(allocations).toEqual([{ paymentId: row.id, payableType: 'sale_invoice', payableId: INVOICE, amount: 111_000_100 }]);
 	});
 
 	test('reuses a pending checkout of the same amount, opens a new one after a partial payment', async () => {
@@ -491,9 +497,15 @@ describe('webhooks', () => {
 		const row = await service.open(ctx, INVOICE);
 		expect(await webhook({ reference: row.id, status: 'paid', amount: 1_110_001, channel: 'BCA' })).toBe('applied');
 		expect(receiptCalls).toEqual([{ amount: 111_000_100, capToOutstanding: true, tx: 'tx' }]);
-		expect(receipts[0]).toMatchObject({ amount: 111_000_037, method: 'bank_transfer', receivedBy: null, code: 'KW-202611-00001' });
+		expect(receipts[0]).toMatchObject({
+			amount: 111_000_037,
+			method: 'bank_transfer',
+			receivedBy: null,
+			code: 'KW-202611-00002',
+			paymentId: row.id,
+		});
 		expect(receipts[0]!.notes).toContain('fake gateway (BCA)');
-		expect(documents).toEqual(['KW-202611-00001']);
+		expect(documents).toEqual(['KW-202611-00002']);
 		// M04: the online payment reaches n8n like a manual receipt.
 		expect(events).toEqual([`receipt.recorded:${receipts[0]!.id}`]);
 		expect(invoice.status).toBe('paid');
@@ -550,9 +562,10 @@ describe('webhooks', () => {
 	test('a forged webhook is refused before anything is read', async () => {
 		const row = await service.open(ctx, INVOICE);
 		await expect(
-			service.handleWebhook('fake', {
+			service.handleWebhook({
+				provider: 'fake',
 				method: 'POST',
-				path: '/',
+				path: '/webhooks/fake',
 				headers: headers({ 'x-fake-signature': 'forged' }),
 				body: { reference: row.id, status: 'paid' },
 			}),

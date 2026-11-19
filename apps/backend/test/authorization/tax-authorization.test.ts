@@ -122,7 +122,7 @@ beforeAll(async () => {
 
 	const { container } = await import('tsyringe');
 	const { TAX_SERVICE_TOKEN } = await import(
-		'../../src/app/accounting/constants/di'
+		'../../src/app/finance/constants/di'
 	);
 
 	const noop = async () => ({});
@@ -152,7 +152,7 @@ beforeAll(async () => {
 	});
 
 	const { TaxController } = await import(
-		'../../src/app/accounting/controllers/tax.controller'
+		'../../src/app/finance/controllers/tax.controller'
 	);
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 

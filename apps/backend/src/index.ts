@@ -10,9 +10,10 @@ import { registerHr } from '@app/hr';
 import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
 import { registerLeadFollowUpSchedule, registerProject, startLeadFollowUpWorker } from '@app/project';
 import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
-import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/accounting';
+import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
-import { registerAccounting } from '@app/accounting';
+import { registerFinance } from '@app/finance';
+import { registerTax } from '@app/tax';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -47,7 +48,6 @@ import {
 } from './app/notification';
 import { registerCompany } from './app/company';
 import { registerSupplier } from './app/supplier';
-import { registerCodeNumber } from './app/code-number';
 import { registerDocument } from './app/document';
 import { registerAuthorization } from './authorization/container';
 
@@ -62,7 +62,6 @@ registerPayment(container);
 // into the document services of every module.
 registerCompany(container);
 registerSupplier(container);
-registerCodeNumber(container);
 registerOrganization(container);
 registerNotification(container);
 registerDocument(container);
@@ -82,7 +81,8 @@ registerProjects(container);
 registerAftersales(container);
 registerHr(container);
 registerLicensing(container);
-registerAccounting(container);
+registerFinance(container);
+registerTax(container);
 registerUser(container);
 registerAuthorization(container);
 

@@ -22,6 +22,9 @@ function customerOf(invoice: TInvoiceSelect) {
 export function invoiceIssuedEvent(invoice: TInvoiceSelect): Record<string, unknown> {
 	return {
 		invoiceId: invoice.id,
+		// ADR-0024 Q18: the payable vocabulary a payment allocation uses.
+		payableType: 'sale_invoice',
+		payableId: invoice.id,
 		organizationId: invoice.organizationId,
 		code: invoice.code,
 		title: invoice.title,

@@ -1,8 +1,9 @@
-import type { TGatewayPaymentStatus } from '@drizzle/schemas/payment.schema';
+
 import { pinoLogger } from '@providers/logger/logger';
 import { businessDateOf } from '@utils/business-date.util';
 import type {
 	IPaymentGateway,
+	TGatewayEventStatus,
 	TCheckout,
 	TCheckoutRequest,
 	TGatewayEvent,
@@ -32,7 +33,7 @@ type TPaymentLinkWebhook = {
 	};
 };
 
-function statusOf(status: string | undefined): TGatewayPaymentStatus {
+function statusOf(status: string | undefined): TGatewayEventStatus {
 	if (status === 'paid') return 'paid';
 	if (status === 'expired') return 'expired';
 	if (status === 'failed') return 'failed';

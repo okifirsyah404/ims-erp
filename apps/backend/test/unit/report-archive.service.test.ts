@@ -3,13 +3,13 @@
  * statements, an open one is refused, and a repeat close writes nothing.
  */
 import { describe, expect, test } from 'bun:test';
-import type { TAccountingPeriodSelect } from '../../drizzle/schemas/accounting.schema';
-import { ReportArchiveService } from '../../src/app/accounting/services/report-archive.service';
+import type { TAccountingPeriodSelect } from '../../drizzle/schemas/finance.schema';
+import { ReportArchiveService } from '../../src/app/finance/services/report-archive.service';
 import {
 	PeriodNotFoundError,
 	ReportArchiveNotFoundError,
 	ReportArchivePeriodOpenError,
-} from '../../src/app/accounting/errors/ledger.errors';
+} from '../../src/app/finance/errors/ledger.errors';
 
 type TArchiveRow = { reportType: string; payload: unknown };
 

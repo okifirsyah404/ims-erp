@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { isoDate, minorAmount } from '@app/accounting/contracts/ledger.contract';
-import { ledgerIdParamSchema } from '@app/accounting/contracts/ledger.contract';
+import { isoDate, minorAmount } from '@app/finance/contracts/ledger.contract';
+import { ledgerIdParamSchema } from '@app/finance/contracts/ledger.contract';
 import { RECEIPT_METHODS, RECEIPT_STATUSES } from '@drizzle/schemas/sale.schema';
 
 /* ----------------------------- invoices (F4) ----------------------------- */

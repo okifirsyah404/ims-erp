@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
-import { taxTypes } from '../../../drizzle/schemas/accounting.schema';
+import { taxTypes } from '../../../drizzle/schemas/finance.schema';
 import { organizations } from '../../../drizzle/schemas/auth.schema';
 import { SEED_ORGANIZATION_SLUG } from './organization.seeder';
 

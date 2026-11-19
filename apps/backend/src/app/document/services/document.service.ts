@@ -1,11 +1,9 @@
-import type { CodeNumberService } from '@app/code-number';
 import type { TDocumentSelect, TDocumentTemplateSelect } from '@drizzle/schemas/document.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import { documentFileFrom, storeDocumentFile } from '@providers/s3/document-file';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
 import { DOCUMENT_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	TCreateDocumentTemplateInput,
@@ -57,8 +55,6 @@ export class DocumentService {
 	constructor(
 		@inject(DOCUMENT_REPOSITORY_TOKEN)
 		private readonly repository: IDocumentRepository,
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly codeNumbers: CodeNumberService,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: IObjectStorage,
 	) {}
@@ -93,10 +89,7 @@ export class DocumentService {
 	): Promise<TDocumentSelect> {
 		const now = new Date();
 		const issuedOn = input.issuedOn ?? todayJakarta();
-		const code = await this.codeNumbers.next(input.documentType, {
-			date: new Date(issuedOn),
-			tx,
-		});
+		const code = input.code;
 		return this.repository.insert(
 			{
 				organizationId: input.organizationId,

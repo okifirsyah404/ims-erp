@@ -17,7 +17,7 @@ import {
 	AR_LEDGER_PORT_TOKEN,
 	POSTING_SERVICE_TOKEN,
 	AR_ACCOUNT_RESOLVER_TOKEN,
-} from '../../accounting/constants/ar-di';
+} from '../../finance/constants/ar-di';
 import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
 import type {
 	TInvoiceRepository,
@@ -28,9 +28,9 @@ import type {
 	TInvoiceItemInput,
 	TUpdateInvoiceInput,
 } from '../contracts/invoice.repository.interface';
-import type { IArLedgerPort } from '../../accounting/contracts/ar-ledger.port';
-import type { PostingService } from '../../accounting/services/posting.service';
-import type { ArAccountResolverService } from '../../accounting/services/ar-account-resolver.service';
+import type { IArLedgerPort } from '../../finance/contracts/ar-ledger.port';
+import type { PostingService } from '../../finance/services/posting.service';
+import type { ArAccountResolverService } from '../../finance/services/ar-account-resolver.service';
 import {
 	InvoiceDueBeforeIssueError,
 	InvoiceNoItemsError,
@@ -271,7 +271,7 @@ export class InvoiceService {
 			await this.posting.post(tx, {
 				organizationId: ctx.organizationId,
 				entryDate: issueDate,
-				sourceModule: 'sales',
+				sourceModule: 'sale',
 				sourceType: 'invoice',
 				sourceId: invoice.id,
 				idempotencyKey: `invoice:${invoice.id}`,
@@ -282,7 +282,7 @@ export class InvoiceService {
 			await this.arLedger.openItem(
 				ctx.organizationId,
 				{
-					salesInvoiceId: invoice.id,
+					invoiceId: invoice.id,
 					customerId: invoice.customerId,
 					invoiceDate: issueDate,
 					dueDate: invoice.dueDate,

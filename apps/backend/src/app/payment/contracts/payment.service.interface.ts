@@ -5,20 +5,21 @@ import type { TPaginationResult } from '@ims-erp/common';
 export type TPaymentActionContext = { organizationId: string; actorUserId: string };
 
 export type TCreatePaymentInput = {
-	paymentType: 'customer_payment' | 'supplier_payment';
+	paymentType: 'receipt' | 'disbursement';
 	counterpartyType: 'customer' | 'supplier' | null;
 	counterpartyId: string | null;
 	amount: number;
-	paymentMethod: 'bank_transfer' | 'cash' | 'cheque' | 'virtual_account';
+	paymentMethod: 'bank_transfer' | 'cash' | 'card' | 'e_wallet' | 'cheque' | 'offset';
 	paymentDate: string;
 	cashBankAccountId: string | null;
 	referenceNumber: string | null;
 	notes: string | null;
 };
 
+/** What a payment settles: a payable document and the amount applied to it. */
 export type TAllocationInput = {
-	salesInvoiceId?: string;
-	supplierBillId?: string;
+	payableType: 'sale_invoice' | 'supplier_bill' | 'employee_advance' | 'expense_claim' | 'expense_settlement' | 'employee_salary_record';
+	payableId: string;
 	amount: number;
 };
 
