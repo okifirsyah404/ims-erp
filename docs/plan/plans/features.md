@@ -621,8 +621,8 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M07 Projects and After-Sales
 
 ### planned
-- Dynamic website, stages 2-4 (home sections; solutions, projects and
-  testimonials; other content pages with `web_pages`) — ERP-0071.
+- Dynamic website, stages 3-4 (solutions, projects and testimonials; other
+  content pages) — ERP-0071.
 
 ### in-progress
 - Dynamic website configured in the ERP — ERP-0071 (ADR-0025). Stage 1
@@ -632,6 +632,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `/public/v1/site`. Evidence: `apps/backend/src/app/commerce`,
   migration `20261119140431_erp0071_commerce_site`,
   `test/unit/website-config.test.ts` (8), `progress.md` 2026-11-19.
+  Stage 2 implemented 2026-11-19: website content (17 types, `web_pages` +
+  `web_assets`, image upload) edited in Integrations → Website Content and
+  the home page read from it. Evidence: migration
+  `20261119163259_erp0071_commerce_content`, `website-content.test.ts` (12),
+  `website-content-labels.test.ts` (4), `progress.md` 2026-11-19 stage 2.
 
 ### implemented
 - Customer portal stage 2 (ERP-0070, 2026-11-19): online order (website

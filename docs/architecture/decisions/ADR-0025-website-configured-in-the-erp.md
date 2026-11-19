@@ -48,3 +48,12 @@
   - Stages 2-4 (home sections; solutions, projects, testimonials; other
     content pages) follow the same pattern: a `commerce` table, a field in
     the public read, a web admin screen, the website adapter with defaults.
+- **Amendment (stage 2, 2026-11-19):** all content pages and collections
+  share one table, `commerce.web_pages` (`page_type`, `slug`, `content`
+  jsonb), instead of a table per section. The shape of each type lives in
+  one registry in `packages/common` that validates saves in the ERP and
+  renders the web admin form; the website reads published entries only and
+  merges them field by field over its built-in content. Images are uploaded
+  to the ERP (`commerce.web_assets`, WebP) and served through a public
+  redirect. Testimonials are their own collection linked to a project by
+  slug.

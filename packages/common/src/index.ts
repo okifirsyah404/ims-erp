@@ -4,3 +4,4 @@ export * from './contracts/repository.js';
 export * from './authorization/erp-permissions.js';
 export * from './files/invite-sheet.js';
 
+export * from './website/content-types.js';

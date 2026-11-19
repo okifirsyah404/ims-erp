@@ -12,6 +12,95 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - ERP-0071 stage 2: website content in the ERP (shared foundation + home page)
+
+Same branch, after stage 1 (`436e9525`).
+
+**User decisions (2026-11-19).** Stages 2, 3 and 4 in a row, one commit per
+stage (`--no-verify`, graphify missing; no push). Images are uploaded to the
+ERP. Testimonials are their own collection, shown on the home page and on
+the related project. The mobile short texts are optional fields.
+
+**Gate 1 (`docs/database/`).** Read: `docs.dbml` Commerce (`web_pages` as
+designed), `module-ownership.md` §22, `logical-references.md` (commerce),
+`integrity-and-consistency.md` (soft delete, unique on live rows, status
+vocabularies). Skipped: `data-dictionary.md` (conventions as in stage 1),
+`implementation-phases.md` (no pending step).
+
+**Gate 2 (manual `grill-me` fallback).**
+- Ownership: `commerce` owns `web_pages` (every page and collection entry)
+  and the new `web_assets` (uploaded images; files in object storage under
+  `website/`).
+- Tenant scoping: company-wide, no `organization_id` (ADR-0012/0025).
+- Shape: one table for 17 content types (`page_type` check), `content`
+  jsonb validated against a shared registry
+  (`packages/common/src/website/content-types.ts`) that also drives the web
+  admin form; single pages (home, about, careers, warranty, installation)
+  use slug `home`; unique `(page_type, slug)` on live rows; `version` is a
+  lost-update guard (409 when stale).
+- Status vocabulary: `draft | published | archived`; only `published` is
+  public; `published_at` is kept on the first publish.
+- Images: `asset:<uuid>` (must exist on save), a site path or an https link;
+  uploads are re-encoded to WebP (longest side 1920 px, at most 8 MB in);
+  the website gets `/public/v1/site/assets/:id`, a 302 to a short-lived URL.
+- Cross-module references: `updated_by_user_id`, `uploaded_by_user_id` →
+  auth.users (nullable logical references). Timestamps bigint ms; no money.
+
+**Changes.**
+- `docs.dbml`: `commerce.web_pages` rewritten (content jsonb, version,
+  checks), new `commerce.web_assets`; references regenerated; validate OK.
+- Drizzle `webPages` / `webAssets`; migration
+  `20261119163259_erp0071_commerce_content` (drizzle-kit generate, inspected:
+  only `commerce`, two tables, checks and indexes).
+- Backend: `content.contract.ts`, `WebContentRepository`,
+  `WebContentService`, `WebContentController` (`/website/pages`,
+  `/website/assets`; read `catalog:read`, create `catalog:create`, save and
+  upload `catalog:update`, status `catalog:publish`, delete
+  `catalog:archive`), public `GET /public/v1/site/pages/:type[/:slug]` (key)
+  and `GET /public/v1/site/assets/:id` (no key); six errors (en/id).
+- Seeder `seedCommerceWebsiteContent` (dev only): 89 published entries from
+  `database/seeders/data/website-content.json`, generated once from the
+  website's built-in data and validated with the registry (legal, warranty
+  and installation not seeded).
+- Web admin: **Integrations → Website Content**
+  (`/integrations/website-content`, list per type grouped by stage;
+  `/integrations/website-content/$pageId` editor rendered from the registry:
+  lists with reorder, image upload / library / path, client-side validation
+  with readable field paths, publish / draft / archive / delete, stale-save
+  message); 210 `integrations` keys + 2 `nav` keys en/id; dead-key prefixes
+  for composed field / type / status labels; `routeTree.gen.ts` regenerated.
+- Website: `src/lib/server/content/` (cached reads, `null` = keep the
+  built-in content), `home.ts` (ERP home merged over `data/home.ts`; hero
+  copy and section headings moved into `data/home.ts` as defaults),
+  `projects.ts` (projects and testimonials, used by the home now and by
+  stage 3); home sections take their copy from it; new **Testimonials**
+  section on the home page.
+
+**Verification.**
+- Migration: `drizzle:migrate-reset` on `ims_erp_scratch` and
+  `drizzle:migrate` on `ims_erp_main` (only the new one).
+- `NODE_ENV=development bun run drizzle:seed` twice: `inserted 89`, then
+  `inserted 0`.
+- `bun run test` (root): backend 1312 pass (`website-content.test.ts` 12
+  new), web-admin 123 pass (`website-content-labels.test.ts` 4 new),
+  locales 98 pass, 0 fail; `bun run lint` 0 errors; `bun run typecheck`
+  clean; `astro check` (website) 0 errors; `validate-dbml.ts` OK.
+- Live API (marketing session): list projects 200 (10); create drops an
+  unknown key; save with version 1 → 200 (version 2), again with version 1
+  → 409; publish 200; delete 200; image upload 201 (WebP 72,952 bytes), public
+  asset URL 302 → 200 `image/webp`, after delete 404.
+- Website in ERP mode: home renders (200) with the seeded content; a hero
+  title set in the ERP showed on the page after the one-minute cache while
+  the other hero fields kept their defaults; reverted.
+- Not done: a browser walk-through of the new web admin editor (no browser
+  in this session) — compiled, type-checked and API-tested only.
+
+**Local only.** MinIO container re-attached to its network
+(`docker network disconnect -f` / `connect`, then started) to test uploads.
+
+**Next executable task:** ERP-0071 stage 3 (solutions, projects and
+testimonials on the website from the ERP).
+
 ## 2026-11-19 - ERP-0071 stage 1: website identity, navigation and API keys configured in the ERP
 
 Same branch, after ERP-0070 (`9f6f1544`). ADR-0025 (proposed); numbers

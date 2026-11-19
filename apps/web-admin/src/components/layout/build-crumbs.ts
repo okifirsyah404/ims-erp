@@ -74,6 +74,8 @@ const LABELS: Record<string, NavKey> = {
 	'/subscription': 'item.subscription',
 	'/integrations/website-catalog': 'item.websiteCatalog',
 	'/integrations/website': 'item.websiteSettings',
+	'/integrations/website-content': 'item.websiteContent',
+	'/integrations/website-content/$pageId': 'breadcrumb.websiteContentEntry',
 	'/integrations/webhooks': 'item.webhooks',
 	'/integrations/whatsapp-ai': 'item.whatsappAi',
 	'/integrations/whatsapp-ai/faq': 'breadcrumb.whatsappFaq',

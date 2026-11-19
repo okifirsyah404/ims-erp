@@ -4,9 +4,13 @@ import ArrowUpRight from "@lucide/astro/icons/arrow-up-right";
 import ScanFace from "@lucide/astro/icons/scan-face";
 import Button from "../ui/Button.astro";
 import Media from "../ui/Media.astro";
-import { routes } from "../../data/site";
-import { heroStats } from "../../data/home";
 import { images } from "../../lib/images";
+import type { HomeContent } from "../../lib/server/content/home";
+
+interface Props {
+  content: HomeContent;
+}
+const { hero, heroStats } = Astro.props.content;
 
 /** 01.01 Home · Hero (desktop boz6T / mobile C86PNR). */
 const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
@@ -18,7 +22,7 @@ const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
   <div class="container-page flex flex-col gap-[22px] pt-7 pb-9 xl:flex-row xl:items-center xl:gap-14 xl:pt-[72px] xl:pb-[88px]">
     <div class="flex flex-col gap-[22px] xl:w-[620px] xl:shrink-0 xl:gap-7">
       <a
-        href={`${routes.products}/eg-face-pro-2`}
+        href={hero.badgeUrl}
         class="flex w-fit items-center gap-2 rounded-pill bg-white py-[5px] pr-3 pl-[5px] ring-1 ring-border ring-inset xl:gap-2.5 xl:py-1.5 xl:pr-3.5 xl:pl-1.5"
       >
         <span
@@ -27,8 +31,8 @@ const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
           NEW
         </span>
         <span class="text-[12px] font-medium text-fg-secondary xl:text-[13px]">
-          <span class="xl:hidden">EG-Face Pro 2 is here</span>
-          <span class="hidden xl:inline">EG-Face Pro 2 — contactless access in 0.2 seconds</span>
+          <span class="xl:hidden">{hero.badgeMobile || hero.badge}</span>
+          <span class="hidden xl:inline">{hero.badge}</span>
         </span>
         <ArrowRight size={14} class="size-3 text-blue-600 xl:size-3.5" aria-hidden="true" />
       </a>
@@ -36,23 +40,20 @@ const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
       <h1
         class="font-heading text-[40px] leading-[43px] font-extrabold tracking-[-1.4px] text-navy-900 xl:text-[60px] xl:leading-[64px] xl:tracking-[-2.4px]"
       >
-        <span class="block">Smart Access.</span>
-        <span class="text-gradient-accent block">Seamless Automation.</span>
-        <span class="block">Better Business.</span>
+        {hero.titleLead && <span class="block">{hero.titleLead}</span>}
+        {hero.titleAccent && <span class="text-gradient-accent block">{hero.titleAccent}</span>}
+        {hero.titleTail && <span class="block">{hero.titleTail}</span>}
       </h1>
 
       <p class="text-[16px] leading-[26px] text-fg-secondary xl:w-[520px] xl:text-[18px] xl:leading-[29px]">
-        <span class="xl:hidden">Integrated Hardware &amp; Software Solutions for Modern Businesses.</span>
-        <span class="hidden xl:inline">
-          Integrated Hardware &amp; Software Solutions for Modern Businesses — from the gate at your entrance to the
-          dashboard on your screen.
-        </span>
+        <span class="xl:hidden">{hero.mobileDescription || hero.description}</span>
+        <span class="hidden xl:inline">{hero.description}</span>
       </p>
 
       <div class="flex flex-col gap-2.5 md:flex-row xl:gap-3">
-        <Button href={routes.products} size="lg" icon={ArrowRight} class="w-full md:w-auto">Explore Products</Button>
-        <Button href={routes.solutions} size="lg" variant="secondary" icon={ArrowUpRight} class="w-full md:w-auto">
-          Explore Solutions
+        <Button href={hero.primaryCtaUrl} size="lg" icon={ArrowRight} class="w-full md:w-auto">{hero.primaryCtaLabel}</Button>
+        <Button href={hero.secondaryCtaUrl} size="lg" variant="secondary" icon={ArrowUpRight} class="w-full md:w-auto">
+          {hero.secondaryCtaLabel}
         </Button>
       </div>
 
@@ -72,7 +73,7 @@ const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
     <!-- Desktop visual -->
     <div class="relative hidden h-[600px] min-w-0 flex-1 xl:block" aria-hidden="true">
       <Media
-        src={images.officeLobby}
+        src={hero.image}
         alt=""
         loading="eager"
         class="absolute top-0 right-0 left-10 h-[560px] rounded-xl shadow-photo"
@@ -133,7 +134,7 @@ const trafficBars = [18, 28, 22, 36, 30, 44, 38, 48, 34, 40];
 
     <!-- Mobile visual -->
     <div class="relative h-[380px] w-full xl:hidden" aria-hidden="true">
-      <Media src={images.officeLobby} alt="" loading="eager" class="absolute inset-x-0 top-0 h-[340px] rounded-card" />
+      <Media src={hero.image} alt="" loading="eager" class="absolute inset-x-0 top-0 h-[340px] rounded-card" />
       <div
         class="absolute top-[262px] left-4 flex w-[220px] items-center gap-2.5 rounded-control bg-white/96 p-3 shadow-[0_16px_32px_#0A1A3F2E]"
       >

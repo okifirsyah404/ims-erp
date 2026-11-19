@@ -7,6 +7,7 @@ import VisitorDashboardMockup from "./VisitorDashboardMockup.astro";
 import SoftwarePreview from "./SoftwarePreview.astro";
 import { routes } from "../../data/site";
 import { solutions } from "../../data/home";
+import type { HomeContent } from "../../lib/server/content/home";
 import { platforms } from "../../data/solutions";
 import { icons } from "../../lib/icons";
 
@@ -19,6 +20,10 @@ import { icons } from "../../lib/icons";
  * tapping an item switches the preview, tapping it again opens the page. Without JS the
  * items are plain links and the first stage is shown.
  */
+interface Props {
+  content: HomeContent;
+}
+const { softwareHeading } = Astro.props.content;
 const href = (slug: string) => `${routes.solutions}/${slug}`;
 const platformFor = (slug: string) => platforms.find((p) => p.slug === slug)!;
 const panel = "transition-opacity duration-500 ease-out motion-reduce:transition-none [grid-area:1/1] data-[hidden]:pointer-events-none data-[hidden]:opacity-0";
@@ -37,8 +42,9 @@ const panel = "transition-opacity duration-500 ease-out motion-reduce:transition
             <SectionHeading
               class="w-[680px]"
               tone="dark"
-              eyebrow="Software Solutions"
-              title="Hardware that thinks. Software that connects it all."
+              eyebrow={softwareHeading.eyebrow}
+              title={softwareHeading.title}
+              description={softwareHeading.description}
               id="software-heading"
             />
             <Button href={routes.solutions} icon={ArrowRight}>Explore all solutions</Button>
@@ -97,7 +103,7 @@ const panel = "transition-opacity duration-500 ease-out motion-reduce:transition
     class="container-page flex flex-col gap-7 bg-[radial-gradient(ellipse_80%_40%_at_100%_0%,#1F5BFF59_0%,#0A1A3F00_100%)] py-14 xl:hidden"
     data-software="tap"
   >
-    <SectionHeading tone="dark" eyebrow="Software Solutions" title="Hardware that thinks. Software that connects it all." />
+    <SectionHeading tone="dark" eyebrow={softwareHeading.eyebrow} title={softwareHeading.mobileTitle ?? softwareHeading.title} />
     <div class="grid">
       {
         solutions.map((solution, index) =>

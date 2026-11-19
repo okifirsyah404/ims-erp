@@ -1,0 +1,2914 @@
+[
+	{
+		"pageType": "home",
+		"slug": "home",
+		"title": "Home",
+		"position": 0,
+		"content": {
+			"heroStats": [
+				{
+					"value": "1,200+",
+					"label": "Gates installed",
+					"shortLabel": "Gates installed"
+				},
+				{
+					"value": "350+",
+					"label": "Business clients",
+					"shortLabel": "Clients"
+				},
+				{
+					"value": "24/7",
+					"label": "Technical support",
+					"shortLabel": "Support"
+				}
+			],
+			"trustedClients": [
+				{
+					"name": "NUSANTARA"
+				},
+				{
+					"name": "Bank Sentosa"
+				},
+				{
+					"name": "GRAHA TOWER"
+				},
+				{
+					"name": "fitzone"
+				},
+				{
+					"name": "Universitas Merdeka"
+				},
+				{
+					"name": "PARKIR+"
+				}
+			],
+			"featuredProductSlugs": [
+				"eg-swing-s200-glass",
+				"eg-flap-f150-slim",
+				"eg-face-pro-2",
+				"eg-park-b6-boom"
+			],
+			"whyItems": [
+				{
+					"icon": "cpu",
+					"title": "Integrated hardware + software",
+					"description": "Gates, readers and controllers ship pre-configured with Entragate software — plug in and go live in days.",
+					"mobileDescription": "Pre-configured systems that go live in days."
+				},
+				{
+					"icon": "badge-check",
+					"title": "Industrial-grade build quality",
+					"mobileTitle": "Industrial-grade quality",
+					"description": "SUS304 stainless, IP54-rated cabinets and 3-million-cycle tested motors for 24/7 operation.",
+					"mobileDescription": "SUS304, IP54, 3M-cycle tested motors."
+				},
+				{
+					"icon": "wrench",
+					"title": "Nationwide installation",
+					"description": "Certified technicians across Java, Bali, Sumatra and Kalimantan, with on-site commissioning.",
+					"mobileDescription": "Certified technicians in 14 provinces."
+				},
+				{
+					"icon": "headset",
+					"title": "Local support & warranty",
+					"description": "24/7 helpdesk in Bahasa Indonesia, spare parts in stock, and up to 3-year warranty coverage.",
+					"mobileDescription": "24/7 helpdesk and up to 3-year warranty."
+				}
+			],
+			"industries": [
+				{
+					"icon": "building-2",
+					"name": "Corporate Offices",
+					"description": "Lobby gates & visitor flow",
+					"image": "/images/scenes/office-lobby-gates.webp"
+				},
+				{
+					"icon": "square-parking",
+					"name": "Malls & Parking",
+					"description": "Barriers, LPR & payments",
+					"image": "/images/scenes/parking-entrance.webp"
+				},
+				{
+					"icon": "dumbbell",
+					"name": "Fitness & Clubs",
+					"description": "Member check-in & turnstiles",
+					"image": "/images/scenes/hotel-lobby-gates.webp"
+				},
+				{
+					"icon": "graduation-cap",
+					"name": "Campus & Libraries",
+					"description": "RFID access & loans",
+					"image": "/images/scenes/transit-turnstiles.webp"
+				},
+				{
+					"icon": "ticket",
+					"name": "Stadiums & Events",
+					"description": "E-ticket gates at scale",
+					"image": "/images/scenes/stadium-entrance.webp"
+				}
+			],
+			"featuredProjectSlugs": [
+				"graha-nusantara-tower",
+				"rumah-sakit-medika-prima",
+				"sentra-mall-parking-hub"
+			],
+			"aboutChecks": [
+				"In-house R&D for hardware, firmware and software",
+				"Installation teams in 14 provinces",
+				"ISO-aligned quality control on every unit"
+			]
+		}
+	},
+	{
+		"pageType": "solution",
+		"slug": "gym-management",
+		"title": "Gym Management System",
+		"position": 0,
+		"content": {
+			"key": "gym",
+			"layerLabel": "Gym Management",
+			"mobileLayerLabel": "Gym",
+			"chipLabel": "Gym",
+			"windowTitle": "Entragate Gym",
+			"icon": "dumbbell",
+			"preview": "blue",
+			"description": "Memberships, class bookings and auto-billing linked to face-ID turnstiles — members walk in, expired passes are stopped at the gate.",
+			"mobileDescription": "Memberships, class bookings and auto-billing linked to face-ID turnstiles.",
+			"tags": [
+				"Memberships",
+				"Face ID check-in",
+				"Auto billing"
+			],
+			"mobileTags": [
+				"Memberships",
+				"Face ID",
+				"Auto billing"
+			],
+			"meta": "Used by 120+ gyms",
+			"headline": "Run every club from one dashboard — members walk in, expired passes stop at the gate.",
+			"intro": "Entragate Gym connects memberships, class bookings and billing to face-ID and QR turnstiles, so front desks stop checking cards and revenue leaks close automatically.",
+			"stats": [
+				{
+					"value": "120+",
+					"label": "Gyms running Entragate"
+				},
+				{
+					"value": "4 s",
+					"label": "Average check-in"
+				},
+				{
+					"value": "-18%",
+					"label": "Expired-member visits"
+				}
+			],
+			"modules": [
+				{
+					"icon": "users",
+					"title": "Memberships & packages",
+					"description": "Monthly, annual, class packs and corporate plans with freezes and transfers."
+				},
+				{
+					"icon": "scan-face",
+					"title": "Face ID & QR check-in",
+					"description": "Members enrol once in the app; turnstiles verify status in real time."
+				},
+				{
+					"icon": "calendar-check",
+					"title": "Class bookings",
+					"description": "Schedules, waitlists and capacity limits per studio and coach."
+				},
+				{
+					"icon": "receipt",
+					"title": "Auto billing",
+					"description": "Recurring charges via virtual account, QRIS and cards with dunning reminders."
+				},
+				{
+					"icon": "smartphone",
+					"title": "Member app",
+					"description": "Passes, bookings, invoices and push notifications under your brand."
+				},
+				{
+					"icon": "layers",
+					"title": "Multi-club reports",
+					"description": "Attendance, revenue and churn per club, compared side by side."
+				}
+			],
+			"workflow": [
+				{
+					"title": "Join online",
+					"description": "Members pick a plan, pay and enrol their face in the app."
+				},
+				{
+					"title": "Walk in",
+					"description": "The turnstile checks membership status in under a second."
+				},
+				{
+					"title": "Book & train",
+					"description": "Class capacity and coach schedules update live."
+				},
+				{
+					"title": "Renew automatically",
+					"description": "Billing runs on schedule; expired passes are stopped at the gate."
+				}
+			],
+			"hardware": [
+				"eg-tri-t100",
+				"eg-face-pro-2",
+				"eg-scan-q3",
+				"eg-flap-f150-slim"
+			],
+			"projects": [
+				"fitzone-member-check-in"
+			],
+			"industries": [
+				"Fitness chains",
+				"Clubs & pools",
+				"Corporate gyms",
+				"Martial arts studios"
+			],
+			"faq": [
+				{
+					"question": "Can members use their existing cards?",
+					"answer": "Yes. Entragate reads Mifare and EM cards alongside face ID and QR, so you can migrate gradually."
+				},
+				{
+					"question": "Does it handle multiple clubs?",
+					"answer": "Yes — one account manages every club, with roaming rules per membership tier."
+				},
+				{
+					"question": "Can it integrate with our payment gateway?",
+					"answer": "We support major Indonesian gateways out of the box and expose a REST API for others."
+				}
+			],
+			"pricingNote": "Per-club subscription · hardware sold separately or bundled"
+		}
+	},
+	{
+		"pageType": "solution",
+		"slug": "e-ticketing",
+		"title": "E-Ticketing System",
+		"position": 1,
+		"content": {
+			"key": "tickets",
+			"layerLabel": "E-Ticketing",
+			"mobileLayerLabel": "E-Ticketing",
+			"chipLabel": "Tickets",
+			"windowTitle": "Entragate Tickets",
+			"icon": "ticket",
+			"preview": "cyan",
+			"description": "Sell, issue and validate QR tickets for events, venues and attractions — scanned at flap barriers in under 300 ms, fraud-proof.",
+			"mobileDescription": "Sell, issue and validate QR tickets — scanned at flap barriers in under 300 ms.",
+			"tags": [
+				"QR & RFID tickets",
+				"Online sales",
+				"Gate validation"
+			],
+			"mobileTags": [
+				"QR & RFID",
+				"Online sales",
+				"Gate scan"
+			],
+			"meta": "2.4M tickets scanned",
+			"headline": "Sell, issue and scan tickets in one system — fraud-proof at every gate.",
+			"intro": "Entragate Tickets handles online sales, dynamic QR and RFID tickets, and sub-300 ms validation at flap barriers and turnstiles, with live capacity for the control room.",
+			"stats": [
+				{
+					"value": "2.4M",
+					"label": "Tickets scanned"
+				},
+				{
+					"value": "<300 ms",
+					"label": "Validation at the gate"
+				},
+				{
+					"value": "0",
+					"label": "Forged tickets accepted"
+				}
+			],
+			"modules": [
+				{
+					"icon": "ticket",
+					"title": "Online ticket sales",
+					"description": "Seat maps, price tiers, promo codes and group bookings."
+				},
+				{
+					"icon": "qr-code",
+					"title": "Dynamic QR & RFID",
+					"description": "Rotating QR codes and RFID wristbands that can't be screenshotted or copied."
+				},
+				{
+					"icon": "zap",
+					"title": "Gate validation",
+					"description": "Offline-capable validation at every lane with anti-passback."
+				},
+				{
+					"icon": "eye",
+					"title": "Live capacity",
+					"description": "Entry counts per gate and zone for crowd control."
+				},
+				{
+					"icon": "receipt",
+					"title": "Payments & refunds",
+					"description": "QRIS, virtual accounts and cards with automated refunds."
+				},
+				{
+					"icon": "layout-grid",
+					"title": "Event reports",
+					"description": "Sales, no-shows and entry curves per event and gate."
+				}
+			],
+			"workflow": [
+				{
+					"title": "Publish the event",
+					"description": "Set zones, prices and gates in minutes."
+				},
+				{
+					"title": "Sell & issue",
+					"description": "Buyers receive dynamic QR tickets or wristbands."
+				},
+				{
+					"title": "Scan at the gate",
+					"description": "Turnstiles validate tickets in under 300 ms, even offline."
+				},
+				{
+					"title": "Monitor live",
+					"description": "Operators steer crowds with live gate counts."
+				}
+			],
+			"hardware": [
+				"eg-tri-t300-auto",
+				"eg-flap-f200-wide",
+				"eg-scan-q3",
+				"eg-scan-r1-reader"
+			],
+			"projects": [
+				"gelora-arena-ticketing"
+			],
+			"industries": [
+				"Stadiums & arenas",
+				"Theme parks",
+				"Museums & attractions",
+				"Conferences"
+			],
+			"faq": [
+				{
+					"question": "Does validation work without internet?",
+					"answer": "Yes. Gates cache valid tickets and sync scans when the connection returns."
+				},
+				{
+					"question": "Can we keep our ticketing partner?",
+					"answer": "Yes — we import tickets from partner platforms via API and validate them at our gates."
+				},
+				{
+					"question": "How do you stop ticket forgery?",
+					"answer": "Rotating QR codes and single-entry rules make screenshots and copies useless."
+				}
+			],
+			"pricingNote": "Per-venue licence or per-ticket fee · volume pricing for stadiums"
+		}
+	},
+	{
+		"pageType": "solution",
+		"slug": "visitor-management",
+		"title": "Visitor Management System",
+		"position": 2,
+		"content": {
+			"key": "visitor",
+			"layerLabel": "Visitor Management",
+			"mobileLayerLabel": "Visitor",
+			"chipLabel": "Visitors",
+			"windowTitle": "Entragate Visitor",
+			"icon": "user-check",
+			"preview": "gray",
+			"description": "Pre-register guests, capture ID and photo at a self-service kiosk, and print QR passes that open only the floors they are invited to.",
+			"mobileDescription": "Pre-register guests, self check-in at kiosks and print QR passes for invited floors only.",
+			"tags": [
+				"Self check-in kiosk",
+				"Host alerts",
+				"QR passes"
+			],
+			"mobileTags": [
+				"Kiosk",
+				"Host alerts",
+				"QR passes"
+			],
+			"meta": "Deployed in 60+ towers",
+			"headline": "Welcome visitors in seconds — and only to the floors they're invited to.",
+			"intro": "Entragate Visitor pre-registers guests, verifies ID at self-service kiosks and issues QR passes that open the right gates, with host alerts and a complete audit trail.",
+			"stats": [
+				{
+					"value": "60+",
+					"label": "Office towers"
+				},
+				{
+					"value": "45 s",
+					"label": "Self check-in"
+				},
+				{
+					"value": "100%",
+					"label": "Audit coverage"
+				}
+			],
+			"modules": [
+				{
+					"icon": "calendar-check",
+					"title": "Pre-registration",
+					"description": "Hosts invite guests from email, the app or Outlook / Google Calendar."
+				},
+				{
+					"icon": "user-check",
+					"title": "Self-service kiosk",
+					"description": "ID scan, photo capture and NDA signing in under a minute."
+				},
+				{
+					"icon": "qr-code",
+					"title": "QR passes",
+					"description": "Passes open only the invited floor and expire automatically."
+				},
+				{
+					"icon": "message-circle",
+					"title": "Host alerts",
+					"description": "WhatsApp and email notifications when guests arrive."
+				},
+				{
+					"icon": "shield-check",
+					"title": "Watchlists",
+					"description": "Flag restricted visitors and alert security instantly."
+				},
+				{
+					"icon": "layers",
+					"title": "Audit & reports",
+					"description": "Every visit logged for compliance, exportable monthly."
+				}
+			],
+			"workflow": [
+				{
+					"title": "Invite",
+					"description": "The host registers the visitor and the floor they'll visit."
+				},
+				{
+					"title": "Check in",
+					"description": "The visitor scans ID at the kiosk and receives a QR pass."
+				},
+				{
+					"title": "Enter",
+					"description": "Speed gates open only for the invited floor."
+				},
+				{
+					"title": "Leave & log",
+					"description": "The pass expires and the visit is archived."
+				}
+			],
+			"hardware": [
+				"eg-swing-s200-glass",
+				"eg-face-pro-2",
+				"eg-scan-q3",
+				"eg-flap-f150-slim"
+			],
+			"projects": [
+				"bank-sentosa-visitor-management",
+				"rumah-sakit-medika-prima",
+				"pemkot-surabaya-city-hall"
+			],
+			"industries": [
+				"Office towers",
+				"Banks & finance",
+				"Hospitals",
+				"Government buildings"
+			],
+			"faq": [
+				{
+					"question": "Can visitors check in without a kiosk?",
+					"answer": "Yes — invited visitors can check in on their phone and walk straight to the gate."
+				},
+				{
+					"question": "Is ID data stored securely?",
+					"answer": "ID images are encrypted, hosted in Indonesia and deleted on your retention schedule."
+				},
+				{
+					"question": "Does it work with our existing gates?",
+					"answer": "In most cases yes — our engineers check compatibility during the site survey."
+				}
+			],
+			"pricingNote": "Per-building subscription · kiosks available to buy or rent"
+		}
+	},
+	{
+		"pageType": "solution",
+		"slug": "library-management",
+		"title": "Library Management System",
+		"position": 3,
+		"content": {
+			"key": "library",
+			"layerLabel": "Library Management",
+			"mobileLayerLabel": "Library",
+			"chipLabel": "Library",
+			"windowTitle": "Entragate Library",
+			"icon": "book-open",
+			"preview": "blue",
+			"description": "RFID cataloguing, self-service loans and returns, and member gates for campuses and public libraries — with overdue alerts built in.",
+			"mobileDescription": "RFID cataloguing, self-service loans and member gates with overdue alerts built in.",
+			"tags": [
+				"RFID self-loan",
+				"Catalogue (OPAC)",
+				"Member gates"
+			],
+			"mobileTags": [
+				"RFID loans",
+				"OPAC",
+				"Member gates"
+			],
+			"meta": "40+ campuses",
+			"headline": "Self-service libraries with RFID loans, member gates and overdue alerts built in.",
+			"intro": "Entragate Library combines RFID cataloguing, self-service loans and returns, and member gates — so librarians spend time with readers, not scanners.",
+			"stats": [
+				{
+					"value": "40+",
+					"label": "Campuses"
+				},
+				{
+					"value": "8 s",
+					"label": "Self-service loan"
+				},
+				{
+					"value": "-35%",
+					"label": "Overdue items"
+				}
+			],
+			"modules": [
+				{
+					"icon": "nfc",
+					"title": "RFID cataloguing",
+					"description": "Tag collections and run inventory with handheld readers."
+				},
+				{
+					"icon": "book-open",
+					"title": "Catalogue (OPAC)",
+					"description": "Search, holds and renewals on web and mobile."
+				},
+				{
+					"icon": "zap",
+					"title": "Self-service loans",
+					"description": "Kiosks issue and return several books at once."
+				},
+				{
+					"icon": "door-open",
+					"title": "Member gates",
+					"description": "Student ID or face entry with live occupancy."
+				},
+				{
+					"icon": "message-circle",
+					"title": "Overdue alerts",
+					"description": "Automatic reminders by WhatsApp and email."
+				},
+				{
+					"icon": "layers",
+					"title": "Usage analytics",
+					"description": "Visits, loans and popular titles per faculty."
+				}
+			],
+			"workflow": [
+				{
+					"title": "Tag the collection",
+					"description": "RFID tags link every item to the catalogue."
+				},
+				{
+					"title": "Enter",
+					"description": "Members pass the gate with their student card or face."
+				},
+				{
+					"title": "Borrow",
+					"description": "Self-service kiosks issue loans in seconds."
+				},
+				{
+					"title": "Return anywhere",
+					"description": "Drop boxes check items in and alert members automatically."
+				}
+			],
+			"hardware": [
+				"eg-flap-f150-slim",
+				"eg-face-lite-1",
+				"eg-scan-r1-reader",
+				"eg-core-c2-controller"
+			],
+			"projects": [
+				"universitas-merdeka-campus-access"
+			],
+			"industries": [
+				"Universities",
+				"Schools",
+				"Public libraries",
+				"Corporate libraries"
+			],
+			"faq": [
+				{
+					"question": "Can you migrate our existing catalogue?",
+					"answer": "Yes — we import MARC and spreadsheet catalogues and tag collections on site."
+				},
+				{
+					"question": "Does it integrate with the academic system?",
+					"answer": "Student data syncs from SIAKAD and other academic systems via API."
+				},
+				{
+					"question": "Do you supply RFID tags?",
+					"answer": "Yes, along with tagging stations and handheld inventory readers."
+				}
+			],
+			"pricingNote": "Per-library subscription · RFID tags and kiosks quoted per collection"
+		}
+	},
+	{
+		"pageType": "solution",
+		"slug": "smart-parking",
+		"title": "Smart Parking Software",
+		"position": 4,
+		"content": {
+			"key": "parking",
+			"layerLabel": "Smart Parking",
+			"mobileLayerLabel": "Parking",
+			"chipLabel": "Parking",
+			"windowTitle": "Entragate Parking",
+			"icon": "car",
+			"preview": "cyan",
+			"description": "Ticketless entry with LPR and RFID, real-time slot occupancy, cashless payment and revenue reports across every level and site.",
+			"mobileDescription": "Ticketless LPR entry, live slot occupancy and cashless payments across every level.",
+			"tags": [
+				"License plate (LPR)",
+				"Cashless",
+				"Occupancy map"
+			],
+			"mobileTags": [
+				"LPR",
+				"Cashless",
+				"Occupancy"
+			],
+			"meta": "18K slots managed",
+			"headline": "Ticketless, cashless parking with live occupancy across every level and site.",
+			"intro": "Entragate Parking reads plates at entry, guides drivers to free bays and takes cashless payment at exit — reconciling every transaction automatically.",
+			"stats": [
+				{
+					"value": "18K",
+					"label": "Bays managed"
+				},
+				{
+					"value": "-62%",
+					"label": "Exit queue time"
+				},
+				{
+					"value": "100%",
+					"label": "Cashless reconciliation"
+				}
+			],
+			"modules": [
+				{
+					"icon": "car",
+					"title": "License plate recognition",
+					"description": "ANPR tuned for Indonesian plates, day and night."
+				},
+				{
+					"icon": "square-parking",
+					"title": "Occupancy & guidance",
+					"description": "Bay sensors and signs show free spaces per level."
+				},
+				{
+					"icon": "receipt",
+					"title": "Cashless payment",
+					"description": "QRIS, e-money and cards at exit kiosks or in the app."
+				},
+				{
+					"icon": "users",
+					"title": "Members & tenants",
+					"description": "Monthly passes and tenant quotas with automatic billing."
+				},
+				{
+					"icon": "shield-check",
+					"title": "Revenue control",
+					"description": "Every entry and payment matched — no leakage."
+				},
+				{
+					"icon": "layers",
+					"title": "Multi-site reports",
+					"description": "Occupancy, revenue and dwell time per site."
+				}
+			],
+			"workflow": [
+				{
+					"title": "Drive in",
+					"description": "ANPR reads the plate and the barrier opens — no ticket."
+				},
+				{
+					"title": "Find a bay",
+					"description": "Guidance signs lead drivers to free spaces."
+				},
+				{
+					"title": "Pay",
+					"description": "Cashless at the kiosk, in the app or automatically for members."
+				},
+				{
+					"title": "Drive out",
+					"description": "The plate is matched to the payment and the barrier opens."
+				}
+			],
+			"hardware": [
+				"eg-park-b6-boom",
+				"eg-park-b4-straight",
+				"eg-pay-k5-exit-kiosk",
+				"eg-kiosk-k2-ticket-dispenser"
+			],
+			"projects": [
+				"grand-indonesia-smart-parking",
+				"sentra-mall-parking-hub"
+			],
+			"industries": [
+				"Malls & retail",
+				"Office towers",
+				"Hospitals",
+				"Airports & transit"
+			],
+			"faq": [
+				{
+					"question": "Can we keep ticket dispensers for visitors?",
+					"answer": "Yes — mix ANPR for members with QR tickets for visitors."
+				},
+				{
+					"question": "Which payment methods are supported?",
+					"answer": "QRIS, e-money cards, debit/credit cards and in-app payment."
+				},
+				{
+					"question": "Can it run without closing the car park?",
+					"answer": "Yes. We migrate lane by lane, as in our Grand Indonesia project."
+				}
+			],
+			"pricingNote": "Per-lane licence · hardware and installation quoted per site"
+		}
+	},
+	{
+		"pageType": "solution",
+		"slug": "access-control",
+		"title": "Access Control Software",
+		"position": 5,
+		"content": {
+			"key": "access",
+			"layerLabel": "Access Control",
+			"mobileLayerLabel": "Access",
+			"chipLabel": "Access",
+			"windowTitle": "Entragate Access",
+			"icon": "key-round",
+			"preview": "gray",
+			"description": "Centrally manage doors, gates and credentials — schedules, anti-passback, lockdown and audit trails for every face, card and QR.",
+			"mobileDescription": "Manage doors, gates and credentials centrally — schedules, anti-passback and audit trails.",
+			"tags": [
+				"Multi-site",
+				"Anti-passback",
+				"Audit trail"
+			],
+			"mobileTags": [
+				"Multi-site",
+				"Anti-passback",
+				"Audit"
+			],
+			"meta": "5,000+ doors online",
+			"headline": "Every door, gate and credential — managed centrally across all your sites.",
+			"intro": "Entragate Access manages schedules, anti-passback, lockdown and audit trails for faces, cards and QR codes, with controllers that keep working offline.",
+			"stats": [
+				{
+					"value": "5,000+",
+					"label": "Doors online"
+				},
+				{
+					"value": "1",
+					"label": "Identity per person"
+				},
+				{
+					"value": "24/7",
+					"label": "Local support"
+				}
+			],
+			"modules": [
+				{
+					"icon": "key-round",
+					"title": "Credentials",
+					"description": "Faces, cards, QR and mobile keys linked to one profile."
+				},
+				{
+					"icon": "calendar-check",
+					"title": "Schedules & zones",
+					"description": "Time rules per group, floor, door and holiday calendar."
+				},
+				{
+					"icon": "shield-check",
+					"title": "Anti-passback & lockdown",
+					"description": "Prevent shared credentials and lock zones in one click."
+				},
+				{
+					"icon": "flame",
+					"title": "Fire-alarm integration",
+					"description": "Doors release automatically on alarm."
+				},
+				{
+					"icon": "cloud",
+					"title": "Cloud or on-premise",
+					"description": "Hosted in Indonesia or on your own servers."
+				},
+				{
+					"icon": "code",
+					"title": "Open API",
+					"description": "Sync people from HRIS and push events to your systems."
+				}
+			],
+			"workflow": [
+				{
+					"title": "Enrol",
+					"description": "People are imported from HRIS or enrolled on site."
+				},
+				{
+					"title": "Assign access",
+					"description": "Rules grant doors and gates by role and schedule."
+				},
+				{
+					"title": "Enter",
+					"description": "Controllers decide locally in milliseconds, even offline."
+				},
+				{
+					"title": "Audit",
+					"description": "Every event is logged and searchable across sites."
+				}
+			],
+			"hardware": [
+				"eg-core-c4-controller",
+				"eg-core-c2-controller",
+				"eg-face-pro-2",
+				"eg-lock-m600-maglock"
+			],
+			"projects": [
+				"graha-tower-lobby-speed-gates",
+				"graha-nusantara-tower",
+				"pemkot-surabaya-city-hall"
+			],
+			"industries": [
+				"Corporate offices",
+				"Data centres",
+				"Factories",
+				"Government"
+			],
+			"faq": [
+				{
+					"question": "Can it control doors from other brands?",
+					"answer": "Many standard Wiegand and OSDP readers and locks work with Entragate controllers."
+				},
+				{
+					"question": "What happens if the network goes down?",
+					"answer": "Controllers store credentials and events locally and keep doors working."
+				},
+				{
+					"question": "Can we host it ourselves?",
+					"answer": "Yes — on-premise deployment is available for government and high-security sites."
+				}
+			],
+			"pricingNote": "Per-door licence · controllers and readers quoted per site"
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "grand-indonesia-smart-parking",
+		"title": "Smart Parking System",
+		"position": 0,
+		"content": {
+			"industry": "parking",
+			"eyebrow": "Parking · Retail",
+			"client": "Grand Indonesia Tower B",
+			"location": "Jakarta Pusat",
+			"year": 2026,
+			"meta": "Grand Indonesia Tower B · 1,200 bays · ANPR · guidance",
+			"summary": "Grand Indonesia Tower B — 1,200 bays upgraded with ANPR entry, parking guidance and cashless exit, live in 10 weeks without closing the basement.",
+			"image": "/images/scenes/parking-entrance.webp",
+			"gallery": [
+				"/images/scenes/parking-entrance.webp",
+				"/images/scenes/smart-parking-mall.webp",
+				"/images/products/parking-barrier.webp",
+				"/images/products/parking-ticket-kiosk.webp"
+			],
+			"metrics": [
+				{
+					"value": "-62%",
+					"label": "Exit queue time"
+				},
+				{
+					"value": "1.5 s",
+					"label": "Gate open time"
+				},
+				{
+					"value": "10 wks",
+					"label": "Install, zero downtime"
+				}
+			],
+			"challenge": "Ticket-based entry created 15-minute exit queues at weekday peaks, and the operator had no live view of occupancy across four basement levels.",
+			"solution": "We replaced ticket dispensers with ANPR cameras at 6 entry lanes, added bay-level guidance displays and installed QRIS / e-money exit kiosks — phased lane by lane so the basement never closed.",
+			"outcome": "Exit queues fell by 62%, revenue reconciliation is automatic, and tenants now see live availability on the building app.",
+			"scope": [
+				"6 entry + 6 exit lanes",
+				"ANPR cameras",
+				"Bay guidance displays",
+				"Cashless exit kiosks",
+				"Smart Parking software"
+			],
+			"products": [
+				"eg-park-b6-boom",
+				"eg-pay-k5-exit-kiosk",
+				"eg-kiosk-k2-ticket-dispenser"
+			],
+			"solutions": [
+				"smart-parking"
+			],
+			"featured": true
+		}
+	},
+	{
+		"pageType": "testimonial",
+		"slug": "grand-indonesia-smart-parking-quote",
+		"title": "Yudi Prasetyo",
+		"position": 0,
+		"content": {
+			"quote": "We went cashless without closing a single level. Our tenants noticed the difference in the first week.",
+			"author": "Yudi Prasetyo",
+			"role": "Building Manager, Grand Indonesia Tower B",
+			"company": "Grand Indonesia Tower B",
+			"projectSlug": "grand-indonesia-smart-parking"
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "universitas-merdeka-campus-access",
+		"title": "Campus Access Control",
+		"position": 1,
+		"content": {
+			"industry": "education",
+			"eyebrow": "Education",
+			"client": "Universitas Merdeka",
+			"location": "Malang",
+			"year": 2025,
+			"meta": "Universitas Merdeka · 48 lanes · face recognition",
+			"summary": "48 flap lanes with face recognition across library, faculty buildings and dormitories — one identity for 32,000 students.",
+			"image": "/images/scenes/transit-turnstiles.webp",
+			"gallery": [
+				"/images/scenes/transit-turnstiles.webp",
+				"/images/scenes/campus-lobby-gates.webp",
+				"/images/products/flap-barrier.webp",
+				"/images/products/face-recognition-terminal.webp"
+			],
+			"metrics": [
+				{
+					"value": "48",
+					"label": "Flap lanes"
+				},
+				{
+					"value": "32k",
+					"label": "Students enrolled"
+				},
+				{
+					"value": "0.3 s",
+					"label": "Face match"
+				}
+			],
+			"challenge": "Shared student cards were passed between friends, and the library had no reliable visitor count.",
+			"solution": "Face recognition terminals on every flap lane, synced with the academic system, plus Library Management for loans and occupancy.",
+			"outcome": "Card sharing stopped overnight, and the library now reports live occupancy to the campus app.",
+			"scope": [
+				"48 flap barrier lanes",
+				"Face recognition terminals",
+				"Library Management",
+				"Campus identity sync"
+			],
+			"products": [
+				"eg-flap-f150-slim",
+				"eg-face-pro-2"
+			],
+			"solutions": [
+				"library-management",
+				"access-control"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "fitzone-member-check-in",
+		"title": "Member Check-in Turnstiles",
+		"position": 2,
+		"content": {
+			"industry": "fitness",
+			"eyebrow": "Fitness",
+			"client": "fitzone",
+			"location": "Jabodetabek",
+			"year": 2025,
+			"meta": "fitzone · 22 clubs · QR & app check-in",
+			"summary": "Tripod turnstiles with QR and app check-in at 22 clubs, connected to Gym Management for memberships and billing.",
+			"image": "/images/scenes/hotel-lobby-gates.webp",
+			"gallery": [
+				"/images/scenes/hotel-lobby-gates.webp",
+				"/images/products/tripod-turnstile.webp",
+				"/images/products/access-terminal.webp"
+			],
+			"metrics": [
+				{
+					"value": "22",
+					"label": "Clubs"
+				},
+				{
+					"value": "4 s",
+					"label": "Average check-in"
+				},
+				{
+					"value": "-18%",
+					"label": "Expired-member visits"
+				}
+			],
+			"challenge": "Front desks spent peak hours checking cards by hand, and expired members slipped in unnoticed.",
+			"solution": "QR and app check-in at tripod turnstiles, with membership status checked in real time by Entragate Gym Management.",
+			"outcome": "Check-in takes under 4 seconds and renewal reminders are sent automatically at the gate.",
+			"scope": [
+				"44 tripod turnstiles",
+				"QR & RFID readers",
+				"Gym Management",
+				"Member app"
+			],
+			"products": [
+				"eg-tri-t100",
+				"eg-scan-q3"
+			],
+			"solutions": [
+				"gym-management"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "gelora-arena-ticketing",
+		"title": "Stadium Ticketing Gates",
+		"position": 3,
+		"content": {
+			"industry": "venues",
+			"eyebrow": "Sports & Venues",
+			"client": "Gelora Arena",
+			"location": "Jakarta",
+			"year": 2024,
+			"meta": "Gelora Arena · 96 tripod lanes · 40,000 fans",
+			"summary": "96 tripod lanes validating e-tickets for 40,000 fans, with live capacity per gate for the control room.",
+			"image": "/images/scenes/stadium-entrance.webp",
+			"gallery": [
+				"/images/scenes/stadium-entrance.webp",
+				"/images/products/tripod-turnstile.webp",
+				"/images/scenes/transit-turnstiles.webp"
+			],
+			"metrics": [
+				{
+					"value": "96",
+					"label": "Tripod lanes"
+				},
+				{
+					"value": "40k",
+					"label": "Fans per match"
+				},
+				{
+					"value": "35 min",
+					"label": "Full-stadium entry"
+				}
+			],
+			"challenge": "Paper tickets were forged, and gates had no live count — the control room learned about overcrowding from the stands.",
+			"solution": "E-Ticketing with dynamic QR passes validated at outdoor-rated tripod turnstiles, and a live capacity dashboard per gate.",
+			"outcome": "Forgery disappeared, and the stadium fills in 35 minutes with operators steering crowds between gates.",
+			"scope": [
+				"96 tripod turnstiles",
+				"Dynamic QR tickets",
+				"E-Ticketing",
+				"Live capacity dashboard"
+			],
+			"products": [
+				"eg-tri-t300-auto",
+				"eg-scan-q3"
+			],
+			"solutions": [
+				"e-ticketing"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "bank-sentosa-visitor-management",
+		"title": "HQ Visitor Management",
+		"position": 4,
+		"content": {
+			"industry": "office",
+			"eyebrow": "Finance",
+			"client": "Bank Sentosa HQ",
+			"location": "Jakarta Selatan",
+			"year": 2025,
+			"meta": "Bank Sentosa HQ · Kiosk · speed gates · VMS",
+			"summary": "Self-service visitor kiosks and speed gates for a 30-floor bank headquarters, with host notifications and audit trails.",
+			"image": "/images/scenes/engineering-team.webp",
+			"gallery": [
+				"/images/scenes/engineering-team.webp",
+				"/images/scenes/office-reception-gates.webp",
+				"/images/products/swing-barrier-double.webp"
+			],
+			"metrics": [
+				{
+					"value": "1,800",
+					"label": "Visitors per day"
+				},
+				{
+					"value": "45 s",
+					"label": "Self check-in"
+				},
+				{
+					"value": "100%",
+					"label": "Audit coverage"
+				}
+			],
+			"challenge": "Reception queues stretched into the lobby, and compliance needed a complete audit trail for every visitor.",
+			"solution": "Visitor Management with pre-registration, self-service kiosks and QR passes that open the swing gates only for the floor being visited.",
+			"outcome": "Lobby queues are gone and auditors receive monthly visitor reports automatically.",
+			"scope": [
+				"Self-service kiosks",
+				"8 swing gates",
+				"Visitor Management",
+				"Host notifications"
+			],
+			"products": [
+				"eg-swing-s200-glass",
+				"eg-face-pro-2"
+			],
+			"solutions": [
+				"visitor-management"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "graha-tower-lobby-speed-gates",
+		"title": "Lobby Speed Gates",
+		"position": 5,
+		"content": {
+			"industry": "office",
+			"eyebrow": "Office",
+			"client": "Graha Tower Phase 2",
+			"location": "Jakarta Selatan",
+			"year": 2026,
+			"meta": "Graha Tower Phase 2 · 12 swing gates · Access Cloud",
+			"summary": "12 glass swing gates managed from Entragate Access Cloud, sharing one tenant directory with Phase 1.",
+			"image": "/images/scenes/office-lobby-gates.webp",
+			"gallery": [
+				"/images/scenes/office-lobby-gates.webp",
+				"/images/products/swing-barrier-double.webp",
+				"/images/products/swing-gate-hinge-detail.webp"
+			],
+			"metrics": [
+				{
+					"value": "12",
+					"label": "Swing gates"
+				},
+				{
+					"value": "6,200",
+					"label": "Daily entries"
+				},
+				{
+					"value": "1",
+					"label": "Shared tenant directory"
+				}
+			],
+			"challenge": "Phase 2 needed premium lobby gates that worked with the existing Phase 1 tenant cards.",
+			"solution": "Tempered-glass swing gates on Access Cloud, importing the Phase 1 directory so tenants use one credential across both towers.",
+			"outcome": "Tenants moved into Phase 2 without re-issuing a single card.",
+			"scope": [
+				"12 swing barrier lanes",
+				"Access Cloud",
+				"Tenant self-service portal"
+			],
+			"products": [
+				"eg-swing-s200-glass",
+				"eg-core-c4-controller"
+			],
+			"solutions": [
+				"access-control"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "graha-nusantara-tower",
+		"title": "Graha Nusantara Tower — 24-lane smart lobby",
+		"position": 6,
+		"content": {
+			"industry": "office",
+			"eyebrow": "Corporate Office",
+			"client": "Graha Nusantara Tower",
+			"location": "Jakarta Selatan",
+			"year": 2026,
+			"meta": "Graha Nusantara · 24 swing lanes · 8,500 daily entries",
+			"summary": "A 24-lane smart lobby with swing barriers, face recognition and visitor management for 8,500 daily entries.",
+			"image": "/images/scenes/mall-lobby-gates.webp",
+			"gallery": [
+				"/images/scenes/mall-lobby-gates.webp",
+				"/images/products/swing-barrier-double.webp",
+				"/images/products/face-recognition-terminal.webp"
+			],
+			"metrics": [
+				{
+					"value": "24",
+					"label": "Swing barrier lanes"
+				},
+				{
+					"value": "8,500",
+					"label": "Daily entries"
+				},
+				{
+					"value": "3.1 s",
+					"label": "Avg. entry time"
+				}
+			],
+			"challenge": "Morning peaks overwhelmed the old turnstiles and guards checked visitor passes by hand.",
+			"solution": "24 swing lanes with face recognition for tenants and QR passes for visitors, all managed from one dashboard.",
+			"outcome": "Average entry time dropped to 3.1 seconds, even at 8:00 peak.",
+			"scope": [
+				"24 swing barrier lanes",
+				"Face recognition",
+				"Visitor Management"
+			],
+			"products": [
+				"eg-swing-s200-glass",
+				"eg-face-pro-2"
+			],
+			"solutions": [
+				"visitor-management",
+				"access-control"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "rumah-sakit-medika-prima",
+		"title": "Rumah Sakit Medika Prima",
+		"position": 7,
+		"content": {
+			"industry": "office",
+			"eyebrow": "Healthcare · Surabaya",
+			"client": "Rumah Sakit Medika Prima",
+			"location": "Surabaya",
+			"year": 2025,
+			"meta": "Flap barriers + visitor management for 3 hospital wings",
+			"summary": "Flap barriers and visitor management across 3 hospital wings, with visiting-hour rules per ward.",
+			"image": "/images/scenes/corporate-lobby.webp",
+			"gallery": [
+				"/images/scenes/corporate-lobby.webp",
+				"/images/products/flap-barrier.webp",
+				"/images/scenes/office-reception-gates.webp"
+			],
+			"metrics": [
+				{
+					"value": "3",
+					"label": "Hospital wings"
+				},
+				{
+					"value": "2",
+					"label": "Visitors per patient"
+				},
+				{
+					"value": "24/7",
+					"label": "Emergency override"
+				}
+			],
+			"challenge": "Wards were crowded outside visiting hours and staff couldn't enforce visitor limits.",
+			"solution": "Visitor passes tied to each patient, enforced at flap barriers per wing, with a fire-alarm override for emergencies.",
+			"outcome": "Visitor limits are enforced automatically, and nurses no longer police the corridors.",
+			"scope": [
+				"Flap barrier lanes",
+				"Visitor Management",
+				"Ward rules engine"
+			],
+			"products": [
+				"eg-flap-f150-slim",
+				"eg-scan-q3"
+			],
+			"solutions": [
+				"visitor-management"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "sentra-mall-parking-hub",
+		"title": "Sentra Mall Parking Hub",
+		"position": 8,
+		"content": {
+			"industry": "parking",
+			"eyebrow": "Retail · Bandung",
+			"client": "Sentra Mall",
+			"location": "Bandung",
+			"year": 2024,
+			"meta": "18 boom barriers with LPR and cashless payment across 4 levels",
+			"summary": "18 boom barriers with LPR and cashless payment across 4 levels.",
+			"image": "/images/scenes/smart-parking-mall.webp",
+			"gallery": [
+				"/images/scenes/smart-parking-mall.webp",
+				"/images/products/parking-barrier.webp",
+				"/images/products/parking-ticket-kiosk.webp"
+			],
+			"metrics": [
+				{
+					"value": "18",
+					"label": "Boom barriers"
+				},
+				{
+					"value": "4",
+					"label": "Parking levels"
+				},
+				{
+					"value": "100%",
+					"label": "Cashless exit"
+				}
+			],
+			"challenge": "Cash handling at exits caused long weekend queues and reconciliation errors.",
+			"solution": "LPR-based entry, cashless exit kiosks and Smart Parking software reconciling every transaction.",
+			"outcome": "Weekend exit queues disappeared and daily reconciliation is automatic.",
+			"scope": [
+				"18 boom barriers",
+				"LPR cameras",
+				"Cashless kiosks",
+				"Smart Parking"
+			],
+			"products": [
+				"eg-park-b4-straight",
+				"eg-pay-k5-exit-kiosk"
+			],
+			"solutions": [
+				"smart-parking"
+			]
+		}
+	},
+	{
+		"pageType": "project",
+		"slug": "pemkot-surabaya-city-hall",
+		"title": "City Hall Visitor & Access",
+		"position": 9,
+		"content": {
+			"industry": "government",
+			"eyebrow": "Government",
+			"client": "Pemerintah Kota Surabaya",
+			"location": "Surabaya",
+			"year": 2025,
+			"meta": "City hall · 16 flap lanes · public service queue",
+			"summary": "Flap barriers, visitor kiosks and staff face recognition for a city hall serving 3,000 citizens a day.",
+			"image": "/images/scenes/campus-lobby-gates.webp",
+			"gallery": [
+				"/images/scenes/campus-lobby-gates.webp",
+				"/images/products/flap-barrier.webp",
+				"/images/products/face-recognition-terminal.webp"
+			],
+			"metrics": [
+				{
+					"value": "16",
+					"label": "Flap lanes"
+				},
+				{
+					"value": "3,000",
+					"label": "Citizens per day"
+				},
+				{
+					"value": "TKDN",
+					"label": "Local content certified"
+				}
+			],
+			"challenge": "Citizens and staff shared one entrance, with no record of who entered secure floors.",
+			"solution": "Separate staff lanes with face recognition and a visitor kiosk issuing QR passes for public-service floors — TKDN-certified hardware.",
+			"outcome": "Secure floors are restricted to staff, and every public visit is logged.",
+			"scope": [
+				"16 flap barrier lanes",
+				"Visitor kiosks",
+				"Face recognition",
+				"TKDN-compliant hardware"
+			],
+			"products": [
+				"eg-flap-f200-wide",
+				"eg-face-lite-1"
+			],
+			"solutions": [
+				"visitor-management",
+				"access-control"
+			]
+		}
+	},
+	{
+		"pageType": "about",
+		"slug": "home",
+		"title": "About",
+		"position": 0,
+		"content": {
+			"stats": [
+				{
+					"value": "12+",
+					"label": "Years of operation"
+				},
+				{
+					"value": "850+",
+					"label": "Projects delivered"
+				},
+				{
+					"value": "2,400+",
+					"label": "Gates & turnstiles installed",
+					"mobileLabel": "Gates installed"
+				},
+				{
+					"value": "34",
+					"label": "Provinces served"
+				}
+			],
+			"companyFacts": [
+				{
+					"label": "Legal entity",
+					"value": "CV. Inti Multi Solusi"
+				},
+				{
+					"label": "Established",
+					"value": "2012, Jakarta"
+				},
+				{
+					"label": "Head office",
+					"value": "Jakarta Selatan, DKI Jakarta",
+					"mobileValue": "Jakarta Selatan"
+				},
+				{
+					"label": "Branches",
+					"value": "Surabaya · Medan · Makassar"
+				},
+				{
+					"label": "Certifications",
+					"value": "ISO 9001:2015 · TKDN registered",
+					"mobileValue": "ISO 9001:2015 · TKDN"
+				},
+				{
+					"label": "Team",
+					"value": "140+ engineers & specialists",
+					"mobileValue": "140+ specialists"
+				}
+			],
+			"vision": {
+				"statement": "“To be Indonesia’s most trusted partner for intelligent access — where every entrance is secure, seamless and connected.”",
+				"initials": "AS",
+				"name": "Ir. Agus Santoso",
+				"role": "Founder & Managing Director"
+			},
+			"missions": [
+				{
+					"text": "Deliver reliable, locally-supported access hardware engineered for Indonesian conditions.",
+					"mobileText": "Deliver reliable, locally-supported access hardware engineered for Indonesia."
+				},
+				{
+					"text": "Build integrated software that turns every entry into actionable business data.",
+					"mobileText": "Build integrated software that turns every entry into business data."
+				},
+				{
+					"text": "Provide end-to-end service — consultation, installation, training and lifetime maintenance.",
+					"mobileText": "Provide end-to-end service — from consultation to lifetime maintenance."
+				},
+				{
+					"text": "Grow a skilled national workforce of access-control engineers and technicians.",
+					"mobileText": "Grow a skilled national workforce of access-control engineers."
+				}
+			],
+			"pillars": [
+				{
+					"icon": "factory",
+					"title": "Hardware Manufacturing & Supply",
+					"description": "Swing and flap barriers, turnstiles, parking barriers and enclosures assembled at our Bekasi workshop with TKDN-compliant components.",
+					"mobileDescription": "Barrier gates, turnstiles and enclosures assembled at our Bekasi workshop with TKDN-compliant parts.",
+					"bullets": [
+						"Custom cabinets & finishes",
+						"Stainless SUS304 builds",
+						"Local spare-part stock"
+					]
+				},
+				{
+					"icon": "code",
+					"title": "Software Development",
+					"description": "Entragate Suite — gym, ticketing, visitor, library, parking and access platforms built and maintained by our in-house product team.",
+					"mobileDescription": "Entragate Suite — six business platforms built and maintained by our in-house product team.",
+					"bullets": [
+						"Cloud & on-premise",
+						"Mobile apps & kiosks",
+						"Open REST API"
+					]
+				},
+				{
+					"icon": "wrench",
+					"title": "System Integration & Service",
+					"description": "Site survey, design, installation and commissioning — backed by preventive maintenance contracts and 24/7 helpdesk.",
+					"mobileDescription": "Survey, installation and commissioning, backed by SLA maintenance and 24/7 helpdesk.",
+					"bullets": [
+						"Nationwide installation",
+						"SLA maintenance",
+						"Operator training"
+					]
+				}
+			],
+			"technologies": [
+				{
+					"icon": "scan-face",
+					"title": "Face Recognition AI",
+					"description": "Liveness-detecting terminals verifying identity in 0.2 s with mask & helmet support.",
+					"mobileDescription": "Liveness detection, 0.2 s verification."
+				},
+				{
+					"icon": "nfc",
+					"title": "RFID & NFC Credentials",
+					"description": "MIFARE DESFire, EM and HID cards, wristbands and mobile NFC keys.",
+					"mobileDescription": "MIFARE, EM, HID cards and mobile keys."
+				},
+				{
+					"icon": "qr-code",
+					"title": "Dynamic QR Access",
+					"description": "Time-bound, encrypted QR passes for visitors, tickets and parking.",
+					"mobileDescription": "Encrypted, time-bound passes."
+				},
+				{
+					"icon": "scan-line",
+					"title": "License Plate Recognition",
+					"description": "ANPR cameras tuned for Indonesian plates, day and night.",
+					"mobileDescription": "ANPR tuned for Indonesian plates."
+				},
+				{
+					"icon": "cpu",
+					"title": "IoT Gate Controllers",
+					"description": "Edge controllers with offline mode, anti-passback and fire-alarm release.",
+					"mobileDescription": "Offline mode and anti-passback."
+				},
+				{
+					"icon": "cloud",
+					"title": "Cloud Platform",
+					"description": "Multi-site SaaS with encrypted data hosted in Indonesian data centres.",
+					"mobileDescription": "Multi-site SaaS hosted in Indonesia."
+				}
+			],
+			"values": [
+				{
+					"icon": "shield-check",
+					"title": "Integrity",
+					"description": "We quote honestly, deliver what we specify and stand behind every installation.",
+					"mobileDescription": "Honest quotes, delivered as specified."
+				},
+				{
+					"icon": "crosshair",
+					"title": "Precision",
+					"description": "Engineering discipline in every weld, wire and line of code we ship.",
+					"mobileDescription": "Discipline in every weld and line of code."
+				},
+				{
+					"icon": "handshake",
+					"title": "Partnership",
+					"description": "Long-term relationships — most clients have been with us 5+ years.",
+					"mobileDescription": "Most clients stay with us 5+ years."
+				},
+				{
+					"icon": "lightbulb",
+					"title": "Innovation",
+					"description": "Continuous R&D so your facility stays ahead of new security demands.",
+					"mobileDescription": "Continuous R&D for new demands."
+				}
+			],
+			"portfolio": [
+				{
+					"tag": "Stadium · 2024",
+					"title": "National Sports Arena, Jakarta",
+					"mobileTitle": "National Sports Arena",
+					"image": "/images/scenes/stadium-entrance.webp",
+					"meta": "96 tripod turnstiles & 48 flap lanes · E-Ticketing integration for 77,000 seats",
+					"mobileMeta": "96 turnstiles · 77,000 seats"
+				},
+				{
+					"tag": "Campus · 2023",
+					"title": "Universitas Nusantara",
+					"image": "/images/scenes/transit-turnstiles.webp",
+					"meta": "Library & campus access, 32 lanes",
+					"mobileMeta": "Library & campus access"
+				},
+				{
+					"tag": "Fitness · 2025",
+					"title": "FitLife Gym Chain",
+					"image": "/images/scenes/hotel-lobby-gates.webp",
+					"meta": "Face ID gates at 18 branches",
+					"mobileMeta": "Face ID at 18 branches"
+				},
+				{
+					"tag": "Parking · 2024",
+					"title": "Grand Mall Surabaya",
+					"image": "/images/scenes/parking-entrance.webp",
+					"meta": "LPR ticketless parking, 2,100 bays",
+					"mobileMeta": "LPR ticketless parking"
+				},
+				{
+					"tag": "Office · 2023",
+					"title": "Menara Sentral Tower",
+					"image": "/images/scenes/office-lobby-gates.webp",
+					"meta": "Visitor & access for 42 floors",
+					"mobileMeta": "Visitor & access, 42 floors"
+				}
+			],
+			"brandChips": [
+				"Barrier Gates",
+				"Turnstiles",
+				"Parking",
+				"Face Recognition",
+				"Software"
+			],
+			"leadership": {
+				"title": "Leadership Team",
+				"description": "Setting direction for Indonesia’s access-control market since 2012.",
+				"members": [
+					{
+						"name": "Budi Hartono",
+						"title": "President Director & Founder",
+						"bio": "Founded IMS in 2012 after 15 years in building automation. Leads strategy and national partnerships.",
+						"portrait": "/images/team/portrait-05.webp"
+					},
+					{
+						"name": "Ratna Sari Dewi",
+						"title": "Director of Operations",
+						"bio": "Oversees manufacturing, logistics and installation teams across Jakarta, Surabaya and Medan.",
+						"portrait": "/images/team/portrait-03.webp"
+					},
+					{
+						"name": "Michael Tanuwijaya",
+						"title": "Chief Technology Officer",
+						"bio": "Architect of the Entragate cloud platform and face-recognition engine. Former R&D lead in Singapore.",
+						"portrait": "/images/team/portrait-02.webp"
+					},
+					{
+						"name": "Lina Marlina",
+						"title": "Finance Director",
+						"bio": "Leads finance, tax compliance and corporate credit programs for enterprise and government clients.",
+						"portrait": "/images/team/portrait-04.webp"
+					}
+				]
+			},
+			"teamGroups": [
+				{
+					"title": "Software Development",
+					"description": "Building the apps, cloud and firmware behind every Entragate gate.",
+					"members": [
+						{
+							"name": "Ahmad Fauzi",
+							"title": "Head of Software Engineering",
+							"bio": "Runs the 18-person platform team shipping the customer portal, mobile app and gate firmware.",
+							"portrait": "/images/team/portrait-13.webp"
+						},
+						{
+							"name": "Putri Ayu Lestari",
+							"title": "Lead Web & Mobile Engineer",
+							"bio": "Designs the Entragate app experience used daily by over 400,000 members and visitors.",
+							"portrait": "/images/team/portrait-06.webp"
+						},
+						{
+							"name": "Kevin Halim",
+							"title": "Cloud & IoT Engineer",
+							"bio": "Keeps 12,000+ connected controllers online with real-time monitoring and OTA updates.",
+							"portrait": "/images/team/portrait-09.webp"
+						}
+					]
+				},
+				{
+					"title": "Engineering & Technical Support",
+					"description": "On-site installation, maintenance and 24/7 technical assistance.",
+					"members": [
+						{
+							"name": "Dedi Kurniawan",
+							"title": "Head of Field Engineering",
+							"bio": "Leads 40+ certified technicians delivering installations and SLA maintenance nationwide.",
+							"portrait": "/images/team/portrait-14.webp"
+						},
+						{
+							"name": "Wahyu Nugroho",
+							"title": "Senior Installation Engineer",
+							"bio": "Specialist in stadium and transit-scale turnstile deployments and site commissioning.",
+							"portrait": "/images/team/portrait-15.webp"
+						},
+						{
+							"name": "Sri Wahyuni",
+							"title": "Technical Support Lead",
+							"bio": "Runs the 24/7 helpdesk and remote diagnostics team with a 15-minute response target.",
+							"portrait": "/images/team/portrait-07.webp"
+						}
+					]
+				},
+				{
+					"title": "Sales & Customer Relations",
+					"description": "Your partners from first site survey to renewal.",
+					"members": [
+						{
+							"name": "Reza Mahendra",
+							"title": "Head of Corporate Sales",
+							"bio": "Guides developers, universities and government agencies through complex access projects.",
+							"portrait": "/images/team/portrait-10.webp"
+						},
+						{
+							"name": "Sari Puspita",
+							"title": "Key Account Manager",
+							"bio": "Dedicated manager for 60+ corporate accounts — known for answering within the hour.",
+							"portrait": "/images/team/portrait-16.webp"
+						},
+						{
+							"name": "Nadia Rahmawati",
+							"title": "Customer Success Manager",
+							"bio": "Leads onboarding, training and quarterly reviews so every installation delivers value.",
+							"portrait": "/images/team/portrait-08.webp"
+						}
+					]
+				},
+				{
+					"title": "Operations",
+					"description": "Supply chain, warehousing and project delivery that keep promises on time.",
+					"members": [
+						{
+							"name": "Joko Susilo",
+							"title": "Supply Chain & Warehouse Manager",
+							"bio": "Manages inventory across three warehouses with same-week dispatch on stocked models.",
+							"portrait": "/images/team/portrait-11.webp"
+						},
+						{
+							"name": "Fitri Handayani",
+							"title": "Project Coordinator",
+							"bio": "Coordinates schedules, permits and handover documents for 150+ projects every year.",
+							"portrait": "/images/team/portrait-12.webp"
+						}
+					]
+				}
+			],
+			"offices": [
+				{
+					"title": "Head Office — Jakarta",
+					"address": "Jl. TB Simatupang No. 41, Cilandak, Jakarta Selatan 12560",
+					"phone": "(021) 7590 2288",
+					"email": "info@intimultisolusi.co.id",
+					"primary": true
+				},
+				{
+					"title": "Branch — Surabaya",
+					"address": "Jl. Raya Darmo No. 88, Surabaya 60265",
+					"phone": "(031) 5678 120",
+					"email": "surabaya@intimultisolusi.co.id"
+				},
+				{
+					"title": "Branch — Medan",
+					"address": "Jl. Gatot Subroto No. 210, Medan 20122",
+					"phone": "(061) 4521 330",
+					"email": "medan@intimultisolusi.co.id"
+				}
+			]
+		}
+	},
+	{
+		"pageType": "careers",
+		"slug": "home",
+		"title": "Careers",
+		"position": 0,
+		"content": {
+			"perks": [
+				{
+					"icon": "rocket",
+					"title": "Build real things",
+					"description": "Ship hardware and software that thousands of people walk through every day."
+				},
+				{
+					"icon": "graduation-cap",
+					"title": "Learn on the job",
+					"description": "Certification programs, mentoring and a yearly training budget."
+				},
+				{
+					"icon": "heart-handshake",
+					"title": "Look after you",
+					"description": "BPJS, private health insurance and performance bonuses."
+				},
+				{
+					"icon": "map-pin",
+					"title": "Work across Indonesia",
+					"description": "Teams in Jakarta, Surabaya, Medan and Makassar."
+				}
+			]
+		}
+	},
+	{
+		"pageType": "career_role",
+		"slug": "field-installation-engineer",
+		"title": "Field Installation Engineer",
+		"position": 0,
+		"content": {
+			"team": "Engineering & Technical Support",
+			"location": "Jakarta / Bekasi",
+			"type": "Full-time"
+		}
+	},
+	{
+		"pageType": "career_role",
+		"slug": "senior-backend-engineer-node-js",
+		"title": "Senior Backend Engineer (Node.js)",
+		"position": 1,
+		"content": {
+			"team": "Software Development",
+			"location": "Jakarta · Hybrid",
+			"type": "Full-time"
+		}
+	},
+	{
+		"pageType": "career_role",
+		"slug": "mobile-engineer-react-native",
+		"title": "Mobile Engineer (React Native)",
+		"position": 2,
+		"content": {
+			"team": "Software Development",
+			"location": "Jakarta · Hybrid",
+			"type": "Full-time"
+		}
+	},
+	{
+		"pageType": "career_role",
+		"slug": "technical-support-specialist",
+		"title": "Technical Support Specialist",
+		"position": 3,
+		"content": {
+			"team": "Engineering & Technical Support",
+			"location": "Surabaya",
+			"type": "Full-time"
+		}
+	},
+	{
+		"pageType": "career_role",
+		"slug": "key-account-manager-government",
+		"title": "Key Account Manager — Government",
+		"position": 4,
+		"content": {
+			"team": "Sales & Customer Relations",
+			"location": "Jakarta",
+			"type": "Full-time"
+		}
+	},
+	{
+		"pageType": "career_role",
+		"slug": "warehouse-logistics-coordinator",
+		"title": "Warehouse & Logistics Coordinator",
+		"position": 5,
+		"content": {
+			"team": "Operations",
+			"location": "Bekasi",
+			"type": "Full-time"
+		}
+	},
+	{
+		"pageType": "news",
+		"slug": "eg-face-pro-2-launch",
+		"title": "EG-Face Pro 2: contactless access in 0.2 seconds",
+		"position": 0,
+		"content": {
+			"category": "Product",
+			"excerpt": "Our new face terminal pairs dual-camera liveness detection with mask and helmet support for busy lobbies.",
+			"date": "2026-10-14",
+			"minutes": 4,
+			"image": "/images/products/face-recognition-terminal.webp",
+			"body": [
+				"EG-Face Pro 2 verifies identities in 0.2 seconds with dual-camera liveness detection that rejects photos and screens.",
+				"The terminal stores 50,000 faces on device, works with masks and safety helmets, and mounts on every Entragate gate or as a standalone wall reader.",
+				"Pre-orders are open now, with first deliveries scheduled for the third week of November."
+			]
+		}
+	},
+	{
+		"pageType": "news",
+		"slug": "cashless-parking-guide",
+		"title": "Going cashless in your car park without closing a level",
+		"position": 1,
+		"content": {
+			"category": "Insights",
+			"excerpt": "Lessons from migrating 1,200 bays to ANPR entry and QRIS exit at Grand Indonesia Tower B.",
+			"date": "2026-09-30",
+			"minutes": 6,
+			"image": "/images/scenes/parking-entrance.webp",
+			"body": [
+				"Cashless parking cuts exit queues and removes cash handling, but many operators worry about the disruption of switching over.",
+				"At Grand Indonesia Tower B we migrated one lane at a time, running ANPR in parallel with existing ticket dispensers until every lane was live — the basement never closed.",
+				"Exit queue times fell by 62%, and revenue now reconciles automatically each night."
+			]
+		}
+	},
+	{
+		"pageType": "news",
+		"slug": "tkdn-certification",
+		"title": "Entragate barrier gates are now TKDN certified",
+		"position": 2,
+		"content": {
+			"category": "Company",
+			"excerpt": "Locally assembled gates qualify for government and BUMN procurement under local-content rules.",
+			"date": "2026-09-12",
+			"minutes": 3,
+			"image": "/images/scenes/engineering-team.webp",
+			"body": [
+				"Swing, flap and tripod gates assembled at our Bekasi workshop are now registered under Indonesia's TKDN local-content program.",
+				"Government agencies and state-owned enterprises can now procure Entragate gates through e-Katalog with local-content credit."
+			]
+		}
+	},
+	{
+		"pageType": "news",
+		"slug": "visitor-management-checklist",
+		"title": "A visitor management checklist for office towers",
+		"position": 3,
+		"content": {
+			"category": "Insights",
+			"excerpt": "Eight things to decide before you replace the lobby logbook.",
+			"date": "2026-08-21",
+			"minutes": 5,
+			"image": "/images/scenes/office-reception-gates.webp",
+			"body": [
+				"Start with who visits: contractors, guests, couriers and interview candidates all need different flows.",
+				"Decide whether hosts must pre-register guests, how IDs are verified, which floors passes open and how long data is kept.",
+				"Finally, plan for peaks — self-service kiosks and QR passes keep the lobby moving at 8:00."
+			]
+		}
+	},
+	{
+		"pageType": "help_topic",
+		"slug": "orders-delivery",
+		"title": "Orders & delivery",
+		"position": 0,
+		"content": {
+			"description": "Order status, shipping estimates, delivery to multiple sites and returns.",
+			"icon": "truck"
+		}
+	},
+	{
+		"pageType": "help_topic",
+		"slug": "quotations-payment",
+		"title": "Quotations & payment",
+		"position": 1,
+		"content": {
+			"description": "Requesting quotes, PO upload, virtual account payment and Faktur Pajak.",
+			"icon": "receipt"
+		}
+	},
+	{
+		"pageType": "help_topic",
+		"slug": "installation-survey",
+		"title": "Installation & site survey",
+		"position": 2,
+		"content": {
+			"mobileTitle": "Installation & survey",
+			"description": "Survey scheduling, site readiness checklist, cabling and commissioning.",
+			"icon": "construction"
+		}
+	},
+	{
+		"pageType": "help_topic",
+		"slug": "warranty-service",
+		"title": "Warranty & service",
+		"position": 3,
+		"content": {
+			"description": "Registering products, claims, SLA plans and preventive maintenance.",
+			"icon": "shield-check"
+		}
+	},
+	{
+		"pageType": "help_topic",
+		"slug": "platform",
+		"title": "Entragate platform",
+		"position": 4,
+		"content": {
+			"description": "Cloud dashboard, member app, face enrollment, QR passes and API.",
+			"icon": "layout-grid"
+		}
+	},
+	{
+		"pageType": "help_topic",
+		"slug": "account-team",
+		"title": "Account & team",
+		"position": 5,
+		"content": {
+			"description": "Business accounts, roles and permissions, invites and security.",
+			"icon": "users"
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "track-your-order",
+		"title": "Track your order from production to installation",
+		"position": 0,
+		"content": {
+			"topic": "orders-delivery",
+			"summary": "Follow every stage of your order with the order number from your confirmation email.",
+			"minutes": 3,
+			"updated": "12 Oct 2026",
+			"body": [
+				"Every Entragate order moves through seven stages: received, paid, production, quality control, shipped, installation and completed.",
+				"Open Track Order and enter the order number from your confirmation email or invoice together with the phone number or email used at checkout. The page refreshes every 30 minutes.",
+				"Business customers can see every order without an order number in the Customer Portal, including invoices, Faktur Pajak and installation schedules."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "delivery-times",
+		"title": "Delivery times and shipping areas",
+		"position": 1,
+		"content": {
+			"topic": "orders-delivery",
+			"summary": "Ready-stock lead times for Jabodetabek and other provinces.",
+			"minutes": 2,
+			"updated": "03 Oct 2026",
+			"body": [
+				"Stocked models (swing barriers, flap barriers, tripod turnstiles) ship within 5 business days in Jabodetabek and 7–10 days to other provinces.",
+				"Pre-order models are produced in 3–4 weeks. Express delivery (1–2 working days) and same-day warehouse pickup in Bekasi are available at checkout.",
+				"All freight is insured. Large orders can be split across several sites — add each address to your quotation request."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "returns",
+		"title": "Returns and damaged deliveries",
+		"position": 2,
+		"content": {
+			"topic": "orders-delivery",
+			"summary": "What to do if a unit arrives damaged or you need to return it.",
+			"minutes": 2,
+			"updated": "21 Sep 2026",
+			"body": [
+				"Inspect the crates on delivery and note any visible damage on the courier's receipt.",
+				"Report damage within 48 hours from the Customer Portal or by WhatsApp with photos of the crate and the unit. We replace damaged units at no cost.",
+				"Unopened ready-stock items can be returned within 14 days; custom finishes and project orders are non-returnable."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "request-quotation",
+		"title": "Request a formal quotation",
+		"position": 3,
+		"content": {
+			"topic": "quotations-payment",
+			"summary": "Get volume pricing, installation and a site survey in one quotation.",
+			"minutes": 3,
+			"updated": "10 Oct 2026",
+			"body": [
+				"Add products to your request from the catalog or Build Your Solution, then complete the project details on the RFQ page.",
+				"Our sales engineers reply within one working day with a quotation PDF, which you can approve in the Customer Portal.",
+				"Projects of four lanes or more qualify for volume pricing of up to 12%."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "faktur-pajak",
+		"title": "Getting a Faktur Pajak for your purchase",
+		"position": 4,
+		"content": {
+			"topic": "quotations-payment",
+			"summary": "How tax invoices are issued for business customers.",
+			"minutes": 2,
+			"updated": "15 Sep 2026",
+			"body": [
+				"Enable “Issue Faktur Pajak” at checkout and enter your company NPWP. For quotations, add the NPWP to your company profile in the Customer Portal.",
+				"The Faktur Pajak is issued within 3 working days of full payment and is available to download from the Customer Portal."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "payment-methods",
+		"title": "Payment methods and NET 14 invoices",
+		"position": 5,
+		"content": {
+			"topic": "quotations-payment",
+			"summary": "Virtual accounts, QRIS, cards and credit terms for business accounts.",
+			"minutes": 2,
+			"updated": "02 Sep 2026",
+			"body": [
+				"We accept BCA and Mandiri virtual accounts, QRIS, and Visa, Mastercard and JCB cards. Virtual-account payments are verified instantly.",
+				"Business accounts can apply for NET 14 invoice terms, subject to credit approval."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "site-survey",
+		"title": "Preparing for a site survey",
+		"position": 6,
+		"content": {
+			"topic": "installation-survey",
+			"summary": "What our engineers check and how to prepare your site.",
+			"minutes": 4,
+			"updated": "08 Oct 2026",
+			"body": [
+				"Surveys are free in Jabodetabek and take 1–2 hours per entrance group. Our engineer measures lanes, power, network and cable routes.",
+				"Please prepare floor plans, the number of users or daily visitors, and contact details for building management.",
+				"You receive a survey report and updated quotation within 2 working days."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "installation-checklist",
+		"title": "Site readiness checklist before installation",
+		"position": 7,
+		"content": {
+			"topic": "installation-survey",
+			"summary": "Power, network and civil works needed before our team arrives.",
+			"minutes": 3,
+			"updated": "28 Sep 2026",
+			"body": [
+				"Each lane needs a 220V outlet on a dedicated MCB and a CAT6 network point. Floors must be level within 3 mm.",
+				"Conduits from the control room to each lane should be in place. Our team handles core drilling and anchoring.",
+				"Installation usually takes 1–3 days per entrance group, followed by commissioning and operator training."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "warranty-coverage",
+		"title": "What the standard warranty covers",
+		"position": 8,
+		"content": {
+			"topic": "warranty-service",
+			"summary": "Two-year warranty on parts and labour, with options to extend.",
+			"minutes": 3,
+			"updated": "11 Oct 2026",
+			"body": [
+				"Entragate hardware carries a two-year warranty on parts, components and on-site labour within Jabodetabek, plus lifetime firmware updates.",
+				"Damage from power surges or vandalism is not covered, but can be added with an optional protection plan.",
+				"Extend coverage to five years from the Customer Portal or your account manager."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "warranty-claim",
+		"title": "Raising a warranty claim",
+		"position": 9,
+		"content": {
+			"topic": "warranty-service",
+			"summary": "Open a claim in minutes from the Customer Portal.",
+			"minutes": 2,
+			"updated": "30 Sep 2026",
+			"body": [
+				"Register your device first by scanning the QR label in the Customer Portal.",
+				"Open the device, choose “Claim warranty”, describe the issue and attach photos or videos. Urgent tickets receive a reply within one hour."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "face-enrollment",
+		"title": "Enrolling faces in Entragate Cloud",
+		"position": 10,
+		"content": {
+			"topic": "platform",
+			"summary": "Bulk-enrol staff and members from photos or the member app.",
+			"minutes": 4,
+			"updated": "05 Oct 2026",
+			"body": [
+				"Upload a CSV with photos, or invite people to self-enrol from the member app. Enrolled faces sync to every terminal within a minute.",
+				"Liveness detection rejects photos of photos and screens, so self-enrolment is safe for members and visitors."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "api-integrations",
+		"title": "Integrating with HR and membership systems",
+		"position": 11,
+		"content": {
+			"topic": "platform",
+			"summary": "Use the REST API and webhooks to sync people and events.",
+			"minutes": 5,
+			"updated": "18 Sep 2026",
+			"body": [
+				"Entragate exposes a documented REST API and webhooks for people, credentials and access events.",
+				"Common integrations include HRIS (Talenta, Mekari), membership and billing systems, and payment gateways. Our engineers can build the connector for you."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "team-roles",
+		"title": "Inviting team members and setting roles",
+		"position": 12,
+		"content": {
+			"topic": "account-team",
+			"summary": "Approvers, finance and viewers on one company account.",
+			"minutes": 2,
+			"updated": "01 Oct 2026",
+			"body": [
+				"Business accounts can invite colleagues from Company & team in the Customer Portal.",
+				"Approvers can accept quotations, Finance sees invoices and payments, and Viewers can track orders and tickets."
+			]
+		}
+	},
+	{
+		"pageType": "help_article",
+		"slug": "account-security",
+		"title": "Keeping your account secure",
+		"position": 13,
+		"content": {
+			"topic": "account-team",
+			"summary": "Passwords, sign-in alerts and removing access for leavers.",
+			"minutes": 2,
+			"updated": "19 Sep 2026",
+			"body": [
+				"Use a password of at least 12 characters. You receive an email whenever your account signs in from a new device.",
+				"Remove leavers from Company & team — their sessions end immediately."
+			]
+		}
+	},
+	{
+		"pageType": "faq_group",
+		"slug": "general",
+		"title": "General",
+		"position": 0,
+		"content": {
+			"mobileLabel": "General",
+			"items": [
+				{
+					"question": "How long does delivery and installation take?",
+					"answer": "Stocked models (swing barriers, flap barriers, tripod turnstiles) ship within 5 business days in Jabodetabek and 7–10 days to other provinces. Installation is scheduled after the site survey and usually takes 1–3 days per entrance group. You can follow every step in Order Tracking."
+				},
+				{
+					"question": "Can I get a Faktur Pajak for my purchase?",
+					"answer": "Yes. Enable “Issue Faktur Pajak” at checkout or add your NPWP to your company profile. It is issued within 3 working days of full payment."
+				},
+				{
+					"question": "What does the standard warranty cover?",
+					"answer": "Two years on parts, components and on-site labour within Jabodetabek, plus lifetime firmware updates. Power-surge and vandalism damage can be covered with an optional plan."
+				},
+				{
+					"question": "How do I raise a support ticket?",
+					"answer": "Open a ticket in the Customer Portal under Support → New ticket, or WhatsApp our 24/7 line. Attach photos or videos so our engineers can diagnose remotely."
+				},
+				{
+					"question": "Can multiple people from my company use one account?",
+					"answer": "Yes. Business accounts can invite approvers, finance staff and viewers, each with their own login and permissions."
+				},
+				{
+					"question": "Does Entragate integrate with our existing HR or membership system?",
+					"answer": "Yes — through our REST API and webhooks. We regularly integrate with HRIS, membership, billing and payment systems, and can build the connector for you."
+				},
+				{
+					"question": "Do you offer site surveys outside Jakarta?",
+					"answer": "Yes. Surveys are free in Jabodetabek; elsewhere our Surabaya, Medan and Makassar teams survey sites for a travel fee that is deducted from your order."
+				}
+			]
+		}
+	},
+	{
+		"pageType": "faq_group",
+		"slug": "orders",
+		"title": "Orders & delivery",
+		"position": 1,
+		"content": {
+			"mobileLabel": "Orders",
+			"items": [
+				{
+					"question": "Can I deliver to several sites in one order?",
+					"answer": "Yes — add each site to your quotation request and we split delivery and installation per site."
+				},
+				{
+					"question": "Can I pick up from your warehouse?",
+					"answer": "Yes, choose Warehouse pickup at checkout to collect from Bekasi on the same day."
+				},
+				{
+					"question": "What if my delivery arrives damaged?",
+					"answer": "Report it within 48 hours with photos and we replace the damaged unit at no cost."
+				}
+			]
+		}
+	},
+	{
+		"pageType": "faq_group",
+		"slug": "payments",
+		"title": "Payments & tax",
+		"position": 2,
+		"content": {
+			"mobileLabel": "Payments",
+			"items": [
+				{
+					"question": "Which payment methods do you accept?",
+					"answer": "BCA and Mandiri virtual accounts, QRIS, Visa, Mastercard and JCB. Business accounts can apply for NET 14 invoices."
+				},
+				{
+					"question": "Do prices include PPN?",
+					"answer": "Catalog prices exclude PPN 11%, which is added at checkout and on quotations."
+				},
+				{
+					"question": "Can we pay with a down payment?",
+					"answer": "Project orders use milestone payments — typically 50% down payment, with the balance due before shipping."
+				}
+			]
+		}
+	},
+	{
+		"pageType": "faq_group",
+		"slug": "warranty",
+		"title": "Warranty & service",
+		"position": 3,
+		"content": {
+			"mobileLabel": "Warranty",
+			"items": [
+				{
+					"question": "How do I register my device?",
+					"answer": "Scan the QR label on the device in the Customer Portal to activate its warranty."
+				},
+				{
+					"question": "Do you offer maintenance contracts?",
+					"answer": "Yes. Preventive maintenance plans include scheduled visits, priority response and discounted spare parts."
+				},
+				{
+					"question": "How fast do you respond to urgent faults?",
+					"answer": "Urgent tickets receive a first reply within one hour, and on-site response within 24 hours in Jabodetabek."
+				}
+			]
+		}
+	},
+	{
+		"pageType": "faq_group",
+		"slug": "platform",
+		"title": "Platform & app",
+		"position": 4,
+		"content": {
+			"mobileLabel": "Platform",
+			"items": [
+				{
+					"question": "Is the software cloud or on-premise?",
+					"answer": "Both. Entragate Cloud is hosted in Indonesian data centres; on-premise servers are available for government and high-security sites."
+				},
+				{
+					"question": "Does the gate still work if the internet is down?",
+					"answer": "Yes. Controllers store credentials and events locally and sync when the connection returns."
+				},
+				{
+					"question": "Is there a member or staff app?",
+					"answer": "Yes — the Entragate app provides QR passes, face enrolment and visitor invites on Android and iOS."
+				}
+			]
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fb500-datasheet",
+		"title": "FB500 Flap Barrier — Product Datasheet",
+		"position": 0,
+		"content": {
+			"product": "Flap Barrier FB500",
+			"category": "flap-barrier-gate",
+			"languages": [
+				"en"
+			],
+			"type": "datasheet",
+			"version": "Rev. 4.1",
+			"size": "2.4 MB PDF",
+			"format": "pdf",
+			"updated": "2026-10-12"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fb500-manual",
+		"title": "FB500 Installation & Commissioning Manual",
+		"position": 1,
+		"content": {
+			"product": "Flap Barrier FB500",
+			"category": "flap-barrier-gate",
+			"languages": [
+				"id",
+				"en"
+			],
+			"type": "manual",
+			"version": "Rev. 3.0",
+			"size": "18.6 MB PDF",
+			"format": "pdf",
+			"updated": "2026-10-03"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "access-sdk",
+		"title": "Entragate Access SDK for Windows & Linux",
+		"position": 2,
+		"content": {
+			"product": "FR-8 · QR-2 · AC-4 controllers",
+			"category": "access-controllers",
+			"languages": [
+				"en"
+			],
+			"type": "driver",
+			"version": "v4.2.0",
+			"size": "64 MB ZIP",
+			"format": "zip",
+			"updated": "2026-09-28",
+			"partner": true
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "barrier-conformity",
+		"title": "SNI & CE Declaration of Conformity — Barrier Series",
+		"position": 3,
+		"content": {
+			"product": "FB500 · SB300 · TT200",
+			"category": "flap-barrier-gate",
+			"languages": [
+				"en",
+				"id"
+			],
+			"type": "certificate",
+			"version": "2026",
+			"size": "860 KB PDF",
+			"format": "pdf",
+			"updated": "2026-09-15"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fb500-footprint",
+		"title": "FB500 Cabinet Footprint & Lane Layout",
+		"position": 4,
+		"content": {
+			"product": "Flap Barrier FB500 · DWG + STEP",
+			"category": "flap-barrier-gate",
+			"languages": [
+				"en"
+			],
+			"type": "cad",
+			"version": "Rev. B",
+			"size": "12.1 MB ZIP",
+			"format": "dwg",
+			"updated": "2026-09-02",
+			"partner": true
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fr8-firmware",
+		"title": "FR-8 Pro Firmware Update",
+		"position": 5,
+		"content": {
+			"product": "Face Recognition FR-8 Pro",
+			"category": "face-recognition",
+			"languages": [
+				"en"
+			],
+			"type": "firmware",
+			"version": "v3.2.1",
+			"size": "38 MB BIN",
+			"format": "zip",
+			"updated": "2026-08-26",
+			"partner": true
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "sb300-datasheet",
+		"title": "SB300 Swing Barrier — Product Datasheet",
+		"position": 6,
+		"content": {
+			"product": "Swing Barrier SB300",
+			"category": "swing-barrier-gate",
+			"languages": [
+				"en"
+			],
+			"type": "datasheet",
+			"version": "Rev. 2.6",
+			"size": "1.9 MB PDF",
+			"format": "pdf",
+			"updated": "2026-08-19"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "pb600-wiring",
+		"title": "Parking Barrier PB600 Wiring Diagram",
+		"position": 7,
+		"content": {
+			"product": "Parking Barrier PB600",
+			"category": "parking-barrier",
+			"languages": [
+				"id"
+			],
+			"type": "manual",
+			"version": "Rev. 1.4",
+			"size": "3.2 MB PDF",
+			"format": "pdf",
+			"updated": "2026-08-07"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "sb300-manual",
+		"title": "SB300 Installation Manual",
+		"position": 8,
+		"content": {
+			"product": "Swing Barrier SB300",
+			"category": "swing-barrier-gate",
+			"languages": [
+				"id",
+				"en"
+			],
+			"type": "manual",
+			"version": "Rev. 2.1",
+			"size": "14.2 MB PDF",
+			"format": "pdf",
+			"updated": "2026-07-30"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "tt200-datasheet",
+		"title": "TT200 Tripod Turnstile — Product Datasheet",
+		"position": 9,
+		"content": {
+			"product": "Tripod Turnstile TT200",
+			"category": "tripod-turnstile",
+			"languages": [
+				"en"
+			],
+			"type": "datasheet",
+			"version": "Rev. 3.3",
+			"size": "1.6 MB PDF",
+			"format": "pdf",
+			"updated": "2026-07-22"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "tt200-cad",
+		"title": "TT200 Footprint & Anchoring Drawing",
+		"position": 10,
+		"content": {
+			"product": "Tripod Turnstile TT200 · DWG",
+			"category": "tripod-turnstile",
+			"languages": [
+				"en"
+			],
+			"type": "cad",
+			"version": "Rev. C",
+			"size": "6.8 MB ZIP",
+			"format": "dwg",
+			"updated": "2026-07-15",
+			"partner": true
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fr8-datasheet",
+		"title": "Face Recognition FR-8 Pro — Datasheet",
+		"position": 11,
+		"content": {
+			"product": "Face Recognition FR-8 Pro",
+			"category": "face-recognition",
+			"languages": [
+				"en",
+				"id"
+			],
+			"type": "datasheet",
+			"version": "Rev. 5.0",
+			"size": "2.1 MB PDF",
+			"format": "pdf",
+			"updated": "2026-07-09"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fr8-hris",
+		"title": "FR-8 HRIS API Integration Guide",
+		"position": 12,
+		"content": {
+			"product": "Face Recognition FR-8 Pro",
+			"category": "face-recognition",
+			"languages": [
+				"en"
+			],
+			"type": "manual",
+			"version": "v4.2",
+			"size": "4.4 MB PDF",
+			"format": "pdf",
+			"updated": "2026-07-01"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "fr8-sni",
+		"title": "FR-8 SNI Certificate",
+		"position": 13,
+		"content": {
+			"product": "Face Recognition FR-8 Pro",
+			"category": "face-recognition",
+			"languages": [
+				"id"
+			],
+			"type": "certificate",
+			"version": "2026",
+			"size": "540 KB PDF",
+			"format": "pdf",
+			"updated": "2026-06-24"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "pb600-datasheet",
+		"title": "Parking Barrier PB600 — Datasheet",
+		"position": 14,
+		"content": {
+			"product": "Parking Barrier PB600",
+			"category": "parking-barrier",
+			"languages": [
+				"en"
+			],
+			"type": "datasheet",
+			"version": "Rev. 2.2",
+			"size": "1.8 MB PDF",
+			"format": "pdf",
+			"updated": "2026-06-18"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "pb600-loop",
+		"title": "Loop Detector Installation Guide",
+		"position": 15,
+		"content": {
+			"product": "Parking Barrier PB600",
+			"category": "parking-barrier",
+			"languages": [
+				"id",
+				"en"
+			],
+			"type": "manual",
+			"version": "Rev. 1.2",
+			"size": "5.1 MB PDF",
+			"format": "pdf",
+			"updated": "2026-06-10"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "pb600-firmware",
+		"title": "PB600 Controller Firmware",
+		"position": 16,
+		"content": {
+			"product": "Parking Barrier PB600",
+			"category": "parking-barrier",
+			"languages": [
+				"en"
+			],
+			"type": "firmware",
+			"version": "v2.7.0",
+			"size": "12 MB BIN",
+			"format": "zip",
+			"updated": "2026-06-02",
+			"partner": true
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "qr2-datasheet",
+		"title": "QR-2 Reader — Datasheet",
+		"position": 17,
+		"content": {
+			"product": "RFID & QR Reader QR-2",
+			"category": "rfid-qr-scanner",
+			"languages": [
+				"en"
+			],
+			"type": "datasheet",
+			"version": "Rev. 1.9",
+			"size": "1.1 MB PDF",
+			"format": "pdf",
+			"updated": "2026-05-27"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "qr2-driver",
+		"title": "QR-2 Wiegand Configuration Tool",
+		"position": 18,
+		"content": {
+			"product": "RFID & QR Reader QR-2",
+			"category": "rfid-qr-scanner",
+			"languages": [
+				"en"
+			],
+			"type": "driver",
+			"version": "v1.6.3",
+			"size": "22 MB ZIP",
+			"format": "zip",
+			"updated": "2026-05-20"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "ac4-manual",
+		"title": "AC-4 Controller Installation Manual",
+		"position": 19,
+		"content": {
+			"product": "Access Controller AC-4",
+			"category": "access-controllers",
+			"languages": [
+				"id",
+				"en"
+			],
+			"type": "manual",
+			"version": "Rev. 2.4",
+			"size": "9.8 MB PDF",
+			"format": "pdf",
+			"updated": "2026-05-12"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "ac4-datasheet",
+		"title": "AC-4 Controller — Datasheet",
+		"position": 20,
+		"content": {
+			"product": "Access Controller AC-4",
+			"category": "access-controllers",
+			"languages": [
+				"en"
+			],
+			"type": "datasheet",
+			"version": "Rev. 2.0",
+			"size": "1.3 MB PDF",
+			"format": "pdf",
+			"updated": "2026-05-05"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "ac4-ce",
+		"title": "AC-4 CE Declaration of Conformity",
+		"position": 21,
+		"content": {
+			"product": "Access Controller AC-4",
+			"category": "access-controllers",
+			"languages": [
+				"en"
+			],
+			"type": "certificate",
+			"version": "2025",
+			"size": "620 KB PDF",
+			"format": "pdf",
+			"updated": "2026-04-28"
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "ctrl-firmware",
+		"title": "Controller Firmware FB-CTRL",
+		"position": 22,
+		"content": {
+			"product": "Flap Barrier FB500",
+			"category": "flap-barrier-gate",
+			"languages": [
+				"en"
+			],
+			"type": "firmware",
+			"version": "v3.2.1",
+			"size": "22 MB BIN",
+			"format": "zip",
+			"updated": "2026-04-21",
+			"partner": true
+		}
+	},
+	{
+		"pageType": "help_document",
+		"slug": "iso9001",
+		"title": "ISO 9001:2015 Quality Management Certificate",
+		"position": 23,
+		"content": {
+			"product": "CV. Inti Multi Solusi",
+			"category": "flap-barrier-gate",
+			"languages": [
+				"en"
+			],
+			"type": "certificate",
+			"version": "2025",
+			"size": "480 KB PDF",
+			"format": "pdf",
+			"updated": "2026-04-14"
+		}
+	},
+	{
+		"pageType": "help_video",
+		"slug": "installing-a-flap-barrier-lane",
+		"title": "Installing a flap barrier lane",
+		"position": 0,
+		"content": {
+			"duration": "12:40",
+			"topic": "Installation",
+			"image": "/images/products/flap-barrier.webp"
+		}
+	},
+	{
+		"pageType": "help_video",
+		"slug": "enrolling-faces-on-the-fr-8-terminal",
+		"title": "Enrolling faces on the FR-8 terminal",
+		"position": 1,
+		"content": {
+			"duration": "6:15",
+			"topic": "Face recognition",
+			"image": "/images/products/face-recognition-terminal.webp"
+		}
+	},
+	{
+		"pageType": "help_video",
+		"slug": "setting-up-visitor-passes-in-entragate-cloud",
+		"title": "Setting up visitor passes in Entragate Cloud",
+		"position": 2,
+		"content": {
+			"duration": "8:02",
+			"topic": "Platform",
+			"image": "/images/scenes/office-reception-gates.webp"
+		}
+	},
+	{
+		"pageType": "help_video",
+		"slug": "calibrating-a-parking-barrier-loop-detector",
+		"title": "Calibrating a parking barrier loop detector",
+		"position": 3,
+		"content": {
+			"duration": "9:30",
+			"topic": "Parking",
+			"image": "/images/products/parking-barrier.webp"
+		}
+	},
+	{
+		"pageType": "help_video",
+		"slug": "wiring-an-ac-4-controller",
+		"title": "Wiring an AC-4 controller",
+		"position": 4,
+		"content": {
+			"duration": "11:18",
+			"topic": "Controllers",
+			"image": "/images/products/access-controller.webp"
+		}
+	},
+	{
+		"pageType": "help_video",
+		"slug": "running-daily-gate-reports",
+		"title": "Running daily gate reports",
+		"position": 5,
+		"content": {
+			"duration": "4:45",
+			"topic": "Platform",
+			"image": "/images/scenes/office-lobby-gates.webp"
+		}
+	},
+	{
+		"pageType": "training_course",
+		"slug": "entragate-certified-installer",
+		"title": "Entragate Certified Installer",
+		"position": 0,
+		"content": {
+			"level": "Technician",
+			"duration": "2 days · on-site in Bekasi",
+			"description": "Mechanical installation, wiring, commissioning and safety checks for barriers and turnstiles.",
+			"icon": "wrench"
+		}
+	},
+	{
+		"pageType": "training_course",
+		"slug": "entragate-cloud-administrator",
+		"title": "Entragate Cloud Administrator",
+		"position": 1,
+		"content": {
+			"level": "Operator",
+			"duration": "1 day · online",
+			"description": "People, credentials, access rules, visitor passes, reports and alerts.",
+			"icon": "cloud"
+		}
+	},
+	{
+		"pageType": "training_course",
+		"slug": "integration-developer",
+		"title": "Integration Developer",
+		"position": 2,
+		"content": {
+			"level": "Developer",
+			"duration": "1 day · online",
+			"description": "REST API, webhooks, SDKs and HRIS / membership integrations.",
+			"icon": "code"
+		}
+	},
+	{
+		"pageType": "training_course",
+		"slug": "preventive-maintenance",
+		"title": "Preventive Maintenance",
+		"position": 3,
+		"content": {
+			"level": "Technician",
+			"duration": "1 day · on-site",
+			"description": "Quarterly maintenance routines, diagnostics and spare-part replacement.",
+			"icon": "shield-check"
+		}
+	}
+]

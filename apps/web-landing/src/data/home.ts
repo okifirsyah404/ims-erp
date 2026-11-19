@@ -177,3 +177,65 @@ export const aboutChecks = [
   "Installation teams in 14 provinces",
   "ISO-aligned quality control on every unit",
 ];
+
+/**
+ * Hero copy and section headings (ERP-0071 stage 2). The ERP's home page overrides any of
+ * them; `mobileTitle` / `mobileDescription` are the 390 frame's shorter variants and are
+ * only used while the ERP has not set the heading.
+ */
+export type HomeHeading = { eyebrow: string; title: string; description?: string; mobileTitle?: string; mobileDescription?: string };
+
+export const heroCopy = {
+  badge: "EG-Face Pro 2 — contactless access in 0.2 seconds",
+  badgeMobile: "EG-Face Pro 2 is here",
+  badgeUrl: "/products/eg-face-pro-2",
+  titleLead: "Smart Access.",
+  titleAccent: "Seamless Automation.",
+  titleTail: "Better Business.",
+  description:
+    "Integrated Hardware & Software Solutions for Modern Businesses — from the gate at your entrance to the dashboard on your screen.",
+  mobileDescription: "Integrated Hardware & Software Solutions for Modern Businesses.",
+  primaryCtaLabel: "Explore Products",
+  primaryCtaUrl: "/products",
+  secondaryCtaLabel: "Explore Solutions",
+  secondaryCtaUrl: "/solutions",
+  image: images.officeLobby,
+};
+
+export const homeHeadings: Record<
+  "trusted" | "products" | "software" | "why" | "industries" | "projects" | "testimonials" | "about" | "contact",
+  HomeHeading
+> = {
+  trusted: { eyebrow: "", title: "Trusted by leading organizations across Indonesia" },
+  products: { eyebrow: "Featured Hardware", title: "Best-selling access hardware.", mobileTitle: "Best sellers" },
+  software: { eyebrow: "Software Solutions", title: "Hardware that thinks. Software that connects it all." },
+  why: {
+    eyebrow: "Why Choose Entragate",
+    title: "One partner from gate to dashboard.",
+    description:
+      "We design, manufacture, install and support every layer of your access infrastructure — so hardware and software work as one system, not a patchwork of vendors.",
+  },
+  industries: {
+    eyebrow: "Industries We Serve",
+    title: "Trusted at the entrances that matter.",
+    description: "From corporate towers to stadiums, Entragate keeps millions of daily entries secure, fast and measurable.",
+  },
+  projects: { eyebrow: "Featured Projects", title: "Real installations. Measurable results." },
+  testimonials: { eyebrow: "What Clients Say", title: "Trusted by the teams who run the entrances." },
+  about: {
+    eyebrow: "The Company Behind Entragate",
+    title: "CV. Inti Multi Solusi — engineering smarter entrances since 2014.",
+    description:
+      "IMS is an Indonesian technology company specializing in smart access systems, automation hardware and integrated business software. Entragate is our product brand — combining in-house engineering, local manufacturing partners and a dedicated software team.",
+    mobileTitle: "CV. Inti Multi Solusi",
+    mobileDescription:
+      "An Indonesian technology company specializing in smart access systems, automation hardware and integrated business software.",
+  },
+  contact: {
+    eyebrow: "",
+    title: "Let's build a smarter entrance.",
+    description:
+      "Tell us about your site. Our engineers will recommend the right hardware and software — with a detailed quotation within 24 hours.",
+    mobileDescription: "Get a detailed quotation from our engineers within 24 hours.",
+  },
+};

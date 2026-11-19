@@ -6,6 +6,13 @@ import Mail from "@lucide/astro/icons/mail";
 import MapPin from "@lucide/astro/icons/map-pin";
 import Button from "../ui/Button.astro";
 import { routes } from "../../data/site";
+import { homeHeadings, type HomeHeading } from "../../data/home";
+
+interface Props {
+  /** The home page passes the ERP's heading; other pages keep the built-in one. */
+  heading?: HomeHeading;
+}
+const heading = Astro.props.heading ?? homeHeadings.contact;
 // ERP-0071: identity and menus come from the ERP (or the built-in defaults).
 const { company } = Astro.locals.site;
 
@@ -24,11 +31,8 @@ const contacts = [
       class="hidden items-center gap-16 overflow-hidden rounded-sheet bg-navy-900 bg-[radial-gradient(ellipse_40%_70%_at_0%_100%,#22D3EE33_0%,#0A1A3F00_100%),radial-gradient(ellipse_70%_100%_at_100%_0%,#1F5BFFB3_0%,#0A1A3F00_100%)] p-[72px] xl:flex"
     >
       <div class="flex flex-1 flex-col gap-5">
-        <h2 class="font-heading text-[48px] font-extrabold tracking-[-1.6px] text-white">Let's build a smarter entrance.</h2>
-        <p class="max-w-[560px] text-[18px] leading-[29px] text-fg-on-dark-muted">
-          Tell us about your site. Our engineers will recommend the right hardware and software — with a detailed
-          quotation within 24 hours.
-        </p>
+        <h2 class="font-heading text-[48px] font-extrabold tracking-[-1.6px] text-white">{heading.title}</h2>
+        {heading.description && <p class="max-w-[560px] text-[18px] leading-[29px] text-fg-on-dark-muted">{heading.description}</p>}
         <div class="flex gap-3 pt-2">
           <Button href={routes.quote} size="lg" icon={ArrowRight}>Get a Free Quote</Button>
           <Button href={company.whatsappHref} size="lg" variant="glass" icon={MessageCircle} target="_blank" rel="noopener noreferrer">
@@ -63,9 +67,11 @@ const contacts = [
       class="flex flex-col gap-[18px] overflow-hidden rounded-xl bg-navy-900 bg-[radial-gradient(ellipse_90%_70%_at_100%_0%,#1F5BFFB3_0%,#0A1A3F00_100%)] p-7 xl:hidden"
     >
       <h2 class="font-heading text-[28px] leading-8 font-extrabold tracking-[-0.8px] text-white">
-        Let's build a smarter entrance.
+        {heading.mobileTitle ?? heading.title}
       </h2>
-      <p class="text-[15px] leading-6 text-fg-on-dark-muted">Get a detailed quotation from our engineers within 24 hours.</p>
+      {(heading.mobileDescription ?? heading.description) && (
+        <p class="text-[15px] leading-6 text-fg-on-dark-muted">{heading.mobileDescription ?? heading.description}</p>
+      )}
       <Button href={routes.quote} size="lg" block icon={ArrowRight}>Get a Free Quote</Button>
       <Button href={company.whatsappHref} size="lg" variant="glass" block icon={MessageCircle} target="_blank" rel="noopener noreferrer">
         Chat on WhatsApp

@@ -7199,11 +7199,13 @@ Ref: investor.profit_shares.investor_id > investor.investors.id [delete: restric
 // MODULE: Commerce  (schema: commerce)
 // Public website content, menus, catalog publications, promotions and the
 // web shop orders. Tenant scoped.
-// Built so far (ERP-0071 stage 1, 2026-11-19): `web_sites`, `web_menus` and
-// `web_menu_items` — company-wide like `catalog.web_listings` (ADR-0012: the
-// public website belongs to the company, not to one organization), so they
-// carry no organization_id. `web_menu_items.web_page_id` lands with
-// `web_pages` (ERP-0071 stage 4). Everything else here is target-only.
+// Built so far (ERP-0071, 2026-11-19): stage 1 `web_sites`, `web_menus`,
+// `web_menu_items`; stages 2-4 `web_pages` (structured content per page_type)
+// and `web_assets` (uploaded images) — company-wide like
+// `catalog.web_listings` (ADR-0012: the public website belongs to the company,
+// not to one organization), so they carry no organization_id.
+// `web_menu_items.web_page_id` stays target-only. Everything else here is
+// target-only.
 // ---------------------------------------------------------------------------
 
 Table commerce.web_sites {
@@ -7234,28 +7236,49 @@ Table commerce.web_sites {
 
 Table commerce.web_pages {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  slug varchar(128) [not null]
+  page_type text [not null, note: "What the row is: a single page (home, about, careers, warranty, installation) or one entry of a collection (solution, project, testimonial, help_topic, help_article, faq_group, help_document, help_video, training_course, news, career_role, legal)."]
+  slug varchar(128) [not null, note: "The entry's address within its type ('home' for single pages)."]
   title text [not null]
-  page_type text [not null, default: 'content']
-  body text
   status text [not null, default: 'draft']
   published_at bigint
+  position integer [not null, default: 0, note: "Order within its type (lists on the website)."]
+  content jsonb [not null, default: `'{}'::jsonb`, note: "The entry's fields, validated per page_type by the shared content-type registry (packages/common). Images are asset references 'asset:<web_assets.id>' or site paths."]
   seo_title text
   seo_description text
-  version integer [not null, default: 1]
+  version integer [not null, default: 1, note: "Bumped on every save; a save carrying an older version is refused (lost-update guard)."]
+  updated_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Public website page."
+  Note: "Content of the public website (ERP-0071 stages 2-4, company-wide, ADR-0025). The website reads published rows only."
   Indexes {
-    (organization_id, slug) [unique, name: 'web_pages_org_slug_uq']
-    status [name: 'web_pages_status_idx']
+    (page_type, slug) [unique, name: 'web_pages_type_slug_uq', note: 'live rows only: WHERE deleted_at IS NULL']
+    (page_type, status, position) [name: 'web_pages_type_status_position_idx']
   }
   Checks {
-    `page_type IN ('content', 'landing', 'about', 'contact', 'legal', 'faq')`
+    `page_type IN ('home', 'about', 'careers', 'warranty', 'installation', 'solution', 'project', 'testimonial', 'help_topic', 'help_article', 'faq_group', 'help_document', 'help_video', 'training_course', 'news', 'career_role', 'legal')`
     `status IN ('draft', 'published', 'archived')`
     `version > 0`
+  }
+}
+
+Table commerce.web_assets {
+  id uuid [pk, default: `uuidv7()`]
+  object_key text [not null, note: "Object-storage key of the normalised WebP image."]
+  file_name text [not null, note: "Original upload name, for the editor."]
+  content_type varchar(64) [not null, default: 'image/webp']
+  byte_size integer [not null, default: 0]
+  alt_text text
+  uploaded_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Images uploaded for website content (ERP-0071, company-wide). Served to browsers through GET /public/v1/site/assets/:id (short-lived redirect)."
+  Indexes {
+    object_key [unique, name: 'web_assets_object_key_uq']
+  }
+  Checks {
+    `byte_size >= 0`
   }
 }
 
@@ -7282,7 +7305,7 @@ Table commerce.web_menu_items {
   web_menu_id uuid [not null]
   label text [not null]
   url text [note: "A site path ('/products?category=x') or an absolute https URL."]
-  web_page_id uuid [note: "Lands with commerce.web_pages (ERP-0071 stage 4)."]
+  web_page_id uuid [note: "Target only: a menu entry pointing at a website page."]
   position integer [not null, default: 0]
   is_active boolean [not null, default: true]
   created_at bigint [not null]

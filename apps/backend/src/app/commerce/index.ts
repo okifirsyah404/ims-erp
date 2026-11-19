@@ -4,11 +4,12 @@
  */
 import Elysia from 'elysia';
 import { PublicWebsiteController } from './controllers/public-website.controller';
+import { WebContentController } from './controllers/web-content.controller';
 import { WebsiteController } from './controllers/website.controller';
 
 export { registerCommerce } from './container';
 
-/** Mounts `/website/*` (web admin, `erp` guard) and `/public/v1/site` (website key). */
+/** Mounts `/website/*` (web admin, `erp` guard) and `/public/v1/site/*` (website key; images without). */
 export function commerceModule() {
-	return new Elysia({ name: 'commerce' }).use(WebsiteController.plugin()).use(PublicWebsiteController.plugin());
+	return new Elysia({ name: 'commerce' }).use(WebsiteController.plugin()).use(WebContentController.plugin()).use(PublicWebsiteController.plugin());
 }

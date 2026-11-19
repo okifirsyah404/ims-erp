@@ -1,0 +1,58 @@
+---
+import Quote from "@lucide/astro/icons/quote";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Media from "../ui/Media.astro";
+import SectionHeading from "../ui/SectionHeading.astro";
+import { routes } from "../../data/site";
+import type { HomeContent } from "../../lib/server/content/home";
+
+/**
+ * Home · Testimonials (ERP-0071): up to three client quotes, from the ERP's testimonial
+ * collection (or the sample portfolio's quotes). Hidden when there are none.
+ */
+interface Props {
+  content: HomeContent;
+}
+const { testimonials, testimonialsHeading } = Astro.props.content;
+---
+
+{
+  testimonials.length > 0 && (
+    <section class="bg-surface">
+      <div class="container-page flex flex-col gap-8 pb-14 xl:gap-12 xl:pb-28">
+        <SectionHeading
+          class="xl:w-[640px]"
+          eyebrow={testimonialsHeading.eyebrow}
+          title={testimonialsHeading.title}
+          description={testimonialsHeading.description}
+        />
+        <ul class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 xl:gap-5">
+          {testimonials.map((testimonial) => (
+            <li class="flex flex-col gap-5 rounded-card bg-white p-6 ring-1 ring-border ring-inset xl:p-7">
+              <Quote size={26} class="text-cyan-400" aria-hidden="true" />
+              <blockquote class="flex-1 font-heading text-[17px] leading-[27px] font-semibold text-navy-900 xl:text-[18px] xl:leading-[28px]">
+                “{testimonial.quote}”
+              </blockquote>
+              <div class="flex items-center gap-3">
+                {testimonial.photo && <Media src={testimonial.photo} alt="" class="size-11 shrink-0 rounded-pill" />}
+                <span class="flex flex-col gap-0.5">
+                  <span class="text-[15px] font-bold text-fg">{testimonial.author}</span>
+                  <span class="text-[13px] text-fg-muted">{[testimonial.role, testimonial.company].filter(Boolean).join(" · ")}</span>
+                </span>
+              </div>
+              {testimonial.projectSlug && (
+                <a
+                  href={`${routes.projects}/${testimonial.projectSlug}`}
+                  class="flex w-fit items-center gap-1.5 text-[14px] font-semibold text-blue-600 hover:underline"
+                >
+                  Read case study
+                  <ArrowRight size={15} aria-hidden="true" />
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

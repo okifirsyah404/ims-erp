@@ -5,9 +5,13 @@ import Button from "../ui/Button.astro";
 import Media from "../ui/Media.astro";
 import SectionHeading from "../ui/SectionHeading.astro";
 import { routes } from "../../data/site";
-import { featuredProject, secondaryProjects } from "../../data/home";
+import type { HomeContent } from "../../lib/server/content/home";
 
 /** 01.01 Home · Featured Projects (desktop eFQ55 / mobile lcVRT). */
+interface Props {
+  content: HomeContent;
+}
+const { featuredProject, secondaryProjects, projectsHeading } = Astro.props.content;
 const href = (slug: string) => `${routes.projects}/${slug}`;
 ---
 
@@ -15,7 +19,7 @@ const href = (slug: string) => `${routes.projects}/${slug}`;
   <!-- Desktop -->
   <div class="container-page hidden flex-col gap-12 py-28 xl:flex">
     <div class="flex items-end justify-between">
-      <SectionHeading class="w-[640px]" eyebrow="Featured Projects" title="Real installations. Measurable results." />
+      <SectionHeading class="w-[640px]" eyebrow={projectsHeading.eyebrow} title={projectsHeading.title} description={projectsHeading.description} />
       <Button href={routes.projects} variant="secondary" icon={ArrowUpRight}>View all projects</Button>
     </div>
     <div class="flex h-[620px] gap-5">
@@ -70,7 +74,7 @@ const href = (slug: string) => `${routes.projects}/${slug}`;
 
   <!-- Mobile -->
   <div class="container-page flex flex-col gap-6 py-14 xl:hidden">
-    <SectionHeading eyebrow="Featured Projects" title="Real installations. Measurable results." />
+    <SectionHeading eyebrow={projectsHeading.eyebrow} title={projectsHeading.mobileTitle ?? projectsHeading.title} />
     <article class="flex flex-col overflow-hidden rounded-card bg-white ring-1 ring-border ring-inset">
       <Media src={featuredProject.image} alt={featuredProject.title} class="h-[220px] w-full" />
       <div class="flex flex-col gap-3 p-5">

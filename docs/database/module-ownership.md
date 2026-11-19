@@ -359,6 +359,14 @@ tenant-scoped schema.
   `src/app/commerce`: `WebsiteService`, web admin `/website/*`, public
   `GET /public/v1/site` (website API key). Website keys are Better Auth API
   keys (config `website`), issued through `IWebsiteKeyIssuer`.
+- **Built (ERP-0071 stages 2-4):** `web_pages` (every website page and
+  collection entry: `page_type` + `slug`, `content` jsonb validated against
+  the shared registry `packages/common/src/website/content-types.ts`,
+  `draft | published | archived`, `version` lost-update guard) and
+  `web_assets` (uploaded images, WebP in object storage under `website/`).
+  `WebContentService`, web admin `/website/pages` + `/website/assets`,
+  public `GET /public/v1/site/pages/:type[/:slug]` (key) and
+  `/public/v1/site/assets/:id` (no key, 302).
 - A commerce order is **not** a sales order. The Sales module owns the
   confirmed order.
 

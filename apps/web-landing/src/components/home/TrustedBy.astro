@@ -1,14 +1,17 @@
 ---
-import { trustedClients } from "../../data/home";
+import type { HomeContent } from "../../lib/server/content/home";
+
+interface Props {
+  content: HomeContent;
+}
+const { trustedClients, trustedHeading } = Astro.props.content;
 
 /** 01.01 Home · Trusted By (desktop only; not present in the 390 frame). */
 ---
 
 <section class="hidden border-y border-border xl:block" aria-label="Trusted by">
   <div class="container-page flex h-[102px] items-center justify-between gap-12">
-    <p class="shrink-0 text-[13px] leading-5 font-medium text-fg-muted">
-      Trusted by leading organizations<br />across Indonesia
-    </p>
+    <p class="w-[220px] shrink-0 text-[13px] leading-5 font-medium text-fg-muted">{trustedHeading.title}</p>
     <ul class="flex flex-1 items-center justify-between gap-8">
       {
         trustedClients.map((client) => (

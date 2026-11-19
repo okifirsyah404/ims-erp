@@ -126,6 +126,7 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			{ titleKey: 'item.websiteCatalog', url: '/integrations/website-catalog', icon: Globe, permission: 'catalog.read' },
 			{ titleKey: 'item.websiteSettings', url: '/integrations/website', icon: Settings, permission: 'catalog.read' },
+			{ titleKey: 'item.websiteContent', url: '/integrations/website-content', icon: LayoutTemplate, permission: 'catalog.read' },
 			{ titleKey: 'item.whatsappAi', url: '/integrations/whatsapp-ai', icon: MessageSquare, permission: 'automation.read' },
 			{ titleKey: 'item.notifications', url: '/integrations/notifications', icon: Bell, open: true },
 			{ titleKey: 'item.webhooks', url: '/integrations/webhooks', icon: Webhook, permission: 'integration.read' },

@@ -1,9 +1,13 @@
 ---
 import SectionHeading from "../ui/SectionHeading.astro";
-import { whyItems } from "../../data/home";
+import type { HomeContent } from "../../lib/server/content/home";
 import { icons } from "../../lib/icons";
 
 /** 01.01 Home · Why Entragate (desktop c84Qj / mobile urKpJ). */
+interface Props {
+  content: HomeContent;
+}
+const { whyItems, whyHeading } = Astro.props.content;
 const cellClass = [
   "border-r border-b border-border pr-10 pb-10",
   "border-b border-border pb-10 pl-10",
@@ -17,9 +21,9 @@ const cellClass = [
   <div class="container-page hidden gap-20 py-28 xl:flex">
     <div class="flex w-[440px] shrink-0 flex-col gap-5">
       <SectionHeading
-        eyebrow="Why Choose Entragate"
-        title="One partner from gate to dashboard."
-        description="We design, manufacture, install and support every layer of your access infrastructure — so hardware and software work as one system, not a patchwork of vendors."
+        eyebrow={whyHeading.eyebrow}
+        title={whyHeading.title}
+        description={whyHeading.description}
         class="gap-5!"
       />
       <div class="flex items-center gap-4 pt-4">
@@ -32,7 +36,7 @@ const cellClass = [
     <ul class="grid flex-1 grid-cols-2">
       {
         whyItems.map((item, index) => {
-          const Icon = icons[item.icon];
+          const Icon = icons[item.icon] ?? icons.layers;
           return (
             <li class:list={["flex flex-col gap-4", cellClass[index]]}>
               <span class="flex size-[52px] items-center justify-center rounded-md bg-[linear-gradient(135deg,#EEF3FF_14.645%,#E7FAFD_85.355%)] text-blue-600 ring-1 ring-blue-100 ring-inset">
@@ -49,17 +53,17 @@ const cellClass = [
 
   <!-- Mobile -->
   <div class="container-page flex flex-col gap-7 py-14 xl:hidden">
-    <SectionHeading eyebrow="Why Choose Entragate" title="One partner from gate to dashboard." />
+    <SectionHeading eyebrow={whyHeading.eyebrow} title={whyHeading.mobileTitle ?? whyHeading.title} />
     {
       whyItems.map((item, index) => {
-        const Icon = icons[item.icon];
+        const Icon = icons[item.icon] ?? icons.layers;
         return (
           <div class:list={["flex gap-4", index < whyItems.length - 1 && "border-b border-border pb-5"]}>
             <span class="flex size-[46px] shrink-0 items-center justify-center rounded-md bg-blue-50 text-blue-600">
               <Icon size={21} aria-hidden="true" />
             </span>
             <div class="flex flex-1 flex-col gap-1">
-              <h3 class="font-heading text-[16px] font-bold text-fg">{"mobileTitle" in item ? item.mobileTitle : item.title}</h3>
+              <h3 class="font-heading text-[16px] font-bold text-fg">{item.mobileTitle}</h3>
               <p class="text-[14px] leading-[21px] text-fg-secondary">{item.mobileDescription}</p>
             </div>
           </div>

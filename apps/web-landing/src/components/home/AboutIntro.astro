@@ -4,11 +4,15 @@ import Check from "@lucide/astro/icons/check";
 import Button from "../ui/Button.astro";
 import Media from "../ui/Media.astro";
 import { routes } from "../../data/site";
-import { aboutChecks } from "../../data/home";
 import { images } from "../../lib/images";
+import type { HomeContent } from "../../lib/server/content/home";
 
 /** 01.01 Home · About IMS Intro (desktop JshHm / mobile zxrYm). */
-const eyebrow = "The Company Behind Entragate";
+interface Props {
+  content: HomeContent;
+}
+const { aboutChecks, aboutHeading } = Astro.props.content;
+const eyebrow = aboutHeading.eyebrow;
 ---
 
 <section class="bg-white">
@@ -26,13 +30,9 @@ const eyebrow = "The Company Behind Entragate";
     <div class="flex flex-1 flex-col gap-6">
       <p class="text-[13px] font-bold tracking-[1.6px] text-blue-600 uppercase">{eyebrow}</p>
       <h2 class="font-heading text-[40px] leading-[46px] font-extrabold tracking-[-1.2px] text-navy-900">
-        CV. Inti Multi Solusi — engineering smarter entrances since 2014.
+        {aboutHeading.title}
       </h2>
-      <p class="text-[17px] leading-7 text-fg-secondary">
-        IMS is an Indonesian technology company specializing in smart access systems, automation hardware and
-        integrated business software. Entragate is our product brand — combining in-house engineering, local
-        manufacturing partners and a dedicated software team.
-      </p>
+      {aboutHeading.description && <p class="text-[17px] leading-7 text-fg-secondary">{aboutHeading.description}</p>}
       <ul class="flex flex-col gap-3">
         {
           aboutChecks.map((item) => (
@@ -56,11 +56,10 @@ const eyebrow = "The Company Behind Entragate";
       <span class="w-fit rounded-md bg-blue-600 px-3.5 py-2 font-heading text-[14px] font-extrabold text-white">Since 2014</span>
     </div>
     <p class="text-[12px] font-bold tracking-[1.4px] text-blue-600 uppercase">{eyebrow}</p>
-    <h2 class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900">CV. Inti Multi Solusi</h2>
-    <p class="text-[15px] leading-6 text-fg-secondary">
-      An Indonesian technology company specializing in smart access systems, automation hardware and integrated
-      business software.
-    </p>
+    <h2 class="font-heading text-[30px] font-extrabold tracking-[-1px] text-navy-900">{aboutHeading.mobileTitle ?? aboutHeading.title}</h2>
+    {(aboutHeading.mobileDescription ?? aboutHeading.description) && (
+      <p class="text-[15px] leading-6 text-fg-secondary">{aboutHeading.mobileDescription ?? aboutHeading.description}</p>
+    )}
     <Button href={routes.about} variant="dark" size="lg" block icon={ArrowRight}>Discover IMS</Button>
   </div>
 </section>

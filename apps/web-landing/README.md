@@ -43,6 +43,12 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
   (`src/lib/server/site/`), put on `Astro.locals.site` by `src/middleware.ts` and cached
   for a minute; unset fields keep the defaults in `src/data/site.ts`. Every page renders on
   request (`output: "server"`) so changes show without a rebuild.
+- **Content (ERP-0071 stages 2-4).** Pages and collections written in the ERP
+  (**Integrations → Website Content**) come from `GET /public/v1/site/pages/:type[/:slug]`
+  through `src/lib/server/content/` (published only, cached for a minute, images as URLs).
+  `null` from a loader means "nothing in the ERP": the page keeps its built-in content
+  from `src/data/*.ts`, merged field by field. The home page uses `content/home.ts`;
+  projects and testimonials use `content/projects.ts`.
 - **Server-side only.** All calls run in Astro Actions, so the token never reaches the browser.
 - **Order pricing.** Prices are always recomputed on the server from the catalog
   (`computeTotals` in `src/data/checkout.ts`).

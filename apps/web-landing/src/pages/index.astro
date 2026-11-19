@@ -8,19 +8,28 @@ import SoftwareShowcase from "../components/home/SoftwareShowcase.astro";
 import WhyEntragate from "../components/home/WhyEntragate.astro";
 import Industries from "../components/home/Industries.astro";
 import FeaturedProjects from "../components/home/FeaturedProjects.astro";
+import Testimonials from "../components/home/Testimonials.astro";
 import AboutIntro from "../components/home/AboutIntro.astro";
 import ContactCta from "../components/home/ContactCta.astro";
+import { getHomeContent } from "../lib/server/content/home";
+
+// ERP-0071 stage 2: the home page's copy comes from the ERP (or the built-in defaults).
+const content = await getHomeContent();
 ---
 
-<PublicLayout title="Entragate — Smart Access, Seamless Automation, Better Business">
-  <HomeHero />
-  <TrustedBy />
+<PublicLayout
+  title={content.seo.title ?? "Entragate — Smart Access, Seamless Automation, Better Business"}
+  description={content.seo.description ?? undefined}
+>
+  <HomeHero content={content} />
+  <TrustedBy content={content} />
   <ProductCategories />
-  <FeaturedProducts />
-  <SoftwareShowcase />
-  <WhyEntragate />
-  <Industries />
-  <FeaturedProjects />
-  <AboutIntro />
-  <ContactCta />
+  <FeaturedProducts content={content} />
+  <SoftwareShowcase content={content} />
+  <WhyEntragate content={content} />
+  <Industries content={content} />
+  <FeaturedProjects content={content} />
+  <Testimonials content={content} />
+  <AboutIntro content={content} />
+  <ContactCta heading={content.contactHeading} />
 </PublicLayout>

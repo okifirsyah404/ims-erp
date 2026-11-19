@@ -1,25 +1,27 @@
 ---
 import Media from "../ui/Media.astro";
 import SectionHeading from "../ui/SectionHeading.astro";
-import { industries } from "../../data/home";
+import type { HomeContent } from "../../lib/server/content/home";
 import { icons } from "../../lib/icons";
 
 /** 01.01 Home · Industries (desktop ar8Cc / mobile HVcS6). */
+interface Props {
+  content: HomeContent;
+}
+const { industries, industriesHeading } = Astro.props.content;
 ---
 
 <section class="bg-white">
   <!-- Desktop -->
   <div class="container-page hidden flex-col gap-10 pb-28 xl:flex">
     <div class="flex items-end justify-between gap-8">
-      <SectionHeading class="w-[640px]" eyebrow="Industries We Serve" title="Trusted at the entrances that matter." />
-      <p class="text-[16px] leading-[26px] text-fg-secondary">
-        From corporate towers to stadiums, Entragate keeps<br />millions of daily entries secure, fast and measurable.
-      </p>
+      <SectionHeading class="w-[640px]" eyebrow={industriesHeading.eyebrow} title={industriesHeading.title} />
+      {industriesHeading.description && <p class="max-w-[420px] text-[16px] leading-[26px] text-fg-secondary">{industriesHeading.description}</p>}
     </div>
     <ul class="flex gap-4">
       {
         industries.map((industry, index) => {
-          const Icon = icons[industry.icon];
+          const Icon = icons[industry.icon] ?? icons.layers;
           return (
             <li
               class:list={[
@@ -45,13 +47,13 @@ import { icons } from "../../lib/icons";
 
   <!-- Mobile -->
   <div class="container-page flex flex-col gap-6 pb-14 xl:hidden">
-    <SectionHeading eyebrow="Industries We Serve" title="Trusted at the entrances that matter." />
+    <SectionHeading eyebrow={industriesHeading.eyebrow} title={industriesHeading.mobileTitle ?? industriesHeading.title} />
     <ul
       class="scrollbar-none -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 md:-mx-8 md:scroll-px-8 md:px-8"
     >
       {
         industries.map((industry) => {
-          const Icon = icons[industry.icon];
+          const Icon = icons[industry.icon] ?? icons.layers;
           return (
             <li class="relative isolate flex h-[300px] w-[230px] shrink-0 snap-start flex-col justify-end gap-1 overflow-hidden rounded-lg p-[18px]">
               <Media src={industry.image} alt="" class="absolute inset-0 -z-10 size-full" />

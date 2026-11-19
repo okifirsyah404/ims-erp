@@ -40,6 +40,7 @@ const nav = {
 	'item.activations': 'Validation & Activation',
 	'item.websiteCatalog': 'Website Catalog',
 	'item.websiteSettings': 'Website Settings',
+	'item.websiteContent': 'Website Content',
 	'item.whatsappAi': 'WhatsApp AI',
 	'item.notifications': 'Notifications',
 	'item.webhooks': 'Webhooks (n8n)',
@@ -147,6 +148,7 @@ const nav = {
 	'breadcrumb.salesReturnNew': 'Customer return',
 	'breadcrumb.whatsappFaq': 'Assistant FAQ',
 	'breadcrumb.whatsappChat': 'Conversation',
+	'breadcrumb.websiteContentEntry': 'Entry',
 } as const;
 
 export default nav;

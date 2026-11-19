@@ -2,7 +2,8 @@ import { and, eq, isNull } from 'drizzle-orm';
 import pino from 'pino';
 import { isProductionEnv } from '../../../config/providers/env';
 import { drizzleDB } from '../../../drizzle/db';
-import { webMenuItems, webMenus, webSites } from '../../../drizzle/schemas/commerce.schema';
+import { webMenuItems, webMenus, webPages, webSites, type WebPageType } from '../../../drizzle/schemas/commerce.schema';
+import websiteContent from '../data/website-content.json' with { type: 'json' };
 
 const logger = pino({
 	timestamp: false,
@@ -132,4 +133,35 @@ export async function seedCommerceWebsite(): Promise<void> {
 		inserted += 1;
 	}
 	logger.info({ siteInserted: !site, menusInserted: inserted }, 'Website identity and menus seeded');
+}
+
+type TSeedEntry = { pageType: WebPageType; slug: string; title: string; position: number; content: Record<string, unknown> };
+
+/**
+ * Seeds the website content (ERP-0071 stages 2-4) as published entries:
+ * `database/seeders/data/website-content.json` was generated once from the
+ * website's built-in data (`apps/web-landing/src/data/*.ts`) and validated
+ * with the shared content-type registry, so a development ERP shows what the
+ * site shows today. Legal, warranty and installation pages are not seeded
+ * (the website keeps its built-in text until they are written in the ERP).
+ * Idempotent per (page_type, slug); skipped in production.
+ */
+export async function seedCommerceWebsiteContent(): Promise<void> {
+	if (isProductionEnv()) {
+		logger.info('Production environment; skipping website content');
+		return;
+	}
+	const now = new Date();
+	let inserted = 0;
+	for (const entry of websiteContent as TSeedEntry[]) {
+		const [existing] = await drizzleDB
+			.select({ id: webPages.id })
+			.from(webPages)
+			.where(and(eq(webPages.pageType, entry.pageType), eq(webPages.slug, entry.slug), isNull(webPages.deletedAt)))
+			.limit(1);
+		if (existing) continue;
+		await drizzleDB.insert(webPages).values({ ...entry, status: 'published', publishedAt: now, createdAt: now, updatedAt: now });
+		inserted += 1;
+	}
+	logger.info({ inserted, total: websiteContent.length }, 'Website content seeded');
 }

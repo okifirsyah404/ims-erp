@@ -2,7 +2,8 @@
 import ProductCard from "../product/ProductCard.astro";
 import SectionHeading from "../ui/SectionHeading.astro";
 import { routes } from "../../data/site";
-import { featuredProductSlugs, mobileFeaturedSlugs, productTabs } from "../../data/home";
+import { productTabs } from "../../data/home";
+import type { HomeContent } from "../../lib/server/content/home";
 import { getProductsBySlugs } from "../../lib/catalog";
 
 /**
@@ -15,6 +16,10 @@ const tabHref: Record<string, string> = {
   Parking: `${routes.products}?category=parking`,
   Biometrics: `${routes.products}?category=biometrics`,
 };
+interface Props {
+  content: HomeContent;
+}
+const { featuredProductSlugs, mobileFeaturedSlugs, productsHeading } = Astro.props.content;
 const activeTab = productTabs[0];
 const featuredProducts = await getProductsBySlugs(featuredProductSlugs);
 const mobileProducts = await getProductsBySlugs(mobileFeaturedSlugs);
@@ -24,7 +29,7 @@ const mobileProducts = await getProductsBySlugs(mobileFeaturedSlugs);
   <!-- Desktop -->
   <div class="container-page hidden flex-col gap-10 py-24 xl:flex">
     <div class="flex items-end justify-between">
-      <SectionHeading class="w-[640px]" eyebrow="Featured Hardware" title="Best-selling access hardware." />
+      <SectionHeading class="w-[640px]" eyebrow={productsHeading.eyebrow} title={productsHeading.title} description={productsHeading.description} />
       <nav aria-label="Product collections" class="flex gap-0.5 rounded-md bg-surface-2 p-1">
         {
           productTabs.map((tab) => (
@@ -50,7 +55,7 @@ const mobileProducts = await getProductsBySlugs(mobileFeaturedSlugs);
   <!-- Mobile -->
   <div class="container-page flex flex-col gap-6 py-12 xl:hidden">
     <div class="flex items-end justify-between">
-      <SectionHeading eyebrow="Featured Hardware" title="Best sellers" />
+      <SectionHeading eyebrow={productsHeading.eyebrow} title={productsHeading.mobileTitle ?? productsHeading.title} />
       <a href={tabHref["Best Sellers"]} class="text-[14px] font-semibold text-blue-600">See all</a>
     </div>
     <div class="flex flex-col gap-6" data-carousel>

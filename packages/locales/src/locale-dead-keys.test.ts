@@ -78,6 +78,11 @@ const DYNAMIC_PREFIXES = [
 	'numbering.pattern.',
 	// Website inquiry errors compose `publicApi.${kind}`.
 	'publicApi.',
+	// The website content editor labels registry fields, content types and
+	// statuses by composing the key (ERP-0071).
+	'website.content.field.',
+	'website.content.type.',
+	'website.content.status.',
 	// The numbering settings page labels server values (document type,
 	// reset policy) by composing the key.
 	'settings:numbering.type.',
