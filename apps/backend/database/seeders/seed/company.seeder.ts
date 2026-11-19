@@ -3,10 +3,9 @@ import pino from 'pino';
 import { isProductionEnv } from '../../../config/providers/env';
 import { drizzleDB } from '../../../drizzle/db';
 import {
-	bankAccounts,
+	companyAddresses,
 	companyProfiles,
 	contacts,
-	headOfficeAddresses,
 } from '../../../drizzle/schemas/company.schema';
 import { SEED_ORGANIZATION_NAME } from './organization.seeder';
 
@@ -56,7 +55,8 @@ export async function seedCompany(): Promise<void> {
 		updatedAt: now,
 	});
 
-	await drizzleDB.insert(headOfficeAddresses).values({
+	await drizzleDB.insert(companyAddresses).values({
+		label: 'head_office',
 		addressLine: 'Jl. Jenderal Sudirman Kav. 52-53, Jakarta Selatan 12190',
 		postalCode: '12190',
 		isPrimary: true,
@@ -85,28 +85,6 @@ export async function seedCompany(): Promise<void> {
 			contactType: 'other',
 			value: 'https://entragate.example',
 			label: 'Website',
-			createdAt: now,
-			updatedAt: now,
-		},
-	]);
-
-	await drizzleDB.insert(bankAccounts).values([
-		{
-			code: 'INVOICE-VAT',
-			bankName: 'Bank Central Asia',
-			accountNumber: '1234567890',
-			accountHolder: `PT ${SEED_ORGANIZATION_NAME}`,
-			invoiceUsage: 'vat',
-			isPrimary: true,
-			createdAt: now,
-			updatedAt: now,
-		},
-		{
-			code: 'INVOICE-NON-VAT',
-			bankName: 'Bank Mandiri',
-			accountNumber: '0987654321',
-			accountHolder: `PT ${SEED_ORGANIZATION_NAME}`,
-			invoiceUsage: 'non_vat',
 			createdAt: now,
 			updatedAt: now,
 		},

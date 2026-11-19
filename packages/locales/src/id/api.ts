@@ -20,12 +20,10 @@ const api: Record<keyof typeof en, string> = {
 	'location.villageNotFound': 'Kelurahan/desa tidak ditemukan',
 
 	'sales.quotationNotFound': 'Penawaran tidak ditemukan',
-	'sales.paymentNotFound': 'Pembayaran tidak ditemukan',
 	'procurement.supplierNotFound': 'Pemasok tidak ditemukan',
 	'procurement.supplierCodeTaken': 'Kode pemasok {{code}} sudah dipakai',
 	'procurement.supplierAlreadyActive': 'Pemasok sudah aktif',
 	'procurement.supplierAlreadyInactive': 'Pemasok sudah nonaktif',
-	'procurement.villageNotFound': 'Kelurahan/desa tidak ditemukan',
 	'procurement.purchaseRequestNotFound': 'Permintaan pembelian tidak ditemukan',
 	'procurement.prState.notDraft': 'Hanya permintaan pembelian berstatus draf yang bisa diubah atau diajukan',
 	'procurement.prState.notSubmitted': 'Hanya permintaan pembelian yang sudah diajukan yang bisa disetujui atau ditolak',
@@ -245,7 +243,6 @@ const api: Record<keyof typeof en, string> = {
 	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
 	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
-	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
 	'document.notFound': 'Dokumen tidak ditemukan',
 	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',
 	'document.fileNotFound': 'File tidak ditemukan',
@@ -259,16 +256,6 @@ const api: Record<keyof typeof en, string> = {
 	'document.signaturePdfInvalid': 'Pilih PDF milik dokumen ini dan unggah berupa PDF',
 	'document.signaturePdfState':
 		'Tanda tangan ini belum punya PDF, atau penempatannya sudah final',
-	'numbering.pattern.length': 'Pola harus 1-100 karakter',
-	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
-	'numbering.pattern.tokenNotForType':
-		'Token {{token}} hanya tersedia untuk: {{types}}',
-	'numbering.pattern.tokenTakesNoWidth': 'Token {{token}} tidak memakai lebar digit',
-	'numbering.pattern.seqWidth': 'Lebar {SEQ:n} harus antara 1 dan 10',
-	'numbering.pattern.seqOnce': 'Pola harus memuat {SEQ} tepat satu kali',
-	'numbering.pattern.braces': 'Kurung kurawal token tidak seimbang atau salah',
-	'numbering.pattern.literals':
-		'Di luar token hanya boleh huruf, angka, spasi, / - . _',
 	'organization.slugTaken': 'Slug organisasi sudah dipakai',
 	'organization.alreadyDeleted': 'Organisasi sudah dihapus',
 	'organization.notDeleted': 'Organisasi belum dihapus',

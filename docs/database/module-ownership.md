@@ -33,65 +33,38 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
 
-## The 28 modules
+## The 18 modules
 
-| # | Module | Schema(s) | Tables | Intra-module FKs | Logical refs out |
-|---|---|---|---|---|---|
-| 1 | Identity | `auth` | 17 | 17 | 2 |
-| 2 | Location | `location` | 4 | 3 | 0 |
-| 3 | Company | `company` | 5 | 0 | 1 |
-| 4 | Code Number | `code_number` | 1 | 0 | 1 |
-| 5 | Organization | `organization` | 6 | 5 | 15 |
-| 6 | CRM | `crm` | 10 | 9 | 21 |
-| 7 | Catalog | `catalog` | 12 | 16 | 15 |
-| 8 | Sales | `sales` | 15 | 11 | 47 |
-| 9 | Procurement | `procurement` | 11 | 13 | 30 |
-| 10 | Inventory | `inventory` | 13 | 19 | 12 |
-| 11 | Projects | `projects` | 13 | 0 | 33 |
-| 12 | HR | `hr` | 16 | 17 | 44 |
-| 13 | Payroll | `payroll` | 11 | 10 | 28 |
-| 14 | Finance | `finance` | 16 | 14 | 46 |
-| 15 | Accounting | `accounting` | 14 | 12 | 24 |
-| 16 | Assets | `assets` | 14 | 16 | 33 |
-| 17 | After-Sales | `aftersales` | 15 | 0 | 39 |
-| 18 | Document | `document` | 8 | 8 | 14 |
-| 19 | Approval | `approval` | 7 | 7 | 14 |
-| 20 | Budgeting | `budgeting` | 8 | 8 | 17 |
-| 21 | Investor | `investor` | 11 | 10 | 31 |
-| 22 | Commerce | `commerce` | 9 | 6 | 16 |
-| 23 | Automation | `automation` | 9 | 6 | 13 |
-| 24 | Licensing | `licensing` | 9 | 11 | 11 |
-| 25 | Ticketing | `ticket` | 5 | 5 | 14 |
-| 26 | Audit | `audit` | 1 | 0 | 1 |
-| 27 | Notification | `notification` | 2 | 1 | 1 |
-| 28 | Payment | `payment` | 1 | 0 | 4 |
-| | **Total** | **28 schemas** | **278** | **231** | **524** |
+| # | Module | Schema | Tables | Intra-module FKs |
+|---|---|---|---|---|
+| 1 | Identity | `auth` | 11 | 9 |
+| 2 | Location | `location` | 4 | 3 |
+| 3 | Company | `company` | 4 | 0 |
+| 4 | Customer | `customer` | 6 | 3 |
+| 5 | Supplier | `supplier` | 6 | 3 |
+| 6 | Inventory | `inventory` | 28 | 37 |
+| 7 | Sale | `sale` | 18 | 20 |
+| 8 | Procurement | `procurement` | 9 | 11 |
+| 9 | Finance | `finance` | 27 | 20 |
+| 10 | Tax | `tax` | 5 | 3 |
+| 11 | Payment | `payment` | 5 | 2 |
+| 12 | Project | `project` | 28 | 23 |
+| 13 | Ticket | `ticket` | 6 | 4 |
+| 14 | Human Resource | `human_resource` | 12 | 11 |
+| 15 | Document | `document` | 12 | 10 |
+| 16 | Notification | `notification` | 2 | 1 |
+| 17 | Audit | `audit` | 1 | 0 |
+| 18 | Automation | `automation` | 4 | 2 |
+| | **Total** | **18 schemas** | **188** | **162** |
 
-Counts are re-derived from `docs.dbml` on every validation run. The parser
-also reports an empty `public` schema (0 tables); it is not a module.
+The `webhook` module (ADR-0024 Q38) has **no schema and no tables**: it owns
+the inbound provider HTTP edge and hands every call to `payment` or
+`automation` through their exported webhook services.
 
-> **Known drift, 2026-11-15.** Only the Accounting row (14) and the table total
-> (275) reflect the current `docs.dbml`; the other per-module rows were last
-> recounted before 2026-11-13 and are low (for example `sales` is 16,
-> `inventory` 15, `hr` 19, `automation` 12). A full recount is tracked in
-> `../plan/plans/2026-11-15_0538_todo_undone.md` §6.
-
-There is no longer any two-schema module. The physical warehouse tables moved
-into `inventory` (ADR-0008): `inventory.warehouses`, `inventory.warehouse_addresses`
-and `inventory.warehouse_storages`. The previous `warehouse` schema — and its
-`warehouse_zones` / `warehouse_bins` tables — is retired from the contract.
-
-`location` and `ticket` are modules in their own right rather than groupings
-of a neighbour: `location` already existed in the database (4 tables, seeded)
-and is a real ownership boundary, so folding it into another module would have
-been a fiction; Ticketing (customer issue tickets) exists for the customer
-portal. ERP-0042 then split Organization three ways - the company profile, the
-numbering authority and the document registry each became their own module
-(Company, Code Number, Document), which is where the count went from 24 to 26
-and why no module spans two schemas any more (ADR-0015). Notification then left
-Automation as module 27 (ADR-0016): it is app-scope, so it cannot live in a
-tenant-scoped schema.
-
+Counts are re-derived from `docs.dbml` on every validation run
+(`validate-dbml.ts`), and the cross-module references are in
+`logical-references.md` (169 logical reference columns, 25 targets, 0
+cross-module `Ref:`).
 ## Module profiles
 
 ### 1. Identity — `auth` (single schema)

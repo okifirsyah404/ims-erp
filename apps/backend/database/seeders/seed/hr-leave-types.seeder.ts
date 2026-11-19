@@ -1,7 +1,7 @@
 import { and, inArray, isNull } from 'drizzle-orm';
 import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
-import { leaveTypes } from '../../../drizzle/schemas/hr.schema';
+import { leaveTypes } from '../../../drizzle/schemas/human-resource.schema';
 
 const logger = pino({
 	timestamp: false,

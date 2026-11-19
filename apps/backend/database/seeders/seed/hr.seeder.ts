@@ -4,15 +4,10 @@ import { drizzleDB } from '../../../drizzle/db';
 import {
 	employees,
 	type TEmployeeInsert,
-} from '../../../drizzle/schemas/hr.schema';
+} from '../../../drizzle/schemas/human-resource.schema';
 import { members, organizations, users } from '../../../drizzle/schemas/auth.schema';
-import { CodeNumberService } from '../../../src/app/code-number/services/code-number.service';
-import { CodeNumberRepository } from '../../../src/app/code-number/repositories/code-number.repository';
-import { CompanyService } from '../../../src/app/company/services/company.service';
-import { CompanyRepository } from '../../../src/app/company/repositories/company.repository';
-import { s3ObjectStorage } from '../../../src/providers/s3/object-storage';
-import { CacheClient } from '../../../src/cache/cache.client';
-import { redisClient } from '../../../src/providers/redis/redis';
+import { HumanResourceNumberingService } from '../../../src/app/human-resource/services/human-resource-numbering.service';
+import { HumanResourceCodeNumberingRepository } from '../../../src/app/human-resource/repositories/code-numbering.repository';
 import { isProductionEnv } from '../../../config/providers/env';
 
 const logger = pino({
@@ -76,14 +71,14 @@ export async function seedHrEmployees(): Promise<void> {
 		return;
 	}
 
-	const numbering = new CodeNumberService(
-		new CodeNumberRepository(drizzleDB),
-		// The seeder runs outside the DI container, so the dependencies are
-		// wired by hand over the shared redis client and S3 client.
-		new CompanyService(
-			new CompanyRepository(drizzleDB, new CacheClient(redisClient)),
-			s3ObjectStorage,
-		),
+	// The seeder runs outside the DI container, so the numbering service is
+	// wired by hand over its own repository and the company letterhead facade.
+	// The seeder runs outside the DI container. The {COMPANY} token is the
+	// seeded profile's document code (see company.seeder.ts), so the facade is
+	// a literal here instead of a repository chain.
+	const numbering = new HumanResourceNumberingService(
+		new HumanResourceCodeNumberingRepository(drizzleDB),
+		{ requireDocumentCode: async () => 'DEV' } as never,
 	);
 
 	let created = 0;

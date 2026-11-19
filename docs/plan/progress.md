@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - P8: cutover, backend (ERP-0088)
+
+- Seeders rewritten on the new schemas: `inventory` (product categories, products, serials, tool fleet as `items`, opening stock as `receipt` movements + `stocks`), new `finance` (cash/bank accounts, replaces `company.bank_accounts`), `company` (`company.addresses`), `hr` (own numbering service). `assets` and `item-category` seeders removed.
+- Migrations: v1 chain moved to `apps/backend/database/migrations-archive/v1/` (31 steps, kept for history); `bunx --bun drizzle-kit generate` produced one baseline `20261119145940_many_human_robot` (18 schemas, 164 `CREATE TABLE` statements, 0 cross-schema `REFERENCES`, 151 unique indexes). Second `generate`: "No schema changes".
+- Disposable DB `ims_migration_check`: `drizzle:migrate` applied cleanly; `drizzle:seed` twice (second run inserted 0 everywhere); database dropped afterwards.
+- Verification: `tsc` 0 errors (seeders included); `bun run lint`, `build`, `typecheck`, `test` green workspace-wide (backend 1232 pass on unit+finance+tax+authorization+notification; locales 98 pass after removing 13 dead `api` keys of deleted modules: `numbering.*`, `sales.paymentNotFound`, `procurement.villageNotFound`); `bun docs/database/validate-dbml.ts` OK (188 tables, 162 intra-module refs, 169 logical reference columns).
+- `docs/database/module-ownership.md` module table now lists the 18 schemas; per-module profile prose below it still describes the pre-refactor modules and is stale.
+- Not done: provider dashboard webhook URL updates (Xendit, SingaPay, WAHA, Meta), decision on dropping the Q34 aliases, legacy `crm.*` error keys, all frontend work, stale module profiles in `module-ownership.md`.
+- docs/database: reviewed; `docs.dbml` unchanged in this step.
+
+Next executable task: frontend catch-up for the new backend (web-admin API wrappers/routes first), then drop the Q34 aliases once clients move.
 ## 2026-11-19 - P7: document numbering, push notifications, webhook module, module vocabulary (ERP-0085/0086/0087/0089 backend)
 
 - `document`: own numbering (`DocumentCodeNumberingRepository`, `DocumentNumberingService` over `document.code_numberings`); the registry still takes the owning module's `code`, it just no longer borrows another module's service. Public share links moved to `/documents/public/v1/shares` with the `/public/v1/documents` alias (Q34).

@@ -24,12 +24,10 @@ const api = {
 	'location.villageNotFound': 'Village not found',
 
 	'sales.quotationNotFound': 'Quotation not found',
-	'sales.paymentNotFound': 'Payment not found',
 	'procurement.supplierNotFound': 'Supplier not found',
 	'procurement.supplierCodeTaken': 'Supplier code {{code}} is already used',
 	'procurement.supplierAlreadyActive': 'The supplier is already active',
 	'procurement.supplierAlreadyInactive': 'The supplier is already inactive',
-	'procurement.villageNotFound': 'Village (kelurahan/desa) not found',
 	'procurement.purchaseRequestNotFound': 'Purchase request not found',
 	'procurement.prState.notDraft': 'Only a draft purchase request can be changed or submitted',
 	'procurement.prState.notSubmitted': 'Only a submitted purchase request can be approved or rejected',
@@ -250,7 +248,6 @@ const api = {
 	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
 	'company.settingInvalid': 'The value does not match its type',
-	'numbering.unknownCodeType': 'Unknown code type',
 	'document.notFound': 'Document not found',
 	'document.notVoidable': 'This document cannot be voided',
 	'document.fileNotFound': 'File not found',
@@ -263,16 +260,6 @@ const api = {
 	'document.signatureImageNotFound': 'No signature image uploaded',
 	'document.signaturePdfInvalid': 'Pick a PDF of this document and upload a PDF',
 	'document.signaturePdfState': 'This signature has no signed PDF yet, or it is final',
-	'numbering.pattern.length': 'The pattern must be 1-100 characters',
-	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
-	'numbering.pattern.tokenNotForType':
-		'Token {{token}} is only available for: {{types}}',
-	'numbering.pattern.tokenTakesNoWidth': 'Token {{token}} does not take a width',
-	'numbering.pattern.seqWidth': 'The {SEQ:n} width must be between 1 and 10',
-	'numbering.pattern.seqOnce': 'The pattern must contain {SEQ} exactly once',
-	'numbering.pattern.braces': 'Unbalanced or malformed token braces',
-	'numbering.pattern.literals':
-		'Only letters, digits, space, / - . _ are allowed outside tokens',
 	'organization.slugTaken': 'Organization slug is already taken',
 	'organization.alreadyDeleted': 'Organization is already deleted',
 	'organization.notDeleted': 'Organization is not deleted',
