@@ -36,5 +36,7 @@ export function documentModule() {
 		.use(DocumentController.plugin())
 		.use(DocumentSignatureController.plugin())
 		.use(SignatureController.plugin())
-		.use(PublicDocumentController.plugin());
+		.use(PublicDocumentController.plugin())
+		// Alias: share links already sent to customers (ADR-0024 Q34).
+		.use(PublicDocumentController.plugin('/public/v1/documents'));
 }

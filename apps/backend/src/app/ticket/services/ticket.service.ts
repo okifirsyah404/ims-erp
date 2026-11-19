@@ -94,7 +94,7 @@ export class TicketService {
 		const view = await this.view(ticket);
 		const customer = await this.customers.getActiveCustomer(ticket.customerId);
 		const contact = customer ? { phone: customer.phone, whatsapp: customer.whatsapp, email: customer.email } : null;
-		await this.outbox.publish('service_ticket.updated', { type: 'service_ticket', id: ticket.id }, ticketUpdatedEvent(ticket, change, view.assignee, contact));
+		await this.outbox.publish('service_ticket.updated', { type: 'ticket', id: ticket.id }, ticketUpdatedEvent(ticket, change, view.assignee, contact));
 		return view;
 	}
 

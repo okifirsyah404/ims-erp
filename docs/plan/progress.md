@@ -12,6 +12,15 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-19 - P7: document numbering, push notifications, webhook module, module vocabulary (ERP-0085/0086/0087/0089 backend)
+
+- `document`: own numbering (`DocumentCodeNumberingRepository`, `DocumentNumberingService` over `document.code_numberings`); the registry still takes the owning module's `code`, it just no longer borrows another module's service. Public share links moved to `/documents/public/v1/shares` with the `/public/v1/documents` alias (Q34).
+- `notification`: tables and types renamed to `push_notifications` / `push_notification_templates` (Q32); `TPushNotification*`, `PushNotificationTemplateCode`; URL stays `/notifications`. Seeders follow.
+- New `webhook` module (ERP-0089, no schema, no repository): `POST /webhooks/<provider>` with raw-body capture, 200 for `accepted|duplicate|ignored` and 401 for `rejected`, 404 for an unknown provider; aliases `/payments/gateway/<provider>` and `/integrations/whatsapp`. It delegates to `ExportedPaymentWebhookService` (payment) and the new `ExportedWhatsappWebhookService` (automation) and never touches a table or a secret.
+- `automation`: the WhatsApp webhook controller is gone; the module publishes `ExportedWhatsappWebhookService`. Outbox aggregate types re-pointed (`service_ticket` -> `ticket`); topics unchanged so n8n keeps working. Doc comments no longer say CRM.
+- `audit`: no schema change; only the module vocabulary in comments/prose was re-pointed.
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/` and `test/` (23 seeder errors remain, P8); `bun test test/unit` -> 790 pass / 0 fail; `bun test test/finance test/tax test/authorization test/notification` -> 441 pass / 0 fail; `bun docs/database/validate-dbml.ts` -> OK (drift 0).
+- Still open: web-admin wrappers (`documents-api.ts`, `signature-api.ts`, `document-image-api.ts`, `notification-api.ts`, `automation-api.ts`, `whatsapp-api.ts`), provider dashboards (Xendit, SingaPay, WAHA, Meta) and seeders (P8).
 ## 2026-11-19 - P6: project absorbs licensing + warranty, ticket replaces aftersales, human-resource (ERP-0082/0083/0084 backend)
 
 - `src/app/projects` and `src/app/licensing` merged into `src/app/project` (git mv; one module, one schema). Tables renamed `project_tasks|costs|evidence|handover` -> `tasks|costs|evidence|handover`; `projects` gains `company_id`, `lead_id`, `order_id`/`order_code`, `address_id`; `warranty_certificates` -> `warranties` with `handover_id`; `licensable_applications` -> `license_applications`, `application_api_keys` -> `license_api_keys`, `license_contracts` gains `license_application_id`/`company_id`/`order_id`.

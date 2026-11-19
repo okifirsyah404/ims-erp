@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { pinoLogger } from '@providers/logger/logger';
-import type { NotificationTemplateCode } from '@drizzle/schemas/notification.schema';
+import type { PushNotificationTemplateCode } from '@drizzle/schemas/notification.schema';
 import { NOTIFICATION_DISPATCHER_TOKEN } from '../constants/di';
 import {
 	dispatchNotification,
@@ -12,7 +12,7 @@ export type TNotifyInput = {
 	/** Recipients; duplicates are collapsed. */
 	userIds: string[];
 	/** `module.event` code, e.g. `org.member_added`. */
-	templateCode: NotificationTemplateCode;
+	templateCode: PushNotificationTemplateCode;
 	/** Values the template interpolates. */
 	variables?: Record<string, string>;
 	/** Display chips, e.g. `[organizationName]`. */
@@ -42,7 +42,7 @@ export function toNotificationSendJob(
 }
 
 /** The enqueue seam; injectable so a test never needs Redis. */
-export type TNotificationDispatcher = (
+export type TPushNotificationDispatcher = (
 	data: NotificationSendJobData,
 ) => Promise<void>;
 
@@ -66,7 +66,7 @@ export type TNotificationDispatcher = (
 export class ExportedNotificationService {
 	constructor(
 		@inject(NOTIFICATION_DISPATCHER_TOKEN)
-		private readonly dispatch: TNotificationDispatcher = dispatchNotification,
+		private readonly dispatch: TPushNotificationDispatcher = dispatchNotification,
 	) {}
 
 	async notify(input: TNotifyInput): Promise<void> {

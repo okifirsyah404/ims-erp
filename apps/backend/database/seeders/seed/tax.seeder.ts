@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
-import { taxTypes } from '../../../drizzle/schemas/finance.schema';
+import { taxes } from '../../../drizzle/schemas/tax.schema';
 import { organizations } from '../../../drizzle/schemas/auth.schema';
 import { SEED_ORGANIZATION_SLUG } from './organization.seeder';
 
@@ -67,20 +67,20 @@ export async function seedTax(): Promise<void> {
 	let inserted = 0;
 	for (const row of SEED_TAX_TYPES) {
 		const [existing] = await drizzleDB
-			.select({ id: taxTypes.id })
-			.from(taxTypes)
+			.select({ id: taxes.id })
+			.from(taxes)
 			.where(
 				and(
-					eq(taxTypes.organizationId, org.id),
-					eq(taxTypes.code, row.code),
-					eq(taxTypes.effectiveFrom, SEED_EFFECTIVE_FROM),
-					isNull(taxTypes.deletedAt),
+					eq(taxes.organizationId, org.id),
+					eq(taxes.code, row.code),
+					eq(taxes.effectiveFrom, SEED_EFFECTIVE_FROM),
+					isNull(taxes.deletedAt),
 				),
 			)
 			.limit(1);
 		if (existing) continue;
 
-		await drizzleDB.insert(taxTypes).values({
+		await drizzleDB.insert(taxes).values({
 			organizationId: org.id,
 			code: row.code,
 			name: row.name,

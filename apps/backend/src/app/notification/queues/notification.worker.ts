@@ -10,8 +10,8 @@ import {
 	REALTIME_HUB_TOKEN,
 } from '@providers/realtime/realtime.hub';
 import { toNotificationView } from '../contracts/notification.contract';
-import type { INotificationRepository } from '../contracts/notification.repository.interface';
-import { NOTIFICATION_REPOSITORY_TOKEN } from '../constants/di';
+import type { IPushNotificationRepository } from '../contracts/notification.repository.interface';
+import { PUSH_NOTIFICATION_REPOSITORY_TOKEN } from '../constants/di';
 import {
 	NOTIFICATION_PRUNE_JOB,
 	NOTIFICATION_QUEUE_NAME,
@@ -46,7 +46,7 @@ export function renderNotificationText(
  * is skipped and not retried, because retrying cannot create the template.
  */
 export async function processNotificationSendJob(
-	repository: INotificationRepository,
+	repository: IPushNotificationRepository,
 	hub: IRealtimeHub,
 	data: NotificationSendJobData,
 ): Promise<NotificationSendOutcome> {
@@ -88,7 +88,7 @@ export async function processNotificationSendJob(
 
 /** Hard-deletes read rows past the retention window (D10). */
 export async function processNotificationPruneJob(
-	repository: INotificationRepository,
+	repository: IPushNotificationRepository,
 	retentionDays: number = appConfig.scheduler.notificationRetentionDays,
 ): Promise<{ removed: number }> {
 	const cutoff = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1_000);
@@ -110,8 +110,8 @@ export type NotificationWorkerHandle = QueueWorker;
  * worker: they outlive the request lifecycle.
  */
 export function startNotificationWorker(): NotificationWorkerHandle {
-	const repository = container.resolve<INotificationRepository>(
-		NOTIFICATION_REPOSITORY_TOKEN,
+	const repository = container.resolve<IPushNotificationRepository>(
+		PUSH_NOTIFICATION_REPOSITORY_TOKEN,
 	);
 	const hub = container.resolve<IRealtimeHub>(REALTIME_HUB_TOKEN);
 

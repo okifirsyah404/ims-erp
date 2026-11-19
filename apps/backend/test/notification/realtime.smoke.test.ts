@@ -19,12 +19,12 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
 import type { AnyElysia } from 'elysia';
 import { container } from 'tsyringe';
 import type {
-	INotificationRepository,
-	TNotificationInsert,
+	IPushNotificationRepository,
+	TPushNotificationInsert,
 } from '../../src/app/notification/contracts/notification.repository.interface';
-import type { TNotificationSelect } from '../../src/app/notification/contracts/notification.repository.interface';
+import type { TPushNotificationSelect } from '../../src/app/notification/contracts/notification.repository.interface';
 import type { NotificationSendJobData } from '../../src/app/notification/queues/notification.queue';
-import type { TNotificationTemplateSelect } from '../../drizzle/schemas/notification.schema';
+import type { TPushNotificationTemplateSelect } from '../../drizzle/schemas/notification.schema';
 import {
 	InProcessRealtimeHub,
 	type IRealtimeHub,
@@ -50,7 +50,7 @@ mock.module('@providers/better-auth/auth', () => ({
 	},
 }));
 
-const TEMPLATE: TNotificationTemplateSelect = {
+const TEMPLATE: TPushNotificationTemplateSelect = {
 	id: 'tpl-smoke',
 	code: 'org.member_added',
 	name: 'Member added',
@@ -66,13 +66,13 @@ const TEMPLATE: TNotificationTemplateSelect = {
 
 /** In-memory inbox: enough of the contract for the worker's send path. */
 function fakeRepository() {
-	const inserted: TNotificationInsert[] = [];
+	const inserted: TPushNotificationInsert[] = [];
 
 	const repository = {
 		async findTemplateByCode(code: string) {
 			return code === TEMPLATE.code ? TEMPLATE : null;
 		},
-		async insert(entry: TNotificationInsert) {
+		async insert(entry: TPushNotificationInsert) {
 			inserted.push(entry);
 			const now = new Date();
 			return {
@@ -94,9 +94,9 @@ function fakeRepository() {
 				createdAt: now,
 				updatedAt: now,
 				deletedAt: null,
-			} satisfies TNotificationSelect;
+			} satisfies TPushNotificationSelect;
 		},
-	} as unknown as INotificationRepository;
+	} as unknown as IPushNotificationRepository;
 
 	return { repository, inserted };
 }

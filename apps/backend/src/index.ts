@@ -8,6 +8,7 @@ import { registerLicenseDueSchedule, startLicenseDueWorker } from '@app/project'
 import { registerLeadFollowUpSchedule, registerProject, startLeadFollowUpWorker } from '@app/project';
 import { registerTicket } from '@app/ticket';
 import { registerHumanResource } from '@app/human-resource';
+import { registerWebhook } from '@app/webhook';
 import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
 import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
@@ -77,6 +78,7 @@ registerCustomer(container);
 registerProject(container);
 registerTicket(container);
 registerHumanResource(container);
+registerWebhook(container);
 registerProcurement(container);
 registerFinance(container);
 registerTax(container);

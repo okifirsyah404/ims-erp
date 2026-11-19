@@ -2,8 +2,8 @@ import { and, inArray, isNull } from 'drizzle-orm';
 import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
 import {
-	notificationTemplates,
-	type NotificationTemplateCode,
+	pushNotificationTemplates,
+	type PushNotificationTemplateCode,
 } from '../../../drizzle/schemas/notification.schema';
 
 const logger = pino({
@@ -22,14 +22,14 @@ const logger = pino({
  * writes onto the row, while the client renders localized copy from
  * `templateCode` + `variables`. Adding a code means adding it to
  * `NOTIFICATION_TEMPLATE_CODES`, to this list, and to the client
- * `notifications` locale namespace.
+ * `pushNotifications` locale namespace.
  *
  * `variables` is the contract a producer must satisfy — the worker renders
  * `{{name}}` placeholders and a missing value becomes an empty string, so a
  * declared variable the producer forgets is a visible gap, not a crash.
  */
 export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
-	code: NotificationTemplateCode;
+	code: PushNotificationTemplateCode;
 	name: string;
 	subjectTemplate: string;
 	bodyTemplate: string;
@@ -92,12 +92,12 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 export async function seedNotificationTemplates(): Promise<void> {
 	const codes = NOTIFICATION_TEMPLATE_SEEDS.map((template) => template.code);
 	const existing = await drizzleDB
-		.select({ code: notificationTemplates.code })
-		.from(notificationTemplates)
+		.select({ code: pushNotificationTemplates.code })
+		.from(pushNotificationTemplates)
 		.where(
 			and(
-				isNull(notificationTemplates.deletedAt),
-				inArray(notificationTemplates.code, codes),
+				isNull(pushNotificationTemplates.deletedAt),
+				inArray(pushNotificationTemplates.code, codes),
 			),
 		);
 	const have = new Set(existing.map((row) => row.code));
@@ -107,7 +107,7 @@ export async function seedNotificationTemplates(): Promise<void> {
 
 	if (missing.length > 0) {
 		const now = new Date();
-		await drizzleDB.insert(notificationTemplates).values(
+		await drizzleDB.insert(pushNotificationTemplates).values(
 			missing.map((template) => ({
 				code: template.code,
 				name: template.name,

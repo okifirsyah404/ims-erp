@@ -1,5 +1,6 @@
 import { appConfig } from '@config/providers/config';
 import type { DependencyContainer } from 'tsyringe';
+import { ExportedWhatsappWebhookService } from './services/exported-whatsapp-webhook.service';
 import { N8nWebhookClient } from './adapters/n8n-webhook';
 import { OpenAiCompatibleModel } from './adapters/openai-compatible';
 import { WahaClient } from './adapters/waha';
@@ -15,6 +16,7 @@ import {
 	WEBHOOK_CLIENT_TOKEN,
 	WHATSAPP_GATEWAY_TOKEN,
 	WHATSAPP_REPOSITORY_TOKEN,
+	EXPORTED_WHATSAPP_WEBHOOK_SERVICE_TOKEN,
 	WHATSAPP_SERVICE_TOKEN,
 	WHATSAPP_SETTINGS_TOKEN,
 } from './constants/di';
@@ -50,6 +52,7 @@ export function registerAutomation(container: DependencyContainer): void {
 	container.register(INBOUND_DISPATCHER_TOKEN, { useValue: new BullInboundDispatcher() });
 	container.register(WHATSAPP_SETTINGS_TOKEN, { useValue: { webhookSecret: appConfig.integrations.wahaWebhookSecret } });
 	container.register(WHATSAPP_SERVICE_TOKEN, { useClass: WhatsappService });
+	container.register(EXPORTED_WHATSAPP_WEBHOOK_SERVICE_TOKEN, { useClass: ExportedWhatsappWebhookService });
 	container.register(ASSISTANT_SERVICE_TOKEN, { useClass: AssistantService });
 	container.register(FAQ_SERVICE_TOKEN, { useClass: FaqService });
 }

@@ -1,12 +1,12 @@
 import type { DependencyContainer } from 'tsyringe';
-import { NotificationRepository } from './repositories/notification.repository';
+import { PushNotificationRepository } from './repositories/notification.repository';
 import { NotificationService } from './services/notification.service';
 import { ExportedNotificationService } from './services/exported-notification.service';
 import { dispatchNotification } from './queues/notification.queue';
 import {
 	EXPORTED_NOTIFICATION_SERVICE_TOKEN,
 	NOTIFICATION_DISPATCHER_TOKEN,
-	NOTIFICATION_REPOSITORY_TOKEN,
+	PUSH_NOTIFICATION_REPOSITORY_TOKEN,
 	NOTIFICATION_SERVICE_TOKEN,
 } from './constants/di';
 
@@ -23,8 +23,8 @@ export * from './constants/di';
  * constructor injection, so this only has to run before the first request.
  */
 export function registerNotification(container: DependencyContainer): void {
-	container.register(NOTIFICATION_REPOSITORY_TOKEN, {
-		useClass: NotificationRepository,
+	container.register(PUSH_NOTIFICATION_REPOSITORY_TOKEN, {
+		useClass: PushNotificationRepository,
 	});
 	container.register(NOTIFICATION_SERVICE_TOKEN, {
 		useClass: NotificationService,

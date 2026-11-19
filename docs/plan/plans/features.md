@@ -39,6 +39,7 @@ Plan: `docs/plan/database-refactor/`. Decision: ADR-0024 (`proposed`).
 - ERP-0077 sale: **backend done** (folder `sale`, `/sales/*`, own numbering, quotation person + company, legacy payments removed); web-admin, customer portal and seeder open; invoice-billing test blocked on P5.
 - ERP-0079/0080/0081 finance, tax, payment: **backend done** (`finance` replaces `accounting` with depreciation; `tax` split out at `/taxes`; payment reworked to one ledger with polymorphic allocations, encrypted gateway config and `ExportedPaymentWebhookService`). `code-number` deleted. Web-admin, portal, webhook module (P7) and seeders open.
 - ERP-0082/0083/0084 project, ticket, human-resource: **backend done** (project absorbs licensing + warranty; ticket replaces aftersales at `/tickets`; `human-resource` with salary records and `ExportedEmployeeService`). Web-admin, portal, landing and seeders open.
+- ERP-0085/0086/0087/0089 document, notification, audit/automation, webhook: **backend done** (document owns its numbering, notification tables renamed to `push_notifications`, the `webhook` module owns `/webhooks/<provider>` with the legacy aliases and no schema). Web-admin wrappers, provider dashboards and seeders open.
   categories, item serials, stocks, movements, adjustments, valuation and the
   warehouse family run on the new schema (`/inventory/products`,
   `/inventory/product-categories`), numbering through

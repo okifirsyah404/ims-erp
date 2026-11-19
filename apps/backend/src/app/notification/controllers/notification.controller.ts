@@ -29,7 +29,7 @@ export class NotificationController {
 	/**
 	 * Builds the Elysia plugin mounting the four inbox routes.
 	 *
-	 * @returns An Elysia instance with `/notifications` mounted
+	 * @returns An Elysia instance with `/pushNotifications` mounted
 	 */
 	static plugin() {
 		const service = container.resolve<NotificationService>(

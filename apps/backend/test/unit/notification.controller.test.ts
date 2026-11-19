@@ -11,15 +11,15 @@ import { beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test';
 import Elysia from 'elysia';
 import type { AnyElysia } from 'elysia';
 import { container } from 'tsyringe';
-import type { INotificationRepository } from '../../src/app/notification/contracts/notification.repository.interface';
-import { NOTIFICATION_REPOSITORY_TOKEN } from '../../src/app/notification/constants/di';
+import type { IPushNotificationRepository } from '../../src/app/notification/contracts/notification.repository.interface';
+import { PUSH_NOTIFICATION_REPOSITORY_TOKEN } from '../../src/app/notification/constants/di';
 import { NotificationService } from '../../src/app/notification/services/notification.service';
 import { NOTIFICATION_SERVICE_TOKEN } from '../../src/app/notification/constants/di';
 import {
 	InProcessRealtimeHub,
 	REALTIME_HUB_TOKEN,
 } from '../../src/providers/realtime/realtime.hub';
-import type { TNotificationSelect } from '../../drizzle/schemas/notification.schema';
+import type { TPushNotificationSelect } from '../../drizzle/schemas/notification.schema';
 
 // Top-level so bun hoists it above the imports: the guard reads the session
 // from this seam, and a mock installed later never reaches the loaded module.
@@ -54,14 +54,14 @@ const READ_ID = '0190a1b2-0000-7000-8000-0000000000aa';
 const UNREAD_ID = '0190a1b2-0000-7000-8000-0000000000bb';
 const OTHER_ID = '0190a1b2-0000-7000-8000-0000000000cc';
 
-let rows: TNotificationSelect[] = [];
+let rows: TPushNotificationSelect[] = [];
 
 function row(
 	id: string,
 	userId: string,
 	status: 'sent' | 'read',
 	createdAt: string,
-): TNotificationSelect {
+): TPushNotificationSelect {
 	const at = new Date(createdAt);
 	return {
 		id,
@@ -85,7 +85,7 @@ function row(
 	};
 }
 
-const repository: INotificationRepository = {
+const repository: IPushNotificationRepository = {
 	async insert() {
 		throw new Error('not used by the HTTP surface');
 	},
@@ -145,7 +145,7 @@ let app: AnyElysia;
 let buildPlugin: () => AnyElysia;
 
 beforeAll(async () => {
-	container.register(NOTIFICATION_REPOSITORY_TOKEN, { useValue: repository });
+	container.register(PUSH_NOTIFICATION_REPOSITORY_TOKEN, { useValue: repository });
 	container.register(REALTIME_HUB_TOKEN, {
 		useValue: new InProcessRealtimeHub(),
 	});

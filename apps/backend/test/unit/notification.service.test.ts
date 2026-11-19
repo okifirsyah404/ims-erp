@@ -9,16 +9,16 @@
  */
 import { describe, expect, test } from 'bun:test';
 import type {
-	INotificationRepository,
-	TNotificationListRequest,
+	IPushNotificationRepository,
+	TPushNotificationListRequest,
 } from '../../src/app/notification/contracts/notification.repository.interface';
 import { NotificationService } from '../../src/app/notification/services/notification.service';
 import { NotificationNotFoundError } from '../../src/app/notification/errors/notification.errors';
 import type { TRealtimeMessage } from '../../src/providers/realtime/realtime.message';
 import type { IRealtimeHub } from '../../src/providers/realtime/realtime.hub';
-import type { TNotificationSelect } from '../../drizzle/schemas/notification.schema';
+import type { TPushNotificationSelect } from '../../drizzle/schemas/notification.schema';
 
-function row(overrides: Partial<TNotificationSelect> = {}): TNotificationSelect {
+function row(overrides: Partial<TPushNotificationSelect> = {}): TPushNotificationSelect {
 	const now = new Date('2026-11-13T10:00:00Z');
 	return {
 		id: 'n-1',
@@ -44,17 +44,17 @@ function row(overrides: Partial<TNotificationSelect> = {}): TNotificationSelect 
 }
 
 function build(options: {
-	rows?: TNotificationSelect[];
-	markReadResult?: TNotificationSelect | null;
+	rows?: TPushNotificationSelect[];
+	markReadResult?: TPushNotificationSelect | null;
 	markAllReadResult?: number;
 	unread?: number;
 } = {}) {
-	const listRequests: TNotificationListRequest[] = [];
+	const listRequests: TPushNotificationListRequest[] = [];
 	const published: { userId: string; message: TRealtimeMessage }[] = [];
 	let unreadCalls = 0;
 
 	const repository = {
-		async listForUser(request: TNotificationListRequest) {
+		async listForUser(request: TPushNotificationListRequest) {
 			listRequests.push(request);
 			const rows = options.rows ?? [];
 			return {
@@ -80,7 +80,7 @@ function build(options: {
 		async findByIdForUser() {
 			return null;
 		},
-	} as unknown as INotificationRepository;
+	} as unknown as IPushNotificationRepository;
 
 	const hub = {
 		publish(userId: string, message: TRealtimeMessage) {

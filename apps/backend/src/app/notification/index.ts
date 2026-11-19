@@ -13,13 +13,13 @@ import { NotificationController } from './controllers/notification.controller';
 
 export * from './container';
 export type {
-	INotificationRepository,
-	TNotificationInsert,
-	TNotificationListRequest,
+	IPushNotificationRepository,
+	TPushNotificationInsert,
+	TPushNotificationListRequest,
 } from './contracts/notification.repository.interface';
 export type {
-	TNotificationView,
-	TNotificationQuery,
+	TPushNotificationView,
+	TPushNotificationQuery,
 } from './contracts/notification.contract';
 export type { TNotifyInput } from './services/exported-notification.service';
 export { NotificationNotFoundError } from './errors/notification.errors';

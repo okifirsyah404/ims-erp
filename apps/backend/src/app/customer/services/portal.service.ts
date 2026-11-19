@@ -24,7 +24,7 @@ export type TPortalDevice = { id: string; certificate: TWarrantySelect; line: nu
 
 /**
  * Customer-portal use cases (ERP-0022). Owns no data: every read and write
- * goes through the owning module's contract (projects, after-sales, CRM),
+ * goes through the owning module's contract (project, ticket),
  * always with the customer id the portal guard resolved — never an id from
  * the request.
  */

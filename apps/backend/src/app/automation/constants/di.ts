@@ -3,6 +3,7 @@
  * WhatsApp assistant).
  */
 import type { InjectionToken } from 'tsyringe';
+import type { ExportedWhatsappWebhookService } from '../services/exported-whatsapp-webhook.service';
 import type { IOutboxDispatcher, IOutboxRepository, IWebhookClient } from '../contracts/outbox.contract';
 import type {
 	IAssistantModel,
@@ -33,3 +34,7 @@ export const WHATSAPP_SERVICE_TOKEN: InjectionToken<WhatsappService> = Symbol('W
 export const ASSISTANT_SERVICE_TOKEN: InjectionToken<AssistantService> = Symbol('ASSISTANT_SERVICE_TOKEN');
 export const FAQ_SERVICE_TOKEN: InjectionToken<FaqService> = Symbol('FAQ_SERVICE_TOKEN');
 export const WHATSAPP_SETTINGS_TOKEN: InjectionToken<TWhatsappSettings> = Symbol('WHATSAPP_SETTINGS_TOKEN');
+
+/** Published to the `webhook` module: verified, deduped WhatsApp deliveries. */
+export const EXPORTED_WHATSAPP_WEBHOOK_SERVICE_TOKEN: InjectionToken<ExportedWhatsappWebhookService> =
+	Symbol('EXPORTED_WHATSAPP_WEBHOOK_SERVICE');

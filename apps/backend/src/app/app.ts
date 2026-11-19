@@ -21,6 +21,7 @@ import { procurementModule } from './procurement';
 import { projectModule } from './project';
 import { ticketModule } from './ticket';
 import { humanResourceModule } from './human-resource';
+import { webhookModule } from './webhook';
 import { salesModule } from './sale';
 import { userModule } from './user';
 
@@ -110,6 +111,7 @@ export function createApp() {
 			.use(projectModule())
 			.use(ticketModule())
 			.use(humanResourceModule())
+			.use(webhookModule())
 			.use(inventoryModule())
 			.use(financeModule())
 			.use(taxModule())
