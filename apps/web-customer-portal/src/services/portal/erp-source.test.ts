@@ -85,6 +85,9 @@ describe("route map", () => {
 describe("envelope", () => {
   test("unwraps data, including noContent's null", () => {
     expect(unwrapEnvelope({ requestId: "r", status: 200, data: { a: 1 } })).toEqual({ a: 1 });
+    // A paginated envelope keeps the shared TPaginationMeta (`okPaginated` in the backend).
+    const pagination = { page: 1, limit: 10, total: 1, totalPages: 1 };
+    expect(unwrapEnvelope({ requestId: "r", status: 200, pagination, data: [{ a: 1 }] })).toEqual({ items: [{ a: 1 }], pagination });
     expect(unwrapEnvelope({ requestId: "r", status: 200, data: null })).toBeNull();
     expect(unwrapEnvelope("plain")).toBe("plain");
   });

@@ -1,6 +1,6 @@
 import { publicApiGuard } from '@authorization/public-api-auth';
 import { domainPlugin } from '@http/plugin';
-import { ok } from '@http/response';
+import { ok, okPaginated } from '@http/response';
 import { container } from 'tsyringe';
 import { PRODUCT_LISTING_SERVICE_TOKEN } from '../constants/di';
 import {
@@ -38,7 +38,7 @@ export class PublicCatalogController {
 
 		return domainPlugin({ name: `public-catalog:${prefix}`, prefix, tags: ['Public Website'] })
 			.use(publicApiGuard())
-			.get('/products', async ({ request }) => ok(await service.listProducts(productQuerySchema.parse(query(request)))), {
+			.get('/products', async ({ request }) => okPaginated(await service.listProducts(productQuerySchema.parse(query(request)))), {
 				publicApi: true,
 				detail: { description: 'listProducts: filter, sort and page published products' },
 			})

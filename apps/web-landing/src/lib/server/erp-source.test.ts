@@ -20,6 +20,13 @@ const envelope = (data: unknown, status = 200) =>
     headers: { "content-type": "application/json" },
   });
 
+/** The backend paginated envelope (`okPaginated()`): rows in `data`, the shared `TPaginationMeta` in `pagination`. */
+const paginated = (rows: unknown[], pagination = { page: 1, limit: 12, total: rows.length, totalPages: 1 }) =>
+  new Response(JSON.stringify({ requestId: "r-1", status: 200, message: "OK", timestamp: 1, pagination, data: rows }), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+
 const errorEnvelope = (status: number, message: string) =>
   new Response(JSON.stringify({ requestId: "r-1", status, message, timestamp: 1, data: null, errors: [] }), {
     status,
@@ -69,7 +76,7 @@ const query: CatalogListQuery = {
   maxPrice: null,
   sort: "price-asc",
   page: 2,
-  pageSize: 12,
+  limit: 12,
 };
 
 describe("route maps", () => {
@@ -95,11 +102,11 @@ describe("unwrapEnvelope", () => {
 
 describe("ERP catalog source", () => {
   test("listProducts sends the query with the website key and maps the envelope", async () => {
-    const { calls, fetcher } = mockFetch(() => envelope({ items: [backendProduct], total: 1, page: 1, pageCount: 1 }));
+    const { calls, fetcher } = mockFetch(() => paginated([backendProduct]));
     const page = await catalogWith(fetcher).listProducts(query);
 
     expect(page.items[0]).toEqual(backendProduct as never);
-    expect(page.total).toBe(1);
+    expect(page.pagination).toEqual({ page: 1, limit: 12, total: 1, totalPages: 1 });
     const { url, init } = calls[0]!;
     expect(url.pathname).toBe("/inventory/public/v1/catalog/products");
     expect(url.searchParams.getAll("category")).toEqual(["turnstile", "gate"]);
@@ -107,13 +114,13 @@ describe("ERP catalog source", () => {
     expect(url.searchParams.get("min")).toBe("1000");
     expect(url.searchParams.has("max")).toBe(false);
     expect(url.searchParams.get("sort")).toBe("price-asc");
-    expect(url.searchParams.get("pageSize")).toBe("12");
+    expect(url.searchParams.get("limit")).toBe("12");
     expect((init.headers as Record<string, string>).Authorization).toBe(`Bearer ${KEY}`);
   });
 
   test("a product without a photo or list price (quotation) still passes the contract", async () => {
     const { image: _image, ...noPhoto } = backendProduct;
-    const { fetcher } = mockFetch(() => envelope({ items: [{ ...noPhoto, price: null }], total: 1, page: 1, pageCount: 1 }));
+    const { fetcher } = mockFetch(() => paginated([{ ...noPhoto, price: null }]));
     const page = await catalogWith(fetcher).listProducts(query);
     expect(page.items[0]!.price).toBeNull();
     expect(page.items[0]!.image).toBeUndefined();
@@ -131,12 +138,12 @@ describe("ERP catalog source", () => {
   });
 
   test("a payload that breaks the contract raises ErpContractError", async () => {
-    const { fetcher } = mockFetch(() => envelope({ items: [{ ...backendProduct, stock: "sold-out" }], total: 1, page: 1, pageCount: 1 }));
+    const { fetcher } = mockFetch(() => paginated([{ ...backendProduct, stock: "sold-out" }]));
     await expect(catalogWith(fetcher).listProducts(query)).rejects.toBeInstanceOf(ErpContractError);
   });
 
   test("a hostile image URL is rejected", async () => {
-    const { fetcher } = mockFetch(() => envelope({ items: [{ ...backendProduct, image: "javascript:alert(1)" }], total: 1, page: 1, pageCount: 1 }));
+    const { fetcher } = mockFetch(() => paginated([{ ...backendProduct, image: "javascript:alert(1)" }]));
     await expect(catalogWith(fetcher).listProducts(query)).rejects.toBeInstanceOf(ErpContractError);
   });
 

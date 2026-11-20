@@ -1,4 +1,5 @@
 import type { OutOfStockMode } from '@drizzle/schemas/inventory.schema';
+import type { TPaginationResult } from '@ims-erp/common';
 import type { TProductQuery, TStockStatus } from '../contracts/product-listing.contract';
 
 /**
@@ -37,8 +38,14 @@ export function toRupiah(minor: number): number {
 	return Math.round(minor / 100);
 }
 
-/** Filters, sorts and pages the published products the way the website asks. */
-export function queryProducts(products: TWebProduct[], query: TProductQuery) {
+/**
+ * Filters, sorts and pages the published products the way the website asks.
+ *
+ * @remarks
+ * Returns the shared `TPaginationResult` contract (`@ims-erp/common`): the controller
+ * wraps it with `okPaginated`. An out-of-range page is clamped to the last page.
+ */
+export function queryProducts(products: TWebProduct[], query: TProductQuery): TPaginationResult<TWebProduct> {
 	const q = query.q?.toLowerCase();
 	const filtered = products.filter(
 		(product) =>
@@ -58,12 +65,10 @@ export function queryProducts(products: TWebProduct[], query: TProductQuery) {
 		'price-desc': (a, b) => price(b, -1) - price(a, -1) || a.name.localeCompare(b.name),
 	};
 	const sorted = [...filtered].sort(sorters[query.sort]);
-	const pageCount = Math.max(1, Math.ceil(sorted.length / query.pageSize));
-	const page = Math.min(query.page, pageCount);
+	const totalPages = Math.ceil(sorted.length / query.limit);
+	const page = Math.min(query.page, Math.max(1, totalPages));
 	return {
-		items: sorted.slice((page - 1) * query.pageSize, page * query.pageSize),
-		total: sorted.length,
-		page,
-		pageCount,
+		meta: { page, limit: query.limit, total: sorted.length, totalPages },
+		data: sorted.slice((page - 1) * query.limit, page * query.limit),
 	};
 }

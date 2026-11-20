@@ -43,9 +43,12 @@ const solutions = () => platforms.map((p) => ({ slug: p.slug, name: p.name, desc
 export const demoCatalogSource: CatalogSource = {
   async listProducts(query) {
     const filtered = products.filter((p) => matches(p, query)).sort(sorters[query.sort]);
-    const pageCount = Math.max(1, Math.ceil(filtered.length / query.pageSize));
-    const page = Math.min(query.page, pageCount);
-    return { items: filtered.slice((page - 1) * query.pageSize, page * query.pageSize), total: filtered.length, page, pageCount };
+    const totalPages = Math.ceil(filtered.length / query.limit);
+    const page = Math.min(query.page, Math.max(1, totalPages));
+    return {
+      items: filtered.slice((page - 1) * query.limit, page * query.limit),
+      pagination: { page, limit: query.limit, total: filtered.length, totalPages },
+    };
   },
   async getProduct(slug) {
     return products.find((p) => p.slug === slug) ?? null;

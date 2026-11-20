@@ -8,7 +8,10 @@ import type { TApiPaginatedResponse, TApiResponse } from "@ims-erp/common";
  */
 export function unwrapEnvelope(body: unknown): unknown {
   if (body && typeof body === "object" && "data" in body) {
-    return (body as TApiResponse<unknown> | TApiPaginatedResponse<unknown>).data;
+    const envelope = body as TApiResponse<unknown> | TApiPaginatedResponse<unknown>;
+    // A paginated envelope keeps its shared `TPaginationMeta` as `{ items, pagination }`.
+    if ("pagination" in envelope && envelope.pagination) return { items: envelope.data, pagination: envelope.pagination };
+    return envelope.data;
   }
   return body;
 }

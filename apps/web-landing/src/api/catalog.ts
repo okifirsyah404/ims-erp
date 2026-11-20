@@ -1,3 +1,4 @@
+import type { TPaginationMeta } from "@ims-erp/common";
 import { z } from "zod";
 import { ApiError, createApiClient, type ApiClientOptions } from "./client";
 import type { Money } from "./money";
@@ -41,10 +42,12 @@ export type CatalogListQuery = {
   maxPrice: number | null;
   sort: CatalogSort;
   page: number;
-  pageSize: number;
+  /** Rows per page: limit of the shared pagination contract (@ims-erp/common). */
+  limit: number;
 };
 
-export type CatalogPage = { items: CatalogProduct[]; total: number; page: number; pageCount: number };
+/** One page of products; `pagination` is the shared `TPaginationMeta` contract (`@ims-erp/common`). */
+export type CatalogPage = { items: CatalogProduct[]; pagination: TPaginationMeta };
 
 export type CatalogCategoryInfo = { slug: string; name: string; productCount: number };
 
@@ -113,9 +116,12 @@ const productSchema = z.object({
 
 const pageSchema = z.object({
   items: z.array(productSchema),
-  total: z.number().int().nonnegative(),
-  page: z.number().int().positive(),
-  pageCount: z.number().int().positive(),
+  pagination: z.object({
+    page: z.number().int().positive(),
+    limit: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    totalPages: z.number().int().nonnegative(),
+  }) satisfies z.ZodType<TPaginationMeta>,
 }) satisfies z.ZodType<CatalogPage>;
 
 export type ErpCatalogConfig = {
@@ -162,7 +168,7 @@ export function createErpCatalogSource(config: ErpCatalogConfig): CatalogSource 
           max: query.maxPrice,
           sort: query.sort,
           page: query.page,
-          pageSize: query.pageSize,
+          limit: query.limit,
         },
       });
       return parseOrThrow("listProducts", pageSchema, body);

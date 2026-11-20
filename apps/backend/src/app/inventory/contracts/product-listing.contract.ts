@@ -54,7 +54,7 @@ export const productQuerySchema = z.object({
 	max: z.coerce.number().min(0).optional(),
 	sort: z.enum(SORTS).default('popular'),
 	page: z.coerce.number().int().min(1).default(1),
-	pageSize: z.coerce.number().int().min(1).max(60).default(12),
+	limit: z.coerce.number().int().min(1).max(60).default(12),
 });
 
 export const slugsQuerySchema = z.object({ slug: many(z.string().max(120)).pipe(z.array(z.string()).max(100)) });

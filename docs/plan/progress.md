@@ -12,6 +12,13 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Pagination of the public catalog uses the `@ims-erp/common` contract
+
+- Backend: `GET /inventory/public/v1/catalog/products` now answers `okPaginated(...)`: rows in `data`, the shared `TPaginationMeta` (`{ page, limit, total, totalPages }`) in `pagination`. `queryProducts` returns `TPaginationResult<TWebProduct>` (`{ meta, data }`) and clamps an out-of-range page to the last page; the query parameter `pageSize` is now `limit` (the `TPaginationRequest` name used by every staff list). `totalPages` is `ceil(total / limit)` (0 for an empty result), the repository convention.
+- web-landing: `CatalogListQuery` carries `limit`; `CatalogPage` is `{ items, pagination: TPaginationMeta }` (`CatalogResult` in `lib/catalog.ts` likewise); the zod page schema validates the four `pagination` fields; the catalog results/pagination components read `pagination.total|page|totalPages`; the demo source builds the same shape. `unwrapEnvelope` (landing and portal) now returns `{ items: data, pagination }` for a paginated envelope so the contract survives unwrapping; the portal has no paginated operation yet.
+- Tests: backend `product-listing.service.test.ts` asserts `meta`, landing `erp-source.test.ts` feeds a backend-shaped paginated envelope and asserts `pagination` and the `limit` query parameter, portal test asserts the paginated unwrap.
+- Verified: backend `tsc` 0 errors; `bun run lint` 0 errors; `bun run test` 7/7; landing `astro check` 0 errors and build OK; portal `astro check` 0 errors and build OK. Search (`/search`) is not a page and stays a grouped result. No live run.
+- docs/database: reviewed, unchanged.
 ## 2026-11-20 - Live API smoke test against a disposable database (no UI)
 
 - Setup: disposable database `ims_smoke` (created, then dropped afterwards): `drizzle:migrate` applied the baseline, `drizzle:seed` ran (about 90 s), backend started with `bun run src/index.ts` (`NODE_ENV=test`).

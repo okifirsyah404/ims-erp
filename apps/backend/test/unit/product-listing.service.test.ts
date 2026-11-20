@@ -163,21 +163,21 @@ describe('public catalog', () => {
 
 	test('products come from the product row; only published ones', async () => {
 		const page = await service.listProducts(productQuerySchema.parse({}));
-		expect(page.total).toBe(3);
-		expect(page.items[0]).toMatchObject({ slug: 'kamera-cctv', name: 'Kamera CCTV', price: 1_500_000, stock: 'ready', categorySlug: 'security', specs: 'Kamera CCTV spec' });
+		expect(page.meta.total).toBe(3);
+		expect(page.data[0]).toMatchObject({ slug: 'kamera-cctv', name: 'Kamera CCTV', price: 1_500_000, stock: 'ready', categorySlug: 'security', specs: 'Kamera CCTV spec' });
 		await expect(service.getProduct('kabel-utp')).rejects.toBeInstanceOf(CatalogNotFoundError);
 		expect(await service.getProduct('jasa-instalasi')).toMatchObject({ price: null, stock: 'request', priceCaption: 'Harga sesuai survei' });
 	});
 
 	test('filters, sorts and pages like the website asks', async () => {
 		const query = (raw: Record<string, unknown>) => service.listProducts(productQuerySchema.parse(raw));
-		expect((await query({ category: 'gate' })).items.map((p) => p.slug)).toEqual(['swing-gate']);
-		expect((await query({ availability: ['preorder', 'request'] })).total).toBe(2);
-		expect((await query({ application: 'Perkantoran' })).items.map((p) => p.slug)).toEqual(['kamera-cctv']);
-		expect((await query({ sort: 'price-desc' })).items.map((p) => p.slug)).toEqual(['swing-gate', 'kamera-cctv', 'jasa-instalasi']);
-		expect((await query({ min: '2000000' })).items.map((p) => p.slug)).toEqual(['swing-gate']);
-		expect(await query({ pageSize: '2', page: '2' })).toMatchObject({ page: 2, pageCount: 2, total: 3 });
-		expect((await query({ q: 'gate' })).total).toBe(1);
+		expect((await query({ category: 'gate' })).data.map((p) => p.slug)).toEqual(['swing-gate']);
+		expect((await query({ availability: ['preorder', 'request'] })).meta.total).toBe(2);
+		expect((await query({ application: 'Perkantoran' })).data.map((p) => p.slug)).toEqual(['kamera-cctv']);
+		expect((await query({ sort: 'price-desc' })).data.map((p) => p.slug)).toEqual(['swing-gate', 'kamera-cctv', 'jasa-instalasi']);
+		expect((await query({ min: '2000000' })).data.map((p) => p.slug)).toEqual(['swing-gate']);
+		expect((await query({ limit: '2', page: '2' })).meta).toEqual({ page: 2, limit: 2, total: 3, totalPages: 2 });
+		expect((await query({ q: 'gate' })).meta.total).toBe(1);
 	});
 
 	test('categories, facets, stock, pricing, solutions and search', async () => {
@@ -222,7 +222,7 @@ describe('public catalog', () => {
 
 	test('hiding a listing removes it from the website at once', async () => {
 		await service.setPublished(CAM, false);
-		expect((await service.listProducts(productQuerySchema.parse({}))).total).toBe(2);
+		expect((await service.listProducts(productQuerySchema.parse({}))).meta.total).toBe(2);
 		expect(products.find((row) => row.id === CAM)?.publishedAt).not.toBeNull();
 	});
 });

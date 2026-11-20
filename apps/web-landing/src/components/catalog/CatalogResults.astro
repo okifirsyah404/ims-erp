@@ -28,7 +28,7 @@ const { query, result, catalogTotal, sample } = Astro.props;
 {
   result ? (
     <>
-      <CatalogToolbar query={query} resultCount={result.total} catalogTotal={catalogTotal} sample={sample} />
+      <CatalogToolbar query={query} resultCount={result.pagination.total} catalogTotal={catalogTotal} sample={sample} />
       {result.items.length === 0 ? (
         <EmptyState
           icon={SearchX}
@@ -56,7 +56,7 @@ const { query, result, catalogTotal, sample } = Astro.props;
         </>
       )}
       <div data-catalog-pagination>
-        <CatalogPagination query={query} page={result.page} pageCount={result.pageCount} />
+        <CatalogPagination query={query} page={result.pagination.page} pageCount={result.pagination.totalPages} />
       </div>
     </>
   ) : (
