@@ -2,6 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	itemCategories,
@@ -60,10 +61,7 @@ export class ItemCategoryRepository implements IItemCategoryRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findById(id: string): Promise<TItemCategorySelect | null> {

@@ -9,6 +9,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
 import { EmptyState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	type TReportArchive,
@@ -76,7 +77,7 @@ function MonthlyArchivesPage() {
 
 	if (!canRead) {
 		return (
-			<EmptyState icon={Archive} title={t('finance:archives.title')} className='border' />
+			<EmptyState icon={Archive} title={t('finance:archives.title')} bordered />
 		);
 	}
 
@@ -95,7 +96,7 @@ function MonthlyArchivesPage() {
 			{canArchive ? (
 				<Card>
 					<CardHeader>
-						<CardTitle className='text-base'>
+						<CardTitle>
 							{t('finance:archives.archive')}
 						</CardTitle>
 					</CardHeader>
@@ -134,9 +135,9 @@ function MonthlyArchivesPage() {
 			) : null}
 
 			{isLoading ? (
-				<p className='text-muted-foreground text-sm'>{t('common:state.loading')}</p>
+				<SectionSkeleton lines={4} />
 			) : rows.length === 0 ? (
-				<EmptyState icon={Archive} title={t('finance:archives.empty')} className='border' />
+				<EmptyState icon={Archive} title={t('finance:archives.empty')} bordered />
 			) : (
 				<div className='space-y-2'>
 					{rows.map((row) => (

@@ -21,8 +21,8 @@ import {
 	createSignatureRequestsSchema,
 	attachSignedPdfSchema,
 	type TCreateSignatureRequestsInput,
-	type TSignatureListQuery,
-	type TSignatureRequestListQuery,
+	type TSignaturePaginationRequest,
+	type TSignatureRequestPaginationRequest,
 	type TSignatureRequestView,
 	type TSignSignatureRequestInput,
 	type TSignatureView,
@@ -89,8 +89,8 @@ export class SignatureService {
 	}
 
 	/** Evidence register (permission `document:signature_read`). */
-	async listSignatures(filter: TSignatureListQuery) {
-		const result = await this.repository.listSignatures(filter);
+	async listSignatures(request: TSignaturePaginationRequest) {
+		const result = await this.repository.paginate(request);
 		const documents = await this.documentMeta(result.data.map((row) => row.documentId));
 		return {
 			meta: result.meta,
@@ -108,15 +108,27 @@ export class SignatureService {
 	}
 
 	/** Requests addressed to the caller (Mine page, incoming). */
-	async listIncoming(signerUserId: string, filter: TSignatureRequestListQuery) {
-		const result = await this.repository.listIncoming(signerUserId, filter);
-		return this.requestPage(result, filter);
+	async listIncoming(
+		signerUserId: string,
+		request: TSignatureRequestPaginationRequest,
+	) {
+		const result = await this.repository.paginateIncoming({
+			...request,
+			signerUserId,
+		});
+		return this.requestPage(result, request);
 	}
 
 	/** Requests the caller created (Mine page, outgoing). */
-	async listOutgoing(requestedByUserId: string, filter: TSignatureRequestListQuery) {
-		const result = await this.repository.listOutgoing(requestedByUserId, filter);
-		return this.requestPage(result, filter);
+	async listOutgoing(
+		requestedByUserId: string,
+		request: TSignatureRequestPaginationRequest,
+	) {
+		const result = await this.repository.paginateOutgoing({
+			...request,
+			requestedByUserId,
+		});
+		return this.requestPage(result, request);
 	}
 
 	/**
@@ -130,7 +142,7 @@ export class SignatureService {
 	 */
 	private async requestPage(
 		result: { meta: TPaginationResult<unknown>['meta']; data: TDocumentSignatureRequestSelect[] },
-		filter: TSignatureRequestListQuery,
+		filter: TSignatureRequestPaginationRequest,
 	) {
 		const documents = await this.documentMeta(result.data.map((row) => row.documentId));
 		const people = await this.people(result.data.map((row) => row.requestedByUserId));

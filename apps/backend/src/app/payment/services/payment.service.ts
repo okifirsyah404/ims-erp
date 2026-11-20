@@ -7,7 +7,7 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { LEDGER_SETTLEMENT_PORT_TOKEN } from '@app/finance/constants/ar-di';
 import type { ILedgerSettlementPort } from '@app/finance/contracts/ledger-settlement.port';
 import { PAYMENT_NUMBERING_SERVICE_TOKEN, PAYMENT_REPOSITORY_TOKEN } from '../constants/di';
-import type { IPaymentRepository } from '../contracts/payment.repository.interface';
+import type { IPaymentRepository, TPaymentPaginationRequest } from '../contracts/payment.repository.interface';
 import type { PaymentNumberingService } from './payment-numbering.service';
 import type {
 	IPaymentService,
@@ -47,12 +47,8 @@ export class PaymentService implements IPaymentService {
 		return payment;
 	}
 
-	list(
-		organizationId: string,
-		filters: { status?: string; paymentType?: string },
-		pagination: { page: number; limit: number },
-	): Promise<TPaginationResult<TPaymentSelect>> {
-		return this.repo.list(organizationId, filters, pagination);
+	list(request: TPaymentPaginationRequest): Promise<TPaginationResult<TPaymentSelect>> {
+		return this.repo.paginate(request);
 	}
 
 	async create(

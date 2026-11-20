@@ -186,11 +186,10 @@ export class FinanceOperationsController {
 				'/supplier-bills',
 				async ({ query, erp }) =>
 					okPaginated(
-						await bills.list(
-							erp.organizationId,
-							supplierBillListQuerySchema.parse(query),
-							supplierBillListQuerySchema.parse(query),
-						),
+						await bills.list({
+							organizationId: erp.organizationId,
+							...supplierBillListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['bill:read'] },
@@ -457,11 +456,10 @@ export class FinanceOperationsController {
 				'/reports/archives',
 				async ({ query, erp }) =>
 					okPaginated(
-						await archives.list(
-							erp.organizationId,
-							reportArchiveListQuerySchema.parse(query),
-							reportArchiveListQuerySchema.parse(query),
-						),
+						await archives.list({
+							organizationId: erp.organizationId,
+							...reportArchiveListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['financial_report:read'] },
@@ -538,11 +536,10 @@ export class FinanceOperationsController {
 				'/reconciliations',
 				async ({ query, erp }) =>
 					okPaginated(
-						await reconciliations.list(
-							erp.organizationId,
-							reconciliationListQuerySchema.parse(query),
-							reconciliationListQuerySchema.parse(query),
-						),
+						await reconciliations.list({
+							organizationId: erp.organizationId,
+							...reconciliationListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['cash_bank:read'] },

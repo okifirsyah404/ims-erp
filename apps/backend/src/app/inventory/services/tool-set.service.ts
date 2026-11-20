@@ -17,6 +17,7 @@ import type { TToolSetCreateInput, TToolSetUpdateInput } from '../contracts/item
 import type {
 	IToolSetItemRepository,
 	IToolSetRepository,
+	TToolSetPaginationRequest,
 } from '../contracts/item-operations.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import { ItemNotFoundError, ItemRuleViolationError } from '../errors/item.errors';
@@ -85,12 +86,11 @@ export class ToolSetService {
 		return { ...toolSet, items: await this.toolSetItems.listByToolSet(id) };
 	}
 
+	/** Fetches one page of the tenant's tool sets. */
 	list(
-		organizationId: string,
-		page: number,
-		limit: number,
+		request: TToolSetPaginationRequest,
 	): Promise<TPaginationResult<TToolSetSelect>> {
-		return this.toolSets.list(organizationId, page, limit);
+		return this.toolSets.paginate(request);
 	}
 
 	async update(

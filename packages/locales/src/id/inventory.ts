@@ -32,6 +32,7 @@ const inventory = {
 	'items.noCategory': 'Tanpa kategori',
 	'items.brand': 'Merek',
 	'items.specification': 'Spesifikasi',
+	'items.details': 'Detail barang',
 	'items.specificationHint': 'Dicetak di penawaran. Satu poin per baris.',
 	'items.isActive': 'Aktif',
 	'items.isActiveHint': 'Barang nonaktif tetap tercatat tetapi tidak ditawarkan untuk penawaran atau PO baru.',
@@ -362,6 +363,7 @@ const inventory = {
 	'adjustmentForm.newDescription':
 		'Masukkan jumlah hasil hitung fisik per baris. Selisih terhadap jumlah sistem menjadi pergerakannya.',
 	'adjustmentForm.warehouse': 'Gudang',
+	'adjustmentForm.details': 'Detail penyesuaian',
 	'adjustmentForm.type': 'Alasan',
 	'adjustmentForm.reasonCode': 'Kode alasan',
 	'adjustmentForm.notes': 'Catatan',

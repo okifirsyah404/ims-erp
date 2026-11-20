@@ -1,21 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatDateTime } from '@/lib/format';
 import {
 	CONVERSATION_STATUS_VARIANT,
 	CONVERSATION_STATUSES,
 	conversationsQueryOptions,
+	type TConversation,
 	type TConversationStatus,
 	whatsappStatusQueryOptions,
 } from '@/lib/whatsapp-api';
@@ -34,6 +37,56 @@ function WhatsappInboxPage() {
 	const health = useQuery(whatsappStatusQueryOptions());
 	const { data, isPending, isError, error } = useQuery(conversationsQueryOptions({ page, status: status || undefined, search: deferred || undefined }));
 	const missing = health.data ? (['webhook', 'gateway', 'assistant'] as const).filter((part) => !health.data[part]) : [];
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TConversation, CellData>[]>(
+		() => [
+			{
+				id: 'contact',
+				header: t('integrations:whatsapp.contact'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/integrations/whatsapp-ai/$conversationId'
+							params={{ conversationId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.contactName ?? row.original.phone}
+						</Link>
+						<div className='text-xs text-muted-foreground'>+{row.original.phone}</div>
+					</>
+				),
+			},
+			{
+				id: 'lastMessage',
+				header: t('integrations:whatsapp.lastMessage'),
+				meta: { cellClassName: 'max-w-96 truncate text-sm' },
+				cell: ({ row }) => row.original.lastMessage ?? '—',
+			},
+			{
+				id: 'state',
+				header: t('integrations:whatsapp.state'),
+				cell: ({ row }) => (
+					<>
+						<Badge variant={CONVERSATION_STATUS_VARIANT[row.original.status]}>
+							{t(`integrations:whatsapp.status.${row.original.status}`)}
+						</Badge>
+						{row.original.status === 'handoff' && row.original.handoffReason && (
+							<div className='text-xs text-muted-foreground'>
+								{t(`integrations:whatsapp.reason.${row.original.handoffReason}`)}
+							</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'at',
+				header: t('integrations:whatsapp.at'),
+				meta: { cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => formatDateTime(row.original.lastMessageAt, i18n.language),
+			},
+		],
+		[t, i18n.language],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -88,53 +141,14 @@ function WhatsappInboxPage() {
 					/>
 				</InputGroup>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('integrations:whatsapp.empty')}</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
+				<EmptyState title={t('integrations:whatsapp.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('integrations:whatsapp.contact')}</TableHead>
-										<TableHead>{t('integrations:whatsapp.lastMessage')}</TableHead>
-										<TableHead>{t('integrations:whatsapp.state')}</TableHead>
-										<TableHead>{t('integrations:whatsapp.at')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((conversation) => (
-										<TableRow key={conversation.id}>
-											<TableCell>
-												<Link
-													to='/integrations/whatsapp-ai/$conversationId'
-													params={{ conversationId: conversation.id }}
-													className='font-medium hover:underline'
-												>
-													{conversation.contactName ?? conversation.phone}
-												</Link>
-												<div className='text-xs text-muted-foreground'>+{conversation.phone}</div>
-											</TableCell>
-											<TableCell className='max-w-96 truncate text-sm'>{conversation.lastMessage ?? '—'}</TableCell>
-											<TableCell>
-												<Badge variant={CONVERSATION_STATUS_VARIANT[conversation.status]}>{t(`integrations:whatsapp.status.${conversation.status}`)}</Badge>
-												{conversation.status === 'handoff' && conversation.handoffReason && (
-													<div className='text-xs text-muted-foreground'>{t(`integrations:whatsapp.reason.${conversation.handoffReason}`)}</div>
-												)}
-											</TableCell>
-											<TableCell className='whitespace-nowrap'>{formatDateTime(conversation.lastMessageAt, i18n.language)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
-					{data.pagination.totalPages > 1 && (
+					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}
 				</>

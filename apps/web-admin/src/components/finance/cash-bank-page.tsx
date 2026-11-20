@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -14,17 +14,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Landmark, Plus } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	accountsQueryOptions,
@@ -33,6 +28,8 @@ import {
 	createCashBankAccount,
 	postCashBankMovement,
 	toMinor,
+	type TCashBankAccount,
+	type TCashBankTransaction,
 	updateCashBankAccount,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
@@ -75,7 +72,12 @@ export function CashBankPage() {
 	const [counterpartAccountId, setCounterpartAccountId] = useState('none');
 
 	const page = search.page ?? 1;
-	const { data: accounts, isError: accountsError, error: accountsErr } = useQuery({
+	const {
+		data: accounts,
+		isPending: accountsPending,
+		isError: accountsError,
+		error: accountsErr,
+	} = useQuery({
 		...cashBankAccountsQueryOptions(),
 		enabled: canRead,
 	});
@@ -148,9 +150,116 @@ export function CashBankPage() {
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
+	const accountColumns = useMemo<
+		ColumnDef<DataTableFeatures, TCashBankAccount, CellData>[]
+	>(() => {
+		const base: ColumnDef<DataTableFeatures, TCashBankAccount, CellData>[] = [
+			{
+				accessorKey: 'code',
+				header: t('finance:common.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'name', header: t('finance:common.name') },
+			{
+				id: 'accountType',
+				header: t('finance:cashBank.accountType'),
+				cell: ({ row }) =>
+					t(
+						row.original.accountType === 'cash'
+							? 'finance:accountType.cash'
+							: 'finance:accountType.bank',
+					),
+			},
+			{
+				id: 'currentBalance',
+				header: t('finance:cashBank.currentBalance'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.currentBalance),
+			},
+		];
+		if (!canUpdate) return base;
+		return [
+			...base,
+			{
+				id: 'glLink',
+				header: t('finance:cashBank.glLink'),
+				cell: ({ row }) => (
+					<Select
+						value={linkedGl[row.original.id] ?? 'none'}
+						disabled={linkGl.isPending}
+						onValueChange={(value: string | null) =>
+							void linkGl.mutateAsync({
+								id: row.original.id,
+								glAccountId: value == null || value === 'none' ? null : value,
+							})
+						}
+					>
+						<SelectTrigger className='w-56 text-xs'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:common.none')}</SelectItem>
+							{glAccounts?.rows
+								.filter((gl) => gl.isActive && gl.isPostable)
+								.map((gl) => (
+									<SelectItem key={gl.id} value={gl.id}>
+										{gl.code} — {gl.name}
+									</SelectItem>
+								))}
+						</SelectContent>
+					</Select>
+				),
+			},
+		];
+	}, [canUpdate, glAccounts, linkGl, linkedGl, t]);
+
+	const movementColumns = useMemo<
+		ColumnDef<DataTableFeatures, TCashBankTransaction, CellData>[]
+	>(
+		() => [
+			{ accessorKey: 'transactionDate', header: t('finance:cashBank.movementDate') },
+			{
+				id: 'code',
+				header: t('finance:common.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => row.original.id.slice(0, 8),
+			},
+			{
+				id: 'direction',
+				header: `${t('finance:cashBank.direction.in')} / ${t('finance:cashBank.direction.out')}`,
+				cell: ({ row }) => (
+					<Badge variant={row.original.direction === 'in' ? 'secondary' : 'outline'}>
+						{row.original.direction === 'in'
+							? t('finance:cashBank.direction.in')
+							: t('finance:cashBank.direction.out')}
+					</Badge>
+				),
+			},
+			{
+				id: 'amount',
+				header: t('finance:common.amount'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.amount),
+			},
+			{
+				id: 'balanceAfter',
+				header: t('finance:cashBank.balanceAfter'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.balanceAfter),
+			},
+			{
+				id: 'description',
+				header: t('finance:common.description'),
+				meta: { cellClassName: 'max-w-72 truncate' },
+				cell: ({ row }) => row.original.description ?? t('finance:common.none'),
+			},
+		],
+		[t],
+	);
+
 	if (!canRead) {
 		return (
-			<EmptyState icon={Landmark} title={t('finance:cashBank.title')} className='border' />
+			<EmptyState icon={Landmark} title={t('finance:cashBank.title')} bordered />
 		);
 	}
 
@@ -244,75 +353,21 @@ export function CashBankPage() {
 			) : null}
 
 			{accountsError ? (
-				<EmptyState icon={Landmark} title={accountsErr.message} className='border' />
-			) : (accounts?.length ?? 0) === 0 ? (
+				<ErrorState error={accountsErr} bordered />
+			) : !accountsPending && (accounts?.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Landmark}
 					title={t('finance:cashBank.accountsEmpty')}
-					className='border'
+					bordered
 				/>
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:common.code')}</TableHead>
-								<TableHead>{t('finance:common.name')}</TableHead>
-								<TableHead>{t('finance:cashBank.accountType')}</TableHead>
-								<TableHead className='text-right'>
-									{t('finance:cashBank.currentBalance')}
-								</TableHead>
-								{canUpdate ? <TableHead>{t('finance:cashBank.glLink')}</TableHead> : null}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{accounts?.map((account) => (
-								<TableRow key={account.id}>
-									<TableCell className='font-mono text-xs'>{account.code}</TableCell>
-									<TableCell>{account.name}</TableCell>
-									<TableCell>
-										{t(
-											account.accountType === 'cash'
-												? 'finance:accountType.cash'
-												: 'finance:accountType.bank',
-										)}
-									</TableCell>
-									<TableCell className='text-right'>
-										{formatMoney(account.currentBalance)}
-									</TableCell>
-									{canUpdate ? (
-									<TableCell>
-											<Select
-												value={linkedGl[account.id] ?? 'none'}
-												disabled={linkGl.isPending}
-												onValueChange={(value: string | null) =>
-													void linkGl.mutateAsync({
-														id: account.id,
-														glAccountId: value == null || value === 'none' ? null : value,
-													})
-												}
-											>
-												<SelectTrigger className='w-56 text-xs'>
-													<SelectValue />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value='none'>{t('finance:common.none')}</SelectItem>
-													{glAccounts?.rows
-														.filter((gl) => gl.isActive && gl.isPostable)
-														.map((gl) => (
-															<SelectItem key={gl.id} value={gl.id}>
-																{gl.code} — {gl.name}
-															</SelectItem>
-														))}
-												</SelectContent>
-											</Select>
-									</TableCell>
-									) : null}
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={accountColumns}
+					data={accounts ?? []}
+					loading={accountsPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<h2 className='pt-2 font-semibold'>{t('finance:cashBank.movements')}</h2>
@@ -406,53 +461,22 @@ export function CashBankPage() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={Landmark} title={error.message} className='border' />
-			) : (movements?.rows.length ?? 0) === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (movements?.rows.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Landmark}
 					title={t('finance:cashBank.movementsEmpty')}
-					className='border'
+					bordered
 				/>
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:cashBank.movementDate')}</TableHead>
-								<TableHead>{t('finance:common.code')}</TableHead>
-								<TableHead>{t('finance:cashBank.direction.in')} / {t('finance:cashBank.direction.out')}</TableHead>
-								<TableHead className='text-right'>{t('finance:common.amount')}</TableHead>
-								<TableHead className='text-right'>{t('finance:cashBank.balanceAfter')}</TableHead>
-								<TableHead>{t('finance:common.description')}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{movements?.rows.map((row) => (
-								<TableRow key={row.id}>
-									<TableCell>{row.transactionDate}</TableCell>
-									<TableCell className='font-mono text-xs'>{row.id.slice(0, 8)}</TableCell>
-									<TableCell>
-										<Badge
-											variant={row.direction === 'in' ? 'secondary' : 'outline'}
-										>
-											{row.direction === 'in'
-												? t('finance:cashBank.direction.in')
-												: t('finance:cashBank.direction.out')}
-										</Badge>
-									</TableCell>
-									<TableCell className='text-right'>{formatMoney(row.amount)}</TableCell>
-									<TableCell className='text-right'>
-										{formatMoney(row.balanceAfter)}
-									</TableCell>
-									<TableCell className='max-w-72 truncate'>
-										{row.description ?? t('finance:common.none')}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={movementColumns}
+					data={movements?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls

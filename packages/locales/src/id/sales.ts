@@ -37,6 +37,7 @@ const sales: Record<keyof typeof en, string> = {
 	'quotation.grandTotal': 'Total',
 	'quotation.terms': 'Syarat dan ketentuan',
 	'quotation.notes': 'Catatan',
+	'quotation.termsAndNotes': 'Syarat dan catatan',
 	'quotation.rejectedReason': 'Alasan ditolak',
 	'quotation.lostReason': 'Alasan batal',
 	'quotation.lostNote': 'Keterangan',

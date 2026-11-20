@@ -3,12 +3,13 @@ import { Link } from '@tanstack/react-router';
 import { PackageSearch, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
+	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
@@ -19,7 +20,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { EmptyState } from '@/components/empty-state';
 import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -33,6 +33,7 @@ import { useItemCategoryNames } from '@/lib/item-category-api';
 import { useClampPage } from '@/lib/use-clamp-page';
 import { usePermission } from '@/lib/use-permission';
 import { ItemForm } from './item-form';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 /** Cards per page: 3 columns × 8 rows. */
 const PAGE_SIZE = 24;
 
@@ -82,13 +83,7 @@ export function ItemKindList({
 	useClampPage(page, pagination?.totalPages, onPageChange);
 
 	if (isError) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{error instanceof Error ? error.message : t('common:error.failed')}
-				</CardContent>
-			</Card>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -138,26 +133,26 @@ export function ItemKindList({
 								src={row.imageUrl}
 								name={row.name}
 							/>
-							<CardHeader className='pb-2'>
-								<div className='flex items-start justify-between gap-2'>
-									<CardTitle className='text-base'>
-										<Link
-											to='/inventory/items/$itemId'
-											params={{ itemId: row.id }}
-											className='hover:underline'
-										>
-											{row.name}
-										</Link>
-									</CardTitle>
-									{row.isActive ? null : (
+							<CardHeader>
+								<CardTitle>
+									<Link
+										to='/inventory/items/$itemId'
+										params={{ itemId: row.id }}
+										className='hover:underline'
+									>
+										{row.name}
+									</Link>
+								</CardTitle>
+								<CardDescription className='font-mono text-xs'>
+									{row.code} · {row.sku}
+								</CardDescription>
+								{row.isActive ? null : (
+									<CardAction>
 										<Badge variant='outline'>
 											{t('inventory:items.inactive')}
 										</Badge>
-									)}
-								</div>
-								<p className='font-mono text-xs text-muted-foreground'>
-									{row.code} · {row.sku}
-								</p>
+									</CardAction>
+								)}
 							</CardHeader>
 							<CardContent className='flex-1 space-y-2 text-sm'>
 								<p>

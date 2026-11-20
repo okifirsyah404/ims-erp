@@ -1,16 +1,14 @@
 import type { TUserInvitationSelect } from '@drizzle/schemas/auth.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 
 /**
  * Filters for the invitation listing. `status` is exact; `email` is a
  * case-insensitive partial match.
  */
-export type TInvitationListRequest = {
+export type TInvitationPaginationRequest = TPaginationRequest & {
 	status?: TUserInvitationSelect['status'];
 	organizationId?: string;
 	email?: string;
-	page: number;
-	limit: number;
 };
 
 /**
@@ -24,8 +22,9 @@ export interface IInvitationRepository {
 	findPendingByEmail(email: string): Promise<TUserInvitationSelect | null>;
 	/** Finds a live invitation by token hash (claim validation). */
 	findByTokenHash(tokenHash: string): Promise<TUserInvitationSelect | null>;
-	list(
-		request: TInvitationListRequest,
+	/** Fetches one filtered page of invitations for the admin triage view. */
+	paginate(
+		request: TInvitationPaginationRequest,
 	): Promise<TPaginationResult<TUserInvitationSelect>>;
 	create(input: TInvitationCreate): Promise<TUserInvitationSelect>;
 	/**

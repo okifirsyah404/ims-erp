@@ -3,7 +3,7 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -20,6 +20,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { Search } from 'lucide-react';
+import { EmptyState } from '@/components/empty-state';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { listProducts, type TProduct } from '@/lib/inventory-api';
 import {
@@ -459,7 +460,9 @@ export function PurchaseOrderForm({
 											</li>
 										))}
 									{openLines.data?.filter((line) => !usedRequestLines.has(line.id)).length === 0 && (
-										<li className='px-3 py-2 text-sm text-muted-foreground'>{t('procurement:po.noOpenRequests')}</li>
+										<li>
+											<EmptyState title={t('procurement:po.noOpenRequests')} size='sm' />
+										</li>
 									)}
 								</ul>
 							</>
@@ -564,17 +567,16 @@ export function PurchaseOrderForm({
 						<Textarea id='po-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 					</Field>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='button' variant='outline' onClick={onCancel}>
+						{t('common:action.cancel')}
+					</Button>
+					{unmapped && <span className='self-center text-sm text-amber-600'>{t('procurement:po.unmappedHint')}</span>}
+					<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId || unmapped}>
+						{t('common:action.save')}
+					</Button>
+				</CardFooter>
 			</Card>
-
-			<div className='flex justify-end gap-2'>
-				<Button type='button' variant='outline' onClick={onCancel}>
-					{t('common:action.cancel')}
-				</Button>
-				{unmapped && <span className='self-center text-sm text-amber-600'>{t('procurement:po.unmappedHint')}</span>}
-				<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId || unmapped}>
-					{t('common:action.save')}
-				</Button>
-			</div>
 		</form>
 	);
 }

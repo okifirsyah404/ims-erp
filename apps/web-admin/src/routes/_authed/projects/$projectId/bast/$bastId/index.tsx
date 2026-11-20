@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BastForm } from '@/components/projects/bast-form';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { bastQueryOptions, updateBast } from '@/lib/handover-api';
 
@@ -24,7 +26,7 @@ function EditBastPage() {
 		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{bast.data ? t('projects:bast.edit', { code: bast.data.code }) : ''}</h1>
 			{bast.isError ? (
-				<p className='text-sm text-destructive'>{bast.error.message}</p>
+				<ErrorState error={bast.error} bordered />
 			) : bast.data ? (
 				<BastForm
 					initial={bast.data}
@@ -45,7 +47,9 @@ function EditBastPage() {
 						}
 					}}
 				/>
-			) : null}
+			) : (
+				<SectionSkeleton lines={6} />
+			)}
 		</div>
 	);
 }

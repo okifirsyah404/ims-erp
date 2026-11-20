@@ -13,7 +13,12 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { TTaxRepository } from '../contracts/tax.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	TTaxPaginationRequest,
+	TTaxRecordPaginationRequest,
+	TTaxRepository,
+} from '../contracts/tax.repository.interface';
 
 /**
  * Drizzle implementation of the tax repository.
@@ -43,10 +48,10 @@ export class TaxRepository implements TTaxRepository {
 			.orderBy(asc(taxes.effectiveFrom));
 	}
 
-	async listTaxTypes(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+	async paginateTaxTypes(
+		request: TTaxPaginationRequest,
 	): Promise<TPaginationResult<TTaxSelect>> {
+		const { organizationId, page, limit } = request;
 		const where = and(
 			eq(taxes.organizationId, organizationId),
 			isNull(taxes.deletedAt),
@@ -60,17 +65,9 @@ export class TaxRepository implements TTaxRepository {
 			.from(taxes)
 			.where(where)
 			.orderBy(asc(taxes.code), asc(taxes.effectiveFrom))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async findTaxTypeById(
@@ -180,20 +177,19 @@ export class TaxRepository implements TTaxRepository {
 		return Number(records.value) + Number(withholding.value);
 	}
 
-	async listTaxRecords(
-		organizationId: string,
-		filter: { year?: number; month?: number },
-		pagination: { page: number; limit: number },
+	async paginateTaxRecords(
+		request: TTaxRecordPaginationRequest,
 	): Promise<TPaginationResult<TTaxRecordSelect>> {
+		const { organizationId, year, month, page, limit } = request;
 		const conditions = [
 			eq(taxRecords.organizationId, organizationId),
 			isNull(taxRecords.deletedAt),
 		];
-		if (filter.year !== undefined) {
-			conditions.push(eq(taxRecords.periodYear, filter.year));
+		if (year !== undefined) {
+			conditions.push(eq(taxRecords.periodYear, year));
 		}
-		if (filter.month !== undefined) {
-			conditions.push(eq(taxRecords.periodMonth, filter.month));
+		if (month !== undefined) {
+			conditions.push(eq(taxRecords.periodMonth, month));
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database
@@ -205,17 +201,9 @@ export class TaxRepository implements TTaxRepository {
 			.from(taxRecords)
 			.where(where)
 			.orderBy(asc(taxRecords.periodYear), asc(taxRecords.periodMonth))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async findTaxRecordById(
@@ -416,10 +404,10 @@ export class TaxRepository implements TTaxRepository {
 		}));
 	}
 
-	async listWithholding(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+	async paginateWithholding(
+		request: TTaxPaginationRequest,
 	): Promise<TPaginationResult<TWithholdingTaxRecordSelect>> {
+		const { organizationId, page, limit } = request;
 		const where = and(
 			eq(withholdingTaxRecords.organizationId, organizationId),
 			isNull(withholdingTaxRecords.deletedAt),
@@ -433,17 +421,9 @@ export class TaxRepository implements TTaxRepository {
 			.from(withholdingTaxRecords)
 			.where(where)
 			.orderBy(asc(withholdingTaxRecords.code))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async findWithholdingById(

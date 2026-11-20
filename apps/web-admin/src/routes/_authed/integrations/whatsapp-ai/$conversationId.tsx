@@ -8,6 +8,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -54,8 +56,18 @@ function ConversationPage() {
 		}
 	};
 
-	if (isPending) return null;
-	if (isError) return <p className='p-6 text-sm text-destructive'>{error.message}</p>;
+	if (isPending)
+		return (
+			<div className='p-6'>
+				<PageSkeleton />
+			</div>
+		);
+	if (isError)
+		return (
+			<div className='p-6'>
+				<ErrorState error={error} bordered />
+			</div>
+		);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -103,7 +115,7 @@ function ConversationPage() {
 			</div>
 			<Card>
 				<CardContent className='flex flex-col gap-3 py-4'>
-					{data.messages.length === 0 && <p className='text-center text-sm text-muted-foreground'>{t('integrations:whatsapp.noMessages')}</p>}
+					{data.messages.length === 0 && <EmptyState size='sm' title={t('integrations:whatsapp.noMessages')} />}
 					{data.messages.map((message) => {
 						const inbound = message.direction === 'inbound';
 						return (

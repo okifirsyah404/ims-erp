@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
+import { EmptyState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 /**
  * Renders its children for application administrators and for warehouse
@@ -19,14 +20,10 @@ export function WarehouseAccessGate({ children }: { children: ReactNode }) {
 	const { t } = useTranslation(['inventory']);
 	const { canAccess, isPending } = useWarehouseAccess();
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (!canAccess) {
 		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('inventory:warehouses.noAccess')}
-				</CardContent>
-			</Card>
+			<EmptyState title={t('inventory:warehouses.noAccess')} bordered />
 		);
 	}
 	return <>{children}</>;

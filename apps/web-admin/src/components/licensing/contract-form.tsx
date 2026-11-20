@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -77,7 +77,7 @@ export function ContractForm({
 			}}
 		>
 			<Card>
-				<CardContent className='pt-6'>
+				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='contract-customer'>{t('licensing:field.customer')}</FieldLabel>
@@ -191,15 +191,15 @@ export function ContractForm({
 						</Field>
 					</FieldGroup>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='button' variant='outline' onClick={onCancel}>
+						{t('common:action.cancel')}
+					</Button>
+					<Button type='submit' disabled={busy || !customerId || !applicationId}>
+						{submitLabel}
+					</Button>
+				</CardFooter>
 			</Card>
-			<div className='mt-6 flex justify-end gap-2'>
-				<Button type='button' variant='outline' onClick={onCancel}>
-					{t('common:action.cancel')}
-				</Button>
-				<Button type='submit' disabled={busy || !customerId || !applicationId}>
-					{submitLabel}
-				</Button>
-			</div>
 		</form>
 	);
 }

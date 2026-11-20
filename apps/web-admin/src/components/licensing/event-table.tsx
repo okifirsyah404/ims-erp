@@ -1,8 +1,11 @@
 import { Link } from '@tanstack/react-router';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { formatDateTime } from '@/lib/format';
 import type { TLicenseEvent } from '@/lib/license-api';
 
@@ -13,49 +16,90 @@ type TResult = 'ok' | 'grace' | 'unknown' | 'expired' | 'not_started' | 'suspend
 /** The license event log: API calls from applications and staff overrides. */
 export function EventTable({ events, showContract }: { events: TLicenseEvent[]; showContract: boolean }) {
 	const { t, i18n } = useTranslation(['licensing', 'common']);
-	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>{t('licensing:events.at')}</TableHead>
-					<TableHead>{t('licensing:events.type')}</TableHead>
-					<TableHead>{t('licensing:events.result')}</TableHead>
-					{showContract && <TableHead>{t('licensing:events.contract')}</TableHead>}
-					<TableHead>{t('licensing:events.source')}</TableHead>
-					<TableHead>{t('licensing:events.detail')}</TableHead>
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{events.map((event) => (
-					<TableRow key={event.id}>
-						<TableCell className='whitespace-nowrap'>{formatDateTime(event.eventAt, i18n.language)}</TableCell>
-						<TableCell>{t(`licensing:events.kind.${event.eventType}`)}</TableCell>
-						<TableCell>
-							<Badge variant={PASSED.has(event.result) ? (event.result === 'grace' ? 'secondary' : 'default') : 'destructive'}>
-								{t(`licensing:result.${event.result as TResult}`)}
-							</Badge>
-						</TableCell>
-						{showContract && (
-							<TableCell>
-								{event.licenseContractId ? (
-									<Link to='/subscription/$contractId' params={{ contractId: event.licenseContractId }} className='hover:underline'>
-										{event.contractCode}
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TLicenseEvent, CellData>[]>(() => {
+		const contractColumn: ColumnDef<DataTableFeatures, TLicenseEvent, CellData>[] = showContract
+			? [
+					{
+						id: 'contract',
+						header: t('licensing:events.contract'),
+						cell: ({ row }) => (
+							<>
+								{row.original.licenseContractId ? (
+									<Link
+										to='/subscription/$contractId'
+										params={{ contractId: row.original.licenseContractId }}
+										className='hover:underline'
+									>
+										{row.original.contractCode}
 									</Link>
 								) : (
 									'—'
 								)}
-								{event.customerName && <div className='text-xs text-muted-foreground'>{event.customerName}</div>}
-							</TableCell>
+								{row.original.customerName && (
+									<div className='text-xs text-muted-foreground'>{row.original.customerName}</div>
+								)}
+							</>
+						),
+					},
+				]
+			: [];
+		return [
+			{
+				id: 'at',
+				header: t('licensing:events.at'),
+				meta: { cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => formatDateTime(row.original.eventAt, i18n.language),
+			},
+			{
+				id: 'type',
+				header: t('licensing:events.type'),
+				cell: ({ row }) => t(`licensing:events.kind.${row.original.eventType}`),
+			},
+			{
+				id: 'result',
+				header: t('licensing:events.result'),
+				cell: ({ row }) => (
+					<Badge
+						variant={
+							PASSED.has(row.original.result)
+								? row.original.result === 'grace'
+									? 'secondary'
+									: 'default'
+								: 'destructive'
+						}
+					>
+						{t(`licensing:result.${row.original.result as TResult}`)}
+					</Badge>
+				),
+			},
+			...contractColumn,
+			{
+				id: 'source',
+				header: t('licensing:events.source'),
+				cell: ({ row }) =>
+					row.original.applicationApiKeyId
+						? t('licensing:events.byApplication')
+						: t('licensing:events.byStaff'),
+			},
+			{
+				id: 'detail',
+				header: t('licensing:events.detail'),
+				meta: { cellClassName: 'max-w-80 text-sm' },
+				cell: ({ row }) => (
+					<>
+						{row.original.instanceId && <code className='font-mono text-xs'>{row.original.instanceId}</code>}
+						{row.original.ipAddress && (
+							<span className='ml-2 text-xs text-muted-foreground'>{row.original.ipAddress}</span>
 						)}
-						<TableCell>{event.applicationApiKeyId ? t('licensing:events.byApplication') : t('licensing:events.byStaff')}</TableCell>
-						<TableCell className='max-w-80 text-sm'>
-							{event.instanceId && <code className='font-mono text-xs'>{event.instanceId}</code>}
-							{event.ipAddress && <span className='ml-2 text-xs text-muted-foreground'>{event.ipAddress}</span>}
-							{event.description && <div className='text-xs text-muted-foreground'>{event.description}</div>}
-						</TableCell>
-					</TableRow>
-				))}
-			</TableBody>
-		</Table>
-	);
+						{row.original.description && (
+							<div className='text-xs text-muted-foreground'>{row.original.description}</div>
+						)}
+					</>
+				),
+			},
+		];
+	}, [i18n.language, showContract, t]);
+
+	return <DataTable columns={columns} data={events} getRowId={(row) => row.id} />;
 }

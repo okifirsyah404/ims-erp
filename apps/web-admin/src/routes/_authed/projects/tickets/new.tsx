@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
@@ -88,7 +88,7 @@ function NewTicketPage() {
 				}}
 			>
 				<Card>
-					<CardContent className='pt-6'>
+					<CardContent>
 						<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='ticket-serial'>{t('projects:ticket.serialNumber')}</FieldLabel>
@@ -194,15 +194,15 @@ function NewTicketPage() {
 							</Field>
 						</FieldGroup>
 					</CardContent>
+					<CardFooter className='justify-end gap-2'>
+						<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects/tickets' })}>
+							{t('common:action.cancel')}
+						</Button>
+						<Button type='submit' disabled={busy || !customerId || !reporterName.trim() || !complaint.trim()}>
+							{t('projects:tickets.submit')}
+						</Button>
+					</CardFooter>
 				</Card>
-				<div className='mt-6 flex justify-end gap-2'>
-					<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects/tickets' })}>
-						{t('common:action.cancel')}
-					</Button>
-					<Button type='submit' disabled={busy || !customerId || !reporterName.trim() || !complaint.trim()}>
-						{t('projects:tickets.submit')}
-					</Button>
-				</div>
 			</form>
 		</div>
 	);

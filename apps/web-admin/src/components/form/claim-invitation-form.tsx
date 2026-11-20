@@ -16,6 +16,7 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
+import { Input } from '@ims-erp/ui/components/input';
 import { PasswordInput } from '@/components/password-input';
 import { CountryPhoneField } from '@/components/form/country-phone-field';
 
@@ -130,9 +131,8 @@ export function ClaimInvitationForm({
 									<FieldLabel htmlFor='claim-username'>
 										{t('form.username')}
 									</FieldLabel>
-									<input
+									<Input
 										id='claim-username'
-										className='flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs'
 										value={username}
 										required
 										minLength={3}

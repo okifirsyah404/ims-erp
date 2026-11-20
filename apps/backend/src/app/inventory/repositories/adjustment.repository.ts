@@ -4,6 +4,7 @@ import {
 	stockAdjustments,
 } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, ilike, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
@@ -72,10 +73,7 @@ export class AdjustmentRepository implements IAdjustmentRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	/** Fetches one alive document by id. */

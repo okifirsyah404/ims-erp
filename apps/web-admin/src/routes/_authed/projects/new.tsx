@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -72,7 +72,7 @@ function NewProjectPage() {
 				}}
 			>
 				<Card>
-					<CardContent className='pt-6'>
+					<CardContent>
 						<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 							<Field>
 								<FieldLabel htmlFor='project-deal-search'>{t('projects:new.searchDeal')}</FieldLabel>
@@ -152,15 +152,15 @@ function NewProjectPage() {
 							</Field>
 						</FieldGroup>
 					</CardContent>
+					<CardFooter className='justify-end gap-2'>
+						<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects' })}>
+							{t('common:action.cancel')}
+						</Button>
+						<Button type='submit' disabled={submitting || !orderId || !picUserId}>
+							{t('projects:new.submit')}
+						</Button>
+					</CardFooter>
 				</Card>
-				<div className='mt-6 flex justify-end gap-2'>
-					<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects' })}>
-						{t('common:action.cancel')}
-					</Button>
-					<Button type='submit' disabled={submitting || !orderId || !picUserId}>
-						{t('projects:new.submit')}
-					</Button>
-				</div>
 			</form>
 		</div>
 	);

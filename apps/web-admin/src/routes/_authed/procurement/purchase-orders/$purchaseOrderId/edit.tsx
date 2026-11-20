@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { PurchaseOrderForm } from '@/components/procurement/purchase-order-form';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { purchaseOrderQueryOptions, updatePurchaseOrder } from '@/lib/procurement-api';
 
@@ -24,8 +26,10 @@ function EditPurchaseOrderPage() {
 	return (
 		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{t('procurement:pos.edit')}</h1>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
+			{isPending ? (
+				<SectionSkeleton lines={6} />
+			) : isError ? (
+				<ErrorState error={error} bordered />
 			) : data.status !== 'draft' ? (
 				<p className='text-sm text-muted-foreground'>{t('procurement:pos.onlyDraftEditable')}</p>
 			) : (

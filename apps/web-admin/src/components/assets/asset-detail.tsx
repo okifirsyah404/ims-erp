@@ -6,6 +6,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardHeader,
 	CardTitle,
@@ -21,7 +22,8 @@ import {
 import { NativeSelect } from '@ims-erp/ui/components/native-select';
 import { CircleAlert, Wrench } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	assetDepreciationsQueryOptions,
@@ -52,24 +54,11 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 	const depreciations = useQuery(assetDepreciationsQueryOptions(assetId));
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:detail.title')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	if (isPending || !data) {
-		return (
-			<Card className='animate-pulse'>
-				<CardHeader>
-					<CardTitle className='h-6 w-1/3 rounded bg-muted' />
-				</CardHeader>
-				<CardContent className='h-40 rounded bg-muted' />
-			</Card>
-		);
+		return <PageSkeleton />;
 	}
 
 	// The history endpoint answers `null` for a unit unknown to this tenant.
@@ -118,7 +107,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 
 			<div className='grid gap-4 sm:grid-cols-3'>
 				<Card>
-					<CardHeader className='pb-2'>
+					<CardHeader>
 						<CardTitle className='text-sm font-medium text-muted-foreground'>
 							{t('assets:register.status')}
 						</CardTitle>
@@ -135,7 +124,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 					</CardContent>
 				</Card>
 				<Card>
-					<CardHeader className='pb-2'>
+					<CardHeader>
 						<CardTitle className='text-sm font-medium text-muted-foreground'>
 							{t('assets:register.bookValue')}
 						</CardTitle>
@@ -145,7 +134,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 					</CardContent>
 				</Card>
 				<Card>
-					<CardHeader className='pb-2'>
+					<CardHeader>
 						<CardTitle className='text-sm font-medium text-muted-foreground'>
 							{t('assets:register.condition')}
 						</CardTitle>
@@ -242,10 +231,10 @@ function LocationCard({
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-start justify-between gap-2'>
+			<CardHeader>
 				<CardTitle className='text-sm'>{t('assets:register.location')}</CardTitle>
 				{canUpdate && asset.status === 'ready' ? (
-					<div className='flex gap-2'>
+					<CardAction className='flex gap-2'>
 						<Button
 							size='sm'
 							variant='outline'
@@ -261,7 +250,7 @@ function LocationCard({
 						>
 							{t('assets:detail.transfer')}
 						</Button>
-					</div>
+					</CardAction>
 				) : null}
 			</CardHeader>
 			<CardContent className='space-y-1 text-sm'>
@@ -397,7 +386,7 @@ function HistorySection({
 }) {
 	return (
 		<Card>
-			<CardHeader className='pb-2'>
+			<CardHeader>
 				<CardTitle className='text-sm'>{title}</CardTitle>
 			</CardHeader>
 			<CardContent>

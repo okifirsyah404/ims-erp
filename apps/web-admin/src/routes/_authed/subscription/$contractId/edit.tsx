@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { ContractForm } from '@/components/licensing/contract-form';
 import { toast } from '@/components/toast';
 import { contractQueryOptions, updateContract } from '@/lib/license-api';
@@ -19,8 +21,8 @@ function EditContractPage() {
 	const { data, isPending, isError, error } = useQuery(contractQueryOptions(contractId));
 	const back = () => void navigate({ to: '/subscription/$contractId', params: { contractId } });
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton cards={1} />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>

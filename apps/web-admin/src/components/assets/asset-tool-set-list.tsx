@@ -24,9 +24,10 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
-import { CircleAlert, Package, Plus } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { toast } from '@/components/toast';
 import {
 	addToolSetItem,
@@ -62,13 +63,7 @@ export function AssetToolSetList() {
 	});
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:toolSets.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -88,18 +83,33 @@ export function AssetToolSetList() {
 				) : null}
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{isPending ? (
+				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+					{Array.from({ length: 3 }, (_, index) => (
+						<Card key={index}>
+							<CardHeader>
+								<Skeleton className='h-5 w-1/2' />
+								<Skeleton className='h-3 w-1/3' />
+							</CardHeader>
+							<CardContent>
+								<Skeleton className='h-4 w-1/4' />
+							</CardContent>
+						</Card>
+					))}
+				</div>
+			) : !data || data.rows.length === 0 ? (
 				<EmptyState
 					icon={Package}
 					title={t('assets:toolSets.emptyTitle')}
 					description={t('assets:toolSets.empty')}
+					bordered
 				/>
 			) : (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.rows.map((toolSet) => (
 						<Card key={toolSet.id}>
-							<CardHeader className='pb-2'>
-								<CardTitle className='text-base'>{toolSet.name}</CardTitle>
+							<CardHeader>
+								<CardTitle>{toolSet.name}</CardTitle>
 								<p className='font-mono text-xs text-muted-foreground'>
 									{toolSet.code}
 								</p>

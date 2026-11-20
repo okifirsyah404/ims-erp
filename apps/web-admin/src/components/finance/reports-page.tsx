@@ -51,7 +51,7 @@ export function ReportsPage() {
 
 	if (!canRead) {
 		return (
-			<EmptyState icon={FileSpreadsheet} title={t('finance:reports.title')} className='border' />
+			<EmptyState icon={FileSpreadsheet} title={t('finance:reports.title')} bordered />
 		);
 	}
 
@@ -137,7 +137,7 @@ export function ReportsPage() {
 							/>
 							<Card>
 								<CardHeader>
-									<CardTitle className='text-base'>
+									<CardTitle>
 										{t('finance:reports.pl.netIncome')}
 									</CardTitle>
 								</CardHeader>
@@ -147,7 +147,7 @@ export function ReportsPage() {
 							</Card>
 						</>
 					) : (
-						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} className='border' />
+						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} bordered />
 					)}
 				</TabsContent>
 
@@ -172,7 +172,7 @@ export function ReportsPage() {
 							{bs.unexplained !== 0 ? (
 								<Card>
 									<CardHeader>
-										<CardTitle className='text-base text-destructive'>
+										<CardTitle className='text-destructive'>
 											{t('finance:reports.bs.unexplained')}
 										</CardTitle>
 									</CardHeader>
@@ -181,7 +181,7 @@ export function ReportsPage() {
 							) : null}
 						</>
 					) : (
-						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} className='border' />
+						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} bordered />
 					)}
 				</TabsContent>
 
@@ -217,7 +217,7 @@ export function ReportsPage() {
 							/>
 							<Card>
 								<CardHeader>
-									<CardTitle className='text-base'>
+									<CardTitle>
 										{t('finance:reports.cf.netChange')}
 									</CardTitle>
 								</CardHeader>
@@ -227,7 +227,7 @@ export function ReportsPage() {
 							</Card>
 						</>
 					) : (
-						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} className='border' />
+						<EmptyState icon={FileSpreadsheet} title={t('finance:reports.run')} bordered />
 					)}
 				</TabsContent>
 			</Tabs>
@@ -269,7 +269,7 @@ function ReportSection({	title,
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-base'>{title}</CardTitle>
+				<CardTitle>{title}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				{rows.length === 0 ? (

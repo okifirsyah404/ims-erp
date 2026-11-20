@@ -78,7 +78,10 @@ export function BastForm({
 			}}
 		>
 			<Card>
-				<CardContent className='pt-6'>
+				<CardHeader>
+					<CardTitle>{t('projects:bast.details')}</CardTitle>
+				</CardHeader>
+				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='bast-date'>{t('projects:bast.date')}</FieldLabel>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { Input } from '@ims-erp/ui/components/input';
 import { Badge } from '@ims-erp/ui/components/badge';
 import {
 	Select,
@@ -12,8 +13,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Download, ReceiptText } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
+import { Download, ReceiptText } from 'lucide-react';
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableFooter,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@ims-erp/ui/components/table';
+
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	recapCsvUrl,
 	recapQueryOptions,
@@ -74,9 +86,9 @@ export function TaxRecap() {
 			</div>
 
 			<div className='flex flex-wrap items-center gap-2'>
-				<input
+				<Input
 					type='number'
-					className='h-9 w-24 rounded-md border bg-transparent px-3 text-sm'
+					className='w-24'
 					value={year}
 					min={2000}
 					max={2100}
@@ -126,77 +138,76 @@ export function TaxRecap() {
 			</div>
 
 			{isError ? (
-				<EmptyState
-					icon={CircleAlert}
-					title={t('tax:recap.title')}
-					description={error.message}
-				/>
-			) : isPending ? null : !data ||
+				<ErrorState error={error} bordered />
+			) : isPending ? (
+				<SectionSkeleton lines={6} />
+			) : !data ||
 				data.lines.length === 0 ? (
 				<EmptyState
 					icon={ReceiptText}
 					title={t('tax:recap.title')}
 					description={t('tax:recap.empty')}
+					bordered
 				/>
 			) : (
 				<>
-					<div className='overflow-hidden rounded-lg border'>
-						<table className='w-full text-sm'>
-							<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-								<tr>
-									<th className='px-3 py-2'>{t('tax:recap.column.code')}</th>
-									<th className='px-3 py-2 text-right'>
+					<div className='overflow-hidden rounded-md border'>
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>{t('tax:recap.column.code')}</TableHead>
+									<TableHead className='text-right'>
 										{t('tax:recap.column.taxableBase')}
-									</th>
-									<th className='px-3 py-2 text-right'>
+									</TableHead>
+									<TableHead className='text-right'>
 										{t('tax:recap.column.taxAmount')}
-									</th>
-									<th className='px-3 py-2 text-right'>
+									</TableHead>
+									<TableHead className='text-right'>
 										{t('tax:recap.column.correctionTotal')}
-									</th>
-									<th className='px-3 py-2 text-right'>
+									</TableHead>
+									<TableHead className='text-right'>
 										{t('tax:recap.column.netPayable')}
-									</th>
-									<th className='px-3 py-2'>
+									</TableHead>
+									<TableHead>
 										{t('tax:recap.column.filingStatus')}
-									</th>
-								</tr>
-							</thead>
-							<tbody>
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
 								{data.lines.map((line) => (
-									<tr key={line.taxRecordId} className='border-t'>
-										<td className='px-3 py-2 font-mono text-xs'>{line.code}</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
+									<TableRow key={line.taxRecordId}>
+										<TableCell className='font-mono text-xs'>{line.code}</TableCell>
+										<TableCell className='text-right font-mono text-xs'>
 											{(line.taxableBase / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
+										</TableCell>
+										<TableCell className='text-right font-mono text-xs'>
 											{(line.taxAmount / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
+										</TableCell>
+										<TableCell className='text-right font-mono text-xs'>
 											{(line.correctionTotal / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
+										</TableCell>
+										<TableCell className='text-right font-mono text-xs'>
 											{(line.netPayable / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2'>
+										</TableCell>
+										<TableCell>
 											<Badge variant={statusTone(asFilingStatus(line.filingStatus))}>
 												{t(`tax:status.${asFilingStatus(line.filingStatus)}`)}
 											</Badge>
-										</td>
-									</tr>
+										</TableCell>
+									</TableRow>
 								))}
-							</tbody>
-							<tfoot>
-								<tr className='border-t bg-muted/30 font-medium'>
-									<td className='px-3 py-2'>{t('tax:recap.totalNetPayable')}</td>
-									<td colSpan={3} />
-									<td className='px-3 py-2 text-right font-mono text-xs'>
+							</TableBody>
+							<TableFooter>
+								<TableRow className='font-medium'>
+									<TableCell>{t('tax:recap.totalNetPayable')}</TableCell>
+									<TableCell colSpan={3} />
+									<TableCell className='text-right font-mono text-xs'>
 										{(data.totalNetPayable / 100).toLocaleString()}
-									</td>
-									<td />
-								</tr>
-							</tfoot>
-						</table>
+									</TableCell>
+									<TableCell />
+								</TableRow>
+							</TableFooter>
+						</Table>
 					</div>
 				</>
 			)}

@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { PurchaseReturnForm } from '@/components/procurement/purchase-return-form';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { purchaseReturnQueryOptions, returnableReceiptsQueryOptions, updatePurchaseReturn } from '@/lib/purchase-return-api';
 
@@ -19,9 +21,9 @@ function EditPurchaseReturnPage() {
 	const detail = useQuery(purchaseReturnQueryOptions(purchaseReturnId));
 	const receipts = useQuery(returnableReceiptsQueryOptions());
 
-	if (detail.isPending || receipts.isPending) return null;
-	if (detail.isError) return <p className='text-sm text-destructive'>{detail.error.message}</p>;
-	if (receipts.isError) return <p className='text-sm text-destructive'>{receipts.error.message}</p>;
+	if (detail.isError) return <ErrorState error={detail.error} bordered />;
+	if (receipts.isError) return <ErrorState error={receipts.error} bordered />;
+	if (detail.isPending || receipts.isPending) return <PageSkeleton cards={1} />;
 
 	return (
 		<div className='flex flex-col gap-6'>

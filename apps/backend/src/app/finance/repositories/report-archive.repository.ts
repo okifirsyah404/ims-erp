@@ -5,10 +5,18 @@ import {
 	type TReportArchiveSelect,
 	type ReportArchiveType,
 } from '@drizzle/schemas/finance.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
+
+/** Page settings, tenant and the optional period filters of the archive listing. */
+export type TReportArchivePaginationRequest = TPaginationRequest & {
+	organizationId: string;
+	periodYear?: number;
+	periodMonth?: number;
+};
 
 export type TReportArchiveInsertInput = {
 	organizationId: string;
@@ -69,20 +77,24 @@ export class ReportArchiveRepository {
 		return row ?? null;
 	}
 
-	async list(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filter: { periodYear?: number; periodMonth?: number } = {},
+	/**
+	 * Fetches one page of archived reports, newest period first.
+	 *
+	 * @param request - Tenant, page settings and the optional period filters
+	 */
+	async paginate(
+		request: TReportArchivePaginationRequest,
 	): Promise<TPaginationResult<TReportArchiveSelect>> {
+		const { organizationId, periodYear, periodMonth, page, limit } = request;
 		const conditions = [
 			eq(reportArchives.organizationId, organizationId),
 			isNull(reportArchives.deletedAt),
 		];
-		if (filter.periodYear != null) {
-			conditions.push(eq(reportArchives.periodYear, filter.periodYear));
+		if (periodYear != null) {
+			conditions.push(eq(reportArchives.periodYear, periodYear));
 		}
-		if (filter.periodMonth != null) {
-			conditions.push(eq(reportArchives.periodMonth, filter.periodMonth));
+		if (periodMonth != null) {
+			conditions.push(eq(reportArchives.periodMonth, periodMonth));
 		}
 		const where = and(...conditions);
 
@@ -96,26 +108,15 @@ export class ReportArchiveRepository {
 					desc(reportArchives.periodMonth),
 					desc(reportArchives.reportType),
 				)
-				.limit(pagination.limit)
-				.offset((pagination.page - 1) * pagination.limit),
+				.limit(limit)
+				.offset((page - 1) * limit),
 			this.database
 				.select({ value: count() })
 				.from(reportArchives)
 				.where(where),
 		]);
 
-		return {
-			data: rows,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total: Number(total?.value ?? 0),
-				totalPages: Math.max(
-					1,
-					Math.ceil(Number(total?.value ?? 0) / pagination.limit),
-				),
-			},
-		};
+		return paginationResult(request, Number(total?.value ?? 0), rows);
 	}
 
 	async findById(

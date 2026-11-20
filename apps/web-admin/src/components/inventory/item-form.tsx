@@ -6,6 +6,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardContent,
+	CardFooter,
 	CardDescription,
 	CardHeader,
 	CardTitle,
@@ -141,13 +142,13 @@ export function ItemForm({
 				</div>
 			)}
 
+			<form onSubmit={handleSubmit}>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('inventory:items.name')}</CardTitle>
 					<CardDescription>{t('inventory:items.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit}>
 						<FieldGroup>
 							{isEdit && (
 								<Field>
@@ -351,57 +352,66 @@ export function ItemForm({
 								/>
 							</Field>
 
-							<label className='flex items-center gap-2 text-sm'>
+							<Field orientation='horizontal'>
 								<Checkbox
+									id='isSerialized'
 									checked={isSerialized}
 									onCheckedChange={(checked) => setIsSerialized(checked === true)}
 								/>
-								{t('inventory:items.serialized')}
-							</label>
+								<FieldLabel htmlFor='isSerialized'>
+									{t('inventory:items.serialized')}
+								</FieldLabel>
+							</Field>
 							<p className='text-xs text-muted-foreground'>
 								{t('inventory:form.serializedHint')}
 							</p>
 
-							<label className='flex items-center gap-2 text-sm'>
+							<Field orientation='horizontal'>
 								<Checkbox
+									id='isStockTracked'
 									checked={isStockTracked}
 									disabled={isSerialized}
 									onCheckedChange={(checked) =>
 										setIsStockTracked(checked === true)
 									}
 								/>
-								{t('inventory:items.quantityTracked')}
-							</label>
+								<FieldLabel htmlFor='isStockTracked'>
+									{t('inventory:items.quantityTracked')}
+								</FieldLabel>
+							</Field>
 
-							<label className='flex items-center gap-2 text-sm'>
+							<Field orientation='horizontal'>
 								<Checkbox
+									id='isActive'
 									checked={isActive}
 									onCheckedChange={(checked) => setIsActive(checked === true)}
 								/>
-								{t('inventory:items.isActive')}
-							</label>
+								<FieldLabel htmlFor='isActive'>
+									{t('inventory:items.isActive')}
+								</FieldLabel>
+							</Field>
 							<p className='text-xs text-muted-foreground'>
 								{t('inventory:items.isActiveHint')}
 							</p>
 
-							<div className='flex gap-2'>
-								<Button type='submit' disabled={submitting || !name || !sku}>
-									{submitting
-										? isEdit
-											? t('inventory:form.saving')
-											: t('inventory:form.creating')
-										: isEdit
-											? t('inventory:form.save')
-											: t('inventory:form.create')}
-								</Button>
-								<Button type='button' variant='outline' onClick={onCancel}>
-									{t('common:action.cancel')}
-								</Button>
-							</div>
 						</FieldGroup>
-					</form>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='submit' disabled={submitting || !name || !sku}>
+						{submitting
+							? isEdit
+								? t('inventory:form.saving')
+								: t('inventory:form.creating')
+							: isEdit
+								? t('inventory:form.save')
+								: t('inventory:form.create')}
+					</Button>
+					<Button type='button' variant='outline' onClick={onCancel}>
+						{t('common:action.cancel')}
+					</Button>
+				</CardFooter>
 			</Card>
+			</form>
 		</div>
 	);
 }

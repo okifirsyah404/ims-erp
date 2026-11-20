@@ -1,5 +1,5 @@
 import { AUDIT_ACTIONS, type TAuditLogSelect } from '@drizzle/schemas/audit.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 
 /**
  * Data-access contract over the append-only audit ledger
@@ -58,8 +58,15 @@ export type TAuditEntry = {
 	request?: { ip?: string | null; userAgent?: string | null };
 };
 
-/** Validated filters for a ledger read. All filters are optional and ANDed. */
-export type TAuditListRequest = {
+/**
+ * Validated filters for a ledger read. All filters are optional and ANDed.
+ *
+ * @remarks
+ * Page settings come from {@link TPaginationRequest}; the tenant filter is a
+ * plain column match, not the tri-state balance scope, because the ledger's
+ * `organization_id` is nullable (system rows have no tenant).
+ */
+export type TAuditPaginationRequest = TPaginationRequest & {
 	action?: AuditAction;
 	actorUserId?: string;
 	targetType?: TAuditTargetType;
@@ -68,15 +75,13 @@ export type TAuditListRequest = {
 	from?: Date;
 	/** Exclusive upper bound. */
 	to?: Date;
-	page: number;
-	limit: number;
 };
 
 export interface IAuditRepository {
 	/** Appends one immutable audit row. */
 	insert(entry: TAuditEntry): Promise<void>;
-	/** Lists ledger rows newest-first, filtered. */
-	list(
-		request: TAuditListRequest,
+	/** Fetches one filtered page of ledger rows, newest first. */
+	paginate(
+		request: TAuditPaginationRequest,
 	): Promise<TPaginationResult<TAuditLogSelect>>;
 }

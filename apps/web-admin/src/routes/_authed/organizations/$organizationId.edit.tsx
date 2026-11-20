@@ -4,6 +4,8 @@ import {
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +15,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -44,7 +47,7 @@ function EditOrganizationPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { t } = useTranslation(['admin', 'common']);
-	const { data: organization } = useQuery({
+	const { data: organization, isPending, isError, error } = useQuery({
 		...organizationQueryOptions(organizationId),
 		retry: false,
 	});
@@ -88,6 +91,9 @@ function EditOrganizationPage() {
 		}
 	}
 
+	if (isPending) return <PageSkeleton cards={1} />;
+	if (isError) return <ErrorState error={error} bordered />;
+
 	return (
 		<div className='flex flex-col gap-6'>
 			<div>
@@ -96,13 +102,13 @@ function EditOrganizationPage() {
 					{t('orgEdit.description')}
 				</p>
 			</div>
+			<form onSubmit={handleSubmit}>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('orgEdit.details')}</CardTitle>
 					<CardDescription>{t('orgImage.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit}>
 						{/* Matches the create page: the logo leads the form, centered
 						    because it is the identity anchor of the card. The upload
 						    is immediate (the org exists), so the picker binds to the
@@ -134,29 +140,29 @@ function EditOrganizationPage() {
 									onChange={(event) => setDescription(event.target.value)}
 								/>
 							</Field>
-							<div className='flex gap-2'>
-								<Button type='submit' disabled={pending || !name}>
-									{pending
-										? t('common:action.saving')
-										: t('common:action.save')}
-								</Button>
-								<Button
-									type='button'
-									variant='outline'
-									onClick={() =>
-										navigate({
-											to: '/organizations/$organizationId',
-											params: { organizationId },
-										})
-									}
-								>
-									{t('common:action.cancel')}
-								</Button>
-							</div>
 						</FieldGroup>
-					</form>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='submit' disabled={pending || !name}>
+						{pending
+							? t('common:action.saving')
+							: t('common:action.save')}
+					</Button>
+					<Button
+						type='button'
+						variant='outline'
+						onClick={() =>
+							navigate({
+								to: '/organizations/$organizationId',
+								params: { organizationId },
+							})
+						}
+					>
+						{t('common:action.cancel')}
+					</Button>
+				</CardFooter>
 			</Card>
+			</form>
 		</div>
 	);
 }

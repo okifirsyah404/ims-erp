@@ -4,7 +4,7 @@ import type {
 	TReceiptInsert,
 	TReceiptSelect,
 } from '@drizzle/schemas/sale.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 import type { TReceiptListQuery } from './invoice.contract';
 import type { TTermAmounts } from '../utils/invoice-terms';
 
@@ -17,6 +17,10 @@ export type TInvoiceListFilters = {
 	/** `today` (Jakarta) when only overdue invoices are wanted. */
 	overdueOn?: string;
 };
+
+/** Page settings, tenant and filters of the invoice listing. */
+export type TInvoicePaginationRequest = TPaginationRequest &
+	TInvoiceListFilters & { organizationId: string };
 
 /**
  * Invoice statuses that count as invoiced revenue (M01).
@@ -97,11 +101,10 @@ export type TInvoiceRepository = {
 		code: string,
 		tx?: unknown,
 	): Promise<TInvoiceSelect | null>;
-	list(
-		organizationId: string,
-		filters: TInvoiceListFilters,
-		pagination: { page: number; limit: number },
-	): Promise<{ data: TInvoiceSelect[]; meta: { page: number; limit: number; total: number; totalPages: number } }>;
+	/** Fetches one filtered page of the tenant's invoices, newest first. */
+	paginate(
+		request: TInvoicePaginationRequest,
+	): Promise<TPaginationResult<TInvoiceSelect>>;
 	/**
 	 * Invoiced totals per period inside `[from, to]`, oldest first, every
 	 * period present. Counts only {@link INVOICED_STATUSES} and rows with an

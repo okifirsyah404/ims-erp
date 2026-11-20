@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -13,16 +13,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Landmark, Plus } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	addReconciliationItems,
@@ -33,6 +28,7 @@ import {
 	cashBankTransactionsQueryOptions,
 	reconcileReconciliation,
 	reconciliationsQueryOptions,
+	type TBankReconciliation,
 	type TBankReconciliationItem,
 	toMinor,
 } from '@/lib/finance-api';
@@ -81,6 +77,67 @@ export function ReconciliationPage() {
 	const items = selectedId ? itemsByReconciliation[selectedId] : undefined;
 
 	const reconciliation = page?.rows.find((row) => row.id === selectedId) ?? null;
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TBankReconciliation, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('finance:common.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'reconciliationDate', header: t('finance:common.date') },
+			{
+				accessorKey: 'statementBalance',
+				header: t('finance:reconciliation.statementBalance'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.statementBalance),
+			},
+			{
+				accessorKey: 'bookBalance',
+				header: t('finance:reconciliation.bookBalance'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.bookBalance),
+			},
+			{
+				accessorKey: 'difference',
+				header: t('finance:reconciliation.difference'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.difference),
+			},
+			{
+				accessorKey: 'status',
+				header: t('finance:common.status'),
+				cell: ({ row }) => (
+					<Badge
+						variant={
+							row.original.status === 'closed'
+								? 'outline'
+								: row.original.status === 'reconciled'
+									? 'secondary'
+									: 'destructive'
+						}
+					>
+						{t(`finance:${statusKey(row.original.status)}` as never)}
+					</Badge>
+				),
+			},
+			{
+				id: 'items',
+				header: () => <span className='sr-only'>{t('finance:reconciliation.items')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<Button
+						size='sm'
+						variant='outline'
+						onClick={() => setSelectedId(row.original.id)}
+					>
+						{t('finance:reconciliation.items')}
+					</Button>
+				),
+			},
+		],
+		[t],
+	);
 
 	const { data: movements } = useQuery({
 		...cashBankTransactionsQueryOptions({
@@ -175,7 +232,7 @@ export function ReconciliationPage() {
 
 	if (!canRead) {
 		return (
-			<EmptyState icon={Landmark} title={t('finance:reconciliation.title')} className='border' />
+			<EmptyState icon={Landmark} title={t('finance:reconciliation.title')} bordered />
 		);
 	}
 
@@ -225,58 +282,21 @@ export function ReconciliationPage() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={Landmark} title={error.message} className='border' />
-			) : (page?.rows.length ?? 0) === 0 ? (
-				<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} className='border' />
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (page?.rows.length ?? 0) === 0 ? (
+				<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} bordered />
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:common.code')}</TableHead>
-								<TableHead>{t('finance:common.date')}</TableHead>
-								<TableHead className='text-right'>{t('finance:reconciliation.statementBalance')}</TableHead>
-								<TableHead className='text-right'>{t('finance:reconciliation.bookBalance')}</TableHead>
-								<TableHead className='text-right'>{t('finance:reconciliation.difference')}</TableHead>
-								<TableHead>{t('finance:common.status')}</TableHead>
-								<TableHead />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{page?.rows.map((row) => (
-								<TableRow
-									key={row.id}
-									className={selectedId === row.id ? 'bg-muted/50' : undefined}
-								>
-									<TableCell className='font-mono text-xs'>{row.code}</TableCell>
-									<TableCell>{row.reconciliationDate}</TableCell>
-									<TableCell className='text-right'>{formatMoney(row.statementBalance)}</TableCell>
-									<TableCell className='text-right'>{formatMoney(row.bookBalance)}</TableCell>
-									<TableCell className='text-right'>{formatMoney(row.difference)}</TableCell>
-									<TableCell>
-										<Badge
-											variant={
-												row.status === 'closed'
-													? 'outline'
-													: row.status === 'reconciled'
-														? 'secondary'
-														: 'destructive'
-											}
-										>
-											{t(`finance:${statusKey(row.status)}` as never)}
-										</Badge>
-									</TableCell>
-									<TableCell className='text-right'>
-										<Button size='sm' variant='outline' onClick={() => setSelectedId(row.id)}>
-											{t('finance:reconciliation.items')}
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={page?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					rowClassName={(row) =>
+						selectedId === row.id ? 'bg-muted/50' : undefined
+					}
+					bordered
+				/>
 			)}
 
 			{selectedId != null && reconciliation ? (

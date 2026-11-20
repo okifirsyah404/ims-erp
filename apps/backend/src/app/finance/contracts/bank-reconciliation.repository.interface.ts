@@ -1,5 +1,15 @@
 import type { TTx } from '@drizzle/types';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+
+/** Filters of the reconciliation listing. */
+export type TBankReconciliationFilters = {
+	cashBankAccountId?: string;
+	status?: string;
+};
+
+/** Page settings, tenant and filters of the reconciliation listing. */
+export type TBankReconciliationPaginationRequest = TPaginationRequest &
+	TBankReconciliationFilters & { organizationId: string };
 
 export interface IBankReconciliationRepository {
 	insertBankReconciliation(
@@ -21,10 +31,9 @@ export interface IBankReconciliationRepository {
 		id: string,
 		tx?: TTx,
 	): Promise<unknown | null>;
-	listBankReconciliations(
-		organizationId: string,
-		filters: { cashBankAccountId?: string; status?: string },
-		pagination: { page: number; limit: number },
+	/** Fetches one page of the tenant's reconciliations, newest first. */
+	paginate(
+		request: TBankReconciliationPaginationRequest,
 	): Promise<TPaginationResult<unknown>>;
 	updateBankReconciliation(
 		organizationId: string,

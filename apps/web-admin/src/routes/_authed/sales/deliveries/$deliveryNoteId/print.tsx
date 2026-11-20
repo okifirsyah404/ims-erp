@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
+import { ErrorState } from '@/components/empty-state';
+
 import { Button } from '@ims-erp/ui/components/button';
 import { DeliveryNoteDocument } from '@/components/sales/delivery-note-document';
 import { companyProfileQueryOptions } from '@/lib/company-api';
@@ -33,7 +35,7 @@ function PrintDeliveryNotePage() {
 				</Button>
 			</div>
 			{note.isError ? (
-				<p className='text-sm text-destructive'>{note.error.message}</p>
+				<ErrorState error={note.error} />
 			) : note.data && !profile.isPending ? (
 				<div className='mx-auto w-full max-w-4xl rounded-md border p-12 print:max-w-none print:border-0 print:p-0'>
 					<DeliveryNoteDocument note={note.data} profile={profile.data} />

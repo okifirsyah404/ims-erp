@@ -151,23 +151,29 @@ export function WarehouseForm({
 					</FieldGroup>
 
 					<div className='mt-4 flex flex-col gap-3'>
-						<label className='flex items-center gap-2 text-sm'>
+						<Field orientation='horizontal'>
 							<Checkbox
+								id='warehouse-is-default'
 								checked={isDefault}
 								onCheckedChange={(checked) => setIsDefault(checked === true)}
 							/>
-							{t('inventory:warehouseForm.isDefault')}
-						</label>
+							<FieldLabel htmlFor='warehouse-is-default'>
+								{t('inventory:warehouseForm.isDefault')}
+							</FieldLabel>
+						</Field>
 						<p className='text-xs text-muted-foreground'>
 							{t('inventory:warehouseForm.isDefaultHint')}
 						</p>
-						<label className='flex items-center gap-2 text-sm'>
+						<Field orientation='horizontal'>
 							<Checkbox
+								id='warehouse-is-active'
 								checked={isActive}
 								onCheckedChange={(checked) => setIsActive(checked === true)}
 							/>
-							{t('inventory:warehouseForm.isActive')}
-						</label>
+							<FieldLabel htmlFor='warehouse-is-active'>
+								{t('inventory:warehouseForm.isActive')}
+							</FieldLabel>
+						</Field>
 					</div>
 				</CardContent>
 			</Card>

@@ -9,7 +9,8 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type { IAccountingPeriodRepository, TPeriodPaginationRequest } from '../contracts/accounting-period.repository.interface';
 
 /**
  * Drizzle queries of `accounting.accounting_periods`.
@@ -60,10 +61,15 @@ export class AccountingPeriodRepository implements IAccountingPeriodRepository {
 		return row ?? null;
 	}
 
-	async listPeriods(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+	/**
+	 * Fetches one page of the tenant's accounting periods, newest first.
+	 *
+	 * @param request - Tenant and page settings
+	 */
+	async paginate(
+		request: TPeriodPaginationRequest,
 	): Promise<TPaginationResult<TAccountingPeriodSelect>> {
+		const { organizationId, page, limit } = request;
 		const where = and(
 			eq(accountingPeriods.organizationId, organizationId),
 			isNull(accountingPeriods.deletedAt),
@@ -77,17 +83,9 @@ export class AccountingPeriodRepository implements IAccountingPeriodRepository {
 			.from(accountingPeriods)
 			.where(where)
 			.orderBy(desc(accountingPeriods.periodYear), desc(accountingPeriods.periodMonth))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async insertPeriod(

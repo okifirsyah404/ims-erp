@@ -10,7 +10,12 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IJournalRepository, TAccountActivity } from '../contracts/journal.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IJournalRepository,
+	TAccountActivity,
+	TJournalEntryPaginationRequest,
+} from '../contracts/journal.repository.interface';
 
 /**
  * Drizzle queries of `accounting.journal_entries` and `accounting.journal_lines`.
@@ -87,25 +92,29 @@ export class JournalRepository implements IJournalRepository {
 		return row ?? null;
 	}
 
-	async listEntries(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filters: { year?: number; month?: number; status?: string } = {},
+	/**
+	 * Fetches one page of the tenant's journal entries, newest first.
+	 *
+	 * @param request - Tenant, page settings and the optional period/status filters
+	 */
+	async paginateEntries(
+		request: TJournalEntryPaginationRequest,
 	): Promise<TPaginationResult<TJournalEntrySelect>> {
+		const { organizationId, year, month, status, page, limit } = request;
 		const conditions = [
 			eq(journalEntries.organizationId, organizationId),
 			isNull(journalEntries.deletedAt),
 		];
-		if (filters.year && filters.month) {
-			const start = `${filters.year}-${String(filters.month).padStart(2, '0')}-01`;
-			const endDate = new Date(Date.UTC(filters.year, filters.month, 0))
+		if (year && month) {
+			const start = `${year}-${String(month).padStart(2, '0')}-01`;
+			const endDate = new Date(Date.UTC(year, month, 0))
 				.toISOString()
 				.slice(0, 10);
 			conditions.push(sql`${journalEntries.entryDate} >= ${start}`);
 			conditions.push(sql`${journalEntries.entryDate} <= ${endDate}`);
 		}
-		if (filters.status) {
-			conditions.push(eq(journalEntries.status, filters.status));
+		if (status) {
+			conditions.push(eq(journalEntries.status, status));
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database
@@ -117,17 +126,9 @@ export class JournalRepository implements IJournalRepository {
 			.from(journalEntries)
 			.where(where)
 			.orderBy(desc(journalEntries.entryDate), desc(journalEntries.createdAt))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async insertEntry(

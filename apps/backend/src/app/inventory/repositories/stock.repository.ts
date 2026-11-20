@@ -1,6 +1,7 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { stocks } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
@@ -79,10 +80,7 @@ export class StockRepository implements IStockRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	/** Fetches the balance for an exact key, if it exists. */

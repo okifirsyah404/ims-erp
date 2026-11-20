@@ -1,6 +1,13 @@
 import type { TTx } from '@drizzle/types';
 import type { TCashBankAccountSelect, TCashBankTransactionSelect } from '@drizzle/schemas/finance.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+
+/** Page settings, tenant and the optional cash-account filter of the movement listing. */
+export type TCashBankTransactionPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+	/** Narrows the movements to one account; omit for all of the tenant's. */
+	cashBankAccountId?: string;
+};
 
 export interface ICashBankRepository {
 	findCashBankAccountByCode(
@@ -58,10 +65,9 @@ export interface ICashBankRepository {
 		},
 		tx?: TTx,
 	): Promise<TCashBankTransactionSelect>;
-	listCashBankTransactions(
-		organizationId: string,
-		cashBankAccountId: string | undefined,
-		pagination: { page: number; limit: number },
+	/** Fetches one page of cash/bank movements, newest first. */
+	paginateTransactions(
+		request: TCashBankTransactionPaginationRequest,
 	): Promise<TPaginationResult<TCashBankTransactionSelect>>;
 	/** Balance recomputed from the posted movements (tests and ops). */
 	cashBankAccountBalance(organizationId: string, id: string): Promise<number>;

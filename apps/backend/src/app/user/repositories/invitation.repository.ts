@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	TUserInvitationSelect,
 } from '@drizzle/schemas/auth.schema';
@@ -18,7 +19,7 @@ import { userInvitations } from '@drizzle/schemas/auth.schema';
 import type {
 	IInvitationRepository,
 	TInvitationCreate,
-	TInvitationListRequest,
+	TInvitationPaginationRequest,
 } from '../contracts/invitation.repository.interface';
 
 /**
@@ -75,8 +76,13 @@ export class InvitationRepository implements IInvitationRepository {
 		return row ?? null;
 	}
 
-	async list(
-		request: TInvitationListRequest,
+	/**
+	 * Fetches one filtered page of invitations.
+	 *
+	 * @param request - Page settings plus the optional status/org/email filters
+	 */
+	async paginate(
+		request: TInvitationPaginationRequest,
 	): Promise<TPaginationResult<TUserInvitationSelect>> {
 		const { status, organizationId, email, page, limit } = request;
 		const filters = [
@@ -104,10 +110,7 @@ export class InvitationRepository implements IInvitationRepository {
 			.offset((page - 1) * limit)
 			.limit(limit);
 
-		return {
-			data,
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
-		};
+		return paginationResult(request, total, data);
 	}
 
 	async create(input: TInvitationCreate): Promise<TUserInvitationSelect> {

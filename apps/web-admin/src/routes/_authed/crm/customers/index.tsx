@@ -1,22 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -27,7 +22,9 @@ import {
 	createCompany,
 	createCustomer,
 	customersQueryOptions,
+	type TCompany,
 	type TCompanyInput,
+	type TCustomer,
 	type TCustomerInput,
 	type TCustomerStatus,
 } from '@/lib/customer-api';
@@ -59,6 +56,87 @@ function CustomerListPage() {
 	const people = useQuery({ ...customersQueryOptions(params), enabled: tab === 'people' });
 	const active = tab === 'companies' ? companies : people;
 	const filtered = deferredSearch !== '' || status !== '';
+
+	const companyColumns = useMemo<ColumnDef<DataTableFeatures, TCompany, CellData>[]>(
+		() => [
+			{ accessorKey: 'code', header: t('crm:customer.code'), meta: { cellClassName: 'font-mono text-xs' } },
+			{
+				id: 'name',
+				header: t('crm:customer.name'),
+				cell: ({ row }) => (
+					<Link
+						to='/crm/customers/$customerId'
+						params={{ customerId: row.original.id }}
+						search={{ kind: 'company' }}
+						className='font-medium hover:underline'
+					>
+						{row.original.name}
+					</Link>
+				),
+			},
+			{
+				id: 'type',
+				header: t('crm:customer.customerType'),
+				cell: ({ row }) => t(`crm:customerType.${row.original.companyType}`),
+			},
+			{
+				id: 'phone',
+				header: t('crm:customer.phone'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.phone ?? row.original.whatsapp ?? '-',
+			},
+			{
+				id: 'status',
+				header: t('crm:customer.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.status === 'active' ? 'secondary' : 'outline'}>
+						{t(`crm:customerStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		],
+		[t],
+	);
+
+	const personColumns = useMemo<ColumnDef<DataTableFeatures, TCustomer, CellData>[]>(
+		() => [
+			{ accessorKey: 'code', header: t('crm:customer.code'), meta: { cellClassName: 'font-mono text-xs' } },
+			{
+				id: 'name',
+				header: t('crm:customer.name'),
+				cell: ({ row }) => (
+					<Link
+						to='/crm/customers/$customerId'
+						params={{ customerId: row.original.id }}
+						className='font-medium hover:underline'
+					>
+						{row.original.name}
+					</Link>
+				),
+			},
+			{
+				id: 'type',
+				header: t('crm:customer.customerType'),
+				cell: ({ row }) => t(`crm:customerType.${row.original.customerType}`),
+			},
+			{
+				id: 'phone',
+				header: t('crm:customer.phone'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.phone ?? row.original.whatsapp ?? '-',
+			},
+			{
+				id: 'status',
+				header: t('crm:customer.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.status === 'active' ? 'secondary' : 'outline'}>
+						{t(`crm:customerStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		],
+		[t],
+	);
 
 	function switchTab(next: TTab) {
 		setTab(next);
@@ -143,77 +221,29 @@ function CustomerListPage() {
 				</Select>
 			</div>
 
-			{active.isPending ? null : active.isError ? (
-				<p className='text-sm text-destructive'>{active.error.message}</p>
-			) : (active.data?.rows.length ?? 0) === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{filtered ? t('crm:customers.noResults') : t('crm:customers.empty')}
-					</CardContent>
-				</Card>
+			{active.isError ? (
+				<ErrorState error={active.error} bordered />
+			) : !active.isPending && (active.data?.rows.length ?? 0) === 0 ? (
+				<EmptyState title={filtered ? t('crm:customers.noResults') : t('crm:customers.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('crm:customer.code')}</TableHead>
-										<TableHead>{t('crm:customer.name')}</TableHead>
-										<TableHead>{t('crm:customer.customerType')}</TableHead>
-										<TableHead>{t('crm:customer.phone')}</TableHead>
-										<TableHead>{t('crm:customer.status')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{tab === 'companies'
-										? companies.data?.rows.map((company) => (
-												<TableRow key={company.id}>
-													<TableCell className='font-mono text-xs'>{company.code}</TableCell>
-													<TableCell>
-														<Link
-															to='/crm/customers/$customerId'
-															params={{ customerId: company.id }}
-															search={{ kind: 'company' }}
-															className='font-medium hover:underline'
-														>
-															{company.name}
-														</Link>
-													</TableCell>
-													<TableCell>{t(`crm:customerType.${company.companyType}`)}</TableCell>
-													<TableCell className='text-muted-foreground'>{company.phone ?? company.whatsapp ?? '-'}</TableCell>
-													<TableCell>
-														<Badge variant={company.status === 'active' ? 'secondary' : 'outline'}>
-															{t(`crm:customerStatus.${company.status}`)}
-														</Badge>
-													</TableCell>
-												</TableRow>
-											))
-										: people.data?.rows.map((customer) => (
-												<TableRow key={customer.id}>
-													<TableCell className='font-mono text-xs'>{customer.code}</TableCell>
-													<TableCell>
-														<Link
-															to='/crm/customers/$customerId'
-															params={{ customerId: customer.id }}
-															className='font-medium hover:underline'
-														>
-															{customer.name}
-														</Link>
-													</TableCell>
-													<TableCell>{t(`crm:customerType.${customer.customerType}`)}</TableCell>
-													<TableCell className='text-muted-foreground'>{customer.phone ?? customer.whatsapp ?? '-'}</TableCell>
-													<TableCell>
-														<Badge variant={customer.status === 'active' ? 'secondary' : 'outline'}>
-															{t(`crm:customerStatus.${customer.status}`)}
-														</Badge>
-													</TableCell>
-												</TableRow>
-											))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					{tab === 'companies' ? (
+						<DataTable
+							columns={companyColumns}
+							data={companies.data?.rows ?? []}
+							getRowId={(row) => row.id}
+							loading={companies.isPending}
+							bordered
+						/>
+					) : (
+						<DataTable
+							columns={personColumns}
+							data={people.data?.rows ?? []}
+							getRowId={(row) => row.id}
+							loading={people.isPending}
+							bordered
+						/>
+					)}
 					{active.data && active.data.pagination.totalPages > 1 && (
 						<PaginationControls
 							page={active.data.pagination.page}

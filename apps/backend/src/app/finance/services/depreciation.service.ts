@@ -7,7 +7,10 @@ import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/da
 import { inject, injectable } from 'tsyringe';
 import { DEPRECIATION_REPOSITORY_TOKEN, FINANCE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { TDepreciationCreateInput } from '../contracts/depreciation.contract';
-import type { IDepreciationRepository } from '../contracts/depreciation.repository.interface';
+import type {
+	IDepreciationRepository,
+	TDepreciationPaginationRequest,
+} from '../contracts/depreciation.repository.interface';
 import { DepreciationPeriodTakenError } from '../errors/depreciation.errors';
 import type { FinanceNumberingService } from './finance-numbering.service';
 
@@ -71,12 +74,10 @@ export class DepreciationService {
 		});
 	}
 
+	/** Fetches one page of depreciation entries, optionally of one item. */
 	list(
-		organizationId: string,
-		filter: { itemId?: string },
-		page: number,
-		limit: number,
+		request: TDepreciationPaginationRequest,
 	): Promise<TPaginationResult<TAssetDepreciationSelect>> {
-		return this.depreciations.list(organizationId, filter, page, limit);
+		return this.depreciations.paginate(request);
 	}
 }

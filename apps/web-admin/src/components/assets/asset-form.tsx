@@ -14,6 +14,7 @@ import {
 import {
 	Card,
 	CardContent,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -160,29 +161,29 @@ export function AssetForm({
 						onChange={(event) => setLocation(event.target.value)}
 					/>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button
+						variant='outline'
+						onClick={() =>
+							onCancel ? onCancel() : void navigate({ to: '/assets/register' })
+						}
+					>
+						{t('form.cancel')}
+					</Button>
+					<Button
+						disabled={!name || save.isPending}
+						onClick={() => void save.mutateAsync()}
+					>
+						{save.isPending
+							? asset
+								? t('form.saving')
+								: t('form.creating')
+							: asset
+								? t('form.save')
+								: t('form.create')}
+					</Button>
+				</CardFooter>
 			</Card>
-			<div className='flex justify-end gap-2'>
-				<Button
-					variant='outline'
-					onClick={() =>
-						onCancel ? onCancel() : void navigate({ to: '/assets/register' })
-					}
-				>
-					{t('form.cancel')}
-				</Button>
-				<Button
-					disabled={!name || save.isPending}
-					onClick={() => void save.mutateAsync()}
-				>
-					{save.isPending
-						? asset
-							? t('form.saving')
-							: t('form.creating')
-						: asset
-							? t('form.save')
-							: t('form.create')}
-				</Button>
-			</div>
 		</div>
 	);
 }

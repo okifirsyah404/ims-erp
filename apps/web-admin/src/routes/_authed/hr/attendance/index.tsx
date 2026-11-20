@@ -1,17 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { TimePicker } from '@ims-erp/ui/components/time-picker';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { ImportDialog } from '@/components/hr/import-dialog';
 import { toast } from '@/components/toast';
 import { todayBusinessDate } from '@/lib/format';
@@ -23,9 +25,12 @@ import {
 	saveAttendanceDay,
 	type TAttendanceDayRow,
 	type TAttendanceEntry,
+	type TAttendanceMonthRow,
 	type TAttendanceStatus,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 /** `/hr/attendance` — the day sheet, the monthly recap and the import (M08). */
 export const Route = createFileRoute('/_authed/hr/attendance/')({
@@ -89,8 +94,8 @@ function AttendancePage() {
 
 function DayView({ date, canRecord }: { date: string; canRecord: boolean }) {
 	const { data, isPending, isError, error, dataUpdatedAt } = useQuery(attendanceDayQueryOptions(date));
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton cards={1} />;
+	if (isError) return <ErrorState error={error} bordered />;
 	// Remount when the day or the server data changes, so the draft starts from it.
 	return <DaySheet key={`${date}-${dataUpdatedAt}`} date={date} rows={data} canRecord={canRecord} />;
 }
@@ -114,9 +119,7 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 
 	if (rows.length === 0) {
 		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('hr:attendance.empty')}</CardContent>
-			</Card>
+			<EmptyState title={t('hr:attendance.empty')} bordered />
 		);
 	}
 
@@ -129,8 +132,8 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 
 	return (
 		<>
-			<Card>
-				<CardContent className='p-0'>
+			<div className='overflow-hidden rounded-md border'>
+				<div>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -213,8 +216,8 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 							})}
 						</TableBody>
 					</Table>
-				</CardContent>
-			</Card>
+				</div>
+			</div>
 			{canRecord && (
 				<div className='flex flex-wrap justify-end gap-2'>
 					<Button
@@ -252,39 +255,29 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 function MonthView({ period }: { period: string }) {
 	const { t } = useTranslation(['hr', 'common']);
 	const { data, isPending, isError, error } = useQuery(attendanceMonthQueryOptions(period));
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
-	return (
-		<Card>
-			<CardContent className='p-0'>
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>{t('hr:field.employee')}</TableHead>
-							{ATTENDANCE_STATUSES.map((status) => (
-								<TableHead key={status} className='text-right'>
-									{t(`hr:status.${status}`)}
-								</TableHead>
-							))}
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{data.map((row) => (
-							<TableRow key={row.employee.id}>
-								<TableCell>
-									<div className='font-medium'>{row.employee.fullName}</div>
-									<div className='text-xs text-muted-foreground'>{row.employee.employeeCode}</div>
-								</TableCell>
-								{ATTENDANCE_STATUSES.map((status) => (
-									<TableCell key={status} className='text-right tabular-nums'>
-										{row.counts[status] || '—'}
-									</TableCell>
-								))}
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			</CardContent>
-		</Card>
+	const columns = useMemo<ColumnDef<DataTableFeatures, TAttendanceMonthRow, CellData>[]>(
+		() => [
+			{
+				id: 'employee',
+				header: t('hr:field.employee'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.employee.fullName}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.employee.employeeCode}</div>
+					</>
+				),
+			},
+			...ATTENDANCE_STATUSES.map(
+				(status): ColumnDef<DataTableFeatures, TAttendanceMonthRow, CellData> => ({
+					id: status,
+					header: t(`hr:status.${status}`),
+					meta: { align: 'right', cellClassName: 'tabular-nums' },
+					cell: ({ row }) => row.original.counts[status] || '—',
+				}),
+			),
+		],
+		[t],
 	);
+	if (isError) return <ErrorState error={error} bordered />;
+	return <DataTable columns={columns} data={data ?? []} getRowId={(row) => row.employee.id} loading={isPending} bordered />;
 }

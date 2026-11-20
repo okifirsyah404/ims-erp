@@ -7,6 +7,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardHeader,
 	CardTitle,
@@ -50,12 +51,14 @@ export function BillingCard({ orderId, active }: { orderId: string; active: bool
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between gap-2'>
+			<CardHeader>
 				<CardTitle>{t('finance:billing.title')}</CardTitle>
 				{active && canCreate && data.remainingToInvoice > 0 && (
-					<Button size='sm' onClick={() => setCreating(true)}>
-						{t('finance:billing.newInvoice')}
-					</Button>
+					<CardAction>
+						<Button size='sm' onClick={() => setCreating(true)}>
+							{t('finance:billing.newInvoice')}
+						</Button>
+					</CardAction>
 				)}
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4 text-sm'>

@@ -24,7 +24,10 @@ import {
 } from '../errors/ledger.errors';
 import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
 import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
-import type { IJournalRepository } from '../contracts/journal.repository.interface';
+import type {
+	IJournalRepository,
+	TJournalEntryPaginationRequest,
+} from '../contracts/journal.repository.interface';
 import type { TChartOfAccountSelect } from '@drizzle/schemas/finance.schema';
 
 /**
@@ -205,12 +208,8 @@ export class PostingService {
 	 * -------------------------------------------------------------- */
 
 	/** Lists journal entries for the `/journal` surface. */
-	async listEntries(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filters: { year?: number; month?: number; status?: string } = {},
-	) {
-		return this.journal.listEntries(organizationId, pagination, filters);
+	async listEntries(request: TJournalEntryPaginationRequest) {
+		return this.journal.paginateEntries(request);
 	}
 
 	/** One journal entry with its lines. */

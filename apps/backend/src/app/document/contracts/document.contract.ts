@@ -27,7 +27,8 @@ export const documentListQuerySchema = z.object({
 	organizationId: optionalText(64),
 });
 
-export type TDocumentListQuery = z.output<typeof documentListQuerySchema>;
+/** Page settings plus the filters of the document registry listing. */
+export type TDocumentPaginationRequest = z.output<typeof documentListQuerySchema>;
 
 /** Issue a document: the code is allocated by the numbering authority. */
 export const issueDocumentSchema = z.object({

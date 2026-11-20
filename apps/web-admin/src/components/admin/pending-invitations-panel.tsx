@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -67,7 +69,7 @@ export function PendingInvitationsPanel({
 	const canDelete = usePermission(ADMIN_PERMISSIONS.cancelInvitations);
 	const { t } = useTranslation(['admin', 'common']);
 
-	const { data, isPending } = useQuery(source.queryOptions);
+	const { data, isPending, isError, error } = useQuery(source.queryOptions);
 
 	async function refresh() {
 		await Promise.all(
@@ -115,13 +117,10 @@ export function PendingInvitationsPanel({
 				<CardDescription>{t('invitations.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
-				{isPending && (
-					<p className='text-sm text-muted-foreground'>{t('common:state.loading')}</p>
-				)}
-				{!isPending && rows.length === 0 && (
-					<p className='text-sm text-muted-foreground'>
-						{t('invitations.empty')}
-					</p>
+				{isPending && <SectionSkeleton />}
+				{isError && <ErrorState error={error} size='sm' />}
+				{!isPending && !isError && rows.length === 0 && (
+					<EmptyState title={t('invitations.empty')} size='sm' />
 				)}
 				{rows.length > 0 && (
 					<Table>

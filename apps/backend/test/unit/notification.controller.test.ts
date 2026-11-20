@@ -97,7 +97,7 @@ const repository: IPushNotificationRepository = {
 			rows.find((entry) => entry.id === id && entry.userId === userId) ?? null
 		);
 	},
-	async listForUser({ userId, page, limit, unreadOnly }) {
+	async paginateForUser({ userId, page, limit, unreadOnly }) {
 		const matching = rows
 			.filter((entry) => entry.userId === userId)
 			.filter((entry) => (unreadOnly ? entry.status !== 'read' : true))

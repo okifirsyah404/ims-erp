@@ -9,7 +9,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IChartOfAccountRepository,
+	TAccountPaginationRequest,
+} from '../contracts/chart-of-account.repository.interface';
 
 /**
  * Drizzle queries of `accounting.chart_of_accounts`.
@@ -99,20 +103,24 @@ export class ChartOfAccountRepository implements IChartOfAccountRepository {
 		return new Map(rows.map((row) => [row.id, row]));
 	}
 
-	async listAccounts(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filters: { accountType?: string; isActive?: boolean } = {},
+	/**
+	 * Fetches one page of the tenant's chart of accounts, ordered by code.
+	 *
+	 * @param request - Tenant, page settings and the optional type/active filters
+	 */
+	async paginateAccounts(
+		request: TAccountPaginationRequest,
 	): Promise<TPaginationResult<TChartOfAccountSelect>> {
+		const { organizationId, accountType, isActive, page, limit } = request;
 		const conditions = [
 			eq(chartOfAccounts.organizationId, organizationId),
 			isNull(chartOfAccounts.deletedAt),
 		];
-		if (filters.accountType) {
-			conditions.push(eq(chartOfAccounts.accountType, filters.accountType));
+		if (accountType) {
+			conditions.push(eq(chartOfAccounts.accountType, accountType));
 		}
-		if (filters.isActive !== undefined) {
-			conditions.push(eq(chartOfAccounts.isActive, filters.isActive));
+		if (isActive !== undefined) {
+			conditions.push(eq(chartOfAccounts.isActive, isActive));
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database
@@ -124,17 +132,9 @@ export class ChartOfAccountRepository implements IChartOfAccountRepository {
 			.from(chartOfAccounts)
 			.where(where)
 			.orderBy(asc(chartOfAccounts.code))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async insertAccount(

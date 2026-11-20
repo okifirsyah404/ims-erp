@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { SalesReturnForm } from '@/components/sales/sales-return-form';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { createSalesReturn, returnableDeliveriesQueryOptions } from '@/lib/sales-return-api';
 
@@ -29,8 +31,10 @@ function NewSalesReturnPage() {
 				<h1 className='text-2xl font-bold'>{t('sales:returns.new')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('sales:returns.newHint')}</p>
 			</div>
-			{receipts.isPending ? null : receipts.isError ? (
-				<p className='text-sm text-destructive'>{receipts.error.message}</p>
+			{receipts.isPending ? (
+				<SectionSkeleton lines={6} />
+			) : receipts.isError ? (
+				<ErrorState error={receipts.error} bordered />
 			) : (
 				<SalesReturnForm
 					receipts={receipts.data}

@@ -4,15 +4,16 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+	Card,
+	CardAction,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@ims-erp/ui/components/card';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo } from 'react';
 import {
 	borrowingDocumentsQueryOptions,
 	borrowingRequestsQueryOptions,
@@ -22,6 +23,10 @@ import {
 	type TBorrowingRequest,
 	type TBorrowingStatus,
 } from '@/lib/borrowing-api';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -150,19 +155,15 @@ export function BorrowingList({
 	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
 	const header = (
-		<div className='flex flex-wrap items-start justify-between gap-3'>
-			<div>
-				<h2 className='text-lg font-semibold'>
-					{t('assets:borrowings.title')}
-				</h2>
-				<p className='max-w-prose text-sm text-muted-foreground'>
-					{t('assets:borrowings.description')}
-				</p>
-			</div>
-			<Button size='sm' render={<Link to='/assets/borrowings/new' />}>
-				{t('assets:borrowings.new')}
-			</Button>
-		</div>
+		<CardHeader>
+			<CardTitle>{t('assets:borrowings.title')}</CardTitle>
+			<CardDescription>{t('assets:borrowings.description')}</CardDescription>
+			<CardAction>
+				<Button size='sm' render={<Link to='/assets/borrowings/new' />}>
+					{t('assets:borrowings.new')}
+				</Button>
+			</CardAction>
+		</CardHeader>
 	);
 
 	const tabs = (
@@ -187,8 +188,9 @@ export function BorrowingList({
 	if (active.isPending) {
 		return (
 			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('common:state.loading')}
+				<CardContent className='space-y-4'>
+					{tabs}
+					<SectionSkeleton lines={5} />
 				</CardContent>
 			</Card>
 		);
@@ -197,11 +199,9 @@ export function BorrowingList({
 	if (active.isError) {
 		return (
 			<Card>
-				<CardContent className='space-y-4 pt-6'>
+				<CardContent className='space-y-4'>
 					{tabs}
-					<p className='py-4 text-center text-sm text-destructive'>
-						{active.error.message}
-					</p>
+					<ErrorState error={active.error} size='sm' />
 				</CardContent>
 			</Card>
 		);
@@ -209,8 +209,8 @@ export function BorrowingList({
 
 	return (
 		<Card>
-			<CardContent className='space-y-4 pt-6'>
-				{header}
+			{header}
+			<CardContent className='space-y-4'>
 				{tabs}
 
 				{tab === 'requests' ? (
@@ -251,138 +251,116 @@ function RequestTable({
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TBorrowingRequest, CellData>[]
+	>(
+		() => [
+			{
+				id: 'code',
+				header: t('assets:borrowings.code'),
+				cell: ({ row }) => (
+					<div className='flex items-center gap-2'>
+						<ItemThumb src={row.original.imageUrl} name={row.original.code} />
+						<Link
+							to='/assets/borrowings/$borrowingId'
+							params={{ borrowingId: row.original.id }}
+							className='font-mono text-xs underline-offset-4 hover:underline'
+						>
+							{row.original.code}
+						</Link>
+					</div>
+				),
+			},
+			{
+				id: 'borrower',
+				header: t('assets:borrowings.borrower'),
+				// A guest's name survives redaction (only the identity fields are
+				// withheld); the fallback covers a retention sweep that nulled it.
+				cell: ({ row }) =>
+					row.original.borrowerType === 'guest'
+						? (row.original.guestName ?? t('assets:borrowings.guest'))
+						: row.original.borrowerType === 'user'
+							? (row.original.borrowerUserId ?? '—')
+							: (row.original.borrowerCustomerId ?? '—'),
+			},
+			{
+				id: 'purpose',
+				header: t('assets:borrowings.purpose'),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				cell: ({ row }) =>
+					t(
+						`assets:borrowingPurpose.${row.original.purpose}` as 'assets:borrowingPurpose.rental',
+					),
+			},
+			{
+				id: 'dueAt',
+				header: t('assets:borrowings.dueAt'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) => new Date(row.original.dueAt).toLocaleDateString(),
+			},
+			{
+				id: 'status',
+				header: t('assets:borrowings.status'),
+				cell: ({ row }) => (
+					<Badge variant={STATUS_VARIANT[row.original.status]}>
+						{t(
+							`assets:borrowingStatus.${row.original.status}` as 'assets:borrowingStatus.requested',
+						)}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: t('assets:borrowings.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) => {
+					const pending = pendingId === row.original.id;
+					return row.original.status === 'requested' ? (
+						<>
+							<Button
+								size='sm'
+								disabled={pending}
+								onClick={() => onAction(row.original.id, 'approve')}
+							>
+								{t('assets:borrowingActions.approve')}
+							</Button>
+							<Button
+								size='sm'
+								variant='secondary'
+								disabled={pending}
+								onClick={() => onAction(row.original.id, 'issue')}
+							>
+								{t('assets:borrowingActions.issue')}
+							</Button>
+							<Button
+								size='sm'
+								variant='ghost'
+								disabled={pending}
+								onClick={() => onAction(row.original.id, 'reject')}
+							>
+								{t('assets:borrowingActions.reject')}
+							</Button>
+							<Button
+								size='sm'
+								variant='ghost'
+								disabled={pending}
+								onClick={() => onAction(row.original.id, 'cancel')}
+							>
+								{t('assets:borrowingActions.cancel')}
+							</Button>
+						</>
+					) : null;
+				},
+			},
+		],
+		[onAction, pendingId, t],
+	);
+
 	if (rows.length === 0) {
-		return (
-			<p className='py-6 text-center text-sm text-muted-foreground'>
-				{t('assets:borrowings.empty')}
-			</p>
-		);
+		return <EmptyState size='sm' title={t('assets:borrowings.empty')} />;
 	}
 
-	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>{t('assets:borrowings.code')}</TableHead>
-					<TableHead>{t('assets:borrowings.borrower')}</TableHead>
-					<TableHead>{t('assets:borrowings.purpose')}</TableHead>
-					<TableHead>{t('assets:borrowings.dueAt')}</TableHead>
-					<TableHead>{t('assets:borrowings.status')}</TableHead>
-					<TableHead className='text-right'>
-						{t('assets:borrowings.actions')}
-					</TableHead>
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{rows.map((row) => (
-					<RequestRow
-						key={row.id}
-						row={row}
-						pending={pendingId === row.id}
-						onAction={(action) => onAction(row.id, action)}
-					/>
-				))}
-			</TableBody>
-		</Table>
-	);
-}
-
-/** One request row plus the actions its status allows. */
-function RequestRow({
-	row,
-	pending,
-	onAction,
-}: {
-	row: TBorrowingRequest;
-	pending: boolean;
-	onAction: (action: TListAction) => void;
-}) {
-	const { t } = useTranslation(['assets', 'common']);
-
-	/**
-	 * The borrower label.
-	 *
-	 * @remarks
-	 * A guest's name survives redaction (only the identity fields are withheld),
-	 * so it is safe to render; the fallback covers the case where the retention
-	 * sweep has already nulled it.
-	 */
-	const borrower =
-		row.borrowerType === 'guest'
-			? (row.guestName ?? t('assets:borrowings.guest'))
-			: row.borrowerType === 'user'
-				? (row.borrowerUserId ?? '—')
-				: (row.borrowerCustomerId ?? '—');
-
-	return (
-		<TableRow>
-			<TableCell>
-				<div className='flex items-center gap-2'>
-					<ItemThumb src={row.imageUrl} name={row.code} />
-					<Link
-						to='/assets/borrowings/$borrowingId'
-						params={{ borrowingId: row.id }}
-						className='font-mono text-xs underline-offset-4 hover:underline'
-					>
-						{row.code}
-					</Link>
-				</div>
-			</TableCell>
-			<TableCell>{borrower}</TableCell>
-			<TableCell className='text-xs text-muted-foreground'>
-				{t(
-					`assets:borrowingPurpose.${row.purpose}` as 'assets:borrowingPurpose.rental',
-				)}
-			</TableCell>
-			<TableCell className='text-xs'>
-				{new Date(row.dueAt).toLocaleDateString()}
-			</TableCell>
-			<TableCell>
-				<Badge variant={STATUS_VARIANT[row.status]}>
-					{t(
-						`assets:borrowingStatus.${row.status}` as 'assets:borrowingStatus.requested',
-					)}
-				</Badge>
-			</TableCell>
-			<TableCell className='text-right'>
-				{row.status === 'requested' ? (
-					<>
-						<Button
-							size='sm'
-							disabled={pending}
-							onClick={() => onAction('approve')}
-						>
-							{t('assets:borrowingActions.approve')}
-						</Button>
-						<Button
-							size='sm'
-							variant='secondary'
-							disabled={pending}
-							onClick={() => onAction('issue')}
-						>
-							{t('assets:borrowingActions.issue')}
-						</Button>
-						<Button
-							size='sm'
-							variant='ghost'
-							disabled={pending}
-							onClick={() => onAction('reject')}
-						>
-							{t('assets:borrowingActions.reject')}
-						</Button>
-						<Button
-							size='sm'
-							variant='ghost'
-							disabled={pending}
-							onClick={() => onAction('cancel')}
-						>
-							{t('assets:borrowingActions.cancel')}
-						</Button>
-					</>
-				) : null}
-			</TableCell>
-		</TableRow>
-	);
+	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} />;
 }
 
 /** The issued half: issue documents, linked to their request's detail page. */
@@ -397,66 +375,72 @@ function IssuedTable({
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TBorrowingDocument, CellData>[]
+	>(
+		() => [
+			{
+				id: 'code',
+				header: t('assets:borrowings.code'),
+				cell: ({ row }) => (
+					<Link
+						to='/assets/borrowings/$borrowingId'
+						params={{ borrowingId: row.original.borrowingRequestId }}
+						className='font-mono text-xs underline-offset-4 hover:underline'
+					>
+						{row.original.code}
+					</Link>
+				),
+			},
+			{
+				id: 'issuedAt',
+				header: t('assets:borrowings.issuedAt'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) =>
+					row.original.issuedAt
+						? new Date(row.original.issuedAt).toLocaleDateString()
+						: '—',
+			},
+			{
+				id: 'dueAt',
+				header: t('assets:borrowings.dueAt'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) => new Date(row.original.dueAt).toLocaleDateString(),
+			},
+			{
+				id: 'status',
+				header: t('assets:borrowings.status'),
+				cell: ({ row }) => (
+					<Badge variant={STATUS_VARIANT[row.original.status]}>
+						{t(
+							`assets:borrowingStatus.${row.original.status}` as 'assets:borrowingStatus.issued',
+						)}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: t('assets:borrowings.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					row.original.status === 'returned' ? (
+						<Button
+							size='sm'
+							disabled={pendingId === row.original.id}
+							onClick={() => onClose(row.original.id)}
+						>
+							{t('assets:borrowingActions.close')}
+						</Button>
+					) : null,
+			},
+		],
+		[onClose, pendingId, t],
+	);
+
 	if (rows.length === 0) {
-		return (
-			<p className='py-6 text-center text-sm text-muted-foreground'>
-				{t('assets:borrowings.emptyIssued')}
-			</p>
-		);
+		return <EmptyState size='sm' title={t('assets:borrowings.emptyIssued')} />;
 	}
 
-	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>{t('assets:borrowings.code')}</TableHead>
-					<TableHead>{t('assets:borrowings.issuedAt')}</TableHead>
-					<TableHead>{t('assets:borrowings.dueAt')}</TableHead>
-					<TableHead>{t('assets:borrowings.status')}</TableHead>
-					<TableHead className='text-right'>
-						{t('assets:borrowings.actions')}
-					</TableHead>
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{rows.map((row) => (
-					<TableRow key={row.id}>
-						<TableCell>
-							<Link
-								to='/assets/borrowings/$borrowingId'
-								params={{ borrowingId: row.borrowingRequestId }}
-								className='font-mono text-xs underline-offset-4 hover:underline'
-							>
-								{row.code}
-							</Link>
-						</TableCell>
-						<TableCell className='text-xs'>
-							{row.issuedAt ? new Date(row.issuedAt).toLocaleDateString() : '—'}
-						</TableCell>
-						<TableCell className='text-xs'>
-							{new Date(row.dueAt).toLocaleDateString()}
-						</TableCell>
-						<TableCell>
-							<Badge variant={STATUS_VARIANT[row.status]}>
-								{t(
-									`assets:borrowingStatus.${row.status}` as 'assets:borrowingStatus.issued',
-								)}
-							</Badge>
-						</TableCell>
-						<TableCell className='text-right'>
-							{row.status === 'returned' ? (
-								<Button
-									size='sm'
-									disabled={pendingId === row.id}
-									onClick={() => onClose(row.id)}
-								>
-									{t('assets:borrowingActions.close')}
-								</Button>
-							) : null}
-						</TableCell>
-					</TableRow>
-				))}
-			</TableBody>
-		</Table>
-	);
+	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} />;
 }
+

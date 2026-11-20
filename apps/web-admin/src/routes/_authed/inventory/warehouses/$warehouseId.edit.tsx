@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
@@ -27,7 +29,7 @@ function EditWarehousePage() {
 	const queryClient = useQueryClient();
 	const [submitting, setSubmitting] = useState(false);
 
-	const { data: warehouse, isPending, isError } = useQuery(
+	const { data: warehouse, isPending, isError, error: loadError } = useQuery(
 		warehouseQueryOptions(warehouseId),
 	);
 
@@ -57,14 +59,14 @@ function EditWarehousePage() {
 		}
 	}
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton cards={1} />;
 
-	if (isError || !warehouse) {
+	if (isError) return <ErrorState error={loadError} bordered />;
+
+	if (!warehouse) {
 		return (
 			<WarehouseAccessGate>
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:warehouses.notFound')}
-				</p>
+				<EmptyState title={t('inventory:warehouses.notFound')} bordered />
 			</WarehouseAccessGate>
 		);
 	}

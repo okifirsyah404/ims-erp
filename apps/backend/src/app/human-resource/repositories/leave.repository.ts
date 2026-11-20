@@ -4,6 +4,7 @@ import type { TTx } from '@drizzle/types';
 import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type { THrScope, TRequestListQuery } from '../contracts/hr-records.contract';
 import type { ILeaveRepository } from '../contracts/hr-records.repository.interface';
 import { periodRange } from '../utils/hr';
@@ -50,7 +51,7 @@ export class LeaveRepository implements ILeaveRepository {
 			.orderBy(desc(leaveRequests.startDate), desc(leaveRequests.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findLeave(id: string) {
@@ -142,7 +143,7 @@ export class LeaveRepository implements ILeaveRepository {
 			.orderBy(desc(overtimeRequests.workDate), desc(overtimeRequests.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findOvertime(id: string) {

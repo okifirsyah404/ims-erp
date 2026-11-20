@@ -69,7 +69,7 @@ function makeHarness() {
 
 	const repo = {
 		findTaxTypesByCode: async () => [...types.values()],
-		listTaxTypes: async () => ({
+		paginateTaxTypes: async () => ({
 			data: [...types.values()],
 			meta: { page: 1, limit: 20, total: types.size, totalPages: 1 },
 		}),
@@ -82,7 +82,7 @@ function makeHarness() {
 		updateTaxType: async () => null,
 		softDeleteTaxType: async () => true,
 		countReferencesToTaxType: async () => 0,
-		listTaxRecords: async () => ({
+		paginateTaxRecords: async () => ({
 			data: [...records.values()],
 			meta: { page: 1, limit: 20, total: records.size, totalPages: 1 },
 		}),
@@ -131,7 +131,7 @@ function makeHarness() {
 			corrections.push(created);
 			return created;
 		},
-		listWithholding: async () => ({
+		paginateWithholding: async () => ({
 			data: [] as TWithholdingTaxRecordSelect[],
 			meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
 		}),

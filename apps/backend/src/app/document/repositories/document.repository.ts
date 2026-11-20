@@ -18,11 +18,12 @@ import {
 } from '@drizzle/schemas/document.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, count, desc, eq, ilike, isNull, ne, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { IDocumentRepository } from '../contracts/document.repository.interface';
-import type { TDocumentListQuery } from '../contracts/document.contract';
+import type { TDocumentPaginationRequest } from '../contracts/document.contract';
 
 /**
  * Drizzle implementation of {@link IDocumentRepository}.
@@ -35,8 +36,15 @@ import type { TDocumentListQuery } from '../contracts/document.contract';
 export class DocumentRepository implements IDocumentRepository {
 	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
 
-	async list(filter: TDocumentListQuery): Promise<TPaginationResult<TDocumentSelect>> {
-		const { page, limit, search, status, documentType, organizationId } = filter;
+	/**
+	 * Fetches one filtered page of the document registry, newest first.
+	 *
+	 * @param request - Page settings plus the optional registry filters
+	 */
+	async paginate(
+		request: TDocumentPaginationRequest,
+	): Promise<TPaginationResult<TDocumentSelect>> {
+		const { page, limit, search, status, documentType, organizationId } = request;
 		const conditions = [isNull(documents.deletedAt)];
 		if (status) conditions.push(eq(documents.status, status));
 		if (documentType) conditions.push(eq(documents.documentType, documentType));
@@ -64,10 +72,7 @@ export class DocumentRepository implements IDocumentRepository {
 		]);
 
 		const total = Number(totals?.value ?? 0);
-		return {
-			meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
-			data: rows,
-		};
+		return paginationResult(request, total, rows);
 	}
 
 	async findById(id: string): Promise<TDocumentSelect | null> {

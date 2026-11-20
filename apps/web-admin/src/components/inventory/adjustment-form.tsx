@@ -213,6 +213,9 @@ export function AdjustmentForm() {
 			</div>
 
 			<Card>
+				<CardHeader>
+					<CardTitle>{t('inventory:adjustmentForm.details')}</CardTitle>
+				</CardHeader>
 				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>

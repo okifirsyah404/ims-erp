@@ -8,6 +8,7 @@ import {
 import type { TTx } from '@drizzle/types';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, asc, count, desc, eq, ilike, inArray, isNull, lte, ne, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
@@ -67,7 +68,7 @@ export class LeadRepository implements ILeadRepository {
 			.orderBy(followUpDueBefore ? asc(leads.nextFollowUpAt) : desc(leads.createdAt), asc(leads.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findById(id: string): Promise<TLeadSelect | null> {

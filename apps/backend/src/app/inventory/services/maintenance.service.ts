@@ -17,6 +17,7 @@ import type { TConditionCheckInput, TMaintenanceCreateInput } from '../contracts
 import type {
 	IConditionCheckRepository,
 	IMaintenanceRepository,
+	TItemHistoryPaginationRequest,
 } from '../contracts/item-operations.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import { ItemNotFoundError } from '../errors/item.errors';
@@ -96,13 +97,11 @@ export class MaintenanceService {
 		return record;
 	}
 
+	/** Fetches one page of the unit's service history. */
 	listMaintenances(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TMaintenanceSelect>> {
-		return this.maintenances.listByItem(itemId, organizationId, page, limit);
+		return this.maintenances.paginateByItem(request);
 	}
 
 	/** Records a condition check; the unit's condition follows it. */
@@ -142,13 +141,11 @@ export class MaintenanceService {
 		return check;
 	}
 
+	/** Fetches one page of the unit's condition-check history. */
 	listConditionChecks(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TConditionCheckSelect>> {
-		return this.conditionChecks.listByItem(itemId, organizationId, page, limit);
+		return this.conditionChecks.paginateByItem(request);
 	}
 
 	private async requireItemInScope(itemId: string, organizationId: string): Promise<TItemSelect> {
