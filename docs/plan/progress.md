@@ -12,6 +12,14 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Astro dependency pin-back (fixes the broken web-landing / web-customer-portal builds)
+
+- Pinned exactly to the versions that last built: `@lucide/astro` 1.61.0 (landing + portal), `@vite-pwa/astro` 1.2.0 and `vite-plugin-pwa` 1.3.0 (portal). `bun.lock` regenerated; `bun install --frozen-lockfile` reports no changes. `.github/dependabot.yml` ignores these three packages until the code is adapted, otherwise the next dependabot run reintroduces the break.
+- Verified from clean state after `bun install`: web-landing `typecheck` 0 errors, 24 tests pass, `astro build` complete; web-customer-portal `typecheck` 0 errors, 60 tests pass, `astro build` complete; root `bun run lint` 0 errors, `bun run test` 7/7, `bun run build` 5/5.
+- Open (proper fix, separate task): adapt the portal `astro.config.mjs` to `@vite-pwa/astro` 2.x (`AstroPWAIntegration` named export) and the landing icon imports to `@lucide/astro` >=1.73 (renamed/removed icons such as `triangle-alert`, `circle-alert`, `square-parking`), then remove the dependabot ignores and the pins.
+- docs/database: reviewed, unchanged.
+
+Next executable task: live smoke test of backend + web-admin + landing + portal.
 ## 2026-11-20 - web-landing and web-customer-portal use the `@ims-erp/common` API contract (ERP-0091 follow-up)
 
 - Both apps now depend on `@ims-erp/common` (`workspace:*`, **devDependency**, `import type` only, so the `xlsx`/`papaparse` runtime deps of the package never reach the production image). `bun.lock` gets exactly the two workspace lines; Dockerfiles copy `packages/common/package.json` in the install stages so `--frozen-lockfile` stays valid.
