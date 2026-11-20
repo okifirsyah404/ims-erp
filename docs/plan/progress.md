@@ -21,7 +21,7 @@ gaps, dynamic website, cart/wishlist) onto the ADR-0024 baseline instead of
 merging. Lists decisions D1-D11 to agree (website schema, cart/wishlist home,
 portal settings, account = company or person, session model, ownership of the
 ERP-0091 gap list), proposed renumbering (ERP-0094..0106, ADR-0026/0027; checked
-free on main and every remote branch on 2026-11-20; open PRs not checked), table and route
+free on main and every remote branch on 2026-11-20; no open PRs), table and route
 mapping, and port order P1-P7. Proposal only, nothing approved; no code moved.
 docs/database: reviewed, unchanged.
 
