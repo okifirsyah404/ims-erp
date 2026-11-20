@@ -12,6 +12,35 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Astro apps on @vite-pwa/astro 2 and @lucide/astro 1.77 (pin-back lifted)
+
+Closes the "proper fix" open item of the 2026-11-20 pin-back entry.
+
+- web-customer-portal `astro.config.mjs`: named `AstroPWAIntegration` import
+  (v2 has no default export); Workbox options `workbox` -> `generateSW`
+  (vite-plugin-pwa 2); `includeManifestIcons` / `includeManifestShortcutIcons`
+  off, since the `icons/*.png` glob already precaches them (`pwa-192.png`
+  was listed several times).
+- Renamed lucide icons: `circle-alert` -> `circle-exclamation-point`,
+  `triangle-alert` -> `triangle-exclamation-point`, `square-parking` ->
+  `square-letter-p` (portal: Flash, OrdersDesktop, ProductsDesktop, login,
+  register/details, track; landing: Alert, `lib/icons.ts`, whose
+  `square-parking` content key is kept).
+- Versions: `@lucide/astro` ^1.77.0 (landing + portal), `@vite-pwa/astro`
+  ^2.0.3, `vite-plugin-pwa` 2.0.0; `bun.lock` regenerated;
+  `.github/dependabot.yml` ignores for the three packages removed.
+- Verified on a fresh worktree of `origin/main` (`1c10c3e1`) after
+  `bun install`: web-landing `astro check` 0 errors, 24 tests, `astro build`
+  complete; web-customer-portal `astro check` 0 errors, 60 tests, `astro build`
+  complete, generated `sw.js` precaches `pwa-192.png` once; root
+  `bun run lint` 0 errors; `bun run test`: backend 1251/0 (needs
+  `apps/backend/.env`; without it 59 config ZodErrors), web-admin 123,
+  locales 98, react-email 6. The `astro check` hints (`await` on non-promises
+  in `erp-source.test.ts`) predate this change.
+- docs/database: reviewed, unchanged.
+
+Next executable task: live smoke test of backend + web-admin + landing + portal.
+
 ## 2026-11-21 - Invite dialog: role ladder enforced end to end, permanent/temporary switch, employee email fix
 
 User request (2026-11-21): the user-invitation dialog on `/admin/users` and
