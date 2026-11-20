@@ -31,7 +31,7 @@ const emailSchema = z
 	.transform((value) => (value ? value.toLowerCase() : null));
 
 /** NPWP: formatting characters are stripped; 15 (legacy) or 16 digits. */
-const taxIdSchema = z
+export const taxIdSchema = z
 	.string()
 	.nullish()
 	.transform((value) => (value ?? '').replace(/[^0-9]/g, ''))
@@ -64,6 +64,8 @@ export const createCustomerSchema = z
 			.regex(/^[0-9]{0,10}$/)
 			.nullish()
 			.transform((value) => (value ? value : null)),
+		/** Line of business shown in the customer portal (ERP-0076). */
+		industry: optionalText(100),
 		notes: optionalText(2000),
 	})
 	.strict();

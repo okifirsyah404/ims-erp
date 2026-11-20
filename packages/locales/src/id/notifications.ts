@@ -17,6 +17,9 @@ const notifications = {
 	'template.org.orgCreated.title': '{{organizationName}} siap',
 	'template.org.orgCreated.body':
 		'Anda membuat {{organizationName}}. Undang tim Anda untuk memulai.',
+	'template.crm.companyChangeRequested.title': '{{customerName}} meminta perubahan data perusahaan',
+	'template.crm.companyChangeRequested.body':
+		'{{requestedBy}} meminta perubahan {{fields}} untuk {{customerName}} di portal pelanggan. Tinjau di halaman pelanggan.',
 	'template.sales.invoiceIssued.title': 'Invoice {{invoiceNumber}} diterbitkan',
 	'template.sales.invoiceIssued.body':
 		'Invoice {{invoiceNumber}} untuk {{customerName}} diterbitkan sebesar {{amount}}.',

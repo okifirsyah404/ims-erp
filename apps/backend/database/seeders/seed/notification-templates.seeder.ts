@@ -58,6 +58,13 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		variables: ['invoiceNumber', 'customerName', 'amount'],
 	},
 	{
+		code: 'crm.company_change_requested',
+		name: 'Company data change requested in the customer portal',
+		subjectTemplate: '{{customerName}} asked to change company data',
+		bodyTemplate: '{{requestedBy}} asked to change {{fields}} of {{customerName}} in the customer portal. Review it on the customer page.',
+		variables: ['customerName', 'requestedBy', 'fields'],
+	},
+	{
 		code: 'sales.online_order_received',
 		name: 'Online order received',
 		subjectTemplate: 'Online order {{quotationNumber}} from {{customerName}}',

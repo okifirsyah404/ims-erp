@@ -5,6 +5,7 @@ import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
 import { customerSiteSchema } from '@app/crm/contracts/customer-address.contract';
+import { companyChangeSchema } from '@app/crm/contracts/customer-change-request.contract';
 import { PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import { quotationSummary } from '../utils/portal-sales-presenter';
 import { portalMemberInviteSchema, portalSignupSchema } from '@app/user/contracts/portal-account.contract';
@@ -204,14 +205,15 @@ export class PortalController {
 			.get(
 				'/account',
 				async (ctx) => {
-					const [customer, members, contact, sites, preferences] = await Promise.all([
+					const [customer, members, contact, sites, preferences, changePending] = await Promise.all([
 						service.customer(ctx.portal),
 						service.members(ctx.portal),
 						pages.contactOf(ctx.portal),
 						pages.listSites(ctx.portal),
 						pages.preferencesOf(ctx.portal),
+						pages.companyChangePending(ctx.portal),
 					]);
-					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members, { contact, sites, preferences }));
+					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members, { contact, sites, preferences, changePending }));
 				},
 				{
 					portal: true,
@@ -227,6 +229,22 @@ export class PortalController {
 				{
 					portal: true,
 					detail: { summary: 'Update personal data', description: 'Name of the login; phone and job title on the CRM contact behind it (ERP-0075)', ...requestBodyDoc(portalPersonalSchema) },
+				},
+			)
+			.patch(
+				'/account/company',
+				async (ctx) => {
+					await pages.requestCompanyChange(ctx.portal, companyChangeSchema.parse(ctx.body));
+					return noContent();
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Ask to change company data',
+						description:
+							'The owner asks for a new company name, NPWP or line of business; sales reviews it in the ERP (ERP-0076) and the account manager is notified. 422 when nothing differs; 403 for other roles.',
+						...requestBodyDoc(companyChangeSchema),
+					},
 				},
 			)
 			.patch(

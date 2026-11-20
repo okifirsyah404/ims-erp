@@ -1,7 +1,9 @@
 import { container } from 'tsyringe';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
-import { CUSTOMER_ADDRESS_SERVICE_TOKEN, CUSTOMER_SERVICE_TOKEN } from '../constants/di';
+import { CUSTOMER_ADDRESS_SERVICE_TOKEN, CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN, CUSTOMER_SERVICE_TOKEN } from '../constants/di';
+import { changeDecisionSchema, changeRequestParamSchema } from '../contracts/customer-change-request.contract';
+import { requestBodyDoc } from '@http/openapi';
 import {
 	contactParamSchema,
 	createCustomerSchema,
@@ -24,6 +26,7 @@ export class CustomerController {
 	static plugin() {
 		const service = container.resolve(CUSTOMER_SERVICE_TOKEN);
 		const addresses = container.resolve(CUSTOMER_ADDRESS_SERVICE_TOKEN);
+		const changeRequests = container.resolve(CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN);
 
 		return domainPlugin({ name: 'crm-customers', prefix: '/customers', tags: ['CRM'], guards: 'erp' })
 			.get('', async ({ query }) => okPaginated(await service.list(customerListQuerySchema.parse(query))), {
@@ -60,6 +63,32 @@ export class CustomerController {
 				{
 					erp: { permission: ['customer:read'] },
 					detail: { description: 'Addresses of a customer, primary first; installation sites (kind site) are kept by the customer in the portal (ERP-0075)' },
+				},
+			)
+			.get('/:id/change-requests', async ({ params }) => ok(await changeRequests.list(idParamSchema.parse(params).id)), {
+				erp: { permission: ['customer:read'] },
+				detail: { description: 'Company-data change requests from the customer portal (ERP-0076), newest first' },
+			})
+			.post(
+				'/:id/change-requests/:requestId/approve',
+				async ({ params, body, erp }) => {
+					const { id, requestId } = changeRequestParamSchema.parse(params);
+					return ok(await changeRequests.approve(id, requestId, erp.session.user.id, changeDecisionSchema.parse(body ?? {}).note ?? null));
+				},
+				{
+					erp: { permission: ['customer:update'] },
+					detail: { description: 'Approves the pending request: its values are written to the customer; 409 when it is not pending', ...requestBodyDoc(changeDecisionSchema) },
+				},
+			)
+			.post(
+				'/:id/change-requests/:requestId/reject',
+				async ({ params, body, erp }) => {
+					const { id, requestId } = changeRequestParamSchema.parse(params);
+					return ok(await changeRequests.reject(id, requestId, erp.session.user.id, changeDecisionSchema.parse(body ?? {}).note ?? null));
+				},
+				{
+					erp: { permission: ['customer:update'] },
+					detail: { description: 'Rejects the pending request (the customer keeps its data); 409 when it is not pending', ...requestBodyDoc(changeDecisionSchema) },
 				},
 			)
 			.post(

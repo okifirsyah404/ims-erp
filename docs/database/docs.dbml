@@ -1058,9 +1058,10 @@ Table crm.customers {
   email text
   phone varchar(30)
   whatsapp varchar(30)
-  address_line text [note: "Primary address, printed on documents. crm.customer_addresses (more addresses) is not built yet."]
+  address_line text [note: "Primary address, printed on documents. More addresses (installation sites) live in crm.customer_addresses (ERP-0075)."]
   village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated through the Location module contract."]
   postal_code varchar(10)
+  industry text [note: "Line of business shown in the customer portal (ERP-0076); changed by staff or through an approved portal change request."]
   status text [not null, default: 'active']
   owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   portal_identity_id uuid [note: "Logical reference to auth.portal_identities.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -1140,6 +1141,30 @@ Table crm.customer_addresses {
   }
   Checks {
     `kind IN ('billing', 'shipping', 'service', 'site', 'other')`
+  }
+}
+
+Table crm.customer_change_requests {
+  id uuid [pk, default: `uuidv7()`]
+  customer_id uuid [not null]
+  changes jsonb [not null, note: "Requested values: any of name, taxId (NPWP digits), industry."]
+  previous jsonb [not null, default: '{}', note: "The customer's values when the request was made, for the reviewer."]
+  status text [not null, default: 'pending']
+  requested_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. The portal login that asked."]
+  requested_by_name text [note: "Name of the person who asked, as shown to staff."]
+  decided_by_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  decided_at bigint
+  decision_note text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "A change of company data (name, NPWP, industry) asked from the customer portal and reviewed by staff (ERP-0076, company-wide like the customer). Approving writes the values to crm.customers; at most one pending request per customer (a new one supersedes it)."
+  Indexes {
+    (customer_id, status) [name: 'customer_change_requests_customer_status_idx']
+    customer_id [unique, name: 'customer_change_requests_pending_uq', note: 'pending live rows only: WHERE status = pending AND deleted_at IS NULL']
+  }
+  Checks {
+    `status IN ('pending', 'approved', 'rejected', 'superseded')`
   }
 }
 
@@ -1601,6 +1626,7 @@ Table catalog.item_cost_histories {
 
 Ref: crm.customer_contacts.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.customer_addresses.customer_id > crm.customers.id [delete: cascade]
+Ref: crm.customer_change_requests.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.leads.customer_id > crm.customers.id [delete: restrict]
 Ref: crm.leads.portal_customer_id > crm.customers.id [delete: restrict]
 Ref: crm.lead_activities.lead_id > crm.leads.id [delete: restrict]

@@ -1,4 +1,6 @@
-import { CUSTOMER_ADDRESS_SERVICE_TOKEN, CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
+import { CUSTOMER_ADDRESS_SERVICE_TOKEN, CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN, CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
+import type { TCompanyChangeInput } from '@app/crm/contracts/customer-change-request.contract';
+import type { CustomerChangeRequestService } from '@app/crm/services/customer-change-request.service';
 import type { TCustomerSiteInput } from '@app/crm/contracts/customer-address.contract';
 import type { CustomerAddressService } from '@app/crm/services/customer-address.service';
 import type { CustomerService } from '@app/crm/services/customer.service';
@@ -63,7 +65,26 @@ export class PortalAccountPagesService {
 		@inject(CUSTOMER_ADDRESS_SERVICE_TOKEN) private readonly addresses: Pick<CustomerAddressService, 'listSites' | 'saveSite' | 'removeSite'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'updateSelf'>,
 		@inject(USER_PREFERENCE_SERVICE_TOKEN) private readonly preferences: Pick<UserPreferenceService, 'portal' | 'setPortal'>,
+		@inject(CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN) private readonly changeRequests: Pick<CustomerChangeRequestService, 'request' | 'pending'>,
 	) {}
+
+	/* Company data (ERP-0076) -------------------------------------------- */
+
+	/**
+	 * The owner asks for a change of the company name, NPWP or line of
+	 * business; sales reviews it in the ERP (owner decision 2026-11-20).
+	 *
+	 * @throws {PortalRoleForbiddenError} any role but owner
+	 */
+	async requestCompanyChange(portal: PortalContext, input: TCompanyChangeInput): Promise<void> {
+		if (portal.role !== 'owner') throw new PortalRoleForbiddenError();
+		await this.changeRequests.request(portal.customerId, { userId: portal.userId, name: portal.user.name }, input);
+	}
+
+	/** Whether a company change is waiting for review. */
+	async companyChangePending(portal: PortalContext): Promise<boolean> {
+		return (await this.changeRequests.pending(portal.customerId)) !== null;
+	}
 
 	private assertManager(portal: PortalContext) {
 		if (!MAY_MANAGE.has(portal.role)) throw new PortalRoleForbiddenError();

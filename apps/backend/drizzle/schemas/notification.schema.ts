@@ -44,6 +44,7 @@ export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];
 export const NOTIFICATION_TEMPLATE_CODES = [
 	'org.member_added',
 	'org.org_created',
+	'crm.company_change_requested',
 	'sales.invoice_issued',
 	'sales.online_order_received',
 	'sales.quotation_accepted',
@@ -57,6 +58,7 @@ export const NOTIFICATION_TEMPLATE_CODES = [
 export const NOTIFICATION_TEMPLATE_KEYS = {
 	'org.member_added': 'org.memberAdded',
 	'org.org_created': 'org.orgCreated',
+	'crm.company_change_requested': 'crm.companyChangeRequested',
 	'sales.invoice_issued': 'sales.invoiceIssued',
 	'sales.online_order_received': 'sales.onlineOrderReceived',
 	'sales.quotation_accepted': 'sales.quotationAccepted',

@@ -91,6 +91,9 @@ const DYNAMIC_PREFIXES = [
 	'crm:customerType.',
 	// Customer address kinds (ERP-0075).
 	'crm:addresses.kind.',
+	// Change request statuses and field labels (ERP-0076).
+	'crm:changeRequests.status.',
+	'crm:changeRequests.field.',
 	'crm:customerStatus.',
 	'crm:leadStatus.',
 	'crm:leadSource.',

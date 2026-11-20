@@ -1,6 +1,8 @@
 import type { DependencyContainer } from 'tsyringe';
 import {
 	CUSTOMER_ADDRESS_REPOSITORY_TOKEN,
+	CUSTOMER_CHANGE_REQUEST_REPOSITORY_TOKEN,
+	CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN,
 	CUSTOMER_ADDRESS_SERVICE_TOKEN,
 	CUSTOMER_CONTACT_REPOSITORY_TOKEN,
 	CUSTOMER_REPOSITORY_TOKEN,
@@ -13,6 +15,8 @@ import {
 import { CustomerContactRepository } from './repositories/customer-contact.repository';
 import { CustomerAddressRepository } from './repositories/customer-address.repository';
 import { CustomerAddressService } from './services/customer-address.service';
+import { CustomerChangeRequestRepository } from './repositories/customer-change-request.repository';
+import { CustomerChangeRequestService } from './services/customer-change-request.service';
 import { CustomerRepository } from './repositories/customer.repository';
 import { CustomerService } from './services/customer.service';
 import { LeadActivityRepository } from './repositories/lead-activity.repository';
@@ -29,6 +33,8 @@ export function registerCrm(container: DependencyContainer): void {
 	container.register(CUSTOMER_SERVICE_TOKEN, { useClass: CustomerService });
 	container.register(CUSTOMER_ADDRESS_REPOSITORY_TOKEN, { useClass: CustomerAddressRepository });
 	container.register(CUSTOMER_ADDRESS_SERVICE_TOKEN, { useClass: CustomerAddressService });
+	container.register(CUSTOMER_CHANGE_REQUEST_REPOSITORY_TOKEN, { useClass: CustomerChangeRequestRepository });
+	container.register(CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN, { useClass: CustomerChangeRequestService });
 	container.register(LEAD_REPOSITORY_TOKEN, { useClass: LeadRepository });
 	container.register(LEAD_ACTIVITY_REPOSITORY_TOKEN, { useClass: LeadActivityRepository });
 	container.register(LEAD_SERVICE_TOKEN, { useClass: LeadService });

@@ -106,7 +106,13 @@ export function companyMember(p: TPresenter, account: TPortalAccountView) {
 
 /** The portal's `AccountSettings`; sites, notification channels and security are not stored yet. */
 /** What the account page shows besides the customer and members (ERP-0075). */
-export type TAccountExtras = { contact: TCustomerContactSelect | null; sites: TCustomerAddressSelect[]; preferences: TPortalPreferences | null };
+export type TAccountExtras = {
+	contact: TCustomerContactSelect | null;
+	sites: TCustomerAddressSelect[];
+	preferences: TPortalPreferences | null;
+	/** A company change waits for sales' review (ERP-0076): shown as not verified. */
+	changePending?: boolean;
+};
 
 export function accountSettings(
 	p: TPresenter,
@@ -116,7 +122,7 @@ export function accountSettings(
 	extras: TAccountExtras = { contact: null, sites: [], preferences: null },
 ) {
 	const business = customer ? customer.customerType !== 'individual' : true;
-	const { contact, sites, preferences } = extras;
+	const { contact, sites, preferences, changePending = false } = extras;
 	return {
 		personal: {
 			name: portal.user.name,
@@ -125,7 +131,15 @@ export function accountSettings(
 			...(contact?.position ? { jobTitle: contact.position } : {}),
 		},
 		...(customer && business
-			? { company: { name: customer.name, shortName: initials(customer.name), ...(customer.taxId ? { npwp: customer.taxId } : {}), verified: true } }
+			? {
+					company: {
+						name: customer.name,
+						shortName: initials(customer.name),
+						...(customer.taxId ? { npwp: customer.taxId } : {}),
+						...(customer.industry ? { industry: customer.industry } : {}),
+						verified: !changePending,
+					},
+				}
 			: {}),
 		members: members.map((member) => companyMember(p, member)),
 		sites: sites.map(companySite),

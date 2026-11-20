@@ -624,6 +624,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Company-data change requests — ERP-0076 (2026-11-20): an owner asks in the
+  portal; sales approve (values written to the customer) or reject on the
+  customer page; the account manager is notified. Evidence: migration
+  `20261120062749_erp0076_company_change_requests`,
+  `test/unit/customer-change-request.test.ts` (4), `progress.md` 2026-11-20 ERP-0076.
 - Customer portal account pages — ERP-0075 (2026-11-20): profile figures,
   personal data, installation sites (also shown to staff on the customer
   page), notification channels and language, onboarding, document library.

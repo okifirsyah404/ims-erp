@@ -88,6 +88,8 @@ export const customers = crmSchema.table(
 		/** Logical reference to location.villages.id — cross-module FK omitted. */
 		villageId: uuid('village_id'),
 		postalCode: varchar('postal_code', { length: 10 }),
+		/** Line of business shown in the customer portal (ERP-0076). */
+		industry: text('industry'),
 		status: text('status').notNull().default('active'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		ownerUserId: text('owner_user_id'),
@@ -179,6 +181,49 @@ export const customerAddresses = crmSchema.table(
 );
 
 export type TCustomerAddressSelect = typeof customerAddresses.$inferSelect;
+
+export const CHANGE_REQUEST_STATUSES = ['pending', 'approved', 'rejected', 'superseded'] as const;
+export type ChangeRequestStatus = (typeof CHANGE_REQUEST_STATUSES)[number];
+
+/** Company values a portal change request may carry (ERP-0076). */
+export type TCompanyChanges = { name?: string; taxId?: string | null; industry?: string | null };
+
+/**
+ * A company-data change asked from the customer portal and reviewed by staff
+ * (ERP-0076). Approving writes the values to `crm.customers`; one pending
+ * request per customer (a new one supersedes it).
+ */
+export const customerChangeRequests = crmSchema.table(
+	'customer_change_requests',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		customerId: uuid('customer_id')
+			.notNull()
+			.references(() => customers.id, { onDelete: 'restrict' }),
+		changes: jsonb('changes').$type<TCompanyChanges>().notNull(),
+		previous: jsonb('previous').$type<TCompanyChanges>().notNull().default({}),
+		status: text('status').$type<ChangeRequestStatus>().notNull().default('pending'),
+		/** Logical reference to auth.users.id — cross-module FK omitted (ADR-0014). */
+		requestedByUserId: text('requested_by_user_id'),
+		requestedByName: text('requested_by_name'),
+		/** Logical reference to auth.users.id — cross-module FK omitted (ADR-0014). */
+		decidedByUserId: text('decided_by_user_id'),
+		decidedAt: unixTimestampNullable('decided_at'),
+		decisionNote: text('decision_note'),
+		...timestamps,
+	},
+	(table) => [
+		index('customer_change_requests_customer_status_idx').on(table.customerId, table.status),
+		uniqueIndex('customer_change_requests_pending_uq')
+			.on(table.customerId)
+			.where(sql`status = 'pending' AND deleted_at IS NULL`),
+		check('customer_change_requests_status_check', sql`${table.status} IN ('pending', 'approved', 'rejected', 'superseded')`),
+	],
+);
+
+export type TCustomerChangeRequestSelect = typeof customerChangeRequests.$inferSelect;
 
 /* ------------------------------------------------------------------------ *
  * crm.leads

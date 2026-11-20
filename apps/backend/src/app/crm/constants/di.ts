@@ -8,6 +8,8 @@
 import type { InjectionToken } from 'tsyringe';
 import type { ICustomerAddressRepository } from '../contracts/customer-address.contract';
 import type { CustomerAddressService } from '../services/customer-address.service';
+import type { ICustomerChangeRequestRepository } from '../contracts/customer-change-request.contract';
+import type { CustomerChangeRequestService } from '../services/customer-change-request.service';
 import type {
 	ICustomerContactRepository,
 	ICustomerRepository,
@@ -34,3 +36,7 @@ export const WEBSITE_INQUIRY_SERVICE_TOKEN: InjectionToken<WebsiteInquiryService
 export const CUSTOMER_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ICustomerAddressRepository> = Symbol('CUSTOMER_ADDRESS_REPOSITORY');
 /** Customer addresses / installation sites (ERP-0075), exported for the portal module. */
 export const CUSTOMER_ADDRESS_SERVICE_TOKEN: InjectionToken<CustomerAddressService> = Symbol('CUSTOMER_ADDRESS_SERVICE');
+
+export const CUSTOMER_CHANGE_REQUEST_REPOSITORY_TOKEN: InjectionToken<ICustomerChangeRequestRepository> = Symbol('CUSTOMER_CHANGE_REQUEST_REPOSITORY');
+/** Company-data change requests from the customer portal (ERP-0076), exported for the portal module. */
+export const CUSTOMER_CHANGE_REQUEST_SERVICE_TOKEN: InjectionToken<CustomerChangeRequestService> = Symbol('CUSTOMER_CHANGE_REQUEST_SERVICE');

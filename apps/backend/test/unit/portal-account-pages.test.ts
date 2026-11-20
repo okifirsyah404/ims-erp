@@ -147,6 +147,13 @@ describe('PortalAccountPagesService', () => {
 			addresses,
 			{ updateSelf: async (_userId, input) => void calls.push(`user:${JSON.stringify(input)}`) },
 			{ portal: async () => ({ notifications: { email: true, whatsapp: false, push: false }, language: null }), setPortal: async () => ({}) as never },
+			{
+				request: async (_customerId, actor, input) => {
+					calls.push(`change:${actor.name}:${input.name}`);
+					return {} as never;
+				},
+				pending: async () => null,
+			},
 		);
 	});
 
@@ -180,6 +187,14 @@ describe('PortalAccountPagesService', () => {
 		await pages.completeOnboarding(portal('owner'), { siteAddress: 'Jl. Lain', invites: [] });
 		const sites = await pages.listSites(portal('owner'));
 		expect(sites.map((row) => [row.label, row.addressLine, row.isPrimary])).toEqual([['PT Maju', 'Jl. Industri 1', true]]);
+	});
+
+	test('only the owner may ask to change company data', async () => {
+		for (const role of ['approver', 'finance', 'viewer'] as const) {
+			await expect(pages.requestCompanyChange(portal(role), { name: 'PT Baru', industry: null })).rejects.toBeInstanceOf(PortalRoleForbiddenError);
+		}
+		await pages.requestCompanyChange(portal('owner'), { name: 'PT Baru', industry: null });
+		expect(calls).toEqual(['change:Dewi:PT Baru']);
 	});
 
 	test('documents: newest first, drafts left out, project files with their link', async () => {

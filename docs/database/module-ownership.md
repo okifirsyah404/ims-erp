@@ -171,6 +171,11 @@ tenant-scoped schema.
   `organization_id` was dropped); the customer portal manages kind `site`
   through `CustomerAddressService` (exported token); staff read every
   address on the customer page (`GET /customers/:id/addresses`).
+- **Built (ERP-0076):** `customer_change_requests` — company-data changes
+  (name, NPWP, industry) asked from the customer portal by an owner of a
+  business account, approved or rejected by staff with `customer:update`
+  (approving writes `crm.customers`); one pending per customer, a new one
+  supersedes it. `crm.customers.industry` added.
 - **Contract**: `assertCustomerOwnedByOrganization(customerId, orgId)`,
   `resolveCustomerContact`, `resolveCustomerAddress`.
 

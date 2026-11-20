@@ -127,3 +127,24 @@ export class WebsiteInquiryError extends AppError {
 		);
 	}
 }
+
+/** The portal change request matches the current company data (ERP-0076). */
+export class CustomerChangeUnchangedError extends AppError {
+	constructor() {
+		super(422, 'crm.changeUnchanged', 'Nothing to change');
+	}
+}
+
+/** The change request is not the customer's pending one (decided, superseded or unknown; ERP-0076). */
+export class CustomerChangeNotPendingError extends AppError {
+	constructor() {
+		super(409, 'crm.changeNotPending', 'This request is no longer pending');
+	}
+}
+
+/** An individual customer has no company data to change (ERP-0076). */
+export class CustomerChangeNotCompanyError extends AppError {
+	constructor() {
+		super(422, 'crm.changeNotCompany', 'Only business accounts have company data');
+	}
+}

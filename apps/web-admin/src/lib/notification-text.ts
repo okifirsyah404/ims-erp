@@ -44,6 +44,17 @@ export function notificationText(
 					organizationName: variables.organizationName ?? '',
 				}),
 			};
+		case 'crm.company_change_requested':
+			return {
+				title: t('template.crm.companyChangeRequested.title', {
+					customerName: variables.customerName ?? '',
+				}),
+				body: t('template.crm.companyChangeRequested.body', {
+					customerName: variables.customerName ?? '',
+					requestedBy: variables.requestedBy ?? '',
+					fields: variables.fields ?? '',
+				}),
+			};
 		case 'sales.invoice_issued':
 			return {
 				title: t('template.sales.invoiceIssued.title', {

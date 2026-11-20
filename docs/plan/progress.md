@@ -12,6 +12,65 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0076: company-data change requests from the customer portal
+
+Same branch, after ERP-0075 (`763f2ac7`).
+
+**Gate 1 (`docs/database/`).** Read: `docs.dbml` CRM (`customers`,
+`customer_interactions` — not a fit: no decision state), Notification
+(`notifications`, templates), `module-ownership.md` §6,
+`integrity-and-consistency.md` (status vocabularies, partial unique).
+Skipped: `data-dictionary.md`, `implementation-phases.md`.
+
+**Gate 2 (manual `grill-me` fallback).**
+- Owner decision: the portal never edits company master data directly (it
+  feeds invoices and tax documents); it asks, staff decide.
+- Ownership: CRM owns `customer_change_requests` (intra-module FK to
+  `crm.customers`, company-wide); the portal only calls
+  `CustomerChangeRequestService.request` with the guard's customer and user.
+- Who: owners of **business** accounts ask (individuals: 422, other roles:
+  403); staff with `customer:update` approve or reject (sales manager,
+  sales, admin, owner); marketing reads but cannot decide.
+- Shape: `changes` and `previous` jsonb with only the differing fields
+  (`name`, `taxId` NPWP digits, `industry`); no NPWP sent = keep it;
+  nothing different = 422. Status `pending | approved | rejected |
+  superseded`; partial unique "one pending per customer"; a new request
+  supersedes the pending one in the same transaction.
+- `industry` had no column: `crm.customers.industry text` added (staff
+  may also set it through the customer API).
+- Notification: `crm.company_change_requested` to the account manager
+  (`owner_user_id`), en/id copy in the client mapper.
+
+**Changes.**
+- `docs.dbml` (+table, +column, ref); references regenerated (547);
+  validate OK. Drizzle; migration
+  `20261120062749_erp0076_company_change_requests` (inspected; header).
+- CRM: contract, repository, `CustomerChangeRequestService`, errors
+  `crm.changeUnchanged` / `crm.changeNotPending` / `crm.changeNotCompany`,
+  staff routes; `taxIdSchema` exported; `industry` on the customer contract.
+- Notification: template code, seeder, `notifications` en/id, client
+  `notification-text.ts` case.
+- Portal: `PATCH /portal/v1/account/company`; `GET /account` returns
+  `company.industry` and `verified: false` while a request is pending.
+- Web admin: customer page **Company data change requests** card (old →
+  new values, approve with note / reject), `crm` labels en/id.
+- Portal app: `updateCompany` mapped.
+
+**Verification.**
+- Migrations: scratch `drizzle:migrate-reset`, dev `drizzle:migrate`; dev
+  `drizzle:seed` (adds the template; idempotent).
+- Unit: `customer-change-request.test.ts` 4 new, `portal-account-pages`
+  +1 (9); backend typecheck 0; web-admin `tsc -b` 0; locales 98 pass.
+- Live: same name → 400 (validation: the name was empty in that call) / the
+  service answers 422 when nothing differs (unit); a request → 200, one
+  notification `sent` to the customer's account manager; staff list (marketing)
+  200; marketing approve → 403; sales reject → 200, again → 409; after the
+  individual guard, the dev login (an individual customer) → 422.
+- Not done: the approve path live (needs a business portal login; covered
+  by unit tests), browser walk-through of the card.
+
+**Next executable task:** ERP-0077 customer notifications in the portal.
+
 ## 2026-11-20 - ERP-0075: customer portal account pages
 
 Same branch, after ERP-0074 (`e64c86af`).

@@ -17,6 +17,9 @@ const notifications = {
 	'template.org.orgCreated.title': '{{organizationName}} is ready',
 	'template.org.orgCreated.body':
 		'You created {{organizationName}}. Invite your team to get started.',
+	'template.crm.companyChangeRequested.title': '{{customerName}} asked to change company data',
+	'template.crm.companyChangeRequested.body':
+		'{{requestedBy}} asked to change {{fields}} of {{customerName}} in the customer portal. Review it on the customer page.',
 	'template.sales.invoiceIssued.title': 'Invoice {{invoiceNumber}} issued',
 	'template.sales.invoiceIssued.body':
 		'Invoice {{invoiceNumber}} for {{customerName}} was issued for {{amount}}.',
