@@ -25,7 +25,7 @@ the repository tree; nothing here is business acceptance.
 | Live API | 69 GET endpoints called against a freshly migrated and seeded disposable database: 65 returned 200, 4 returned 400 (they need query parameters), none 404/5xx | smoke test 2026-11-20; **no UI was opened** and webhooks with a configured gateway, the license machine API and most write paths were **not** exercised |
 | Tests | `bun run test` 7/7 turbo tasks: backend 1232, web-admin 119, locales 98, web-landing 24, web-customer-portal 60 pass; `bun run lint` 0 errors; `tsc` 0 errors | 2026-11-19/20 |
 | Frontend | web-admin wrappers repointed to the new URLs (slices 1-5); landing and portal use the `@ims-erp/common` envelope contract; many new backend tables have no UI yet | `progress.md` 2026-11-19/20; read by controllers, not run in a UI |
-| Astro apps | `@lucide/astro`, `@vite-pwa/astro` and `vite-plugin-pwa` are pinned back to the last building versions (dependabot ignores them); proper adaptation to the newer majors is open | `progress.md` 2026-11-20 |
+| Astro apps | adapted to the current majors instead of the pin-back: `@lucide/astro` ^1.77.0 (renamed icons), `@vite-pwa/astro` ^2.0.3 (`AstroPWAIntegration` named export, `generateSW`), `vite-plugin-pwa` 2.0.0; the dependabot ignores are removed | `progress.md` 2026-11-20 (pin-back lifted) |
 
 Open ADR-0024 leftovers (from `progress.md`, 2026-11-20): legacy `crm.*` error
 keys in `customer.errors.ts`; `ExportedFinanceService` / `ExportedJournalService`

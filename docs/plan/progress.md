@@ -605,6 +605,53 @@ Next executable task: UI smoke of web-admin (sign in, one screen per slice) and 
 - docs/database: reviewed, unchanged.
 
 Next executable task: live smoke test of backend + web-admin + landing + portal.
+## 2026-11-20 - Astro apps on @vite-pwa/astro 2 and @lucide/astro 1.77 (pin-back lifted)
+
+Closes the "proper fix" open item of the 2026-11-20 pin-back entry above.
+
+- web-customer-portal `astro.config.mjs`: named `AstroPWAIntegration` import
+  (v2 has no default export); Workbox options `workbox` -> `generateSW`
+  (vite-plugin-pwa 2); `includeManifestIcons` / `includeManifestShortcutIcons`
+  off, since the `icons/*.png` glob already precaches them (`pwa-192.png`
+  was listed several times).
+- Renamed lucide icons: `circle-alert` -> `circle-exclamation-point`,
+  `triangle-alert` -> `triangle-exclamation-point`, `square-parking` ->
+  `square-letter-p` (portal: Flash, OrdersDesktop, ProductsDesktop, login,
+  register/details, track; landing: Alert, `lib/icons.ts`, whose
+  `square-parking` content key is kept).
+- Versions: `@lucide/astro` ^1.77.0 (landing + portal), `@vite-pwa/astro`
+  ^2.0.3, `vite-plugin-pwa` 2.0.0; `bun.lock` regenerated;
+  `.github/dependabot.yml` ignores for the three packages removed.
+- Verified before the merge with `main` (`1c10c3e1`) on a fresh worktree after
+  `bun install`: web-landing `astro check` 0 errors, 24 tests, `astro build`
+  complete; web-customer-portal `astro check` 0 errors, 60 tests, `astro build`
+  complete, generated `sw.js` precaches `pwa-192.png` once; root
+  `bun run lint` 0 errors; `bun run test`: backend 1251/0 (needs
+  `apps/backend/.env`; without it 59 config ZodErrors), web-admin 123,
+  locales 98, react-email 6. The `astro check` hints (`await` on non-promises
+  in `erp-source.test.ts`) predate this change.
+- Merged `main` (`aa5dc92d`, the ADR-0026 product/warehouse split) into this
+  branch; `main` is the base for both code and features. One conflict, in this
+  file: `main`'s entries were kept in full and this entry was inserted at its
+  chronological place, right after the pin-back entry whose open item it
+  closes. `bun.lock` merged without conflict and still resolves
+  `@lucide/astro` 1.77.0, `@vite-pwa/astro` 2.0.3, `vite-plugin-pwa` 2.0.0;
+  `bun install --frozen-lockfile` installs cleanly. `docs/architecture/project-audit.md`
+  had a stale "pinned back, adaptation open" row and now records the adaptation.
+  No code or feature regression against `main`: the tree differs from
+  `origin/main` only in the 12 Astro/dependabot files above plus this file and
+  the audit row.
+- Verified after the merge: `bun install --frozen-lockfile` clean;
+  `bun run lint` 0 errors (5/5 tasks, 23 pre-existing backend warnings);
+  `bun run test` 7/7 — backend 1287, web-admin 138, locales 106, landing 24,
+  portal 60, react-email 6, 0 failures; `bun run build` 5/5; web-landing
+  `astro check` 0 errors (5 hints), web-customer-portal `astro check` 0 errors
+  (10 hints), the same pre-existing `await` hints; generated `sw.js` precaches
+  `pwa-192.png` exactly once; `bun docs/database/validate-dbml.ts` OK (192
+  tables, 147 refs, 0 cross-module refs, 0 parity drift), matching `main`.
+- docs/database: reviewed, unchanged.
+
+Next executable task: live smoke test of backend + web-admin + landing + portal.
 ## 2026-11-20 - web-landing and web-customer-portal use the `@ims-erp/common` API contract (ERP-0091 follow-up)
 
 - Both apps now depend on `@ims-erp/common` (`workspace:*`, **devDependency**, `import type` only, so the `xlsx`/`papaparse` runtime deps of the package never reach the production image). `bun.lock` gets exactly the two workspace lines; Dockerfiles copy `packages/common/package.json` in the install stages so `--frozen-lockfile` stays valid.
