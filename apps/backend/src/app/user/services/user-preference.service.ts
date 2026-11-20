@@ -6,6 +6,8 @@ import type { IUserPreferenceRepository } from '../repositories/user-preference.
 export type TPortalPreferences = {
 	notifications: { email: boolean; whatsapp: boolean; push: boolean };
 	language: 'en' | 'id' | null;
+	/** An emailed code at every sign-in (ERP-0081). */
+	twoStep: boolean;
 };
 
 const KEYS = {
@@ -13,10 +15,11 @@ const KEYS = {
 	whatsapp: 'portal.notify.whatsapp',
 	push: 'portal.notify.push',
 	language: 'portal.language',
+	twoStep: 'portal.security.two_step',
 } as const;
 
-/** Email on, WhatsApp and push off, language from the browser until chosen. */
-const DEFAULTS: TPortalPreferences = { notifications: { email: true, whatsapp: false, push: false }, language: null };
+/** Email on, WhatsApp and push off, language from the browser until chosen, two-step off. */
+const DEFAULTS: TPortalPreferences = { notifications: { email: true, whatsapp: false, push: false }, language: null, twoStep: false };
 
 const flag = (value: string | null | undefined, fallback: boolean) => (value === 'true' ? true : value === 'false' ? false : fallback);
 
@@ -39,17 +42,22 @@ export class UserPreferenceService {
 				push: flag(values.get(KEYS.push), DEFAULTS.notifications.push),
 			},
 			language: language === 'en' || language === 'id' ? language : DEFAULTS.language,
+			twoStep: flag(values.get(KEYS.twoStep), DEFAULTS.twoStep),
 		};
 	}
 
 	/** Saves the given settings only; others keep their value. */
-	async setPortal(userId: string, patch: { notifications?: Partial<TPortalPreferences['notifications']>; language?: 'en' | 'id' }): Promise<TPortalPreferences> {
+	async setPortal(
+		userId: string,
+		patch: { notifications?: Partial<TPortalPreferences['notifications']>; language?: 'en' | 'id'; twoStep?: boolean },
+	): Promise<TPortalPreferences> {
 		const entries: Record<string, string> = {};
 		for (const channel of ['email', 'whatsapp', 'push'] as const) {
 			const value = patch.notifications?.[channel];
 			if (value !== undefined) entries[KEYS[channel]] = String(value);
 		}
 		if (patch.language) entries[KEYS.language] = patch.language;
+		if (patch.twoStep !== undefined) entries[KEYS.twoStep] = String(patch.twoStep);
 		if (Object.keys(entries).length > 0) await this.preferences.set(userId, entries);
 		return this.portal(userId);
 	}

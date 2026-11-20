@@ -116,9 +116,16 @@ export class PortalAccountPagesService {
 		return this.preferences.portal(portal.userId);
 	}
 
-	/** Notification channels and language; face ID and two-step are not supported (ignored). */
-	updateSettings(portal: PortalContext, patch: { notifications?: Partial<TPortalPreferences['notifications']>; preferences?: { language?: 'en' | 'id' } }) {
-		return this.preferences.setPortal(portal.userId, { notifications: patch.notifications, language: patch.preferences?.language });
+	/** Notification channels, language and two-step sign-in (ERP-0081). */
+	updateSettings(
+		portal: PortalContext,
+		patch: { notifications?: Partial<TPortalPreferences['notifications']>; security?: { twoStep?: boolean }; preferences?: { language?: 'en' | 'id' } },
+	) {
+		return this.preferences.setPortal(portal.userId, {
+			notifications: patch.notifications,
+			language: patch.preferences?.language,
+			twoStep: patch.security?.twoStep,
+		});
 	}
 
 	/* Sites ---------------------------------------------------------------- */

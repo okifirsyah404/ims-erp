@@ -50,7 +50,9 @@ document at `/docs` (tag "Customer portal").
 
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
-| `login` | `POST /portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` (session) + `{ ok: true, user, session: { expiresAt } }`; 401 wrong credentials or no `customer` role, 423 locked (5 failures, 15 min) |
+| `login` | `POST /portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` (session) + `{ ok: true, user, session: { expiresAt } }`; 401 wrong credentials or no `customer` role, 423 locked (5 failures, 15 min). With two-step sign-in on (ERP-0081): no session, `{ ok: false, twoStep: true, challenge, email }` (masked) and a 6-digit code by email |
+| `verifyLoginCode` | `POST /portal/v1/auth/login/verify` | ERP-0081: `{ challenge, code }` → `Set-Cookie` (session) + `{ ok: true, user, session }`; 400 wrong/expired (5 attempts, 10 min, Redis `portal:login-code:*`, code hashed) |
+| `resendLoginCode` | `POST /portal/v1/auth/login/resend` | `{ challenge }`; always 200 |
 | `register` | `POST /portal/v1/auth/register` | `{ accountType, name, email, phone?, password (12-128) }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
 | `verifyEmail` | `POST /portal/v1/auth/verify-email` | `{ email, code }` → `Set-Cookie` (session) + `{ user, session: { expiresAt } }` (creates customer, contact, owner login with the `customer` role); 400 wrong/expired (5 attempts, 10 min) |
 | `resendVerification` | `POST /portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
@@ -58,6 +60,10 @@ document at `/docs` (tag "Customer portal").
 | `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | `{ token, password (12-128) }`; 400 invalid/expired. Also sets the first password after an invitation |
 | `logout` | `POST /portal/v1/auth/logout` | session cookie; answers a clearing `Set-Cookie` |
 | `changePassword` | `POST /portal/v1/account/password` | `{ current, next (12-128) }`; 400 wrong current |
+| `listDevices` | `GET /portal/v1/account/devices` | ERP-0081: Better Auth sessions of the login `{ id, userAgent, ipAddress, createdAt, updatedAt, current }`; never the session token. The portal server forwards the visitor's `User-Agent` / `X-Forwarded-For` on sign-in |
+| `revokeDevice` | `DELETE /portal/v1/account/devices/:id` | by session id (the token is looked up server-side); 404 when gone or another login's |
+| `signOutOtherDevices` | `POST /portal/v1/account/devices/sign-out-others` | every session but this one |
+| `closeAccount` | `POST /portal/v1/account/close` | ERP-0081, owner decision 2026-11-20: `{ password }`; revokes this portal identity (soft: `status revoked`, `deleted_at`) and ends its sessions; customer, orders and documents stay. 400 wrong password, 409 `portal.lastOwner` for the only active owner of a business customer (an individual may close) |
 | — (session user) | `GET /portal/v1/me` | `PortalUser` |
 | `getHome` | `GET /portal/v1/home` | active project + open tickets; quotations/activity empty in stage 1 |
 | `getBadges` | `GET /portal/v1/badges` | `openTickets`; the rest 0 in stage 1 |
@@ -115,7 +121,7 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | `listWishlist` / `removeWishlistItem` | `GET /portal/v1/wishlist`, `DELETE /portal/v1/wishlist/:id` | saved products still published (`WishlistItem`: name, category, price label, stock, image); removing another account's item → 404 |
 | `getProfile` | `GET /portal/v1/profile` | counts and amounts for the profile page (orders, projects, devices, tickets, SPHs awaiting, outstanding, sites, warranties expiring in 60 days, documents, members, approvers) — ERP-0075 |
 | `updatePersonal` | `PATCH /portal/v1/account/personal` | `{ name, phone, jobTitle? }`: the name on the login (Better Auth), phone and job title on the CRM contact behind it |
-| `updateSettings` | `PATCH /portal/v1/account/settings` | notification channels and language per login (`auth.user_preferences`); face ID / two-step not supported (ignored, shown off) |
+| `updateSettings` | `PATCH /portal/v1/account/settings` | notification channels, language and two-step sign-in (`security.twoStep`, ERP-0081) per login (`auth.user_preferences`); face ID and appearance were removed (user decision 2026-11-20) |
 | `saveSite` / `deleteSite` | `POST /portal/v1/account/sites`, `PATCH` / `DELETE /account/sites/:id` | installation sites (`crm.customer_addresses` kind `site`): owners and approvers (403 otherwise); first site primary, removing the primary promotes the oldest; 30 max |
 | `completeOnboarding` | `POST /portal/v1/onboarding` | `{ siteAddress, invites[] }`: the first site (when none) and colleague invites; failed invites are reported, not fatal |
 | `listDocuments` | `GET /portal/v1/documents?folder=` | invoices and sent SPHs (listed), warranty certificates, customer-visible project files (short-lived link) |

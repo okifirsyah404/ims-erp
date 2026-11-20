@@ -594,7 +594,7 @@ Table auth.user_preferences {
   preference_value text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Per user UI and behaviour preferences (ERP-0075 builds it for portal logins: notification channels and language). Server side truth stays in the owning module. Keys are dotted names, values text (booleans as 'true'/'false')."
+  Note: "Per user UI and behaviour preferences (ERP-0075 builds it for portal logins: notification channels and language; ERP-0081 adds portal.security.two_step for the emailed sign-in code). Server side truth stays in the owning module. Keys are dotted names, values text (booleans as 'true'/'false')."
   Indexes {
     (user_id, preference_key) [unique, name: 'user_preferences_key_uq', note: 'live rows only: WHERE deleted_at IS NULL']
   }

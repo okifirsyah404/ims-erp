@@ -95,8 +95,14 @@ describe('UserPreferenceService (portal settings)', () => {
 			set: async (_userId, entries) => Object.entries(entries).forEach(([key, value]) => store.set(key, value)),
 		};
 		const service = new UserPreferenceService(preferences);
-		expect(await service.portal('u1')).toEqual({ notifications: { email: true, whatsapp: false, push: false }, language: null });
-		expect(await service.setPortal('u1', { notifications: { whatsapp: true } })).toEqual({ notifications: { email: true, whatsapp: true, push: false }, language: null });
+		expect(await service.portal('u1')).toEqual({ notifications: { email: true, whatsapp: false, push: false }, language: null, twoStep: false });
+		expect(await service.setPortal('u1', { notifications: { whatsapp: true } })).toEqual({
+			notifications: { email: true, whatsapp: true, push: false },
+			language: null,
+			twoStep: false,
+		});
+		// ERP-0081: two-step sign-in is a per-login preference.
+		expect((await service.setPortal('u1', { twoStep: true })).twoStep).toBe(true);
 		expect((await service.setPortal('u1', { language: 'id' })).notifications.whatsapp).toBe(true);
 		expect((await service.portal('u1')).language).toBe('id');
 	});
@@ -146,7 +152,7 @@ describe('PortalAccountPagesService', () => {
 			},
 			addresses,
 			{ updateSelf: async (_userId, input) => void calls.push(`user:${JSON.stringify(input)}`) },
-			{ portal: async () => ({ notifications: { email: true, whatsapp: false, push: false }, language: null }), setPortal: async () => ({}) as never },
+			{ portal: async () => ({ notifications: { email: true, whatsapp: false, push: false }, language: null, twoStep: false }), setPortal: async () => ({}) as never },
 			{
 				request: async (_customerId, actor, input) => {
 					calls.push(`change:${actor.name}:${input.name}`);

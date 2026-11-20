@@ -1,4 +1,4 @@
-import { type AccountSettings, type AuthTokens, type OrderDetail, type PortalSource, type ProjectDetail, type TicketDetail, type TicketMessage, type WishlistItem, type RfqSummary } from "@/api/portal";
+import { type AccountSettings, type AuthTokens, type OrderDetail, type PortalSource, type ProjectDetail, type TicketDetail, type TicketMessage, type WishlistItem, type RfqSummary, type SignedInDevice } from "@/api/portal";
 import * as data from "./demo-data";
 import * as accountData from "./demo-account";
 
@@ -24,6 +24,7 @@ type DemoState = {
   wishlist: WishlistItem[];
   claimedRfqs: RfqSummary[];
   rfqClaims: Map<string, { expires: number }>;
+  devices: SignedInDevice[];
 };
 
 /**
@@ -42,6 +43,10 @@ const state: DemoState = (globalDemo.__entragateDemoState ??= {
   wishlist: [...accountData.wishlist],
   claimedRfqs: [],
   rfqClaims: new Map(),
+  devices: [
+    { id: "demo-this", userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0", ipAddress: "127.0.0.1", createdAt: "2026-11-20T01:00:00.000Z", updatedAt: "2026-11-20T03:00:00.000Z", current: true },
+    { id: "demo-phone", userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) Safari/604.1", ipAddress: "10.0.0.8", createdAt: "2026-11-12T08:00:00.000Z", updatedAt: "2026-11-18T09:30:00.000Z", current: false },
+  ],
 });
 
 // Short-lived access token + refresh token, mirroring the ERP flow so refresh is exercised in demo mode.
@@ -112,6 +117,10 @@ export const demoSource: PortalSource = {
     return code === DEMO_OTP ? { user: data.demoUser, tokens: tokens() } : null;
   },
   async resendVerification() {},
+  async verifyLoginCode({ code }) {
+    return code === DEMO_OTP ? { user: data.demoUser, tokens: tokens() } : null;
+  },
+  async resendLoginCode() {},
   async requestPasswordReset() {},
   async resetPassword({ password }) {
     return password.length >= 12;
@@ -377,6 +386,20 @@ export const demoSource: PortalSource = {
     if (input.current !== DEMO_CREDENTIALS.password) return false;
     state.account.security.passwordChangedLabel = "Changed just now";
     return true;
+  },
+  async listDevices() {
+    return state.devices;
+  },
+  async revokeDevice(_s, id) {
+    state.devices = state.devices.filter((device) => device.id !== id || device.current);
+    state.account.security.activeDevices = state.devices.length;
+  },
+  async signOutOtherDevices() {
+    state.devices = state.devices.filter((device) => device.current);
+    state.account.security.activeDevices = state.devices.length;
+  },
+  async closeAccount(_s, { password }) {
+    return password === DEMO_CREDENTIALS.password ? { ok: true } : { ok: false, reason: "wrong_password" };
   },
   async listWishlist() {
     return state.wishlist;

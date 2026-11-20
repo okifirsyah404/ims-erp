@@ -27,6 +27,13 @@ export const erpRoutes: PortalRoutes = {
   resetPassword: "/portal/v1/auth/password-reset/confirm",
   logout: "/portal/v1/auth/logout",
   changePassword: "/portal/v1/account/password",
+  // Two-step sign-in, devices and deleting the login (ERP-0081)
+  verifyLoginCode: "/portal/v1/auth/login/verify",
+  resendLoginCode: "/portal/v1/auth/login/resend",
+  listDevices: "/portal/v1/account/devices",
+  revokeDevice: "/portal/v1/account/devices/:id",
+  signOutOtherDevices: "/portal/v1/account/devices/sign-out-others",
+  closeAccount: "/portal/v1/account/close",
   getAccount: "/portal/v1/account",
   inviteMember: "/portal/v1/account/members",
   removeMember: "/portal/v1/account/members/:id",

@@ -1,6 +1,7 @@
 import { dispatchMail } from '@providers/mailer/mailer.queue';
 import {
 	renderPortalInvitationEmail,
+	renderPortalLoginCodeEmail,
 	renderPortalRfqClaimCodeEmail,
 	renderPortalSignupCodeEmail,
 	renderResetPasswordEmail,
@@ -28,5 +29,9 @@ export class QueuePortalMailer implements IPortalMailer {
 
 	async sendRfqClaimCode(input: { to: string; name: string; code: string; reference: string }): Promise<void> {
 		await dispatchMail({ to: input.to, ...(await renderPortalRfqClaimCodeEmail({ name: input.name, code: input.code, reference: input.reference })) });
+	}
+
+	async sendLoginCode(input: { to: string; name: string; code: string }): Promise<void> {
+		await dispatchMail({ to: input.to, ...(await renderPortalLoginCodeEmail({ name: input.name, code: input.code })) });
 	}
 }

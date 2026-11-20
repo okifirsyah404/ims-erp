@@ -93,3 +93,10 @@ export class PortalPdfUnavailableError extends AppError {
 		super(503, 'portal.pdfUnavailable', 'This document cannot be downloaded right now. Please try again later.');
 	}
 }
+
+/** The device (session) is gone or belongs to another login (ERP-0081). */
+export class PortalDeviceNotFoundError extends AppError {
+	constructor() {
+		super(404, 'portal.deviceNotFound', 'That device is no longer signed in');
+	}
+}

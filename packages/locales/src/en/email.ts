@@ -46,6 +46,10 @@ const email = {
 	'portalRfqClaimCode.greeting': 'Hi {{name}},',
 	'portalRfqClaimCode.body': 'Someone asked to add your quotation request {{reference}} to a {{app}} customer portal account. Enter this code in the portal to confirm it is you.',
 	'portalRfqClaimCode.expiry': 'The code expires in 15 minutes. If this was not you, ignore this email; the request stays where it is.',
+	'portalLoginCode.subject': '{{code}} is your {{app}} sign-in code',
+	'portalLoginCode.greeting': 'Hi {{name}},',
+	'portalLoginCode.body': 'Use this code to finish signing in to your {{app}} customer portal account.',
+	'portalLoginCode.expiry': 'The code expires in 10 minutes. If you did not try to sign in, change your password now.',
 
 	// Organization invitation (invitation.type = 'org'): invite to join a
 	// specific organization with a role.

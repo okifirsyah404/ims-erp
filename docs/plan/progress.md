@@ -12,6 +12,77 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0081: portal security settings (2-step, devices, delete login)
+
+Same branch, after ERP-0080 (`c57c4bb9`). User: keep only what matters and
+make it work — 2FA, active devices, change password, delete account; remove
+WhatsApp updates, Face ID, download my data, email updates, appearance.
+Decisions (AskUserQuestion): 2FA by **email code**; deleting the account
+removes **the login only**, data stays, the **last owner of a business
+account cannot** delete.
+
+**Gate 1.** `docs/database/docs.dbml` Identity (`auth.portal_identities`,
+`auth.user_preferences`) read; module ownership / integrity docs skimmed for
+soft delete of identities. No table or column change: the two-step flag is a
+`user_preferences` key (`portal.security.two_step`), codes live in Redis,
+devices are Better Auth sessions. Only the `user_preferences` note text
+changed. Skipped `logical-references.md` / `implementation-phases.md`: no
+new cross-module reference, no pending step.
+
+**Gate 2 (manual grill, answers).** Ownership: Identity (user module) owns
+codes, the preference and closing the identity; Portal owns the session
+gateway (Better Auth) and the HTTP surface. Tenant: a portal login belongs to
+one customer; devices are filtered by the session's own user, revoke by
+session id looked up server-side (token never sent to the browser). Soft
+delete: closing revokes the identity (`status revoked`, `deleted_at`), the
+Better Auth user and all customer data stay. Last owner: only active owners
+of a non-individual customer count. 2FA: password session dropped at once
+(no half-signed-in state), 6-digit code hashed with the challenge, 10 min, 5
+attempts, then sign in again; the lockout counter is unchanged. Turning 2FA
+off needs only the session (accepted for now; noted below).
+
+**Changes.**
+- Backend Identity: `UserPreferenceService` `twoStep`;
+  `PortalAccountService.startLoginCode` / `resendLoginCode` /
+  `verifyLoginCode` / `closeOwnLogin`; `PortalLastOwnerError` (409);
+  mailer `sendLoginCode` + `renderPortalLoginCodeEmail` (`email` locale
+  en/id).
+- Backend Portal: session gateway `verifyPassword`, `listSessions`,
+  `revokeSession`, `revokeOtherSessions`, `createSession(userId, from)`;
+  `PortalAuthService.login` returns the two-step challenge,
+  `verifyLoginCode`, `devices`, `revokeDevice`, `revokeOtherDevices`,
+  `closeAccount`; routes `/auth/login/verify`, `/auth/login/resend`,
+  `/account/devices` (GET, DELETE `:id`, `sign-out-others`),
+  `/account/close`; `/account` returns the real device count and
+  `twoStep`; settings schema without face ID / appearance; `api` locale
+  `portal.lastOwner`, `portal.deviceNotFound` (en/id).
+- Portal app: `/login/code`, `/settings/devices`,
+  `/settings/delete-account`; settings reduced to push notifications,
+  change password, 2-step, active devices, language, currency, delete
+  account; Face ID button removed from the login; desktop profile follows;
+  sign-in forwards the visitor's User-Agent and address; demo source updated.
+
+**Verification.**
+- `bun run typecheck` 6/6; `bun run lint` 0 errors; `bun run test` backend
+  1364/0 (+5: two-step, five wrong codes, devices, close with last owner /
+  second owner, individual), web-admin 123/0, locales 98/0, react-email 6/0;
+  portal `astro check` 0.
+- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts` → OK.
+- Live (dev portal, Dewi): settings show only the kept items; two-step on →
+  login redirects to `/login/code` ("we sent to d***@example.com"); code
+  `000000` → "That code is wrong or has expired."; two-step turned off again;
+  devices list "Safari on iPhone · This device" plus older sessions with
+  "Sign out"; delete with a wrong password → "Your password is incorrect",
+  account still open. Screenshots of settings, devices and delete checked.
+- Not done live: a right sign-in code (SMTP is real; the dev mailbox
+  `@example.com` cannot be read — covered by unit tests), an actual delete
+  and the last-owner refusal (would close the test login; unit-tested).
+- Open: turning two-step off does not ask for the password again.
+
+**Next executable task:** chat (service ticket thread) gaps the user may
+choose: staff notified of customer messages, attachments, "confirm fix";
+then the end-to-end order test with the user.
+
 ## 2026-11-20 - ERP-0080: order tracking from real data, courier and waybill
 
 Same branch, after ERP-0079 (`878739fc`). User: "tracking is not clear and

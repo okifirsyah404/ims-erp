@@ -46,6 +46,16 @@ export const portalMessageSchema = z.object({ text: z.string().trim().min(1).max
 export const portalVerifySchema = z.object({ email: z.string().trim().toLowerCase().email().max(254), code: z.string().trim().regex(/^\d{6}$/) });
 export const portalResendSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
 
+/** Two-step sign-in (ERP-0081): the challenge from `/auth/login` and the emailed code. */
+export const portalLoginCodeSchema = z.object({ challenge: z.string().min(16).max(128), code: z.string().trim().regex(/^\d{6}$/) });
+export const portalLoginResendSchema = z.object({ challenge: z.string().min(16).max(128) });
+
+/** Closing one's own login asks for the password again (ERP-0081). */
+export const portalCloseAccountSchema = z.object({ password: z.string().min(1).max(128) });
+
+/** A device is a Better Auth session id (not a uuid). */
+export const portalDeviceParamSchema = z.object({ id: z.string().min(1).max(128) });
+
 export const portalIdParamSchema = z.object({ id: z.string().uuid() });
 /** Devices are certificate lines: `<certificate uuid>:<line index>`. */
 export const portalProductParamSchema = z.object({ id: z.string().regex(/^[0-9a-f-]{36}:\d{1,3}$/i) });
@@ -62,12 +72,15 @@ export type TPortalSession = { token: string; userId: string; roles: string[]; e
 /** The global role every portal login carries (ADR-0024); nothing else passes the portal guard. */
 export const PORTAL_CUSTOMER_ROLE = 'customer';
 
+/** A signed-in device of the login (ERP-0081); the session token never leaves the ERP. */
+export type TPortalDeviceSession = { id: string; token: string; userAgent: string | null; ipAddress: string | null; createdAt: Date; updatedAt: Date };
+
 /** Better Auth port for portal sessions and passwords. */
 export interface IPortalSessionGateway {
 	/** Email + password sign-in; `null` on wrong credentials. */
 	signIn(email: string, password: string, headers: Headers): Promise<TPortalSession | null>;
-	/** A session for a user who just verified a sign-up code. */
-	createSession(userId: string): Promise<TPortalSession | null>;
+	/** A session for a user who just verified a code; `from` (request headers) names the device. */
+	createSession(userId: string, from?: Headers): Promise<TPortalSession | null>;
 	/** The live session behind a session token, or `null`. */
 	getSession(token: string): Promise<TPortalSession | null>;
 	/** The session token carried by a request's `Cookie` header, or `null`. */
@@ -81,6 +94,14 @@ export interface IPortalSessionGateway {
 	changePassword(token: string, current: string, next: string): Promise<boolean>;
 	/** `false` when the token is invalid or expired. */
 	resetPassword(token: string, password: string): Promise<boolean>;
+	/** `false` when the password of the session's user is wrong (ERP-0081). */
+	verifyPassword(token: string, password: string): Promise<boolean>;
+	/** Every live session of the session's user. */
+	listSessions(token: string): Promise<TPortalDeviceSession[]>;
+	/** Ends one session of the session's user, by its session token. */
+	revokeSession(token: string, sessionToken: string): Promise<void>;
+	/** Ends every session of the user except this one. */
+	revokeOtherSessions(token: string): Promise<void>;
 }
 
 /** Failed sign-in counter per email (Redis); the lock lasts {@link PORTAL_LOCK_SECONDS}. */
@@ -156,9 +177,9 @@ export const portalPersonalSchema = z.object({
 
 export const portalSettingsSchema = z.object({
 	notifications: z.object({ push: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }).partial().optional(),
-	/** Face ID and two-step are not supported by the ERP; sent values are ignored. */
-	security: z.object({ faceId: z.boolean(), twoStep: z.boolean() }).partial().optional(),
-	preferences: z.object({ language: z.enum(['en', 'id']), currency: z.literal('IDR'), appearance: z.enum(['light', 'system']) }).partial().optional(),
+	/** Two-step sign-in by an emailed code (ERP-0081). */
+	security: z.object({ twoStep: z.boolean() }).partial().optional(),
+	preferences: z.object({ language: z.enum(['en', 'id']), currency: z.literal('IDR') }).partial().optional(),
 });
 
 export const portalOnboardingSchema = z.object({

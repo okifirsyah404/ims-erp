@@ -46,6 +46,10 @@ const email = {
 	'portalRfqClaimCode.greeting': 'Hai {{name}},',
 	'portalRfqClaimCode.body': 'Ada permintaan untuk menambahkan permintaan penawaran {{reference}} Anda ke akun portal pelanggan {{app}}. Masukkan kode ini di portal untuk memastikan itu Anda.',
 	'portalRfqClaimCode.expiry': 'Kode berlaku 15 menit. Jika bukan Anda, abaikan email ini; permintaan Anda tidak berubah.',
+	'portalLoginCode.subject': '{{code}} adalah kode masuk {{app}} Anda',
+	'portalLoginCode.greeting': 'Hai {{name}},',
+	'portalLoginCode.body': 'Gunakan kode ini untuk menyelesaikan masuk ke akun portal pelanggan {{app}} Anda.',
+	'portalLoginCode.expiry': 'Kode berlaku 10 menit. Jika Anda tidak mencoba masuk, segera ganti password Anda.',
 
 	// Undangan organisasi (invitation.type = 'org'): undangan bergabung ke
 	// organisasi tertentu dengan peran.

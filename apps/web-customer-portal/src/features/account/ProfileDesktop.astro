@@ -45,11 +45,8 @@ const stats = [
   { label: "Devices", value: profile.stats.devices },
   { label: "Tickets", value: profile.stats.tickets },
 ];
-const notificationRows = [
-  { key: "push", label: "Push notifications" },
-  { key: "email", label: "Email updates" },
-  { key: "whatsapp", label: "WhatsApp updates" },
-] as const;
+// WhatsApp and email updates were removed from the settings (user decision 2026-11-20).
+const notificationRows = [{ key: "push", label: "Push notifications" }] as const;
 const card = "rounded-card bg-white ring-1 ring-border ring-inset";
 ---
 
@@ -187,8 +184,8 @@ const card = "rounded-card bg-white ring-1 ring-border ring-inset";
           </div>
           <dl class="flex flex-col gap-3.5 text-[14px]">
             <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">2-step verification</dt><dd class:list={["text-[13.5px] font-semibold", account.security.twoStep ? "text-success" : "text-fg-muted"]}>{account.security.twoStep ? "On" : "Off"}</dd></div>
-            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">Password</dt><dd class="text-[13.5px] font-semibold text-fg-muted"><a href="/settings/password" class="hover:text-blue-600">{account.security.passwordChangedLabel.replace("Last changed", "Changed")}</a></dd></div>
-            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">Active devices</dt><dd class="text-[13.5px] font-semibold text-fg-muted">{account.security.activeDevices} device{account.security.activeDevices === 1 ? "" : "s"}</dd></div>
+            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">Password</dt><dd class="text-[13.5px] font-semibold text-fg-muted"><a href="/settings/password" class="hover:text-blue-600">{account.security.passwordChangedLabel.replace("Last changed", "Changed") || "Change"}</a></dd></div>
+            <div class="flex justify-between gap-2.5"><dt class="font-medium text-fg">Active devices</dt><dd class="text-[13.5px] font-semibold text-fg-muted"><a href="/settings/devices" class="hover:text-blue-600">{account.security.activeDevices} device{account.security.activeDevices === 1 ? "" : "s"}</a></dd></div>
           </dl>
         </section>
       </div>

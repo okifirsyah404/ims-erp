@@ -6,7 +6,7 @@ import { cn } from "cn";
  * App / Toggle (05.10): 46×28 switch that saves immediately through
  * actions.account.updateSetting. Optimistic; reverts and explains on failure.
  */
-type SettingKey = "push" | "email" | "whatsapp" | "faceId" | "twoStep";
+type SettingKey = "push" | "twoStep";
 type Props = { setting: SettingKey; label: string; defaultChecked: boolean; className?: string };
 
 export default function SettingToggle({ setting, label, defaultChecked, className }: Props) {

@@ -1,4 +1,4 @@
-import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
 import type { CustomerService } from '@app/crm/services/customer.service';
 import type { ICacheClient } from '@cache/cache.client';
@@ -26,6 +26,7 @@ import {
 	PortalCustomerUnavailableError,
 	PortalEmailTakenError,
 	PortalInvalidCodeError,
+	PortalLastOwnerError,
 	PortalNotConfiguredError,
 	PortalOwnerOnlyError,
 	PortalRemoveSelfError,
@@ -38,7 +39,11 @@ export const PORTAL_RESET_TTL_SECONDS = 60 * 60;
 export const PORTAL_SIGNUP_CODE_TTL_SECONDS = 10 * 60;
 export const PORTAL_SIGNUP_MAX_ATTEMPTS = 5;
 
+/** A two-step sign-in code lives 10 minutes and allows 5 attempts (ERP-0081). */
+export const PORTAL_LOGIN_CODE_TTL_SECONDS = 10 * 60;
+
 type TPendingSignup = { userId: string; name: string; phone: string | null; codeHash: string; attempts: number };
+type TPendingLogin = { userId: string; name: string; email: string; codeHash: string; attempts: number };
 
 const hashCode = (email: string, code: string) => createHash('sha256').update(`${email}:${code}`).digest('hex');
 
@@ -199,6 +204,66 @@ export class PortalAccountService {
 	}
 
 	/* -------------------------------------------------------------------- *
+	 * Two-step sign-in and closing one's own login (ERP-0081)
+	 * -------------------------------------------------------------------- */
+
+	/**
+	 * Emails a 6-digit sign-in code and answers an opaque challenge the portal
+	 * sends back with the code. The password was already checked.
+	 */
+	async startLoginCode(user: { id: string; name: string; email: string }): Promise<string> {
+		const challenge = randomBytes(24).toString('base64url');
+		await this.sendLoginCode(challenge, { userId: user.id, name: user.name, email: user.email });
+		return challenge;
+	}
+
+	/** A new code for a pending sign-in; silent when the challenge is gone. */
+	async resendLoginCode(challenge: string): Promise<void> {
+		const pending = await this.cache.get<TPendingLogin>(this.loginKey(challenge));
+		if (pending) await this.sendLoginCode(challenge, pending);
+	}
+
+	/**
+	 * The user behind a right code; the challenge is used up.
+	 * @throws {PortalInvalidCodeError} wrong, expired or used (5 attempts)
+	 */
+	async verifyLoginCode(challenge: string, code: string): Promise<string> {
+		const key = this.loginKey(challenge);
+		const pending = await this.cache.get<TPendingLogin>(key);
+		if (!pending) throw new PortalInvalidCodeError();
+		const expected = Buffer.from(pending.codeHash);
+		const given = Buffer.from(hashCode(challenge, code.trim()));
+		if (expected.length !== given.length || !timingSafeEqual(expected, given)) {
+			const attempts = pending.attempts + 1;
+			if (attempts >= PORTAL_SIGNUP_MAX_ATTEMPTS) await this.cache.del(key);
+			else await this.cache.set<TPendingLogin>(key, { ...pending, attempts }, PORTAL_LOGIN_CODE_TTL_SECONDS);
+			throw new PortalInvalidCodeError();
+		}
+		await this.cache.del(key);
+		return pending.userId;
+	}
+
+	/**
+	 * The person closes their own login (owner decision 2026-11-20): the login
+	 * is revoked and its sessions end; the customer, its documents and history
+	 * stay. The only owner of a business account cannot leave it ownerless.
+	 * @throws {PortalLastOwnerError}
+	 */
+	async closeOwnLogin(caller: TPortalCustomerIdentity): Promise<void> {
+		if (caller.role === 'owner') {
+			const customer = await this.customers.getActiveCustomer(caller.customerId);
+			const business = customer ? customer.customerType !== 'individual' : true;
+			if (business) {
+				const otherOwners = (await this.identities.listLiveByCustomer(caller.customerId)).filter(
+					(identity) => identity.id !== caller.identityId && identity.portalRole === 'owner' && identity.status === 'active',
+				);
+				if (otherOwners.length === 0) throw new PortalLastOwnerError();
+			}
+		}
+		await this.revoke(caller.identityId);
+	}
+
+	/* -------------------------------------------------------------------- *
 	 * Contract for the portal guard and sign-in
 	 * -------------------------------------------------------------------- */
 
@@ -294,6 +359,16 @@ export class PortalAccountService {
 		const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
 		await this.cache.set<TPendingSignup>(this.signupKey(email), { ...pending, codeHash: hashCode(email, code), attempts: 0 }, PORTAL_SIGNUP_CODE_TTL_SECONDS);
 		await this.mailer.sendSignupCode({ to: email, name: pending.name, code });
+	}
+
+	private loginKey(challenge: string): string {
+		return `portal:login-code:${challenge}`;
+	}
+
+	private async sendLoginCode(challenge: string, pending: Pick<TPendingLogin, 'userId' | 'name' | 'email'>): Promise<void> {
+		const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+		await this.cache.set<TPendingLogin>(this.loginKey(challenge), { ...pending, codeHash: hashCode(challenge, code), attempts: 0 }, PORTAL_LOGIN_CODE_TTL_SECONDS);
+		await this.mailer.sendLoginCode({ to: pending.email, name: pending.name, code });
 	}
 
 	private async sendInvitation(user: Pick<TAuthUser, 'id' | 'name' | 'email'>, link: string): Promise<void> {

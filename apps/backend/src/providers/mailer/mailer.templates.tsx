@@ -205,6 +205,27 @@ export async function renderPortalRfqClaimCodeEmail({
 	return { subject: t(language, 'email:portalRfqClaimCode.subject', { code, reference }), html, text };
 }
 
+/** Two-step sign-in code of the customer portal (ERP-0081). */
+export async function renderPortalLoginCodeEmail({
+	name,
+	code,
+	language = DEFAULT_LANGUAGE,
+}: {
+	name: string;
+	code: string;
+	language?: LanguageCode;
+}): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
+	const texts = {
+		greeting: t(language, 'email:portalLoginCode.greeting', { name }),
+		body: t(language, 'email:portalLoginCode.body', { app }),
+		expiry: t(language, 'email:portalLoginCode.expiry'),
+		footer: t(language, 'email:footer.noReply', { app }),
+	};
+	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
+	return { subject: t(language, 'email:portalLoginCode.subject', { code, app }), html, text };
+}
+
 /** Organization-invitation input; superset of the base template input. */
 export type OrganizationInvitationTemplateInput = TemplateInput & {
 	organizationName: string;

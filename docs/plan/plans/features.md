@@ -624,6 +624,10 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Portal security settings — ERP-0081 (2026-11-20): 2-step sign-in by email
+  code, active devices, delete own login (last business owner cannot); unused
+  settings removed. Evidence: `test/unit/customer-portal.test.ts`,
+  `progress.md` 2026-11-20 ERP-0081.
 - Order tracking from real data + courier/waybill on delivery notes — ERP-0080
   (2026-11-20): one stage derivation for portal and website; RajaOngkir-ready
   courier codes. Evidence: `test/unit/public-tracking.test.ts` (10),

@@ -364,6 +364,8 @@ const api: Record<keyof typeof en, string> = {
 	'portal.invalidCode': 'Kode salah atau sudah kedaluwarsa',
 	'portal.ownerOnly': 'Hanya pemilik akun yang bisa mengelola anggota',
 	'portal.removeSelf': 'Anda tidak bisa mencabut akses Anda sendiri',
+	'portal.lastOwner': 'Anda satu-satunya pemilik akun perusahaan ini. Jadikan rekan Anda pemilik terlebih dahulu, atau minta kami menutup akunnya.',
+	'portal.deviceNotFound': 'Perangkat itu sudah tidak masuk lagi',
 	'portal.contactUnavailable': 'Kontak tidak ada atau milik pelanggan lain',
 	'commerce.websiteKeyNotFound': 'API key website tidak ditemukan',
 	'commerce.webPageNotFound': 'Konten website tidak ditemukan',

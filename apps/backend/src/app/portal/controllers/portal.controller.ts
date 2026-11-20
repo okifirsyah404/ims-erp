@@ -22,6 +22,10 @@ import {
 	portalPasswordResetSchema,
 	portalPersonalSchema,
 	portalProductParamSchema,
+	portalCloseAccountSchema,
+	portalDeviceParamSchema,
+	portalLoginCodeSchema,
+	portalLoginResendSchema,
 	portalResendSchema,
 	portalSettingsSchema,
 	portalTicketSchema,
@@ -76,7 +80,10 @@ export class PortalAuthController {
 			.post(
 				'/login',
 				async (ctx) => {
-					const { context, session } = await auth.login(portalLoginSchema.parse(ctx.body), ctx.request.headers);
+					const result = await auth.login(portalLoginSchema.parse(ctx.body), ctx.request.headers);
+					// Two-step on: no session yet, the code went to the email (ERP-0081).
+					if ('twoStep' in result) return ok({ ok: false, twoStep: true, challenge: result.challenge, email: result.email });
+					const { context, session } = result;
 					const customer = await portal.customer(context);
 					ctx.set.headers['set-cookie'] = await auth.sessionCookie(session);
 					return ok({ ok: true, user: portalUser(context, customer), session: { expiresAt: session.expiresAt.toISOString() } });
@@ -84,8 +91,39 @@ export class PortalAuthController {
 				{
 					detail: {
 						summary: 'Sign in',
-						description: `Email + password sign-in for a login with the \`customer\` role; 401 wrong credentials or a staff login, 423 locked after 5 failures. ${SESSION_COOKIE_NOTE}`,
+						description: `Email + password sign-in for a login with the \`customer\` role; 401 wrong credentials or a staff login, 423 locked after 5 failures. With two-step sign-in on, answers \`{ ok: false, twoStep: true, challenge, email }\` (masked email) and emails a 6-digit code; \`/auth/login/verify\` finishes. ${SESSION_COOKIE_NOTE}`,
 						...requestBodyDoc(portalLoginSchema),
+					},
+				},
+			)
+			.post(
+				'/login/verify',
+				async (ctx) => {
+					const input = portalLoginCodeSchema.parse(ctx.body);
+					const { context, session } = await auth.verifyLoginCode(input.challenge, input.code, ctx.request.headers);
+					const customer = await portal.customer(context);
+					ctx.set.headers['set-cookie'] = await auth.sessionCookie(session);
+					return ok({ ok: true, user: portalUser(context, customer), session: { expiresAt: session.expiresAt.toISOString() } });
+				},
+				{
+					detail: {
+						summary: 'Finish a two-step sign-in',
+						description: `The emailed code of a two-step sign-in (ERP-0081); 400 wrong or expired (5 attempts, 10 minutes). ${SESSION_COOKIE_NOTE}`,
+						...requestBodyDoc(portalLoginCodeSchema),
+					},
+				},
+			)
+			.post(
+				'/login/resend',
+				async ({ body }) => {
+					await auth.resendLoginCode(portalLoginResendSchema.parse(body).challenge);
+					return noContent();
+				},
+				{
+					detail: {
+						summary: 'Resend the sign-in code',
+						description: 'A new code for a pending two-step sign-in; same answer for an unknown challenge',
+						...requestBodyDoc(portalLoginResendSchema),
 					},
 				},
 			)
@@ -208,17 +246,61 @@ export class PortalController {
 				},
 			)
 			.get(
+				'/account/devices',
+				async ({ portal }) => ok(await auth.devices(portal)),
+				{
+					portal: true,
+					detail: { summary: 'Signed-in devices', description: 'Devices (sessions) of this login with browser, address and last use; `current` marks this one (ERP-0081)' },
+				},
+			)
+			.delete(
+				'/account/devices/:id',
+				async ({ portal, params }) => {
+					await auth.revokeDevice(portal, portalDeviceParamSchema.parse(params).id);
+					return noContent();
+				},
+				{ portal: true, detail: { summary: 'Sign a device out', description: 'Ends one session of this login; 404 when it is gone (ERP-0081)' } },
+			)
+			.post(
+				'/account/devices/sign-out-others',
+				async ({ portal }) => {
+					await auth.revokeOtherDevices(portal);
+					return noContent();
+				},
+				{ portal: true, detail: { summary: 'Sign out other devices', description: 'Ends every session of this login except this one (ERP-0081)' } },
+			)
+			.post(
+				'/account/close',
+				async ({ portal, body, set }) => {
+					await auth.closeAccount(portal, portalCloseAccountSchema.parse(body).password);
+					set.headers['set-cookie'] = await auth.clearedSessionCookie();
+					return noContent();
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Delete my login',
+						description:
+							'Removes this login after the password (ERP-0081): sessions end, the customer, its orders and documents stay. 400 wrong password; 409 the only owner of a business account.',
+						...requestBodyDoc(portalCloseAccountSchema),
+					},
+				},
+			)
+			.get(
 				'/account',
 				async (ctx) => {
-					const [customer, members, contact, sites, preferences, changePending] = await Promise.all([
+					const [customer, members, contact, sites, preferences, changePending, devices] = await Promise.all([
 						service.customer(ctx.portal),
 						service.members(ctx.portal),
 						pages.contactOf(ctx.portal),
 						pages.listSites(ctx.portal),
 						pages.preferencesOf(ctx.portal),
 						pages.companyChangePending(ctx.portal),
+						auth.devices(ctx.portal),
 					]);
-					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members, { contact, sites, preferences, changePending }));
+					return ok(
+						accountSettings(presenter(ctx), ctx.portal, customer, members, { contact, sites, preferences, changePending, deviceCount: Math.max(1, devices.length) }),
+					);
 				},
 				{
 					portal: true,
@@ -262,7 +344,7 @@ export class PortalController {
 					portal: true,
 					detail: {
 						summary: 'Update settings',
-						description: 'Notification channels and language of this login (ERP-0075); face ID and two-step are not supported and ignored',
+						description: 'Notification channels, language and two-step sign-in by emailed code of this login (ERP-0075, ERP-0081)',
 						...requestBodyDoc(portalSettingsSchema),
 					},
 				},

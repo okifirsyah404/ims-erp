@@ -367,6 +367,8 @@ const api = {
 	'portal.invalidCode': 'The code is wrong or has expired',
 	'portal.ownerOnly': 'Only an account owner can manage members',
 	'portal.removeSelf': 'You cannot remove your own access',
+	'portal.lastOwner': 'You are the only owner of this company account. Make a colleague an owner first, or ask us to close the account.',
+	'portal.deviceNotFound': 'That device is no longer signed in',
 	'portal.contactUnavailable': 'The contact is missing or belongs to another customer',
 	'commerce.websiteKeyNotFound': 'Website key not found',
 	'commerce.webPageNotFound': 'Website content not found',

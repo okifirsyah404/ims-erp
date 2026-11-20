@@ -5,7 +5,7 @@ import { auth } from '@providers/better-auth/auth';
 import { PORTAL_SIGNIN_HEADER, PORTAL_SIGNIN_NONCE } from '@providers/better-auth/portal-signin';
 import { parseCookies, parseSetCookieHeader } from 'better-auth/cookies';
 import { injectable } from 'tsyringe';
-import type { IPortalSessionGateway, TPortalSession } from '../contracts/portal.contract';
+import type { IPortalSessionGateway, TPortalDeviceSession, TPortalSession } from '../contracts/portal.contract';
 
 async function sessionCookieName(): Promise<string> {
 	return (await auth.$context).authCookies.sessionToken.name;
@@ -67,9 +67,9 @@ export class BetterAuthPortalSessionGateway implements IPortalSessionGateway {
 		return this.getSession(decodeURIComponent(cookie.value));
 	}
 
-	/** A session for a user who just verified their sign-up code (no password round trip). */
-	async createSession(userId: string): Promise<TPortalSession | null> {
-		const headers = portalHeaders();
+	/** A session for a user who just verified a code (no password round trip); `from` names the device. */
+	async createSession(userId: string, from?: Headers): Promise<TPortalSession | null> {
+		const headers = portalHeaders(from);
 		const context = { headers, request: new Request('http://internal/portal-signup', { headers }), context: {} as never } as unknown as AuthEndpointContext;
 		const token = (await runWithEndpointContext(context, async () => {
 			const ctx = await auth.$context;
@@ -124,6 +124,35 @@ export class BetterAuthPortalSessionGateway implements IPortalSessionGateway {
 		} catch {
 			return false;
 		}
+	}
+
+	async verifyPassword(token: string, password: string): Promise<boolean> {
+		try {
+			await auth.api.verifyPassword({ headers: await sessionHeaders(token), body: { password } });
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	async listSessions(token: string): Promise<TPortalDeviceSession[]> {
+		const sessions = await auth.api.listSessions({ headers: await sessionHeaders(token) }).catch(() => []);
+		return sessions.map((session) => ({
+			id: session.id,
+			token: session.token,
+			userAgent: session.userAgent ?? null,
+			ipAddress: session.ipAddress ?? null,
+			createdAt: new Date(session.createdAt),
+			updatedAt: new Date(session.updatedAt),
+		}));
+	}
+
+	async revokeSession(token: string, sessionToken: string): Promise<void> {
+		await auth.api.revokeSession({ headers: await sessionHeaders(token), body: { token: sessionToken } });
+	}
+
+	async revokeOtherSessions(token: string): Promise<void> {
+		await auth.api.revokeOtherSessions({ headers: await sessionHeaders(token) });
 	}
 
 	async resetPassword(token: string, password: string): Promise<boolean> {

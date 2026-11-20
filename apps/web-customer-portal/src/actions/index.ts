@@ -44,6 +44,17 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
 
 const password = z.string().min(12, "Use at least 12 characters").max(128);
 
+/** The visitor's browser and address, so the ERP can list the device (ERP-0081). */
+function clientOf(context: ActionAPIContext) {
+  let ip: string | undefined;
+  try {
+    ip = context.clientAddress;
+  } catch {
+    ip = undefined;
+  }
+  return { userAgent: context.request.headers.get("user-agent") ?? undefined, ip };
+}
+
 export const server = {
   auth: {
     /** 04.01 Login / 04.08 error state. */
@@ -57,12 +68,16 @@ export const server = {
       }),
       handler: async (input, context) => {
         const result = await call(() =>
-          portal.login({ email: input.email, password: input.password, accountType: input.account_type }),
+          portal.login({ email: input.email, password: input.password, accountType: input.account_type, client: clientOf(context) }),
         );
         if (!result.ok) {
           if (result.reason === "locked") {
             const minutes = Math.max(1, Math.ceil((Date.parse(result.lockedUntil) - Date.now()) / 60_000));
             throw new ActionError({ code: "TOO_MANY_REQUESTS", message: `Account locked. Try again in ${minutes} minutes or reset your password.` });
+          }
+          if (result.reason === "two_step") {
+            context.session?.set("pendingSignIn", { challenge: result.challenge, email: result.email, remember: input.remember });
+            return { ok: true, twoStep: true };
           }
           if (result.reason === "unverified") {
             context.session?.set("pendingVerification", { email: result.email, accountType: input.account_type });
@@ -78,6 +93,31 @@ export const server = {
           });
         }
         await signIn(context.session!, result.user, result.tokens, input.remember);
+        return { ok: true, twoStep: false };
+      },
+    }),
+
+    /** Second step of a two-step sign-in (ERP-0081): the code from the email. */
+    verifyLoginCode: defineAction({
+      accept: "form",
+      input: z.object({ code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code") }),
+      handler: async (input, context) => {
+        const pending = await context.session?.get("pendingSignIn");
+        if (!pending) throw new ActionError({ code: "UNAUTHORIZED", message: "Your sign-in has expired. Please sign in again." });
+        const result = await call(() => portal.verifyLoginCode({ challenge: pending.challenge, code: input.code, client: clientOf(context) }));
+        if (!result) throw new ActionError({ code: "BAD_REQUEST", message: "That code is wrong or has expired." });
+        context.session?.delete("pendingSignIn");
+        await signIn(context.session!, result.user, result.tokens, pending.remember);
+        return { ok: true };
+      },
+    }),
+
+    resendLoginCode: defineAction({
+      accept: "form",
+      handler: async (_input, context) => {
+        const pending = await context.session?.get("pendingSignIn");
+        if (!pending) throw new ActionError({ code: "UNAUTHORIZED", message: "Your sign-in has expired. Please sign in again." });
+        await call(() => portal.resendLoginCode({ challenge: pending.challenge }));
         return { ok: true };
       },
     }),
@@ -500,17 +540,16 @@ export const server = {
     updateSetting: defineAction({
       accept: "form",
       input: z.object({
-        key: z.enum(["push", "email", "whatsapp", "faceId", "twoStep", "language", "appearance"]),
+        key: z.enum(["push", "twoStep", "language"]),
         value: z.string().max(20),
       }),
       handler: async (input, context) => {
         const tokens = requireAuth(context);
         const on = input.value === "true";
         let patch: SettingsPatch;
-        if (input.key === "push" || input.key === "email" || input.key === "whatsapp") patch = { notifications: { [input.key]: on } };
-        else if (input.key === "faceId" || input.key === "twoStep") patch = { security: { [input.key]: on } };
-        else if (input.key === "language") patch = { preferences: { language: input.value === "id" ? "id" : "en" } };
-        else patch = { preferences: { appearance: input.value === "system" ? "system" : "light" } };
+        if (input.key === "push") patch = { notifications: { push: on } };
+        else if (input.key === "twoStep") patch = { security: { twoStep: on } };
+        else patch = { preferences: { language: input.value === "id" ? "id" : "en" } };
         await call(() => portal.updateSettings(tokens, patch));
         return { ok: true };
       },
@@ -530,6 +569,50 @@ export const server = {
         const changed = await call(() => portal.changePassword(tokens, { current: input.current, next: input.password }));
         if (!changed) throw new ActionError({ code: "BAD_REQUEST", message: "Your current password is incorrect" });
         context.session?.set("flash", { tone: "success", title: "Password changed", description: "Use your new password the next time you sign in." });
+        return { ok: true };
+      },
+    }),
+
+    /** Signs one other device out (ERP-0081). */
+    revokeDevice: defineAction({
+      accept: "form",
+      input: z.object({ id: z.string().min(1).max(128) }),
+      handler: async (input, context) => {
+        const tokens = requireAuth(context);
+        await call(() => portal.revokeDevice(tokens, input.id));
+        return { ok: true };
+      },
+    }),
+
+    signOutOtherDevices: defineAction({
+      accept: "form",
+      handler: async (_input, context) => {
+        const tokens = requireAuth(context);
+        await call(() => portal.signOutOtherDevices(tokens));
+        return { ok: true };
+      },
+    }),
+
+    /** Deletes the login only; orders, documents and the company stay (ERP-0081). */
+    closeAccount: defineAction({
+      accept: "form",
+      input: z.object({
+        password: z.string().min(1, "Enter your password").max(128),
+        confirm: z.boolean().refine((value) => value, "Tick the box to confirm"),
+      }),
+      handler: async (input, context) => {
+        const tokens = requireAuth(context);
+        const result = await call(() => portal.closeAccount(tokens, { password: input.password }));
+        if (!result.ok) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message:
+              result.reason === "wrong_password"
+                ? "Your password is incorrect"
+                : (result.message ?? "You are the only owner of this company account. Make a colleague an owner first."),
+          });
+        }
+        signOut(context.session!);
         return { ok: true };
       },
     }),

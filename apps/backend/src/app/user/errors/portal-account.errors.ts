@@ -67,3 +67,10 @@ export class PortalContactUnavailableError extends AppError {
 		super(422, 'portal.contactUnavailable', 'The contact is missing or belongs to another customer');
 	}
 }
+
+/** The only owner of a business account cannot close their login (owner decision 2026-11-20). */
+export class PortalLastOwnerError extends AppError {
+	constructor() {
+		super(409, 'portal.lastOwner', 'You are the only owner of this company account. Make a colleague an owner first, or ask us to close the account.');
+	}
+}
