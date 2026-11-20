@@ -204,6 +204,79 @@ untyped literals, so nothing failed at runtime before the fix):
 
 Next executable task: unchanged (see the entry below).
 
+## 2026-11-21 - Migrations re-split into one folder per Postgres schema
+
+User request: create one migration per schema in
+`apps/backend/database/migrations/` named `<datetime>_create_<schema>_schema`,
+derived from `apps/backend/drizzle/schemas/`. This restores ADR-0024 decision 6
+("per-schema baseline", extending ADR-0019), which the 2026-11-19/20 P8 cutover
+had shipped as a single folder.
+
+**What changed.** The single baseline `20261120192010_parched_venom` is archived
+to `database/migrations-archive/v3-per-schema-20261121` (same convention as
+`v1` and `v2-product-warehouse-20261123`) and replaced by **20 folders**:
+
+`20261120214111_create_auth_schema`, `..._create_audit_schema`,
+`..._create_automation_schema`, `..._create_company_schema`,
+`..._create_customer_schema`, `..._create_document_schema`,
+`..._create_finance_schema`, `..._create_human_resource_schema`,
+`..._create_inventory_schema`, `..._create_location_schema`,
+`..._create_notification_schema`, `..._create_payment_schema`,
+`..._create_procurement_schema`, `..._create_product_schema`,
+`..._create_project_schema`, `..._create_sale_schema`,
+`..._create_supplier_schema`, `..._create_tax_schema`,
+`..._create_ticket_schema`, `..._create_warehouse_schema`.
+
+`auth` is first (Better Auth owns the foundation tables), the rest alphabetical.
+The database has **0 cross-schema foreign keys**, so the order is a readability
+choice, not a correctness requirement — every folder is self-contained.
+
+**Generated, not hand-assembled.** Each folder came from `drizzle-kit generate`
+run against a **cumulative** `--schema` list (`audit.schema.ts`, then
+`audit + automation`, …), so the chain is 1 `base` + 19 chained `diff`
+snapshots: `check` and `generate` agree with `drizzle/schemas` by construction.
+No SQL statement was written or edited by hand.
+
+**Equivalence proven before the swap.** Two independent checks, both run before
+the old folder was removed:
+
+- Concatenating the 20 folders yields the **same 728 statements** as the
+  archived baseline (same multiset; 0 missing, 0 extra). Statement counts per
+  schema also matched the archived `snapshot.json` footprints exactly
+  (audit 7, auth 40, automation 17, company 10, customer 25, document 41,
+  finance 87, human_resource 43, inventory 106, location 16, notification 11,
+  payment 20, procurement 42, product 17, project 78, sale 76, supplier 21,
+  tax 21, ticket 18, warehouse 32).
+- A fresh `generateMigration(empty → drizzle/schemas)` reproduced the archived
+  `migration.sql` with **0 statement-level differences**, confirming the old
+  baseline carried no hand-written SQL tail (the ADR-0019 exception for
+  `NULLS NOT DISTINCT` / partial index predicates no longer applies — the
+  current snapshot models them).
+
+**Commands run (2026-11-21).**
+`bunx --bun drizzle-kit generate` (per-schema, cumulative `--schema`) → 20
+folders. `bunx --bun drizzle-kit generate` against the repo config → "No schema
+changes, nothing to migrate". `bunx --bun drizzle-kit check` → "Everything's
+fine". On a disposable `postgres:18-alpine` container
+(`POSTGRES_URL=postgresql://ci:ci@localhost:55432/perschema_check`):
+`drizzle-kit migrate` → applied; resulting database = 22 schemas, 169 tables
+(168 application + the `drizzle` journal table's schema), 20 journal rows,
+**0 cross-schema FKs**. `bun run database/seeders/index.ts` → seeded; second run
+→ 0 inserts (idempotent). `pg_dump --schema-only` of that database vs. one
+migrated from the archived single baseline → **identical** (9669 lines each,
+differing only in pg_dump's random `\restrict` session tokens).
+`bun docs/database/validate-dbml.ts` → `OK` (192 tables, 147 refs, 0
+cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity
+drift).
+
+**Docs.** `runbook.md` (baseline section), `data-model.md`, `project-audit.md`,
+`architecture/README.md`, `database/implementation-phases.md` (new P8b) and
+`AGENTS.md` (command-status row) now describe the per-schema chain; the
+single-baseline references are marked superseded, not deleted.
+`docs/database/docs.dbml` was reviewed and is **unchanged** — no table, column,
+index, constraint, cross-module link or status vocabulary moved; only the
+packaging of the same DDL changed.
+
 ## 2026-11-21 - web-admin: `@ims-erp/ui` components instead of native elements, consistent Card composition
 
 User request: make `apps/web-admin` use `@ims-erp/ui` components wherever

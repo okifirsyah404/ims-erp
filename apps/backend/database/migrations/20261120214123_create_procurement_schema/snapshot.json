@@ -1,0 +1,4736 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "f49c3748-d5f1-4478-a87e-df4d27746cc2",
+  "prevIds": [
+    "3703395a-149c-4a66-819b-bd67ae3524d0"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "procurement"
+      ],
+      "writes": [
+        "s|sch|procurement",
+        "n|sch|procurement",
+        "e|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "goods_receipt_items"
+      ],
+      "writes": [
+        "s|tbl|procurement.goods_receipt_items",
+        "n|tbl|procurement.goods_receipt_items",
+        "e|tbl|procurement.goods_receipt_items",
+        "n|rel|procurement.goods_receipt_items",
+        "n|type|procurement.goods_receipt_items",
+        "n|rel|procurement.goods_receipt_items_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "goods_receipts"
+      ],
+      "writes": [
+        "s|tbl|procurement.goods_receipts",
+        "n|tbl|procurement.goods_receipts",
+        "e|tbl|procurement.goods_receipts",
+        "n|rel|procurement.goods_receipts",
+        "n|type|procurement.goods_receipts",
+        "n|rel|procurement.goods_receipts_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "code_numberings"
+      ],
+      "writes": [
+        "s|tbl|procurement.code_numberings",
+        "n|tbl|procurement.code_numberings",
+        "e|tbl|procurement.code_numberings",
+        "n|rel|procurement.code_numberings",
+        "n|type|procurement.code_numberings",
+        "n|rel|procurement.code_numberings_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_order_items"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_order_items",
+        "n|tbl|procurement.purchase_order_items",
+        "e|tbl|procurement.purchase_order_items",
+        "n|rel|procurement.purchase_order_items",
+        "n|type|procurement.purchase_order_items",
+        "n|rel|procurement.purchase_order_items_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_orders"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_orders",
+        "n|tbl|procurement.purchase_orders",
+        "e|tbl|procurement.purchase_orders",
+        "n|rel|procurement.purchase_orders",
+        "n|type|procurement.purchase_orders",
+        "n|rel|procurement.purchase_orders_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_request_items"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_request_items",
+        "n|tbl|procurement.purchase_request_items",
+        "e|tbl|procurement.purchase_request_items",
+        "n|rel|procurement.purchase_request_items",
+        "n|type|procurement.purchase_request_items",
+        "n|rel|procurement.purchase_request_items_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_requests"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_requests",
+        "n|tbl|procurement.purchase_requests",
+        "e|tbl|procurement.purchase_requests",
+        "n|rel|procurement.purchase_requests",
+        "n|type|procurement.purchase_requests",
+        "n|rel|procurement.purchase_requests_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_return_items"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_return_items",
+        "n|tbl|procurement.purchase_return_items",
+        "e|tbl|procurement.purchase_return_items",
+        "n|rel|procurement.purchase_return_items",
+        "n|type|procurement.purchase_return_items",
+        "n|rel|procurement.purchase_return_items_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_returns"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_returns",
+        "n|tbl|procurement.purchase_returns",
+        "e|tbl|procurement.purchase_returns",
+        "n|rel|procurement.purchase_returns",
+        "n|type|procurement.purchase_returns",
+        "n|rel|procurement.purchase_returns_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "goods_receipt_items",
+        "goods_receipt_items_goods_receipt_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.goods_receipt_items_goods_receipt_id_idx",
+        "n|idx|procurement.goods_receipt_items_goods_receipt_id_idx",
+        "e|idx|procurement.goods_receipt_items_goods_receipt_id_idx",
+        "n|rel|procurement.goods_receipt_items_goods_receipt_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipt_items",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipt_items.goods_receipt_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "goods_receipt_items",
+        "goods_receipt_items_purchase_order_item_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.goods_receipt_items_purchase_order_item_id_idx",
+        "n|idx|procurement.goods_receipt_items_purchase_order_item_id_idx",
+        "e|idx|procurement.goods_receipt_items_purchase_order_item_id_idx",
+        "n|rel|procurement.goods_receipt_items_purchase_order_item_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipt_items",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipt_items.purchase_order_item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "goods_receipts",
+        "goods_receipts_code_uq"
+      ],
+      "writes": [
+        "s|idx|procurement.goods_receipts_code_uq",
+        "n|idx|procurement.goods_receipts_code_uq",
+        "e|idx|procurement.goods_receipts_code_uq",
+        "n|rel|procurement.goods_receipts_code_uq"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipts",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipts.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "goods_receipts",
+        "goods_receipts_purchase_order_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.goods_receipts_purchase_order_id_idx",
+        "n|idx|procurement.goods_receipts_purchase_order_id_idx",
+        "e|idx|procurement.goods_receipts_purchase_order_id_idx",
+        "n|rel|procurement.goods_receipts_purchase_order_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipts",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipts.purchase_order_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "goods_receipts",
+        "goods_receipts_warehouse_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.goods_receipts_warehouse_id_idx",
+        "n|idx|procurement.goods_receipts_warehouse_id_idx",
+        "e|idx|procurement.goods_receipts_warehouse_id_idx",
+        "n|rel|procurement.goods_receipts_warehouse_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipts",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipts.warehouse_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "code_numberings",
+        "procurement_code_numberings_type_uq"
+      ],
+      "writes": [
+        "s|idx|procurement.procurement_code_numberings_type_uq",
+        "n|idx|procurement.procurement_code_numberings_type_uq",
+        "e|idx|procurement.procurement_code_numberings_type_uq",
+        "n|rel|procurement.procurement_code_numberings_type_uq"
+      ],
+      "reads": [
+        "n|tbl|procurement.code_numberings",
+        "n|sch|procurement",
+        "n|col|procurement.code_numberings.code_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_order_items",
+        "purchase_order_items_order_sort_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_order_items_order_sort_idx",
+        "n|idx|procurement.purchase_order_items_order_sort_idx",
+        "e|idx|procurement.purchase_order_items_order_sort_idx",
+        "n|rel|procurement.purchase_order_items_order_sort_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_order_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_order_items.purchase_order_id",
+        "n|col|procurement.purchase_order_items.sort_order"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_order_items",
+        "purchase_order_items_purchase_request_item_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_order_items_purchase_request_item_id_idx",
+        "n|idx|procurement.purchase_order_items_purchase_request_item_id_idx",
+        "e|idx|procurement.purchase_order_items_purchase_request_item_id_idx",
+        "n|rel|procurement.purchase_order_items_purchase_request_item_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_order_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_order_items.purchase_request_item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_orders",
+        "purchase_orders_code_uq"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_orders_code_uq",
+        "n|idx|procurement.purchase_orders_code_uq",
+        "e|idx|procurement.purchase_orders_code_uq",
+        "n|rel|procurement.purchase_orders_code_uq"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_orders.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_orders",
+        "purchase_orders_supplier_company_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_orders_supplier_company_id_idx",
+        "n|idx|procurement.purchase_orders_supplier_company_id_idx",
+        "e|idx|procurement.purchase_orders_supplier_company_id_idx",
+        "n|rel|procurement.purchase_orders_supplier_company_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_orders.supplier_company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_orders",
+        "purchase_orders_status_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_orders_status_idx",
+        "n|idx|procurement.purchase_orders_status_idx",
+        "e|idx|procurement.purchase_orders_status_idx",
+        "n|rel|procurement.purchase_orders_status_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_orders.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_request_items",
+        "purchase_request_items_request_sort_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_request_items_request_sort_idx",
+        "n|idx|procurement.purchase_request_items_request_sort_idx",
+        "e|idx|procurement.purchase_request_items_request_sort_idx",
+        "n|rel|procurement.purchase_request_items_request_sort_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_request_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_request_items.purchase_request_id",
+        "n|col|procurement.purchase_request_items.sort_order"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_requests",
+        "purchase_requests_code_uq"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_requests_code_uq",
+        "n|idx|procurement.purchase_requests_code_uq",
+        "e|idx|procurement.purchase_requests_code_uq",
+        "n|rel|procurement.purchase_requests_code_uq"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_requests",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_requests.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_requests",
+        "purchase_requests_status_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_requests_status_idx",
+        "n|idx|procurement.purchase_requests_status_idx",
+        "e|idx|procurement.purchase_requests_status_idx",
+        "n|rel|procurement.purchase_requests_status_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_requests",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_requests.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_requests",
+        "purchase_requests_requested_by_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_requests_requested_by_idx",
+        "n|idx|procurement.purchase_requests_requested_by_idx",
+        "e|idx|procurement.purchase_requests_requested_by_idx",
+        "n|rel|procurement.purchase_requests_requested_by_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_requests",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_requests.requested_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_return_items",
+        "purchase_return_items_purchase_return_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_return_items_purchase_return_id_idx",
+        "n|idx|procurement.purchase_return_items_purchase_return_id_idx",
+        "e|idx|procurement.purchase_return_items_purchase_return_id_idx",
+        "n|rel|procurement.purchase_return_items_purchase_return_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_return_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_return_items.purchase_return_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_return_items",
+        "purchase_return_items_goods_receipt_item_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_return_items_goods_receipt_item_id_idx",
+        "n|idx|procurement.purchase_return_items_goods_receipt_item_id_idx",
+        "e|idx|procurement.purchase_return_items_goods_receipt_item_id_idx",
+        "n|rel|procurement.purchase_return_items_goods_receipt_item_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_return_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_return_items.goods_receipt_item_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_returns",
+        "purchase_returns_code_uq"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_returns_code_uq",
+        "n|idx|procurement.purchase_returns_code_uq",
+        "e|idx|procurement.purchase_returns_code_uq",
+        "n|rel|procurement.purchase_returns_code_uq"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_returns.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_returns",
+        "purchase_returns_goods_receipt_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_returns_goods_receipt_id_idx",
+        "n|idx|procurement.purchase_returns_goods_receipt_id_idx",
+        "e|idx|procurement.purchase_returns_goods_receipt_id_idx",
+        "n|rel|procurement.purchase_returns_goods_receipt_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_returns.goods_receipt_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_returns",
+        "purchase_returns_purchase_order_id_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_returns_purchase_order_id_idx",
+        "n|idx|procurement.purchase_returns_purchase_order_id_idx",
+        "e|idx|procurement.purchase_returns_purchase_order_id_idx",
+        "n|rel|procurement.purchase_returns_purchase_order_id_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_returns.purchase_order_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_returns",
+        "purchase_returns_status_idx"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_returns_status_idx",
+        "n|idx|procurement.purchase_returns_status_idx",
+        "e|idx|procurement.purchase_returns_status_idx",
+        "n|rel|procurement.purchase_returns_status_idx"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_returns.status"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "goods_receipt_items"
+      ],
+      "writes": [
+        "s|fk|procurement.goods_receipt_items.goods_receipt_items_goods_receipt_id_goods_receipts_id_fkey",
+        "n|fk|procurement.goods_receipt_items.goods_receipt_items_goods_receipt_id_goods_receipts_id_fkey",
+        "e|fk|procurement.goods_receipt_items.goods_receipt_items_goods_receipt_id_goods_receipts_id_fkey",
+        "n|con|procurement.goods_receipt_items.goods_receipt_items_goods_receipt_id_goods_receipts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipt_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.goods_receipts",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipt_items.goods_receipt_id",
+        "n|col|procurement.goods_receipts.id",
+        "e|uniqueness|procurement.goods_receipts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "goods_receipt_items"
+      ],
+      "writes": [
+        "s|fk|procurement.goods_receipt_items.goods_receipt_items_LfHoAU3Xn983_fkey",
+        "n|fk|procurement.goods_receipt_items.goods_receipt_items_LfHoAU3Xn983_fkey",
+        "e|fk|procurement.goods_receipt_items.goods_receipt_items_LfHoAU3Xn983_fkey",
+        "n|con|procurement.goods_receipt_items.goods_receipt_items_LfHoAU3Xn983_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipt_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_order_items",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipt_items.purchase_order_item_id",
+        "n|col|procurement.purchase_order_items.id",
+        "e|uniqueness|procurement.purchase_order_items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "goods_receipts"
+      ],
+      "writes": [
+        "s|fk|procurement.goods_receipts.goods_receipts_purchase_order_id_purchase_orders_id_fkey",
+        "n|fk|procurement.goods_receipts.goods_receipts_purchase_order_id_purchase_orders_id_fkey",
+        "e|fk|procurement.goods_receipts.goods_receipts_purchase_order_id_purchase_orders_id_fkey",
+        "n|con|procurement.goods_receipts.goods_receipts_purchase_order_id_purchase_orders_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.goods_receipts",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.goods_receipts.purchase_order_id",
+        "n|col|procurement.purchase_orders.id",
+        "e|uniqueness|procurement.purchase_orders.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_order_items"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_order_items.purchase_order_items_purchase_order_id_purchase_orders_id_fkey",
+        "n|fk|procurement.purchase_order_items.purchase_order_items_purchase_order_id_purchase_orders_id_fkey",
+        "e|fk|procurement.purchase_order_items.purchase_order_items_purchase_order_id_purchase_orders_id_fkey",
+        "n|con|procurement.purchase_order_items.purchase_order_items_purchase_order_id_purchase_orders_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_order_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_order_items.purchase_order_id",
+        "n|col|procurement.purchase_orders.id",
+        "e|uniqueness|procurement.purchase_orders.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_order_items"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_order_items.purchase_order_items_9wVPh1SlEHf2_fkey",
+        "n|fk|procurement.purchase_order_items.purchase_order_items_9wVPh1SlEHf2_fkey",
+        "e|fk|procurement.purchase_order_items.purchase_order_items_9wVPh1SlEHf2_fkey",
+        "n|con|procurement.purchase_order_items.purchase_order_items_9wVPh1SlEHf2_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_order_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_request_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_order_items.purchase_request_item_id",
+        "n|col|procurement.purchase_request_items.id",
+        "e|uniqueness|procurement.purchase_request_items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_request_items"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_request_items.purchase_request_items_Ux9VGEdMFJ2l_fkey",
+        "n|fk|procurement.purchase_request_items.purchase_request_items_Ux9VGEdMFJ2l_fkey",
+        "e|fk|procurement.purchase_request_items.purchase_request_items_Ux9VGEdMFJ2l_fkey",
+        "n|con|procurement.purchase_request_items.purchase_request_items_Ux9VGEdMFJ2l_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_request_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_requests",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_request_items.purchase_request_id",
+        "n|col|procurement.purchase_requests.id",
+        "e|uniqueness|procurement.purchase_requests.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_return_items"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_return_items.purchase_return_items_Ixkuf3GYrG7c_fkey",
+        "n|fk|procurement.purchase_return_items.purchase_return_items_Ixkuf3GYrG7c_fkey",
+        "e|fk|procurement.purchase_return_items.purchase_return_items_Ixkuf3GYrG7c_fkey",
+        "n|con|procurement.purchase_return_items.purchase_return_items_Ixkuf3GYrG7c_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_return_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_return_items.purchase_return_id",
+        "n|col|procurement.purchase_returns.id",
+        "e|uniqueness|procurement.purchase_returns.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_return_items"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_return_items.purchase_return_items_zWIWs6D5BjYk_fkey",
+        "n|fk|procurement.purchase_return_items.purchase_return_items_zWIWs6D5BjYk_fkey",
+        "e|fk|procurement.purchase_return_items.purchase_return_items_zWIWs6D5BjYk_fkey",
+        "n|con|procurement.purchase_return_items.purchase_return_items_zWIWs6D5BjYk_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_return_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.goods_receipt_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_return_items.goods_receipt_item_id",
+        "n|col|procurement.goods_receipt_items.id",
+        "e|uniqueness|procurement.goods_receipt_items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_return_items"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_return_items.purchase_return_items_yhMa9BsZjRyG_fkey",
+        "n|fk|procurement.purchase_return_items.purchase_return_items_yhMa9BsZjRyG_fkey",
+        "e|fk|procurement.purchase_return_items.purchase_return_items_yhMa9BsZjRyG_fkey",
+        "n|con|procurement.purchase_return_items.purchase_return_items_yhMa9BsZjRyG_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_return_items",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_order_items",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_return_items.purchase_order_item_id",
+        "n|col|procurement.purchase_order_items.id",
+        "e|uniqueness|procurement.purchase_order_items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_returns"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_returns.purchase_returns_goods_receipt_id_goods_receipts_id_fkey",
+        "n|fk|procurement.purchase_returns.purchase_returns_goods_receipt_id_goods_receipts_id_fkey",
+        "e|fk|procurement.purchase_returns.purchase_returns_goods_receipt_id_goods_receipts_id_fkey",
+        "n|con|procurement.purchase_returns.purchase_returns_goods_receipt_id_goods_receipts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|tbl|procurement.goods_receipts",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_returns.goods_receipt_id",
+        "n|col|procurement.goods_receipts.id",
+        "e|uniqueness|procurement.goods_receipts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_returns"
+      ],
+      "writes": [
+        "s|fk|procurement.purchase_returns.purchase_returns_purchase_order_id_purchase_orders_id_fkey",
+        "n|fk|procurement.purchase_returns.purchase_returns_purchase_order_id_purchase_orders_id_fkey",
+        "e|fk|procurement.purchase_returns.purchase_returns_purchase_order_id_purchase_orders_id_fkey",
+        "n|con|procurement.purchase_returns.purchase_returns_purchase_order_id_purchase_orders_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement",
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_returns.purchase_order_id",
+        "n|col|procurement.purchase_orders.id",
+        "e|uniqueness|procurement.purchase_orders.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "procurement",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "goods_receipt_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "goods_receipts",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "code_numberings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_order_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_orders",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_request_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_requests",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_return_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_returns",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "purchase_order_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "product_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "sku",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "unit",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "quantity",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "unit_cost",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "serial_numbers",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "movement_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "purchase_order_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "bin_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'posted'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "receipt_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "supplier_delivery_ref",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "received_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "code_type",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "pattern",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "reset_policy",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "period_key",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "next_number",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "product_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "sku",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "specification",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "unit",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "quantity",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'1'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "unit_price",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "line_total",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "quantity_received",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'0'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_request_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "sort_order",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "code",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "supplier_company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "supplier_pic_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "supplier_snapshot",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "category",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "subject",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "order_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "expected_delivery_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "supplier_quote_ref",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "supplier_quote_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "project_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "buyer_pic_name",
+        "type": "varchar(120)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "vat_mode",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'none'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "vat_rate_bps",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "subtotal",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "tax_total",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "grand_total",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "payment_terms",
+        "type": "varchar(500)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "terms",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "rejection_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "submitted_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "submitted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "sent_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "sent_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "cancelled_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "cancelled_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "cancelled_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "purchase_request_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "product_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "sku",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "specification",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "unit",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "quantity",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'1'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "estimated_unit_price",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "estimated_total",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "sort_order",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "code",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "requested_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "requested_by_name",
+        "type": "varchar(120)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "subject",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "justification",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "project_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "request_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "needed_by",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "estimated_total",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "rejection_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "submitted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "cancelled_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "cancelled_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "cancelled_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "goods_receipt_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_order_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "product_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "sku",
+        "type": "varchar(64)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "unit",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "quantity",
+        "type": "numeric(18,3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "unit_cost",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "line_total",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "serial_numbers",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "movement_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "sort_order",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "goods_receipt_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_order_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "supplier_company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "warehouse_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "bin_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "return_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "total_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "rejection_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "submitted_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "submitted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "shipped_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "shipped_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "cancelled_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "cancelled_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "cancelled_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_items_goods_receipt_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "goods_receipt_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_items_purchase_order_item_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_order_item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "goods_receipts_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "goods_receipts_purchase_order_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_order_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "goods_receipts_warehouse_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "warehouse_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "procurement_code_numberings_type_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_items_order_sort_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_order_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "sort_order",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_items_purchase_request_item_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_request_item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND code IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_supplier_company_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "supplier_company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "purchase_request_items_request_sort_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_request_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "sort_order",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND code IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_requested_by_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "requested_by",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_purchase_return_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_return_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_goods_receipt_item_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "goods_receipt_item_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND code IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_goods_receipt_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "goods_receipt_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_purchase_order_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "purchase_order_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_items_goods_receipt_id_goods_receipts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "goods_receipt_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "goods_receipts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_items_LfHoAU3Xn983_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_order_item_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_order_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "goods_receipts_purchase_order_id_purchase_orders_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_order_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_orders",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_items_purchase_order_id_purchase_orders_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_order_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_orders",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_items_9wVPh1SlEHf2_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_request_item_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_request_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "purchase_request_items_Ux9VGEdMFJ2l_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_request_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_requests",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_Ixkuf3GYrG7c_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_return_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_returns",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_zWIWs6D5BjYk_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "goods_receipt_item_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "goods_receipt_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_yhMa9BsZjRyG_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_order_item_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_order_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_goods_receipt_id_goods_receipts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "goods_receipt_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "goods_receipts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_purchase_order_id_purchase_orders_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "purchase_order_id"
+        ],
+        "schemaTo": "procurement",
+        "tableTo": "purchase_orders",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "goods_receipts_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "code_numberings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "purchase_request_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipt_items",
+        "name": "goods_receipt_items_amounts_check",
+        "value": "quantity > 0 AND unit_cost >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "goods_receipts",
+        "name": "goods_receipts_status_check",
+        "value": "status IN ('posted')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "procurement_code_numberings_reset_check",
+        "value": "reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "code_numberings",
+        "name": "procurement_code_numberings_next_check",
+        "value": "next_number > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_order_items",
+        "name": "purchase_order_items_amounts_check",
+        "value": "quantity > 0 AND unit_price >= 0 AND line_total >= 0 AND quantity_received >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_status_check",
+        "value": "status IN ('draft', 'submitted', 'approved', 'sent', 'partially_received', 'received', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_category_check",
+        "value": "category IN ('hardware', 'software', 'service', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_vat_mode_check",
+        "value": "vat_mode IN ('none', 'included', 'added')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_vat_rate_check",
+        "value": "vat_rate_bps >= 0 AND vat_rate_bps <= 10000",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "purchase_orders_amounts_check",
+        "value": "subtotal >= 0 AND tax_total >= 0 AND grand_total >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_request_items",
+        "name": "purchase_request_items_amounts_check",
+        "value": "quantity > 0 AND estimated_unit_price >= 0 AND estimated_total >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_status_check",
+        "value": "status IN ('draft', 'submitted', 'approved', 'ordered', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_estimated_total_check",
+        "value": "estimated_total >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_requests",
+        "name": "purchase_requests_needed_by_check",
+        "value": "needed_by IS NULL OR needed_by >= request_date",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_return_items",
+        "name": "purchase_return_items_amounts_check",
+        "value": "quantity > 0 AND unit_cost >= 0 AND line_total >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_status_check",
+        "value": "status IN ('draft', 'submitted', 'approved', 'shipped', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "purchase_returns_total_check",
+        "value": "total_amount >= 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}
