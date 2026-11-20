@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "investor". It is kept for history. Current owner: none (never built; no investor tables exist in the 18 schemas) - see docs/database/module-ownership.md.
+> Mapping: investor -> no owner; the `erp` schema never existed.
+
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
 
 # Investor Module (owner to be created)

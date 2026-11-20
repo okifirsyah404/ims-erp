@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # UAT — M04 n8n, WhatsApp, Website
 
 Scope: website catalog, ERP events to n8n, WhatsApp assistant with FAQ and

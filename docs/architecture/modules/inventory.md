@@ -1,3 +1,5 @@
+> Updated 2026-11-20 (ADR-0024): `inventory` now also absorbs the former `assets` and `catalog` schemas and the warehouse tables (28 tables; product master `inventory.products`, physical units `inventory.items`). The public website catalog is served at `/inventory/public/v1/catalog`. Table names below that predate this are historical; the current list is in docs/database/module-ownership.md.
+
 # Inventory Module
 
 > Rewritten 2026-11-02. The previous content described `apps/backend-nest`
@@ -16,7 +18,7 @@ lent out.
 **In scope**
 
 - One item master for the whole ERP (`inventory.items`), superseding
-  `catalog.items` (ADR-0008).
+  `catalog.items` (ADR-0008; the catalog schema itself was absorbed into `inventory` by ADR-0024).
 - Individual unit tracking for serialized items (`serial_tracked_items`).
 - Warehouses, warehouse addresses, and storages (bins).
 - The authoritative stock ledger and its balance projection.
@@ -129,7 +131,7 @@ DBML marked *planned, not implemented*.
 ## Dependencies and rules
 
 - Consumes `auth.organizations`/`auth.users`, `location.villages`, and
-  `crm.customers` through logical references only — no cross-module FKs.
+  `customer.customers` through logical references only — no cross-module FKs.
 - Other modules must create stock movements through this module's exported
   service, in one transaction with their own writes, never by inserting into
   `stock_movements` directly.

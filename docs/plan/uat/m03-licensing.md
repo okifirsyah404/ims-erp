@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # UAT — M03 Subscription and Licensing
 
 Scope: application register, license contracts and keys, renewal through

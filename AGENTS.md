@@ -41,8 +41,8 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | --------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
-| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-02 — backend 131/131, web-admin 21/21, typecheck clean                                                                                                                 |
-| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-10-29/30 — migrations applied; seed idempotent (run twice). All use `bunx --bun drizzle-kit`; the `--bun` flag is required because the DB driver is `drizzle-orm/bun-sql`. Seed content is faker-generated (deterministic, `faker.seed`) since 2026-11-03; re-verified 2026-11-03 with `@faker-js/faker@10.6.0`. ⚠️ 2026-11-12: `generate` / `migrate` are **blocked on main** (branching snapshot chain) — hand-written migrations + `database/migrate-reset.ts` on a disposable DB; see `runbook.md` |
+| `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-20 — lint 0 errors; `test` 7/7 tasks (backend 1232, web-admin 119, locales 98, web-landing 24, web-customer-portal 60). ⚠️ root `typecheck` does **not** cover web-admin (no script): use `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` (also part of `build`). The two Astro apps are checked with `astro check` (`bun run typecheck` inside each) |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-11-19/20 — ADR-0024 **baseline**: one migration (`database/migrations/20261119145940_many_human_robot`: 18 schemas, 164 `CREATE TABLE`, 0 cross-schema `REFERENCES`); a second `generate` reports no changes; `migrate` + `seed` applied on a disposable database and the second `seed` inserted 0 rows. The pre-ADR-0024 chain is archived in `database/migrations-archive/v1` and is not applied. All use `bunx --bun drizzle-kit` (`--bun` is required: the driver is `drizzle-orm/bun-sql`). Seed content is deterministic (`faker.seed`). The old "blocked on main" note (branching snapshot chain) is resolved by the baseline; see `runbook.md` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Docker
@@ -63,6 +63,23 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   needs data it does not have, add a repository method, not a query.
   Cross-module access goes through the owning module's exported contract or
   service via DI token, never another module's repository.
+- **Schema segregation (ADR-0024).** 18 Postgres schemas (`auth`, `location`,
+  `company`, `customer`, `supplier`, `inventory`, `sale`, `procurement`,
+  `finance`, `tax`, `payment`, `project`, `ticket`, `human_resource`,
+  `document`, `notification`, `audit`, `automation`) and 188 tables; each
+  business module owns exactly one of them. Two exceptions are by design: the
+  `user` and `organization` backend modules both live in the `auth` schema
+  because Better Auth owns those tables (the standalone `organization` *schema*
+  with branches/departments/positions is gone), and the `webhook` module has
+  **no schema**: it is the inbound provider HTTP edge and delegates to the
+  exported webhook services of `payment` and `automation`. There is no central numbering module: every schema owns a
+  `code_numberings` table and a `<Module>NumberingService`. No module reads or
+  writes another module's tables or imports its repository; ownership and the
+  contract methods are in `docs/database/module-ownership.md`. Removed modules
+  (`accounting`, `aftersales`, `assets`, `catalog`, `code-number`, `crm`,
+  `licensing`, `portal`) and the schemas `organization`, `payroll`, `approval`,
+  `budgeting`, `investor`, `commerce` must not be reintroduced; pre-refactor docs that mention them are
+  historical and say so.
 - **Cross-module references are nullable.** A column that points at another
   module's table (including `auth`) is a plain nullable id column - no
   cross-schema foreign key, no `NOT NULL` (ADR-0014, the `elysia-module` rule
@@ -160,7 +177,20 @@ endpoint means registering in `index.ts`, mounting in `app/app.ts`.
   without `InjectionToken<T>` is a defect.
 
 **URL layout.** Admin surfaces live under `/admin/*` (`/admin/users`,
-`/admin/roles`, `/admin/audit`, `/admin/invitations`). Self-service `/users/me*`
+`/admin/audit`, `/admin/invitations`, `/admin/payments/gateways`,
+`/admin/customers/portal-accounts`). Business modules use their own prefix
+(`/sales`, `/inventory`, `/procurement`, `/finance`, `/taxes`, `/payments`,
+`/projects`, `/tickets`, `/human-resources`, `/documents`, `/suppliers`,
+`/customers`). External entry points have exactly one URL and **no aliases**
+(nothing is deployed, ADR-0024 Q34): provider webhooks at
+`/webhooks/{xendit,singapay,whatsapp}`, the machine license API at
+`/projects/api/v1/licenses`, the website API at `/projects/public/v1` and
+`/inventory/public/v1/catalog`, quotation render at
+`/sales/public/v1/render/quotations`, public share links at
+`/documents/public/v1/shares`, the customer portal at `/customers/portal/v1`.
+List endpoints return the shared pagination contract (`okPaginated` with
+`TPaginationMeta` from `@ims-erp/common`, query parameters `page` and `limit`);
+the Astro apps read the same envelope types. Self-service `/users/me*`
 and the public `/invitations/claim/:token`, `/username-availability` stay
 un-prefixed — they must not inherit the admin guard. Route moves change the
 backend **and** `apps/web-admin` (typed calls, sidebars, `routeTree.gen.ts` in
@@ -171,7 +201,7 @@ the same change); a backend-only move is an incomplete change.
 Creating, updating, or deleting a feature module — and any backend feature
 work that adds or changes endpoints, services, repositories, Drizzle schemas,
 or migrations — passes through two gates **before** code and one **after** it.
-The schema contract is 270 tables across 27 modules; nobody holds it in their
+The schema contract is 188 tables across 18 schemas; nobody holds it in their
 head, and inventing a column or a cross-module link is the most expensive
 mistake available here.
 
@@ -179,20 +209,21 @@ mistake available here.
 `erp-database-schema` skill; follow its order:
 
 1. `docs/database/docs.dbml` — canonical persistence contract. Never read its
-   ~7,300 lines linearly: `grep -n "^// MODULE:" docs/database/docs.dbml`,
+   ~5,500 lines linearly: `grep -n "^// MODULE:" docs/database/docs.dbml`,
    then read the header note and the tables of your module plus the tables of
    any module you reference.
 2. `docs/database/module-ownership.md` — who owns which schema, the cross-module
-   contract methods (`resolveX` / `assertXOwnedBy`), the one two-schema
-   exception (Inventory: `warehouse` + `inventory`).
+   contract methods (`resolveX` / `assertXOwnedBy`); every business module has
+   exactly one schema (the old Inventory two-schema exception is gone,
+   warehouses live in `inventory`; `user` and `organization` share `auth`).
 3. `docs/database/integrity-and-consistency.md` — FK policy, soft delete,
    uniqueness, concurrency, status vocabularies.
 4. `docs/database/data-dictionary.md` — column conventions (uuid pk, tenant
    column, datetimes, money, quantity, codes).
 5. `docs/database/logical-references.md` — mandatory when the change crosses a
    module boundary.
-6. `docs/database/implementation-phases.md` — only when the task depends on a
-   step that has not landed yet.
+6. `docs/database/implementation-phases.md` — the history of ADR-0024 (P0-P8),
+   what was verified and what is still open; read it for that context only.
 
 Say which of these you skipped and why. `docs/database/docs.dbml` is canonical:
 when a Drizzle schema file and `docs.dbml` disagree, `docs.dbml` wins and the
@@ -256,7 +287,12 @@ of them is a bug, not a partial state.
   `Record<keyof typeof en, string>` so the key set must match `en` exactly.
   **Never type an `id` bundle as `typeof en`** — that makes values literal
   types and breaks translation.
-- Namespaces: `common`, `nav`, `auth`, `account`, `admin`.
+- Namespaces: one bundle file per namespace under `src/en` and `src/id`
+  (`common`, `nav`, `auth`, `account`, `admin`, `api`, `crm`, `sales`,
+  `procurement`, `inventory`, `assets`, `finance`, `tax`, `projects`,
+  `licensing`, `hr`, `documents`, `signatures`, `notifications`,
+  `integrations`, `settings`, `dashboard`, `claim`, `email`). `api` keys are
+  resolved by the backend from error keys.
 
 **Adding or changing a key.** Edit the `en` bundle, then the `id` bundle. Both
 are required. `packages/locales/src/locale-parity.test.ts` enforces key-set

@@ -23,29 +23,31 @@ call the owning module's assert method first**.
 
 ### 2.1 The rule
 
-A foreign key may only connect two tables of the same module. `docs.dbml`
-contains 233 `Ref:` declarations and 0 cross-module refs.
+A foreign key may only connect two tables of the same schema. `docs.dbml`
+contains 162 `Ref:` declarations and 0 cross-module refs, across 188 tables in
+18 schemas (ADR-0024).
 
 Verified by parsing the file (`validate-dbml.ts`, `@dbml/core`):
 
 ```text
-parsed: 270 tables
+parsed: 188 tables, 162 refs
 cross-module refs: 0
 timestamp gaps: 0
 drizzle parity drift: 0
 ```
 
-Every module owns exactly one Postgres schema, so a `Ref:` that crosses a
-schema boundary would also cross a module boundary. The retired `warehouse`
-schema is the one historical exception: its tables were folded into
-`inventory` (ADR-0008), so what used to be an intra-module two-schema pair is
-now an ordinary intra-schema reference.
+Every business module owns exactly one Postgres schema, so a `Ref:` that
+crosses a schema boundary would also cross a module boundary. The retired
+`warehouse` schema was folded into `inventory` (ADR-0008), so what used to be
+an intra-module two-schema pair is now an ordinary intra-schema reference.
 
 ### 2.2 No exception remains
 
-There is no longer any module spanning two schemas. Warehouse and Inventory are
-one module inside one schema, so every schema boundary in the contract is also
-a module boundary and is crossed logically, never by a foreign key.
+No business module spans two schemas. The one shared schema is `auth`, which
+the `user` and `organization` backend modules both use because Better Auth owns
+those tables; it is still a single schema, so every schema boundary in the
+contract is crossed logically, never by a foreign key. The `webhook` module
+has no schema and no tables.
 
 ### 2.3 `ON DELETE` policy
 
@@ -59,14 +61,15 @@ Concrete mapping:
 
 | Category | Action |
 |---|---|
-| Better Auth children (sessions, accounts, members, invitations, passkeys) | `CASCADE` |
-| Document lines (quotation items, invoice items, journal lines, payslip items) | `CASCADE` |
-| Master data referenced by money records (supplier, purchase order, chart of accounts, cash/bank account, employee, item, unit, warehouse, price list, leave type, tax type, accounting period) | `RESTRICT` |
-| Self-referencing hierarchies (parent branch, parent department, parent account, parent category, parent menu, reversed entry, superseded document, renewed contract) | `SET NULL` |
-| Optional links (invoice of a receipt, payment of a receipt, project of a ticket, journal entry of a depreciation) | `SET NULL` |
+| Better Auth children (sessions, accounts, members, invitations, passkeys, organization settings) | `CASCADE` |
+| Document lines (quotation items, order items, invoice items, journal lines, purchase order items) | `CASCADE` |
+| Master data referenced by money records (customer company, supplier company, product, warehouse, chart of accounts, accounting period, cash/bank account, tax) | `RESTRICT` |
+| Self-referencing hierarchies and history links (parent category, parent ticket, superseded document, reversed journal entry, renewed license contract, employee manager) | `SET NULL` |
+| Optional links (storage bin of a stock row, gateway of a payment, template of a ticket or document, journal entry of a depreciation) | `SET NULL` |
 
-`RESTRICT` is the default posture for anything a financial record points at.
-`CASCADE` is used only where the child is meaningless alone.
+Across the 162 declared `Ref:` lines the split is `CASCADE` 72, `RESTRICT` 64,
+`SET NULL` 26. `RESTRICT` is the default posture for anything a financial
+record points at. `CASCADE` is used only where the child is meaningless alone.
 
 ## 3. Tenant consistency
 
@@ -78,35 +81,39 @@ legally point at a row of tenant B.
 
 ### 3.2 The rule
 
-**Every query filters on `organization_id`.** Every write sets
-`organization_id` from the request context, never from the client body.
+**Every query on an organization-scoped table filters on `organization_id`**
+(with the `IS NULL OR` form where the table defines a global scope, see
+`data-dictionary.md` 1.2). Every write sets `organization_id` from the request
+context, never from the client body. Tables without the column are
+company-wide (ADR-0011) and are protected by role permissions, not by a
+tenant filter.
 
 ### 3.3 The database backstop, inside a module
 
-A composite foreign key ties the parent and the child to the same tenant:
+A composite foreign key can tie a parent and a child to the same tenant:
 
 ```sql
 FOREIGN KEY (organization_id, parent_id) REFERENCES parent (organization_id, id)
 ```
 
-These composite foreign keys are implemented directly in the Drizzle schema
-files, because DBML cannot express a composite `Ref:` (`@dbml/core` rejects
-it with "A Ref field must be a binary relationship" and "Unequal fields in
-ref endpoints").
+DBML cannot express a composite `Ref:` (`@dbml/core` rejects it with "A Ref
+field must be a binary relationship" and "Unequal fields in ref endpoints"),
+and the baseline v2 Drizzle schemas **do not declare any composite tenant
+foreign key** (verified: no `foreignKey()` in `apps/backend/drizzle/schemas`).
+Two properties of the SQL standard explain why this backstop is weak now:
 
-Two properties of the SQL standard matter here:
-
-- The referenced columns must have a **unique constraint** on
-  `(organization_id, id)`. Postgres does not accept a plain unique index on
-  `id` as the target of a composite foreign key, so each parent table gets
-  a `UNIQUE (organization_id, id)` constraint.
+- The referenced columns would need a **unique constraint** on
+  `(organization_id, id)`; Postgres does not accept a plain unique index on
+  `id` as the target of a composite foreign key.
 - The default match type is `MATCH SIMPLE`: **if any referencing column is
-  NULL, the constraint is satisfied without a check.** So the composite
-  foreign key only bites once `organization_id` is `NOT NULL` and the parent
-  id is `NOT NULL`. Both are the case for every tenant-scoped table today.
-  Once ADR-0014 flips the tenant column to nullable, a row without an
-  organization drops out of this backstop and relies on the owning module's
-  contract method instead.
+  NULL, the constraint is satisfied without a check.** Since ADR-0014 made the
+  tenant column nullable everywhere it exists, a composite foreign key could
+  not guard a row without an organization anyway.
+
+Tenant consistency inside a module therefore comes from the owning service
+(the same assert-by-organization rule used across modules), and plain
+single-column foreign keys guarantee only existence. If a composite backstop
+is reintroduced it must be added to the Drizzle schema first and recorded here.
 
 ### 3.4 The database backstop, across modules
 
@@ -114,11 +121,13 @@ A composite foreign key across modules would violate the isolation rule.
 Across modules, tenant consistency comes from the contract:
 
 ```text
-assertCustomerOwnedByOrganization(customerId, orgId)
+assertCustomer(customerId, orgId)      // ExportedCustomerService
 ```
 
-The owning module must expose an assert method that takes the id **and**
-the organization id, and must reject a mismatch. A contract method that
+The owning module must expose an assert method that takes the id (and the
+organization id wherever the target table is organization-scoped), and must
+reject a mismatch. Company-wide targets (for example `customer.*`) have no
+organization to match; the assert checks existence and liveness only. A contract method that
 only takes an id is not sufficient.
 
 ### 3.5 Where the tenant column is nullable
@@ -126,20 +135,33 @@ only takes an id is not sufficient.
 | Table | Why |
 |---|---|
 | `audit.audit_logs.organization_id` | a global admin action can happen outside any organization |
-| `location.*` | global reference data, not tenant scoped |
-| `inventory.*` | company-wide scope (ADR-0008) |
-| `assets.*` | company-wide scope (ERP-0036 D11) |
-| `company.*` | the one company behind every organization (ERP-0042) |
-| `code_number.series` | company-wide numbering authority (ERP-0009) |
-| `document.*` | company-wide documents allowed (ERP-0042) |
+| `inventory.*` (where the column exists) | global scope: `NULL` = company-wide (ADR-0008) |
+| `document.*` | company-wide documents allowed |
+| `finance.*`, `tax.*`, `payment.payments`, `payment.payment_allocations`, `payment.gateways` | the column is a nullable logical reference; presence is a service-layer fact (ADR-0014) |
+| `auth.user_invitations` | an invitation may precede an organization |
+| the organization-scoped part of `sale`, `project`, `procurement`, `ticket`, `human_resource`, `automation` | e.g. `sale.invoices`, `project.types`, `procurement.purchase_requests`, `ticket.ticket_templates`, `human_resource.employees`, `automation.outbox_messages` |
 
-Every other table that carries the column has `organization_id text NOT NULL`
-today. ADR-0014 flips the cross-module reference columns to nullable
-everywhere, tenant column included; the flip is tracked as ERP-0037 and the
-contract method, not the constraint, becomes the presence check.
+No `organization_id` at all: `location.*`, `company.*`, `customer.*`,
+`supplier.*`, `notification.*`, every `<schema>.code_numberings` table, the
+module `settings` tables keyed only by `(setting_group, setting_key)` (all
+except `finance.settings` and `payment.settings`, which carry the column), and
+the company-wide core of `sale` / `project` / `procurement` / `ticket` /
+`human_resource` (ADR-0011).
 
-Scope carve-out: `NULL` means "company-wide" only on the modules listed
-above. Everywhere else `NULL` means "not (yet) linked" (ADR-0014).
+`organization_id text NOT NULL`: `auth.members`, `auth.invitations` and
+`auth.organization_settings` (intra-schema foreign key to
+`auth.organizations.id`, `ON DELETE CASCADE`). In the Drizzle schemas the
+column is also `NOT NULL` on `inventory.warehouse_organizations`,
+`inventory.stock_adjustments`, `inventory.stock_adjustment_items`,
+`sale.invoices`, `sale.invoice_items`, `sale.receipts` and a few further
+`finance` / `payment` / `tax` columns, where `docs.dbml` still shows the column
+nullable (known drift between `docs.dbml` and the Drizzle files; parity checks
+do not compare nullability).
+
+Scope carve-out: `NULL` means "company-wide" only on the tables whose note says
+"Null means global/company-wide" (mainly `inventory.*`) and on
+`audit.audit_logs`. Everywhere else `NULL` means "not (yet) linked"
+(ADR-0014); the contract method, not the constraint, is the presence check.
 
 ## 4. Soft delete consistency
 
@@ -152,17 +174,19 @@ milliseconds of the deletion.
 
 | Consequence | Handling |
 |---|---|
-| A reused code would collide with the unique index | **Partial unique index** `WHERE deleted_at IS NULL` on every `(organization_id, code)` pair, written directly in the Drizzle schemas (`uniqueIndex(...).where(sql\`deleted_at IS NULL\`)`). |
+| A reused code would collide with the unique index | **Partial unique index** `WHERE deleted_at IS NULL` on the unique keys that must free their value on delete (most `code`, `slug`, `sku` and natural-key uniques), written directly in the Drizzle schemas (`uniqueIndex(...).where(sql\`deleted_at IS NULL\`)`). |
 | A deleted parent would break the child | `ON DELETE` rules only matter for a real `DELETE`, which feature code does not issue. Soft delete does not cascade, so the child keeps its history. |
 | A reference to a deleted row | The referencing module reads the target through the owning module's contract, which returns a soft-deleted row for history reads and refuses it for new writes. |
 | Master data referenced by money | Cannot be hard deleted at all. The `deleted_at` marker is the only state, and the owning module refuses to soft-delete it when a financial record references it. |
 
-Append-only ledgers, logs and projections (`inventory.stock_movements`,
-`inventory.stock_balances`, `inventory.serial_tracked_items`,
-`inventory.lot_batches`, `ticket.ticket_status_history`,
-`audit.audit_logs`) carry no `deleted_at`: a ledger row is corrected by a
-compensating row, and a projection row is rebuilt, never deleted. This is
-documented in each table's note.
+Append-only ledgers, logs and projections (`inventory.movements`,
+`inventory.stocks`, `inventory.borrowing_events`,
+`inventory.borrowing_request_events`, `finance.ar_open_items`,
+`finance.ap_open_items`, `audit.audit_logs`) carry no `deleted_at`: a ledger
+row is corrected by a compensating row, and a projection row is rebuilt,
+never deleted. This is documented in each table's note. The Better Auth
+tables other than `auth.users` and `auth.organizations` are hard deleted by
+Better Auth itself and must never gain a `deleted_at` column.
 
 ### 4.3 The read rule
 
@@ -173,20 +197,30 @@ asks for the trash. A soft-deleted row must never appear in a default read.
 
 ### 5.1 Business codes
 
-`(organization_id, code)` is unique on every document and master table that
-has a `code`. Because the row may be soft deleted, the real index is
-partial:
+`code` (company-wide tables) or `(organization_id, code)` (organization-scoped
+tables) is unique on every document and master table that has a `code`.
+Because the row may be soft deleted, the real index is partial:
 
 ```sql
-CREATE UNIQUE INDEX customers_org_code_uq
-  ON crm.customers (organization_id, code)
+CREATE UNIQUE INDEX products_slug_uq
+  ON inventory.products (slug)
   WHERE deleted_at IS NULL;
 ```
 
+Not every code index is partial: for example `finance.journal_entries`
+declares a plain `(organization_id, code)` unique
+(`journal_entries_org_code_uq`), so a soft-deleted entry keeps its code
+reserved. Read the index in the Drizzle schema before assuming either form.
+
 A unique index ignores `NULL`, so a nullable `organization_id` (ADR-0014)
-would let two unlinked rows share a code. Those tables use the ADR-0008 pair:
-`(organization_id, code) WHERE organization_id IS NOT NULL` plus
-`(code) WHERE organization_id IS NULL`.
+would let two unlinked rows share a code. Tables with a global scope use the
+ADR-0008 pair: `(organization_id, code) WHERE organization_id IS NOT NULL`
+plus `(code) WHERE organization_id IS NULL` (for example
+`inventory.products`, `inventory.movements`, `inventory.borrowings`).
+`inventory.items.code` is globally unique in a single index.
+
+Codes are allocated from the owning module's `<schema>.code_numberings`
+table (see 7.2).
 
 ### 5.2 Global reference data
 
@@ -202,21 +236,33 @@ Several tables have a natural key that is not a code:
 
 | Table | Natural key |
 |---|---|
-| `crm.customer_credit_limits` | `(organization_id, customer_id, effective_from)` |
-| `catalog.item_prices` | `(price_list_id, item_id, valid_from)` |
-| `catalog.item_uom_conversions` | `(item_id, from_unit_id, to_unit_id)` |
-| `catalog.item_bundles` | `(bundle_item_id, component_item_id)` |
-| `catalog.item_suppliers` | `(item_id, supplier_id)` |
-| `hr.attendance_records` | `(organization_id, employee_id, attendance_date)` |
-| `hr.employee_salary_components` | `(employee_id, component_code, effective_from)` |
-| `payroll.payroll_periods` | `(organization_id, period_year, period_month)` |
-| `payroll.payslip_items` | `(payslip_id, sequence)` |
-| `accounting.account_balances` | `(account_id, accounting_period_id)` |
-| `accounting.opening_balances` | `(account_id, as_of_date)` |
-| `assets.asset_depreciations` | `(asset_id, period_year, period_month)` |
-| `approval.approval_policy_versions` | `(approval_policy_id, version)` |
-| `approval.approval_stages` | `(approval_request_id, stage_order)` |
-| `license_*` | see `docs.dbml` |
+| `inventory.stocks` | `(organization_id, warehouse_id, product_id, bin_id)` for scoped rows, `(warehouse_id, product_id, bin_id)` for global rows (`NULLS NOT DISTINCT`) |
+| `inventory.borrowing_items` | `(borrowing_request_id, item_id)` |
+| `inventory.tool_set_items` | `(tool_set_id, item_id)` |
+| `inventory.warehouse_storages` | `(warehouse_id, code)` |
+| `inventory.warehouse_managers` | `(warehouse_id, user_id)` |
+| `inventory.warehouse_organizations` | `(warehouse_id, organization_id)` |
+| `sale.targets` | `(organization_id, sales_user_id, period_year, period_month)` |
+| `finance.accounting_periods` | `(organization_id, period_year, period_month)` |
+| `finance.journal_lines` | `(journal_entry_id, line_no)` |
+| `finance.journal_entries` | `(organization_id, idempotency_key)` when the key is set |
+| `finance.account_balances` | `(account_id, accounting_period_id)` |
+| `finance.opening_balances` | `(account_id, as_of_date)` |
+| `finance.asset_depreciations` | `(item_id, period_year, period_month)` |
+| `finance.ar_open_items` / `ap_open_items` | `(organization_id, invoice_id)` / `(organization_id, supplier_bill_id)` |
+| `tax.taxes` | `(organization_id, code, effective_from)` |
+| `tax.records` | `(organization_id, tax_type_id, period_year, period_month)` |
+| `payment.payment_allocations` | `(payment_id, payable_type, payable_id)` |
+| `payment.payments` | `(provider, provider_reference)` and `receipt_id`, both partial |
+| `human_resource.attendances` | `(employee_id, attendance_date)` |
+| `human_resource.employee_salaries` | `(employee_id, effective_from)` |
+| `human_resource.employee_salary_records` | `(period, employee_id)` |
+| `project.license_activations` | `(license_key_id, instance_id)` among live active rows |
+| `project.kpi_evaluations` | `(kpi_definition_id, project_id, period_year, period_month)` |
+| `document.templates` | `(organization_id, code, version)` |
+| `document.tag_links` | `(document_id, document_tag_id)` |
+| `automation.whatsapp_messages` | `(direction, external_id)` |
+| `<schema>.code_numberings` | `(code_type)` among live rows |
 
 ## 6. Separation of duties
 
@@ -248,23 +294,25 @@ executed_by <> requested_by
 executed_by <> approved_by
 ```
 
-Enforced by the service layer, per row, before the write. The Approval
-module additionally carries `no_self_approval boolean NOT NULL DEFAULT true`
-on `approval.approval_policy_versions`, so the rule is data, not code.
+Enforced by the service layer, per row, before the write. There is no
+central approval module or `no_self_approval` policy flag any more
+(ADR-0024): the rule lives in each owning module's service (for example the
+`payment.payments` note states that execution requires approval and is not
+allowed by the requester).
 
 ### 6.3 Approval flow integrity
 
+Approval is a per-module status flow, not a shared engine. The
+`approval.*` tables (policies, versions, requests, stages, decisions,
+delegations) were removed.
+
 | Rule | Where it lives |
 |---|---|
-| Only a `submitted` / `pending` record can be approved | service, guarded by the `status` `CHECK` |
-| A stage opens only when the previous stage is finished | service, `approval.approval_stages.stage_order` |
-| The approver count of a stage must be reached | service, `required_approver_count` |
-| The amount must fall in the band of the stage | service, `min_amount` / `max_amount` on the stage and the threshold |
-| A duplicate decision on the same stage is rejected | service, unique index `(approval_stage_id, approver_user_id)` on `approval.approval_decisions` |
-| A decision log is append only | no `deleted_at` on `approval.approval_decisions` |
-| A policy version is immutable | no `deleted_at`, no `updated_at` on `approval.approval_policy_versions` |
-| The request points at the version that was in force | `approval.approval_requests.approval_policy_version_id NOT NULL` |
-| A change of the source document invalidates the request | `approval.approval_requests.source_version`, compared by the owning module on write |
+| Only a `submitted` record can be approved | service, guarded by the module's `status` `CHECK` |
+| Approval is one level for purchase requests | `procurement.purchase_requests` note: `draft -> submitted -> approved -> ordered`, rejection returns to `draft` with a reason |
+| The actor of each step is recorded | `approved_by` / `approved_at`, `posted_by` / `posted_at`, `reversed_by` ... columns on the document |
+| A ledger row is never edited after posting | `inventory.movements` and `finance.journal_entries` are corrected by a reversal |
+| A duplicate posting is refused | `finance.journal_entries (organization_id, idempotency_key)`, and idempotent `posted` handling for `inventory.stock_adjustments` |
 
 ## 7. Concurrency
 
@@ -275,7 +323,7 @@ the expected previous state, and the service checks the affected row count.
 If zero rows were updated, another actor already moved the record.
 
 ```sql
-UPDATE finance.payments
+UPDATE payment.payments
    SET status = 'approved', approved_by = $1, approved_at = $2
  WHERE id = $3
    AND status = 'submitted';
@@ -287,30 +335,40 @@ approval" true under concurrency, without a lock.
 
 ### 7.2 Numbering
 
-`code_number.series` is the single numbering authority. Allocation is a
-locked row update inside the same transaction as the insert:
+There is no central numbering schema (ADR-0024 Q6, Q32). Every business
+schema owns a `<schema>.code_numberings` table, written only through that
+module's `<Module>NumberingService`. Allocation is one atomic statement per
+`(code_type, period_key)`:
 
 ```sql
-UPDATE code_number.series
-   SET next_number = next_number + 1
- WHERE organization_id = $1 AND module = $2 AND document_type = $3
- RETURNING next_number - 1;
+INSERT INTO sale.code_numberings (code_type, period_key, next_number, ...)
+VALUES ($1, $2, 2, ...)
+ON CONFLICT (...) DO UPDATE SET next_number = code_numberings.next_number + 1
+RETURNING next_number - 1;
 ```
 
-The `UPDATE ... RETURNING` takes the row lock, so two concurrent
-transactions cannot receive the same number.
+The conflict update takes the row lock, so two concurrent transactions cannot
+receive the same number. A new period (`2026`, `2026-11` or `all`, from
+`reset_policy`) restarts at 1. The statement above is illustrative: the real
+SQL is in the numbering service, and the table's contract is in `docs.dbml`.
 
 ### 7.3 Stock
 
-`inventory.stock_balances` is a projection, never the truth. The truth is
-`inventory.stock_movements`, which is append only. The balance is updated
-in the same transaction as the movement, with the movement row locked
-first. A balance that does not match the sum of its movements is a bug in
-the Inventory service, not a state to be tolerated.
+`inventory.stocks` is a projection, never the truth. The truth is
+`inventory.movements`, which is append only and covers both products and
+physical items. The balance is updated by the service (never by a trigger) in
+the same transaction as the movement; `recomputeFromLedger` is the repair
+operation. A balance's `organization_id` follows the **warehouse** scope, not
+the caller: a global warehouse has one shared balance row. A balance that does
+not match the sum of its movements is a bug in the Inventory service, not a
+state to be tolerated.
 
 ### 7.4 Ledger posting
 
-`accounting.journal_entries` is posted in one transaction:
+`finance.journal_entries` is posted in one transaction by the finance posting
+service; other modules never write journal rows directly (`source_module`
+names the producer: `finance`, `sale`, `procurement`, `inventory`, `payment`,
+`tax`, `human_resource`):
 
 1. Insert the header with `total_debit = total_credit` (the `CHECK` enforces it).
 2. Insert the lines, each with exactly one positive side.
@@ -323,16 +381,19 @@ edited; a correction is a reversing entry linked through
 
 ### 7.5 Idempotency
 
-An approval decision, a payment execution and a stock posting must be safe
-to retry. The service uses a unique natural key as the idempotency anchor:
+A journal posting, a payment execution or webhook, and a stock posting must
+be safe to retry. The service uses a unique natural key as the idempotency
+anchor:
 
 | Operation | Anchor |
 |---|---|
-| Approval decision | `(approval_stage_id, approver_user_id)` |
-| Payment allocation | `(payment_id, invoice_id)` |
-| Payslip line | `(payslip_id, sequence)` |
-| Segment membership | `(segment_id, customer_id)` |
-| Discount request parent | exactly one of `quotation_id` / `sales_order_id` |
+| Journal posting | `(organization_id, idempotency_key)` on `finance.journal_entries` |
+| Payment allocation | `(payment_id, payable_type, payable_id)` |
+| Gateway payment webhook | `(provider, provider_reference)` and `receipt_id` on `payment.payments`; a replayed webhook finds `receipt_id` and does nothing |
+| Outbox message | `dedupe_key` on `automation.outbox_messages` |
+| WhatsApp message | `(direction, external_id)` on `automation.whatsapp_messages` |
+| Lead intake | `idempotency_key` on `project.leads` |
+| Stock adjustment posting | idempotent `posted` transition (only `posted` writes movements) |
 
 ## 8. Value integrity
 
@@ -342,28 +403,29 @@ to retry. The service uses a unique natural key as the idempotency anchor:
 - Every money column has a `CHECK` for the sign: `>= 0` for a total, `> 0`
   for a transaction amount.
 - Derived totals are checked by the database where the identity is fixed:
-  - `accounting.journal_entries`: `total_debit = total_credit`
-  - `accounting.journal_lines`: exactly one positive side
-  - `budgeting.cash_flow_plans`:
-    `closing_balance = opening_balance + inflow_total - outflow_total`
-  - `investor.profit_shares`: `net_amount = gross_amount - tax_amount`
+  - `finance.journal_entries`: `total_debit = total_credit`
+  - `finance.journal_lines`: exactly one positive side
+  - `finance.employee_advances`: `settled_amount >= 0` and
+    `settled_amount <= amount`
 - Header totals are recomputed from the lines by the service on every write.
   The stored total is a cache, the lines are the truth.
 
 ### 8.2 Quantity
 
-`numeric(18,3)`, `CHECK` for `> 0` on a line quantity and `>= 0` on a
-balance. A quantity of zero is never a line.
+`numeric(18,3)` (a few line quantities use `numeric(18,4)`), `CHECK` for
+`> 0` on a line quantity and `>= 0` on a balance (`inventory.stocks`). A
+quantity of zero is never a line. `inventory.movements` carries a signed
+`quantity <> 0` check.
 
 ### 8.3 Dates
 
 | Rule | Check |
 |---|---|
 | A period ends after it starts | `end_date >= start_date` |
-| A due date is after an issue date | `due_date >= issue_date` |
-| A contract ends after it starts | `end_date IS NULL OR end_date >= start_date` |
-| An expiry is after an issue | `expires_on > issued_on` |
-| A hire date is before a termination date | `termination_date >= hire_date` |
+| A due date is after an issue date | `due_date IS NULL OR issue_date IS NULL OR due_date >= issue_date` |
+| An optional range ends after it starts | `end_date IS NULL OR start_date IS NULL OR end_date >= start_date` |
+| A warranty expires after acquisition | `warranty_expires_on IS NULL OR acquired_on IS NULL OR warranty_expires_on >= acquired_on` |
+| A hire date is before a termination date | `termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date` |
 | A month number | `BETWEEN 1 AND 12` |
 | A percentage | `BETWEEN 0 AND 100` |
 | A progress | `BETWEEN 0 AND 100` |
@@ -392,16 +454,16 @@ split by ownership, with one side authoritative.
 
 | Concern | Authoritative | Derived / mirror |
 |---|---|---|
-| Stock quantity | `inventory.stock_movements` | `inventory.stock_balances` |
-| Item price | `catalog.item_prices` | `catalog.items.selling_price` is the default only |
-| Money movement | `finance.payments` | `sales.receipts`, `finance.cash_bank_transactions`, `payroll.payroll_payments` |
+| Stock quantity | `inventory.movements` | `inventory.stocks` |
+| Product master | `inventory.products` | — (the old `catalog.items` and price lists are gone) |
+| Physical unit | `inventory.items` | — |
+| Money movement | `payment.payments` | `sale.receipts` (proof only), `finance.cash_bank_transactions` |
+| Payables settled by a payment | `payment.payment_allocations` | the `status` of the invoice / bill / advance |
 | Employee advances | `finance.employee_advances` | — |
 | Expense settlement | `finance.expense_settlements` | — |
-| Goods and services | `catalog.items` | — |
-| Customer address | `crm.customer_addresses` (`kind` discriminator) | — |
-| General ledger balance | `accounting.journal_entries` + `journal_lines` | `accounting.account_balances` |
+| Customer address | `customer.addresses` / `customer.company_addresses` | — |
+| General ledger balance | `finance.journal_entries` + `journal_lines` | `finance.account_balances`, `finance.ar_open_items` / `ap_open_items` |
 | Role and permission | code, `packages/common/src/authorization/erp-permissions.ts` | `auth.members.role` |
-| Approval decision | `approval.approval_decisions` | the `status` of the business document |
 | Document version | `document.documents` | `document.templates.version` |
 
 ## 10. What the database cannot guarantee
@@ -412,8 +474,8 @@ Stated plainly, so nobody assumes otherwise.
 |---|---|---|
 | Cross-module reference to another tenant | no foreign key exists | the owning module's assert method, called before the write |
 | Cross-module reference to a deleted row | no foreign key exists | the owning module's resolve method returns the state |
-| Self approval | needs two columns of the same row compared | service check plus the `no_self_approval` policy flag |
-| Approval of a stale document | needs the source row | `source_version` comparison by the owning module |
+| Self approval | needs two columns of the same row compared | service check in the owning module (there is no policy flag table any more) |
+| A tenant mismatch inside one module | no composite foreign key exists in the schemas (see 3.3) | the owning service filters and asserts by organization |
 | Stock going negative | needs the sum of the ledger | the Inventory service computes the available quantity inside the transaction |
 | Duplicate request on retry | needs an idempotency key from the client | service idempotency key, plus the natural key unique index |
 | A direct `UPDATE` bypassing the service | — | database role permissions: the application role has no `DELETE` on ledger tables, and no `TRUNCATE` anywhere |
@@ -430,6 +492,8 @@ Before a schema change is accepted:
 5. Every new logical reference has the standard note wording and a contract
    method on the owning side.
 6. Every new cross-module link has **no** `Ref:`.
-7. Every new unique code index is partial with `WHERE deleted_at IS NULL`.
+7. Every new unique code index is partial with `WHERE deleted_at IS NULL`
+   unless the table deliberately keeps deleted codes reserved (state it in
+   the table note).
 8. The seed still runs twice without error.
 9. The tests cover authorization, ownership and validation for the change.

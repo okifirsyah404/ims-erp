@@ -17,7 +17,7 @@ ADR-0020; this guide is the step-by-step version. Indonesian version:
 ## 1. What talks to what
 
 ```text
-Customer WhatsApp ──► WAHA ──POST /integrations/whatsapp/webhook──► ERP
+Customer WhatsApp ──► WAHA ──POST /webhooks/whatsapp──► ERP
 ERP ──POST /api/sendText──► WAHA ──► Customer WhatsApp      (replies)
 ERP outbox ──POST N8N_WEBHOOK_URL──► n8n ──► WAHA / email   (notifications)
 ERP ──POST <AI_BASE_URL>/chat/completions──► AI provider    (optional)
@@ -66,7 +66,7 @@ configured") and can be sent from **Webhooks (n8n)** once set.
 
 1. Start the WAHA session and scan the QR code with the dedicated number.
 2. In the session's webhook settings:
-   - URL: `<APP_URL>/integrations/whatsapp/webhook`
+   - URL: `<APP_URL>/webhooks/whatsapp`
    - Events: `message` only
    - HMAC key: the value of `WAHA_WEBHOOK_SECRET`
      (WAHA then sends `X-Webhook-Hmac`, HMAC-SHA512 of the body).

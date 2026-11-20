@@ -6,9 +6,33 @@ real and were inspected; test evidence comes from actually executed commands
 proven functionality.
 
 > 2026-10-28: `apps/backend-nest` (referred to below as `apps/backend`) was
-> deleted; `apps/backend-elysia` is the backend. Audit content below is kept as
-> the historical NestJS-era baseline; re-audit backend-elysia before using
-> these findings.
+> deleted; the Elysia backend (now `apps/backend`, formerly `apps/backend-elysia`)
+> is the backend. The "Domain classification", "Baseline checks" and "Known
+> risks" sections below are the **historical 2026-10-25 NestJS-era baseline**,
+> kept for the record; do not read them as current state. Current state is the
+> next section.
+
+## Current state (2026-11-20, ADR-0024 baseline)
+
+Only facts taken from `docs/plan/progress.md` entries of 2026-11-19/20 and from
+the repository tree; nothing here is business acceptance.
+
+| Area | State | Evidence |
+|---|---|---|
+| Schema | 18 Postgres schemas, 188 tables in `docs/database/docs.dbml`; 18 Drizzle schema files in `apps/backend/drizzle/schemas/`; the baseline migration creates 164 tables (the rest of `docs.dbml` is target-only, e.g. `human_resource.employee_addresses`, ticket templates) | `validate-dbml.ts` OK (188 tables, 162 intra-module refs, 169 logical reference columns) on 2026-11-19 |
+| Migrations | one baseline `database/migrations/20261119145940_many_human_robot`; v1 chain archived in `database/migrations-archive/v1`; `generate` then reports no changes | verified 2026-11-19 on a disposable database: `migrate`, `seed` twice (second run inserted 0), `generate` "No schema changes" |
+| Backend modules | 18 schema modules + `webhook` (no schema) mounted in `src/app/app.ts` (plus `user` and `organization`, which sit over the `auth` schema) | live boot 2026-11-20: all controllers resolved through DI |
+| Live API | 69 GET endpoints called against a freshly migrated and seeded disposable database: 65 returned 200, 4 returned 400 (they need query parameters), none 404/5xx | smoke test 2026-11-20; **no UI was opened** and webhooks with a configured gateway, the license machine API and most write paths were **not** exercised |
+| Tests | `bun run test` 7/7 turbo tasks: backend 1232, web-admin 119, locales 98, web-landing 24, web-customer-portal 60 pass; `bun run lint` 0 errors; `tsc` 0 errors | 2026-11-19/20 |
+| Frontend | web-admin wrappers repointed to the new URLs (slices 1-5); landing and portal use the `@ims-erp/common` envelope contract; many new backend tables have no UI yet | `progress.md` 2026-11-19/20; read by controllers, not run in a UI |
+| Astro apps | `@lucide/astro`, `@vite-pwa/astro` and `vite-plugin-pwa` are pinned back to the last building versions (dependabot ignores them); proper adaptation to the newer majors is open | `progress.md` 2026-11-20 |
+
+Open ADR-0024 leftovers (from `progress.md`, 2026-11-20): legacy `crm.*` error
+keys in `customer.errors.ts`; `ExportedFinanceService` / `ExportedJournalService`
+not built; ticket templates and sub-tickets (Q29); the `employee_addresses`
+Drizzle table and controller; supplier address endpoints; the reconciliation
+match route path; the webhook body envelope status for `rejected`/`unknown`
+outcomes; ERP-0070..0089 are all `in-progress`, none `accepted`.
 
 ## Repository state
 
@@ -51,7 +75,7 @@ Legend: **verified working** / **partially implemented** / **scaffold only** /
 | `customer` domain | partially implemented | schema + migration real; repository has only `findById` variants with a questionable scope-compare pattern; controller/service empty; 2 pre-written specs |
 | `investors`, `audit_logs` schema | schema only | `erp-schema.ts` + baseline migration; no code |
 | employee, expense, inventory, notification, organization, payment, product, purchasing, reporting, sales, supplier, warehouse modules (12) | scaffold only | each has a `*.module.ts` registered in `app.module.ts` plus empty controller/service; no DTOs, no queries |
-| Database migrations | verified present | **19 migrations, one per Postgres schema** (squashed 2026-11-14, ADR-0019); `20261028042701_create_auth_schema/` creates the `auth` schema (Better Auth tables, bigint timestamps, FKs/unique slug) plus the ERP-owned `auth.user_invitations`; each later folder adds exactly one schema. Timestamps are bigint unix ms. `drizzle-kit check` and `generate` both run clean against `drizzle.config.ts`. The pre-squash history (57 folders, no `migrations/meta` journal) is in git history only |
+| Database migrations | historical (superseded 2026-11-19 by the single ADR-0024 baseline, see "Current state") | **19 migrations, one per Postgres schema** (squashed 2026-11-14, ADR-0019); `20261028042701_create_auth_schema/` creates the `auth` schema (Better Auth tables, bigint timestamps, FKs/unique slug) plus the ERP-owned `auth.user_invitations`; each later folder adds exactly one schema. Timestamps are bigint unix ms. `drizzle-kit check` and `generate` both run clean against `drizzle.config.ts`. The pre-squash history (57 folders, no `migrations/meta` journal) is in git history only |
 | Seeders | partially implemented | `database/seeders/` with runner + `auth.seeder.ts` and raw Indonesian address JSON (provinces/regencies/districts/villages); ERP-domain seeders absent |
 | web-admin routes | scaffold only | only `/` ("Welcome Home!") and `/login`; `routeTree.gen.ts` generated; no authenticated layout wired to routes |
 | web-admin shell | scaffold only | `main-sidebar.tsx` is untouched shadcn sample data ("Acme Inc", Playground/Models nav) |
@@ -88,6 +112,13 @@ Failing suites, grouped by cause:
 Found while rebuilding M08 (PR #83) and M04 (PR #84) on `main` @ 89940c0.
 Not caused by those PRs; recorded here per the Definition of Done.
 
+> Historical (2026-11-12 → 2026-11-15). The module and table names below
+> (`accounting`, `hr`, `sales`) predate ADR-0024 (now `finance`,
+> `human_resource`, `sale`), and the `hr.employees` vocabulary row and the
+> "squashed migrations" statements were superseded by the 2026-11-19 baseline;
+> the `DRIZZLE_TOKEN` row is still true for the services listed under their new
+> names (see below).
+
 Re-checked 2026-11-15 on `feat/m08-hr-on-main` after merging `main` @ `2b28fc46`:
 
 - **Resolved by ERP-0052** (migration history squashed to one migration per
@@ -102,8 +133,8 @@ Re-checked 2026-11-15 on `feat/m08-hr-on-main` after merging `main` @ `2b28fc46`
 
 | Issue | Evidence | Workaround used | Owner action |
 |---|---|---|---|
-| `DRIZZLE_TOKEN` injected in a service | `sales/services/invoice.service.ts` (three `this.database.transaction` calls) plus `accounting/services/{bank-reconciliation,cash-bank,month-end-close}.service.ts` — AGENTS hard rule: no service may inject it | none (M04 only added an outbox dependency) | move the transaction behind the repository / transaction runner |
-| `hr.employees` status vocabulary drifts from `docs.dbml` | DBML: `employment_status IN ('active', 'on_leave', 'suspended', 'terminated')`, `employment_type IN ('permanent', 'contract', 'freelance', 'intern')`. Drizzle `hr.schema.ts`: `employment_status IN ('active', 'inactive', 'terminated')`, `employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')` | none — the built schema is authoritative for now; ERP-0034 code only writes `active` / `inactive` / `terminated` | pick one vocabulary, then sync `docs.dbml` and the Drizzle check constraints together (a real migration) |
+| `DRIZZLE_TOKEN` injected in a service | Re-grepped 2026-11-20 (`src/app/*/services`): still present in `sale/services/invoice.service.ts`, `finance/services/{bank-reconciliation,cash-bank,month-end-close,opening-balance,posting,supplier-bill}.service.ts`, `inventory/services/{adjustment,stock}.service.ts` and `payment/services/payment.service.ts` — AGENTS hard rule: no service may inject it. Only the file list was re-checked; the transaction usage in the new files was not read | none (M04 only added an outbox dependency) | move the transaction behind the repository / transaction runner |
+| `human_resource.employees` status vocabulary vs `docs.dbml` (was `hr.employees`) | Row recorded 2026-11-15 against the pre-ADR-0024 `hr.schema.ts`. **Not re-checked** after the move to `human-resource.schema.ts` and the rewritten `docs.dbml` | n/a | re-compare the two vocabularies before relying on this row |
 | Port 3000 clash in dev | `@ims-erp/react-email` preview also binds 3000; the backend gets `127.0.0.1`, the preview `[::1]` | call the backend on `127.0.0.1:3000` | give the preview its own port |
 | No local DB/Redis ports | `docker-compose.yml` publishes no Postgres/Redis ports (only backend 3001 and web-admin 8080); `.env` expects 15432/16379 | override file outside the repo (see `runbook.md`) | add a local override to the repo |
 | JSON columns are `jsonb` | `data-dictionary.md` 1.12 says structured payloads are JSON `text`; 14+ `docs.dbml` columns use `jsonb` | M04 follows the existing `jsonb` practice | decide and fix the dictionary or the columns |

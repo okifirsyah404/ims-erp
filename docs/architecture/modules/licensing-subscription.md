@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "licensing". It is kept for history. Current owner: project (schema `project`: license_* tables; HTTP /projects/licenses and /projects/api/v1/licenses) - see docs/database/module-ownership.md.
+> Mapping: licensing -> project.
+
 # Licensing & Subscription Module (M03)
 
 Code: `apps/backend/src/app/licensing/` (schema `licensing`, company-wide),

@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # ERP-0051 Follow-ups After PR #101
 
 > Status: **open**, written 2026-11-14. Nothing here blocks the merge of

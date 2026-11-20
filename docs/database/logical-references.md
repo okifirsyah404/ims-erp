@@ -45,13 +45,17 @@ Table customer.customers {
 3. **Every cross-module reference is nullable** (ADR-0014). Presence is a
    service-layer fact, enforced by the owning module's contract method, not by
    the database: a soft delete, a merge or a reference that cannot be resolved
-   must never block a write. `docs.dbml` already carries the nullable form for
-   all 169 references; the Drizzle schema files still declare `not null` on the
-   columns listed by ERP-0037 and are flipped module by module until that row
-   closes.
-4. **Tenant match is mandatory.** The referring row and the referenced row
-   must have the same `organization_id`. This is enforced by the owning
-   module's assert method, not by a foreign key.
+   must never block a write. `docs.dbml` carries the nullable form for the
+   references; a few Drizzle columns still declare `organization_id` as
+   `not null` (for example `inventory.stock_adjustments`, `sale.invoices`,
+   `sale.receipts`) where `docs.dbml` shows it nullable. That drift is tracked
+   in `data-dictionary.md` 1.2 and `integrity-and-consistency.md` 3.5.
+4. **Tenant match is mandatory where the target is organization-scoped.** The
+   referring row and the referenced row must have the same `organization_id`
+   (or the target's global scope, ADR-0008). This is enforced by the owning
+   module's assert method, not by a foreign key. Company-wide targets
+   (`customer.*`, `supplier.*`, `project.*` core, `location.*`) carry no
+   organization to match.
 5. **The owning module must expose a resolve/assert contract** that the
    referring module calls before writing.
 6. **A logical reference is never a substitute for an intra-module foreign
@@ -205,7 +209,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sale.returns`  ->  `customer_id`
 - `ticket.tickets`  ->  `customer_id`
 
-### `inventory.products.id` - owner Inventory (warehouse schema), 10 referring columns
+### `inventory.products.id` - owner Inventory, 10 referring columns
 
 - `finance.supplier_bill_items`  ->  `product_id`
 - `procurement.goods_receipt_items`  ->  `product_id`
@@ -282,17 +286,17 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.expense_claims`  ->  `payment_id`
 - `sale.receipts`  ->  `payment_id`
 
-### `inventory.movements.id` - owner Inventory (warehouse schema), 2 referring columns
+### `inventory.movements.id` - owner Inventory, 2 referring columns
 
 - `procurement.goods_receipt_items`  ->  `movement_id`
 - `sale.delivery_note_items`  ->  `movement_id`
 
-### `inventory.warehouse_storages.id` - owner Inventory (warehouse schema), 2 referring columns
+### `inventory.warehouse_storages.id` - owner Inventory, 2 referring columns
 
 - `procurement.goods_receipts`  ->  `bin_id`
 - `sale.delivery_notes`  ->  `bin_id`
 
-### `inventory.warehouses.id` - owner Inventory (warehouse schema), 2 referring columns
+### `inventory.warehouses.id` - owner Inventory, 2 referring columns
 
 - `procurement.goods_receipts`  ->  `warehouse_id`
 - `sale.delivery_notes`  ->  `warehouse_id`
@@ -325,11 +329,11 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 - `sale.invoices`  ->  `payment_term_id`
 
-### `inventory.item_serials.id` - owner Inventory (warehouse schema), 1 referring column
+### `inventory.item_serials.id` - owner Inventory, 1 referring column
 
 - `ticket.tickets`  ->  `item_serial_id`
 
-### `inventory.items.id` - owner Inventory (warehouse schema), 1 referring column
+### `inventory.items.id` - owner Inventory, 1 referring column
 
 - `finance.asset_depreciations`  ->  `item_id`
 
@@ -385,20 +389,18 @@ fixes by name are repeated here.
 
 ### Tenant scope (`organization_id`)
 
-- Every tenant scoped table carries `organization_id`. It is nullable per
-  ADR-0014: `NULL` means global/company-wide data (ADR-0008), and
-  `inventory.warehouses.organization_id` is frozen at `NULL` because warehouse
-  access comes from `warehouse_organizations` (ADR-0010). Drizzle still
-  declares the tenant columns `not null` until ERP-0037 lands.
-- Every read query filters on `organization_id`, always. A missing filter is
-  a bug, not a warning.
+- Organization-scoped tables carry `organization_id`; most business data is
+  company-wide and carries none (ADR-0011). Where present it is nullable per
+  ADR-0014: `NULL` means global/company-wide data on `inventory.*` (ADR-0008),
+  and `inventory.warehouses.organization_id` is frozen at `NULL` because
+  warehouse access comes from `warehouse_organizations` (ADR-0010).
+- Every read query on an organization-scoped table filters on
+  `organization_id`. A missing filter is a bug, not a warning.
 - Every write sets `organization_id` from the request context, never from
   the client body.
-- The composite tenant foreign key in the Drizzle schemas closes
-  the gap **inside** a module: `(organization_id, parent_id)` must match
-  `(organization_id, id)` of the parent. Cross-module the same guarantee is
-  provided by the contract call. The composite FK is `MATCH SIMPLE`, so a
-  `NULL` `organization_id` skips that check (ADR-0014).
+- The Drizzle schemas declare **no composite tenant foreign key** today, so
+  tenant consistency inside a module and across modules is provided by the
+  owning service's assert/resolve call, not by the database.
 
 ### Actor scope (`*_by`, `*_by_user_id`, `requested_by`, `approved_by`)
 
@@ -410,11 +412,13 @@ fixes by name are repeated here.
 
 - The target must be active (`is_active = true` where the column exists).
 - The target must not be soft deleted (`deleted_at IS NULL`).
-- The target must belong to the same organization.
+- Where the target table is organization-scoped, it must belong to the same
+  organization (or be global); company-wide masters have no organization.
 
 ### Document scope (`document_id`, `receipt_document_id`)
 
-- The document must exist in the same organization.
+- The document must exist in the same organization scope (`document.*` rows
+  may be company-wide, `NULL`).
 - A receipt document used as payment evidence must be `issued`, never
   `draft` and never `void`.
 
@@ -426,12 +430,13 @@ fixes by name are repeated here.
 ### Ticket scope (`ticket.tickets.*`)
 
 - A portal customer may list and read only tickets whose `customer_id`
-  matches its linked customer record and whose `organization_id` matches the
-  session's organization.
-- Internal notes (`ticket_messages.is_internal_note`) are filtered out of
-  every portal response at the service layer.
-- `assignee_user_id` must be a member of the ticket's organization with a
-  staff role; portal (customer-role) members can never be assignees.
+  matches its linked customer record. `ticket.tickets` is company-wide and has
+  no `organization_id`.
+- Internal messages (`ticket_messages.visibility = 'internal'`) are filtered
+  out of every portal response at the service layer; only
+  `visibility = 'customer'` messages reach the portal.
+- `assignee_user_id` must be a live user holding `ticket:update` (see the
+  column note); portal customers can never be assignees.
 
 ## How to check this document against the schema
 

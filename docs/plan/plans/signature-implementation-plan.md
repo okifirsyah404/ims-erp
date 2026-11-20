@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Signature implementation plan (ERP-0048 / ERP-0049)
 
 Status: **implemented** (2026-11-16 for requests/evidence/image; 2026-11-17 for

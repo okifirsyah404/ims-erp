@@ -16,8 +16,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   single `auth` schema, shared by Better Auth's 9 core tables and the 6 ERP
   extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 231 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` now checks all 231; before 2026-11-05 it read
+  `docs.dbml` contains 162 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` checks all 162; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 524 such logical reference columns exist (target count re-verified on each validation run, see validate-dbml.ts).
+- 169 such logical reference columns exist across 25 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -225,7 +225,7 @@ no central code-number module.
 ### Not a schema: `webhook`
 
 The `webhook` module (ADR-0024 Q38) owns the inbound provider edge
-(`/webhooks/*`, plus the old URLs kept as aliases until the Q34 cut-over). It
+(`/webhooks/*` only: the old URLs were removed, Q34 revised 2026-11-20). It
 delegates to `ExportedPaymentWebhookService` and
 `ExportedWhatsappWebhookService`: 200 for `accepted|duplicate|ignored`, 401
 for `rejected`, 404 for an unknown provider.

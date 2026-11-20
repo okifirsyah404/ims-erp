@@ -8,26 +8,32 @@ re-mapped. Mark verbatim-mapping as pending.**
 
 ## Quick note on what is real
 
-Modules marked scaffold-only exist as empty `*.module.ts` + empty
-controller/service (see `project-audit.md`). Ownership below is the target map,
-not an implementation claim.
+> Updated 2026-11-20 for ADR-0024: the ERP is **18 Postgres schemas / 188
+> tables** plus the schema-less `webhook` module. The map below is business
+> ownership; per-module tables, contracts and boundaries live in
+> `docs/database/module-ownership.md` and `docs/database/docs.dbml`. A module
+> being listed here is not a claim that every capability is built: see
+> `docs/plan/progress.md` and `docs/plan/backlog.md` for status (all of
+> ERP-0070..0089 were still `in-progress`, none `accepted`, on 2026-11-20).
 
 ## Capability → owner map
 
 | Capability group | Owner module(s) | Coverage |
 |---|---|---|
-| Company, users, roles, permissions, audit | `company`, `code_number`, `document`, `user`, `notification`, `auth` (to be created), Better Auth plugins; `audit.audit_logs` table | Company profile, bank refs and settings = `company.*`; numbering authority = `code_number.series`; issued document registry = `document.*`; audit trail = `audit.audit_logs`; users/roles = Better Auth |
-| Customers & CRM | `customer` (company-wide CRM data), `notification` | Customers + contacts + lead/follow-up planning; approved FAQ knowledge (catalog knowledge) |
-| Suppliers & procurement | `supplier`, `purchasing` | Supplier master, purchase bills, payables, supplier payments |
-| Catalog & stock | `product`, `inventory`, `warehouse` | Products/services + categories/units; stock movements + valuation boundaries; single operational warehouse (physical structure lives in `inventory.*`, ADR-0008) |
-| Sales & payments | `sales`, `payment` | Quotation (SPH), invoice, DP, partial payments, settlements, receipts, receivables |
-| Expenses & accounting | `expense` (operational costs), accounting to be located | COA, opening balances, journals, ledger, trial balance, reconciliation, period closing |
-| Financial reporting & tax | `reporting`; tax to be located | P&L, balance sheet, cash flow, drill-down, configurable tax recap |
-| Assets & projects | not yet assigned (assess: extend `inventory` or a new `asset/project` domain) | Assets/tools incl. depreciation, project progress, handover/BAST |
-| People & payroll | `employee` | Employee master, approved inputs, salary components, payroll run, approval, payslip, posting |
-| Subscription & licensing | `product` + `payment` (assess for a licensing owner) | Packages, contracts, renewal, activation, validation, expiry/suspend |
-| Investors & profit sharing | `investors` table exists; module to be created | Investor master, capital records, approved distributions, payment history |
-| Digital integrations & portals | `payment` (gateway), `notification` (WhatsApp), `user`/`auth` (portal identity) | Checkout, one gateway, WhatsApp AI, optional n8n, customer + investor portals |
+| Company, users, roles, permissions, audit | `company`, `auth` (Identity; `user` and `organization` modules sit over it), `document`, `notification`, `audit` | Company profile and settings = `company.*`; issued document registry = `document.*`; audit trail = `audit.audit_logs`; users, organizations, members = Better Auth; roles are a code-defined enum (no role table). Numbering is per module (`code_numberings` in each schema) |
+| Customers & leads | `customer`, `project` (leads), `automation` | B2B companies and people (incl. portal login) in `customer`; leads and follow-up in `project`; approved FAQ knowledge and WhatsApp in `automation` |
+| Suppliers & procurement | `supplier`, `procurement`, `finance` | Supplier companies/PICs (bank details restricted); purchase requests/orders/receipts/returns; supplier bills and payables in `finance` |
+| Products, stock & warehouse | `inventory` | Products and categories, physical items/assets, stock ledger and balances, adjustments, borrowing, maintenance, disposals; the warehouse tables live in `inventory` (one schema, ADR-0008/ADR-0024) |
+| Sales & payments | `sale`, `payment` | Quotation, order, delivery note, return, invoice, receipt; one payment ledger (channel manual or gateway) with allocations |
+| Accounting & expenses | `finance` | COA, periods, journals, opening balances, cash/bank, reconciliation, supplier bills, AR/AP, expense claims, advances, depreciation, period close |
+| Tax | `tax` | Taxes, period records, corrections, withholding records (configurable recap; filing stays with finance) |
+| Financial reporting | `finance` (reports) | P&L, balance sheet, cash flow, aging; depth of each report is per `progress.md`, not claimed here |
+| Assets & projects | `inventory` (assets/tools, depreciation basis), `project` | Projects, tasks, handover/BAST, costs, warranties; asset depreciation is posted by `finance` |
+| After-sales tickets | `ticket` | Tickets and messages; warranty is checked through `project` |
+| People & payroll | `human_resource` | Employees, attendance, leave, overtime, tasks, salaries and salary records. Payroll run/approval/posting depth: see `progress.md` |
+| Subscription & licensing | `project` | License applications, contracts, keys, activations, events; machine API at `/projects/api/v1/licenses` |
+| Investors & profit sharing | not assigned | The former `investor` module was removed by ADR-0024; business scope still to be decided |
+| Digital integrations & portals | `webhook` (inbound edge), `payment` (gateway), `automation` (n8n outbox, WhatsApp), `customer` (portal login) | Checkout, one gateway, WhatsApp, n8n; customer portal at `/customers/portal/v1`; no investor portal today |
 
 ## Master data catalog (target model)
 
@@ -44,7 +50,7 @@ not an implementation claim.
 5. **Categories & units** — consistent definitions (units, sets, pieces,
    packages, months, years).
 6. **Warehouse** — one operational warehouse (code, name, address, responsible
-   employee).
+   employee); stored in `inventory.warehouses` and related tables.
 7. **Assets/tools** — code, category, serial, acquisition value/date, location,
    responsible person, condition.
 8. **Employees** — code, name, position, contact, joining date, status, salary
@@ -71,9 +77,11 @@ contracts or public API responses.
 
 **One company, multiple internal organizations** (ADR-0001, extended by
 ADR-0007). Better Auth `organization` plugin + `auth.members` provide internal
-role/membership structure (departments, teams, portal groups inside the one
-company). Several organizations may coexist — each with its own membership and
-per-organization role catalog — but they are **not** a tenant dimension: there
+role/membership structure inside the one company (the former `organization`
+schema with branches, departments and positions was removed by ADR-0024;
+`auth.organizations` and `auth.organization_settings` remain). Several
+organizations may coexist — each with its own membership, with roles from the
+closed code-defined enum — but they are **not** a tenant dimension: there
 is no cross-company tenant column in ERP master data, and master data is shared
 company-wide. A later migration path exists if true multi-tenancy is ever
 needed. Portal users get row-scoped ownership checks (customer sees own

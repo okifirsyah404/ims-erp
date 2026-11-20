@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # UAT — M07 Projects and After-Sales
 
 Scope: projects from a deal, checklist and evidence, direct costs and

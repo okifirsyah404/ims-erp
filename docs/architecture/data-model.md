@@ -4,169 +4,63 @@ Schema, keys, constraints, and conventions. Current declarations:
 `apps/backend/drizzle/schemas/*.ts` (auth + per-feature schemas) and
 `apps/backend/drizzle/datatypes/unix-timestamp.ts`.
 
-> 2026-11-13: `apps/backend-elysia` is now `apps/backend`. The schema list
-> below matches `docs/database/docs.dbml`: 28 modules, one Postgres schema each
-> (ERP-0042, ADR-0015; `notification` added by ADR-0016; `payment` added by
-> ADR-0023). `docs.dbml` is canonical if the two disagree.
+> Rewritten 2026-11-20 for ADR-0024 (database normalization baseline v2):
+> **18 Postgres schemas, 188 tables** in `docs/database/docs.dbml`, plus the
+> schema-less `webhook` module. `docs.dbml` is canonical; the Drizzle files in
+> `apps/backend/drizzle/schemas/` mirror it, but the single baseline migration
+> creates **164** tables, so some `docs.dbml` tables are still target-only (for
+> example `human_resource.employee_addresses`; ticket templates and sub-tickets,
+> Q29). Per-module ownership, table counts and contracts live in
+> `docs/database/module-ownership.md`; this file keeps only the cross-cutting
+> summary and the conventions.
 
 ## PostgreSQL schemas
 
-- **`auth`** — Better Auth-owned: `users`, `accounts`, `sessions`, `passkeys`,
-  `organizations` (unique `slug`), `members`, `invitations`, phone/OTP/magic-link
-  tables as generated. Timestamps are bigint milliseconds. FKs cascade to
-  `users.id` for auth-owned tables. ERP-owned extension tables in the same
-  schema include `user_invitations` and `portal_identities` (ERP-0022,
-  ADR-0022): a customer-portal login → `linked_entity_id` (logical reference
-  to `crm.customers.id`) and `contact_id` (→ `crm.customer_contacts.id`),
-  both nullable per ADR-0014, `portal_role owner|approver|finance|viewer`,
-  status `active|suspended|revoked`, one live row per contact and per user.
-- **`company`** — the one legal company of the application (ADR-0011, ERP-0042):
-  - `profiles` — legal and trading name, `document_code` (the `{COMPANY}`
-    numbering token), tagline, tax id, letterhead logo and signature object
-    keys, and the values printed on documents (signatory name/title, default
-    terms, warranty texts). One row for the whole company, no
-    `organization_id`.
-  - `head_office_addresses` — the printed office address; `village_id` is a
-    logical reference to `location.villages.id` (ADR-0003).
-  - `contacts` — email/phone/website channels.
-  - `bank_accounts` — the company's own accounts printed on invoices (VAT and
-    non-VAT). Not operational balances: Finance owns
-    `finance.cash_bank_accounts`.
-  - `settings` — company-wide key/value store (`setting_group`, `setting_key`,
-    `value`, `value_type`, `is_secret` reserved `false`). Organization-scoped
-    settings stay in `organization.settings`.
-- **`code_number`** — the single numbering authority (ERP-0009, ERP-0042):
-  - `series` — one row per `code_type`, with `pattern`, `reset_policy`,
-    `next_number` and `last_issued_at`. Verbatim rename of
-    `organization.document_sequences` (`document_type` → `code_type`),
-    company-wide.
-- **`document`** — the issued document registry (ERP-0042):
-  - `templates` — document templates and their version.
-  - `documents` — the issued registry row per outward-facing document, keyed by
-    `source_type` + `source_id`; the business document stays in its owning
-    module.
-  - `files`, `signatures`, `access_logs`, `shares`, `tags`, `tag_links` —
-    stored file metadata, signature records, the read audit trail, revocable
-    public share tokens and tagging. `organization_id` is nullable: NULL means
-    company-wide (ADR-0011 pattern).
-- **`audit`** — `audit.audit_logs`: `actor_id` → `auth.users.id ON DELETE SET
-  NULL`, `actor_role`, `action`, `resource_type`, `resource_id`, `metadata`
-  (jsonb), `ip`, `user_agent`; indexes on actor, action, (resource_type,
-  resource_id). Append-only.
-- **`crm`** — `crm.customers`: `id`, `name`, `email`, `phone`, `status`
-  (default `'active'`), `code`, unix-ms timestamps, `deleted_at`, structured
-  Indonesian address references, tax identity.
-- **`investor`** — `investor.investors`: the customer shape plus
-  `ownership_share` (placeholder); exact portion/reserve config is business
-  data governed by owner approval.
-- **`erp`** — **retired**. The shared domain schema in the original plan was
-  never created; the tables above landed in their own feature schemas. Do not
-  add tables here.
-- **`inventory`** — inventory module (ADR-0008, ADR-0009):
-  - `items` — SKU-level master. `item_kind` (`product|component|material|tool|service`,
-    CHECK-guarded text, not an enum), `is_serialized`, `is_stock_tracked`,
-    `min_stock_qty`, exact-integer IDR prices. **Supersedes `catalog.items`.**
-  - `serial_tracked_items` — one physical unit per row. `status`
-    (`pre_order|in_stock|borrowed|lost|sold|applied_warranty`);
-    `is_provisional_serial` ties to `pre_order` via a CHECK. Name kept
-    deliberately (plan D9).
-  - `warehouses` — global (`organization_id IS NULL`) or per-organization.
-    Address fields moved out to `warehouse_addresses` (strict 1:1).
-  - `warehouse_addresses` — `street` free text plus optional
-    `rt`/`rw`/`postal_code` and a village-level logical ref to
-    `location.villages` (ADR-0003). Only `village_id` links to location data;
-    the province/regency/district selections are UI state, rebuilt on edit.
-  - `warehouse_storages` — flat bins, no zone level (D14).
-    `UNIQUE(warehouse_id, code) WHERE deleted_at IS NULL`.
-  - `stock_movements` — **authoritative, append-only ledger** (ADR-0008). One
-    row per movement, never updated after posting; a correction is a new
-    row. A reversal is a `reference_type = 'reversal'` row pointing at the
-    original, and the original flips to `status = 'reversed'` exactly once
-    (the conditional `UPDATE … WHERE status = 'posted'` is the concurrency
-    guard). **No valuation columns**: `unit_cost`/`currency_code` were removed
-    because they were guaranteed to hold `0` forever — valuation belongs to the
-    accounting module, and the base price lives on `items.selling_price` /
-    `items.purchase_price` (OPEN-3 closed).
-  - `stock_balances` — **service-maintained projection** over
-    `stock_movements`, written inside the same transaction as the movement
-    that caused it. No triggers. Only `applyDelta` writes quantity, and it is
-    an atomic upsert (`ON CONFLICT … DO UPDATE SET quantity_on_hand =
-    quantity_on_hand + excluded…`), never read-then-write. `recomputeFromLedger`
-    is the repair operation *and* the test oracle. Two partial unique indexes
-    (`…_org_scope_uq` `WHERE organization_id IS NOT NULL`, `…_global_scope_uq`
-    `WHERE organization_id IS NULL`) let the upsert name the right conflict
-    target per scope. **Scope rule:** a balance's `organization_id` follows the
-    **warehouse**, not the caller — an organization-owned warehouse keeps
-    per-organization balances, while a global warehouse has **one shared
-    balance row** (`organization_id = NULL`) that every organization contributes
-    to and sees. That is deliberate: a global warehouse is one shared physical
-    space. `quantity_reserved` stays 0 until reservations are built, so
-    `quantity_available == quantity_on_hand`.
-  - **Ledger sign rule.** A movement stores an **unsigned** quantity; direction
-    is a property of its `movement_type` (`isOutbound`). Every row counts toward
-    a balance total, **including `reversed` ones** — a reversal is a new opposing
-    movement, so the original and its reversal cancel exactly. Excluding the
-    original would leave the reversal uncancelled and drift the balance by `q`
-    on every reversal (caught by the recompute oracle).
-  - **Negative stock is refused for every movement type**, reversal included.
-  - `stock_adjustments` + `stock_adjustment_items` — adjustments are
-    **documents, not bare movements**, with a real approval chain:
-    `draft → submitted → approved|rejected → posted|cancelled`. Only `posted`
-    writes movements; posting is idempotent (`posted_at IS NOT NULL` is the
-    guard). `stock_adjustments.organization_id` is **NOT NULL**, unlike the rest
-    of `inventory.*`: an adjustment is always raised by a tenant, even against a
-    global warehouse. Self-approval is refused unless the actor holds
-    `stock_adjustment:approve`. A line stores `quantity_before`/`quantity_after`
-    (counted totals, not deltas) so a recount is auditable; a line whose delta is
-    zero writes **no** movement (a `recount` that agrees still reaches `posted`).
-  - Not yet implemented: `stock_transfers`, `stock_reservations`, `lot_batches`,
-    `cycle_counts`, `borrowings`, `borrowing_lines`, `borrowing_events`
-    (S4+). The tables exist in the schema and migration; the services do not.
-  - **Every `inventory.*` table has a nullable `organization_id`**; coded
-    tables use a partial-unique *pair* (`(organization_id, code) WHERE
-    organization_id IS NOT NULL` plus `(code) WHERE organization_id IS NULL`)
-    because PostgreSQL treats every NULL as distinct. Global rows are addressed
-    with `IS NULL` only — never `eq(column, null)`, never a sentinel.
-  - Warehouse routes are **application-admin-only** (`sessionGuard` +
-    `requireGlobalAdmin`), not org-permission-gated: no organization role holds
-    any `warehouse:*` action. Non-admins get 403 on reads, not an empty list.
-  - `is_default` is **service-enforced** to at most one per scope (including
-    the `NULL` scope); a partial unique index cannot express that.
-  - A warehouse's `organization_id` is **immutable after creation** (plan
-    D-C), as is its `code`.
+| Schema | Owner module | Notes |
+|---|---|---|
+| `auth` | Identity | Better Auth core tables (hand-maintained) + `user_invitations`, `organization_settings`. The portal login lives in `customer.customers`, not here. |
+| `location` | Location | Global reference data (province → regency → district → village). |
+| `company` | Company | The one legal company: `profiles`, `addresses`, `contacts`, `settings`. Bank accounts are `finance.cash_bank_accounts`. |
+| `customer` | Customer | `companies`, `customers` (people, incl. portal login), addresses, settings. |
+| `supplier` | Supplier | `companies`, `suppliers` (PIC people), addresses, settings; bank details restricted. |
+| `inventory` | Inventory | Products, physical items, stock ledger/balances, adjustments, borrowing, maintenance, disposals and the **warehouse tables**. One schema; the old separate `warehouse` schema is gone. |
+| `sale` | Sale | Quotations, orders, delivery notes, returns, invoices, receipts, contracts. |
+| `procurement` | Procurement | Purchase requests/orders, goods receipts, purchase returns. |
+| `finance` | Finance | Ledger, journals, periods, cash/bank, reconciliations, supplier bills, AR/AP, depreciation. |
+| `tax` | Tax | `taxes`, period records, corrections, withholding records. |
+| `payment` | Payment | One payment ledger (`channel` manual\|gateway), polymorphic allocations, gateways with write-only sealed secrets. |
+| `project` | Project | Projects, leads, handover, warranties and the license tables. |
+| `ticket` | Ticket | `tickets`, `ticket_messages`, templates. |
+| `human_resource` | Human Resource | Employees, attendance, leave, overtime, tasks, salaries and salary records. |
+| `document` | Document | Templates, issued documents, files, signatures, shares, tags. `organization_id` nullable (NULL = company-wide). |
+| `notification` | Notification | `push_notifications`, `push_notification_templates` (ADR-0016). |
+| `audit` | Audit | `audit_logs`, append-only. |
+| `automation` | Automation | n8n outbox, FAQ, WhatsApp conversations/messages. |
 
-- **`hr`** — employees (ERP-0034: invite-first, `organization_id` nullable =
-  company level) and the M08 stage 1 records (ERP-0059): `bank_accounts`
-  (one salary account per employee, masked without `employee:read_private`),
-  `attendance_records` (one per employee per day; sources `manual|import|leave`),
-  `leave_types`, `leave_requests` (`submitted|approved|rejected|cancelled`,
-  Sundays excluded, annual quota), `overtime_requests`, `employee_tasks`,
-  `salary_summaries` (per month; net = base + allowances + overtime + bonus −
-  deductions, `CHECK`ed; `draft|approved`, approved = locked). The records
-  carry no `organization_id`; they are scoped through the employee.
+Facts that hold across modules:
 
-- **`catalog`** — the item master target lives here, but `inventory` shipped
-  first (ADR-0008/ADR-0011), so this schema holds only what M04 added:
-  `web_listings` (what the public website shows of an inventory item —
-  `item_id` is a plain nullable id validated through the Inventory contract,
-  ADR-0014; one live listing per item, unique among live rows).
-
-- **`automation`** — M04 integrations. Built: `outbox_messages` (the
-  transactional outbox delivering ERP events to n8n, stages 1–2;
-  `organization_id` is nullable because the events are company-wide,
-  ADR-0012, and `dedupe_key` makes once-per-fact events idempotent),
-  `faq_entries`, `whatsapp_conversations` and `whatsapp_messages` (the
-  WhatsApp assistant: approved answers, one row per chat with the company
-  number, and the full message log). The workflow/credential tables here stay
-  target-only — n8n is the workflow engine.
-
-- **`notification`** — the caller's own inbox (ADR-0016): notification rows
-  and the seeded templates, read-through on a single realtime socket.
-
-- **`payment`** — online checkout of a sales invoice through a
-  provider-neutral gateway (ERP-0020, ADR-0023): `gateway_payments`, with the
-  invoice and receipt as nullable logical references to `sales`.
-
+- **Numbering is per module.** Every business schema owns a `code_numberings`
+  table and a `<Module>NumberingService` (ADR-0024 Q32). There is no
+  `code_number` schema and no central numbering module.
+- **No organization schema.** Branches, departments and positions are gone;
+  `auth.organizations` and `auth.organization_settings` remain, and
+  `src/app/organization` is a module over those `auth` tables (no schema of
+  its own).
+- **`webhook` has no schema and no tables**: it is the inbound provider HTTP
+  edge (`/webhooks/*`) and delegates to `payment` and `automation`.
+- **The `erp` schema never existed** (see `module-ownership.md`).
+- **Inventory scope.** Inventory rows may carry a null `organization_id`
+  (global scope, ADR-0008): coded tables use a partial-unique *pair*
+  (`(organization_id, code) WHERE organization_id IS NOT NULL` plus
+  `(code) WHERE organization_id IS NULL`); global rows are addressed with
+  `IS NULL`, never `eq(column, null)`. The stock ledger (`movements`) is
+  append-only and `stocks` is a service-maintained projection written in the
+  same transaction. Table and column names were renamed by ADR-0024; check
+  `docs.dbml` for the current ones before relying on any name from older
+  progress entries.
+- **Payment secrets are write-only.** Gateway secrets are sealed with
+  AES-256-GCM (`PAYMENT_SECRET_KEY`); the API returns only `hasSecret` and
+  `secretLast4`.
 ## Conventions (pinned decisions)
 
 - **Datetimes** — unix milliseconds in bigint columns via
@@ -241,10 +135,13 @@ never ships in a frontend bundle.
 - Historical migrations are immutable. New schema changes → new migration via
   `drizzle:generate`, SQL inspected by a human, then applied to a **disposable**
   database for testing. `drizzle-kit push` is for disposable DBs only.
-- Auth schema changes: run `auth:generate` (pin its version first), review the
-  generated diff into the migration, never hand-edit auth tables.
-- Unknown journal state for the existing baseline (`migrations/meta`) must be
-  verified before the first new generate/migrate run.
-- 2026-11-12: generate/migrate are blocked on main by a branching snapshot
-  chain; new migrations are hand-written and verified on a disposable
-  database with `database/migrate-reset.ts` (`runbook.md`, `project-audit.md`).
+- Auth schema changes: hand-written, append-only edits to `auth.schema.ts`; never run `auth:generate` (AGENTS.md hard rule).
+- Baseline (ADR-0024, 2026-11-19): the schema is one migration,
+  `database/migrations/20261119145940_many_human_robot` (18 schemas, 164
+  `CREATE TABLE` statements, no cross-schema `REFERENCES`). The 31-step v1
+  chain is kept for history in `database/migrations-archive/v1` (not applied).
+  Verified on a disposable database on 2026-11-19: `drizzle:migrate`, then
+  `drizzle:seed` twice (second run inserted nothing), and a second
+  `drizzle-kit generate` reported no schema changes. The earlier "blocked on
+  main" branching-snapshot problem (2026-11-12) is resolved by this baseline
+  (`runbook.md`).

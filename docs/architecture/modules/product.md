@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "product / catalog". It is kept for history. Current owner: inventory (schema `inventory`: products, product_categories) - see docs/database/module-ownership.md.
+> Mapping: catalog -> inventory.
+
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
 >
 > 2026-11-02: the **item master now lives in Inventory** — `inventory.items`

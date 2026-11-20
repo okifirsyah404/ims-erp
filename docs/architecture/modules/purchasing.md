@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "purchasing". It is kept for history. Current owner: procurement (schema `procurement`), supplier (schema `supplier`), finance (supplier bills) - see docs/database/module-ownership.md.
+> Mapping: purchasing -> procurement; supplier master -> supplier; bills -> finance.supplier_bills.
+
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
 
 # Purchasing Module

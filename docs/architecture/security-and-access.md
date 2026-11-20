@@ -97,7 +97,8 @@ Key separations encoded in the matrix (full grants in
 - **sales** creates/submits; cannot approve (even own submissions).
 - **finance** executes payments; no HR record access; payroll *payment*
   access ≠ payroll *record* access.
-- **hr** prepares payroll; approval and execution stay separate.
+- **hr** (the role key; the module and schema are `human_resource`) prepares
+  payroll; approval and execution stay separate.
 - **purchasing/warehouse**: preparation and stock operations; no self-approval
   of their own requests/adjustments.
 - **auditor**: read/export only; sensitive HR/payroll scope must be assigned
@@ -160,14 +161,21 @@ every subsequent one.
 
 ### Company-wide resources (ERP-0042)
 
-Three resources are company-wide, not organization-scoped: `company`,
-`code_number` and `document` (ADR-0015). They replaced `company_setting`, which
-used to carry the profile, the numbering and the settings in one vocabulary.
+Two resources are company-wide, not organization-scoped: `company` and
+`document` (ADR-0015). They replaced `company_setting`, which used to carry the
+profile, the numbering and the settings in one vocabulary. The company routes
+live under `/companies` (ADR-0024; the earlier `/company/*` prefix is gone).
+
+> Numbering is per module since ADR-0024 (each schema owns `code_numberings`).
+> The `code_number` permission resource is still declared in
+> `packages/common/src/authorization/erp-permissions.ts`, but no backend route
+> uses it any more (no `/code-numbers` controller exists; grep of
+> `apps/backend/src` finds none). Whether to remove the resource is an open
+> cleanup, not decided here.
 
 | Resource | Actions | Guards |
 |---|---|---|
-| `company` | `read`, `update` | `GET /company/profile`, `PUT /company/profile`, the logo/signature uploads, `GET /company/settings`, `PUT /company/settings/:group/:key` |
-| `code_number` | `read`, `update` | `GET /code-numbers`, `PUT /code-numbers/:codeType` |
+| `company` | `read`, `update` | the profile, logo/signature uploads and settings routes under `/companies` (check `company/controllers` for the exact paths) |
 | `document` | `read`, `create`, `update`, `submit`, `approve`, `issue`, `void`, `download`, `signature_read`, `signature_request`, `signature_sign` | the registry, files, signatures, shares, tags |
 
 "Company-wide" describes the **data scope**, never the authorization boundary:
@@ -297,8 +305,10 @@ table as they land; the catalog resources (`audit_log:read`,
 
 ## Bootstrap / seeding
 
-- `bun run drizzle:seed` (apps/backend) runs `auth.seeder` then
-  `location.seeder`. The auth seeder is idempotent: creates the initial
+- `bun run drizzle:seed` (apps/backend) runs the seeders registered in
+  `database/seeders/index.ts` (auth, location, company, inventory, finance, tax,
+  HR, notification, organization seeders; check the file for the exact order).
+  The auth seeder is idempotent: creates the initial
   global admin (no org membership) via the Better Auth instance; existing
   users are never reset.
 - **Organization seeding is dev-only.** The organization seeder is skipped in
@@ -332,19 +342,35 @@ table as they land; the catalog resources (`audit_log:read`,
 
 ## Integration gaps (modules not yet built)
 
-The catalog registers the full ERP vocabulary, but only the `sales` vertical
-(quotation, payment) plus user management exist today. Routes for the remaining
-resources must use the `erp` macro as they are built; record-level policies
-that depend on missing modules (payslip ownership, investor report publication
-status, approval_rule storage) are documented here and MUST be wired when each
-module lands.
+The catalog registers the full ERP vocabulary. After ADR-0024 the backend
+mounts the 18 schema modules plus `webhook` (see `docs/database/module-ownership.md`),
+and the 2026-11-20 live smoke test read 69 list/detail endpoints across them
+without a 404/5xx; that proves reachability, **not** that every permission,
+ownership rule or write path is exercised. Routes for resources still being
+built must use the `erp` macro; record-level policies that depend on missing
+pieces (payslip ownership, investor report publication status, approval_rule
+storage) are documented here and MUST be wired when each lands.
+
+Sensitive-field gates that exist: supplier bank columns are stripped from every
+company response unless the caller holds `supplier:read_bank`, and a bank write
+without it is a 403 (`SupplierBankForbiddenError`; read side verified live,
+write side by a role that can update but lacks the permission **not** verified
+live). Payment gateway secrets are write-only (sealed AES-256-GCM, only
+`hasSecret`/`secretLast4` are returned; `payment_gateway:read|update`, held by
+`owner` today). Employee bank/salary data is masked without
+`employee:read_private`.
+
+Inbound provider webhooks (`/webhooks/{xendit,singapay,whatsapp}`) carry no
+session: authenticity is the provider signature/token check inside the owning
+module's webhook service; an unconfigured provider answers 404, a rejected
+signature 401.
 
 Audit writes are no longer a gap: `audit.audit_logs` and `AuditService` exist,
 and the user-management actions listed under **Audit** already append to it.
 
-Company, Code Number and Document are built (ERP-0042): their routes exist and
-are guarded by the `erp` macro plus the `company:*`, `code_number:*` and
-`document:*` permissions. The document **signature request** flow is built
+Company and Document are built (ERP-0042): their routes exist and are guarded
+by the `erp` macro plus the `company:*` and `document:*` permissions (the
+Code Number module was removed by ADR-0024). The document **signature request** flow is built
 (ERP-0048/ERP-0049): `document:signature_read` sees the signature register and
 one document's signature section, `document:signature_request` creates and
 cancels requests, `document:signature_sign` acts on a request addressed to the

@@ -11,7 +11,7 @@ stored files, signature records, the read/download access trail, revocable
 public share links, tags, and templates.
 
 The boundary that matters: **the business document stays in its owning module.**
-`sales.invoices` is the invoice; `document.documents` is the issued copy that
+`sale.invoices` is the invoice; `document.documents` is the issued copy that
 says "invoice number `0001/INV/IMS/XI/26` exists, was issued on this date, and
 these are its files". Sales never loses ownership of its own table, and Document
 never gains a second copy of the invoice's business columns.

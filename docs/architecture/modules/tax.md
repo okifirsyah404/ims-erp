@@ -1,34 +1,36 @@
-# Tax Module (accounting schema, ERP-0016 Phase 1)
+> Updated 2026-11-20 (ADR-0024): tax is its own module and schema `tax` (5 tables: `taxes`, `records`, `corrections`, `withholding_tax_records`, `code_numberings`), HTTP under `/taxes`. The route table below keeps the pre-refactor `/tax/*` paths; check `apps/backend/src/app/tax/controllers/tax.controller.ts` for the exact current ones.
+
+# Tax Module (schema `tax`)
 
 > Rewritten 2026-11-07. The previous version described the deleted NestJS
 > backend. This describes the current Elysia slice in
-> `apps/backend/src/app/accounting/`.
+> `apps/backend/src/app/tax/`.
 
 ## Purpose and boundary
 
 Tax rate master and period working papers for finance review. Output is
 **working papers**, never automatic DJP filing, and not a tax engine for every
-tax type (v5.1 M10, ERP-0016). The tax slice lives in the `accounting` schema
+tax type (v5.1 M10, ERP-0016). The tax slice lives in the `tax` schema (was `accounting` before ADR-0024)
 (one schema per module, see `docs/plan/plans/tax.md`, D1 to D18).
 
 ## Implemented (backend, Phase 1)
 
-- `accounting.tax_types`: effective-dated rates. Rate change = new row. Overlap
+- `tax.taxes`: effective-dated rates. Rate change = new row. Overlap
   per code refused by `TaxService` (D7). Unique `(org, code, effective_from)`
   on live rows.
-- `accounting.tax_records`: one draft recap per tax type per period (D13).
+- `tax.records`: one draft recap per tax type per period (D13).
   Lifecycle `draft → verified → filed`. Amounts editable only in `draft`.
-- `accounting.tax_corrections`: signed corrections against a recap. Record
+- `tax.corrections`: signed corrections against a recap. Record
   moves to `corrected`; `tax_amount` is never rewritten. Net payable = recap +
   active corrections, computed at read (D15).
-- `accounting.withholding_tax_records`: PPh withheld on a payment. Lifecycle
+- `tax.withholding_tax_records`: PPh withheld on a payment. Lifecycle
   `recorded → verified → paid | reversed`. Counterparty is plain text (D11).
 - Rounding: half-up to whole rupiah, `ROUNDING_UNIT_MINOR = 100` minor units
   (D14, finance gate open).
 - Seeded rates are placeholders (PPN 11%, PPh 23 2%, PPh 4(2) 10%, D18).
   Not confirmed by finance.
 
-## Routes (`/tax/*`)
+## Routes (`/taxes`, was `/tax/*`)
 
 | Area | Routes | Permission |
 | --- | --- | --- |

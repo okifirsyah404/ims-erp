@@ -173,7 +173,7 @@ approved.
 
 ## 9. Inbound chat assistant on Meta: not built yet
 
-Today WAHA posts inbound chats directly to the ERP (`POST /integrations/whatsapp/webhook`), and
+Today WAHA posts inbound chats directly to the ERP (`POST /webhooks/whatsapp`), and
 the ERP replies through WAHA. For a Meta number, the ERP (module `automation`, M04) needs:
 1. **A Meta webhook:**
    - `GET` verification (`hub.mode=subscribe`, `hub.verify_token`, echo `hub.challenge`);

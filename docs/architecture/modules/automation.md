@@ -23,7 +23,7 @@ Outbound business events and the WhatsApp assistant (M04, owner decisions of
 - Auth OTP/magic-link delivery is not here yet (still Better Auth's own
   senders).
 
-The public website catalog is a separate module (`catalog.web_listings`);
+The public website catalog is part of the `inventory` module (listing columns on `inventory.products`, served at `/inventory/public/v1/catalog`);
 the assistant reads it through `CatalogService.matchProducts`.
 
 ## The event contract (what n8n receives)

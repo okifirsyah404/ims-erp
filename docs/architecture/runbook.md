@@ -35,7 +35,8 @@ Environment is loaded per-workspace from `.env` (the backend uses
 |---|---|---|
 | `bun run lint` | repo root | ✅ verified 2026-10-28→30 — pass; remaining warnings pre-existing |
 | `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
-| `bun run test` | repo root | ✅ verified 2026-11-02 — 4/4 turbo tasks; backend **131 pass / 0 fail**, web-admin **21 pass / 0 fail** |
+| `bun run test` | repo root | ✅ verified 2026-11-20 — 7/7 turbo tasks (backend 1232, web-landing 24, web-customer-portal 60 pass); earlier 2026-11-02: backend 131, web-admin 21 |
+| `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-admin` | ✅ verified 2026-11-20 — 0 errors. The root `typecheck` does not cover web-admin (no `typecheck` script); this is the real check (also part of `build`) |
 
 ### Live smoke tests (need a running backend on :3001)
 
@@ -97,8 +98,8 @@ Use the package scripts — all run drizzle-kit under the Bun runtime
 driver is `drizzle-orm/bun-sql`:
 
 ```powershell
-bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-10-29/30; BLOCKED on main since 2026-11-09 (see below)
-bun run drizzle:migrate    # apply migrations — verified 2026-10-29/30; BLOCKED on main since 2026-11-09 (see below)
+bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-11-19 (baseline below: "No schema changes")
+bun run drizzle:migrate    # apply migrations — verified 2026-11-19 on a disposable database (baseline below)
 bun run drizzle:push       # disposable DBs only
 bun run drizzle:studio     # inspect
 bun run drizzle:seed       # seed runners (database/seeders) — verified idempotent (run twice)
@@ -108,15 +109,28 @@ bun run drizzle:seed       # seed runners (database/seeders) — verified idempo
 generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
 stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 
-**State on main (verified 2026-11-12):** `drizzle-kit generate` and
-`drizzle-kit migrate` stop with "Conflicting migrations detected" (the
-snapshot chain branches; see `project-audit.md`, "Pre-existing issues").
-Until it is repaired:
+**Migration baseline (ADR-0024, 2026-11-19).** History, kept honest:
 
-- New migrations are **hand-written** (`database/migrations/<ts>_<name>/migration.sql`,
-  no snapshot), headed by a comment saying why, with SQL copied from a
-  drizzle-kit run where possible.
-- Apply and verify on a **disposable** database only:
+- 2026-11-12 → 2026-11-19: `generate` / `migrate` were **blocked on main**
+  ("Conflicting migrations detected", a branching snapshot chain), and
+  migrations were hand-written and verified with `database/migrate-reset.ts`.
+- 2026-11-19: the v1 chain (31 steps) was moved to
+  `apps/backend/database/migrations-archive/v1` (history only, never applied)
+  and replaced by **one baseline migration**,
+  `apps/backend/database/migrations/20261119145940_many_human_robot`
+  (18 schemas, 164 `CREATE TABLE` statements, 0 cross-schema `REFERENCES`).
+- Verified 2026-11-19 on a disposable database (dropped afterwards):
+  `drizzle:migrate` applied it cleanly; `drizzle:seed` ran twice and the second
+  run inserted nothing; a second `drizzle-kit generate` printed
+  "No schema changes". On 2026-11-20 a fresh disposable database (`ims_smoke`)
+  was migrated and seeded again for the live API smoke test.
+- So `generate` and `migrate` work again. New schema changes: edit
+  `docs/database/docs.dbml` first, then the Drizzle schema, run
+  `bun run drizzle:generate`, inspect the SQL, and apply it to a **disposable**
+  database only. Not re-verified here: a *second* migration step stacked on the
+  baseline (none has been generated yet).
+
+Disposable-database recipe (also used for the reset tooling):
 
 ```powershell
 docker exec ims-erp-postgres-1 sh -c 'createdb -U "$POSTGRES_USER" ims_erp_scratch'
@@ -127,6 +141,8 @@ bunx --bun drizzle-kit push --explain      # prints the diff, executes nothing
 ```
 
 - Never use `drizzle-kit generate --fix-conflicts`.
+- Payment gateway secrets are sealed with `PAYMENT_SECRET_KEY`; without it,
+  creating a gateway answers 409 "secret not available" (verified 2026-11-20).
 
 Local infra: `docker-compose.yml` publishes no Postgres/Redis ports; the dev
 `.env` expects 15432/16379. Use an override file kept outside the repo:
@@ -140,9 +156,9 @@ services:
 Rules:
 - Never run `drizzle-kit push` or migrations against a database you cannot
   recreate. Push is for disposable DBs only.
-- Verify the migration journal state before the first `generate` run; if
-  inconsistent, create the disposable DB, apply the full set from scratch, and
-  record the outcome before proceeding.
+- Before a `generate` run, confirm `drizzle-kit check` is clean; if the chain
+  looks inconsistent, create a disposable DB, apply the full set from scratch,
+  and record the outcome before proceeding.
 - `auth:generate` script pins nothing (`auth@latest`) — pin before running.
 - Seeds must be idempotent (safe to run twice).
 
@@ -173,6 +189,7 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up --build web-
 | Redis connect failures | `REDIS_*` env names |
 | Cache entries "stale" for 30 s–5 min diffs | TTL is ms in Keyv, s in Better Auth secondaryStorage |
 | A user update is not visible on the read path | Every writer of `auth.users` must evict the shared `user:*` keys (`src/app/user/constants/cache.ts`) — a new write path that forgets this reintroduces 5-minute staleness |
+| Backend crashes at startup resolving a controller | A module `container.ts` is missing a token registration (the HR numbering gap, fixed 2026-11-20); the live smoke test booted every controller cleanly afterwards |
 | Strange migration warnings | rc-channel drizzle; see `stack-compatibility.md` unresolved issues |
 | Auth route body not parsed | Elysia body parsing config; better-auth needs raw bodies for webhooks/sign-up |
 | Two modules "share" a route and the wrong handler answers | Check the actual registered paths (`prefix` + sub-path) before assuming mount order; with prefix-wrapped plugins the FIRST registration wins, but a prefix + `.get('/')` registers `/prefix/` (a *different* route) |

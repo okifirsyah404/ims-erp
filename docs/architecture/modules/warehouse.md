@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "warehouse". It is kept for history. Current owner: inventory (schema `inventory`: warehouses, warehouse_storages, ...) - see docs/database/module-ownership.md.
+> Mapping: warehouse -> inventory.
+
 # Warehouse Module
 
 > 2026-11-02: **This module has been folded into Inventory.** Warehouses are

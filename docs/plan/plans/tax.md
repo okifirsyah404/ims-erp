@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Tax Module Plan — M10 (ERP-0016)
 
 > Status: approved plan (sharpened through a grilling session, rounds 1–2 + Q12–Q13)

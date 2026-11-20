@@ -1,3 +1,5 @@
+> Updated 2026-11-20 (ADR-0024): the ERP roles are code (`packages/common/src/authorization/erp-permissions.ts`), not tables; portal logins moved to `customer.customers`; profile/preferences are no longer separate tables. User and organization HTTP stay in `apps/backend/src/app/user` and `organization`, over schema `auth`.
+
 > 2026-11-03: the historical note below is stale (NestJS-era audit). The
 > Elysia backend's user module now also owns the former `user-management`
 > module (admin API: invitations, roles, account lifecycle) — repositories,

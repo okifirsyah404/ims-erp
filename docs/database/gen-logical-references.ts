@@ -81,7 +81,7 @@ gen += `\n## The ${byTarget.size} targets in full\n`;
 for (const [target, list] of sortedTargets) {
   const owner = moduleLabel(target);
   const schema = target.split(".")[0];
-  const extra = (schema === "warehouse" || schema === "inventory") ? " (warehouse schema)" : "";
+  const extra = ""; // warehouses live in the inventory schema since ADR-0024 (no second schema)
   gen += `\n### \`${target}.id\` - owner ${owner}${extra}, ${list.length} referring column${list.length === 1 ? "" : "s"}\n\n`;
   for (const line of [...list].sort()) gen += `- \`${line.replace("  ->  ", "`  ->  `")}\`\n`;
 }

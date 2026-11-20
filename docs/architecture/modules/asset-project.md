@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "assets/projects". It is kept for history. Current owner: inventory (assets, schema `inventory`) and project (schema `project`) - see docs/database/module-ownership.md.
+> Mapping: assets -> inventory; projects -> project.
+
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
 
 # Assets & Projects Module (owner to be created)

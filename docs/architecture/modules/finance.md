@@ -1,3 +1,5 @@
+> Updated 2026-11-20 (ADR-0024): the `accounting` schema was absorbed into `finance`, and tax moved to the `tax` schema (see `tax.md`). The module is `apps/backend/src/app/finance` (routes `/finance/*`, `/finance/depreciations`); where the "Current state" section below says `src/app/accounting` or "schemas `accounting` and `finance`", read `finance` only. Current table list: docs/database/docs.dbml `finance.*` (27 tables, incl. credit memos, expense claims, employee advances, settlements).
+
 # Finance Module (M09 — in-progress: Stage 1 built, Stage 2 open)
 
 ## Purpose and boundary
@@ -8,7 +10,7 @@ with payments and supplier bills, financial reports, bank reconciliation,
 and period close. Owns the **posting engine** and all financial invariants.
 Other modules (sales, expense, purchasing, payroll) request postings through
 this module's exported service — they never write ledger rows themselves.
-Invoices stay owned by Sales (`sales.invoices`); finance mirrors only the
+Invoices stay owned by Sale (`sale.invoices`); finance mirrors only the
 open-item sub-ledger.
 
 ## Current state (implemented, 2026-11-07)
@@ -42,8 +44,7 @@ are complete; decisions D1–D12 are pinned in the same plan.
   in exact integer minor units; `sourceType`/`sourceId` provenance on the JE.
 - Corrections are append-only reversals, never edits (reversal links both
   ways); posting requires an open period for the entry date; document codes
-  come from `code_number.series` (was `organization.document_sequences` before
-  ERP-0042).
+  come from the module's own `finance.code_numberings` (ADR-0024; was `code_number.series`).
 - Cash/bank accounts need a GL link before the first movement; the
   informational `opening_balance` never overrides the JE truth.
 - AR/AP: sub-ledger mirror tables (`ar_open_items` / `ap_open_items`)

@@ -64,21 +64,28 @@ drizzle/                      Drizzle client + schemas (code-owned)
   verified 2026-10-30): do not run `auth:generate`; apply hand-written,
   append-only edits and mirror the column in Better Auth's
   `user.additionalFields` where applicable.
-- `erp` schema: **retired**. The shared domain schema in the original plan
-  (`audit_logs`, `customers`, `investors`) was never created as `erp.*`;
-  those tables landed in their own feature schemas as `audit.audit_logs`,
-  `crm.customers` and `investor.investors`. Do not create it.
-- One module owns exactly one Postgres schema. `company.*` (company profile,
-  contacts, bank accounts, company-wide settings), `code_number.series` (the
-  numbering authority) and `document.*` (the issued document registry) were
-  split out of `organization.*` in ERP-0042 (ADR-0015); no module spans two
-  schemas any more. New feature tables get a per-feature Postgres schema
-  named after the domain (`customer.*`, `sales.*`, ...) per the cross-feature
-  isolation rule. Relations live in v2 `defineRelationsPart`
-  blocks per schema file, combined in `drizzle.ts`. Relations do **not**
-  replace PostgreSQL FKs, unique constraints, checks, or indexes — add both
-  (within a single feature's schema only; cross-feature references are loose
-  IDs).
+- `erp` schema: never existed. The shared domain schema in the original plan
+  was never created; its tables landed in their own schemas (`audit.audit_logs`,
+  `customer.customers`). Do not create it.
+- One module owns exactly one Postgres schema (ADR-0024: 18 schemas, 188
+  tables: `auth`, `location`, `company`, `customer`, `supplier`, `inventory`,
+  `sale`, `procurement`, `finance`, `tax`, `payment`, `project`, `ticket`,
+  `human_resource`, `document`, `notification`, `audit`, `automation`). The old
+  two-schema exception (Inventory owning a `warehouse` schema) is gone:
+  warehouses live in `inventory`. The `webhook` module has no schema and no
+  tables; it is the inbound provider edge and delegates to `payment` and
+  `automation` through their exported webhook services. `src/app/user` and
+  `src/app/organization` are modules over the `auth` schema.
+  Per-module ownership, table counts and contracts:
+  `docs/database/module-ownership.md`; tables: `docs/database/docs.dbml`.
+- Numbering is per module: each business schema owns a `code_numberings` table
+  and a `<Module>NumberingService`; there is no central code-number module.
+- New feature tables get a per-feature Postgres schema named after the domain
+  per the cross-feature isolation rule. Relations live in v2
+  `defineRelationsPart` blocks per schema file, combined in `drizzle.ts`.
+  Relations do **not** replace PostgreSQL FKs, unique constraints, checks, or
+  indexes — add both (within a single feature's schema only; cross-feature
+  references are loose IDs).
 
 ## Frontend rules (apps/web-admin)
 
@@ -122,5 +129,5 @@ Services own transactions. A multipurpose case writes: acquire a transaction
 handle from the Drizzle client (`drizzle/container.ts`), pass the tx-scoped
 handle to affected repositories, commit/rollback in the service, invalidate
 affected cache keys only after commit. Side effects to external systems (webhooks, WhatsApp,
-licensing) occur after local commit; outbox/wire format decisions are deferred
+license sync) occur after local commit; outbox/wire format decisions are deferred
 until those phases.

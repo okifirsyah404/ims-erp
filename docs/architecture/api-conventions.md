@@ -1,6 +1,6 @@
 # API Conventions
 
-Conventions for backend HTTP endpoints (`apps/backend-elysia`). Envelope
+Conventions for backend HTTP endpoints (`apps/backend`). Envelope
 conventions carry over from the prior backend implementation.
 
 ## Routing / route shape
@@ -36,6 +36,32 @@ conventions carry over from the prior backend implementation.
   self-consistent with `data`.
 - Single-resource endpoints return the row object; `204`/`200` semantics per
   mutation kind.
+- Public (unauthenticated-session) catalog lists follow the same contract: the
+  `@ims-erp/common` `TPaginationMeta` (`{ page, limit, total, totalPages }`)
+  with the query parameter `limit` (not `pageSize`).
+  `GET /inventory/public/v1/catalog/products` answers `okPaginated(...)`
+  (rows in `data`, meta in `pagination`).
+
+## URL layout (ADR-0024)
+
+Each module mounts under its own prefix; there are **no URL aliases** (removed
+2026-11-20). Prefixes that are easy to get wrong:
+
+| Surface | Path |
+|---|---|
+| Inbound provider webhooks (`webhook` module) | `/webhooks/{xendit,singapay,whatsapp}`: 200 for `accepted\|duplicate\|ignored`, 401 `rejected`, 404 unknown provider |
+| Machine license API | `/projects/api/v1/licenses/*` |
+| Website forms (API key `Authorization: Bearer ewk_...`) | `/projects/public/v1/*` |
+| Public catalog | `/inventory/public/v1/catalog/*` |
+| Public quotation render | `/sales/public/v1/render/quotations` |
+| Public document shares | `/documents/public/v1/shares/:token` |
+| Customer portal | `/customers/portal/v1/*` |
+| Payments, gateway checkouts, gateway admin | `/payments`, `/payments/checkouts/*`, `/admin/payments/gateways` |
+| Other modules | `/inventory`, `/sales`, `/customers`, `/suppliers`, `/procurement`, `/finance`, `/taxes`, `/projects`, `/tickets`, `/human-resources`, `/documents`, `/companies`, `/notifications` |
+
+Known inconsistency: a webhook reply with outcome `rejected` or `unknown` sets
+the HTTP status (401/404) but its body envelope still says `status: 200`
+(observed in the 2026-11-20 live smoke test, not yet fixed).
 
 ## Error contract
 

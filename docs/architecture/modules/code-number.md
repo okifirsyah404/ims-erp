@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "code-number". It is kept for history. Current owner: every business schema (its own `code_numberings` table and `<Module>NumberingService`) - see docs/database/module-ownership.md.
+> Mapping: code_number.series -> <schema>.code_numberings.
+
 # Code Number Module
 
 > Created 2026-11-13 (ERP-0042, ADR-0015). Reflects

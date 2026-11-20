@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Website and Customer Portal Integration — Gap Analysis
 
 Written 2026-11-14 for ERP-0022 (customer portal) and the website parts of

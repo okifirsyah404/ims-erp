@@ -1,42 +1,48 @@
-> 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
-
 # Supplier Module
+
+> Rewritten 2026-11-20 (ADR-0024). The previous page was the NestJS-era
+> scaffold audit of the supplier master that lived inside procurement; the
+> supplier master is now its own module and schema.
+
+Code: `apps/backend/src/app/supplier`. Schema: `supplier`. Ownership profile:
+`docs/database/module-ownership.md` (#5). Tables: `docs/database/docs.dbml`.
 
 ## Purpose and boundary
 
-Supplier/vendor master data: code, name, address, contact person, payment
-terms, and **bank details under restricted access** (masked in lists;
-permission-gated detail; audited when revealed/exported).
+Supplier/vendor master data, split out of `procurement`. It owns the B2B
+supplier company and its people (PIC); it does not own purchase documents
+(`procurement`) or supplier bills and payments (`finance`, `payment`).
 
-## Current state (audit, 2026-10-25)
+## Owned tables (6)
 
-**Scaffold only:**
+`companies` (the supplier company), `suppliers` (the people/PIC),
+`addresses`, `company_addresses`, `settings`, `code_numberings`
+(`SupplierNumberingService`, ADR-0024 Q32). Addresses store only `village_id`;
+the rest of the path is derived through `ExportedLocationService`.
 
-- `modules/supplier/**` — empty stubs; registered in `app.module.ts`.
-- Pre-written unit specs (controller/service) exist.
+## HTTP
 
-## Data ownership (planned, Phase 3 — commercial T03/T07)
+Prefix `/suppliers` (`erp` guard): `GET|POST /companies`,
+`GET|PATCH /companies/:id`, `POST /companies/:id/activate|deactivate`,
+`GET|POST /people`, `PATCH|DELETE /people/:id` (soft delete).
 
-- `erp.suppliers` — code (unique alive), name, address, contact person,
-  payment terms, bank details (restricted columns), status/deleted_at.
-- Transactional links (bills, payables) belong to purchasing; payments to
-  payment/finance.
+## Contract
 
-## Behavior targets
+`ExportedSupplierService` (`EXPORTED_SUPPLIER_SERVICE_TOKEN`,
+repository-only facade): `assertActiveCompany`, `findCompanyByCode`,
+`findPerson`, `getPurchaseSnapshot`, `getBankDetails`. `procurement` and
+`finance` consume it; nobody reads `supplier.*` tables directly.
 
-- CRUD + deactivate (soft) with permission gates; bank detail access tested
-  for denial by default roles.
-- Referenced by purchasing bills; supplier payments never bypass the
-  payables state (S06/S11 chain).
+## Permissions
 
-## Dependencies and rules
+Resource `supplier`: `read`, `create`, `update`, `archive`, `read_bank`.
 
-- Pure master data consumed by purchasing/payment via contracts. No finance
-  posting logic here.
+## Rules
 
-## Tests
-
-- Existing stub specs to replace.
-- Required: unique supplier code (partial unique, 23505→409), bank-detail
-  masking on list responses, restricted detail read permission-denial,
-  soft-delete filtering, audit on sensitive detail access.
+- Bank details are restricted: only holders of `supplier:read_bank` see them;
+  lists never include them.
+- Documents snapshot supplier data at creation (`getPurchaseSnapshot`).
+- Cross-module references to suppliers are plain nullable id columns,
+  checked by `assertActiveCompany` before the write (ADR-0014).
+- Soft delete only; a supplier referenced by purchase or finance documents is
+  never hard-deleted.
