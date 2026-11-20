@@ -291,6 +291,7 @@ export class CatalogService {
 				quantity: line.quantity,
 				orderable,
 				itemId: orderable ? item!.id : null,
+				requestItemId: !orderable && item ? item.id : null,
 				name: item?.name ?? null,
 				unitPrice: orderable ? item!.sellingPrice : null,
 			};

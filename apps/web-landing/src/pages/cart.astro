@@ -62,9 +62,9 @@ const perks = [
       </div>
       <ul class="flex flex-col gap-3" data-cart-lines></ul>
       <div class="flex flex-col gap-3 rounded-lg bg-warning-bg p-4 ring-1 ring-warning-border ring-inset" data-quote-only hidden>
-        <p class="text-[14px] text-fg"><strong>Some items need a project quotation</strong> — they're priced after a site survey and can't be paid online.</p>
+        <p class="text-[14px] text-fg"><strong>Some items are priced on request.</strong> Check out as usual: they go into the same quotation and our sales team adds their price before you approve it.</p>
         <button type="button" class="flex w-fit items-center gap-2 text-[14px] font-bold text-blue-600 hover:underline" data-move-to-quote>
-          Move them to a quotation request <ArrowRight size={15} aria-hidden="true" />
+          Or send them as a separate quotation request <ArrowRight size={15} aria-hidden="true" />
         </button>
       </div>
       <ul class="grid gap-3 sm:grid-cols-3">
@@ -187,7 +187,8 @@ const perks = [
     root.querySelector("[data-cart-subtotal]")!.textContent = formatRupiah(subtotal);
     root.querySelector("[data-cart-units]")!.textContent = String(buyable.reduce((n, l) => n + l.qty, 0));
     const toCheckout = root.querySelector<HTMLAnchorElement>("[data-to-checkout]")!;
-    if (buyable.length) toCheckout.removeAttribute("aria-disabled");
+    // ERP-0078: price-on-request items check out too (one quotation for everything).
+    if (lines.length) toCheckout.removeAttribute("aria-disabled");
     else toCheckout.setAttribute("aria-disabled", "true");
   };
 

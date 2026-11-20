@@ -21,6 +21,9 @@ export const ONLINE_ORDER_COPY = {
 	poNumber: (poNumber: string) => `No. PO pelanggan: ${poNumber}.`,
 	note: (note: string) => `Catatan pelanggan: ${note}`,
 	acceptedBy: (name: string) => `Disetujui pelanggan di portal oleh ${name}.`,
+	/** A line the customer asked for without an online price: sales prices it before sending the SPH. */
+	priceOnRequest: 'Harga menyusul — mohon penawaran (permintaan pelanggan)',
+	priceOnRequestNote: (count: number) => `${count} baris "harga menyusul": isi harga sebelum SPH dikirim.`,
 } as const;
 
 /** Where an online order was placed. */
@@ -32,8 +35,11 @@ export type TOnlineOrderInput = {
 	/** The person placing the order (portal user name). */
 	requestedBy: string;
 	source: TOnlineOrderSource;
-	/** Orderable catalog lines: the item and its quantity (the price is the item's). */
-	lines: { itemId: string; quantity: number }[];
+	/**
+	 * Catalog lines: the item and its quantity. The price is the item's, except
+	 * `priceOnRequest` lines (ERP-0078), which start at 0 for sales to price.
+	 */
+	lines: { itemId: string; quantity: number; priceOnRequest?: boolean }[];
 	note: string | null;
 	poNumber: string | null;
 };

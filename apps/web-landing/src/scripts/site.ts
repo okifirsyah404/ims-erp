@@ -90,6 +90,27 @@ async function saveWishlist(mode: "merge" | "replace") {
   syncWishlist();
 }
 
+/** After the sign-in round trip (`?signed_in`, `?signed_out`, `?auth=<reason>`): say what happened, then tidy the URL. */
+const AUTH_FAILURES: Record<string, string> = {
+  state: "Sign-in did not finish (it was started in another tab or window). Please sign in again.",
+  expired: "Sign-in took too long. Please sign in again.",
+  exchange: "We couldn't complete your sign-in. Please try again.",
+  config: "Sign-in is not available right now. Please try again later.",
+};
+
+function initAuthNotice() {
+  const url = new URL(window.location.href);
+  const failure = url.searchParams.get("auth");
+  if (url.searchParams.has("signed_in")) toast("You're signed in", { tone: "success" });
+  else if (url.searchParams.has("signed_out")) toast("You're signed out", { tone: "info" });
+  else if (failure) toast(AUTH_FAILURES[failure] ?? AUTH_FAILURES.exchange!, { tone: "danger" });
+  else return;
+  // checkout.astro reads its own flags server-side; the other pages only need the toast.
+  if (url.pathname === "/checkout") return;
+  for (const key of ["signed_in", "signed_out", "auth"]) url.searchParams.delete(key);
+  history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 function initAccountWishlist() {
   if (customerId && !sessionStorage.getItem(WISHLIST_MERGED + customerId)) void saveWishlist("merge");
 }
@@ -136,6 +157,7 @@ function initBackToTop() {
 document.documentElement.classList.add("motion-ready");
 observeReveal();
 syncWishlist();
+initAuthNotice();
 initAccountWishlist();
 initDelegatedControls();
 initBackToTop();

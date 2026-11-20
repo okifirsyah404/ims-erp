@@ -177,7 +177,11 @@ export type TPortalCheckout = z.output<typeof portalCheckoutSchema>;
 
 /** A checkout estimate in whole rupiah, as the website's `OrderQuote` expects (ERP-0070). */
 export type TCheckoutQuote = {
-	lines: { productSlug: string; quantity: number; unitPrice: number; lineTotal: number; available: boolean }[];
+	/**
+	 * `available`: the line can go into the order. `priceOnRequest` lines (ERP-0078) have no
+	 * online price (or no stock): they join the same draft SPH at 0 and sales prices them.
+	 */
+	lines: { productSlug: string; quantity: number; unitPrice: number; lineTotal: number; available: boolean; priceOnRequest?: boolean; note?: string }[];
 	subtotal: number;
 	discount: number;
 	shipping: number;

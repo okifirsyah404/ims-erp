@@ -9,6 +9,7 @@ import Logo from "../brand/Logo.astro";
 import Button from "../ui/Button.astro";
 import MobileMenu from "./MobileMenu.astro";
 import PortalMenu from "./PortalMenu.astro";
+import { getCustomer } from "../../lib/server/auth";
 import MegaMenu from "./MegaMenu.astro";
 import CommandPalette from "./CommandPalette.astro";
 import { customerPortal, routes } from "../../data/site";
@@ -27,6 +28,8 @@ interface Props {
 const { cartCount = 0 } = Astro.props;
 const pathname = Astro.url.pathname;
 const cartLabel = cartCount > 0 ? `Cart, ${cartCount} items` : "Cart";
+// The signed-in customer (website hand-off), shown on the portal trigger.
+const signedInName = (await getCustomer(Astro.session))?.name.split(" ")[0];
 ---
 
 <header class="sticky top-0 z-40 border-b border-border bg-white/95 backdrop-blur-[10px]">
@@ -104,7 +107,7 @@ const cartLabel = cartCount > 0 ? `Cart, ${cartCount} items` : "Cart";
           data-portal-trigger
         >
           <CircleUserRound size={17} aria-hidden="true" />
-          Customer Portal
+          {signedInName ?? "Customer Portal"}
         </a>
         <PortalMenu variant="panel" />
       </div>

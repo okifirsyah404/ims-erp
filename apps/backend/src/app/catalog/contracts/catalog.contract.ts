@@ -91,6 +91,11 @@ export type TOrderLine = {
 	quantity: number;
 	orderable: boolean;
 	itemId: string | null;
+	/**
+	 * A published product that cannot be bought online (no list price, or out of stock): it
+	 * can still join the order as a "price on request" line (ERP-0078). `null` otherwise.
+	 */
+	requestItemId: string | null;
 	name: string | null;
 	unitPrice: number | null;
 };

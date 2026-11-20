@@ -8,7 +8,8 @@ import ArrowRight from "@lucide/astro/icons/arrow-right";
 import Phone from "@lucide/astro/icons/phone";
 import Button from "../ui/Button.astro";
 import SocialLinks from "../ui/SocialLinks.astro";
-import { customerPortal, routes } from "../../data/site";
+import { authRoutes, customerPortal, routes } from "../../data/site";
+import { getCustomer } from "../../lib/server/auth";
 import { isActivePath } from "../../lib/nav";
 import { catalogCategories } from "../../data/catalog";
 import { getSolutions } from "../../lib/server/content/solutions";
@@ -22,6 +23,8 @@ interface Props {
 }
 
 const { id, pathname } = Astro.props;
+const here = `${Astro.url.pathname}${Astro.url.search}`;
+const customer = await getCustomer(Astro.session);
 const productLinks = catalogCategories.map((c) => ({ label: c.name, href: `${routes.products}?category=${c.slug}` }));
 const { platforms } = await getSolutions();
 const solutionLinks = platforms.map((p) => ({ label: p.name, href: `${routes.solutions}/${p.slug}` }));
@@ -101,19 +104,38 @@ const solutionLinks = platforms.map((p) => ({ label: p.name, href: `${routes.sol
         </span>
       </div>
       <div class="flex gap-2.5">
-        <a
-          href={customerPortal.login}
-          class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 px-3 py-[13px] text-[14px] font-semibold text-white"
-        >
-          Log in
-          <LogIn size={15} aria-hidden="true" />
-        </a>
-        <a
-          href={customerPortal.register}
-          class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white px-3 py-[13px] text-[14px] font-semibold text-fg ring-1 ring-border ring-inset"
-        >
-          Register
-        </a>
+        {customer ? (
+          <>
+            <a
+              href={customerPortal.home}
+              class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 px-3 py-[13px] text-[14px] font-semibold text-white"
+            >
+              {customer.name.split(" ")[0]} · Portal
+            </a>
+            <form method="post" action={authRoutes.logout} class="flex flex-1">
+              <input type="hidden" name="next" value={here} />
+              <button type="submit" class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white px-3 py-[13px] text-[14px] font-semibold text-fg ring-1 ring-border ring-inset">
+                Sign out
+              </button>
+            </form>
+          </>
+        ) : (
+          <>
+            <a
+              href={authRoutes.login(here)}
+              class="flex flex-1 items-center justify-center gap-2 rounded-md bg-navy-900 px-3 py-[13px] text-[14px] font-semibold text-white"
+            >
+              Log in
+              <LogIn size={15} aria-hidden="true" />
+            </a>
+            <a
+              href={authRoutes.register(here)}
+              class="flex flex-1 items-center justify-center gap-2 rounded-md bg-white px-3 py-[13px] text-[14px] font-semibold text-fg ring-1 ring-border ring-inset"
+            >
+              Register
+            </a>
+          </>
+        )}
       </div>
     </div>
 

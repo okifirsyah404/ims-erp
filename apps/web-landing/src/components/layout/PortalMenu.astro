@@ -7,7 +7,8 @@ import ChevronRight from "@lucide/astro/icons/chevron-right";
 import Smartphone from "@lucide/astro/icons/smartphone";
 import X from "@lucide/astro/icons/x";
 import LogoMark from "../brand/LogoMark.astro";
-import { customerPortal, routes } from "../../data/site";
+import { authRoutes, customerPortal, routes } from "../../data/site";
+import { getCustomer } from "../../lib/server/auth";
 
 /**
  * 01.06 Header → Customer Portal menu (desktop dropdown, qRUzr) and Portal Entry Sheet
@@ -19,6 +20,9 @@ interface Props {
 }
 
 const { variant } = Astro.props;
+// Sign-in goes through the website hand-off and comes back to this page (signed in here too).
+const here = `${Astro.url.pathname}${Astro.url.search}`;
+const customer = await getCustomer(Astro.session);
 const links = [
   { icon: Route, tone: "bg-blue-50 text-blue-600", title: "Track an order", text: "Order no. or AWB — no sign-in needed", mobileText: "No sign-in needed", href: routes.track },
   { icon: Headset, tone: "bg-success-bg text-success", title: "Get support", text: "Open a ticket or chat on WhatsApp", mobileText: "Ticket, WhatsApp or call", href: customerPortal.newTicket },
@@ -44,10 +48,23 @@ const links = [
             <span class="text-[12px] text-fg-on-dark-muted">Orders, projects, quotations &amp; support</span>
           </span>
         </div>
-        <div class="flex gap-2">
-          <a href={customerPortal.login} class="flex flex-1 items-center justify-center rounded-md bg-white py-2.5 text-[13px] font-bold text-navy-900 hover:bg-surface">Sign in</a>
-          <a href={customerPortal.register} class="flex flex-1 items-center justify-center rounded-md bg-blue-600 py-2.5 text-[13px] font-bold text-white ring-1 ring-white/20 ring-inset hover:bg-blue-700">Create account</a>
-        </div>
+        {customer ? (
+          <div class="flex flex-col gap-2">
+            <p class="text-[13px] text-fg-on-dark-muted">Signed in as <span class="font-bold text-white">{customer.name}</span></p>
+            <div class="flex gap-2">
+              <a href={customerPortal.home} class="flex flex-1 items-center justify-center rounded-md bg-white py-2.5 text-[13px] font-bold text-navy-900 hover:bg-surface">Open portal</a>
+              <form method="post" action={authRoutes.logout} class="flex flex-1">
+                <input type="hidden" name="next" value={here} />
+                <button type="submit" class="flex flex-1 items-center justify-center rounded-md bg-blue-600 py-2.5 text-[13px] font-bold text-white ring-1 ring-white/20 ring-inset hover:bg-blue-700">Sign out</button>
+              </form>
+            </div>
+          </div>
+        ) : (
+          <div class="flex gap-2">
+            <a href={authRoutes.login(here)} class="flex flex-1 items-center justify-center rounded-md bg-white py-2.5 text-[13px] font-bold text-navy-900 hover:bg-surface">Sign in</a>
+            <a href={authRoutes.register(here)} class="flex flex-1 items-center justify-center rounded-md bg-blue-600 py-2.5 text-[13px] font-bold text-white ring-1 ring-white/20 ring-inset hover:bg-blue-700">Create account</a>
+          </div>
+        )}
       </div>
       <ul class="flex flex-col p-2">
         {links.map(({ icon: Icon, tone, title, text, href }) => (
@@ -81,8 +98,21 @@ const links = [
           </div>
           <form method="dialog"><button class="flex size-8 items-center justify-center rounded-pill bg-surface text-fg" aria-label="Close"><X size={16} aria-hidden="true" /></button></form>
         </div>
-        <a href={customerPortal.login} class="flex items-center justify-center rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta">Sign in</a>
-        <a href={customerPortal.register} class="flex items-center justify-center rounded-md bg-white py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset">Create account · Individual or Business</a>
+        {customer ? (
+          <>
+            <p class="text-[13px] text-fg-secondary">Signed in as <span class="font-bold text-fg">{customer.name}</span></p>
+            <a href={customerPortal.home} class="flex items-center justify-center rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta">Open portal</a>
+            <form method="post" action={authRoutes.logout}>
+              <input type="hidden" name="next" value={here} />
+              <button type="submit" class="flex w-full items-center justify-center rounded-md bg-white py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset">Sign out</button>
+            </form>
+          </>
+        ) : (
+          <>
+            <a href={authRoutes.login(here)} class="flex items-center justify-center rounded-md bg-blue-600 py-3.5 text-[15px] font-semibold text-white shadow-cta">Sign in</a>
+            <a href={authRoutes.register(here)} class="flex items-center justify-center rounded-md bg-white py-3 text-[14px] font-semibold text-fg ring-1 ring-border ring-inset">Create account · Individual or Business</a>
+          </>
+        )}
         <ul class="flex flex-col divide-y divide-border rounded-lg ring-1 ring-border ring-inset">
           {links.filter((l) => !l.desktopOnly).map(({ icon: Icon, tone, title, mobileText, href }) => (
             <li>

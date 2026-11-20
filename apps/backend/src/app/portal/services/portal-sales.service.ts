@@ -76,12 +76,23 @@ export class PortalSalesService {
 	private estimate(lines: TOrderLine[]): TCheckoutQuote {
 		const priced = lines.map((line) => {
 			const unitPrice = line.unitPrice === null ? 0 : rupiah(line.unitPrice);
+			if (!line.orderable && line.requestItemId) {
+				return {
+					productSlug: line.productSlug,
+					quantity: line.quantity,
+					unitPrice: 0,
+					lineTotal: 0,
+					available: true,
+					priceOnRequest: true,
+					note: 'Price on request — our sales team prices it in your quotation',
+				};
+			}
 			return { productSlug: line.productSlug, quantity: line.quantity, unitPrice, lineTotal: line.orderable ? unitPrice * line.quantity : 0, available: line.orderable };
 		});
 		const subtotal = priced.reduce((sum, line) => sum + line.lineTotal, 0);
 		const tax = Math.round((subtotal * CHECKOUT_VAT_BPS) / 10_000);
 		const fingerprint = createHash('sha256')
-			.update(JSON.stringify(priced.map((line) => [line.productSlug, line.quantity, line.unitPrice, line.available])))
+			.update(JSON.stringify(priced.map((line) => [line.productSlug, line.quantity, line.unitPrice, line.available, line.priceOnRequest ?? false])))
 			.digest('base64url')
 			.slice(0, 32);
 		return {
@@ -107,13 +118,15 @@ export class PortalSalesService {
 		this.require(portal, MAY_ORDER);
 		const lines = await this.catalog.orderLines(input.items);
 		const estimate = this.estimate(lines);
-		if (estimate.quoteId !== input.quoteId || lines.some((line) => !line.orderable)) throw new PortalCheckoutChangedError();
+		if (estimate.quoteId !== input.quoteId || lines.some((line) => !line.orderable && !line.requestItemId)) throw new PortalCheckoutChangedError();
 		const quotation = await this.sales.requestOrder({
 			customerId: portal.customerId,
 			contactId: portal.contactId,
 			requestedBy: portal.user.name,
 			source,
-			lines: lines.map((line) => ({ itemId: line.itemId!, quantity: line.quantity })),
+			lines: lines.map((line) =>
+				line.orderable ? { itemId: line.itemId!, quantity: line.quantity } : { itemId: line.requestItemId!, quantity: line.quantity, priceOnRequest: true },
+			),
 			note: input.notes ?? input.shipping?.notes ?? null,
 			poNumber: input.poNumber ?? null,
 		});

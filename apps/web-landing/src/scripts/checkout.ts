@@ -36,10 +36,9 @@ export function initCheckout() {
   const $$ = <T extends Element = HTMLElement>(selector: string, root: ParentNode = document) => [...root.querySelectorAll<T>(selector)];
   const catalog = new Map(data.catalog.map((p) => [p.slug, p]));
   const isCustomer = form.dataset.mode === "customer";
-  const purchasable = (cart: CartLine[]) => cart.filter((l) => {
-    const p = catalog.get(l.slug);
-    return p && p.price !== null && p.stock !== "out";
-  });
+  // ERP-0078: every catalog product goes into the order; one without an online price (or out
+  // of stock) is a "price on request" line that sales prices in the same quotation.
+  const purchasable = (cart: CartLine[]) => cart.filter((l) => catalog.has(l.slug));
 
   let lines = purchasable(getCart());
   const returning = new URL(location.href).searchParams.get("order");
@@ -275,8 +274,8 @@ export function initCheckout() {
         strong.className = "font-semibold text-fg";
         strong.textContent = `${line.quantity} × ${p?.name ?? line.productSlug}`;
         const meta = document.createElement("span");
-        meta.className = line.available ? "text-[12.5px] text-fg-muted" : "text-[12.5px] font-semibold text-danger";
-        meta.textContent = line.available ? `${formatRupiah(line.unitPrice)} each` : (line.note ?? "Not available");
+        meta.className = !line.available ? "text-[12.5px] font-semibold text-danger" : line.priceOnRequest ? "text-[12.5px] font-semibold text-warning" : "text-[12.5px] text-fg-muted";
+        meta.textContent = !line.available ? (line.note ?? "Not available") : line.priceOnRequest ? "Price on request — included in your quotation" : `${formatRupiah(line.unitPrice)} each`;
         name.append(strong, meta);
         const total = document.createElement("span");
         total.className = "font-bold text-fg";

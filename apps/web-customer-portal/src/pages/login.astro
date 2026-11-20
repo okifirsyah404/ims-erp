@@ -23,6 +23,8 @@ const result = Astro.getActionResult(actions.auth.login);
 // Keep `next` on the POST URL (the bare action URL `?_action=…` would drop it).
 const loginAction = next !== "/" ? `/login?next=${encodeURIComponent(next)}&${String(actions.auth.login).replace(/^\?/, "")}` : actions.auth.login;
 if (result && !result.error) return Astro.redirect(next, 303);
+// Verifying the email first must not lose the way back (e.g. to the website hand-off).
+if (result?.error?.code === "FORBIDDEN" && next !== "/") Astro.session?.set("returnTo", next);
 
 const accountType = Astro.url.searchParams.get("type") === "individual" ? "individual" : "business";
 const fieldErrors = result?.error && isInputError(result.error) ? result.error.fields : {};

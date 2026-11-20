@@ -122,6 +122,8 @@ export type OrderQuote = {
     lineTotal: Money;
     /** `false` when the product is out of stock or can't be bought online. */
     available: boolean;
+    /** No online price (or no stock): it joins the same quotation and sales prices it (ERP-0078). */
+    priceOnRequest?: boolean;
     note?: string;
   }[];
   subtotal: Money;
@@ -200,6 +202,7 @@ const orderQuoteSchema = z.object({
       unitPrice: z.number().nonnegative(),
       lineTotal: z.number().nonnegative(),
       available: z.boolean(),
+      priceOnRequest: z.boolean().optional(),
       note: z.string().max(200).optional(),
     }),
   ),

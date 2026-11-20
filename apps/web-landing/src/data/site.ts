@@ -50,8 +50,8 @@ export const customerPortal = {
 
 /** Website sign-in hand-off (portal login/register, then back here). */
 export const authRoutes = {
-  login: (next = "/checkout") => `/auth/login?next=${encodeURIComponent(next)}`,
-  register: (next = "/checkout") => `/auth/login?mode=register&next=${encodeURIComponent(next)}`,
+  login: (next = "/") => `/auth/login?next=${encodeURIComponent(next)}`,
+  register: (next = "/") => `/auth/login?mode=register&next=${encodeURIComponent(next)}`,
   logout: "/auth/logout",
 } as const;
 

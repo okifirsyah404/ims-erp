@@ -257,8 +257,8 @@ beforeEach(() => {
 	catalogLines = (lines) =>
 		lines.map((line) =>
 			line.productSlug === 'reader'
-				? { ...line, orderable: true, itemId: ITEM, name: 'Reader', unitPrice: 100_000_00 }
-				: { ...line, orderable: false, itemId: null, name: 'Gate', unitPrice: null },
+				? { ...line, orderable: true, itemId: ITEM, requestItemId: null, name: 'Reader', unitPrice: 100_000_00 }
+				: { ...line, orderable: false, itemId: null, requestItemId: null, name: 'Gate', unitPrice: null },
 		);
 });
 
@@ -282,14 +282,35 @@ describe('portal checkout', () => {
 		expect(requested[0]).toMatchObject({ customerId: CUST_A, source: 'website', lines: [{ itemId: ITEM, quantity: 2 }], note: 'Pagi' });
 	});
 
+	test('ERP-0078: a published product without an online price joins the same draft SPH as "price on request"', async () => {
+		catalogLines = (lines) =>
+			lines.map((line) =>
+				line.productSlug === 'reader'
+					? { ...line, orderable: true, itemId: ITEM, requestItemId: null, name: 'Reader', unitPrice: 100_000_00 }
+					: { ...line, orderable: false, itemId: null, requestItemId: 'item-gate', name: 'Gate', unitPrice: null },
+			);
+		const service = portalSales();
+		const items = [{ productSlug: 'reader', quantity: 1 }, { productSlug: 'gate', quantity: 2 }];
+		const quote = await service.quote({ items });
+		expect(quote.lines.map((line) => [line.productSlug, line.available, line.priceOnRequest ?? false, line.lineTotal])).toEqual([
+			['reader', true, false, 100_000],
+			['gate', true, true, 0],
+		]);
+		await service.placeOrder(portal('owner'), { items, quoteId: quote.quoteId }, 'website');
+		expect((requested[0] as { lines: unknown[] }).lines).toEqual([
+			{ itemId: ITEM, quantity: 1 },
+			{ itemId: 'item-gate', quantity: 2, priceOnRequest: true },
+		]);
+	});
+
 	test('a changed price, a stale quote or an unorderable line is 409', async () => {
 		const service = portalSales();
 		const items = [{ productSlug: 'reader', quantity: 1 }];
 		const { quoteId } = await service.quote({ items });
 		await expect(service.placeOrder(portal('owner'), { items, quoteId: 'Q-stale' }, 'portal')).rejects.toBeInstanceOf(PortalCheckoutChangedError);
-		catalogLines = (lines) => lines.map((line) => ({ ...line, orderable: true, itemId: ITEM, name: 'Reader', unitPrice: 120_000_00 }));
+		catalogLines = (lines) => lines.map((line) => ({ ...line, orderable: true, itemId: ITEM, requestItemId: null, name: 'Reader', unitPrice: 120_000_00 }));
 		await expect(service.placeOrder(portal('owner'), { items, quoteId }, 'portal')).rejects.toBeInstanceOf(PortalCheckoutChangedError);
-		catalogLines = (lines) => lines.map((line) => ({ ...line, orderable: false, itemId: null, name: 'Gate', unitPrice: null }));
+		catalogLines = (lines) => lines.map((line) => ({ ...line, orderable: false, itemId: null, requestItemId: null, name: 'Gate', unitPrice: null }));
 		const mixed = [{ productSlug: 'gate', quantity: 1 }];
 		const second = await service.quote({ items: mixed });
 		await expect(service.placeOrder(portal('owner'), { items: mixed, quoteId: second.quoteId }, 'portal')).rejects.toBeInstanceOf(

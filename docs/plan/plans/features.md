@@ -624,6 +624,8 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Website sign-in back to the page + order with price-on-request items — ERP-0078
+  (2026-11-20). Evidence: `progress.md` 2026-11-20 ERP-0078.
 - Customer notifications in the portal — ERP-0077 (2026-11-20): SPH sent,
   delivery shipped, invoice issued, payment received and support replies
   reach the customer's portal logins; unread counters in the navigation.

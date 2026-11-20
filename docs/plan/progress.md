@@ -12,6 +12,58 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0078: website sign-in back to the page; order and quotation in one checkout
+
+Same branch, after ERP-0077 (`0eb3364a`). User tested the build and reported:
+"login redirects me to a page", "at purchase I'm logged out", "I want to
+order and request a quotation at once". `docs/database/` reviewed and
+unchanged.
+
+**Root causes (investigated).**
+- The header and menu "Sign in" / "Register" links pointed at the portal's
+  own login, not the website hand-off: the user ended on the portal home and
+  the website never got a session, so checkout asked to sign in again (no
+  website session files existed). The header never showed signed-in state.
+- The hand-off only returned to `/checkout`, `/cart` or `/quote`; failures
+  always went to `/checkout?auth=…` whose message hides with an empty cart.
+- An unverified portal login lost the way back during email verification.
+- Checkout only took products with an online price and stock; the rest had
+  to go through a separate RFQ.
+
+**Decision (user, 2026-11-20).** One draft SPH: products without an online
+price (or out of stock) join the order as "harga menyusul" lines at 0, and
+sales prices them before sending the SPH.
+
+**Changes.**
+- Website: `safeReturnPath` accepts any same-site page (not `/auth/*`),
+  default `/`; PortalMenu (panel + sheet), MobileMenu: sign-in/register via
+  `/auth/login?next=<current page>`, signed-in name, "Open portal",
+  "Sign out" (POST, back to the page); header trigger shows the first name;
+  `/auth/logout` returns to `next`; `/auth/callback` failures go back to the
+  starting page with `?auth=<reason>`; `site.ts` toasts signed in / out /
+  failure on any page; checkout and cart accept price-on-request products
+  (cart copy updated, checkout enabled), checkout lines show "Price on request".
+- Portal: an unverified login stores `returnTo` = `next`.
+- Backend: `TOrderLine.requestItemId`; the checkout quote marks those lines
+  `priceOnRequest` (available, 0); `placeOrder` accepts them; the SPH gets
+  them at 0 with the specification "Harga menyusul — mohon penawaran" and a
+  note counting them for sales.
+
+**Verification.**
+- Hand-off simulated with two cookie jars after a dev-server restart:
+  `/auth/login?next=/products?category=parking` → portal `/connect/web` →
+  portal `/login?next=…` → login POST → `/connect/web` → website
+  `/auth/callback` → `/products?category=parking&signed_in=1`; the page
+  header shows "Signed in as …".
+- `portal-sales.test.ts` +1 (combined order: priced + price-on-request lines
+  in one SPH); `bun run test` all green (backend 1353), typecheck clean,
+  `astro check` website 0 and portal 0.
+- Not done: a browser walk-through of a full checkout with a price-on-request
+  item (next: the end-to-end order test with the user).
+
+**Next executable task:** ERP-0079 document downloads (SPH, invoice, warranty
+PDF) in the portal.
+
 ## 2026-11-20 - ERP-0077: customer notifications in the portal
 
 Same branch, after ERP-0076 (`a5a1a053`). `docs/database/` reviewed and

@@ -104,8 +104,10 @@ export class CustomerSalesService {
 		const customer = await this.customers.getActiveCustomer(input.customerId);
 		if (!customer) throw new QuotationCustomerUnavailableError();
 		const owner = await this.ownerOr(customer.ownerUserId);
+		const onRequest = input.lines.filter((line) => line.priceOnRequest).length;
 		const notes = [
 			ONLINE_ORDER_COPY.requestedBy(ONLINE_ORDER_COPY.channel[input.source], input.requestedBy),
+			onRequest > 0 ? ONLINE_ORDER_COPY.priceOnRequestNote(onRequest) : null,
 			input.poNumber ? ONLINE_ORDER_COPY.poNumber(input.poNumber) : null,
 			input.note ? ONLINE_ORDER_COPY.note(input.note) : null,
 		]
@@ -132,10 +134,10 @@ export class CustomerSalesService {
 				lines: input.lines.map((line) => ({
 					itemId: line.itemId,
 					name: null,
-					specification: null,
+					specification: line.priceOnRequest ? ONLINE_ORDER_COPY.priceOnRequest : null,
 					unit: null,
 					quantity: String(line.quantity),
-					unitPrice: null,
+					unitPrice: line.priceOnRequest ? 0 : null,
 					discountAmount: 0,
 				})),
 			},

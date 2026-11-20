@@ -14,11 +14,13 @@ const origin = (value: string | undefined, devFallback: string, prodFallback: st
 export const webUrl = origin(PUBLIC_WEB_URL, "http://localhost:4321", "https://entragate.com");
 export const customerUrl = origin(PUBLIC_CUSTOMER_URL, "http://localhost:4322", "https://customer.entragate.com");
 
-/** Same-site, path-only destinations the website may return to after signing in. */
-const RETURN_PATHS = ["/checkout", "/cart", "/quote"];
-
-export function safeReturnPath(value: string | null | undefined, fallback = "/checkout"): string {
+/**
+ * Where the website may return after signing in or out: any same-site path (the page the
+ * visitor was on), never another origin and never the sign-in routes themselves.
+ */
+export function safeReturnPath(value: string | null | undefined, fallback = "/"): string {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback;
   const path = value.split(/[?#]/)[0]!;
-  return RETURN_PATHS.some((p) => path === p || path.startsWith(`${p}/`)) ? value.slice(0, 300) : fallback;
+  if (path === "/auth" || path.startsWith("/auth/") || path.startsWith("/_actions")) return fallback;
+  return value.slice(0, 300);
 }
