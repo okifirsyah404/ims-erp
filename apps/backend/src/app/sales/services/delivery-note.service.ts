@@ -1,3 +1,5 @@
+import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
+import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import { ITEM_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ItemService } from '@app/inventory/services/item.service';
 import type { StockService } from '@app/inventory/services/stock.service';
@@ -98,6 +100,8 @@ export class DeliveryNoteService {
 		/** ERP-0044: shipped delivery notes are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0077: tells the customer's portal logins. */
+		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
 	) {}
 
 	list(query: TDeliveryNoteListQuery): Promise<TPaginationResult<TDeliveryNoteRow>> {
@@ -357,6 +361,14 @@ export class DeliveryNoteService {
 				},
 				tx,
 			);
+		});
+		await this.portalNotifier.notify({
+			customerId: note.customerId,
+			templateCode: 'portal.order_shipped',
+			variables: { orderNumber: note.salesOrderCode, deliveryNumber: note.code },
+			sourceType: 'sales_order',
+			sourceId: note.salesOrderId,
+			tags: [note.salesOrderCode],
 		});
 		return this.get(id);
 	}

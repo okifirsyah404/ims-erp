@@ -12,7 +12,6 @@ import { type PortalRoutes } from "@/api/portal";
  * show as an error and actions as "This feature isn't connected yet":
  * - `refreshSession` on purpose: ERP sessions are Better Auth's 7-day sessions and
  *   there is no refresh token; the portal signs the user out when they expire.
- * - not built in the ERP yet: notifications (ERP-0077).
  * - deferred by the owner (2026-11-20): device lookup/registration and service booking.
  *
  * Ordering itself happens on the website (catalog + checkout, user decision 2026-11-19);
@@ -69,6 +68,9 @@ export const erpRoutes: PortalRoutes = {
 
   // Sign-in-free order lookup (ERP-0073): minimal status, no customer, prices or addresses
   lookupPublicOrder: "/public/v1/orders/:id/status",
+
+  // In-app notifications (ERP-0077); opening the list marks them read
+  listNotifications: "/portal/v1/notifications",
 
   // Account pages (ERP-0075)
   getProfile: "/portal/v1/profile",

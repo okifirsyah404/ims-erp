@@ -17,6 +17,7 @@ import type { IPortalAuthGateway, IPortalIdentityRepository, IPortalMailer } fro
 import type { PortalAccountService } from '../services/portal-account.service';
 import type { IUserPreferenceRepository } from '../repositories/user-preference.repository';
 import type { UserPreferenceService } from '../services/user-preference.service';
+import type { CustomerPortalNotifier } from '../services/customer-portal-notifier.service';
 
 /** Customer-portal logins (ERP-0022). `PORTAL_ACCOUNT_SERVICE_TOKEN` is the contract other modules use. */
 export const PORTAL_IDENTITY_REPOSITORY_TOKEN: InjectionToken<IPortalIdentityRepository> = Symbol('PORTAL_IDENTITY_REPOSITORY');
@@ -75,3 +76,6 @@ export const USER_ADMIN_SERVICE_TOKEN: InjectionToken<UserAdminService> = Symbol
 export const USER_PREFERENCE_REPOSITORY_TOKEN: InjectionToken<IUserPreferenceRepository> = Symbol('USER_PREFERENCE_REPOSITORY');
 /** Per-user preferences (ERP-0075), exported for the portal module. */
 export const USER_PREFERENCE_SERVICE_TOKEN: InjectionToken<UserPreferenceService> = Symbol('USER_PREFERENCE_SERVICE');
+
+/** In-app notifications to a customer's portal logins (ERP-0077), exported for Sales and After-sales. */
+export const CUSTOMER_PORTAL_NOTIFIER_TOKEN: InjectionToken<CustomerPortalNotifier> = Symbol('CUSTOMER_PORTAL_NOTIFIER');

@@ -80,7 +80,7 @@ beforeEach(() => {
 			},
 		},
 		// ERP-0022 message thread: not exercised here (see customer-portal.test.ts).
-		{ list: async () => [], latestCustomerVisible: async () => new Map(), create: async () => ({}) as never },
+		{ list: async () => [], latestCustomerVisible: async () => new Map(), create: async () => ({}) as never }, { notify: async () => {} },
 	);
 });
 

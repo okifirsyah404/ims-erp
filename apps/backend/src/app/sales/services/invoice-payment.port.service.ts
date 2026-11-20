@@ -1,3 +1,5 @@
+import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
+import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import { inject, injectable } from 'tsyringe';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
@@ -5,7 +7,7 @@ import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sales.sche
 import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
 import type { TInvoiceRepository, TReceiptData } from '../contracts/invoice.repository.interface';
 import type { IInvoicePaymentPort } from '../contracts/invoice-payment.port';
-import { receiptRecordedEvent } from '../utils/invoice-events';
+import { paymentReceivedNotice, receiptRecordedEvent } from '../utils/invoice-events';
 
 /**
  * Sales' implementation of {@link IInvoicePaymentPort} (ADR-0023): the payment
@@ -18,6 +20,8 @@ export class InvoicePaymentPortService implements IInvoicePaymentPort {
 		private readonly invoices: Pick<TInvoiceRepository, 'findById' | 'addReceipt'>,
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
+		/** ERP-0077: tells the customer's portal logins. */
+		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
 	) {}
 
 	findById(organizationId: string, id: string, tx?: unknown): Promise<TInvoiceSelect | null> {
@@ -34,5 +38,6 @@ export class InvoicePaymentPortService implements IInvoicePaymentPort {
 	/** M04: an online payment is a received payment for n8n too. */
 	async publishReceiptRecorded(receipt: TReceiptSelect, invoice: TInvoiceSelect): Promise<void> {
 		await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, invoice));
+		await this.portalNotifier.notify(paymentReceivedNotice(receipt, invoice));
 	}
 }

@@ -439,7 +439,7 @@ function ticketService(): ServiceTicketService {
 				comments.push(row);
 				return row;
 			},
-		},
+		}, { notify: async () => {} },
 	);
 }
 

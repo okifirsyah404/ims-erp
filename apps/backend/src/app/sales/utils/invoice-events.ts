@@ -1,3 +1,5 @@
+import type { TCustomerNotice } from '@app/user/services/customer-portal-notifier.service';
+import { rupiahLabel } from './rupiah';
 import type { TInvoiceSelect, TReceiptSelect } from '@drizzle/schemas/sales.schema';
 
 /**
@@ -54,5 +56,29 @@ export function receiptRecordedEvent(receipt: TReceiptSelect, invoice: TInvoiceS
 			outstandingTotal: invoice.outstandingTotal,
 		},
 		customer: customerOf(invoice),
+	};
+}
+
+/** ERP-0077: the customer's portal logins hear about an issued invoice. */
+export function invoiceIssuedNotice(invoice: TInvoiceSelect): TCustomerNotice {
+	return {
+		customerId: invoice.customerId,
+		templateCode: 'portal.invoice_issued',
+		variables: { invoiceNumber: invoice.code ?? '', amount: rupiahLabel(invoice.grandTotal), dueDate: invoice.dueDate ?? '' },
+		sourceType: 'invoice',
+		sourceId: invoice.id,
+		tags: invoice.code ? [invoice.code] : [],
+	};
+}
+
+/** ERP-0077: … and about a payment recorded on it (staff receipt or online payment). */
+export function paymentReceivedNotice(receipt: TReceiptSelect, invoice: TInvoiceSelect): TCustomerNotice {
+	return {
+		customerId: invoice.customerId,
+		templateCode: 'portal.payment_received',
+		variables: { invoiceNumber: invoice.code ?? '', amount: rupiahLabel(receipt.amount) },
+		sourceType: 'invoice',
+		sourceId: invoice.id,
+		tags: invoice.code ? [invoice.code] : [],
 	};
 }

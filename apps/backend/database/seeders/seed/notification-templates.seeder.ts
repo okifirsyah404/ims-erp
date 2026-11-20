@@ -58,6 +58,46 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		variables: ['invoiceNumber', 'customerName', 'amount'],
 	},
 	{
+		// Customer portal (ERP-0077): the portal renders its own localized copy; this is the stored fallback.
+		code: 'portal.quotation_sent',
+		name: 'Quotation … is ready',
+		subjectTemplate: 'Quotation {{quotationNumber}} is ready',
+		bodyTemplate: 'Your quotation {{quotationNumber}} ({{amount}}) is ready for review.',
+		variables: ['quotationNumber', 'amount'],
+	},
+	{
+		// Customer portal (ERP-0077): the portal renders its own localized copy; this is the stored fallback.
+		code: 'portal.order_shipped',
+		name: 'Order … is on its way',
+		subjectTemplate: 'Order {{orderNumber}} is on its way',
+		bodyTemplate: 'Delivery {{deliveryNumber}} for order {{orderNumber}} has left our warehouse.',
+		variables: ['orderNumber', 'deliveryNumber'],
+	},
+	{
+		// Customer portal (ERP-0077): the portal renders its own localized copy; this is the stored fallback.
+		code: 'portal.invoice_issued',
+		name: 'Invoice … issued',
+		subjectTemplate: 'Invoice {{invoiceNumber}} issued',
+		bodyTemplate: 'Invoice {{invoiceNumber}} for {{amount}} is due {{dueDate}}.',
+		variables: ['invoiceNumber', 'amount', 'dueDate'],
+	},
+	{
+		// Customer portal (ERP-0077): the portal renders its own localized copy; this is the stored fallback.
+		code: 'portal.payment_received',
+		name: 'Payment received for …',
+		subjectTemplate: 'Payment received for {{invoiceNumber}}',
+		bodyTemplate: 'We received {{amount}} for invoice {{invoiceNumber}}. Thank you.',
+		variables: ['invoiceNumber', 'amount'],
+	},
+	{
+		// Customer portal (ERP-0077): the portal renders its own localized copy; this is the stored fallback.
+		code: 'portal.ticket_replied',
+		name: 'New reply on ticket …',
+		subjectTemplate: 'New reply on ticket {{ticketNumber}}',
+		bodyTemplate: '{{author}} replied to your support ticket {{ticketNumber}}.',
+		variables: ['ticketNumber', 'author'],
+	},
+	{
 		code: 'crm.company_change_requested',
 		name: 'Company data change requested in the customer portal',
 		subjectTemplate: '{{customerName}} asked to change company data',

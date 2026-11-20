@@ -12,6 +12,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0077: customer notifications in the portal
+
+Same branch, after ERP-0076 (`a5a1a053`). `docs/database/` reviewed and
+unchanged: `notification.notifications` / templates already exist; only
+template rows (seeder) are new.
+
+**Gate 2 (manual `grill-me` fallback).**
+- Pipeline: the existing in-app notification module (rows per user, queue,
+  realtime) — no new table. Each portal login is a user, so the customer's
+  **active** `customer` portal identities are the recipients.
+- Dependency direction: Identity already depends on Notification, so the
+  recipient lookup cannot live in Notification. `CustomerPortalNotifier`
+  (Identity, exported) resolves the logins and calls
+  `ExportedNotificationService.notify`; producers (Sales, After-sales) call
+  the notifier. It never fails the producer (no logins = no-op; errors logged).
+- Events (owner list "SPH dikirim, pesanan berubah status, invoice terbit/
+  lunas, balasan tiket, tahap proyek"): SPH sent (quotation delivery), order
+  shipped (delivery note shipped), invoice issued, payment received (staff
+  receipt and online payment), support reply with visibility `customer`
+  (internal notes never). **Project stage changes are not wired yet.**
+- Reading: other modules may only use Notification's exported surface, so
+  `NotificationInboxService` (latest, unread count, mark all read) is new;
+  the portal lists the latest 50, shows only `portal.*` templates and marks
+  everything read when the list is opened (the contract has no mark-read
+  operation). Copy is rendered by the portal in the request language
+  (`portal.notification.*`, en/id); the seeded English text is the fallback.
+
+**Changes.**
+- Notification: 5 template codes + keys + seeder rows;
+  `NotificationInboxService` (`NOTIFICATION_INBOX_SERVICE_TOKEN`).
+- Identity: `CustomerPortalNotifier` (`CUSTOMER_PORTAL_NOTIFIER_TOKEN`).
+- Sales: `QuotationDeliveryService`, `DeliveryNoteService.ship`,
+  `InvoiceService.issue` / receipts, `InvoicePaymentPortService` notify;
+  `utils/rupiah.ts`, `invoiceIssuedNotice` / `paymentReceivedNotice`.
+- After-sales: `ServiceTicketService.addComment` notifies on customer-visible
+  replies.
+- Portal: `GET /portal/v1/notifications`, presenter `portalNotification`,
+  `unreadNotifications` on `/home` and `/badges` (were 0).
+- Tests: `customer-portal-notifications.test.ts` (4); six producer tests get
+  a no-op notifier.
+- Portal app: `listNotifications` mapped.
+
+**Verification.**
+- Unit 4 new; backend typecheck 0; full suites below.
+- Dev `drizzle:seed` (template rows; idempotent).
+- Live (dev portal login + `customer_service` seed account): internal note
+  → unread unchanged; customer-visible reply → unread +1; `GET
+  /portal/v1/notifications` with `Accept-Language: id` → "Balasan baru di
+  tiket …", kind `support`, link `/support/<id>`, unread; badge afterwards 0;
+  listing again shows it read.
+- Known gap: the unread badge counts every notification of the login, the
+  list shows only `portal.*` ones (a portal login receives no others today).
+- Not done: project-stage notifications; live checks of the SPH, shipping,
+  invoice and payment producers; browser walk-through.
+
+**Next executable task:** review of branch `feat/erp-0069-portal-session`
+(ERP-0069 … ERP-0077) with the owner, including browser walk-throughs of the
+portal and the web admin pages added since ERP-0071; then project-stage
+notifications.
+
 ## 2026-11-20 - ERP-0076: company-data change requests from the customer portal
 
 Same branch, after ERP-0075 (`763f2ac7`).

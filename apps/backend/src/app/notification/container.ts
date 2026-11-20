@@ -2,9 +2,11 @@ import type { DependencyContainer } from 'tsyringe';
 import { NotificationRepository } from './repositories/notification.repository';
 import { NotificationService } from './services/notification.service';
 import { ExportedNotificationService } from './services/exported-notification.service';
+import { NotificationInboxService } from './services/notification-inbox.service';
 import { dispatchNotification } from './queues/notification.queue';
 import {
 	EXPORTED_NOTIFICATION_SERVICE_TOKEN,
+	NOTIFICATION_INBOX_SERVICE_TOKEN,
 	NOTIFICATION_DISPATCHER_TOKEN,
 	NOTIFICATION_REPOSITORY_TOKEN,
 	NOTIFICATION_SERVICE_TOKEN,
@@ -37,4 +39,5 @@ export function registerNotification(container: DependencyContainer): void {
 	container.register(EXPORTED_NOTIFICATION_SERVICE_TOKEN, {
 		useClass: ExportedNotificationService,
 	});
+	container.register(NOTIFICATION_INBOX_SERVICE_TOKEN, { useClass: NotificationInboxService });
 }

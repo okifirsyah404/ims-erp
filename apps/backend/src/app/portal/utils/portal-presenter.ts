@@ -9,6 +9,7 @@
  */
 import type { TWishlistEntry } from '@app/commerce/services/account-shop.service';
 import type { TPortalRfqView } from '../services/portal-rfq.service';
+import type { TNotificationView } from '@app/notification/contracts/notification.contract';
 import type { TPortalDocumentEntry, TPortalDocumentFolder, TPortalProfileFacts } from '../services/portal-account-pages.service';
 import type { TPortalPreferences } from '@app/user/services/user-preference.service';
 import type { TCustomerAddressSelect, TCustomerContactSelect } from '@drizzle/schemas/crm.schema';
@@ -435,5 +436,35 @@ export function documentLibrary(p: TPresenter, entries: TPortalDocumentEntry[], 
 				...(entry.url ? { url: entry.url } : {}),
 				folder: entry.folder,
 			})),
+	};
+}
+
+/** Portal notification template → what the portal shows (ERP-0077). */
+const PORTAL_NOTICES = {
+	'portal.quotation_sent': { key: 'quotationSent', kind: 'quotation', href: (id: string) => `/quotations/${id}` },
+	'portal.order_shipped': { key: 'orderShipped', kind: 'order', href: (id: string) => `/orders/${id}` },
+	'portal.invoice_issued': { key: 'invoiceIssued', kind: 'payment', href: (id: string) => `/payments/${id}` },
+	'portal.payment_received': { key: 'paymentReceived', kind: 'payment', href: (id: string) => `/payments/${id}` },
+	'portal.ticket_replied': { key: 'ticketReplied', kind: 'support', href: (id: string) => `/support/${id}` },
+} as const;
+
+const jakartaDay = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(value);
+
+/** One in-app notification in the portal's `PortalNotification` shape; `null` for a template the portal does not know. */
+export function portalNotification(p: TPresenter, notification: TNotificationView) {
+	const notice = PORTAL_NOTICES[notification.templateCode as keyof typeof PORTAL_NOTICES];
+	if (!notice) return null;
+	const variables = notification.variables ?? {};
+	const created = new Date(notification.createdAt);
+	const text = (part: 'title' | 'body') => p.t(`portal.notification.${notice.key}.${part}` as const, variables as never) as string;
+	return {
+		id: notification.id,
+		group: jakartaDay(created) === p.today ? ('today' as const) : ('earlier' as const),
+		kind: notice.kind,
+		title: text('title'),
+		body: text('body'),
+		ago: agoLabel(p, created),
+		unread: notification.readAt === null,
+		...(notification.sourceId ? { href: notice.href(notification.sourceId) } : {}),
 	};
 }

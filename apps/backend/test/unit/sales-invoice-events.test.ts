@@ -43,7 +43,7 @@ function service(events: { topic: string; data: Record<string, unknown> }[]) {
 			},
 		},
 		// ERP-0044: the registry is exercised elsewhere; receipts register here.
-		{ register: async () => ({}) as never, voidBySource: async () => 1 },
+		{ register: async () => ({}) as never, voidBySource: async () => 1 }, { notify: async () => {} },
 	);
 }
 

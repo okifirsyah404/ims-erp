@@ -6,6 +6,7 @@ import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
 import { customerSiteSchema } from '@app/crm/contracts/customer-address.contract';
 import { companyChangeSchema } from '@app/crm/contracts/customer-change-request.contract';
+import { NOTIFICATION_INBOX_SERVICE_TOKEN } from '@app/notification/constants/di';
 import { PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import { quotationSummary } from '../utils/portal-sales-presenter';
 import { portalMemberInviteSchema, portalSignupSchema } from '@app/user/contracts/portal-account.contract';
@@ -31,6 +32,7 @@ import {
 	companySite,
 	documentLibrary,
 	deviceSummary,
+	portalNotification,
 	portalUser,
 	profileSummary,
 	projectDetail,
@@ -167,6 +169,7 @@ export class PortalController {
 		const auth = container.resolve(PORTAL_AUTH_SERVICE_TOKEN);
 		const service = container.resolve(PORTAL_SERVICE_TOKEN);
 		const pages = container.resolve(PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN);
+		const inbox = container.resolve(NOTIFICATION_INBOX_SERVICE_TOKEN);
 		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		// A malformed id is answered 404 like an unknown one: the portal reads 404 as "not found".
 		const id = (params: unknown) => {
@@ -295,6 +298,24 @@ export class PortalController {
 					},
 				},
 			)
+			.get(
+				'/notifications',
+				async (ctx) => {
+					const p = presenter(ctx);
+					const rows = await inbox.latest(ctx.portal.userId, 50);
+					const list = rows.map((row) => portalNotification(p, row)).filter((row) => row !== null);
+					// Opening the list reads them: the response still shows which were new.
+					if (rows.some((row) => row.readAt === null)) await inbox.markAllRead(ctx.portal.userId);
+					return ok(list);
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Notifications',
+						description: 'The latest 50 notifications of this login (SPH sent, order shipped, invoice issued, payment received, support reply; ERP-0077), newest first; opening the list marks them read',
+					},
+				},
+			)
 			.get('/profile', async (ctx) => ok(profileSummary(presenter(ctx), await pages.profile(ctx.portal))), {
 				portal: true,
 				detail: { summary: 'Profile figures', description: 'Counts and amounts for the profile page (ERP-0075)' },
@@ -355,7 +376,7 @@ export class PortalController {
 							.map((row) => quotationSummary(p, row, row.items.length, row.creator?.name ?? '', row.salesOrder?.code ?? null)),
 						openTickets: tickets.filter((ticket) => ticket.status !== 'closed').slice(0, 3).map((ticket) => ticketSummary(p, ticket)),
 						activity: [],
-						unreadNotifications: 0,
+						unreadNotifications: await inbox.unreadCount(ctx.portal.userId),
 					});
 				},
 				{ portal: true, detail: { summary: 'Home screen', description: 'Home screen: active project, quotations waiting for an answer and open tickets' } },
@@ -368,7 +389,7 @@ export class PortalController {
 						activeOrders: counts.activeOrders,
 						quotationsAwaiting: counts.quotationsAwaiting,
 						openTickets: tickets.filter((ticket) => ticket.status !== 'closed').length,
-						unreadNotifications: 0,
+						unreadNotifications: await inbox.unreadCount(portal.userId),
 					});
 				},
 				{ portal: true, detail: { summary: 'Navigation counters', description: 'Counters for the navigation badges' } },

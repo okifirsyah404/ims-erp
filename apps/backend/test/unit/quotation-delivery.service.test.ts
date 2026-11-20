@@ -103,7 +103,7 @@ beforeEach(() => {
 				published.push({ topic, data, dedupeKey: options?.dedupeKey });
 				return {} as never;
 			},
-		} as never,
+		} as never, { notify: async () => {} },
 	);
 });
 

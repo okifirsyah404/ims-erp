@@ -1,3 +1,6 @@
+import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
+import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
+import { rupiahLabel } from '../utils/rupiah';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
 import { COMPANY_SERVICE_TOKEN } from '@app/company/constants/di';
@@ -49,6 +52,8 @@ export class QuotationDeliveryService {
 		private readonly users: Pick<UserService, 'getUser'>,
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
+		/** ERP-0077: tells the customer's portal logins. */
+		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
 	) {}
 
 	/**
@@ -97,6 +102,14 @@ export class QuotationDeliveryService {
 			if (!finalAttempt) throw error;
 			pinoLogger.error({ err: error, quotationId: id }, 'quotation PDF not rendered; quotation.sent goes out without it');
 		}
+		await this.portalNotifier.notify({
+			customerId: quotation.customerId,
+			templateCode: 'portal.quotation_sent',
+			variables: { quotationNumber: quotation.code ?? '', amount: rupiahLabel(quotation.grandTotal) },
+			sourceType: 'quotation',
+			sourceId: quotation.id,
+			tags: quotation.code ? [quotation.code] : [],
+		});
 		const owner = quotation.createdBy ? await this.users.getUser(quotation.createdBy).catch(() => null) : null;
 		const customer = quotation.customerSnapshot;
 		await this.outbox.publish(

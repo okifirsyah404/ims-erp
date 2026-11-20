@@ -1,3 +1,5 @@
+import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
+import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
@@ -42,7 +44,7 @@ import {
 	ReceiptNotFoundError,
 } from '../errors/invoice.errors';
 import { businessDateOf } from '@utils/business-date.util';
-import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
+import { invoiceIssuedEvent, invoiceIssuedNotice, paymentReceivedNotice, receiptRecordedEvent } from '../utils/invoice-events';
 import type {
 	TCreateReceiptInput,
 	TReceiptListQuery,
@@ -83,6 +85,8 @@ export class InvoiceService {
 		/** ERP-0044: issued invoices and receipts are registered documents. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0077: tells the customer's portal logins. */
+		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
 	) {}
 
 	async list(
@@ -212,6 +216,7 @@ export class InvoiceService {
 	): Promise<TInvoiceSelect> {
 		const issued = await this.issueInTransaction(ctx, id, dates);
 		await this.outbox.publish('invoice.issued', { type: 'invoice', id: issued.id }, invoiceIssuedEvent(issued));
+		await this.portalNotifier.notify(invoiceIssuedNotice(issued));
 		return issued;
 	}
 
@@ -468,6 +473,7 @@ export class InvoiceService {
 		// n8n event (M04), with the invoice as it stands after the payment.
 		const paid = (await this.repo.findById(ctx.organizationId, invoiceId)) ?? invoice;
 		await this.outbox.publish('receipt.recorded', { type: 'receipt', id: receipt.id }, receiptRecordedEvent(receipt, paid));
+		await this.portalNotifier.notify(paymentReceivedNotice(receipt, paid));
 		return receipt;
 	}
 

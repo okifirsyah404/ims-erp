@@ -8,11 +8,13 @@ import { QueueInvitationMailer } from './adapters/queue-mailer';
 import { UserService } from './services/user.service';
 import { UserPreferenceRepository } from './repositories/user-preference.repository';
 import { UserPreferenceService } from './services/user-preference.service';
+import { CustomerPortalNotifier } from './services/customer-portal-notifier.service';
 import { InvitationService } from './services/invitation.service';
 import { UserAdminService } from './services/user-admin.service';
 import {
 	USER_PREFERENCE_REPOSITORY_TOKEN,
 	USER_PREFERENCE_SERVICE_TOKEN,
+	CUSTOMER_PORTAL_NOTIFIER_TOKEN,
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
 	INVITATION_SERVICE_TOKEN,
@@ -90,4 +92,5 @@ export function registerUser(container: DependencyContainer): void {
 	container.register(PORTAL_ACCOUNT_SERVICE_TOKEN, { useClass: PortalAccountService });
 	container.register(USER_PREFERENCE_REPOSITORY_TOKEN, { useClass: UserPreferenceRepository });
 	container.register(USER_PREFERENCE_SERVICE_TOKEN, { useClass: UserPreferenceService });
+	container.register(CUSTOMER_PORTAL_NOTIFIER_TOKEN, { useClass: CustomerPortalNotifier });
 }

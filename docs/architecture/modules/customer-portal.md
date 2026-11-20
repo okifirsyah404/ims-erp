@@ -120,11 +120,12 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | `completeOnboarding` | `POST /portal/v1/onboarding` | `{ siteAddress, invites[] }`: the first site (when none) and colleague invites; failed invites are reported, not fatal |
 | `listDocuments` | `GET /portal/v1/documents?folder=` | invoices and sent SPHs (listed), warranty certificates, customer-visible project files (short-lived link) |
 | `updateCompany` | `PATCH /portal/v1/account/company` | owners of business accounts (ERP-0076): `{ name, npwp?, industry? }` becomes a change request reviewed by sales (not a direct edit); the account manager is notified; while pending, `company.verified` is `false`; 422 when nothing differs or for an individual; 403 for other roles |
+| `listNotifications` | `GET /portal/v1/notifications` | latest 50 in-app notifications of the login (ERP-0077): SPH sent, delivery shipped, invoice issued, payment received (staff or online), support reply visible to the customer; kind + link per template; opening the list marks them read; `getBadges` / `getHome` count the unread |
 | website `submitRfq` (signed in) | `POST /public/v1/rfq` | website key **and** the customer's session cookie → the RFQ joins that account (`linkedToAccount: true`); a guest RFQ answers `false` |
 
 Not built yet (routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
-notifications (ERP-0077). Deferred by owner decision (2026-11-20): device registration and service
+nothing else. Deferred by owner decision (2026-11-20): device registration and service
 booking, promo codes.
 
 ## Staff side

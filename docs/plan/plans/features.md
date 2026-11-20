@@ -624,6 +624,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Customer notifications in the portal — ERP-0077 (2026-11-20): SPH sent,
+  delivery shipped, invoice issued, payment received and support replies
+  reach the customer's portal logins; unread counters in the navigation.
+  Evidence: `test/unit/customer-portal-notifications.test.ts` (4),
+  `progress.md` 2026-11-20 ERP-0077.
 - Company-data change requests — ERP-0076 (2026-11-20): an owner asks in the
   portal; sales approve (values written to the customer) or reject on the
   customer page; the account manager is notified. Evidence: migration

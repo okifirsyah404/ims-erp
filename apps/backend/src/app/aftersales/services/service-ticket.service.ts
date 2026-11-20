@@ -1,3 +1,5 @@
+import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
+import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
 import { CUSTOMER_SERVICE_TOKEN } from '@app/crm/constants/di';
@@ -81,6 +83,8 @@ export class ServiceTicketService {
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'register'>,
 		/** ERP-0022: the ticket's message thread (staff notes and replies, customer messages). */
 		@inject(SERVICE_TICKET_COMMENT_REPOSITORY_TOKEN) private readonly comments: IServiceTicketCommentRepository,
+		/** ERP-0077: tells the customer's portal logins. */
+		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
 	) {}
 
 	private async view(ticket: TServiceTicketSelect): Promise<TTicketView> {
@@ -253,7 +257,7 @@ export class ServiceTicketService {
 		const ticket = await this.require(ctx, id);
 		if (ticket.status === 'closed') throw new TicketStateError('comment');
 		const author = await this.users.getUser(ctx.actorUserId);
-		return this.comments.create({
+		const comment = await this.comments.create({
 			serviceTicketId: ticket.id,
 			authorType: 'staff',
 			authorUserId: ctx.actorUserId,
@@ -261,6 +265,18 @@ export class ServiceTicketService {
 			body: body.body,
 			visibility: body.visibility,
 		});
+		// ERP-0077: a reply the customer can see reaches their portal logins (internal notes do not).
+		if (comment.visibility === 'customer') {
+			await this.portalNotifier.notify({
+				customerId: ticket.customerId,
+				templateCode: 'portal.ticket_replied',
+				variables: { ticketNumber: ticket.code, author: comment.authorName },
+				sourceType: 'service_ticket',
+				sourceId: ticket.id,
+				tags: [ticket.code],
+			});
+		}
+		return comment;
 	}
 
 	/* -------------------------------------------------------------------- *

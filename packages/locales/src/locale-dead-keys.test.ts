@@ -204,6 +204,8 @@ const DYNAMIC_PREFIXES = [
 	'portal.rfq.status.',
 	// Document library folder labels (ERP-0075).
 	'portal.documents.folder.',
+	// Portal notification copy, composed from the template (ERP-0077).
+	'portal.notification.',
 	// Order tracking labels compose the stage name (ERP-0073).
 	'tracking.stage.',
 	'tracking.text.',

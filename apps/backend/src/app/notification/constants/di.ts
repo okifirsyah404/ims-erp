@@ -1,6 +1,7 @@
 import type { InjectionToken } from 'tsyringe';
 import type { INotificationRepository } from '../contracts/notification.repository.interface';
 import type { NotificationService } from '../services/notification.service';
+import type { NotificationInboxService } from '../services/notification-inbox.service';
 import type {
 	ExportedNotificationService,
 	TNotificationDispatcher,
@@ -32,3 +33,6 @@ export const NOTIFICATION_DISPATCHER_TOKEN: InjectionToken<TNotificationDispatch
 
 export const EXPORTED_NOTIFICATION_SERVICE_TOKEN: InjectionToken<ExportedNotificationService> =
 	Symbol('EXPORTED_NOTIFICATION_SERVICE');
+
+/** A user's own inbox for other modules (ERP-0077: customer portal); read and mark-read only. */
+export const NOTIFICATION_INBOX_SERVICE_TOKEN: InjectionToken<NotificationInboxService> = Symbol('NOTIFICATION_INBOX_SERVICE');

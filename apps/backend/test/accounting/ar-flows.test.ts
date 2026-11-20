@@ -405,7 +405,7 @@ function makeHarness() {
 				voided.push(`${module}/${sourceType}/${sourceId}`);
 				return 1;
 			},
-		},
+		}, { notify: async () => {} },
 	);
 
 	return {

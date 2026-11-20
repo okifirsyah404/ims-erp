@@ -162,7 +162,7 @@ beforeEach(() => {
 				voided.push(`${module}/${sourceType}/${sourceId}`);
 				return 1;
 			},
-		},
+		}, { notify: async () => {} },
 	);
 });
 
