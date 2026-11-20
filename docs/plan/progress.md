@@ -567,6 +567,33 @@ keep working.
 - Open: no guard tests for the goods-receipt and purchase-return product guards; `docs/architecture/api-conventions.md` and the module pages still describe the migration name `20261119145940_many_human_robot` (AGENTS.md, runbook and phases doc must point at the new baseline); defaults and indexes are still not compared by the validator.
 
 Next executable task: update the baseline name in AGENTS.md/runbook/phases docs, then the live UI smoke test.
+## 2026-11-20 - Port plan for the customer portal and dynamic website (docs only)
+
+`docs/plan/port-portal-onto-main.md`: proposal to port Dafrin's
+`feat/erp-0069-portal-session` work (portal ordering, SPH, orders, invoices,
+payment, tracking, documents, notifications, account pages, security, ticket
+gaps, dynamic website, cart/wishlist) onto the ADR-0024 baseline instead of
+merging. Lists decisions D1-D11 to agree (website schema, cart/wishlist home,
+portal settings, account = company or person, session model, ownership of the
+ERP-0091 gap list), proposed renumbering (ERP-0094..0106, ADR-0027/0028), table
+and route mapping, and port order P1-P7. Proposal only, nothing approved; no
+code moved. docs/database: reviewed, unchanged.
+
+- Merged `main` (`532c682a`, after PR #133 and #136) into `docs/port-portal-plan`;
+  `main` is the base. One conflict, in this file: `main`'s entries kept in full,
+  this entry inserted at its chronological place.
+- Plan refreshed against `main`: ADR numbers moved up by one (ADR-0026 is now
+  `product-and-warehouse-modules` on `main`, ADR-0025 is `tanstack-table-for-web-admin`),
+  so portal session = ADR-0027 and website = ADR-0028; schema counts 20 / 192
+  (a `website` schema would be the 21st); public catalog route
+  `/products/public/v1/catalog`; Astro fix recorded as landed (PR #133); a note
+  that product and warehouse are separate modules since ADR-0026. ERP-0094..0106
+  re-checked free on `main`, every remote branch and open PRs (only #134).
+  Table names in the mapping were checked against `docs/database/docs.dbml`
+  (`sale.orders`, `sale.receipts`, `ticket.tickets`, `project.warranties`, ... exist;
+  `customer.cart_items`, `customer.wishlist_items`, `website.*` are the proposed
+  new tables). D1-D11 are unchanged.
+
 ## 2026-11-20 - Docs sync after ADR-0024: AGENTS.md, docs/database, docs/architecture (module boundary and schema segregation)
 
 - `AGENTS.md`: command-status rows updated with the verified 2026-11-19/20 facts (baseline migration, root `typecheck` does not cover web-admin, test counts); new hard rule "Schema segregation" (18 schemas / 188 tables, `user` and `organization` modules share `auth`, `webhook` has no schema, per-module `code_numberings`, removed modules and schemas); URL layout (admin paths, per-module prefixes, no aliases, the single external URLs, shared pagination contract); Gate 1 numbers (188 tables / 18 schemas, `docs.dbml` about 5,500 lines, no two-schema exception); locale namespace list.
