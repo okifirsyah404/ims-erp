@@ -12,6 +12,19 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Port plan for the customer portal and dynamic website (docs only)
+
+`docs/plan/port-portal-onto-main.md`: proposal to port Dafrin's
+`feat/erp-0069-portal-session` work (portal ordering, SPH, orders, invoices,
+payment, tracking, documents, notifications, account pages, security, ticket
+gaps, dynamic website, cart/wishlist) onto the ADR-0024 baseline instead of
+merging. Lists decisions D1-D11 to agree (website schema, cart/wishlist home,
+portal settings, account = company or person, session model, ownership of the
+ERP-0091 gap list), proposed renumbering (ERP-0094..0106, ADR-0026/0027; checked
+free on main, every remote branch and open PRs on 2026-11-20), table and route
+mapping, and port order P1-P7. Proposal only, nothing approved; no code moved.
+docs/database: reviewed, unchanged.
+
 ## 2026-11-21 - Invite dialog: role ladder enforced end to end, permanent/temporary switch, employee email fix
 
 User request (2026-11-21): the user-invitation dialog on `/admin/users` and
