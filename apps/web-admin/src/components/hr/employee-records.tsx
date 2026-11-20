@@ -26,7 +26,7 @@ export function EmployeeRecordCards({ employeeId, fullName }: { employeeId: stri
 	);
 }
 
-type TBankDraft = { bankName: string; accountNumber: string; accountHolder: string };
+type TBankDraft = { bankName: string; bankAccountNumber: string; bankAccountHolder: string };
 
 function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullName: string }) {
 	const { t } = useTranslation(['hr', 'common']);
@@ -63,8 +63,8 @@ function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullNam
 						onClick={() =>
 							setDraft({
 								bankName: account?.bankName ?? '',
-								accountNumber: account?.accountNumber ?? '',
-								accountHolder: account?.accountHolder ?? fullName,
+								bankAccountNumber: account?.bankAccountNumber ?? '',
+								bankAccountHolder: account?.bankAccountHolder ?? fullName,
 							})
 						}
 					>
@@ -92,13 +92,13 @@ function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullNam
 									required
 									inputMode='numeric'
 									maxLength={50}
-									value={draft.accountNumber}
-									onChange={(event) => setDraft({ ...draft, accountNumber: event.target.value.replace(/[^0-9 -]/g, '') })}
+									value={draft.bankAccountNumber}
+									onChange={(event) => setDraft({ ...draft, bankAccountNumber: event.target.value.replace(/[^0-9 -]/g, '') })}
 								/>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='bank-holder'>{t('hr:bank.holder')}</FieldLabel>
-								<Input id='bank-holder' required maxLength={200} value={draft.accountHolder} onChange={(event) => setDraft({ ...draft, accountHolder: event.target.value })} />
+								<Input id='bank-holder' required maxLength={200} value={draft.bankAccountHolder} onChange={(event) => setDraft({ ...draft, bankAccountHolder: event.target.value })} />
 							</Field>
 						</FieldGroup>
 						<div className='mt-4 flex justify-end gap-2'>
@@ -114,9 +114,9 @@ function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullNam
 					<div className='grid gap-2 sm:grid-cols-3'>
 						<Detail label={t('hr:bank.name')}>{account.bankName}</Detail>
 						<Detail label={t('hr:bank.number')}>
-							<span className='font-mono'>{account.accountNumber}</span>
+							<span className='font-mono'>{account.bankAccountNumber}</span>
 						</Detail>
-						<Detail label={t('hr:bank.holder')}>{account.accountHolder}</Detail>
+						<Detail label={t('hr:bank.holder')}>{account.bankAccountHolder}</Detail>
 					</div>
 				) : (
 					<p className='text-muted-foreground'>{t('hr:bank.none')}</p>

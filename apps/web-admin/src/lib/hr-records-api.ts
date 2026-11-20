@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for the M08 employee records (`/hr/*`): attendance, leave,
+ * API client for the M08 employee records (`/human-resources/*`): attendance, leave,
  * overtime, tasks, monthly salary summaries and the salary bank account.
  * Employees themselves are ERP-0034 (`@/lib/hr-api`). Money is IDR minor
  * units; business dates `YYYY-MM-DD`; times `HH:MM`.
@@ -28,7 +28,7 @@ export const REQUEST_STATUS_VARIANT: Record<TRequestStatus, 'default' | 'seconda
 export type TPersonRef = { id: string; employeeCode: string; fullName: string };
 
 /** The salary bank account; the number is masked without `employee:read_private`. */
-export type TBankAccount = { bankName: string; accountNumber: string; accountHolder: string; masked: boolean };
+export type TBankAccount = { bankName: string | null; bankAccountNumber: string | null; bankAccountHolder: string | null; masked: boolean };
 
 export type TAttendanceRecord = {
 	status: TAttendanceStatus;
@@ -168,48 +168,48 @@ export async function downloadTemplate(path: string, filename: string): Promise<
 }
 
 // Employees (M08 additions to ERP-0034)
-export const activeEmployeesQueryOptions = () => single<TPersonRef[]>(['hr', 'employees', 'active'], '/hr/active-employees');
+export const activeEmployeesQueryOptions = () => single<TPersonRef[]>(['hr', 'employees', 'active'], '/human-resources/active-employees');
 export const bankAccountQueryOptions = (employeeId: string) =>
-	single<TBankAccount | null>(['hr', 'bank-account', employeeId], `/hr/employees/${employeeId}/bank-account`);
-export const saveBankAccount = (id: string, input: { bankName: string; accountNumber: string; accountHolder: string }) =>
-	send<TBankAccount | null>(`/hr/employees/${id}/bank-account`, 'PUT', input);
+	single<TBankAccount | null>(['hr', 'bank-account', employeeId], `/human-resources/employees/${employeeId}/bank-account`);
+export const saveBankAccount = (id: string, input: { bankName: string; bankAccountNumber: string; bankAccountHolder: string }) =>
+	send<TBankAccount | null>(`/human-resources/employees/${id}/bank-account`, 'PUT', input);
 
 // Attendance
-export const attendanceDayQueryOptions = (date: string) => single<TAttendanceDayRow[]>(['hr', 'attendance', 'day', date], `/hr/attendance/day?date=${date}`);
+export const attendanceDayQueryOptions = (date: string) => single<TAttendanceDayRow[]>(['hr', 'attendance', 'day', date], `/human-resources/attendances/day?date=${date}`);
 export const attendanceMonthQueryOptions = (period: string) =>
-	single<TAttendanceMonthRow[]>(['hr', 'attendance', 'month', period], `/hr/attendance/month?period=${period}`);
+	single<TAttendanceMonthRow[]>(['hr', 'attendance', 'month', period], `/human-resources/attendances/month?period=${period}`);
 export const saveAttendanceDay = (date: string, entries: TAttendanceEntry[]) =>
-	send<{ saved: number; skipped: number }>('/hr/attendance/day', 'PUT', { date, entries });
-export const importAttendance = (file: File) => upload('/hr/attendance/import', file);
+	send<{ saved: number; skipped: number }>('/human-resources/attendances/day', 'PUT', { date, entries });
+export const importAttendance = (file: File) => upload('/human-resources/attendances/import', file);
 
 // Leave and overtime
-export const leaveTypesQueryOptions = () => single<TLeaveType[]>(['hr', 'leave-types'], '/hr/leave-types');
+export const leaveTypesQueryOptions = () => single<TLeaveType[]>(['hr', 'leave-types'], '/human-resources/leave-types');
 export const leaveRequestsQueryOptions = (params: { page?: number; status?: TRequestStatus; period?: string; employeeId?: string }) =>
-	paginated<TLeaveRequest>(['hr', 'leave', params], `/hr/leave${query(params)}`);
+	paginated<TLeaveRequest>(['hr', 'leave', params], `/human-resources/leave${query(params)}`);
 export const leaveBalancesQueryOptions = (employeeId: string, year: number) =>
-	single<TLeaveBalance[]>(['hr', 'leave', 'balances', employeeId, year], `/hr/leave/balances?employeeId=${employeeId}&year=${year}`, !!employeeId);
+	single<TLeaveBalance[]>(['hr', 'leave', 'balances', employeeId, year], `/human-resources/leave/balances?employeeId=${employeeId}&year=${year}`, !!employeeId);
 export const createLeave = (input: { employeeId: string; leaveTypeId: string; startDate: string; endDate: string; reason: string | null }) =>
-	send<TLeaveRequest>('/hr/leave', 'POST', input);
+	send<TLeaveRequest>('/human-resources/leave', 'POST', input);
 export const decideLeave = (id: string, action: 'approve' | 'reject' | 'cancel', note: string | null) =>
-	send<TLeaveRequest>(`/hr/leave/${id}/${action}`, 'POST', { note });
+	send<TLeaveRequest>(`/human-resources/leave/${id}/${action}`, 'POST', { note });
 export const overtimeQueryOptions = (params: { page?: number; status?: TRequestStatus; period?: string }) =>
-	paginated<TOvertime>(['hr', 'overtime', params], `/hr/overtime${query(params)}`);
+	paginated<TOvertime>(['hr', 'overtime', params], `/human-resources/overtime${query(params)}`);
 export const createOvertime = (input: { employeeId: string; workDate: string; hours: number; reason: string | null }) =>
-	send<TOvertime>('/hr/overtime', 'POST', input);
+	send<TOvertime>('/human-resources/overtime', 'POST', input);
 export const decideOvertime = (id: string, action: 'approve' | 'reject' | 'cancel', note: string | null) =>
-	send<TOvertime>(`/hr/overtime/${id}/${action}`, 'POST', { note });
+	send<TOvertime>(`/human-resources/overtime/${id}/${action}`, 'POST', { note });
 
 // Tasks
 export const tasksQueryOptions = (params: { page?: number; status?: TTaskStatus; employeeId?: string }) =>
-	paginated<TTask>(['hr', 'tasks', params], `/hr/tasks${query(params)}`);
+	paginated<TTask>(['hr', 'tasks', params], `/human-resources/employee-tasks${query(params)}`);
 export const createTask = (input: { employeeId: string; title: string; description: string | null; dueDate: string | null }) =>
-	send<TTask>('/hr/tasks', 'POST', input);
-export const setTaskStatus = (id: string, status: TTaskStatus) => send<TTask>(`/hr/tasks/${id}/status`, 'POST', { status });
+	send<TTask>('/human-resources/employee-tasks', 'POST', input);
+export const setTaskStatus = (id: string, status: TTaskStatus) => send<TTask>(`/human-resources/employee-tasks/${id}/status`, 'POST', { status });
 
 // Salary summaries
-export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/hr/salary?period=${period}`);
-export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/hr/salary', 'PUT', input);
-export const removeSalary = (id: string) => send<{ removed: true }>(`/hr/salary/${id}`, 'DELETE');
-export const generateSalary = (period: string) => send<TSalaryPeriod>(`/hr/salary/generate?period=${period}`, 'POST');
-export const approveSalary = (period: string) => send<TSalaryPeriod>(`/hr/salary/approve?period=${period}`, 'POST');
-export const importSalary = (period: string, file: File) => upload(`/hr/salary/import?period=${period}`, file);
+export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/human-resources/salary-records?period=${period}`);
+export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/human-resources/salary-records', 'PUT', input);
+export const removeSalary = (id: string) => send<{ removed: true }>(`/human-resources/salary-records/${id}`, 'DELETE');
+export const generateSalary = (period: string) => send<TSalaryPeriod>(`/human-resources/salary-records/generate?period=${period}`, 'POST');
+export const approveSalary = (period: string) => send<TSalaryPeriod>(`/human-resources/salary-records/approve?period=${period}`, 'POST');
+export const importSalary = (period: string, file: File) => upload(`/human-resources/salary-records/import?period=${period}`, file);

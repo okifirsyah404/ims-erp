@@ -189,7 +189,7 @@ function SalaryPage() {
 			<ImportDialog
 				open={importing}
 				onOpenChange={setImporting}
-				templatePath='/hr/salary/template'
+				templatePath='/human-resources/salary-records/template'
 				templateName='template-gaji.xlsx'
 				templateLabel={t('hr:salary.template')}
 				onImport={(file) => importSalary(period, file)}

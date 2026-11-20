@@ -12,6 +12,15 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Frontend slice 5: human-resource, documents, automation (web-admin)
+
+- Human resource (5A): `hr-api` / `hr-records-api` `/hr/*` -> `/human-resources/*` (employees, `attendances`, `employee-tasks`, `salary-records`; leave, overtime, leave-types and active-employees under the bare `/human-resources` prefix; bank account under `/human-resources/employees/:id`). Bug fixed: the bank form sent `accountNumber`/`accountHolder` while the backend takes `bankAccountNumber`/`bankAccountHolder` (saves would have been rejected). Create input takes `organizationRoles: string[]`. Frontend route paths (`/hr/*`) unchanged.
+- Documents/automation (5B): public share link uses `/documents/public/v1/shares/:token` (old `/public/v1/documents` stays a backend alias); `OUTBOX_TOPICS` extended from 5 to 13 topics with en/id labels; `TDocument.issuedOn` nullable. Notification, signature, whatsapp, FAQ, admin, organization and location wrappers already matched the backend.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; `bun run lint` 0 errors; `bun run test` 5/5; `bun run build` 5/5. Endpoints checked by reading controllers; no live UI run.
+- Open: `employee_addresses` exists only in `docs.dbml` (no Drizzle table or controller) so no address UI; organization list `warehousesCount` is always 0 from the backend and the projects count is a client-side placeholder (both pre-existing); `TSignature` omits `signatureImageUrl`, `sourceFileId`, `hasSignedPdf`.
+- docs/database: reviewed, unchanged (the `employee_addresses` gap is recorded here, not changed).
+
+Next executable task: frontend slice 6 (web-customer-portal, web-landing, then drop or finalise the Q34 aliases).
 ## 2026-11-20 - Frontend slice 4: project, lead, handover, license, ticket (web-admin)
 
 - Project (4A): `lead-api` `/leads*` -> `/projects/leads*`; warranty certificates `/warranty-certificates/projects/:id` -> `/projects/warranties/projects/:id` (`bastId` -> `handoverId`); `project-api` `salesOrderId/Code` -> `orderId/orderCode`, `TProject` gains `companyId`, `leadId`; `TLead` gains `companyId`. BAST routes (`/projects/basts`, `/projects/:id/basts*`), stats, open-deals, staff, tasks, evidence, costs were already correct. Lead conversion marks the lead won and links a customer person; it does not open a project (backend behaviour, no UI added).

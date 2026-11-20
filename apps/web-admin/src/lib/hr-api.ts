@@ -7,7 +7,7 @@ import type {
 import { queryOptions } from '@tanstack/react-query';
 
 /**
- * API client for the HR employee endpoints (`/hr/employees*`).
+ * API client for the HR employee endpoints (`/human-resources/employees*`).
  *
  * @remarks
  * Tenant scope comes from the caller's active organization server-side:
@@ -124,14 +124,14 @@ export function employeesQueryOptions(params: TEmployeeListParams) {
 	if (params.scope) search.set('scope', params.scope);
 	return queryOptions({
 		queryKey: ['hr', 'employees', params],
-		queryFn: () => getDataPaginated<TEmployee>(`/hr/employees?${search.toString()}`),
+		queryFn: () => getDataPaginated<TEmployee>(`/human-resources/employees?${search.toString()}`),
 	});
 }
 
 export function employeeDetailQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['hr', 'employees', 'detail', id],
-		queryFn: () => getData<TEmployee>(`/hr/employees/${id}`),
+		queryFn: () => getData<TEmployee>(`/human-resources/employees/${id}`),
 	});
 }
 
@@ -152,7 +152,7 @@ export function employeePickerQueryOptions(organizationIds: string[], search?: s
 				organizationIds: organizationIds.join(','),
 			});
 			if (search) params.set('search', search);
-			return getData<TEmployeePickerRow[]>(`/hr/employees/picker?${params.toString()}`);
+			return getData<TEmployeePickerRow[]>(`/human-resources/employees/picker?${params.toString()}`);
 		},
 		enabled: organizationIds.length > 0,
 	});
@@ -162,7 +162,7 @@ export function createEmployee(input: {
 	fullName: string;
 	email: string;
 	organizationId?: string | null;
-	organizationRole?: string;
+	organizationRoles?: string[];
 	employeeCode?: string | null;
 	legalName?: string | null;
 	nickname?: string | null;
@@ -179,13 +179,13 @@ export function createEmployee(input: {
 	hireDate?: string | null;
 	terminationDate?: string | null;
 }) {
-	return sendData<TEmployee>('/hr/employees', 'POST', input);
+	return sendData<TEmployee>('/human-resources/employees', 'POST', input);
 }
 
 export function updateEmployee(id: string, input: Record<string, unknown>) {
-	return sendData<TEmployee>(`/hr/employees/${id}`, 'PATCH', input);
+	return sendData<TEmployee>(`/human-resources/employees/${id}`, 'PATCH', input);
 }
 
 export function archiveEmployee(id: string) {
-	return sendData<{ archived: boolean }>(`/hr/employees/${id}`, 'DELETE');
+	return sendData<{ archived: boolean }>(`/human-resources/employees/${id}`, 'DELETE');
 }
