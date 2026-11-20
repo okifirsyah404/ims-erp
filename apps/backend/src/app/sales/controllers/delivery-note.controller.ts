@@ -1,3 +1,4 @@
+import { requestBodyDoc } from '@http/openapi';
 import type { ErpContext } from '@authorization/elysia-auth';
 import {
 	type IPermissionResolver,
@@ -13,6 +14,7 @@ import {
 	cancelDeliveryNoteSchema,
 	createDeliveryNoteSchema,
 	deliverDeliveryNoteSchema,
+	shipDeliveryNoteSchema,
 	deliveryNoteListQuerySchema,
 } from '../contracts/delivery-note.contract';
 import { DeliveryNoteReadForbiddenError } from '../errors/delivery-note.errors';
@@ -93,9 +95,13 @@ export class DeliveryNoteController {
 					),
 				{ erp: { permission: ['stock:issue'] }, detail: { description: 'Prepares (and numbers) a delivery note' } },
 			)
-			.post('/:id/ship', async ({ params, erp }) => ok(await present(erp, await service.ship(actor(erp), id(params)))), {
+			.post('/:id/ship', async ({ params, body, erp }) => ok(await present(erp, await service.ship(actor(erp), id(params), shipDeliveryNoteSchema.parse(body ?? {})))), {
 				erp: { permission: ['stock:issue'] },
-				detail: { description: 'Ships a prepared note: stock issue at average cost, serial units sold' },
+				detail: {
+					description:
+						'Ships a prepared note: stock issue at average cost, serial units sold. Optional courier (own fleet or a courier code), service and waybill (AWB) for tracking (ERP-0080).',
+					...requestBodyDoc(shipDeliveryNoteSchema),
+				},
 			})
 			.post(
 				'/:id/deliver',

@@ -15,6 +15,7 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
 import {
 	Table,
 	TableBody,
@@ -31,6 +32,8 @@ import {
 	deliverDeliveryNote,
 	deliveryNoteQueryOptions,
 	shipDeliveryNote,
+	COURIER_CODES,
+	type TCourierCode,
 } from '@/lib/delivery-note-api';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -60,6 +63,10 @@ function DeliveryNoteDetailPage() {
 	const canReturn = usePermission('sales_return.create');
 	const [action, setAction] = useState<TAction>(null);
 	const [input, setInput] = useState('');
+	// ERP-0080: who carries the shipment (own fleet or a courier with a waybill).
+	const [courierCode, setCourierCode] = useState<TCourierCode>('own');
+	const [courierService, setCourierService] = useState('');
+	const [waybill, setWaybill] = useState('');
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(deliveryNoteQueryOptions(deliveryNoteId));
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
@@ -83,7 +90,14 @@ function DeliveryNoteDetailPage() {
 	const run = async () => {
 		setBusy(true);
 		try {
-			if (action === 'ship') await shipDeliveryNote(deliveryNoteId);
+			if (action === 'ship') {
+				const own = courierCode === 'own';
+				await shipDeliveryNote(deliveryNoteId, {
+					courierCode,
+					courierService: own ? null : courierService.trim() || null,
+					waybillNumber: own ? null : waybill.trim() || null,
+				});
+			}
 			if (action === 'deliver') await deliverDeliveryNote(deliveryNoteId, input.trim());
 			if (action === 'cancel') await cancelDeliveryNote(deliveryNoteId, input.trim());
 			await queryClient.invalidateQueries({ queryKey: ['sales'] });
@@ -166,6 +180,16 @@ function DeliveryNoteDetailPage() {
 						<Detail label={t('sales:delivery.warehouse')} value={data.warehouse ? `${data.warehouse.code} — ${data.warehouse.name}` : null} />
 						<Detail label={t('sales:delivery.bin')} value={data.bin?.code} />
 						<Detail label={t('sales:delivery.driverName')} value={[data.driverName, data.vehicleNumber].filter(Boolean).join(' · ')} />
+						<Detail
+							label={t('sales:delivery.courier')}
+							value={
+								data.courierCode
+									? [t(`sales:courier.${data.courierCode as TCourierCode}`), data.courierService, data.waybillNumber ? `AWB ${data.waybillNumber}` : null]
+											.filter(Boolean)
+											.join(' · ')
+									: null
+							}
+						/>
 						<Detail label={t('sales:delivery.shippedAt')} value={data.shippedAt ? formatDateTime(data.shippedAt, i18n.language) : null} />
 						<Detail
 							label={t('sales:delivery.receiverName')}
@@ -240,6 +264,33 @@ function DeliveryNoteDetailPage() {
 							<DialogTitle>{title}</DialogTitle>
 						</DialogHeader>
 						{action === 'ship' && <p className='pt-2 text-sm text-muted-foreground'>{t('sales:deliveries.shipHint')}</p>}
+						{action === 'ship' && (
+							<FieldGroup className='grid gap-4 pt-4 sm:grid-cols-2'>
+								<Field className='sm:col-span-2'>
+									<FieldLabel htmlFor='dn-courier'>{t('sales:delivery.courier')}</FieldLabel>
+									<NativeSelect id='dn-courier' className='w-full' value={courierCode} onChange={(event) => setCourierCode(event.target.value as TCourierCode)}>
+										{COURIER_CODES.map((code) => (
+											<NativeSelectOption key={code} value={code}>
+												{t(`sales:courier.${code}`)}
+											</NativeSelectOption>
+										))}
+									</NativeSelect>
+								</Field>
+								{courierCode !== 'own' && (
+									<>
+										<Field>
+											<FieldLabel htmlFor='dn-courier-service'>{t('sales:delivery.courierService')}</FieldLabel>
+											<Input id='dn-courier-service' maxLength={60} placeholder='REG' value={courierService} onChange={(event) => setCourierService(event.target.value)} />
+										</Field>
+										<Field>
+											<FieldLabel htmlFor='dn-waybill'>{t('sales:delivery.waybill')}</FieldLabel>
+											<Input id='dn-waybill' maxLength={60} value={waybill} onChange={(event) => setWaybill(event.target.value)} />
+										</Field>
+									</>
+								)}
+								<p className='text-xs text-muted-foreground sm:col-span-2'>{t('sales:delivery.courierHint')}</p>
+							</FieldGroup>
+						)}
 						{action === 'cancel' && <p className='pt-2 text-sm text-muted-foreground'>{t('sales:deliveries.cancelHint')}</p>}
 						{action !== 'ship' && (
 							<FieldGroup className='py-4'>

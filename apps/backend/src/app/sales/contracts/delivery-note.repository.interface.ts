@@ -56,7 +56,13 @@ export interface IDeliveryNoteRepository {
 		tx: TTx,
 	): Promise<{ note: TDeliveryNoteSelect; items: TDeliveryNoteItemSelect[] }>;
 	/** `prepared → shipped`. */
-	markShipped(id: string, actorUserId: string, tx: TTx): Promise<TDeliveryNoteSelect | null>;
+	/** Prepared → shipped, with who carries it (ERP-0080). */
+	markShipped(
+		id: string,
+		actorUserId: string,
+		tx: TTx,
+		courier?: { courierCode: string | null; courierService: string | null; waybillNumber: string | null },
+	): Promise<TDeliveryNoteSelect | null>;
 	/** Records the issue movement and its cost on a line. */
 	setLineIssue(lineId: string, data: { stockMovementId: string; unitCost: number }, tx: TTx): Promise<void>;
 	/** `shipped → delivered`. */

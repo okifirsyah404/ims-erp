@@ -40,6 +40,10 @@ export type TDeliveryNote = {
 	recipientContact: string | null;
 	driverName: string | null;
 	vehicleNumber: string | null;
+	/** ERP-0080: who carried it (`own` or a courier code), its service and waybill (AWB). */
+	courierCode: string | null;
+	courierService: string | null;
+	waybillNumber: string | null;
 	notes: string | null;
 	shippedAt: string | null;
 	receivedAt: string | null;
@@ -193,8 +197,19 @@ export async function createDeliveryNote(input: TDeliveryNoteInput): Promise<TDe
 		.data as TDeliveryNoteDetail;
 }
 
-export async function shipDeliveryNote(id: string): Promise<TDeliveryNoteDetail> {
-	return (await request<TDeliveryNoteDetail>(`/delivery-notes/${id}/ship`, { method: 'POST' })).data as TDeliveryNoteDetail;
+/** Courier codes as the backend (and RajaOngkir) name them (ERP-0080). */
+export const COURIER_CODES = ['own', 'jne', 'jnt', 'sicepat', 'anteraja', 'pos', 'tiki', 'lion', 'ninja', 'wahana', 'other'] as const;
+export type TCourierCode = (typeof COURIER_CODES)[number];
+
+export type TShipInput = { courierCode: TCourierCode | null; courierService: string | null; waybillNumber: string | null };
+
+export async function shipDeliveryNote(id: string, courier?: TShipInput): Promise<TDeliveryNoteDetail> {
+	return (
+		await request<TDeliveryNoteDetail>(`/delivery-notes/${id}/ship`, {
+			method: 'POST',
+			body: JSON.stringify(courier ?? {}),
+		})
+	).data as TDeliveryNoteDetail;
 }
 
 export async function deliverDeliveryNote(id: string, receiverName: string): Promise<TDeliveryNoteDetail> {

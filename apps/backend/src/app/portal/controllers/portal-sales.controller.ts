@@ -6,7 +6,8 @@ import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
 import { ACCOUNT_SHOP_SERVICE_TOKEN } from '@app/commerce/constants/di';
 import { cartSyncSchema, wishlistSyncSchema } from '@app/commerce/contracts/account-shop.contract';
-import { PORTAL_RFQ_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { PORTAL_ORDER_TRACKING_SERVICE_TOKEN, PORTAL_RFQ_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { portalOrderDetail, portalOrderSummary } from '../utils/tracking-presenter';
 import {
 	portalAcceptQuotationSchema,
 	portalCheckoutSchema,
@@ -25,8 +26,6 @@ import type { TPresenter } from '../utils/portal-presenter';
 import {
 	invoiceDetail,
 	invoiceList,
-	orderDetail,
-	orderSummary,
 	paymentMethods,
 	quotationDetail,
 	quotationSummary,
@@ -50,6 +49,7 @@ export class PortalSalesController {
 		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		const portalService = container.resolve(PORTAL_SERVICE_TOKEN);
 		const rfqs = container.resolve(PORTAL_RFQ_SERVICE_TOKEN);
+		const orderTracking = container.resolve(PORTAL_ORDER_TRACKING_SERVICE_TOKEN);
 		const shop = container.resolve(ACCOUNT_SHOP_SERVICE_TOKEN);
 		const id = (params: unknown) => {
 			const parsed = portalIdParamSchema.safeParse(params);
@@ -246,17 +246,27 @@ export class PortalSalesController {
 					},
 				},
 			)
-			.get('/orders', async (ctx) => ok((await sales.listOrders(ctx.portal)).map((order) => orderSummary(presenter(ctx), order))), {
-				portal: true,
-				detail: { summary: 'List orders', description: "The customer's sales orders" },
-			})
+			.get(
+				'/orders',
+				async (ctx) => {
+					const p = presenter(ctx);
+					return ok((await orderTracking.list(ctx.portal)).map((tracked) => portalOrderSummary(p, tracked)));
+				},
+				{
+					portal: true,
+					detail: { summary: 'List orders', description: "The customer's sales orders with their real progress (payment, delivery notes, installation; ERP-0080)" },
+				},
+			)
 			.get(
 				'/orders/:id',
-				async (ctx) => {
-					const { order, paidMinor } = await sales.getOrder(ctx.portal, id(ctx.params));
-					return ok(orderDetail(presenter(ctx), order, paidMinor));
+				async (ctx) => ok(portalOrderDetail(presenter(ctx), await orderTracking.get(ctx.portal, id(ctx.params)))),
+				{
+					portal: true,
+					detail: {
+						summary: 'Order detail',
+						description: 'Lines, totals, payment, delivery (courier, waybill, recipient), installation, invoice documents and the stage timeline (ERP-0080)',
+					},
 				},
-				{ portal: true, detail: { summary: 'Order detail', description: 'Lines, totals, amount paid and the status timeline' } },
 			)
 			.get('/invoices', async (ctx) => ok(invoiceList(presenter(ctx), await sales.listInvoices(ctx.portal))), {
 				portal: true,

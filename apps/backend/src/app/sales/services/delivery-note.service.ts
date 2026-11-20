@@ -1,3 +1,4 @@
+import type { TShipDeliveryNote } from '../contracts/delivery-note.contract';
 import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
 import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import { ITEM_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
@@ -296,7 +297,7 @@ export class DeliveryNoteService {
 	 * @throws {InsufficientStockError} Not enough stock in the warehouse (from inventory)
 	 * @throws {DeliveryNoteLineError} A serial is no longer in stock there
 	 */
-	async ship(actor: { userId: string; organizationId: string }, id: string): Promise<TDeliveryNoteDetail> {
+	async ship(actor: { userId: string; organizationId: string }, id: string, courier: Partial<TShipDeliveryNote> = {}): Promise<TDeliveryNoteDetail> {
 		const note = await this.notes.findById(id);
 		if (!note) throw new DeliveryNoteNotFoundError();
 		if (note.status !== 'prepared') throw new DeliveryNoteStateError('ship');
@@ -307,7 +308,12 @@ export class DeliveryNoteService {
 		const occurredAt = noon(note.deliveryDate);
 
 		await this.transactions.run(async (tx) => {
-			const shipped = await this.notes.markShipped(id, actor.userId, tx);
+			// ERP-0080: who carries it; the own fleet has no waybill.
+			const shipped = await this.notes.markShipped(id, actor.userId, tx, {
+				courierCode: courier.courierCode ?? null,
+				courierService: courier.courierCode === 'own' ? null : (courier.courierService ?? null),
+				waybillNumber: courier.courierCode === 'own' ? null : (courier.waybillNumber ?? null),
+			});
 			if (!shipped) throw new DeliveryNoteStateError('ship');
 			for (const [index, line] of lines.entries()) {
 				const item = kinds[index];

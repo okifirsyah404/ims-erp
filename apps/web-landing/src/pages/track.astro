@@ -53,7 +53,15 @@ const stages: { stage: TrackingStage; label: string; icon: typeof Check }[] = [
   { stage: "installation", label: "Installation", icon: Wrench },
   { stage: "completed", label: "Completed", icon: Flag },
 ];
-const currentIndex = order ? stages.findIndex((s) => s.stage === order.status) : -1;
+// The order's own steps (an order without installation has no installation step); the step in
+// progress is the timeline's current one, or the last step once everything is done.
+const shown = order ? stages.filter((s) => order.timeline.some((t) => t.stage === s.stage)) : stages;
+const currentIndex = order
+  ? (() => {
+      const current = order.timeline.findIndex((t) => t.state === "current");
+      return current === -1 ? shown.length - 1 : current;
+    })()
+  : -1;
 const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
 ---
 
@@ -98,7 +106,7 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
               required
               maxlength="160"
               autocomplete="tel"
-              placeholder="Last 4 digits or email"
+              placeholder="Full phone number or email on the order"
               aria-invalid={fieldErrors.contact ? "true" : undefined}
               class="w-full bg-transparent text-[15px] font-semibold text-fg outline-none placeholder:font-normal placeholder:text-fg-muted xl:text-[17px]"
             />
@@ -172,9 +180,10 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
               </div>
             </div>
             <ol class="flex" aria-label="Order progress">
-              {stages.map(({ label, icon: Icon }, index) => {
-                const done = index < currentIndex;
-                const current = index === currentIndex;
+              {shown.map(({ label, icon: Icon }, index) => {
+                // State comes from the order timeline: an unpaid order can be shipped already.
+                const done = order.timeline[index]?.state === "done";
+                const current = order.timeline[index]?.state === "current";
                 return (
                   <li class="flex flex-1 flex-col items-center gap-2.5" aria-current={current ? "step" : undefined}>
                     <span class="flex w-full items-center">
@@ -189,7 +198,7 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
                       >
                         <Icon size={16} class="size-3 xl:size-4" aria-hidden="true" />
                       </span>
-                      <span class:list={["h-[3px] flex-1", index === stages.length - 1 ? "bg-transparent" : index < currentIndex ? "bg-blue-600" : "bg-surface-2"]} />
+                      <span class:list={["h-[3px] flex-1", index === shown.length - 1 ? "bg-transparent" : index < currentIndex ? "bg-blue-600" : "bg-surface-2"]} />
                     </span>
                     <span class:list={["hidden text-[13px] xl:block", current ? "font-semibold text-blue-600" : done ? "font-semibold text-fg" : "font-medium text-fg-muted"]}>{label}</span>
                     <span class="sr-only xl:hidden">{label}{done ? " (done)" : current ? " (current)" : ""}</span>
@@ -201,8 +210,8 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
               <div class="flex flex-1 flex-col gap-2">
                 <div class="flex justify-between text-[13px]">
                   <span class="font-semibold text-blue-600 xl:text-fg">
-                    <span class="xl:hidden">Step {currentIndex + 1} of {stages.length} · {order.statusLabel}</span>
-                    <span class="hidden xl:inline">Overall progress · Step {currentIndex + 1} of {stages.length}</span>
+                    <span class="xl:hidden">Step {currentIndex + 1} of {shown.length} · {order.statusLabel}</span>
+                    <span class="hidden xl:inline">Overall progress · Step {currentIndex + 1} of {shown.length}</span>
                   </span>
                   <span class="font-bold text-fg xl:text-blue-600">{Math.round(order.progress * 100)}%</span>
                 </div>
@@ -232,7 +241,7 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
               <p class="text-[13px] text-fg-on-dark-muted">{order.delivery.installationLabel} · Completion {order.estimatedCompletionLabel}</p>
             </div>
             <dl class="grid grid-cols-3 gap-2">
-              {[[order.delivery.daysToShip, "to ship"], [order.delivery.daysToFinish, "to finish"], [`${currentIndex + 1}/${stages.length}`, "steps"]].map(([v, l]) => (
+              {[[order.delivery.daysToShip, "to ship"], [order.delivery.daysToFinish, "to finish"], [`${currentIndex + 1}/${shown.length}`, "steps"]].map(([v, l]) => (
                 <div class="flex flex-col-reverse rounded-md bg-white/8 p-3"><dt class="text-[11px] text-fg-on-dark-muted">{l}</dt><dd class="font-heading text-[18px] font-bold text-white">{v}</dd></div>
               ))}
             </dl>
@@ -325,7 +334,7 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
               <p class="text-[14px] text-fg-on-dark-muted">{order.delivery.installationLabel}</p>
             </div>
             <dl class="grid grid-cols-3 gap-2.5">
-              {[[order.delivery.daysToShip, "days to ship"], [order.delivery.daysToFinish, "days to finish"], [currentIndex + 1, `of ${stages.length} steps`]].map(([v, l]) => (
+              {[[order.delivery.daysToShip, "days to ship"], [order.delivery.daysToFinish, "days to finish"], [currentIndex + 1, `of ${shown.length} steps`]].map(([v, l]) => (
                 <div class="flex flex-col-reverse gap-0.5 rounded-md bg-white/8 p-3"><dt class="text-[11px] text-fg-on-dark-muted">{l}</dt><dd class="font-heading text-[20px] font-bold text-white">{v}</dd></div>
               ))}
             </dl>
@@ -353,8 +362,13 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
               <div class="flex justify-between"><dt class="text-fg-secondary">PPN 11%</dt><dd class="font-semibold text-fg">{formatRupiah(order.totals.tax)}</dd></div>
               <div class="flex justify-between pt-1"><dt class="text-[14px] font-bold text-fg">Total</dt><dd class="font-heading text-[17px] font-bold text-navy-900">{formatRupiah(order.totals.total)}</dd></div>
             </dl>
-            <p class="flex items-center gap-2 rounded-md bg-success-bg px-3 py-2.5 text-[12.5px] font-semibold text-success ring-1 ring-success-border ring-inset">
-              <CircleCheck size={15} aria-hidden="true" />{order.totals.paymentNote}
+            <p
+              class:list={[
+                "flex items-center gap-2 rounded-md px-3 py-2.5 text-[12.5px] font-semibold ring-1 ring-inset",
+                order.totals.fullyPaid ? "bg-success-bg text-success ring-success-border" : "bg-surface text-fg ring-border",
+              ]}
+            >
+              <CircleCheck size={15} class:list={[!order.totals.fullyPaid && "text-blue-600"]} aria-hidden="true" />{order.totals.paymentNote}
             </p>
           </section>
 
@@ -404,7 +418,7 @@ const docIcons = { pdf: FileText, image: Image, dwg: Ruler };
       <section class="container-page flex flex-col gap-6 py-10 xl:gap-10 xl:py-24" aria-labelledby="how-title">
         <div class="flex flex-col gap-2 xl:items-center xl:text-center">
           <p class="text-[12px] font-bold tracking-[1.6px] text-blue-600 uppercase xl:text-[13px]">How tracking works</p>
-          <h2 id="how-title" class="font-heading text-[26px] font-bold tracking-[-0.8px] text-navy-900 xl:text-[36px]">Seven steps from order to handover</h2>
+          <h2 id="how-title" class="font-heading text-[26px] font-bold tracking-[-0.8px] text-navy-900 xl:text-[36px]">Up to seven steps from order to handover</h2>
         </div>
         <ol class="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
           {stages.map(({ label, icon: Icon }, index) => (

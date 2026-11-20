@@ -7,6 +7,7 @@ import type { PortalRfqService } from '../services/portal-rfq.service';
 import type { PublicTrackingService } from '../services/public-tracking.service';
 import type { PortalAccountPagesService } from '../services/portal-account-pages.service';
 import type { PortalDocumentFileService } from '../services/portal-document-file.service';
+import type { PortalOrderTrackingService } from '../services/portal-order-tracking.service';
 
 /** Injection tokens of the customer portal module (ERP-0022). */
 export const PORTAL_SESSION_GATEWAY_TOKEN: InjectionToken<IPortalSessionGateway> = Symbol('PORTAL_SESSION_GATEWAY');
@@ -22,3 +23,6 @@ export const PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN: InjectionToken<PortalAccountPag
 
 /** Document downloads (PDF on request, project files; ERP-0079). */
 export const PORTAL_DOCUMENT_FILE_SERVICE_TOKEN: InjectionToken<PortalDocumentFileService> = Symbol('PORTAL_DOCUMENT_FILE_SERVICE');
+
+/** The customer's orders with real progress (ERP-0080). */
+export const PORTAL_ORDER_TRACKING_SERVICE_TOKEN: InjectionToken<PortalOrderTrackingService> = Symbol('PORTAL_ORDER_TRACKING_SERVICE');

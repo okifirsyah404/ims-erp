@@ -97,7 +97,7 @@ export type PublicTracking = {
   }[];
   lastUpdatedLabel: string;
   items: { name: string; quantity: number; amount: Money; image?: string }[];
-  totals: { subtotal: Money; installation: Money; tax: Money; total: Money; paymentNote: string };
+  totals: { subtotal: Money; installation: Money; tax: Money; total: Money; fullyPaid?: boolean; paymentNote: string };
   shipping: { address: string; courier: string; siteContact: string; installationTeam: string };
   documents: { name: string; meta: string; kind: "pdf" | "image" | "dwg" }[];
   projectManager: { name: string; whatsapp?: string; phone?: string };

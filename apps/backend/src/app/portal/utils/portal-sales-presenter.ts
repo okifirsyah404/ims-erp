@@ -9,8 +9,7 @@
  */
 import type { TCustomerInvoice } from '@app/sales/contracts/customer-sales.contract';
 import type { TQuotationDetail, TQuotationView } from '@app/sales/services/quotation.service';
-import type { TSalesOrderDetail } from '@app/sales/services/sales-order.service';
-import type { TInvoiceSelect, TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
+import type { TInvoiceSelect } from '@drizzle/schemas/sales.schema';
 import { dateLabel, documentFileUrl, type TPresenter } from './portal-presenter';
 
 /** "25 Oct" / "25 Okt": the portal's quotation screens add the year themselves. */
@@ -127,68 +126,6 @@ export function quotationDetail(
 		downPaymentDue: Math.round(toMoney(quotation.grandTotal) * downPaymentRate),
 		approvers: ctx.approvers,
 		companyName: ctx.companyName,
-	};
-}
-
-/* ------------------------------------------------------------------------ *
- * Orders
- * ------------------------------------------------------------------------ */
-
-/** Sales order status → the portal's order status and its step on a 4-step bar. */
-const ORDER_STEPS: Record<TSalesOrderSelect['status'], { status: 'confirmed' | 'production' | 'delivered' | 'cancelled'; step: number }> = {
-	confirmed: { status: 'confirmed', step: 1 },
-	in_progress: { status: 'production', step: 2 },
-	delivered: { status: 'delivered', step: 3 },
-	completed: { status: 'delivered', step: 4 },
-	cancelled: { status: 'cancelled', step: 0 },
-};
-const ORDER_STEP_COUNT = 4;
-
-export function orderSummary(p: TPresenter, order: TSalesOrderSelect) {
-	const { status, step } = ORDER_STEPS[order.status];
-	const statusLabel = p.t(`portal.sales.order.${order.status}`);
-	return {
-		id: order.id,
-		number: order.code,
-		title: order.title,
-		status,
-		statusLabel,
-		step,
-		stepCount: ORDER_STEP_COUNT,
-		stepLabel: statusLabel,
-		// 0..1, like every other portal progress value (the portal draws `progress * 100`%).
-		progress: step / ORDER_STEP_COUNT,
-		etaLabel: order.deliveryDate ? p.t('portal.sales.order.eta', { date: dateLabel(p, order.deliveryDate) }) : p.t('portal.sales.order.etaOpen'),
-		total: toMoney(order.grandTotal),
-		placedAt: order.orderDate,
-	};
-}
-
-export function orderDetail(p: TPresenter, order: TSalesOrderDetail, paidTotalMinor: number) {
-	const summary = orderSummary(p, order);
-	return {
-		...summary,
-		arrivalLabel: summary.etaLabel,
-		arrivalWindow: '',
-		lines: order.items.map((item) => ({
-			name: item.name,
-			detail: item.specification ?? item.sku ?? '',
-			quantity: Number(item.quantity),
-			amount: toMoney(item.lineTotal),
-		})),
-		delivery: { site: order.customerSnapshot.name, address: order.customerSnapshot.addressLine ?? '', courier: '', awb: '' },
-		payment: {
-			subtotal: toMoney(order.subtotal),
-			...(order.discountTotal > 0 ? { discountLabel: p.t('portal.sales.discount'), discount: toMoney(order.discountTotal) } : {}),
-			tax: toMoney(order.taxTotal),
-			total: toMoney(order.grandTotal),
-			...(paidTotalMinor > 0 ? { paidLabel: p.t('portal.sales.invoice.paidAmount', { amount: toMoney(paidTotalMinor).toLocaleString('id-ID') }) } : {}),
-		},
-		documents: [],
-		timeline: order.history.map((entry) => ({
-			label: p.t(`portal.sales.order.${entry.toStatus as TSalesOrderSelect['status']}`),
-			time: dateLabel(p, entry.createdAt),
-		})),
 	};
 }
 

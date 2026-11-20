@@ -54,6 +54,23 @@ export const createDeliveryNoteSchema = z.object({
 	lines: z.array(deliveryNoteLineSchema).min(1).max(200),
 });
 
+/**
+ * Courier codes for shipping (ERP-0080): `own` (own fleet) or a courier as RajaOngkir names
+ * it, so its waybill can be tracked later.
+ */
+export const COURIER_CODES = ['own', 'jne', 'jnt', 'sicepat', 'anteraja', 'pos', 'tiki', 'lion', 'ninja', 'wahana', 'other'] as const;
+export type TCourierCode = (typeof COURIER_CODES)[number];
+
+/** Who carries the shipment; all optional (an old client ships without a body). */
+export const shipDeliveryNoteSchema = z
+	.object({
+		courierCode: z.enum(COURIER_CODES).nullish(),
+		courierService: optionalText(60),
+		waybillNumber: optionalText(60),
+	});
+
+export type TShipDeliveryNote = z.output<typeof shipDeliveryNoteSchema>;
+
 export const deliverDeliveryNoteSchema = z.object({
 	receiverName: z.string().trim().min(1).max(200),
 	/** Defaults to now. */

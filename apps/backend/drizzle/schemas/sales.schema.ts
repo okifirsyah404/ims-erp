@@ -474,6 +474,11 @@ export const deliveryNotes = salesSchema.table(
 		recipientContact: varchar('recipient_contact', { length: 200 }),
 		driverName: varchar('driver_name', { length: 200 }),
 		vehicleNumber: varchar('vehicle_number', { length: 32 }),
+		/** `own` (own fleet) or a courier code as RajaOngkir names them (ERP-0080); set when shipping. */
+		courierCode: varchar('courier_code', { length: 20 }),
+		courierService: varchar('courier_service', { length: 60 }),
+		/** Courier waybill (AWB / resi); empty for the own fleet. */
+		waybillNumber: varchar('waybill_number', { length: 60 }),
 		notes: text('notes'),
 		shippedAt: unixTimestampNullable('shipped_at'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
@@ -494,6 +499,7 @@ export const deliveryNotes = salesSchema.table(
 			.where(sql`deleted_at IS NULL`),
 		index('delivery_notes_sales_order_id_idx').on(table.salesOrderId),
 		index('delivery_notes_status_idx').on(table.status),
+		index('delivery_notes_waybill_number_idx').on(table.waybillNumber),
 		check('delivery_notes_status_check', sql`${table.status} IN ('prepared', 'shipped', 'delivered', 'cancelled')`),
 	],
 );

@@ -2054,6 +2054,9 @@ Table sales.delivery_notes {
   recipient_contact varchar(200) [note: "Telp/Email of the recipient."]
   driver_name varchar(200) [note: "Printed under Tertanda Supir."]
   vehicle_number varchar(32)
+  courier_code varchar(20) [note: "Who carries it (ERP-0080): 'own' (own fleet: driver_name + vehicle_number) or a courier code as RajaOngkir names them (jne, jnt, sicepat, anteraja, pos, tiki, lion, ninja, wahana, ...); set when shipping."]
+  courier_service varchar(60) [note: "Courier service, e.g. REG, YES, CTC."]
+  waybill_number varchar(60) [note: "Courier waybill (AWB / resi) for tracking; empty for the own fleet."]
   notes text [note: "Catatan box of the print."]
   shipped_at bigint
   shipped_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -2068,6 +2071,7 @@ Table sales.delivery_notes {
   deleted_at bigint
   Note: "Delivery note (surat jalan), company-wide (ADR-0011). Shipping posts one stock issue movement per stock-tracked line at the moving-average cost and marks the listed serial units sold, in one transaction through the Inventory module contract. Shipped notes are final; returns are sales_returns."
   Indexes {
+    waybill_number [name: 'delivery_notes_waybill_number_idx']
     sales_order_id [name: 'delivery_notes_sales_order_id_idx']
     status [name: 'delivery_notes_status_idx']
   }

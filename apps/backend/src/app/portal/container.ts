@@ -4,6 +4,7 @@ import { BetterAuthPortalSessionGateway } from './adapters/better-auth-portal-se
 import {
 	PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN,
 	PORTAL_DOCUMENT_FILE_SERVICE_TOKEN,
+	PORTAL_ORDER_TRACKING_SERVICE_TOKEN,
 	PORTAL_AUTH_SERVICE_TOKEN,
 	PORTAL_RFQ_SERVICE_TOKEN,
 	PORTAL_SALES_SERVICE_TOKEN,
@@ -18,6 +19,7 @@ import { PortalRfqService } from './services/portal-rfq.service';
 import { PublicTrackingService } from './services/public-tracking.service';
 import { PortalAccountPagesService } from './services/portal-account-pages.service';
 import { PortalDocumentFileService } from './services/portal-document-file.service';
+import { PortalOrderTrackingService } from './services/portal-order-tracking.service';
 
 export * from './constants/di';
 
@@ -38,4 +40,5 @@ export function registerPortal(container: DependencyContainer): void {
 	container.register(PUBLIC_TRACKING_SERVICE_TOKEN, { useClass: PublicTrackingService });
 	container.register(PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN, { useClass: PortalAccountPagesService });
 	container.register(PORTAL_DOCUMENT_FILE_SERVICE_TOKEN, { useClass: PortalDocumentFileService });
+	container.register(PORTAL_ORDER_TRACKING_SERVICE_TOKEN, { useClass: PortalOrderTrackingService });
 }

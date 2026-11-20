@@ -62,6 +62,16 @@ describe('locale values', () => {
 		const ALLOWED_IDENTICAL = new Set([
 			// "Target" is the Indonesian word too (customer portal, ERP-0022).
 			'api:portal.label.target',
+			// Courier brand names are the same in both languages (ERP-0080).
+			'sales:courier.jne',
+			'sales:courier.jnt',
+			'sales:courier.sicepat',
+			'sales:courier.anteraja',
+			'sales:courier.pos',
+			'sales:courier.tiki',
+			'sales:courier.lion',
+			'sales:courier.ninja',
+			'sales:courier.wahana',
 			// "Subtotal" and "Total" are the Indonesian invoice terms too (ERP-0070).
 			'api:portal.sales.subtotal',
 			'api:portal.sales.total',

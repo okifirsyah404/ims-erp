@@ -57,7 +57,7 @@ const sampleTracking: PublicTracking = {
     { name: "Face Recognition Terminal FR-8", quantity: 4, amount: 54_000_000, image: images.faceTerminal },
     { name: "Access Controller AC-4 Door", quantity: 1, amount: 8_500_000, image: images.accessController },
   ],
-  totals: { subtotal: 248_500_000, installation: 12_000_000, tax: 28_655_000, total: 289_155_000, paymentNote: "50% paid · balance due before shipping" },
+  totals: { subtotal: 248_500_000, installation: 12_000_000, tax: 28_655_000, total: 289_155_000, fullyPaid: false, paymentNote: "50% paid · balance due before shipping" },
   shipping: {
     address: "Graha Sentosa Fitness, Jl. TB Simatupang Kav. 18, Cilandak, Jakarta Selatan 12430",
     courier: "Entragate Logistics · Insured freight",

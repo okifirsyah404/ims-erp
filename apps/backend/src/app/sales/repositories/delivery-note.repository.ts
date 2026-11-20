@@ -117,11 +117,16 @@ export class DeliveryNoteRepository implements IDeliveryNoteRepository {
 		return { note, items: rows };
 	}
 
-	async markShipped(id: string, actorUserId: string, tx: TTx) {
+	async markShipped(
+		id: string,
+		actorUserId: string,
+		tx: TTx,
+		courier?: { courierCode: string | null; courierService: string | null; waybillNumber: string | null },
+	) {
 		const now = new Date();
 		const [note] = await tx
 			.update(deliveryNotes)
-			.set({ status: 'shipped', shippedAt: now, shippedBy: actorUserId, updatedAt: now })
+			.set({ status: 'shipped', shippedAt: now, shippedBy: actorUserId, updatedAt: now, ...(courier ?? {}) })
 			.where(and(this.live(id), eq(deliveryNotes.status, 'prepared')))
 			.returning();
 		return note ?? null;

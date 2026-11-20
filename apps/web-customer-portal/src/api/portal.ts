@@ -84,7 +84,7 @@ export type OrderDetail = OrderSummary & {
   delivery: { site: string; address: string; courier: string; awb: string; pic?: string };
   /** On-site installation plan, when the order includes installation. */
   installation?: { label: string; detail: string };
-  payment: { subtotal: Money; discountLabel?: string; discount?: Money; tax: Money; total: Money; paidLabel?: string };
+  payment: { subtotal: Money; discountLabel?: string; discount?: Money; tax: Money; total: Money; paidLabel?: string; fullyPaid?: boolean };
   documents: PortalDocument[];
   timeline: TimelineEvent[];
   courier?: { name: string; vehicle: string; distanceLabel: string; phone?: string; updatedLabel: string };

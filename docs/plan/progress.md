@@ -12,6 +12,71 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0080: order tracking from real data, courier and waybill
+
+Same branch, after ERP-0079 (`878739fc`). User: "tracking is not clear and
+not from the database"; tracking will later integrate with RajaOngkir.
+
+**Root causes.** Portal `/orders` used a 4-step bar from the sales order
+status only (no delivery notes, no project, no payment); its timeline was the
+status history. Delivery notes had only driver and vehicle, so a courier
+shipment had no courier or waybill. The website track page always drew 7
+steps (also for orders without installation), asked for "last 4 digits"
+although the lookup needs the full phone or the email, and drew the payment
+note as paid even when unpaid.
+
+**Design (Gate 2, manual).** One stage derivation for the website and the
+portal (`trackingStages`: received, paid, production, qc, shipped,
+installation only when a project exists, completed); the step in progress is
+the one after the last finished step, so an unpaid order that shipped is not
+pulled back. Courier data lives on the delivery note (Sales owns it):
+`courier_code` (`own` or a courier as RajaOngkir names it: jne, jnt,
+sicepat, anteraja, pos, tiki, lion, ninja, wahana, other),
+`courier_service`, `waybill_number`; all nullable, set when shipping; the
+own fleet clears service and waybill. No live courier status yet: RajaOngkir
+waybill tracking is a later step that reads these columns.
+
+**Changes.**
+- `docs/database/docs.dbml` `sales.delivery_notes`: three columns + index
+  `delivery_notes_waybill_number_idx`; Drizzle `sales.schema.ts`; migration
+  `20261120091259_erp0080_delivery_courier` (generated, inspected, header).
+- Sales: `shipDeliveryNoteSchema` / `COURIER_CODES`; `POST
+  /delivery-notes/:id/ship` takes an optional body; `markShipped` stores it;
+  `OrderTrackingService.forCustomer` / `listForCustomer` (+ invoice ids).
+- Portal: `PortalOrderTrackingService`; `/portal/v1/orders` and
+  `/orders/:id` now use `portalOrderSummary` / `portalOrderDetail`
+  (timeline, courier + AWB, site contact, installation, payment with
+  `fullyPaid`, invoice PDFs); public tracking shows the courier and AWB and
+  `totals.fullyPaid`. Old `orderSummary` / `orderDetail` and their 6
+  unused `api` locale keys removed (dead-key prefix `portal.sales.order.`
+  dropped).
+- Web admin: ship dialog with courier, service and waybill; detail shows them;
+  `sales` locale keys `delivery.courier*`, `courier.*` (en/id).
+- Website `/track`: steps from the order's own timeline (6 without
+  installation), step bar state from the timeline, contact placeholder "Full
+  phone number or email on the order", payment note green only when paid.
+- Portal `/orders/:id`: "Total paid" only when fully paid.
+
+**Verification.**
+- `bun docs/database/gen-logical-references.ts` + `bun
+  docs/database/validate-dbml.ts` → OK (0 cross-module refs, 0 timestamp
+  gaps, 0 drift).
+- `bun run typecheck` 6/6; `bun run lint` 0 errors; `bun run test`
+  backend 1359/0, web-admin 123/0, locales 98/0, react-email 6/0;
+  `public-tracking.test.ts` 10 (2 new for courier and the portal view).
+- Live (dev servers restarted): staff `warehouse.seed` created delivery note
+  `0001/SJ/DEV/XI/26` for SO `0002/SO/DEV/XI/26` (dev stock receipt of 10 units
+  first, the dev warehouse was empty) and shipped it with JNE REG, AWB
+  `JNE0080TEST01` → 200 with the three fields. Portal `/orders` "Step 4 of 6",
+  detail shows "JNE REG · AWB JNE0080TEST01" and "Awaiting payment"; website
+  `/track` lookup by order number + email shows 6 steps, Paid open, the
+  courier line and the site contact (screenshots checked).
+- Not done: a browser click-through of the staff ship dialog; RajaOngkir.
+
+**Next executable task:** ERP-0081 portal security settings (2FA by email
+code, active devices, change password, delete login; remove the unused
+settings).
+
 ## 2026-11-20 - ERP-0079: document downloads in the customer portal
 
 Same branch, after ERP-0078 (`86743101`). User: "documents cannot be

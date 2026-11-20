@@ -19,7 +19,14 @@ import {
 	type TTrackedOrder,
 } from '../../src/app/portal/services/public-tracking.service';
 import type { TPresenter } from '../../src/app/portal/utils/portal-presenter';
-import { publicOrderStatus, publicTracking, trackingStages } from '../../src/app/portal/utils/tracking-presenter';
+import {
+	courierLabel,
+	portalOrderDetail,
+	portalOrderSummary,
+	publicOrderStatus,
+	publicTracking,
+	trackingStages,
+} from '../../src/app/portal/utils/tracking-presenter';
 
 const p: TPresenter = { t: (key: string) => key, language: 'en', today: '2026-11-20', now: new Date('2026-11-20T03:00:00Z') } as unknown as TPresenter;
 
@@ -46,6 +53,7 @@ function tracking(overrides: Partial<TOrderTracking['order']> = {}, extra: Parti
 		} as unknown as TOrderTracking['order'],
 		paidMinor: 0,
 		fullyPaid: false,
+		invoiceIds: [],
 		deliveryNotes: [],
 		...extra,
 	};
@@ -103,7 +111,7 @@ describe('tracking stages', () => {
 		const install = view.timeline.find((step) => step.stage === 'installation')!;
 		expect(install.state).toBe('current');
 		expect(install.progress).toEqual({ value: 0.5, tasks: [{ label: 'Pasang', state: 'done' }, { label: 'Uji', state: 'current' }] });
-		expect(view.shipping).toEqual({ address: 'Gedung A', courier: 'Adi · B 1234 CD', siteContact: 'Sari · 0812', installationTeam: 'Rina' });
+		expect(view.shipping).toEqual({ address: 'Gedung A', courier: 'Entragate · Adi · B 1234 CD', siteContact: 'Sari · 0812', installationTeam: 'Rina' });
 		expect(view.siteLabel).toBe('Lobby Utama');
 		expect(view.totals.paymentNote).toBe('tracking.paidInFull');
 	});
@@ -113,20 +121,46 @@ describe('tracking stages', () => {
 		expect(facts.every((fact) => fact.done)).toBe(true);
 	});
 
-	test('the portal status hides the customer, prices and addresses', () => {
+	test('the portal status hides the customer, prices and addresses (same stages as the order page)', () => {
 		const status = publicOrderStatus(p, tracking({ status: 'in_progress' }));
 		expect(status).toEqual({
 			orderNumber: '0001/SO/IMS/XI/26',
 			title: 'tracking.publicTitle',
 			status: 'production',
-			statusLabel: 'portal.sales.order.in_progress',
+			statusLabel: 'tracking.now.qc',
 			arrivalLabel: 'portal.sales.order.eta',
 			step: 2,
-			stepCount: 4,
-			stepLabel: 'portal.sales.order.in_progress',
-			progress: 0.5,
+			stepCount: 6,
+			stepLabel: 'tracking.now.qc',
+			progress: 2 / 6,
 		});
 		expect(JSON.stringify(status)).not.toContain('Maju');
+	});
+});
+
+describe('courier and portal order view (ERP-0080)', () => {
+	const note = (overrides: Record<string, unknown>) =>
+		({ status: 'shipped', shippedAt: new Date('2026-11-19T03:00:00Z'), createdAt: new Date('2026-11-19T01:00:00Z'), updatedAt: new Date('2026-11-19T03:00:00Z'), ...overrides }) as never;
+
+	test('a courier shipment shows the courier, service and waybill', () => {
+		const tracked: TTrackedOrder = {
+			...tracking({ status: 'delivered' }, { deliveryNotes: [note({ courierCode: 'jne', courierService: 'REG', waybillNumber: 'JNE123', recipientPic: 'Sari' })] }),
+			project: null,
+		};
+		expect(courierLabel(tracked.deliveryNotes[0])).toBe('JNE REG');
+		expect(publicTracking(p, tracked).shipping.courier).toBe('JNE REG · AWB JNE123');
+		const detail = portalOrderDetail(p, tracked);
+		expect(detail.delivery).toMatchObject({ courier: 'JNE REG', awb: 'JNE123', pic: 'Sari' });
+		expect(detail.status).toBe('shipped');
+		expect(detail.timeline.find((step) => step.title === 'tracking.stage.shipped')!.state).toBe('done');
+	});
+
+	test('an unpaid order that already shipped is not pulled back to "awaiting payment"', () => {
+		const tracked: TTrackedOrder = { ...tracking({ status: 'in_progress' }, { deliveryNotes: [note({})] }), project: null };
+		const summary = portalOrderSummary(p, tracked);
+		expect(summary.status).toBe('shipped');
+		expect(summary.statusLabel).toBe('tracking.now.completed');
+		expect(portalOrderDetail(p, tracked).payment.paidLabel).toBe('tracking.unpaid');
 	});
 });
 

@@ -101,7 +101,7 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | `getQuotation` | `GET /portal/v1/quotations/:id` | `QuotationDetail` with `approvers` (active owners/approvers) |
 | `acceptQuotation` | `POST /portal/v1/quotations/:id/accept` | `{ approverId (= caller's identity), poNumber? }` → creates the sales order; 409 not `sent` |
 | `requestQuotationRevision` | `POST /portal/v1/quotations/:id/revision` | `{ topics[], message }` → notifies the salesperson; attachments 422 |
-| `listOrders` / `getOrder` | `GET /portal/v1/orders`, `/orders/:id` | sales orders → `OrderSummary` / `OrderDetail` (4-step bar) |
+| `listOrders` / `getOrder` | `GET /portal/v1/orders`, `/orders/:id` | sales orders → `OrderSummary` / `OrderDetail` from the tracking stages (ERP-0080): received, paid, production, qc, shipped, installation (only with a project), completed; detail carries the timeline, courier + AWB of the latest delivery note, site contact, installation, payment (`fullyPaid`) and invoice PDFs; 404 for another customer's order |
 | `listInvoices` / `getInvoice` | `GET /portal/v1/invoices`, `/invoices/:id` | issued, partially paid and paid invoices only |
 | `listPaymentMethods` | `GET /portal/v1/payment-methods` | the active gateway as one method (`id` = provider); empty when none |
 | `payInvoice` | `POST /portal/v1/invoices/:id/pay` | `{ methodId }` → `{ instructionsUrl, reference }` (gateway checkout, reused while pending) |

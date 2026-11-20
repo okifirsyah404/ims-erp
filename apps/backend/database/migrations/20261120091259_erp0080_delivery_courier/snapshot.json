@@ -1,0 +1,159 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "019444ec-d142-4d17-b233-c0bea0b533b2",
+  "prevIds": [
+    "0cbe19e3-f05c-4cea-b3a8-3e9cac73fc4e"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sales",
+        "delivery_notes",
+        "courier_code"
+      ],
+      "writes": [
+        "s|col|sales.delivery_notes.courier_code",
+        "n|col|sales.delivery_notes.courier_code",
+        "e|col|sales.delivery_notes.courier_code"
+      ],
+      "reads": [
+        "n|tbl|sales.delivery_notes",
+        "n|sch|sales"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sales",
+        "delivery_notes",
+        "courier_service"
+      ],
+      "writes": [
+        "s|col|sales.delivery_notes.courier_service",
+        "n|col|sales.delivery_notes.courier_service",
+        "e|col|sales.delivery_notes.courier_service"
+      ],
+      "reads": [
+        "n|tbl|sales.delivery_notes",
+        "n|sch|sales"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sales",
+        "delivery_notes",
+        "waybill_number"
+      ],
+      "writes": [
+        "s|col|sales.delivery_notes.waybill_number",
+        "n|col|sales.delivery_notes.waybill_number",
+        "e|col|sales.delivery_notes.waybill_number"
+      ],
+      "reads": [
+        "n|tbl|sales.delivery_notes",
+        "n|sch|sales"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "sales",
+        "delivery_notes",
+        "delivery_notes_waybill_number_idx"
+      ],
+      "writes": [
+        "s|idx|sales.delivery_notes_waybill_number_idx",
+        "n|idx|sales.delivery_notes_waybill_number_idx",
+        "e|idx|sales.delivery_notes_waybill_number_idx",
+        "n|rel|sales.delivery_notes_waybill_number_idx"
+      ],
+      "reads": [
+        "n|tbl|sales.delivery_notes",
+        "n|sch|sales",
+        "n|col|sales.delivery_notes.waybill_number"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "sales",
+        "table": "delivery_notes",
+        "name": "courier_code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sales",
+        "table": "delivery_notes",
+        "name": "courier_service",
+        "type": "varchar(60)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sales",
+        "table": "delivery_notes",
+        "name": "waybill_number",
+        "type": "varchar(60)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sales",
+        "table": "delivery_notes",
+        "name": "delivery_notes_waybill_number_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "waybill_number",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

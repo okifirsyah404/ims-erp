@@ -106,6 +106,8 @@ const DYNAMIC_PREFIXES = [
 	'settings:companyProfile.image.',
 	'sales:lostReason.',
 	'sales:orderStatus.',
+	// Courier names on delivery notes (ERP-0080).
+	'sales:courier.',
 	// Invoice status, term kind and receipt method labels come from server values.
 	'finance:status.',
 	'finance:termKind.',
@@ -198,8 +200,6 @@ const DYNAMIC_PREFIXES = [
 	// Customer portal (ERP-0022): stage and evidence labels are composed from
 	// the server value in `portal-presenter.ts`.
 	'portal.stage.',
-	// Portal order status labels compose `portal.sales.order.${status}` (ERP-0070).
-	'portal.sales.order.',
 	// Website RFQ status labels compose `portal.rfq.status.${status}` (ERP-0072).
 	'portal.rfq.status.',
 	// Document library folder labels (ERP-0075).
