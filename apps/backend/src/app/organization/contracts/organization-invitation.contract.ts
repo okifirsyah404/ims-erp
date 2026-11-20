@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { erpRoleNames, organizationRoleSchema } from '@ims-erp/common';
+import {
+	employmentTypeSchema,
+	erpRoleNames,
+	organizationRoleSchema,
+} from '@ims-erp/common';
 
 /**
  * Request contracts for the organization-scoped invitation routes.
@@ -26,6 +30,12 @@ export const orgInvitationRowSchema = z.object({
 		.min(1)
 		.max(erpRoleNames.length)
 		.optional(),
+	/**
+	 * Employee profile created alongside the invitation (ERP-0034). The org
+	 * surface has no `organizationId` (it comes from the path) but the same
+	 * permanent/temporary choice applies. Absent = `permanent`.
+	 */
+	employmentType: employmentTypeSchema.optional(),
 });
 /** Parsed {@link orgInvitationRowSchema}. */
 export type TOrgInvitationRow = z.infer<typeof orgInvitationRowSchema>;

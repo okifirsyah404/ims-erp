@@ -2,6 +2,9 @@ import { container } from 'tsyringe';
 import { translator } from '@providers/i18n/translator';
 import { domainPlugin } from '@http/plugin';
 import { errorEnvelope, ok, okPaginated } from '@http/response';
+import type { ErpContext } from '@authorization/elysia-auth';
+import { isGlobalAdmin } from '@authorization/require-global-admin';
+import { parseRoleList } from '@ims-erp/common';
 import {
 	addMemberSchema,
 	memberIdParamsSchema,
@@ -12,16 +15,33 @@ import {
 	updateOrganizationSchema,
 } from '../contracts/organization.contract';
 import { ORGANIZATION_SERVICE_TOKEN } from '../constants/di';
-import { OrganizationService } from '../services/organization.service';
+import {
+	OrganizationService,
+	type TMemberAssignmentContext,
+} from '../services/organization.service';
 import { organizationImageFrom } from '../utils/organization-image';
 import {
 	LastOrganizationError,
 	LastOwnerError,
 	MemberNotFoundError,
+	MemberRoleNotAssignableError,
 	OrganizationNotFoundError,
 	OrganizationNotDeletedError,
 	OrganizationSlugTakenError,
 } from '../errors/organization.errors';
+
+/**
+ * Role-assignment context for member add/update, from the guard-resolved
+ * session (never client input).
+ *
+ * @param erp - The guard context: caller's membership row plus platform role
+ */
+function memberAssignmentContext(erp: ErpContext): TMemberAssignmentContext {
+	return {
+		callerRoles: parseRoleList(erp.member.role),
+		isPlatformAdmin: isGlobalAdmin({ erp }),
+	};
+}
 
 /**
  * HTTP boundary for the organization module's organization-scoped routes.
@@ -125,6 +145,12 @@ export class OrganizationController {
 					set.status = 409;
 					return errorEnvelope(409, t('common.conflict'), [
 						{ message: t(error.key) },
+					]);
+				}
+				if (error instanceof MemberRoleNotAssignableError) {
+					set.status = 403;
+					return errorEnvelope(403, t('common.forbidden'), [
+						{ message: t(error.key, { roles: error.roles.join(', ') }) },
 					]);
 				}
 				return undefined;
@@ -272,11 +298,12 @@ export class OrganizationController {
 			// Members: add
 			.post(
 				'/:organizationId/members',
-				async ({ request, params, body, status }) => {
+				async ({ request, params, body, status, erp }) => {
 					const member = await organizationService.addMember(
 						request.headers,
 						params.organizationId,
 						body,
+						memberAssignmentContext(erp),
 					);
 					return status(201, ok(member));
 				},
@@ -289,12 +316,13 @@ export class OrganizationController {
 			// Members: update role
 			.patch(
 				'/:organizationId/members/:memberId',
-				async ({ request, params, body }) => {
+				async ({ request, params, body, erp }) => {
 					const member = await organizationService.updateMemberRole(
 						request.headers,
 						params.organizationId,
 						params.memberId,
 						body,
+						memberAssignmentContext(erp),
 					);
 					return ok(member);
 				},

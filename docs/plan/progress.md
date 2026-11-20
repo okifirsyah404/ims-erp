@@ -12,6 +12,113 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - Invite dialog: role ladder enforced end to end, permanent/temporary switch, employee email fix
+
+User request (2026-11-21): the user-invitation dialog on `/admin/users` and
+`/organizations/<id>` offered every organization role to everyone, and an
+invited employee could not be marked temporary. Two further requests during
+the session: fix the same bug on the member-edit page, and add the
+`employmentType` column to the bulk template.
+
+**Role ladder (requirements 1-3).** One shared helper now owns the rule
+(`assignableOrganizationRoles` / `grantableOrganizationRoles` in
+`packages/common/src/authorization/erp-permissions.ts`):
+
+| Caller | invited roles |
+| --- | --- |
+| anyone | never `owner` |
+| org `admin` | never `owner`, `admin` |
+| org `hr` | never `owner`, `admin`, `hr` |
+| platform `admin` (`user.role`) | never `owner` (unless they also hold an owner membership) |
+
+- `components/invite/invite-dialog.tsx`: the dropdown renders
+  `grantableRoles` for the **target** organization (in admin mode it follows
+  the organization selector), and the effective role is clamped during render
+  rather than in an effect, so switching organizations can never leave a
+  now-illegal value selected. `lib/use-caller-org-roles.ts` resolves the
+  caller's membership from `GET /organizations/mine`.
+- `lib/admin-api.ts` (`parseBulkInviteRows`) and
+  `packages/common/src/files/invite-sheet.ts` (`rowsToInviteSheet`) accept
+  `allowedRoles`; a disallowed role is a per-row error.
+- The sheet parser's hand-copied `ERP_ROLES` list is gone — it still named the
+  app roles `investor`/`customer` removed by ADR-0018, so a sheet using them
+  passed the client and was rejected row-by-row by the API. It now reads
+  `erpRoleNames`.
+- **Backend enforcement** (`src/authorization/role-assignment.ts`, new):
+  `POST /admin/invitations`, `POST /organizations/:id/invitations` (single and
+  bulk — the batch is rejected whole), `POST /hr/employees` and the
+  organization member add/update routes reject illegal roles with 403
+  (`invitation.roleNotAssignable` / `organization.roleNotAssignable`).
+  `OrganizationService.addMember`/`updateMemberRole` take a
+  `TMemberAssignmentContext` from the controller and pass the target member's
+  current roles, so keeping an existing grant is not an escalation while
+  creating one above the caller's tier is.
+
+**Member-edit page (follow-up request).** `$organizationId.members.$memberId.edit.tsx`
+rendered every `erpRoleNames` checkbox including `owner`, and the backend
+`updateMemberRole` checked nothing but last-owner. The checkboxes now render
+`useAssignableOrgRoles(organizationId, currentRoles)`; roles the caller cannot
+change are listed in a hint (`memberEdit.rolesLocked`) instead of silently
+vanishing, because they are still part of the member's row.
+
+**Permanent/temporary switch (requirement 4).** `@ims-erp/ui/components/switch`
+is mounted once above the dialog's tabs, so all three input modes agree:
+`permanent` (default) vs `contract`. The value travels as
+`employmentType` through `TInviteInput`, `invitationInputBase`,
+`orgInvitationRowSchema` and into `EmployeeInviteService.defaultProfile`. The
+vocabulary lives in `packages/common/src/hr/employment.ts`
+(`employmentTypeNames` + labels), and the bulk template gained an
+`employmentType` column (`INVITE_SHEET_HEADERS`), with per-row validation; an
+empty cell falls back to the switch. `invite.fileHint` (en + id) lists the new
+column.
+
+**Employee bugs found while wiring the switch.**
+- `EmployeeInviteService.defaultProfile` never set `email`, so every
+  invite-created employee had `email = NULL`: the duplicate-email guard
+  (`employees.findByEmail`) never fired, employee search never matched, and the
+  detail card rendered `—`. Fixed (`email: row.email`).
+- `components/hr/employee-form.tsx` never sent `organizationId`, so
+  `EmployeeService.create` treated every submission as a company-level
+  creation and rejected org HR with `CompanyEmployeeForbiddenError`. It now
+  sends the active organization.
+
+**Verification (executed 2026-11-21).**
+- `packages/common`: `bun run build` clean; `bun test` 25 pass (13 new in
+  `test/grantable-roles.test.ts`, 6 new/updated in `test/invite-sheet.test.ts`).
+- `apps/backend`: `bunx tsc --noEmit` clean; `bun test` 1251 pass / 0 fail
+  (new `test/unit/role-assignment.test.ts` 12 pass; 3 new cases in
+  `test/unit/employee-invite.service.test.ts` covering email + employmentType).
+  The run still prints the pre-existing "database ims_erp_test does not exist"
+  and "chromium crashed" noise; neither fails a test.
+- `apps/web-admin`: `bunx tsc -p tsconfig.app.json --noEmit` clean; `bun test`
+  123 pass (4 new cases in `test/unit/invite-parse.test.ts`).
+- `packages/locales`: `bun test` 98 pass (parity holds for every new key in
+  both `en` and `id`).
+- `bun run lint` at the root: 5/5 tasks, 0 errors (15 warnings, all pre-existing
+  unused imports in untouched files).
+- **Live smoke test** (`apps/backend/scripts/smoke-role-ladder.ts`, new) against
+  the dev server on :3001 and the seeded database — **12/12 passed**:
+  - owner caller: `owner` rejected on `/admin/invitations`, on
+    `/organizations/:id/invitations` and on `/human-resources/employees`
+    (all 403); a legal `member` + `contract` invite returns 201 and its
+    employee row comes back with `email` set and `employmentType=contract`
+    (the two employee bugs, proved fixed end to end);
+  - org admin: `admin` -> 403, `hr` -> 201;
+  - org HR: `admin`, `hr` and `owner` -> 403, `member` -> 201;
+  - org admin promoting a member to `admin` via
+    `PATCH /organizations/:id/members/:memberId` -> 403
+    (`Role not assignable: admin`);
+  - an application-level invite (no organization) -> 201.
+- Not browser-verified: the dialog, the switch and the member-edit page were
+  verified by typecheck, unit tests, lint and the live API only. The seeded
+  database was left untouched (the first draft of the smoke script promoted a
+  seeded account to owner; it was restored and the script no longer mutates
+  roles).
+
+No migration: `hr.employees.employment_type` already existed with its check
+constraint, and `employmentType` is optional on every payload, so older clients
+keep working.
+
 ## 2026-11-20 - docs.dbml and Drizzle brought into agreement: ADR-0014 enforced on 61 columns, parity check strengthened
 
 - Finding: `validate-dbml.ts` check 5 only proved that every Drizzle table and column *name* exists in `docs.dbml`; "drizzle parity drift: 0" said nothing about nullability or types. A both-directions comparison found 185 nullability and 3 type differences. 61 of them were cross-module id columns declared `NOT NULL` in Drizzle (all `organization_id` of finance/tax/payment/sale/inventory tables, `sale.quotations.customer_id`, `sale.orders.customer_id`, `delivery_notes.warehouse_id`, `procurement.purchase_orders.supplier_company_id`, `*.product_id` lines, `project.projects.order_id/customer_id/pic_user_id`, `ticket.tickets.customer_id`, `audit.audit_logs.actor_user_id`, `notification.push_notifications.user_id`, ...), which ADR-0014 and the AGENTS.md hard rule forbid. The earlier note of "about ten" in the docs sync entry under-reported this.

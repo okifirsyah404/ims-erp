@@ -62,6 +62,33 @@ describe('EmployeeInviteService', () => {
 		expect(invitations.rollbackPending).not.toHaveBeenCalled();
 	});
 
+	test('the invite email lands on the employee row (duplicate guard + search rely on it)', async () => {
+		const { service, employees } = makeDeps();
+		await service.invite(row, ACTOR);
+		const inserted = (employees.insert as unknown as { mock: { calls: unknown[][] } }).mock
+			.calls[0]?.[0] as Record<string, unknown>;
+		// The profile defaults used to drop the address, so every
+		// invite-created employee had `email = NULL`: the duplicate-email guard
+		// never fired and the list search never matched.
+		expect(inserted.email).toBe('budi@example.com');
+	});
+
+	test('employmentType defaults to permanent', async () => {
+		const { service, employees } = makeDeps();
+		await service.invite(row, ACTOR);
+		const inserted = (employees.insert as unknown as { mock: { calls: unknown[][] } }).mock
+			.calls[0]?.[0] as Record<string, unknown>;
+		expect(inserted.employmentType).toBe('permanent');
+	});
+
+	test('the invite carries the chosen employmentType (temporary employee)', async () => {
+		const { service, employees } = makeDeps();
+		await service.invite({ ...row, employmentType: 'contract' }, ACTOR);
+		const inserted = (employees.insert as unknown as { mock: { calls: unknown[][] } }).mock
+			.calls[0]?.[0] as Record<string, unknown>;
+		expect(inserted.employmentType).toBe('contract');
+	});
+
 	test('email already an employee: rejected before any invite is sent', async () => {
 		const { service, invitations } = makeDeps({
 			findByEmail: async () => ({ id: 'emp-existing' }) as never,

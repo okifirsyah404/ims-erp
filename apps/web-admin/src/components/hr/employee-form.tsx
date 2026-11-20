@@ -28,6 +28,7 @@ import {
 	type TWorkType,
 	WORK_TYPES,
 } from '@/lib/hr-api';
+import { useActiveOrganizationId } from '@/lib/use-active-organization';
 
 /**
  * Invite-first employee creation form (ERP-0034).
@@ -41,6 +42,12 @@ export function EmployeeForm() {
 	const { t } = useTranslation('hr');
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	// The backend resolves the employee's tenant from the request's
+	// organization context, and `organizationId` in the body must match it: an
+	// org-scoped caller without one is rejected as a company-level creation
+	// (`CompanyEmployeeForbiddenError`). The form used to omit it entirely, so
+	// every organization HR user hit a 403 here.
+	const organizationId = useActiveOrganizationId();
 
 	const [fullName, setFullName] = useState('');
 	const [email, setEmail] = useState('');
@@ -55,6 +62,7 @@ export function EmployeeForm() {
 			createEmployee({
 				fullName,
 				email,
+				organizationId,
 				phone: phone || null,
 				nationalId: nationalId || null,
 				employmentType,

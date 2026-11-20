@@ -346,6 +346,100 @@ export function hasRole(role: string | null | undefined, name: string): boolean 
 	return parseRoleList(role).includes(name);
 }
 
+/**
+ * Options for the role-assignment helpers below.
+ *
+ * @remarks
+ * `isPlatformAdmin` is the Better Auth `admin` application role
+ * (`user.role`), not an organization role: it administers every organization
+ * (ADR-0007), so it clears every tier restriction except the `owner` rule.
+ */
+export type TRoleAssignmentOptions = {
+	isPlatformAdmin?: boolean;
+	/**
+	 * Roles the target member already holds. Only member management passes
+	 * this: an existing grant is not a new grant, so a caller may leave it in
+	 * place even when it sits above their tier. Invites omit it.
+	 */
+	currentRoles?: readonly string[];
+};
+
+/**
+ * Organization roles a caller may hand out, sorted by catalog order.
+ *
+ * @remarks
+ * The tier ladder is deliberately tiny and explicit:
+ * - `owner` requires holding `owner` — an invite can never carry it, and this
+ *   also mirrors Better Auth's own hook (`auth-hooks.ts`: an owner grant needs
+ *   an acting owner member, so a platform admin with no owner membership is
+ *   rejected there too).
+ * - `admin` requires an acting owner.
+ * - `hr` requires an acting owner or admin.
+ * - Every other role is grantable by any member manager; the backend still
+ *   enforces `member:create`/`member:update` and record-level rules.
+ *
+ * `currentRoles` is the member-management escape hatch: an existing grant is
+ * not a new grant, so a caller may leave a role in place even when it sits
+ * above their tier (an admin removing `admin` from a peer, org HR keeping
+ * `hr`). Invites omit it, which is what keeps the invite dropdown strict.
+ *
+ * @param callerRoles - The caller's comma-joined `member.role` split apart
+ * @param options - Platform-admin bypass and the target's current roles
+ */
+export function assignableOrganizationRoles(
+	callerRoles: readonly string[],
+	options: TRoleAssignmentOptions = {},
+): ErpRoleName[] {
+	const held = new Set(callerRoles);
+	const current = new Set(options.currentRoles ?? []);
+	const isPlatformAdmin = options.isPlatformAdmin === true;
+	const isOwner = held.has('owner');
+
+	return erpRoleNames.filter((role) => {
+		if (role === 'owner') return isOwner;
+		// Keeping an existing grant is not an escalation.
+		if (current.has(role) && held.has(role)) return true;
+		if (isPlatformAdmin) return true;
+		if (role === 'admin') return isOwner;
+		if (role === 'hr') return isOwner || held.has('admin');
+		return true;
+	});
+}
+
+/**
+ * Organization roles a caller may put on an *invitation*.
+ *
+ * @remarks
+ * Same ladder as {@link assignableOrganizationRoles} without the
+ * keep-existing escape hatch, and with `owner` removed unconditionally: an
+ * invite can never carry the organization's owner role (requirements: no
+ * `owner` in the role dropdown for anyone, and org admins additionally lose
+ * `admin`, org HR additionally loses `hr`).
+ */
+export function grantableOrganizationRoles(
+	callerRoles: readonly string[],
+	options: Omit<TRoleAssignmentOptions, 'currentRoles'> = {},
+): ErpRoleName[] {
+	return assignableOrganizationRoles(callerRoles, options).filter(
+		(role) => role !== 'owner',
+	);
+}
+
+/**
+ * The requested roles a caller may not assign, for a domain error message.
+ *
+ * @remarks
+ * Empty means the payload is fine. Comparison is on the raw strings so a
+ * stale client naming a role that no longer exists is reported, not ignored.
+ */
+export function findUnassignableRoles(
+	requested: readonly string[],
+	allowed: readonly string[],
+): string[] {
+	const permitted = new Set<string>(allowed);
+	return requested.filter((role) => !permitted.has(role));
+}
+
 export const appRoleGrants: Record<AppRoleName, ErpPermissionRequest> = {
 	// Read-only investor portal; "published/shared" record-level checks apply.
 	investor: {

@@ -44,12 +44,31 @@ import {
 	LastOrganizationError,
 	LastOwnerError,
 	MemberNotFoundError,
+	MemberRoleNotAssignableError,
 	OrganizationAlreadyDeletedError,
 	OrganizationNotDeletedError,
 	OrganizationNotFoundError,
 	OrganizationSlugTakenError,
 } from '../errors/organization.errors';
 import type { TMemberRole } from '../contracts/organization.contract';
+import {
+	assignableOrganizationRoles,
+	findUnassignableRoles,
+	parseRoleList,
+} from '@ims-erp/common';
+
+/**
+ * Who is assigning roles, for the tier check in member management.
+ *
+ * @remarks
+ * Derived by the controller from the guard-resolved session: the caller's own
+ * organization roles plus the platform-admin flag (which administers every
+ * organization, ADR-0007). Never read from client input.
+ */
+export type TMemberAssignmentContext = {
+	callerRoles: readonly string[];
+	isPlatformAdmin: boolean;
+};
 
 /**
  * Organization module service.
@@ -492,13 +511,17 @@ export class OrganizationService {
 	 *
 	 * @throws OrganizationNotFoundError when the organization is absent or
 	 * soft-deleted
+	 * @throws MemberRoleNotAssignableError when a requested role sits above the
+	 * caller's tier (`owner` is never granted this way)
 	 */
 	async addMember(
 		headers: Headers,
 		organizationId: string,
 		input: TAddMember,
+		assignment: TMemberAssignmentContext,
 	): Promise<{ id: string }> {
 		const organization = await this.ensureActive(organizationId);
+		this.assertAssignableRoles(assignment, input.roles, []);
 		const member = await this.gateway.addMember({
 			organizationId,
 			userId: input.userId,
@@ -524,16 +547,27 @@ export class OrganizationService {
 	 *
 	 * @throws MemberNotFoundError when the member does not exist
 	 * @throws LastOwnerError when demoting the last owner
+	 * @throws MemberRoleNotAssignableError when a requested role sits above the
+	 * caller's tier and the member does not already hold it
 	 */
 	async updateMemberRole(
 		headers: Headers,
 		organizationId: string,
 		memberId: string,
 		input: TUpdateMemberRole,
+		assignment: TMemberAssignmentContext,
 	): Promise<{ id: string; role: string }> {
 		await this.ensureActive(organizationId);
 		const member = await this.repository.findMemberById(organizationId, memberId);
 		if (!member) throw new MemberNotFoundError();
+		// An existing grant is not a new grant: the caller may leave a role in
+		// place even when it sits above their tier (an owner demoting another
+		// owner, an admin removing `admin` from a peer), but may not create one.
+		this.assertAssignableRoles(
+			assignment,
+			input.roles,
+			parseRoleList(member.role),
+		);
 		if (this.isOwner(member.role) && !input.roles.includes('owner')) {
 			await this.ensureNotLastOwner(organizationId, memberId);
 		}
@@ -632,6 +666,33 @@ export class OrganizationService {
 	 */
 	private isOwner(role: string): boolean {
 		return role.split(',').map((r) => r.trim()).includes('owner');
+	}
+
+	/**
+	 * Rejects role assignments above the caller's tier.
+	 *
+	 * @remarks
+	 * The shared ladder (`assignableOrganizationRoles`) is the single source of
+	 * truth: the member-edit checkboxes render exactly this set, and Better
+	 * Auth's own hooks only cover the endpoints reached through `auth.api`.
+	 * `currentRoles` carries the target member's roles so keeping an existing
+	 * grant is allowed while creating one above the caller's tier is not.
+	 *
+	 * @throws MemberRoleNotAssignableError when any requested role is illegal
+	 */
+	private assertAssignableRoles(
+		assignment: TMemberAssignmentContext,
+		requested: readonly string[],
+		currentRoles: readonly string[],
+	): void {
+		const allowed = assignableOrganizationRoles(assignment.callerRoles, {
+			isPlatformAdmin: assignment.isPlatformAdmin,
+			currentRoles,
+		});
+		const illegal = findUnassignableRoles(requested, allowed);
+		if (illegal.length > 0) {
+			throw new MemberRoleNotAssignableError(illegal);
+		}
 	}
 }
 

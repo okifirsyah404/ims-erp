@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { erpRoleNames, organizationRoleSchema } from '@ims-erp/common';
+import {
+	employmentTypeSchema,
+	erpRoleNames,
+	organizationRoleSchema,
+} from '@ims-erp/common';
 import { isValidPhoneNumber } from 'libphonenumber-js/min';
 
 /**
@@ -42,6 +46,13 @@ const invitationInputBase = z.object({
 	/** Bulk-file convenience: resolve the target org by its unique slug
 	 * instead of a UUID. Ignored when `organizationId` is present. */
 	organizationSlug: z.string().min(1).max(120).optional(),
+	/**
+	 * Employee profile created alongside the invitation (ERP-0034): the invite
+	 * pipeline always inserts an `hr.employees` row, so the caller may choose
+	 * permanent vs. temporary here instead of accepting the `permanent`
+	 * default. Absent = `permanent`.
+	 */
+	employmentType: employmentTypeSchema.optional(),
 });
 
 export const createInvitationSchema = z.union([

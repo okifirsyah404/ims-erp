@@ -71,12 +71,15 @@ const admin = {
 	'invite.file': 'Upload file',
 	'invite.fileLabel': 'Spreadsheet (.csv or .xlsx, {{max}} rows max)',
 	'invite.fileHint':
-		'Columns: <code>email, name, organizationSlug, role</code>. Only email and name are required; download the template for the exact layout.',
+		'Columns: <code>email, name, organizationSlug, role, employmentType</code>. Only email and name are required; download the template for the exact layout.',
 	'invite.fileTooLarge': 'The file is larger than 1 MB',
 	'invite.fileEmpty': 'The file has no data rows',
 	'invite.fileUnreadable': 'The file could not be read',
 	'invite.fileRowError': 'Row {{row}}: {{message}}',
 	'invite.fileReady': '{{count}} row(s) ready to send',
+	'invite.permanentEmployee': 'Permanent employee',
+	'invite.permanentEmployeeHint':
+		'Turn off to create the employee as temporary (contract).',
 	'invite.downloadTemplateXlsx': 'Download template (.xlsx)',
 	'invite.downloadTemplateCsv': 'Download template (.csv)',
 	'accessDenied.title': 'Administrator access required',
@@ -226,6 +229,8 @@ const admin = {
 	'memberEdit.title': 'Edit member',
 	'memberEdit.description': 'Change this member’s role or remove them from the organization.',
 	'memberEdit.role': 'Role',
+	'memberEdit.rolesLocked':
+		'Roles you cannot change are hidden: {{roles}}. Only an owner can change them.',
 	'memberEdit.updated': 'Member role updated',
 	'memberEdit.remove': 'Remove member',
 	'memberEdit.removeTitle': 'Remove {{name}} from the organization?',

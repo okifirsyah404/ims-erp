@@ -79,3 +79,22 @@ export class LastOwnerError extends Error {
 	}
 }
 
+/**
+ * The caller tried to grant an organization role above their own tier.
+ *
+ * @remarks
+ * `owner` is never *granted* here (it is born with the organization); a
+ * non-owner must not add or promote anyone to `owner`, and an org admin or
+ * org HR must not hand out `admin`/`hr` respectively. The shared ladder lives
+ * in `@ims-erp/common` (`assignableOrganizationRoles`), so the member-edit
+ * checkboxes and this guard agree.
+ */
+export class MemberRoleNotAssignableError extends Error {
+	readonly status = 403;
+	readonly key: ApiKey = 'organization.roleNotAssignable';
+	constructor(readonly roles: readonly string[]) {
+		super(`Role not assignable: ${roles.join(', ')}`);
+		this.name = 'MemberRoleNotAssignableError';
+	}
+}
+

@@ -14,10 +14,11 @@ export function buildInvitationTemplate(
 	const sample = [
 		[...INVITE_SHEET_HEADERS],
 		// Multi-role cells are pipe-separated; the comma stays the field
-		// separator (ERP-0041).
-		['budi@example.com', 'Budi Santoso', 'my-org-slug', 'member'],
-		['ani@example.com', 'Ani Lestari', 'my-org-slug', 'admin|finance'],
-		['sari@example.com', 'Sari Dewi', '', ''],
+		// separator (ERP-0041). `employmentType` is the employee profile the
+		// invite creates; an empty cell falls back to the dialog's switch.
+		['budi@example.com', 'Budi Santoso', 'my-org-slug', 'member', 'permanent'],
+		['ani@example.com', 'Ani Lestari', 'my-org-slug', 'admin|finance', 'contract'],
+		['sari@example.com', 'Sari Dewi', '', '', ''],
 	];
 	if (format === 'csv') {
 		const csv = XLSX.utils.sheet_to_csv(XLSX.utils.aoa_to_sheet(sample));

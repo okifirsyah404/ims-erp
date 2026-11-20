@@ -1,5 +1,9 @@
 import type { ErpContext } from '@authorization/elysia-auth';
 import { isGlobalAdmin } from '@authorization/require-global-admin';
+import {
+	roleAssignmentContext,
+	unassignableInviteRoles,
+} from '@authorization/role-assignment';
 import { container } from 'tsyringe';
 import { DomainHttpError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
@@ -14,6 +18,7 @@ import {
 	INVITATION_SERVICE_TOKEN,
 } from '../../user/constants/di';
 import type { IInvitationEmployeePort } from '../../user/contracts/invitation-employee.port';
+import { RoleNotAssignableError } from '../../user/errors/invitation.errors';
 import {
 	createOrgInvitationSchema,
 	orgInvitationListParamsSchema,
@@ -117,6 +122,19 @@ export class OrganizationInvitationController {
 					assertPathOrganization(ctx.erp, organizationId);
 					const actor = actorFrom(ctx.erp, ctx.request);
 					const parsed = createOrgInvitationSchema.parse(ctx.body);
+					// Role-assignment ladder: an org admin may not invite an
+					// owner, and org HR may not invite admin/hr either. Checked
+					// here, not only in the dialog, because this endpoint is the
+					// boundary. Rejecting the whole batch keeps the result
+					// honest: a partially-privileged batch would otherwise create
+					// employees for rows whose roles were silently dropped.
+					const assignment = roleAssignmentContext(ctx.erp);
+					const requestedRoles = (Array.isArray(parsed) ? parsed : [parsed])
+						.flatMap((row) => row.organizationRoles ?? []);
+					const illegal = unassignableInviteRoles(assignment, requestedRoles);
+					if (illegal.length > 0) {
+						throw new RoleNotAssignableError(illegal);
+					}
 					// The organization comes from the path, never the body, so a
 					// caller cannot redirect an invitation it is allowed to send.
 					if (Array.isArray(parsed)) {

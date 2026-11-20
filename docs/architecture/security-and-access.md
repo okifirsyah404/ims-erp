@@ -229,7 +229,16 @@ Permissions are necessary but never sufficient for approvals:
 
 ## Privilege-escalation protection
 
-Two complementary layers:
+Three complementary layers, all reading one shared ladder
+(`assignableOrganizationRoles` / `grantableOrganizationRoles` in
+`packages/common/src/authorization/erp-permissions.ts`):
+
+| Caller | may invite / assign |
+| --- | --- |
+| `owner` | everything except `owner` on an *invitation* (owner is born with the organization; member management may still promote another owner) |
+| org `admin` | every role except `owner` and `admin` |
+| org `hr` | every role except `owner`, `admin` and `hr` |
+| platform `admin` (`user.role`) | every role except `owner`, unless they also hold an owner membership |
 
 1. **Better Auth hooks.** `auth-hooks.ts` installs `hooks.before` middleware that:
 
@@ -240,9 +249,25 @@ Two complementary layers:
    - Runs inside the Better Auth handler, so both the mounted auth routes and
      server-side `auth.api.*` calls are covered.
 
-2. **Service-level role policy.** The user-management services (`/admin/users`,
+2. **Controller guards.** The first-party routes that bypass Better Auth's own
+   endpoints re-check the same ladder against the guard-resolved caller
+   (`src/authorization/role-assignment.ts`): `POST /admin/invitations`,
+   `POST /organizations/:id/invitations` (single **and** bulk — the whole batch
+   is rejected, so no employee is created for a row whose roles were dropped),
+   `POST /hr/employees`, and the organization member add/update routes
+   (`OrganizationService.assertAssignableRoles`, which passes the target
+   member's current roles so keeping an existing grant is not treated as an
+   escalation). Violations are a 403 carrying `invitation.roleNotAssignable` /
+   `organization.roleNotAssignable`.
+
+3. **Service-level role policy.** The user-management services (`/admin/users`,
    invitation claim) enforce the same role policy for account and membership
-   mutations; the hook above does not see those routes.
+   mutations; the hooks above do not see those routes.
+
+The UI mirrors the ladder rather than defining it: the invite dialog's role
+dropdown, the member-edit checkboxes and the bulk-invite spreadsheet parser all
+call the shared helper, so a hidden option and a rejected request can never
+disagree.
 
 Global role changes remain exclusively within `admin()` endpoints.
 

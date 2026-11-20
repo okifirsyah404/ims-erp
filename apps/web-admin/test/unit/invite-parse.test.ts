@@ -55,6 +55,60 @@ describe('parseBulkInviteRows — organization mode', () => {
 		expect(rowErrors).toEqual(['Row 1: unknown role "boss"']);
 		expect(rows).toHaveLength(0);
 	});
+
+	test('a role the caller may not assign fails only that row', () => {
+		const { rows, rowErrors } = parseBulkInviteRows(
+			'jane@example.com, Jane Doe, owner\njohn@example.com, John, member',
+			{
+				mode: 'org',
+				organizationId: 'org-1',
+				organizationRole: 'member',
+				allowedRoles: ['member', 'finance'],
+			},
+		);
+
+		expect(rows).toHaveLength(1);
+		expect(rows[0]?.email).toBe('john@example.com');
+		expect(rowErrors[0]).toContain('role not allowed');
+	});
+
+	test('the default role is checked against the allowed set too', () => {
+		// A row with no role falls back to the dialog default; if that default
+		// is not assignable the row must not silently go out.
+		const { rows, rowErrors } = parseBulkInviteRows('jane@example.com, Jane Doe', {
+			mode: 'org',
+			organizationId: 'org-1',
+			organizationRole: 'admin',
+			allowedRoles: ['member', 'finance'],
+		});
+
+		expect(rows).toHaveLength(0);
+		expect(rowErrors[0]).toContain('role not allowed');
+	});
+
+	test('the employment type from the dialog is applied to every row', () => {
+		const { rows } = parseBulkInviteRows('jane@example.com, Jane Doe', {
+			mode: 'org',
+			organizationId: 'org-1',
+			organizationRole: 'member',
+			employmentType: 'contract',
+		});
+
+		expect(rows[0]?.employmentType).toBe('contract');
+	});
+
+	test('an application-level row keeps the employment type too', () => {
+		// The invite pipeline creates a company-level employee for these rows,
+		// so the permanent/temporary choice still applies.
+		const { rows } = parseBulkInviteRows('jane@example.com, Jane Doe, , member', {
+			mode: 'admin',
+			resolveOrganizationCode: resolve,
+			employmentType: 'contract',
+		});
+
+		expect(rows[0]?.organizationId).toBeUndefined();
+		expect(rows[0]?.employmentType).toBe('contract');
+	});
 });
 
 describe('parseBulkInviteRows — admin mode', () => {

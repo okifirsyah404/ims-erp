@@ -13,6 +13,7 @@ const api: Record<keyof typeof en, string> = {
 	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
+	'common.forbidden': 'Akses ditolak',
 
 	'location.provinceNotFound': 'Provinsi tidak ditemukan',
 	'location.regencyNotFound': 'Kabupaten/kota tidak ditemukan',
@@ -266,6 +267,7 @@ const api: Record<keyof typeof en, string> = {
 	'organization.memberNotFound': 'Anggota tidak ditemukan',
 	'organization.lastOwner':
 		'Tidak dapat menghapus atau menurunkan pemilik terakhir',
+	'organization.roleNotAssignable': 'Peran tidak dapat diberikan: {{roles}}',
 
 	'aftersales.ticketState.comment': 'Tiket yang sudah ditutup tidak menerima pesan baru',
 	'portal.stage.preparation': 'Persiapan',
@@ -330,6 +332,7 @@ const api: Record<keyof typeof en, string> = {
 	'invitation.expired': 'Tautan undangan ini sudah kedaluwarsa',
 	'invitation.bulkLimited': 'Maksimal {{max}} baris',
 	'invitation.unknownOrganizationSlug': 'Tidak ada organisasi dengan slug "{{slug}}"',
+	'invitation.roleNotAssignable': 'Peran tidak dapat diberikan: {{roles}}',
 	'invitation.claimUserMissing': 'Pengguna yang diundang tidak lagi tersedia',
 	'invitation.claimAlreadyActive': 'Akun ini sudah aktif',
 	'invitation.claimInvalid': 'Data klaim tidak valid',
