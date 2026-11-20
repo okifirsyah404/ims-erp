@@ -150,7 +150,7 @@ describe('SingaPay adapter', () => {
 		clientId: 'client-1',
 		clientSecret: 'client-secret',
 		accountId: '01HACCOUNT',
-		webhookPath: '/payments/gateway/singapay/webhook',
+		webhookPath: '/webhooks/singapay',
 	};
 	let clock: number;
 	const now = () => clock;

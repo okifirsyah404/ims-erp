@@ -45,15 +45,14 @@ function receipt<T>(replayed: boolean, data: T, status: (code: 201, body: unknow
 }
 
 /**
- * Public website API (`/public/v1`, ADR-0011 step 3b): website forms become
+ * Public website API (`/projects/public/v1`, ADR-0011 step 3b): website forms become
  * leads. Server-to-server only — every route opts into the `publicApi`
  * macro (website API key). Paths are what the website's `ERP_*_PATH` route
  * map points at; payload shapes follow the website's fixed contracts.
  */
 export class PublicWebsiteController {
 	/**
-	 * @param prefix - The website API path: `/projects/public/v1` (primary) or the
-	 * `/public/v1` alias the deployed website still calls (ADR-0024 Q34).
+	 * @param prefix - The website API path: `/projects/public/v1`.
 	 */
 	static plugin(prefix = '/projects/public/v1') {
 		const inquiries = container.resolve(WEBSITE_INQUIRY_SERVICE_TOKEN);

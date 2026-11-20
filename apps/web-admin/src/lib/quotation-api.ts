@@ -228,7 +228,7 @@ export function quotationRenderQueryOptions(id: string, token: string) {
 		queryKey: ['sales', 'quotations', id, 'render'] as const,
 		queryFn: async () =>
 			(await request<{ quotation: TQuotationDetail; profile: TCompanyProfile | null }>(
-				`/public/v1/render/quotations/${id}?token=${encodeURIComponent(token)}`,
+				`/sales/public/v1/render/quotations/${id}?token=${encodeURIComponent(token)}`,
 			)).data!,
 		retry: false,
 	});

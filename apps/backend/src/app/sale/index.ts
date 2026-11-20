@@ -34,8 +34,6 @@ export function salesModule() {
 	return new Elysia({ name: 'sales' })
 		.use(QuotationController.plugin())
 		.use(QuotationRenderController.plugin())
-		// Alias: render links already sent to customers (ADR-0024 Q34).
-		.use(QuotationRenderController.plugin('/public/v1/render/quotations'))
 		.use(SalesOrderController.plugin())
 		.use(DeliveryNoteController.plugin())
 		.use(SalesReturnController.plugin())

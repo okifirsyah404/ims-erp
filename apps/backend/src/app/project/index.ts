@@ -4,8 +4,8 @@
  * @remarks
  * Absorbs the former `projects`, `licensing` modules and the `aftersales`
  * warranty certificate. URLs live under `/projects`; the machine license API
- * keeps `/licensing/v1` as an alias and the website inquiry API keeps
- * `/public/v1` until the Q34 cut-over (P8).
+ * serves the machine license API at `/projects/api/v1/licenses` and the
+ * website inquiry API at `/projects/public/v1`.
  */
 import Elysia from 'elysia';
 
@@ -44,12 +44,8 @@ export function projectModule() {
 		.use(ProjectController.plugin())
 		.use(WarrantyController.plugin())
 		.use(LicensingController.plugin())
-		// Machine API of installed applications: the primary URL and the alias
-		// shipped clients still call (ADR-0024 Q34).
+		// Machine API of installed applications.
 		.use(LicenseApiController.plugin())
-		.use(LicenseApiController.plugin('/licensing/v1'))
-		// Server-to-server website API: API-key guard, no session. The primary
-		// URL and the alias the deployed website still calls.
-		.use(PublicWebsiteController.plugin())
-		.use(PublicWebsiteController.plugin('/public/v1'));
+		// Server-to-server website API: API-key guard, no session.
+		.use(PublicWebsiteController.plugin());
 }

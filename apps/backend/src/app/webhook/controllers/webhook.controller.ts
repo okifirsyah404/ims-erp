@@ -23,11 +23,10 @@ const STATUS: Record<TWebhookOutcome, 200 | 401> = {
  * @remarks
  * Public: no session; authenticity is the owning module's signature or token
  * check. The raw body is captured (`parse: 'text'`) because Xendit, SingaPay
- * and WAHA sign exactly what they sent. Old paths stay mounted as aliases so a
- * provider dashboard does not need to change on deploy day.
+ * and WAHA sign exactly what they sent.
  */
 export class WebhookController {
-	/** @param prefix - The mount path: `/webhooks` or one of the legacy aliases. */
+	/** @param prefix - The mount path, `/webhooks` by default. */
 	static plugin(prefix = '/webhooks') {
 		const service = container.resolve(WebhookService);
 

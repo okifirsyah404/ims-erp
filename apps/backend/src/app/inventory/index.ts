@@ -33,9 +33,8 @@ export function inventoryModule() {
 		.use(ItemCategoryController.plugin())
 		.use(ProductListingController.plugin())
 		// Server-to-server website API (API-key guard, no session): the primary URL
-		// and the alias the deployed website still calls (ADR-0024 Q34).
+		// at `/inventory/public/v1/catalog`.
 		.use(PublicCatalogController.plugin())
-		.use(PublicCatalogController.plugin('/public/v1/catalog'))
 		.use(ItemOperationsController.plugin())
 		.use(BorrowingRequestController.plugin())
 		.use(BorrowingController.plugin())

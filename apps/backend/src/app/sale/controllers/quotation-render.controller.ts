@@ -22,8 +22,7 @@ class RenderNotFoundError extends AppError {
  */
 export class QuotationRenderController {
 	/**
-	 * @param prefix - The mount path: `/sales/public/v1/render/quotations` (primary) or the
-	 * `/public/v1/render/quotations` alias that links already sent to customers use (Q34).
+	 * @param prefix - The mount path: `/sales/public/v1/render/quotations`.
 	 */
 	static plugin(prefix = '/sales/public/v1/render/quotations') {
 		const service = container.resolve(QUOTATION_DELIVERY_SERVICE_TOKEN);

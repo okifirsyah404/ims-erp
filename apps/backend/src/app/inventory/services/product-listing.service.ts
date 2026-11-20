@@ -159,7 +159,7 @@ export class ProductListingService {
 	private imageLink(slug: string): string | undefined {
 		const base = appConfig.app.url;
 		return base?.startsWith('https://')
-			? `${base.replace(/\/$/, '')}/public/v1/catalog/products/${encodeURIComponent(slug)}/image`
+			? `${base.replace(/\/$/, '')}/inventory/public/v1/catalog/products/${encodeURIComponent(slug)}/image`
 			: undefined;
 	}
 

@@ -125,7 +125,7 @@ describe('quotation delivery', () => {
 			customer: { name: 'PT Maju', whatsapp: '081234567890' },
 			owner: { userId: 'sales-1', name: 'Sari' },
 			pdf: {
-				url: 'https://erp.test/public/v1/documents/tok-1/file',
+				url: 'https://erp.test/documents/public/v1/shares/tok-1/file',
 				fileName: '1376-QT-IMS-XI-26.pdf',
 				expiresAt: '2026-12-17T03:00:00.000Z',
 			},

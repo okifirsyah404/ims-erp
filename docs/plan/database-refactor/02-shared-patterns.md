@@ -152,11 +152,7 @@ Prefixes: `/users`, `/organizations`, `/locations`, `/companies`,
 `/taxes`, `/payments`, `/projects`, `/tickets`, `/human-resources`,
 `/documents`, `/notifications`, `/audit`, `/automation`, `/webhooks`.
 
-Aliases (Q34): only for callers outside this repository - payment gateway
-webhooks (old paths mounted on the `webhook` module), license API (`/licensing/v1/*`), website public API
-(`/public/v1/*` used by web-landing builds already deployed and by n8n),
-WhatsApp/n8n webhooks (`/integrations/whatsapp/*`). The alias is a second
-mount of the same handler (POST bodies cannot rely on a 308 for every client),
-tagged `deprecated` in OpenAPI, and listed in `99-cutover.md` with a removal
-task. The three frontends in this repo are updated to the new URLs in step 6
-and never use an alias.
+No aliases (Q34, revised 2026-11-20): nothing is deployed yet, so the old URLs
+(/licensing/v1/*, /public/v1/*, gateway and WhatsApp webhook paths) were removed at cut-over.
+
+

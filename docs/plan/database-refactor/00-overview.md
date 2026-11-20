@@ -77,7 +77,7 @@ without reading the rest:
 | Q30 / Q35 | One long branch, phase per module, each phase green before the next. |
 | Q31 | Folder `human-resource`; ADR-0024; epic ERP-0070..ERP-0089; existing `organization_id` scope kept per table. |
 | Q32 | `notification.push_notifications` / `push_notification_templates`; `document` gains `settings` + `code_numberings`. |
-| Q34 | External endpoints (gateway webhooks, license API, website RFQ/catalog, WhatsApp/n8n webhooks) move to the new URLs and keep the old URL as an alias during a transition window. |
+| Q34 | External endpoints (gateway webhooks, license API, website RFQ/catalog, WhatsApp/n8n webhooks) move to the new URLs. **Revised 2026-11-20: no aliases** - there is no production server and no deployed client yet, so the old URLs were removed outright at cut-over. |
 | Q37 | (review 2026-11-19) Do not delete tool sets: `inventory.tool_sets` + `tool_set_items` (items = tool units); a borrowing may lend a whole kit (`borrowing_requests.tool_set_id`). |
 | Q38 | (review 2026-11-19) Webhooks get their own module `webhook` with **no database**: it receives provider calls under `/webhooks/<provider>` and hands them to exported services of the owning modules (payment, automation). |
 | Q39 | (review 2026-11-19) Salary stays in HR: `employee_salaries` and `employee_salary_records` live in `human_resource`; finance and payment read them through `ExportedEmployeeService`. |
@@ -169,7 +169,6 @@ produces the baseline and the seed.
   diff; `drizzle:seed` is idempotent (run twice).
 - `bun run lint`, `bun run test`, `bun run typecheck` green across the
   workspace; locale parity and dead-key tests green.
-- The three frontends call only new URLs; aliases exist only for the Q34
-  external endpoints.
+- The three frontends call only new URLs; no aliases exist (Q34, revised 2026-11-20).
 - `progress.md`, `backlog.md`, `features.md`, `docs/architecture/*` module docs
   and `docs/database/*` reflect the result.

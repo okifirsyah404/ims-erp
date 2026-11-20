@@ -175,7 +175,7 @@ these routes still run the `erp` macro with a validated organization, and then
 check the permission. A caller with no permission in the validated organization
 cannot read the profile even though the profile has no `organization_id`
 column. Reads that genuinely need no organization context (the public share
-endpoint `/public/v1/documents/:token`) live on `sessionGuard()`-free public
+endpoint `/documents/public/v1/shares/:token`) live on `sessionGuard()`-free public
 routes and are authorized by the token alone, with an expiry and a revocation
 flag checked on every request.
 

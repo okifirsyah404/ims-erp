@@ -5,7 +5,7 @@ import { currentLanguage } from '@/i18n';
 /**
  * API client for the website catalog listings (`/inventory/product-listings`,
  * M04 stage 1). The website reads published listings through
- * `/public/v1/catalog`.
+ * `/inventory/public/v1/catalog`.
  *
  * @remarks
  * A listing is no longer its own row (ADR-0024 Q14): it is the set of listing

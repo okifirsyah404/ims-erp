@@ -76,7 +76,7 @@ masked (last 4) without `read_key`.
 
 ## License API — integration note for the pilot application
 
-Base URL: the ERP backend, prefix `/licensing/v1`. Server-to-server or from
+Base URL: the ERP backend, prefix `/projects/api/v1/licenses`. Server-to-server or from
 the installed application; every request sends
 `Authorization: Bearer elk_…` (issued under **Subscription & Licensing →
 API Keys**, shown once). Rate limit: 120 calls per minute per key (429). A

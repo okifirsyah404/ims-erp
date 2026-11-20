@@ -12,7 +12,7 @@ import {
 } from '../contracts/product-listing.contract';
 
 /**
- * Public website catalog (`/inventory/public/v1/catalog` with the `/public/v1/catalog` alias, M04 stage 1): the website's
+ * Public website catalog (`/inventory/public/v1/catalog` M04 stage 1): the website's
  * `CatalogSource` contract. Server-to-server with the website key
  * (`publicApi`), except the product photo, which the visitor's browser
  * loads: it only redirects to a short-lived URL of a published product's
@@ -20,8 +20,7 @@ import {
  */
 export class PublicCatalogController {
 	/**
-	 * @param prefix - The mount path: /inventory/public/v1/catalog (primary) or the
-	 * deployed website's /public/v1/catalog alias (ADR-0024 Q34).
+	 * @param prefix - The mount path: /inventory/public/v1/catalog.
 	 */
 	static plugin(prefix = '/inventory/public/v1/catalog') {
 		const service = container.resolve(PRODUCT_LISTING_SERVICE_TOKEN);

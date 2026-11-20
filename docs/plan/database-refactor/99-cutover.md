@@ -29,20 +29,19 @@ Phase P8. Runs once every module phase (P1-P7) is green on the branch
   faker-generated.
 - Run `bun run drizzle:seed` twice; second run inserts nothing.
 
-## 3. URL aliases (Q34)
+## 3. URL aliases (Q34) - dropped
 
-| Old URL | New URL | Caller |
-|---|---|---|
-| `/payments/gateway/*` webhooks | `/webhooks/xendit`, `/webhooks/singapay` (module `webhook`) | Xendit / SingaPay dashboards |
-| `/licensing/v1/*` | `/projects/api/v1/licenses/*` | customer applications |
-| `/public/v1/*` inquiries, catalog, render, documents | `/projects/public/v1/inquiries`, `/inventory/public/v1/catalog`, `/sales/public/v1/render/quotations`, `/documents/public/v1/shares` | web-landing deployments, sent links, n8n |
-| `/integrations/whatsapp/*` | `/webhooks/whatsapp` (module `webhook`) | WAHA / Meta / n8n |
+Decision 2026-11-20: there is no production server and no deployed client, so
+the aliases were removed instead of finalised. The URLs are:
 
-Each alias mounts the same handler, is marked deprecated in OpenAPI and logs a
-warning with the caller. Removal task: new backlog row after providers and
-apps are reconfigured (checklist: update Xendit/SingaPay webhook URL, publish
-license-client update, redeploy web-landing, update n8n HTTP nodes and WAHA
-webhook).
+| Surface | URL |
+|---|---|
+| Provider webhooks | `/webhooks/xendit`, `/webhooks/singapay`, `/webhooks/whatsapp` (module `webhook`) |
+| Machine license API | `/projects/api/v1/licenses/*` |
+| Website public API | `/projects/public/v1/*`, `/inventory/public/v1/catalog`, `/sales/public/v1/render/quotations`, `/documents/public/v1/shares` |
+
+When the first environment is deployed, configure the Xendit/SingaPay/WAHA/Meta
+webhook URLs, the license client and the n8n HTTP nodes with these paths from the start.
 
 ## 4. Verification commands
 

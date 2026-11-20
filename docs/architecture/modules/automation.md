@@ -83,7 +83,7 @@ print view (`/print/quotations/:id?token=` on the web admin, a 2-minute HMAC
 render token, no session) with headless Chromium to an A4 PDF, stores it on the
 quotation's registry document, opens a public link for `PDF_LINK_DAYS`
 (default 30, revocable from the document screen) and publishes the event with
-`pdf.url` = `/public/v1/documents/<token>/file`. Three attempts (30 s, then
+`pdf.url` = `/documents/public/v1/shares/<token>/file`. Three attempts (30 s, then
 1 min); the last one publishes with `pdf: null` instead of not at all. One
 event per sending (`dedupe_key` = quotation and `sent_at`). No Chromium
 configured (`PDF_CHROMIUM_PATH` empty) = the event goes out without a PDF.
@@ -105,7 +105,7 @@ once per bill, due date and threshold.
 
 ## WhatsApp assistant
 
-Flow: WAHA → `POST /integrations/whatsapp/webhook` (no session; WAHA's
+Flow: WAHA → `POST /webhooks/whatsapp` (no session; WAHA's
 `X-Webhook-Hmac` = hex HMAC-SHA512 of the raw body with
 `WAHA_WEBHOOK_SECRET`, compared in constant time; refused with 503 when the
 key is not configured, 401 when wrong). Only `message` events from personal
@@ -165,7 +165,7 @@ without them events stay `pending` with "not configured" and can be sent
 from the log once set. `WAHA_URL`, `WAHA_API_KEY`, `WAHA_SESSION` (default
 `default`), `WAHA_WEBHOOK_SECRET` (min 16) for WhatsApp; `AI_BASE_URL`,
 `AI_API_KEY`, `AI_MODEL` for the optional AI provider. In WAHA, point the
-session's webhook at `<APP_URL>/integrations/whatsapp/webhook`, event
+session's webhook at `<APP_URL>/webhooks/whatsapp`, event
 `message`, with the HMAC key = `WAHA_WEBHOOK_SECRET`. None of these is ever
 logged; adapters never echo URLs or keys.
 

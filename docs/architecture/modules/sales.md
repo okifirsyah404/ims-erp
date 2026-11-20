@@ -49,7 +49,7 @@ approvals or fully automated CRM.
   has adapters in `payment/adapters/` (Xendit, SingaPay, local `fake`), chosen
   by `PAYMENT_GATEWAY_PROVIDER`. Staff: `GET /gateway-payments/status`,
   `GET|POST /invoices/:id/gateway-payments` (`invoice:read` /
-  `receipt:create`). Public: `POST /payments/gateway/:provider/webhook`,
+  `receipt:create`). Public: `POST /webhooks/:provider`,
   verified by the adapter. A paid event posts exactly one receipt, capped at
   the outstanding amount, in one transaction with the checkout row locked.
   Money that cannot be applied is kept `paid` with a note.
@@ -62,7 +62,7 @@ Sending an approved SPH enqueues `quotation-sent`: the
 PDF with headless Chromium, files it on the quotation's registry document,
 shares it for 30 days and publishes `quotation.sent` with the link
 (`automation.md`). The print view reads
-`GET /public/v1/render/quotations/:id?token=`; the token is a 2-minute HMAC
+`GET /sales/public/v1/render/quotations/:id?token=`; the token is a 2-minute HMAC
 over the quotation id, signed with `APP_SECRET`, and anything else answers 404.
 
 ## Dependencies and rules

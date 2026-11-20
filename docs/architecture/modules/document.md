@@ -94,7 +94,7 @@ actually happened.
   at 365 by the request schema. There is no "never expires" option.
 - Revocable: `DELETE /documents/:id/shares/:shareId` sets `is_revoked`, and the
   row is kept so the trail stays readable.
-- The public endpoint `GET /public/v1/documents/:token` is anonymous: no
+- The public endpoint `GET /documents/public/v1/shares/:token` is anonymous: no
   `erp` guard, no session. Authorization is the token plus the expiry and
   revocation checks on every request.
 - The public view is a deliberately reduced shape: document type and code,
@@ -110,7 +110,7 @@ when the source was never registered (seeded or pre-ERP-0044 data) or is
 void, and the caller then goes on without a file. The uploader may be null
 (`uploaded_by_user_id` is nullable). A share is opened with the normal
 `createShare` (the sharer may be null too), and
-`GET /public/v1/documents/:token/file` sends the reader straight to the
+`GET /documents/public/v1/shares/:token/file` sends the reader straight to the
 newest file, so a chat message can carry one link to a PDF.
 
 ## API
@@ -130,8 +130,8 @@ Prefix `/documents`, guard `erp`:
 | `GET /documents/:id/files/:fileId/download` | `document:download` | short-lived URL; appends a download row |
 | `POST /documents/:id/shares` | `document:update` | a revocable public link with a mandatory expiry |
 | `DELETE /documents/:id/shares/:shareId` | `document:update` | revokes (the row is kept) |
-| `GET /public/v1/documents/:token` | none | the anonymous public read; no `erp` guard |
-| `GET /public/v1/documents/:token/file` | none | ERP-0067: 302 to a 5-minute URL of the newest file; appends an anonymous download row |
+| `GET /documents/public/v1/shares/:token` | none | the anonymous public read; no `erp` guard |
+| `GET /documents/public/v1/shares/:token/file` | none | ERP-0067: 302 to a 5-minute URL of the newest file; appends an anonymous download row |
 
 Permissions are `document:read` / `document:create` / `document:update` /
 `document:submit` / `document:approve` / `document:issue` / `document:void` /

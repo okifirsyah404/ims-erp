@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Slice 6 and alias removal (Q34 revised): no aliases, portal/landing need no repoint
+
+- Decision (user, 2026-11-20): there is no production server and no deployed client, so the Q34 aliases were removed instead of finalised.
+- Backend: removed the second mounts `/public/v1/documents`, `/public/v1/catalog`, `/public/v1/render/quotations`, `/licensing/v1`, `/public/v1` (website API) and the webhook aliases `/payments/gateway/*`, `/integrations/whatsapp/*`. The only URLs are `/webhooks/{xendit,singapay,whatsapp}`, `/projects/api/v1/licenses`, `/projects/public/v1`, `/inventory/public/v1/catalog`, `/sales/public/v1/render/quotations`, `/documents/public/v1/shares`. Server-built links updated: quotation PDF share URL (`quotation-delivery.service.ts`) and product listing image URL (`product-listing.service.ts`); web-admin `quotation-api` render URL and `catalog-api` comment. Tests: `quotation-delivery.service.test.ts` URL expectation and `payment-gateway.test.ts` SingaPay `webhookPath` (the signature signs the path; the service default was already `/webhooks/singapay`).
+- web-landing and web-customer-portal: no repoint needed. Their ERP route maps (`erp-routes.ts`, `catalogRoutes`) are intentionally empty and the apps run on demo data, so connecting them to the ERP API is new feature work, not part of this migration.
+- Docs: live references updated in `docs/architecture/{security-and-access.md,api/licensing.yaml,modules/automation.md,document.md,licensing-integration.md,licensing-subscription.md,sales.md}` and `apps/backend/.env.example` (webhook URLs). ADR files keep their historical text. `docs/plan/database-refactor` Q34 notes revised in `00-overview.md`, `02-shared-patterns.md`, `99-cutover.md`.
+- Verified: backend `tsc` 0 errors, web-admin `tsc -p tsconfig.app.json` 0 errors, `bun run lint` 0 errors, `bun run test` 5/5 (backend 1232 pass), `bun run build` 5/5, `validate-dbml.ts` OK.
+- Open (no longer blockers): provider dashboard URLs do not need changing today; configure `/webhooks/*` when the first environment is deployed. Remaining refactor leftovers: legacy `crm.*` error keys in `customer.errors.ts`, `ExportedFinanceService`/`ExportedJournalService`, ticket templates and sub-tickets (Q29), `employee_addresses` Drizzle table + controller, supplier addresses endpoints, the reconciliation match route path, ERP-0070..0089 all still `in-progress` (none `accepted`).
+- docs/database: reviewed, unchanged.
+
+Next executable task: close ADR-0024 leftovers (see Open), then pick the next backlog item.
 ## 2026-11-20 - Frontend slice 5: human-resource, documents, automation (web-admin)
 
 - Human resource (5A): `hr-api` / `hr-records-api` `/hr/*` -> `/human-resources/*` (employees, `attendances`, `employee-tasks`, `salary-records`; leave, overtime, leave-types and active-employees under the bare `/human-resources` prefix; bank account under `/human-resources/employees/:id`). Bug fixed: the bank form sent `accountNumber`/`accountHolder` while the backend takes `bankAccountNumber`/`bankAccountHolder` (saves would have been rejected). Create input takes `organizationRoles: string[]`. Frontend route paths (`/hr/*`) unchanged.

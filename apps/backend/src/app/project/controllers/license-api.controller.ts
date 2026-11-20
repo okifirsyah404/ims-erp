@@ -10,7 +10,7 @@ function clientIp(headers: Headers): string | null {
 }
 
 /**
- * Machine license API for own applications (`/licensing/v1`, M03 stage 2).
+ * Machine license API for own applications (`/projects/api/v1/licenses`, M03 stage 2).
  * Server-to-server: no session and no ERP role; every call sends the
  * application's key as `Authorization: Bearer elk_…` and can only reach keys
  * of that application. Validate always answers 200 with `valid` and
@@ -18,8 +18,7 @@ function clientIp(headers: Headers): string | null {
  */
 export class LicenseApiController {
 	/**
-	 * @param prefix - The machine API path: `/projects/api/v1/licenses` (primary) or the
-	 * `/licensing/v1` alias installed apps still call (ADR-0024 Q34).
+	 * @param prefix - The machine API path: `/projects/api/v1/licenses`.
 	 */
 	static plugin(prefix = '/projects/api/v1/licenses') {
 		const service = container.resolve(LICENSE_API_SERVICE_TOKEN);

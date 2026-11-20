@@ -77,7 +77,7 @@ export class QuotationDeliveryService {
 		if (!documentId) return null;
 		const share = await this.documents.createShare(documentId, appConfig.pdf.linkDays, actor);
 		return {
-			url: `${appConfig.app.url.replace(/\/+$/, '')}/public/v1/documents/${share.token}/file`,
+			url: `${appConfig.app.url.replace(/\/+$/, '')}/documents/public/v1/shares/${share.token}/file`,
 			fileName,
 			expiresAt: share.expiresAt,
 		};
