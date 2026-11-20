@@ -12,6 +12,19 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Live API smoke test against a disposable database (no UI)
+
+- Setup: disposable database `ims_smoke` (created, then dropped afterwards): `drizzle:migrate` applied the baseline, `drizzle:seed` ran (about 90 s), backend started with `bun run src/index.ts` (`NODE_ENV=test`).
+- Boot: all controllers resolved through the DI container at startup with no crash, so no missing registration is left in any module container (the earlier HR numbering gap was the only one).
+- Reads: signed in as the seeded owner and called 69 GET list/detail endpoints across inventory, stock, sale, customer, supplier, procurement, finance, tax, payment, project, ticket, human-resource, document, notification, automation, company, location, audit: 65 returned 200, 4 returned 400 only because they need query parameters (`/admin/customers/portal-accounts`, `/projects/warranties`, `/human-resources/attendances/day`, `/human-resources/salary-records`), none returned 404 or 5xx. The queries run against the new baseline schema.
+- Writes: `POST /suppliers/companies` with bank fields 201; `POST /human-resources/employees` 201 (confirms the numbering DI fix); `POST /admin/payments/gateways` 201 with `PAYMENT_SECRET_KEY` set and 409 "secret not available" without it; the gateway list never contained the secret (only `hasSecret`, `secretLast4`).
+- Supplier bank gate: owner sees bank fields; the seeded `auditor` (holds `supplier:read` only) gets 200 with no bank fields in the list or the detail.
+- Removed aliases: `/payments/gateway/xendit` and `/public/v1/catalog/products` answer 404; `/inventory/public/v1/catalog/categories` without a key answers 401; `/customers/portal/v1/me` without a session 401.
+- Webhooks (no gateway configured): `/webhooks/xendit` 404 "Unknown payment provider"; `/webhooks/whatsapp` HTTP 401 and `/webhooks/nope` HTTP 404. Observation: for `rejected` and `unknown` outcomes the response body envelope still says `status: 200` while the HTTP status is 401/404 (the controller sets `set.status` but returns `ok({ outcome })`); consider `errorEnvelope` for these.
+- Not exercised: any UI (web-admin, web-landing, web-customer-portal were not opened), webhooks with a configured gateway and a valid signature, portal login success (my payload guess was wrong, 400), public catalog and website forms with a real API key, the license machine API, write paths of most modules, a supplier write with bank fields by a role that can update but lacks `supplier:read_bank` (only the read side was proven), `GET /health` (404: no such route).
+- docs/database: reviewed, unchanged.
+
+Next executable task: UI smoke of web-admin (sign in, one screen per slice) and portal/landing against the same seeded backend; then the Astro dependency adaptation and the small ADR-0024 leftovers.
 ## 2026-11-20 - Astro dependency pin-back (fixes the broken web-landing / web-customer-portal builds)
 
 - Pinned exactly to the versions that last built: `@lucide/astro` 1.61.0 (landing + portal), `@vite-pwa/astro` 1.2.0 and `vite-plugin-pwa` 1.3.0 (portal). `bun.lock` regenerated; `bun install --frozen-lockfile` reports no changes. `.github/dependabot.yml` ignores these three packages until the code is adapted, otherwise the next dependabot run reintroduces the break.
