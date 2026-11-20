@@ -1,5 +1,5 @@
-import { PRODUCT_LISTING_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ProductListingService } from '@app/inventory/services/product-listing.service';
+import { PRODUCT_LISTING_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ProductListingService } from '@app/product/services/product-listing.service';
 import type { HandoffReason } from '@drizzle/schemas/automation.schema';
 import { pinoLogger } from '@providers/logger/logger';
 import { inject, injectable } from 'tsyringe';

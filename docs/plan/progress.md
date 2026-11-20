@@ -12,6 +12,112 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ADR-0026: product and warehouse become their own modules (schema split)
+
+User request: separate `product` and `warehouse` from the inventory database
+schema and give each its own module; then move both onto their own API
+prefixes, move the whole frontend slice out of `inventory`, and give each
+module its own numbering series (`{COMPANY}` added to the pattern) and its own
+`settings` table. Decision record: `docs/architecture/decisions/ADR-0026-product-and-warehouse-modules.md`
+(supersedes the single-schema part of ADR-0008 and ADR-0024 Q14).
+
+**Schema (T1).** 20 Postgres schemas, 192 tables (188 before).
+`drizzle/schemas/product.schema.ts` owns `products`, `product_categories`,
+`settings`, `code_numberings`; `drizzle/schemas/warehouse.schema.ts` owns the
+six estate tables plus `settings` and `code_numberings`. `inventory` keeps 20
+tables. 16 former FKs from `inventory` into the moved tables became plain
+nullable uuid columns with the standard logical-reference note (ADR-0014):
+`item_serials.{product_id,warehouse_id,bin_id}`, `items.{warehouse_id,storage_id}`,
+`documents.product_id`, `movements.{product_id,warehouse_id,bin_id,target_warehouse_id,target_bin_id}`,
+`stocks.{product_id,warehouse_id,bin_id}`, `stock_adjustments.warehouse_id`,
+`stock_adjustment_items.{product_id,bin_id}`.
+
+**Cross-module reads (T3).** Every join/EXISTS across the new boundary is
+gone: stock valuation (products + warehouses + storages joins) now batches
+through the two facades and a `searchByNameOrSku` id set; `movement.repository`
+takes `warehouseIds` from `idsInScope`; `product.repository` asks
+`productIdsInWarehouse`/`availableByProducts`/`countSerials`;
+`warehouse.repository` lost `countKinds`/`countLiveUnits` (now
+`countSerialKindsByWarehouse`, `countMaterialStocks`, `countItemsByWarehouse`,
+`countLiveUnits` on the inventory facade + a local `countStorages`).
+
+**Cycle breaker.** `ExportedInventoryService ↔ ExportedProductService` is a
+real object-graph cycle. A factory registration for the port was not enough
+(tsyringe follows the lambda's emitted `design:paramtypes`), so the product
+kind lookup is now `ProductKindsPort`, constructed with a lazily-resolving
+closure (`useFactory: (c) => new ProductKindsPort(() => c.resolve(...))`) and
+the serial count flows the other way through `PRODUCT_SERIAL_COUNTS_TOKEN`.
+Boot verified: `scripts/__boot-check.ts` (throwaway) resolved both facades
+against the seeded disposable DB and returned a product snapshot, the
+warehouse name map and the serial-kind counts.
+
+**Movement (T5) - regenerated baseline.** `drizzle-kit generate` after the
+split produced one migration: 20 `CREATE SCHEMA`, 168 `CREATE TABLE`, only
+intra-module FKs. The previous baseline was archived to
+`database/migrations-archive/v2-product-warehouse-20261123` (same convention
+as `v1`) and the new one is `database/migrations/20261120192010_parched_venom`
+(`migration.sql` + `snapshot.json`, no `meta/` - matches the repo's baseline
+layout). A second `generate` reports "No schema changes". Applied to a
+disposable database `ims_erp_split_check`: `migrate` OK, `seed` OK
+(products 3, categories 11, warehouses 2, storages 3, serials 2, items 6), a
+second `seed` inserted 0 rows (idempotent).
+
+**Commands run (2026-11-23).**
+`bunx --bun drizzle-kit generate` → one migration, then "No schema changes, nothing to migrate".
+`POSTGRES_URL=…/ims_erp_split_check bunx --bun drizzle-kit migrate` → applied.
+`POSTGRES_URL=…/ims_erp_split_check bun run drizzle:seed` twice → second run 0 new rows.
+`bun docs/database/gen-logical-references.ts` → 190 refs, 25 targets, 147 intra-module refs.
+`bun docs/database/validate-dbml.ts` → `parsed: 192 tables, 147 refs / cross-module refs: 0 / timestamp gaps: 0 / drizzle parity drift: 0 / column parity drift: 0 / OK`.
+`cd packages/locales && bun test` → 98 pass, 0 fail (locale parity + dead keys).
+
+**Docs.** `docs/database/docs.dbml` (new `MODULE: Product` / `MODULE: Warehouse`
+sections, moved `Ref:`s, 4 new tables), `module-ownership.md` (20 modules,
+product/warehouse/inventory profiles, 147 refs),
+`docs/architecture/decisions/ADR-0026-*`, `AGENTS.md` (20 schemas / 192 tables,
+new catalog URL), this file.
+
+**Frontend slice (T6).** web-admin: API clients repointed (`/products`,
+`/product-categories`, `/product-listings`; unit routes stay
+`/products/:id/units`); routes moved to `routes/_authed/products/**` and
+`routes/_authed/warehouses/**` (categories joined product), `routeTree.gen.ts`
+regenerated; sidebar gained `section.product` and `section.warehouse` with the
+Product and Warehouse entries, leaving stock/purchasing/assets under
+`section.inventory`; breadcrumbs, `route-guard.ts` and the `warehouse-list`
+route API updated. Locales: new `product` and `warehouse` namespaces (en + id)
+carrying the product/catalogue/unit copy (91 keys) and the warehouse/address
+copy (118 keys); `inventory` keeps stock/items/movements/adjustments/value;
+`NAMESPACES`, `i18next.d.ts`, both `index.ts` bundles, `product:kind.` in the
+dead-key allow-list and nine Indonesian strings that were identical to English
+fixed. web-landing: catalog routes and tests now call
+`/products/public/v1/catalog`. Verified: web-admin `tsc -p tsconfig.app.json`
+clean, `bun test` 138 pass; web-landing `bun test` 24 pass; `packages/locales`
+`bun test` 106 pass (parity + dead keys).
+
+**Tests (T5).** `test/authorization` split into `product-authorization` (product
+module) and `inventory-authorization` (stock/items/borrowing), with the
+warehouse suite repointed at `@app/warehouse`; `stock-test-doubles` and
+`test-app` register the new modules; `audit-writer-double` uses `@shared/audit`.
+The unit suites follow the new seams: `SERIAL_UNIT_SERVICE_TOKEN` for the unit
+methods, `EXPORTED_INVENTORY_SERVICE_TOKEN` /
+`EXPORTED_WAREHOUSE_SERVICE_TOKEN` / `EXPORTED_PRODUCT_SERVICE_TOKEN` doubles for
+the facades, `countStorages`/`findByIds` for the warehouse repository, and
+`adjustment`'s stock double rebuilt as an explicit typed object. New
+`test/unit/module-seams.test.ts` covers the cross-module contracts (16 cases).
+`WarehouseService`'s HR dependency was narrowed to `Pick<ExportedEmployeeService,
+'findEmployeeById'>` so its double is structural instead of cast.
+
+**Commands run (2026-11-23, final).**
+`bunx tsc -p tsconfig.json --noEmit` (apps/backend) → 0 errors.
+`bun test` (apps/backend) → 1287 pass, 0 fail (99 files).
+`bun test` (packages/locales) → 106 pass, 0 fail.
+`bunx tsc -p tsconfig.app.json --noEmit` + `bun test` (apps/web-admin) → 0 errors, 138 pass.
+`bun test` (apps/web-landing) → 24 pass.
+`bun docs/database/validate-dbml.ts` → `OK`. The disposable verification database was dropped.
+
+**Open follow-ups (not claimed):** live UI smoke test of web-admin/landing
+against the seeded backend; `web-customer-portal`'s `tsconfig.json` still trips
+TS5101 (`baseUrl` deprecated), which is unrelated to this change.
+
 ## 2026-11-22 - Backend: every paginated repository method is `paginate()` on one shared envelope helper
 
 User request: make `apps/backend/src/app/*` use `paginate()` instead of `list()`
@@ -97,6 +203,79 @@ untyped literals, so nothing failed at runtime before the fix):
 `test/unit/payment-gateway.test.ts`.
 
 Next executable task: unchanged (see the entry below).
+
+## 2026-11-21 - Migrations re-split into one folder per Postgres schema
+
+User request: create one migration per schema in
+`apps/backend/database/migrations/` named `<datetime>_create_<schema>_schema`,
+derived from `apps/backend/drizzle/schemas/`. This restores ADR-0024 decision 6
+("per-schema baseline", extending ADR-0019), which the 2026-11-19/20 P8 cutover
+had shipped as a single folder.
+
+**What changed.** The single baseline `20261120192010_parched_venom` is archived
+to `database/migrations-archive/v3-per-schema-20261121` (same convention as
+`v1` and `v2-product-warehouse-20261123`) and replaced by **20 folders**:
+
+`20261120214111_create_auth_schema`, `..._create_audit_schema`,
+`..._create_automation_schema`, `..._create_company_schema`,
+`..._create_customer_schema`, `..._create_document_schema`,
+`..._create_finance_schema`, `..._create_human_resource_schema`,
+`..._create_inventory_schema`, `..._create_location_schema`,
+`..._create_notification_schema`, `..._create_payment_schema`,
+`..._create_procurement_schema`, `..._create_product_schema`,
+`..._create_project_schema`, `..._create_sale_schema`,
+`..._create_supplier_schema`, `..._create_tax_schema`,
+`..._create_ticket_schema`, `..._create_warehouse_schema`.
+
+`auth` is first (Better Auth owns the foundation tables), the rest alphabetical.
+The database has **0 cross-schema foreign keys**, so the order is a readability
+choice, not a correctness requirement — every folder is self-contained.
+
+**Generated, not hand-assembled.** Each folder came from `drizzle-kit generate`
+run against a **cumulative** `--schema` list (`audit.schema.ts`, then
+`audit + automation`, …), so the chain is 1 `base` + 19 chained `diff`
+snapshots: `check` and `generate` agree with `drizzle/schemas` by construction.
+No SQL statement was written or edited by hand.
+
+**Equivalence proven before the swap.** Two independent checks, both run before
+the old folder was removed:
+
+- Concatenating the 20 folders yields the **same 728 statements** as the
+  archived baseline (same multiset; 0 missing, 0 extra). Statement counts per
+  schema also matched the archived `snapshot.json` footprints exactly
+  (audit 7, auth 40, automation 17, company 10, customer 25, document 41,
+  finance 87, human_resource 43, inventory 106, location 16, notification 11,
+  payment 20, procurement 42, product 17, project 78, sale 76, supplier 21,
+  tax 21, ticket 18, warehouse 32).
+- A fresh `generateMigration(empty → drizzle/schemas)` reproduced the archived
+  `migration.sql` with **0 statement-level differences**, confirming the old
+  baseline carried no hand-written SQL tail (the ADR-0019 exception for
+  `NULLS NOT DISTINCT` / partial index predicates no longer applies — the
+  current snapshot models them).
+
+**Commands run (2026-11-21).**
+`bunx --bun drizzle-kit generate` (per-schema, cumulative `--schema`) → 20
+folders. `bunx --bun drizzle-kit generate` against the repo config → "No schema
+changes, nothing to migrate". `bunx --bun drizzle-kit check` → "Everything's
+fine". On a disposable `postgres:18-alpine` container
+(`POSTGRES_URL=postgresql://ci:ci@localhost:55432/perschema_check`):
+`drizzle-kit migrate` → applied; resulting database = 22 schemas, 169 tables
+(168 application + the `drizzle` journal table's schema), 20 journal rows,
+**0 cross-schema FKs**. `bun run database/seeders/index.ts` → seeded; second run
+→ 0 inserts (idempotent). `pg_dump --schema-only` of that database vs. one
+migrated from the archived single baseline → **identical** (9669 lines each,
+differing only in pg_dump's random `\restrict` session tokens).
+`bun docs/database/validate-dbml.ts` → `OK` (192 tables, 147 refs, 0
+cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity
+drift).
+
+**Docs.** `runbook.md` (baseline section), `data-model.md`, `project-audit.md`,
+`architecture/README.md`, `database/implementation-phases.md` (new P8b) and
+`AGENTS.md` (command-status row) now describe the per-schema chain; the
+single-baseline references are marked superseded, not deleted.
+`docs/database/docs.dbml` was reviewed and is **unchanged** — no table, column,
+index, constraint, cross-module link or status vocabulary moved; only the
+packaging of the same DDL changed.
 
 ## 2026-11-21 - web-admin: `@ims-erp/ui` components instead of native elements, consistent Card composition
 

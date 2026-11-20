@@ -8,16 +8,16 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 
 ## The rule
 
-- Each **module** owns exactly one Postgres **schema**. The one historical
-  two-schema exception (Inventory owning a separate `warehouse` schema) is
-  **gone**: the physical estate now lives inside `inventory` as
-  `inventory.warehouses`, `inventory.warehouse_addresses` and
-  `inventory.warehouse_storages` (ADR-0008). The Identity module owns the
-  single `auth` schema, shared by Better Auth's 9 core tables and the 6 ERP
-  extension tables.
+- Each **module** owns exactly one Postgres **schema**. The historical
+  two-schema exception is **gone** and stayed gone: ADR-0026 split the product
+  master and the physical estate out of `inventory` into the `product` and
+  `warehouse` schemas, because reference/configuration data does not belong to
+  the stock ledger (ADR-0008 ruled the opposite; ADR-0026 supersedes it). The
+  Identity module owns the single `auth` schema, shared by Better Auth's 9 core
+  tables and the 6 ERP extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 162 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` checks all 162; before 2026-11-05 it read
+  `docs.dbml` contains 147 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` checks all 147; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -33,29 +33,29 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 - Cross-module reads and writes go through the owning module's exported
   service contract. Another module's repository is never imported.
 
-## The 18 modules
+## The 20 modules
 
-| # | Module | Schema | Tables | Intra-module FKs |
-|---|---|---|---|---|
 | 1 | Identity | `auth` | 11 | 9 |
 | 2 | Location | `location` | 4 | 3 |
 | 3 | Company | `company` | 4 | 0 |
 | 4 | Customer | `customer` | 6 | 3 |
 | 5 | Supplier | `supplier` | 6 | 3 |
-| 6 | Inventory | `inventory` | 28 | 37 |
-| 7 | Sale | `sale` | 18 | 20 |
-| 8 | Procurement | `procurement` | 9 | 11 |
-| 9 | Finance | `finance` | 27 | 20 |
-| 10 | Tax | `tax` | 5 | 3 |
-| 11 | Payment | `payment` | 5 | 2 |
-| 12 | Project | `project` | 28 | 23 |
-| 13 | Ticket | `ticket` | 6 | 4 |
-| 14 | Human Resource | `human_resource` | 12 | 11 |
-| 15 | Document | `document` | 12 | 10 |
-| 16 | Notification | `notification` | 2 | 1 |
-| 17 | Audit | `audit` | 1 | 0 |
-| 18 | Automation | `automation` | 4 | 2 |
-| | **Total** | **18 schemas** | **188** | **162** |
+| 6 | Product | `product` | 4 | 1 |
+| 7 | Warehouse | `warehouse` | 8 | 5 |
+| 8 | Inventory | `inventory` | 20 | 16 |
+| 9 | Sale | `sale` | 18 | 20 |
+| 10 | Procurement | `procurement` | 9 | 11 |
+| 11 | Finance | `finance` | 27 | 20 |
+| 12 | Tax | `tax` | 5 | 3 |
+| 13 | Payment | `payment` | 5 | 2 |
+| 14 | Project | `project` | 28 | 23 |
+| 15 | Ticket | `ticket` | 6 | 4 |
+| 16 | Human Resource | `human_resource` | 12 | 11 |
+| 17 | Document | `document` | 12 | 10 |
+| 18 | Notification | `notification` | 2 | 1 |
+| 19 | Audit | `audit` | 1 | 0 |
+| 20 | Automation | `automation` | 4 | 2 |
+| | **Total** | **20 schemas** | **192** | **147** |
 
 The `webhook` module (ADR-0024 Q38) has **no schema and no tables**: it owns
 the inbound provider HTTP edge and hands every call to `payment` or
@@ -121,22 +121,61 @@ no central code-number module.
 - **Contract**: `ExportedSupplierService` (`assertActiveCompany`,
   `findCompanyByCode`, `findPerson`, `getPurchaseSnapshot`, `getBankDetails`).
 
-### 6. Inventory - `inventory` (absorbs `assets` and `catalog`)
+### 6. Product - `product` (new, split out of inventory, ADR-0026)
 
-- **Owns** the product master (`products`, `product_categories`, with the
-  website listing columns), `item_serials`, physical units (`items`,
+- **Owns** the product (SKU) master `products` — including the website
+  listing columns that were `catalog.web_listings` (ADR-0024 Q14) —
+  `product_categories`, `settings` and `code_numberings` (`item_product`,
+  `item_material`, `item_component`; pattern `{TYPE}-{COMPANY}-{SEQ:5}`).
+- Stock balances, the ledger and serial units are **not** here: a unit's
+  custody is an inventory fact. This module reads availability, the
+  warehouse-scoped quantity and unit counts back through
+  `ExportedInventoryService`.
+- Rows may carry a null `organization_id` (global scope, ADR-0008).
+- **Contract**: `ExportedProductService` (`assertProduct`, `isProductActive`,
+  `productsById`, `getNameMap`, `productKinds`, `countUnits`,
+  `categoryExists`, `findBySearch`), plus `ProductService`,
+  `ProductCategoryService`, `ProductImageService` and
+  `ProductListingService` through their DI tokens.
+
+### 7. Warehouse - `warehouse` (new, split out of inventory, ADR-0026)
+
+- **Owns** the physical estate: `warehouses`, `warehouse_addresses` (strict
+  1:1), `warehouse_storages` (bins, one level, ADR-0008), `warehouse_managers`
+  (PIC grants, ADR-0017), `warehouse_organizations` (ADR-0010),
+  `warehouse_settings` (per warehouse), plus the module-wide `settings` and
+  `code_numberings` (`warehouse`; pattern `{TYPE}-{COMPANY}-{SEQ:4}`).
+- Warehouses are global: `organization_id` stays frozen at NULL and access
+  comes from `warehouse_organizations` (ADR-0010). Writes are
+  application-admin-only.
+- What is physically in a warehouse (units, materials, equipment, open
+  borrowings) is read through `ExportedInventoryService`.
+- **Contract**: `ExportedWarehouseService` (`warehouseExists`,
+  `warehouseIsActive`, `storageInWarehouse`, `getNameMap`, `organizationScope`,
+  `isLinked`, `hasAddress`, `warehousesById`, `idsInScope`), plus
+  `WarehouseService` and `WarehouseManagerService` through their DI tokens.
+
+### 8. Inventory - `inventory` (absorbs `assets`; product and warehouse split out)
+
+- **Owns** serial units (`item_serials`), physical units (`items`,
   `item_categories`, `documents`), the stock ledger (`movements`) and balances
   (`stocks`), adjustments, borrowing (`borrowing_requests`, `borrowings`,
   `borrowing_items`, both event tables), `maintenances`, `condition_checks`,
-  `disposals`, tool sets, and the warehouse tables (`warehouses`,
-  `warehouse_addresses`, `warehouse_storages`, `warehouse_managers`,
-  `warehouse_organizations`, `warehouse_settings`).
-- The two-schema exception is gone: warehouses live in `inventory` now.
+  `disposals`, tool sets, `settings` and `code_numberings` (`asset`,
+  `stock_movement`, `stock_adjustment`, `borrowing`, `maintenance`, `disposal`,
+  `tool_set`).
+- The product master and the warehouse estate moved out (ADR-0026); every id
+  pointing at them is a plain nullable column validated by the owning module's
+  contract.
 - Rows may carry a null `organization_id` (global scope, ADR-0008).
-- **Contract**: `ExportedInventoryService` (`getNameMap`) plus the product,
-  stock and item services other modules call through DI tokens.
+- **Contract**: `ExportedInventoryService` (`availableByProducts`,
+  `productIdsInWarehouse`, `countSerials`, `serialExists`, `countLiveUnits`,
+  `countOpenBorrowingsByOriginWarehouse`, `countMaterialStocks`,
+  `countSerialKindsByWarehouse`, `countItemsByWarehouse`, `isItemOwnedBy`)
+  plus the stock, item and serial-unit services other modules call through DI
+  tokens (`StockService`, `ItemService`, `SerialUnitService`).
 
-### 7. Sale - `sale` (was `sales`)
+### 9. Sale - `sale` (was `sales`)
 
 - **Owns** quotations and items/status history, orders and items/status
   history, delivery notes, returns, invoices, receipts, discount requests,
@@ -145,14 +184,14 @@ no central code-number module.
 - **Contract**: `ExportedOrderService.findOrder`,
   `ExportedInvoiceService.findById`.
 
-### 8. Procurement - `procurement`
+### 10. Procurement - `procurement`
 
 - **Owns** purchase requests, purchase orders, goods receipts, purchase
   returns, each with items. The supplier master is `supplier`.
 - **Contract**: consumes `ExportedSupplierService`; offers PO/receipt reads to
   `finance` (supplier bills) through its services.
 
-### 9. Finance - `finance` (absorbs `accounting`)
+### 11. Finance - `finance` (absorbs `accounting`)
 
 - **Owns** the chart of accounts, periods, journals and templates, opening and
   account balances, cash/bank accounts and transactions, reconciliations,
@@ -163,12 +202,12 @@ no central code-number module.
 - **Contract**: finance services for posting; `ExportedFinanceService` and
   `ExportedJournalService` (tax recap) are not built yet.
 
-### 10. Tax - `tax` (new, split from accounting)
+### 12. Tax - `tax` (new, split from accounting)
 
 - **Owns** `taxes`, period `records`, signed `corrections`,
   `withholding_tax_records`. HTTP lives under `/taxes`.
 
-### 11. Payment - `payment`
+### 13. Payment - `payment`
 
 - **Owns** the single payment ledger (`payments`, channel `manual|gateway`),
   polymorphic `payment_allocations`, provider `gateways` (write-only secrets
@@ -177,7 +216,7 @@ no central code-number module.
   `requireExecuted`), `ExportedPaymentWebhookService` for the `webhook`
   module.
 
-### 12. Project - `project` (was `projects`; absorbs leads, licensing, warranty)
+### 14. Project - `project` (was `projects`; absorbs leads, licensing, warranty)
 
 - **Owns** projects and their tasks, phases, milestones, costs, evidence,
   handover, daily reports, site assignments, KPIs, changes, work plans, leads
@@ -185,38 +224,38 @@ no central code-number module.
   (applications, contracts, keys, activations, events, API keys).
 - **Contract**: project/lead/warranty reads through its services.
 
-### 13. Ticket - `ticket` (absorbs `aftersales` tickets)
+### 15. Ticket - `ticket` (absorbs `aftersales` tickets)
 
 - **Owns** `tickets`, `ticket_messages`, `ticket_templates`,
   `sub_ticket_templates`, settings. Templates and sub-tickets (Q29) are
   target-only in the dbml.
 
-### 14. Human Resource - `human_resource` (was `hr`)
+### 16. Human Resource - `human_resource` (was `hr`)
 
 - **Owns** employees and addresses, attendance, leave types/requests,
   overtime, tasks, salaries and salary records, schedules, settings.
 - **Contract**: `ExportedEmployeeService` (`findEmployeeById`,
   `findEmployeeByUserId`).
 
-### 15. Document - `document`
+### 17. Document - `document`
 
 - **Owns** templates, issued documents and files, signatures and requests,
   user signatures, access logs, shares, tags and links, settings.
   `organization_id` is nullable (NULL = company-wide).
 - `document.issue` takes the owning module's `code`.
 
-### 16. Notification - `notification`
+### 18. Notification - `notification`
 
 - **Owns** `push_notifications` and `push_notification_templates`. App-scope:
   no `organization_id`; the organization travels as a tag (ADR-0016).
 - **Contract**: `ExportedNotificationService`.
 
-### 17. Audit - `audit`
+### 19. Audit - `audit`
 
 - **Owns** `audit_logs`, append-only: no updates, no soft delete. The actor is
   a logical reference.
 
-### 18. Automation - `automation`
+### 20. Automation - `automation`
 
 - **Owns** the n8n outbox (`outbox_messages`), `faq_entries`,
   `whatsapp_conversations`, `whatsapp_messages`. Company-wide (ADR-0012).

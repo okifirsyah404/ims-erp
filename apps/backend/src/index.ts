@@ -2,6 +2,8 @@
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
+import { registerProduct } from '@app/product';
+import { registerWarehouse } from '@app/warehouse';
 import { registerCustomer } from '@app/customer';
 import { registerProcurement } from '@app/procurement';
 import { registerLicenseDueSchedule, startLicenseDueWorker } from '@app/project';
@@ -69,6 +71,11 @@ registerDocument(container);
 // (registerInventory builds the shared InventoryAuditWriter at
 // registration time).
 registerAudit(container);
+// ADR-0026: product and warehouse own their schemas now, and inventory
+// consumes their export facades — register them first so a resolve of
+// EXPORTED_INVENTORY_SERVICE_TOKEN never races a missing product token.
+registerProduct(container);
+registerWarehouse(container);
 registerInventory(container);
 // Automation before the modules that publish events (project leads, …).
 registerAutomation(container);

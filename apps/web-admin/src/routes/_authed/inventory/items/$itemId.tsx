@@ -51,7 +51,7 @@ import { usePermission } from '@/lib/use-permission';
  *
  * @remarks
  * The path keeps its historical `items` segment; `$itemId` is a **product** id
- * (`/inventory/products/:id` on the backend). Physical assets live under
+ * (`/products/:id` on the backend). Physical assets live under
  * `/assets`.
  */
 export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
@@ -59,7 +59,7 @@ export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
 });
 
 function ItemDetailPage() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const categoryNames = useItemCategoryNames();
 	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
@@ -79,7 +79,7 @@ function ItemDetailPage() {
 	if (!item) {
 		return (
 			<AdminOnly>
-				<EmptyState title={t('inventory:detail.notFound')} bordered />
+				<EmptyState title={t('product:detail.notFound')} bordered />
 			</AdminOnly>
 		);
 	}
@@ -88,9 +88,9 @@ function ItemDetailPage() {
 		setArchiving(true);
 		try {
 			await archiveProduct(itemId);
-			toast.success(t('inventory:form.archived'));
+			toast.success(t('product:form.archived'));
 			await queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] });
-			void navigate({ to: '/inventory/products' });
+			void navigate({ to: '/products' });
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : t('common:error.failed'),
@@ -107,7 +107,7 @@ function ItemDetailPage() {
 					<div>
 						<div className='flex items-center gap-2'>
 							<h1 className='text-2xl font-bold'>{item.name}</h1>
-							<Badge variant='outline'>{t(`inventory:kind.${item.productKind}`)}</Badge>
+							<Badge variant='outline'>{t(`product:kind.${item.productKind}`)}</Badge>
 						</div>
 						<p className='font-mono text-xs text-muted-foreground'>
 							{item.code} · {item.sku}
@@ -129,17 +129,17 @@ function ItemDetailPage() {
 							<AlertDialogTrigger
 								render={
 									<Button variant='destructive' disabled={archiving}>
-										{t('inventory:detail.archive')}
+										{t('product:detail.archive')}
 									</Button>
 								}
 							/>
 							<AlertDialogContent>
 								<AlertDialogHeader>
 									<AlertDialogTitle>
-										{t('inventory:detail.archiveConfirm')}
+										{t('product:detail.archiveConfirm')}
 									</AlertDialogTitle>
 									<AlertDialogDescription>
-										{t('inventory:detail.archiveConfirmBody')}
+										{t('product:detail.archiveConfirmBody')}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
@@ -147,7 +147,7 @@ function ItemDetailPage() {
 										{t('common:action.cancel')}
 									</AlertDialogCancel>
 									<AlertDialogAction onClick={() => void handleArchive()}>
-										{t('inventory:detail.archive')}
+										{t('product:detail.archive')}
 									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
@@ -157,42 +157,42 @@ function ItemDetailPage() {
 
 				<Card>
 					<CardHeader>
-						<CardTitle>{t('inventory:items.details')}</CardTitle>
+						<CardTitle>{t('product:items.details')}</CardTitle>
 					</CardHeader>
 					<CardContent className='grid grid-cols-2 gap-4 p-4 text-sm sm:grid-cols-4'>
 						<Detail
-							label={t('inventory:items.category')}
+							label={t('product:items.category')}
 							value={item.productCategoryId ? (categoryNames.get(item.productCategoryId) ?? null) : null}
 						/>
-						<Detail label={t('inventory:items.brand')} value={item.brand} />
+						<Detail label={t('product:items.brand')} value={item.brand} />
 						<Detail
-							label={t('inventory:items.isActive')}
-							value={item.isActive ? t('inventory:items.isActive') : t('inventory:items.inactive')}
+							label={t('product:items.isActive')}
+							value={item.isActive ? t('product:items.isActive') : t('product:items.inactive')}
 						/>
-						<Detail label={t('inventory:items.unitLabel')} value={item.unitLabel} />
-						<Detail label={t('inventory:items.barcode')} value={item.barcode} />
+						<Detail label={t('product:items.unitLabel')} value={item.unitLabel} />
+						<Detail label={t('product:items.barcode')} value={item.barcode} />
 						<Detail
-							label={t('inventory:items.minStockQty')}
+							label={t('product:items.minStockQty')}
 							value={item.minStockQty}
 						/>
 						<Detail
-							label={t('inventory:items.sellingPrice')}
+							label={t('product:items.sellingPrice')}
 							value={String(item.sellingPrice)}
 						/>
 						<Detail
-							label={t('inventory:items.purchasePrice')}
+							label={t('product:items.purchasePrice')}
 							value={String(item.purchasePrice)}
 						/>
 						<Detail
-							label={t('inventory:items.tracking')}
+							label={t('product:items.tracking')}
 							value={
 								item.isSerialized
-									? t('inventory:items.serialized')
-									: t('inventory:items.quantityTracked')
+									? t('product:items.serialized')
+									: t('product:items.quantityTracked')
 							}
 						/>
 						<Detail
-							label={t('inventory:items.description_label')}
+							label={t('product:items.description_label')}
 							value={item.description}
 						/>
 					</CardContent>
@@ -201,7 +201,7 @@ function ItemDetailPage() {
 				{item.specification && (
 					<Card>
 						<CardHeader>
-							<CardTitle>{t('inventory:items.specification')}</CardTitle>
+							<CardTitle>{t('product:items.specification')}</CardTitle>
 						</CardHeader>
 						<CardContent className='text-sm'>
 							<p className='whitespace-pre-line'>{item.specification}</p>
@@ -212,15 +212,15 @@ function ItemDetailPage() {
 				<Card>
 					<CardContent className='p-4'>
 						<DocumentImageField
-							label={t('inventory:items.documentPhoto')}
-							hint={t('inventory:items.documentPhotoHint')}
+							label={t('product:items.documentPhoto')}
+							hint={t('product:items.documentPhotoHint')}
 							imageUrl={item.imageUrl}
 							disabled={!canUpdate}
 							onUpload={async (file) => {
-								setItem(await uploadDocumentImage<TProduct>(`/inventory/products/${itemId}/image`, file));
+								setItem(await uploadDocumentImage<TProduct>(`/products/${itemId}/image`, file));
 							}}
 							onRemove={async () => {
-								setItem(await removeDocumentImage<TProduct>(`/inventory/products/${itemId}/image`));
+								setItem(await removeDocumentImage<TProduct>(`/products/${itemId}/image`));
 							}}
 						/>
 					</CardContent>
@@ -254,13 +254,13 @@ function Detail({
  *
  * @remarks
  * Registering needs a real serial number: the backend's `POST
- * /inventory/products/:id/units` contract rejects an empty one, so the form can
+ * /products/:id/units` contract rejects an empty one, so the form can
  * no longer mint a `pre_order` unit with a provisional serial. Provisional
  * serials that already exist (from purchasing) can still be replaced exactly
  * once, and the replace control is only offered while the unit is provisional.
  */
 function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[] }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const queryClient = useQueryClient();
 	const [serial, setSerial] = useState('');
 	const [registering, setRegistering] = useState(false);
@@ -282,7 +282,7 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 				serialNumber: serial.trim(),
 				status: 'in_stock',
 			});
-			toast.success(t('inventory:unit.registered'));
+			toast.success(t('product:unit.registered'));
 			setSerial('');
 			await refresh();
 		} catch (error) {
@@ -298,7 +298,7 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 		async (unitId: string, nextSerial: string) => {
 			try {
 				await replaceProvisionalSerial(itemId, unitId, nextSerial);
-				toast.success(t('inventory:unit.replaced'));
+				toast.success(t('product:unit.replaced'));
 				await refresh();
 			} catch (error) {
 				toast.error(
@@ -313,14 +313,14 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 		() => [
 			{
 				id: 'serialNumber',
-				header: t('inventory:detail.serialNumber'),
+				header: t('product:detail.serialNumber'),
 				meta: { cellClassName: 'font-mono text-xs' },
 				cell: ({ row }) => (
 					<>
 						{row.original.serialNumber}
 						{row.original.isProvisionalSerial && (
 							<Badge variant='outline' className='ml-2'>
-								{t('inventory:detail.provisional')}
+								{t('product:detail.provisional')}
 							</Badge>
 						)}
 					</>
@@ -328,22 +328,22 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 			},
 			{
 				id: 'status',
-				header: t('inventory:detail.status'),
+				header: t('product:detail.status'),
 				cell: ({ row }) => (
 					<Badge variant='secondary'>
-						{t(`inventory:status.${row.original.status}`)}
+						{t(`product:status.${row.original.status}`)}
 					</Badge>
 				),
 			},
 			{
 				id: 'assetTag',
-				header: t('inventory:detail.assetTag'),
+				header: t('product:detail.assetTag'),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => row.original.assetTag ?? '—',
 			},
 			{
 				id: 'replace',
-				header: t('inventory:unit.replaceSerial'),
+				header: t('product:unit.replaceSerial'),
 				meta: { align: 'right' },
 				cell: ({ row }) =>
 					row.original.isProvisionalSerial ? (
@@ -363,16 +363,16 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t('inventory:detail.units')}</CardTitle>
+				<CardTitle>{t('product:detail.units')}</CardTitle>
 				<CardDescription>
-					{t('inventory:unit.newDescription')}
+					{t('product:unit.newDescription')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
 				<form onSubmit={handleRegister} className='flex items-end gap-2'>
 					<Field className='flex-1'>
 						<FieldLabel htmlFor='serial'>
-							{t('inventory:unit.serialNumber')}
+							{t('product:unit.serialNumber')}
 						</FieldLabel>
 						<Input
 							id='serial'
@@ -381,19 +381,19 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 							onChange={(event) => setSerial(event.target.value)}
 						/>
 						<FieldDescription>
-							{t('inventory:unit.serialNumberHint')}
+							{t('product:unit.serialNumberHint')}
 						</FieldDescription>
 					</Field>
 					<Button type='submit' disabled={registering}>
 						{registering
-							? t('inventory:unit.registering')
-							: t('inventory:unit.register')}
+							? t('product:unit.registering')
+							: t('product:unit.register')}
 					</Button>
 				</form>
 
 				{units.length === 0 ? (
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:detail.unitsEmpty')}
+						{t('product:detail.unitsEmpty')}
 					</p>
 				) : (
 					<DataTable
@@ -413,7 +413,7 @@ function ReplaceSerialButton({
 }: {
 	onReplace: (serialNumber: string) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const [value, setValue] = useState('');
 
 	return (
@@ -421,20 +421,20 @@ function ReplaceSerialButton({
 			<AlertDialogTrigger
 				render={
 					<Button variant='ghost' size='sm'>
-						{t('inventory:unit.replaceSerial')}
+						{t('product:unit.replaceSerial')}
 					</Button>
 				}
 			/>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>{t('inventory:unit.replaceSerial')}</AlertDialogTitle>
+					<AlertDialogTitle>{t('product:unit.replaceSerial')}</AlertDialogTitle>
 					<AlertDialogDescription>
-						{t('inventory:unit.replaceSerialBody')}
+						{t('product:unit.replaceSerialBody')}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<Input
 					value={value}
-					placeholder={t('inventory:unit.serialNumber')}
+					placeholder={t('product:unit.serialNumber')}
 					onChange={(event) => setValue(event.target.value)}
 				/>
 				<AlertDialogFooter>

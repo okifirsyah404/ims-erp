@@ -10,7 +10,7 @@ import {
 	createAdjustmentSchema,
 	setAdjustmentLinesSchema,
 } from '../contracts/adjustment.contract';
-import { idParamSchema } from '../contracts/product.contract';
+import { idParamSchema } from '../contracts/pagination.contract';
 import { ADJUSTMENT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN } from '../constants/di';
 import type {
 	AdjustmentService,

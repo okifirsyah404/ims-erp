@@ -8,12 +8,12 @@ import type {
 } from '@drizzle/schemas/inventory.schema';
 import { ITEM_KINDS } from '@drizzle/schemas/inventory.schema';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
-import type { ExportedInventoryService } from './exported-inventory.service';
+import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ExportedWarehouseService } from '@app/warehouse/services/exported-warehouse.service';
 import type { InventoryNumberingService } from './inventory-numbering.service';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import type { TItemCreateData } from '../contracts/item.repository.interface';
 import {
-	EXPORTED_INVENTORY_SERVICE_TOKEN,
 	INVENTORY_NUMBERING_SERVICE_TOKEN,
 	ITEM_CATEGORY_REPOSITORY_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
@@ -25,9 +25,7 @@ import {
 	ItemRuleViolationError,
 	ItemTransitionError,
 } from '../errors/item.errors';
-import { InventoryAuditWriter } from '../services/inventory-audit.writer';
-import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
-import type { TInventoryAuditActor } from '../constants/audit-actor';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 
 /**
  * Legal status edges for the asset lifecycle (D12/D18/D21).
@@ -51,11 +49,11 @@ export const ITEM_STATUS_TRANSITIONS: Record<ItemStatus, ItemStatus[]> = {
 };
 
 /** The actor context for custody/lifecycle operations. */
-export type TItemActor = TInventoryAuditActor;
+export type TItemActor = TAuditActor;
 
 /** One asset row decorated with its storage warehouse's name. */
 export type TItemWithLocation = TItemSelect & {
-	/** Resolved `inventory.warehouses.name`; `null` when unallocated. */
+	/** Resolved `warehouse.warehouses.name`; `null` when unallocated. */
 	warehouseName: string | null;
 };
 
@@ -80,10 +78,10 @@ export class ItemService {
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
-		private readonly audit: InventoryAuditWriter,
-		/** Storage-location name resolution via inventory's export facade. */
-		@inject(EXPORTED_INVENTORY_SERVICE_TOKEN)
-		private readonly exportedInventoryService: ExportedInventoryService,
+		private readonly audit: AuditWriter,
+		/** Storage-location name resolution via the warehouse export facade. */
+		@inject(EXPORTED_WAREHOUSE_SERVICE_TOKEN)
+		private readonly warehouses: Pick<ExportedWarehouseService, 'getNameMap'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
 	) {}
 
@@ -108,7 +106,7 @@ export class ItemService {
 	 * Decorates asset rows with the storage warehouse's name.
 	 *
 	 * @remarks
-	 * `warehouseId` is a logical reference to `inventory.warehouses.id`, so the
+	 * `warehouseId` is a logical reference to `warehouse.warehouses.id`, so the
 	 * name crosses the module boundary as a service-to-service call per the
 	 * module rules — this module never queries the inventory schema directly.
 	 */
@@ -122,7 +120,7 @@ export class ItemService {
 		];
 		const nameMap =
 			warehouseIds.length > 0
-				? await this.exportedInventoryService.getNameMap(warehouseIds)
+				? await this.warehouses.getNameMap(warehouseIds)
 				: new Map<string, string>();
 		return rows.map((asset) => ({
 			...asset,
@@ -212,7 +210,7 @@ export class ItemService {
 			organizationId: updated.organizationId,
 			meta: {
 				code: current.code,
-				...InventoryAuditWriter.snapshot(
+				...AuditWriter.snapshot(
 					{
 						name: current.name,
 						description: current.description,

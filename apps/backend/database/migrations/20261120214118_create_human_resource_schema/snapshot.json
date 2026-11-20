@@ -1,0 +1,4305 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "53c33299-227a-4282-a398-0f760460e8c3",
+  "prevIds": [
+    "06a64398-69b0-4bf8-919f-3a3018cd2890"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "human_resource"
+      ],
+      "writes": [
+        "s|sch|human_resource",
+        "n|sch|human_resource",
+        "e|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "attendances"
+      ],
+      "writes": [
+        "s|tbl|human_resource.attendances",
+        "n|tbl|human_resource.attendances",
+        "e|tbl|human_resource.attendances",
+        "n|rel|human_resource.attendances",
+        "n|type|human_resource.attendances",
+        "n|rel|human_resource.attendances_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salaries"
+      ],
+      "writes": [
+        "s|tbl|human_resource.employee_salaries",
+        "n|tbl|human_resource.employee_salaries",
+        "e|tbl|human_resource.employee_salaries",
+        "n|rel|human_resource.employee_salaries",
+        "n|type|human_resource.employee_salaries",
+        "n|rel|human_resource.employee_salaries_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salary_records"
+      ],
+      "writes": [
+        "s|tbl|human_resource.employee_salary_records",
+        "n|tbl|human_resource.employee_salary_records",
+        "e|tbl|human_resource.employee_salary_records",
+        "n|rel|human_resource.employee_salary_records",
+        "n|type|human_resource.employee_salary_records",
+        "n|rel|human_resource.employee_salary_records_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_tasks"
+      ],
+      "writes": [
+        "s|tbl|human_resource.employee_tasks",
+        "n|tbl|human_resource.employee_tasks",
+        "e|tbl|human_resource.employee_tasks",
+        "n|rel|human_resource.employee_tasks",
+        "n|type|human_resource.employee_tasks",
+        "n|rel|human_resource.employee_tasks_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employees"
+      ],
+      "writes": [
+        "s|tbl|human_resource.employees",
+        "n|tbl|human_resource.employees",
+        "e|tbl|human_resource.employees",
+        "n|rel|human_resource.employees",
+        "n|type|human_resource.employees",
+        "n|rel|human_resource.employees_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "code_numberings"
+      ],
+      "writes": [
+        "s|tbl|human_resource.code_numberings",
+        "n|tbl|human_resource.code_numberings",
+        "e|tbl|human_resource.code_numberings",
+        "n|rel|human_resource.code_numberings",
+        "n|type|human_resource.code_numberings",
+        "n|rel|human_resource.code_numberings_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "settings"
+      ],
+      "writes": [
+        "s|tbl|human_resource.settings",
+        "n|tbl|human_resource.settings",
+        "e|tbl|human_resource.settings",
+        "n|rel|human_resource.settings",
+        "n|type|human_resource.settings",
+        "n|rel|human_resource.settings_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "leave_requests"
+      ],
+      "writes": [
+        "s|tbl|human_resource.leave_requests",
+        "n|tbl|human_resource.leave_requests",
+        "e|tbl|human_resource.leave_requests",
+        "n|rel|human_resource.leave_requests",
+        "n|type|human_resource.leave_requests",
+        "n|rel|human_resource.leave_requests_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "leave_types"
+      ],
+      "writes": [
+        "s|tbl|human_resource.leave_types",
+        "n|tbl|human_resource.leave_types",
+        "e|tbl|human_resource.leave_types",
+        "n|rel|human_resource.leave_types",
+        "n|type|human_resource.leave_types",
+        "n|rel|human_resource.leave_types_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "overtime_requests"
+      ],
+      "writes": [
+        "s|tbl|human_resource.overtime_requests",
+        "n|tbl|human_resource.overtime_requests",
+        "e|tbl|human_resource.overtime_requests",
+        "n|rel|human_resource.overtime_requests",
+        "n|type|human_resource.overtime_requests",
+        "n|rel|human_resource.overtime_requests_pkey"
+      ],
+      "reads": [
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "attendances",
+        "attendances_day_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.attendances_day_uq",
+        "n|idx|human_resource.attendances_day_uq",
+        "e|idx|human_resource.attendances_day_uq",
+        "n|rel|human_resource.attendances_day_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.attendances",
+        "n|sch|human_resource",
+        "n|col|human_resource.attendances.employee_id",
+        "n|col|human_resource.attendances.attendance_date"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "attendances",
+        "attendances_date_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.attendances_date_idx",
+        "n|idx|human_resource.attendances_date_idx",
+        "e|idx|human_resource.attendances_date_idx",
+        "n|rel|human_resource.attendances_date_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.attendances",
+        "n|sch|human_resource",
+        "n|col|human_resource.attendances.attendance_date"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "attendances",
+        "attendances_leave_request_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.attendances_leave_request_id_idx",
+        "n|idx|human_resource.attendances_leave_request_id_idx",
+        "e|idx|human_resource.attendances_leave_request_id_idx",
+        "n|rel|human_resource.attendances_leave_request_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.attendances",
+        "n|sch|human_resource",
+        "n|col|human_resource.attendances.leave_request_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_salaries",
+        "employee_salaries_period_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_salaries_period_uq",
+        "n|idx|human_resource.employee_salaries_period_uq",
+        "e|idx|human_resource.employee_salaries_period_uq",
+        "n|rel|human_resource.employee_salaries_period_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salaries",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salaries.employee_id",
+        "n|col|human_resource.employee_salaries.effective_from"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_salaries",
+        "employee_salaries_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_salaries_employee_id_idx",
+        "n|idx|human_resource.employee_salaries_employee_id_idx",
+        "e|idx|human_resource.employee_salaries_employee_id_idx",
+        "n|rel|human_resource.employee_salaries_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salaries",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salaries.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_salary_records",
+        "employee_salary_records_period_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_salary_records_period_uq",
+        "n|idx|human_resource.employee_salary_records_period_uq",
+        "e|idx|human_resource.employee_salary_records_period_uq",
+        "n|rel|human_resource.employee_salary_records_period_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.period",
+        "n|col|human_resource.employee_salary_records.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_salary_records",
+        "employee_salary_records_period_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_salary_records_period_idx",
+        "n|idx|human_resource.employee_salary_records_period_idx",
+        "e|idx|human_resource.employee_salary_records_period_idx",
+        "n|rel|human_resource.employee_salary_records_period_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.period"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_salary_records",
+        "employee_salary_records_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_salary_records_employee_id_idx",
+        "n|idx|human_resource.employee_salary_records_employee_id_idx",
+        "e|idx|human_resource.employee_salary_records_employee_id_idx",
+        "n|rel|human_resource.employee_salary_records_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_tasks",
+        "employee_tasks_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_tasks_employee_id_idx",
+        "n|idx|human_resource.employee_tasks_employee_id_idx",
+        "e|idx|human_resource.employee_tasks_employee_id_idx",
+        "n|rel|human_resource.employee_tasks_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_tasks",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_tasks.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employee_tasks",
+        "employee_tasks_status_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employee_tasks_status_idx",
+        "n|idx|human_resource.employee_tasks_status_idx",
+        "e|idx|human_resource.employee_tasks_status_idx",
+        "n|rel|human_resource.employee_tasks_status_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_tasks",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_tasks.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employees",
+        "employees_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.employees_org_code_uq",
+        "n|idx|human_resource.employees_org_code_uq",
+        "e|idx|human_resource.employees_org_code_uq",
+        "n|rel|human_resource.employees_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.organization_id",
+        "n|col|human_resource.employees.employee_code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employees",
+        "employees_user_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.employees_user_uq",
+        "n|idx|human_resource.employees_user_uq",
+        "e|idx|human_resource.employees_user_uq",
+        "n|rel|human_resource.employees_user_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employees",
+        "employees_manager_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employees_manager_employee_id_idx",
+        "n|idx|human_resource.employees_manager_employee_id_idx",
+        "e|idx|human_resource.employees_manager_employee_id_idx",
+        "n|rel|human_resource.employees_manager_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.manager_employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employees",
+        "employees_status_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employees_status_idx",
+        "n|idx|human_resource.employees_status_idx",
+        "e|idx|human_resource.employees_status_idx",
+        "n|rel|human_resource.employees_status_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.employment_status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employees",
+        "employees_national_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employees_national_id_idx",
+        "n|idx|human_resource.employees_national_id_idx",
+        "e|idx|human_resource.employees_national_id_idx",
+        "n|rel|human_resource.employees_national_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.national_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "employees",
+        "employees_org_name_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.employees_org_name_idx",
+        "n|idx|human_resource.employees_org_name_idx",
+        "e|idx|human_resource.employees_org_name_idx",
+        "n|rel|human_resource.employees_org_name_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.organization_id",
+        "n|col|human_resource.employees.full_name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "code_numberings",
+        "human_resource_code_numberings_type_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.human_resource_code_numberings_type_uq",
+        "n|idx|human_resource.human_resource_code_numberings_type_uq",
+        "e|idx|human_resource.human_resource_code_numberings_type_uq",
+        "n|rel|human_resource.human_resource_code_numberings_type_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.code_numberings",
+        "n|sch|human_resource",
+        "n|col|human_resource.code_numberings.code_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "settings",
+        "human_resource_settings_scope_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.human_resource_settings_scope_uq",
+        "n|idx|human_resource.human_resource_settings_scope_uq",
+        "e|idx|human_resource.human_resource_settings_scope_uq",
+        "n|rel|human_resource.human_resource_settings_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.settings",
+        "n|sch|human_resource",
+        "n|col|human_resource.settings.setting_group",
+        "n|col|human_resource.settings.setting_key"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "leave_requests",
+        "leave_requests_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.leave_requests_employee_id_idx",
+        "n|idx|human_resource.leave_requests_employee_id_idx",
+        "e|idx|human_resource.leave_requests_employee_id_idx",
+        "n|rel|human_resource.leave_requests_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.leave_requests",
+        "n|sch|human_resource",
+        "n|col|human_resource.leave_requests.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "leave_requests",
+        "leave_requests_status_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.leave_requests_status_idx",
+        "n|idx|human_resource.leave_requests_status_idx",
+        "e|idx|human_resource.leave_requests_status_idx",
+        "n|rel|human_resource.leave_requests_status_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.leave_requests",
+        "n|sch|human_resource",
+        "n|col|human_resource.leave_requests.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "leave_types",
+        "leave_types_code_uq"
+      ],
+      "writes": [
+        "s|idx|human_resource.leave_types_code_uq",
+        "n|idx|human_resource.leave_types_code_uq",
+        "e|idx|human_resource.leave_types_code_uq",
+        "n|rel|human_resource.leave_types_code_uq"
+      ],
+      "reads": [
+        "n|tbl|human_resource.leave_types",
+        "n|sch|human_resource",
+        "n|col|human_resource.leave_types.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "overtime_requests",
+        "overtime_requests_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.overtime_requests_employee_id_idx",
+        "n|idx|human_resource.overtime_requests_employee_id_idx",
+        "e|idx|human_resource.overtime_requests_employee_id_idx",
+        "n|rel|human_resource.overtime_requests_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.overtime_requests",
+        "n|sch|human_resource",
+        "n|col|human_resource.overtime_requests.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "human_resource",
+        "overtime_requests",
+        "overtime_requests_work_date_idx"
+      ],
+      "writes": [
+        "s|idx|human_resource.overtime_requests_work_date_idx",
+        "n|idx|human_resource.overtime_requests_work_date_idx",
+        "e|idx|human_resource.overtime_requests_work_date_idx",
+        "n|rel|human_resource.overtime_requests_work_date_idx"
+      ],
+      "reads": [
+        "n|tbl|human_resource.overtime_requests",
+        "n|sch|human_resource",
+        "n|col|human_resource.overtime_requests.work_date"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "attendances"
+      ],
+      "writes": [
+        "s|fk|human_resource.attendances.attendances_employee_id_employees_id_fkey",
+        "n|fk|human_resource.attendances.attendances_employee_id_employees_id_fkey",
+        "e|fk|human_resource.attendances.attendances_employee_id_employees_id_fkey",
+        "n|con|human_resource.attendances.attendances_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.attendances",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.attendances.employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "attendances"
+      ],
+      "writes": [
+        "s|fk|human_resource.attendances.attendances_leave_request_id_leave_requests_id_fkey",
+        "n|fk|human_resource.attendances.attendances_leave_request_id_leave_requests_id_fkey",
+        "e|fk|human_resource.attendances.attendances_leave_request_id_leave_requests_id_fkey",
+        "n|con|human_resource.attendances.attendances_leave_request_id_leave_requests_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.attendances",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.leave_requests",
+        "n|sch|human_resource",
+        "n|col|human_resource.attendances.leave_request_id",
+        "n|col|human_resource.leave_requests.id",
+        "e|uniqueness|human_resource.leave_requests.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salaries"
+      ],
+      "writes": [
+        "s|fk|human_resource.employee_salaries.employee_salaries_employee_id_employees_id_fkey",
+        "n|fk|human_resource.employee_salaries.employee_salaries_employee_id_employees_id_fkey",
+        "e|fk|human_resource.employee_salaries.employee_salaries_employee_id_employees_id_fkey",
+        "n|con|human_resource.employee_salaries.employee_salaries_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salaries",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salaries.employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salary_records"
+      ],
+      "writes": [
+        "s|fk|human_resource.employee_salary_records.employee_salary_records_employee_id_employees_id_fkey",
+        "n|fk|human_resource.employee_salary_records.employee_salary_records_employee_id_employees_id_fkey",
+        "e|fk|human_resource.employee_salary_records.employee_salary_records_employee_id_employees_id_fkey",
+        "n|con|human_resource.employee_salary_records.employee_salary_records_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_tasks"
+      ],
+      "writes": [
+        "s|fk|human_resource.employee_tasks.employee_tasks_employee_id_employees_id_fkey",
+        "n|fk|human_resource.employee_tasks.employee_tasks_employee_id_employees_id_fkey",
+        "e|fk|human_resource.employee_tasks.employee_tasks_employee_id_employees_id_fkey",
+        "n|con|human_resource.employee_tasks.employee_tasks_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_tasks",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_tasks.employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employees"
+      ],
+      "writes": [
+        "s|fk|human_resource.employees.employees_manager_employee_id_employees_id_fkey",
+        "n|fk|human_resource.employees.employees_manager_employee_id_employees_id_fkey",
+        "e|fk|human_resource.employees.employees_manager_employee_id_employees_id_fkey",
+        "n|con|human_resource.employees.employees_manager_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.manager_employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "leave_requests"
+      ],
+      "writes": [
+        "s|fk|human_resource.leave_requests.leave_requests_employee_id_employees_id_fkey",
+        "n|fk|human_resource.leave_requests.leave_requests_employee_id_employees_id_fkey",
+        "e|fk|human_resource.leave_requests.leave_requests_employee_id_employees_id_fkey",
+        "n|con|human_resource.leave_requests.leave_requests_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.leave_requests",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.leave_requests.employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "leave_requests"
+      ],
+      "writes": [
+        "s|fk|human_resource.leave_requests.leave_requests_leave_type_id_leave_types_id_fkey",
+        "n|fk|human_resource.leave_requests.leave_requests_leave_type_id_leave_types_id_fkey",
+        "e|fk|human_resource.leave_requests.leave_requests_leave_type_id_leave_types_id_fkey",
+        "n|con|human_resource.leave_requests.leave_requests_leave_type_id_leave_types_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.leave_requests",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.leave_types",
+        "n|sch|human_resource",
+        "n|col|human_resource.leave_requests.leave_type_id",
+        "n|col|human_resource.leave_types.id",
+        "e|uniqueness|human_resource.leave_types.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "overtime_requests"
+      ],
+      "writes": [
+        "s|fk|human_resource.overtime_requests.overtime_requests_employee_id_employees_id_fkey",
+        "n|fk|human_resource.overtime_requests.overtime_requests_employee_id_employees_id_fkey",
+        "e|fk|human_resource.overtime_requests.overtime_requests_employee_id_employees_id_fkey",
+        "n|con|human_resource.overtime_requests.overtime_requests_employee_id_employees_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|human_resource.overtime_requests",
+        "n|sch|human_resource",
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.overtime_requests.employee_id",
+        "n|col|human_resource.employees.id",
+        "e|uniqueness|human_resource.employees.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "human_resource",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "attendances",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "employee_salaries",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "employee_salary_records",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "employee_tasks",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "employees",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "code_numberings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "leave_requests",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "leave_types",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "name": "overtime_requests",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendance_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "check_in_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "check_out_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "source",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'manual'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "leave_request_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "recorded_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "base_salary",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "fixed_allowances",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "bank_name",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "bank_account_number",
+        "type": "varchar(50)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "bank_account_holder",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "effective_from",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "effective_to",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "period",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "base_salary",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "allowances",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "overtime_pay",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "bonus",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "deductions",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "net_pay",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "title",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "due_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'open'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "done_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employee_code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "full_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "legal_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "nickname",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "national_id",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "email",
+        "type": "varchar(320)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "phone",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "whatsapp",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "photo_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employment_status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employment_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'permanent'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "work_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'onsite'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "hire_date",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "termination_date",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "manager_employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "code_type",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "pattern",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "reset_policy",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "period_key",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "next_number",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "setting_group",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "setting_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "setting_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "value_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'string'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_type_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "start_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "end_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "days",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'submitted'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "recorded_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "decided_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "decided_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "decision_note",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "attendance_status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'leave'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "uses_quota",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "annual_quota_days",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "work_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "hours",
+        "type": "numeric(5,2)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'submitted'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "recorded_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "decided_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "decided_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "decision_note",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_day_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "attendance_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_date_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "attendance_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_leave_request_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "leave_request_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_period_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "effective_from",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_period_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "period",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_period_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "period",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "employee_tasks_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "employee_tasks_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "employee_code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_user_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "user_id IS NOT NULL AND deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_manager_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "manager_employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employment_status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_national_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "national_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_org_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "full_name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "human_resource_code_numberings_type_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "human_resource_settings_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "setting_group",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "setting_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "leave_types_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "overtime_requests_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "overtime_requests_work_date_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "work_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_leave_request_id_leave_requests_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "leave_request_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "leave_requests",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "employee_tasks_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_manager_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "manager_employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_leave_type_id_leave_types_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "leave_type_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "leave_types",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "overtime_requests_employee_id_employees_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_id"
+        ],
+        "schemaTo": "human_resource",
+        "tableTo": "employees",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "employee_tasks_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "code_numberings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "settings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "leave_types_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "overtime_requests_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_status_check",
+        "value": "status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_source_check",
+        "value": "source IN ('manual', 'import', 'leave')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "attendances",
+        "name": "attendances_times_check",
+        "value": "check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_base_check",
+        "value": "base_salary >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_allowances_check",
+        "value": "fixed_allowances >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salaries",
+        "name": "employee_salaries_range_check",
+        "value": "effective_to IS NULL OR effective_to >= effective_from",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_status_check",
+        "value": "status IN ('draft', 'approved')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_amounts_check",
+        "value": "base_salary >= 0 AND allowances >= 0 AND overtime_pay >= 0 AND bonus >= 0 AND deductions >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_net_check",
+        "value": "net_pay = base_salary + allowances + overtime_pay + bonus - deductions",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_tasks",
+        "name": "employee_tasks_status_check",
+        "value": "status IN ('open', 'done', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_employment_status_check",
+        "value": "employment_status IN ('active', 'inactive', 'terminated')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_employment_type_check",
+        "value": "employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_work_type_check",
+        "value": "work_type IN ('onsite', 'remote', 'hybrid')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_termination_check",
+        "value": "termination_date IS NULL OR hire_date IS NULL OR termination_date >= hire_date",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "human_resource_code_numberings_reset_check",
+        "value": "reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "code_numberings",
+        "name": "human_resource_code_numberings_next_check",
+        "value": "next_number > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "settings",
+        "name": "human_resource_settings_value_type_check",
+        "value": "value_type IN ('string', 'number', 'boolean', 'json', 'date')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_status_check",
+        "value": "status IN ('submitted', 'approved', 'rejected', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_dates_check",
+        "value": "end_date >= start_date",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_requests",
+        "name": "leave_requests_days_check",
+        "value": "days > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "leave_types_attendance_status_check",
+        "value": "attendance_status IN ('leave', 'sick', 'permit')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "leave_types",
+        "name": "leave_types_quota_check",
+        "value": "annual_quota_days >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "overtime_requests_status_check",
+        "value": "status IN ('submitted', 'approved', 'rejected', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "overtime_requests",
+        "name": "overtime_requests_hours_check",
+        "value": "hours > 0 AND hours <= 24",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

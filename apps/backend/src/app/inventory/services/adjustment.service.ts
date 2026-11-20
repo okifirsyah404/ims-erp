@@ -13,10 +13,8 @@ import type {
 	TAdjustmentLineInput,
 	TAdjustmentPaginationRequest,
 } from '../contracts/adjustment.repository.interface';
-import type { IProductRepository } from '../contracts/product.repository.interface';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
-	PRODUCT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 } from '../constants/di';
 import type { StockService } from './stock.service';
@@ -27,20 +25,20 @@ import {
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
 	AdjustmentTransitionError,
-	ProductNotFoundError,
+	InventoryReferenceError,
 	SelfApprovalForbiddenError,
 } from '../errors/inventory.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
-import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
-import type { TInventoryAuditActor } from '../constants/audit-actor';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
+import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ExportedProductService } from '@app/product/services/exported-product.service';
 
 /**
  * Adapts the route-layer {@link TAdjustmentActor} (permission flags, no
  * request context) to the audit actor shape. The controller supplies
- * email/ip/user-agent via {@link TInventoryAuditActor} on methods that take
+ * email/ip/user-agent via {@link TAuditActor} on methods that take
  * one directly; transitions only need the user id.
  */
-function actorAuditActor(actor: TAdjustmentActor): TInventoryAuditActor {
+function actorAuditActor(actor: TAdjustmentActor): TAuditActor {
 	return { userId: actor.actorUserId ?? 'system' };
 }
 
@@ -148,8 +146,9 @@ export class AdjustmentService {
 	constructor(
 		@inject(ADJUSTMENT_REPOSITORY_TOKEN)
 		private readonly adjustmentRepository: IAdjustmentRepository,
-		@inject(PRODUCT_REPOSITORY_TOKEN)
-		private readonly itemRepository: IProductRepository,
+		/** Product validation, read through the `product` module (ADR-0026). */
+		@inject(EXPORTED_PRODUCT_SERVICE_TOKEN)
+		private readonly products: Pick<ExportedProductService, 'assertProduct'>,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stockService: StockService,
 		/**
@@ -159,7 +158,7 @@ export class AdjustmentService {
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
@@ -193,9 +192,9 @@ export class AdjustmentService {
 	 * @param organizationId - The tenant raising it (never null)
 	 * @param data - Header fields plus the requested lines
 	 * @param actor - Who is raising it
-	 * @throws {WarehouseNotFoundError} When the warehouse is absent
+	 * @throws {InventoryReferenceError} When the warehouse is absent
 	 * @throws {AdjustmentHasNoLinesError} When no lines are supplied
-	 * @throws {ProductNotFoundError} When a line references an unknown item
+	 * @throws {InventoryReferenceError} When a line references an unknown product
 	 */
 	async create(
 		organizationId: string,
@@ -241,7 +240,7 @@ export class AdjustmentService {
 				await this.buildLines(
 					organizationId,
 					adjustment.id,
-					adjustment.warehouseId,
+					requireId(adjustment.warehouseId, 'warehouse'),
 					data.lines,
 				),
 				tx,
@@ -288,7 +287,7 @@ export class AdjustmentService {
 			await this.buildLines(
 				organizationId,
 				id,
-				adjustment.warehouseId,
+				requireId(adjustment.warehouseId, 'warehouse'),
 				inputs,
 			),
 		);
@@ -299,7 +298,7 @@ export class AdjustmentService {
 	async submit(
 		id: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
 		return this.transition(id, organizationId, 'submitted', {}, actor);
 	}
@@ -338,7 +337,7 @@ export class AdjustmentService {
 	async reject(
 		id: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
 		return this.transition(id, organizationId, 'rejected', {}, actor);
 	}
@@ -347,7 +346,7 @@ export class AdjustmentService {
 	async cancel(
 		id: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
 		return this.transition(id, organizationId, 'cancelled', {}, actor);
 	}
@@ -395,7 +394,7 @@ export class AdjustmentService {
 		if (lines.length === 0) throw new AdjustmentHasNoLinesError();
 
 		const { scopeOrganizationId } = await this.stockService.resolveScope(
-			adjustment.warehouseId,
+			requireId(adjustment.warehouseId, 'warehouse'),
 		);
 
 		// ONE transaction for the claim and every per-line movement (hardening
@@ -415,14 +414,21 @@ export class AdjustmentService {
 				// the counter saw, but the movement must reflect reality now.
 				const current = await this.stockService.balanceFor(
 					scopeOrganizationId,
-					adjustment.warehouseId,
-					line.productId,
+					requireId(adjustment.warehouseId, 'warehouse'),
+					requireId(line.productId, 'product'),
 					line.binId,
 				);
+
 
 				const before = Number(current?.quantityOnHand ?? '0');
 				const after = Number(line.quantityAfter);
 				const delta = after - before;
+
+				// A recount that agrees with the system is not a movement:
+				// `stock_movements_quantity_check` forbids `quantity = 0`, and
+				// the document still reaches `posted`. Without this the agree-
+				// path would either post a zero row (rejected by the schema
+				// check) or double-count the balance.
 				if (delta === 0) continue;
 
 				const movementType: MovementType =
@@ -433,9 +439,9 @@ export class AdjustmentService {
 						// The acting tenant is recorded on the ledger even when the
 						// warehouse is global and the balance is shared.
 						actorOrganizationId: organizationId,
-						warehouseId: adjustment.warehouseId,
+						warehouseId: requireId(adjustment.warehouseId, 'warehouse'),
 						binId: line.binId,
-						productId: line.productId,
+						productId: requireId(line.productId, 'product'),
 						movementType,
 						// postMovement takes an unsigned quantity; direction is the type.
 						quantity: Math.abs(delta).toFixed(3),
@@ -483,7 +489,7 @@ export class AdjustmentService {
 		organizationId: string,
 		to: AdjustmentStatus,
 		extra: Partial<TStockAdjustmentSelect>,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TStockAdjustmentSelect> {
 		const adjustment = await this.requireDocument(id, organizationId);
 		if (!isLegalTransition(adjustment.status, to)) {
@@ -543,7 +549,7 @@ export class AdjustmentService {
 	 * @param organizationId - The raising tenant
 	 * @param adjustmentId - The header the lines belong to
 	 * @param inputs - Lines as supplied by the client
-	 * @throws {ProductNotFoundError} When an item is unknown or the client sent
+	 * @throws {InventoryReferenceError} When a product is unknown or the client sent
 	 *   the same item twice for one bin, which would make the result order
 	 *   dependent
 	 */
@@ -567,8 +573,9 @@ export class AdjustmentService {
 			}
 			seen.add(key);
 
-			const item = await this.itemRepository.findById(input.productId);
-			if (!item) throw new ProductNotFoundError();
+			// The product master lives in the `product` module: validate the id
+			// before freezing the line (ADR-0014 / ADR-0026).
+			await this.products.assertProduct(input.productId);
 
 			// Snapshot the system's current quantity. Not just for audit: showing
 			// the counter what the system believed makes a recount reviewable.
@@ -609,4 +616,22 @@ export class AdjustmentService {
 	): Promise<string> {
 		return this.numbering.next('stock_adjustment', tx);
 	}
+}
+/**
+ * Narrows a nullable logical id to a string.
+ *
+ * @remarks
+ * `warehouse_id` and `product_id` are nullable plain columns since ADR-0026
+ * (cross-module references are always nullable, ADR-0014). A posted adjustment
+ * always carries both, so a NULL here means a corrupted row: fail loudly rather
+ * than posting a movement against a missing reference.
+ *
+ * @throws {InventoryReferenceError} When the column is NULL
+ */
+function requireId(
+	value: string | null,
+	reference: 'product' | 'warehouse',
+): string {
+	if (!value) throw new InventoryReferenceError(reference);
+	return value;
 }

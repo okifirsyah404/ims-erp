@@ -12,13 +12,13 @@ import { ITEM_CATEGORY_SERVICE_TOKEN } from '../constants/di';
 import type {
 	ItemCategoryService,
 } from '../services/item-category.service';
-import type { TInventoryAuditActor } from '../constants/audit-actor';
+import type { TAuditActor } from '@shared/audit';
 
 /**
  * Audit actor derived from the guard-resolved session and request headers,
  * never from client input (house pattern).
  */
-function auditActor(erp: ErpContext, request: Request): TInventoryAuditActor {
+function auditActor(erp: ErpContext, request: Request): TAuditActor {
 	return {
 		userId: erp.session.user.id,
 		email: erp.session.user.email,

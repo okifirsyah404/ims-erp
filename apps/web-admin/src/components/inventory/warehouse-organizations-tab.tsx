@@ -48,7 +48,7 @@ export function WarehouseOrganizationsTab({
 }: {
 	warehouseId: string;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
 	const confirm = useConfirm();
 	const [selected, setSelected] = useState<string>('');
@@ -69,8 +69,8 @@ export function WarehouseOrganizationsTab({
 			toast.success(
 				t(
 					result.created
-						? 'inventory:warehouses.linkCreated'
-						: 'inventory:warehouses.linkAlreadyExists',
+						? 'warehouse:warehouses.linkCreated'
+						: 'warehouse:warehouses.linkAlreadyExists',
 				),
 			);
 			setSelected('');
@@ -86,7 +86,7 @@ export function WarehouseOrganizationsTab({
 			unlinkWarehouseOrganization(warehouseId, organizationId),
 		onSuccess: (result) => {
 			if (result.removed) {
-				toast.success(t('inventory:warehouses.linkRemoved'));
+				toast.success(t('warehouse:warehouses.linkRemoved'));
 			}
 			invalidate();
 		},
@@ -107,7 +107,7 @@ export function WarehouseOrganizationsTab({
 		return [
 			{
 				id: 'organization',
-				header: t('inventory:warehouses.organization'),
+				header: t('warehouse:warehouses.organization'),
 				meta: { cellClassName: 'font-medium' },
 				cell: ({ row }) =>
 					(row.original.organizationId
@@ -118,7 +118,7 @@ export function WarehouseOrganizationsTab({
 			},
 			{
 				id: 'linkedSince',
-				header: t('inventory:warehouses.linkedSince'),
+				header: t('warehouse:warehouses.linkedSince'),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
 			},
@@ -136,7 +136,7 @@ export function WarehouseOrganizationsTab({
 							if (
 								organizationId &&
 								(await confirm({
-									title: t('inventory:warehouses.unlinkConfirm'),
+									title: t('warehouse:warehouses.unlinkConfirm'),
 									destructive: true,
 								}))
 							) {
@@ -145,7 +145,7 @@ export function WarehouseOrganizationsTab({
 						}}
 					>
 						<Unlink className='mr-2 size-4' />
-						{t('inventory:warehouses.unlinkAction')}
+						{t('warehouse:warehouses.unlinkAction')}
 					</Button>
 				),
 			},
@@ -160,9 +160,9 @@ export function WarehouseOrganizationsTab({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t('inventory:warehouses.linkedOrganizations')}</CardTitle>
+				<CardTitle>{t('warehouse:warehouses.linkedOrganizations')}</CardTitle>
 				<CardDescription>
-					{t('inventory:warehouses.linkedOrganizationsHint')}
+					{t('warehouse:warehouses.linkedOrganizationsHint')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
@@ -170,7 +170,7 @@ export function WarehouseOrganizationsTab({
 					<Select value={selected} onValueChange={(value) => setSelected(value ?? '')}>
 						<SelectTrigger className='w-72'>
 							<SelectValue
-								placeholder={t('inventory:warehouses.selectOrganization')}
+								placeholder={t('warehouse:warehouses.selectOrganization')}
 							/>
 						</SelectTrigger>
 						<SelectContent>
@@ -187,7 +187,7 @@ export function WarehouseOrganizationsTab({
 						onClick={() => link.mutate(selected)}
 					>
 						<Link2 className='mr-2 size-4' />
-						{t('inventory:warehouses.linkAction')}
+						{t('warehouse:warehouses.linkAction')}
 					</Button>
 				</div>
 
@@ -196,7 +196,7 @@ export function WarehouseOrganizationsTab({
 				) : !links.isPending && (links.data ?? []).length === 0 ? (
 					<EmptyState
 						icon={Building2}
-						title={t('inventory:warehouses.noLinkedOrganizations')}
+						title={t('warehouse:warehouses.noLinkedOrganizations')}
 						size='sm'
 					/>
 				) : (

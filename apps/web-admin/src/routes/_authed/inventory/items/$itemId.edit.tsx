@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_authed/inventory/items/$itemId/edit')({
 });
 
 function EditItemPage() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
@@ -32,7 +32,7 @@ function EditItemPage() {
 		setSubmitting(true);
 		try {
 			await updateProduct(itemId, input as TProductUpdateInput);
-			toast.success(t('inventory:form.updated'));
+			toast.success(t('product:form.updated'));
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
 				queryClient.invalidateQueries({
@@ -59,7 +59,7 @@ function EditItemPage() {
 	if (!item) {
 		return (
 			<AdminOnly>
-				<EmptyState title={t('inventory:detail.notFound')} bordered />
+				<EmptyState title={t('product:detail.notFound')} bordered />
 			</AdminOnly>
 		);
 	}

@@ -2,7 +2,6 @@ import type { TDisposalSelect, TItemSelect } from '@drizzle/schemas/inventory.sc
 import type { TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { SYSTEM_AUDIT_ACTOR, type TInventoryAuditActor } from '../constants/audit-actor';
 import {
 	DISPOSAL_REPOSITORY_TOKEN,
 	INVENTORY_NUMBERING_SERVICE_TOKEN,
@@ -19,7 +18,7 @@ import {
 	ItemRuleViolationError,
 	ItemTransitionError,
 } from '../errors/item.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import type { InventoryNumberingService } from './inventory-numbering.service';
 
 /**
@@ -42,7 +41,7 @@ export class DisposalService {
 		private readonly disposals: IDisposalRepository,
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 	) {}
@@ -52,7 +51,7 @@ export class DisposalService {
 		itemId: string,
 		organizationId: string,
 		data: TDisposalCreateInput,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TDisposalSelect> {
 		const item = await this.requireItemInScope(itemId, organizationId);
 		if (item.status === 'disposed') throw new ItemTransitionError(item.status, 'disposal_requested');
@@ -90,7 +89,7 @@ export class DisposalService {
 	async approveDisposal(
 		disposalId: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TDisposalSelect> {
 		const disposal = await this.requireDisposal(disposalId, organizationId);
 		if (!['draft', 'submitted'].includes(disposal.status)) {
@@ -117,7 +116,7 @@ export class DisposalService {
 	async executeDisposal(
 		disposalId: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TDisposalSelect> {
 		const disposal = await this.requireDisposal(disposalId, organizationId);
 		if (disposal.status !== 'approved') throw new ItemTransitionError(disposal.status, 'executed');
@@ -159,7 +158,7 @@ export class DisposalService {
 	async cancelDisposal(
 		disposalId: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TDisposalSelect> {
 		const disposal = await this.requireDisposal(disposalId, organizationId);
 		if (disposal.status === 'executed') throw new ItemTransitionError(disposal.status, 'cancelled');

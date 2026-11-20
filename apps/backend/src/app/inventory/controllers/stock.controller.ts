@@ -10,7 +10,7 @@ import {
 	receiptSchema,
 	recomputeSchema,
 } from '../contracts/stock.contract';
-import { idParamSchema } from '../contracts/product.contract';
+import { idParamSchema } from '../contracts/pagination.contract';
 import { STOCK_SERVICE_TOKEN } from '../constants/di';
 import type { StockService } from '../services/stock.service';
 import {

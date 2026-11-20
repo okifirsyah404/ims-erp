@@ -3,7 +3,7 @@ import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
 import { container } from 'tsyringe';
 import { z } from 'zod';
-import type { TInventoryAuditActor } from '../constants/audit-actor';
+import type { TAuditActor } from '@shared/audit';
 import {
 	DISPOSAL_SERVICE_TOKEN,
 	ITEM_CUSTODY_SERVICE_TOKEN,
@@ -25,14 +25,14 @@ import {
 	toolSetItemAddSchema,
 	toolSetUpdateSchema,
 } from '../contracts/item-operations.contract';
-import { idParamSchema } from '../contracts/product.contract';
+import { idParamSchema } from '../contracts/pagination.contract';
 import { ItemRuleViolationError } from '../errors/item.errors';
 
 /**
  * Audit actor derived from the guard-resolved session and request headers,
  * never from client input (house pattern).
  */
-function auditActor(erp: ErpContext, request: Request): TInventoryAuditActor {
+function auditActor(erp: ErpContext, request: Request): TAuditActor {
 	return {
 		userId: erp.session.user.id,
 		email: erp.session.user.email,

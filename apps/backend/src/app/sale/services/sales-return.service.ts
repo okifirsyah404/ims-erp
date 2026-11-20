@@ -1,7 +1,11 @@
-import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ProductService } from '@app/inventory/services/product.service';
+import { STOCK_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import { WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ProductService } from '@app/product/services/product.service';
+import { SERIAL_UNIT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { SerialUnitService } from '@app/inventory/services/serial-unit.service';
 import type { StockService } from '@app/inventory/services/stock.service';
-import type { WarehouseService } from '@app/inventory/services/warehouse.service';
+import type { WarehouseService } from '@app/warehouse/services/warehouse.service';
 import { SALE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { SaleNumberingService } from './sale-numbering.service';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
@@ -103,7 +107,10 @@ export class SalesReturnService {
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement' | 'resolveScope'>,
 		@inject(PRODUCT_SERVICE_TOKEN)
-		private readonly items: Pick<ProductService, 'getProduct' | 'receiveCustomerUnits'>,
+		private readonly items: Pick<ProductService, 'getProduct'>,
+		/** Unit custody stayed in inventory when the product master moved (ADR-0026). */
+		@inject(SERIAL_UNIT_SERVICE_TOKEN)
+		private readonly units: Pick<SerialUnitService, 'receiveCustomerUnits'>,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<WarehouseService, 'getWarehouse'>,
 		@inject(SALE_NUMBERING_SERVICE_TOKEN)
@@ -440,7 +447,7 @@ export class SalesReturnService {
 				);
 				const serials = line.serialNumbers ?? [];
 				if (serials.length) {
-					const missing = await this.items.receiveCustomerUnits(
+					const missing = await this.units.receiveCustomerUnits(
 						productId,
 						serials,
 						{

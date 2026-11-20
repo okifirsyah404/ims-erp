@@ -6,7 +6,6 @@ import type {
 import type { TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { SYSTEM_AUDIT_ACTOR, type TInventoryAuditActor } from '../constants/audit-actor';
 import {
 	CONDITION_CHECK_REPOSITORY_TOKEN,
 	INVENTORY_NUMBERING_SERVICE_TOKEN,
@@ -21,7 +20,7 @@ import type {
 } from '../contracts/item-operations.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import { ItemNotFoundError } from '../errors/item.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import type { InventoryNumberingService } from './inventory-numbering.service';
 import type { ItemCustodyService } from './item-custody.service';
 import { ITEM_CUSTODY_SERVICE_TOKEN } from '../constants/di';
@@ -49,7 +48,7 @@ export class MaintenanceService {
 		private readonly custody: Pick<ItemCustodyService, 'reconcileStatus'>,
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 	) {}
@@ -59,7 +58,7 @@ export class MaintenanceService {
 		itemId: string,
 		organizationId: string,
 		data: TMaintenanceCreateInput,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TMaintenanceSelect> {
 		await this.requireItemInScope(itemId, organizationId);
 		const record = await this.transactions.run(async (tx) => {
@@ -109,7 +108,7 @@ export class MaintenanceService {
 		itemId: string,
 		organizationId: string,
 		data: TConditionCheckInput,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TConditionCheckSelect> {
 		await this.requireItemInScope(itemId, organizationId);
 		const check = await this.transactions.run(async (tx) => {

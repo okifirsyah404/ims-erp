@@ -3,6 +3,8 @@
  * too, because `build-crumbs.ts` resolves them from the same vocabulary.
  */
 const nav = {
+	'section.product': 'Products',
+	'section.warehouse': 'Warehouses',
 	'section.inventory': 'Inventory',
 	'section.administration': 'Administration',
 

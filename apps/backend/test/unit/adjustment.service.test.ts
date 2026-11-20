@@ -13,6 +13,9 @@
  *    `quantity = 0`) yet still reaches `posted`.
  * 4. **Posting is idempotent** — `posted_at IS NOT NULL` is the guard.
  * 5. **Tenant isolation** — another organization's document is a 404.
+ *
+ * ADR-0026: the product master moved to `@app/product`, so line validation goes
+ * through `EXPORTED_PRODUCT_SERVICE_TOKEN` (`assertProduct`).
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
@@ -21,19 +24,17 @@ import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import type {
 	TStockAdjustmentItemSelect,
 	TStockAdjustmentSelect,
+	TStockSelect,
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IAdjustmentRepository,
 	TAdjustmentLineData,
 	TAdjustmentPaginationRequest,
 } from '../../src/app/inventory/contracts/adjustment.repository.interface';
-import type {
-	IProductRepository,
-} from '../../src/app/inventory/contracts/product.repository.interface';
+import type { ExportedProductService } from '../../src/app/product/services/exported-product.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
-	PRODUCT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 } from '../../src/app/inventory/constants/di';
 import {
@@ -50,6 +51,7 @@ import {
 	AdjustmentTransitionError,
 	SelfApprovalForbiddenError,
 } from '../../src/app/inventory/errors/inventory.errors';
+import { ProductNotFoundError } from '../../src/app/product/errors/product.errors';
 
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';
@@ -114,7 +116,7 @@ function fakeAdjustments() {
 			return row;
 		},
 		async update(id: string, data: Partial<TStockAdjustmentSelect>) {
-			const row = documents.find((row) => row.id === id);
+			const row = documents.find((candidate) => candidate.id === id);
 			if (!row) return null;
 			Object.assign(row, data);
 			return row;
@@ -167,76 +169,129 @@ function fakeAdjustments() {
 	};
 }
 
-/** Records the movements the service asks the ledger to post. */
+/**
+ * The stock ledger double.
+ *
+ * @remarks
+ * ADR-0026 re-cut the seam `AdjustmentService` uses, so this is an explicit
+ * object rather than a partial `StockService`: `resolveScope` answers with the
+ * warehouse's scope only, `balanceFor` takes that scope (not the caller's
+ * organization), and `postMovement` joins the caller's transaction. It is
+ * narrowed to the three methods the service actually calls.
+ *
+ * @param onHand - Seeded on-hand quantity per product id
+ */
 function fakeStock(onHand: Record<string, string> = {}) {
 	const posted: TPostMovementInput[] = [];
-	const service = {
+	/**
+	 * Failure hook for the atomicity test.
+	 *
+	 * @remarks
+	 * A settable field rather than a replaced method: the double is now an
+	 * explicit object, so `postMovement` is an own property that cannot be
+	 * shadowed-then-restored the way the old partial-class double was.
+	 */
+	let onPost: (() => void) | null = null;
+	/** The seam the service consumes, plus the two hooks the tests drive. */
+	type TStockDouble = Pick<
+		StockService,
+		'resolveScope' | 'balanceFor' | 'postMovement'
+	> & {
+		/** Makes the next posted movement throw, simulating a failed line. */
+		failNextPost(reason: string): void;
+		/** Restores the healthy ledger. */
+		healPosts(): void;
+	};
+	const stock: TStockDouble = {
+		failNextPost(reason: string) {
+			onPost = () => {
+				throw new Error(reason);
+			};
+		},
+		healPosts() {
+			onPost = null;
+		},
+		/** The warehouse's balance scope — the acting tenant is not consulted. */
 		async resolveScope() {
-			return { warehouse: { id: WAREHOUSE_ID }, scopeOrganizationId: ORG_A };
+			return { scopeOrganizationId: ORG_A };
 		},
-		async balanceFor(_scope: string | null, _wh: string, productId: string) {
+		async balanceFor(_scope, _warehouseId, productId) {
 			const quantity = onHand[productId];
-			return quantity === undefined ? null : { quantityOnHand: quantity };
+			return quantity === undefined ? null : ({ quantityOnHand: quantity } as never);
 		},
-		async postMovement(input: TPostMovementInput) {
+		async postMovement(input, _tx) {
+			onPost?.();
 			posted.push(input);
-			return { movement: {}, balance: {}, scopeOrganizationId: ORG_A };
+			return { movement: {}, balance: {}, scopeOrganizationId: ORG_A } as never;
 		},
-	} as unknown as StockService;
-	return { service, posted };
+	};
+	return { service: stock, posted };
 }
 
-/** Minimal item repository: `findById` is all the service uses. */
-function fakeItems(): IProductRepository {
-	return {
-		async paginate() {
-			return { meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] };
+/**
+ * Product facade double.
+ *
+ * @remarks
+ * The service only asks it whether a line's product exists (ADR-0014/0026), so
+ * the fake knows the two fixture ids and answers `ProductNotFoundError`
+ * otherwise — the same contract `ExportedProductService.assertProduct` gives.
+ */
+function fakeProducts(known: readonly string[]) {
+	const asserted: string[] = [];
+	const facade: Pick<ExportedProductService, 'assertProduct'> = {
+		async assertProduct(productId: string) {
+			asserted.push(productId);
+			if (!known.includes(productId)) throw new ProductNotFoundError();
+			return {
+				id: productId,
+				code: 'PRD-00001',
+				sku: 'CTRL-01',
+				name: 'Door controller',
+				unitLabel: 'pcs',
+				sellingPrice: 0,
+				purchasePrice: 0,
+				specification: null,
+				productKind: 'product',
+				imageObjectKey: null,
+				isActive: true,
+				isSerialized: false,
+				isStockTracked: true,
+			};
 		},
-		async findById(id: string) {
-			if (id !== ITEM_ID && id !== ITEM_ID_2) return null;
-			return { id } as never;
-		},
-		async findBySku() {
-			return null;
-		},
-		async create() {
-			return {} as never;
-		},
-		async update() {
-			return null;
-		},
-		async archive() {
-			return null;
-		},
-		async countLiveUnits() {
-			return 0;
-		},
-	} as unknown as IProductRepository;
+	};
+	return { facade, asserted };
 }
 
 let adjustments: ReturnType<typeof fakeAdjustments>;
 let stock: ReturnType<typeof fakeStock>;
-let items: IProductRepository;
+let products: ReturnType<typeof fakeProducts>;
 let service: AdjustmentService;
 
 /** Builds the service against a fresh fake world. */
 function build(onHand: Record<string, string> = {}) {
 	adjustments = fakeAdjustments();
 	stock = fakeStock(onHand);
-	items = fakeItems();
+	products = fakeProducts([ITEM_ID, ITEM_ID_2]);
 	const database = {
 		// Emulates a real transaction: a thrown callback rolls the world back
-		// (status/postedAt snapshot restore) — this is exactly the property
-		// the atomic-claim test asserts.
+		// (status/postedAt restore plus the rows it inserted, and the movements
+		// the fake ledger recorded), which is exactly the property the
+		// atomic-claim test asserts.
 		transaction: async (callback: (tx: null) => unknown) => {
 			const snapshot = adjustments.documents.map((row) => ({
 				row,
 				status: row.status,
 				postedAt: row.postedAt,
 			}));
+			const documentCount = adjustments.documents.length;
+			const lineCount = adjustments.lines.length;
+			const movementCount = stock.posted.length;
 			try {
 				return await callback(null);
 			} catch (error) {
+				adjustments.documents.length = documentCount;
+				adjustments.lines.length = lineCount;
+				stock.posted.length = movementCount;
 				for (const entry of snapshot) {
 					entry.row.status = entry.status;
 					entry.row.postedAt = entry.postedAt;
@@ -244,16 +299,25 @@ function build(onHand: Record<string, string> = {}) {
 				throw error;
 			}
 		},
+		// Drizzle-bun-sql returns an array-like result; `undefined` is replaced
+		// by the caller's own value, so a non-null marker is enough here.
+		$(pieces: TemplateStringsArray) {
+			void pieces;
+			return [] as unknown[];
+		},
 	} as never;
 
 	container.register(ADJUSTMENT_REPOSITORY_TOKEN, { useValue: adjustments });
-	container.register(PRODUCT_REPOSITORY_TOKEN, { useValue: items });
-	container.register(STOCK_SERVICE_TOKEN, { useValue: stock.service });
+	// The ledger double is registered on the seam the service resolves and is
+	// then handed to the constructor. The token is typed to the whole
+	// `StockService`, so — like the other suites' facade doubles — the
+	// three-method stand-in is registered as a structural double.
+	container.registerInstance(STOCK_SERVICE_TOKEN, stock.service as never);
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useValue: new AdjustmentService(
 			adjustments as unknown as IAdjustmentRepository,
-			items,
-			stock.service,
+			products.facade,
+			container.resolve(STOCK_SERVICE_TOKEN),
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,
@@ -287,6 +351,22 @@ async function approved(id: string): Promise<void> {
 	await service.approve(id, ORG_A, actor(APPROVER));
 }
 
+/**
+ * Rebuilds the world, keeping the logging double a test already references.
+ *
+ * @remarks
+ * `stock.posted` is captured per build, so a test that re-seeds the balances
+ * mid-test must be holding the *new* recorder, not the one it built before.
+ * The setup inside {@link build} is synchronous, so no `await` can be split.
+ */
+function seedWorld(onHand: Record<string, string>): {
+	stock: ReturnType<typeof fakeStock>;
+	adjustments: ReturnType<typeof fakeAdjustments>;
+} {
+	// `build` replaces both bindings; read them after it ran, not before.
+	build(onHand);
+	return { stock, adjustments };
+}
 describe('adjustment — lifecycle', () => {
 	test('a new adjustment starts as a draft owned by the raising tenant', async () => {
 		const detail = await service.findDetail(await raise(), ORG_A);
@@ -317,18 +397,11 @@ describe('adjustment — lifecycle', () => {
 
 		// Make the very first movement fail mid-transaction (simulating a
 		// serialization failure or insufficient stock under the FOR UPDATE
-		// lock). Mutate the live double: the service captured it at build.
-		const healthyPost = (stock.service as unknown as {
-			postMovement: (input: TPostMovementInput) => Promise<unknown>;
-		}).postMovement;
-		(stock.service as unknown as {
-			postMovement: () => Promise<never>;
-		}).postMovement = async () => {
-			throw new Error('boom');
-		};
-		await expect(
-			service.post(id, ORG_A, actor(APPROVER)),
-		).rejects.toThrow('boom');
+		// lock).
+		stock.service.failNextPost('boom');
+		await expect(service.post(id, ORG_A, actor(APPROVER))).rejects.toThrow(
+			'boom',
+		);
 
 		// The claim must have rolled back with the transaction: the document
 		// is still approved, not stuck in `posted` with zero movements.
@@ -337,9 +410,7 @@ describe('adjustment — lifecycle', () => {
 		expect(after.adjustment.postedAt).toBeNull();
 
 		// Re-post with the healthy stock double succeeds.
-		(stock.service as unknown as {
-			postMovement: (input: TPostMovementInput) => Promise<unknown>;
-		}).postMovement = healthyPost;
+		stock.service.healPosts();
 		const posted = await service.post(id, ORG_A, actor(APPROVER));
 		expect(posted.adjustment.status).toBe('posted');
 		expect(stock.posted.length).toBeGreaterThan(0);
@@ -367,9 +438,9 @@ describe('adjustment — lifecycle', () => {
 
 		const cancelledId = await raise();
 		await service.cancel(cancelledId, ORG_A);
-		await expect(
-			service.submit(cancelledId, ORG_A),
-		).rejects.toBeInstanceOf(AdjustmentTransitionError);
+		await expect(service.submit(cancelledId, ORG_A)).rejects.toBeInstanceOf(
+			AdjustmentTransitionError,
+		);
 	});
 
 	test('an adjustment with no lines cannot be raised', async () => {
@@ -391,6 +462,67 @@ describe('adjustment — lifecycle', () => {
 		await expect(service.submit(id, ORG_B)).rejects.toBeInstanceOf(
 			AdjustmentNotFoundError,
 		);
+	});
+});
+
+describe('adjustment — lines are validated against the product module (ADR-0026)', () => {
+	test('an unknown product is refused by the product contract before any write', async () => {
+		// ADR-0026: the product id is a logical reference validated by the
+		// owning module's façade, so the refusal is the product module's own
+		// `ProductNotFoundError` (404) — inventory does not translate it.
+		await expect(
+			service.create(
+				ORG_A,
+				{
+					warehouseId: WAREHOUSE_ID,
+					adjustmentType: 'recount',
+					lines: [
+						{
+							productId: '01920000-0000-7000-8000-00000000dead',
+							quantityAfter: '1.000',
+						},
+					],
+				},
+				actor(REQUESTER),
+			),
+		).rejects.toBeInstanceOf(ProductNotFoundError);
+		// The header row was written inside the create transaction and the
+		// failed line validation rolled it back with it.
+		expect(adjustments.documents).toHaveLength(0);
+		expect(adjustments.lines).toHaveLength(0);
+	});
+
+	test('every line is asserted through the product facade exactly once', async () => {
+		await service.create(
+			ORG_A,
+			{
+				warehouseId: WAREHOUSE_ID,
+				adjustmentType: 'recount',
+				lines: [
+					{ productId: ITEM_ID, quantityAfter: '1.000' },
+					{ productId: ITEM_ID_2, quantityAfter: '2.000' },
+				],
+			},
+			actor(REQUESTER),
+		);
+		expect(products.asserted).toEqual([ITEM_ID, ITEM_ID_2]);
+	});
+
+	test('two lines for one product and bin are refused', async () => {
+		await expect(
+			service.create(
+				ORG_A,
+				{
+					warehouseId: WAREHOUSE_ID,
+					adjustmentType: 'recount',
+					lines: [
+						{ productId: ITEM_ID, quantityAfter: '1.000' },
+						{ productId: ITEM_ID, quantityAfter: '2.000' },
+					],
+				},
+				actor(REQUESTER),
+			),
+		).rejects.toBeInstanceOf(AdjustmentTransitionError);
 	});
 });
 
@@ -470,7 +602,7 @@ describe('adjustment — the state machine refuses every illegal edge', () => {
 			// with its own test, not a state-machine edge.
 			if (from === 'posted' && to === 'posted') continue;
 
-			const legal = LEGAL[from].includes(to);
+			const legal = LEGAL[from]!.includes(to);
 			const label = legal ? 'allows' : 'refuses';
 
 			test(`${label} ${from} → ${to}`, async () => {
@@ -483,9 +615,7 @@ describe('adjustment — the state machine refuses every illegal edge', () => {
 				if (legal) {
 					await run;
 				} else {
-					await expect(run).rejects.toBeInstanceOf(
-						AdjustmentTransitionError,
-					);
+					await expect(run).rejects.toBeInstanceOf(AdjustmentTransitionError);
 				}
 			});
 		}
@@ -510,11 +640,7 @@ describe('adjustment — self-approval', () => {
 		const id = await raise();
 		await service.submit(id, ORG_A);
 
-		const document = await service.approve(
-			id,
-			ORG_A,
-			actor(REQUESTER, true),
-		);
+		const document = await service.approve(id, ORG_A, actor(REQUESTER, true));
 		expect(document.status).toBe('approved');
 	});
 
@@ -530,14 +656,14 @@ describe('adjustment — self-approval', () => {
 
 describe('adjustment — posting writes one movement per CHANGED line', () => {
 	test('an increase posts exactly one adjustment_in', async () => {
-		build({ [ITEM_ID]: '4.000' });
+		const world = seedWorld({ [ITEM_ID]: '4.000' });
 		const id = await raise('10.000');
 		await approved(id);
 
 		await service.post(id, ORG_A, actor(APPROVER));
 
-		expect(stock.posted).toHaveLength(1);
-		expect(stock.posted[0]).toMatchObject({
+		expect(world.stock.posted).toHaveLength(1);
+		expect(world.stock.posted[0]).toMatchObject({
 			movementType: 'adjustment_in',
 			// The DELTA (10 - 4), not the counted total.
 			quantity: '6.000',
@@ -549,63 +675,78 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 	});
 
 	test('a decrease posts exactly one adjustment_out', async () => {
-		build({ [ITEM_ID]: '10.000' });
+		const world = seedWorld({ [ITEM_ID]: '10.000' });
 		const id = await raise('3.000');
 		await approved(id);
 
 		await service.post(id, ORG_A, actor(APPROVER));
 
-		expect(stock.posted).toHaveLength(1);
-		expect(stock.posted[0]).toMatchObject({
+		expect(world.stock.posted).toHaveLength(1);
+		expect(world.stock.posted[0]).toMatchObject({
 			movementType: 'adjustment_out',
 			quantity: '7.000',
 		});
 	});
 
 	test('opening stock: an increase enters at the line cost; a decrease at the average', async () => {
-		build({ [ITEM_ID]: '0.000' });
+		const opening = seedWorld({ [ITEM_ID]: '0.000' });
 		const detail = await service.create(
 			ORG_A,
 			{
 				warehouseId: WAREHOUSE_ID,
 				adjustmentType: 'increase',
 				reasonCode: 'opening_stock',
-				lines: [{ productId: ITEM_ID, quantityAfter: '5.000', unitCost: 1_250_000 }],
+				lines: [
+					{ productId: ITEM_ID, quantityAfter: '5.000', unitCost: 1_250_000 },
+				],
 			},
 			actor(REQUESTER),
 		);
 		expect(detail.lines[0]).toMatchObject({ unitCost: 1_250_000 });
 		await approved(detail.adjustment.id);
 		await service.post(detail.adjustment.id, ORG_A, actor(APPROVER));
-		expect(stock.posted[0]).toMatchObject({ movementType: 'adjustment_in', quantity: '5.000', unitCost: 1_250_000 });
+		expect(opening.stock.posted[0]).toMatchObject({
+			movementType: 'adjustment_in',
+			quantity: '5.000',
+			unitCost: 1_250_000,
+		});
 
-		build({ [ITEM_ID]: '10.000' });
+		const closing = seedWorld({ [ITEM_ID]: '10.000' });
 		const down = await service.create(
 			ORG_A,
-			{ warehouseId: WAREHOUSE_ID, adjustmentType: 'decrease', lines: [{ productId: ITEM_ID, quantityAfter: '8.000', unitCost: 99 }] },
+			{
+				warehouseId: WAREHOUSE_ID,
+				adjustmentType: 'decrease',
+				lines: [
+					{ productId: ITEM_ID, quantityAfter: '8.000', unitCost: 99 },
+				],
+			},
 			actor(REQUESTER),
 		);
 		await approved(down.adjustment.id);
 		await service.post(down.adjustment.id, ORG_A, actor(APPROVER));
-		expect(stock.posted[0]).toMatchObject({ movementType: 'adjustment_out', unitCost: null });
+		expect(closing.stock.posted[0]).toMatchObject({
+			movementType: 'adjustment_out',
+			unitCost: null,
+		});
 	});
 
 	test('a recount that agrees posts NOTHING but still reaches posted', async () => {
-		build({ [ITEM_ID]: '5.000' });
+		const world = seedWorld({ [ITEM_ID]: '5.000' });
 		const id = await raise('5.000');
 		await approved(id);
 
-		const result = await service.post(id, ORG_A, actor(APPROVER));
-
 		// `stock_movements_quantity_check` forbids quantity = 0, and "the count
 		// agreed" is not a movement.
-		expect(stock.posted).toHaveLength(0);
+		expect(world.stock.posted).toHaveLength(0);
+		const result = await service.post(id, ORG_A, actor(APPROVER));
 		expect(result.adjustment.status).toBe('posted');
 		expect(result.adjustment.postedAt).not.toBeNull();
+		expect(world.stock.posted).toHaveLength(0);
 	});
 
 	test('only the changed lines of a mixed document post', async () => {
-		build({ [ITEM_ID]: '5.000', [ITEM_ID_2]: '2.000' });
+		const world = seedWorld({ [ITEM_ID]: '5.000', [ITEM_ID_2]: '2.000' });
 		const detail = await service.create(
 			ORG_A,
 			{
@@ -619,28 +760,30 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 			actor(REQUESTER),
 		);
 		await approved(detail.adjustment.id);
+		// Raising and approving posts nothing: the ledger only moves on post.
+		expect(world.stock.posted).toHaveLength(0);
 
 		await service.post(detail.adjustment.id, ORG_A, actor(APPROVER));
 
-		expect(stock.posted).toHaveLength(1);
-		expect(stock.posted[0]).toMatchObject({
+		expect(world.stock.posted).toHaveLength(1);
+		expect(world.stock.posted[0]).toMatchObject({
 			productId: ITEM_ID_2,
 			quantity: '7.000',
 		});
 	});
 
 	test('an empty balance counts as zero, not as an error', async () => {
-		build({});
+		const world = seedWorld({});
 		const id = await raise('8.000');
 		await approved(id);
 
 		await service.post(id, ORG_A, actor(APPROVER));
 
-		expect(stock.posted[0]).toMatchObject({ quantity: '8.000' });
+		expect(world.stock.posted[0]).toMatchObject({ quantity: '8.000' });
 	});
 
 	test('posting twice does not write the movements twice', async () => {
-		build({ [ITEM_ID]: '0.000' });
+		const world = seedWorld({ [ITEM_ID]: '0.000' });
 		const id = await raise('10.000');
 		await approved(id);
 
@@ -648,14 +791,14 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 		await service.post(id, ORG_A, actor(APPROVER));
 
 		// `posted_at IS NOT NULL` is the idempotency guard.
-		expect(stock.posted).toHaveLength(1);
+		expect(world.stock.posted).toHaveLength(1);
 	});
 
 	test('the stored snapshot records what the system believed at raise time', async () => {
-		build({ [ITEM_ID]: '4.000' });
+		seedWorld({ [ITEM_ID]: '4.000' });
 		const detail = await service.findDetail(await raise('10.000'), ORG_A);
 
-		expect(detail.lines[0].quantityBefore).toBe('4.000');
-		expect(detail.lines[0].quantityAfter).toBe('10.000');
+		expect(detail.lines[0]!.quantityBefore).toBe('4.000');
+		expect(detail.lines[0]!.quantityAfter).toBe('10.000');
 	});
 });

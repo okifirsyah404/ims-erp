@@ -1,6 +1,6 @@
 Project "ENTRAGATE ERP" {
   database_type: 'PostgreSQL'
-  Note: "Canonical persistence contract for ENTRAGATE ERP (ADR-0024 baseline v2). 18 Postgres schemas for 20 modules: 18 modules own one schema each, `auth` is shared by the `user` and `organization` modules because Better Auth owns it, and the `webhook` module owns no schema at all. Module isolation is a hard rule: a Ref may only connect tables owned by the same schema, and every module owns exactly one schema. Cross-module links are nullable logical id columns plus a column note (ADR-0014), never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums. Document numbering is one `<schema>.code_numberings` table per schema that allocates codes (ADR-0024 Q6) - there is no shared code_number schema. Partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Composite tenant foreign keys are not used: the tenant match of a row and the rows it references is enforced by the owning module's resolve/assert contract methods. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one. Tables marked `status: target` in their Note are listed by the owner but not built yet (ADR-0024 Q22)."
+  Note: "Canonical persistence contract for ENTRAGATE ERP (ADR-0024 baseline v2). 20 Postgres schemas for 22 modules: 20 modules own one schema each (product and warehouse were split out of inventory by ADR-0026), `auth` is shared by the `user` and `organization` modules because Better Auth owns it, and the `webhook` module owns no schema at all. Module isolation is a hard rule: a Ref may only connect tables owned by the same schema, and every module owns exactly one schema. Cross-module links are nullable logical id columns plus a column note (ADR-0014), never a foreign key. Datetimes are unix milliseconds in bigint. Money is exact integer IDR minor units in bigint plus a currency_code column. Tenant scope is organization_id (text, references auth.organizations.id logically). Soft delete is deleted_at (bigint, nullable) on every business table except append-only ledgers and projections, which document their exemption in their table note. Status vocabularies are text guarded by Checks blocks, never native enums. Document numbering is one `<schema>.code_numberings` table per schema that allocates codes (ADR-0024 Q6) - there is no shared code_number schema. Partial unique indexes for soft-deleted codes are implemented directly in the Drizzle schema files, which DBML cannot express. Composite tenant foreign keys are not used: the tenant match of a row and the rows it references is enforced by the owning module's resolve/assert contract methods. Better Auth owned tables (auth.users, auth.sessions, auth.accounts, auth.verifications, auth.organizations, auth.members, auth.invitations, auth.passkeys, auth.apikeys) are the exception to the soft-delete rule: only auth.users and auth.organizations carry deleted_at, the rest are hard deleted by Better Auth itself, so their tables must never gain a deleted_at column nor be queried with one. Tables marked `status: target` in their Note are listed by the owner but not built yet (ADR-0024 Q22)."
 }
 
 TableGroup "Identity" {
@@ -49,9 +49,25 @@ TableGroup "Supplier" {
   supplier.code_numberings
 }
 
+TableGroup "Product" {
+  product.products
+  product.product_categories
+  product.settings
+  product.code_numberings
+}
+
+TableGroup "Warehouse" {
+  warehouse.warehouses
+  warehouse.warehouse_addresses
+  warehouse.warehouse_storages
+  warehouse.warehouse_managers
+  warehouse.warehouse_organizations
+  warehouse.warehouse_settings
+  warehouse.settings
+  warehouse.code_numberings
+}
+
 TableGroup "Inventory" {
-  inventory.products
-  inventory.product_categories
   inventory.item_serials
   inventory.items
   inventory.item_categories
@@ -70,12 +86,6 @@ TableGroup "Inventory" {
   inventory.disposals
   inventory.tool_sets
   inventory.tool_set_items
-  inventory.warehouses
-  inventory.warehouse_addresses
-  inventory.warehouse_storages
-  inventory.warehouse_managers
-  inventory.warehouse_organizations
-  inventory.warehouse_settings
   inventory.settings
   inventory.code_numberings
 }
@@ -964,23 +974,18 @@ Ref: supplier.addresses.supplier_id > supplier.suppliers.id [delete: cascade]
 Ref: supplier.company_addresses.company_id > supplier.companies.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
-// MODULE: Inventory  (schema: inventory; absorbs `assets` and `catalog`).
-// ADR-0024 Q14/Q15/Q24-Q27:
-//   products        = stocked/sold SKU master (was inventory.items) + the
-//                     website listing columns of catalog.web_listings (1:1)
-//   item_serials    = serial units of a product (was serial_tracked_items)
-//   items           = one row per physical tool/asset unit (was assets.assets)
-//   movements       = the stock ledger and the asset location trail merged
-//   stocks          = balance projection (was stock_balances)
-// Borrowing lives here again (was assets.borrowings), split into the request
-// and the issue document. `organization_id` stays nullable per table: NULL
-// means global/company-wide (ADR-0008 scope rule).
+// MODULE: Product  (schema: product; split out of inventory by ADR-0026).
+// Owns the product (SKU) master with its website listing columns, the product
+// categories, the module settings and the product code series. Stock balances,
+// the stock ledger and serial units stay in `inventory`, which references
+// product.products through plain nullable ids (ADR-0014); product reads stock
+// availability and serial counts back through ExportedInventoryService.
 // ---------------------------------------------------------------------------
 
-Table inventory.products {
+Table product.products {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id; cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null, note: "Human reference from the numbering authority (item_product -> PRD-00001, item_material -> MAT-00001, item_component -> CMP-00001). Immutable after create."]
+  code varchar(32) [not null, note: "Human reference from the numbering authority (item_product -> PRD-<company>-00001, item_material -> MAT-<company>-00001, item_component -> CMP-<company>-00001; ADR-0026). Immutable after create."]
   sku varchar(64) [not null, note: "Manufacturer/business SKU, typed by the user. Unique per tenant; immutable after create."]
   serial_number text [note: "Optional manufacturer serial of a serialized product master. Per-unit serials stay in inventory.item_serials."]
   name text [not null]
@@ -1035,7 +1040,7 @@ Table inventory.products {
   }
 }
 
-Table inventory.product_categories {
+Table product.product_categories {
   id uuid [pk, default: `uuidv7()`]
   slug varchar(64) [not null, note: "Matches the public website's category slug."]
   name varchar(120) [not null]
@@ -1049,16 +1054,231 @@ Table inventory.product_categories {
   Note: "Product category, one level, company-wide (ADR-0011): no organization_id. Was inventory.item_categories. A category with live products cannot be archived."
 }
 
+Table product.settings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  setting_group text [not null]
+  setting_key text [not null]
+  setting_value text
+  value_type text [not null, default: 'string']
+  description text
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint
+  Note: "Product module configuration key value store (ADR-0024 Q27)."
+  Indexes {
+    (setting_group, setting_key) [unique, name: 'product_settings_scope_uq']
+  }
+  Checks {
+    `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
+  }
+}
+
+Table product.code_numberings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  code_type varchar(32) [not null, note: "item_product, item_material, item_component."]
+  pattern varchar(100)
+  reset_policy text
+  period_key varchar(7) [not null]
+  next_number bigint [not null, default: 1]
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Code series of the product module (ADR-0026). Default pattern {TYPE}-{COMPANY}-{SEQ:5}, never reset."
+  Checks {
+    `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
+    `next_number > 0`
+  }
+}
+
+Ref: product.products.product_category_id > product.product_categories.id [delete: restrict]
+
+// ---------------------------------------------------------------------------
+// MODULE: Warehouse  (schema: warehouse; split out of inventory by ADR-0026).
+// Owns the physical estate: warehouses, their address, storages (bins), the
+// person-in-charge and organization links, per-warehouse and module settings
+// and the warehouse code series. Stock lives in `inventory`, which references
+// warehouses and storages through plain nullable ids (ADR-0014). Warehouses are
+// global (organization_id frozen at NULL, ADR-0010).
+// ---------------------------------------------------------------------------
+
+Table warehouse.warehouses {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Frozen at NULL (ADR-0010): every warehouse is global; organization access comes from warehouse_organizations. Column kept because migrations are append-only."]
+  code varchar(32) [not null]
+  name text [not null]
+  responsible_employee_id uuid [note: "Display-only person in charge (ADR-0010); grants no access. Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract."]
+  is_default boolean [not null, default: false]
+  is_active boolean [not null, default: true]
+  image_url text
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Warehouse master. Address fields live in warehouse_addresses (strict 1:1). Writes are application-admin-only. Organization access is granted by warehouse_organizations links (ADR-0010)."
+  Indexes {
+    (organization_id, code) [unique, name: 'warehouses_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
+    (code) [unique, name: 'warehouses_global_code_uq', note: 'WHERE organization_id IS NULL']
+    is_default [name: 'warehouses_is_default_idx']
+    is_active [name: 'warehouses_is_active_idx']
+  }
+}
+
+Table warehouse.warehouse_addresses {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  label text
+  address_line text [not null]
+  rt varchar(8)
+  rw varchar(8)
+  postal_code varchar(10)
+  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated by ExportedLocationService.assertVillage on write; district, regency and province are derived through ExportedLocationService.resolveVillagePath (ADR-0024 Q10)."]
+  latitude numeric(10,7)
+  longitude numeric(10,7)
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Warehouse address, strictly 1:1 with warehouses. Structured per ADR-0003/ADR-0024 Q10: free-text address_line plus a village-level logical reference."
+  Indexes {
+    warehouse_id [unique, name: 'warehouse_addresses_warehouse_uq']
+    village_id [name: 'warehouse_addresses_village_id_idx']
+  }
+}
+
+Table warehouse.warehouse_storages {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  code varchar(32) [not null]
+  name text
+  bin_type text
+  capacity numeric(18,3)
+  is_active boolean [not null, default: true]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Storage location (bin) inside a warehouse. Storage is one level deep: warehouse -> storage, there is no zone level (ADR-0008)."
+  Indexes {
+    warehouse_id [name: 'warehouse_storages_warehouse_id_idx']
+    (warehouse_id, code) [unique, name: 'warehouse_storages_warehouse_code_uq', note: 'WHERE deleted_at IS NULL']
+  }
+}
+
+Table warehouse.warehouse_managers {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  user_id text [note: "The person in charge. Logical reference to auth.users.id; cross-module FK intentionally omitted (ADR-0014). A NULL row grants nothing."]
+  assigned_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Per-user, per-warehouse person-in-charge grant (ADR-0017). It is not an organization role and grants no stock operation; create stays application-admin-only."
+  Indexes {
+    (warehouse_id, user_id) [unique, name: 'warehouse_managers_uq', note: 'WHERE deleted_at IS NULL']
+    user_id [name: 'warehouse_managers_user_id_idx']
+  }
+}
+
+Table warehouse.warehouse_organizations {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Many-to-many link granting an organization access to a global warehouse (ADR-0010). Link writes are application-admin-only and audited; unlink is rejected while the organization has open borrowings in the warehouse."
+  Indexes {
+    (warehouse_id, organization_id) [unique, name: 'warehouse_organizations_uq', note: 'WHERE deleted_at IS NULL']
+    organization_id [name: 'warehouse_organizations_organization_id_idx']
+  }
+}
+
+Table warehouse.warehouse_settings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  setting_key text [not null]
+  setting_value text
+  value_type text [not null, default: 'string']
+  description text
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint
+  Note: "Per-warehouse configuration key value store (ADR-0024 Q27). Module-wide configuration lives in warehouse.settings."
+  Indexes {
+    (warehouse_id, setting_key) [unique, name: 'warehouse_settings_uq']
+  }
+  Checks {
+    `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
+  }
+}
+
+Table warehouse.settings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  setting_group text [not null]
+  setting_key text [not null]
+  setting_value text
+  value_type text [not null, default: 'string']
+  description text
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint
+  Note: "Warehouse module configuration key value store (ADR-0024 Q27)."
+  Indexes {
+    (setting_group, setting_key) [unique, name: 'warehouse_settings_scope_uq']
+  }
+  Checks {
+    `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
+  }
+}
+
+Table warehouse.code_numberings {
+  deleted_at bigint
+  id uuid [pk, default: `uuidv7()`]
+  code_type varchar(32) [not null, note: "warehouse."]
+  pattern varchar(100)
+  reset_policy text
+  period_key varchar(7) [not null]
+  next_number bigint [not null, default: 1]
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  Note: "Code series of the warehouse module (ADR-0026). Default pattern {TYPE}-{COMPANY}-{SEQ:4}, never reset."
+  Checks {
+    `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
+    `next_number > 0`
+  }
+}
+
+Ref: warehouse.warehouse_addresses.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_storages.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_managers.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_organizations.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_settings.warehouse_id > warehouse.warehouses.id [delete: cascade]
+
+// ---------------------------------------------------------------------------
+// MODULE: Inventory  (schema: inventory; absorbs `assets`; the product master
+// and the warehouses moved to the `product` and `warehouse` modules, ADR-0026).
+// ADR-0024 Q14/Q15/Q24-Q27:
+//   item_serials    = serial units of a product (was serial_tracked_items)
+//   items           = one row per physical tool/asset unit (was assets.assets)
+//   movements       = the stock ledger and the asset location trail merged
+//   stocks          = balance projection (was stock_balances)
+// Borrowing lives here again (was assets.borrowings), split into the request
+// and the issue document. `organization_id` stays nullable per table: NULL
+// means global/company-wide (ADR-0008 scope rule).
+// ---------------------------------------------------------------------------
+
 Table inventory.item_serials {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  product_id uuid [not null]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
   serial_number text [not null]
   is_provisional_serial boolean [not null, default: false, note: "A pre-ordered unit carries a PO-... serial until it is received. Replaced exactly once."]
   asset_tag text
   status text [not null, default: 'in_stock']
-  warehouse_id uuid [note: "NULL while the unit is lost."]
-  bin_id uuid
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract. NULL while the unit is lost."]
+  bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
   acquired_on date
   warranty_expires_on date
   purchase_order_line_id uuid [note: "Logical reference to the procurement line this unit was ordered on. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
@@ -1107,8 +1327,8 @@ Table inventory.items {
   status text [not null, default: 'ready']
   deactivation_reason text [note: "Required exactly when status = 'inactive'."]
   location_description text [note: "Off-site / non-warehouse location; may be set together with warehouse_id/storage_id."]
-  warehouse_id uuid [note: "Current warehouse of the physical unit; NULL while borrowed, disposed or lost."]
-  storage_id uuid [note: "Storage (bin) inside warehouse_id; a storage id always implies its warehouse_id."]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract. Current warehouse of the physical unit; NULL while borrowed, disposed or lost."]
+  storage_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract. Storage (bin) inside warehouse_id; a storage id always implies its warehouse_id."]
   custodian_employee_id uuid [note: "Written denormalisation of the open borrowing's borrower, produced only by syncCustody; never accepted from a request body. Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract."]
   borrowed_since bigint
   supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
@@ -1171,7 +1391,7 @@ Table inventory.item_categories {
 Table inventory.documents {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide. Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  product_id uuid [note: "Exactly one of product_id / item_id is set."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract. Exactly one of product_id / item_id is set."]
   item_id uuid [note: "Exactly one of product_id / item_id is set."]
   document_type text [not null]
   object_key text [not null, note: "Object-storage key; never a public URL."]
@@ -1200,12 +1420,12 @@ Table inventory.movements {
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   movement_type text [not null]
-  product_id uuid [note: "Exactly one of product_id / item_id is set (ADR-0024 Q24)."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract. Exactly one of product_id / item_id is set (ADR-0024 Q24)."]
   item_id uuid [note: "Exactly one of product_id / item_id is set. An item movement is always quantity 1."]
-  warehouse_id uuid [note: "Source warehouse (product moves) or the warehouse the item left / entered."]
-  bin_id uuid
-  target_warehouse_id uuid [note: "Transfer destination warehouse; required for transfer_in / transfer_out."]
-  target_bin_id uuid
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract. Source warehouse (product moves) or the warehouse the item left / entered."]
+  bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
+  target_warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract. Transfer destination warehouse; required for transfer_in / transfer_out."]
+  target_bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
   from_location text [note: "Free-text off-site detail of an item movement."]
   to_location text [note: "Free-text off-site detail of an item movement."]
   quantity numeric(18,3) [not null]
@@ -1240,9 +1460,9 @@ Table inventory.movements {
 Table inventory.stocks {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Null means global/company-wide (ADR-0008). Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  product_id uuid [not null]
-  warehouse_id uuid [not null]
-  bin_id uuid
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
+  bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
   quantity_on_hand numeric(18,3) [not null, default: 0]
   quantity_reserved numeric(18,3) [not null, default: 0]
   quantity_available numeric(18,3) [not null, default: 0]
@@ -1268,7 +1488,7 @@ Table inventory.stock_adjustments {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
-  warehouse_id uuid [not null]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
   adjustment_type text [not null]
   status text [not null, default: 'draft']
   reason_code text
@@ -1297,8 +1517,8 @@ Table inventory.stock_adjustment_items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   stock_adjustment_id uuid [not null]
-  product_id uuid [not null]
-  bin_id uuid
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
+  bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
   quantity_before numeric(18,3) [not null, default: 0]
   quantity_after numeric(18,3) [not null, default: 0]
   unit_cost bigint [note: "Cost an increase enters stock at (IDR minor units; opening stock). Null = the current moving average. Ignored for decreases."]
@@ -1594,115 +1814,6 @@ Table inventory.tool_set_items {
   }
 }
 
-Table inventory.warehouses {
-  id uuid [pk, default: `uuidv7()`]
-  organization_id text [note: "Frozen at NULL (ADR-0010): every warehouse is global; organization access comes from warehouse_organizations. Column kept because migrations are append-only."]
-  code varchar(32) [not null]
-  name text [not null]
-  responsible_employee_id uuid [note: "Display-only person in charge (ADR-0010); grants no access. Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract."]
-  is_default boolean [not null, default: false]
-  is_active boolean [not null, default: true]
-  image_url text
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "Warehouse master. Address fields live in warehouse_addresses (strict 1:1). Writes are application-admin-only. Organization access is granted by warehouse_organizations links (ADR-0010)."
-  Indexes {
-    (organization_id, code) [unique, name: 'warehouses_org_code_uq', note: 'WHERE organization_id IS NOT NULL']
-    (code) [unique, name: 'warehouses_global_code_uq', note: 'WHERE organization_id IS NULL']
-    is_default [name: 'warehouses_is_default_idx']
-    is_active [name: 'warehouses_is_active_idx']
-  }
-}
-
-Table inventory.warehouse_addresses {
-  id uuid [pk, default: `uuidv7()`]
-  warehouse_id uuid [not null]
-  label text
-  address_line text [not null]
-  rt varchar(8)
-  rw varchar(8)
-  postal_code varchar(10)
-  village_id uuid [note: "Logical reference to location.villages.id. Cross-module FK intentionally omitted. Validated by ExportedLocationService.assertVillage on write; district, regency and province are derived through ExportedLocationService.resolveVillagePath (ADR-0024 Q10)."]
-  latitude numeric(10,7)
-  longitude numeric(10,7)
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "Warehouse address, strictly 1:1 with warehouses. Structured per ADR-0003/ADR-0024 Q10: free-text address_line plus a village-level logical reference."
-  Indexes {
-    warehouse_id [unique, name: 'warehouse_addresses_warehouse_uq']
-    village_id [name: 'warehouse_addresses_village_id_idx']
-  }
-}
-
-Table inventory.warehouse_storages {
-  id uuid [pk, default: `uuidv7()`]
-  warehouse_id uuid [not null]
-  code varchar(32) [not null]
-  name text
-  bin_type text
-  capacity numeric(18,3)
-  is_active boolean [not null, default: true]
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "Storage location (bin) inside a warehouse. Storage is one level deep: warehouse -> storage, there is no zone level (ADR-0008)."
-  Indexes {
-    warehouse_id [name: 'warehouse_storages_warehouse_id_idx']
-    (warehouse_id, code) [unique, name: 'warehouse_storages_warehouse_code_uq', note: 'WHERE deleted_at IS NULL']
-  }
-}
-
-Table inventory.warehouse_managers {
-  id uuid [pk, default: `uuidv7()`]
-  warehouse_id uuid [not null]
-  user_id text [note: "The person in charge. Logical reference to auth.users.id; cross-module FK intentionally omitted (ADR-0014). A NULL row grants nothing."]
-  assigned_by text [note: "Logical reference to auth.users.id."]
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "Per-user, per-warehouse person-in-charge grant (ADR-0017). It is not an organization role and grants no stock operation; create stays application-admin-only."
-  Indexes {
-    (warehouse_id, user_id) [unique, name: 'warehouse_managers_uq', note: 'WHERE deleted_at IS NULL']
-    user_id [name: 'warehouse_managers_user_id_idx']
-  }
-}
-
-Table inventory.warehouse_organizations {
-  id uuid [pk, default: `uuidv7()`]
-  warehouse_id uuid [not null]
-  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  created_at bigint [not null]
-  updated_at bigint
-  deleted_at bigint
-  Note: "Many-to-many link granting an organization access to a global warehouse (ADR-0010). Link writes are application-admin-only and audited; unlink is rejected while the organization has open borrowings in the warehouse."
-  Indexes {
-    (warehouse_id, organization_id) [unique, name: 'warehouse_organizations_uq', note: 'WHERE deleted_at IS NULL']
-    organization_id [name: 'warehouse_organizations_organization_id_idx']
-  }
-}
-
-Table inventory.warehouse_settings {
-  deleted_at bigint
-  id uuid [pk, default: `uuidv7()`]
-  warehouse_id uuid [not null]
-  setting_key text [not null]
-  setting_value text
-  value_type text [not null, default: 'string']
-  description text
-  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
-  created_at bigint [not null]
-  updated_at bigint
-  Note: "Per-warehouse configuration key value store (ADR-0024 Q27). Module-wide configuration lives in inventory.settings."
-  Indexes {
-    (warehouse_id, setting_key) [unique, name: 'warehouse_settings_uq']
-  }
-  Checks {
-    `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
-  }
-}
-
 Table inventory.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -1726,7 +1837,7 @@ Table inventory.settings {
 Table inventory.code_numberings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
-  code_type varchar(32) [not null, note: "item_product, item_material, item_component, asset, stock_movement, stock_adjustment, borrowing, maintenance, disposal, warehouse, tool_set."]
+  code_type varchar(32) [not null, note: "asset, stock_movement, stock_adjustment, borrowing, maintenance, disposal, tool_set."]
   pattern varchar(100)
   reset_policy text
   period_key varchar(7) [not null]
@@ -1734,33 +1845,17 @@ Table inventory.code_numberings {
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Code series of the inventory module (ADR-0024 Q6). Absorbs the inventory and assets rows of code_number.series."
+  Note: "Code series of the inventory module (ADR-0024 Q6). Absorbs the inventory and assets rows of code_number.series. Product and warehouse codes moved to product.code_numberings and warehouse.code_numberings (ADR-0026)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
   }
 }
 
-Ref: inventory.products.product_category_id > inventory.product_categories.id [delete: restrict]
-Ref: inventory.item_serials.product_id > inventory.products.id [delete: restrict]
-Ref: inventory.item_serials.warehouse_id > inventory.warehouses.id [delete: set null]
-Ref: inventory.item_serials.bin_id > inventory.warehouse_storages.id [delete: set null]
 Ref: inventory.items.item_category_id > inventory.item_categories.id [delete: set null]
-Ref: inventory.items.warehouse_id > inventory.warehouses.id [delete: set null]
-Ref: inventory.items.storage_id > inventory.warehouse_storages.id [delete: set null]
 Ref: inventory.item_categories.parent_category_id > inventory.item_categories.id [delete: set null]
-Ref: inventory.movements.product_id > inventory.products.id [delete: restrict]
 Ref: inventory.movements.item_id > inventory.items.id [delete: restrict]
-Ref: inventory.movements.warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.movements.bin_id > inventory.warehouse_storages.id [delete: set null]
-Ref: inventory.movements.target_warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.movements.target_bin_id > inventory.warehouse_storages.id [delete: set null]
-Ref: inventory.stocks.product_id > inventory.products.id [delete: restrict]
-Ref: inventory.stocks.warehouse_id > inventory.warehouses.id [delete: restrict]
-Ref: inventory.stocks.bin_id > inventory.warehouse_storages.id [delete: set null]
-Ref: inventory.stock_adjustments.warehouse_id > inventory.warehouses.id [delete: restrict]
 Ref: inventory.stock_adjustment_items.stock_adjustment_id > inventory.stock_adjustments.id [delete: cascade]
-Ref: inventory.stock_adjustment_items.product_id > inventory.products.id [delete: restrict]
 Ref: inventory.borrowings.borrowing_request_id > inventory.borrowing_requests.id [delete: restrict]
 Ref: inventory.borrowing_items.borrowing_request_id > inventory.borrowing_requests.id [delete: restrict]
 Ref: inventory.borrowing_items.borrowing_id > inventory.borrowings.id [delete: cascade]
@@ -1773,17 +1868,12 @@ Ref: inventory.condition_checks.item_id > inventory.items.id [delete: cascade]
 Ref: inventory.disposals.item_id > inventory.items.id [delete: restrict]
 Ref: inventory.tool_set_items.tool_set_id > inventory.tool_sets.id [delete: cascade]
 Ref: inventory.tool_set_items.item_id > inventory.items.id [delete: restrict]
-Ref: inventory.warehouse_addresses.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.warehouse_storages.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.warehouse_managers.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.warehouse_organizations.warehouse_id > inventory.warehouses.id [delete: cascade]
-Ref: inventory.warehouse_settings.warehouse_id > inventory.warehouses.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: Sale  (schema: sale, was sales). Quotation -> order -> delivery ->
 // invoice -> receipt. Company-wide (ADR-0011): no organization_id on the
 // quotation/order/delivery tables. `sales.payments` (legacy scaffold) is
-// removed. Item references point at inventory.products; the person on a
+// removed. Item references point at product.products; the person on a
 // document is customer.customers (customer_contact_id is gone).
 // ---------------------------------------------------------------------------
 
@@ -1852,7 +1942,7 @@ Table sale.quotations {
 Table sale.quotation_items {
   id uuid [pk, default: `uuidv7()`]
   quotation_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null = custom line."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract. Null = custom line."]
   sku varchar(64)
   name text [not null, note: "Product name snapshot (printed bold)."]
   specification text [note: "Multi-line specification printed under the name."]
@@ -1951,7 +2041,7 @@ Table sale.order_items {
   id uuid [pk, default: `uuidv7()`]
   order_id uuid [not null]
   quotation_item_id uuid [note: "The SPH line it was copied from."]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null = custom line."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract. Null = custom line."]
   sku varchar(64)
   name text [not null]
   specification text
@@ -2002,8 +2092,8 @@ Table sale.delivery_notes {
   id uuid [pk, default: `uuidv7()`]
   code varchar(32) [not null, note: "Assigned on creation (SJ). Unique among live rows (partial index in the Drizzle schema)."]
   order_id uuid [not null]
-  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  bin_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted."]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
+  bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted."]
   status text [not null, default: 'prepared']
   delivery_date date [not null, note: "Jakarta business date printed as Tanggal."]
   project_name text [note: "Nama Proyek; defaults to the order title."]
@@ -2040,7 +2130,7 @@ Table sale.delivery_note_items {
   id uuid [pk, default: `uuidv7()`]
   delivery_note_id uuid [not null]
   order_item_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Null for a custom order line."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Null for a custom order line."]
   sku varchar(64)
   name text [not null]
   unit varchar(32) [not null]
@@ -2071,7 +2161,7 @@ Table sale.returns {
   delivery_note_id uuid [not null, note: "The shipped delivery note the goods left on; every line returns one of its lines."]
   order_id uuid [not null, note: "The delivery note's order, copied for listing and re-opening."]
   customer_id uuid [note: "Logical reference to customer.customers.id. Cross-module FK intentionally omitted. Validated through the Customer module contract."]
-  warehouse_id uuid [note: "Where the goods come back to; defaults to the delivery note's warehouse. Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted."]
+  warehouse_id uuid [note: "Where the goods come back to; defaults to the delivery note's warehouse. Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted."]
   status text [not null, default: 'draft']
   return_date date [not null]
   reason text [not null]
@@ -2109,7 +2199,7 @@ Table sale.return_items {
   return_id uuid [not null]
   delivery_note_item_id uuid [not null]
   order_item_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
   sku varchar(64)
   name text [not null]
   unit varchar(32) [not null]
@@ -2119,7 +2209,7 @@ Table sale.return_items {
   line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
   serial_numbers jsonb [note: "The returned units of a serialized product, from the delivery line."]
   condition text [note: "Set on receiving: good (sellable again) or damaged."]
-  bin_id uuid [note: "Storage the line was received into. Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted."]
+  bin_id uuid [note: "Storage the line was received into. Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted."]
   movement_id uuid [note: "The return_in movement posted on receiving. Logical reference to inventory.movements.id. Cross-module FK intentionally omitted."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
@@ -2209,7 +2299,7 @@ Table sale.invoice_items {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   invoice_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
   description text
   quantity numeric(18,4) [not null, default: 0]
   unit_price bigint [not null, default: 0]
@@ -2463,7 +2553,7 @@ Table procurement.purchase_requests {
 Table procurement.purchase_request_items {
   id uuid [pk, default: `uuidv7()`]
   purchase_request_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract. Null for a free-text line."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract. Null for a free-text line."]
   sku varchar(64)
   name text [not null]
   specification text
@@ -2544,7 +2634,7 @@ Table procurement.purchase_orders {
 Table procurement.purchase_order_items {
   id uuid [pk, default: `uuidv7()`]
   purchase_order_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
   sku varchar(64) [not null]
   name text [not null]
   specification text
@@ -2575,8 +2665,8 @@ Table procurement.goods_receipts {
   id uuid [pk, default: `uuidv7()`]
   code varchar(32) [not null, note: "Assigned on creation (BPB). Unique among live rows."]
   purchase_order_id uuid [not null]
-  warehouse_id uuid [note: "Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
-  bin_id uuid [note: "Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted."]
+  warehouse_id uuid [note: "Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted. Validated through the Warehouse module contract."]
+  bin_id uuid [note: "Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted."]
   status text [not null, default: 'posted']
   receipt_date date [not null]
   supplier_delivery_ref varchar(100)
@@ -2599,7 +2689,7 @@ Table procurement.goods_receipt_items {
   id uuid [pk, default: `uuidv7()`]
   goods_receipt_id uuid [not null]
   purchase_order_item_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted."]
   sku varchar(64) [not null]
   name text [not null]
   unit varchar(32) [not null]
@@ -2627,8 +2717,8 @@ Table procurement.purchase_returns {
   goods_receipt_id uuid [not null, note: "The BPB the goods came in on; every line returns one of its lines."]
   purchase_order_id uuid [not null, note: "The goods receipt's purchase order, copied for listing and re-opening."]
   supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
-  warehouse_id uuid [note: "The goods receipt's warehouse; stock leaves from here. Logical reference to inventory.warehouses.id. Cross-module FK intentionally omitted."]
-  bin_id uuid [note: "The goods receipt's storage. Logical reference to inventory.warehouse_storages.id. Cross-module FK intentionally omitted."]
+  warehouse_id uuid [note: "The goods receipt's warehouse; stock leaves from here. Logical reference to warehouse.warehouses.id. Cross-module FK intentionally omitted."]
+  bin_id uuid [note: "The goods receipt's storage. Logical reference to warehouse.warehouse_storages.id. Cross-module FK intentionally omitted."]
   status text [not null, default: 'draft']
   return_date date [not null]
   reason text [not null]
@@ -2666,7 +2756,7 @@ Table procurement.purchase_return_items {
   purchase_return_id uuid [not null]
   goods_receipt_item_id uuid [not null]
   purchase_order_item_id uuid [not null]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted."]
   sku varchar(64) [not null]
   name text [not null]
   unit varchar(32) [not null]
@@ -3125,7 +3215,7 @@ Table finance.supplier_bill_items {
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   supplier_bill_id uuid [not null]
   purchase_order_item_id uuid [note: "Logical reference to procurement.purchase_order_items.id. Cross-module FK intentionally omitted."]
-  product_id uuid [note: "Logical reference to inventory.products.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract."]
   name text [not null]
   unit varchar(32) [not null]
   quantity numeric(18,3) [not null]

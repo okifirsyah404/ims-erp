@@ -13,10 +13,6 @@ const OUT = join(import.meta.dir, "logical-references.md");
 const NOTE_RE = /^Logical reference to ([\w]+)\.([\w]+)\.id\. Cross-module FK intentionally omitted\./;
 
 const db = new Parser().parse(readFileSync(SRC, "utf8"), "dbmlv2");
-const moduleOf = (s) =>
-  s === "warehouse" || s === "inventory" ? "Inventory" :
-  s === "auth" ? "Identity" : s;
-
 const tables = [];
 for (const schema of db.schemas) {
   for (const t of schema.tables ?? []) {
@@ -32,8 +28,7 @@ for (const r of tables) {
   if (!r.note) continue;
   const m = r.note.match(NOTE_RE);
   if (!m) continue;
-  const tSchema = m[1] === "warehouses" ? "warehouse" : m[1];
-  refs.push({ source: `${r.schema}.${r.table}`, column: r.field, target: `${tSchema}.${m[2]}` });
+  refs.push({ source: `${r.schema}.${r.table}`, column: r.field, target: `${m[1]}.${m[2]}` });
 }
 
 const byTarget = new Map();
@@ -81,7 +76,7 @@ gen += `\n## The ${byTarget.size} targets in full\n`;
 for (const [target, list] of sortedTargets) {
   const owner = moduleLabel(target);
   const schema = target.split(".")[0];
-  const extra = ""; // warehouses live in the inventory schema since ADR-0024 (no second schema)
+  const extra = ""; // one schema per module (ADR-0026 gave product and warehouse their own)
   gen += `\n### \`${target}.id\` - owner ${owner}${extra}, ${list.length} referring column${list.length === 1 ? "" : "s"}\n\n`;
   for (const line of [...list].sort()) gen += `- \`${line.replace("  ->  ", "`  ->  `")}\`\n`;
 }

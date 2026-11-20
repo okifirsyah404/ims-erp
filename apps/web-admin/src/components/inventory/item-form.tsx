@@ -68,7 +68,7 @@ export function ItemForm({
 	onSubmit: (input: TProductCreateInput | TProductUpdateInput) => void;
 	onCancel: () => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const isEdit = item != null;
 
 	const [sku, setSku] = useState(item?.sku ?? '');
@@ -132,12 +132,12 @@ export function ItemForm({
 			{compact ? null : (
 				<div>
 					<h1 className='text-2xl font-bold'>
-						{isEdit ? t('inventory:form.editItem') : t('inventory:form.newItem')}
+						{isEdit ? t('product:form.editItem') : t('product:form.newItem')}
 					</h1>
 					<p className='text-sm text-muted-foreground'>
 						{isEdit
-							? t('inventory:form.editItemDescription')
-							: t('inventory:form.newItemDescription')}
+							? t('product:form.editItemDescription')
+							: t('product:form.newItemDescription')}
 					</p>
 				</div>
 			)}
@@ -145,23 +145,23 @@ export function ItemForm({
 			<form onSubmit={handleSubmit}>
 			<Card>
 				<CardHeader>
-					<CardTitle>{t('inventory:items.name')}</CardTitle>
-					<CardDescription>{t('inventory:items.description')}</CardDescription>
+					<CardTitle>{t('product:items.name')}</CardTitle>
+					<CardDescription>{t('product:items.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
 						<FieldGroup>
 							{isEdit && (
 								<Field>
-									<FieldLabel htmlFor='code'>{t('inventory:items.code')}</FieldLabel>
+									<FieldLabel htmlFor='code'>{t('product:items.code')}</FieldLabel>
 									<Input id='code' value={item?.code ?? ''} readOnly disabled />
 									<FieldDescription>
-										{t('inventory:items.codeAutoHint')}
+										{t('product:items.codeAutoHint')}
 									</FieldDescription>
 								</Field>
 							)}
 
 							<Field>
-								<FieldLabel htmlFor='sku'>{t('inventory:items.sku')}</FieldLabel>
+								<FieldLabel htmlFor='sku'>{t('product:items.sku')}</FieldLabel>
 								<Input
 									id='sku'
 									value={sku}
@@ -175,7 +175,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='serialNumber'>
-									{t('inventory:items.serialNumber')}
+									{t('product:items.serialNumber')}
 								</FieldLabel>
 								<Input
 									id='serialNumber'
@@ -186,7 +186,7 @@ export function ItemForm({
 							</Field>
 
 							<Field>
-								<FieldLabel htmlFor='name'>{t('inventory:items.name')}</FieldLabel>
+								<FieldLabel htmlFor='name'>{t('product:items.name')}</FieldLabel>
 								<Input
 									id='name'
 									value={name}
@@ -197,7 +197,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='productKind'>
-									{t('inventory:items.kind')}
+									{t('product:items.kind')}
 								</FieldLabel>
 								<Select
 									value={productKind}
@@ -212,7 +212,7 @@ export function ItemForm({
 									<SelectContent>
 										{PRODUCT_KINDS.map((kind) => (
 											<SelectItem key={kind} value={kind}>
-												{t(`inventory:kind.${kind}`)}
+												{t(`product:kind.${kind}`)}
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -221,7 +221,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='category'>
-									{t('inventory:items.category')}
+									{t('product:items.category')}
 								</FieldLabel>
 								<Select
 									value={categoryId === '' ? 'none' : categoryId}
@@ -233,7 +233,7 @@ export function ItemForm({
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value='none'>{t('inventory:items.noCategory')}</SelectItem>
+										<SelectItem value='none'>{t('product:items.noCategory')}</SelectItem>
 										{categoryOptions.map((category) => (
 											<SelectItem key={category.id} value={category.id}>
 												{category.name}
@@ -245,7 +245,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='unitLabel'>
-									{t('inventory:items.unitLabel')}
+									{t('product:items.unitLabel')}
 								</FieldLabel>
 								<Select
 									value={unitLabel}
@@ -265,7 +265,7 @@ export function ItemForm({
 							</Field>
 
 							<Field>
-								<FieldLabel htmlFor='brand'>{t('inventory:items.brand')}</FieldLabel>
+								<FieldLabel htmlFor='brand'>{t('product:items.brand')}</FieldLabel>
 								<Input
 									id='brand'
 									value={brand}
@@ -276,7 +276,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='specification'>
-									{t('inventory:items.specification')}
+									{t('product:items.specification')}
 								</FieldLabel>
 								<Textarea
 									id='specification'
@@ -285,12 +285,12 @@ export function ItemForm({
 									value={specification}
 									onChange={(event) => setSpecification(event.target.value)}
 								/>
-								<FieldDescription>{t('inventory:items.specificationHint')}</FieldDescription>
+								<FieldDescription>{t('product:items.specificationHint')}</FieldDescription>
 							</Field>
 
 							<Field>
 								<FieldLabel htmlFor='barcode'>
-									{t('inventory:items.barcode')}
+									{t('product:items.barcode')}
 								</FieldLabel>
 								<Input
 									id='barcode'
@@ -301,7 +301,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='description'>
-									{t('inventory:items.description_label')}
+									{t('product:items.description_label')}
 								</FieldLabel>
 								<Input
 									id='description'
@@ -312,7 +312,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='minStockQty'>
-									{t('inventory:items.minStockQty')}
+									{t('product:items.minStockQty')}
 								</FieldLabel>
 								<Input
 									id='minStockQty'
@@ -326,7 +326,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='sellingPrice'>
-									{t('inventory:items.sellingPrice')}
+									{t('product:items.sellingPrice')}
 								</FieldLabel>
 								<Input
 									id='sellingPrice'
@@ -340,7 +340,7 @@ export function ItemForm({
 
 							<Field>
 								<FieldLabel htmlFor='purchasePrice'>
-									{t('inventory:items.purchasePrice')}
+									{t('product:items.purchasePrice')}
 								</FieldLabel>
 								<Input
 									id='purchasePrice'
@@ -359,11 +359,11 @@ export function ItemForm({
 									onCheckedChange={(checked) => setIsSerialized(checked === true)}
 								/>
 								<FieldLabel htmlFor='isSerialized'>
-									{t('inventory:items.serialized')}
+									{t('product:items.serialized')}
 								</FieldLabel>
 							</Field>
 							<p className='text-xs text-muted-foreground'>
-								{t('inventory:form.serializedHint')}
+								{t('product:form.serializedHint')}
 							</p>
 
 							<Field orientation='horizontal'>
@@ -376,7 +376,7 @@ export function ItemForm({
 									}
 								/>
 								<FieldLabel htmlFor='isStockTracked'>
-									{t('inventory:items.quantityTracked')}
+									{t('product:items.quantityTracked')}
 								</FieldLabel>
 							</Field>
 
@@ -387,11 +387,11 @@ export function ItemForm({
 									onCheckedChange={(checked) => setIsActive(checked === true)}
 								/>
 								<FieldLabel htmlFor='isActive'>
-									{t('inventory:items.isActive')}
+									{t('product:items.isActive')}
 								</FieldLabel>
 							</Field>
 							<p className='text-xs text-muted-foreground'>
-								{t('inventory:items.isActiveHint')}
+								{t('product:items.isActiveHint')}
 							</p>
 
 						</FieldGroup>
@@ -400,11 +400,11 @@ export function ItemForm({
 					<Button type='submit' disabled={submitting || !name || !sku}>
 						{submitting
 							? isEdit
-								? t('inventory:form.saving')
-								: t('inventory:form.creating')
+								? t('product:form.saving')
+								: t('product:form.creating')
 							: isEdit
-								? t('inventory:form.save')
-								: t('inventory:form.create')}
+								? t('product:form.save')
+								: t('product:form.create')}
 					</Button>
 					<Button type='button' variant='outline' onClick={onCancel}>
 						{t('common:action.cancel')}

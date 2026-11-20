@@ -52,7 +52,7 @@ export function WarehouseItemTable({
 	warehouseId: string;
 	itemKind: TProductKind;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
 	const [page, setPage] = useState(1);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [submittedSearch, setSubmittedSearch] = useState('');
@@ -76,7 +76,7 @@ export function WarehouseItemTable({
 		() => [
 			{
 				id: 'image',
-				header: t('inventory:warehouses.image'),
+				header: t('warehouse:warehouses.image'),
 				meta: { headClassName: 'w-16' },
 				cell: ({ row }) =>
 					row.original.imageUrl ? (
@@ -97,19 +97,19 @@ export function WarehouseItemTable({
 			},
 			{
 				accessorKey: 'sku',
-				header: t('inventory:items.sku'),
+				header: t('product:items.sku'),
 				meta: { cellClassName: 'font-mono text-xs' },
 			},
-			{ accessorKey: 'name', header: t('inventory:items.name') },
+			{ accessorKey: 'name', header: t('product:items.name') },
 			{
 				id: 'unitLabel',
-				header: t('inventory:items.unitLabel'),
+				header: t('product:items.unitLabel'),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => row.original.unitLabel ?? '—',
 			},
 			{
 				id: 'quantity',
-				header: t('inventory:warehouses.quantity'),
+				header: t('warehouse:warehouses.quantity'),
 				meta: { align: 'right', cellClassName: 'tabular-nums' },
 				cell: ({ row }) =>
 					row.original.quantityOnHand == null
@@ -118,7 +118,7 @@ export function WarehouseItemTable({
 			},
 			{
 				accessorKey: 'minStockQty',
-				header: t('inventory:items.minStockQty'),
+				header: t('product:items.minStockQty'),
 				meta: { cellClassName: 'tabular-nums' },
 			},
 			{
@@ -155,7 +155,7 @@ export function WarehouseItemTable({
 			<CardContent className='flex flex-col gap-3'>
 				<Input
 					className='w-64'
-					placeholder={t('inventory:warehouses.searchPlaceholder')}
+					placeholder={t('warehouse:warehouses.searchPlaceholder')}
 					value={searchTerm}
 					onChange={(event) => setSearchTerm(event.target.value)}
 					onKeyDown={(event) => {
@@ -168,8 +168,8 @@ export function WarehouseItemTable({
 				{rows.length === 0 && !isPending ? (
 					<EmptyState
 						icon={PackageOpen}
-						title={t('inventory:items.emptyTitle')}
-						description={t('inventory:items.empty')}
+						title={t('product:items.emptyTitle')}
+						description={t('product:items.empty')}
 						className='py-4'
 					/>
 				) : (
