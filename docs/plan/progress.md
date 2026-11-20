@@ -17,8 +17,8 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 `docs/plan/port-portal-onto-main.md`: proposal to port this branch onto main
 after main's ADR-0024 normalization (comparison at `origin/main` `1c10c3e1`):
 decisions D1-D11 to agree with Oki, renumbering (ERP-0069..0081 -> ERP-0094..0106,
-ADR-0024/0025 -> ADR-0026/0027; checked free on main, all remote branches and
-open PRs), table/column and route mapping, port order P1-P7. No code moved;
+ADR-0024/0025 -> ADR-0026/0027; checked free on main and all remote branches;
+open PRs not checked - no `gh` CLI here), table/column and route mapping, port order P1-P7. No code moved;
 `docs/database/` unchanged. Not approved.
 
 **Next executable task:** agree D1-D11 with Oki, then P1 (session + security)

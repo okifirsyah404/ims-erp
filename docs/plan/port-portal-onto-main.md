@@ -47,7 +47,7 @@ the UI, logic and tests and rewriting the schema/repository/route layer.
 
 ERP-0070..0091 and ADR-0024 are taken on main; ADR-0025 is taken on
 `fix/web-admin-ui-consitency`. Proposed (checked free on main, every remote
-branch and open PRs, 2026-11-20):
+branch on 2026-11-20; open PRs not checked - no `gh` CLI here):
 
 | Branch number | Port number | Slice |
 | --- | --- | --- |
