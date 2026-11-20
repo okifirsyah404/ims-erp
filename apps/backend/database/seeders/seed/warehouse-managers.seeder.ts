@@ -4,7 +4,7 @@ import { drizzleDB } from '../../../drizzle/db';
 import {
 	warehouseManagers,
 	warehouses,
-} from '../../../drizzle/schemas/inventory.schema';
+} from '../../../drizzle/schemas/warehouse.schema';
 import { users } from '../../../drizzle/schemas/auth.schema';
 import { isProductionEnv } from '../../../config/providers/env';
 

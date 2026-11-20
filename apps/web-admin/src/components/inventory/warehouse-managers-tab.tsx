@@ -36,7 +36,7 @@ import { SearchableSelect, type TSearchableOption } from './searchable-select';
  * membership at all, which is why it cannot reuse `GET /admin/users`.
  */
 export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
 	const confirm = useConfirm();
 	const [term, setTerm] = useState('');
@@ -57,7 +57,7 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 	const assign = useMutation({
 		mutationFn: (userId: string) => assignWarehouseManager(warehouseId, userId),
 		onSuccess: () => {
-			toast.success(t('inventory:warehouses.managerAssigned'));
+			toast.success(t('warehouse:warehouses.managerAssigned'));
 			setSelected(null);
 			setTerm('');
 			invalidate();
@@ -69,7 +69,7 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 		mutationFn: (userId: string) =>
 			unassignWarehouseManager(warehouseId, userId),
 		onSuccess: () => {
-			toast.success(t('inventory:warehouses.managerUnassigned'));
+			toast.success(t('warehouse:warehouses.managerUnassigned'));
 			invalidate();
 		},
 		onError: (error: Error) => toast.error(error.message),
@@ -81,18 +81,18 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 		() => [
 			{
 				id: 'account',
-				header: t('inventory:warehouses.managerAccount'),
+				header: t('warehouse:warehouses.managerAccount'),
 				meta: { cellClassName: 'font-medium' },
 				cell: ({ row }) =>
 					row.original.name ?? row.original.email ?? (
 						<span className='text-muted-foreground'>
-							{t('inventory:warehouses.managerUnknownAccount')}
+							{t('warehouse:warehouses.managerUnknownAccount')}
 						</span>
 					),
 			},
 			{
 				id: 'assignedAt',
-				header: t('inventory:warehouses.managerAssignedAt'),
+				header: t('warehouse:warehouses.managerAssignedAt'),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => new Date(row.original.assignedAt).toLocaleDateString(),
 			},
@@ -108,7 +108,7 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 						onClick={async () => {
 							if (
 								await confirm({
-									title: t('inventory:warehouses.unassignManagerConfirm'),
+									title: t('warehouse:warehouses.unassignManagerConfirm'),
 									destructive: true,
 								})
 							) {
@@ -117,7 +117,7 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 						}}
 					>
 						<UserMinus className='mr-2 size-4' />
-						{t('inventory:warehouses.unassignManagerAction')}
+						{t('warehouse:warehouses.unassignManagerAction')}
 					</Button>
 				),
 			},
@@ -142,21 +142,21 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t('inventory:warehouses.managersTitle')}</CardTitle>
-				<CardDescription>{t('inventory:warehouses.managersHint')}</CardDescription>
+				<CardTitle>{t('warehouse:warehouses.managersTitle')}</CardTitle>
+				<CardDescription>{t('warehouse:warehouses.managersHint')}</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
 				<div className='flex items-end gap-2'>
 					<div className='flex w-80 flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>
-							{t('inventory:warehouses.assignManager')}
+							{t('warehouse:warehouses.assignManager')}
 						</span>
 						<SearchableSelect
 							value={selected?.value ?? null}
 							options={options}
 							loading={candidates.isFetching}
-							placeholder={t('inventory:warehouses.assignManagerPlaceholder')}
-							emptyLabel={t('inventory:warehouses.assignManagerEmpty')}
+							placeholder={t('warehouse:warehouses.assignManagerPlaceholder')}
+							emptyLabel={t('warehouse:warehouses.assignManagerEmpty')}
 							onSearch={setTerm}
 							onChange={(value) =>
 								setSelected(
@@ -172,14 +172,14 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 						disabled={!selected || assign.isPending}
 						onClick={() => selected && assign.mutate(selected.value)}
 					>
-						{t('inventory:warehouses.assignManagerAction')}
+						{t('warehouse:warehouses.assignManagerAction')}
 					</Button>
 				</div>
 
 				{managers.isError ? (
 					<ErrorState error={managers.error} size='sm' />
 				) : !managers.isPending && (managers.data ?? []).length === 0 ? (
-					<EmptyState title={t('inventory:warehouses.noManagers')} size='sm' />
+					<EmptyState title={t('warehouse:warehouses.noManagers')} size='sm' />
 				) : (
 					<DataTable
 						columns={columns}

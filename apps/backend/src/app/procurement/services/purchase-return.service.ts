@@ -1,7 +1,11 @@
-import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ProductService } from '@app/inventory/services/product.service';
+import { STOCK_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import { WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ProductService } from '@app/product/services/product.service';
+import { SERIAL_UNIT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { SerialUnitService } from '@app/inventory/services/serial-unit.service';
 import type { StockService } from '@app/inventory/services/stock.service';
-import type { WarehouseService } from '@app/inventory/services/warehouse.service';
+import type { WarehouseService } from '@app/warehouse/services/warehouse.service';
 import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { ProcurementNumberingService } from './procurement-numbering.service';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
@@ -102,7 +106,10 @@ export class PurchaseReturnService {
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement'>,
 		@inject(PRODUCT_SERVICE_TOKEN)
-		private readonly items: Pick<ProductService, 'getProduct' | 'supplierReturnableSerials' | 'returnUnits'>,
+		private readonly items: Pick<ProductService, 'getProduct'>,
+		/** Unit custody stayed in inventory when the product master moved (ADR-0026). */
+		@inject(SERIAL_UNIT_SERVICE_TOKEN)
+		private readonly units: Pick<SerialUnitService, 'supplierReturnableSerials' | 'returnUnits'>,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<WarehouseService, 'getWarehouse'>,
 		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
@@ -174,7 +181,7 @@ export class PurchaseReturnService {
 				let serialNumbers: string[] = [];
 				if (isSerialized && line.productId && receipt.warehouseId) {
 					// ERP-0065: units a customer returned damaged go back too.
-					const inStock = new Set(await this.items.supplierReturnableSerials(line.productId, receipt.warehouseId));
+					const inStock = new Set(await this.units.supplierReturnableSerials(line.productId, receipt.warehouseId));
 					const onReturns = new Set(used.serialNumbers);
 					serialNumbers = (line.serialNumbers ?? []).filter((serial) => inStock.has(serial) && !onReturns.has(serial));
 				}
@@ -427,7 +434,7 @@ export class PurchaseReturnService {
 				await this.returns.setMovement(line.id, posted.movement.id, tx);
 				const serials = line.serialNumbers ?? [];
 				if (serials.length) {
-					const missing = await this.items.returnUnits(
+					const missing = await this.units.returnUnits(
 						productId,
 						serials,
 						{ warehouseId, movementId: posted.movement.id },

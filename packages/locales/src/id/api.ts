@@ -171,35 +171,9 @@ const api: Record<keyof typeof en, string> = {
 	'publicApi.fileType': 'Gunakan berkas PDF, DWG, JPG, atau PNG',
 	'publicApi.badPayload': 'Payload harus JSON yang valid',
 
-	'inventory.itemNotFound': 'Barang tidak ditemukan',
 	'inventory.unitNotFound': 'Unit barang tidak ditemukan',
-	'inventory.skuTaken': 'Barang dengan SKU ini sudah ada',
-	'inventory.categoryNotFound': 'Kategori barang tidak ditemukan',
-	'inventory.categorySlugTaken': 'Kategori barang dengan slug ini sudah ada',
-	'inventory.categoryHasItems':
-		'Kategori yang masih dipakai {{count}} barang tidak bisa diarsipkan; nonaktifkan saja',
-	'inventory.categoryUnavailable': 'Kategori yang dipilih tidak tersedia',
 	'inventory.serialTaken': 'Unit barang dengan nomor seri ini sudah ada',
 	'inventory.ruleViolation': 'Aturan inventaris tidak mengizinkan: {{rule}}',
-	'inventory.itemHasUnits':
-		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
-	'inventory.warehouseNotFound': 'Gudang tidak ditemukan',
-	'inventory.warehouseCodeTaken':
-		'Gudang dengan kode ini sudah ada pada cakupan ini',
-	'inventory.warehouseHasUnits':
-		'Gudang tidak dapat diarsipkan karena masih menyimpan {{count}} unit aktif',
-	'inventory.warehouseLinkConflict':
-		'Tautan tidak dapat diputus selama organisasi masih memiliki {{count}} peminjaman aktif yang berasal dari gudang ini',
-	'inventory.storageNotFound': 'Penyimpanan tidak ditemukan',
-	'inventory.storageCodeTaken':
-		'Penyimpanan dengan kode ini sudah ada di gudang ini',
-	'inventory.warehouseInactive':
-		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
-	'inventory.warehousePicInvalid':
-		'Karyawan penanggung jawab tidak dikenal, tidak aktif, atau bukan dari organisasi yang terhubung',
-	'inventory.warehouseManagerExists':
-		'Pengguna ini sudah menjadi penanggung jawab gudang',
-	'inventory.warehouseManagerUserNotFound': 'Pengguna tidak ditemukan',
 	'inventory.movementNotFound': 'Pergerakan stok tidak ditemukan',
 	'inventory.movementAlreadyReversed':
 		'Pergerakan stok ini sudah dibalik sebelumnya',
@@ -214,6 +188,38 @@ const api: Record<keyof typeof en, string> = {
 		'Anda tidak dapat menyetujui penyesuaian stok Anda sendiri',
 	'inventory.adjustmentHasNoLines':
 		'Penyesuaian stok harus memiliki minimal satu baris',
+
+	'inventory.referenceUnavailable': '{{reference}} tidak dikenal, sudah diarsipkan, atau tidak aktif',
+
+	'product.notFound': 'Barang tidak ditemukan',
+	'product.skuTaken': 'Barang dengan SKU ini sudah ada',
+	'product.categoryNotFound': 'Kategori barang tidak ditemukan',
+	'product.categorySlugTaken': 'Kategori barang dengan slug ini sudah ada',
+	'product.categoryHasProducts':
+		'Kategori yang masih dipakai {{count}} barang tidak bisa diarsipkan; nonaktifkan saja',
+	'product.categoryUnavailable': 'Kategori yang dipilih tidak tersedia',
+	'product.hasUnits':
+		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
+	'product.ruleViolation': 'Aturan produk tidak mengizinkan: {{rule}}',
+
+	'warehouse.notFound': 'Gudang tidak ditemukan',
+	'warehouse.codeTaken':
+		'Gudang dengan kode ini sudah ada pada cakupan ini',
+	'warehouse.hasUnits':
+		'Gudang tidak dapat diarsipkan karena masih menyimpan {{count}} unit aktif',
+	'warehouse.linkConflict':
+		'Tautan tidak dapat diputus selama organisasi masih memiliki {{count}} peminjaman aktif yang berasal dari gudang ini',
+	'warehouse.storageNotFound': 'Penyimpanan tidak ditemukan',
+	'warehouse.storageCodeTaken':
+		'Penyimpanan dengan kode ini sudah ada di gudang ini',
+	'warehouse.inactive':
+		'Gudang "{{warehouseCode}}" tidak aktif; penyimpanannya tidak dapat diubah',
+	'warehouse.picInvalid':
+		'Karyawan penanggung jawab tidak dikenal, tidak aktif, atau bukan dari organisasi yang terhubung',
+	'warehouse.managerExists':
+		'Pengguna ini sudah menjadi penanggung jawab gudang',
+	'warehouse.managerUserNotFound': 'Pengguna tidak ditemukan',
+	'warehouse.ruleViolation': 'Aturan gudang tidak mengizinkan: {{rule}}',
 
 	'assets.assetNotFound': 'Aset tidak ditemukan',
 	'assets.categoryNotFound': 'Kategori aset tidak ditemukan',

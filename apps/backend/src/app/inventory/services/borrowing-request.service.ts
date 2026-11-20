@@ -46,7 +46,7 @@ import {
 	UnitNotAvailableError,
 	UnitNotOnBorrowingError,
 } from '../errors/borrowing.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { AuditWriter } from '@shared/audit';
 import type { InventoryNumberingService } from './inventory-numbering.service';
 
 /**
@@ -102,7 +102,7 @@ export class BorrowingRequestService {
 		private readonly toolSetItems: IToolSetItemRepository,
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 	) {}

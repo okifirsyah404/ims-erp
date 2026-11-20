@@ -17,13 +17,13 @@ import { PageSkeleton } from '@/components/page-skeleton';
  * narrow for these routes.
  */
 export function WarehouseAccessGate({ children }: { children: ReactNode }) {
-	const { t } = useTranslation(['inventory']);
+	const { t } = useTranslation(['inventory', 'warehouse']);
 	const { canAccess, isPending } = useWarehouseAccess();
 
 	if (isPending) return <PageSkeleton />;
 	if (!canAccess) {
 		return (
-			<EmptyState title={t('inventory:warehouses.noAccess')} bordered />
+			<EmptyState title={t('warehouse:warehouses.noAccess')} bordered />
 		);
 	}
 	return <>{children}</>;

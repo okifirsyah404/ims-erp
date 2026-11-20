@@ -173,6 +173,9 @@ beforeEach(() => {
 			async getProduct(id: string) {
 				return { id, isSerialized: id === READER, isStockTracked: id !== SERVICE } as never;
 			},
+		},
+		{
+			/** ADR-0026: taking units back from a customer is an `inventory` fact. */
 			async receiveCustomerUnits(_itemId: string, serials: readonly string[], data: { status: string }) {
 				const ok = serials.filter((serial) => sold.includes(serial));
 				units.push(...ok.map((serial) => ({ serial, status: data.status })));

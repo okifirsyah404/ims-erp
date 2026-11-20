@@ -139,6 +139,13 @@ beforeEach(() => {
 		},
 		{
 			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', isStockTracked: true }) as never,
+		},
+		{
+			/**
+			 * ADR-0026: unit custody stayed in `inventory`, so shipping sells the
+			 * serials through `SerialUnitService` rather than through the product
+			 * service.
+			 */
 			inStockSerials: async () => inStock,
 			async sellUnits(productId: string, serials: readonly string[], data: { customerId: string | null }) {
 				sold.push({ productId, serials, customerId: data.customerId });

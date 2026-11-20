@@ -5,26 +5,22 @@
  * Every token carries the `InjectionToken<T>` annotation. Bare `Symbol(...)`
  * leaves `container.resolve()` returning `unknown`, which forces casts at
  * every call site.
+ *
+ * ADR-0026 split the product master (`product`) and the warehouse estate
+ * (`warehouse`) out of this module: product- and warehouse-shaped tokens live
+ * in their own modules now, and this module talks to them through
+ * {@link EXPORTED_PRODUCT_SERVICE_TOKEN} / {@link EXPORTED_WAREHOUSE_SERVICE_TOKEN}
+ * from `@app/product` and `@app/warehouse` instead of owning repositories.
  */
 import type { InjectionToken } from 'tsyringe';
-import type { IProductRepository } from '../contracts/product.repository.interface';
 import type { IItemSerialRepository } from '../contracts/item-serial.repository.interface';
-import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
-import type { IWarehouseAddressRepository } from '../contracts/warehouse-address.repository.interface';
-import type { IWarehouseStorageRepository } from '../contracts/warehouse-storage.repository.interface';
-import type { IWarehouseManagerRepository } from '../contracts/warehouse-manager.repository.interface';
 import type { IMovementRepository } from '../contracts/movement.repository.interface';
 import type { IStockRepository } from '../contracts/stock.repository.interface';
 import type { IAdjustmentRepository } from '../contracts/adjustment.repository.interface';
-import type { ProductService } from '../services/product.service';
-import type { ProductImageService } from '../services/product-image.service';
-import type { WarehouseService } from '../services/warehouse.service';
-import type { WarehouseManagerService } from '../services/warehouse-manager.service';
 import type { ExportedInventoryService } from '../services/exported-inventory.service';
+import type { SerialUnitService } from '../services/serial-unit.service';
 import type { StockService } from '../services/stock.service';
 import type { AdjustmentService } from '../services/adjustment.service';
-import type { IProductCategoryRepository } from '../contracts/product-category.repository.interface';
-import type { ProductCategoryService } from '../services/product-category.service';
 import type {
 	IBorrowingEventRepository,
 	IBorrowingItemRepository,
@@ -56,46 +52,30 @@ import type { ItemCategoryService } from '../services/item-category.service';
 import type { InventoryNumberingService } from '../services/inventory-numbering.service';
 import type { IStockValuationRepository } from '../contracts/stock-valuation.contract';
 import type { StockValuationService } from '../services/stock-valuation.service';
-import type { ProductListingService } from '../services/product-listing.service';
 
-export const PRODUCT_REPOSITORY_TOKEN: InjectionToken<IProductRepository> =
-	Symbol('PRODUCT_REPOSITORY');
+/** `inventory.item_serials` — the physical instances of a serialized product. */
 export const ITEM_SERIAL_REPOSITORY_TOKEN: InjectionToken<IItemSerialRepository> =
 	Symbol('ITEM_SERIAL_REPOSITORY');
-export const PRODUCT_SERVICE_TOKEN: InjectionToken<ProductService> =
-	Symbol('PRODUCT_SERVICE');
-export const PRODUCT_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IProductCategoryRepository> =
-	Symbol('PRODUCT_CATEGORY_REPOSITORY');
-export const PRODUCT_CATEGORY_SERVICE_TOKEN: InjectionToken<ProductCategoryService> =
-	Symbol('PRODUCT_CATEGORY_SERVICE');
+/** Serial-unit lifecycle: registration, status matrix, sell/receive/return. */
+export const SERIAL_UNIT_SERVICE_TOKEN: InjectionToken<SerialUnitService> =
+	Symbol('SERIAL_UNIT_SERVICE');
 /** `inventory.items` (tool/asset units, was `assets.assets`). */
 export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> = Symbol('ITEM_REPOSITORY');
-export const ITEM_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IItemCategoryRepository> = Symbol('ITEM_CATEGORY_REPOSITORY');
+export const ITEM_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IItemCategoryRepository> =
+	Symbol('ITEM_CATEGORY_REPOSITORY');
 export const ITEM_SERVICE_TOKEN: InjectionToken<ItemService> = Symbol('ITEM_SERVICE');
-export const ITEM_CATEGORY_SERVICE_TOKEN: InjectionToken<ItemCategoryService> = Symbol('ITEM_CATEGORY_SERVICE');
+export const ITEM_CATEGORY_SERVICE_TOKEN: InjectionToken<ItemCategoryService> =
+	Symbol('ITEM_CATEGORY_SERVICE');
 /** `inventory.code_numberings` (ADR-0024 Q6). */
 export const INVENTORY_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<InventoryCodeNumberingRepository> =
 	Symbol('INVENTORY_CODE_NUMBERING_REPOSITORY');
-/** Issues product, movement, adjustment, warehouse and (later) item/borrowing codes. */
+/** Issues movement, adjustment, maintenance, disposal, asset and tool-set codes. */
 export const INVENTORY_NUMBERING_SERVICE_TOKEN: InjectionToken<InventoryNumberingService> =
 	Symbol('INVENTORY_NUMBERING_SERVICE');
-export const WAREHOUSE_REPOSITORY_TOKEN: InjectionToken<IWarehouseRepository> =
-	Symbol('WAREHOUSE_REPOSITORY');
-export const WAREHOUSE_ADDRESS_REPOSITORY_TOKEN: InjectionToken<IWarehouseAddressRepository> =
-	Symbol('WAREHOUSE_ADDRESS_REPOSITORY');
-export const WAREHOUSE_STORAGE_REPOSITORY_TOKEN: InjectionToken<IWarehouseStorageRepository> =
-	Symbol('WAREHOUSE_STORAGE_REPOSITORY');
-export const WAREHOUSE_SERVICE_TOKEN: InjectionToken<WarehouseService> =
-	Symbol('WAREHOUSE_SERVICE');
-/** Person-in-charge assignments (ADR-0017). */
-export const WAREHOUSE_MANAGER_REPOSITORY_TOKEN: InjectionToken<IWarehouseManagerRepository> =
-	Symbol('WAREHOUSE_MANAGER_REPOSITORY');
-export const WAREHOUSE_MANAGER_SERVICE_TOKEN: InjectionToken<WarehouseManagerService> =
-	Symbol('WAREHOUSE_MANAGER_SERVICE');
 /**
- * Cross-module export facade over warehouse reads (name resolution for
- * storage-location display). Depends only on the warehouse repository, so
- * consumers (assets) cannot form a service-to-service cycle.
+ * Cross-module export facade over inventory reads (units, balances,
+ * borrowings). Depends only on the module's own repositories, so consumers
+ * (`product`, `warehouse`, `sale`, ...) cannot form a service-to-service cycle.
  */
 export const EXPORTED_INVENTORY_SERVICE_TOKEN: InjectionToken<ExportedInventoryService> =
 	Symbol('EXPORTED_INVENTORY_SERVICE');
@@ -110,18 +90,11 @@ export const STOCK_SERVICE_TOKEN: InjectionToken<StockService> =
 export const ADJUSTMENT_SERVICE_TOKEN: InjectionToken<AdjustmentService> =
 	Symbol('ADJUSTMENT_SERVICE');
 
-/** Token resolving to the {@link ProductImageService} (document photo of an item). */
-export const PRODUCT_IMAGE_SERVICE_TOKEN: InjectionToken<ProductImageService> = Symbol('PRODUCT_IMAGE_SERVICE_TOKEN');
-
 /** Token resolving to the inventory value repository (ADR-0011 step 5b). */
 export const STOCK_VALUATION_REPOSITORY_TOKEN: InjectionToken<IStockValuationRepository> = Symbol('STOCK_VALUATION_REPOSITORY_TOKEN');
 
 /** Token resolving to the {@link StockValuationService}. */
 export const STOCK_VALUATION_SERVICE_TOKEN: InjectionToken<StockValuationService> = Symbol('STOCK_VALUATION_SERVICE_TOKEN');
-
-/** Token resolving to the {@link ProductCatalogService} — the Inventory contract of the website catalog (M04). */
-export const PRODUCT_LISTING_SERVICE_TOKEN: InjectionToken<ProductListingService> = Symbol('PRODUCT_LISTING_SERVICE_TOKEN');
-
 
 /* ------------------------------------------------------------------------ *
  * Items: custody, movements, borrowing (ADR-0024 Q14-Q26)

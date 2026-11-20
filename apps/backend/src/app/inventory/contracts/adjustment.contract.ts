@@ -3,7 +3,7 @@ import {
 	ADJUSTMENT_STATUSES,
 	ADJUSTMENT_TYPES,
 } from '@drizzle/schemas/inventory.schema';
-import { inventoryPaginationSchema } from './product.contract';
+import { inventoryPaginationSchema } from './pagination.contract';
 
 /**
  * Request schemas for the stock adjustment document workflow.

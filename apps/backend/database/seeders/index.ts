@@ -1,14 +1,20 @@
 import 'reflect-metadata';
 import { DateTime, Duration } from 'luxon';
 import pino from 'pino';
+import { and, eq } from 'drizzle-orm';
 import { closeDB, drizzleDB } from '../../drizzle/db';
+import { organizations } from '../../drizzle/schemas/auth.schema';
+import { village } from '../../drizzle/schemas/location.schema';
+import { isProductionEnv } from '../../config/providers/env';
 import { seedLocations } from './seed/location.seeder';
 import { seedAuth } from './seed/auth.seeder';
+import { seedProduct } from './seed/product.seeder';
+import { seedWarehouse } from './seed/warehouse.seeder';
 import { seedInventory } from './seed/inventory.seeder';
 import { seedWarehouseManagers } from './seed/warehouse-managers.seeder';
 import { seedFinance } from './seed/finance.seeder';
 import { seedTax } from './seed/tax.seeder';
-import { seedOrganization } from './seed/organization.seeder';
+import { SEED_ORGANIZATION_SLUG, seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
@@ -45,10 +51,21 @@ export async function runSeeders(): Promise<void> {
 	await seedOrganization();
 	await seedOrganizationMembers();
 	await seedOrganizationRoles();
-	// Needs the organization (scope), location (address village), the item
-	// category rows above; asset placements then reference the warehouse and
-	// storage rows it creates.
-	await seedInventory();
+	// ADR-0026: the product master and the warehouse estate are their own
+	// modules now, and the inventory fixtures reference both.
+	await seedProduct();
+	const [organization] = await drizzleDB
+		.select({ id: organizations.id })
+		.from(organizations)
+		.where(eq(organizations.slug, SEED_ORGANIZATION_SLUG))
+		.limit(1);
+	const [villageRow] = await drizzleDB.select({ id: village.id }).from(village).limit(1);
+	const estate = await seedWarehouse({
+		organizationId: organization?.id ?? null,
+		villageId: villageRow?.id ?? null,
+		isProduction: isProductionEnv(),
+	});
+	if (estate) await seedInventory(estate);
 	// Needs the live warehouse rows above and the seeded `warehouse` role
 	// account from `seedOrganizationMembers` (ADR-0017).
 	await seedWarehouseManagers();

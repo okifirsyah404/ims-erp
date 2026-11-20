@@ -66,7 +66,7 @@ const DYNAMIC_PREFIXES = [
 	// The detail page labels the access trail with the server's action value.
 	'documents:action.',
 	// `t(`inventory:kind.${kind}`)` — an item's kind selects its own label.
-	'inventory:kind.',
+	'product:kind.',
 	// The ledger and the adjustment workflow label their enums the same way:
 	// the value comes from the server, so the key has to be composed.
 	'inventory:movements.type.',

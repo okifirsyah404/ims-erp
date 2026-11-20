@@ -1,20 +1,19 @@
 import type { DependencyContainer } from 'tsyringe';
-import { WAREHOUSE_PIC_RESOLVER_TOKEN } from '@authorization/warehouse-pic-resolver';
-import type { IWarehouseManagerRepository as IWarehouseManagerRepositoryPort } from './contracts/warehouse-manager.repository.interface';
-import { ProductRepository } from './repositories/product.repository';
-import { ItemSerialRepository } from './repositories/item-serial.repository';
-import { InventoryCodeNumberingRepository } from './repositories/code-numbering.repository';
-import { InventoryNumberingService } from './services/inventory-numbering.service';
-import { WarehouseRepository } from './repositories/warehouse.repository';
-import { WarehouseManagerRepository } from './repositories/warehouse-manager.repository';
-import { WarehouseAddressRepository } from './repositories/warehouse-address.repository';
-import { WarehouseStorageRepository } from './repositories/warehouse-storage.repository';
+import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
+import type { AuditService } from '../audit/services/audit.service';
+import {
+	EXPORTED_PRODUCT_SERVICE_TOKEN,
+	PRODUCT_SERIAL_COUNTS_TOKEN,
+} from '@app/product/constants/di';
+import type { ExportedProductService } from '@app/product/services/exported-product.service';
+import { ProductKindsPort } from './services/exported-inventory.service';
+import { AuditWriter } from '@shared/audit';
 import { MovementRepository } from './repositories/movement.repository';
 import { StockRepository } from './repositories/stock.repository';
 import { AdjustmentRepository } from './repositories/adjustment.repository';
-import { InventoryAuditWriter } from './services/inventory-audit.writer';
-import { ProductImageService } from './services/product-image.service';
-import { ProductService } from './services/product.service';
+import { ItemSerialRepository } from './repositories/item-serial.repository';
+import { InventoryCodeNumberingRepository } from './repositories/code-numbering.repository';
+import { InventoryNumberingService } from './services/inventory-numbering.service';
 import { ConditionCheckRepository } from './repositories/condition-check.repository';
 import { DisposalRepository } from './repositories/disposal.repository';
 import { InventoryDocumentRepository } from './repositories/inventory-document.repository';
@@ -36,18 +35,12 @@ import { ItemRepository } from './repositories/item.repository';
 import { ItemCategoryRepository } from './repositories/item-category.repository';
 import { ItemService } from './services/item.service';
 import { ItemCategoryService } from './services/item-category.service';
-import { ProductCategoryRepository } from './repositories/product-category.repository';
-import { ProductCategoryService } from './services/product-category.service';
-import { AUDIT_SERVICE_TOKEN } from '../audit/constants/di';
-import type { AuditService } from '../audit/services/audit.service';
-import { WarehouseService } from './services/warehouse.service';
-import { WarehouseManagerService } from './services/warehouse-manager.service';
 import { ExportedInventoryService } from './services/exported-inventory.service';
+import { SerialUnitService } from './services/serial-unit.service';
 import { StockService } from './services/stock.service';
 import { AdjustmentService } from './services/adjustment.service';
 import { StockValuationRepository } from './repositories/stock-valuation.repository';
 import { StockValuationService } from './services/stock-valuation.service';
-import { ProductListingService } from './services/product-listing.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
@@ -77,23 +70,12 @@ import {
 	ITEM_CATEGORY_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	ITEM_SERVICE_TOKEN,
-	PRODUCT_CATEGORY_REPOSITORY_TOKEN,
-	PRODUCT_CATEGORY_SERVICE_TOKEN,
-	PRODUCT_REPOSITORY_TOKEN,
-	PRODUCT_IMAGE_SERVICE_TOKEN,
-	PRODUCT_SERVICE_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	ITEM_SERIAL_REPOSITORY_TOKEN,
+	SERIAL_UNIT_SERVICE_TOKEN,
 	STOCK_SERVICE_TOKEN,
-	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-	WAREHOUSE_MANAGER_REPOSITORY_TOKEN,
-	WAREHOUSE_MANAGER_SERVICE_TOKEN,
-	WAREHOUSE_REPOSITORY_TOKEN,
-	WAREHOUSE_SERVICE_TOKEN,
-	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 	STOCK_VALUATION_REPOSITORY_TOKEN,
 	STOCK_VALUATION_SERVICE_TOKEN,
-	PRODUCT_LISTING_SERVICE_TOKEN,
 	EXPORTED_INVENTORY_SERVICE_TOKEN,
 } from './constants/di';
 
@@ -104,7 +86,9 @@ export * from './constants/di';
  *
  * @remarks
  * Explicit `container.register` calls, matching every other domain in this
- * codebase — there is no decorator-based auto-registration.
+ * codebase — there is no decorator-based auto-registration. The product master
+ * and the warehouse estate moved out (ADR-0026); this module consumes their
+ * export facades through DI tokens instead of owning those repositories.
  *
  * @param container - The tsyringe container to populate
  */
@@ -113,11 +97,10 @@ export function registerInventory(container: DependencyContainer): void {
 	// AuditService. Resolved eagerly here, which is safe: registerAudit runs
 	// before registerInventory at the composition root, and both the writer
 	// and the inner service are stateless.
-	const auditWriter = new InventoryAuditWriter(
-		container.resolve<AuditService>(AUDIT_SERVICE_TOKEN),
+	container.registerInstance(
+		AuditWriter,
+		new AuditWriter(container.resolve<AuditService>(AUDIT_SERVICE_TOKEN)),
 	);
-	// One shared writer instance for every inventory service.
-	container.registerInstance(InventoryAuditWriter, auditWriter);
 
 	container.register(INVENTORY_CODE_NUMBERING_REPOSITORY_TOKEN, {
 		useClass: InventoryCodeNumberingRepository,
@@ -125,54 +108,14 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(INVENTORY_NUMBERING_SERVICE_TOKEN, {
 		useClass: InventoryNumberingService,
 	});
-	container.register(PRODUCT_REPOSITORY_TOKEN, { useClass: ProductRepository });
 	container.register(ITEM_SERIAL_REPOSITORY_TOKEN, {
 		useClass: ItemSerialRepository,
-	});
-	container.register(PRODUCT_SERVICE_TOKEN, { useClass: ProductService });
-	container.register(PRODUCT_IMAGE_SERVICE_TOKEN, { useClass: ProductImageService });
-	container.register(PRODUCT_CATEGORY_REPOSITORY_TOKEN, {
-		useClass: ProductCategoryRepository,
-	});
-	container.register(PRODUCT_CATEGORY_SERVICE_TOKEN, {
-		useClass: ProductCategoryService,
 	});
 	container.register(ITEM_REPOSITORY_TOKEN, { useClass: ItemRepository });
 	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, { useClass: ItemCategoryRepository });
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
 	container.register(ITEM_CATEGORY_SERVICE_TOKEN, { useClass: ItemCategoryService });
-
-	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
-		useClass: WarehouseRepository,
-	});
-	container.register(WAREHOUSE_ADDRESS_REPOSITORY_TOKEN, {
-		useClass: WarehouseAddressRepository,
-	});
-	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, {
-		useClass: WarehouseStorageRepository,
-	});
-	container.register(WAREHOUSE_SERVICE_TOKEN, {
-		useClass: WarehouseService,
-	});
-	// ADR-0017: person-in-charge assignments. The repository doubles as the
-	// `warehouseGuard` port (it implements `IWarehousePicResolver`), so the
-	// guard never touches Drizzle.
-	container.register(WAREHOUSE_MANAGER_REPOSITORY_TOKEN, {
-		useClass: WarehouseManagerRepository,
-	});
-	container.register(WAREHOUSE_MANAGER_SERVICE_TOKEN, {
-		useClass: WarehouseManagerService,
-	});
-	container.register(WAREHOUSE_PIC_RESOLVER_TOKEN, {
-		useFactory: (c: DependencyContainer) =>
-			c.resolve<IWarehouseManagerRepositoryPort>(
-				WAREHOUSE_MANAGER_REPOSITORY_TOKEN,
-			),
-	});
-	// Cross-module export facade — repository-only, safe for other modules.
-	container.register(EXPORTED_INVENTORY_SERVICE_TOKEN, {
-		useClass: ExportedInventoryService,
-	});
+	container.register(SERIAL_UNIT_SERVICE_TOKEN, { useClass: SerialUnitService });
 
 	container.register(ITEM_MOVEMENT_REPOSITORY_TOKEN, { useClass: ItemMovementRepository });
 	container.register(MAINTENANCE_REPOSITORY_TOKEN, { useClass: MaintenanceRepository });
@@ -204,13 +147,39 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(ADJUSTMENT_REPOSITORY_TOKEN, {
 		useClass: AdjustmentRepository,
 	});
+	// Cross-module export facade - repository-only, safe for other modules.
+	// Registered after the stock/movement/borrowing repositories it composes.
+	container.register(EXPORTED_INVENTORY_SERVICE_TOKEN, {
+		useClass: ExportedInventoryService,
+	});
+	// Cycle breaker (ADR-0026): the product module reads its serial counts
+	// through this port. Wiring it to the facade here (not in `registerProduct`)
+	// is what keeps `ExportedInventoryService` <-> `ExportedProductService` a
+	// DAG: the port is only resolved while inventory's graph is being built.
+	container.register(PRODUCT_SERIAL_COUNTS_TOKEN, {
+		useFactory: (c: DependencyContainer) =>
+			c.resolve<ExportedInventoryService>(EXPORTED_INVENTORY_SERVICE_TOKEN),
+	});
+	// Cycle breaker (ADR-0026): the inventory facade reads product kinds through
+	// `ProductKindsPort`, which resolves the product facade on first *call*, not
+	// at construction, so the mutual reference never recurses in tsyringe. The
+	// factory parameter is unannotated on purpose: an annotated arrow emits
+	// `design:paramtypes` for the factory itself and tsyringe would follow the
+	// very edge this avoids.
+	container.register(ProductKindsPort, {
+		useFactory: (c) =>
+			new ProductKindsPort(() =>
+				(c as DependencyContainer).resolve<ExportedProductService>(
+					EXPORTED_PRODUCT_SERVICE_TOKEN,
+				),
+			),
+	});
 	// StockService must be registered before AdjustmentService: the latter
 	// injects it, and tsyringe resolves lazily but the token must already exist
 	// for bootstrap to fail early rather than at first request.
 	container.register(STOCK_SERVICE_TOKEN, { useClass: StockService });
 	container.register(STOCK_VALUATION_REPOSITORY_TOKEN, { useClass: StockValuationRepository });
 	container.register(STOCK_VALUATION_SERVICE_TOKEN, { useClass: StockValuationService });
-	container.register(PRODUCT_LISTING_SERVICE_TOKEN, { useClass: ProductListingService });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useClass: AdjustmentService,
 	});

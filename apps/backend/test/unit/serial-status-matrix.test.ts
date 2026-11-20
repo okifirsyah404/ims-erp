@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	PRODUCT_KINDS,
-	SERIAL_STATUSES,
 	type ProductKind,
+} from '@drizzle/schemas/product.schema';
+import {
+	SERIAL_STATUSES,
 	type SerialStatus,
 } from '@drizzle/schemas/inventory.schema';
 import {
 	assertTransitionAllowed,
 	isStatusAllowedForKind,
-} from '../../src/app/inventory/services/product.service';
+} from '../../src/app/inventory/constants/serial-matrix';
 import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inventory.errors';
 
 /**
@@ -16,12 +18,14 @@ import { InventoryRuleViolationError } from '../../src/app/inventory/errors/inve
  *
  * @remarks
  * This matrix is the module's central business rule — no unit is ever `ready`
- * or `borrowed` (those are the **asset** vocabulary). Every pair is asserted
+ * or `borrowed` (those are the **item** vocabulary). Every pair is asserted
  * explicitly rather than spot-checked, because a hole here silently corrupts
  * unit state in the stock flows that build on it.
  *
- * ERP-0036 removed `tool` and `service`; tools are `inventory.items` since
- * ADR-0024 Q14.
+ * ERP-0036 removed `tool` and `service` from the product kinds; tools are
+ * `inventory.items` since ADR-0024 Q14. ADR-0026 moved the kinds to
+ * `product.schema.ts` and the matrix to `inventory/constants/serial-matrix.ts`;
+ * the unit status vocabulary stayed in `inventory.schema.ts`.
  */
 
 /** Statuses a kind may hold, per ADR-0008. Source of truth for the assertions. */

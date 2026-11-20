@@ -1,5 +1,5 @@
-import { PRODUCT_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ProductService } from '@app/inventory/services/product.service';
+import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ProductService } from '@app/product/services/product.service';
 import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { ProcurementNumberingService } from './procurement-numbering.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';

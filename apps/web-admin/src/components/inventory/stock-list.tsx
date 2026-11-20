@@ -43,7 +43,7 @@ export function StockList({
 	page: number;
 	onPageChange: (page: number) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
 	const confirm = useConfirm();
 	const canSeeCost = usePermission('product.read_cost');
@@ -98,7 +98,7 @@ export function StockList({
 				header: t('inventory:stock.warehouse'),
 				cell: ({ row }) => (
 					<Link
-						to='/inventory/warehouses/$warehouseId'
+						to='/warehouses/$warehouseId'
 						params={{ warehouseId: row.original.warehouseId }}
 						className='hover:underline'
 					>
@@ -130,7 +130,7 @@ export function StockList({
 						<Badge variant='secondary'>{t('inventory:stock.shared')}</Badge>
 					) : (
 						<Badge variant='outline'>
-							{t('inventory:warehouses.organization')}
+							{t('warehouse:warehouses.organization')}
 						</Badge>
 					),
 			},

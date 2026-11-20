@@ -8,7 +8,7 @@
 import { describe, expect, test } from 'bun:test';
 import { and } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { lifecycleFilter } from '../../src/app/inventory/repositories/warehouse.repository';
+import { lifecycleFilter } from '../../src/app/warehouse/repositories/warehouse.repository';
 
 const dialect = new PgDialect();
 

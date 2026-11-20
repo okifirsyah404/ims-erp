@@ -1,5 +1,5 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { stocks } from '@drizzle/schemas/inventory.schema';
+import { itemSerials, stocks } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -311,7 +311,70 @@ export class StockRepository implements IStockRepository {
 			.from(stocks)
 			.where(inArray(stocks.productId, productIds))
 			.groupBy(stocks.productId);
-		return rows.map((row) => ({ productId: row.productId, available: Number(row.available) }));
+		return rows.flatMap((row) =>
+			row.productId
+				? [{ productId: row.productId, available: Number(row.available) }]
+				: [],
+		);
+	}
+
+	/**
+	 * Products with a physical presence in one warehouse (ADR-0026).
+	 *
+	 * @remarks
+	 * Either a live serialized unit or a stock balance, because
+	 * quantity-tracked products have no units at all — their stock lives only
+	 * in `stocks`. Two `EXISTS` are unioned rather than joined so a product
+	 * with several units or bins in the warehouse appears once. `product` uses
+	 * the returned ids for its `inArray` filter, because it may not read
+	 * `inventory.*` (and the unit rows are this module's table anyway).
+	 *
+	 * @param warehouseId - The warehouse the product list is scoped to
+	 */
+	async productIdsInWarehouse(warehouseId: string): Promise<string[]> {
+		const rows = await this.database
+			.select({ productId: stocks.productId })
+			.from(stocks)
+			.where(eq(stocks.warehouseId, warehouseId))
+			.union(
+				this.database
+					.select({ productId: itemSerials.productId })
+					.from(itemSerials)
+					.where(
+						and(
+							isNull(itemSerials.deletedAt),
+							eq(itemSerials.warehouseId, warehouseId),
+						),
+					),
+			);
+		return rows.flatMap((row) => (row.productId ? [row.productId] : []));
+	}
+
+	/**
+	 * Distinct products with a positive on-hand balance per warehouse.
+	 *
+	 * @remarks
+	 * Materials are never serialized, so their "is it here" answer is a
+	 * balance, not a unit. `warehouse` composes this into its kind counts.
+	 *
+	 * @param warehouseIds - The warehouses on the current page
+	 */
+	async countMaterialStocks(
+		warehouseIds: string[],
+	): Promise<Array<{ warehouseId: string | null; productId: string }>> {
+		if (warehouseIds.length === 0) return [];
+		const rows = await this.database
+			.selectDistinct({ warehouseId: stocks.warehouseId, productId: stocks.productId })
+			.from(stocks)
+			.where(
+				and(
+					gt(stocks.quantityOnHand, '0'),
+					inArray(stocks.warehouseId, warehouseIds),
+				),
+			);
+		return rows.flatMap((row) =>
+			row.productId ? [{ warehouseId: row.warehouseId, productId: row.productId }] : [],
+		);
 	}
 
 	/** Hard-deletes a balance row. */

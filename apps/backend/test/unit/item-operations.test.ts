@@ -104,8 +104,14 @@ describe('ItemCustodyService', () => {
 			numbering,
 			audit,
 			{
-				assertWarehouseReachableByOrg: async (warehouseId: string) => warehouseId !== 'unreachable',
-				assertStorageInWarehouse: async () => {},
+				/**
+				 * ADR-0026: the warehouse estate moved to its own module, so custody
+				 * reads reachability and storage placement through its facade. An
+				 * unlinked warehouse is reported as not-found, which is what the
+				 * `'unreachable'` sentinel exercises below.
+				 */
+				isLinked: async (warehouseId: string) => warehouseId !== 'unreachable',
+				storageInWarehouse: async () => true,
 			},
 			transactions,
 		);

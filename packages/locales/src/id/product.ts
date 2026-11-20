@@ -1,0 +1,112 @@
+/**
+ * Product module copy (ADR-0026).
+ *
+ * @remarks
+ * The product (SKU) master, its categories and the serial units of a
+ * product, split out of `inventory` when the product master became its own
+ * module.
+ */
+const product = {
+	'items.description':
+		'Master barang — katalog SKU untuk organisasi ini.',
+	'items.empty': 'Belum ada barang untuk organisasi ini.',
+	'items.emptyTitle': 'Belum ada apa pun di sini',
+	'items.sku': 'Kode SKU',
+	'items.code': 'Kode',
+	'items.codeAutoHint': 'Dibuat otomatis dari seri penomoran.',
+	'items.serialNumber': 'Nomor seri',
+	'items.name': 'Nama',
+	'items.kind': 'Jenis',
+	'items.tracking': 'Pelacakan',
+	'items.serialized': 'Bernomor seri',
+	'items.quantityTracked': 'Kuantitas',
+	'items.category': 'Kategori',
+	'items.unitLabel': 'Satuan',
+	'items.minStockQty': 'Stok minimum',
+	'items.sellingPrice': 'Harga jual',
+	'items.purchasePrice': 'Harga beli',
+	'items.description_label': 'Deskripsi',
+	'items.barcode': 'Kode batang',
+	'items.noCategory': 'Tanpa kategori',
+	'items.brand': 'Merek',
+	'items.specification': 'Spesifikasi',
+	'items.details': 'Detail barang',
+	'items.specificationHint': 'Dicetak di penawaran. Satu poin per baris.',
+	'items.isActive': 'Aktif',
+	'items.isActiveHint': 'Barang nonaktif tetap tercatat tetapi tidak ditawarkan untuk penawaran atau PO baru.',
+	'items.inactive': 'Nonaktif',
+	'categories.title': 'Kategori Barang',
+	'categories.description':
+		'Satu tingkat, dipakai bersama seluruh perusahaan. Slug sama dengan kategori di website.',
+	'categories.new': 'Kategori baru',
+	'categories.edit': 'Ubah kategori',
+	'categories.empty': 'Belum ada kategori.',
+	'categories.slug': 'Slug URL',
+	'categories.slugHint': 'Huruf kecil, angka, dan tanda hubung, mis. access-controllers. Tidak bisa diubah nanti.',
+	'categories.name': 'Nama',
+	'categories.shortName': 'Nama pendek',
+	'categories.sortOrder': 'Urutan',
+	'categories.descriptionLabel': 'Deskripsi',
+	'categories.isActive': 'Aktif',
+	'categories.inactive': 'Nonaktif',
+	'categories.saved': 'Kategori disimpan',
+	'categories.archive': 'Arsipkan',
+	'categories.archiveConfirm': 'Arsipkan kategori {{name}}? Kategori yang masih dipakai barang tidak bisa diarsipkan; nonaktifkan saja.',
+	'categories.archived': 'Kategori diarsipkan',
+	'kind.product': 'Produk',
+	'kind.component': 'Komponen',
+	'kind.material': 'Bahan',
+	'products.title': 'Produk',
+	'components.title': 'Komponen',
+	'materials.title': 'Bahan',
+	'form.newItem': 'Barang baru',
+	'form.newItemDescription':
+		'SKU dan jenis ditetapkan saat pembuatan — keduanya menentukan keunikan dan aturan status.',
+	'form.editItem': 'Ubah barang',
+	'form.editItemDescription':
+		'SKU dan jenis tidak dapat diubah setelah dibuat.',
+	'form.create': 'Buat barang',
+	'form.creating': 'Membuat…',
+	'form.save': 'Simpan perubahan',
+	'form.saving': 'Menyimpan…',
+	'form.serializedHint':
+		'Barang bernomor seri dilacak per unit; kuantitas tidak dihitung.',
+	'form.created': 'Barang dibuat',
+	'form.updated': 'Barang diperbarui',
+	'form.archived': 'Barang diarsipkan',
+	'detail.notFound': 'Barang ini tidak ada atau sudah diarsipkan.',
+	'detail.archive': 'Arsipkan',
+	'detail.archiveConfirm': 'Arsipkan barang ini?',
+	'detail.archiveConfirmBody':
+		'Mengarsipkan menyembunyikan barang dari daftar. Barang yang masih memiliki unit tidak dapat diarsipkan.',
+	'detail.units': 'Unit',
+	'detail.unitsEmpty': 'Belum ada unit terdaftar.',
+	'detail.serialNumber': 'Nomor seri',
+	'detail.assetTag': 'Tag aset',
+	'detail.status': 'Keadaan',
+	'detail.provisional': 'Sementara',
+	'status.pre_order': 'Pra-pesan',
+	'status.in_stock': 'Siap',
+	'status.lost': 'Hilang',
+	'status.sold': 'Terjual',
+	'status.applied_warranty': 'Dipakai garansi',
+	'status.returned': 'Diretur ke pemasok',
+	'status.damaged': 'Rusak',
+	'unit.new': 'Daftarkan unit',
+	'unit.newDescription':
+		'Unit adalah wujud fisik dari barang bernomor seri.',
+	'unit.serialNumber': 'Nomor seri',
+	'unit.serialNumberHint':
+		'Wajib diisi. Nomor seri sementara dari pra-pesan diganti sekali saat barang diterima, lewat tabel di bawah.',
+	'unit.register': 'Daftarkan unit',
+	'unit.registering': 'Mendaftarkan…',
+	'unit.registered': 'Unit terdaftar',
+	'unit.replaceSerial': 'Tetapkan nomor seri asli',
+	'unit.replaceSerialBody':
+		'Nomor seri sementara hanya dapat diganti satu kali.',
+	'unit.replaced': 'Nomor seri diganti',
+	'items.documentPhoto': 'Foto di dokumen',
+	'items.documentPhotoHint': 'Dicetak di kolom Gambar pada penawaran. PNG, JPG, atau WebP, maksimal 2 MB. Penawaran yang sudah terbit tetap memakai fotonya.',
+} as const;
+
+export default product;

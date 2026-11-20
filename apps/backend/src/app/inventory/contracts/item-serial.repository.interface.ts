@@ -116,4 +116,27 @@ export interface IItemSerialRepository {
 		data: { warehouseId: string; movementId: string | null },
 		tx: TTx,
 	): Promise<string[]>;
+	/**
+	 * Live serialized units held in a warehouse `inventory` does not own.
+	 *
+	 * @remarks
+	 * The unit table stayed in `inventory` when the warehouse estate moved to
+	 * the `warehouse` module (ADR-0026), so counts are read here and published
+	 * through `ExportedInventoryService`.
+	 */
+	countLiveUnits(warehouseId: string): Promise<number>;
+
+	/** Live serialized units of one product, excluding `lost` (archive guard). */
+	countLiveUnitsByProduct(productId: string): Promise<number>;
+
+	/**
+	 * Live serialized units per `(warehouse, product)`.
+	 *
+	 * @remarks
+	 * Grouped by product, not by kind: the product kind is the `product`
+	 * module's vocabulary, so the caller sums per kind through its facade.
+	 */
+	countByWarehouse(
+		warehouseIds: string[],
+	): Promise<Array<{ warehouseId: string | null; productId: string; value: number }>>;
 }

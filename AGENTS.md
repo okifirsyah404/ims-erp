@@ -63,10 +63,11 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   needs data it does not have, add a repository method, not a query.
   Cross-module access goes through the owning module's exported contract or
   service via DI token, never another module's repository.
-- **Schema segregation (ADR-0024).** 18 Postgres schemas (`auth`, `location`,
-  `company`, `customer`, `supplier`, `inventory`, `sale`, `procurement`,
-  `finance`, `tax`, `payment`, `project`, `ticket`, `human_resource`,
-  `document`, `notification`, `audit`, `automation`) and 188 tables; each
+- **Schema segregation (ADR-0024, ADR-0026).** 20 Postgres schemas (`auth`,
+  `location`, `company`, `customer`, `supplier`, `product`, `warehouse`,
+  `inventory`, `sale`, `procurement`, `finance`, `tax`, `payment`, `project`,
+  `ticket`, `human_resource`, `document`, `notification`, `audit`,
+  `automation`) and 192 tables; each
   business module owns exactly one of them. Two exceptions are by design: the
   `user` and `organization` backend modules both live in the `auth` schema
   because Better Auth owns those tables (the standalone `organization` *schema*
@@ -185,7 +186,7 @@ endpoint means registering in `index.ts`, mounting in `app/app.ts`.
 (nothing is deployed, ADR-0024 Q34): provider webhooks at
 `/webhooks/{xendit,singapay,whatsapp}`, the machine license API at
 `/projects/api/v1/licenses`, the website API at `/projects/public/v1` and
-`/inventory/public/v1/catalog`, quotation render at
+`/products/public/v1/catalog`, quotation render at
 `/sales/public/v1/render/quotations`, public share links at
 `/documents/public/v1/shares`, the customer portal at `/customers/portal/v1`.
 List endpoints return the shared pagination contract (`okPaginated` with
@@ -201,7 +202,7 @@ the same change); a backend-only move is an incomplete change.
 Creating, updating, or deleting a feature module — and any backend feature
 work that adds or changes endpoints, services, repositories, Drizzle schemas,
 or migrations — passes through two gates **before** code and one **after** it.
-The schema contract is 188 tables across 18 schemas; nobody holds it in their
+The schema contract is 192 tables across 20 schemas; nobody holds it in their
 head, and inventing a column or a cross-module link is the most expensive
 mistake available here.
 
@@ -214,8 +215,9 @@ mistake available here.
    any module you reference.
 2. `docs/database/module-ownership.md` — who owns which schema, the cross-module
    contract methods (`resolveX` / `assertXOwnedBy`); every business module has
-   exactly one schema (the old Inventory two-schema exception is gone,
-   warehouses live in `inventory`; `user` and `organization` share `auth`).
+   exactly one schema (the old Inventory two-schema exception is gone, and
+   ADR-0026 gave product and warehouse their own schemas; `user` and
+   `organization` share `auth`).
 3. `docs/database/integrity-and-consistency.md` — FK policy, soft delete,
    uniqueness, concurrency, status vocabularies.
 4. `docs/database/data-dictionary.md` — column conventions (uuid pk, tenant

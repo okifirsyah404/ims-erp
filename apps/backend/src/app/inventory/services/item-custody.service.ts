@@ -3,14 +3,12 @@ import type { TTx } from '@drizzle/types';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { SYSTEM_AUDIT_ACTOR, type TInventoryAuditActor } from '../constants/audit-actor';
 import {
 	BORROWING_ITEM_REPOSITORY_TOKEN,
 	INVENTORY_NUMBERING_SERVICE_TOKEN,
 	ITEM_MOVEMENT_REPOSITORY_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	MAINTENANCE_REPOSITORY_TOKEN,
-	WAREHOUSE_SERVICE_TOKEN,
 } from '../constants/di';
 import type { IBorrowingItemRepository } from '../contracts/borrowing.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
@@ -20,10 +18,11 @@ import type {
 } from '../contracts/item-movement.repository.interface';
 import type { IMaintenanceRepository, TItemHistoryPaginationRequest } from '../contracts/item-operations.repository.interface';
 import { ItemNotFoundError, ItemRuleViolationError } from '../errors/item.errors';
-import { WarehouseNotFoundError } from '../errors/inventory.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { InventoryReferenceError } from '../errors/inventory.errors';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import type { InventoryNumberingService } from './inventory-numbering.service';
-import type { WarehouseService } from './warehouse.service';
+import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ExportedWarehouseService } from '@app/warehouse/services/exported-warehouse.service';
 
 /**
  * Custody, location trail and derived status of item units (was the custody
@@ -53,11 +52,17 @@ export class ItemCustodyService {
 		private readonly maintenances: IMaintenanceRepository,
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
-		private readonly audit: InventoryAuditWriter,
-		@inject(WAREHOUSE_SERVICE_TOKEN)
+		/** Fire-and-forget audit writer (hardening plan D3). */
+		private readonly audit: AuditWriter,
+		/**
+		 * Warehouse reachability and storage checks, read through the
+		 * `warehouse` module's facade (ADR-0026): this module may not inject
+		 * another module's service.
+		 */
+		@inject(EXPORTED_WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<
-			WarehouseService,
-			'assertWarehouseReachableByOrg' | 'assertStorageInWarehouse'
+			ExportedWarehouseService,
+			'isLinked' | 'storageInWarehouse'
 		>,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
@@ -98,7 +103,7 @@ export class ItemCustodyService {
 			notes?: string | null;
 			at?: Date;
 		},
-		actor: TInventoryAuditActor,
+		actor: TAuditActor,
 		tx: TTx,
 	): Promise<TItemMovementSelect> {
 		const movement = await this.record(
@@ -133,7 +138,7 @@ export class ItemCustodyService {
 			notes?: string | null;
 			at?: Date;
 		},
-		actor: TInventoryAuditActor,
+		actor: TAuditActor,
 		tx: TTx,
 	): Promise<TItemMovementSelect> {
 		const movement = await this.record(
@@ -168,7 +173,7 @@ export class ItemCustodyService {
 		itemId: string,
 		organizationId: string | null,
 		data: { referenceId?: string | null; notes?: string | null; at?: Date },
-		actor: TInventoryAuditActor,
+		actor: TAuditActor,
 		tx: TTx,
 	): Promise<TItemMovementSelect> {
 		const movement = await this.record(
@@ -193,7 +198,7 @@ export class ItemCustodyService {
 		itemId: string,
 		organizationId: string,
 		data: { warehouseId: string; storageId?: string | null; locationDescription?: string | null },
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemMovementSelect> {
 		const item = await this.requireItemInScope(itemId, organizationId);
 		this.assertReady(item, 'place');
@@ -239,7 +244,7 @@ export class ItemCustodyService {
 		itemId: string,
 		organizationId: string,
 		data: { toWarehouseId: string; toStorageId?: string | null; notes?: string | null },
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemMovementSelect> {
 		const item = await this.requireItemInScope(itemId, organizationId);
 		this.assertReady(item, 'transfer');
@@ -288,7 +293,7 @@ export class ItemCustodyService {
 			toLocation?: string | null;
 			notes?: string | null;
 		},
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemMovementSelect> {
 		if (data.movementType !== 'project_site') {
 			throw new ItemRuleViolationError(`unknown movement type "${data.movementType}"`);
@@ -349,7 +354,7 @@ export class ItemCustodyService {
 			notes?: string | null;
 			at?: Date;
 		},
-		actor: TInventoryAuditActor,
+		actor: TAuditActor,
 		tx: TTx,
 	): Promise<TItemMovementSelect> {
 		const { at, ...rest } = data;
@@ -381,14 +386,16 @@ export class ItemCustodyService {
 		storageId: string | null,
 		organizationId: string,
 	): Promise<void> {
-		const reachable = await this.warehouses.assertWarehouseReachableByOrg(
-			warehouseId,
-			organizationId,
-		);
+		const reachable = await this.warehouses.isLinked(warehouseId, organizationId);
 		// Unlinked is reported as not-found, so a tenant cannot probe which
 		// warehouse ids exist (ERP-0031 acceptance).
-		if (!reachable) throw new WarehouseNotFoundError();
-		if (storageId) await this.warehouses.assertStorageInWarehouse(storageId, warehouseId);
+		if (!reachable) throw new InventoryReferenceError('warehouse', 'warehouse.notFound');
+		if (storageId) {
+			const inWarehouse = await this.warehouses.storageInWarehouse(storageId, warehouseId);
+			if (!inWarehouse) {
+				throw new InventoryReferenceError('storage', 'warehouse.storageNotFound');
+			}
+		}
 	}
 
 	private async requireItem(itemId: string): Promise<TItemSelect> {

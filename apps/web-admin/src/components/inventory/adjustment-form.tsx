@@ -77,7 +77,7 @@ type TOption = { value: string; label: string; searchText: string };
  * approval, by someone holding the post permission.
  */
 export function AdjustmentForm() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const queryClient = useQueryClient();
 	// Line costs (opening stock) are for `product:read_cost` holders only.
 	const canSeeCost = usePermission('product.read_cost');

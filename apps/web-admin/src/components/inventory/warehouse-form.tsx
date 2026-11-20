@@ -54,7 +54,7 @@ export function WarehouseForm({
 	onSubmit: (input: TWarehouseCreateInput | TWarehouseUpdateInput) => void;
 	onCancel: () => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const isEdit = warehouse != null;
 
 	const [code, setCode] = useState(warehouse?.code ?? '');
@@ -106,27 +106,27 @@ export function WarehouseForm({
 		<form className='flex flex-col gap-6' onSubmit={handleSubmit}>
 			<div>
 				<h1 className='text-2xl font-bold'>
-					{isEdit ? t('inventory:warehouseForm.edit') : t('inventory:warehouseForm.new')}
+					{isEdit ? t('warehouse:warehouseForm.edit') : t('warehouse:warehouseForm.new')}
 				</h1>
 				<p className='text-sm text-muted-foreground'>
 					{isEdit
-						? t('inventory:warehouseForm.editDescription')
-						: t('inventory:warehouseForm.newDescription')}
+						? t('warehouse:warehouseForm.editDescription')
+						: t('warehouse:warehouseForm.newDescription')}
 				</p>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>{t('inventory:warehouseForm.details')}</CardTitle>
+					<CardTitle>{t('warehouse:warehouseForm.details')}</CardTitle>
 					<CardDescription>
-						{t('inventory:warehouseForm.detailsDescription')}
+						{t('warehouse:warehouseForm.detailsDescription')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='warehouse-code'>
-								{t('inventory:warehouseForm.code')}
+								{t('warehouse:warehouseForm.code')}
 							</FieldLabel>
 							<Input
 								id='warehouse-code'
@@ -139,7 +139,7 @@ export function WarehouseForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warehouse-name'>
-								{t('inventory:warehouseForm.name')}
+								{t('warehouse:warehouseForm.name')}
 							</FieldLabel>
 							<Input
 								id='warehouse-name'
@@ -158,11 +158,11 @@ export function WarehouseForm({
 								onCheckedChange={(checked) => setIsDefault(checked === true)}
 							/>
 							<FieldLabel htmlFor='warehouse-is-default'>
-								{t('inventory:warehouseForm.isDefault')}
+								{t('warehouse:warehouseForm.isDefault')}
 							</FieldLabel>
 						</Field>
 						<p className='text-xs text-muted-foreground'>
-							{t('inventory:warehouseForm.isDefaultHint')}
+							{t('warehouse:warehouseForm.isDefaultHint')}
 						</p>
 						<Field orientation='horizontal'>
 							<Checkbox
@@ -171,7 +171,7 @@ export function WarehouseForm({
 								onCheckedChange={(checked) => setIsActive(checked === true)}
 							/>
 							<FieldLabel htmlFor='warehouse-is-active'>
-								{t('inventory:warehouseForm.isActive')}
+								{t('warehouse:warehouseForm.isActive')}
 							</FieldLabel>
 						</Field>
 					</div>
@@ -180,16 +180,16 @@ export function WarehouseForm({
 
 			<Card>
 				<CardHeader>
-					<CardTitle>{t('inventory:warehouseForm.address')}</CardTitle>
+					<CardTitle>{t('warehouse:warehouseForm.address')}</CardTitle>
 					<CardDescription>
-						{t('inventory:warehouseForm.addressDescription')}
+						{t('warehouse:warehouseForm.addressDescription')}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='warehouse-address-label'>
-								{t('inventory:address.label')}
+								{t('warehouse:address.label')}
 							</FieldLabel>
 							<Input
 								id='warehouse-address-label'
@@ -202,7 +202,7 @@ export function WarehouseForm({
 					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
 						<Field className='sm:col-span-3'>
 							<FieldLabel htmlFor='warehouse-address-street'>
-								{t('inventory:address.street')}
+								{t('warehouse:address.street')}
 							</FieldLabel>
 							<Textarea
 								id='warehouse-address-street'
@@ -213,7 +213,7 @@ export function WarehouseForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warehouse-address-rt'>
-								{t('inventory:address.rt')}
+								{t('warehouse:address.rt')}
 							</FieldLabel>
 							<Input
 								id='warehouse-address-rt'
@@ -224,7 +224,7 @@ export function WarehouseForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warehouse-address-rw'>
-								{t('inventory:address.rw')}
+								{t('warehouse:address.rw')}
 							</FieldLabel>
 							<Input
 								id='warehouse-address-rw'
@@ -235,7 +235,7 @@ export function WarehouseForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='warehouse-address-postal'>
-								{t('inventory:address.postalCode')}
+								{t('warehouse:address.postalCode')}
 							</FieldLabel>
 							<Input
 								id='warehouse-address-postal'
@@ -257,10 +257,10 @@ export function WarehouseForm({
 			<div className='flex gap-2'>
 				<Button type='submit' disabled={submitting}>
 					{submitting
-						? t('inventory:warehouseForm.saving')
+						? t('warehouse:warehouseForm.saving')
 						: isEdit
 							? t('common:action.save')
-							: t('inventory:warehouseForm.create')}
+							: t('warehouse:warehouseForm.create')}
 				</Button>
 				<Button type='button' variant='outline' onClick={onCancel}>
 					{t('common:action.cancel')}

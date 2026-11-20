@@ -116,4 +116,23 @@ export interface IStockRepository {
 
 	/** Available quantity per item over every warehouse (website catalog, M04). */
 	availableByProducts(productIds: string[]): Promise<{ productId: string; available: number }[]>;
+	/**
+	 * Products with a physical presence in one warehouse (ADR-0026).
+	 *
+	 * @remarks
+	 * A live serialized unit or a stock balance. `product` filters its list by
+	 * warehouse with these ids instead of querying `inventory.*` itself.
+	 */
+	productIdsInWarehouse(warehouseId: string): Promise<string[]>;
+
+	/**
+	 * Products with a positive on-hand balance per warehouse.
+	 *
+	 * @remarks
+	 * Materials are never serialized, so their "is it here" answer is a
+	 * balance. The caller counts distinct products per warehouse.
+	 */
+	countMaterialStocks(
+		warehouseIds: string[],
+	): Promise<Array<{ warehouseId: string | null; productId: string }>>;
 }
