@@ -22,6 +22,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { Search } from 'lucide-react';
+import { EmptyState } from '@/components/empty-state';
 import { customerQueryOptions, customersQueryOptions } from '@/lib/customer-api';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { ITEM_UNIT_LABELS, listProducts, type TItemUnitLabel, type TProduct } from '@/lib/inventory-api';
@@ -463,7 +464,9 @@ export function QuotationForm({
 									</li>
 								))}
 								{items.data?.rows.length === 0 && (
-									<li className='px-3 py-2 text-sm text-muted-foreground'>{t('sales:form.noItems')}</li>
+									<li>
+										<EmptyState title={t('sales:form.noItems')} size='sm' />
+									</li>
 								)}
 							</ul>
 						)}

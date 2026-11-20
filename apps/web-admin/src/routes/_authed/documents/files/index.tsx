@@ -18,6 +18,7 @@ import {
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import {
@@ -205,12 +206,12 @@ function DocumentsPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{isError && <p className='text-sm text-destructive'>{error.message}</p>}
+					{isError && <ErrorState error={error} size='sm' />}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('documents:empty')}</p>
+						<EmptyState title={t('documents:empty')} size='sm' />
 					)}
-					{rows.length > 0 && (
-						<DataTable columns={columns} data={rows} getRowId={(row) => row.id} />
+					{(isPending || rows.length > 0) && (
+						<DataTable columns={columns} data={rows} getRowId={(row) => row.id} loading={isPending} />
 					)}
 					{pagination && (
 						<PaginationControls

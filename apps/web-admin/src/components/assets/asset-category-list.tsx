@@ -13,14 +13,14 @@ import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { CircleAlert, Layers, Plus } from 'lucide-react';
+import { Layers, Plus } from 'lucide-react';
 import {
 	Pagination,
 	PaginationContent,
 	PaginationItem,
 } from '@ims-erp/ui/components/pagination';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	assetCategoriesQueryOptions,
@@ -114,13 +114,7 @@ export function AssetCategoryList() {
 	);
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:categories.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -156,16 +150,18 @@ export function AssetCategoryList() {
 				</div>
 			) : null}
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={Layers}
 					title={t('assets:categories.emptyTitle')}
 					description={t('assets:categories.empty')}
+					bordered
 				/>
 			) : (
 				<DataTable
 					columns={columns}
-					data={data.rows}
+					data={data?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -287,17 +288,16 @@ export function BillsTable() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<p className='text-muted-foreground text-sm'>{error.message}</p>
-			) : (data?.rows.length ?? 0) === 0 ? (
-				<p className='text-muted-foreground text-sm'>
-					{t('finance:bills.empty')}
-				</p>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
+				<EmptyState title={t('finance:bills.empty')} bordered />
 			) : (
 				<>
 					<DataTable
 						columns={columns}
 						data={data?.rows ?? []}
+						loading={isPending}
 						getRowId={(row) => row.id}
 						bordered
 					/>

@@ -17,6 +17,8 @@ import {
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton, SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	createDocumentShare,
@@ -218,8 +220,8 @@ function DocumentDetailPage() {
 	if (!canRead) {
 		return <div className='text-sm text-muted-foreground'>{t('documents:noPermission')}</div>;
 	}
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -276,7 +278,7 @@ function DocumentDetailPage() {
 				</CardHeader>
 				<CardContent>
 					{data.files.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>{t('documents:noFiles')}</p>
+						<EmptyState title={t('documents:noFiles')} size='sm' />
 					) : (
 						<DataTable columns={fileColumns} data={data.files} getRowId={(row) => row.id} />
 					)}
@@ -316,7 +318,7 @@ function DocumentDetailPage() {
 				</CardHeader>
 				<CardContent>
 					{data.shares.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>{t('documents:noShares')}</p>
+						<EmptyState title={t('documents:noShares')} size='sm' />
 					) : (
 						<DataTable columns={shareColumns} data={data.shares} getRowId={(row) => row.id} />
 					)}
@@ -339,13 +341,13 @@ function DocumentDetailPage() {
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>
-					{signatureSection.isError && (
-						<p className='text-sm text-destructive'>{signatureSection.error.message}</p>
-					)}
+					{signatureSection.isError && <ErrorState error={signatureSection.error} size='sm' />}
 					<div>
 						<h3 className='mb-2 text-sm font-medium'>{t('signatures:signaturesOnDocument')}</h3>
-						{(signatureSection.data?.signatures ?? []).length === 0 ? (
-							<p className='text-sm text-muted-foreground'>{t('signatures:empty')}</p>
+						{signatureSection.isPending ? (
+							<SectionSkeleton lines={2} />
+						) : (signatureSection.data?.signatures ?? []).length === 0 ? (
+							<EmptyState title={t('signatures:empty')} size='sm' />
 						) : (
 							<ul className='flex flex-col gap-1 text-sm'>
 								{(signatureSection.data?.signatures ?? []).map((signature) => (
@@ -364,8 +366,10 @@ function DocumentDetailPage() {
 					</div>
 					<div>
 						<h3 className='mb-2 text-sm font-medium'>{t('signatures:outgoing')}</h3>
-						{(signatureSection.data?.requests ?? []).length === 0 ? (
-							<p className='text-sm text-muted-foreground'>{t('signatures:outgoingEmpty')}</p>
+						{signatureSection.isPending ? (
+							<SectionSkeleton lines={2} />
+						) : (signatureSection.data?.requests ?? []).length === 0 ? (
+							<EmptyState title={t('signatures:outgoingEmpty')} size='sm' />
 						) : (
 							<ul className='flex flex-col gap-1 text-sm'>
 								{(signatureSection.data?.requests ?? []).map((request) => (
@@ -394,7 +398,7 @@ function DocumentDetailPage() {
 				</CardHeader>
 				<CardContent>
 					{data.accessTrail.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>{t('documents:noAccess')}</p>
+						<EmptyState title={t('documents:noAccess')} size='sm' />
 					) : (
 						<ul className='flex flex-col gap-1 text-sm'>
 							{data.accessTrail.map((row) => (

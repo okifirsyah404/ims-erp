@@ -55,12 +55,26 @@ describe('DataTable', () => {
 		expect(html).toContain('colSpan="2"');
 	});
 
-	test('keeps the heading row when loading', () => {
+	test('renders skeleton rows with the header while loading', () => {
 		const html = renderToString(
-			<DataTable columns={columns} data={rows} loading empty={<span>Loading</span>} />,
+			<DataTable columns={columns} data={rows} loading skeletonRows={3} />,
 		);
-		expect(html).toContain('Loading');
-		expect(html).not.toContain('AA-1');
+		expect(html).toContain('>Code<'); // header stays visible
+		expect(html).not.toContain('AA-1'); // data is not shown
+		expect(html.match(/data-slot="skeleton"/g)?.length).toBe(6); // 3 rows x 2 columns
+		expect(html).toContain('aria-busy="true"');
+	});
+
+	test('uses meta.skeletonClassName and right-aligns numeric placeholders', () => {
+		const sized: ColumnDef<DataTableFeatures, TRow, unknown>[] = [
+			{ accessorKey: 'code', header: 'Code', meta: { skeletonClassName: 'h-4 w-24' } },
+			{ accessorKey: 'total', header: 'Total', meta: { align: 'right' } },
+		];
+		const html = renderToString(
+			<DataTable columns={sized} data={[]} loading skeletonRows={1} />,
+		);
+		expect(html).toContain('h-4 w-24');
+		expect(html).toContain('ml-auto');
 	});
 
 	test('adds the bordered frame only when asked', () => {

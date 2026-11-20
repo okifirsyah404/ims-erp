@@ -12,6 +12,92 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-22 - Backend: every paginated repository method is `paginate()` on one shared envelope helper
+
+User request: make `apps/backend/src/app/*` use `paginate()` instead of `list()`
+and friends, following the `location` module as the reference. No `ERP-*`
+backlog item is claimed (internal refactor: no endpoint, envelope, or schema
+change), so `backlog.md` / `features.md` do not move. `docs/database/` reviewed
+and unchanged — no table, column, index, constraint, status vocabulary, or
+column type changed; the grill-me pass had nothing to grill (tenant scoping and
+soft-delete filters are unchanged, only their argument plumbing moved).
+
+New shared helper `apps/backend/src/utils/pagination.util.ts`:
+`paginationResult(request, total, data)` builds `TPaginationResult<T>` with
+`totalPages = Math.ceil(total / limit)`. Every repository now uses it instead of
+hand-rolling `meta` — the old code had drifted across three spellings
+(`Math.ceil(...)`, `Math.ceil(...) || 1`, `Math.max(1, ...)`), so the same empty
+list reported 1 page in some modules and 0 in others.
+
+Renamed + reshaped to `paginate(request)` / `paginate<Thing>(request)` with one
+request object (`TPaginationRequest & { ...filters }`, tenant inside):
+
+- `audit` `list` -> `paginate`; `notification` `listForUser` ->
+  `paginateForUser`; `payment` `list` -> `paginate`; `user`
+  `invitation.list` -> `paginate`, `user-management.listUsers` ->
+  `paginateUsers`; `document` `list` -> `paginate`; `document/signature`
+  `listSignatures`/`listIncoming`/`listOutgoing` ->
+  `paginate`/`paginateIncoming`/`paginateOutgoing`.
+- `finance`: `listPeriods`, `listBankReconciliations`,
+  `listCashBankTransactions`, `listAccounts`, `listEntries`,
+  `listSupplierBills`, depreciation `list`, report-archive `list` ->
+  `paginate` / `paginateTransactions` / `paginateAccounts` / `paginateEntries`.
+- `human-resource` employee `list` -> `paginate`; `inventory` maintenance /
+  condition-check / item-movement `listByItem` -> `paginateByItem`, disposal and
+  tool-set `list` -> `paginate`; `sale` invoice `list` -> `paginate` (and it now
+  returns `TPaginationResult<T>` instead of an inline `{data, meta}`); `project`
+  handover `paginateAll` -> `paginate`; `tax` `listTaxTypes`/`listTaxRecords`/
+  `listWithholding` -> `paginateTaxTypes`/`paginateTaxRecords`/
+  `paginateWithholding`.
+- `supplier` and `customer` had the worst shape — `paginate()` returning bare
+  rows plus a separate `count()`, with the service hand-building `meta`. Both
+  `paginate()` methods now return `TPaginationResult<T>` and `count()` is gone
+  from both contracts. `customer`'s local `TPagination<T>` (which used `rows`
+  instead of `data`) and the service's `TCustomerPage<T>` are deleted.
+
+Also normalised to the shared helper without renaming (already `paginate*`):
+`location` (4), `inventory` (11), `procurement` (4), `sale` (4),
+`project` (4), `organization` (2), `automation` (2), `human-resource` (3),
+`user` (1), plus `StockValuationService.get` (a service that built its own
+`meta`).
+
+Three live bugs found and fixed by the reshape — the same defect each time, a
+controller passing the parsed query as *both* filters and pagination:
+
+- `finance/controllers/ledger.controller.ts` `GET /ledger/accounts` — the
+  `accountType`/`isActive` filters never reached the repository, so they were
+  silently dropped.
+- `finance/controllers/finance-operations.controller.ts`
+  `GET /supplier-bills`, `GET /reports/archives`, `GET /reconciliations` — same
+  duplicated-argument shape.
+- `sale/controllers/invoice.controller.ts` `GET /sales/invoices` and
+  `payment/controllers/payment-ledger.controller.ts` `GET /payments` — same.
+
+Behaviour change to note: `totalPages` is now `0` (was `1`) for an empty result
+set on every list endpoint. web-admin already clamps via `useClampPage`
+(`Math.max(totalPages, 1)`) and `PaginationControls` only renders when `> 1`,
+so no UI regression is expected — but an empty-list browser pass is still owed.
+
+Verification (all executed 2026-11-22):
+
+- `cd apps/backend && bunx tsc --noEmit` — 0 errors.
+- `cd apps/backend && bun test` — 1257 pass / 0 fail across 97 files (was 1251
+  before the new `pagination.util.test.ts` +6).
+- `bun run lint` — 0 errors (pre-existing warnings only).
+- `bun run test` (repo root) — 7/7 tasks: backend 1257, web-admin 129, locales
+  98, web-landing 24, web-customer-portal 60, react-email 6.
+- `bun docs/database/validate-dbml.ts` — OK.
+- NOT verified: no browser pass over empty lists (see the `totalPages` note),
+  and `graphify update .` was not run in this session.
+
+Stale test doubles that type-checking caught (all were `as never` casts or
+untyped literals, so nothing failed at runtime before the fix):
+`test/finance/*` (5 files), `test/tax/tax.service.test.ts`,
+`test/unit/{signature,user-admin,item-operations,handover-warranty,customer,supplier,hr-records}.service.test.ts`,
+`test/unit/payment-gateway.test.ts`.
+
+Next executable task: unchanged (see the entry below).
+
 ## 2026-11-21 - web-admin: `@ims-erp/ui` components instead of native elements, consistent Card composition
 
 User request: make `apps/web-admin` use `@ims-erp/ui` components wherever
@@ -128,6 +214,60 @@ tasks, 0 errors. Working tree 144 files changed, not committed. NOT verified:
 no rendered browser check - the frame, `meta.align` right-alignment and
 `EmptyState` sizes change the look, so pages with wide tables (14 columns:
 `warehouse-item-table`), money columns and empty lists still need a visual pass.
+
+### Follow-up: empty, error and loading states unified (Empty + Skeleton)
+
+Request: show the ui `Empty` when data is empty or a load fails, and the ui
+`Skeleton` while loading. Components in `apps/web-admin/src/components/`:
+
+- `empty-state.tsx`: `EmptyState` (ui `Empty` composition) plus the new
+  `ErrorState` (icon, title `common:error.failed`, the thrown message as
+  description, `tone='error'`) and `errorMessage()`.
+- `page-skeleton.tsx`: `PageSkeleton` (heading + content cards, for detail and
+  edit pages) and `SectionSkeleton` (muted lines for panels).
+- `data-table/data-table.tsx`: `loading` now renders `Skeleton` rows, one cell
+  per column, header kept, `aria-busy`; `skeletonRows`; per-column width via
+  `meta.skeletonClassName`.
+- Roll-out across `apps/web-admin/src`: `ErrorState` 137 uses, `PageSkeleton` 36,
+  `SectionSkeleton` 34, `DataTable loading={isPending}` 48. Lists became
+  `isError ? ErrorState : !isPending && empty ? EmptyState : DataTable loading`;
+  detail/edit/guard pages return `PageSkeleton` instead of `null`; the hand-made
+  `SkeletonRows` in `admin/audit` and `admin/users` were removed.
+
+Deliberately unchanged: inline mutation/form errors (`transition.error`,
+`reversal.error`, `creation.error`, submit errors), `routes/_authed.index.tsx`
+(redirect-only `return null`), auth screens, `*-document.tsx`, sidebar
+`nav-user`, print routes' pending state (only their error branch changed),
+`notification-bell` (its error text is `notifications:loadFailed`; switching it
+to `ErrorState` would orphan that key and fail the dead-keys test).
+`signatureSection.error` in `documents/files/$documentId.tsx` IS a query error
+and was converted (one line, revert if unwanted). Behaviour changes to look at:
+list pages (`movement-list`, `stock-list`, `adjustment-list`) now keep the title
+and filters while loading/erroring; `items/$itemId`, `items/$itemId.edit`,
+`warehouses/$warehouseId.edit` show `ErrorState` for errors and `EmptyState`
+only for a genuinely missing record; the two returns edit pages show an error
+as soon as either query fails.
+
+Also cleaned 7 `exhaustive-deps` "unnecessary dependency `x.isPending`" warnings
+left by the earlier DataTable migration (`tax-record-list`, `asset-disposal-list`,
+`account-list`, `journal-page`).
+
+Verification (executed 2026-11-21): `bunx tsc -p tsconfig.app.json --noEmit`
+exit 0; `bun run test` 7/7 tasks (web-admin 138: +9 `test/states.test.tsx`, +2
+loading tests in `test/data-table.test.tsx`; backend 1257; locales 98;
+web-landing 24; web-customer-portal 60; react-email 6); `bun run lint` 5/5
+tasks, 0 errors (web-admin 16 warnings, all pre-existing categories:
+`only-export-components`, `set-state-in-effect`, one `exhaustive-deps` in
+`signatures/mine/$requestId/place.tsx`). NOT verified: no browser run. Skeleton
+heights, the bordered `ErrorState`, gated queries (`enabled: canRead`) for users
+without the permission, and the organization edit page (now `PageSkeleton`
+until loaded) still need a visual pass.
+
+Working tree note: 140 `apps/backend` files plus
+`docs/architecture/api-conventions.md` and untracked
+`apps/backend/src/utils/pagination.util.ts` (+ test) changed from a separate
+pagination refactor (timestamps 2026-11-20 22:16), not from this work. Keep them
+out of the web-admin commit.
 
 ## 2026-11-21 - Invite dialog: role ladder enforced end to end, permanent/temporary switch, employee email fix
 

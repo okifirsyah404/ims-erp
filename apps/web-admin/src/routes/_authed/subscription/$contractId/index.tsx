@@ -12,7 +12,8 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/com
 import { Input } from '@ims-erp/ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { ContractBadges } from '@/components/licensing/contract-badges';
 import { EventTable } from '@/components/licensing/event-table';
 import { toast } from '@/components/toast';
@@ -65,11 +66,11 @@ function ContractDetailPage() {
 	const [keyNotes, setKeyNotes] = useState('');
 	const [busy, setBusy] = useState(false);
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/subscription' className='text-sm hover:underline'>
 					{t('licensing:contracts.back')}
 				</Link>

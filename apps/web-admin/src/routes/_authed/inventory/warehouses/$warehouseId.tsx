@@ -30,7 +30,7 @@ import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table'
 import { WarehouseOrganizationsTab } from '@/components/inventory/warehouse-organizations-tab';
 import { WarehouseManagersTab } from '@/components/inventory/warehouse-managers-tab';
 import { useConfirm } from '@/components/confirm-dialog';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
 import { type TWarehouseStorage, warehouseQueryOptions } from '@/lib/warehouse-api';
 
@@ -57,7 +57,7 @@ function WarehouseDetail() {
 	const { t } = useTranslation(['inventory', 'common']);
 	const { warehouseId } = useParams({ from: Route.id });
 	const { isAppAdmin } = useWarehouseAccess();
-	const { data: warehouse, isPending, isError } = useQuery(
+	const { data: warehouse, isPending, isError, error } = useQuery(
 		warehouseQueryOptions(warehouseId),
 	);
 
@@ -115,12 +115,12 @@ function WarehouseDetail() {
 		);
 	}
 
-	if (isError || !warehouse) {
+	if (isError) return <ErrorState error={error} bordered />;
+
+	if (!warehouse) {
 		return (
 			<WarehouseAccessGate>
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:warehouses.notFound')}
-				</p>
+				<EmptyState title={t('inventory:warehouses.notFound')} bordered />
 			</WarehouseAccessGate>
 		);
 	}

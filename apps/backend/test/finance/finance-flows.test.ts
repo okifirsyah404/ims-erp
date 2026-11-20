@@ -252,7 +252,7 @@ function makeHarness() {
 			cashTxRows.push(created);
 			return created;
 		},
-		listCashBankTransactions: async () => ({
+		paginateTransactions: async () => ({
 			data: [...cashTxRows.values()],
 			meta: {
 				page: 1,

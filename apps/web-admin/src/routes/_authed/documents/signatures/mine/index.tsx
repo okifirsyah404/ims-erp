@@ -29,6 +29,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	SIGNATURE_METHODS,
@@ -132,14 +134,18 @@ function MySignaturePage() {
 					<CardDescription>{t('signatures:imageHint')}</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-3'>
-					{imageUrl ? (
+					{canSign && image.isPending ? (
+						<SectionSkeleton lines={2} />
+					) : image.isError ? (
+						<ErrorState error={image.error} size='sm' />
+					) : imageUrl ? (
 						<img
 							src={imageUrl}
 							alt={t('signatures:imageTitle')}
 							className='h-24 w-auto object-contain'
 						/>
 					) : (
-						<p className='text-sm text-muted-foreground'>{t('signatures:imageEmpty')}</p>
+						<EmptyState title={t('signatures:imageEmpty')} size='sm' />
 					)}
 					<input
 						ref={fileInput}
@@ -201,9 +207,10 @@ function MySignaturePage() {
 						<p className='text-xs text-muted-foreground'>{t('signatures:signHint')}</p>
 					</div>
 
-					{incoming.isError && <p className='text-sm text-destructive'>{incoming.error.message}</p>}
-					{!incoming.isPending && pending.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('signatures:incomingEmpty')}</p>
+					{canSign && incoming.isPending && <SectionSkeleton />}
+					{incoming.isError && <ErrorState error={incoming.error} size='sm' />}
+					{!incoming.isPending && !incoming.isError && pending.length === 0 && (
+						<EmptyState title={t('signatures:incomingEmpty')} size='sm' />
 					)}
 					{pending.map((request) => (
 						<div
@@ -250,8 +257,10 @@ function MySignaturePage() {
 					<CardTitle>{t('signatures:history')}</CardTitle>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-2'>
-					{!history.isPending && historyRows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('signatures:historyEmpty')}</p>
+					{canSign && history.isPending && <SectionSkeleton />}
+					{history.isError && <ErrorState error={history.error} size='sm' />}
+					{!history.isPending && !history.isError && historyRows.length === 0 && (
+						<EmptyState title={t('signatures:historyEmpty')} size='sm' />
 					)}
 					{historyRows.map((request) => (
 						<div

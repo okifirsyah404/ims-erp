@@ -11,6 +11,7 @@ import {
 } from '@drizzle/schemas/procurement.schema';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, asc, count, desc, eq, gt, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
@@ -69,7 +70,7 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 			.orderBy(desc(purchaseOrders.createdAt), desc(purchaseOrders.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findById(id: string): Promise<TPurchaseOrderSelect | null> {

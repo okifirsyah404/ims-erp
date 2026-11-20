@@ -22,7 +22,8 @@ import {
 } from '@ims-erp/ui/components/card';
 import { Building2 } from 'lucide-react';
 
-import { EmptyState } from '@/components/empty-state';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 
 export const Route = createFileRoute('/_authed/organizations/')({
 	component: OrganizationsPage,
@@ -77,7 +78,7 @@ function OrganizationsPage() {
 	const queryClient = useQueryClient();
 	const { data: session } = useSession();
 	const canCreate = hasRole(session?.user?.role, 'admin');
-	const { data, isPending } = useQuery({ ...organizationsQueryOptions });
+	const { data, isPending, isError, error } = useQuery({ ...organizationsQueryOptions });
 	const { t } = useTranslation(['admin', 'common']);
 
 	const hasAny = (data?.rows.length ?? 0) > 0;
@@ -115,7 +116,33 @@ function OrganizationsPage() {
 				)}
 			</div>
 
-			{isPending ? null : hasAny ? (
+			{isPending ? (
+				<div
+					className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4'
+					aria-busy='true'
+				>
+					<span className='sr-only'>{t('common:state.loading')}</span>
+					{Array.from({ length: 6 }, (_, index) => (
+						<Card key={`org-skeleton-${index}`} aria-hidden='true'>
+							<CardHeader className='flex items-center gap-3'>
+								<Skeleton className='size-10 shrink-0 rounded-md motion-reduce:animate-none' />
+								<div className='flex flex-1 flex-col gap-1.5'>
+									<Skeleton className='h-4 w-3/4 motion-reduce:animate-none' />
+									<Skeleton className='h-3 w-1/2 motion-reduce:animate-none' />
+								</div>
+							</CardHeader>
+							<CardContent>
+								<Skeleton className='h-8 w-full motion-reduce:animate-none' />
+							</CardContent>
+							<CardFooter>
+								<Skeleton className='h-5 w-16 rounded-full motion-reduce:animate-none' />
+							</CardFooter>
+						</Card>
+					))}
+				</div>
+			) : isError ? (
+				<ErrorState error={error} bordered />
+			) : hasAny ? (
 				/* Three columns max below 1536px: a 4-up grid at `lg` gave ~180px
 				   cards, too narrow for the 40px logo, the three stat columns and
 				   the badge+Restore footer. */

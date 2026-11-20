@@ -29,7 +29,8 @@ import {
 	type TAttendanceStatus,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 /** `/hr/attendance` — the day sheet, the monthly recap and the import (M08). */
 export const Route = createFileRoute('/_authed/hr/attendance/')({
@@ -93,8 +94,8 @@ function AttendancePage() {
 
 function DayView({ date, canRecord }: { date: string; canRecord: boolean }) {
 	const { data, isPending, isError, error, dataUpdatedAt } = useQuery(attendanceDayQueryOptions(date));
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton cards={1} />;
+	if (isError) return <ErrorState error={error} bordered />;
 	// Remount when the day or the server data changes, so the draft starts from it.
 	return <DaySheet key={`${date}-${dataUpdatedAt}`} date={date} rows={data} canRecord={canRecord} />;
 }
@@ -277,7 +278,6 @@ function MonthView({ period }: { period: string }) {
 		],
 		[t],
 	);
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
-	return <DataTable columns={columns} data={data} getRowId={(row) => row.employee.id} bordered />;
+	if (isError) return <ErrorState error={error} bordered />;
+	return <DataTable columns={columns} data={data ?? []} getRowId={(row) => row.employee.id} loading={isPending} bordered />;
 }

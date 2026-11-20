@@ -22,6 +22,7 @@ import {
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import {
 	SIGNATURE_METHODS,
@@ -150,12 +151,17 @@ function SignatureRegisterPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{isError && <p className='text-sm text-destructive'>{error.message}</p>}
+					{isError && <ErrorState error={error} size='sm' />}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('signatures:empty')}</p>
+						<EmptyState title={t('signatures:empty')} size='sm' />
 					)}
-					{rows.length > 0 && (
-						<DataTable columns={columns} data={rows} getRowId={(row) => row.id} />
+					{((canRead && isPending) || rows.length > 0) && (
+						<DataTable
+							columns={columns}
+							data={rows}
+							getRowId={(row) => row.id}
+							loading={canRead && isPending}
+						/>
 					)}
 					{pagination && (
 						<PaginationControls

@@ -42,11 +42,10 @@ export class PaymentLedgerController {
 				'/payments',
 				async ({ query, erp }) =>
 					okPaginated(
-						await payments.list(
-							erp.organizationId,
-							paymentListQuerySchema.parse(query),
-							paymentListQuerySchema.parse(query),
-						),
+						await payments.list({
+							organizationId: erp.organizationId,
+							...paymentListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['payment:read'] },

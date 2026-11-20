@@ -20,6 +20,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { Search } from 'lucide-react';
+import { EmptyState } from '@/components/empty-state';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { listProducts, type TProduct } from '@/lib/inventory-api';
 import {
@@ -459,7 +460,9 @@ export function PurchaseOrderForm({
 											</li>
 										))}
 									{openLines.data?.filter((line) => !usedRequestLines.has(line.id)).length === 0 && (
-										<li className='px-3 py-2 text-sm text-muted-foreground'>{t('procurement:po.noOpenRequests')}</li>
+										<li>
+											<EmptyState title={t('procurement:po.noOpenRequests')} size='sm' />
+										</li>
 									)}
 								</ul>
 							</>

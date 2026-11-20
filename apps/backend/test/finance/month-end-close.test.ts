@@ -219,7 +219,7 @@ function makeHarness() {
 			cashTxRows.push(created);
 			return created;
 		},
-		listCashBankTransactions: async () => ({
+		paginateTransactions: async () => ({
 			data: [...cashTxRows],
 			meta: { page: 1, limit: 20, total: cashTxRows.length, totalPages: 1 },
 		}),
@@ -251,7 +251,7 @@ function makeHarness() {
 			Object.assign(row, patch);
 			return row;
 		},
-		listSupplierBills: async () => ({
+		paginate: async () => ({
 			data: [...bills.values()],
 			meta: { page: 1, limit: 20, total: bills.size, totalPages: 1 },
 		}),

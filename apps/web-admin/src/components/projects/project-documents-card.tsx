@@ -6,6 +6,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { useConfirm } from '@/components/confirm-dialog';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatBusinessDate } from '@/lib/format';
 import { cancelBast, projectBastsQueryOptions, warrantyQueryOptions } from '@/lib/handover-api';
@@ -39,8 +41,12 @@ export function ProjectDocumentsCard({ project }: { project: TProjectDetail }) {
 				)}
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4 text-sm'>
-				{(basts.data ?? []).length === 0 ? (
-					<p className='text-muted-foreground'>{t('projects:bast.none')}</p>
+				{basts.isPending ? (
+					<SectionSkeleton />
+				) : basts.isError ? (
+					<ErrorState error={basts.error} size='sm' />
+				) : (basts.data ?? []).length === 0 ? (
+					<EmptyState title={t('projects:bast.none')} size='sm' />
 				) : (
 					<ul className='flex flex-col divide-y'>
 						{(basts.data ?? []).map((bast) => (

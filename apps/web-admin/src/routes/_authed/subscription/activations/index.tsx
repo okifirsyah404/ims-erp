@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent } from '@ims-erp/ui/components/card';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { EventTable } from '@/components/licensing/event-table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { eventsQueryOptions, GRACE_DAYS } from '@/lib/license-api';
@@ -25,8 +26,10 @@ function ActivationLogPage() {
 				<h1 className='text-2xl font-bold'>{t('licensing:events.pageTitle')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('licensing:events.pageDescription', { days: GRACE_DAYS })}</p>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
+			{isPending ? (
+				<SectionSkeleton lines={5} />
+			) : isError ? (
+				<ErrorState error={error} bordered />
 			) : data.rows.length === 0 ? (
 				<EmptyState title={t('licensing:events.empty')} bordered />
 			) : (

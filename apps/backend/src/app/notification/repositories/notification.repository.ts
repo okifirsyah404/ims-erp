@@ -3,6 +3,7 @@ import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/tokens';
+import { paginationResult } from '@utils/pagination.util';
 import {
 	pushNotifications,
 	pushNotificationTemplates,
@@ -12,7 +13,7 @@ import {
 import type {
 	IPushNotificationRepository,
 	TPushNotificationInsert,
-	TPushNotificationListRequest,
+	TPushNotificationPaginationRequest,
 } from '../contracts/notification.repository.interface';
 
 /**
@@ -79,8 +80,13 @@ export class PushNotificationRepository implements IPushNotificationRepository {
 		return (row as TPushNotificationSelect | undefined) ?? null;
 	}
 
-	async listForUser(
-		request: TPushNotificationListRequest,
+	/**
+	 * Fetches one newest-first page of the caller's inbox.
+	 *
+	 * @param request - Caller id, page settings, and the `unreadOnly` filter
+	 */
+	async paginateForUser(
+		request: TPushNotificationPaginationRequest,
 	): Promise<TPaginationResult<TPushNotificationSelect>> {
 		const { userId, page, limit, unreadOnly } = request;
 		const where = and(
@@ -102,10 +108,7 @@ export class PushNotificationRepository implements IPushNotificationRepository {
 			.offset((page - 1) * limit)
 			.limit(limit);
 
-		return {
-			data: data as TPushNotificationSelect[],
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
-		};
+		return paginationResult(request, total, data as TPushNotificationSelect[]);
 	}
 
 	async countUnread(userId: string): Promise<number> {

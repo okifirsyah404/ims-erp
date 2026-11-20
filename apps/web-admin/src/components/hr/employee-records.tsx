@@ -6,6 +6,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { todayBusinessDate } from '@/lib/format';
 import { bankAccountQueryOptions, leaveBalancesQueryOptions, saveBankAccount } from '@/lib/hr-records-api';
@@ -34,7 +36,7 @@ function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullNam
 	const canUpdate = usePermission('employee.update');
 	const canReadPrivate = usePermission('employee.read_private');
 	const canEdit = canUpdate && canReadPrivate;
-	const { data: account } = useQuery(bankAccountQueryOptions(employeeId));
+	const { data: account, isPending, isError, error } = useQuery(bankAccountQueryOptions(employeeId));
 	const [draft, setDraft] = useState<TBankDraft | null>(null);
 	const [busy, setBusy] = useState(false);
 
@@ -120,8 +122,12 @@ function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullNam
 						</Detail>
 						<Detail label={t('hr:bank.holder')}>{account.bankAccountHolder}</Detail>
 					</div>
+				) : isPending ? (
+					<SectionSkeleton lines={2} />
+				) : isError ? (
+					<ErrorState error={error} size='sm' />
 				) : (
-					<p className='text-muted-foreground'>{t('hr:bank.none')}</p>
+					<EmptyState title={t('hr:bank.none')} size='sm' />
 				)}
 			</CardContent>
 		</Card>
@@ -138,6 +144,8 @@ function LeaveBalanceCard({ employeeId }: { employeeId: string }) {
 				<CardTitle>{t('hr:balance.title', { year })}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
+				{balances.isPending ? <SectionSkeleton lines={3} /> : null}
+				{balances.isError ? <ErrorState error={balances.error} size='sm' /> : null}
 				{(balances.data ?? []).map((balance) => (
 					<div key={balance.leaveType.id}>
 						<div className='font-medium'>{balance.leaveType.name}</div>

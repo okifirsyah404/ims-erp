@@ -13,7 +13,7 @@ import type { IOrganizationSlugResolverPort } from '../contracts/organization-sl
 import { dispatchAvatarGeneration } from '../queues/avatar.queue';
 import type {
 	IInvitationRepository,
-	TInvitationListRequest,
+	TInvitationPaginationRequest,
 } from '../contracts/invitation.repository.interface';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
 import type { TClaimTarget } from '../contracts/user-management-auth.gateway.interface';
@@ -312,10 +312,11 @@ export class InvitationService {
 		};
 	}
 
+	/** Fetches one filtered page of invitations. */
 	list(
-		request: TInvitationListRequest,
+		request: TInvitationPaginationRequest,
 	): Promise<TPaginationResult<TUserInvitationSelect>> {
-		return this.invitations.list(request);
+		return this.invitations.paginate(request);
 	}
 
 	/**

@@ -7,17 +7,8 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
-import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PackageOpen } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
@@ -154,13 +145,7 @@ export function WarehouseItemTable({
 	);
 
 	if (isError) {
-		return (
-			<EmptyState
-				title={error instanceof Error ? error.message : t('common:error.failed')}
-				tone='error'
-				bordered
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	const rows = data?.rows ?? [];
@@ -187,56 +172,12 @@ export function WarehouseItemTable({
 						description={t('inventory:items.empty')}
 						className='py-4'
 					/>
-				) : rows.length === 0 && isPending ? (
-					<Table aria-busy>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-16'>
-									{t('inventory:warehouses.image')}
-								</TableHead>
-								<TableHead>{t('inventory:items.sku')}</TableHead>
-								<TableHead>{t('inventory:items.name')}</TableHead>
-								<TableHead>{t('inventory:items.unitLabel')}</TableHead>
-								<TableHead className='text-right'>
-									{t('inventory:warehouses.quantity')}
-								</TableHead>
-								<TableHead>{t('inventory:items.minStockQty')}</TableHead>
-								<TableHead className='text-right'>
-									<span className='sr-only'>{t('common:action.edit')}</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{Array.from({ length: 5 }, (_, index) => (
-								<TableRow key={`skeleton-${index}`}>
-									<TableCell>
-										<Skeleton className='size-10 rounded' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-24' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-40' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-16' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='ml-auto h-4 w-12' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-12' />
-									</TableCell>
-									<TableCell />
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
 				) : (
 					<DataTable
 						columns={columns}
 						data={rows}
 						getRowId={(item) => item.id}
+						loading={isPending}
 					/>
 				)}
 				{pagination && (

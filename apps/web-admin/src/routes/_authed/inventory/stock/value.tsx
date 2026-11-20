@@ -23,7 +23,8 @@ import type { DataTableFeatures } from '@/components/data-table/data-table-featu
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatIdr } from '@/lib/format';
 import { stockValuationQueryOptions, type TStockValuationRow } from '@/lib/stock-valuation-api';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 
 const PAGE_SIZE = 50;
 
@@ -104,8 +105,10 @@ function InventoryValuePage() {
 				<p className='text-sm text-muted-foreground'>{t('inventory:value.description')}</p>
 			</div>
 			{isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : isPending ? null : (
+				<ErrorState error={error} bordered />
+			) : isPending ? (
+				<SectionSkeleton lines={6} />
+			) : (
 				<>
 					<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 						<Card>

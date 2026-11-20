@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { authClient } from '@/lib/auth-client';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -120,11 +121,8 @@ export function SessionsTable() {
 								))}
 							{sessionsQuery.isError && (
 								<TableRow>
-									<TableCell
-										colSpan={5}
-										className='text-destructive py-8 text-center'
-									>
-										{(sessionsQuery.error as Error).message}
+									<TableCell colSpan={5}>
+										<ErrorState error={sessionsQuery.error} size='sm' />
 									</TableCell>
 								</TableRow>
 							)}
@@ -164,11 +162,8 @@ export function SessionsTable() {
 								!sessionsQuery.isError &&
 								sessions.length === 0 && (
 									<TableRow>
-										<TableCell
-											colSpan={5}
-											className='text-muted-foreground py-8 text-center'
-										>
-											{t('sessions.empty')}
+										<TableCell colSpan={5}>
+											<EmptyState title={t('sessions.empty')} size='sm' />
 										</TableCell>
 									</TableRow>
 								)}

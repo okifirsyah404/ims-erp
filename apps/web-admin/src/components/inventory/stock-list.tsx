@@ -11,7 +11,7 @@ import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { useConfirm } from '@/components/confirm-dialog';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { ItemThumb } from '@/components/item-thumb';
 import { balancesQueryOptions, recomputeBalances, type TStockBalance } from '@/lib/stock-api';
@@ -165,18 +165,6 @@ export function StockList({
 		[t],
 	);
 
-	if (isPending) {
-		return (
-			<EmptyState title={t('common:state.loading')} size='sm' bordered />
-		);
-	}
-
-	if (isError) {
-		return (
-			<EmptyState title={error.message} tone='error' size='sm' bordered />
-		);
-	}
-
 	const rows = data?.rows ?? [];
 
 	return (
@@ -260,7 +248,9 @@ export function StockList({
 				) : null}
 			</div>
 
-			{rows.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && rows.length === 0 ? (
 				<EmptyState
 					title={t('inventory:stock.empty')}
 					bordered
@@ -270,6 +260,7 @@ export function StockList({
 					columns={columns}
 					data={rows}
 					getRowId={(row) => row.id}
+					loading={isPending}
 					bordered
 				/>
 			)}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
 import { EmptyState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 /**
  * Renders its children for application administrators and for warehouse
@@ -19,7 +20,7 @@ export function WarehouseAccessGate({ children }: { children: ReactNode }) {
 	const { t } = useTranslation(['inventory']);
 	const { canAccess, isPending } = useWarehouseAccess();
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (!canAccess) {
 		return (
 			<EmptyState title={t('inventory:warehouses.noAccess')} bordered />

@@ -18,6 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import {
@@ -44,7 +46,7 @@ export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope:
 	const canRead = usePermission('portal_account.read');
 	const canInvite = usePermission('portal_account.invite');
 	const canRevoke = usePermission('portal_account.revoke');
-	const { data: accounts = [], isPending } = useQuery(portalAccountsQueryOptions(scope, canRead));
+	const { data: accounts = [], isPending, isError, error } = useQuery(portalAccountsQueryOptions(scope, canRead));
 	const [name, setName] = useState(defaultName);
 	const [email, setEmail] = useState(defaultEmail ?? '');
 	const [role, setRole] = useState<TPortalRole>('owner');
@@ -74,7 +76,9 @@ export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope:
 				<CardTitle>{t('crm:portal.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4 text-sm'>
-				{!isPending && accounts.length === 0 && <p className='text-muted-foreground'>{t('crm:portal.none')}</p>}
+				{isPending && <SectionSkeleton />}
+				{isError && <ErrorState error={error} size='sm' />}
+				{!isPending && !isError && accounts.length === 0 && <EmptyState title={t('crm:portal.none')} size='sm' />}
 				{accounts.map((account) => (
 					<div key={account.id} className='flex flex-wrap items-center justify-between gap-2 border-b pb-3 last:border-b-0'>
 						<div className='flex flex-col gap-1'>

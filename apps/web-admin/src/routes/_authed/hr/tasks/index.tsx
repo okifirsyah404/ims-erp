@@ -20,7 +20,7 @@ import { toast } from '@/components/toast';
 import { formatBusinessDate, todayBusinessDate } from '@/lib/format';
 import { createTask, setTaskStatus, TASK_STATUSES, tasksQueryOptions, type TTask, type TTaskStatus } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 
 /** `/hr/tasks` — simple tasks for employees outside projects (M08). */
 export const Route = createFileRoute('/_authed/hr/tasks/')({
@@ -188,14 +188,14 @@ function TasksPage() {
 					}}
 				/>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
 				<EmptyState title={t('hr:tasks.empty')} bordered />
 			) : (
 				<>
-					<DataTable columns={columns} data={data.rows} getRowId={(task) => task.id} bordered />
-					{data.pagination.totalPages > 1 && (
+					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(task) => task.id} loading={isPending} bordered />
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}
 				</>

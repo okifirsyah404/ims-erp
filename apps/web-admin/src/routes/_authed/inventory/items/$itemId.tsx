@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -63,21 +65,21 @@ function ItemDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	const { data: item, isPending, isError } = useQuery(productQueryOptions(itemId));
+	const { data: item, isPending, isError, error } = useQuery(productQueryOptions(itemId));
 	const { data: units } = useQuery(productSerialsQueryOptions(itemId));
 
 	const [archiving, setArchiving] = useState(false);
 	const canUpdate = usePermission('product.update');
 	const setItem = (saved: TProduct) => queryClient.setQueryData(productQueryOptions(itemId).queryKey, saved);
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 
-	if (isError || !item) {
+	if (isError) return <ErrorState error={error} bordered />;
+
+	if (!item) {
 		return (
 			<AdminOnly>
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:detail.notFound')}
-				</p>
+				<EmptyState title={t('inventory:detail.notFound')} bordered />
 			</AdminOnly>
 		);
 	}

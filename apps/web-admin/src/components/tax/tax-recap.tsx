@@ -13,7 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Download, ReceiptText } from 'lucide-react';
+import { Download, ReceiptText } from 'lucide-react';
 import {
 	Table,
 	TableBody,
@@ -24,7 +24,8 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	recapCsvUrl,
 	recapQueryOptions,
@@ -137,17 +138,16 @@ export function TaxRecap() {
 			</div>
 
 			{isError ? (
-				<EmptyState
-					icon={CircleAlert}
-					title={t('tax:recap.title')}
-					description={error.message}
-				/>
-			) : isPending ? null : !data ||
+				<ErrorState error={error} bordered />
+			) : isPending ? (
+				<SectionSkeleton lines={6} />
+			) : !data ||
 				data.lines.length === 0 ? (
 				<EmptyState
 					icon={ReceiptText}
 					title={t('tax:recap.title')}
 					description={t('tax:recap.empty')}
+					bordered
 				/>
 			) : (
 				<>

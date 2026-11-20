@@ -19,10 +19,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { CircleAlert, TrendingDown } from 'lucide-react';
+import { TrendingDown } from 'lucide-react';
 import { getRouteApi } from '@tanstack/react-router';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	assetsQueryOptions,
@@ -89,13 +89,7 @@ export function AssetDepreciationList() {
 	);
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:depreciation.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -109,16 +103,18 @@ export function AssetDepreciationList() {
 				</p>
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={TrendingDown}
 					title={t('assets:depreciation.emptyTitle')}
 					description={t('assets:depreciation.empty')}
+					bordered
 				/>
 			) : (
 				<DataTable
 					columns={columns}
-					data={data.rows}
+					data={data?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

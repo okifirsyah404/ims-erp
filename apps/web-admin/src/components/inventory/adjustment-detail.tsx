@@ -14,7 +14,8 @@ import {
 import type { TranslationKey } from '@ims-erp/locales';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { formatIdr } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
 import {
@@ -108,17 +109,9 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 		return base;
 	}, [canSeeCost, t]);
 
-	if (isPending) {
-		return (
-			<EmptyState title={t('common:state.loading')} size='sm' bordered />
-		);
-	}
+	if (isPending) return <PageSkeleton />;
 
-	if (isError) {
-		return (
-			<EmptyState title={error.message} tone='error' bordered />
-		);
-	}
+	if (isError) return <ErrorState error={error} bordered />;
 
 	// The query is typed `T | null`, so a successful-but-empty response would
 	// otherwise blow up on destructuring. Surface it instead of crashing.

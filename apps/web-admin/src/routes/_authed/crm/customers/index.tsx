@@ -11,7 +11,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -221,9 +221,9 @@ function CustomerListPage() {
 				</Select>
 			</div>
 
-			{active.isPending ? null : active.isError ? (
-				<p className='text-sm text-destructive'>{active.error.message}</p>
-			) : (active.data?.rows.length ?? 0) === 0 ? (
+			{active.isError ? (
+				<ErrorState error={active.error} bordered />
+			) : !active.isPending && (active.data?.rows.length ?? 0) === 0 ? (
 				<EmptyState title={filtered ? t('crm:customers.noResults') : t('crm:customers.empty')} bordered />
 			) : (
 				<>
@@ -232,6 +232,7 @@ function CustomerListPage() {
 							columns={companyColumns}
 							data={companies.data?.rows ?? []}
 							getRowId={(row) => row.id}
+							loading={companies.isPending}
 							bordered
 						/>
 					) : (
@@ -239,6 +240,7 @@ function CustomerListPage() {
 							columns={personColumns}
 							data={people.data?.rows ?? []}
 							getRowId={(row) => row.id}
+							loading={people.isPending}
 							bordered
 						/>
 					)}

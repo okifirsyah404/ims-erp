@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { useIsAppAdmin } from '@/lib/use-is-app-admin';
 
 export const Route = createFileRoute('/_authed/admin')({
@@ -26,7 +27,7 @@ function AdminLayout() {
 
 	// The session is already resolved by `_authed`; this avoids flashing the
 	// 403 while the client-side session query settles.
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 
 	if (!isAppAdmin) {
 		return (

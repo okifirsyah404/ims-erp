@@ -19,8 +19,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, PenLine } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
+import { PenLine } from 'lucide-react';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	addCorrection,
@@ -112,13 +112,7 @@ export function TaxCorrections() {
 	);
 
 	if (records.isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('tax:corrections.title')}
-				description={records.error.message}
-			/>
-		);
+		return <ErrorState error={records.error} bordered />;
 	}
 
 	return (
@@ -157,6 +151,7 @@ export function TaxCorrections() {
 					icon={PenLine}
 					title={t('tax:corrections.title')}
 					description={t('tax:records.empty')}
+					bordered
 				/>
 			) : (
 				<>
@@ -193,17 +188,19 @@ export function TaxCorrections() {
 						</div>
 					) : null}
 
-					{corrections.isPending ? null : !corrections.data ||
-						corrections.data.length === 0 ? (
+					{!corrections.isPending &&
+					(!corrections.data || corrections.data.length === 0) ? (
 						<EmptyState
 							icon={PenLine}
 							title={t('tax:corrections.title')}
 							description={t('tax:corrections.empty')}
+							bordered
 						/>
 					) : (
 						<DataTable
 							columns={columns}
-							data={corrections.data}
+							data={corrections.data ?? []}
+							loading={corrections.isPending}
 							getRowId={(row) => row.id}
 							bordered
 						/>

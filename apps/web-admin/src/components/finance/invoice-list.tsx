@@ -22,7 +22,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
 import {
@@ -175,9 +175,9 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 				</Field>
 			</div>
 
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
 				<EmptyState
 					title={filtered ? t('finance:invoices.noResults') : t('finance:invoices.empty')}
 					bordered
@@ -186,11 +186,12 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 				<>
 					<DataTable
 						columns={columns}
-						data={data.rows}
+						data={data?.rows ?? []}
+						loading={isPending}
 						getRowId={(row) => row.id}
 						bordered
 					/>
-					{data.pagination.totalPages > 1 && (
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls
 							page={data.pagination.page}
 							totalPages={data.pagination.totalPages}

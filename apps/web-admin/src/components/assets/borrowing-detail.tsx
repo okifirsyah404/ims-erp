@@ -26,7 +26,8 @@ import {
 } from '@/lib/borrowing-api';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 const STATUS_VARIANT: Record<
@@ -152,11 +153,11 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 	});
 
 	if (isPending) {
-		return <EmptyState title={t('common:state.loading')} size='sm' bordered />;
+		return <PageSkeleton />;
 	}
 
 	if (isError) {
-		return <EmptyState title={error.message} tone='error' bordered />;
+		return <ErrorState error={error} bordered />;
 	}
 
 	if (!data) {

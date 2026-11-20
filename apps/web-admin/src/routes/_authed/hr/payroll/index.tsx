@@ -24,7 +24,8 @@ import {
 	type TSalaryRow,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 
 /** `/hr/payroll` — monthly salary summaries, approved by the owner (M08). */
 export const Route = createFileRoute('/_authed/hr/payroll/')({
@@ -108,8 +109,10 @@ function SalaryPage() {
 				/>
 				{data && <Badge variant={locked ? 'default' : 'outline'}>{t(`hr:salary.state.${data.state}`)}</Badge>}
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
+			{isPending ? (
+				<SectionSkeleton lines={6} />
+			) : isError ? (
+				<ErrorState error={error} bordered />
 			) : data.rows.length === 0 ? (
 				<EmptyState title={t('hr:salary.empty')} bordered />
 			) : (

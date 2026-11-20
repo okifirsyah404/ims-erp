@@ -8,7 +8,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -147,14 +147,20 @@ function PurchaseRequestListPage() {
 					<FieldLabel htmlFor='pr-mine'>{t('procurement:prs.mine')}</FieldLabel>
 				</Field>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
 				<EmptyState title={t('procurement:prs.empty')} bordered />
 			) : (
 				<>
-					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
-					{data.pagination.totalPages > 1 && (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						getRowId={(row) => row.id}
+						loading={isPending}
+						bordered
+					/>
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}
 				</>

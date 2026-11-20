@@ -22,7 +22,8 @@ import {
 import { NativeSelect } from '@ims-erp/ui/components/native-select';
 import { CircleAlert, Wrench } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	assetDepreciationsQueryOptions,
@@ -53,24 +54,11 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 	const depreciations = useQuery(assetDepreciationsQueryOptions(assetId));
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:detail.title')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	if (isPending || !data) {
-		return (
-			<Card className='animate-pulse'>
-				<CardHeader>
-					<CardTitle className='h-6 w-1/3 rounded bg-muted' />
-				</CardHeader>
-				<CardContent className='h-40 rounded bg-muted' />
-			</Card>
-		);
+		return <PageSkeleton />;
 	}
 
 	// The history endpoint answers `null` for a unit unknown to this tenant.

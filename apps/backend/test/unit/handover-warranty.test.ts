@@ -62,7 +62,7 @@ beforeEach(() => {
 	handover = new HandoverService(
 		{
 			list: async () => basts,
-			paginateAll: async () => ({ meta: { page: 1, limit: 20, total: basts.length, totalPages: 1 }, data: [] }),
+			paginate: async () => ({ meta: { page: 1, limit: 20, total: basts.length, totalPages: 1 }, data: [] }),
 			find: async (projectId, id) => basts.find((row) => row.id === id && row.projectId === projectId) ?? null,
 			async create(projectId, code, actor, data) {
 				const row = { ...data, id: crypto.randomUUID(), projectId, code, status: 'issued', createdBy: actor } as THandoverSelect;

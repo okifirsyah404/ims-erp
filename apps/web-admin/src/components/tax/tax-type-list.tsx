@@ -12,12 +12,12 @@ import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { CircleAlert, Plus, Scale } from 'lucide-react';
+import { Plus, Scale } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { useConfirm } from '@/components/confirm-dialog';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	createTaxType,
@@ -175,13 +175,7 @@ export function TaxTypeList() {
 	}, [canUpdate, confirm, remove, t, toggleActive]);
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('tax:types.title')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -233,14 +227,21 @@ export function TaxTypeList() {
 				</div>
 			) : null}
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={Scale}
 					title={t('tax:types.title')}
 					description={t('tax:types.empty')}
+					bordered
 				/>
 			) : (
-				<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
+				<DataTable
+					columns={columns}
+					data={data?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls

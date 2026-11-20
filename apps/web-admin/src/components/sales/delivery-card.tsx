@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { DELIVERY_NOTE_STATUS_VARIANT, deliveryNotesQueryOptions } from '@/lib/delivery-note-api';
 import { formatBusinessDate } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -36,9 +38,11 @@ export function DeliveryCard({ orderId, deliverable }: { orderId: string; delive
 			</CardHeader>
 			<CardContent>
 				{notes.isError ? (
-					<p className='text-sm text-destructive'>{notes.error.message}</p>
-				) : !notes.data ? null : notes.data.rows.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>{t('sales:deliveries.noneForOrder')}</p>
+					<ErrorState error={notes.error} size='sm' />
+				) : notes.isPending ? (
+					<SectionSkeleton />
+				) : notes.data.rows.length === 0 ? (
+					<EmptyState title={t('sales:deliveries.noneForOrder')} size='sm' />
 				) : (
 					<ul className='flex flex-col gap-2 text-sm'>
 						{notes.data.rows.map((note) => (

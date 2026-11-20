@@ -14,7 +14,8 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import { CalendarClock } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	AGING_BUCKETS,
 	type TAgingResponse,
@@ -86,8 +87,10 @@ export function AgingTable({
 				{t('finance:aging.asOf')}: {data?.asOfDate ?? today()}
 			</p>
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={CalendarClock} title={error.message} bordered />
+			{isPending ? (
+				<SectionSkeleton lines={5} />
+			) : isError ? (
+				<ErrorState error={error} bordered />
 			) : rows.length === 0 ? (
 				<EmptyState
 					icon={CalendarClock}

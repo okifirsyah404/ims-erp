@@ -76,7 +76,7 @@ import {
 import { organizationsQueryOptions } from '@/lib/organization-api';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { InviteDialog } from '@/components/invite/invite-dialog';
 import {
@@ -133,21 +133,6 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 
 /** Per-column placeholders matching the Users table's shape. `elements`
  *  renders multiple stacked skeletons (e.g. avatar + text in one cell). */
-const SKELETON_CELLS: Array<{
-	key: string;
-	className?: string;
-	elements?: Array<string>;
-}> = [
-	{
-		key: 'user',
-		elements: ['size-9 rounded-full', 'h-4 w-32'],
-	},
-	{ key: 'status', className: 'h-5 w-20 rounded-full' },
-	{ key: 'orgs', className: 'h-5 w-36 rounded-full' },
-	{ key: 'created', className: 'h-4 w-24' },
-	{ key: 'actions', className: 'ml-auto h-8 w-8' },
-];
-
 function UsersPage() {
 	const organizationId = useActiveOrganizationId();
 	const search = Route.useSearch();
@@ -425,7 +410,7 @@ function UsersPage() {
 				</CardHeader>
 				<CardContent>
 					{isError && (
-						<EmptyState title={(error as Error).message} tone='error' size='sm' />
+						<ErrorState error={error} size='sm' />
 					)}
 					{!isPending && !isError && rows.length === 0 && (
 						<EmptyState title={t('users.empty')} size='sm' />
@@ -436,7 +421,6 @@ function UsersPage() {
 							data={rows}
 							getRowId={(user) => user.id}
 							loading={isPending}
-							empty={<SkeletonRows />}
 						/>
 					)}
 					{isPending && <span className='sr-only'>{t('users.loading')}</span>}
@@ -641,29 +625,6 @@ function UserActions({
 	);
 }
 
-/** Per-column placeholders shown while the first page loads. */
-function SkeletonRows() {
-	return (
-		<span className='flex flex-col gap-2'>
-			{SKELETON_CELLS.map((cell) => (
-				<span key={cell.key} className='flex items-center gap-3'>
-					{'elements' in cell && cell.elements
-						? (cell.elements as readonly string[]).map((element, index) => (
-								<Skeleton
-									key={index}
-									className={`${element} motion-reduce:animate-none`}
-								/>
-							))
-						: (
-								<Skeleton
-									className={`${(cell as { className: string }).className} motion-reduce:animate-none`}
-								/>
-							)}
-				</span>
-			))}
-		</span>
-	);
-}
 
 /**
  * Filters popover: status + organization selects with draft state.

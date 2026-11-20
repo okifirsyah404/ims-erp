@@ -20,7 +20,8 @@ export const signatureListQuerySchema = z.object({
 	method: z.enum(DOCUMENT_SIGNATURE_METHODS).nullish(),
 });
 
-export type TSignatureListQuery = z.output<typeof signatureListQuerySchema>;
+/** Page settings plus the filters of the signature evidence register. */
+export type TSignaturePaginationRequest = z.output<typeof signatureListQuerySchema>;
 
 /** Create signature requests: one row per signer, inserted as a batch. */
 export const createSignatureRequestsSchema = z.object({
@@ -56,7 +57,8 @@ export const signatureRequestListQuerySchema = z.object({
 	pendingOnly: z.coerce.boolean().nullish(),
 });
 
-export type TSignatureRequestListQuery = z.output<typeof signatureRequestListQuerySchema>;
+/** Page settings plus the filters of the caller's request listing. */
+export type TSignatureRequestPaginationRequest = z.output<typeof signatureRequestListQuerySchema>;
 
 /** Batch lookup of signers' images for the print layouts (D12). */
 export const userImagesSchema = z.object({

@@ -21,9 +21,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Plus, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	archiveEmployee,
@@ -168,10 +168,7 @@ export function EmployeeList() {
 					))}
 				</div>
 			) : isError ? (
-				<div className='text-destructive flex items-center gap-2 text-sm'>
-					<CircleAlert className='size-4' />
-					{error.message}
-				</div>
+				<ErrorState error={error} bordered />
 			) : !data || data.rows.length === 0 ? (
 				<EmptyState
 					icon={Users}

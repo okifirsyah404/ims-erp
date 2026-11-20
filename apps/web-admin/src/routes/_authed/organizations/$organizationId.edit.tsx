@@ -4,6 +4,8 @@ import {
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +47,7 @@ function EditOrganizationPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { t } = useTranslation(['admin', 'common']);
-	const { data: organization } = useQuery({
+	const { data: organization, isPending, isError, error } = useQuery({
 		...organizationQueryOptions(organizationId),
 		retry: false,
 	});
@@ -88,6 +90,9 @@ function EditOrganizationPage() {
 			setPending(false);
 		}
 	}
+
+	if (isPending) return <PageSkeleton cards={1} />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>

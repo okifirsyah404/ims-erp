@@ -23,7 +23,8 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from '@ims-erp/ui/components/chart';
-import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { DateRangePicker, type TDateRangeValue } from '@ims-erp/ui/components/date-range-picker';
 import { ToggleGroup, ToggleGroupItem } from '@ims-erp/ui/components/toggle-group';
 import {
@@ -239,19 +240,11 @@ function QueryBody({
 	children: ReactNode;
 }) {
 	const { t } = useTranslation('dashboard');
-	if (isPending) {
-		return (
-			<div className='flex flex-col gap-2' aria-busy='true'>
-				<Skeleton className='h-4 w-full' />
-				<Skeleton className='h-4 w-2/3' />
-				<Skeleton className='h-4 w-1/2' />
-			</div>
-		);
-	}
+	if (isPending) return <SectionSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col items-start gap-2'>
-				<span className='text-sm text-muted-foreground'>{t('error.unavailable')}</span>
+				<ErrorState error={t('error.unavailable')} size='sm' className='w-full' />
 				<Button variant='outline' size='sm' onClick={onRetry}>
 					<RotateCw />
 					{t('action.retry')}
@@ -348,7 +341,7 @@ function CashWidget({ organizationId }: { organizationId: string | null }) {
 				onRetry={() => void query.refetch()}
 			>
 				{accounts.length === 0 ? (
-					<span className='text-sm text-muted-foreground'>{t('empty.noAccounts')}</span>
+					<EmptyState title={t('empty.noAccounts')} size='sm' />
 				) : (
 					accounts.map((account) => (
 						<Figure
@@ -754,7 +747,7 @@ function ActivityCard({ organizationId }: { organizationId: string | null }) {
 					}}
 				>
 					{entries.length === 0 ? (
-						<span className='text-sm text-muted-foreground'>{t('activity.empty')}</span>
+						<EmptyState title={t('activity.empty')} size='sm' />
 					) : (
 						entries.map((entry) => (
 							<div

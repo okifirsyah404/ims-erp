@@ -8,7 +8,8 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from '@ims-erp/ui/components/empty';
-import type { LucideIcon } from 'lucide-react';
+import { CircleAlert, type LucideIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Shared empty / error state (shadcn `Empty` composition).
@@ -79,5 +80,49 @@ export function EmptyState({
 			</EmptyHeader>
 			{action ? <EmptyContent>{action}</EmptyContent> : null}
 		</Empty>
+	);
+}
+
+/** Readable message for whatever a failed query threw. */
+export function errorMessage(error: unknown): string | undefined {
+	if (error instanceof Error) return error.message || undefined;
+	if (typeof error === 'string') return error || undefined;
+	return undefined;
+}
+
+/**
+ * Shared "could not load" state: `EmptyState` with the error styling.
+ *
+ * @remarks
+ * Title is always `common:error.failed`; the thrown message goes in the
+ * description. Use it wherever a query's `isError` branch used to print the
+ * message as bare text. Inline mutation failures (a button action, a form
+ * submit) are not load failures and keep their own inline message.
+ */
+export function ErrorState({
+	error,
+	size = 'default',
+	bordered = false,
+	className,
+}: {
+	/** The thrown value, usually `query.error`. */
+	error: unknown;
+	/** `sm` inside a card, popover or table cell. */
+	size?: 'default' | 'sm';
+	/** Dashed outline for a standalone section state. */
+	bordered?: boolean;
+	className?: string;
+}) {
+	const { t } = useTranslation('common');
+	return (
+		<EmptyState
+			icon={CircleAlert}
+			tone='error'
+			title={t('error.failed')}
+			description={errorMessage(error)}
+			size={size}
+			bordered={bordered}
+			className={className}
+		/>
 	);
 }

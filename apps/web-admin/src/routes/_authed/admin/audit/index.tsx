@@ -33,7 +33,7 @@ import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 
 /** Audit actions the user-management domain emits (mirrors the backend). */
@@ -58,15 +58,6 @@ const AUDIT_ACTIONS = [
 
 /** Target types the backend vocabulary uses. */
 const TARGET_TYPES = ['invitation', 'user', 'role', 'member', 'organization'] as const;
-
-/** Per-column placeholder widths, matching the audit table's shape. */
-const SKELETON_CELLS = [
-	{ key: 'when', className: 'h-4 w-36' },
-	{ key: 'action', className: 'h-5 w-28 rounded-full' },
-	{ key: 'actor', className: 'h-4 w-40' },
-	{ key: 'target', className: 'h-4 w-44' },
-	{ key: 'metadata', className: 'h-4 w-full max-w-md' },
-] as const;
 
 type TAuditSearch = {
 	page?: number;
@@ -119,7 +110,7 @@ function AuditPage() {
 			{
 				accessorKey: 'createdAt',
 				header: t('audit.when'),
-				meta: { cellClassName: 'whitespace-nowrap text-xs text-muted-foreground' },
+				meta: { cellClassName: 'whitespace-nowrap text-xs text-muted-foreground', skeletonClassName: 'h-4 w-36' },
 				cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
 			},
 			{
@@ -300,7 +291,7 @@ function AuditPage() {
 				</CardHeader>
 				<CardContent>
 					{isError && (
-						<EmptyState title={(error as Error).message} tone='error' size='sm' />
+						<ErrorState error={error} size='sm' />
 					)}
 					{!isPending && !isError && rows.length === 0 && (
 						<EmptyState title={t('audit.empty')} size='sm' />
@@ -311,7 +302,6 @@ function AuditPage() {
 							data={rows}
 							getRowId={(entry) => entry.id}
 							loading={isPending}
-							empty={<SkeletonRows />}
 						/>
 					)}
 					{isPending && <span className='sr-only'>{t('audit.loading')}</span>}
@@ -338,16 +328,3 @@ function shortId(id: string): string {
 	return id.length > 12 ? `${id.slice(0, 8)}…` : id;
 }
 
-/** Placeholder rows shown while the first audit page loads. */
-function SkeletonRows() {
-	return (
-		<span className='flex flex-col gap-2'>
-			{SKELETON_CELLS.map((cell) => (
-				<Skeleton
-					key={cell.key}
-					className={`${cell.className} motion-reduce:animate-none`}
-				/>
-			))}
-		</span>
-	);
-}

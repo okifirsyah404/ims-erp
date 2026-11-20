@@ -28,9 +28,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	DISPOSAL_METHODS,
@@ -172,17 +172,11 @@ export function AssetDisposalList() {
 				},
 			},
 		],
-		[approve, approve.isPending, cancel, cancel.isPending, canDispose, execute, execute.isPending, t],
+		[approve, cancel, canDispose, execute, t],
 	);
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:disposals.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -201,16 +195,18 @@ export function AssetDisposalList() {
 				) : null}
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={Trash2}
 					title={t('assets:disposals.emptyTitle')}
 					description={t('assets:disposals.empty')}
+					bordered
 				/>
 			) : (
 				<DataTable
 					columns={columns}
-					data={data.rows}
+					data={data?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

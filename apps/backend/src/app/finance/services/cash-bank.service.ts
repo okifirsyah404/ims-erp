@@ -22,7 +22,10 @@ import {
 	CashBankInsufficientFundsError,
 	CashBankLinkRequiredError,
 } from '../errors/ledger.errors';
-import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
+import type {
+	ICashBankRepository,
+	TCashBankTransactionPaginationRequest,
+} from '../contracts/cash-bank.repository.interface';
 import type { IBankAccountLinkRepository } from '../contracts/bank-account-link.repository.interface';
 
 export type TCashBankActionContext = {
@@ -267,15 +270,10 @@ export class CashBankService {
 		return outerTx ? run(outerTx) : this.database.transaction(run);
 	}
 
+	/** Fetches one page of cash/bank movements, optionally of one account. */
 	async listMovements(
-		organizationId: string,
-		cashBankAccountId: string | undefined,
-		pagination: { page: number; limit: number },
+		request: TCashBankTransactionPaginationRequest,
 	): Promise<TPaginationResult<TCashBankTransactionSelect>> {
-		return this.cashAccounts.listCashBankTransactions(
-			organizationId,
-			cashBankAccountId,
-			pagination,
-		);
+		return this.cashAccounts.paginateTransactions(request);
 	}
 }

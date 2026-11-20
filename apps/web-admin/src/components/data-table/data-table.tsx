@@ -15,6 +15,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { type DataTableFeatures, features } from './data-table-features';
 
 const ALIGN_CLASS = {
@@ -58,6 +59,7 @@ export function DataTable<TData extends RowData>({
 	getRowId,
 	empty,
 	loading,
+	skeletonRows = 5,
 	bordered = false,
 	rowClassName,
 }: {
@@ -69,8 +71,10 @@ export function DataTable<TData extends RowData>({
 	getRowId?: (row: TData) => string;
 	/** Rendered inside the table when `data` is empty. */
 	empty?: ReactNode;
-	/** Placeholder text shown while the first page loads. */
+	/** Renders `Skeleton` rows (one cell per column) in place of data. */
 	loading?: boolean;
+	/** How many placeholder rows to show while `loading` (default 5). */
+	skeletonRows?: number;
 	/** Draw the shadcn guide's `rounded-md border` frame around the table. */
 	bordered?: boolean;
 	/** Extra classes for a row, e.g. highlighting the selected record. */
@@ -83,7 +87,7 @@ export function DataTable<TData extends RowData>({
 
 	return (
 		<div className={bordered ? 'overflow-hidden rounded-md border' : undefined}>
-			<Table>
+			<Table aria-busy={loading || undefined}>
 				<TableHeader>
 					<TableRow>
 						{headers.map((header) => {
@@ -104,14 +108,22 @@ export function DataTable<TData extends RowData>({
 				</TableHeader>
 				<TableBody>
 					{loading ? (
-						<TableRow>
-							<TableCell
-								colSpan={columnCount}
-								className='h-24 text-center text-muted-foreground'
-							>
-								{empty}
-							</TableCell>
-						</TableRow>
+						Array.from({ length: skeletonRows }, (_, rowIndex) => (
+							<TableRow key={rowIndex} aria-hidden='true'>
+								{table.getVisibleLeafColumns().map((column) => {
+									const meta = column.columnDef.meta;
+									return (
+										<TableCell key={column.id} className={cellClasses(meta)}>
+											<Skeleton
+												className={`${meta?.skeletonClassName ?? 'h-4 w-full'} ${
+													meta?.align === 'right' ? 'ml-auto' : ''
+												} motion-reduce:animate-none`}
+											/>
+										</TableCell>
+									);
+								})}
+							</TableRow>
+						))
 					) : rows.length === 0 ? (
 						<TableRow>
 							<TableCell

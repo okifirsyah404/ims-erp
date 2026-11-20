@@ -16,7 +16,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { CalendarCheck, CircleCheck, CircleX } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	closeChecklistQueryOptions,
@@ -248,14 +248,15 @@ export function ClosingPage() {
 				</Card>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={CalendarCheck} title={error.message} bordered />
-			) : (periods?.rows.length ?? 0) === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (periods?.rows.length ?? 0) === 0 ? (
 				<EmptyState icon={CalendarCheck} title={t('finance:periods.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}
 					data={periods?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

@@ -17,7 +17,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Scale, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
@@ -256,9 +256,9 @@ export function OpeningBalancePage() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={Scale} title={error.message} bordered />
-			) : (rows?.length ?? 0) === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (rows?.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Scale}
 					title={t('finance:opening.empty')}
@@ -268,6 +268,7 @@ export function OpeningBalancePage() {
 				<DataTable
 					columns={columns}
 					data={rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

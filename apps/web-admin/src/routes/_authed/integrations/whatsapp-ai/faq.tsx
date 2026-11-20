@@ -13,7 +13,7 @@ import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import { usePermission } from '@/lib/use-permission';
@@ -113,12 +113,12 @@ function FaqPage() {
 				</div>
 				{canManage && <Button onClick={() => setEditing({ entry: null })}>{t('integrations:faq.new')}</Button>}
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.length === 0 ? (
 				<EmptyState title={t('integrations:faq.empty')} bordered />
 			) : (
-				<DataTable columns={columns} data={data} getRowId={(row) => row.id} bordered />
+				<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
 			)}
 			{editing && (
 				<FaqDialog

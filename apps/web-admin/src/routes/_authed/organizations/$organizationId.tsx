@@ -7,7 +7,7 @@ import {
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -179,18 +179,18 @@ function OrganizationDetailPage() {
 	}
 	if (!organization) {
 		return (
-			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-muted-foreground'>
-					{t('orgDetail.notFound')}
-				</p>
-				<Button
-					variant='outline'
-					className='w-fit'
-					onClick={() => navigate({ to: '/organizations' })}
-				>
-					{t('orgDetail.backToList')}
-				</Button>
-			</div>
+			<EmptyState
+				title={t('orgDetail.notFound')}
+				bordered
+				action={
+					<Button
+						variant='outline'
+						onClick={() => navigate({ to: '/organizations' })}
+					>
+						{t('orgDetail.backToList')}
+					</Button>
+				}
+			/>
 		);
 	}
 
@@ -315,6 +315,8 @@ function OrganizationDetailPage() {
 									</Card>
 								))}
 							</div>
+						) : membersQuery.isError ? (
+							<ErrorState error={membersQuery.error} size='sm' />
 						) : (members?.rows?.length ?? 0) === 0 ? (
 							<EmptyState size='sm' title={t('orgDetail.membersEmpty')} />
 						) : (

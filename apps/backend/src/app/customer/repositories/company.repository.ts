@@ -5,13 +5,18 @@ import {
 	type TCustomerCompanySelect,
 } from '@drizzle/schemas/customer.schema';
 import { likePattern } from '@drizzle/search';
+import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
+import { paginationResult } from '@utils/pagination.util';
 import type { ICacheClient } from '@cache/cache.client';
-import type { TCompanyListQuery } from '../contracts/customer.contract';
-import type { ICompanyRepository, TNewCompany } from '../contracts/customer.repository.interface';
+import type {
+	ICompanyRepository,
+	TCompanyPaginationRequest,
+	TNewCompany,
+} from '../contracts/customer.repository.interface';
 
 /**
  * Drizzle + Redis implementation of {@link ICompanyRepository}.
@@ -36,7 +41,7 @@ export class CompanyRepository implements ICompanyRepository {
 		);
 	}
 
-	private filters(query: TCompanyListQuery) {
+	private filters(query: TCompanyPaginationRequest) {
 		return and(
 			isNull(customerCompanies.deletedAt),
 			query.status
@@ -54,22 +59,23 @@ export class CompanyRepository implements ICompanyRepository {
 		);
 	}
 
-	async paginate(query: TCompanyListQuery): Promise<TCustomerCompanySelect[]> {
-		return this.database
+	/** Fetches one filtered page of customer companies, ordered by name. */
+	async paginate(
+		request: TCompanyPaginationRequest,
+	): Promise<TPaginationResult<TCustomerCompanySelect>> {
+		const where = this.filters(request);
+		const rows = await this.database
 			.select()
 			.from(customerCompanies)
-			.where(this.filters(query))
+			.where(where)
 			.orderBy(asc(customerCompanies.name), asc(customerCompanies.id))
-			.limit(query.limit)
-			.offset((query.page - 1) * query.limit);
-	}
-
-	async count(query: TCompanyListQuery): Promise<number> {
-		const [{ value }] = await this.database
+			.limit(request.limit)
+			.offset((request.page - 1) * request.limit);
+		const [{ value: total }] = await this.database
 			.select({ value: count() })
 			.from(customerCompanies)
-			.where(this.filters(query));
-		return Number(value);
+			.where(where);
+		return paginationResult(request, Number(total), rows);
 	}
 
 	async findById(id: string): Promise<TCustomerCompanySelect | null> {

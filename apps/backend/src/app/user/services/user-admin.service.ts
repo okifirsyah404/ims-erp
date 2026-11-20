@@ -46,7 +46,7 @@ export class UserAdminService {
 	 * @param query validated listing filters
 	 */
 	async list(query: TUserQuery): Promise<TPaginationResult<TAdminUser>> {
-		const result = await this.users.listUsers({
+		const result = await this.users.paginateUsers({
 			status: query.status,
 			role: query.role,
 			search: query.search,

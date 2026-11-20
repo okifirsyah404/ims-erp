@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-
 import { DocumentImageField } from '@/components/documents/document-image-field';
 import { CompanyProfileForm } from '@/components/settings/company-profile-form';
 import { CompanySettingsCard } from '@/components/settings/company-settings-card';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	companyProfileQueryOptions,
@@ -69,10 +71,10 @@ function CompanyProfilePage() {
 				<h1 className='text-2xl font-bold'>{t('settings:companyProfile.title')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('settings:companyProfile.description')}</p>
 			</div>
-			{isPending ? null : isError ? (
-				<Alert variant='destructive'>
-					<AlertDescription>{error.message}</AlertDescription>
-				</Alert>
+			{isPending ? (
+				<SectionSkeleton lines={8} />
+			) : isError ? (
+				<ErrorState error={error} bordered />
 			) : (
 				<>
 					{profile === null && (

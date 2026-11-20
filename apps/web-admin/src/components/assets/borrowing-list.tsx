@@ -25,7 +25,8 @@ import {
 } from '@/lib/borrowing-api';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -185,7 +186,14 @@ export function BorrowingList({
 	);
 
 	if (active.isPending) {
-		return <EmptyState title={t('common:state.loading')} size='sm' bordered />;
+		return (
+			<Card>
+				<CardContent className='space-y-4'>
+					{tabs}
+					<SectionSkeleton lines={5} />
+				</CardContent>
+			</Card>
+		);
 	}
 
 	if (active.isError) {
@@ -193,9 +201,7 @@ export function BorrowingList({
 			<Card>
 				<CardContent className='space-y-4'>
 					{tabs}
-					<p className='py-4 text-center text-sm text-destructive'>
-						{active.error.message}
-					</p>
+					<ErrorState error={active.error} size='sm' />
 				</CardContent>
 			</Card>
 		);

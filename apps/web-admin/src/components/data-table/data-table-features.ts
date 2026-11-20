@@ -27,6 +27,8 @@ export type TColumnMeta = {
 	cellClassName?: string;
 	/** Classes applied to the header cell of this column. */
 	headClassName?: string;
+	/** Size classes of this column's loading placeholder (default `h-4 w-full`). */
+	skeletonClassName?: string;
 };
 
 /**

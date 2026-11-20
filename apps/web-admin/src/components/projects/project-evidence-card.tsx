@@ -14,6 +14,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import { EVIDENCE_KINDS, removeEvidence, type TEvidenceKind, type TProjectDetail, uploadEvidence } from '@/lib/project-api';
@@ -64,7 +65,7 @@ export function ProjectEvidenceCard({ project, actorUserId }: { project: TProjec
 					))}
 				</div>
 				{project.evidence.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>{t('projects:evidence.empty')}</p>
+					<EmptyState title={t('projects:evidence.empty')} size='sm' />
 				) : (
 					<ul className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
 						{project.evidence.map((file) => {

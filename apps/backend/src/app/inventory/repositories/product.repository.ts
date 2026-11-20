@@ -5,6 +5,7 @@ import {
 	itemSerials,
 } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -126,10 +127,7 @@ export class ProductRepository implements IProductRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	/** Fetches one alive item by id. */

@@ -17,6 +17,8 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { DataTable } from '@/components/data-table/data-table';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { BillingCard } from '@/components/finance/billing-card';
 import { DeliveryCard } from '@/components/sales/delivery-card';
@@ -102,11 +104,11 @@ function SalesOrderDetailPage() {
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(salesOrderQueryOptions(orderId));
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/sales/orders' className='text-sm hover:underline'>
 					{t('sales:orders.back')}
 				</Link>

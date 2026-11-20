@@ -6,6 +6,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { EmptyState } from '@/components/empty-state';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
@@ -73,7 +74,7 @@ export function GatewayPaymentsCard({ invoiceId, payable }: { invoiceId: string;
 			</CardHeader>
 			<CardContent className='p-0'>
 				{rows.length === 0 ? (
-					<p className='p-4 text-sm text-muted-foreground'>{t('finance:gateway.empty')}</p>
+					<EmptyState title={t('finance:gateway.empty')} size='sm' />
 				) : (
 					<GatewayPaymentsTable rows={rows} note={note} onCopy={(url) => void copy(url)} />
 				)}

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { CircleAlert, Wrench } from 'lucide-react';
+import { Wrench } from 'lucide-react';
 import { getRouteApi } from '@tanstack/react-router';
 import {
 	Table,
@@ -12,7 +12,8 @@ import {
 } from '@ims-erp/ui/components/table';
 
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	assetsQueryOptions,
 	assetDetailQueryOptions,
@@ -39,13 +40,7 @@ export function AssetServiceRecordList() {
 	});
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:service.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -57,11 +52,14 @@ export function AssetServiceRecordList() {
 				</p>
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{isPending ? (
+				<SectionSkeleton lines={6} />
+			) : !data || data.rows.length === 0 ? (
 				<EmptyState
 					icon={Wrench}
 					title={t('assets:service.emptyTitle')}
 					description={t('assets:service.empty')}
+					bordered
 				/>
 			) : (
 				<div className='space-y-4'>

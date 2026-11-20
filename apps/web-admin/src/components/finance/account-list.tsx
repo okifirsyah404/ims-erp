@@ -18,7 +18,7 @@ import { Archive, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
@@ -206,14 +206,12 @@ export function AccountList() {
 		];
 	}, [
 		archive,
-		archive.isPending,
 		canArchive,
 		canUpdate,
 		confirm,
 		showActions,
 		t,
 		toggleActive,
-		toggleActive.isPending,
 	]);
 
 	return (
@@ -304,9 +302,9 @@ export function AccountList() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={Archive} title={error.message} bordered />
-			) : (data?.rows.length ?? 0) === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Archive}
 					title={t('finance:accounts.empty')}
@@ -316,6 +314,7 @@ export function AccountList() {
 				<DataTable
 					columns={columns}
 					data={data?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

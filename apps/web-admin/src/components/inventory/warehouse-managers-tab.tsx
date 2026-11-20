@@ -14,6 +14,7 @@ import {
 import { UserMinus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
@@ -175,15 +176,16 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 					</Button>
 				</div>
 
-				{managers.isPending ? null : (managers.data ?? []).length === 0 ? (
-					<p className='py-6 text-sm text-muted-foreground'>
-						{t('inventory:warehouses.noManagers')}
-					</p>
+				{managers.isError ? (
+					<ErrorState error={managers.error} size='sm' />
+				) : !managers.isPending && (managers.data ?? []).length === 0 ? (
+					<EmptyState title={t('inventory:warehouses.noManagers')} size='sm' />
 				) : (
 					<DataTable
 						columns={columns}
 						data={managers.data ?? []}
 						getRowId={(row) => row.userId}
+						loading={managers.isPending}
 					/>
 				)}
 			</CardContent>

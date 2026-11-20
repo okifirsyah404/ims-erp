@@ -12,7 +12,8 @@ import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import {
@@ -44,7 +45,11 @@ function ApiKeysPage() {
 			</div>
 			{!canManage ? (
 				<p className='text-sm text-muted-foreground'>{t('licensing:apiKeys.noAccess')}</p>
-			) : applications.isPending ? null : own.length === 0 ? (
+			) : applications.isPending ? (
+				<SectionSkeleton lines={5} />
+			) : applications.isError ? (
+				<ErrorState error={applications.error} bordered />
+			) : own.length === 0 ? (
 				<EmptyState title={t('licensing:apiKeys.noOwnApplication')} bordered />
 			) : (
 				own.map((app) => <ApplicationKeys key={app.id} application={app} />)

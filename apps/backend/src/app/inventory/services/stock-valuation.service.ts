@@ -1,5 +1,6 @@
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import { STOCK_VALUATION_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	IStockValuationRepository,
@@ -32,8 +33,7 @@ export class StockValuationService {
 			this.valuation.byWarehouse(query.warehouseId),
 		]);
 		return {
-			meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) },
-			data: rows,
+			...paginationResult(query, total, rows),
 			warehouses,
 			grandTotal: warehouses.reduce((sum, warehouse) => sum + warehouse.totalValue, 0),
 		};

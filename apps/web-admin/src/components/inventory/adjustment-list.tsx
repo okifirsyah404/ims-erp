@@ -15,7 +15,7 @@ import {
 	type TAdjustmentStatus,
 	type TStockAdjustment,
 } from '@/lib/adjustment-api';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 
 /** Badge emphasis per status: only `posted` actually moved stock. */
@@ -156,18 +156,6 @@ export function AdjustmentList() {
 		[t, transition],
 	);
 
-	if (isPending) {
-		return (
-			<EmptyState title={t('common:state.loading')} size='sm' bordered />
-		);
-	}
-
-	if (isError) {
-		return (
-			<EmptyState title={error.message} tone='error' bordered />
-		);
-	}
-
 	const rows = data?.rows ?? [];
 
 	return (
@@ -193,13 +181,16 @@ export function AdjustmentList() {
 				<p className='text-sm text-destructive'>{transition.error.message}</p>
 			) : null}
 
-			{rows.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && rows.length === 0 ? (
 				<EmptyState title={t('inventory:adjustments.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}
 					data={rows}
 					getRowId={(row) => row.id}
+					loading={isPending}
 					bordered
 				/>
 			)}

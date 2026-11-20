@@ -4,6 +4,9 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
+
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
@@ -158,8 +161,8 @@ function SalesReturnDetailPage() {
 		}
 	}
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	const own = data.createdBy === session?.user.id;
 	const cancellable = ['draft', 'submitted', 'approved'].includes(data.status);

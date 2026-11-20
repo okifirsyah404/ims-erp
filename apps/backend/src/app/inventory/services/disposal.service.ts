@@ -9,7 +9,10 @@ import {
 	ITEM_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { TDisposalCreateInput } from '../contracts/item-operations.contract';
-import type { IDisposalRepository } from '../contracts/item-operations.repository.interface';
+import type {
+	IDisposalRepository,
+	TDisposalPaginationRequest,
+} from '../contracts/item-operations.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import {
 	ItemNotFoundError,
@@ -173,12 +176,11 @@ export class DisposalService {
 		return updated;
 	}
 
+	/** Fetches one page of the tenant's disposal documents. */
 	list(
-		organizationId: string,
-		page: number,
-		limit: number,
+		request: TDisposalPaginationRequest,
 	): Promise<TPaginationResult<TDisposalSelect>> {
-		return this.disposals.list(organizationId, page, limit);
+		return this.disposals.paginate(request);
 	}
 
 	getDisposal(id: string, organizationId: string): Promise<TDisposalSelect> {

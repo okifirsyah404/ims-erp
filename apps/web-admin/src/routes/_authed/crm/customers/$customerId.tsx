@@ -20,6 +20,8 @@ import { AddressFormDialog, type TAddressFormValues } from '@/components/crm/add
 import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PortalAccountCard } from '@/components/crm/portal-account-card';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton, SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	addCompanyAddress,
@@ -94,7 +96,7 @@ function AddressList({
 				)}
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
-				{addresses.length === 0 && <p className='text-muted-foreground'>{t('crm:customers.noAddresses')}</p>}
+				{addresses.length === 0 && <EmptyState title={t('crm:customers.noAddresses')} size='sm' />}
 				{addresses.map((address) => (
 					<div key={address.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
 						<div>
@@ -175,17 +177,16 @@ function PersonDetail() {
 	const { customerId } = useParams({ from: Route.id });
 	const canUpdate = usePermission('customer.update');
 	const canArchive = usePermission('customer.archive');
-	const { data: customer, isPending, isError } = useQuery(customerQueryOptions(customerId));
+	const { data: customer, isPending, isError, error } = useQuery(customerQueryOptions(customerId));
 	const company = useQuery({ ...companyQueryOptions(customer?.companyId ?? '', !!customer?.companyId) });
 	const [editing, setEditing] = useState(false);
 	const [adding, setAdding] = useState(false);
 	const [removing, setRemoving] = useState<TAddress | null>(null);
 	const { run, submitting } = useRunner();
 
-	if (isPending) return null;
-	if (isError || !customer) {
-		return <p className='text-sm text-muted-foreground'>{t('crm:customers.notFound')}</p>;
-	}
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
+	if (!customer) return <EmptyState title={t('crm:customers.notFound')} bordered />;
 
 	const active = customer.status === 'active';
 
@@ -310,7 +311,7 @@ function CompanyDetail() {
 	const { customerId: companyId } = useParams({ from: Route.id });
 	const canUpdate = usePermission('customer.update');
 	const canArchive = usePermission('customer.archive');
-	const { data: company, isPending, isError } = useQuery(companyQueryOptions(companyId));
+	const { data: company, isPending, isError, error } = useQuery(companyQueryOptions(companyId));
 	const people = useQuery(customersQueryOptions({ page: 1, limit: 100, companyId }));
 	const [editing, setEditing] = useState(false);
 	const [addingPerson, setAddingPerson] = useState(false);
@@ -318,10 +319,9 @@ function CompanyDetail() {
 	const [removing, setRemoving] = useState<TAddress | null>(null);
 	const { run, submitting } = useRunner();
 
-	if (isPending) return null;
-	if (isError || !company) {
-		return <p className='text-sm text-muted-foreground'>{t('crm:customers.notFound')}</p>;
-	}
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
+	if (!company) return <EmptyState title={t('crm:customers.notFound')} bordered />;
 
 	const active = company.status === 'active';
 	const primary = people.data?.rows.find((person) => person.isPrimary);
@@ -399,7 +399,11 @@ function CompanyDetail() {
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-2 text-sm'>
-					{(people.data?.rows.length ?? 0) === 0 && <p className='text-muted-foreground'>{t('crm:contacts.empty')}</p>}
+					{people.isPending && <SectionSkeleton />}
+					{people.isError && <ErrorState error={people.error} size='sm' />}
+					{!people.isPending && !people.isError && (people.data?.rows.length ?? 0) === 0 && (
+						<EmptyState title={t('crm:contacts.empty')} size='sm' />
+					)}
 					{people.data?.rows.map((person) => (
 						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
 							<div>

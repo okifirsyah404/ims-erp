@@ -4,6 +4,8 @@ import {
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -54,7 +56,7 @@ function EditMemberPage() {
 	const queryClient = useQueryClient();
 	const { t, i18n } = useTranslation(['admin', 'common']);
 
-	const { data: members, isPending } = useQuery({
+	const { data: members, isPending, isError, error } = useQuery({
 		...organizationMembersQueryOptions(organizationId),
 	});
 	const member = members?.rows.find((row) => row.id === memberId);
@@ -127,19 +129,10 @@ function EditMemberPage() {
 		}
 	}
 
-	if (isPending) {
-		return (
-			<div className='text-sm text-muted-foreground'>
-				{t('common:state.loading')}
-			</div>
-		);
-	}
+	if (isPending) return <PageSkeleton cards={1} />;
+	if (isError) return <ErrorState error={error} bordered />;
 	if (!member) {
-		return (
-			<div className='text-sm text-muted-foreground'>
-				{t('common:state.noResults')}
-			</div>
-		);
+		return <EmptyState title={t('common:state.noResults')} bordered />;
 	}
 
 	const joinedRoles = roles.join(',');

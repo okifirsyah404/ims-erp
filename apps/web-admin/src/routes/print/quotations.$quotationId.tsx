@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
+import { ErrorState } from '@/components/empty-state';
 import { QuotationDocument } from '@/components/sales/quotation-document';
 import { quotationRenderQueryOptions } from '@/lib/quotation-api';
 
@@ -63,7 +64,9 @@ function QuotationRenderPage() {
 		};
 	}, [render.data]);
 
-	if (render.isError) return <p className='p-8 text-sm text-destructive'>{render.error.message}</p>;
+	if (render.isError) return <div className='p-8'>
+			<ErrorState error={render.error} />
+		</div>;
 	if (!render.data) return null;
 	return (
 		<div data-render-ready={ready ? 'true' : 'false'}>

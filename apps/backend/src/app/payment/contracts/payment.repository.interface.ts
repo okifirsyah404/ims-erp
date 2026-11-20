@@ -1,8 +1,18 @@
 import type { TPaymentAllocationSelect, TPaymentInsert, TPaymentSelect } from '@drizzle/schemas/payment.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 
 /** Filters of the payment list (`GET /payments`). */
 export type TPaymentListFilters = { status?: string; paymentType?: string };
+
+/**
+ * Page settings plus the tenant and filters of `GET /payments`.
+ *
+ * @remarks
+ * `organizationId` travels inside the request rather than as a leading
+ * positional argument, matching every other paginated repository method.
+ */
+export type TPaymentPaginationRequest = TPaginationRequest &
+	TPaymentListFilters & { organizationId: string };
 
 /** A new payment row; ids and timestamps are the repository's. */
 export type TPaymentData = Omit<TPaymentInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
@@ -26,11 +36,8 @@ export type TAllocationData = {
  */
 export interface IPaymentRepository {
 	findById(organizationId: string, id: string, tx?: unknown): Promise<TPaymentSelect | null>;
-	list(
-		organizationId: string,
-		filters: TPaymentListFilters,
-		pagination: { page: number; limit: number },
-	): Promise<TPaginationResult<TPaymentSelect>>;
+	/** Fetches one filtered page of the tenant's payments, newest first. */
+	paginate(request: TPaymentPaginationRequest): Promise<TPaginationResult<TPaymentSelect>>;
 	/** Payments not yet executed: the month-end close checklist count (F7). */
 	countOpen(organizationId: string): Promise<number>;
 	insert(row: TPaymentData, tx?: unknown): Promise<TPaymentSelect>;

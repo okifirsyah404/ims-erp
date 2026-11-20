@@ -1,6 +1,7 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, asc, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
@@ -17,8 +18,8 @@ import {
 } from '@drizzle/schemas/document.schema';
 import type { ISignatureRepository } from '../contracts/signature.repository.interface';
 import type {
-	TSignatureListQuery,
-	TSignatureRequestListQuery,
+	TSignaturePaginationRequest,
+	TSignatureRequestPaginationRequest,
 } from '../contracts/signature.contract';
 
 /**
@@ -35,10 +36,15 @@ import type {
 export class SignatureRepository implements ISignatureRepository {
 	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
 
-	async listSignatures(
-		filter: TSignatureListQuery,
+	/**
+	 * Fetches one filtered page of the signature evidence register.
+	 *
+	 * @param request - Page settings plus the optional document/method filters
+	 */
+	async paginate(
+		request: TSignaturePaginationRequest,
 	): Promise<TPaginationResult<TDocumentSignatureSelect>> {
-		const { page, limit, documentId, method } = filter;
+		const { page, limit, documentId, method } = request;
 		const conditions = [isNull(documentSignatures.deletedAt)];
 		if (documentId) conditions.push(eq(documentSignatures.documentId, documentId));
 		if (method) conditions.push(eq(documentSignatures.signatureMethod, method));
@@ -55,10 +61,7 @@ export class SignatureRepository implements ISignatureRepository {
 			this.database.select({ value: count() }).from(documentSignatures).where(where),
 		]);
 		const total = Number(totals?.value ?? 0);
-		return {
-			meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
-			data: rows,
-		};
+		return paginationResult(request, total, rows);
 	}
 
 	async listSignaturesOfDocument(
@@ -85,31 +88,31 @@ export class SignatureRepository implements ISignatureRepository {
 		return row;
 	}
 
-	async listIncoming(
-		signerUserId: string,
-		filter: TSignatureRequestListQuery,
+	/** Fetches one page of live requests addressed to one signer, newest first. */
+	async paginateIncoming(
+		request: TSignatureRequestPaginationRequest & { signerUserId: string },
 	): Promise<TPaginationResult<TDocumentSignatureRequestSelect>> {
-		return this.listRequests(
-			eq(documentSignatureRequests.signerUserId, signerUserId),
-			filter,
+		return this.paginateRequests(
+			eq(documentSignatureRequests.signerUserId, request.signerUserId),
+			request,
 		);
 	}
 
-	async listOutgoing(
-		requestedByUserId: string,
-		filter: TSignatureRequestListQuery,
+	/** Fetches one page of live requests one requester created, newest first. */
+	async paginateOutgoing(
+		request: TSignatureRequestPaginationRequest & { requestedByUserId: string },
 	): Promise<TPaginationResult<TDocumentSignatureRequestSelect>> {
-		return this.listRequests(
-			eq(documentSignatureRequests.requestedByUserId, requestedByUserId),
-			filter,
+		return this.paginateRequests(
+			eq(documentSignatureRequests.requestedByUserId, request.requestedByUserId),
+			request,
 		);
 	}
 
-	private async listRequests(
+	private async paginateRequests(
 		scope: ReturnType<typeof eq>,
-		filter: TSignatureRequestListQuery,
+		request: TSignatureRequestPaginationRequest,
 	): Promise<TPaginationResult<TDocumentSignatureRequestSelect>> {
-		const { page, limit, pendingOnly } = filter;
+		const { page, limit, pendingOnly } = request;
 		const conditions = [
 			scope,
 			isNull(documentSignatureRequests.deletedAt),
@@ -133,10 +136,7 @@ export class SignatureRepository implements ISignatureRepository {
 				.where(where),
 		]);
 		const total = Number(totals?.value ?? 0);
-		return {
-			meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
-			data: rows,
-		};
+		return paginationResult(request, total, rows);
 	}
 
 	async listRequestsOfDocument(

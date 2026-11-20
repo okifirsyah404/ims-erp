@@ -6,14 +6,15 @@ import {
 	type TCustomerSelect,
 } from '@drizzle/schemas/customer.schema';
 import { likePattern } from '@drizzle/search';
+import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, ilike, isNotNull, isNull, ne, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { TCustomerListQuery } from '../contracts/customer.contract';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	ICustomerPersonRepository,
+	TCustomerPaginationRequest,
 	TNewCustomer,
-	TPagination,
 } from '../contracts/customer.repository.interface';
 
 /**
@@ -32,7 +33,7 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 		return and(eq(customers.id, id), isNull(customers.deletedAt));
 	}
 
-	private filters(query: TCustomerListQuery) {
+	private filters(query: TCustomerPaginationRequest) {
 		return and(
 			isNull(customers.deletedAt),
 			query.status ? eq(customers.status, query.status) : undefined,
@@ -47,32 +48,23 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 		);
 	}
 
-	async paginate(query: TCustomerListQuery): Promise<TPagination<TCustomerSelect>> {
+	/** Fetches one filtered page of customer people, ordered by name. */
+	async paginate(
+		request: TCustomerPaginationRequest,
+	): Promise<TPaginationResult<TCustomerSelect>> {
+		const where = this.filters(request);
 		const rows = await this.database
 			.select()
 			.from(customers)
-			.where(this.filters(query))
+			.where(where)
 			.orderBy(asc(customers.name), asc(customers.id))
-			.limit(query.limit)
-			.offset((query.page - 1) * query.limit);
-		const total = await this.count(query);
-		return {
-			meta: {
-				page: query.page,
-				limit: query.limit,
-				total,
-				totalPages: Math.max(1, Math.ceil(total / query.limit)),
-			},
-			rows,
-		};
-	}
-
-	async count(query: TCustomerListQuery): Promise<number> {
-		const [{ value }] = await this.database
+			.limit(request.limit)
+			.offset((request.page - 1) * request.limit);
+		const [{ value: total }] = await this.database
 			.select({ value: count() })
 			.from(customers)
-			.where(this.filters(query));
-		return Number(value);
+			.where(where);
+		return paginationResult(request, Number(total), rows);
 	}
 
 	async findById(id: string): Promise<TCustomerSelect | null> {

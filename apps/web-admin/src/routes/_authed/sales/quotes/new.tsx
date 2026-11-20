@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { QuotationForm } from '@/components/sales/quotation-form';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { companyProfileQueryOptions } from '@/lib/company-api';
 import { createQuotation } from '@/lib/quotation-api';
@@ -32,7 +33,9 @@ function NewQuotationPage() {
 	return (
 		<div className='flex flex-col gap-6'>
 			<h1 className='text-2xl font-bold'>{t('sales:quotations.new')}</h1>
-			{profile.isPending ? null : (
+			{profile.isPending ? (
+				<SectionSkeleton lines={6} />
+			) : (
 				<QuotationForm
 					quotation={null}
 					initialCustomerId={search.customerId}

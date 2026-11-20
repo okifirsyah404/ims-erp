@@ -97,7 +97,7 @@ describe('ItemCustodyService', () => {
 					movements.push(row);
 					return row as never;
 				},
-				listByItem: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
+				paginateByItem: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
 			},
 			{ findOpenForItem: async (itemId: string) => (openBorrowed.has(itemId) ? { issuedAt: new Date() } : null) },
 			{ hasOpenForItem: async (itemId: string) => openMaintenance.has(itemId) } as never,
@@ -177,10 +177,10 @@ describe('MaintenanceService', () => {
 					created.push(data);
 					return { id: id(), ...(data as object) } as never;
 				},
-				listByItem: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
+				paginateByItem: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
 				hasOpenForItem: async () => true,
 			},
-			{ create: async (data: never) => ({ id: id(), ...(data as object) }) as never, listByItem: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }) },
+			{ create: async (data: never) => ({ id: id(), ...(data as object) }) as never, paginateByItem: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }) },
 			{ reconcileStatus: async (itemId: string) => { reconciled.push(itemId); return null; } },
 			numbering,
 			audit,
@@ -217,7 +217,7 @@ describe('DisposalService', () => {
 					return row;
 				},
 				findById: async (disposalId: string) => rows.find((r) => r.id === disposalId) ?? null,
-				list: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
+				paginate: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
 				update: async (disposalId: string, data: Partial<TDisposalSelect>) => {
 					const row = rows.find((r) => r.id === disposalId);
 					return row ? Object.assign(row, data) : null;
@@ -280,7 +280,7 @@ describe('ToolSetService', () => {
 					sets.push(row);
 					return row;
 				},
-				list: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
+				paginate: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
 				update: async (setId: string, data: Partial<TToolSetSelect>) => {
 					const row = sets.find((s) => s.id === setId);
 					return row ? Object.assign(row, data) : null;

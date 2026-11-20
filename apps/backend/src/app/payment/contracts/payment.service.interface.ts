@@ -1,5 +1,6 @@
 import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaymentPaginationRequest } from './payment.repository.interface';
 
 /** Who is acting: the tenant and the signed-in user. */
 export type TPaymentActionContext = { organizationId: string; actorUserId: string };
@@ -37,11 +38,8 @@ export type TAllocationInput = {
  */
 export interface IPaymentService {
 	get(organizationId: string, id: string): Promise<TPaymentSelect>;
-	list(
-		organizationId: string,
-		filters: { status?: string; paymentType?: string },
-		pagination: { page: number; limit: number },
-	): Promise<TPaginationResult<TPaymentSelect>>;
+	/** Fetches one filtered page of the tenant's payment ledger. */
+	list(request: TPaymentPaginationRequest): Promise<TPaginationResult<TPaymentSelect>>;
 	create(
 		ctx: TPaymentActionContext,
 		input: TCreatePaymentInput,

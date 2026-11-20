@@ -1,4 +1,4 @@
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 import type {
 	TConditionCheckInsert,
 	TConditionCheckSelect,
@@ -16,6 +16,29 @@ import type {
 } from '@drizzle/schemas/inventory.schema';
 import type { TTx } from '@drizzle/types';
 
+/**
+ * Page settings for one item's history tab.
+ *
+ * @remarks
+ * The item and its tenant both travel inside the request, so the three
+ * history repositories (`maintenance`, `condition_check`, `item_movement`)
+ * share one parameter shape.
+ */
+export type TItemHistoryPaginationRequest = TPaginationRequest & {
+	itemId: string;
+	organizationId: string;
+};
+
+/** Page settings and tenant of the disposal listing. */
+export type TDisposalPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+};
+
+/** Page settings and tenant of the tool-set listing. */
+export type TToolSetPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+};
+
 /** Persistence port for `inventory.maintenances`. */
 export interface IMaintenanceRepository {
 	/** Whether the unit has a scheduled or in-progress maintenance. */
@@ -23,12 +46,9 @@ export interface IMaintenanceRepository {
 
 	create(data: TMaintenanceInsert, tx?: TTx): Promise<TMaintenanceSelect>;
 
-	/** Service history of one unit, newest first, scoped to the tenant. */
-	listByItem(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+	/** Fetches one page of the unit's service history, newest first. */
+	paginateByItem(
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TMaintenanceSelect>>;
 }
 
@@ -36,11 +56,9 @@ export interface IMaintenanceRepository {
 export interface IConditionCheckRepository {
 	create(data: TConditionCheckInsert, tx?: TTx): Promise<TConditionCheckSelect>;
 
-	listByItem(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+	/** Fetches one page of the unit's condition-check history, newest first. */
+	paginateByItem(
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TConditionCheckSelect>>;
 }
 
@@ -50,10 +68,9 @@ export interface IDisposalRepository {
 
 	findById(id: string): Promise<TDisposalSelect | null>;
 
-	list(
-		organizationId: string,
-		page: number,
-		limit: number,
+	/** Fetches one page of the tenant's disposal documents. */
+	paginate(
+		request: TDisposalPaginationRequest,
 	): Promise<TPaginationResult<TDisposalSelect>>;
 
 	update(
@@ -90,10 +107,9 @@ export interface IToolSetRepository {
 
 	create(data: TToolSetInsert, tx?: TTx): Promise<TToolSetSelect>;
 
-	list(
-		organizationId: string,
-		page: number,
-		limit: number,
+	/** Fetches one page of the tenant's tool sets. */
+	paginate(
+		request: TToolSetPaginationRequest,
 	): Promise<TPaginationResult<TToolSetSelect>>;
 
 	update(

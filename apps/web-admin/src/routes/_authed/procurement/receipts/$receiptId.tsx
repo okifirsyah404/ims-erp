@@ -4,6 +4,9 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
+
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DataTable } from '@/components/data-table/data-table';
@@ -86,8 +89,8 @@ function GoodsReceiptDetailPage() {
 	const { data, isPending, isError, error } = useQuery(goodsReceiptQueryOptions(receiptId));
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>

@@ -13,9 +13,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	IToolSetItemRepository,
 	IToolSetRepository,
+	TToolSetPaginationRequest,
 } from '../contracts/item-operations.repository.interface';
 
 /** Drizzle implementation of {@link IToolSetRepository} on `inventory.tool_sets`. */
@@ -36,11 +38,15 @@ export class ToolSetRepository implements IToolSetRepository {
 		return row;
 	}
 
-	async list(
-		organizationId: string,
-		page: number,
-		limit: number,
+	/**
+	 * Fetches one page of the tenant's tool sets, ordered by code.
+	 *
+	 * @param request - Tenant and page settings
+	 */
+	async paginate(
+		request: TToolSetPaginationRequest,
 	): Promise<TPaginationResult<TToolSetSelect>> {
+		const { organizationId, page, limit } = request;
 		const where = and(eq(toolSets.organizationId, organizationId), isNull(toolSets.deletedAt));
 		const [{ value: total }] = await this.database
 			.select({ value: count() })
@@ -53,7 +59,7 @@ export class ToolSetRepository implements IToolSetRepository {
 			.orderBy(asc(toolSets.code))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult(request, total, data);
 	}
 
 	async update(id: string, data: Partial<TToolSetInsert>, tx?: TTx): Promise<TToolSetSelect | null> {

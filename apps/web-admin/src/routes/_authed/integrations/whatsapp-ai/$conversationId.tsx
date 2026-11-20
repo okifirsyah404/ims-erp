@@ -8,7 +8,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -55,8 +56,18 @@ function ConversationPage() {
 		}
 	};
 
-	if (isPending) return null;
-	if (isError) return <p className='p-6 text-sm text-destructive'>{error.message}</p>;
+	if (isPending)
+		return (
+			<div className='p-6'>
+				<PageSkeleton />
+			</div>
+		);
+	if (isError)
+		return (
+			<div className='p-6'>
+				<ErrorState error={error} bordered />
+			</div>
+		);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>

@@ -4,17 +4,21 @@ import {
 	type TSupplierCompanySelect,
 } from '@drizzle/schemas/supplier.schema';
 import { likePattern } from '@drizzle/search';
+import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
+import { paginationResult } from '@utils/pagination.util';
 import type { ICacheClient } from '@cache/cache.client';
 import type {
 	TSupplierCompanyCreateInput,
-	TSupplierCompanyListQuery,
 	TSupplierCompanyUpdateInput,
 } from '../contracts/supplier.contract';
-import type { ISupplierCompanyRepository } from '../contracts/supplier.repository.interface';
+import type {
+	ISupplierCompanyRepository,
+	TSupplierCompanyPaginationRequest,
+} from '../contracts/supplier.repository.interface';
 
 /**
  * Drizzle + Redis implementation of {@link ISupplierCompanyRepository}.
@@ -39,7 +43,7 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 		);
 	}
 
-	private filters(query: TSupplierCompanyListQuery) {
+	private filters(query: TSupplierCompanyPaginationRequest) {
 		return and(
 			isNull(supplierCompanies.deletedAt),
 			query.status ? eq(supplierCompanies.status, query.status) : undefined,
@@ -58,24 +62,23 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 		);
 	}
 
+	/** Fetches one filtered page of supplier companies, ordered by name. */
 	async paginate(
-		query: TSupplierCompanyListQuery,
-	): Promise<TSupplierCompanySelect[]> {
-		return this.database
+		request: TSupplierCompanyPaginationRequest,
+	): Promise<TPaginationResult<TSupplierCompanySelect>> {
+		const where = this.filters(request);
+		const rows = await this.database
 			.select()
 			.from(supplierCompanies)
-			.where(this.filters(query))
+			.where(where)
 			.orderBy(asc(supplierCompanies.name), asc(supplierCompanies.id))
-			.limit(query.limit)
-			.offset((query.page - 1) * query.limit);
-	}
-
-	async count(query: TSupplierCompanyListQuery): Promise<number> {
-		const [{ value }] = await this.database
+			.limit(request.limit)
+			.offset((request.page - 1) * request.limit);
+		const [{ value: total }] = await this.database
 			.select({ value: count() })
 			.from(supplierCompanies)
-			.where(this.filters(query));
-		return Number(value);
+			.where(where);
+		return paginationResult(request, Number(total), rows);
 	}
 
 	async findById(id: string): Promise<TSupplierCompanySelect | null> {

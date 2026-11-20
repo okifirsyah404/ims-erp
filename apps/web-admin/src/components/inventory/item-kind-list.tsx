@@ -33,7 +33,7 @@ import { useItemCategoryNames } from '@/lib/item-category-api';
 import { useClampPage } from '@/lib/use-clamp-page';
 import { usePermission } from '@/lib/use-permission';
 import { ItemForm } from './item-form';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 /** Cards per page: 3 columns × 8 rows. */
 const PAGE_SIZE = 24;
 
@@ -83,13 +83,7 @@ export function ItemKindList({
 	useClampPage(page, pagination?.totalPages, onPageChange);
 
 	if (isError) {
-		return (
-			<EmptyState
-				title={error instanceof Error ? error.message : t('common:error.failed')}
-				tone='error'
-				bordered
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (

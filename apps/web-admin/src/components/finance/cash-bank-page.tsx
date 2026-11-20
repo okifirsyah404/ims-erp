@@ -19,7 +19,7 @@ import { Landmark, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	accountsQueryOptions,
@@ -72,7 +72,12 @@ export function CashBankPage() {
 	const [counterpartAccountId, setCounterpartAccountId] = useState('none');
 
 	const page = search.page ?? 1;
-	const { data: accounts, isError: accountsError, error: accountsErr } = useQuery({
+	const {
+		data: accounts,
+		isPending: accountsPending,
+		isError: accountsError,
+		error: accountsErr,
+	} = useQuery({
 		...cashBankAccountsQueryOptions(),
 		enabled: canRead,
 	});
@@ -348,8 +353,8 @@ export function CashBankPage() {
 			) : null}
 
 			{accountsError ? (
-				<EmptyState icon={Landmark} title={accountsErr.message} bordered />
-			) : (accounts?.length ?? 0) === 0 ? (
+				<ErrorState error={accountsErr} bordered />
+			) : !accountsPending && (accounts?.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Landmark}
 					title={t('finance:cashBank.accountsEmpty')}
@@ -359,6 +364,7 @@ export function CashBankPage() {
 				<DataTable
 					columns={accountColumns}
 					data={accounts ?? []}
+					loading={accountsPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>
@@ -455,9 +461,9 @@ export function CashBankPage() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={Landmark} title={error.message} bordered />
-			) : (movements?.rows.length ?? 0) === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (movements?.rows.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Landmark}
 					title={t('finance:cashBank.movementsEmpty')}
@@ -467,6 +473,7 @@ export function CashBankPage() {
 				<DataTable
 					columns={movementColumns}
 					data={movements?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					bordered
 				/>

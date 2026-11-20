@@ -17,7 +17,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Landmark, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	addReconciliationItems,
@@ -282,14 +282,15 @@ export function ReconciliationPage() {
 				</div>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={Landmark} title={error.message} tone='error' bordered />
-			) : (page?.rows.length ?? 0) === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (page?.rows.length ?? 0) === 0 ? (
 				<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}
 					data={page?.rows ?? []}
+					loading={isPending}
 					getRowId={(row) => row.id}
 					rowClassName={(row) =>
 						selectedId === row.id ? 'bg-muted/50' : undefined

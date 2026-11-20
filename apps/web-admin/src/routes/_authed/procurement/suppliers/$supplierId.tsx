@@ -3,6 +3,9 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
+
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
@@ -137,8 +140,8 @@ function SupplierDetailPage() {
 		}
 	}
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -217,7 +220,7 @@ function SupplierDetailPage() {
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-3 text-sm'>
-					{data.people.length === 0 && <p className='text-muted-foreground'>{t('procurement:suppliers.noPeople')}</p>}
+					{data.people.length === 0 && <EmptyState title={t('procurement:suppliers.noPeople')} size='sm' />}
 					{data.people.map((person) => (
 						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
 							<div>

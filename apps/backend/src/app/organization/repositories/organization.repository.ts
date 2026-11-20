@@ -6,6 +6,7 @@ import {
 	organizations,
 } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -100,15 +101,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 
 		const withCounts = await this.attachCounts(rows);
 
-		return {
-			meta: {
-				page,
-				limit,
-				total: Number(totalRow?.value ?? 0),
-				totalPages: Math.max(1, Math.ceil(Number(totalRow?.value ?? 0) / limit)),
-			},
-			data: withCounts,
-		};
+		return paginationResult({ page, limit }, Number(totalRow?.value ?? 0), withCounts);
 	}
 
 	/**
@@ -307,14 +300,10 @@ export class OrganizationRepository implements IOrganizationRepository {
 			.from(members)
 			.where(and(...conditions));
 
-		return {
-			meta: {
-				page,
-				limit,
-				total: Number(totalRow?.value ?? 0),
-				totalPages: Math.max(1, Math.ceil(Number(totalRow?.value ?? 0) / limit)),
-			},
-			data: rows.map((row) => ({
+		return paginationResult(
+			{ page, limit },
+			Number(totalRow?.value ?? 0),
+			rows.map((row) => ({
 				id: row.id,
 				organizationId: row.organizationId,
 				userId: row.userId,
@@ -325,7 +314,7 @@ export class OrganizationRepository implements IOrganizationRepository {
 						? { name: row.userName, email: row.userEmail, image: row.userImage }
 						: null,
 			})),
-		};
+		);
 	}
 
 	/**

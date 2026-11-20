@@ -56,10 +56,10 @@ export class TaxController {
 				'',
 				async ({ query, erp }) =>
 					okPaginated(
-						await tax.listTaxTypes(
-							erp.organizationId,
-							taxTypeListQuerySchema.parse(query),
-						),
+						await tax.listTaxTypes({
+							organizationId: erp.organizationId,
+							...taxTypeListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['tax:read'] },
@@ -197,16 +197,13 @@ export class TaxController {
 			)
 			.get(
 				'/records',
-				async ({ query, erp }) => {
-					const { page, limit, year, month } = taxRecordListQuerySchema.parse(query);
-					return okPaginated(
-						await tax.listTaxRecords(
-							erp.organizationId,
-							{ year, month },
-							{ page, limit },
-						),
-					);
-				},
+				async ({ query, erp }) =>
+					okPaginated(
+						await tax.listTaxRecords({
+							organizationId: erp.organizationId,
+							...taxRecordListQuerySchema.parse(query),
+						}),
+					),
 				{
 					erp: { permission: ['tax:read'] },
 					detail: { description: 'Paginated period working papers' },
@@ -329,10 +326,10 @@ export class TaxController {
 				'/withholdings',
 				async ({ query, erp }) =>
 					okPaginated(
-						await tax.listWithholding(
-							erp.organizationId,
-							withholdingListQuerySchema.parse(query),
-						),
+						await tax.listWithholding({
+							organizationId: erp.organizationId,
+							...withholdingListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['tax:read'] },

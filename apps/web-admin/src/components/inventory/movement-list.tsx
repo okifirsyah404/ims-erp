@@ -18,7 +18,7 @@ import {
 	type TStockMovement,
 } from '@/lib/stock-api';
 import { useClampPage } from '@/lib/use-clamp-page';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 
 /** Rows per page: 24 keeps a full-height page without endless scrolling. */
@@ -201,18 +201,6 @@ export function MovementList({
 		[confirm, reversal, t],
 	);
 
-	if (isPending) {
-		return (
-			<EmptyState title={t('common:state.loading')} size='sm' bordered />
-		);
-	}
-
-	if (isError) {
-		return (
-			<EmptyState title={error.message} tone='error' bordered />
-		);
-	}
-
 	const rows = data?.rows ?? [];
 
 	return (
@@ -233,13 +221,16 @@ export function MovementList({
 				</p>
 			) : null}
 
-			{rows.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && rows.length === 0 ? (
 				<EmptyState title={t('inventory:movements.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}
 					data={rows}
 					getRowId={(row) => row.id}
+					loading={isPending}
 					bordered
 				/>
 			)}

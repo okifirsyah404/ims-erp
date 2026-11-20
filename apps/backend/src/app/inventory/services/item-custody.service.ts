@@ -18,7 +18,7 @@ import type {
 	IItemMovementRepository,
 	TItemMovementSelect,
 } from '../contracts/item-movement.repository.interface';
-import type { IMaintenanceRepository } from '../contracts/item-operations.repository.interface';
+import type { IMaintenanceRepository, TItemHistoryPaginationRequest } from '../contracts/item-operations.repository.interface';
 import { ItemNotFoundError, ItemRuleViolationError } from '../errors/item.errors';
 import { WarehouseNotFoundError } from '../errors/inventory.errors';
 import { InventoryAuditWriter } from './inventory-audit.writer';
@@ -323,14 +323,11 @@ export class ItemCustodyService {
 		return movement;
 	}
 
-	/** The location trail of one unit, newest first. */
+	/** Fetches one page of the unit's location trail, newest first. */
 	listMovements(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TItemMovementSelect>> {
-		return this.movements.listByItem(itemId, organizationId, page, limit);
+		return this.movements.paginateByItem(request);
 	}
 
 	/* ------------------------------------------------------------------ */

@@ -38,7 +38,7 @@ import {
 	updateItemCategory,
 } from '@/lib/item-category-api';
 import { usePermission } from '@/lib/use-permission';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 
 /**
  * Item categories (ADR-0011): one level, company-wide. Lists every live
@@ -154,15 +154,16 @@ export function ItemCategoryList() {
 				{canCreate && <Button onClick={() => setEditing('new')}>{t('inventory:categories.new')}</Button>}
 			</div>
 
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : categories.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && categories.length === 0 ? (
 				<EmptyState title={t('inventory:categories.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}
-					data={categories}
+					data={categories ?? []}
 					getRowId={(category) => category.id}
+					loading={isPending}
 					bordered
 				/>
 			)}

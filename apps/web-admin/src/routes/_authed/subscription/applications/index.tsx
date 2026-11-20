@@ -14,7 +14,7 @@ import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	APPLICATION_SOURCES,
@@ -157,12 +157,12 @@ function ApplicationsPage() {
 				<Checkbox id='applications-show-retired' checked={showRetired} onCheckedChange={(checked) => setShowRetired(checked === true)} />
 				<FieldLabel htmlFor='applications-show-retired'>{t('licensing:applications.showRetired')}</FieldLabel>
 			</Field>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.length === 0 ? (
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.length === 0 ? (
 				<EmptyState title={t('licensing:applications.empty')} bordered />
 			) : (
-				<DataTable columns={columns} data={data} getRowId={(row) => row.id} bordered />
+				<DataTable columns={columns} data={data ?? []} loading={isPending} getRowId={(row) => row.id} bordered />
 			)}
 
 			<Dialog open={editing !== null} onOpenChange={(next) => !next && setEditing(null)}>

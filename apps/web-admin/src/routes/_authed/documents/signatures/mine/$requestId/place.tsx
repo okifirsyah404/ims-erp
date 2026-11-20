@@ -23,6 +23,8 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Slider } from '@ims-erp/ui/components/slider';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { documentDetailQueryOptions } from '@/lib/documents-api';
 import {
@@ -184,9 +186,11 @@ function PlaceSignaturePage() {
 	if (!canSign) {
 		return <div className='text-sm text-muted-foreground'>{t('signatures:noPermission')}</div>;
 	}
-	if (requests.isPending || (request && document.isPending)) return null;
+	if (requests.isError) return <ErrorState error={requests.error} bordered />;
+	if (request && document.isError) return <ErrorState error={document.error} bordered />;
+	if (requests.isPending || (request && document.isPending)) return <PageSkeleton cards={1} />;
 	if (!request) {
-		return <div className='text-sm text-muted-foreground'>{t('signatures:requestNotFound')}</div>;
+		return <EmptyState title={t('signatures:requestNotFound')} bordered />;
 	}
 
 	const file = pdfFiles.find((candidate) => candidate.id === fileId);

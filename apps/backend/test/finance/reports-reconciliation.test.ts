@@ -194,7 +194,7 @@ function makeHarness() {
 		},
 		updateCashBankAccount: async () => null,
 		insertCashBankTransaction: async () => null,
-		listCashBankTransactions: async () => ({
+		paginateTransactions: async () => ({
 			data: [],
 			meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
 		}),
@@ -209,7 +209,7 @@ function makeHarness() {
 		},
 		findBankReconciliationById: async (_o: string, id: string) =>
 			reconciliations.get(id) ?? null,
-		listBankReconciliations: async () => ({
+		paginate: async () => ({
 			data: [...reconciliations.values()],
 			meta: { page: 1, limit: 20, total: reconciliations.size, totalPages: 1 },
 		}),

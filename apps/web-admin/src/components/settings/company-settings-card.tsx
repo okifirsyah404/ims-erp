@@ -17,6 +17,7 @@ import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
@@ -107,14 +108,15 @@ export function CompanySettingsCard({
 				<CardDescription>{description ?? t('settings:settings.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
-				{isPending ? null : isError ? (
-					<p className='text-sm text-destructive'>{error.message}</p>
-				) : settings.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>{emptyText ?? t('settings:settings.empty')}</p>
+				{isError ? (
+					<ErrorState error={error} size='sm' />
+				) : !isPending && settings.length === 0 ? (
+					<EmptyState title={emptyText ?? t('settings:settings.empty')} size='sm' />
 				) : (
 					<DataTable
 						columns={columns}
 						data={settings}
+						loading={isPending}
 						getRowId={(row) => `${row.settingGroup}.${row.settingKey}`}
 					/>
 				)}

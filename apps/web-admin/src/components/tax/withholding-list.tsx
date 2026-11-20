@@ -20,9 +20,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, ReceiptText, Plus } from 'lucide-react';
+import { ReceiptText, Plus } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	createWithholding,
@@ -226,13 +226,7 @@ export function WithholdingList() {
 	}, [canUpdate, canVerify, t, transition, typeRows]);
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('tax:withholding.title')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -306,27 +300,31 @@ export function WithholdingList() {
 				</div>
 			) : null}
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={ReceiptText}
 					title={t('tax:withholding.title')}
 					description={t('tax:withholding.empty')}
+					bordered
 				/>
 			) : (
 				<>
 					<DataTable
 						columns={columns}
-						data={data.rows}
+						data={data?.rows ?? []}
+						loading={isPending}
 						getRowId={(row) => row.id}
 						bordered
 					/>
-					<PaginationControls
-						page={page}
-						totalPages={data.pagination.totalPages}
-						onPageChange={(next) =>
-							void navigate({ search: (prev) => ({ ...prev, page: next }) })
-						}
-					/>
+					{data ? (
+						<PaginationControls
+							page={page}
+							totalPages={data.pagination.totalPages}
+							onPageChange={(next) =>
+								void navigate({ search: (prev) => ({ ...prev, page: next }) })
+							}
+						/>
+					) : null}
 				</>
 			)}
 

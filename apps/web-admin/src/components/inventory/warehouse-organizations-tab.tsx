@@ -20,6 +20,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import { Building2, Link2, Unlink } from 'lucide-react';
@@ -190,16 +191,20 @@ export function WarehouseOrganizationsTab({
 					</Button>
 				</div>
 
-				{links.isPending ? null : (links.data ?? []).length === 0 ? (
-					<div className='flex items-center gap-2 py-6 text-sm text-muted-foreground'>
-						<Building2 className='size-4' />
-						{t('inventory:warehouses.noLinkedOrganizations')}
-					</div>
+				{links.isError ? (
+					<ErrorState error={links.error} size='sm' />
+				) : !links.isPending && (links.data ?? []).length === 0 ? (
+					<EmptyState
+						icon={Building2}
+						title={t('inventory:warehouses.noLinkedOrganizations')}
+						size='sm'
+					/>
 				) : (
 					<DataTable
 						columns={columns}
 						data={links.data ?? []}
 						getRowId={(row) => row.organizationId ?? ''}
+						loading={links.isPending}
 					/>
 				)}
 			</CardContent>

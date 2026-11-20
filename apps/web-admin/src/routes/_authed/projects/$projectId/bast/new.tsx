@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { BastForm } from '@/components/projects/bast-form';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { bastDraftQueryOptions, createBast } from '@/lib/handover-api';
 
@@ -27,7 +29,7 @@ function NewBastPage() {
 				<p className='text-sm text-muted-foreground'>{t('projects:bast.newHint')}</p>
 			</div>
 			{draft.isError ? (
-				<p className='text-sm text-destructive'>{draft.error.message}</p>
+				<ErrorState error={draft.error} bordered />
 			) : draft.data ? (
 				<BastForm
 					initial={draft.data}
@@ -48,7 +50,9 @@ function NewBastPage() {
 						}
 					}}
 				/>
-			) : null}
+			) : (
+				<SectionSkeleton lines={6} />
+			)}
 		</div>
 	);
 }

@@ -33,11 +33,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
+import { Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { useConfirm } from '@/components/confirm-dialog';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	archiveWarehouse,
@@ -73,7 +74,7 @@ type TSortDir = 'asc' | 'desc';
  */
 export function WarehouseList() {
 	const { isAppAdmin, isPending } = useWarehouseAccess();
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	return isAppAdmin ? <AdminWarehouseList /> : <PicWarehouseList />;
 }
 
@@ -211,14 +212,7 @@ function AdminWarehouseList() {
 
 			{/* Cards -------------------------------------------------------- */}
 			{isError ? (
-				<EmptyState
-					icon={CircleAlert}
-					bordered
-					title={t('common:error.failed')}
-					description={
-						error instanceof Error ? error.message : undefined
-					}
-				/>
+				<ErrorState error={error} bordered />
 			) : rows.length === 0 && !isPending ? (
 				<EmptyState
 					icon={Warehouse}
@@ -325,12 +319,7 @@ function PicWarehouseList() {
 			</InputGroup>
 
 			{isError ? (
-				<EmptyState
-					icon={CircleAlert}
-					bordered
-					title={t('common:error.failed')}
-					description={error instanceof Error ? error.message : undefined}
-				/>
+				<ErrorState error={error} bordered />
 			) : rows.length === 0 && !isPending ? (
 				<EmptyState
 					icon={Warehouse}

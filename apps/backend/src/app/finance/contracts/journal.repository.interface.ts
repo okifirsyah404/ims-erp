@@ -1,9 +1,17 @@
 import type { TTx } from '@drizzle/types';
 import type { TJournalEntrySelect, TJournalLineSelect } from '@drizzle/schemas/finance.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 
 /** Aggregated journal activity of one account inside a date window. */
 export type TAccountActivity = { accountId: string; debit: number; credit: number };
+
+/** Page settings, tenant and the optional filters of the journal listing. */
+export type TJournalEntryPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+	year?: number;
+	month?: number;
+	status?: string;
+};
 
 export interface IJournalRepository {
 	findEntryById(organizationId: string, id: string, tx?: TTx): Promise<TJournalEntrySelect | null>;
@@ -19,10 +27,9 @@ export interface IJournalRepository {
 		sourceId: string,
 		tx?: TTx,
 	): Promise<TJournalEntrySelect | null>;
-	listEntries(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filters?: { year?: number; month?: number; status?: string },
+	/** Fetches one page of the tenant's journal entries, newest first. */
+	paginateEntries(
+		request: TJournalEntryPaginationRequest,
 	): Promise<TPaginationResult<TJournalEntrySelect>>;
 	insertEntry(
 		row: {

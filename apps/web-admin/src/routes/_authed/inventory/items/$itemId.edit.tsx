@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 import { AdminOnly } from '@/components/inventory/admin-only';
@@ -24,7 +26,7 @@ function EditItemPage() {
 	const queryClient = useQueryClient();
 	const [submitting, setSubmitting] = useState(false);
 
-	const { data: item, isPending, isError } = useQuery(productQueryOptions(itemId));
+	const { data: item, isPending, isError, error: loadError } = useQuery(productQueryOptions(itemId));
 
 	async function handleSubmit(input: TProductUpdateInput | Record<string, unknown>) {
 		setSubmitting(true);
@@ -50,14 +52,14 @@ function EditItemPage() {
 		}
 	}
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton cards={1} />;
 
-	if (isError || !item) {
+	if (isError) return <ErrorState error={loadError} bordered />;
+
+	if (!item) {
 		return (
 			<AdminOnly>
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:detail.notFound')}
-				</p>
+				<EmptyState title={t('inventory:detail.notFound')} bordered />
 			</AdminOnly>
 		);
 	}

@@ -11,7 +11,12 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, count, desc, eq, gt, inArray, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { IPaymentRepository, TPaymentData, TPaymentListFilters } from '../contracts/payment.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IPaymentRepository,
+	TPaymentData,
+	TPaymentPaginationRequest,
+} from '../contracts/payment.repository.interface';
 
 /**
  * Drizzle queries of `payment.payments` and `payment.payment_allocations`
@@ -39,14 +44,18 @@ export class PaymentRepository implements IPaymentRepository {
 		return row ?? null;
 	}
 
-	async list(
-		organizationId: string,
-		filters: TPaymentListFilters,
-		pagination: { page: number; limit: number },
+	/**
+	 * Fetches one filtered page of the tenant's payments, newest first.
+	 *
+	 * @param request - Tenant, page settings and the optional status/type filters
+	 */
+	async paginate(
+		request: TPaymentPaginationRequest,
 	): Promise<TPaginationResult<TPaymentSelect>> {
+		const { organizationId, status, paymentType, page, limit } = request;
 		const conditions = [eq(payments.organizationId, organizationId), isNull(payments.deletedAt)];
-		if (filters.status) conditions.push(eq(payments.status, filters.status));
-		if (filters.paymentType) conditions.push(eq(payments.paymentType, filters.paymentType));
+		if (status) conditions.push(eq(payments.status, status));
+		if (paymentType) conditions.push(eq(payments.paymentType, paymentType));
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database.select({ value: count() }).from(payments).where(where);
 		const data = await this.database
@@ -54,17 +63,9 @@ export class PaymentRepository implements IPaymentRepository {
 			.from(payments)
 			.where(where)
 			.orderBy(desc(payments.createdAt))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async countOpen(organizationId: string): Promise<number> {

@@ -9,7 +9,7 @@ import type {
 	TCreateDocumentTemplateInput,
 	TDocumentDetail,
 	TDocumentFileView,
-	TDocumentListQuery,
+	TDocumentPaginationRequest,
 	TDocumentShareView,
 	TIssueDocumentInput,
 	TPublicDocumentView,
@@ -59,8 +59,9 @@ export class DocumentService {
 		private readonly storage: IObjectStorage,
 	) {}
 
-	list(query: TDocumentListQuery): Promise<TPaginationResult<TDocumentSelect>> {
-		return this.repository.list(query);
+	/** Fetches one page of the document registry. */
+	list(request: TDocumentPaginationRequest): Promise<TPaginationResult<TDocumentSelect>> {
+		return this.repository.paginate(request);
 	}
 
 	/** One document; reading it appends a `view` row to the access trail. */

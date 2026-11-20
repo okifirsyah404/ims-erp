@@ -18,6 +18,8 @@ import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
@@ -145,8 +147,8 @@ export function PaymentGatewaysPanel({ canEdit }: { canEdit: boolean }) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [canEdit, t]);
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <SectionSkeleton lines={5} />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-4'>

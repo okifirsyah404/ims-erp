@@ -1,17 +1,18 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import {
-	suppliers,
-	type TSupplierSelect,
-} from '@drizzle/schemas/supplier.schema';
+import { suppliers, type TSupplierSelect } from '@drizzle/schemas/supplier.schema';
+import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	TSupplierCreateInput,
-	TSupplierListQuery,
 	TSupplierUpdateInput,
 } from '../contracts/supplier.contract';
-import type { ISupplierRepository } from '../contracts/supplier.repository.interface';
+import type {
+	ISupplierRepository,
+	TSupplierPaginationRequest,
+} from '../contracts/supplier.repository.interface';
 
 /**
  * Drizzle implementation of {@link ISupplierRepository}.
@@ -31,29 +32,30 @@ export class SupplierRepository implements ISupplierRepository {
 		return and(eq(suppliers.id, id), isNull(suppliers.deletedAt));
 	}
 
-	private filters(query: TSupplierListQuery) {
+	private filters(query: TSupplierPaginationRequest) {
 		return and(
 			isNull(suppliers.deletedAt),
 			query.companyId ? eq(suppliers.companyId, query.companyId) : undefined,
 		);
 	}
 
-	async paginate(query: TSupplierListQuery): Promise<TSupplierSelect[]> {
-		return this.database
+	/** Fetches one filtered page of supplier people, ordered by name. */
+	async paginate(
+		request: TSupplierPaginationRequest,
+	): Promise<TPaginationResult<TSupplierSelect>> {
+		const where = this.filters(request);
+		const rows = await this.database
 			.select()
 			.from(suppliers)
-			.where(this.filters(query))
+			.where(where)
 			.orderBy(asc(suppliers.name), asc(suppliers.id))
-			.limit(query.limit)
-			.offset((query.page - 1) * query.limit);
-	}
-
-	async count(query: TSupplierListQuery): Promise<number> {
-		const [{ value }] = await this.database
+			.limit(request.limit)
+			.offset((request.page - 1) * request.limit);
+		const [{ value: total }] = await this.database
 			.select({ value: count() })
 			.from(suppliers)
-			.where(this.filters(query));
-		return Number(value);
+			.where(where);
+		return paginationResult(request, Number(total), rows);
 	}
 
 	async findById(id: string): Promise<TSupplierSelect | null> {
