@@ -1,4 +1,3 @@
-import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import {
@@ -9,42 +8,71 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from '@ims-erp/ui/components/empty';
+import type { LucideIcon } from 'lucide-react';
 
 /**
- * Shared empty/error state for list pages and empty sections.
+ * Shared empty / error state (shadcn `Empty` composition).
  *
  * @remarks
- * Thin wrapper over the `@ims-erp/ui` Empty composition (shadcn Base Empty)
- * so every page renders the same dashed placeholder: icon in a muted tile,
- * title, optional description, optional action (e.g. a create button).
- * Pass `className='border'` (or any override) via `className` — the base
- * `Empty` only styles the dash pattern, not the border width, so a boxed
- * look needs it.
+ * One component for every "nothing here" and "could not load" case, so lists,
+ * cards and tables all read the same:
+ *
+ * - `title` is the one-liner; `description` the optional explanation.
+ * - `action` is a call to action, typically a single `Button`.
+ * - `tone='error'` restyles the title for a failed load.
+ * - `size='sm'` is for messages nested inside a card or a table cell.
+ * - `bordered` adds the doc's outline variant. Standalone section states pass
+ *   it; a state already sitting inside a `Card` or a data-table frame does not.
+ *
+ * `icon` is optional: a plain sentence ("No invoices yet") does not need one.
  */
 export function EmptyState({
 	icon: Icon,
 	title,
 	description,
 	action,
+	tone = 'default',
+	size = 'default',
+	bordered = false,
 	className,
 }: {
-	/** Icon shown in a muted square tile. */
-	icon: LucideIcon;
+	/** Icon shown in a muted square tile. Omit for text-only states. */
+	icon?: LucideIcon;
 	/** Primary one-liner, e.g. "No warehouses yet". */
-	title: string;
+	title: ReactNode;
 	/** Secondary explanation; keep to one sentence. */
-	description?: string;
+	description?: ReactNode;
 	/** Optional call to action, typically a single Button. */
 	action?: ReactNode;
+	/** `error` restyles the title for a failed load. */
+	tone?: 'default' | 'error';
+	/** `sm` is a compact variant for use inside a card or table cell. */
+	size?: 'default' | 'sm';
+	/** Draw the dashed outline (doc's "Outline" variant). */
+	bordered?: boolean;
 	className?: string;
 }) {
 	return (
-		<Empty className={className}>
-			<EmptyHeader>
-				<EmptyMedia variant='icon'>
-					<Icon />
-				</EmptyMedia>
-				<EmptyTitle>{title}</EmptyTitle>
+		<Empty
+			className={[
+				bordered ? 'border' : '',
+				size === 'sm' ? 'gap-2 p-4' : '',
+				className ?? '',
+			]
+				.filter(Boolean)
+				.join(' ')}
+		>
+			<EmptyHeader className={size === 'sm' ? 'gap-1' : undefined}>
+				{Icon ? (
+					<EmptyMedia variant='icon'>
+						<Icon />
+					</EmptyMedia>
+				) : null}
+				<EmptyTitle
+					className={tone === 'error' ? 'text-destructive' : undefined}
+				>
+					{title}
+				</EmptyTitle>
 				{description ? (
 					<EmptyDescription>{description}</EmptyDescription>
 				) : null}

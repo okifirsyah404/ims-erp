@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import {
 	AlertDialog,
@@ -14,7 +15,6 @@ import {
 } from '@ims-erp/ui/components/alert-dialog';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
@@ -26,14 +26,8 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
 	archiveItemCategory,
@@ -44,6 +38,7 @@ import {
 	updateItemCategory,
 } from '@/lib/item-category-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState } from '@/components/empty-state';
 
 /**
  * Item categories (ADR-0011): one level, company-wide. Lists every live
@@ -94,6 +89,61 @@ export function ItemCategoryList() {
 		}
 	}
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TItemCategory, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'sortOrder',
+				header: t('inventory:categories.sortOrder'),
+				meta: { headClassName: 'w-16' },
+			},
+			{
+				id: 'name',
+				header: t('inventory:categories.name'),
+				cell: ({ row }) => (
+					<>
+						{row.original.name}
+						{!row.original.isActive && (
+							<Badge variant='outline' className='ml-2'>
+								{t('inventory:categories.inactive')}
+							</Badge>
+						)}
+					</>
+				),
+			},
+			{
+				accessorKey: 'slug',
+				header: t('inventory:categories.slug'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'shortName',
+				header: t('inventory:categories.shortName'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.shortName ?? '—',
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<div className='flex justify-end gap-2'>
+						{canUpdate && (
+							<Button variant='outline' size='sm' onClick={() => setEditing(row.original)}>
+								{t('common:action.edit')}
+							</Button>
+						)}
+						{canArchive && (
+							<Button variant='outline' size='sm' onClick={() => setArchiving(row.original)}>
+								{t('inventory:categories.archive')}
+							</Button>
+						)}
+					</div>
+				),
+			},
+		],
+		[canArchive, canUpdate, t],
+	);
+
 	return (
 		<div className='flex flex-col gap-6'>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
@@ -107,58 +157,14 @@ export function ItemCategoryList() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : categories.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{t('inventory:categories.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState title={t('inventory:categories.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead className='w-16'>{t('inventory:categories.sortOrder')}</TableHead>
-									<TableHead>{t('inventory:categories.name')}</TableHead>
-									<TableHead>{t('inventory:categories.slug')}</TableHead>
-									<TableHead>{t('inventory:categories.shortName')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{categories.map((category) => (
-									<TableRow key={category.id}>
-										<TableCell>{category.sortOrder}</TableCell>
-										<TableCell>
-											{category.name}
-											{!category.isActive && (
-												<Badge variant='outline' className='ml-2'>
-													{t('inventory:categories.inactive')}
-												</Badge>
-											)}
-										</TableCell>
-										<TableCell className='font-mono text-xs'>{category.slug}</TableCell>
-										<TableCell className='text-muted-foreground'>{category.shortName ?? '—'}</TableCell>
-										<TableCell className='text-right'>
-											<div className='flex justify-end gap-2'>
-												{canUpdate && (
-													<Button variant='outline' size='sm' onClick={() => setEditing(category)}>
-														{t('common:action.edit')}
-													</Button>
-												)}
-												{canArchive && (
-													<Button variant='outline' size='sm' onClick={() => setArchiving(category)}>
-														{t('inventory:categories.archive')}
-													</Button>
-												)}
-											</div>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable
+					columns={columns}
+					data={categories}
+					getRowId={(category) => category.id}
+					bordered
+				/>
 			)}
 
 			{editing && (
@@ -291,10 +297,14 @@ function CategoryDialog({
 								onChange={(event) => setDescription(event.target.value)}
 							/>
 						</Field>
-						<label className='flex items-center gap-2 text-sm'>
-							<Checkbox checked={isActive} onCheckedChange={(checked) => setIsActive(checked === true)} />
-							{t('inventory:categories.isActive')}
-						</label>
+						<Field orientation='horizontal'>
+							<Checkbox
+								id='category-is-active'
+								checked={isActive}
+								onCheckedChange={(checked) => setIsActive(checked === true)}
+							/>
+							<FieldLabel htmlFor='category-is-active'>{t('inventory:categories.isActive')}</FieldLabel>
+						</Field>
 					</FieldGroup>
 					<DialogFooter>
 						<Button type='button' variant='outline' onClick={onClose}>

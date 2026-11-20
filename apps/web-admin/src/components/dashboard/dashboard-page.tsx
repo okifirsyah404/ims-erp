@@ -11,6 +11,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -203,18 +204,18 @@ function Widget({
 }) {
 	const { t } = useTranslation(['dashboard', 'nav']);
 	return (
-		<Card className='gap-4'>
+		<Card>
 			<CardHeader>
-				<CardTitle className='flex items-center justify-between'>
-					{title}
+				<CardTitle>{title}</CardTitle>
+				{description && <CardDescription>{description}</CardDescription>}
+				<CardAction>
 					<Link
 						to={to}
 						className='text-xs font-normal text-muted-foreground hover:text-foreground'
 					>
 						{t('action.viewAll')} · {t(titleKeyLink)}
 					</Link>
-				</CardTitle>
-				{description && <CardDescription>{description}</CardDescription>}
+				</CardAction>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2'>{children}</CardContent>
 		</Card>
@@ -607,20 +608,18 @@ function SalesChartCard({
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-				<div>
-					<CardTitle>{t('chart.title')}</CardTitle>
-					<CardDescription>
-						{range === 'custom' && !(custom.from && custom.to)
-							? t('chart.customPlaceholder')
-							: t('chart.rangeLabel', {
-									from: window.from,
-									to: window.to,
-									total: formatIdr(total),
-								})}
-					</CardDescription>
-				</div>
-				<div className='flex flex-wrap items-center gap-2'>
+			<CardHeader>
+				<CardTitle>{t('chart.title')}</CardTitle>
+				<CardDescription>
+					{range === 'custom' && !(custom.from && custom.to)
+						? t('chart.customPlaceholder')
+						: t('chart.rangeLabel', {
+								from: window.from,
+								to: window.to,
+								total: formatIdr(total),
+							})}
+				</CardDescription>
+				<CardAction className='flex flex-wrap items-center justify-end gap-2'>
 					<div ref={setAnchor}>
 						<ToggleGroup
 							value={[range]}
@@ -664,7 +663,7 @@ function SalesChartCard({
 							aria-label={t('chart.customPlaceholder')}
 						/>
 					)}
-				</div>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<QueryBody
@@ -735,15 +734,15 @@ function ActivityCard({ organizationId }: { organizationId: string | null }) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='flex items-center justify-between'>
-					{t('activity.title')}
+				<CardTitle>{t('activity.title')}</CardTitle>
+				<CardAction>
 					<Link
 						to='/sales/invoices'
 						className='text-xs font-normal text-muted-foreground hover:text-foreground'
 					>
 						{t('action.viewAll')}
 					</Link>
-				</CardTitle>
+				</CardAction>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-3'>
 				<QueryBody

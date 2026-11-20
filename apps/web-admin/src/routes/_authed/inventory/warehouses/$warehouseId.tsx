@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import {
 	createFileRoute,
 	Link,
@@ -13,18 +14,13 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { MapPin, PackageOpen } from 'lucide-react';
@@ -33,9 +29,10 @@ import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage
 import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table';
 import { WarehouseOrganizationsTab } from '@/components/inventory/warehouse-organizations-tab';
 import { WarehouseManagersTab } from '@/components/inventory/warehouse-managers-tab';
+import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
-import { warehouseQueryOptions } from '@/lib/warehouse-api';
+import { type TWarehouseStorage, warehouseQueryOptions } from '@/lib/warehouse-api';
 
 /**
  * `/inventory/warehouses/$warehouseId` — one warehouse, read-only item tabs
@@ -80,7 +77,7 @@ function WarehouseDetail() {
 					<div className='grid grid-cols-2 gap-4 sm:grid-cols-5'>
 						{Array.from({ length: 5 }, (_, index) => (
 							<Card key={index}>
-								<CardHeader className='space-y-0 pb-2'>
+								<CardHeader>
 									<Skeleton className='h-3 w-16' />
 								</CardHeader>
 								<CardContent>
@@ -182,8 +179,10 @@ function WarehouseDetail() {
 				<div className='grid grid-cols-2 gap-4 sm:grid-cols-5'>
 					{stats.map(([label, value]) => (
 						<Card key={label}>
-							<CardHeader className='space-y-0 pb-2'>
-								<p className='text-xs text-muted-foreground'>{label}</p>
+							<CardHeader>
+								<CardTitle className='text-sm font-medium text-muted-foreground'>
+									{label}
+								</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<p className='text-2xl font-bold tabular-nums'>{value}</p>
@@ -310,18 +309,97 @@ function StorageTab({
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const archiveStorage = useArchiveStorage(warehouseId);
+	const confirm = useConfirm();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<string | undefined>(undefined);
 	const { data: warehouse } = useQuery(warehouseQueryOptions(warehouseId));
 	const storages = warehouse?.storages ?? [];
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TWarehouseStorage, CellData>[]
+	>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('inventory:warehouses.storageCode'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'name',
+				header: t('inventory:warehouses.storageName'),
+				cell: ({ row }) => row.original.name ?? '—',
+			},
+			{
+				id: 'binType',
+				header: t('inventory:warehouses.binType'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.binType ?? '—',
+			},
+			{
+				id: 'capacity',
+				header: t('inventory:warehouses.capacity'),
+				meta: { cellClassName: 'tabular-nums' },
+				cell: ({ row }) => row.original.capacity ?? '—',
+			},
+			{
+				id: 'state',
+				header: t('inventory:warehouses.state'),
+				cell: ({ row }) =>
+					row.original.isActive ? (
+						<Badge variant='secondary'>
+							{t('inventory:warehouses.active')}
+						</Badge>
+					) : (
+						<Badge variant='outline'>
+							{t('inventory:warehouses.inactive')}
+						</Badge>
+					),
+			},
+			{
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<div className='flex justify-end gap-1'>
+						<Button
+							variant='ghost'
+							size='sm'
+							onClick={() => {
+								setEditing(row.original.id);
+								setDialogOpen(true);
+							}}
+						>
+							{t('common:action.edit')}
+						</Button>
+						<Button
+							variant='ghost'
+							size='sm'
+							disabled={archiveStorage.isPending}
+							onClick={async () => {
+								if (
+									await confirm({
+										title: t('inventory:warehouses.archiveConfirmTitle'),
+										destructive: true,
+									})
+								) {
+									archiveStorage.mutate(row.original.id);
+								}
+							}}
+						>
+							{t('inventory:detail.archive')}
+						</Button>
+					</div>
+				),
+			},
+		],
+		[archiveStorage, confirm, t],
+	);
+
 	return (
 		<Card>
-			<CardContent className='flex flex-col gap-3'>
-				<div className='flex items-center justify-between gap-3'>
-					<span className='text-sm text-muted-foreground'>
-						{t('inventory:warehouses.storages')}
-					</span>
+			<CardHeader>
+				<CardTitle>{t('inventory:warehouses.storages')}</CardTitle>
+				<CardAction>
 					<Button
 						size='sm'
 						disabled={!warehouseIsActive}
@@ -332,7 +410,9 @@ function StorageTab({
 					>
 						{t('inventory:warehouses.addStorage')}
 					</Button>
-				</div>
+				</CardAction>
+			</CardHeader>
+			<CardContent className='flex flex-col gap-3'>
 				{storages.length === 0 ? (
 					<EmptyState
 						icon={PackageOpen}
@@ -341,73 +421,11 @@ function StorageTab({
 						className='py-4'
 					/>
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('inventory:warehouses.storageCode')}</TableHead>
-								<TableHead>{t('inventory:warehouses.storageName')}</TableHead>
-								<TableHead>{t('inventory:warehouses.binType')}</TableHead>
-								<TableHead>{t('inventory:warehouses.capacity')}</TableHead>
-								<TableHead>{t('inventory:warehouses.state')}</TableHead>
-								<TableHead className='text-right'>
-									<span className='sr-only'>{t('common:action.edit')}</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{storages.map((storage) => (
-								<TableRow key={storage.id}>
-									<TableCell className='font-mono text-xs'>
-										{storage.code}
-									</TableCell>
-									<TableCell>{storage.name ?? '—'}</TableCell>
-									<TableCell className='text-muted-foreground'>
-										{storage.binType ?? '—'}
-									</TableCell>
-									<TableCell className='tabular-nums'>
-										{storage.capacity ?? '—'}
-									</TableCell>
-									<TableCell>
-										{storage.isActive ? (
-											<Badge variant='secondary'>
-												{t('inventory:warehouses.active')}
-											</Badge>
-										) : (
-											<Badge variant='outline'>
-												{t('inventory:warehouses.inactive')}
-											</Badge>
-										)}
-									</TableCell>
-									<TableCell className='text-right'>
-										<div className='flex justify-end gap-1'>
-											<Button
-												variant='ghost'
-												size='sm'
-												onClick={() => {
-													setEditing(storage.id);
-													setDialogOpen(true);
-												}}
-											>
-												{t('common:action.edit')}
-											</Button>
-											<Button
-												variant='ghost'
-												size='sm'
-												disabled={archiveStorage.isPending}
-												onClick={() => {
-													if (window.confirm(t('inventory:warehouses.archiveConfirmTitle'))) {
-														archiveStorage.mutate(storage.id);
-													}
-												}}
-											>
-												{t('inventory:detail.archive')}
-											</Button>
-										</div>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable
+						columns={columns}
+						data={storages}
+						getRowId={(storage) => storage.id}
+					/>
 				)}
 			</CardContent>
 			<StorageDialog

@@ -1,15 +1,18 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import {
@@ -17,6 +20,7 @@ import {
 	applicationsQueryOptions,
 	issueApiKey,
 	revokeApiKey,
+	type TApplicationApiKey,
 	type TLicensableApplication,
 } from '@/lib/license-api';
 import { usePermission } from '@/lib/use-permission';
@@ -41,9 +45,7 @@ function ApiKeysPage() {
 			{!canManage ? (
 				<p className='text-sm text-muted-foreground'>{t('licensing:apiKeys.noAccess')}</p>
 			) : applications.isPending ? null : own.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('licensing:apiKeys.noOwnApplication')}</CardContent>
-				</Card>
+				<EmptyState title={t('licensing:apiKeys.noOwnApplication')} bordered />
 			) : (
 				own.map((app) => <ApplicationKeys key={app.id} application={app} />)
 			)}
@@ -91,63 +93,90 @@ function ApplicationKeys({ application }: { application: TLicensableApplication 
 		setName('');
 	};
 
+	// `revoke` is re-created every render and only closes over `application` and setters.
+	const columns = useMemo<ColumnDef<DataTableFeatures, TApplicationApiKey, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'name',
+				header: t('licensing:field.name'),
+				meta: { cellClassName: 'font-medium' },
+			},
+			{
+				id: 'start',
+				header: t('licensing:apiKeys.start'),
+				cell: ({ row }) => (
+					<code className='font-mono text-xs'>
+						{row.original.keyStart ? `${row.original.keyStart}…` : '—'}
+					</code>
+				),
+			},
+			{
+				id: 'created',
+				header: t('licensing:apiKeys.created'),
+				cell: ({ row }) => formatDateTime(row.original.createdAt, i18n.language),
+			},
+			{
+				id: 'issuedBy',
+				header: t('licensing:apiKeys.issuedBy'),
+				cell: ({ row }) => (
+					<>
+						{row.original.createdByName ?? '—'}
+						{row.original.status === 'revoked' && row.original.revokedByName && (
+							<div className='text-xs text-muted-foreground'>
+								{t('licensing:apiKeys.revokedBy', { name: row.original.revokedByName })}
+							</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'lastUsed',
+				header: t('licensing:apiKeys.lastUsed'),
+				cell: ({ row }) =>
+					row.original.lastUsedAt ? formatDateTime(row.original.lastUsedAt, i18n.language) : '—',
+			},
+			{
+				id: 'status',
+				header: t('licensing:field.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.status === 'active' ? 'default' : 'outline'}>
+						{t(`licensing:keys.status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					row.original.status === 'active' ? (
+						<Button size='sm' variant='ghost' disabled={busy} onClick={() => void revoke(row.original.id)}>
+							{t('licensing:action.revoke')}
+						</Button>
+					) : null,
+			},
+		],
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- revoke only closes over application/setters
+		[busy, i18n.language, t],
+	);
+
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between gap-2'>
+			<CardHeader>
 				<CardTitle>
-					{application.code} — {application.name}
+					{application.code} - {application.name}
 				</CardTitle>
-				<Button size='sm' onClick={() => setCreating(true)}>
-					{t('licensing:apiKeys.new')}
-				</Button>
+				<CardAction>
+					<Button size='sm' onClick={() => setCreating(true)}>
+						{t('licensing:apiKeys.new')}
+					</Button>
+				</CardAction>
 			</CardHeader>
 			<CardContent className='p-0'>
 				{!data || data.length === 0 ? (
 					<p className='px-6 pb-6 text-sm text-muted-foreground'>{t('licensing:apiKeys.empty')}</p>
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('licensing:field.name')}</TableHead>
-								<TableHead>{t('licensing:apiKeys.start')}</TableHead>
-								<TableHead>{t('licensing:apiKeys.created')}</TableHead>
-								<TableHead>{t('licensing:apiKeys.issuedBy')}</TableHead>
-								<TableHead>{t('licensing:apiKeys.lastUsed')}</TableHead>
-								<TableHead>{t('licensing:field.status')}</TableHead>
-								<TableHead />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.map((key) => (
-								<TableRow key={key.id}>
-									<TableCell className='font-medium'>{key.name}</TableCell>
-									<TableCell>
-										<code className='font-mono text-xs'>{key.keyStart ? `${key.keyStart}…` : '—'}</code>
-									</TableCell>
-									<TableCell>{formatDateTime(key.createdAt, i18n.language)}</TableCell>
-									<TableCell>
-										{key.createdByName ?? '—'}
-										{key.status === 'revoked' && key.revokedByName && (
-											<div className='text-xs text-muted-foreground'>
-												{t('licensing:apiKeys.revokedBy', { name: key.revokedByName })}
-											</div>
-										)}
-									</TableCell>
-									<TableCell>{key.lastUsedAt ? formatDateTime(key.lastUsedAt, i18n.language) : '—'}</TableCell>
-									<TableCell>
-										<Badge variant={key.status === 'active' ? 'default' : 'outline'}>{t(`licensing:keys.status.${key.status}`)}</Badge>
-									</TableCell>
-									<TableCell className='text-right'>
-										{key.status === 'active' && (
-											<Button size='sm' variant='ghost' disabled={busy} onClick={() => void revoke(key.id)}>
-												{t('licensing:action.revoke')}
-											</Button>
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable columns={columns} data={data} getRowId={(row) => row.id} />
 				)}
 			</CardContent>
 

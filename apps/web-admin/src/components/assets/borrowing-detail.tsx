@@ -9,14 +9,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo } from 'react';
 import {
 	borrowingQueryOptions,
 	borrowingStatusOf,
@@ -30,6 +24,9 @@ import {
 	type TBorrowingItem,
 	type TBorrowingStatus,
 } from '@/lib/borrowing-api';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 
 const STATUS_VARIANT: Record<
@@ -155,33 +152,15 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 	});
 
 	if (isPending) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('common:state.loading')}
-				</CardContent>
-			</Card>
-		);
+		return <EmptyState title={t('common:state.loading')} size='sm' bordered />;
 	}
 
 	if (isError) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-destructive'>
-					{error.message}
-				</CardContent>
-			</Card>
-		);
+		return <EmptyState title={error.message} tone='error' bordered />;
 	}
 
 	if (!data) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('assets:borrowings.notFound')}
-				</CardContent>
-			</Card>
-		);
+		return <EmptyState title={t('assets:borrowings.notFound')} bordered />;
 	}
 
 	const { borrowing, items, events } = data;
@@ -326,7 +305,7 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-base'>
+					<CardTitle>
 						{t('assets:borrowings.lines')}
 					</CardTitle>
 					<p className='text-sm text-muted-foreground'>
@@ -334,50 +313,31 @@ export function BorrowingDetail({ borrowingId }: { borrowingId: string }) {
 					</p>
 				</CardHeader>
 				<CardContent>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('assets:borrowings.serial')}</TableHead>
-								<TableHead>{t('assets:borrowings.origin')}</TableHead>
-								<TableHead>{t('assets:borrowings.issuedAt')}</TableHead>
-								<TableHead>{t('assets:borrowings.returnedAt')}</TableHead>
-								<TableHead>{t('assets:borrowings.condition')}</TableHead>
-								<TableHead className='text-right'>
-									{t('assets:borrowings.actions')}
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{items.map((item) => (
-								<ItemRow
-									key={item.id}
-									item={item}
-									busy={busy}
-									canAct={borrowing !== null}
-									onReturn={() =>
-										borrowing &&
-										returnItems.mutate({
-											issuedBorrowingId: borrowing.id,
-											borrowingItemId: item.id,
-										})
-									}
-									onMarkLost={() =>
-										borrowing &&
-										markLost.mutate({
-											issuedBorrowingId: borrowing.id,
-											borrowingItemId: item.id,
-										})
-									}
-								/>
-							))}
-						</TableBody>
-					</Table>
+					<ItemsTable
+						items={items}
+						busy={busy}
+						canAct={borrowing !== null}
+						onReturn={(item) =>
+							borrowing &&
+							returnItems.mutate({
+								issuedBorrowingId: borrowing.id,
+								borrowingItemId: item.id,
+							})
+						}
+						onMarkLost={(item) =>
+							borrowing &&
+							markLost.mutate({
+								issuedBorrowingId: borrowing.id,
+								borrowingItemId: item.id,
+							})
+						}
+					/>
 				</CardContent>
 			</Card>
 
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-base'>
+					<CardTitle>
 						{t('assets:borrowings.timeline')}
 					</CardTitle>
 					<p className='text-sm text-muted-foreground'>
@@ -451,7 +411,7 @@ function BorrowerCard({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-base'>
+				<CardTitle>
 					{t('assets:borrowings.borrower')}
 				</CardTitle>
 			</CardHeader>
@@ -501,77 +461,113 @@ function BorrowerCard({
 	);
 }
 
-/** One borrowed unit plus the per-item actions it allows. */
-function ItemRow({
-	item,
+/** The borrowed units plus the per-item actions each one allows. */
+function ItemsTable({
+	items,
 	busy,
 	canAct,
 	onReturn,
 	onMarkLost,
 }: {
-	item: TBorrowingItem;
+	items: TBorrowingItem[];
 	busy: boolean;
 	/** `false` before issue: there is no borrowing to return against. */
 	canAct: boolean;
-	onReturn: () => void;
-	onMarkLost: () => void;
+	onReturn: (item: TBorrowingItem) => void;
+	onMarkLost: (item: TBorrowingItem) => void;
 }) {
 	const { t } = useTranslation(['assets', 'common']);
 
-	// An item is "open" only once issued and while neither returned nor lost.
-	const open =
-		item.issuedAt !== null &&
-		item.returnedAt === null &&
-		item.markedLostAt === null;
-
-	return (
-		<TableRow>
-			<TableCell className='font-mono text-xs'>
-				{item.itemId}
-				{item.markedLateAt ? (
-					<Badge variant='destructive' className='ml-2'>
-						{t('assets:borrowings.late')}
-					</Badge>
-				) : null}
-				{item.markedLostAt ? (
-					<Badge variant='destructive' className='ml-2'>
-						{t('assets:borrowings.lost')}
-					</Badge>
-				) : null}
-			</TableCell>
-			<TableCell className='font-mono text-xs text-muted-foreground'>
-				{item.originWarehouseId ?? '—'}
-			</TableCell>
-			<TableCell className='text-xs'>
-				{item.issuedAt ? new Date(item.issuedAt).toLocaleDateString() : '—'}
-			</TableCell>
-			<TableCell className='text-xs'>
-				{item.returnedAt ? new Date(item.returnedAt).toLocaleDateString() : '—'}
-			</TableCell>
-			<TableCell className='text-xs text-muted-foreground'>
-				{item.returnedCondition
-					? t(
-							`assets:borrowingCondition.${item.returnedCondition}` as 'assets:borrowingCondition.good',
-						)
-					: '—'}
-			</TableCell>
-			<TableCell className='text-right'>
-				{open && canAct ? (
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TBorrowingItem, CellData>[]
+	>(
+		() => [
+			{
+				id: 'serial',
+				header: t('assets:borrowings.serial'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (
 					<>
-						<Button size='sm' disabled={busy} onClick={onReturn}>
-							{t('assets:borrowingActions.return')}
-						</Button>
-						<Button
-							size='sm'
-							variant='ghost'
-							disabled={busy}
-							onClick={onMarkLost}
-						>
-							{t('assets:borrowingActions.markLost')}
-						</Button>
+						{row.original.itemId}
+						{row.original.markedLateAt ? (
+							<Badge variant='destructive' className='ml-2'>
+								{t('assets:borrowings.late')}
+							</Badge>
+						) : null}
+						{row.original.markedLostAt ? (
+							<Badge variant='destructive' className='ml-2'>
+								{t('assets:borrowings.lost')}
+							</Badge>
+						) : null}
 					</>
-				) : null}
-			</TableCell>
-		</TableRow>
+				),
+			},
+			{
+				id: 'origin',
+				header: t('assets:borrowings.origin'),
+				meta: { cellClassName: 'font-mono text-xs text-muted-foreground' },
+				cell: ({ row }) => row.original.originWarehouseId ?? '—',
+			},
+			{
+				id: 'issuedAt',
+				header: t('assets:borrowings.issuedAt'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) =>
+					row.original.issuedAt
+						? new Date(row.original.issuedAt).toLocaleDateString()
+						: '—',
+			},
+			{
+				id: 'returnedAt',
+				header: t('assets:borrowings.returnedAt'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) =>
+					row.original.returnedAt
+						? new Date(row.original.returnedAt).toLocaleDateString()
+						: '—',
+			},
+			{
+				id: 'condition',
+				header: t('assets:borrowings.condition'),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				cell: ({ row }) =>
+					row.original.returnedCondition
+						? t(
+								`assets:borrowingCondition.${row.original.returnedCondition}` as 'assets:borrowingCondition.good',
+							)
+						: '—',
+			},
+			{
+				id: 'actions',
+				header: t('assets:borrowings.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) => {
+					const item = row.original;
+					// An item is "open" only once issued and while neither returned nor lost.
+					const open =
+						item.issuedAt !== null &&
+						item.returnedAt === null &&
+						item.markedLostAt === null;
+					return open && canAct ? (
+						<>
+							<Button size='sm' disabled={busy} onClick={() => onReturn(item)}>
+								{t('assets:borrowingActions.return')}
+							</Button>
+							<Button
+								size='sm'
+								variant='ghost'
+								disabled={busy}
+								onClick={() => onMarkLost(item)}
+							>
+								{t('assets:borrowingActions.markLost')}
+							</Button>
+						</>
+					) : null;
+				},
+			},
+		],
+		[busy, canAct, onMarkLost, onReturn, t],
 	);
+
+	return <DataTable columns={columns} data={items} getRowId={(row) => row.id} />;
 }

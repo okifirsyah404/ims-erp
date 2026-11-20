@@ -1,24 +1,26 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, todayBusinessDate } from '@/lib/format';
-import { createTask, setTaskStatus, TASK_STATUSES, tasksQueryOptions, type TTaskStatus } from '@/lib/hr-records-api';
+import { createTask, setTaskStatus, TASK_STATUSES, tasksQueryOptions, type TTask, type TTaskStatus } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState } from '@/components/empty-state';
 
 /** `/hr/tasks` — simple tasks for employees outside projects (M08). */
 export const Route = createFileRoute('/_authed/hr/tasks/')({
@@ -46,20 +48,106 @@ function TasksPage() {
 	const [busy, setBusy] = useState(false);
 	const today = todayBusinessDate();
 
-	const run = async (work: () => Promise<unknown>, done: string) => {
-		setBusy(true);
-		try {
-			await work();
-			await queryClient.invalidateQueries({ queryKey: ['hr', 'tasks'] });
-			toast.success(done);
-			return true;
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-			return false;
-		} finally {
-			setBusy(false);
-		}
-	};
+	const run = useCallback(
+		async (work: () => Promise<unknown>, done: string) => {
+			setBusy(true);
+			try {
+				await work();
+				await queryClient.invalidateQueries({ queryKey: ['hr', 'tasks'] });
+				toast.success(done);
+				return true;
+			} catch (cause) {
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+				return false;
+			} finally {
+				setBusy(false);
+			}
+		},
+		[queryClient, t],
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TTask, CellData>[]>(
+		() => [
+			{
+				id: 'title',
+				header: t('hr:tasks.taskTitle'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.title}</div>
+						{row.original.description && (
+							<div className='max-w-96 truncate text-xs text-muted-foreground'>{row.original.description}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'employee',
+				header: t('hr:field.employee'),
+				cell: ({ row }) => row.original.employee?.fullName ?? '—',
+			},
+			{
+				id: 'due',
+				header: t('hr:tasks.due'),
+				cell: ({ row }) => (
+					<span
+						className={
+							row.original.status === 'open' && row.original.dueDate && row.original.dueDate < today
+								? 'text-destructive'
+								: undefined
+						}
+					>
+						{formatBusinessDate(row.original.dueDate, i18n.language)}
+					</span>
+				),
+			},
+			{
+				id: 'status',
+				header: t('hr:field.status'),
+				cell: ({ row }) => (
+					<Badge variant={STATUS_VARIANT[row.original.status]}>{t(`hr:taskStatus.${row.original.status}`)}</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => (
+					<>
+						{canUpdate && row.original.status === 'open' && (
+							<>
+								<Button
+									size='sm'
+									disabled={busy}
+									onClick={() => void run(() => setTaskStatus(row.original.id, 'done'), t('hr:taskStatus.done'))}
+								>
+									{t('hr:tasks.markDone')}
+								</Button>
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={busy}
+									onClick={() => void run(() => setTaskStatus(row.original.id, 'cancelled'), t('hr:taskStatus.cancelled'))}
+								>
+									{t('hr:tasks.cancel')}
+								</Button>
+							</>
+						)}
+						{canUpdate && row.original.status !== 'open' && (
+							<Button
+								size='sm'
+								variant='ghost'
+								disabled={busy}
+								onClick={() => void run(() => setTaskStatus(row.original.id, 'open'), t('hr:taskStatus.open'))}
+							>
+								{t('hr:tasks.reopen')}
+							</Button>
+						)}
+					</>
+				),
+			},
+		],
+		[busy, canUpdate, i18n.language, run, t, today],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -103,65 +191,10 @@ function TasksPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('hr:tasks.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('hr:tasks.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('hr:tasks.taskTitle')}</TableHead>
-										<TableHead>{t('hr:field.employee')}</TableHead>
-										<TableHead>{t('hr:tasks.due')}</TableHead>
-										<TableHead>{t('hr:field.status')}</TableHead>
-										<TableHead />
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((task) => (
-										<TableRow key={task.id}>
-											<TableCell>
-												<div className='font-medium'>{task.title}</div>
-												{task.description && <div className='max-w-96 truncate text-xs text-muted-foreground'>{task.description}</div>}
-											</TableCell>
-											<TableCell>{task.employee?.fullName ?? '—'}</TableCell>
-											<TableCell className={task.status === 'open' && task.dueDate && task.dueDate < today ? 'text-destructive' : ''}>
-												{formatBusinessDate(task.dueDate, i18n.language)}
-											</TableCell>
-											<TableCell>
-												<Badge variant={STATUS_VARIANT[task.status]}>{t(`hr:taskStatus.${task.status}`)}</Badge>
-											</TableCell>
-											<TableCell className='text-right whitespace-nowrap'>
-												{canUpdate && task.status === 'open' && (
-													<>
-														<Button size='sm' disabled={busy} onClick={() => void run(() => setTaskStatus(task.id, 'done'), t('hr:taskStatus.done'))}>
-															{t('hr:tasks.markDone')}
-														</Button>
-														<Button
-															size='sm'
-															variant='ghost'
-															disabled={busy}
-															onClick={() => void run(() => setTaskStatus(task.id, 'cancelled'), t('hr:taskStatus.cancelled'))}
-														>
-															{t('hr:tasks.cancel')}
-														</Button>
-													</>
-												)}
-												{canUpdate && task.status !== 'open' && (
-													<Button size='sm' variant='ghost' disabled={busy} onClick={() => void run(() => setTaskStatus(task.id, 'open'), t('hr:taskStatus.open'))}>
-														{t('hr:tasks.reopen')}
-													</Button>
-												)}
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(task) => task.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

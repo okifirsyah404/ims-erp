@@ -4,15 +4,19 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { CircleAlert, Plus, Scale } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
@@ -20,6 +24,7 @@ import {
 	deleteTaxType,
 	taxTypesQueryOptions,
 	updateTaxType,
+	type TTaxType,
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -38,6 +43,7 @@ export function TaxTypeList() {
 	const queryClient = useQueryClient();
 	const search = routeApi.useSearch();
 	const canUpdate = usePermission('tax.update');
+	const confirm = useConfirm();
 
 	const [code, setCode] = useState('');
 	const [name, setName] = useState('');
@@ -91,6 +97,82 @@ export function TaxTypeList() {
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TTaxType, CellData>[]>(() => {
+		const base: ColumnDef<DataTableFeatures, TTaxType, CellData>[] = [
+			{
+				accessorKey: 'code',
+				header: t('tax:types.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'name', header: t('tax:types.name') },
+			{
+				accessorKey: 'rate',
+				header: t('tax:types.rate'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				accessorKey: 'effectiveFrom',
+				header: t('tax:types.effectiveFrom'),
+				meta: { cellClassName: 'text-xs' },
+			},
+			{
+				accessorKey: 'effectiveTo',
+				header: t('tax:types.effectiveTo'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) => row.original.effectiveTo ?? '—',
+			},
+			{
+				accessorKey: 'isActive',
+				header: t('tax:types.active'),
+				cell: ({ row }) =>
+					row.original.isActive ? (
+						<Badge>{t('tax:types.active')}</Badge>
+					) : (
+						<Badge variant='outline'>{t('tax:types.inactive')}</Badge>
+					),
+			},
+		];
+		if (!canUpdate) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<>
+						<Button
+							variant='outline'
+							size='sm'
+							className='mr-1'
+							onClick={() => void toggleActive.mutateAsync(row.original)}
+						>
+							{row.original.isActive
+								? t('tax:types.inactive')
+								: t('tax:types.active')}
+						</Button>
+						<Button
+							variant='ghost'
+							size='sm'
+							onClick={async () => {
+								if (
+									await confirm({
+										title: t('tax:types.deleteConfirm'),
+										destructive: true,
+									})
+								) {
+									void remove.mutateAsync(row.original.id);
+								}
+							}}
+						>
+							{t('common:action.delete')}
+						</Button>
+					</>
+				),
+			},
+		];
+	}, [canUpdate, confirm, remove, t, toggleActive]);
 
 	if (isError) {
 		return (
@@ -158,68 +240,7 @@ export function TaxTypeList() {
 					description={t('tax:types.empty')}
 				/>
 			) : (
-				<div className='overflow-hidden rounded-lg border'>
-					<table className='w-full text-sm'>
-						<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-							<tr>
-								<th className='px-3 py-2'>{t('tax:types.code')}</th>
-								<th className='px-3 py-2'>{t('tax:types.name')}</th>
-								<th className='px-3 py-2'>{t('tax:types.rate')}</th>
-								<th className='px-3 py-2'>{t('tax:types.effectiveFrom')}</th>
-								<th className='px-3 py-2'>{t('tax:types.effectiveTo')}</th>
-								<th className='px-3 py-2'>{t('tax:types.active')}</th>
-								{canUpdate ? <th className='px-3 py-2' /> : null}
-							</tr>
-						</thead>
-						<tbody>
-							{data.rows.map((row) => (
-								<tr key={row.id} className='border-t'>
-									<td className='px-3 py-2 font-mono text-xs'>{row.code}</td>
-									<td className='px-3 py-2'>{row.name}</td>
-									<td className='px-3 py-2 font-mono text-xs'>{row.rate}</td>
-									<td className='px-3 py-2 text-xs'>{row.effectiveFrom}</td>
-									<td className='px-3 py-2 text-xs'>
-										{row.effectiveTo ?? '—'}
-									</td>
-									<td className='px-3 py-2'>
-										{row.isActive ? (
-											<Badge>{t('tax:types.active')}</Badge>
-										) : (
-											<Badge variant='outline'>
-												{t('tax:types.inactive')}
-											</Badge>
-										)}
-									</td>
-									{canUpdate ? (
-										<td className='px-3 py-2 text-right'>
-											<Button
-												variant='outline'
-												size='sm'
-												className='mr-1'
-												onClick={() => void toggleActive.mutateAsync(row)}
-											>
-												{row.isActive
-													? t('tax:types.inactive')
-													: t('tax:types.active')}
-											</Button>
-											<Button
-												variant='ghost'
-												size='sm'
-												onClick={() => {
-													if (window.confirm(t('tax:types.deleteConfirm'))) {
-														void remove.mutateAsync(row.id);
-													}
-												}}
-											>
-												{t('common:action.delete')}
-											</Button>
-										</td>
-									) : null}
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 			)}
 
 			<PaginationControls

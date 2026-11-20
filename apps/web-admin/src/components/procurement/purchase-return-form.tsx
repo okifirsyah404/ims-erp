@@ -189,9 +189,9 @@ export function PurchaseReturnForm({
 										<FieldLabel>{t('procurement:receipt.serialNumbers')}</FieldLabel>
 										<div className='flex flex-wrap gap-4'>
 											{item.serialNumbers.map((serial) => (
-												<label key={serial} className='flex items-center gap-2 text-sm'>
+												<Field key={serial} orientation='horizontal' className='w-auto'>
 													<Checkbox
-														aria-label={serial}
+														id={`serial-${item.id}-${serial}`}
 														checked={draft(item.id).serials.includes(serial)}
 														onCheckedChange={(checked) =>
 															setLine(item.id, {
@@ -202,8 +202,8 @@ export function PurchaseReturnForm({
 															})
 														}
 													/>
-													{serial}
-												</label>
+													<FieldLabel htmlFor={`serial-${item.id}-${serial}`}>{serial}</FieldLabel>
+												</Field>
 											))}
 										</div>
 										<FieldDescription>{t('procurement:returns.serialHint')}</FieldDescription>

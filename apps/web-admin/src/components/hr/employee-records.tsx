@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { toast } from '@/components/toast';
@@ -54,22 +54,24 @@ function BankAccountCard({ employeeId, fullName }: { employeeId: string; fullNam
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between gap-2'>
+			<CardHeader>
 				<CardTitle>{t('hr:bank.title')}</CardTitle>
 				{canEdit && !draft && (
-					<Button
-						size='sm'
-						variant='outline'
-						onClick={() =>
-							setDraft({
-								bankName: account?.bankName ?? '',
-								bankAccountNumber: account?.bankAccountNumber ?? '',
-								bankAccountHolder: account?.bankAccountHolder ?? fullName,
-							})
-						}
-					>
-						{t('hr:bank.edit')}
-					</Button>
+					<CardAction>
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() =>
+								setDraft({
+									bankName: account?.bankName ?? '',
+									bankAccountNumber: account?.bankAccountNumber ?? '',
+									bankAccountHolder: account?.bankAccountHolder ?? fullName,
+								})
+							}
+						>
+							{t('hr:bank.edit')}
+						</Button>
+					</CardAction>
 				)}
 			</CardHeader>
 			<CardContent className='text-sm'>

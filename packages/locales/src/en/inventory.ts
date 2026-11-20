@@ -37,6 +37,7 @@ const inventory = {
 	'items.noCategory': 'No category',
 	'items.brand': 'Brand',
 	'items.specification': 'Specification',
+	'items.details': 'Item details',
 	'items.specificationHint': 'Printed on quotations. One point per line.',
 	'items.isActive': 'Active',
 	'items.isActiveHint': 'Inactive items stay listed but are not offered for new quotations or purchase orders.',
@@ -373,6 +374,7 @@ const inventory = {
 	'adjustmentForm.newDescription':
 		'Enter the counted total per line. The difference from the system quantity becomes the movement.',
 	'adjustmentForm.warehouse': 'Warehouse',
+	'adjustmentForm.details': 'Adjustment details',
 	'adjustmentForm.type': 'Reason',
 	'adjustmentForm.reasonCode': 'Reason code',
 	'adjustmentForm.notes': 'Notes',

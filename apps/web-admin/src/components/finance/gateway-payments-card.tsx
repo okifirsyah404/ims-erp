@@ -1,11 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import { formatDateTime, formatIdr } from '@/lib/format';
 import {
@@ -23,7 +25,7 @@ import { usePermission } from '@/lib/use-permission';
  * receipt appears by itself once the provider confirms the payment.
  */
 export function GatewayPaymentsCard({ invoiceId, payable }: { invoiceId: string; payable: boolean }) {
-	const { t, i18n } = useTranslation(['finance', 'common']);
+	const { t } = useTranslation(['finance', 'common']);
 	const queryClient = useQueryClient();
 	const canReceive = usePermission('receipt.create');
 	const [busy, setBusy] = useState(false);
@@ -59,66 +61,113 @@ export function GatewayPaymentsCard({ invoiceId, payable }: { invoiceId: string;
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between gap-2'>
+			<CardHeader>
 				<CardTitle>{t('finance:gateway.title')}</CardTitle>
 				{gateway.enabled && payable && canReceive && (
-					<Button size='sm' disabled={busy} onClick={() => void open()}>
-						{t('finance:gateway.open')}
-					</Button>
+					<CardAction>
+						<Button size='sm' disabled={busy} onClick={() => void open()}>
+							{t('finance:gateway.open')}
+						</Button>
+					</CardAction>
 				)}
 			</CardHeader>
 			<CardContent className='p-0'>
 				{rows.length === 0 ? (
 					<p className='p-4 text-sm text-muted-foreground'>{t('finance:gateway.empty')}</p>
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:gateway.created')}</TableHead>
-								<TableHead>{t('finance:gateway.provider')}</TableHead>
-								<TableHead className='text-right'>{t('finance:receipt.amount')}</TableHead>
-								<TableHead>{t('finance:invoice.status')}</TableHead>
-								<TableHead>{t('finance:gateway.expires')}</TableHead>
-								<TableHead />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((row) => (
-								<TableRow key={row.id}>
-									<TableCell>{formatDateTime(row.createdAt, i18n.language)}</TableCell>
-									<TableCell className='capitalize'>
-										{row.provider}
-										{row.paymentChannel ? ` · ${row.paymentChannel}` : ''}
-									</TableCell>
-									<TableCell className='text-right'>{formatIdr(row.paidAmount ?? row.amount)}</TableCell>
-									<TableCell>
-										<Badge variant={GATEWAY_STATUS_VARIANT[row.status]}>{t(`finance:gateway.status.${row.status}`)}</Badge>
-										{note(row) && <div className='mt-1 text-xs text-muted-foreground'>{note(row)}</div>}
-									</TableCell>
-									<TableCell>{row.status === 'pending' ? formatDateTime(row.expiresAt, i18n.language) : '—'}</TableCell>
-									<TableCell className='text-right'>
-										{row.status === 'pending' && row.paymentUrl && (
-											<div className='flex justify-end gap-1'>
-												<Button variant='ghost' size='sm' onClick={() => void copy(row.paymentUrl!)}>
-													{t('finance:gateway.copy')}
-												</Button>
-												<Button
-													variant='ghost'
-													size='sm'
-													render={<a href={row.paymentUrl} target='_blank' rel='noreferrer' />}
-													nativeButton={false}
-												>
-													{t('finance:gateway.visit')}
-												</Button>
-											</div>
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<GatewayPaymentsTable rows={rows} note={note} onCopy={(url) => void copy(url)} />
 				)}
 			</CardContent>
 		</Card>
 	);
+}
+
+/** The checkout-link table of one invoice. */
+function GatewayPaymentsTable({
+	rows,
+	note,
+	onCopy,
+}: {
+	rows: TGatewayPayment[];
+	note: (row: TGatewayPayment) => string | null;
+	onCopy: (url: string) => void;
+}) {
+	const { t, i18n } = useTranslation(['finance', 'common']);
+
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TGatewayPayment, CellData>[]
+	>(
+		() => [
+			{
+				id: 'created',
+				header: t('finance:gateway.created'),
+				cell: ({ row }) => formatDateTime(row.original.createdAt, i18n.language),
+			},
+			{
+				id: 'provider',
+				header: t('finance:gateway.provider'),
+				meta: { cellClassName: 'capitalize' },
+				cell: ({ row }) => (
+					<>
+						{row.original.provider}
+						{row.original.paymentChannel ? ` · ${row.original.paymentChannel}` : ''}
+					</>
+				),
+			},
+			{
+				id: 'amount',
+				header: t('finance:receipt.amount'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.paidAmount ?? row.original.amount),
+			},
+			{
+				id: 'status',
+				header: t('finance:invoice.status'),
+				cell: ({ row }) => (
+					<>
+						<Badge variant={GATEWAY_STATUS_VARIANT[row.original.status]}>
+							{t(`finance:gateway.status.${row.original.status}`)}
+						</Badge>
+						{note(row.original) && (
+							<div className='mt-1 text-xs text-muted-foreground'>{note(row.original)}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'expires',
+				header: t('finance:gateway.expires'),
+				cell: ({ row }) =>
+					row.original.status === 'pending'
+						? formatDateTime(row.original.expiresAt, i18n.language)
+						: '—',
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => {
+					const url = row.original.paymentUrl;
+					return row.original.status === 'pending' && url ? (
+						<div className='flex justify-end gap-1'>
+							<Button variant='ghost' size='sm' onClick={() => onCopy(url)}>
+								{t('finance:gateway.copy')}
+							</Button>
+							<Button
+								variant='ghost'
+								size='sm'
+								render={<a href={url} target='_blank' rel='noreferrer' />}
+								nativeButton={false}
+							>
+								{t('finance:gateway.visit')}
+							</Button>
+						</div>
+					) : null;
+				},
+			},
+		],
+		[i18n.language, note, onCopy, t],
+	);
+
+	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} />;
 }

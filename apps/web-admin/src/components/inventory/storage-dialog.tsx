@@ -157,13 +157,16 @@ export function StorageDialog({
 							onChange={(event) => setCapacity(event.target.value)}
 						/>
 					</Field>
-					<label className='flex items-center gap-2 text-sm'>
+					<Field orientation='horizontal'>
 						<Checkbox
+							id='storage-is-active'
 							checked={isActive}
 							onCheckedChange={(checked) => setIsActive(checked === true)}
 						/>
-						{t('inventory:warehouseForm.isActive')}
-					</label>
+						<FieldLabel htmlFor='storage-is-active'>
+							{t('inventory:warehouseForm.isActive')}
+						</FieldLabel>
+					</Field>
 					<DialogFooter>
 						<Button
 							type='button'

@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
 	DialogContent,
@@ -15,14 +16,9 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
 	createGateway,
@@ -58,6 +54,97 @@ export function PaymentGatewaysPanel({ canEdit }: { canEdit: boolean }) {
 		}
 	}
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TGateway, CellData>[]>(() => {
+		const base: ColumnDef<DataTableFeatures, TGateway, CellData>[] = [
+			{
+				id: 'name',
+				header: t('settings:paymentGateways.name'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						<div className='font-mono text-xs text-muted-foreground'>{row.original.code}</div>
+					</>
+				),
+			},
+			{
+				accessorKey: 'provider',
+				header: t('settings:paymentGateways.provider'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'mode',
+				header: t('settings:paymentGateways.mode'),
+				cell: ({ row }) =>
+					row.original.mode === 'live'
+						? t('settings:paymentGateways.modeLive')
+						: t('settings:paymentGateways.modeSandbox'),
+			},
+			{
+				id: 'status',
+				header: t('settings:paymentGateways.status'),
+				cell: ({ row }) => (
+					<div className='flex flex-wrap gap-1'>
+						<Badge variant={row.original.isActive ? 'default' : 'secondary'}>
+							{row.original.isActive ? t('common:status.active') : t('common:status.inactive')}
+						</Badge>
+						{row.original.isDefault && (
+							<Badge variant='outline'>{t('settings:paymentGateways.defaultBadge')}</Badge>
+						)}
+					</div>
+				),
+			},
+			{
+				id: 'secret',
+				header: t('settings:paymentGateways.secret'),
+				cell: ({ row }) =>
+					row.original.hasSecret
+						? row.original.secretLast4
+							? t('settings:paymentGateways.configuredLast4', { last4: row.original.secretLast4 })
+							: t('settings:paymentGateways.configured')
+						: t('settings:paymentGateways.notConfigured'),
+			},
+			{
+				id: 'webhookToken',
+				header: t('settings:paymentGateways.webhookToken'),
+				cell: ({ row }) =>
+					row.original.hasWebhookToken
+						? t('settings:paymentGateways.configured')
+						: t('settings:paymentGateways.notConfigured'),
+			},
+			{
+				id: 'rotatedAt',
+				header: t('settings:paymentGateways.rotatedAt'),
+				cell: ({ row }) =>
+					row.original.rotatedAt
+						? new Date(row.original.rotatedAt).toLocaleString()
+						: t('settings:paymentGateways.neverRotated'),
+			},
+		];
+		if (!canEdit) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<div className='flex justify-end gap-2'>
+						{!row.original.isDefault && row.original.isActive && (
+							<Button variant='outline' size='sm' onClick={() => void makeDefault(row.original)}>
+								{t('settings:paymentGateways.makeDefault')}
+							</Button>
+						)}
+						<Button variant='outline' size='sm' onClick={() => setDialog({ gateway: row.original })}>
+							{t('common:action.edit')}
+						</Button>
+					</div>
+				),
+			},
+		];
+		// makeDefault only closes over t/refresh, which are stable per render of t.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [canEdit, t]);
+
 	if (isPending) return null;
 	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
 
@@ -71,73 +158,7 @@ export function PaymentGatewaysPanel({ canEdit }: { canEdit: boolean }) {
 			{data.length === 0 ? (
 				<p className='text-sm text-muted-foreground'>{t('settings:paymentGateways.empty')}</p>
 			) : (
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead>{t('settings:paymentGateways.name')}</TableHead>
-							<TableHead>{t('settings:paymentGateways.provider')}</TableHead>
-							<TableHead>{t('settings:paymentGateways.mode')}</TableHead>
-							<TableHead>{t('settings:paymentGateways.status')}</TableHead>
-							<TableHead>{t('settings:paymentGateways.secret')}</TableHead>
-							<TableHead>{t('settings:paymentGateways.webhookToken')}</TableHead>
-							<TableHead>{t('settings:paymentGateways.rotatedAt')}</TableHead>
-							{canEdit && <TableHead />}
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{data.map((gateway) => (
-							<TableRow key={gateway.id}>
-								<TableCell>
-									<div className='font-medium'>{gateway.name}</div>
-									<div className='font-mono text-xs text-muted-foreground'>{gateway.code}</div>
-								</TableCell>
-								<TableCell className='font-mono text-xs'>{gateway.provider}</TableCell>
-								<TableCell>
-									{gateway.mode === 'live'
-										? t('settings:paymentGateways.modeLive')
-										: t('settings:paymentGateways.modeSandbox')}
-								</TableCell>
-								<TableCell className='flex flex-wrap gap-1'>
-									<Badge variant={gateway.isActive ? 'default' : 'secondary'}>
-										{gateway.isActive ? t('common:status.active') : t('common:status.inactive')}
-									</Badge>
-									{gateway.isDefault && (
-										<Badge variant='outline'>{t('settings:paymentGateways.defaultBadge')}</Badge>
-									)}
-								</TableCell>
-								<TableCell>
-									{gateway.hasSecret
-										? gateway.secretLast4
-											? t('settings:paymentGateways.configuredLast4', { last4: gateway.secretLast4 })
-											: t('settings:paymentGateways.configured')
-										: t('settings:paymentGateways.notConfigured')}
-								</TableCell>
-								<TableCell>
-									{gateway.hasWebhookToken
-										? t('settings:paymentGateways.configured')
-										: t('settings:paymentGateways.notConfigured')}
-								</TableCell>
-								<TableCell>
-									{gateway.rotatedAt
-										? new Date(gateway.rotatedAt).toLocaleString()
-										: t('settings:paymentGateways.neverRotated')}
-								</TableCell>
-								{canEdit && (
-									<TableCell className='flex justify-end gap-2'>
-										{!gateway.isDefault && gateway.isActive && (
-											<Button variant='outline' size='sm' onClick={() => void makeDefault(gateway)}>
-												{t('settings:paymentGateways.makeDefault')}
-											</Button>
-										)}
-										<Button variant='outline' size='sm' onClick={() => setDialog({ gateway })}>
-											{t('common:action.edit')}
-										</Button>
-									</TableCell>
-								)}
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
+				<DataTable columns={columns} data={data} getRowId={(row) => row.id} bordered />
 			)}
 			{dialog && (
 				<GatewayDialog
@@ -271,11 +292,10 @@ function GatewayDialog({
 							</NativeSelect>
 						</Field>
 						<Field orientation='horizontal'>
-							<input
+							<Checkbox
 								id='gateway-active'
-								type='checkbox'
 								checked={isActive}
-								onChange={(event) => setIsActive(event.target.checked)}
+								onCheckedChange={(checked) => setIsActive(checked === true)}
 							/>
 							<FieldLabel htmlFor='gateway-active'>{t('common:status.active')}</FieldLabel>
 						</Field>

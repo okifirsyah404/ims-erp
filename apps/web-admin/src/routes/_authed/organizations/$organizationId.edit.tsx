@@ -13,6 +13,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -96,13 +97,13 @@ function EditOrganizationPage() {
 					{t('orgEdit.description')}
 				</p>
 			</div>
+			<form onSubmit={handleSubmit}>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('orgEdit.details')}</CardTitle>
 					<CardDescription>{t('orgImage.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit}>
 						{/* Matches the create page: the logo leads the form, centered
 						    because it is the identity anchor of the card. The upload
 						    is immediate (the org exists), so the picker binds to the
@@ -134,29 +135,29 @@ function EditOrganizationPage() {
 									onChange={(event) => setDescription(event.target.value)}
 								/>
 							</Field>
-							<div className='flex gap-2'>
-								<Button type='submit' disabled={pending || !name}>
-									{pending
-										? t('common:action.saving')
-										: t('common:action.save')}
-								</Button>
-								<Button
-									type='button'
-									variant='outline'
-									onClick={() =>
-										navigate({
-											to: '/organizations/$organizationId',
-											params: { organizationId },
-										})
-									}
-								>
-									{t('common:action.cancel')}
-								</Button>
-							</div>
 						</FieldGroup>
-					</form>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='submit' disabled={pending || !name}>
+						{pending
+							? t('common:action.saving')
+							: t('common:action.save')}
+					</Button>
+					<Button
+						type='button'
+						variant='outline'
+						onClick={() =>
+							navigate({
+								to: '/organizations/$organizationId',
+								params: { organizationId },
+							})
+						}
+					>
+						{t('common:action.cancel')}
+					</Button>
+				</CardFooter>
 			</Card>
+			</form>
 		</div>
 	);
 }

@@ -8,6 +8,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -103,7 +104,7 @@ function ConversationPage() {
 			</div>
 			<Card>
 				<CardContent className='flex flex-col gap-3 py-4'>
-					{data.messages.length === 0 && <p className='text-center text-sm text-muted-foreground'>{t('integrations:whatsapp.noMessages')}</p>}
+					{data.messages.length === 0 && <EmptyState size='sm' title={t('integrations:whatsapp.noMessages')} />}
 					{data.messages.map((message) => {
 						const inbound = message.direction === 'inbound';
 						return (

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -17,15 +18,9 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
 import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
@@ -37,6 +32,7 @@ import {
 	salesReturnQueryOptions,
 	submitSalesReturn,
 	type TSalesReturnCondition,
+	type TSalesReturnItem,
 } from '@/lib/sales-return-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -55,6 +51,78 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 }
 
 type TLineChoice = { condition: TSalesReturnCondition; binId: string };
+
+/** The return's line items; its own component so the column hooks run before the page's early returns. */
+function ReturnItemsTable({
+	items,
+	canSeeCost,
+	language,
+	storages,
+}: {
+	items: TSalesReturnItem[];
+	canSeeCost: boolean;
+	language: string;
+	storages: { id: string; code: string }[] | undefined;
+}) {
+	const { t } = useTranslation(['sales', 'common']);
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSalesReturnItem, CellData>[]>(() => {
+		const binCode = (id: string | null) => storages?.find((storage) => storage.id === id)?.code ?? null;
+		const costColumn: ColumnDef<DataTableFeatures, TSalesReturnItem, CellData>[] = canSeeCost
+			? [
+					{
+						id: 'unitCost',
+						header: t('sales:return.unitCost'),
+						meta: { align: 'right' },
+						cell: ({ row }) => formatIdr(row.original.unitCost),
+					},
+				]
+			: [];
+		return [
+			{
+				id: 'item',
+				header: t('sales:return.item'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.sku}</div>
+					</>
+				),
+			},
+			{
+				id: 'quantity',
+				header: t('sales:return.quantity'),
+				meta: { align: 'right' },
+				cell: ({ row }) => `${Number(row.original.quantity).toLocaleString(language)} ${row.original.unit}`,
+			},
+			...costColumn,
+			{
+				id: 'lineTotal',
+				header: t('sales:return.lineTotal'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.lineTotal),
+			},
+			{
+				id: 'serialNumbers',
+				header: t('sales:return.serialNumbers'),
+				meta: { cellClassName: 'text-sm' },
+				cell: ({ row }) => row.original.serialNumbers?.join(', ') ?? '—',
+			},
+			{
+				id: 'condition',
+				header: t('sales:return.condition'),
+				meta: { cellClassName: 'text-sm' },
+				cell: ({ row }) => (
+					<>
+						{row.original.condition ? t(`sales:returnCondition.${row.original.condition}`) : '—'}
+						{row.original.binId ? ` · ${binCode(row.original.binId) ?? ''}` : ''}
+					</>
+				),
+			},
+		];
+	}, [t, canSeeCost, language, storages]);
+
+	return <DataTable columns={columns} data={items} getRowId={(row) => row.id} />;
+}
 
 function SalesReturnDetailPage() {
 	const { t, i18n } = useTranslation(['sales', 'common']);
@@ -98,7 +166,6 @@ function SalesReturnDetailPage() {
 	const storages = data.warehouse?.storages ?? [];
 	const choice = (id: string): TLineChoice => choices[id] ?? { condition: 'good', binId: '' };
 	const setChoice = (id: string, patch: Partial<TLineChoice>) => setChoices((current) => ({ ...current, [id]: { ...choice(id), ...patch } }));
-	const binCode = (id: string | null) => storages.find((storage) => storage.id === id)?.code ?? null;
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -186,40 +253,9 @@ function SalesReturnDetailPage() {
 				</CardContent>
 			</Card>
 
-			<Card>
+			<Card className='gap-0 py-0'>
 				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('sales:return.item')}</TableHead>
-								<TableHead className='text-right'>{t('sales:return.quantity')}</TableHead>
-								{canSeeCost && <TableHead className='text-right'>{t('sales:return.unitCost')}</TableHead>}
-								<TableHead className='text-right'>{t('sales:return.lineTotal')}</TableHead>
-								<TableHead>{t('sales:return.serialNumbers')}</TableHead>
-								<TableHead>{t('sales:return.condition')}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.items.map((item) => (
-								<TableRow key={item.id}>
-									<TableCell>
-										<div className='font-medium'>{item.name}</div>
-										<div className='text-xs text-muted-foreground'>{item.sku}</div>
-									</TableCell>
-									<TableCell className='text-right'>
-										{Number(item.quantity).toLocaleString(language)} {item.unit}
-									</TableCell>
-									{canSeeCost && <TableCell className='text-right'>{formatIdr(item.unitCost)}</TableCell>}
-									<TableCell className='text-right'>{formatIdr(item.lineTotal)}</TableCell>
-									<TableCell className='text-sm'>{item.serialNumbers?.join(', ') ?? '—'}</TableCell>
-									<TableCell className='text-sm'>
-										{item.condition ? t(`sales:returnCondition.${item.condition}`) : '—'}
-										{item.binId ? ` · ${binCode(item.binId) ?? ''}` : ''}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<ReturnItemsTable items={data.items} canSeeCost={canSeeCost} language={language} storages={data.warehouse?.storages} />
 					<dl className='ml-auto flex max-w-sm flex-col gap-1 p-4 text-sm'>
 						<div className='flex justify-between border-t pt-1 text-base font-bold'>
 							<dt>{t('sales:return.total')}</dt>

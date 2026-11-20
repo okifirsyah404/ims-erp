@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -18,20 +21,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
 import {
 	SALES_ORDER_STATUS_VARIANT,
 	SALES_ORDER_STATUSES,
 	salesOrdersQueryOptions,
+	type TSalesOrder,
 	type TSalesOrderStatus,
 } from '@/lib/sales-order-api';
 
@@ -51,6 +47,56 @@ function SalesOrderListPage() {
 	const filtered = deferredSearch !== '' || status !== '';
 	const { data, isPending, isError, error } = useQuery(
 		salesOrdersQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined }),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSalesOrder, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('sales:order.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/sales/orders/$orderId'
+							params={{ orderId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code}
+						</Link>
+						<div className='text-xs text-muted-foreground'>
+							{[row.original.quotationCode, row.original.customerPoNumber].filter(Boolean).join(' · ')}
+						</div>
+					</>
+				),
+			},
+			{
+				id: 'customer',
+				header: t('sales:quotation.customer'),
+				cell: ({ row }) => row.original.customerSnapshot.name,
+			},
+			{
+				id: 'orderDate',
+				header: t('sales:order.date'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.orderDate, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('sales:quotation.status'),
+				cell: ({ row }) => (
+					<Badge variant={SALES_ORDER_STATUS_VARIANT[row.original.status]}>
+						{t(`sales:orderStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'grandTotal',
+				header: t('sales:quotation.grandTotal'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.grandTotal),
+			},
+		],
+		[t, i18n.language],
 	);
 
 	return (
@@ -100,56 +146,13 @@ function SalesOrderListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{filtered ? t('sales:orders.noResults') : t('sales:orders.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState
+					title={filtered ? t('sales:orders.noResults') : t('sales:orders.empty')}
+					bordered
+				/>
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('sales:order.code')}</TableHead>
-										<TableHead>{t('sales:quotation.customer')}</TableHead>
-										<TableHead>{t('sales:order.date')}</TableHead>
-										<TableHead>{t('sales:quotation.status')}</TableHead>
-										<TableHead className='text-right'>{t('sales:quotation.grandTotal')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((order) => (
-										<TableRow key={order.id}>
-											<TableCell>
-												<Link
-													to='/sales/orders/$orderId'
-													params={{ orderId: order.id }}
-													className='font-medium hover:underline'
-												>
-													{order.code}
-												</Link>
-												<div className='text-xs text-muted-foreground'>
-													{[order.quotationCode, order.customerPoNumber].filter(Boolean).join(' · ')}
-												</div>
-											</TableCell>
-											<TableCell>{order.customerSnapshot.name}</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{formatBusinessDate(order.orderDate, i18n.language)}
-											</TableCell>
-											<TableCell>
-												<Badge variant={SALES_ORDER_STATUS_VARIANT[order.status]}>
-													{t(`sales:orderStatus.${order.status}`)}
-												</Badge>
-											</TableCell>
-											<TableCell className='text-right'>{formatIdr(order.grandTotal)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls
 							page={data.pagination.page}

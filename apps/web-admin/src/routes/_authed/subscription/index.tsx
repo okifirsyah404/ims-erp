@@ -1,19 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { ContractBadges } from '@/components/licensing/contract-badges';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
-import { CONTRACT_STATUSES, contractsQueryOptions, DUE_WITHIN_DAYS, type TContractStatus } from '@/lib/license-api';
+import {
+	CONTRACT_STATUSES,
+	contractsQueryOptions,
+	DUE_WITHIN_DAYS,
+	type TContractStatus,
+	type TLicenseContract,
+} from '@/lib/license-api';
 import { usePermission } from '@/lib/use-permission';
 
 const searchSchema = z.object({ due: z.boolean().optional() });
@@ -40,6 +50,69 @@ function ContractListPage() {
 			status: dueOnly ? undefined : status || undefined,
 			dueWithinDays: dueOnly ? DUE_WITHIN_DAYS : undefined,
 		}),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TLicenseContract, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('licensing:field.code'),
+				cell: ({ row }) => (
+					<Link
+						to='/subscription/$contractId'
+						params={{ contractId: row.original.id }}
+						className='font-medium hover:underline'
+					>
+						{row.original.code}
+					</Link>
+				),
+			},
+			{ accessorKey: 'customerName', header: t('licensing:field.customer') },
+			{
+				id: 'application',
+				header: t('licensing:field.application'),
+				cell: ({ row }) => (
+					<>
+						{row.original.applicationName}
+						{row.original.packageName && (
+							<div className='text-xs text-muted-foreground'>{row.original.packageName}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'period',
+				header: t('licensing:field.period'),
+				meta: { cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => (
+					<>
+						{formatBusinessDate(row.original.startDate, i18n.language)} –{' '}
+						{row.original.endDate
+							? formatBusinessDate(row.original.endDate, i18n.language)
+							: t('licensing:timing.perpetual')}
+					</>
+				),
+			},
+			{
+				id: 'value',
+				header: t('licensing:field.value'),
+				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => (
+					<>
+						{formatIdr(row.original.contractValue)}
+						<div className='text-xs text-muted-foreground'>
+							{t(`licensing:cycle.${row.original.billingCycle}`)}
+						</div>
+					</>
+				),
+			},
+			{
+				id: 'status',
+				header: t('licensing:field.status'),
+				cell: ({ row }) => <ContractBadges contract={row.original} />,
+			},
+		],
+		[i18n.language, t],
 	);
 
 	return (
@@ -76,18 +149,19 @@ function ContractListPage() {
 						))}
 					</SelectContent>
 				</Select>
-				<label className='flex items-center gap-2 text-sm'>
-					<input
-						type='checkbox'
-						className='size-4'
+				<Field orientation='horizontal' className='w-auto'>
+					<Checkbox
+						id='contracts-due-only'
 						checked={dueOnly}
-						onChange={(event) => {
-							setDueOnly(event.target.checked);
+						onCheckedChange={(checked) => {
+							setDueOnly(checked === true);
 							setPage(1);
 						}}
 					/>
-					{t('licensing:contracts.dueOnly', { days: DUE_WITHIN_DAYS })}
-				</label>
+					<FieldLabel htmlFor='contracts-due-only'>
+						{t('licensing:contracts.dueOnly', { days: DUE_WITHIN_DAYS })}
+					</FieldLabel>
+				</Field>
 				<InputGroup className='max-w-sm'>
 					<InputGroupAddon align='inline-start'>
 						<Search aria-hidden='true' />
@@ -107,54 +181,10 @@ function ContractListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('licensing:contracts.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('licensing:contracts.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('licensing:field.code')}</TableHead>
-										<TableHead>{t('licensing:field.customer')}</TableHead>
-										<TableHead>{t('licensing:field.application')}</TableHead>
-										<TableHead>{t('licensing:field.period')}</TableHead>
-										<TableHead className='text-right'>{t('licensing:field.value')}</TableHead>
-										<TableHead>{t('licensing:field.status')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((contract) => (
-										<TableRow key={contract.id}>
-											<TableCell>
-												<Link to='/subscription/$contractId' params={{ contractId: contract.id }} className='font-medium hover:underline'>
-													{contract.code}
-												</Link>
-											</TableCell>
-											<TableCell>{contract.customerName}</TableCell>
-											<TableCell>
-												{contract.applicationName}
-												{contract.packageName && <div className='text-xs text-muted-foreground'>{contract.packageName}</div>}
-											</TableCell>
-											<TableCell className='whitespace-nowrap'>
-												{formatBusinessDate(contract.startDate, i18n.language)} –{' '}
-												{contract.endDate ? formatBusinessDate(contract.endDate, i18n.language) : t('licensing:timing.perpetual')}
-											</TableCell>
-											<TableCell className='text-right whitespace-nowrap'>
-												{formatIdr(contract.contractValue)}
-												<div className='text-xs text-muted-foreground'>{t(`licensing:cycle.${contract.billingCycle}`)}</div>
-											</TableCell>
-											<TableCell>
-												<ContractBadges contract={contract} />
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

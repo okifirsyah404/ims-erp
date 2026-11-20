@@ -7,7 +7,9 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
+	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
@@ -34,6 +36,7 @@ import {
 import { CircleAlert, Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
@@ -133,6 +136,7 @@ function AdminWarehouseList() {
 	});
 
 	const { archive, toggleActive } = useWarehouseLifecycle();
+	const confirm = useConfirm();
 
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
@@ -209,18 +213,18 @@ function AdminWarehouseList() {
 			{isError ? (
 				<EmptyState
 					icon={CircleAlert}
+					bordered
 					title={t('common:error.failed')}
 					description={
 						error instanceof Error ? error.message : undefined
 					}
-					className='border'
 				/>
 			) : rows.length === 0 && !isPending ? (
 				<EmptyState
 					icon={Warehouse}
+					bordered
 					title={t('inventory:warehouses.emptyTitle')}
 					description={t('inventory:warehouses.empty')}
-					className='border'
 					action={
 						<Button render={<Link to='/inventory/warehouses/new' />}>
 							{t('inventory:warehouses.new')}
@@ -244,11 +248,13 @@ function AdminWarehouseList() {
 											isActive: !warehouse.isActive,
 										})
 									}
-									onArchive={() => {
+									onArchive={async () => {
 										if (
-											window.confirm(
-												`${t('inventory:warehouses.archiveConfirmTitle')}\n\n${t('inventory:warehouses.archiveConfirmBody')}`,
-											)
+											await confirm({
+												title: t('inventory:warehouses.archiveConfirmTitle'),
+												description: t('inventory:warehouses.archiveConfirmBody'),
+												destructive: true,
+											})
 										) {
 											archive.mutate(warehouse.id);
 										}
@@ -286,6 +292,7 @@ function PicWarehouseList() {
 	const [term, setTerm] = useState('');
 	const { data, isPending, isError, error } = useQuery(myWarehousesQueryOptions());
 	const { archive, toggleActive } = useWarehouseLifecycle();
+	const confirm = useConfirm();
 
 	const needle = term.trim().toLowerCase();
 	const rows = (data ?? []).filter(
@@ -320,16 +327,16 @@ function PicWarehouseList() {
 			{isError ? (
 				<EmptyState
 					icon={CircleAlert}
+					bordered
 					title={t('common:error.failed')}
 					description={error instanceof Error ? error.message : undefined}
-					className='border'
 				/>
 			) : rows.length === 0 && !isPending ? (
 				<EmptyState
 					icon={Warehouse}
+					bordered
 					title={t('inventory:warehouses.emptyTitle')}
 					description={t('inventory:warehouses.empty')}
-					className='border'
 				/>
 			) : (
 				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
@@ -348,11 +355,13 @@ function PicWarehouseList() {
 											isActive: !warehouse.isActive,
 										})
 									}
-									onArchive={() => {
+									onArchive={async () => {
 										if (
-											window.confirm(
-												`${t('inventory:warehouses.archiveConfirmTitle')}\n\n${t('inventory:warehouses.archiveConfirmBody')}`,
-											)
+											await confirm({
+												title: t('inventory:warehouses.archiveConfirmTitle'),
+												description: t('inventory:warehouses.archiveConfirmBody'),
+												destructive: true,
+											})
 										) {
 											archive.mutate(warehouse.id);
 										}
@@ -604,16 +613,12 @@ function WarehouseCard({
 						<PackageOpen className='size-10' />
 					</div>
 				)}
-				<CardHeader className='flex items-start justify-between gap-2 space-y-0'>
-					<div className='flex min-w-0 flex-col gap-0.5'>
-						<CardTitle className='truncate text-base'>
-							{warehouse.name}
-						</CardTitle>
-						<p className='truncate font-mono text-xs text-muted-foreground'>
-							{warehouse.code}
-						</p>
-					</div>
-					<div className='flex shrink-0 flex-col items-end gap-1'>
+				<CardHeader>
+					<CardTitle className='truncate'>{warehouse.name}</CardTitle>
+					<CardDescription className='truncate font-mono text-xs'>
+						{warehouse.code}
+					</CardDescription>
+					<CardAction className='flex flex-col items-end gap-1'>
 						{warehouse.organizationId === null ? (
 							<Badge variant='outline'>
 								{t('inventory:warehouses.global')}
@@ -631,7 +636,7 @@ function WarehouseCard({
 								{t('inventory:warehouses.inactive')}
 							</Badge>
 						) : null}
-					</div>
+					</CardAction>
 				</CardHeader>
 				<CardContent>
 					<div

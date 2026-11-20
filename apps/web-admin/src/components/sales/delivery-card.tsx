@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DELIVERY_NOTE_STATUS_VARIANT, deliveryNotesQueryOptions } from '@/lib/delivery-note-api';
 import { formatBusinessDate } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -20,16 +20,18 @@ export function DeliveryCard({ orderId, deliverable }: { orderId: string; delive
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between gap-2'>
+			<CardHeader>
 				<CardTitle>{t('sales:deliveries.forOrder')}</CardTitle>
 				{canIssue && deliverable && (
-					<Button
-						size='sm'
-						render={<Link to='/sales/deliveries/new' search={{ salesOrderId: orderId }} />}
-						nativeButton={false}
-					>
-						{t('sales:deliveries.createForOrder')}
-					</Button>
+					<CardAction>
+						<Button
+							size='sm'
+							render={<Link to='/sales/deliveries/new' search={{ salesOrderId: orderId }} />}
+							nativeButton={false}
+						>
+							{t('sales:deliveries.createForOrder')}
+						</Button>
+					</CardAction>
 				)}
 			</CardHeader>
 			<CardContent>

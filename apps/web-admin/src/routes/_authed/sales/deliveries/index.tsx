@@ -1,27 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from '@ims-erp/ui/components/input-group';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { DELIVERY_NOTE_STATUS_VARIANT, deliveryNotesQueryOptions } from '@/lib/delivery-note-api';
+import {
+	DELIVERY_NOTE_STATUS_VARIANT,
+	deliveryNotesQueryOptions,
+	type TDeliveryNote,
+} from '@/lib/delivery-note-api';
 import { formatBusinessDate } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
 
@@ -40,6 +39,53 @@ function DeliveryNoteListPage() {
 	const deferredSearch = useDeferredValue(search.trim());
 	const { data, isPending, isError, error } = useQuery(
 		deliveryNotesQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined }),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TDeliveryNote, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('sales:delivery.code'),
+				cell: ({ row }) => (
+					<Link
+						to='/sales/deliveries/$deliveryNoteId'
+						params={{ deliveryNoteId: row.original.id }}
+						className='font-medium hover:underline'
+					>
+						{row.original.code}
+					</Link>
+				),
+			},
+			{ accessorKey: 'orderCode', header: t('sales:delivery.order') },
+			{
+				id: 'recipient',
+				header: t('sales:delivery.recipientName'),
+				cell: ({ row }) => (
+					<>
+						<div>{row.original.recipientName}</div>
+						{row.original.projectName && (
+							<div className='text-xs text-muted-foreground'>{row.original.projectName}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'deliveryDate',
+				header: t('sales:delivery.date'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.deliveryDate, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('sales:delivery.status'),
+				cell: ({ row }) => (
+					<Badge variant={DELIVERY_NOTE_STATUS_VARIANT[row.original.status]}>
+						{t(`sales:deliveryStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		],
+		[t, i18n.language],
 	);
 
 	return (
@@ -73,50 +119,10 @@ function DeliveryNoteListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('sales:deliveries.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('sales:deliveries.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('sales:delivery.code')}</TableHead>
-										<TableHead>{t('sales:delivery.order')}</TableHead>
-										<TableHead>{t('sales:delivery.recipientName')}</TableHead>
-										<TableHead>{t('sales:delivery.date')}</TableHead>
-										<TableHead>{t('sales:delivery.status')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((note) => (
-										<TableRow key={note.id}>
-											<TableCell>
-												<Link
-													to='/sales/deliveries/$deliveryNoteId'
-													params={{ deliveryNoteId: note.id }}
-													className='font-medium hover:underline'
-												>
-													{note.code}
-												</Link>
-											</TableCell>
-											<TableCell>{note.orderCode}</TableCell>
-											<TableCell>
-												<div>{note.recipientName}</div>
-												{note.projectName && <div className='text-xs text-muted-foreground'>{note.projectName}</div>}
-											</TableCell>
-											<TableCell className='text-muted-foreground'>{formatBusinessDate(note.deliveryDate, i18n.language)}</TableCell>
-											<TableCell>
-												<Badge variant={DELIVERY_NOTE_STATUS_VARIANT[note.status]}>{t(`sales:deliveryStatus.${note.status}`)}</Badge>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

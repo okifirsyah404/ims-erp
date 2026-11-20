@@ -3,7 +3,7 @@ import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -564,17 +564,16 @@ export function PurchaseOrderForm({
 						<Textarea id='po-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 					</Field>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='button' variant='outline' onClick={onCancel}>
+						{t('common:action.cancel')}
+					</Button>
+					{unmapped && <span className='self-center text-sm text-amber-600'>{t('procurement:po.unmappedHint')}</span>}
+					<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId || unmapped}>
+						{t('common:action.save')}
+					</Button>
+				</CardFooter>
 			</Card>
-
-			<div className='flex justify-end gap-2'>
-				<Button type='button' variant='outline' onClick={onCancel}>
-					{t('common:action.cancel')}
-				</Button>
-				{unmapped && <span className='self-center text-sm text-amber-600'>{t('procurement:po.unmappedHint')}</span>}
-				<Button type='submit' disabled={submitting || lines.length === 0 || !supplierId || unmapped}>
-					{t('common:action.save')}
-				</Button>
-			</div>
 		</form>
 	);
 }

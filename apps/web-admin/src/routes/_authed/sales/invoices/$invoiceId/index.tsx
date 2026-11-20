@@ -32,6 +32,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState } from '@/components/empty-state';
 import { GatewayPaymentsCard } from '@/components/finance/gateway-payments-card';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
@@ -215,8 +216,9 @@ function InvoiceDetailPage() {
 				</CardHeader>
 				<CardContent className='p-0'>
 					{data.receipts.length === 0 ? (
-						<p className='p-4 text-sm text-muted-foreground'>{t('finance:receipt.empty')}</p>
+						<EmptyState title={t('finance:receipt.empty')} size='sm' />
 					) : (
+						<div className='overflow-hidden rounded-md border'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -247,6 +249,7 @@ function InvoiceDetailPage() {
 								))}
 							</TableBody>
 						</Table>
+						</div>
 					)}
 				</CardContent>
 			</Card>

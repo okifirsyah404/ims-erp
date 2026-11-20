@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -18,15 +18,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
 import {
@@ -34,6 +30,7 @@ import {
 	INVOICE_STATUSES,
 	invoicesQueryOptions,
 	isOverdue,
+	type TInvoice,
 	type TInvoiceStatus,
 	type TInvoiceTermKind,
 } from '@/lib/invoice-api';
@@ -59,6 +56,66 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 			termKind,
 			overdue,
 		}),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TInvoice, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('finance:invoice.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/sales/invoices/$invoiceId'
+							params={{ invoiceId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code ?? t('finance:invoice.draftNumber')}
+						</Link>
+						<div className='text-xs text-muted-foreground'>{row.original.orderCode}</div>
+					</>
+				),
+			},
+			{
+				id: 'customer',
+				header: t('finance:invoice.customer'),
+				cell: ({ row }) => row.original.customerSnapshot?.name ?? '-',
+			},
+			{ accessorKey: 'description', header: t('finance:invoice.description') },
+			{
+				id: 'dueDate',
+				header: t('finance:invoice.dueDate'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.dueDate, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('finance:invoice.status'),
+				cell: ({ row }) => (
+					<div className='flex flex-wrap gap-1'>
+						<Badge variant={INVOICE_STATUS_VARIANT[row.original.status]}>
+							{t(`finance:status.${row.original.status}`)}
+						</Badge>
+						{isOverdue(row.original, today) && (
+							<Badge variant='destructive'>{t('finance:invoice.overdue')}</Badge>
+						)}
+					</div>
+				),
+			},
+			{
+				id: 'grandTotal',
+				header: t('finance:invoice.grandTotal'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.grandTotal),
+			},
+			{
+				id: 'outstanding',
+				header: t('finance:invoice.outstanding'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.outstandingTotal),
+			},
+		],
+		[i18n.language, t, today],
 	);
 
 	return (
@@ -103,76 +160,36 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 						))}
 					</SelectContent>
 				</Select>
-				<label className='flex items-center gap-2 text-sm'>
+				<Field orientation='horizontal' className='w-auto'>
 					<Checkbox
+						id='invoice-overdue-only'
 						checked={overdue}
 						onCheckedChange={(checked) => {
 							setOverdue(checked === true);
 							setPage(1);
 						}}
 					/>
-					{t('finance:invoices.overdueOnly')}
-				</label>
+					<FieldLabel htmlFor='invoice-overdue-only'>
+						{t('finance:invoices.overdueOnly')}
+					</FieldLabel>
+				</Field>
 			</div>
 
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{filtered ? t('finance:invoices.noResults') : t('finance:invoices.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState
+					title={filtered ? t('finance:invoices.noResults') : t('finance:invoices.empty')}
+					bordered
+				/>
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('finance:invoice.code')}</TableHead>
-										<TableHead>{t('finance:invoice.customer')}</TableHead>
-										<TableHead>{t('finance:invoice.description')}</TableHead>
-										<TableHead>{t('finance:invoice.dueDate')}</TableHead>
-										<TableHead>{t('finance:invoice.status')}</TableHead>
-										<TableHead className='text-right'>{t('finance:invoice.grandTotal')}</TableHead>
-										<TableHead className='text-right'>{t('finance:invoice.outstanding')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((invoice) => (
-										<TableRow key={invoice.id}>
-											<TableCell>
-												<Link
-													to='/sales/invoices/$invoiceId'
-													params={{ invoiceId: invoice.id }}
-													className='font-medium hover:underline'
-												>
-													{invoice.code ?? t('finance:invoice.draftNumber')}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{invoice.orderCode}</div>
-											</TableCell>
-											<TableCell>{invoice.customerSnapshot?.name ?? '-'}</TableCell>
-											<TableCell>{invoice.description}</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{formatBusinessDate(invoice.dueDate, i18n.language)}
-											</TableCell>
-											<TableCell>
-												<div className='flex flex-wrap gap-1'>
-													<Badge variant={INVOICE_STATUS_VARIANT[invoice.status]}>
-														{t(`finance:status.${invoice.status}`)}
-													</Badge>
-													{isOverdue(invoice, today) && <Badge variant='destructive'>{t('finance:invoice.overdue')}</Badge>}
-												</div>
-											</TableCell>
-											<TableCell className='text-right'>{formatIdr(invoice.grandTotal)}</TableCell>
-											<TableCell className='text-right'>{formatIdr(invoice.outstandingTotal)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable
+						columns={columns}
+						data={data.rows}
+						getRowId={(row) => row.id}
+						bordered
+					/>
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls
 							page={data.pagination.page}

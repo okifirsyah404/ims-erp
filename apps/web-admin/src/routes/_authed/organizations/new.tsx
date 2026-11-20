@@ -8,6 +8,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -129,13 +130,13 @@ function NewOrganizationPage() {
 					{t('orgs.newDescription')}
 				</p>
 			</div>
+			<form onSubmit={handleSubmit}>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('orgs.details')}</CardTitle>
 					<CardDescription>{t('orgs.slugDescription')}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<form onSubmit={handleSubmit}>
 						{/* Logo is an organization attribute, so it leads the form;
 						    centered because it is the identity anchor of the card. */}
 						<div className='mb-6 flex flex-col items-center gap-2'>
@@ -226,23 +227,22 @@ function NewOrganizationPage() {
 								</p>
 							</Field>
 						</FieldGroup>
-
-						<div className='mt-6 flex items-center justify-end gap-2 border-t pt-4'>
-							<Button
-								type='button'
-								variant='outline'
-								disabled={pending}
-								onClick={() => navigate({ to: '/organizations' })}
-							>
-								{t('common:action.cancel')}
-							</Button>
-							<Button type='submit' disabled={!canSubmit}>
-								{pending ? t('orgs.creating') : t('orgs.create')}
-							</Button>
-						</div>
-					</form>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button
+						type='button'
+						variant='outline'
+						disabled={pending}
+						onClick={() => navigate({ to: '/organizations' })}
+					>
+						{t('common:action.cancel')}
+					</Button>
+					<Button type='submit' disabled={!canSubmit}>
+						{pending ? t('orgs.creating') : t('orgs.create')}
+					</Button>
+				</CardFooter>
 			</Card>
+			</form>
 		</div>
 	);
 }

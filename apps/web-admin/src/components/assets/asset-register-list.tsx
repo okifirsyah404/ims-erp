@@ -13,6 +13,7 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -187,8 +188,9 @@ export function AssetRegisterList() {
 						))}
 					</SelectContent>
 				</Select>
-				<label className='flex items-center gap-2 text-sm text-muted-foreground'>
+				<Field orientation='horizontal' className='w-auto'>
 					<Checkbox
+						id='asset-include-archived'
 						checked={search.includeArchived === true}
 						onCheckedChange={(checked) =>
 							void navigate({
@@ -200,8 +202,10 @@ export function AssetRegisterList() {
 							})
 						}
 					/>
-					{t('assets:register.includeArchived')}
-				</label>
+					<FieldLabel htmlFor='asset-include-archived'>
+						{t('assets:register.includeArchived')}
+					</FieldLabel>
+				</Field>
 			</div>
 
 			{/* Grid --------------------------------------------------------- */}
@@ -230,9 +234,9 @@ export function AssetRegisterList() {
 					{data.rows.map((asset) => (
 						<Card key={asset.id} className='flex flex-col overflow-hidden'>
 							<ItemThumb variant='cover' src={asset.imageUrl} name={asset.name} />
-							<CardHeader className='pb-2'>
+							<CardHeader>
 								<div className='flex items-start justify-between gap-2'>
-									<CardTitle className='text-base'>
+									<CardTitle>
 										<Link
 											to='/assets/register/$assetId'
 											params={{ assetId: asset.id }}

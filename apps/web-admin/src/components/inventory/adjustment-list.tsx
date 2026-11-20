@@ -1,18 +1,13 @@
 import { Link } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import type { TranslationKey } from '@ims-erp/locales';
 import {
 	adjustmentsQueryOptions,
@@ -20,6 +15,7 @@ import {
 	type TAdjustmentStatus,
 	type TStockAdjustment,
 } from '@/lib/adjustment-api';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 
 /** Badge emphasis per status: only `posted` actually moved stock. */
@@ -91,23 +87,84 @@ export function AdjustmentList() {
 		},
 	});
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TStockAdjustment, CellData>[]
+	>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('inventory:adjustments.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (
+					<Link
+						to='/inventory/stock/adjustments/$adjustmentId'
+						params={{ adjustmentId: row.original.id }}
+						className='hover:underline'
+					>
+						{row.original.code}
+					</Link>
+				),
+			},
+			{
+				id: 'type',
+				header: t('inventory:adjustments.type'),
+				cell: ({ row }) =>
+					t(
+						`inventory:adjustments.type.${row.original.adjustmentType}` as TranslationKey,
+						{ defaultValue: row.original.adjustmentType },
+					),
+			},
+			{
+				id: 'status',
+				header: t('inventory:adjustments.statusLabel'),
+				cell: ({ row }) => (
+					<Badge variant={STATUS_VARIANT[row.original.status]}>
+						{t(
+							`inventory:adjustments.status.${row.original.status}` as TranslationKey,
+							{ defaultValue: row.original.status },
+						)}
+					</Badge>
+				),
+			},
+			{
+				id: 'requestedBy',
+				header: t('inventory:adjustments.requestedBy'),
+				meta: { cellClassName: 'font-mono text-xs text-muted-foreground' },
+				cell: ({ row }) => row.original.requestedBy ?? '—',
+			},
+			{
+				id: 'requestedAt',
+				header: t('inventory:adjustments.requestedAt'),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				cell: ({ row }) => new Date(row.original.requestedAt).toLocaleString(),
+			},
+			{
+				id: 'actions',
+				header: t('common:action.edit'),
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<AdjustmentActions
+						row={row.original}
+						pending={transition.isPending}
+						onAction={(action) =>
+							transition.mutate({ id: row.original.id, action })
+						}
+					/>
+				),
+			},
+		],
+		[t, transition],
+	);
+
 	if (isPending) {
 		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('common:state.loading')}
-				</CardContent>
-			</Card>
+			<EmptyState title={t('common:state.loading')} size='sm' bordered />
 		);
 	}
 
 	if (isError) {
 		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-destructive'>
-					{error.message}
-				</CardContent>
-			</Card>
+			<EmptyState title={error.message} tone='error' bordered />
 		);
 	}
 
@@ -137,53 +194,21 @@ export function AdjustmentList() {
 			) : null}
 
 			{rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{t('inventory:adjustments.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState title={t('inventory:adjustments.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('inventory:adjustments.code')}</TableHead>
-									<TableHead>{t('inventory:adjustments.type')}</TableHead>
-									<TableHead>{t('inventory:adjustments.statusLabel')}</TableHead>
-									<TableHead>
-										{t('inventory:adjustments.requestedBy')}
-									</TableHead>
-									<TableHead>
-										{t('inventory:adjustments.requestedAt')}
-									</TableHead>
-									<TableHead className='text-right'>
-										{t('common:action.edit')}
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((row) => (
-									<AdjustmentRow
-										key={row.id}
-										row={row}
-										pending={transition.isPending}
-										onAction={(action) =>
-											transition.mutate({ id: row.id, action })
-										}
-									/>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable
+					columns={columns}
+					data={rows}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 		</div>
 	);
 }
 
-/** One document row plus the actions its status allows. */
-function AdjustmentRow({
+/** The actions a document's status allows. */
+function AdjustmentActions({
 	row,
 	pending,
 	onAction,
@@ -197,35 +222,7 @@ function AdjustmentRow({
 	const { t } = useTranslation(['inventory', 'common']);
 
 	return (
-		<TableRow>
-			<TableCell className='font-mono text-xs'>
-				<Link
-					to='/inventory/stock/adjustments/$adjustmentId'
-					params={{ adjustmentId: row.id }}
-					className='hover:underline'
-				>
-					{row.code}
-				</Link>
-			</TableCell>
-			<TableCell>
-				{t(`inventory:adjustments.type.${row.adjustmentType}` as TranslationKey, {
-					defaultValue: row.adjustmentType,
-				})}
-			</TableCell>
-			<TableCell>
-				<Badge variant={STATUS_VARIANT[row.status]}>
-					{t(`inventory:adjustments.status.${row.status}` as TranslationKey, {
-						defaultValue: row.status,
-					})}
-				</Badge>
-			</TableCell>
-			<TableCell className='font-mono text-xs text-muted-foreground'>
-				{row.requestedBy ?? '—'}
-			</TableCell>
-			<TableCell className='text-xs text-muted-foreground'>
-				{new Date(row.requestedAt).toLocaleString()}
-			</TableCell>
-			<TableCell className='space-x-1 text-right'>
+		<div className='space-x-1'>
 				{row.status === 'draft' ? (
 					<>
 						<Button
@@ -274,7 +271,6 @@ function AdjustmentRow({
 						{t('inventory:adjustmentActions.post')}
 					</Button>
 				) : null}
-			</TableCell>
-		</TableRow>
+		</div>
 	);
 }

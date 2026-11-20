@@ -128,10 +128,10 @@ function OrganizationsPage() {
 							className='group'
 						>
 							<Card className='h-full transition-shadow group-hover:shadow-md'>
-								<CardHeader className='flex items-center gap-3 space-y-0'>
+								<CardHeader className='flex items-center gap-3'>
 									<OrganizationLogo organization={org} />
 									<div className='flex min-w-0 flex-col gap-0.5'>
-										<CardTitle className='truncate text-base'>
+										<CardTitle className='truncate'>
 											{org.name}
 										</CardTitle>
 										<p className='text-sm text-muted-foreground truncate'>
@@ -203,7 +203,7 @@ function OrganizationsPage() {
 					icon={Building2}
 					title={t('orgs.emptyTitle')}
 					description={t('orgs.empty')}
-					className='border'
+					bordered
 					action={
 						canCreate ? (
 							<Button onClick={() => navigate({ to: '/organizations/new' })}>

@@ -98,8 +98,8 @@ export function AssetToolSetList() {
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.rows.map((toolSet) => (
 						<Card key={toolSet.id}>
-							<CardHeader className='pb-2'>
-								<CardTitle className='text-base'>{toolSet.name}</CardTitle>
+							<CardHeader>
+								<CardTitle>{toolSet.name}</CardTitle>
 								<p className='font-mono text-xs text-muted-foreground'>
 									{toolSet.code}
 								</p>

@@ -15,7 +15,7 @@ import {
 } from '@ims-erp/ui/components/alert-dialog';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { AddressFormDialog, type TAddressFormValues } from '@/components/crm/address-form-dialog';
 import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
@@ -83,12 +83,14 @@ function AddressList({
 	const { t } = useTranslation(['crm', 'common']);
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between'>
+			<CardHeader>
 				<CardTitle>{t('crm:customers.addresses')}</CardTitle>
 				{canUpdate && (
-					<Button size='sm' variant='outline' onClick={onAdd}>
-						{t('crm:address.add')}
-					</Button>
+					<CardAction>
+						<Button size='sm' variant='outline' onClick={onAdd}>
+							{t('crm:address.add')}
+						</Button>
+					</CardAction>
 				)}
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
@@ -386,12 +388,14 @@ function CompanyDetail() {
 			/>
 
 			<Card>
-				<CardHeader className='flex flex-row items-center justify-between'>
+				<CardHeader>
 					<CardTitle>{t('crm:contacts.title')}</CardTitle>
 					{canUpdate && (
-						<Button size='sm' variant='outline' onClick={() => setAddingPerson(true)}>
-							{t('crm:contacts.add')}
-						</Button>
+						<CardAction>
+							<Button size='sm' variant='outline' onClick={() => setAddingPerson(true)}>
+								{t('crm:contacts.add')}
+							</Button>
+						</CardAction>
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-2 text-sm'>

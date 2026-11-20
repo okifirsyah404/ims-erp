@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -15,14 +16,6 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
-import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -30,6 +23,8 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { CreateOrderDialog } from '@/components/sales/create-order-dialog';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
@@ -45,6 +40,7 @@ import {
 	sendQuotation,
 	submitQuotation,
 	type TQuotation,
+	type TQuotationItem,
 	type TQuotationLostReason,
 } from '@/lib/quotation-api';
 import { createSalesOrder } from '@/lib/sales-order-api';
@@ -62,6 +58,54 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 			<div className='whitespace-pre-line'>{value || '—'}</div>
 		</div>
 	);
+}
+
+/** The quotation's lines; its own component so the column hooks run before the page's early returns. */
+function QuotationItemsTable({ items, language }: { items: TQuotationItem[]; language: string }) {
+	const { t } = useTranslation(['sales', 'common']);
+	const columns = useMemo<ColumnDef<DataTableFeatures, TQuotationItem, CellData>[]>(
+		() => [
+			{
+				id: 'name',
+				header: t('sales:line.name'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						{row.original.specification && (
+							<div className='whitespace-pre-line text-xs text-muted-foreground'>{row.original.specification}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'quantity',
+				header: t('sales:line.quantity'),
+				meta: { align: 'right' },
+				cell: ({ row }) => `${Number(row.original.quantity).toLocaleString(language)} ${row.original.unit}`,
+			},
+			{
+				id: 'unitPrice',
+				header: t('sales:line.unitPrice'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.unitPrice),
+			},
+			{
+				id: 'discount',
+				header: t('sales:line.discount'),
+				meta: { align: 'right' },
+				cell: ({ row }) => (row.original.discountAmount ? formatIdr(row.original.discountAmount) : '—'),
+			},
+			{
+				id: 'lineTotal',
+				header: t('sales:line.total'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.lineTotal),
+			},
+		],
+		[t, language],
+	);
+
+	return <DataTable columns={columns} data={items} getRowId={(row) => row.id} />;
 }
 
 function QuotationDetailPage() {
@@ -256,37 +300,9 @@ function QuotationDetailPage() {
 				</Card>
 			</div>
 
-			<Card>
+			<Card className='gap-0 py-0'>
 				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('sales:line.name')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.quantity')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.unitPrice')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.discount')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.total')}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.items.map((item) => (
-								<TableRow key={item.id}>
-									<TableCell>
-										<div className='font-medium'>{item.name}</div>
-										{item.specification && (
-											<div className='whitespace-pre-line text-xs text-muted-foreground'>{item.specification}</div>
-										)}
-									</TableCell>
-									<TableCell className='text-right'>
-										{Number(item.quantity).toLocaleString(i18n.language === 'en' ? 'en-GB' : 'id-ID')} {item.unit}
-									</TableCell>
-									<TableCell className='text-right'>{formatIdr(item.unitPrice)}</TableCell>
-									<TableCell className='text-right'>{item.discountAmount ? formatIdr(item.discountAmount) : '—'}</TableCell>
-									<TableCell className='text-right'>{formatIdr(item.lineTotal)}</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<QuotationItemsTable items={data.items} language={i18n.language === 'en' ? 'en-GB' : 'id-ID'} />
 					<dl className='ml-auto flex max-w-sm flex-col gap-1 p-4 text-sm'>
 						<div className='flex justify-between'>
 							<dt>{t('sales:quotation.subtotal')}</dt>
@@ -386,7 +402,10 @@ function QuotationDetailPage() {
 
 			{(data.terms || data.notes) && (
 				<Card>
-					<CardContent className='grid gap-3 pt-6 text-sm'>
+					<CardHeader>
+						<CardTitle>{t('sales:quotation.termsAndNotes')}</CardTitle>
+					</CardHeader>
+					<CardContent className='grid gap-3 text-sm'>
 						<Detail label={t('sales:quotation.terms')} value={data.terms} />
 						<Detail label={t('sales:quotation.notes')} value={data.notes} />
 					</CardContent>

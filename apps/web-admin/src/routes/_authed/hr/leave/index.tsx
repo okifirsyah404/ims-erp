@@ -1,18 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { RequestActions } from '@/components/hr/request-actions';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -27,9 +28,11 @@ import {
 	leaveTypesQueryOptions,
 	REQUEST_STATUS_VARIANT,
 	REQUEST_STATUSES,
+	type TLeaveRequest,
 	type TRequestStatus,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState } from '@/components/empty-state';
 
 /** `/hr/leave` — leave recorded by HR and approved by someone else (M08). */
 export const Route = createFileRoute('/_authed/hr/leave/')({
@@ -54,18 +57,91 @@ function LeavePage() {
 	const [recording, setRecording] = useState(false);
 	const [busy, setBusy] = useState(false);
 
-	const act = async (id: string, action: 'approve' | 'reject' | 'cancel') => {
-		setBusy(true);
-		try {
-			await decideLeave(id, action, null);
-			await queryClient.invalidateQueries({ queryKey: ['hr'] });
-			toast.success(t(`hr:request.done.${action}`));
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-		} finally {
-			setBusy(false);
-		}
-	};
+	const act = useCallback(
+		async (id: string, action: 'approve' | 'reject' | 'cancel') => {
+			setBusy(true);
+			try {
+				await decideLeave(id, action, null);
+				await queryClient.invalidateQueries({ queryKey: ['hr'] });
+				toast.success(t(`hr:request.done.${action}`));
+			} catch (cause) {
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+			} finally {
+				setBusy(false);
+			}
+		},
+		[queryClient, t],
+	);
+
+	const userId = session?.user.id;
+	const columns = useMemo<ColumnDef<DataTableFeatures, TLeaveRequest, CellData>[]>(
+		() => [
+			{
+				id: 'employee',
+				header: t('hr:field.employee'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.employee?.fullName ?? '—'}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.employee?.employeeCode}</div>
+					</>
+				),
+			},
+			{
+				id: 'type',
+				header: t('hr:leave.type'),
+				cell: ({ row }) => (
+					<>
+						{row.original.leaveType?.name ?? '—'}
+						{row.original.reason && (
+							<div className='max-w-64 truncate text-xs text-muted-foreground'>{row.original.reason}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'start',
+				header: t('hr:leave.start'),
+				meta: { cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => (
+					<>
+						{formatBusinessDate(row.original.startDate, i18n.language)} –{' '}
+						{formatBusinessDate(row.original.endDate, i18n.language)}
+					</>
+				),
+			},
+			{
+				accessorKey: 'days',
+				header: t('hr:leave.days'),
+				meta: { align: 'right', cellClassName: 'tabular-nums' },
+			},
+			{
+				id: 'status',
+				header: t('hr:field.status'),
+				cell: ({ row }) => (
+					<Badge variant={REQUEST_STATUS_VARIANT[row.original.status]}>
+						{t(`hr:request.status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<RequestActions
+						status={row.original.status}
+						recordedByMe={row.original.recordedBy === userId}
+						canApprove={canApprove}
+						canReject={canReject}
+						canCancel={canCancel}
+						busy={busy}
+						onAction={(action) => void act(row.original.id, action)}
+					/>
+				),
+			},
+		],
+		[act, busy, canApprove, canCancel, canReject, i18n.language, t, userId],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -109,59 +185,10 @@ function LeavePage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('hr:leave.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('hr:leave.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('hr:field.employee')}</TableHead>
-										<TableHead>{t('hr:leave.type')}</TableHead>
-										<TableHead>{t('hr:leave.start')}</TableHead>
-										<TableHead className='text-right'>{t('hr:leave.days')}</TableHead>
-										<TableHead>{t('hr:field.status')}</TableHead>
-										<TableHead />
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((row) => (
-										<TableRow key={row.id}>
-											<TableCell>
-												<div className='font-medium'>{row.employee?.fullName ?? '—'}</div>
-												<div className='text-xs text-muted-foreground'>{row.employee?.employeeCode}</div>
-											</TableCell>
-											<TableCell>
-												{row.leaveType?.name ?? '—'}
-												{row.reason && <div className='max-w-64 truncate text-xs text-muted-foreground'>{row.reason}</div>}
-											</TableCell>
-											<TableCell className='whitespace-nowrap'>
-												{formatBusinessDate(row.startDate, i18n.language)} – {formatBusinessDate(row.endDate, i18n.language)}
-											</TableCell>
-											<TableCell className='text-right tabular-nums'>{row.days}</TableCell>
-											<TableCell>
-												<Badge variant={REQUEST_STATUS_VARIANT[row.status]}>{t(`hr:request.status.${row.status}`)}</Badge>
-											</TableCell>
-											<TableCell className='text-right'>
-												<RequestActions
-													status={row.status}
-													recordedByMe={row.recordedBy === session?.user.id}
-													canApprove={canApprove}
-													canReject={canReject}
-													canCancel={canCancel}
-													busy={busy}
-													onAction={(action) => void act(row.id, action)}
-												/>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

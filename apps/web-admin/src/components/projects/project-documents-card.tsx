@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import { formatBusinessDate } from '@/lib/format';
 import { cancelBast, projectBastsQueryOptions, warrantyQueryOptions } from '@/lib/handover-api';
@@ -18,6 +19,7 @@ import { usePermission } from '@/lib/use-permission';
 export function ProjectDocumentsCard({ project }: { project: TProjectDetail }) {
 	const { t, i18n } = useTranslation(['projects', 'common']);
 	const queryClient = useQueryClient();
+	const confirm = useConfirm();
 	const canUpdate = usePermission('project.update');
 	const basts = useQuery(projectBastsQueryOptions(project.id));
 	const warranty = useQuery(warrantyQueryOptions(project.id));
@@ -26,12 +28,14 @@ export function ProjectDocumentsCard({ project }: { project: TProjectDetail }) {
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-center justify-between gap-2'>
+			<CardHeader>
 				<CardTitle>{t('projects:documents.title')}</CardTitle>
 				{active && canUpdate && (
-					<Button size='sm' render={<Link to='/projects/$projectId/bast/new' params={{ projectId: project.id }} />} nativeButton={false}>
-						{t('projects:bast.new')}
-					</Button>
+					<CardAction>
+						<Button size='sm' render={<Link to='/projects/$projectId/bast/new' params={{ projectId: project.id }} />} nativeButton={false}>
+							{t('projects:bast.new')}
+						</Button>
+					</CardAction>
 				)}
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4 text-sm'>
@@ -63,7 +67,7 @@ export function ProjectDocumentsCard({ project }: { project: TProjectDetail }) {
 													variant='ghost'
 													size='sm'
 													onClick={async () => {
-														if (!window.confirm(t('projects:bast.cancelConfirm', { code: bast.code }))) return;
+														if (!(await confirm({ title: t('projects:bast.cancelConfirm', { code: bast.code }), destructive: true }))) return;
 														try {
 															await cancelBast(project.id, bast.id);
 															await queryClient.invalidateQueries({ queryKey: ['projects'] });

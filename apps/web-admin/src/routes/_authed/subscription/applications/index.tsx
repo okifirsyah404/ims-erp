@@ -1,17 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	APPLICATION_SOURCES,
@@ -67,6 +70,80 @@ function ApplicationsPage() {
 		}
 	};
 
+	// `open` and `run` are re-created every render and only close over state setters.
+	const columns = useMemo<ColumnDef<DataTableFeatures, TLicensableApplication, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('licensing:field.code'),
+				meta: { cellClassName: 'font-medium' },
+			},
+			{
+				id: 'name',
+				header: t('licensing:field.name'),
+				cell: ({ row }) => (
+					<>
+						{row.original.name}
+						{row.original.status === 'retired' && (
+							<Badge variant='outline' className='ml-2'>
+								{t('licensing:applications.retired')}
+							</Badge>
+						)}
+						{row.original.description && (
+							<div className='max-w-96 truncate text-xs text-muted-foreground'>
+								{row.original.description}
+							</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'vendor',
+				header: t('licensing:field.vendor'),
+				cell: ({ row }) => row.original.vendor ?? '—',
+			},
+			{
+				id: 'source',
+				header: t('licensing:field.source'),
+				cell: ({ row }) => t(`licensing:source.${row.original.source}`),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) =>
+					canManage ? (
+						<>
+							<Button size='sm' variant='ghost' onClick={() => open(row.original)}>
+								{t('licensing:action.edit')}
+							</Button>
+							{row.original.status === 'active' ? (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={busy}
+									onClick={() => void run(() => retireApplication(row.original.id))}
+								>
+									{t('licensing:applications.retire')}
+								</Button>
+							) : (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={busy}
+									onClick={() => void run(() => restoreApplication(row.original.id))}
+								>
+									{t('licensing:applications.restore')}
+								</Button>
+							)}
+						</>
+					) : null,
+			},
+		],
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- open/run only close over state setters
+		[busy, canManage, t],
+	);
+
 	return (
 		<div className='flex flex-col gap-6'>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
@@ -76,68 +153,16 @@ function ApplicationsPage() {
 				</div>
 				{canManage && <Button onClick={() => open('new')}>{t('licensing:applications.new')}</Button>}
 			</div>
-			<label className='flex items-center gap-2 text-sm'>
-				<input type='checkbox' className='size-4' checked={showRetired} onChange={(event) => setShowRetired(event.target.checked)} />
-				{t('licensing:applications.showRetired')}
-			</label>
+			<Field orientation='horizontal' className='w-auto'>
+				<Checkbox id='applications-show-retired' checked={showRetired} onCheckedChange={(checked) => setShowRetired(checked === true)} />
+				<FieldLabel htmlFor='applications-show-retired'>{t('licensing:applications.showRetired')}</FieldLabel>
+			</Field>
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('licensing:applications.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('licensing:applications.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('licensing:field.code')}</TableHead>
-									<TableHead>{t('licensing:field.name')}</TableHead>
-									<TableHead>{t('licensing:field.vendor')}</TableHead>
-									<TableHead>{t('licensing:field.source')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data.map((app) => (
-									<TableRow key={app.id}>
-										<TableCell className='font-medium'>{app.code}</TableCell>
-										<TableCell>
-											{app.name}
-											{app.status === 'retired' && (
-												<Badge variant='outline' className='ml-2'>
-													{t('licensing:applications.retired')}
-												</Badge>
-											)}
-											{app.description && <div className='max-w-96 truncate text-xs text-muted-foreground'>{app.description}</div>}
-										</TableCell>
-										<TableCell>{app.vendor ?? '—'}</TableCell>
-										<TableCell>{t(`licensing:source.${app.source}`)}</TableCell>
-										<TableCell className='text-right whitespace-nowrap'>
-											{canManage && (
-												<>
-													<Button size='sm' variant='ghost' onClick={() => open(app)}>
-														{t('licensing:action.edit')}
-													</Button>
-													{app.status === 'active' ? (
-														<Button size='sm' variant='ghost' disabled={busy} onClick={() => void run(() => retireApplication(app.id))}>
-															{t('licensing:applications.retire')}
-														</Button>
-													) : (
-														<Button size='sm' variant='ghost' disabled={busy} onClick={() => void run(() => restoreApplication(app.id))}>
-															{t('licensing:applications.restore')}
-														</Button>
-													)}
-												</>
-											)}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable columns={columns} data={data} getRowId={(row) => row.id} bordered />
 			)}
 
 			<Dialog open={editing !== null} onOpenChange={(next) => !next && setEditing(null)}>

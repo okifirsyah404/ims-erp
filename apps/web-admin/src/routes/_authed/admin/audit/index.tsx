@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { ScrollText } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -22,21 +22,18 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import {
 	ADMIN_PERMISSIONS,
 	auditQueryOptions,
 	type TAuditListParams,
+	type TAdminAudit,
 } from '@/lib/admin-api';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
 import { usePermission } from '@/lib/use-permission';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 
 /** Audit actions the user-management domain emits (mirrors the backend). */
@@ -61,9 +58,6 @@ const AUDIT_ACTIONS = [
 
 /** Target types the backend vocabulary uses. */
 const TARGET_TYPES = ['invitation', 'user', 'role', 'member', 'organization'] as const;
-
-/** Number of placeholder rows shown while the first page loads. */
-const SKELETON_ROW_COUNT = 5;
 
 /** Per-column placeholder widths, matching the audit table's shape. */
 const SKELETON_CELLS = [
@@ -120,6 +114,47 @@ function AuditPage() {
 		enabled: !!organizationId && canRead,
 	});
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TAdminAudit, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'createdAt',
+				header: t('audit.when'),
+				meta: { cellClassName: 'whitespace-nowrap text-xs text-muted-foreground' },
+				cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+			},
+			{
+				accessorKey: 'action',
+				header: t('audit.action'),
+				cell: ({ row }) => <Badge variant='secondary'>{row.original.action}</Badge>,
+			},
+			{
+				id: 'actor',
+				header: t('audit.actor'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) => row.original.actorEmail ?? row.original.actorUserId,
+			},
+			{
+				id: 'target',
+				header: t('audit.target'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) => (
+					<>
+						<span className='text-muted-foreground'>{row.original.targetType}</span>{' '}
+						<span className='font-mono'>{shortId(row.original.targetId)}</span>
+					</>
+				),
+			},
+			{
+				id: 'metadata',
+				header: t('audit.metadata'),
+				meta: { cellClassName: 'max-w-md truncate text-xs text-muted-foreground' },
+				cell: ({ row }) =>
+					row.original.meta ? JSON.stringify(row.original.meta) : '-',
+			},
+		],
+		[t],
+	);
+
 	if (!organizationId) {
 		return (
 			<div className='text-sm text-muted-foreground'>
@@ -138,6 +173,7 @@ function AuditPage() {
 
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
+
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -264,59 +300,19 @@ function AuditPage() {
 				</CardHeader>
 				<CardContent>
 					{isError && (
-						<p className='text-sm text-destructive'>{(error as Error).message}</p>
+						<EmptyState title={(error as Error).message} tone='error' size='sm' />
 					)}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('audit.empty')}</p>
+						<EmptyState title={t('audit.empty')} size='sm' />
 					)}
 					{(isPending || rows.length > 0) && (
-						<Table aria-busy={isPending || undefined}>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('audit.when')}</TableHead>
-									<TableHead>{t('audit.action')}</TableHead>
-									<TableHead>{t('audit.actor')}</TableHead>
-									<TableHead>{t('audit.target')}</TableHead>
-									<TableHead>{t('audit.metadata')}</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{isPending &&
-									Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-										<TableRow key={index} aria-hidden='true'>
-											{SKELETON_CELLS.map((cell) => (
-												<TableCell key={cell.key}>
-													<Skeleton
-														className={`${cell.className} motion-reduce:animate-none`}
-													/>
-												</TableCell>
-											))}
-										</TableRow>
-									))}
-								{rows.map((entry) => (
-									<TableRow key={entry.id}>
-										<TableCell className='whitespace-nowrap text-xs text-muted-foreground'>
-											{new Date(entry.createdAt).toLocaleString()}
-										</TableCell>
-										<TableCell>
-											<Badge variant='secondary'>{entry.action}</Badge>
-										</TableCell>
-										<TableCell className='text-xs'>
-											{entry.actorEmail ?? entry.actorUserId}
-										</TableCell>
-										<TableCell className='text-xs'>
-											<span className='text-muted-foreground'>
-												{entry.targetType}
-											</span>{' '}
-											<span className='font-mono'>{shortId(entry.targetId)}</span>
-										</TableCell>
-										<TableCell className='max-w-md truncate text-xs text-muted-foreground'>
-											{entry.meta ? JSON.stringify(entry.meta) : '—'}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+						<DataTable
+							columns={columns}
+							data={rows}
+							getRowId={(entry) => entry.id}
+							loading={isPending}
+							empty={<SkeletonRows />}
+						/>
 					)}
 					{isPending && <span className='sr-only'>{t('audit.loading')}</span>}
 
@@ -340,4 +336,18 @@ function AuditPage() {
 /** Truncates long ids for the table while keeping them recognizable. */
 function shortId(id: string): string {
 	return id.length > 12 ? `${id.slice(0, 8)}…` : id;
+}
+
+/** Placeholder rows shown while the first audit page loads. */
+function SkeletonRows() {
+	return (
+		<span className='flex flex-col gap-2'>
+			{SKELETON_CELLS.map((cell) => (
+				<Skeleton
+					key={cell.key}
+					className={`${cell.className} motion-reduce:animate-none`}
+				/>
+			))}
+		</span>
+	);
 }

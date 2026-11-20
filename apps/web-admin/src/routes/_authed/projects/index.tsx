@@ -1,25 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate } from '@/lib/format';
-import { PROJECT_STATUS_VARIANT, PROJECT_STATUSES, projectsQueryOptions, type TProjectStatus } from '@/lib/project-api';
+import {
+	PROJECT_STATUS_VARIANT,
+	PROJECT_STATUSES,
+	projectsQueryOptions,
+	type TProject,
+	type TProjectStatus,
+} from '@/lib/project-api';
 import { usePermission } from '@/lib/use-permission';
 
 const PAGE_SIZE = 20;
@@ -38,6 +39,63 @@ function ProjectListPage() {
 	const deferredSearch = useDeferredValue(search.trim());
 	const { data, isPending, isError, error } = useQuery(
 		projectsQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined }),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TProject, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('projects:field.code'),
+				cell: ({ row }) => (
+					<Link
+						to='/projects/$projectId'
+						params={{ projectId: row.original.id }}
+						className='font-medium hover:underline'
+					>
+						{row.original.code}
+					</Link>
+				),
+			},
+			{
+				id: 'title',
+				header: t('projects:field.title'),
+				cell: ({ row }) => (
+					<>
+						<div>{row.original.title}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.customerName}</div>
+					</>
+				),
+			},
+			{
+				id: 'pic',
+				header: t('projects:field.pic'),
+				cell: ({ row }) => row.original.pic?.name ?? '—',
+			},
+			{
+				id: 'stage',
+				header: t('projects:field.stage'),
+				cell: ({ row }) => t(`projects:stage.${row.original.stage}`),
+			},
+			{
+				id: 'targetEnd',
+				header: t('projects:field.targetEnd'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) =>
+					row.original.targetEndDate
+						? formatBusinessDate(row.original.targetEndDate, i18n.language)
+						: '—',
+			},
+			{
+				id: 'status',
+				header: t('projects:field.status'),
+				cell: ({ row }) => (
+					<Badge variant={PROJECT_STATUS_VARIANT[row.original.status]}>
+						{t(`projects:status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		],
+		[t, i18n.language],
 	);
 
 	return (
@@ -92,50 +150,10 @@ function ProjectListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('projects:list.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('projects:list.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('projects:field.code')}</TableHead>
-										<TableHead>{t('projects:field.title')}</TableHead>
-										<TableHead>{t('projects:field.pic')}</TableHead>
-										<TableHead>{t('projects:field.stage')}</TableHead>
-										<TableHead>{t('projects:field.targetEnd')}</TableHead>
-										<TableHead>{t('projects:field.status')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((project) => (
-										<TableRow key={project.id}>
-											<TableCell>
-												<Link to='/projects/$projectId' params={{ projectId: project.id }} className='font-medium hover:underline'>
-													{project.code}
-												</Link>
-											</TableCell>
-											<TableCell>
-												<div>{project.title}</div>
-												<div className='text-xs text-muted-foreground'>{project.customerName}</div>
-											</TableCell>
-											<TableCell>{project.pic?.name ?? '—'}</TableCell>
-											<TableCell>{t(`projects:stage.${project.stage}`)}</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{project.targetEndDate ? formatBusinessDate(project.targetEndDate, i18n.language) : '—'}
-											</TableCell>
-											<TableCell>
-												<Badge variant={PROJECT_STATUS_VARIANT[project.status]}>{t(`projects:status.${project.status}`)}</Badge>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

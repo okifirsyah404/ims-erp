@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { FileText } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -15,20 +15,16 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import {
 	DOCUMENT_STATUSES,
 	documentsQueryOptions,
 	voidDocument,
+	type TDocument,
 	type TDocumentListParams,
 	type TDocumentStatus,
 } from '@/lib/documents-api';
@@ -74,6 +70,65 @@ function DocumentsPage() {
 		},
 		onError: (cause) => toast.error(cause instanceof Error ? cause.message : t('common:error.failed')),
 	});
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TDocument, CellData>[]>(() => {
+		const base: ColumnDef<DataTableFeatures, TDocument, CellData>[] = [
+			{
+				id: 'code',
+				header: t('documents:code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (
+					<Link
+						to='/documents/files/$documentId'
+						params={{ documentId: row.original.id }}
+						className='hover:underline'
+					>
+						{row.original.code}
+					</Link>
+				),
+			},
+			{
+				accessorKey: 'documentType',
+				header: t('documents:type'),
+				meta: { cellClassName: 'text-xs' },
+			},
+			{ accessorKey: 'title', header: t('documents:documentTitle') },
+			{
+				accessorKey: 'issuedOn',
+				header: t('documents:issuedOn'),
+				meta: { cellClassName: 'whitespace-nowrap text-xs' },
+			},
+			{
+				id: 'status',
+				header: t('documents:status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.status === 'void' ? 'outline' : 'secondary'}>
+						{t(`documents:status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		];
+		if (!canUpdate) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					row.original.status !== 'void' ? (
+						<Button
+							variant='outline'
+							size='sm'
+							disabled={voidMutation.isPending}
+							onClick={() => voidMutation.mutate(row.original.id)}
+						>
+							{t('documents:void')}
+						</Button>
+					) : null,
+			},
+		];
+	}, [t, canUpdate, voidMutation]);
 
 	if (!canRead) {
 		return <div className='text-sm text-muted-foreground'>{t('documents:noPermission')}</div>;
@@ -155,57 +210,7 @@ function DocumentsPage() {
 						<p className='text-sm text-muted-foreground'>{t('documents:empty')}</p>
 					)}
 					{rows.length > 0 && (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('documents:code')}</TableHead>
-									<TableHead>{t('documents:type')}</TableHead>
-									<TableHead>{t('documents:documentTitle')}</TableHead>
-									<TableHead>{t('documents:issuedOn')}</TableHead>
-									<TableHead>{t('documents:status')}</TableHead>
-									{canUpdate && <TableHead />}
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((document) => (
-									<TableRow key={document.id}>
-										<TableCell className='font-mono text-xs'>
-										<Link
-											to='/documents/files/$documentId'
-											params={{ documentId: document.id }}
-											className='hover:underline'
-										>
-											{document.code}
-										</Link>
-									</TableCell>
-										<TableCell className='text-xs'>{document.documentType}</TableCell>
-										<TableCell>{document.title}</TableCell>
-										<TableCell className='whitespace-nowrap text-xs'>
-											{document.issuedOn}
-										</TableCell>
-										<TableCell>
-											<Badge variant={document.status === 'void' ? 'outline' : 'secondary'}>
-												{t(`documents:status.${document.status}`)}
-											</Badge>
-										</TableCell>
-										{canUpdate && (
-											<TableCell className='text-right'>
-												{document.status !== 'void' && (
-													<Button
-														variant='outline'
-														size='sm'
-														disabled={voidMutation.isPending}
-														onClick={() => voidMutation.mutate(document.id)}
-													>
-														{t('documents:void')}
-													</Button>
-												)}
-											</TableCell>
-										)}
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+						<DataTable columns={columns} data={rows} getRowId={(row) => row.id} />
 					)}
 					{pagination && (
 						<PaginationControls

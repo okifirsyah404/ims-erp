@@ -24,9 +24,11 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Field,
 	FieldGroup,
@@ -161,14 +163,13 @@ function EditMemberPage() {
 					{member.user?.email ?? '—'}
 				</p>
 			</div>
-			<Card className='max-w-xl'>
+			<form onSubmit={handleSave} className='max-w-xl'>
+			<Card>
 				<CardHeader>
 					<CardTitle>{t('memberEdit.role')}</CardTitle>
 					<CardDescription>{t('memberEdit.description')}</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<div className='flex flex-col gap-6'>
-						<form onSubmit={handleSave}>
 							<FieldGroup>
 								<Field>
 									<FieldLabel>{t('memberEdit.role')}</FieldLabel>
@@ -176,21 +177,22 @@ function EditMemberPage() {
 										{assignableRoles.map((roleName) => {
 											const id = `role-${roleName}`;
 											return (
-												<label
+												<Field
 													key={roleName}
-													htmlFor={id}
-													className='flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer has-[:checked]:bg-accent'
+													orientation='horizontal'
+													className='rounded-md border px-3 py-2 has-[[data-checked]]:bg-accent'
 												>
-													<input
+													<Checkbox
 														id={id}
-														type='checkbox'
 														checked={roles.includes(roleName)}
-														onChange={(event) =>
-															toggleRole(roleName, event.target.checked)
+														onCheckedChange={(checked) =>
+															toggleRole(roleName, checked === true)
 														}
 													/>
-													{erpRoleLabel(roleName, i18n.language)}
-												</label>
+													<FieldLabel htmlFor={id} className='cursor-pointer'>
+														{erpRoleLabel(roleName, i18n.language)}
+													</FieldLabel>
+												</Field>
 											);
 										})}
 									</div>
@@ -204,33 +206,33 @@ function EditMemberPage() {
 										</p>
 									)}
 								</Field>
-								<div className='flex gap-2'>
-									<Button
-										type='submit'
-										disabled={pending || roles.length === 0 || unchanged}
-									>
-										{pending
-											? t('common:action.saving')
-											: t('common:action.save')}
-									</Button>
-									<Button
-										type='button'
-										variant='outline'
-										onClick={() =>
-											navigate({
-												to: '/organizations/$organizationId',
-												params: { organizationId },
-											})
-										}
-									>
-										{t('common:action.cancel')}
-									</Button>
-								</div>
 							</FieldGroup>
-						</form>
-
+				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button
+						type='submit'
+						disabled={pending || roles.length === 0 || unchanged}
+					>
+						{pending
+							? t('common:action.saving')
+							: t('common:action.save')}
+					</Button>
+					<Button
+						type='button'
+						variant='outline'
+						onClick={() =>
+							navigate({
+								to: '/organizations/$organizationId',
+								params: { organizationId },
+							})
+						}
+					>
+						{t('common:action.cancel')}
+					</Button>
 						<AlertDialog>
-							<AlertDialogTrigger render={<Button variant='destructive' />}>
+							<AlertDialogTrigger
+								render={<Button type='button' variant='destructive' />}
+							>
 								{t('memberEdit.remove')}
 							</AlertDialogTrigger>
 							<AlertDialogContent>
@@ -259,9 +261,9 @@ function EditMemberPage() {
 								</AlertDialogFooter>
 							</AlertDialogContent>
 						</AlertDialog>
-					</div>
-				</CardContent>
+				</CardFooter>
 			</Card>
+			</form>
 		</div>
 	);
 }

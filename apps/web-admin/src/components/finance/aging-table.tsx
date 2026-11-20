@@ -87,12 +87,12 @@ export function AgingTable({
 			</p>
 
 			{isPending ? null : isError ? (
-				<EmptyState icon={CalendarClock} title={error.message} className='border' />
+				<EmptyState icon={CalendarClock} title={error.message} bordered />
 			) : rows.length === 0 ? (
 				<EmptyState
 					icon={CalendarClock}
 					title={t('finance:aging.empty')}
-					className='border'
+					bordered
 				/>
 			) : (
 				<div className='overflow-x-auto rounded-md border'>

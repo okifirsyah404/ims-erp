@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -13,17 +13,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Archive, Plus } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	ACCOUNT_TYPES,
@@ -31,6 +27,7 @@ import {
 	accountsQueryOptions,
 	createAccount,
 	CASH_FLOW_CATEGORIES,
+	type TAccount,
 	type TAccountType,
 	type TCashFlowCategory,
 	updateAccount,
@@ -49,6 +46,7 @@ const categoryKey = (c: TCashFlowCategory) =>
 /** Chart of accounts: CRUD-lite with archive (F2). */
 export function AccountList() {
 	const { t } = useTranslation(['finance', 'common']);
+	const confirm = useConfirm();
 	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
 	const search = routeApi.useSearch();
@@ -59,7 +57,9 @@ export function AccountList() {
 	const [type, setType] = useState<TAccountType | 'all'>('all');
 	const [code, setCode] = useState('');
 	const [name, setName] = useState('');
-	const [normalBalance, setNormalBalance] = useState<'debit' | 'credit'>('debit');
+	const [normalBalance, setNormalBalance] = useState<'debit' | 'credit'>(
+		'debit',
+	);
 	const [cashFlowCategory, setCashFlowCategory] = useState<string>('none');
 
 	const page = search.page ?? 1;
@@ -82,7 +82,10 @@ export function AccountList() {
 				name,
 				accountType: type === 'all' ? 'asset' : type,
 				normalBalance,
-				cashFlowCategory: cashFlowCategory === 'none' ? null : (cashFlowCategory as TCashFlowCategory),
+				cashFlowCategory:
+					cashFlowCategory === 'none'
+						? null
+						: (cashFlowCategory as TCashFlowCategory),
 			}),
 		onSuccess: async () => {
 			toast.success(t('finance:accounts.created'));
@@ -111,6 +114,107 @@ export function AccountList() {
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
+
+	const showActions = canUpdate || canArchive;
+	const columns = useMemo<ColumnDef<DataTableFeatures, TAccount, CellData>[]>(() => {
+		const base: ColumnDef<DataTableFeatures, TAccount, CellData>[] = [
+			{
+				accessorKey: 'code',
+				header: t('finance:common.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'name', header: t('finance:common.name') },
+			{
+				id: 'accountType',
+				header: t('finance:accounts.type'),
+				cell: ({ row }) => t(typeKey(row.original.accountType)),
+			},
+			{
+				id: 'normalBalance',
+				header: t('finance:accounts.normalBalance'),
+				cell: ({ row }) =>
+					t(
+						row.original.normalBalance === 'debit'
+							? 'finance:normalBalance.debit'
+							: 'finance:normalBalance.credit',
+					),
+			},
+			{
+				id: 'cashFlowCategory',
+				header: t('finance:accounts.cashFlowCategory'),
+				cell: ({ row }) =>
+					row.original.cashFlowCategory
+						? t(categoryKey(row.original.cashFlowCategory))
+						: t('finance:common.none'),
+			},
+			{
+				id: 'status',
+				header: t('finance:common.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.isActive ? 'secondary' : 'outline'}>
+						{row.original.isActive
+							? t('finance:accounts.isActive')
+							: t('finance:accounts.archived')}
+					</Badge>
+				),
+			},
+		];
+		if (!showActions) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: t('finance:common.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<>
+						{canUpdate ? (
+							<Button
+								variant='outline'
+								size='sm'
+								className='mr-1'
+								disabled={toggleActive.isPending}
+								onClick={() => void toggleActive.mutateAsync(row.original)}
+							>
+								{row.original.isActive
+									? t('finance:accounts.archived')
+									: t('finance:accounts.isActive')}
+							</Button>
+						) : null}
+						{canArchive && row.original.isActive ? (
+							<Button
+								variant='ghost'
+								size='sm'
+								disabled={archive.isPending}
+								onClick={async () => {
+									if (
+										await confirm({
+											title: t('finance:accounts.archiveConfirm'),
+											destructive: true,
+										})
+									) {
+										void archive.mutateAsync(row.original.id);
+									}
+								}}
+							>
+								<Archive className='size-4' />
+							</Button>
+						) : null}
+					</>
+				),
+			},
+		];
+	}, [
+		archive,
+		archive.isPending,
+		canArchive,
+		canUpdate,
+		confirm,
+		showActions,
+		t,
+		toggleActive,
+		toggleActive.isPending,
+	]);
 
 	return (
 		<div className='space-y-4'>
@@ -171,7 +275,10 @@ export function AccountList() {
 							</SelectItem>
 						</SelectContent>
 					</Select>
-					<Select value={cashFlowCategory} onValueChange={(value) => setCashFlowCategory(value ?? 'none')}>
+					<Select
+						value={cashFlowCategory}
+						onValueChange={(value) => setCashFlowCategory(value ?? 'none')}
+					>
 						<SelectTrigger className='w-40'>
 							<SelectValue />
 						</SelectTrigger>
@@ -198,98 +305,20 @@ export function AccountList() {
 			) : null}
 
 			{isPending ? null : isError ? (
-				<EmptyState
-					icon={Archive}
-					title={error.message}
-					className='border'
-				/>
+				<EmptyState icon={Archive} title={error.message} bordered />
 			) : (data?.rows.length ?? 0) === 0 ? (
 				<EmptyState
 					icon={Archive}
 					title={t('finance:accounts.empty')}
-					className='border'
+					bordered
 				/>
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:common.code')}</TableHead>
-								<TableHead>{t('finance:common.name')}</TableHead>
-								<TableHead>{t('finance:accounts.type')}</TableHead>
-								<TableHead>{t('finance:accounts.normalBalance')}</TableHead>
-								<TableHead>{t('finance:accounts.cashFlowCategory')}</TableHead>
-								<TableHead>{t('finance:common.status')}</TableHead>
-								{canUpdate || canArchive ? (
-									<TableHead className='text-right'>
-										{t('finance:common.actions')}
-									</TableHead>
-								) : null}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data?.rows.map((row) => (
-								<TableRow key={row.id}>
-									<TableCell className='font-mono text-xs'>{row.code}</TableCell>
-									<TableCell>{row.name}</TableCell>
-									<TableCell>{t(typeKey(row.accountType))}</TableCell>
-									<TableCell>
-										{t(
-											row.normalBalance === 'debit'
-												? 'finance:normalBalance.debit'
-												: 'finance:normalBalance.credit',
-										)}
-									</TableCell>
-									<TableCell>
-										{row.cashFlowCategory
-											? t(categoryKey(row.cashFlowCategory))
-											: t('finance:common.none')}
-									</TableCell>
-									<TableCell>
-										<Badge
-											variant={row.isActive ? 'secondary' : 'outline'}
-										>
-											{row.isActive
-												? t('finance:accounts.isActive')
-												: t('finance:accounts.archived')}
-										</Badge>
-									</TableCell>
-									{canUpdate || canArchive ? (
-										<TableCell className='text-right'>
-											{canUpdate ? (
-												<Button
-													variant='outline'
-													size='sm'
-													className='mr-1'
-													disabled={toggleActive.isPending}
-													onClick={() => void toggleActive.mutateAsync(row)}
-												>
-													{row.isActive
-														? t('finance:accounts.archived')
-														: t('finance:accounts.isActive')}
-												</Button>
-											) : null}
-											{canArchive && row.isActive ? (
-												<Button
-													variant='ghost'
-													size='sm'
-													disabled={archive.isPending}
-													onClick={() => {
-														if (window.confirm(t('finance:accounts.archiveConfirm'))) {
-															void archive.mutateAsync(row.id);
-														}
-													}}
-												>
-													<Archive className='size-4' />
-												</Button>
-											) : null}
-										</TableCell>
-									) : null}
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={data?.rows ?? []}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls

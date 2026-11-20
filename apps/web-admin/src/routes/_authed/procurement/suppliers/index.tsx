@@ -1,12 +1,15 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -19,18 +22,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
 import { toast } from '@/components/toast';
-import { createSupplierCompany, supplierCompaniesQueryOptions, type TSupplierCompanyInput } from '@/lib/supplier-api';
+import {
+	createSupplierCompany,
+	supplierCompaniesQueryOptions,
+	type TSupplierCompany,
+	type TSupplierCompanyInput,
+} from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
 
 const PAGE_SIZE = 20;
@@ -69,6 +69,47 @@ function SupplierListPage() {
 			setSubmitting(false);
 		}
 	}
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSupplierCompany, CellData>[]>(
+		() => [
+			{
+				id: 'name',
+				header: t('procurement:supplier.name'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/procurement/suppliers/$supplierId'
+							params={{ supplierId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.name}
+						</Link>
+						<div className='text-xs text-muted-foreground'>{row.original.code}</div>
+					</>
+				),
+			},
+			{
+				id: 'email',
+				header: t('procurement:supplier.email'),
+				cell: ({ row }) => row.original.email ?? '—',
+			},
+			{
+				id: 'phone',
+				header: t('procurement:supplier.phone'),
+				cell: ({ row }) => row.original.phone ?? row.original.whatsapp ?? '—',
+			},
+			{
+				id: 'status',
+				header: t('procurement:supplier.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.status === 'active' ? 'default' : 'outline'}>
+						{t(`common:status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		],
+		[t],
+	);
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -115,48 +156,10 @@ function SupplierListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('procurement:suppliers.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('procurement:suppliers.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('procurement:supplier.name')}</TableHead>
-										<TableHead>{t('procurement:supplier.email')}</TableHead>
-										<TableHead>{t('procurement:supplier.phone')}</TableHead>
-										<TableHead>{t('procurement:supplier.status')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((supplier) => (
-										<TableRow key={supplier.id}>
-											<TableCell>
-												<Link
-													to='/procurement/suppliers/$supplierId'
-													params={{ supplierId: supplier.id }}
-													className='font-medium hover:underline'
-												>
-													{supplier.name}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{supplier.code}</div>
-											</TableCell>
-											<TableCell>{supplier.email ?? '—'}</TableCell>
-											<TableCell>{supplier.phone ?? supplier.whatsapp ?? '—'}</TableCell>
-											<TableCell>
-												<Badge variant={supplier.status === 'active' ? 'default' : 'outline'}>
-													{t(`common:status.${supplier.status}`)}
-												</Badge>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

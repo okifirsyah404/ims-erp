@@ -1,25 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatDateTime } from '@/lib/format';
-import { TICKET_STATUS_VARIANT, TICKET_STATUSES, ticketsQueryOptions, type TTicketStatus } from '@/lib/service-ticket-api';
+import {
+	TICKET_STATUS_VARIANT,
+	TICKET_STATUSES,
+	ticketsQueryOptions,
+	type TServiceTicket,
+	type TTicketStatus,
+} from '@/lib/service-ticket-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/projects/tickets` — service tickets (M07, ADR-0011 step 6c). */
@@ -35,6 +36,61 @@ function TicketListPage() {
 	const [search, setSearch] = useState('');
 	const deferredSearch = useDeferredValue(search.trim());
 	const { data, isPending, isError, error } = useQuery(ticketsQueryOptions({ page, search: deferredSearch || undefined, status: status || undefined }));
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TServiceTicket, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('projects:field.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/projects/tickets/$ticketId'
+							params={{ ticketId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code}
+						</Link>
+						<div className='text-xs text-muted-foreground'>
+							{formatDateTime(row.original.reportedAt, i18n.language)}
+						</div>
+					</>
+				),
+			},
+			{ accessorKey: 'customerName', header: t('projects:ticket.customer') },
+			{
+				accessorKey: 'complaint',
+				header: t('projects:ticket.complaint'),
+				meta: { cellClassName: 'max-w-72 truncate' },
+			},
+			{
+				id: 'warranty',
+				header: t('projects:ticket.warranty'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.inWarranty ? 'default' : 'outline'}>
+						{row.original.inWarranty
+							? t('projects:ticket.inWarranty')
+							: t('projects:ticket.outOfWarranty')}
+					</Badge>
+				),
+			},
+			{
+				id: 'assignee',
+				header: t('projects:ticket.assignee'),
+				cell: ({ row }) => row.original.assignee?.name ?? '—',
+			},
+			{
+				id: 'status',
+				header: t('projects:field.status'),
+				cell: ({ row }) => (
+					<Badge variant={TICKET_STATUS_VARIANT[row.original.status]}>
+						{t(`projects:ticketStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		],
+		[t, i18n.language],
+	);
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -88,50 +144,10 @@ function TicketListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('projects:tickets.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('projects:tickets.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('projects:field.code')}</TableHead>
-										<TableHead>{t('projects:ticket.customer')}</TableHead>
-										<TableHead>{t('projects:ticket.complaint')}</TableHead>
-										<TableHead>{t('projects:ticket.warranty')}</TableHead>
-										<TableHead>{t('projects:ticket.assignee')}</TableHead>
-										<TableHead>{t('projects:field.status')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((ticket) => (
-										<TableRow key={ticket.id}>
-											<TableCell>
-												<Link to='/projects/tickets/$ticketId' params={{ ticketId: ticket.id }} className='font-medium hover:underline'>
-													{ticket.code}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{formatDateTime(ticket.reportedAt, i18n.language)}</div>
-											</TableCell>
-											<TableCell>{ticket.customerName}</TableCell>
-											<TableCell className='max-w-72 truncate'>{ticket.complaint}</TableCell>
-											<TableCell>
-												<Badge variant={ticket.inWarranty ? 'default' : 'outline'}>
-													{ticket.inWarranty ? t('projects:ticket.inWarranty') : t('projects:ticket.outOfWarranty')}
-												</Badge>
-											</TableCell>
-											<TableCell>{ticket.assignee?.name ?? '—'}</TableCell>
-											<TableCell>
-												<Badge variant={TICKET_STATUS_VARIANT[ticket.status]}>{t(`projects:ticketStatus.${ticket.status}`)}</Badge>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

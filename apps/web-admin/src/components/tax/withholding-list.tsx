@@ -4,12 +4,15 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
 	SelectContent,
@@ -77,9 +80,6 @@ export function WithholdingList() {
 	const invalidate = () =>
 		queryClient.invalidateQueries({ queryKey: ['tax-withholding'] });
 
-	const typeName = (id: string) =>
-		types.data?.rows.find((row) => row.id === id)?.name ?? id;
-
 	const create = useMutation({
 		mutationFn: () =>
 			createWithholding({
@@ -109,6 +109,121 @@ export function WithholdingList() {
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
+
+	const typeRows = types.data?.rows;
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TWithholdingRecord, CellData>[]
+	>(() => {
+		const nameOf = (id: string) => typeRows?.find((row) => row.id === id)?.name ?? id;
+		const base: ColumnDef<DataTableFeatures, TWithholdingRecord, CellData>[] = [
+			{
+				accessorKey: 'code',
+				header: t('tax:withholding.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'taxType',
+				header: t('tax:records.taxType'),
+				cell: ({ row }) => nameOf(row.original.taxTypeId),
+			},
+			{
+				id: 'counterparty',
+				header: t('tax:withholding.counterparty'),
+				cell: ({ row }) => row.original.counterpartyType ?? '—',
+			},
+			{
+				id: 'baseAmount',
+				header: t('tax:withholding.baseAmount'),
+				meta: { align: 'right', cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (row.original.baseAmount / 100).toLocaleString(),
+			},
+			{
+				id: 'taxAmount',
+				header: t('tax:withholding.taxAmount'),
+				meta: { align: 'right', cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (row.original.taxAmount / 100).toLocaleString(),
+			},
+			{
+				id: 'status',
+				header: t('tax:withholding.status'),
+				cell: ({ row }) => (
+					<Badge variant={statusTone(asWithholdingStatus(row.original.status))}>
+						{t(`tax:status.${asWithholdingStatus(row.original.status)}`)}
+					</Badge>
+				),
+			},
+		];
+		if (!(canVerify || canUpdate)) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<>
+						{canUpdate && row.original.status === 'recorded' ? (
+							<Button
+								variant='outline'
+								size='sm'
+								className='mr-1'
+								onClick={() => setEditing(row.original)}
+							>
+								{t('common:action.edit')}
+							</Button>
+						) : null}
+						{canVerify && row.original.status === 'recorded' ? (
+							<Button
+								variant='outline'
+								size='sm'
+								className='mr-1'
+								disabled={transition.isPending}
+								onClick={() =>
+									void transition.mutateAsync({
+										id: row.original.id,
+										to: 'verified',
+									})
+								}
+							>
+								{t('tax:withholding.verify')}
+							</Button>
+						) : null}
+						{canVerify && row.original.status === 'verified' ? (
+							<>
+								<Button
+									variant='outline'
+									size='sm'
+									className='mr-1'
+									disabled={transition.isPending}
+									onClick={() =>
+										void transition.mutateAsync({
+											id: row.original.id,
+											to: 'paid',
+										})
+									}
+								>
+									{t('tax:withholding.pay')}
+								</Button>
+								<Button
+									variant='ghost'
+									size='sm'
+									disabled={transition.isPending}
+									onClick={() =>
+										void transition.mutateAsync({
+											id: row.original.id,
+											to: 'reversed',
+										})
+									}
+								>
+									{t('tax:withholding.reverse')}
+								</Button>
+							</>
+						) : null}
+					</>
+				),
+			},
+		];
+	}, [canUpdate, canVerify, t, transition, typeRows]);
 
 	if (isError) {
 		return (
@@ -199,110 +314,12 @@ export function WithholdingList() {
 				/>
 			) : (
 				<>
-					<div className='overflow-hidden rounded-lg border'>
-						<table className='w-full text-sm'>
-							<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-								<tr>
-									<th className='px-3 py-2'>{t('tax:withholding.code')}</th>
-									<th className='px-3 py-2'>{t('tax:records.taxType')}</th>
-									<th className='px-3 py-2'>
-										{t('tax:withholding.counterparty')}
-									</th>
-									<th className='px-3 py-2 text-right'>
-										{t('tax:withholding.baseAmount')}
-									</th>
-									<th className='px-3 py-2 text-right'>
-										{t('tax:withholding.taxAmount')}
-									</th>
-									<th className='px-3 py-2'>{t('tax:withholding.status')}</th>
-									{canVerify || canUpdate ? <th className='px-3 py-2' /> : null}
-								</tr>
-							</thead>
-							<tbody>
-								{data.rows.map((row) => (
-									<tr key={row.id} className='border-t'>
-										<td className='px-3 py-2 font-mono text-xs'>{row.code}</td>
-										<td className='px-3 py-2'>{typeName(row.taxTypeId)}</td>
-										<td className='px-3 py-2'>
-											{row.counterpartyType ?? '—'}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
-											{(row.baseAmount / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
-											{(row.taxAmount / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2'>
-											<Badge variant={statusTone(asWithholdingStatus(row.status))}>
-												{t(`tax:status.${asWithholdingStatus(row.status)}`)}
-											</Badge>
-										</td>
-										{canVerify || canUpdate ? (
-											<td className='px-3 py-2 text-right'>
-												{canUpdate && row.status === 'recorded' ? (
-													<Button
-														variant='outline'
-														size='sm'
-														className='mr-1'
-														onClick={() => setEditing(row)}
-													>
-														{t('common:action.edit')}
-													</Button>
-												) : null}
-												{canVerify && row.status === 'recorded' ? (
-													<Button
-														variant='outline'
-														size='sm'
-														className='mr-1'
-														disabled={transition.isPending}
-														onClick={() =>
-															void transition.mutateAsync({
-																id: row.id,
-																to: 'verified',
-															})
-														}
-													>
-														{t('tax:withholding.verify')}
-													</Button>
-												) : null}
-												{canVerify && row.status === 'verified' ? (
-													<>
-														<Button
-															variant='outline'
-															size='sm'
-															className='mr-1'
-															disabled={transition.isPending}
-															onClick={() =>
-																void transition.mutateAsync({
-																	id: row.id,
-																	to: 'paid',
-																})
-															}
-														>
-															{t('tax:withholding.pay')}
-														</Button>
-														<Button
-															variant='ghost'
-															size='sm'
-															disabled={transition.isPending}
-															onClick={() =>
-																void transition.mutateAsync({
-																	id: row.id,
-																	to: 'reversed',
-																})
-															}
-														>
-															{t('tax:withholding.reverse')}
-														</Button>
-													</>
-												) : null}
-											</td>
-										) : null}
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+					<DataTable
+						columns={columns}
+						data={data.rows}
+						getRowId={(row) => row.id}
+						bordered
+					/>
 					<PaginationControls
 						page={page}
 						totalPages={data.pagination.totalPages}

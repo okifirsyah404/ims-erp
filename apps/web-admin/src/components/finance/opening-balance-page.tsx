@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -13,16 +13,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Scale, Trash2 } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	accountsQueryOptions,
@@ -31,6 +27,7 @@ import {
 	postOpeningBalances,
 	removeOpeningBalanceRow,
 	toMinor,
+	type TOpeningBalanceRow,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -41,6 +38,7 @@ const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 /** Opening balances: draft batch + one-shot post as ONE journal entry (F3). */
 export function OpeningBalancePage() {
 	const { t } = useTranslation(['finance', 'common']);
+	const confirm = useConfirm();
 	const queryClient = useQueryClient();
 	const canRead = usePermission('journal.read');
 	const canEdit = usePermission('journal.update');
@@ -51,7 +49,12 @@ export function OpeningBalancePage() {
 	const [debit, setDebit] = useState('');
 	const [credit, setCredit] = useState('');
 
-	const { data: rows, isPending, isError, error } = useQuery({
+	const {
+		data: rows,
+		isPending,
+		isError,
+		error,
+	} = useQuery({
 		...openingBalancesQueryOptions(),
 		enabled: canRead,
 	});
@@ -101,13 +104,95 @@ export function OpeningBalancePage() {
 
 	const draftRows = rows?.filter((row) => row.postedAt == null) ?? [];
 	const totalDebit = draftRows.reduce((sum, row) => sum + row.debitBalance, 0);
-	const totalCredit = draftRows.reduce((sum, row) => sum + row.creditBalance, 0);
+	const totalCredit = draftRows.reduce(
+		(sum, row) => sum + row.creditBalance,
+		0,
+	);
 	const balanced = totalDebit === totalCredit && totalDebit > 0;
 	const hasPosted = rows?.some((row) => row.postedAt != null) ?? false;
 
+	const showActions = canEdit && !hasPosted;
+	const accountRows = accounts?.rows;
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TOpeningBalanceRow, CellData>[]
+	>(() => {
+		const base: ColumnDef<DataTableFeatures, TOpeningBalanceRow, CellData>[] = [
+			{
+				id: 'account',
+				header: t('finance:opening.account'),
+				cell: ({ row }) => {
+					const account = accountRows?.find(
+						(item) => item.id === row.original.accountId,
+					);
+					return account
+						? `${account.code} — ${account.name}`
+						: row.original.accountId;
+				},
+			},
+			{ accessorKey: 'asOfDate', header: t('finance:opening.asOf') },
+			{
+				id: 'debit',
+				header: t('finance:opening.debit'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.debitBalance),
+			},
+			{
+				id: 'credit',
+				header: t('finance:opening.credit'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.creditBalance),
+			},
+			{
+				id: 'status',
+				header: t('finance:common.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.postedAt ? 'secondary' : 'outline'}>
+						{row.original.postedAt
+							? t('finance:opening.posted')
+							: t('payments.status.draft')}
+					</Badge>
+				),
+			},
+		];
+		if (!showActions) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: t('finance:common.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					row.original.postedAt == null ? (
+						<Button
+							variant='ghost'
+							size='sm'
+							className='mr-1'
+							disabled={removeRow.isPending}
+							onClick={async () => {
+								if (
+									await confirm({
+										title: t('finance:opening.removeConfirm'),
+										destructive: true,
+									})
+								) {
+									void removeRow.mutateAsync(row.original.id);
+								}
+							}}
+						>
+							<Trash2 className='size-4' />
+						</Button>
+					) : null,
+			},
+		];
+	}, [accountRows, confirm, removeRow, showActions, t]);
+
 	if (!canRead) {
 		return (
-			<EmptyState icon={Scale} title={t('finance:opening.title')} className='border' />
+			<EmptyState
+				icon={Scale}
+				title={t('finance:opening.title')}
+				bordered
+			/>
 		);
 	}
 
@@ -122,12 +207,19 @@ export function OpeningBalancePage() {
 
 			{canEdit && !hasPosted ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<Select value={accountId} onValueChange={(value: string | null) => setAccountId(value ?? 'none')}>
+					<Select
+						value={accountId}
+						onValueChange={(value: string | null) =>
+							setAccountId(value ?? 'none')
+						}
+					>
 						<SelectTrigger className='w-72'>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value='none'>{t('finance:opening.account')}</SelectItem>
+							<SelectItem value='none'>
+								{t('finance:opening.account')}
+							</SelectItem>
 							{accounts?.rows
 								.filter((account) => account.isActive && account.isPostable)
 								.map((account) => (
@@ -165,71 +257,20 @@ export function OpeningBalancePage() {
 			) : null}
 
 			{isPending ? null : isError ? (
-				<EmptyState icon={Scale} title={error.message} className='border' />
+				<EmptyState icon={Scale} title={error.message} bordered />
 			) : (rows?.length ?? 0) === 0 ? (
-				<EmptyState icon={Scale} title={t('finance:opening.empty')} className='border' />
+				<EmptyState
+					icon={Scale}
+					title={t('finance:opening.empty')}
+					bordered
+				/>
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:opening.account')}</TableHead>
-								<TableHead>{t('finance:opening.asOf')}</TableHead>
-								<TableHead className='text-right'>{t('finance:opening.debit')}</TableHead>
-								<TableHead className='text-right'>{t('finance:opening.credit')}</TableHead>
-								<TableHead>{t('finance:common.status')}</TableHead>
-								{canEdit && !hasPosted ? (
-									<TableHead className='text-right'>
-										{t('finance:common.actions')}
-									</TableHead>
-								) : null}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows?.map((row) => {
-								const account = accounts?.rows.find(
-									(item) => item.id === row.accountId,
-								);
-								return (
-									<TableRow key={row.id}>
-										<TableCell>
-											{account ? `${account.code} — ${account.name}` : row.accountId}
-										</TableCell>
-										<TableCell>{row.asOfDate}</TableCell>
-										<TableCell className='text-right'>
-											{formatMoney(row.debitBalance)}
-										</TableCell>
-										<TableCell className='text-right'>
-											{formatMoney(row.creditBalance)}
-										</TableCell>
-										<TableCell>
-											<Badge variant={row.postedAt ? 'secondary' : 'outline'}>
-												{row.postedAt ? t('finance:opening.posted') : t('payments.status.draft')}
-											</Badge>
-										</TableCell>
-										{canEdit && !hasPosted && row.postedAt == null ? (
-											<TableCell className='text-right'>
-												<Button
-													variant='ghost'
-													size='sm'
-													className='mr-1'
-													disabled={removeRow.isPending}
-													onClick={() => {
-														if (window.confirm(t('finance:opening.removeConfirm'))) {
-															void removeRow.mutateAsync(row.id);
-														}
-													}}
-												>
-													<Trash2 className='size-4' />
-												</Button>
-											</TableCell>
-										) : null}
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={rows ?? []}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			{draftRows.length > 0 && canPost && !hasPosted ? (
@@ -248,8 +289,13 @@ export function OpeningBalancePage() {
 					<Button
 						size='sm'
 						disabled={!balanced || postBatch.isPending}
-						onClick={() => {
-							if (window.confirm(t('finance:opening.postBatch') + '?')) {
+						onClick={async () => {
+							if (
+								await confirm({
+									title: t('finance:opening.postBatch') + '?',
+									destructive: false,
+								})
+							) {
 								void postBatch.mutateAsync();
 							}
 						}}

@@ -6,6 +6,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardHeader,
 	CardTitle,
@@ -118,7 +119,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 
 			<div className='grid gap-4 sm:grid-cols-3'>
 				<Card>
-					<CardHeader className='pb-2'>
+					<CardHeader>
 						<CardTitle className='text-sm font-medium text-muted-foreground'>
 							{t('assets:register.status')}
 						</CardTitle>
@@ -135,7 +136,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 					</CardContent>
 				</Card>
 				<Card>
-					<CardHeader className='pb-2'>
+					<CardHeader>
 						<CardTitle className='text-sm font-medium text-muted-foreground'>
 							{t('assets:register.bookValue')}
 						</CardTitle>
@@ -145,7 +146,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 					</CardContent>
 				</Card>
 				<Card>
-					<CardHeader className='pb-2'>
+					<CardHeader>
 						<CardTitle className='text-sm font-medium text-muted-foreground'>
 							{t('assets:register.condition')}
 						</CardTitle>
@@ -242,10 +243,10 @@ function LocationCard({
 
 	return (
 		<Card>
-			<CardHeader className='flex flex-row items-start justify-between gap-2'>
+			<CardHeader>
 				<CardTitle className='text-sm'>{t('assets:register.location')}</CardTitle>
 				{canUpdate && asset.status === 'ready' ? (
-					<div className='flex gap-2'>
+					<CardAction className='flex gap-2'>
 						<Button
 							size='sm'
 							variant='outline'
@@ -261,7 +262,7 @@ function LocationCard({
 						>
 							{t('assets:detail.transfer')}
 						</Button>
-					</div>
+					</CardAction>
 				) : null}
 			</CardHeader>
 			<CardContent className='space-y-1 text-sm'>
@@ -397,7 +398,7 @@ function HistorySection({
 }) {
 	return (
 		<Card>
-			<CardHeader className='pb-2'>
+			<CardHeader>
 				<CardTitle className='text-sm'>{title}</CardTitle>
 			</CardHeader>
 			<CardContent>

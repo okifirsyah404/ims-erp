@@ -7,6 +7,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -63,13 +64,13 @@ export function ChangePasswordForm() {
 	}
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{t('password.title')}</CardTitle>
-				<CardDescription>{t('password.description')}</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<form onSubmit={handleSubmit}>
+		<form onSubmit={handleSubmit}>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('password.title')}</CardTitle>
+					<CardDescription>{t('password.description')}</CardDescription>
+				</CardHeader>
+				<CardContent>
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='current-password'>
@@ -130,14 +131,14 @@ export function ChangePasswordForm() {
 								{error}
 							</p>
 						)}
-						<div>
-							<Button type='submit' disabled={pending}>
-								{pending ? t('password.submitting') : t('password.submit')}
-							</Button>
-						</div>
 					</FieldGroup>
-				</form>
-			</CardContent>
-		</Card>
+				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='submit' disabled={pending}>
+						{pending ? t('password.submitting') : t('password.submit')}
+					</Button>
+				</CardFooter>
+			</Card>
+		</form>
 	);
 }

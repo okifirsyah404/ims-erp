@@ -3,7 +3,7 @@ import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
@@ -482,10 +482,14 @@ export function QuotationForm({
 				</CardHeader>
 				<CardContent className='grid gap-6 sm:grid-cols-2'>
 					<FieldGroup>
-						<label className='flex items-center gap-2 text-sm'>
-							<Checkbox checked={vatEnabled} onCheckedChange={(checked) => setVatEnabled(checked === true)} />
-							{t('sales:quotation.vatEnabled')}
-						</label>
+						<Field orientation='horizontal'>
+							<Checkbox
+								id='quotation-vat-enabled'
+								checked={vatEnabled}
+								onCheckedChange={(checked) => setVatEnabled(checked === true)}
+							/>
+							<FieldLabel htmlFor='quotation-vat-enabled'>{t('sales:quotation.vatEnabled')}</FieldLabel>
+						</Field>
 						{vatEnabled && (
 							<Field>
 								<FieldLabel htmlFor='quotation-vat'>{t('sales:quotation.vatRate')}</FieldLabel>
@@ -584,7 +588,10 @@ export function QuotationForm({
 			</Card>
 
 			<Card>
-				<CardContent className='pt-6'>
+				<CardHeader>
+					<CardTitle>{t('sales:quotation.termsAndNotes')}</CardTitle>
+				</CardHeader>
+				<CardContent>
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='quotation-terms'>{t('sales:quotation.terms')}</FieldLabel>
@@ -608,16 +615,15 @@ export function QuotationForm({
 						</Field>
 					</FieldGroup>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='button' variant='outline' onClick={onCancel}>
+						{t('common:action.cancel')}
+					</Button>
+					<Button type='submit' disabled={submitting || lines.length === 0 || !customerId || !scheduleValid}>
+						{t('common:action.save')}
+					</Button>
+				</CardFooter>
 			</Card>
-
-			<div className='flex justify-end gap-2'>
-				<Button type='button' variant='outline' onClick={onCancel}>
-					{t('common:action.cancel')}
-				</Button>
-				<Button type='submit' disabled={submitting || lines.length === 0 || !customerId || !scheduleValid}>
-					{t('common:action.save')}
-				</Button>
-			</div>
 		</form>
 	);
 }

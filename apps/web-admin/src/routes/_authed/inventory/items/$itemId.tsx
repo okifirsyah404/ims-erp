@@ -1,7 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -14,14 +17,6 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
-import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -32,6 +27,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from '@ims-erp/ui/components/alert-dialog';
+import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { useItemCategoryNames } from '@/lib/item-category-api';
@@ -158,6 +154,9 @@ function ItemDetailPage() {
 				</div>
 
 				<Card>
+					<CardHeader>
+						<CardTitle>{t('inventory:items.details')}</CardTitle>
+					</CardHeader>
 					<CardContent className='grid grid-cols-2 gap-4 p-4 text-sm sm:grid-cols-4'>
 						<Detail
 							label={t('inventory:items.category')}
@@ -199,9 +198,11 @@ function ItemDetailPage() {
 
 				{item.specification && (
 					<Card>
-						<CardContent className='p-4 text-sm'>
-							<div className='text-muted-foreground'>{t('inventory:items.specification')}</div>
-							<p className='mt-1 whitespace-pre-line'>{item.specification}</p>
+						<CardHeader>
+							<CardTitle>{t('inventory:items.specification')}</CardTitle>
+						</CardHeader>
+						<CardContent className='text-sm'>
+							<p className='whitespace-pre-line'>{item.specification}</p>
 						</CardContent>
 					</Card>
 				)}
@@ -262,14 +263,14 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 	const [serial, setSerial] = useState('');
 	const [registering, setRegistering] = useState(false);
 
-	async function refresh() {
+	const refresh = useCallback(async () => {
 		await Promise.all([
 			queryClient.invalidateQueries({
 				queryKey: productSerialsQueryOptions(itemId).queryKey,
 			}),
 			queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
 		]);
-	}
+	}, [itemId, queryClient]);
 
 	async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -291,17 +292,71 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 		}
 	}
 
-	async function handleReplace(unitId: string, nextSerial: string) {
-		try {
-			await replaceProvisionalSerial(itemId, unitId, nextSerial);
-			toast.success(t('inventory:unit.replaced'));
-			await refresh();
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : t('common:error.failed'),
-			);
-		}
-	}
+	const handleReplace = useCallback(
+		async (unitId: string, nextSerial: string) => {
+			try {
+				await replaceProvisionalSerial(itemId, unitId, nextSerial);
+				toast.success(t('inventory:unit.replaced'));
+				await refresh();
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : t('common:error.failed'),
+				);
+			}
+		},
+		[itemId, refresh, t],
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TProductSerial, CellData>[]>(
+		() => [
+			{
+				id: 'serialNumber',
+				header: t('inventory:detail.serialNumber'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (
+					<>
+						{row.original.serialNumber}
+						{row.original.isProvisionalSerial && (
+							<Badge variant='outline' className='ml-2'>
+								{t('inventory:detail.provisional')}
+							</Badge>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'status',
+				header: t('inventory:detail.status'),
+				cell: ({ row }) => (
+					<Badge variant='secondary'>
+						{t(`inventory:status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'assetTag',
+				header: t('inventory:detail.assetTag'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.assetTag ?? '—',
+			},
+			{
+				id: 'replace',
+				header: t('inventory:unit.replaceSerial'),
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					row.original.isProvisionalSerial ? (
+						<ReplaceSerialButton
+							onReplace={(nextSerial) =>
+								void handleReplace(row.original.id, nextSerial)
+							}
+						/>
+					) : (
+						'—'
+					),
+			},
+		],
+		[handleReplace, t],
+	);
 
 	return (
 		<Card>
@@ -313,20 +368,20 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
 				<form onSubmit={handleRegister} className='flex items-end gap-2'>
-					<div className='flex flex-1 flex-col gap-1'>
-						<label htmlFor='serial' className='text-xs text-muted-foreground'>
+					<Field className='flex-1'>
+						<FieldLabel htmlFor='serial'>
 							{t('inventory:unit.serialNumber')}
-						</label>
+						</FieldLabel>
 						<Input
 							id='serial'
 							required
 							value={serial}
 							onChange={(event) => setSerial(event.target.value)}
 						/>
-						<span className='text-xs text-muted-foreground'>
+						<FieldDescription>
 							{t('inventory:unit.serialNumberHint')}
-						</span>
-					</div>
+						</FieldDescription>
+					</Field>
 					<Button type='submit' disabled={registering}>
 						{registering
 							? t('inventory:unit.registering')
@@ -339,51 +394,11 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 						{t('inventory:detail.unitsEmpty')}
 					</p>
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('inventory:detail.serialNumber')}</TableHead>
-								<TableHead>{t('inventory:detail.status')}</TableHead>
-								<TableHead>{t('inventory:detail.assetTag')}</TableHead>
-								<TableHead className='text-right'>
-									{t('inventory:unit.replaceSerial')}
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{units.map((unit) => (
-								<TableRow key={unit.id}>
-									<TableCell className='font-mono text-xs'>
-										{unit.serialNumber}
-										{unit.isProvisionalSerial && (
-											<Badge variant='outline' className='ml-2'>
-												{t('inventory:detail.provisional')}
-											</Badge>
-										)}
-									</TableCell>
-									<TableCell>
-										<Badge variant='secondary'>
-											{t(`inventory:status.${unit.status}`)}
-										</Badge>
-									</TableCell>
-									<TableCell className='text-muted-foreground'>
-										{unit.assetTag ?? '—'}
-									</TableCell>
-									<TableCell className='text-right'>
-										{unit.isProvisionalSerial ? (
-											<ReplaceSerialButton
-												onReplace={(nextSerial) =>
-													void handleReplace(unit.id, nextSerial)
-												}
-											/>
-										) : (
-											'—'
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable
+						columns={columns}
+						data={units}
+						getRowId={(unit) => unit.id}
+					/>
 				)}
 			</CardContent>
 		</Card>

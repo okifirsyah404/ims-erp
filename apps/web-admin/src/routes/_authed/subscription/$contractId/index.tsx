@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState } from '@/components/empty-state';
 import { ContractBadges } from '@/components/licensing/contract-badges';
 import { EventTable } from '@/components/licensing/event-table';
 import { toast } from '@/components/toast';
@@ -231,18 +232,21 @@ function ContractDetailPage() {
 			</Card>
 
 			<Card>
-				<CardHeader className='flex flex-row items-center justify-between gap-2'>
+				<CardHeader>
 					<CardTitle>{t('licensing:keys.title')}</CardTitle>
 					{live && canCreate && (
-						<Button size='sm' onClick={() => openDialog({ kind: 'key' })}>
-							{t('licensing:action.addKey')}
-						</Button>
+						<CardAction>
+							<Button size='sm' onClick={() => openDialog({ kind: 'key' })}>
+								{t('licensing:action.addKey')}
+							</Button>
+						</CardAction>
 					)}
 				</CardHeader>
 				<CardContent className='p-0'>
 					{data.keys.length === 0 ? (
-						<p className='px-6 pb-6 text-sm text-muted-foreground'>{t('licensing:keys.empty')}</p>
+						<EmptyState title={t('licensing:keys.empty')} size='sm' />
 					) : (
+						<div className='overflow-hidden rounded-md border'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -325,6 +329,7 @@ function ContractDetailPage() {
 								})}
 							</TableBody>
 						</Table>
+						</div>
 					)}
 					{anyMasked && <p className='px-6 py-3 text-xs text-muted-foreground'>{t('licensing:keys.masked')}</p>}
 				</CardContent>

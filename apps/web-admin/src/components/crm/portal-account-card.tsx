@@ -17,6 +17,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import {
@@ -30,8 +31,6 @@ import {
 	type TPortalScope,
 } from '@/lib/portal-account-api';
 import { usePermission } from '@/lib/use-permission';
-
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
 
 /**
  * The customer's portal logins (ERP-0022, owner decision D2): one per person,
@@ -130,13 +129,18 @@ export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope:
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='portal-role'>{t('crm:portal.roleLabel')}</FieldLabel>
-							<select id='portal-role' className={select} value={role} onChange={(event) => setRole(event.target.value as TPortalRole)}>
-								{PORTAL_ROLES.map((value) => (
-									<option key={value} value={value}>
-										{t(`crm:portal.role.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select value={role} onValueChange={(value: string | null) => setRole((value ?? 'owner') as TPortalRole)}>
+								<SelectTrigger id='portal-role' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{PORTAL_ROLES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`crm:portal.role.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Button type='submit' disabled={busy}>
 							{t('crm:portal.invite')}

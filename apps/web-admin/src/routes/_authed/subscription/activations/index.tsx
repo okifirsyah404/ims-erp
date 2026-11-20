@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { EmptyState } from '@/components/empty-state';
 import { EventTable } from '@/components/licensing/event-table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { eventsQueryOptions, GRACE_DAYS } from '@/lib/license-api';
@@ -27,12 +28,10 @@ function ActivationLogPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('licensing:events.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('licensing:events.empty')} bordered />
 			) : (
 				<>
-					<Card>
+					<Card className='gap-0 py-0'>
 						<CardContent className='p-0'>
 							<EventTable events={data.rows} showContract />
 						</CardContent>

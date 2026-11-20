@@ -12,6 +12,123 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - web-admin: `@ims-erp/ui` components instead of native elements, consistent Card composition
+
+User request: make `apps/web-admin` use `@ims-erp/ui` components wherever
+possible, and use `CardHeader` / `CardTitle` / `CardContent` / `CardAction` /
+`CardFooter` consistently. No `ERP-*` backlog item is claimed (UI refactor, no
+behavior, schema or API change), so `backlog.md` / `features.md` do not move.
+`docs/database/` reviewed and unchanged.
+
+What changed (107 files, `apps/web-admin/src` plus two locale bundles):
+
+- New shared helpers: `components/confirm-dialog.tsx` (`ConfirmProvider`,
+  `useConfirm()`, an `AlertDialog` replacing `window.confirm`; provider mounted
+  in `routes/__root.tsx`) and `components/card-empty.tsx` (`CardEmpty`, the
+  centered empty/error card). New key `common:action.confirm` in `en` and `id`.
+- Native `<table>` in data lists -> `Table*` (9 files, assets and tax),
+  `<input type='checkbox'>` -> `Checkbox` + `Field`/`FieldLabel`, hand-styled
+  `<input>`/`<select>` -> `Input`/`Select`, `window.confirm` -> `useConfirm()`
+  (about 17 call sites).
+- Cards: buttons in headers moved into `CardAction` (24 uses, was 0), empty and
+  error cards -> `CardEmpty`, table-wrapper cards -> `Card className='gap-0
+  py-0'` + `CardContent className='p-0'`, redundant `CardTitle text-base`,
+  `CardHeader pb-2` / `space-y-*` removed.
+
+Deliberately left native: print documents (`*-document.tsx`), `<form>`,
+`<ul>`/`<ol>`/`<img>`/`<a>`, hidden `type='file'` inputs, the drag-drop
+`<button>` in `image-dropzone`, and the item-search result rows in
+`quotation-form` / `purchase-order-form`. Still native and open: 3
+`window.prompt` calls that need typed input (`assets/borrowing-detail`,
+`finance/payments-table`, `projects/project-costs-card`). Not done: form actions
+in `CardFooter`, a `StatCard`, titles for untitled cards (needs new locale
+keys), and a lint rule against native elements.
+
+Verification (all executed 2026-11-21):
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` - 0 errors.
+- `bun run lint` - 0 errors (existing warnings only); `bun run test` - 7/7
+  tasks (web-admin 123, backend 1251, locales 98, web-landing 24,
+  web-customer-portal 60, react-email 6).
+- NOT verified: no rendered check in a browser. Table-wrapper and `CardAction`
+  changes alter spacing, so a visual pass over tax, assets, sales lists, and a
+  panel with header actions is still owed.
+
+Next executable task: unchanged (see the entry below).
+
+### Follow-up: Card composition aligned with the shadcn Card docs
+
+Reference: https://ui.shadcn.com/docs/components/base/card (our
+`packages/ui/src/components/card.tsx` already matches it; no UI-package change).
+Canonical shape: `Card > CardHeader(CardTitle, CardDescription, CardAction) >
+CardContent > CardFooter`; spacing from `size='sm'` / `--card-spacing`, not from
+per-use paddings.
+
+- Form actions moved into `CardFooter className='justify-end gap-2'` with the
+  `<form>` wrapping the `<Card>`: change-password/-email, profile-edit,
+  contract-form, organizations new/edit/member-edit, projects new, tickets new,
+  borrowing-form, asset-form, item-form, quotation-form, purchase-request-form,
+  purchase-order-form. `CardFooter` uses went 7 -> 22.
+- Hand-written `<h2>` card title -> `CardHeader`/`CardTitle`/`CardAction`
+  (`borrowing-list`); `pt-6` removed from `CardContent` (contract-form, project
+  forms, warranty, bast-form, borrowing-list, quotation pages); compact member
+  card and its skeleton -> `<Card size='sm'>`.
+- Six untitled panel cards got a `CardTitle`; 5 new keys (`en` + `id`):
+  `sales:quotation.termsAndNotes`, `inventory:items.details`,
+  `projects:bast.details`, `projects:warranty.details`,
+  `inventory:adjustmentForm.details`.
+
+Left as is, on purpose: forms whose buttons sit below several cards at page
+level (`adjustment-form`, `warehouse-form`, `warranty/index`) or whose last card
+renders conditionally (`sales-return-form`, `purchase-return-form`,
+`deliveries/new`, `receipts/new`) - moving buttons into a footer there would hide
+or relocate them; inline/embedded add-forms; auth screens (`components/form/*`);
+dialog forms. Cards left untitled where a title would duplicate an existing
+label (item image field, conversation thread, list-row cards).
+
+Verification (executed 2026-11-21): `bunx tsc -p tsconfig.app.json --noEmit` exit
+0; `bun run lint` 5/5 tasks, 0 errors (existing warnings only); `bun run test`
+7/7 tasks (web-admin 123, backend 1251, locales 98, web-landing 24,
+web-customer-portal 60, react-email 6). Working tree: 128 files changed, not
+committed. NOT verified: no rendered browser check. Footer bar, `size='sm'`
+and table-wrapper spacing change the look, so a visual pass is still owed.
+
+### Follow-up: Data Table and Empty aligned with the shadcn guides
+
+References: https://ui.shadcn.com/docs/components/base/data-table and
+`.../empty`. Decision recorded in
+`docs/architecture/decisions/ADR-0025-tanstack-table-for-web-admin.md`.
+
+- Added `@tanstack/react-table@^9.3.1` to `apps/web-admin` (no
+  `packages/ui` change).
+- `components/data-table/`: `data-table.tsx` (single renderer: guide frame via
+  `bordered`, `meta.align` applied to header _and_ cells so they cannot drift,
+  `empty`, `loading`, `rowClassName`), `data-table-features.ts` (one
+  `tableFeatures()` object; `columnMeta` slot types `meta`), and
+  `data-table-column-header.tsx` (sort button for client-sorted tables).
+- 72 files now render through `DataTable`; raw `<Table>` remains only where a
+  column model cannot express the markup: `TableFooter`/`colSpan` totals
+  (`tax-recap`, `finance/aging-table`, `hr/payroll`, `account/sessions-table`),
+  editable input rows (`hr/attendance`, `reconciliation` items,
+  `warehouse-item-table` skeleton, `project-costs-card`), header-less history
+  list (`asset-service-record-list`), the billing/gateway/invoice lists that
+  live inside a `Card`, and `*-document.tsx` print documents.
+- `EmptyState` rewritten on the ui `Empty` composition: optional `icon`,
+  `tone='error'`, `size='sm'`, `bordered` (the guide's outline variant).
+  `CardEmpty` deleted; 51 call sites and ~12 hand-rolled empty paragraphs now
+  use `EmptyState` (123 usages total). The 32 repeated `className='border'`
+  are gone in favour of `bordered`.
+- Tests: `test/data-table.test.tsx` (6) covers rows, `meta.align` on header and
+  cells, empty state, loading, `bordered`, `rowClassName`.
+
+Verification (executed 2026-11-21): `tsc -p tsconfig.app.json --noEmit` exit 0;
+`bun run test` 7/7 tasks (web-admin 129, backend 1251, locales 98,
+web-landing 24, web-customer-portal 60, react-email 6); `bun run lint` 5/5
+tasks, 0 errors. Working tree 144 files changed, not committed. NOT verified:
+no rendered browser check - the frame, `meta.align` right-alignment and
+`EmptyState` sizes change the look, so pages with wide tables (14 columns:
+`warehouse-item-table`), money columns and empty lists still need a visual pass.
+
 ## 2026-11-21 - Invite dialog: role ladder enforced end to end, permanent/temporary switch, employee email fix
 
 User request (2026-11-21): the user-invitation dialog on `/admin/users` and

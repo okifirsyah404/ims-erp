@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -25,6 +24,7 @@ import {
 	type TSalaryRow,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState } from '@/components/empty-state';
 
 /** `/hr/payroll` — monthly salary summaries, approved by the owner (M08). */
 export const Route = createFileRoute('/_authed/hr/payroll/')({
@@ -111,12 +111,10 @@ function SalaryPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('hr:salary.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('hr:salary.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
+				<div className='overflow-hidden rounded-md border'>
+					<div>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -171,8 +169,8 @@ function SalaryPage() {
 								</TableRow>
 							</TableFooter>
 						</Table>
-					</CardContent>
-				</Card>
+					</div>
+				</div>
 			)}
 
 			{editing && (

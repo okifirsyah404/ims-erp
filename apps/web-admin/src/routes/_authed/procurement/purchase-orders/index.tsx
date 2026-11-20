@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -19,20 +22,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
 import {
 	PO_STATUS_VARIANT,
 	PURCHASE_ORDER_STATUSES,
 	purchaseOrdersQueryOptions,
+	type TPurchaseOrder,
 	type TPurchaseOrderStatus,
 } from '@/lib/procurement-api';
 import { usePermission } from '@/lib/use-permission';
@@ -53,6 +49,54 @@ function PurchaseOrderListPage() {
 	const deferredSearch = useDeferredValue(search.trim());
 	const { data, isPending, isError, error } = useQuery(
 		purchaseOrdersQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined }),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TPurchaseOrder, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('procurement:po.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/procurement/purchase-orders/$purchaseOrderId'
+							params={{ purchaseOrderId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code ?? t('procurement:po.noNumber')}
+						</Link>
+						<div className='text-xs text-muted-foreground'>{row.original.subject}</div>
+					</>
+				),
+			},
+			{
+				id: 'supplier',
+				header: t('procurement:po.supplier'),
+				cell: ({ row }) => row.original.supplierSnapshot.name,
+			},
+			{
+				id: 'orderDate',
+				header: t('procurement:po.orderDate'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.orderDate, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('procurement:po.status'),
+				cell: ({ row }) => (
+					<Badge variant={PO_STATUS_VARIANT[row.original.status]}>
+						{t(`procurement:status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'grandTotal',
+				header: t('procurement:po.grandTotal'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.grandTotal),
+			},
+		],
+		[t, i18n.language],
 	);
 
 	return (
@@ -107,48 +151,10 @@ function PurchaseOrderListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('procurement:pos.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('procurement:pos.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('procurement:po.code')}</TableHead>
-										<TableHead>{t('procurement:po.supplier')}</TableHead>
-										<TableHead>{t('procurement:po.orderDate')}</TableHead>
-										<TableHead>{t('procurement:po.status')}</TableHead>
-										<TableHead className='text-right'>{t('procurement:po.grandTotal')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((order) => (
-										<TableRow key={order.id}>
-											<TableCell>
-												<Link
-													to='/procurement/purchase-orders/$purchaseOrderId'
-													params={{ purchaseOrderId: order.id }}
-													className='font-medium hover:underline'
-												>
-													{order.code ?? t('procurement:po.noNumber')}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{order.subject}</div>
-											</TableCell>
-											<TableCell>{order.supplierSnapshot.name}</TableCell>
-											<TableCell className='text-muted-foreground'>{formatBusinessDate(order.orderDate, i18n.language)}</TableCell>
-											<TableCell>
-												<Badge variant={PO_STATUS_VARIANT[order.status]}>{t(`procurement:status.${order.status}`)}</Badge>
-											</TableCell>
-											<TableCell className='text-right'>{formatIdr(order.grandTotal)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

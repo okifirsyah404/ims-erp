@@ -1,16 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import { usePermission } from '@/lib/use-permission';
 import { createFaq, faqQueryOptions, removeFaq, type TFaqEntry, type TFaqInput, updateFaq } from '@/lib/whatsapp-api';
@@ -23,25 +27,79 @@ export const Route = createFileRoute('/_authed/integrations/whatsapp-ai/faq')({
 function FaqPage() {
 	const { t } = useTranslation(['integrations', 'common']);
 	const queryClient = useQueryClient();
+	const confirm = useConfirm();
 	const canManage = usePermission('whatsapp.manage_faq');
 	const { data, isPending, isError, error } = useQuery(faqQueryOptions());
 	const [editing, setEditing] = useState<{ entry: TFaqEntry | null } | null>(null);
 	const [busy, setBusy] = useState(false);
 
-	const run = async (work: () => Promise<unknown>, done: string) => {
-		setBusy(true);
-		try {
-			await work();
-			await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'faq'] });
-			toast.success(done);
-			return true;
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-			return false;
-		} finally {
-			setBusy(false);
-		}
-	};
+	const run = useCallback(
+		async (work: () => Promise<unknown>, done: string) => {
+			setBusy(true);
+			try {
+				await work();
+				await queryClient.invalidateQueries({ queryKey: ['whatsapp', 'faq'] });
+				toast.success(done);
+				return true;
+			} catch (cause) {
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+				return false;
+			} finally {
+				setBusy(false);
+			}
+		},
+		[queryClient, t],
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TFaqEntry, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'question',
+				header: t('integrations:faq.question'),
+				meta: { cellClassName: 'max-w-64 font-medium' },
+			},
+			{
+				accessorKey: 'answer',
+				header: t('integrations:faq.answer'),
+				meta: { cellClassName: 'max-w-96 truncate text-sm' },
+			},
+			{
+				id: 'state',
+				header: t('integrations:faq.state'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.isActive ? 'default' : 'outline'}>
+						{row.original.isActive ? t('integrations:faq.active') : t('integrations:faq.inactive')}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					canManage ? (
+						<div className='flex justify-end gap-2'>
+							<Button size='sm' variant='outline' onClick={() => setEditing({ entry: row.original })}>
+								{t('integrations:faq.edit')}
+							</Button>
+							<Button
+								size='sm'
+								variant='outline'
+								disabled={busy}
+								onClick={async () => {
+									if (await confirm({ title: t('integrations:faq.confirmRemove'), destructive: true })) {
+										void run(() => removeFaq(row.original.id), t('integrations:faq.removed'));
+									}
+								}}
+							>
+								{t('integrations:faq.remove')}
+							</Button>
+						</div>
+					) : null,
+			},
+		],
+		[t, busy, canManage, confirm, run],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -58,56 +116,9 @@ function FaqPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('integrations:faq.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('integrations:faq.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('integrations:faq.question')}</TableHead>
-									<TableHead>{t('integrations:faq.answer')}</TableHead>
-									<TableHead>{t('integrations:faq.state')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data.map((entry) => (
-									<TableRow key={entry.id}>
-										<TableCell className='max-w-64 font-medium'>{entry.question}</TableCell>
-										<TableCell className='max-w-96 truncate text-sm'>{entry.answer}</TableCell>
-										<TableCell>
-											<Badge variant={entry.isActive ? 'default' : 'outline'}>
-												{entry.isActive ? t('integrations:faq.active') : t('integrations:faq.inactive')}
-											</Badge>
-										</TableCell>
-										<TableCell className='text-right'>
-											{canManage && (
-												<div className='flex justify-end gap-2'>
-													<Button size='sm' variant='outline' onClick={() => setEditing({ entry })}>
-														{t('integrations:faq.edit')}
-													</Button>
-													<Button
-														size='sm'
-														variant='outline'
-														disabled={busy}
-														onClick={() => {
-															if (window.confirm(t('integrations:faq.confirmRemove'))) void run(() => removeFaq(entry.id), t('integrations:faq.removed'));
-														}}
-													>
-														{t('integrations:faq.remove')}
-													</Button>
-												</div>
-											)}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable columns={columns} data={data} getRowId={(row) => row.id} bordered />
 			)}
 			{editing && (
 				<FaqDialog
@@ -182,10 +193,10 @@ function FaqDialog({ entry, busy, onClose, onSave }: { entry: TFaqEntry | null; 
 									onChange={(event) => setSortOrder(event.target.value)}
 								/>
 							</Field>
-							<label className='flex items-center gap-2 self-end pb-2 text-sm'>
-								<input type='checkbox' checked={isActive} onChange={(event) => setIsActive(event.target.checked)} />
-								{t('integrations:faq.activeLabel')}
-							</label>
+							<Field orientation='horizontal' className='self-end pb-2'>
+								<Checkbox id='faq-active' checked={isActive} onCheckedChange={(checked) => setIsActive(checked === true)} />
+								<FieldLabel htmlFor='faq-active'>{t('integrations:faq.activeLabel')}</FieldLabel>
+							</Field>
 						</div>
 					</FieldGroup>
 					<DialogFooter>

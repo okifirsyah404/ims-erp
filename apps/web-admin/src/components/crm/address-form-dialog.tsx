@@ -123,10 +123,10 @@ export function AddressFormDialog({
 								onChange={(event) => setPostalCode(event.target.value)}
 							/>
 						</Field>
-						<label className='flex items-center gap-2 text-sm'>
-							<Checkbox checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
-							{t('crm:address.primary')}
-						</label>
+						<Field orientation='horizontal'>
+							<Checkbox id='address-primary' checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
+							<FieldLabel htmlFor='address-primary'>{t('crm:address.primary')}</FieldLabel>
+						</Field>
 					</FieldGroup>
 					<DialogFooter>
 						<Button type='button' variant='outline' onClick={onClose}>

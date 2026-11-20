@@ -4,11 +4,14 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
 	SelectContent,
@@ -23,6 +26,7 @@ import {
 	addCorrection,
 	correctionsQueryOptions,
 	taxRecordsQueryOptions,
+	type TTaxCorrection,
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -74,6 +78,38 @@ export function TaxCorrections() {
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
+
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TTaxCorrection, CellData>[]
+	>(
+		() => [
+			{
+				id: 'amount',
+				header: t('tax:corrections.amount'),
+				meta: { align: 'right', cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (
+					<span
+						className={row.original.amount < 0 ? 'text-red-600' : 'text-green-700'}
+					>
+						{(row.original.amount / 100).toLocaleString()}
+					</span>
+				),
+			},
+			{ accessorKey: 'reason', header: t('tax:corrections.reason') },
+			{
+				id: 'evidence',
+				header: t('tax:corrections.evidence'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => row.original.evidenceDocumentId ?? '—',
+			},
+			{
+				accessorKey: 'createdBy',
+				header: t('tax:corrections.createdBy'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+		],
+		[t],
+	);
 
 	if (records.isError) {
 		return (
@@ -165,40 +201,12 @@ export function TaxCorrections() {
 							description={t('tax:corrections.empty')}
 						/>
 					) : (
-						<div className='overflow-hidden rounded-lg border'>
-							<table className='w-full text-sm'>
-								<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-									<tr>
-										<th className='px-3 py-2 text-right'>
-											{t('tax:corrections.amount')}
-										</th>
-										<th className='px-3 py-2'>{t('tax:corrections.reason')}</th>
-										<th className='px-3 py-2'>{t('tax:corrections.evidence')}</th>
-										<th className='px-3 py-2'>{t('tax:corrections.createdBy')}</th>
-									</tr>
-								</thead>
-								<tbody>
-									{corrections.data.map((row) => (
-										<tr key={row.id} className='border-t'>
-											<td
-												className={`px-3 py-2 text-right font-mono text-xs ${
-													row.amount < 0 ? 'text-red-600' : 'text-green-700'
-												}`}
-											>
-												{(row.amount / 100).toLocaleString()}
-											</td>
-											<td className='px-3 py-2'>{row.reason}</td>
-											<td className='px-3 py-2 font-mono text-xs'>
-												{row.evidenceDocumentId ?? '—'}
-											</td>
-											<td className='px-3 py-2 font-mono text-xs'>
-												{row.createdBy}
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
+						<DataTable
+							columns={columns}
+							data={corrections.data}
+							getRowId={(row) => row.id}
+							bordered
+						/>
 					)}
 				</>
 			)}

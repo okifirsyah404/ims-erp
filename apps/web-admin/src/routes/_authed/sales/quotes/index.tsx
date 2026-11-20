@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -19,20 +22,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
 import {
 	QUOTATION_STATUS_VARIANT,
 	QUOTATION_STATUSES,
 	quotationsQueryOptions,
+	type TQuotation,
 	type TQuotationStatus,
 } from '@/lib/quotation-api';
 import { usePermission } from '@/lib/use-permission';
@@ -59,6 +55,57 @@ function QuotationListPage() {
 			search: deferredSearch || undefined,
 			status: status || undefined,
 		}),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TQuotation, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('sales:quotation.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/sales/quotes/$quotationId'
+							params={{ quotationId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code}
+						</Link>
+						<div className='text-xs text-muted-foreground'>{row.original.title}</div>
+					</>
+				),
+			},
+			{
+				id: 'customer',
+				header: t('sales:quotation.customer'),
+				cell: ({ row }) => row.original.customerSnapshot.name,
+			},
+			{
+				id: 'quotationDate',
+				header: t('sales:quotation.date'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.quotationDate, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('sales:quotation.status'),
+				cell: ({ row }) => (
+					<div className='flex flex-wrap gap-1'>
+						<Badge variant={QUOTATION_STATUS_VARIANT[row.original.status]}>
+							{t(`sales:status.${row.original.status}`)}
+						</Badge>
+						{row.original.expired && <Badge variant='outline'>{t('sales:quotation.expired')}</Badge>}
+					</div>
+				),
+			},
+			{
+				id: 'grandTotal',
+				header: t('sales:quotation.grandTotal'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.grandTotal),
+			},
+		],
+		[t, i18n.language],
 	);
 
 	return (
@@ -115,57 +162,13 @@ function QuotationListPage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{filtered ? t('sales:quotations.noResults') : t('sales:quotations.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState
+					title={filtered ? t('sales:quotations.noResults') : t('sales:quotations.empty')}
+					bordered
+				/>
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('sales:quotation.code')}</TableHead>
-										<TableHead>{t('sales:quotation.customer')}</TableHead>
-										<TableHead>{t('sales:quotation.date')}</TableHead>
-										<TableHead>{t('sales:quotation.status')}</TableHead>
-										<TableHead className='text-right'>{t('sales:quotation.grandTotal')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((quotation) => (
-										<TableRow key={quotation.id}>
-											<TableCell>
-												<Link
-													to='/sales/quotes/$quotationId'
-													params={{ quotationId: quotation.id }}
-													className='font-medium hover:underline'
-												>
-													{quotation.code}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{quotation.title}</div>
-											</TableCell>
-											<TableCell>{quotation.customerSnapshot.name}</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{formatBusinessDate(quotation.quotationDate, i18n.language)}
-											</TableCell>
-											<TableCell>
-												<div className='flex flex-wrap gap-1'>
-													<Badge variant={QUOTATION_STATUS_VARIANT[quotation.status]}>
-														{t(`sales:status.${quotation.status}`)}
-													</Badge>
-													{quotation.expired && <Badge variant='outline'>{t('sales:quotation.expired')}</Badge>}
-												</div>
-											</TableCell>
-											<TableCell className='text-right'>{formatIdr(quotation.grandTotal)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls
 							page={data.pagination.page}

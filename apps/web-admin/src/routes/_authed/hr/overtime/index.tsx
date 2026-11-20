@@ -1,19 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { RequestActions } from '@/components/hr/request-actions';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -26,9 +27,11 @@ import {
 	overtimeQueryOptions,
 	REQUEST_STATUS_VARIANT,
 	REQUEST_STATUSES,
+	type TOvertime,
 	type TRequestStatus,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState } from '@/components/empty-state';
 
 /** `/hr/overtime` — overtime recorded by HR and approved by someone else (M08). */
 export const Route = createFileRoute('/_authed/hr/overtime/')({
@@ -54,20 +57,85 @@ function OvertimePage() {
 	const [reason, setReason] = useState('');
 	const [busy, setBusy] = useState(false);
 
-	const run = async (work: () => Promise<unknown>, done: string) => {
-		setBusy(true);
-		try {
-			await work();
-			await queryClient.invalidateQueries({ queryKey: ['hr'] });
-			toast.success(done);
-			return true;
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-			return false;
-		} finally {
-			setBusy(false);
-		}
-	};
+	const run = useCallback(
+		async (work: () => Promise<unknown>, done: string) => {
+			setBusy(true);
+			try {
+				await work();
+				await queryClient.invalidateQueries({ queryKey: ['hr'] });
+				toast.success(done);
+				return true;
+			} catch (cause) {
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+				return false;
+			} finally {
+				setBusy(false);
+			}
+		},
+		[queryClient, t],
+	);
+
+	const userId = session?.user.id;
+	const columns = useMemo<ColumnDef<DataTableFeatures, TOvertime, CellData>[]>(
+		() => [
+			{
+				id: 'employee',
+				header: t('hr:field.employee'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.employee?.fullName ?? '—'}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.employee?.employeeCode}</div>
+					</>
+				),
+			},
+			{
+				id: 'date',
+				header: t('hr:field.date'),
+				meta: { cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => formatBusinessDate(row.original.workDate, i18n.language),
+			},
+			{
+				id: 'hours',
+				header: t('hr:overtime.hours'),
+				meta: { align: 'right', cellClassName: 'tabular-nums' },
+				cell: ({ row }) => Number(row.original.hours),
+			},
+			{
+				id: 'reason',
+				header: t('hr:field.reason'),
+				meta: { cellClassName: 'max-w-64 truncate' },
+				cell: ({ row }) => row.original.reason ?? '—',
+			},
+			{
+				id: 'status',
+				header: t('hr:field.status'),
+				cell: ({ row }) => (
+					<Badge variant={REQUEST_STATUS_VARIANT[row.original.status]}>
+						{t(`hr:request.status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<RequestActions
+						status={row.original.status}
+						recordedByMe={row.original.recordedBy === userId}
+						canApprove={canApprove}
+						canReject={canReject}
+						canCancel={canCancel}
+						busy={busy}
+						onAction={(action) =>
+							void run(() => decideOvertime(row.original.id, action, null), t(`hr:request.done.${action}`))
+						}
+					/>
+				),
+			},
+		],
+		[busy, canApprove, canCancel, canReject, i18n.language, run, t, userId],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -111,54 +179,10 @@ function OvertimePage() {
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('hr:overtime.empty')}</CardContent>
-				</Card>
+				<EmptyState title={t('hr:overtime.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('hr:field.employee')}</TableHead>
-										<TableHead>{t('hr:field.date')}</TableHead>
-										<TableHead className='text-right'>{t('hr:overtime.hours')}</TableHead>
-										<TableHead>{t('hr:field.reason')}</TableHead>
-										<TableHead>{t('hr:field.status')}</TableHead>
-										<TableHead />
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((row) => (
-										<TableRow key={row.id}>
-											<TableCell>
-												<div className='font-medium'>{row.employee?.fullName ?? '—'}</div>
-												<div className='text-xs text-muted-foreground'>{row.employee?.employeeCode}</div>
-											</TableCell>
-											<TableCell className='whitespace-nowrap'>{formatBusinessDate(row.workDate, i18n.language)}</TableCell>
-											<TableCell className='text-right tabular-nums'>{Number(row.hours)}</TableCell>
-											<TableCell className='max-w-64 truncate'>{row.reason ?? '—'}</TableCell>
-											<TableCell>
-												<Badge variant={REQUEST_STATUS_VARIANT[row.status]}>{t(`hr:request.status.${row.status}`)}</Badge>
-											</TableCell>
-											<TableCell className='text-right'>
-												<RequestActions
-													status={row.status}
-													recordedByMe={row.recordedBy === session?.user.id}
-													canApprove={canApprove}
-													canReject={canReject}
-													canCancel={canCancel}
-													busy={busy}
-													onAction={(action) => void run(() => decideOvertime(row.id, action, null), t(`hr:request.done.${action}`))}
-												/>
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

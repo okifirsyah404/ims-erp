@@ -1,18 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	approvePayment,
@@ -30,6 +26,7 @@ const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 /** Workflow actions for one payment row (F4/F5/F7). */
 function PaymentRowActions({ payment }: { payment: TPayment }) {
 	const { t } = useTranslation(['finance', 'common']);
+	const confirm = useConfirm();
 	const queryClient = useQueryClient();
 	const canSubmit = usePermission('payment.submit');
 	const canApprove = usePermission('payment.approve');
@@ -124,8 +121,13 @@ function PaymentRowActions({ payment }: { payment: TPayment }) {
 					size='sm'
 					variant='ghost'
 					disabled={voidAct.isPending}
-					onClick={() => {
-						if (window.confirm(t('finance:payments.voidExecutedConfirm'))) {
+					onClick={async () => {
+						if (
+							await confirm({
+								title: t('finance:payments.voidExecutedConfirm'),
+								destructive: true,
+							})
+						) {
 							void voidAct.mutateAsync(true);
 						}
 					}}
@@ -158,6 +160,53 @@ export function PaymentsTable({
 		enabled: canRead,
 	});
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TPayment, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('finance:common.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'paymentDate', header: t('finance:common.date') },
+			{
+				id: 'amount',
+				header: t('finance:common.amount'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatMoney(row.original.amount),
+			},
+			{
+				id: 'method',
+				header: t('finance:payments.method'),
+				cell: ({ row }) =>
+					t(`finance:payments.method.${row.original.paymentMethod}` as never),
+			},
+			{
+				id: 'status',
+				header: t('finance:common.status'),
+				cell: ({ row }) => (
+					<Badge
+						variant={
+							row.original.status === 'executed'
+								? 'secondary'
+								: row.original.status === 'void'
+									? 'outline'
+									: 'destructive'
+						}
+					>
+						{t(`finance:payments.status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: t('finance:common.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) => <PaymentRowActions payment={row.original} />,
+			},
+		],
+		[t],
+	);
+
 	if (!canRead) return null;
 
 	return (
@@ -171,58 +220,12 @@ export function PaymentsTable({
 				</p>
 			) : (
 				<>
-					<div className='overflow-x-auto rounded-md border'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('finance:common.code')}</TableHead>
-									<TableHead>{t('finance:common.date')}</TableHead>
-									<TableHead className='text-right'>
-										{t('finance:common.amount')}
-									</TableHead>
-									<TableHead>{t('finance:payments.method')}</TableHead>
-									<TableHead>{t('finance:common.status')}</TableHead>
-									<TableHead className='text-right'>
-										{t('finance:common.actions')}
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data?.rows.map((payment) => (
-									<TableRow key={payment.id}>
-										<TableCell className='font-mono text-xs'>
-											{payment.code}
-										</TableCell>
-										<TableCell>{payment.paymentDate}</TableCell>
-										<TableCell className='text-right'>
-											{formatMoney(payment.amount)}
-										</TableCell>
-										<TableCell>
-											{t(
-												`finance:payments.method.${payment.paymentMethod}` as never,
-											)}
-										</TableCell>
-										<TableCell>
-											<Badge
-												variant={
-													payment.status === 'executed'
-														? 'secondary'
-														: payment.status === 'void'
-															? 'outline'
-															: 'destructive'
-												}
-											>
-												{t(`finance:payments.status.${payment.status}`)}
-											</Badge>
-										</TableCell>
-										<TableCell className='text-right'>
-											<PaymentRowActions payment={payment} />
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</div>
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						getRowId={(row) => row.id}
+						bordered
+					/>
 					<PaginationControls
 						page={page}
 						totalPages={data?.pagination.totalPages ?? 1}

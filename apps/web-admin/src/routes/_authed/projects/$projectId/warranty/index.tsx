@@ -63,7 +63,10 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 			}}
 		>
 			<Card>
-				<CardContent className='pt-6'>
+				<CardHeader>
+					<CardTitle>{t('projects:warranty.details')}</CardTitle>
+				</CardHeader>
+				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
 						<Field>
 							<FieldLabel htmlFor='warranty-bast'>{t('projects:warranty.bast')}</FieldLabel>

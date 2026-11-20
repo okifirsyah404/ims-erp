@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Download, Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import {
 	Select,
 	SelectContent,
@@ -14,14 +14,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
 	createDocumentShare,
@@ -30,6 +25,8 @@ import {
 	downloadDocumentFile,
 	publicShareUrl,
 	revokeDocumentShare,
+	type TDocumentFile,
+	type TDocumentShare,
 	uploadDocumentFile,
 } from '@/lib/documents-api';
 import { formatDateTime } from '@/lib/format';
@@ -73,8 +70,11 @@ function DocumentDetailPage() {
 	});
 
 	const refresh = () => queryClient.invalidateQueries({ queryKey: ['documents', documentId] });
-	const fail = (cause: unknown) =>
-		toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+	const fail = useCallback(
+		(cause: unknown) =>
+			toast.error(cause instanceof Error ? cause.message : t('common:error.failed')),
+		[t],
+	);
 
 	const uploadMutation = useMutation({
 		mutationFn: (file: File) => uploadDocumentFile(documentId, file),
@@ -112,13 +112,114 @@ function DocumentDetailPage() {
 		onError: fail,
 	});
 
+	const editable = canUpdate && data?.status !== 'void';
+
+	const fileColumns = useMemo<ColumnDef<DataTableFeatures, TDocumentFile, CellData>[]>(
+		() => [
+			{ accessorKey: 'fileName', header: t('documents:fileName') },
+			{
+				id: 'fileSize',
+				header: t('documents:fileSize'),
+				meta: { align: 'right', cellClassName: 'text-xs' },
+				cell: ({ row }) =>
+					`${Math.max(1, Math.round(row.original.sizeBytes / 1024)).toLocaleString(i18n.language)} KB`,
+			},
+			{
+				id: 'uploadedAt',
+				header: t('documents:uploadedAt'),
+				meta: { cellClassName: 'whitespace-nowrap text-xs' },
+				cell: ({ row }) => formatDateTime(row.original.uploadedAt, i18n.language),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<div className='flex justify-end gap-1'>
+						{canDownload && (
+							<Button
+								variant='ghost'
+								size='icon'
+								onClick={() => {
+									void downloadDocumentFile(documentId, row.original.id)
+										.then((url) => window.open(url, '_blank', 'noopener'))
+										.catch(fail);
+								}}
+							>
+								<Download className='size-4' />
+							</Button>
+						)}
+						{editable && (
+							<Button
+								variant='ghost'
+								size='icon'
+								disabled={deleteMutation.isPending}
+								onClick={() => deleteMutation.mutate(row.original.id)}
+							>
+								<Trash2 className='size-4' />
+							</Button>
+						)}
+					</div>
+				),
+			},
+		],
+		[t, i18n.language, canDownload, editable, documentId, deleteMutation, fail],
+	);
+
+	const shareColumns = useMemo<ColumnDef<DataTableFeatures, TDocumentShare, CellData>[]>(
+		() => [
+			{
+				id: 'link',
+				header: t('documents:link'),
+				meta: { cellClassName: 'max-w-72 truncate font-mono text-xs' },
+				cell: ({ row }) => publicShareUrl(row.original.token),
+			},
+			{
+				id: 'expiresAt',
+				header: t('documents:expiresAt'),
+				meta: { cellClassName: 'whitespace-nowrap text-xs' },
+				cell: ({ row }) =>
+					row.original.expiresAt ? formatDateTime(row.original.expiresAt, i18n.language) : '—',
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<div className='flex justify-end gap-1'>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => {
+								void navigator.clipboard
+									.writeText(publicShareUrl(row.original.token))
+									.then(() => toast.success(t('documents:linkCopied')));
+							}}
+						>
+							{t('documents:copyLink')}
+						</Button>
+						{editable && (
+							<Button
+								variant='ghost'
+								size='sm'
+								disabled={revokeMutation.isPending}
+								onClick={() => revokeMutation.mutate(row.original.id)}
+							>
+								{t('documents:revoke')}
+							</Button>
+						)}
+					</div>
+				),
+			},
+		],
+		[t, i18n.language, editable, revokeMutation],
+	);
+
 	if (!canRead) {
 		return <div className='text-sm text-muted-foreground'>{t('documents:noPermission')}</div>;
 	}
 	if (isPending) return null;
 	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
-
-	const editable = canUpdate && data.status !== 'void';
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -147,13 +248,11 @@ function DocumentDetailPage() {
 			</Card>
 
 			<Card>
-				<CardHeader className='flex flex-row items-center justify-between'>
-					<div>
-						<CardTitle>{t('documents:files')}</CardTitle>
-						<CardDescription>{t('documents:filesHint')}</CardDescription>
-					</div>
+				<CardHeader>
+					<CardTitle>{t('documents:files')}</CardTitle>
+					<CardDescription>{t('documents:filesHint')}</CardDescription>
 					{editable && (
-						<>
+						<CardAction>
 							<input
 								ref={fileInput}
 								type='file'
@@ -172,75 +271,24 @@ function DocumentDetailPage() {
 							>
 								{t('documents:uploadFile')}
 							</Button>
-						</>
+						</CardAction>
 					)}
 				</CardHeader>
 				<CardContent>
 					{data.files.length === 0 ? (
 						<p className='text-sm text-muted-foreground'>{t('documents:noFiles')}</p>
 					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('documents:fileName')}</TableHead>
-									<TableHead className='text-right'>{t('documents:fileSize')}</TableHead>
-									<TableHead>{t('documents:uploadedAt')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data.files.map((file) => (
-									<TableRow key={file.id}>
-										<TableCell>{file.fileName}</TableCell>
-										<TableCell className='text-right text-xs'>
-											{Math.max(1, Math.round(file.sizeBytes / 1024)).toLocaleString(i18n.language)} KB
-										</TableCell>
-										<TableCell className='whitespace-nowrap text-xs'>
-											{formatDateTime(file.uploadedAt, i18n.language)}
-										</TableCell>
-										<TableCell className='text-right'>
-											<div className='flex justify-end gap-1'>
-												{canDownload && (
-													<Button
-														variant='ghost'
-														size='icon'
-														onClick={() => {
-															void downloadDocumentFile(documentId, file.id)
-																.then((url) => window.open(url, '_blank', 'noopener'))
-																.catch(fail);
-														}}
-													>
-														<Download className='size-4' />
-													</Button>
-												)}
-												{editable && (
-													<Button
-														variant='ghost'
-														size='icon'
-														disabled={deleteMutation.isPending}
-														onClick={() => deleteMutation.mutate(file.id)}
-													>
-														<Trash2 className='size-4' />
-													</Button>
-												)}
-											</div>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+						<DataTable columns={fileColumns} data={data.files} getRowId={(row) => row.id} />
 					)}
 				</CardContent>
 			</Card>
 
 			<Card>
-				<CardHeader className='flex flex-row items-center justify-between'>
-					<div>
-						<CardTitle>{t('documents:shares')}</CardTitle>
-						<CardDescription>{t('documents:sharesHint')}</CardDescription>
-					</div>
+				<CardHeader>
+					<CardTitle>{t('documents:shares')}</CardTitle>
+					<CardDescription>{t('documents:sharesHint')}</CardDescription>
 					{editable && (
-						<div className='flex items-center gap-2'>
+						<CardAction className='flex items-center gap-2'>
 							<Select
 								value={String(expiresInDays)}
 								onValueChange={(value) => setExpiresInDays(Number(value))}
@@ -263,76 +311,31 @@ function DocumentDetailPage() {
 							>
 								{t('documents:createShare')}
 							</Button>
-						</div>
+						</CardAction>
 					)}
 				</CardHeader>
 				<CardContent>
 					{data.shares.length === 0 ? (
 						<p className='text-sm text-muted-foreground'>{t('documents:noShares')}</p>
 					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('documents:link')}</TableHead>
-									<TableHead>{t('documents:expiresAt')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data.shares.map((share) => (
-									<TableRow key={share.id}>
-										<TableCell className='max-w-72 truncate font-mono text-xs'>
-											{publicShareUrl(share.token)}
-										</TableCell>
-										<TableCell className='whitespace-nowrap text-xs'>
-											{share.expiresAt ? formatDateTime(share.expiresAt, i18n.language) : '—'}
-										</TableCell>
-										<TableCell className='text-right'>
-											<div className='flex justify-end gap-1'>
-												<Button
-													variant='outline'
-													size='sm'
-													onClick={() => {
-														void navigator.clipboard
-															.writeText(publicShareUrl(share.token))
-															.then(() => toast.success(t('documents:linkCopied')));
-													}}
-												>
-													{t('documents:copyLink')}
-												</Button>
-												{editable && (
-													<Button
-														variant='ghost'
-														size='sm'
-														disabled={revokeMutation.isPending}
-														onClick={() => revokeMutation.mutate(share.id)}
-													>
-														{t('documents:revoke')}
-													</Button>
-												)}
-											</div>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+						<DataTable columns={shareColumns} data={data.shares} getRowId={(row) => row.id} />
 					)}
 				</CardContent>
 			</Card>
 
 			<Card>
-				<CardHeader className='flex flex-row items-center justify-between'>
-					<div>
-						<CardTitle>{t('signatures:entries')}</CardTitle>
-						<CardDescription>{t('signatures:registerDescription')}</CardDescription>
-					</div>
+				<CardHeader>
+					<CardTitle>{t('signatures:entries')}</CardTitle>
+					<CardDescription>{t('signatures:registerDescription')}</CardDescription>
 					{canRequestSignature && data.status !== 'void' && (
-						<Link
-							to='/documents/signatures/request'
-							className='text-sm font-medium text-primary hover:underline'
-						>
-							{t('signatures:requestTitle')}
-						</Link>
+						<CardAction>
+							<Link
+								to='/documents/signatures/request'
+								className='text-sm font-medium text-primary hover:underline'
+							>
+								{t('signatures:requestTitle')}
+							</Link>
+						</CardAction>
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-4'>

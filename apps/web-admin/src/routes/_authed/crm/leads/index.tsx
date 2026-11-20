@@ -1,23 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState } from '@/components/empty-state';
 import { LeadFormDialog } from '@/components/crm/lead-form-dialog';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -28,6 +24,7 @@ import {
 	LEAD_STATUS_VARIANT,
 	LEAD_STATUSES,
 	leadsQueryOptions,
+	type TLead,
 	type TLeadInput,
 	type TLeadSource,
 	type TLeadStatus,
@@ -72,6 +69,56 @@ function LeadListPage() {
 		set(value);
 		setPage(1);
 	};
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TLead, CellData>[]>(
+		() => [
+			{
+				id: 'name',
+				header: t('crm:lead.name'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/crm/leads/$leadId'
+							params={{ leadId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.name}
+						</Link>
+						<div className='text-xs text-muted-foreground'>
+							{[row.original.companyName, row.original.reference].filter(Boolean).join(' · ')}
+						</div>
+					</>
+				),
+			},
+			{
+				id: 'source',
+				header: t('crm:lead.source'),
+				cell: ({ row }) => t(`crm:leadSource.${row.original.source}`),
+			},
+			{
+				id: 'status',
+				header: t('crm:lead.status'),
+				cell: ({ row }) => (
+					<Badge variant={LEAD_STATUS_VARIANT[row.original.status]}>
+						{t(`crm:leadStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'assignee',
+				header: t('crm:lead.assignee'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.assignee?.name ?? t('crm:lead.unassigned'),
+			},
+			{
+				id: 'nextFollowUpAt',
+				header: t('crm:lead.nextFollowUpAt'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatDateTime(row.original.nextFollowUpAt, i18n.language),
+			},
+		],
+		[t, i18n.language],
+	);
 
 	async function handleCreate(input: TLeadInput) {
 		setSubmitting(true);
@@ -163,65 +210,19 @@ function LeadListPage() {
 						</SelectContent>
 					</Select>
 				)}
-				<label className='flex items-center gap-2 text-sm'>
-					<Checkbox checked={followUpDue} onCheckedChange={(checked) => reset(setFollowUpDue)(checked === true)} />
-					{t('crm:leads.followUpDue')}
-				</label>
+				<Field orientation='horizontal' className='w-auto'>
+					<Checkbox id='leads-follow-up-due' checked={followUpDue} onCheckedChange={(checked) => reset(setFollowUpDue)(checked === true)} />
+					<FieldLabel htmlFor='leads-follow-up-due'>{t('crm:leads.followUpDue')}</FieldLabel>
+				</Field>
 			</div>
 
 			{isPending ? null : isError ? (
 				<p className='text-sm text-destructive'>{error.message}</p>
 			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{filtered ? t('crm:leads.noResults') : t('crm:leads.empty')}
-					</CardContent>
-				</Card>
+				<EmptyState title={filtered ? t('crm:leads.noResults') : t('crm:leads.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('crm:lead.name')}</TableHead>
-										<TableHead>{t('crm:lead.source')}</TableHead>
-										<TableHead>{t('crm:lead.status')}</TableHead>
-										<TableHead>{t('crm:lead.assignee')}</TableHead>
-										<TableHead>{t('crm:lead.nextFollowUpAt')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((lead) => (
-										<TableRow key={lead.id}>
-											<TableCell>
-												<Link
-													to='/crm/leads/$leadId'
-													params={{ leadId: lead.id }}
-													className='font-medium hover:underline'
-												>
-													{lead.name}
-												</Link>
-												<div className='text-xs text-muted-foreground'>
-													{[lead.companyName, lead.reference].filter(Boolean).join(' · ')}
-												</div>
-											</TableCell>
-											<TableCell>{t(`crm:leadSource.${lead.source}`)}</TableCell>
-											<TableCell>
-												<Badge variant={LEAD_STATUS_VARIANT[lead.status]}>{t(`crm:leadStatus.${lead.status}`)}</Badge>
-											</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{lead.assignee?.name ?? t('crm:lead.unassigned')}
-											</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{formatDateTime(lead.nextFollowUpAt, i18n.language)}
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
+					<DataTable columns={columns} data={data.rows} getRowId={(row) => row.id} bordered />
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls
 							page={data.pagination.page}

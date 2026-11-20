@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -14,17 +14,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { BookText, Plus, Trash2 } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	accountsQueryOptions,
@@ -32,6 +28,7 @@ import {
 	postJournalEntry,
 	reverseJournalEntry,
 	toMinor,
+	type TJournalEntry,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -47,6 +44,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 /** Journal: entry list, manual posting, append-only reversal (F2). */
 export function JournalPage() {
 	const { t } = useTranslation(['finance', 'common']);
+	const confirm = useConfirm();
 	const navigate = routeApi.useNavigate();
 	const queryClient = useQueryClient();
 	const search = routeApi.useSearch();
@@ -113,12 +111,87 @@ export function JournalPage() {
 	});
 
 	const totalDebit = lines.reduce((sum, line) => sum + toMinor(line.debit), 0);
-	const totalCredit = lines.reduce((sum, line) => sum + toMinor(line.credit), 0);
+	const totalCredit = lines.reduce(
+		(sum, line) => sum + toMinor(line.credit),
+		0,
+	);
 	const balanced = totalDebit === totalCredit && totalDebit > 0;
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TJournalEntry, CellData>[]>(
+		() => {
+			const base: ColumnDef<DataTableFeatures, TJournalEntry, CellData>[] = [
+				{
+					accessorKey: 'code',
+					header: t('finance:common.code'),
+					meta: { cellClassName: 'font-mono text-xs' },
+				},
+				{ accessorKey: 'entryDate', header: t('finance:journal.entryDate') },
+				{
+					id: 'source',
+					header: t('finance:journal.source'),
+					meta: { cellClassName: 'font-mono text-xs' },
+					cell: ({ row }) =>
+						`${row.original.sourceModule}${row.original.sourceType ? ` / ${row.original.sourceType}` : ''}`,
+				},
+				{
+					id: 'description',
+					header: t('finance:common.description'),
+					meta: { cellClassName: 'max-w-72 truncate' },
+					cell: ({ row }) =>
+						row.original.description ?? t('finance:common.none'),
+				},
+				{
+					id: 'status',
+					header: t('finance:common.status'),
+					cell: ({ row }) => (
+						<Badge
+							variant={row.original.status === 'posted' ? 'secondary' : 'outline'}
+						>
+							{row.original.status}
+						</Badge>
+					),
+				},
+			];
+			if (!canPost) return base;
+			return [
+				...base,
+				{
+					id: 'actions',
+					header: t('finance:common.actions'),
+					meta: { align: 'right' },
+					cell: ({ row }) =>
+						row.original.status === 'posted' && !row.original.reversedByEntryId ? (
+							<Button
+								variant='ghost'
+								size='sm'
+								disabled={reverse.isPending}
+								onClick={async () => {
+									if (
+										await confirm({
+											title: t('finance:journal.reverseConfirm'),
+											destructive: true,
+										})
+									) {
+										void reverse.mutateAsync(row.original.id);
+									}
+								}}
+							>
+								{t('finance:journal.reverse')}
+							</Button>
+						) : null,
+				},
+			];
+		},
+		[canPost, confirm, reverse, reverse.isPending, t],
+	);
 
 	if (!canRead) {
 		return (
-			<EmptyState icon={BookText} title={t('finance:journal.title')} className='border' />
+			<EmptyState
+				icon={BookText}
+				title={t('finance:journal.title')}
+				bordered
+			/>
 		);
 	}
 
@@ -126,7 +199,9 @@ export function JournalPage() {
 		<div className='space-y-4'>
 			<div className='flex items-start justify-between gap-4'>
 				<div>
-					<h1 className='text-xl font-semibold'>{t('finance:journal.title')}</h1>
+					<h1 className='text-xl font-semibold'>
+						{t('finance:journal.title')}
+					</h1>
 					<p className='text-muted-foreground text-sm'>
 						{t('finance:journal.description')}
 					</p>
@@ -163,7 +238,11 @@ export function JournalPage() {
 										setLines((previous) =>
 											previous.map((row, rowIndex) =>
 												rowIndex === index
-													? { ...row, accountId: value == null || value === 'none' ? '' : value }
+													? {
+															...row,
+															accountId:
+																value == null || value === 'none' ? '' : value,
+														}
 													: row,
 											),
 										)
@@ -177,7 +256,9 @@ export function JournalPage() {
 											{t('finance:journal.line.account')}
 										</SelectItem>
 										{accounts?.rows
-											.filter((account) => account.isActive && account.isPostable)
+											.filter(
+												(account) => account.isActive && account.isPostable,
+											)
 											.map((account) => (
 												<SelectItem key={account.id} value={account.id}>
 													{account.code} — {account.name}
@@ -270,72 +351,20 @@ export function JournalPage() {
 			) : null}
 
 			{isPending ? null : isError ? (
-				<EmptyState icon={BookText} title={error.message} className='border' />
+				<EmptyState icon={BookText} title={error.message} bordered />
 			) : (data?.rows.length ?? 0) === 0 ? (
-				<EmptyState icon={BookText} title={t('finance:journal.empty')} className='border' />
+				<EmptyState
+					icon={BookText}
+					title={t('finance:journal.empty')}
+					bordered
+				/>
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:common.code')}</TableHead>
-								<TableHead>{t('finance:journal.entryDate')}</TableHead>
-								<TableHead>{t('finance:journal.source')}</TableHead>
-								<TableHead>{t('finance:common.description')}</TableHead>
-								<TableHead>{t('finance:common.status')}</TableHead>
-								{canPost ? (
-									<TableHead className='text-right'>
-										{t('finance:common.actions')}
-									</TableHead>
-								) : null}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data?.rows.map((entry) => (
-								<TableRow key={entry.id}>
-									<TableCell className='font-mono text-xs'>{entry.code}</TableCell>
-									<TableCell>{entry.entryDate}</TableCell>
-									<TableCell className='font-mono text-xs'>
-										{entry.sourceModule}
-										{entry.sourceType ? ` / ${entry.sourceType}` : ''}
-									</TableCell>
-									<TableCell className='max-w-72 truncate'>
-										{entry.description ?? t('finance:common.none')}
-									</TableCell>
-									<TableCell>
-										<Badge
-											variant={
-												entry.status === 'posted' ? 'secondary' : 'outline'
-											}
-										>
-											{entry.status}
-										</Badge>
-									</TableCell>
-									{canPost ? (
-										<TableCell className='text-right'>
-											{entry.status === 'posted' && !entry.reversedByEntryId ? (
-												<Button
-													variant='ghost'
-													size='sm'
-													disabled={reverse.isPending}
-													onClick={() => {
-														if (
-															window.confirm(t('finance:journal.reverseConfirm'))
-														) {
-															void reverse.mutateAsync(entry.id);
-														}
-													}}
-												>
-													{t('finance:journal.reverse')}
-												</Button>
-											) : null}
-										</TableCell>
-									) : null}
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={data?.rows ?? []}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls
