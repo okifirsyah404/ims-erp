@@ -1,4 +1,8 @@
 import type { ErpContext } from '@authorization/elysia-auth';
+import {
+	roleAssignmentContext,
+	unassignableInviteRoles,
+} from '@authorization/role-assignment';
 import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
@@ -13,6 +17,7 @@ import {
 	updateEmployeeSchema,
 } from '../contracts/hr.contract';
 import type { EmployeeService, TEmployeeContext } from '../services/employee.service';
+import { RoleNotAssignableError } from '@app/user/errors/invitation.errors';
 
 /**
  * Builds the service context from the `erpGuard`-resolved context.
@@ -93,6 +98,19 @@ export class EmployeeController {
 				'',
 				async ({ body, erp, request, status }) => {
 					const ctx = contextFrom(erp);
+					const parsed = createEmployeeSchema.parse(body);
+					// The invite-first form can carry organization roles, so it
+					// passes the same ladder as the invitation endpoints: HR must
+					// not smuggle `admin`/`hr`/`owner` in through an employee.
+					if (parsed.organizationRoles?.length) {
+						const illegal = unassignableInviteRoles(
+							roleAssignmentContext(erp),
+							parsed.organizationRoles,
+						);
+						if (illegal.length > 0) {
+							throw new RoleNotAssignableError(illegal);
+						}
+					}
 					return status(
 						201,
 						created(
@@ -105,7 +123,7 @@ export class EmployeeController {
 										userAgent: request.headers.get('user-agent'),
 									},
 								},
-								createEmployeeSchema.parse(body),
+								parsed,
 							),
 						),
 					);

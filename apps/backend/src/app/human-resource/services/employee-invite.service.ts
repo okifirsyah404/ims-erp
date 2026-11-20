@@ -37,8 +37,15 @@ export type TInviteEmployeeRow = TCreateInvitationInput & {
 function defaultProfile(row: TInviteEmployeeRow): TCreateEmployee {
 	return {
 		fullName: row.name,
+		// The invite carries the address that becomes the login; storing it on
+		// the employee row is what makes the duplicate-email guard and the
+		// employee search work. It used to be dropped, leaving `email` NULL on
+		// every invite-created employee.
+		email: row.email,
 		employmentStatus: 'active',
-		employmentType: 'permanent',
+		// The dialog's permanent/temporary switch (or the sheet's
+		// `employmentType` cell) decides this; `permanent` stays the default.
+		employmentType: row.employmentType ?? 'permanent',
 		workType: 'onsite',
 		...row.employee,
 	} as TCreateEmployee;

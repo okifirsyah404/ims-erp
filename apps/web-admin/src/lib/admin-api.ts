@@ -304,6 +304,11 @@ export type TInviteInput = {
 	organizationId?: string;
 	/** Closed-enum role names; stored comma-joined backend-side (ERP-0041). */
 	organizationRoles?: string[];
+	/**
+	 * Employment type of the employee record the invite creates (ERP-0034).
+	 * Absent = `permanent`; the dialog's permanent/temporary switch sets it.
+	 */
+	employmentType?: string;
 };
 
 export async function resendInvitation(
@@ -335,6 +340,17 @@ export type TBulkInviteParseOptions = {
 	organizationId?: string;
 	/** Role used when a row does not specify one (and the row has an org). */
 	organizationRole?: string;
+	/**
+	 * Roles the caller may assign. Absent = the whole catalog. A role outside
+	 * this list is a per-row error, mirroring the backend guard (`owner` is
+	 * never invitable; org admins also lose `admin`, org HR also loses `hr`).
+	 */
+	allowedRoles?: readonly string[];
+	/**
+	 * Employment type applied to every pasted row (the dialog's switch). The
+	 * paste format has no column for it; the spreadsheet upload does.
+	 */
+	employmentType?: string;
 	/** Resolves a pasted organization code (slug) to its id; null if unknown. */	resolveOrganizationCode?: (code: string) => string | null;
 };
 
@@ -406,14 +422,26 @@ export function parseBulkInviteRows(
 			organizationId = options.organizationId;
 		}
 
-		// A role only means something inside an organization. An unknown
-		// role drops the row (per-row validation, same as the sheet parser).
+		// A role only means something inside an organization. An unknown or
+		// disallowed role drops the row (per-row validation, same as the sheet
+		// parser and the backend guard).
 		const roles = organizationId
 			? resolveOrganizationRoles(rawRole, options)
 			: undefined;
 		if (organizationId && rawRole && roles === undefined) {
 			rowErrors.push(`Row ${index + 1}: unknown role "${rawRole}"`);
 			continue;
+		}
+		if (organizationId && roles && options.allowedRoles) {
+			const forbidden = roles.filter(
+				(role) => !options.allowedRoles?.includes(role),
+			);
+			if (forbidden.length > 0) {
+				rowErrors.push(
+					`Row ${index + 1}: role not allowed for you "${forbidden.join(', ')}"`,
+				);
+				continue;
+			}
 		}
 
 		rows.push({
@@ -423,6 +451,9 @@ export function parseBulkInviteRows(
 			name: rawName || rawEmail.split('@')[0]!,
 			organizationId,
 			organizationRoles: roles,
+			// Every invitation creates an employee record, so the employment
+			// type applies to application-level rows too.
+			employmentType: options.employmentType,
 		});
 	}
 	return { rows, rowErrors, error: null };

@@ -69,10 +69,15 @@ describe('addMember producer', () => {
 		const { calls, service: pushNotifications } = recordingNotifications();
 		const service = makeOrganizationService({ pushNotifications });
 
-		await service.addMember(new Headers(), 'org-1', {
-			userId: 'u-new',
-			roles: ['sales'],
-		} as never);
+		await service.addMember(
+			new Headers(),
+			'org-1',
+			{
+				userId: 'u-new',
+				roles: ['sales'],
+			} as never,
+			{ callerRoles: ['owner'], isPlatformAdmin: false },
+		);
 
 		expect(calls).toHaveLength(1);
 		expect(calls[0]).toMatchObject({
@@ -93,10 +98,15 @@ describe('addMember producer', () => {
 		const service = makeOrganizationService({ pushNotifications: failing });
 
 		await expect(
-			service.addMember(new Headers(), 'org-1', {
-				userId: 'u-new',
-				roles: ['sales'],
-			} as never),
+			service.addMember(
+				new Headers(),
+				'org-1',
+				{
+					userId: 'u-new',
+					roles: ['sales'],
+				} as never,
+				{ callerRoles: ['owner'], isPlatformAdmin: false },
+			),
 		).resolves.toEqual({ id: 'member-u-new' });
 	});
 });

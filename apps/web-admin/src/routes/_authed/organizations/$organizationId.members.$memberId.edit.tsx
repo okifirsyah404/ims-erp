@@ -32,12 +32,13 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
-import { erpRoleLabel, erpRoleNames } from '@ims-erp/common';
+import { erpRoleLabel } from '@ims-erp/common';
 import {
 	organizationMembersQueryOptions,
 	removeMember,
 	updateMemberRole,
 } from '@/lib/organization-api';
+import { useAssignableOrgRoles } from '@/lib/use-caller-org-roles';
 
 export const Route = createFileRoute(
 	'/_authed/organizations/$organizationId/members/$memberId/edit',
@@ -62,6 +63,23 @@ function EditMemberPage() {
 	);
 	const [pending, setPending] = useState(false);
 	const [removing, setRemoving] = useState(false);
+
+	// Only the roles the caller may actually set are offered. `owner` never
+	// appears for a non-owner, an org admin loses `admin`, org HR loses `hr` —
+	// the same shared ladder the backend enforces. The member's existing roles
+	// are passed in so a role that is already granted stays visible (removing
+	// it is not an escalation).
+	const currentRoles = (member?.role ?? '')
+		.split(',')
+		.map((r) => r.trim())
+		.filter(Boolean);
+	const { roles: assignableRoles } = useAssignableOrgRoles(
+		organizationId,
+		currentRoles,
+	);
+	const hiddenRoles = currentRoles.filter(
+		(role) => !assignableRoles.includes(role as never),
+	);
 
 	async function handleSave(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -155,7 +173,7 @@ function EditMemberPage() {
 								<Field>
 									<FieldLabel>{t('memberEdit.role')}</FieldLabel>
 									<div className='grid grid-cols-2 gap-2 sm:grid-cols-3'>
-										{erpRoleNames.map((roleName) => {
+										{assignableRoles.map((roleName) => {
 											const id = `role-${roleName}`;
 											return (
 												<label
@@ -176,6 +194,15 @@ function EditMemberPage() {
 											);
 										})}
 									</div>
+									{hiddenRoles.length > 0 && (
+										<p className='text-xs text-muted-foreground'>
+											{t('memberEdit.rolesLocked', {
+												roles: hiddenRoles
+													.map((role) => erpRoleLabel(role, i18n.language))
+													.join(', '),
+											})}
+										</p>
+									)}
 								</Field>
 								<div className='flex gap-2'>
 									<Button

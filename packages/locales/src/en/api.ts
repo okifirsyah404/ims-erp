@@ -17,6 +17,7 @@ const api = {
 	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
+	'common.forbidden': 'Forbidden',
 
 	'location.provinceNotFound': 'Province not found',
 	'location.regencyNotFound': 'Regency not found',
@@ -269,6 +270,7 @@ const api = {
 	'organization.notDeleted': 'Organization is not deleted',
 	'organization.memberNotFound': 'Member not found',
 	'organization.lastOwner': 'Cannot remove or demote the last owner',
+	'organization.roleNotAssignable': 'Role not assignable: {{roles}}',
 
 	'aftersales.ticketState.comment': 'A closed ticket takes no new messages',
 	'portal.stage.preparation': 'Preparation',
@@ -333,6 +335,7 @@ const api = {
 	'invitation.expired': 'This invitation link has expired',
 	'invitation.bulkLimited': 'Bulk limited to {{max}} rows',
 	'invitation.unknownOrganizationSlug': 'No organization has slug "{{slug}}"',
+	'invitation.roleNotAssignable': 'Role not assignable: {{roles}}',
 	'invitation.claimUserMissing': 'Invited user no longer exists',
 	'invitation.claimAlreadyActive': 'This account is already active',
 	'invitation.claimInvalid': 'Invalid claim data',

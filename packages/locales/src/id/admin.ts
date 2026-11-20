@@ -73,12 +73,15 @@ const admin_: Record<keyof typeof admin, string> = {
 	'invite.file': 'Unggah file',
 	'invite.fileLabel': 'Lembar kerja (.csv atau .xlsx, maks {{max}} baris)',
 	'invite.fileHint':
-		'Kolom: <code>email, name, organizationSlug, role</code>. Hanya email dan nama yang wajib; unduh templat untuk tata letak pastinya.',
+		'Kolom: <code>email, name, organizationSlug, role, employmentType</code>. Hanya email dan nama yang wajib; unduh templat untuk tata letak pastinya.',
 	'invite.fileTooLarge': 'Ukuran file melebihi 1 MB',
 	'invite.fileEmpty': 'File tidak berisi baris data',
 	'invite.fileUnreadable': 'File tidak dapat dibaca',
 	'invite.fileRowError': 'Baris {{row}}: {{message}}',
 	'invite.fileReady': '{{count}} baris siap dikirim',
+	'invite.permanentEmployee': 'Karyawan tetap',
+	'invite.permanentEmployeeHint':
+		'Matikan untuk membuat karyawan sebagai sementara (kontrak).',
 	'invite.downloadTemplateXlsx': 'Unduh templat (.xlsx)',
 	'invite.downloadTemplateCsv': 'Unduh templat (.csv)',
 	'accessDenied.title': 'Perlu akses administrator',
@@ -231,6 +234,8 @@ const admin_: Record<keyof typeof admin, string> = {
 	'memberEdit.description':
 		'Ubah peran anggota ini atau keluarkan mereka dari organisasi.',
 	'memberEdit.role': 'Peran',
+	'memberEdit.rolesLocked':
+		'Peran yang tidak dapat Anda ubah disembunyikan: {{roles}}. Hanya pemilik yang dapat mengubahnya.',
 	'memberEdit.updated': 'Peran anggota diperbarui',
 	'memberEdit.remove': 'Keluarkan anggota',
 	'memberEdit.removeTitle': 'Keluarkan {{name}} dari organisasi?',

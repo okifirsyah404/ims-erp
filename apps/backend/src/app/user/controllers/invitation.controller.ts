@@ -1,4 +1,5 @@
 import type { ErpContext } from '@authorization/elysia-auth';
+import { roleAssignmentContext, unassignableInviteRoles } from '@authorization/role-assignment';
 import { container } from 'tsyringe';
 import {
 	claimInvitationSchema,
@@ -15,7 +16,10 @@ import {
 import type { IInvitationEmployeePort } from '../contracts/invitation-employee.port';
 import type { InvitationService, TActor } from '../../user/services/invitation.service';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
-import { UserManagementError } from '../errors/invitation.errors';
+import {
+	RoleNotAssignableError,
+	UserManagementError,
+} from '../errors/invitation.errors';
 import { GLOBAL_ADMIN_ROLE, hasAppRole } from '@providers/better-auth/ac/admin-ac';
 import { NotGlobalAdminError } from '@http/errors';
 import { domainPlugin } from '@http/plugin';
@@ -90,6 +94,18 @@ export class InvitationController {
 				async (ctx) => {
 					const actor = actorFrom(ctx.erp, ctx.request);
 					const parsed = createInvitationSchema.parse(ctx.body);
+					// Role-assignment ladder, same rule as the organization
+					// surface: `owner` is never invitable, and the tier of the
+					// target organization decides whether `admin`/`hr` are.
+					// Application admins reach this route, so they clear every
+					// tier except `owner`.
+					const assignment = roleAssignmentContext(ctx.erp);
+					const requestedRoles = (Array.isArray(parsed) ? parsed : [parsed])
+						.flatMap((row) => row.organizationRoles ?? []);
+					const illegal = unassignableInviteRoles(assignment, requestedRoles);
+					if (illegal.length > 0) {
+						throw new RoleNotAssignableError(illegal);
+					}
 					// Invite and employee creation are one step (ERP-0034): the port
 					// is implemented by HR, so this controller never imports HR.
 					if (Array.isArray(parsed)) {

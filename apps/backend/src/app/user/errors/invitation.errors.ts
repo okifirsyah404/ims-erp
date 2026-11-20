@@ -86,6 +86,26 @@ export class InvalidInvitationError extends UserManagementError {
 	}
 }
 
+/**
+ * The caller tried to hand out an organization role above their tier.
+ *
+ * @remarks
+ * The UI hides those options, but the backend is the boundary: an org admin
+ * must not invite an `owner`, and org HR must not invite `admin`/`hr` either.
+ * `owner` is never grantable through an invitation for anyone.
+ */
+export class RoleNotAssignableError extends UserManagementError {
+	constructor(roles: readonly string[]) {
+		const list = roles.join(', ');
+		super(
+			403,
+			'invitation.roleNotAssignable',
+			`Role not assignable: ${list}`,
+			{ roles: list },
+		);
+	}
+}
+
 /** Token invalid, expired, cancelled, or already used. */
 export class InvalidClaimTokenError extends UserManagementError {
 	constructor() {

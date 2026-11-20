@@ -33,9 +33,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
+import { Switch } from '@ims-erp/ui/components/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { erpRoleLabel, erpRoleNames, parseInviteSheet, MAX_INVITE_SHEET_ROWS } from '@ims-erp/common';
+import {
+	employmentTypeLabels,
+	erpRoleLabel,
+	parseInviteSheet,
+	MAX_INVITE_SHEET_ROWS,
+} from '@ims-erp/common';
 import {
 	BULK_INVITE_LIMIT,
 	parseBulkInviteRows,
@@ -49,6 +55,7 @@ import {
 	sendOrgInvitations,
 	downloadOrgInvitationTemplate,
 } from '@/lib/org-invitation-api';
+import { useGrantableOrgRoles } from '@/lib/use-caller-org-roles';
 
 /** `admin` = application-level dialog (`/admin/users`); `org` = organization detail. */
 export type TInviteMode = 'admin' | 'org';
@@ -98,6 +105,11 @@ export function InviteDialog({
 	const [fileRows, setFileRows] = useState<TInviteInput[] | null>(null);
 	const [fileErrors, setFileErrors] = useState<string[]>([]);
 	const [report, setReport] = useState<string[] | null>(null);
+	// Permanent vs. temporary employee. Applies to every tab: single, bulk and
+	// file rows all create an employee record, and a sheet row without its own
+	// `employmentType` cell falls back to this.
+	const [isPermanent, setIsPermanent] = useState(true);
+	const employmentType = isPermanent ? 'permanent' : 'contract';
 	const { t, i18n } = useTranslation(['admin', 'common']);
 
 	// Every live organization, for the admin-mode selector and bulk codes.
@@ -110,6 +122,24 @@ export function InviteDialog({
 		staleTime: 60 * 1000,
 	});
 	const options = (organizations?.rows ?? []).filter((row) => !row.deletedAt);
+
+	// The organization whose membership governs the role dropdown. In `org`
+	// mode it is the page's organization; in `admin` mode it follows the
+	// selector, so switching target organizations re-evaluates the caller's
+	// tier there (a platform admin may be owner in one org and a plain member
+	// in another).
+	const roleScopeOrganizationId = isAdmin ? targetOrganizationId : (organizationId ?? null);
+	const { roles: grantableRoles } = useGrantableOrgRoles(roleScopeOrganizationId);
+
+	// Derived, not synced in an effect: a role picked for one organization may
+	// sit above the caller's tier in the next, so the *effective* role is
+	// clamped at render time. The stored value is left untouched so returning
+	// to an organization where it is legal restores it.
+	const effectiveRole = grantableRoles.includes(organizationRole as never)
+		? organizationRole
+		: grantableRoles.includes('member')
+			? 'member'
+			: (grantableRoles[0] ?? 'member');
 
 	const send = useMutation({
 		mutationFn: (input: TInviteInput | TInviteInput[]) =>
@@ -180,7 +210,10 @@ export function InviteDialog({
 			email: email.trim(),
 			name: name.trim(),
 			organizationId: targetOrganizationId ?? undefined,
-			organizationRoles: targetOrganizationId ? [organizationRole] : undefined,
+			organizationRoles: targetOrganizationId ? [effectiveRole] : undefined,
+			// Every invitation creates an employee record (company-level when no
+			// organization is chosen), so the switch always applies.
+			employmentType,
 		});
 	}
 
@@ -188,7 +221,9 @@ export function InviteDialog({
 		const { rows, rowErrors, error } = parseBulkInviteRows(bulk, {
 			mode,
 			organizationId,
-			organizationRole,
+			organizationRole: effectiveRole,
+			allowedRoles: grantableRoles,
+			employmentType,
 			resolveOrganizationCode: (code) =>
 				options.find((row) => row.slug === code)?.id ?? null,
 		});
@@ -218,7 +253,12 @@ export function InviteDialog({
 		}
 		try {
 			const buffer = new Uint8Array(await file.arrayBuffer());
-			const parsed = parseInviteSheet(file.name, buffer);
+			// `allowedRoles` is the same ladder the dropdown uses: the sheet
+			// parser reports a disallowed role as a per-row error instead of
+			// sending a request the backend will reject.
+			const parsed = parseInviteSheet(file.name, buffer, {
+				allowedRoles: grantableRoles,
+			});
 			if (parsed.rows.length === 0 && parsed.errors.length === 0) {
 				setFileErrors([t('invite.fileEmpty')]);
 				return;
@@ -240,13 +280,15 @@ export function InviteDialog({
 				const roles = targetOrgId
 					? (row.role
 						? row.role.split('|').map((r) => r.trim()).filter(Boolean)
-						: [organizationRole])
+						: [effectiveRole])
 					: undefined;
 				return {
 					email: row.email,
 					name: row.name,
 					organizationId: targetOrgId,
 					organizationRoles: roles,
+					// A row may override the switch (spreadsheet column).
+					employmentType: row.employmentType ?? employmentType,
 				};
 			});
 			setFileRows(rows);
@@ -278,22 +320,60 @@ export function InviteDialog({
 		send.mutate(fileRows);
 	}
 
+	/**
+	 * Role dropdown, restricted to what the caller may actually assign.
+	 *
+	 * @remarks
+	 * `grantableRoles` comes from the shared ladder
+	 * (`grantableOrganizationRoles`): `owner` never appears, an org admin does
+	 * not see `admin`, org HR does not see `hr`. The backend enforces the same
+	 * rule, so hiding an option here is UX, not the boundary.
+	 */
 	const roleSelect = (placeholder: string) => (
 		<Select
-			value={organizationRole}
+			value={effectiveRole}
 			onValueChange={(value) => setOrganizationRole(value ?? 'member')}
 		>
 			<SelectTrigger>
 				<SelectValue placeholder={placeholder} />
 			</SelectTrigger>
 			<SelectContent>
-				{erpRoleNames.map((roleName) => (
+				{grantableRoles.map((roleName) => (
 					<SelectItem key={roleName} value={roleName}>
 						{erpRoleLabel(roleName, i18n.language)}
 					</SelectItem>
 				))}
 			</SelectContent>
 		</Select>
+	);
+
+	/**
+	 * Permanent/temporary switch for the employee record every org invite
+	 * creates. One switch, above the tabs, so all three input modes agree.
+	 */
+	const employmentSwitch = (
+		<Field orientation='horizontal' className='items-center justify-between rounded-lg border p-3'>
+			<div className='flex flex-col gap-0.5'>
+				<FieldLabel htmlFor='invite-employment-type'>
+					{t('invite.permanentEmployee')}
+				</FieldLabel>
+				<p className='text-xs text-muted-foreground'>
+					{t('invite.permanentEmployeeHint')}
+				</p>
+			</div>
+			<div className='flex items-center gap-2'>
+				<span className='text-xs text-muted-foreground'>
+					{employmentTypeLabels[isPermanent ? 'permanent' : 'contract'][
+						i18n.language.startsWith('id') ? 'id' : 'en'
+					]}
+				</span>
+				<Switch
+					id='invite-employment-type'
+					checked={isPermanent}
+					onCheckedChange={(checked) => setIsPermanent(checked)}
+				/>
+			</div>
+		</Field>
 	);
 
 	return (
@@ -303,6 +383,8 @@ export function InviteDialog({
 					<DialogTitle>{t('invite.title')}</DialogTitle>
 					<DialogDescription>{t('invite.description')}</DialogDescription>
 				</DialogHeader>
+
+				{employmentSwitch}
 
 				<Tabs defaultValue='single'>
 					<TabsList>

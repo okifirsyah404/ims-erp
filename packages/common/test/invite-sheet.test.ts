@@ -26,7 +26,29 @@ describe('rowsToInviteSheet', () => {
 			name: 'Budi',
 			organizationSlug: 'org-1',
 			role: 'member',
+			employmentType: null,
 		});
+	});
+
+	test('reads and validates the employmentType column', () => {
+		const result = rowsToInviteSheet([
+			{ email: 'a@b.co', name: 'A', employmentType: 'Contract' },
+			{ email: 'c@d.co', name: 'C', employmentType: 'permanent' },
+		]);
+		expect(result.errors).toHaveLength(0);
+		expect(result.rows.map((row) => row.employmentType)).toEqual([
+			'contract',
+			'permanent',
+		]);
+	});
+
+	test('an unknown employmentType is a per-row error', () => {
+		const result = rowsToInviteSheet([
+			{ email: 'a@b.co', name: 'A', employmentType: 'freelance' },
+			{ email: 'c@d.co', name: 'C', employmentType: 'contract' },
+		]);
+		expect(result.rows).toHaveLength(1);
+		expect(result.errors[0]?.message).toContain('unknown employmentType');
 	});
 
 	test('per-row errors: missing email, bad email, missing name, bad role', () => {
@@ -38,6 +60,27 @@ describe('rowsToInviteSheet', () => {
 		]);
 		expect(result.rows).toHaveLength(0);
 		expect(result.errors.map((e) => e.row)).toEqual([2, 3, 4, 5]);
+	});
+
+	test('roles come from the shared catalog: the removed app roles are rejected', () => {
+		// `investor`/`customer` were organization roles before ADR-0018. The
+		// parser used to keep a hand-copied list naming them, so a sheet using
+		// them passed here and was rejected row-by-row by the API.
+		const result = rowsToInviteSheet([
+			{ email: 'a@b.co', name: 'A', role: 'investor' },
+			{ email: 'c@d.co', name: 'C', role: 'customer' },
+		]);
+		expect(result.rows).toHaveLength(0);
+		expect(result.errors).toHaveLength(2);
+	});
+
+	test('allowedRoles rejects a role the uploader may not assign', () => {
+		const result = rowsToInviteSheet(
+			[{ email: 'a@b.co', name: 'A', role: 'owner' }],
+			{ allowedRoles: ['member', 'finance'] },
+		);
+		expect(result.rows).toHaveLength(0);
+		expect(result.errors[0]?.message).toContain('role not allowed');
 	});
 
 	test('duplicate email in file is a per-row error', () => {
