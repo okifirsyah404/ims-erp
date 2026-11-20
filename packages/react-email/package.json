@@ -19,12 +19,12 @@
 		"react-dom": "^19.3.0"
 	},
 	"devDependencies": {
-		"@react-email/ui": "6.11.13",
+		"@react-email/ui": "6.11.14",
 		"@types/bun": "^1.4.4",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
-		"oxlint": "^1.93.0",
-		"react-email": "^6.11.13",
+		"oxlint": "^1.94.0",
+		"react-email": "^6.11.14",
 		"typescript": "~6.0.2"
 	}
 }
