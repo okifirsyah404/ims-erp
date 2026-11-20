@@ -7,6 +7,7 @@ import type {
 	TCustomerInsert,
 	TCustomerSelect,
 } from '@drizzle/schemas/customer.schema';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 import type {
 	TCompanyAddressInput,
 	TCompanyListQuery,
@@ -28,17 +29,20 @@ export type TNewCustomer = Omit<
 	'id' | 'createdAt' | 'updatedAt' | 'deletedAt'
 >;
 
-/** Pagination envelope returned by repositories (service maps it to the HTTP shape). */
-export type TPagination<T> = {
-	meta: { page: number; limit: number; total: number; totalPages: number };
-	rows: T[];
-};
+/** Page settings plus the filters of the customer-company listing. */
+export type TCompanyPaginationRequest = TPaginationRequest &
+	Omit<TCompanyListQuery, 'page' | 'limit'>;
+
+/** Page settings plus the filters of the customer-person listing. */
+export type TCustomerPaginationRequest = TPaginationRequest &
+	Omit<TCustomerListQuery, 'page' | 'limit'>;
 
 /** Persistence port for `customer.companies` (live rows only). */
 export interface ICompanyRepository {
-	paginate(query: TCompanyListQuery): Promise<TCustomerCompanySelect[]>;
-
-	count(query: TCompanyListQuery): Promise<number>;
+	/** Fetches one filtered page of customer companies with its pagination metadata. */
+	paginate(
+		request: TCompanyPaginationRequest,
+	): Promise<TPaginationResult<TCustomerCompanySelect>>;
 
 	findById(id: string): Promise<TCustomerCompanySelect | null>;
 
@@ -58,9 +62,10 @@ export interface ICompanyRepository {
 
 /** Persistence port for `customer.customers` (live rows only). */
 export interface ICustomerPersonRepository {
-	paginate(query: TCustomerListQuery): Promise<TPagination<TCustomerSelect>>;
-
-	count(query: TCustomerListQuery): Promise<number>;
+	/** Fetches one filtered page of customer people with its pagination metadata. */
+	paginate(
+		request: TCustomerPaginationRequest,
+	): Promise<TPaginationResult<TCustomerSelect>>;
 
 	findById(id: string): Promise<TCustomerSelect | null>;
 

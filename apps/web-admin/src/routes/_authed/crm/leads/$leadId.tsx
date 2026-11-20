@@ -22,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ConvertLeadDialog } from '@/components/crm/convert-lead-dialog';
 import { LeadFormDialog } from '@/components/crm/lead-form-dialog';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatIdr } from '@/lib/dashboard-api';
 import { formatDateTime, fromDateTimeInput } from '@/lib/format';
@@ -67,7 +69,7 @@ function LeadDetailPage() {
 	const canArchive = usePermission('lead.archive');
 	const canConvert = usePermission(['lead.update', 'customer.create']);
 	const canQuote = usePermission('quotation.create');
-	const { data: lead, isPending, isError } = useQuery(leadQueryOptions(leadId));
+	const { data: lead, isPending, isError, error } = useQuery(leadQueryOptions(leadId));
 	const assignees = useQuery(leadAssigneesQueryOptions(canManage));
 	const [submitting, setSubmitting] = useState(false);
 	const [editing, setEditing] = useState(false);
@@ -109,8 +111,9 @@ function LeadDetailPage() {
 		}
 	}
 
-	if (isPending) return null;
-	if (isError || !lead) return <p className='text-sm text-muted-foreground'>{t('crm:leads.notFound')}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
+	if (!lead) return <EmptyState title={t('crm:leads.notFound')} bordered />;
 
 	const open = lead.status !== 'won';
 	const statusChoice = nextStatus || lead.status;
@@ -364,7 +367,7 @@ function LeadDetailPage() {
 						</form>
 					)}
 					{lead.activities.length === 0 ? (
-						<p className='text-sm text-muted-foreground'>{t('crm:activities.empty')}</p>
+						<EmptyState title={t('crm:activities.empty')} size='sm' />
 					) : (
 						<ul className='flex flex-col gap-3 text-sm'>
 							{lead.activities.map((activity) => (

@@ -2,6 +2,8 @@ import type nav from '../en/nav';
 
 /** Indonesian — mirrors `en/nav` keys exactly (values are free-form). */
 const nav_: Record<keyof typeof nav, string> = {
+	'section.product': 'Produk',
+	'section.warehouse': 'Gudang',
 	'section.inventory': 'Inventaris',
 	'section.administration': 'Administrasi',
 

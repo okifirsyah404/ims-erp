@@ -86,6 +86,9 @@ beforeEach(() => {
 		},
 		{
 			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', organizationId: null }) as never,
+		},
+		{
+			/** ADR-0026: unit registration stayed in `inventory`. */
 			async registerUnit(_itemId: string, data: (typeof units)[number]) {
 				units.push(data);
 				return {} as never;

@@ -16,21 +16,25 @@
  * a fake and the interface is a compile error rather than a runtime surprise.
  */
 import { describe, expect, test } from 'bun:test';
-import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
-import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
-import type { IWarehouseAddressRepository } from '../../src/app/inventory/contracts/warehouse-address.repository.interface';
-import type { IWarehouseStorageRepository } from '../../src/app/inventory/contracts/warehouse-storage.repository.interface';
-import { WarehouseService } from '../../src/app/inventory/services/warehouse.service';
+import type {
+	TWarehouseSelect,
+	TWarehouseStorageSelect,
+} from '@drizzle/schemas/warehouse.schema';
+import type { IWarehouseRepository } from '../../src/app/warehouse/contracts/warehouse.repository.interface';
+import type { IWarehouseAddressRepository } from '../../src/app/warehouse/contracts/warehouse-address.repository.interface';
+import type { IWarehouseStorageRepository } from '../../src/app/warehouse/contracts/warehouse-storage.repository.interface';
+import type { ExportedInventoryService } from '../../src/app/inventory/services/exported-inventory.service';
+import { WarehouseService } from '../../src/app/warehouse/services/warehouse.service';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	StorageCodeTakenError,
 	StorageNotFoundError,
 	WarehouseCodeTakenError,
-	WarehouseLinkConflictError,
 	WarehouseHasUnitsError,
 	WarehouseInactiveError,
+	WarehouseLinkConflictError,
 	WarehouseNotFoundError,
-} from '../../src/app/inventory/errors/inventory.errors';
+} from '../../src/app/warehouse/errors/warehouse.errors';
 
 const ORG_A = 'org-a';
 const ORG_B = 'org-b';
@@ -57,6 +61,67 @@ function makeWarehouse(
 }
 
 /**
+ * The inventory facade double.
+ *
+ * @remarks
+ * ADR-0026 moved every "what is physically in this warehouse" question into
+ * `inventory`, so the counts the list/detail pages decorate with arrive
+ * through {@link EXPORTED_INVENTORY_SERVICE_TOKEN} — not through warehouse
+ * repositories any more. The maps below are live so a test can seed them.
+ */
+function makeInventoryFacade() {
+	/** Live serialized units per warehouse (archive guard). */
+	const liveUnits = new Map<string, number>();
+	/** Distinct products with a positive on-hand balance per warehouse. */
+	const materialStocks = new Map<string, number>();
+	/** Alive `equipment`-typed assets per warehouse. */
+	const equipments = new Map<string, number>();
+	/** Live serialized units per warehouse, keyed by the product's kind. */
+	const serialKinds = new Map<string, Map<string, number>>();
+
+	const inventory: Pick<
+		ExportedInventoryService,
+		| 'countItemsByWarehouse'
+		| 'countLiveUnits'
+		| 'countOpenBorrowingsByOriginWarehouse'
+		| 'countMaterialStocks'
+		| 'countSerialKindsByWarehouse'
+	> = {
+		async countItemsByWarehouse(warehouseIds, _itemKind) {
+			return warehouseIds
+				.filter((id) => equipments.has(id))
+				.map((warehouseId) => ({
+					warehouseId,
+					value: equipments.get(warehouseId)!,
+				}));
+		},
+		async countLiveUnits(warehouseId) {
+			return liveUnits.get(warehouseId) ?? 0;
+		},
+		async countOpenBorrowingsByOriginWarehouse() {
+			return 0;
+		},
+		async countMaterialStocks(warehouseIds) {
+			return warehouseIds
+				.filter((id) => materialStocks.has(id))
+				.map((warehouseId) => ({
+					warehouseId,
+					value: materialStocks.get(warehouseId)!,
+				}));
+		},
+		async countSerialKindsByWarehouse(warehouseIds) {
+			return warehouseIds.flatMap((warehouseId) =>
+				[...(serialKinds.get(warehouseId) ?? new Map<string, number>())].map(
+					([key, value]) => ({ warehouseId, key, value }),
+				),
+			);
+		},
+	};
+
+	return { inventory, liveUnits, materialStocks, equipments, serialKinds };
+}
+
+/**
  * In-memory warehouse repository.
  *
  * @remarks
@@ -80,13 +145,13 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 				data: rows,
 			};
 		},
-		async findById(id) {
+		async findById(id: string) {
 			return rows.find((row) => row.id === id) ?? null;
 		},
-		async findAlive(ids) {
+		async findAlive(ids?: readonly string[]) {
 			return ids ? rows.filter((row) => ids.includes(row.id)) : rows;
 		},
-		async isLinked(warehouseId, organizationId) {
+		async isLinked(warehouseId: string, organizationId: string) {
 			return links.some(
 				(link) =>
 					link.warehouseId === warehouseId &&
@@ -94,7 +159,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 					link.deletedAt === null,
 			);
 		},
-		async listLinked(organizationId) {
+		async listLinked(organizationId: string) {
 			const linkedIds = new Set(
 				links
 					.filter(
@@ -108,7 +173,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 				(row) => linkedIds.has(row.id) && row.deletedAt === null,
 			);
 		},
-		async listOrganizations(warehouseId) {
+		async listOrganizations(warehouseId: string) {
 			return links
 				.filter(
 					(link) => link.warehouseId === warehouseId && link.deletedAt === null,
@@ -118,7 +183,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 					createdAt: new Date(0),
 				}));
 		},
-		async linkOrganization(warehouseId, organizationId) {
+		async linkOrganization(warehouseId: string, organizationId: string) {
 			const existing = links.find(
 				(link) =>
 					link.warehouseId === warehouseId &&
@@ -132,7 +197,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 			links.push({ warehouseId, organizationId, deletedAt: null });
 			return { created: true };
 		},
-		async unlinkOrganization(warehouseId, organizationId) {
+		async unlinkOrganization(warehouseId: string, organizationId: string) {
 			const existing = links.find(
 				(link) =>
 					link.warehouseId === warehouseId &&
@@ -143,7 +208,7 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 			existing.deletedAt = new Date();
 			return true;
 		},
-		async findByCode(organizationId, code) {
+		async findByCode(organizationId: string | null, code: string) {
 			return (
 				rows.find(
 					(row) =>
@@ -161,24 +226,29 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 			rows.push(row);
 			return row;
 		},
-		async update(id, data) {
+		async update(id: string, data) {
 			const row = rows.find((r) => r.id === id);
 			if (!row) return null;
 			Object.assign(row, data);
 			return row;
 		},
-		async archive(id) {
+		async archive(id: string) {
 			const row = rows.find((r) => r.id === id);
 			if (!row) return null;
 			row.deletedAt = new Date();
 			return row;
 		},
-		async findNamesByIds(ids) {
+		async findNamesByIds(ids: string[]) {
 			return rows
 				.filter((r) => ids.includes(r.id) && r.deletedAt === null)
 				.map((r) => ({ id: r.id, name: r.name }));
 		},
-		async clearDefaultExcept(organizationId, exceptId) {
+		async findByIds(ids: string[]) {
+			return rows
+				.filter((r) => ids.includes(r.id) && r.deletedAt === null)
+				.map((r) => ({ id: r.id, code: r.code, name: r.name }));
+		},
+		async clearDefaultExcept(organizationId: string | null, exceptId: string) {
 			clearDefaultCalls.push({ organizationId, exceptId });
 			for (const row of rows) {
 				if (row.organizationId === organizationId && row.id !== exceptId) {
@@ -186,18 +256,17 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 				}
 			}
 		},
-		async countLiveUnits() {
-			return 0;
-		},
-		async countKinds(warehouseIds) {
-			return warehouseIds.map((warehouseId) => ({
-				warehouseId,
-				productsCount: 0,
-				componentsCount: 0,
-				materialsCount: 0,
-				equipmentsCount: 0,
-				storagesCount: 0,
-			}));
+		async countStorages(warehouseIds) {
+			// ADR-0026: the storage count is the one per-warehouse projection the
+			// warehouse module still owns. A warehouse absent from the map has none.
+			const counts = new Map<string, number>();
+			for (const warehouseId of warehouseIds) {
+				const live = storageRows.filter(
+					(row) => row.warehouseId === warehouseId && row.deletedAt === null,
+				).length;
+				if (live > 0) counts.set(warehouseId, live);
+			}
+			return counts;
 		},
 	};
 
@@ -215,22 +284,27 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 
 	const storageRows: Array<Record<string, unknown>> = [];
 	const storageRepository: IWarehouseStorageRepository = {
-		async listByWarehouse(warehouseId) {
+		async listByWarehouse(warehouseId: string, options?: { includeArchived?: boolean }) {
 			return storageRows.filter(
-				(row) => row.warehouseId === warehouseId && row.deletedAt === null,
-			) as never;
+				(row) =>
+					row.warehouseId === warehouseId &&
+					(options?.includeArchived === true || row.deletedAt === null),
+			) as unknown as TWarehouseStorageSelect[];
 		},
-		async findById(id) {
-			return (storageRows.find((row) => row.id === id) as never) ?? null;
+		async findById(id: string) {
+			return (
+				(storageRows.find((row) => row.id === id) as unknown as TWarehouseStorageSelect) ??
+				null
+			);
 		},
-		async findByCode(warehouseId, code) {
+		async findByCode(warehouseId: string, code: string) {
 			return (
 				(storageRows.find(
 					(row) =>
 						row.warehouseId === warehouseId &&
 						row.code === code &&
 						row.deletedAt === null,
-				) as never) ?? null
+				) as unknown as TWarehouseStorageSelect) ?? null
 			);
 		},
 		async create(data) {
@@ -245,38 +319,50 @@ function makeRepos(seed: TWarehouseSelect[] = []) {
 				deletedAt: null,
 			};
 			storageRows.push(row);
-			return row as never;
+			return row as unknown as TWarehouseStorageSelect;
 		},
-		async update(id, data) {
+		async update(id: string, data) {
 			const row = storageRows.find((r) => r.id === id);
 			if (!row) return null;
 			Object.assign(row, data);
-			return row as never;
+			return row as unknown as TWarehouseStorageSelect;
 		},
-		async archive(id) {
+		async archive(id: string) {
 			const row = storageRows.find((r) => r.id === id);
 			if (!row) return null;
 			row.deletedAt = new Date();
-			return row as never;
+			return row as unknown as TWarehouseStorageSelect;
 		},
 	};
+
+	const inventory = makeInventoryFacade();
 
 	const service = new WarehouseService(
 		warehouseRepository,
 		addressRepository,
 		storageRepository,
 		new AuditWriterDouble(),
-		// ERP-0031: no borrowings in these tests — the guard never blocks.
-		{ async countOpenByOriginWarehouse() { return 0; } },
-		// No assets in these tests — equipment counts resolve to zero.
-		{ countByWarehouse: async () => [] } as never,
-		// ERP-0034: no HR rows in these tests — every PIC lookup misses, so
-		// tests that assign one must clear it (`null`) instead.
-		{ findEmployeeById: async () => null, findEmployeeByUserId: async () => null } as never,
+		// ADR-0026: physical truth about a warehouse (units, balances, open
+		// borrowings) is read through the inventory facade.
+		inventory.inventory,
+		// ERP-0034: no HR rows in these tests - every PIC lookup misses, so
+		// tests that assign one must clear it (`null`) instead. The service
+		// narrows its dependency to `Pick<ExportedEmployeeService,
+		// 'findEmployeeById'>`, so a structural double is enough (ADR-0026).
+		{
+			findEmployeeById: async () => null,
+		},
 		// ERP-0042: no code allocation in these tests - every create passes a code.
-		{ next: async (codeType: string) => `WH-${codeType}` } as never,
+		{ next: async (codeType: string) => `WH-${codeType}` },
 	);
-	return { service, rows, links, clearDefaultCalls, warehouseRepository };
+	return {
+		service,
+		rows,
+		links,
+		clearDefaultCalls,
+		warehouseRepository,
+		inventory,
+	};
 }
 
 describe('warehouse↔organization links (ERP-0031 slice 3)', () => {
@@ -335,13 +421,13 @@ describe('warehouse↔organization links (ERP-0031 slice 3)', () => {
 
 	test('unlinkOrganization is refused with 409 while open borrowings exist', async () => {
 		const warehouse = makeWarehouse({ code: 'MAIN' });
-		const { service, links } = makeRepos([warehouse]);
+		const { service, links, inventory } = makeRepos([warehouse]);
 		links.push({ warehouseId: warehouse.id, organizationId: ORG_A, deletedAt: null });
 
 		// Override the guard for this test: the org still holds custody.
 		const guarded = Object.assign(Object.create(Object.getPrototypeOf(service)), service, {});
-		Object.defineProperty(guarded, 'borrowingGuard', {
-			value: { async countOpenByOriginWarehouse() { return 2; } },
+		Object.defineProperty(guarded, 'inventory', {
+			value: { ...inventory.inventory, countOpenBorrowingsByOriginWarehouse: async () => 2 },
 		});
 
 		await expect(
@@ -561,8 +647,9 @@ describe('archiveWarehouse', () => {
 
 	test('refuses to archive a warehouse holding live units', async () => {
 		const current = makeWarehouse();
-		const { service, rows, warehouseRepository } = makeRepos([current]);
-		warehouseRepository.countLiveUnits = async () => 3;
+		const { service, rows, inventory } = makeRepos([current]);
+		// Live units are an `inventory` fact (ADR-0026).
+		inventory.liveUnits.set(current.id, 3);
 
 		await expect(service.archiveWarehouse(current.id)).rejects.toBeInstanceOf(
 			WarehouseHasUnitsError,

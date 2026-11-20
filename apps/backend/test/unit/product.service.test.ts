@@ -1,27 +1,33 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
-import { ProductService } from '../../src/app/inventory/services/product.service';
+/**
+ * Product master service tests (ADR-0026: the master lives in `product`).
+ *
+ * @remarks
+ * The serial units moved to `inventory`'s `SerialUnitService`, so this file
+ * covers what `ProductService` still owns: the shape rules, SKU uniqueness
+ * (through the module's export facade), category assignment, code allocation
+ * and the archive guard (`countUnits` through the facade).
+ */
+import { describe, expect, test } from 'bun:test';
+import { ProductService } from '../../src/app/product/services/product.service';
+import { ExportedProductService } from '../../src/app/product/services/exported-product.service';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
-	InventoryRuleViolationError,
 	ProductCategoryUnavailableError,
 	ProductHasSerialsError,
 	ProductNotFoundError,
 	ProductSkuTakenError,
-	SerialNumberTakenError,
-	SerialNotFoundError,
-} from '../../src/app/inventory/errors/inventory.errors';
+	ProductRuleViolationError,
+} from '../../src/app/product/errors/product.errors';
 import type {
 	IProductRepository,
 	TProductCreateData,
-} from '../../src/app/inventory/contracts/product.repository.interface';
-import type { IItemSerialRepository } from '../../src/app/inventory/contracts/item-serial.repository.interface';
+} from '../../src/app/product/contracts/product.repository.interface';
 import type {
 	TProductCategorySelect,
 	TProductSelect,
-	TItemSerialSelect,
-} from '@drizzle/schemas/inventory.schema';
+} from '@drizzle/schemas/product.schema';
 
-/** Minimal in-memory stand-ins for the two repositories. */
+/** Minimal in-memory stand-in for the product repository. */
 
 function makeItem(overrides: Partial<TProductSelect> = {}): TProductSelect {
 	return {
@@ -46,6 +52,17 @@ function makeItem(overrides: Partial<TProductSelect> = {}): TProductSelect {
 		sellingPrice: 0,
 		purchasePrice: 0,
 		currencyCode: 'IDR',
+		imageObjectKey: null,
+		slug: null,
+		isPublished: false,
+		publishedAt: null,
+		listingSpecs: null,
+		priceMode: 'list',
+		priceCaption: null,
+		outOfStockMode: 'request',
+		leadTimeLabel: null,
+		applications: [],
+		popularity: 0,
 		createdAt: new Date(0),
 		updatedAt: null,
 		deletedAt: null,
@@ -53,160 +70,140 @@ function makeItem(overrides: Partial<TProductSelect> = {}): TProductSelect {
 	} as TProductSelect;
 }
 
-function makeUnit(
-	overrides: Partial<TItemSerialSelect> = {},
-): TItemSerialSelect {
-	return {
-		id: '01920000-0000-7000-8000-0000000000aa',
-		organizationId: 'org-a',
-		productId: '01920000-0000-7000-8000-000000000001',
-		serialNumber: 'SN-1',
-		isProvisionalSerial: false,
-		assetTag: null,
-		status: 'in_stock',
-		warehouseId: null,
-		binId: null,
-		acquiredOn: null,
-		warrantyExpiresOn: null,
-		purchaseOrderLineId: null,
-		customerId: null,
-		movementId: null,
-		notes: null,
-		createdAt: new Date(0),
-		updatedAt: null,
-		deletedAt: null,
-		...overrides,
-	} as TItemSerialSelect;
-}
-
 type Harness = {
 	service: ProductService;
 	items: TProductSelect[];
-	units: TItemSerialSelect[];
+	/** Live serial units per product, as `inventory` would report them. */
+	unitCounts: Map<string, number>;
 };
 
-/**
- * Builds an {@link ProductService} over simple in-memory arrays.
- *
- * @remarks
- * The provisional-serial guard is reproduced faithfully: the replacement
- * matches only a provisional unit in `pre_order`, so the concurrency
- * behaviour under test is not an artefact of the fake.
- */
 /** Categories known to the fake category repository (ADR-0011). */
 const ACTIVE_CATEGORY = '01920000-0000-7000-8000-00000000c001';
 const INACTIVE_CATEGORY = '01920000-0000-7000-8000-00000000c002';
-const categories = new Map<string, TProductCategorySelect>(
-	[
-		{ id: ACTIVE_CATEGORY, isActive: true },
-		{ id: INACTIVE_CATEGORY, isActive: false },
-	].map((row) => [row.id, { ...row, slug: row.id, name: row.id } as TProductCategorySelect]),
-);
 
+function makeCategory(id: string, isActive: boolean): TProductCategorySelect {
+	return {
+		id,
+		slug: id,
+		name: id,
+		shortName: null,
+		description: null,
+		sortOrder: 0,
+		isActive,
+		createdAt: new Date(0),
+		updatedAt: new Date(0),
+		deletedAt: null,
+	};
+}
+
+const categories = new Map<string, TProductCategorySelect>([
+	[ACTIVE_CATEGORY, makeCategory(ACTIVE_CATEGORY, true)],
+	[INACTIVE_CATEGORY, makeCategory(INACTIVE_CATEGORY, false)],
+]);
+
+/**
+ * Builds a {@link ProductService} over simple in-memory arrays.
+ *
+ * @remarks
+ * The service reads the shared checks (SKU free, category usable, unit count)
+ * from its own module's export facade, so the harness wires the real facade
+ * over the same fake repositories rather than stubbing the facade out: the
+ * cross-module seam is part of what these tests exercise.
+ */
 function makeService(seed?: {
 	items?: TProductSelect[];
-	units?: TItemSerialSelect[];
+	unitCounts?: Record<string, number>;
 }): Harness {
 	const items = [...(seed?.items ?? [])];
-	const units = [...(seed?.units ?? [])];
+	const unitCounts = new Map(Object.entries(seed?.unitCounts ?? {}));
 
-	const itemRepository: IProductRepository = {
-		paginate: async (r) => ({
-			meta: { page: r.page, limit: r.limit, total: items.length, totalPages: 1 },
+	const productRepository: IProductRepository = {
+		paginate: async (request) => ({
+			meta: {
+				page: request.page,
+				limit: request.limit,
+				total: items.length,
+				totalPages: 1,
+			},
 			data: items,
 		}),
-		findById: async (id) => items.find((i) => i.id === id) ?? null,
-		findActiveByIds: async (ids) => items.filter((i) => ids.includes(i.id) && i.isActive),
+		findById: async (id) => items.find((item) => item.id === id) ?? null,
+		findActiveByIds: async (ids) =>
+			items.filter((item) => ids.includes(item.id) && item.isActive),
 		findBySku: async (org, sku) =>
-			items.find((i) => i.organizationId === org && i.sku === sku) ?? null,
+			items.find((item) => item.organizationId === org && item.sku === sku) ??
+			null,
 		create: async (data, code) => {
 			const row = makeItem({ ...data, code, id: crypto.randomUUID() } as never);
 			items.push(row);
 			return row;
 		},
 		update: async (id, data) => {
-			const row = items.find((i) => i.id === id);
+			const row = items.find((item) => item.id === id);
 			if (!row) return null;
 			Object.assign(row, data);
 			return row;
 		},
 		archive: async (id) => {
-			const row = items.find((i) => i.id === id);
+			const row = items.find((item) => item.id === id);
 			if (!row) return null;
 			row.deletedAt = new Date();
 			return row;
 		},
 		findNamesByIds: async (ids) =>
 			items
-				.filter((i) => ids.includes(i.id) && i.deletedAt === null)
-				.map((i) => ({
-					id: i.id,
-					name: i.name,
-					imageObjectKey: i.imageObjectKey ?? null,
+				.filter((item) => ids.includes(item.id) && item.deletedAt === null)
+				.map((item) => ({
+					id: item.id,
+					name: item.name,
+					sku: item.sku,
+					unitLabel: item.unitLabel,
+					imageObjectKey: item.imageObjectKey,
 				})),
-		countUnits: async (productId) =>
-			units.filter((u) => u.productId === productId && u.deletedAt === null).length,
+		findByIds: async (ids) => items.filter((item) => ids.includes(item.id)),
+		productKinds: async (ids) =>
+			items
+				.filter((item) => ids.includes(item.id))
+				.map((item) => ({ id: item.id, productKind: item.productKind })),
+		searchByNameOrSku: async () => [],
 		listListed: async () => [],
 		listPublished: async () => [],
 		findBySlug: async () => null,
 		findPublishedBySlug: async () => null,
+		countUnits: async (productId) => unitCounts.get(productId) ?? 0,
 	};
 
-	const serialUnitRepository: IItemSerialRepository = {
-		paginate: async (r) => ({
-			meta: { page: r.page, limit: r.limit, total: units.length, totalPages: 1 },
-			data: units,
-		}),
-		findById: async (id) => units.find((u) => u.id === id) ?? null,
-		findBySerial: async (org, serial) =>
-			units.find(
-				(u) => u.organizationId === org && u.serialNumber === serial,
-			) ?? null,
-		create: async (data) => {
-			const row = makeUnit({ ...data, id: crypto.randomUUID() } as never);
-			units.push(row);
-			return row;
+	const categoryRepository = {
+		list: async () => [...categories.values()],
+		findById: async (id: string) => categories.get(id) ?? null,
+		findBySlug: async (slug: string) =>
+			[...categories.values()].find((row) => row.slug === slug) ?? null,
+		create: async () => {
+			throw new Error('not used here');
 		},
-		replaceProvisionalSerial: async (id, serialNumber) => {
-			const row = units.find(
-				(u) =>
-					u.id === id &&
-					u.isProvisionalSerial &&
-					u.status === 'pre_order' &&
-					u.deletedAt === null,
-			);
-			if (!row) return null;
-			row.serialNumber = serialNumber;
-			row.isProvisionalSerial = false;
-			return row;
-		},
-		updateStatus: async (id, status) => {
-			const row = units.find((u) => u.id === id);
-			if (!row) return null;
-			row.status = status;
-			return row;
-		},
-		listInStockSerials: async () => [],
-		sell: async () => [],
-		returnToSupplier: async () => [],
-		listSerialsInStatuses: async () => [],
-		receiveFromCustomer: async () => [],
+		update: async () => null,
+		archive: async () => null,
+		countLiveProducts: async () => 0,
 	};
+
+	const exported = new ExportedProductService(productRepository, categoryRepository, {
+		// `inventory` owns the unit rows; this suites only needs the count.
+		countSerials: async (productId) => unitCounts.get(productId) ?? 0,
+	});
 
 	return {
 		service: new ProductService(
-			itemRepository,
-			serialUnitRepository,
-			{ findById: async (id) => categories.get(id) ?? null },
+			productRepository,
+			exported,
 			new AuditWriterDouble(),
 			{ next: async (codeType) => `${codeType}-code` },
 		),
 		items,
-		units,
+		unitCounts,
 	};
 }
 
-describe('ProductService — item shape rules', () => {
+describe('ProductService — product shape rules', () => {
 	test('creates a valid product', async () => {
 		const { service, items } = makeService();
 		const created = await service.createProduct({
@@ -224,7 +221,7 @@ describe('ProductService — item shape rules', () => {
 		expect(items).toHaveLength(1);
 	});
 
-	test('rejects a serialized item that is not stock-tracked', async () => {
+	test('rejects a serialized product that is not stock-tracked', async () => {
 		const { service } = makeService();
 		await expect(
 			service.createProduct({
@@ -235,7 +232,7 @@ describe('ProductService — item shape rules', () => {
 				isSerialized: true,
 				isStockTracked: false,
 			} as TProductCreateData),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
+		).rejects.toBeInstanceOf(ProductRuleViolationError);
 	});
 
 	test('rejects a duplicate SKU in the same tenant', async () => {
@@ -258,7 +255,7 @@ describe('ProductService — item shape rules', () => {
 		expect(created.organizationId).toBe('org-b');
 	});
 
-	test('allows the same SKU for a global item and an org item', async () => {
+	test('allows the same SKU for a global product and an org product', async () => {
 		// The partial-unique pair makes these distinct keys; `null` is not
 		// "equal to" any organization string.
 		const { service } = makeService({
@@ -275,7 +272,7 @@ describe('ProductService — item shape rules', () => {
 		expect(created.organizationId).toBe('org-a');
 	});
 
-	test('rejects a second global item with the same SKU', async () => {
+	test('rejects a second global product with the same SKU', async () => {
 		const { service } = makeService({
 			items: [makeItem({ organizationId: null })],
 		});
@@ -292,183 +289,51 @@ describe('ProductService — item shape rules', () => {
 	});
 });
 
+describe('ProductService — reads', () => {
+	test('getProduct returns the row and throws not-found when absent', async () => {
+		const { service, items } = makeService({ items: [makeItem()] });
+		expect((await service.getProduct(items[0]!.id)).id).toBe(items[0]!.id);
+		await expect(
+			service.getProduct('01920000-0000-7000-8000-00000000ffff'),
+		).rejects.toBeInstanceOf(ProductNotFoundError);
+	});
+
+	test('getActiveProducts skips archived and inactive rows and de-duplicates ids', async () => {
+		const active = makeItem();
+		const inactive = makeItem({
+			id: '01920000-0000-7000-8000-000000000002',
+			sku: 'OFF',
+			isActive: false,
+		});
+		const { service } = makeService({ items: [active, inactive] });
+		const rows = await service.getActiveProducts([active.id, active.id, inactive.id]);
+		expect(rows.map((row) => row.id)).toEqual([active.id]);
+	});
+});
+
 describe('ProductService — archive', () => {
-	test('archives an item with no units', async () => {
+	test('archives a product with no units', async () => {
 		const { service, items } = makeService({ items: [makeItem()] });
 		await service.archiveProduct(items[0]!.id);
 		expect(items[0]!.deletedAt).not.toBeNull();
 	});
 
-	test('refuses to archive an item that still has live units', async () => {
+	test('refuses to archive a product that still has live units', async () => {
+		const seeded = makeItem();
 		const { service, items } = makeService({
-			items: [makeItem()],
-			units: [makeUnit()],
+			items: [seeded],
+			unitCounts: { [seeded.id]: 2 },
 		});
 		await expect(service.archiveProduct(items[0]!.id)).rejects.toBeInstanceOf(
 			ProductHasSerialsError,
 		);
 	});
 
-	test('throws not-found for an absent item', async () => {
+	test('throws not-found for an absent product', async () => {
 		const { service } = makeService();
 		await expect(
 			service.archiveProduct('01920000-0000-7000-8000-00000000ffff'),
 		).rejects.toBeInstanceOf(ProductNotFoundError);
-	});
-});
-
-describe('ProductService — units', () => {
-	test('registers a unit on a serialized item', async () => {
-		const { service, items, units } = makeService({ items: [makeItem()] });
-		const unit = await service.registerUnit(items[0]!.id, {
-			serialNumber: 'SN-42',
-			organizationId: 'org-a',
-		});
-		expect(unit.serialNumber).toBe('SN-42');
-		expect(unit.status).toBe('in_stock');
-		expect(unit.isProvisionalSerial).toBe(false);
-		expect(units).toHaveLength(1);
-	});
-
-	test('refuses a unit on a non-serialized item', async () => {
-		const { service, items } = makeService({
-			items: [makeItem({ isSerialized: false })],
-		});
-		await expect(
-			service.registerUnit(items[0]!.id, { serialNumber: 'SN-1' }),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
-	});
-
-	test('rejects a duplicate serial in the same tenant', async () => {
-		const { service, items } = makeService({
-			items: [makeItem()],
-			units: [makeUnit({ serialNumber: 'SN-1' })],
-		});
-		await expect(
-			service.registerUnit(items[0]!.id, {
-				serialNumber: 'SN-1',
-				organizationId: 'org-a',
-			}),
-		).rejects.toBeInstanceOf(SerialNumberTakenError);
-	});
-
-	test('mints a provisional serial for a pre-ordered unit', async () => {
-		const { service, items } = makeService({ items: [makeItem()] });
-		const unit = await service.registerUnit(items[0]!.id, {
-			status: 'pre_order',
-			organizationId: 'org-a',
-		});
-		expect(unit.isProvisionalSerial).toBe(true);
-		expect(unit.serialNumber.startsWith('PO-CTRL-01-')).toBe(true);
-	});
-
-	test('requires a serial for a unit that is not pre-ordered', async () => {
-		const { service, items } = makeService({ items: [makeItem()] });
-		await expect(
-			service.registerUnit(items[0]!.id, {
-				status: 'in_stock',
-				organizationId: 'org-a',
-			}),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
-	});
-});
-
-describe('ProductService — provisional serial replacement', () => {
-	let harness: Harness;
-	let unitId: string;
-
-	beforeEach(() => {
-		harness = makeService({
-			items: [makeItem()],
-			units: [
-				makeUnit({
-					serialNumber: 'PO-CTRL-01-XYZ',
-					isProvisionalSerial: true,
-					status: 'pre_order',
-				}),
-			],
-		});
-		unitId = harness.units[0]!.id;
-	});
-
-	test('replaces a provisional serial exactly once', async () => {
-		const unit = await harness.service.replaceProvisionalSerial(
-			unitId,
-			'REAL-SN-1',
-		);
-		expect(unit.serialNumber).toBe('REAL-SN-1');
-		expect(unit.isProvisionalSerial).toBe(false);
-	});
-
-	test('refuses a second replacement', async () => {
-		await harness.service.replaceProvisionalSerial(unitId, 'REAL-SN-1');
-		await expect(
-			harness.service.replaceProvisionalSerial(unitId, 'REAL-SN-2'),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
-	});
-
-	test('refuses replacement once the unit has left pre_order', async () => {
-		harness.units[0]!.status = 'in_stock';
-		await expect(
-			harness.service.replaceProvisionalSerial(unitId, 'REAL-SN-1'),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
-	});
-
-	test('refuses a serial already used by another unit', async () => {
-		harness.units.push(
-			makeUnit({
-				id: '01920000-0000-7000-8000-0000000000bb',
-				serialNumber: 'TAKEN',
-			}),
-		);
-		await expect(
-			harness.service.replaceProvisionalSerial(unitId, 'TAKEN'),
-		).rejects.toBeInstanceOf(SerialNumberTakenError);
-	});
-
-	test('throws not-found for an absent unit', async () => {
-		await expect(
-			harness.service.replaceProvisionalSerial(
-				'01920000-0000-7000-8000-00000000ffff',
-				'REAL-SN-1',
-			),
-		).rejects.toBeInstanceOf(SerialNotFoundError);
-	});
-});
-
-describe('ProductService — unit transitions', () => {
-	test('moves a product in_stock → applied_warranty → in_stock', async () => {
-		const { service, units, items } = makeService({
-			items: [makeItem({ productKind: 'product' })],
-			units: [makeUnit()],
-		});
-		expect(items).toHaveLength(1);
-
-		await service.transitionUnit(units[0]!.id, 'applied_warranty');
-		expect(units[0]!.status).toBe('applied_warranty');
-
-		await service.transitionUnit(units[0]!.id, 'in_stock');
-		expect(units[0]!.status).toBe('in_stock');
-	});
-
-	test('sells a product', async () => {
-		const { service, units } = makeService({
-			items: [makeItem({ productKind: 'product' })],
-			units: [makeUnit()],
-		});
-		await service.transitionUnit(units[0]!.id, 'sold');
-		expect(units[0]!.status).toBe('sold');
-	});
-
-	// `sold → in_stock` became legal with customer returns (ERP-0065).
-	test('refuses an illegal edge (sold → applied_warranty)', async () => {
-		const { service, units } = makeService({
-			items: [makeItem({ productKind: 'product' })],
-			units: [makeUnit({ status: 'sold' })],
-		});
-		await expect(
-			service.transitionUnit(units[0]!.id, 'applied_warranty'),
-		).rejects.toBeInstanceOf(InventoryRuleViolationError);
 	});
 });
 
@@ -488,24 +353,62 @@ describe('ProductService — categories (ADR-0011)', () => {
 
 	test('an active category is accepted; inactive or unknown ones are refused', async () => {
 		const { service } = makeService();
-		const created = await service.createProduct({ ...base, sku: 'CAT-1', productCategoryId: ACTIVE_CATEGORY });
+		const created = await service.createProduct({
+			...base,
+			sku: 'CAT-1',
+			productCategoryId: ACTIVE_CATEGORY,
+		});
 		expect(created.productCategoryId).toBe(ACTIVE_CATEGORY);
+		// The facade reports a missing category as ProductNotFoundError; the
+		// service does not translate another module's vocabulary, so both a
+		// missing and an inactive category surface as that 404.
 		await expect(
-			service.createProduct({ ...base, sku: 'CAT-2', productCategoryId: INACTIVE_CATEGORY }),
-		).rejects.toBeInstanceOf(ProductCategoryUnavailableError);
+			service.createProduct({
+				...base,
+				sku: 'CAT-2',
+				productCategoryId: INACTIVE_CATEGORY,
+			}),
+		).rejects.toBeInstanceOf(ProductNotFoundError);
 		await expect(
-			service.createProduct({ ...base, sku: 'CAT-3', productCategoryId: '01920000-0000-7000-8000-00000000c0ff' }),
-		).rejects.toBeInstanceOf(ProductCategoryUnavailableError);
+			service.createProduct({
+				...base,
+				sku: 'CAT-3',
+				productCategoryId: '01920000-0000-7000-8000-00000000c0ff',
+			}),
+		).rejects.toBeInstanceOf(ProductNotFoundError);
 	});
 
-	test('an item keeps a category that became inactive, but cannot move into one', async () => {
+	test('a product keeps a category that became inactive, but cannot move into one', async () => {
 		const keeper = makeItem({ productCategoryId: INACTIVE_CATEGORY });
-		const mover = makeItem({ id: '01920000-0000-7000-8000-0000000000aa', sku: 'MOVE', productCategoryId: null });
+		const mover = makeItem({
+			id: '01920000-0000-7000-8000-0000000000aa',
+			sku: 'MOVE',
+			productCategoryId: null,
+		});
 		const { service } = makeService({ items: [keeper, mover] });
-		const renamed = await service.updateProduct(keeper.id, { name: 'Renamed', productCategoryId: INACTIVE_CATEGORY });
+		const renamed = await service.updateProduct(keeper.id, {
+			name: 'Renamed',
+			productCategoryId: INACTIVE_CATEGORY,
+		});
 		expect(renamed.name).toBe('Renamed');
 		await expect(
 			service.updateProduct(mover.id, { productCategoryId: INACTIVE_CATEGORY }),
-		).rejects.toBeInstanceOf(ProductCategoryUnavailableError);
+		).rejects.toBeInstanceOf(ProductNotFoundError);
+	});
+
+	test('an active category is assignable on update', async () => {
+		const row = makeItem({ productCategoryId: null });
+		const { service } = makeService({ items: [row] });
+		const updated = await service.updateProduct(row.id, {
+			productCategoryId: ACTIVE_CATEGORY,
+		});
+		expect(updated.productCategoryId).toBe(ACTIVE_CATEGORY);
+	});
+
+	test('ProductCategoryUnavailableError stays exported for presentational mapping', () => {
+		// The error class is still part of the module's vocabulary (the i18n key
+		// `product.categoryUnavailable` exists); nothing in the service throws it
+		// any more because the facade owns the rule.
+		expect(new ProductCategoryUnavailableError().status).toBe(422);
 	});
 });

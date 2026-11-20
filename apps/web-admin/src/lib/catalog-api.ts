@@ -3,9 +3,9 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for the website catalog listings (`/inventory/product-listings`,
+ * API client for the website catalog listings (`/product-listings`,
  * M04 stage 1). The website reads published listings through
- * `/inventory/public/v1/catalog`.
+ * `/products/public/v1/catalog`.
  *
  * @remarks
  * A listing is no longer its own row (ADR-0024 Q14): it is the set of listing
@@ -74,16 +74,16 @@ const send = async <T>(path: string, method: string, body?: unknown): Promise<T>
 export const listingsQueryOptions = () =>
 	queryOptions({
 		queryKey: ['catalog', 'listings'] as const,
-		queryFn: async () => (await request<TListing[]>('/inventory/product-listings')).data as TListing[],
+		queryFn: async () => (await request<TListing[]>('/product-listings')).data as TListing[],
 	});
 
 /** Creates the listing of a product (first save, unpublished) or edits it. */
 export const saveListing = (productId: string, input: TListingInput) =>
-	send<TListing>(`/inventory/product-listings/${productId}`, 'PUT', input);
+	send<TListing>(`/product-listings/${productId}`, 'PUT', input);
 export const publishListing = (productId: string, published: boolean) =>
-	send<TListing>(`/inventory/product-listings/${productId}/publish`, 'POST', { published });
+	send<TListing>(`/product-listings/${productId}/publish`, 'POST', { published });
 /** Removes the listing; the product itself stays. */
-export const removeListing = (productId: string) => send<void>(`/inventory/product-listings/${productId}`, 'DELETE');
+export const removeListing = (productId: string) => send<void>(`/product-listings/${productId}`, 'DELETE');
 
 /** `Kamera CCTV 2MP` → `kamera-cctv-2mp`. */
 export function slugify(text: string): string {

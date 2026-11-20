@@ -34,6 +34,19 @@ conventions carry over from the prior backend implementation.
 
 - `total` counts matching alive rows before the page is cut — the envelope is
   self-consistent with `data`.
+- **Repository convention (one page, one method, one helper).** A repository
+  method that answers one filtered page is named `paginate`, or
+  `paginate<Thing>` when one repository serves several lists
+  (`paginateMembers`, `paginateReceipts`, `paginateIncoming`,
+  `paginateTaxTypes`). It takes **one request object** — `TPaginationRequest &
+  { ...filters }` with the tenant inside it — never `(organizationId, filters,
+  pagination)` positionally, and it returns `TPaginationResult<T>` built by
+  `paginationResult(request, total, data)` from
+  `apps/backend/src/utils/pagination.util.ts`. `totalPages` is
+  `Math.ceil(total / limit)`, so an empty result set reports **0** pages;
+  callers clamp (`useClampPage` in web-admin). A `paginate` that returns bare
+  rows plus a separate `count()` is the defect this convention removes: the
+  service would have to hand-build `meta` and the two could disagree.
 - Single-resource endpoints return the row object; `204`/`200` semantics per
   mutation kind.
 - Public (unauthenticated-session) catalog lists follow the same contract: the

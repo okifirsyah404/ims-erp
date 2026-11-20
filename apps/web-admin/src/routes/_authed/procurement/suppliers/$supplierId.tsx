@@ -3,9 +3,12 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
+
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import {
 	Dialog,
 	DialogContent,
@@ -13,6 +16,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
@@ -90,10 +94,10 @@ function PersonDialog({
 							<FieldLabel htmlFor='person-email'>{t('procurement:supplier.picEmail')}</FieldLabel>
 							<Input id='person-email' type='email' value={email} onChange={(event) => setEmail(event.target.value)} />
 						</Field>
-						<label className='flex items-center gap-2 text-sm sm:col-span-2'>
-							<input type='checkbox' checked={isPrimary} onChange={(event) => setIsPrimary(event.target.checked)} />
-							{t('procurement:supplier.isPrimary')}
-						</label>
+						<Field orientation='horizontal' className='sm:col-span-2'>
+							<Checkbox id='person-primary' checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
+							<FieldLabel htmlFor='person-primary'>{t('procurement:supplier.isPrimary')}</FieldLabel>
+						</Field>
 					</FieldGroup>
 					<DialogFooter>
 						<Button type='button' variant='outline' onClick={onClose}>
@@ -136,8 +140,8 @@ function SupplierDetailPage() {
 		}
 	}
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -205,16 +209,18 @@ function SupplierDetailPage() {
 				</Card>
 			</div>
 			<Card>
-				<CardHeader className='flex flex-row items-center justify-between'>
+				<CardHeader>
 					<CardTitle>{t('procurement:suppliers.people')}</CardTitle>
 					{canUpdate && (
-						<Button variant='outline' size='sm' onClick={() => setAddingPerson(true)}>
-							{t('procurement:suppliers.addPerson')}
-						</Button>
+						<CardAction>
+							<Button variant='outline' size='sm' onClick={() => setAddingPerson(true)}>
+								{t('procurement:suppliers.addPerson')}
+							</Button>
+						</CardAction>
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-3 text-sm'>
-					{data.people.length === 0 && <p className='text-muted-foreground'>{t('procurement:suppliers.noPeople')}</p>}
+					{data.people.length === 0 && <EmptyState title={t('procurement:suppliers.noPeople')} size='sm' />}
 					{data.people.map((person) => (
 						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
 							<div>

@@ -131,25 +131,40 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		],
 	},
 
-	// M05 — Inventory & Purchasing, with Assets & Equipment (M06) folded in.
+	// M05 — Product master (ADR-0026: its own module, next to the stock module),
+	// with Assets & Equipment (M06) folded into Inventory below.
 	{
-		labelKey: 'section.inventory',
+		labelKey: 'section.product',
+		items: [
+			{ titleKey: 'item.products', url: '/products', icon: Package, permission: 'product.read' },
+			{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
+			{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
+			// No catalog resource yet: hidden.
+			{ titleKey: 'item.itemCategories', url: '/product-categories' },
+		],
+	},
+
+	// Warehouses (ADR-0026: the physical estate is its own module).
+	{
+		labelKey: 'section.warehouse',
 		items: [
 			// App admins see every warehouse; a person in charge sees the ones
 			// granted to them (ADR-0017, resolved from `/warehouses/mine`).
-			{ titleKey: 'item.warehouses', url: '/inventory/warehouses', icon: Warehouse, warehousePic: true },
+			{ titleKey: 'item.warehouses', url: '/warehouses', icon: Warehouse, warehousePic: true },
+		],
+	},
+
+	// M05 — Stock, purchasing and assets.
+	{
+		labelKey: 'section.inventory',
+		items: [
 			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator, permission: 'stock.read' },
 			{
 				titleKey: 'item.items',
 				icon: Package,
 				items: [
-					{ titleKey: 'item.products', url: '/inventory/products', permission: 'product.read' },
-					{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
-					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
 					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.itemCategories', url: '/inventory/categories' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },
 				],
 			},

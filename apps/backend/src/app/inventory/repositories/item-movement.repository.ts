@@ -5,11 +5,13 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, count, desc, eq, isNotNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	IItemMovementRepository,
 	TItemMovementCreateData,
 	TItemMovementSelect,
 } from '../contracts/item-movement.repository.interface';
+import type { TItemHistoryPaginationRequest } from '../contracts/item-operations.repository.interface';
 
 /** Drizzle implementation of {@link IItemMovementRepository} (item rows of `movements`). */
 @injectable()
@@ -31,12 +33,15 @@ export class ItemMovementRepository implements IItemMovementRepository {
 		return row as TItemMovementSelect;
 	}
 
-	async listByItem(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+	/**
+	 * Fetches one page of the unit's location trail, newest first.
+	 *
+	 * @param request - Unit, tenant and page settings
+	 */
+	async paginateByItem(
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TItemMovementSelect>> {
+		const { itemId, organizationId, page, limit } = request;
 		const where = and(
 			eq(movements.itemId, itemId),
 			isNotNull(movements.itemId),
@@ -53,9 +58,6 @@ export class ItemMovementRepository implements IItemMovementRepository {
 			.orderBy(desc(movements.occurredAt), desc(movements.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data: data as TItemMovementSelect[],
-		};
+		return paginationResult(request, total, data as TItemMovementSelect[]);
 	}
 }

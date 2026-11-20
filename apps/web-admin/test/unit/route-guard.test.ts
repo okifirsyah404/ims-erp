@@ -82,26 +82,26 @@ describe('canOpenPath', () => {
 
 	test('warehouse page: allowed for an app admin or a person in charge', async () => {
 		expect(
-			await canOpenPath('/inventory/warehouses', admin, fakeClient([])),
+			await canOpenPath('/warehouses', admin, fakeClient([])),
 		).toBe(true);
 		expect(
 			await canOpenPath(
-				'/inventory/warehouses/wh-1',
+				'/warehouses/wh-1',
 				investorOnly,
 				fakeClient([], {}, [{ id: 'wh-1' }]),
 			),
 		).toBe(true);
 		// No grant and no admin role: the sidebar hides it, so the route denies.
 		expect(
-			await canOpenPath('/inventory/warehouses', investorOnly, fakeClient([])),
+			await canOpenPath('/warehouses', investorOnly, fakeClient([])),
 		).toBe(false);
 	});
 
 	test('creating a warehouse stays app-admin only, even for a person in charge', async () => {
 		const picClient = fakeClient([], {}, [{ id: 'wh-1' }]);
-		expect(await canOpenPath('/inventory/warehouses/new', admin, picClient)).toBe(true);
+		expect(await canOpenPath('/warehouses/new', admin, picClient)).toBe(true);
 		expect(
-			await canOpenPath('/inventory/warehouses/new', investorOnly, picClient),
+			await canOpenPath('/warehouses/new', investorOnly, picClient),
 		).toBe(false);
 	});
 

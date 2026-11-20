@@ -46,11 +46,10 @@ export class InvoiceController {
 				'/invoices',
 				async ({ query, erp }) =>
 					okPaginated(
-						await invoices.list(
-							erp.organizationId,
-							invoiceListQuerySchema.parse(query),
-							invoiceListQuerySchema.parse(query),
-						),
+						await invoices.list({
+							organizationId: erp.organizationId,
+							...invoiceListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['invoice:read'] },

@@ -64,10 +64,10 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 169 |
+| Logical reference columns | 190 |
 | Distinct targets | 25 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 162 |
+| Intra-module `Ref:` declarations | 147 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -78,19 +78,19 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | Target | Owner | Referring columns |
 |---|---|---|
 | `auth.organizations.id` | Identity | 53 |
-| `auth.users.id` | Identity | 30 |
+| `auth.users.id` | Identity | 34 |
+| `product.products.id` | Product | 15 |
 | `customer.customers.id` | Customer | 12 |
-| `inventory.products.id` | Inventory | 10 |
 | `human_resource.employees.id` | Human Resource | 8 |
 | `location.villages.id` | Location | 8 |
+| `warehouse.warehouse_storages.id` | Warehouse | 8 |
+| `warehouse.warehouses.id` | Warehouse | 8 |
 | `customer.companies.id` | Customer | 7 |
 | `document.documents.id` | Document | 6 |
 | `project.projects.id` | Project | 6 |
 | `supplier.companies.id` | Supplier | 5 |
 | `payment.payments.id` | Payment | 3 |
 | `inventory.movements.id` | Inventory | 2 |
-| `inventory.warehouse_storages.id` | Inventory | 2 |
-| `inventory.warehouses.id` | Inventory | 2 |
 | `procurement.purchase_orders.id` | Procurement | 2 |
 | `project.leads.id` | Project | 2 |
 | `sale.invoices.id` | Sale | 2 |
@@ -135,7 +135,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `human_resource.employees`  ->  `organization_id`
 - `inventory.stock_adjustment_items`  ->  `organization_id`
 - `inventory.stock_adjustments`  ->  `organization_id`
-- `inventory.warehouse_organizations`  ->  `organization_id`
 - `payment.gateways`  ->  `organization_id`
 - `payment.payment_allocations`  ->  `organization_id`
 - `payment.payments`  ->  `organization_id`
@@ -160,8 +159,9 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `tax.taxes`  ->  `organization_id`
 - `tax.withholding_tax_records`  ->  `organization_id`
 - `ticket.ticket_templates`  ->  `organization_id`
+- `warehouse.warehouse_organizations`  ->  `organization_id`
 
-### `auth.users.id` - owner Identity, 30 referring columns
+### `auth.users.id` - owner Identity, 34 referring columns
 
 - `audit.audit_logs`  ->  `actor_user_id`
 - `company.profiles`  ->  `updated_by`
@@ -177,12 +177,13 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `inventory.code_numberings`  ->  `updated_by`
 - `inventory.documents`  ->  `created_by`
 - `inventory.movements`  ->  `created_by`
-- `inventory.products`  ->  `created_by`
 - `inventory.settings`  ->  `updated_by`
 - `inventory.stock_adjustments`  ->  `approved_by`
 - `inventory.stock_adjustments`  ->  `requested_by`
-- `inventory.warehouse_settings`  ->  `updated_by`
 - `notification.push_notifications`  ->  `user_id`
+- `product.code_numberings`  ->  `updated_by`
+- `product.products`  ->  `created_by`
+- `product.settings`  ->  `updated_by`
 - `project.projects`  ->  `pic_user_id`
 - `project.tasks`  ->  `assignee_user_id`
 - `sale.quotations`  ->  `approved_by`
@@ -193,6 +194,27 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `supplier.companies`  ->  `created_by`
 - `supplier.settings`  ->  `updated_by`
 - `supplier.suppliers`  ->  `created_by`
+- `warehouse.code_numberings`  ->  `updated_by`
+- `warehouse.settings`  ->  `updated_by`
+- `warehouse.warehouse_settings`  ->  `updated_by`
+
+### `product.products.id` - owner Product, 15 referring columns
+
+- `finance.supplier_bill_items`  ->  `product_id`
+- `inventory.documents`  ->  `product_id`
+- `inventory.item_serials`  ->  `product_id`
+- `inventory.movements`  ->  `product_id`
+- `inventory.stock_adjustment_items`  ->  `product_id`
+- `inventory.stocks`  ->  `product_id`
+- `procurement.goods_receipt_items`  ->  `product_id`
+- `procurement.purchase_order_items`  ->  `product_id`
+- `procurement.purchase_request_items`  ->  `product_id`
+- `procurement.purchase_return_items`  ->  `product_id`
+- `sale.delivery_note_items`  ->  `product_id`
+- `sale.invoice_items`  ->  `product_id`
+- `sale.order_items`  ->  `product_id`
+- `sale.quotation_items`  ->  `product_id`
+- `sale.return_items`  ->  `product_id`
 
 ### `customer.customers.id` - owner Customer, 12 referring columns
 
@@ -208,19 +230,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sale.quotations`  ->  `customer_id`
 - `sale.returns`  ->  `customer_id`
 - `ticket.tickets`  ->  `customer_id`
-
-### `inventory.products.id` - owner Inventory, 10 referring columns
-
-- `finance.supplier_bill_items`  ->  `product_id`
-- `procurement.goods_receipt_items`  ->  `product_id`
-- `procurement.purchase_order_items`  ->  `product_id`
-- `procurement.purchase_request_items`  ->  `product_id`
-- `procurement.purchase_return_items`  ->  `product_id`
-- `sale.delivery_note_items`  ->  `product_id`
-- `sale.invoice_items`  ->  `product_id`
-- `sale.order_items`  ->  `product_id`
-- `sale.quotation_items`  ->  `product_id`
-- `sale.return_items`  ->  `product_id`
 
 ### `human_resource.employees.id` - owner Human Resource, 8 referring columns
 
@@ -239,10 +248,32 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `customer.addresses`  ->  `village_id`
 - `customer.company_addresses`  ->  `village_id`
 - `human_resource.employee_addresses`  ->  `village_id`
-- `inventory.warehouse_addresses`  ->  `village_id`
 - `project.addresses`  ->  `village_id`
 - `supplier.addresses`  ->  `village_id`
 - `supplier.company_addresses`  ->  `village_id`
+- `warehouse.warehouse_addresses`  ->  `village_id`
+
+### `warehouse.warehouse_storages.id` - owner Warehouse, 8 referring columns
+
+- `inventory.item_serials`  ->  `bin_id`
+- `inventory.items`  ->  `storage_id`
+- `inventory.movements`  ->  `bin_id`
+- `inventory.movements`  ->  `target_bin_id`
+- `inventory.stock_adjustment_items`  ->  `bin_id`
+- `inventory.stocks`  ->  `bin_id`
+- `procurement.goods_receipts`  ->  `bin_id`
+- `sale.delivery_notes`  ->  `bin_id`
+
+### `warehouse.warehouses.id` - owner Warehouse, 8 referring columns
+
+- `inventory.item_serials`  ->  `warehouse_id`
+- `inventory.items`  ->  `warehouse_id`
+- `inventory.movements`  ->  `target_warehouse_id`
+- `inventory.movements`  ->  `warehouse_id`
+- `inventory.stock_adjustments`  ->  `warehouse_id`
+- `inventory.stocks`  ->  `warehouse_id`
+- `procurement.goods_receipts`  ->  `warehouse_id`
+- `sale.delivery_notes`  ->  `warehouse_id`
 
 ### `customer.companies.id` - owner Customer, 7 referring columns
 
@@ -290,16 +321,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 - `procurement.goods_receipt_items`  ->  `movement_id`
 - `sale.delivery_note_items`  ->  `movement_id`
-
-### `inventory.warehouse_storages.id` - owner Inventory, 2 referring columns
-
-- `procurement.goods_receipts`  ->  `bin_id`
-- `sale.delivery_notes`  ->  `bin_id`
-
-### `inventory.warehouses.id` - owner Inventory, 2 referring columns
-
-- `procurement.goods_receipts`  ->  `warehouse_id`
-- `sale.delivery_notes`  ->  `warehouse_id`
 
 ### `procurement.purchase_orders.id` - owner Procurement, 2 referring columns
 

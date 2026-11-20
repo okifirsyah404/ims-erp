@@ -32,7 +32,7 @@ import {
 	warehouseManagers,
 	warehouseOrganizations,
 	warehouses,
-} from '../drizzle/schemas/inventory.schema';
+} from '../drizzle/schemas/warehouse.schema';
 
 const BASE = `http://localhost:${process.env.APP_PORT ?? 3011}`;
 const ORG_ID = process.argv[2];

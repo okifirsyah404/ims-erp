@@ -10,7 +10,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	ICashBankRepository,
+	TCashBankTransactionPaginationRequest,
+} from '../contracts/cash-bank.repository.interface';
 
 /**
  * Drizzle queries of `finance.cash_bank_accounts` and
@@ -155,11 +159,15 @@ export class CashBankRepository implements ICashBankRepository {
 		return created;
 	}
 
-	async listCashBankTransactions(
-		organizationId: string,
-		cashBankAccountId: string | undefined,
-		pagination: { page: number; limit: number },
+	/**
+	 * Fetches one page of cash/bank movements, newest first.
+	 *
+	 * @param request - Tenant, page settings and the optional account filter
+	 */
+	async paginateTransactions(
+		request: TCashBankTransactionPaginationRequest,
 	): Promise<TPaginationResult<TCashBankTransactionSelect>> {
+		const { organizationId, cashBankAccountId, page, limit } = request;
 		const conditions = [
 			eq(cashBankTransactions.organizationId, organizationId),
 			isNull(cashBankTransactions.deletedAt),
@@ -177,17 +185,9 @@ export class CashBankRepository implements ICashBankRepository {
 			.from(cashBankTransactions)
 			.where(where)
 			.orderBy(desc(cashBankTransactions.transactionDate), desc(cashBankTransactions.createdAt))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async cashBankAccountBalance(organizationId: string, id: string): Promise<number> {

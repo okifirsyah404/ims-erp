@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
@@ -17,17 +18,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatIdr } from '@/lib/format';
-import { stockValuationQueryOptions } from '@/lib/stock-valuation-api';
+import { stockValuationQueryOptions, type TStockValuationRow } from '@/lib/stock-valuation-api';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 
 const PAGE_SIZE = 50;
 
@@ -53,6 +50,54 @@ function InventoryValuePage() {
 	}
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TStockValuationRow, CellData>[]>(
+		() => [
+			{
+				id: 'item',
+				header: t('inventory:value.item'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.sku}</div>
+					</>
+				),
+			},
+			{
+				id: 'warehouse',
+				header: t('inventory:value.warehouse'),
+				cell: ({ row }) => (
+					<>
+						{row.original.warehouseCode}
+						{row.original.binCode ? ` · ${row.original.binCode}` : ''}
+					</>
+				),
+			},
+			{
+				id: 'quantity',
+				header: t('inventory:value.quantity'),
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<>
+						{Number(row.original.quantityOnHand).toLocaleString(language)} {row.original.unit}
+					</>
+				),
+			},
+			{
+				id: 'averageCost',
+				header: t('inventory:value.averageCost'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.averageCost),
+			},
+			{
+				id: 'totalValue',
+				header: t('inventory:value.totalValue'),
+				meta: { align: 'right', cellClassName: 'font-medium' },
+				cell: ({ row }) => formatIdr(row.original.totalValue),
+			},
+		],
+		[language, t],
+	);
+
 	return (
 		<div className='flex flex-col gap-6'>
 			<div>
@@ -60,8 +105,10 @@ function InventoryValuePage() {
 				<p className='text-sm text-muted-foreground'>{t('inventory:value.description')}</p>
 			</div>
 			{isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : isPending ? null : (
+				<ErrorState error={error} bordered />
+			) : isPending ? (
+				<SectionSkeleton lines={6} />
+			) : (
 				<>
 					<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 						<Card>
@@ -121,44 +168,14 @@ function InventoryValuePage() {
 						</InputGroup>
 					</div>
 					{data.data.length === 0 ? (
-						<Card>
-							<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('inventory:value.empty')}</CardContent>
-						</Card>
+						<EmptyState title={t('inventory:value.empty')} bordered />
 					) : (
-						<Card>
-							<CardContent className='p-0'>
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead>{t('inventory:value.item')}</TableHead>
-											<TableHead>{t('inventory:value.warehouse')}</TableHead>
-											<TableHead className='text-right'>{t('inventory:value.quantity')}</TableHead>
-											<TableHead className='text-right'>{t('inventory:value.averageCost')}</TableHead>
-											<TableHead className='text-right'>{t('inventory:value.totalValue')}</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{data.data.map((row) => (
-											<TableRow key={`${row.productId}-${row.warehouseId}-${row.binCode ?? ''}`}>
-												<TableCell>
-													<div className='font-medium'>{row.name}</div>
-													<div className='text-xs text-muted-foreground'>{row.sku}</div>
-												</TableCell>
-												<TableCell>
-													{row.warehouseCode}
-													{row.binCode ? ` · ${row.binCode}` : ''}
-												</TableCell>
-												<TableCell className='text-right'>
-													{Number(row.quantityOnHand).toLocaleString(language)} {row.unit}
-												</TableCell>
-												<TableCell className='text-right'>{formatIdr(row.averageCost)}</TableCell>
-												<TableCell className='text-right font-medium'>{formatIdr(row.totalValue)}</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
-							</CardContent>
-						</Card>
+						<DataTable
+							columns={columns}
+							data={data.data}
+							getRowId={(row) => `${row.productId}-${row.warehouseId}-${row.binCode ?? ''}`}
+							bordered
+						/>
 					)}
 					{data.meta.totalPages > 1 && (
 						<PaginationControls page={data.meta.page} totalPages={data.meta.totalPages} onPageChange={setPage} />

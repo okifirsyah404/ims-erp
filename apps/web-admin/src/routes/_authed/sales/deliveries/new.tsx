@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -70,18 +71,18 @@ function SerialPicker({
 			<FieldDescription>{t('deliveries.pickSerials', { count: serials.data?.length ?? 0 })}</FieldDescription>
 			<div className='flex flex-wrap gap-x-4 gap-y-1'>
 				{(serials.data ?? []).map((serial) => (
-					<label key={serial} className='flex items-center gap-1.5 text-sm'>
-						<input
-							type='checkbox'
+					<Field key={serial} orientation='horizontal' className='w-auto'>
+						<Checkbox
+							id={`dn-serial-${lineId}-${serial}`}
 							name={`dn-serial-${lineId}`}
 							value={serial}
 							checked={value.includes(serial)}
-							onChange={(event) =>
-								onChange(event.target.checked ? [...value, serial] : value.filter((entry) => entry !== serial))
+							onCheckedChange={(checked) =>
+								onChange(checked === true ? [...value, serial] : value.filter((entry) => entry !== serial))
 							}
 						/>
-						{serial}
-					</label>
+						<FieldLabel htmlFor={`dn-serial-${lineId}-${serial}`}>{serial}</FieldLabel>
+					</Field>
 				))}
 			</div>
 		</div>

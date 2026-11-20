@@ -3,7 +3,7 @@ import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -304,16 +304,15 @@ export function PurchaseRequestForm({
 						{t('procurement:pr.estimatedTotal')}: {formatIdr(total)}
 					</div>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='button' variant='outline' onClick={onCancel}>
+						{t('common:action.cancel')}
+					</Button>
+					<Button type='submit' disabled={submitting || lines.length === 0}>
+						{t('common:action.save')}
+					</Button>
+				</CardFooter>
 			</Card>
-
-			<div className='flex justify-end gap-2'>
-				<Button type='button' variant='outline' onClick={onCancel}>
-					{t('common:action.cancel')}
-				</Button>
-				<Button type='submit' disabled={submitting || lines.length === 0}>
-					{t('common:action.save')}
-				</Button>
-			</div>
 		</form>
 	);
 }

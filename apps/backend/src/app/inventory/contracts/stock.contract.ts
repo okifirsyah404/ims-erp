@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { MOVEMENT_TYPES } from '@drizzle/schemas/inventory.schema';
-import { inventoryPaginationSchema } from './product.contract';
-import { booleanQuerySchema } from './warehouse.contract';
+import { inventoryPaginationSchema } from './pagination.contract';
+import { booleanQuerySchema } from './pagination.contract';
 
 /**
  * Request schemas for the stock ledger, balances, and receipts/issues.

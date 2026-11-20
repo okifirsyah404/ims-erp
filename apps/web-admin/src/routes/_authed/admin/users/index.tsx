@@ -9,7 +9,7 @@ import {
 	UserPlus,
 	Users as UsersIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TranslationKey } from '@ims-erp/locales';
 import { toast } from '@/components/toast';
@@ -57,14 +57,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import {
 	ADMIN_PERMISSIONS,
 	cancelInvitation,
@@ -81,6 +74,9 @@ import {
 	type TUserStatus,
 } from '@/lib/admin-api';
 import { organizationsQueryOptions } from '@/lib/organization-api';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { InviteDialog } from '@/components/invite/invite-dialog';
 import {
@@ -135,26 +131,8 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
 		deactivated: 'destructive',
 	};
 
-/** Number of placeholder rows shown while the first page loads. */
-const SKELETON_ROW_COUNT = 5;
-
 /** Per-column placeholders matching the Users table's shape. `elements`
  *  renders multiple stacked skeletons (e.g. avatar + text in one cell). */
-const SKELETON_CELLS: Array<{
-	key: string;
-	className?: string;
-	elements?: Array<string>;
-}> = [
-	{
-		key: 'user',
-		elements: ['size-9 rounded-full', 'h-4 w-32'],
-	},
-	{ key: 'status', className: 'h-5 w-20 rounded-full' },
-	{ key: 'orgs', className: 'h-5 w-36 rounded-full' },
-	{ key: 'created', className: 'h-4 w-24' },
-	{ key: 'actions', className: 'ml-auto h-8 w-8' },
-];
-
 function UsersPage() {
 	const organizationId = useActiveOrganizationId();
 	const search = Route.useSearch();
@@ -243,6 +221,63 @@ function UsersPage() {
 		invalidate: [['admin-invitations'], ['admin-audit']],
 	};
 
+	const busy = deactivate.isPending || restore.isPending || remove.isPending;
+	const columns = useMemo<ColumnDef<DataTableFeatures, TAdminUser, CellData>[]>(
+		() => [
+			{
+				id: 'user',
+				header: sortHeader(t('users.user'), 'name'),
+				cell: ({ row }) => <UserIdentity user={row.original} />,
+			},
+			{
+				id: 'status',
+				header: t('users.filterStatus'),
+				cell: ({ row }) => <UserStatusBadges user={row.original} />,
+			},
+			{
+				id: 'roles',
+				header: t('users.organizationRoles'),
+				cell: ({ row }) => <UserOrganizations user={row.original} />,
+			},
+			{
+				accessorKey: 'createdAt',
+				header: sortHeader(t('users.created'), 'createdAt'),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				cell: ({ row }) =>
+					row.original.createdAt
+						? new Date(row.original.createdAt).toLocaleDateString()
+						: '—',
+			},
+			{
+				accessorKey: 'joinedAt',
+				header: sortHeader(t('users.joined'), 'joinedAt'),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				// Pending users never claimed their invitation - no join date yet.
+				cell: ({ row }) =>
+					row.original.joinedAt
+						? new Date(row.original.joinedAt).toLocaleDateString()
+						: '—',
+			},
+			{
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('users.actions')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<UserActions
+						user={row.original}
+						busy={busy}
+						canUpdate={canUpdate}
+						canDelete={canDelete}
+						onDeactivate={() => deactivate.mutate(row.original.id)}
+						onRestore={() => restore.mutate(row.original.id)}
+						onDelete={() => remove.mutate(row.original.id)}
+					/>
+				),
+			},
+		],
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[t, busy, canUpdate, canDelete, search.sortBy, search.sortDir],
+	);
 	if (!organizationId) {
 		return (
 			<div className='text-sm text-muted-foreground'>
@@ -253,7 +288,6 @@ function UsersPage() {
 
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
-	const busy = deactivate.isPending || restore.isPending || remove.isPending;
 
 	/** Toggles the sort column, flipping direction when already active. */
 	function toggleSort(field: TSortField) {
@@ -282,6 +316,23 @@ function UsersPage() {
 			<ArrowDown className='ml-1 size-3' aria-hidden='true' />
 		);
 	}
+
+	/** Server-driven sort header: the URL holds the sort, not the table. */
+	function sortHeader(label: string, field: TSortField) {
+		return () => (
+			<Button
+				variant='ghost'
+				size='sm'
+				className='-ml-2 h-8'
+				onClick={() => toggleSort(field)}
+			>
+				{label}
+				{sortIcon(field)}
+			</Button>
+		);
+	}
+
+
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -359,93 +410,18 @@ function UsersPage() {
 				</CardHeader>
 				<CardContent>
 					{isError && (
-						<p className='text-sm text-destructive'>{(error as Error).message}</p>
+						<ErrorState error={error} size='sm' />
 					)}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('users.empty')}</p>
+						<EmptyState title={t('users.empty')} size='sm' />
 					)}
 					{(isPending || rows.length > 0) && (
-						<Table aria-busy={isPending || undefined}>
-							<TableHeader>
-								<TableRow>
-									<TableHead>
-										<button
-											type='button'
-											className='inline-flex items-center hover:text-foreground'
-											onClick={() => toggleSort('name')}
-										>
-											{t('users.user')}
-											{sortIcon('name')}
-										</button>
-									</TableHead>
-									<TableHead>{t('users.filterStatus')}</TableHead>
-									<TableHead>{t('users.organizationRoles')}</TableHead>
-									<TableHead>
-										<button
-											type='button'
-											className='inline-flex items-center hover:text-foreground'
-											onClick={() => toggleSort('createdAt')}
-										>
-											{t('users.created')}
-											{sortIcon('createdAt')}
-										</button>
-									</TableHead>
-									<TableHead>
-										<button
-											type='button'
-											className='inline-flex items-center hover:text-foreground'
-											onClick={() => toggleSort('joinedAt')}
-										>
-											{t('users.joined')}
-											{sortIcon('joinedAt')}
-										</button>
-									</TableHead>
-									<TableHead className='text-right'>
-										<span className='sr-only'>{t('users.actions')}</span>
-									</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{isPending &&
-									Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
-										<TableRow key={index} aria-hidden='true'>
-											{SKELETON_CELLS.map((cell) => (
-												<TableCell key={cell.key}>
-													{'elements' in cell && cell.elements ? (
-														<div
-															className='flex items-center gap-3'
-															aria-hidden='true'
-														>
-															{cell.elements.map((element, elementIndex) => (
-																<Skeleton
-																	key={elementIndex}
-																	className={`${element} motion-reduce:animate-none`}
-																/>
-															))}
-														</div>
-													) : (
-														<Skeleton
-															className={`${cell.className} motion-reduce:animate-none`}
-														/>
-													)}
-												</TableCell>
-											))}
-										</TableRow>
-									))}
-								{rows.map((user) => (
-									<UserRow
-										key={user.id}
-										user={user}
-										busy={busy}
-										canUpdate={canUpdate}
-										canDelete={canDelete}
-										onDeactivate={() => deactivate.mutate(user.id)}
-										onRestore={() => restore.mutate(user.id)}
-										onDelete={() => remove.mutate(user.id)}
-									/>
-								))}
-							</TableBody>
-						</Table>
+						<DataTable
+							columns={columns}
+							data={rows}
+							getRowId={(user) => user.id}
+							loading={isPending}
+						/>
 					)}
 					{isPending && <span className='sr-only'>{t('users.loading')}</span>}
 
@@ -478,8 +454,88 @@ function UsersPage() {
 	);
 }
 
-/** One user row: org memberships with join dates + dropdown actions. */
-function UserRow({
+/** Avatar + name + email + handle for a user row. */
+function UserIdentity({ user }: { user: TAdminUser }) {
+	return (
+		<div className='flex items-center gap-3'>
+			<Avatar className='size-9'>
+				{user.image && (
+					<AvatarImage src={user.image} alt={user.name || user.email} />
+				)}
+				<AvatarFallback>
+					{user.name
+						? user.name
+								.split(' ')
+								.map((part) => part[0])
+								.slice(0, 2)
+								.join('')
+								.toUpperCase()
+						: '—'}
+				</AvatarFallback>
+			</Avatar>
+			<div className='flex flex-col'>
+				<span className='font-medium'>{user.name || '—'}</span>
+				<span className='text-xs text-muted-foreground'>{user.email}</span>
+				{user.username && (
+					<span className='text-xs text-muted-foreground'>
+						@{user.displayUsername ?? user.username}
+					</span>
+				)}
+			</div>
+		</div>
+	);
+}
+
+/** Account status plus the app-admin marker. */
+function UserStatusBadges({ user }: { user: TAdminUser }) {
+	const status = user.deletedAt ? 'deleted' : (user.status ?? 'unknown');
+	const { t } = useTranslation(['admin', 'common']);
+
+	return (
+		<div className='flex flex-wrap gap-1'>
+			<Badge variant={STATUS_VARIANT[status] ?? 'outline'}>
+				{/*
+				 * The only dynamically composed key in the app: `status` comes from
+				 * the backend, so it cannot be narrowed statically. `defaultValue`
+				 * falls back to the raw status if a new one appears before the
+				 * `common:status.*` keys are updated.
+				 */}
+				{t(`common:status.${status}` as TranslationKey, { defaultValue: status })}
+			</Badge>
+			{hasRole(user.role, 'admin') && (
+				<Badge variant='outline'>{t('users.appAdmin')}</Badge>
+			)}
+		</div>
+	);
+}
+
+/** Organization memberships with the role held in each. */
+function UserOrganizations({ user }: { user: TAdminUser }) {
+	const { t, i18n } = useTranslation(['admin', 'common']);
+
+	// `?? []` is defensive: a listing served by a handler that doesn't join
+	// memberships omits the field entirely, and an unguarded `.length` crashed
+	// the whole table.
+	if ((user.organizations ?? []).length === 0) {
+		return (
+			<span className='text-xs text-muted-foreground'>
+				{t('users.noMemberships')}
+			</span>
+		);
+	}
+	return (
+		<div className='flex flex-wrap gap-1'>
+			{(user.organizations ?? []).map((org) => (
+				<Badge key={org.id} variant='secondary'>
+					{`${humanizeIdentifier(org.name)} (${erpRoleLabel(org.role, i18n.language)})`}
+				</Badge>
+			))}
+		</div>
+	);
+}
+
+/** Row actions dropdown, including the controlled delete confirmation. */
+function UserActions({
 	user,
 	busy,
 	canUpdate,
@@ -502,153 +558,73 @@ function UserRow({
 	const hasActions =
 		(canUpdate && (isActive || canRestore)) || (canDelete && !user.deletedAt);
 	const [deleteOpen, setDeleteOpen] = useState(false);
-	const { t, i18n } = useTranslation(['admin', 'common']);
+	const { t } = useTranslation(['admin', 'common']);
 
+	if (!hasActions) {
+		return <span className='text-xs text-muted-foreground'>—</span>;
+	}
 	return (
-		<TableRow>
-			<TableCell>
-				<div className='flex items-center gap-3'>
-					<Avatar className='size-9'>
-						{user.image && (
-							<AvatarImage src={user.image} alt={user.name || user.email} />
-						)}
-						<AvatarFallback>
-							{user.name
-								? user.name
-										.split(' ')
-										.map((part) => part[0])
-										.slice(0, 2)
-										.join('')
-										.toUpperCase()
-								: '—'}
-						</AvatarFallback>
-					</Avatar>
-					<div className='flex flex-col'>
-						<span className='font-medium'>{user.name || '—'}</span>
-						<span className='text-xs text-muted-foreground'>{user.email}</span>
-						{user.username && (
-							<span className='text-xs text-muted-foreground'>
-								@{user.displayUsername ?? user.username}
-							</span>
-						)}
-					</div>
-				</div>
-			</TableCell>
-			<TableCell>
-				<div className='flex flex-wrap gap-1'>
-					<Badge variant={STATUS_VARIANT[status] ?? 'outline'}>
-						{/*
-						 * The only dynamically composed key in the app: `status` comes from
-						 * the backend, so it cannot be narrowed statically. `defaultValue`
-						 * falls back to the raw status if a new one appears before the
-						 * `common:status.*` keys are updated.
-						 */}
-						{t(`common:status.${status}` as TranslationKey, { defaultValue: status })}
-					</Badge>
-					{hasRole(user.role, 'admin') && (
-						<Badge variant='outline'>{t('users.appAdmin')}</Badge>
-					)}
-				</div>
-			</TableCell>
-			<TableCell>
-				{/* `?? []` is defensive: a listing served by a handler that
-				    doesn't join memberships omits the field entirely, and an
-				    unguarded `.length` crashed the whole table. */}
-				{(user.organizations ?? []).length === 0 ? (
-					<span className='text-xs text-muted-foreground'>
-						{t('users.noMemberships')}
-					</span>
-				) : (
-					<div className='flex flex-wrap gap-1'>
-						{(user.organizations ?? []).map((org) => (
-							<Badge key={org.id} variant='secondary'>
-								{`${humanizeIdentifier(org.name)} (${erpRoleLabel(org.role, i18n.language)})`}
-							</Badge>
-						))}
-					</div>
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button
+						variant='ghost'
+						size='sm'
+						disabled={busy}
+						aria-label={t('users.openActions')}
+					>
+						<MoreHorizontal className='size-4' />
+					</Button>
+				}
+			/>
+			<DropdownMenuContent align='end' className='w-44'>
+				{canUpdate && isActive && (
+					<DropdownMenuItem onSelect={onDeactivate}>
+						{t('users.deactivate')}
+					</DropdownMenuItem>
 				)}
-			</TableCell>
-			<TableCell className='text-xs text-muted-foreground'>
-				{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
-			</TableCell>
-			<TableCell className='text-xs text-muted-foreground'>
-				{/* Pending users never claimed their invitation — no join date yet. */}
-				{user.joinedAt ? new Date(user.joinedAt).toLocaleDateString() : '—'}
-			</TableCell>
-			<TableCell className='text-right'>
-				{!hasActions ? (
-					<span className='text-xs text-muted-foreground'>—</span>
-				) : (
-					<DropdownMenu>
-						<DropdownMenuTrigger
-							render={
-								<Button
-									variant='ghost'
-									size='sm'
-									disabled={busy}
-									aria-label={t('users.openActions')}
-								>
-									<MoreHorizontal className='size-4' />
-								</Button>
-							}
-						/>
-						<DropdownMenuContent align='end' className='w-44'>
-							{canUpdate && isActive && (
-								<DropdownMenuItem onSelect={onDeactivate}>
-									{t('users.deactivate')}
-								</DropdownMenuItem>
-							)}
-							{canUpdate && canRestore && (
-								<DropdownMenuItem onSelect={onRestore}>
-									{t('common:action.restore')}
-								</DropdownMenuItem>
-							)}
-							{canDelete && !user.deletedAt && (
-								<>
-									{canUpdate && (isActive || canRestore) && (
-										<DropdownMenuSeparator />
-									)}
-									{/* Controlled dialog: opening it from the menu item
-									    avoids nesting an AlertDialog inside the menu portal
-									    (the trigger must live outside the popup). */}
-									<DropdownMenuItem
-										variant='destructive'
-										onSelect={() => setDeleteOpen(true)}
-									>
+				{canUpdate && canRestore && (
+					<DropdownMenuItem onSelect={onRestore}>
+						{t('common:action.restore')}
+					</DropdownMenuItem>
+				)}
+				{canDelete && !user.deletedAt && (
+					<>
+						{canUpdate && (isActive || canRestore) && <DropdownMenuSeparator />}
+						{/* Controlled dialog: opening it from the menu item avoids
+						    nesting an AlertDialog inside the menu portal (the trigger
+						    must live outside the popup). */}
+						<DropdownMenuItem
+							variant='destructive'
+							onSelect={() => setDeleteOpen(true)}
+						>
+							{t('common:action.delete')}
+						</DropdownMenuItem>
+						<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+							<AlertDialogContent>
+								<AlertDialogHeader>
+									<AlertDialogTitle>{t('users.deleteTitle')}</AlertDialogTitle>
+									<AlertDialogDescription>
+										{t('users.deleteDescription', { email: user.email })}
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter>
+									<AlertDialogCancel>
+										{t('common:action.cancel')}
+									</AlertDialogCancel>
+									<AlertDialogAction onClick={onDelete}>
 										{t('common:action.delete')}
-									</DropdownMenuItem>
-									<AlertDialog
-										open={deleteOpen}
-										onOpenChange={setDeleteOpen}
-									>
-										<AlertDialogContent>
-											<AlertDialogHeader>
-												<AlertDialogTitle>
-													{t('users.deleteTitle')}
-												</AlertDialogTitle>
-												<AlertDialogDescription>
-													{t('users.deleteDescription', { email: user.email })}
-												</AlertDialogDescription>
-											</AlertDialogHeader>
-											<AlertDialogFooter>
-												<AlertDialogCancel>
-													{t('common:action.cancel')}
-												</AlertDialogCancel>
-												<AlertDialogAction onClick={onDelete}>
-													{t('common:action.delete')}
-												</AlertDialogAction>
-											</AlertDialogFooter>
-										</AlertDialogContent>
-									</AlertDialog>
-								</>
-							)}
-						</DropdownMenuContent>
-					</DropdownMenu>
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</AlertDialogContent>
+						</AlertDialog>
+					</>
 				)}
-			</TableCell>
-		</TableRow>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }
+
 
 /**
  * Filters popover: status + organization selects with draft state.

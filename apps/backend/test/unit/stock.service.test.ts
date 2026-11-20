@@ -18,15 +18,20 @@
  * Drizzle repositories rely on: the atomic accumulate in `applyDelta` and the
  * conditional `status = 'posted'` claim in `claimForReversal`. The fakes are
  * deliberately dumb elsewhere — anything smarter would be testing the fake.
+ *
+ * ADR-0026: the product master and the warehouse estate moved to their own
+ * modules, so `StockService` reads them through the repository-only export
+ * facades. The warehouse fake therefore speaks the facade's contract, and the
+ * product fake is only reached for row decoration.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
 import type {
-	TProductSelect,
 	TStockSelect,
 	TMovementSelect,
-	TWarehouseSelect,
 } from '@drizzle/schemas/inventory.schema';
+import type { TProductSelect } from '@drizzle/schemas/product.schema';
+import type { TWarehouseSelect } from '@drizzle/schemas/warehouse.schema';
 import type {
 	IMovementRepository,
 	TProductMovementSelect,
@@ -39,21 +44,17 @@ import type {
 	TStockKey,
 	TStockPaginationRequest,
 } from '../../src/app/inventory/contracts/stock.repository.interface';
-import type { IProductRepository } from '../../src/app/inventory/contracts/product.repository.interface';
-import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
-import {
-	STOCK_REPOSITORY_TOKEN,
-	PRODUCT_REPOSITORY_TOKEN,
-	MOVEMENT_REPOSITORY_TOKEN,
-	STOCK_SERVICE_TOKEN,
-	WAREHOUSE_REPOSITORY_TOKEN,
-} from '../../src/app/inventory/constants/di';
+import type { IProductRepository } from '../../src/app/product/contracts/product.repository.interface';
+import type { ExportedProductService } from '../../src/app/product/services/exported-product.service';
+import type { ExportedWarehouseService } from '../../src/app/warehouse/services/exported-warehouse.service';
+import { MOVEMENT_REPOSITORY_TOKEN, STOCK_SERVICE_TOKEN, STOCK_REPOSITORY_TOKEN } from '../../src/app/inventory/constants/di';
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { signedContribution } from '../../src/app/inventory/repositories/movement.repository';
 import { createNumberingDouble } from '../helpers/numbering-double';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import {
 	InsufficientStockError,
+	InventoryReferenceError,
 	MovementAlreadyReversedError,
 } from '../../src/app/inventory/errors/inventory.errors';
 
@@ -81,12 +82,13 @@ function warehouse(
 		code: id.slice(-2).toUpperCase(),
 		name: `Warehouse ${id.slice(-2)}`,
 		responsibleEmployeeId: null,
+		imageUrl: null,
 		isDefault: false,
 		isActive: true,
 		createdAt: new Date(0),
 		updatedAt: null,
 		deletedAt: null,
-	} as TWarehouseSelect;
+	};
 }
 
 /** Balance key → sign-accumulating in-memory replica of the upsert. */
@@ -150,11 +152,11 @@ function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[]
 			row.status = 'reversed';
 			return row;
 		},
-		async ledgerRows(scopeOrganizationId: string | null) {
+		// The real ledger reads are scoped by a warehouse id set (ADR-0026: the
+		// warehouse→organization mapping is the `warehouse` module's).
+		async ledgerRows(warehouseIds: string[]) {
 			return rows
-				.filter(
-					(row) => (WAREHOUSES.find((w) => w.id === row.warehouseId)?.organizationId ?? null) === scopeOrganizationId,
-				)
+				.filter((row) => warehouseIds.includes(row.warehouseId))
 				.map(({ productId, warehouseId, binId, movementType, quantity, unitCost }) => ({
 					productId,
 					warehouseId,
@@ -164,15 +166,10 @@ function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[]
 					unitCost,
 				}));
 		},
-		async ledgerTotals(scopeOrganizationId) {
+		async ledgerTotals(warehouseIds: string[]) {
 			const signed = new Map<string, number>();
 			for (const row of rows) {
-				// A movement's balance scope is its warehouse's scope, exactly as
-				// the service decides it.
-				const scope =
-					WAREHOUSES.find((w) => w.id === row.warehouseId)?.organizationId ??
-					null;
-				if (scope !== scopeOrganizationId) continue;
+				if (!warehouseIds.includes(row.warehouseId)) continue;
 				const key = `${row.warehouseId}::${row.productId}::${row.binId ?? ''}`;
 				// NOT `continue` for reversed rows: the entry must still exist so a
 				// fully reversed key is reported with a total of 0 and the service
@@ -186,9 +183,9 @@ function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[]
 			return [...signed.entries()].map(([key, quantity]) => {
 				const [warehouseId, productId, binId] = key.split('::');
 				return {
-					productId,
-					warehouseId,
-					binId: binId === '' ? null : binId,
+					productId: productId!,
+					warehouseId: warehouseId!,
+					binId: binId === '' ? null : binId!,
 					quantity: quantity.toFixed(3),
 				};
 			});
@@ -217,6 +214,7 @@ function fakeBalances(store: BalanceStore): IStockRepository {
 			const row = store.get(keyOf(key));
 			return {
 				quantityOnHand: row?.quantityOnHand ?? '0',
+				availableCost: 0,
 				averageCost: row?.averageCost ?? 0,
 				totalValue: row?.totalValue ?? 0,
 			};
@@ -247,6 +245,8 @@ function fakeBalances(store: BalanceStore): IStockRepository {
 					quantityOnHand: delta.quantity,
 					quantityReserved: '0',
 					quantityAvailable: delta.quantity,
+					averageCost: 0,
+					totalValue: 0,
 					lastMovementAt: delta.occurredAt,
 					createdAt: new Date(),
 					updatedAt: null,
@@ -285,6 +285,8 @@ function fakeBalances(store: BalanceStore): IStockRepository {
 				quantityOnHand: quantity,
 				quantityReserved: '0',
 				quantityAvailable: quantity,
+				averageCost: 0,
+				totalValue: 0,
 				lastMovementAt: null,
 				createdAt: new Date(),
 				updatedAt: null,
@@ -298,121 +300,85 @@ function fakeBalances(store: BalanceStore): IStockRepository {
 		async availableByProducts() {
 			return [];
 		},
-	};
-}
-
-/** Minimal warehouse repository: `findById` is all the service uses. */
-function fakeItems(): IProductRepository {
-	return {
-		async paginate() {
-			return {
-				meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
-				data: [],
-			};
-		},
-		async findById() {
-			return null;
-		},
-		async findActiveByIds() {
+		async productIdsInWarehouse() {
 			return [];
 		},
-		async findBySku() {
-			return null;
-		},
-		async create(data) {
-			return data as TProductSelect;
-		},
-		async update() {
-			return null;
-		},
-		async archive() {
-			return null;
-		},
-		async findNamesByIds() {
+		async countMaterialStocks() {
 			return [];
-		},
-		async countUnits() {
-			return 0;
-		},
-		async listListed() {
-			return [];
-		},
-		async listPublished() {
-			return [];
-		},
-		async findBySlug() {
-			return null;
-		},
-		async findPublishedBySlug() {
-			return null;
 		},
 	};
 }
 
-function fakeWarehouses(): IWarehouseRepository {
+/**
+ * Product facade double.
+ *
+ * @remarks
+ * `StockService` only asks it for row decoration (`productsById`,
+ * `getNameMap`), so the fake answers from an empty catalogue: the ledger
+ * assertions never look at names.
+ */
+function fakeProducts(): Pick<ExportedProductService, 'productsById' | 'getNameMap'> & {
+	asyncProducts?: never;
+} {
 	return {
-		async paginate() {
-			return {
-				meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
-				data: [],
-			};
+		async productsById() {
+			return new Map();
 		},
-		async findById(id) {
-			return WAREHOUSES.find((row) => row.id === id) ?? null;
+		async getNameMap() {
+			return new Map<string, string>();
 		},
-		async findAlive(ids) {
-			return ids
-				? WAREHOUSES.filter((row) => ids.includes(row.id))
-				: WAREHOUSES;
+	};
+}
+
+/**
+ * Warehouse facade double over the in-memory estate.
+ *
+ * @remarks
+ * This replaces the old `IWarehouseRepository` fake: since ADR-0026 the
+ * warehouse→scope mapping belongs to the `warehouse` module, and the only way
+ * `inventory` may see it is this contract.
+ */
+function fakeWarehouses(): Pick<
+	ExportedWarehouseService,
+	'warehouseExists' | 'organizationScope' | 'isLinked' | 'getNameMap' | 'idsInScope'
+> {
+	return {
+		async warehouseExists(warehouseId) {
+			return WAREHOUSES.some((row) => row.id === warehouseId);
+		},
+		async organizationScope(warehouseId) {
+			const row = WAREHOUSES.find((candidate) => candidate.id === warehouseId);
+			return row === undefined
+				? { found: false as const }
+				: { found: true as const, organizationId: row.organizationId };
 		},
 		// ERP-0031: service-level link assert — link every fake warehouse to a
 		// test org so internal flows pass.
-		async isLinked(warehouseId, organizationId) {
-			return organizationId === 'org-a';
+		async isLinked(_warehouseId, organizationId) {
+			return organizationId === ORG_A;
 		},
-		async listLinked(organizationId) {
-			return organizationId === 'org-a' ? WAREHOUSES : [];
+		async getNameMap(ids) {
+			return new Map(
+				WAREHOUSES.filter((row) => ids.includes(row.id)).map((row) => [
+					row.id,
+					row.name,
+				]),
+			);
 		},
-		async listOrganizations() {
-			return [];
+		async idsInScope(organizationId) {
+			return WAREHOUSES.filter((row) => row.organizationId === organizationId).map(
+				(row) => row.id,
+			);
 		},
-		async linkOrganization() {
-			return { created: true };
-		},
-		async unlinkOrganization() {
-			return false;
-		},
-		async findByCode() {
-			return null;
-		},
-		async create(data) {
-			return { ...data, id: 'new' } as TWarehouseSelect;
-		},
-		async update() {
-			return null;
-		},
-		async archive() {
-			return null;
-		},
-		async findNamesByIds() {
-			return [];
-		},
-		async clearDefaultExcept() {},
-		async countLiveUnits() {
-			return 0;
-		},
-		async countKinds(warehouseIds) {
-			return warehouseIds.map((warehouseId) => ({
-				warehouseId,
-				productsCount: 0,
-				componentsCount: 0,
-				materialsCount: 0,
-				equipmentsCount: 0,
-				storagesCount: 0,
-			}));
-		},
-	} as IWarehouseRepository;
+	};
 }
+
+/** Kept typed so a drift in the product contract is a compile error. */
+export type TStockTestProductRow = TProductSelect;
+export type TStockTestMovementRow = TMovementSelect;
+/** The product repository is no longer injected by `StockService`; kept for
+ * the type-level assertion that the contract still exists. */
+export type TStockTestProductRepository = IProductRepository;
 
 let balances: BalanceStore;
 let movements: ReturnType<typeof fakeMovements>;
@@ -448,27 +414,23 @@ beforeEach(() => {
 	container.register(STOCK_REPOSITORY_TOKEN, {
 		useValue: fakeBalances(balances),
 	});
-	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
-		useValue: fakeWarehouses(),
+	container.register(STOCK_SERVICE_TOKEN, {
+		useValue: new StockService(
+			movements,
+			container.resolve(STOCK_REPOSITORY_TOKEN),
+			fakeWarehouses() as never,
+			fakeProducts() as never,
+			// Photo URLs are decoration only; the ledger tests do not assert them.
+			{ presignGet: () => '' },
+			createNumberingDouble(),
+			new AuditWriterDouble(),
+			database,
+		),
 	});
-	container.register(PRODUCT_REPOSITORY_TOKEN, {
-		useValue: fakeItems(),
-	});
-	container.register(STOCK_SERVICE_TOKEN, { useValue: new StockService(
-		container.resolve(MOVEMENT_REPOSITORY_TOKEN),
-		container.resolve(STOCK_REPOSITORY_TOKEN),
-		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
-		container.resolve(PRODUCT_REPOSITORY_TOKEN),
-		// Photo URLs are decoration only; the ledger tests do not assert them.
-		{ urlFor: () => null } as never,
-		createNumberingDouble(),
-		new AuditWriterDouble(),
-		database,
-	) });
 	service = container.resolve<StockService>(STOCK_SERVICE_TOKEN);
 });
 
-/** Reads the balance row a scope/warehouse/item combination should produce. */
+/** Reads the balance row a scope/warehouse/product combination should produce. */
 async function balanceOf(
 	scope: string | null,
 	warehouseId: string,
@@ -530,7 +492,7 @@ describe('stock — scope rule', () => {
 		expect(second.movement.organizationId).toBe(ORG_B);
 	});
 
-	test('the shared and per-tenant balances for one item never mix', async () => {
+	test('the shared and per-tenant balances for one product never mix', async () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
@@ -550,6 +512,24 @@ describe('stock — scope rule', () => {
 		expect(await balanceOf(ORG_A, ORG_A_WAREHOUSE)).toBe('3.000');
 		expect(balances.size).toBe(2);
 	});
+
+	test('an unknown warehouse is a 422 reference error, not a silent global scope', async () => {
+		// ADR-0026: the scope answer comes from the `warehouse` facade, and a
+		// `{ found: false }` answer must stop the write.
+		await expect(
+			service.resolveScope('01920000-0000-7000-8000-00000000dead'),
+		).rejects.toBeInstanceOf(InventoryReferenceError);
+	});
+
+	test('assertWarehouseLinkedFor refuses an unlinked warehouse', async () => {
+		// The fake links every warehouse to ORG_A only.
+		await expect(
+			service.assertWarehouseLinkedFor(ORG_A_WAREHOUSE, ORG_B),
+		).rejects.toBeInstanceOf(InventoryReferenceError);
+		await expect(
+			service.assertWarehouseLinkedFor(ORG_A_WAREHOUSE, ORG_A),
+		).resolves.toBeUndefined();
+	});
 });
 
 describe('stock — negative stock is refused', () => {
@@ -559,7 +539,7 @@ describe('stock — negative stock is refused', () => {
 		'adjustment_out',
 		'return_out',
 		'consumption',
-		"issue",
+		'issue',
 	] as const)('%s cannot take the balance below zero', async (movementType) => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
@@ -882,7 +862,11 @@ describe('stock — the ledger is the truth', () => {
 
 describe('stock — moving-average cost (ADR-0011 §5)', () => {
 	test('cost follows receipts, issues and reversals, and recompute rebuilds the same value', async () => {
-		const post = (movementType: 'receipt' | 'issue', quantity: string, unitCost?: number) =>
+		const post = (
+			movementType: 'receipt' | 'issue',
+			quantity: string,
+			unitCost?: number,
+		) =>
 			service.postMovement({
 				actorOrganizationId: ORG_A,
 				warehouseId: ORG_A_WAREHOUSE,
@@ -905,6 +889,9 @@ describe('stock — moving-average cost (ADR-0011 §5)', () => {
 		const before = await service.balanceFor(ORG_A, ORG_A_WAREHOUSE, ITEM_ID, null);
 		await service.recomputeFromLedger(ORG_A);
 		const after = await service.balanceFor(ORG_A, ORG_A_WAREHOUSE, ITEM_ID, null);
-		expect(after).toMatchObject({ averageCost: before!.averageCost, totalValue: before!.totalValue });
+		expect(after).toMatchObject({
+			averageCost: before!.averageCost,
+			totalValue: before!.totalValue,
+		});
 	});
 });

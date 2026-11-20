@@ -6,7 +6,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { organizationHeaders } from './organization-store';
 
 /**
- * API client for the product master endpoints (`/inventory/products`).
+ * API client for the product master endpoints (`/products`).
  *
  * @remarks
  * A **product** is the stocked/sold SKU master (formerly "item"; ADR-0024).
@@ -193,20 +193,20 @@ export async function listProducts(params?: {
 	const query = search.toString();
 
 	const envelope = (await request<TProduct[]>(
-		`/inventory/products${query ? `?${query}` : ''}`,
+		`/products${query ? `?${query}` : ''}`,
 	)) as TApiPaginatedResponse<TProduct>;
 	return { rows: envelope.data, pagination: envelope.pagination };
 }
 
 /** Fetches one product. */
 export async function getProduct(productId: string) {
-	const envelope = await request<TProduct>(`/inventory/products/${productId}`);
+	const envelope = await request<TProduct>(`/products/${productId}`);
 	return envelope.data;
 }
 
 /** Creates a product. */
 export async function createProduct(input: TProductCreateInput) {
-	const envelope = await request<TProduct>('/inventory/products', {
+	const envelope = await request<TProduct>('/products', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
@@ -219,7 +219,7 @@ export async function updateProduct(
 	input: TProductUpdateInput,
 ) {
 	const envelope = await request<TProduct>(
-		`/inventory/products/${productId}`,
+		`/products/${productId}`,
 		{
 			method: 'PATCH',
 			body: JSON.stringify(input),
@@ -230,7 +230,7 @@ export async function updateProduct(
 
 /** Archives a product (soft delete). */
 export async function archiveProduct(productId: string) {
-	await request(`/inventory/products/${productId}`, { method: 'DELETE' });
+	await request(`/products/${productId}`, { method: 'DELETE' });
 }
 
 /** Fetches one page of a product's serialized units. */
@@ -241,7 +241,7 @@ export async function listProductSerials(
 	const search = new URLSearchParams();
 	search.set('limit', String(params?.limit ?? 100));
 	const envelope = (await request<TProductSerial[]>(
-		`/inventory/products/${productId}/units?${search.toString()}`,
+		`/products/${productId}/units?${search.toString()}`,
 	)) as TApiPaginatedResponse<TProductSerial>;
 	return envelope.data;
 }
@@ -265,7 +265,7 @@ export async function registerSerial(
 	},
 ) {
 	const envelope = await request<TProductSerial>(
-		`/inventory/products/${productId}/units`,
+		`/products/${productId}/units`,
 		{
 			method: 'POST',
 			body: JSON.stringify(input),
@@ -281,7 +281,7 @@ export async function replaceProvisionalSerial(
 	serialNumber: string,
 ) {
 	const envelope = await request<TProductSerial>(
-		`/inventory/products/${productId}/units/${serialId}`,
+		`/products/${productId}/units/${serialId}`,
 		{ method: 'PATCH', body: JSON.stringify({ serialNumber }) },
 	);
 	return envelope.data;

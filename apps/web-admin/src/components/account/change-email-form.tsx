@@ -10,6 +10,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -57,12 +58,13 @@ export function ChangeEmailForm() {
 	}
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{t('email.title')}</CardTitle>
-				<CardDescription>{t('email.description')}</CardDescription>
-			</CardHeader>
-			<CardContent>
+		<form onSubmit={handleSubmit}>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('email.title')}</CardTitle>
+					<CardDescription>{t('email.description')}</CardDescription>
+				</CardHeader>
+				<CardContent>
 				<FieldGroup>
 					<Field>
 						<FieldLabel htmlFor='current-email'>
@@ -80,41 +82,36 @@ export function ChangeEmailForm() {
 							</Badge>
 						</div>
 					</Field>
-					<form onSubmit={handleSubmit}>
-						<FieldGroup>
-							<Field>
-								<FieldLabel htmlFor='new-email'>{t('email.new')}</FieldLabel>
-								<Input
-									id='new-email'
-									type='email'
-									required
-									value={newEmail}
-									onChange={(e) => setNewEmail(e.target.value)}
-									autoComplete='email'
-								/>
-								<FieldDescription>
-									{t('email.verificationHint')}
-								</FieldDescription>
-							</Field>
-							{requested && (
-								<FieldDescription>
-									{t('email.verificationRequested')}
-								</FieldDescription>
-							)}
-							{error && (
-								<p className='text-destructive text-sm' role='alert'>
-									{error}
-								</p>
-							)}
-							<div>
-								<Button type='submit' disabled={pending}>
-									{pending ? t('email.submitting') : t('email.submit')}
-								</Button>
-							</div>
-						</FieldGroup>
-					</form>
+					<Field>
+						<FieldLabel htmlFor='new-email'>{t('email.new')}</FieldLabel>
+						<Input
+							id='new-email'
+							type='email'
+							required
+							value={newEmail}
+							onChange={(e) => setNewEmail(e.target.value)}
+							autoComplete='email'
+						/>
+						<FieldDescription>{t('email.verificationHint')}</FieldDescription>
+					</Field>
+					{requested && (
+						<FieldDescription>
+							{t('email.verificationRequested')}
+						</FieldDescription>
+					)}
+					{error && (
+						<p className='text-destructive text-sm' role='alert'>
+							{error}
+						</p>
+					)}
 				</FieldGroup>
 			</CardContent>
+			<CardFooter className='justify-end gap-2'>
+				<Button type='submit' disabled={pending}>
+					{pending ? t('email.submitting') : t('email.submit')}
+				</Button>
+			</CardFooter>
 		</Card>
+		</form>
 	);
 }

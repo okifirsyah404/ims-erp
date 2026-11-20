@@ -5,14 +5,21 @@
  * Each extends {@link AppError} so the shared `onError` arm in
  * `@http/plugin` maps it without a per-module arm. Keys resolve through
  * `@providers/i18n/translator`, so this module owns no English prose.
+ *
+ * ADR-0026 moved the product master and the warehouse estate to their own
+ * modules, so their errors (`ProductNotFoundError`,
+ * `WarehouseNotFoundError`, ...) live in `product.errors.ts` /
+ * `warehouse.errors.ts`. A missing product or warehouse reached from a stock
+ * write is reported as {@link InventoryReferenceError} instead, so the
+ * inventory module does not translate another module's vocabulary.
  */
 import { AppError } from '@http/errors';
 import type { ApiKey } from '@providers/i18n/translator';
 
-/** The requested item does not exist (or is soft-deleted). */
+/** The requested product does not exist (or is soft-deleted). */
 export class ProductNotFoundError extends AppError {
 	constructor() {
-		super(404, 'inventory.itemNotFound', 'Item not found');
+		super(404, 'product.notFound', 'Product not found');
 	}
 }
 
@@ -20,13 +27,6 @@ export class ProductNotFoundError extends AppError {
 export class SerialNotFoundError extends AppError {
 	constructor() {
 		super(404, 'inventory.unitNotFound', 'Item unit not found');
-	}
-}
-
-/** The item already exists for this tenant. */
-export class ProductSkuTakenError extends AppError {
-	constructor() {
-		super(409, 'inventory.skuTaken', 'An item with this SKU already exists');
 	}
 }
 
@@ -46,8 +46,8 @@ export class SerialNumberTakenError extends AppError {
  *
  * @remarks
  * 422 rather than 409: the request is well-formed and the record exists, but
- * the transition is forbidden by policy (tools cannot be sold, a provisional
- * serial cannot be replaced twice, and so on).
+ * the transition is forbidden by policy (a non-serialized product cannot have
+ * units, a provisional serial cannot be replaced twice, and so on).
  */
 export class InventoryRuleViolationError extends AppError {
 	constructor(
@@ -59,118 +59,21 @@ export class InventoryRuleViolationError extends AppError {
 	}
 }
 
-/** An item with live units cannot be archived. */
-export class ProductHasSerialsError extends AppError {
-	constructor(count: number) {
-		super(
-			422,
-			'inventory.itemHasUnits',
-			`Cannot archive an item that still has ${count} live unit(s)`,
-			{ count },
-		);
-	}
-}
-
-/** The requested warehouse does not exist (or is soft-deleted). */
-export class WarehouseNotFoundError extends AppError {
-	constructor() {
-		super(404, 'inventory.warehouseNotFound', 'Warehouse not found');
-	}
-}
-
-/** The warehouse code is already used within this scope. */
-export class WarehouseCodeTakenError extends AppError {
-	constructor() {
-		super(
-			409,
-			'inventory.warehouseCodeTaken',
-			'A warehouse with this code already exists in this scope',
-		);
-	}
-}
-
-/** The warehouse still holds live units and cannot be archived. */
-export class WarehouseHasUnitsError extends AppError {
-	constructor(count: number) {
-		super(
-			422,
-			'inventory.warehouseHasUnits',
-			`Cannot archive a warehouse that still holds ${count} live unit(s)`,
-			{ count },
-		);
-	}
-}
-
 /**
- * A warehouse↔organization link cannot be cut (ERP-0031).
+ * A product or warehouse named by a stock document cannot be used.
  *
  * @remarks
- * 409, not 422: the conflict is with concurrent custody state (open
- * borrowings), and the caller can retry once those are returned.
+ * The row lives in another module (`product` / `warehouse`, ADR-0026) and is
+ * checked through that module's facade. 422 rather than 404: the stock
+ * document is the resource being written; the reference is what is unusable.
  */
-export class WarehouseLinkConflictError extends AppError {
-	constructor(count: number) {
-		super(
-			409,
-			'inventory.warehouseLinkConflict',
-			`Cannot unlink while the organization holds ${count} open borrowing(s) originating in this warehouse`,
-			{ count },
-		);
-	}
-}
-
-/**
- * The requested warehouse PIC (responsible employee) is not assignable.
- *
- * @remarks
- * 422: the request is well-formed but the employee is unknown, inactive, or
- * belongs to an organization not linked to the warehouse (ERP-0034; ADR-0010
- * keeps the field display-only — this only gates *assignment*, not access).
- */
-export class WarehousePicInvalidError extends AppError {
-	constructor() {
-		super(
-			422,
-			'inventory.warehousePicInvalid',
-			'The responsible employee is unknown, inactive, or not from a linked organization',
-		);
-	}
-}
-
-/**
- * A storage cannot be written into an inactive warehouse.
- *
- * @remarks
- * 422 rather than 409: the warehouse exists and the request is well-formed,
- * but the parent warehouse's state forbids the write (D4 in
- * `docs/plan/plans/warehouse-hardening.md`).
- */
-export class WarehouseInactiveError extends AppError {
-	constructor(code: string) {
-		super(
-			422,
-			'inventory.warehouseInactive',
-			`Warehouse "${code}" is inactive; its storages cannot be changed`,
-			{ warehouseCode: code },
-		);
-	}
-}
-
-/** The requested storage (bin) does not exist in this warehouse. */
-export class StorageNotFoundError extends AppError {
-	constructor() {
-		super(404, 'inventory.storageNotFound', 'Storage not found');
-	}
-}
-
-/** The storage code is already used within this warehouse. */
-export class StorageCodeTakenError extends AppError {
-	constructor() {
-		super(
-			409,
-			'inventory.storageCodeTaken',
-			'A storage with this code already exists in this warehouse',
-		);
+export class InventoryReferenceError extends AppError {
+	constructor(
+		readonly reference: 'product' | 'warehouse' | 'storage',
+		key: ApiKey = 'inventory.referenceUnavailable',
+		message = `${reference} is unknown, archived or inactive`,
+	) {
+		super(422, key, message, { reference });
 	}
 }
 
@@ -271,68 +174,6 @@ export class AdjustmentHasNoLinesError extends AppError {
 			422,
 			'inventory.adjustmentHasNoLines',
 			'A stock adjustment must have at least one line',
-		);
-	}
-}
-
-/** The requested item category does not exist (or is archived). */
-export class ProductCategoryNotFoundError extends AppError {
-	constructor() {
-		super(404, 'inventory.categoryNotFound', 'Item category not found');
-	}
-}
-
-/** A live category already uses this slug. */
-export class ProductCategorySlugTakenError extends AppError {
-	constructor() {
-		super(409, 'inventory.categorySlugTaken', 'An item category with this slug already exists');
-	}
-}
-
-/** A category with live items cannot be archived (deactivate it instead). */
-export class ProductCategoryHasProductsError extends AppError {
-	constructor(count: number) {
-		super(
-			409,
-			'inventory.categoryHasItems',
-			`Cannot archive a category that still has ${count} live item(s)`,
-			{ count },
-		);
-	}
-}
-
-/** An item names a category that does not exist, is archived, or inactive. */
-export class ProductCategoryUnavailableError extends AppError {
-	constructor() {
-		super(422, 'inventory.categoryUnavailable', 'The item category is not available');
-	}
-}
-
-/** The user already holds a live assignment for the warehouse (ADR-0017). */
-export class WarehouseManagerExistsError extends AppError {
-	constructor() {
-		super(
-			409,
-			'inventory.warehouseManagerExists',
-			'This user is already a person in charge of the warehouse',
-		);
-	}
-}
-
-/**
- * The user named in an assignment does not exist (or is deleted).
- *
- * @remarks
- * 404 rather than 422: the request body is well-formed, the *target resource*
- * is missing. The check goes through the Identity module contract, never
- * straight to `auth.users` (cross-module reads go through the owning module).
- */
-export class WarehouseManagerUserNotFoundError extends AppError {
-	constructor() {
-		super(
-			404,
-			'inventory.warehouseManagerUserNotFound',
-			'User not found',
 		);
 	}
 }

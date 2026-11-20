@@ -1,6 +1,13 @@
 import type { TTx } from '@drizzle/types';
 import type { TChartOfAccountSelect } from '@drizzle/schemas/finance.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+
+/** Page settings, tenant and the optional filters of the account listing. */
+export type TAccountPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+	accountType?: string;
+	isActive?: boolean;
+};
 
 export interface IChartOfAccountRepository {
 	findAccountById(organizationId: string, id: string, tx?: TTx): Promise<TChartOfAccountSelect | null>;
@@ -16,10 +23,9 @@ export interface IChartOfAccountRepository {
 	): Promise<Map<string, TChartOfAccountSelect>>;
 	/** Id-keyed map for the report builders. */
 	listAccountsMap(organizationId: string, tx?: TTx): Promise<Map<string, TChartOfAccountSelect>>;
-	listAccounts(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filters?: { accountType?: string; isActive?: boolean },
+	/** Fetches one page of the tenant's chart of accounts. */
+	paginateAccounts(
+		request: TAccountPaginationRequest,
 	): Promise<TPaginationResult<TChartOfAccountSelect>>;
 	insertAccount(
 		row: {

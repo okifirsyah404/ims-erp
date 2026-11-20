@@ -73,7 +73,7 @@ function makeService(options: {
 		listMemberships: mock(() =>
 			Promise.resolve(options.memberships ?? []),
 		),
-		listUsers: mock(() =>
+		paginateUsers: mock(() =>
 			Promise.resolve(
 				options.paginate ?? {
 					data: [],

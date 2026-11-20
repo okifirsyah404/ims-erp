@@ -4,6 +4,7 @@ import type { TTx } from '@drizzle/types';
 import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type { THrScope, TTaskListQuery } from '../contracts/hr-records.contract';
 import type { ISalaryRepository, ITaskRepository } from '../contracts/hr-records.repository.interface';
 import { visibleEmployees } from './people.repository';
@@ -29,7 +30,7 @@ export class TaskRepository implements ITaskRepository {
 			.orderBy(asc(employeeTasks.status), sql`${employeeTasks.dueDate} asc nulls last`, desc(employeeTasks.createdAt))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findById(id: string) {

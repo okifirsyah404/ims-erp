@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { FileCheck2 } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -18,18 +19,15 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import {
 	SIGNATURE_METHODS,
 	signaturesQueryOptions,
+	type TSignature,
 	type TSignatureMethod,
 } from '@/lib/signature-api';
 import { usePermission } from '@/lib/use-permission';
@@ -62,6 +60,50 @@ function SignatureRegisterPage() {
 
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSignature, CellData>[]>(
+		() => [
+			{
+				id: 'document',
+				header: t('signatures:document'),
+				cell: ({ row }) => (
+					<>
+						<span className='font-mono text-xs'>
+							{row.original.documentCode ?? row.original.documentId}
+						</span>
+						{row.original.documentTitle && (
+							<span className='block text-xs text-muted-foreground'>
+								{row.original.documentTitle}
+							</span>
+						)}
+					</>
+				),
+			},
+			{ accessorKey: 'signerName', header: t('signatures:signer') },
+			{
+				id: 'method',
+				header: t('signatures:method'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.method === 'electronic' ? 'secondary' : 'outline'}>
+						{t(`signatures:methodOption.${row.original.method}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'signedAt',
+				header: t('signatures:signedAt'),
+				meta: { cellClassName: 'whitespace-nowrap text-xs' },
+				cell: ({ row }) => new Date(row.original.signedAt).toLocaleString(i18n.language),
+			},
+			{
+				id: 'ipAddress',
+				header: t('signatures:ipAddress'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => row.original.ipAddress ?? '—',
+			},
+		],
+		[t, i18n.language],
+	);
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -109,50 +151,17 @@ function SignatureRegisterPage() {
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					{isError && <p className='text-sm text-destructive'>{error.message}</p>}
+					{isError && <ErrorState error={error} size='sm' />}
 					{!isPending && !isError && rows.length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('signatures:empty')}</p>
+						<EmptyState title={t('signatures:empty')} size='sm' />
 					)}
-					{rows.length > 0 && (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('signatures:document')}</TableHead>
-									<TableHead>{t('signatures:signer')}</TableHead>
-									<TableHead>{t('signatures:method')}</TableHead>
-									<TableHead>{t('signatures:signedAt')}</TableHead>
-									<TableHead>{t('signatures:ipAddress')}</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((signature) => (
-									<TableRow key={signature.id}>
-										<TableCell>
-											<span className='font-mono text-xs'>
-												{signature.documentCode ?? signature.documentId}
-											</span>
-											{signature.documentTitle && (
-												<span className='block text-xs text-muted-foreground'>
-													{signature.documentTitle}
-												</span>
-											)}
-										</TableCell>
-										<TableCell>{signature.signerName}</TableCell>
-										<TableCell>
-											<Badge variant={signature.method === 'electronic' ? 'secondary' : 'outline'}>
-												{t(`signatures:methodOption.${signature.method}`)}
-											</Badge>
-										</TableCell>
-										<TableCell className='whitespace-nowrap text-xs'>
-											{new Date(signature.signedAt).toLocaleString(i18n.language)}
-										</TableCell>
-										<TableCell className='font-mono text-xs'>
-											{signature.ipAddress ?? '—'}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
+					{((canRead && isPending) || rows.length > 0) && (
+						<DataTable
+							columns={columns}
+							data={rows}
+							getRowId={(row) => row.id}
+							loading={canRead && isPending}
+						/>
 					)}
 					{pagination && (
 						<PaginationControls

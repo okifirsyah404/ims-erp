@@ -7,7 +7,9 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
+	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -19,9 +21,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Plus, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	archiveEmployee,
@@ -166,10 +168,7 @@ export function EmployeeList() {
 					))}
 				</div>
 			) : isError ? (
-				<div className='text-destructive flex items-center gap-2 text-sm'>
-					<CircleAlert className='size-4' />
-					{error.message}
-				</div>
+				<ErrorState error={error} bordered />
 			) : !data || data.rows.length === 0 ? (
 				<EmptyState
 					icon={Users}
@@ -214,24 +213,24 @@ function EmployeeCard(props: {
 	const { employee } = props;
 	return (
 		<Card className='flex flex-col'>
-			<CardHeader className='pb-2'>
-				<div className='flex items-start justify-between gap-2'>
-					<CardTitle className='text-base'>
-						<Link
-							to='/hr/employees/$employeeId'
-							params={{ employeeId: employee.id }}
-							className='hover:underline'
-						>
-							{employee.fullName}
-						</Link>
-					</CardTitle>
+			<CardHeader>
+				<CardTitle>
+					<Link
+						to='/hr/employees/$employeeId'
+						params={{ employeeId: employee.id }}
+						className='hover:underline'
+					>
+						{employee.fullName}
+					</Link>
+				</CardTitle>
+				<CardDescription className='font-mono text-xs'>
+					{employee.employeeCode}
+				</CardDescription>
+				<CardAction>
 					<Badge variant={STATUS_TONE[employee.employmentStatus]}>
 						{t(`hr:status.${employee.employmentStatus}`)}
 					</Badge>
-				</div>
-				<p className='text-muted-foreground font-mono text-xs'>
-					{employee.employeeCode}
-				</p>
+				</CardAction>
 			</CardHeader>
 			<CardContent className='flex flex-1 flex-col gap-1 text-sm'>
 				{employee.email && (

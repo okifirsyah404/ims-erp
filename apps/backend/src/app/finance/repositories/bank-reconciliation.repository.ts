@@ -8,7 +8,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IBankReconciliationRepository } from '../contracts/bank-reconciliation.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IBankReconciliationRepository,
+	TBankReconciliationPaginationRequest,
+} from '../contracts/bank-reconciliation.repository.interface';
 
 /**
  * Drizzle queries of `finance.bank_reconciliations` and
@@ -66,20 +70,24 @@ export class BankReconciliationRepository implements IBankReconciliationReposito
 		return row ?? null;
 	}
 
-	async listBankReconciliations(
-		organizationId: string,
-		filters: { cashBankAccountId?: string; status?: string },
-		pagination: { page: number; limit: number },
+	/**
+	 * Fetches one page of the tenant's reconciliations, newest first.
+	 *
+	 * @param request - Tenant, page settings and the optional filters
+	 */
+	async paginate(
+		request: TBankReconciliationPaginationRequest,
 	): Promise<TPaginationResult<unknown>> {
+		const { organizationId, cashBankAccountId, status, page, limit } = request;
 		const conditions = [
 			eq(bankReconciliations.organizationId, organizationId),
 			isNull(bankReconciliations.deletedAt),
 		];
-		if (filters.cashBankAccountId) {
-			conditions.push(eq(bankReconciliations.cashBankAccountId, filters.cashBankAccountId));
+		if (cashBankAccountId) {
+			conditions.push(eq(bankReconciliations.cashBankAccountId, cashBankAccountId));
 		}
-		if (filters.status) {
-			conditions.push(eq(bankReconciliations.status, filters.status));
+		if (status) {
+			conditions.push(eq(bankReconciliations.status, status));
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database
@@ -91,17 +99,9 @@ export class BankReconciliationRepository implements IBankReconciliationReposito
 			.from(bankReconciliations)
 			.where(where)
 			.orderBy(desc(bankReconciliations.reconciliationDate))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async updateBankReconciliation(

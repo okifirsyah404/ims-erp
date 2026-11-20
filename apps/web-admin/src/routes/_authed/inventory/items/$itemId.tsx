@@ -1,7 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -14,14 +19,6 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
-import {
 	AlertDialog,
 	AlertDialogAction,
 	AlertDialogCancel,
@@ -32,6 +29,7 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from '@ims-erp/ui/components/alert-dialog';
+import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { useItemCategoryNames } from '@/lib/item-category-api';
@@ -53,7 +51,7 @@ import { usePermission } from '@/lib/use-permission';
  *
  * @remarks
  * The path keeps its historical `items` segment; `$itemId` is a **product** id
- * (`/inventory/products/:id` on the backend). Physical assets live under
+ * (`/products/:id` on the backend). Physical assets live under
  * `/assets`.
  */
 export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
@@ -61,27 +59,27 @@ export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
 });
 
 function ItemDetailPage() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const categoryNames = useItemCategoryNames();
 	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	const { data: item, isPending, isError } = useQuery(productQueryOptions(itemId));
+	const { data: item, isPending, isError, error } = useQuery(productQueryOptions(itemId));
 	const { data: units } = useQuery(productSerialsQueryOptions(itemId));
 
 	const [archiving, setArchiving] = useState(false);
 	const canUpdate = usePermission('product.update');
 	const setItem = (saved: TProduct) => queryClient.setQueryData(productQueryOptions(itemId).queryKey, saved);
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 
-	if (isError || !item) {
+	if (isError) return <ErrorState error={error} bordered />;
+
+	if (!item) {
 		return (
 			<AdminOnly>
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:detail.notFound')}
-				</p>
+				<EmptyState title={t('product:detail.notFound')} bordered />
 			</AdminOnly>
 		);
 	}
@@ -90,9 +88,9 @@ function ItemDetailPage() {
 		setArchiving(true);
 		try {
 			await archiveProduct(itemId);
-			toast.success(t('inventory:form.archived'));
+			toast.success(t('product:form.archived'));
 			await queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] });
-			void navigate({ to: '/inventory/products' });
+			void navigate({ to: '/products' });
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : t('common:error.failed'),
@@ -109,7 +107,7 @@ function ItemDetailPage() {
 					<div>
 						<div className='flex items-center gap-2'>
 							<h1 className='text-2xl font-bold'>{item.name}</h1>
-							<Badge variant='outline'>{t(`inventory:kind.${item.productKind}`)}</Badge>
+							<Badge variant='outline'>{t(`product:kind.${item.productKind}`)}</Badge>
 						</div>
 						<p className='font-mono text-xs text-muted-foreground'>
 							{item.code} · {item.sku}
@@ -131,17 +129,17 @@ function ItemDetailPage() {
 							<AlertDialogTrigger
 								render={
 									<Button variant='destructive' disabled={archiving}>
-										{t('inventory:detail.archive')}
+										{t('product:detail.archive')}
 									</Button>
 								}
 							/>
 							<AlertDialogContent>
 								<AlertDialogHeader>
 									<AlertDialogTitle>
-										{t('inventory:detail.archiveConfirm')}
+										{t('product:detail.archiveConfirm')}
 									</AlertDialogTitle>
 									<AlertDialogDescription>
-										{t('inventory:detail.archiveConfirmBody')}
+										{t('product:detail.archiveConfirmBody')}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
@@ -149,7 +147,7 @@ function ItemDetailPage() {
 										{t('common:action.cancel')}
 									</AlertDialogCancel>
 									<AlertDialogAction onClick={() => void handleArchive()}>
-										{t('inventory:detail.archive')}
+										{t('product:detail.archive')}
 									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
@@ -158,40 +156,43 @@ function ItemDetailPage() {
 				</div>
 
 				<Card>
+					<CardHeader>
+						<CardTitle>{t('product:items.details')}</CardTitle>
+					</CardHeader>
 					<CardContent className='grid grid-cols-2 gap-4 p-4 text-sm sm:grid-cols-4'>
 						<Detail
-							label={t('inventory:items.category')}
+							label={t('product:items.category')}
 							value={item.productCategoryId ? (categoryNames.get(item.productCategoryId) ?? null) : null}
 						/>
-						<Detail label={t('inventory:items.brand')} value={item.brand} />
+						<Detail label={t('product:items.brand')} value={item.brand} />
 						<Detail
-							label={t('inventory:items.isActive')}
-							value={item.isActive ? t('inventory:items.isActive') : t('inventory:items.inactive')}
+							label={t('product:items.isActive')}
+							value={item.isActive ? t('product:items.isActive') : t('product:items.inactive')}
 						/>
-						<Detail label={t('inventory:items.unitLabel')} value={item.unitLabel} />
-						<Detail label={t('inventory:items.barcode')} value={item.barcode} />
+						<Detail label={t('product:items.unitLabel')} value={item.unitLabel} />
+						<Detail label={t('product:items.barcode')} value={item.barcode} />
 						<Detail
-							label={t('inventory:items.minStockQty')}
+							label={t('product:items.minStockQty')}
 							value={item.minStockQty}
 						/>
 						<Detail
-							label={t('inventory:items.sellingPrice')}
+							label={t('product:items.sellingPrice')}
 							value={String(item.sellingPrice)}
 						/>
 						<Detail
-							label={t('inventory:items.purchasePrice')}
+							label={t('product:items.purchasePrice')}
 							value={String(item.purchasePrice)}
 						/>
 						<Detail
-							label={t('inventory:items.tracking')}
+							label={t('product:items.tracking')}
 							value={
 								item.isSerialized
-									? t('inventory:items.serialized')
-									: t('inventory:items.quantityTracked')
+									? t('product:items.serialized')
+									: t('product:items.quantityTracked')
 							}
 						/>
 						<Detail
-							label={t('inventory:items.description_label')}
+							label={t('product:items.description_label')}
 							value={item.description}
 						/>
 					</CardContent>
@@ -199,9 +200,11 @@ function ItemDetailPage() {
 
 				{item.specification && (
 					<Card>
-						<CardContent className='p-4 text-sm'>
-							<div className='text-muted-foreground'>{t('inventory:items.specification')}</div>
-							<p className='mt-1 whitespace-pre-line'>{item.specification}</p>
+						<CardHeader>
+							<CardTitle>{t('product:items.specification')}</CardTitle>
+						</CardHeader>
+						<CardContent className='text-sm'>
+							<p className='whitespace-pre-line'>{item.specification}</p>
 						</CardContent>
 					</Card>
 				)}
@@ -209,15 +212,15 @@ function ItemDetailPage() {
 				<Card>
 					<CardContent className='p-4'>
 						<DocumentImageField
-							label={t('inventory:items.documentPhoto')}
-							hint={t('inventory:items.documentPhotoHint')}
+							label={t('product:items.documentPhoto')}
+							hint={t('product:items.documentPhotoHint')}
 							imageUrl={item.imageUrl}
 							disabled={!canUpdate}
 							onUpload={async (file) => {
-								setItem(await uploadDocumentImage<TProduct>(`/inventory/products/${itemId}/image`, file));
+								setItem(await uploadDocumentImage<TProduct>(`/products/${itemId}/image`, file));
 							}}
 							onRemove={async () => {
-								setItem(await removeDocumentImage<TProduct>(`/inventory/products/${itemId}/image`));
+								setItem(await removeDocumentImage<TProduct>(`/products/${itemId}/image`));
 							}}
 						/>
 					</CardContent>
@@ -251,25 +254,25 @@ function Detail({
  *
  * @remarks
  * Registering needs a real serial number: the backend's `POST
- * /inventory/products/:id/units` contract rejects an empty one, so the form can
+ * /products/:id/units` contract rejects an empty one, so the form can
  * no longer mint a `pre_order` unit with a provisional serial. Provisional
  * serials that already exist (from purchasing) can still be replaced exactly
  * once, and the replace control is only offered while the unit is provisional.
  */
 function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[] }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const queryClient = useQueryClient();
 	const [serial, setSerial] = useState('');
 	const [registering, setRegistering] = useState(false);
 
-	async function refresh() {
+	const refresh = useCallback(async () => {
 		await Promise.all([
 			queryClient.invalidateQueries({
 				queryKey: productSerialsQueryOptions(itemId).queryKey,
 			}),
 			queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
 		]);
-	}
+	}, [itemId, queryClient]);
 
 	async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -279,7 +282,7 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 				serialNumber: serial.trim(),
 				status: 'in_stock',
 			});
-			toast.success(t('inventory:unit.registered'));
+			toast.success(t('product:unit.registered'));
 			setSerial('');
 			await refresh();
 		} catch (error) {
@@ -291,99 +294,113 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 		}
 	}
 
-	async function handleReplace(unitId: string, nextSerial: string) {
-		try {
-			await replaceProvisionalSerial(itemId, unitId, nextSerial);
-			toast.success(t('inventory:unit.replaced'));
-			await refresh();
-		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : t('common:error.failed'),
-			);
-		}
-	}
+	const handleReplace = useCallback(
+		async (unitId: string, nextSerial: string) => {
+			try {
+				await replaceProvisionalSerial(itemId, unitId, nextSerial);
+				toast.success(t('product:unit.replaced'));
+				await refresh();
+			} catch (error) {
+				toast.error(
+					error instanceof Error ? error.message : t('common:error.failed'),
+				);
+			}
+		},
+		[itemId, refresh, t],
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TProductSerial, CellData>[]>(
+		() => [
+			{
+				id: 'serialNumber',
+				header: t('product:detail.serialNumber'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (
+					<>
+						{row.original.serialNumber}
+						{row.original.isProvisionalSerial && (
+							<Badge variant='outline' className='ml-2'>
+								{t('product:detail.provisional')}
+							</Badge>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'status',
+				header: t('product:detail.status'),
+				cell: ({ row }) => (
+					<Badge variant='secondary'>
+						{t(`product:status.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'assetTag',
+				header: t('product:detail.assetTag'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.assetTag ?? '—',
+			},
+			{
+				id: 'replace',
+				header: t('product:unit.replaceSerial'),
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					row.original.isProvisionalSerial ? (
+						<ReplaceSerialButton
+							onReplace={(nextSerial) =>
+								void handleReplace(row.original.id, nextSerial)
+							}
+						/>
+					) : (
+						'—'
+					),
+			},
+		],
+		[handleReplace, t],
+	);
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t('inventory:detail.units')}</CardTitle>
+				<CardTitle>{t('product:detail.units')}</CardTitle>
 				<CardDescription>
-					{t('inventory:unit.newDescription')}
+					{t('product:unit.newDescription')}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
 				<form onSubmit={handleRegister} className='flex items-end gap-2'>
-					<div className='flex flex-1 flex-col gap-1'>
-						<label htmlFor='serial' className='text-xs text-muted-foreground'>
-							{t('inventory:unit.serialNumber')}
-						</label>
+					<Field className='flex-1'>
+						<FieldLabel htmlFor='serial'>
+							{t('product:unit.serialNumber')}
+						</FieldLabel>
 						<Input
 							id='serial'
 							required
 							value={serial}
 							onChange={(event) => setSerial(event.target.value)}
 						/>
-						<span className='text-xs text-muted-foreground'>
-							{t('inventory:unit.serialNumberHint')}
-						</span>
-					</div>
+						<FieldDescription>
+							{t('product:unit.serialNumberHint')}
+						</FieldDescription>
+					</Field>
 					<Button type='submit' disabled={registering}>
 						{registering
-							? t('inventory:unit.registering')
-							: t('inventory:unit.register')}
+							? t('product:unit.registering')
+							: t('product:unit.register')}
 					</Button>
 				</form>
 
 				{units.length === 0 ? (
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:detail.unitsEmpty')}
+						{t('product:detail.unitsEmpty')}
 					</p>
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('inventory:detail.serialNumber')}</TableHead>
-								<TableHead>{t('inventory:detail.status')}</TableHead>
-								<TableHead>{t('inventory:detail.assetTag')}</TableHead>
-								<TableHead className='text-right'>
-									{t('inventory:unit.replaceSerial')}
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{units.map((unit) => (
-								<TableRow key={unit.id}>
-									<TableCell className='font-mono text-xs'>
-										{unit.serialNumber}
-										{unit.isProvisionalSerial && (
-											<Badge variant='outline' className='ml-2'>
-												{t('inventory:detail.provisional')}
-											</Badge>
-										)}
-									</TableCell>
-									<TableCell>
-										<Badge variant='secondary'>
-											{t(`inventory:status.${unit.status}`)}
-										</Badge>
-									</TableCell>
-									<TableCell className='text-muted-foreground'>
-										{unit.assetTag ?? '—'}
-									</TableCell>
-									<TableCell className='text-right'>
-										{unit.isProvisionalSerial ? (
-											<ReplaceSerialButton
-												onReplace={(nextSerial) =>
-													void handleReplace(unit.id, nextSerial)
-												}
-											/>
-										) : (
-											'—'
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable
+						columns={columns}
+						data={units}
+						getRowId={(unit) => unit.id}
+					/>
 				)}
 			</CardContent>
 		</Card>
@@ -396,7 +413,7 @@ function ReplaceSerialButton({
 }: {
 	onReplace: (serialNumber: string) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const [value, setValue] = useState('');
 
 	return (
@@ -404,20 +421,20 @@ function ReplaceSerialButton({
 			<AlertDialogTrigger
 				render={
 					<Button variant='ghost' size='sm'>
-						{t('inventory:unit.replaceSerial')}
+						{t('product:unit.replaceSerial')}
 					</Button>
 				}
 			/>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>{t('inventory:unit.replaceSerial')}</AlertDialogTitle>
+					<AlertDialogTitle>{t('product:unit.replaceSerial')}</AlertDialogTitle>
 					<AlertDialogDescription>
-						{t('inventory:unit.replaceSerialBody')}
+						{t('product:unit.replaceSerialBody')}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<Input
 					value={value}
-					placeholder={t('inventory:unit.serialNumber')}
+					placeholder={t('product:unit.serialNumber')}
 					onChange={(event) => setValue(event.target.value)}
 				/>
 				<AlertDialogFooter>

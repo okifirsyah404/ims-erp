@@ -3,11 +3,7 @@ import { isOutbound } from '../constants/movement-direction';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import type {
-	MovementType,
-	TStockSelect,
-	TWarehouseSelect,
-} from '@drizzle/schemas/inventory.schema';
+import type { MovementType, TStockSelect } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
 	TMovementPaginationRequest,
@@ -18,26 +14,27 @@ import type {
 	TStockKey,
 	TStockPaginationRequest,
 } from '../contracts/stock.repository.interface';
-import type { IProductRepository } from '../contracts/product.repository.interface';
-import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
 import {
 	STOCK_REPOSITORY_TOKEN,
-	PRODUCT_IMAGE_SERVICE_TOKEN,
-	PRODUCT_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
-	WAREHOUSE_REPOSITORY_TOKEN,
 } from '../constants/di';
+import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ExportedProductService } from '@app/product/services/exported-product.service';
+import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ExportedWarehouseService } from '@app/warehouse/services/exported-warehouse.service';
 import {
+	InventoryReferenceError,
 	MovementAlreadyReversedError,
 	MovementNotFoundError,
-	WarehouseNotFoundError,
 } from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
 import { applyMovementCost, type TCostState } from '../utils/moving-average';
 import { INVENTORY_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { InventoryNumberingService } from './inventory-numbering.service';
-import type { ProductImageService } from './product-image.service';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+
+import { AuditWriter } from '@shared/audit';
+import { storedImageUrl } from '@shared/media';
+import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 
 /** One balance row decorated with readable item and warehouse names. */
 export type TStockBalanceWithNames = TStockSelect & {
@@ -124,14 +121,22 @@ export class StockService {
 		private readonly movementRepository: IMovementRepository,
 		@inject(STOCK_REPOSITORY_TOKEN)
 		private readonly balanceRepository: IStockRepository,
-		@inject(WAREHOUSE_REPOSITORY_TOKEN)
-		private readonly warehouseRepository: IWarehouseRepository,
-		/** Name resolution for stock-row decoration (items and warehouses). */
-		@inject(PRODUCT_REPOSITORY_TOKEN)
-		private readonly itemRepository: IProductRepository,
-		/** Turns an item's stored photo key into a URL for the same rows. */
-		@inject(PRODUCT_IMAGE_SERVICE_TOKEN)
-		private readonly itemImages: Pick<ProductImageService, 'urlFor'>,
+		/**
+		 * Name resolution and existence checks for the warehouses a movement
+		 * names. The warehouse estate lives in the `warehouse` module (ADR-0026),
+		 * so this module asks its facade rather than reading `warehouse.*`.
+		 */
+		@inject(EXPORTED_WAREHOUSE_SERVICE_TOKEN)
+		private readonly warehouses: Pick<
+			ExportedWarehouseService,
+			'warehouseExists' | 'organizationScope' | 'isLinked' | 'getNameMap' | 'idsInScope'
+		>,
+		/** Name resolution for stock-row decoration. */
+		@inject(EXPORTED_PRODUCT_SERVICE_TOKEN)
+		private readonly products: Pick<ExportedProductService, 'productsById' | 'getNameMap'>,
+		/** Turns a stored photo key into a URL for the same rows. */
+		@inject(OBJECT_STORAGE_TOKEN)
+		private readonly storage: Pick<IObjectStorage, 'presignGet'>,
 		/**
 		 * ERP-0009 numbering authority: movement codes are sequence-allocated
 		 * inside the posting transaction (hardening plan D4), replacing the
@@ -140,7 +145,7 @@ export class StockService {
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		/**
 		 * The live Drizzle handle, for the service-owned transaction boundary.
 		 *
@@ -164,10 +169,11 @@ export class StockService {
 			...result,
 			data: result.data.map((row) => ({
 				...row,
-				itemName: names.items.get(row.productId)?.name ?? null,
-				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
-				imageUrl: this.itemImages.urlFor(
-					names.items.get(row.productId)?.imageObjectKey ?? null,
+				itemName: row.productId ? (names.items.get(row.productId)?.name ?? null) : null,
+				warehouseName: row.warehouseId ? (names.warehouses.get(row.warehouseId) ?? null) : null,
+				imageUrl: storedImageUrl(
+					this.storage,
+				row.productId ? (names.items.get(row.productId)?.imageObjectKey ?? null) : null,
 				),
 			})),
 		};
@@ -185,10 +191,11 @@ export class StockService {
 			...result,
 			data: result.data.map((row) => ({
 				...row,
-				itemName: names.items.get(row.productId)?.name ?? null,
-				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
-				imageUrl: this.itemImages.urlFor(
-					names.items.get(row.productId)?.imageObjectKey ?? null,
+				itemName: row.productId ? (names.items.get(row.productId)?.name ?? null) : null,
+				warehouseName: row.warehouseId ? (names.warehouses.get(row.warehouseId) ?? null) : null,
+				imageUrl: storedImageUrl(
+					this.storage,
+				row.productId ? (names.items.get(row.productId)?.imageObjectKey ?? null) : null,
 				),
 			})),
 		};
@@ -198,26 +205,26 @@ export class StockService {
 	 * Batch-resolves item and warehouse names for the given ids, in two
 	 * queries regardless of page size. Unknown ids are absent from the maps.
 	 */
-	private async resolveNames(ids: string[]): Promise<{
+	private async resolveNames(ids: Array<string | null>): Promise<{
 		items: Map<string, { name: string; imageObjectKey: string | null }>;
 		warehouses: Map<string, string>;
 	}> {
-		const unique = [...new Set(ids)];
+		const unique = [...new Set(ids.flatMap((id) => (id ? [id] : [])))];
 		if (unique.length === 0) {
 			return { items: new Map(), warehouses: new Map() };
 		}
-		const [itemRows, warehouseRows] = await Promise.all([
-			this.itemRepository.findNamesByIds(unique),
-			this.warehouseRepository.findNamesByIds(unique),
+		const [items, warehouses] = await Promise.all([
+			this.products.productsById(unique),
+			this.warehouses.getNameMap(unique),
 		]);
 		return {
 			items: new Map(
-				itemRows.map((row) => [
-					row.id,
-					{ name: row.name, imageObjectKey: row.imageObjectKey },
+				[...items].map(([id, product]) => [
+					id,
+					{ name: product.name, imageObjectKey: product.imageObjectKey },
 				]),
 			),
-			warehouses: new Map(warehouseRows.map((row) => [row.id, row.name])),
+			warehouses,
 		};
 	}
 
@@ -240,30 +247,27 @@ export class StockService {
 		warehouseId: string,
 		actorOrganizationId: string,
 	): Promise<void> {
-		const warehouse = await this.warehouseRepository.findById(warehouseId);
-		if (!warehouse) throw new WarehouseNotFoundError();
-		const linked = await this.warehouseRepository.isLinked(
-			warehouseId,
-			actorOrganizationId,
-		);
-		if (!linked) throw new WarehouseNotFoundError();
+		const warehouse = await this.warehouses.warehouseExists(warehouseId);
+		if (!warehouse) throw new InventoryReferenceError('warehouse', 'warehouse.notFound');
+		const linked = await this.warehouses.isLinked(warehouseId, actorOrganizationId);
+		if (!linked) throw new InventoryReferenceError('warehouse', 'warehouse.notFound');
 	}
 
 	/**
 	 * Resolves the balance scope a warehouse belongs to.
 	 *
 	 * @param warehouseId - The warehouse being moved in or out of
-	 * @returns The warehouse, and the `organizationId` its balances carry
-	 * @throws {WarehouseNotFoundError} When the warehouse is absent or archived
+	 * @returns The `organizationId` the warehouse's balances carry
+	 * @throws {InventoryReferenceError} When the warehouse is absent or archived
 	 */
 	async resolveScope(
 		warehouseId: string,
-	): Promise<{ warehouse: TWarehouseSelect; scopeOrganizationId: string | null }> {
-		const warehouse = await this.warehouseRepository.findById(warehouseId);
-		if (!warehouse) throw new WarehouseNotFoundError();
+	): Promise<{ scopeOrganizationId: string | null }> {
+		const scope = await this.warehouses.organizationScope(warehouseId);
+		if (!scope.found) throw new InventoryReferenceError('warehouse', 'warehouse.notFound');
 		// The warehouse's own scope decides. NOT the caller's organization:
 		// posting into a global warehouse contributes to the SHARED balance.
-		return { warehouse, scopeOrganizationId: warehouse.organizationId };
+		return { scopeOrganizationId: scope.organizationId };
 	}
 
 	/**
@@ -294,7 +298,7 @@ export class StockService {
 	 * @param input - The movement to post
 	 * @param tx - An outer transaction to join.
 	 * @returns The movement and the resulting balance
-	 * @throws {WarehouseNotFoundError} When the warehouse is absent
+	 * @throws {InventoryReferenceError} When the warehouse is absent
 	 * @throws {InsufficientStockError} When an outbound move would go below zero
 	 *
 	 * @remarks
@@ -566,9 +570,8 @@ export class StockService {
 	async recomputeFromLedger(
 		scopeOrganizationId: string | null,
 	): Promise<{ written: number; removed: number }> {
-		const totals = await this.movementRepository.ledgerTotals(
-			scopeOrganizationId,
-		);
+		const warehouseIds = await this.warehouses.idsInScope(scopeOrganizationId);
+		const totals = await this.movementRepository.ledgerTotals(warehouseIds);
 		const existing = await this.balanceRepository.listByScope(
 			scopeOrganizationId,
 		);
@@ -604,6 +607,7 @@ export class StockService {
 		// Rows that exist but have no ledger entry at all are stale.
 		let removed = 0;
 		for (const row of existing) {
+			if (!row.productId || !row.warehouseId) continue;
 			if (byKey.has(keyOf(row.productId, row.warehouseId, row.binId))) continue;
 			if (
 				await this.balanceRepository.remove({
@@ -620,7 +624,7 @@ export class StockService {
 		// Cost is path-dependent, so it is replayed in posting order rather than
 		// summed (ADR-0011 §5).
 		const costs = new Map<string, TCostState & { key: TStockKey }>();
-		for (const row of await this.movementRepository.ledgerRows(scopeOrganizationId)) {
+		for (const row of await this.movementRepository.ledgerRows(warehouseIds)) {
 			const id = keyOf(row.productId, row.warehouseId, row.binId);
 			const state = costs.get(id) ?? {
 				key: { scopeOrganizationId, productId: row.productId, warehouseId: row.warehouseId, binId: row.binId },

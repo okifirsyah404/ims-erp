@@ -20,6 +20,8 @@ declare module 'i18next' {
 		account: typeof en.account;
 		admin: typeof en.admin;
 		inventory: typeof en.inventory;
+		product: typeof en.product;
+		warehouse: typeof en.warehouse;
 		finance: typeof en.finance;
 		assets: typeof en.assets;
 		dashboard: typeof en.dashboard;

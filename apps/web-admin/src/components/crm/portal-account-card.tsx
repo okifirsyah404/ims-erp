@@ -17,6 +17,9 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatDateTime } from '@/lib/format';
 import {
@@ -31,8 +34,6 @@ import {
 } from '@/lib/portal-account-api';
 import { usePermission } from '@/lib/use-permission';
 
-const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
-
 /**
  * The customer's portal logins (ERP-0022, owner decision D2): one per person,
  * each with a role. Staff invite people (they set the password from the
@@ -45,7 +46,7 @@ export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope:
 	const canRead = usePermission('portal_account.read');
 	const canInvite = usePermission('portal_account.invite');
 	const canRevoke = usePermission('portal_account.revoke');
-	const { data: accounts = [], isPending } = useQuery(portalAccountsQueryOptions(scope, canRead));
+	const { data: accounts = [], isPending, isError, error } = useQuery(portalAccountsQueryOptions(scope, canRead));
 	const [name, setName] = useState(defaultName);
 	const [email, setEmail] = useState(defaultEmail ?? '');
 	const [role, setRole] = useState<TPortalRole>('owner');
@@ -75,7 +76,9 @@ export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope:
 				<CardTitle>{t('crm:portal.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4 text-sm'>
-				{!isPending && accounts.length === 0 && <p className='text-muted-foreground'>{t('crm:portal.none')}</p>}
+				{isPending && <SectionSkeleton />}
+				{isError && <ErrorState error={error} size='sm' />}
+				{!isPending && !isError && accounts.length === 0 && <EmptyState title={t('crm:portal.none')} size='sm' />}
 				{accounts.map((account) => (
 					<div key={account.id} className='flex flex-wrap items-center justify-between gap-2 border-b pb-3 last:border-b-0'>
 						<div className='flex flex-col gap-1'>
@@ -130,13 +133,18 @@ export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope:
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='portal-role'>{t('crm:portal.roleLabel')}</FieldLabel>
-							<select id='portal-role' className={select} value={role} onChange={(event) => setRole(event.target.value as TPortalRole)}>
-								{PORTAL_ROLES.map((value) => (
-									<option key={value} value={value}>
-										{t(`crm:portal.role.${value}`)}
-									</option>
-								))}
-							</select>
+							<Select value={role} onValueChange={(value: string | null) => setRole((value ?? 'owner') as TPortalRole)}>
+								<SelectTrigger id='portal-role' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{PORTAL_ROLES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`crm:portal.role.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 						</Field>
 						<Button type='submit' disabled={busy}>
 							{t('crm:portal.invite')}

@@ -167,10 +167,10 @@ export function CustomerFormDialog({
 							</Field>
 						</div>
 						{companyId && (
-							<label className='flex items-center gap-2 text-sm'>
-								<Checkbox checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
-								{t('crm:contacts.isPrimary')}
-							</label>
+							<Field orientation='horizontal'>
+								<Checkbox id='customer-primary' checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
+								<FieldLabel htmlFor='customer-primary'>{t('crm:contacts.isPrimary')}</FieldLabel>
+							</Field>
 						)}
 						<Field>
 							<FieldLabel htmlFor='customer-notes'>{t('crm:customer.notes')}</FieldLabel>

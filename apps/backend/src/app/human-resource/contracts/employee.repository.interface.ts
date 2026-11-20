@@ -1,7 +1,7 @@
 import type { TEmployeeInsert, TEmployeeSelect } from '@drizzle/schemas/human-resource.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TEmployeeListQuery, TEmployeePickerRow } from './hr.contract';
+import type { TEmployeePickerRow, TEmployeePaginationRequest } from './hr.contract';
 
 /**
  * Persistence port of `hr.employees`.
@@ -12,14 +12,9 @@ import type { TEmployeeListQuery, TEmployeePickerRow } from './hr.contract';
  * the service layer's job, per elysia-module rule 3.2.
  */
 export interface IEmployeeRepository {
-	/** Paginated list. Scope filtering (`organization`/`company`) is the caller's. */
-	list(
-		filter: TEmployeeListQuery & {
-			/** Restrict to these organization ids (null = company-level only). */
-			organizationIds: string[] | null;
-			/** Include company-level rows (organization_id IS NULL). */
-			includeCompany: boolean;
-		},
+	/** Fetches one page of employees. Scope filtering (`organization`/`company`) is the caller's. */
+	paginate(
+		request: TEmployeePaginationRequest,
 	): Promise<TPaginationResult<TEmployeeSelect>>;
 
 	findById(id: string, tx?: TTx): Promise<TEmployeeSelect | null>;

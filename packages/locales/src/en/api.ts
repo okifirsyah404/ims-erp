@@ -175,35 +175,9 @@ const api = {
 	'publicApi.fileType': 'Use PDF, DWG, JPG or PNG files',
 	'publicApi.badPayload': 'The payload must be valid JSON',
 
-	'inventory.itemNotFound': 'Item not found',
 	'inventory.unitNotFound': 'Item unit not found',
-	'inventory.skuTaken': 'An item with this SKU already exists',
-	'inventory.categoryNotFound': 'Item category not found',
-	'inventory.categorySlugTaken': 'An item category with this slug already exists',
-	'inventory.categoryHasItems':
-		'Cannot archive a category that still has {{count}} item(s); deactivate it instead',
-	'inventory.categoryUnavailable': 'The selected category is not available',
 	'inventory.serialTaken': 'An item unit with this serial number already exists',
 	'inventory.ruleViolation': 'This inventory rule does not allow it: {{rule}}',
-	'inventory.itemHasUnits':
-		'Cannot archive an item that still has {{count}} live unit(s)',
-	'inventory.warehouseNotFound': 'Warehouse not found',
-	'inventory.warehouseCodeTaken':
-		'A warehouse with this code already exists in this scope',
-	'inventory.warehouseHasUnits':
-		'Cannot archive a warehouse that still holds {{count}} live unit(s)',
-	'inventory.warehouseLinkConflict':
-		'Cannot unlink while the organization holds {{count}} open borrowing(s) originating in this warehouse',
-	'inventory.storageNotFound': 'Storage not found',
-	'inventory.storageCodeTaken':
-		'A storage with this code already exists in this warehouse',
-	'inventory.warehouseInactive':
-		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
-	'inventory.warehousePicInvalid':
-		'The responsible employee is unknown, inactive, or not from a linked organization',
-	'inventory.warehouseManagerExists':
-		'This user is already a person in charge of the warehouse',
-	'inventory.warehouseManagerUserNotFound': 'User not found',
 	'inventory.movementNotFound': 'Stock movement not found',
 	'inventory.movementAlreadyReversed':
 		'This stock movement has already been reversed',
@@ -218,6 +192,38 @@ const api = {
 		'You cannot approve your own stock adjustment',
 	'inventory.adjustmentHasNoLines':
 		'A stock adjustment must have at least one line',
+
+	'inventory.referenceUnavailable': 'The {{reference}} is unknown, archived or inactive',
+
+	'product.notFound': 'Product not found',
+	'product.skuTaken': 'A product with this SKU already exists',
+	'product.categoryNotFound': 'Product category not found',
+	'product.categorySlugTaken': 'A product category with this slug already exists',
+	'product.categoryHasProducts':
+		'Cannot archive a category that still has {{count}} product(s); deactivate it instead',
+	'product.categoryUnavailable': 'The selected category is not available',
+	'product.hasUnits':
+		'Cannot archive a product that still has {{count}} live unit(s)',
+	'product.ruleViolation': 'This product rule does not allow it: {{rule}}',
+
+	'warehouse.notFound': 'Warehouse not found',
+	'warehouse.codeTaken':
+		'A warehouse with this code already exists in this scope',
+	'warehouse.hasUnits':
+		'Cannot archive a warehouse that still holds {{count}} live unit(s)',
+	'warehouse.linkConflict':
+		'Cannot unlink while the organization holds {{count}} open borrowing(s) originating in this warehouse',
+	'warehouse.storageNotFound': 'Storage not found',
+	'warehouse.storageCodeTaken':
+		'A storage with this code already exists in this warehouse',
+	'warehouse.inactive':
+		'Warehouse "{{warehouseCode}}" is inactive; its storages cannot be changed',
+	'warehouse.picInvalid':
+		'The responsible employee is unknown, inactive, or not from a linked organization',
+	'warehouse.managerExists':
+		'This user is already a person in charge of the warehouse',
+	'warehouse.managerUserNotFound': 'User not found',
+	'warehouse.ruleViolation': 'This warehouse rule does not allow it: {{rule}}',
 
 	'assets.assetNotFound': 'Asset not found',
 	'assets.categoryNotFound': 'Asset category not found',

@@ -6,7 +6,10 @@ import {
 	PeriodNotFoundError,
 	PeriodTransitionError,
 } from '../errors/ledger.errors';
-import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
+import type {
+	IAccountingPeriodRepository,
+	TPeriodPaginationRequest,
+} from '../contracts/accounting-period.repository.interface';
 import type { IJournalRepository } from '../contracts/journal.repository.interface';
 import type { IAccountBalanceRepository } from '../contracts/account-balance.repository.interface';
 
@@ -42,11 +45,11 @@ export class PeriodService {
 		@inject(ACCOUNT_BALANCE_REPOSITORY_TOKEN) private readonly balances: IAccountBalanceRepository,
 	) {}
 
+	/** Fetches one page of the tenant's accounting periods. */
 	async listPeriods(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+		request: TPeriodPaginationRequest,
 	): Promise<TPaginationResult<TAccountingPeriodSelect>> {
-		return this.periods.listPeriods(organizationId, pagination);
+		return this.periods.paginate(request);
 	}
 
 	async getPeriod(

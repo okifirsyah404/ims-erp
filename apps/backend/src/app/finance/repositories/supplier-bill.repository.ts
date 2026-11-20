@@ -5,7 +5,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	ISupplierBillRepository,
+	TSupplierBillPaginationRequest,
+} from '../contracts/supplier-bill.repository.interface';
 
 /** Drizzle queries of `finance.supplier_bills`. Tenant scoped, soft-delete aware. */
 @injectable()
@@ -102,18 +106,22 @@ export class SupplierBillRepository implements ISupplierBillRepository {
 			.orderBy(asc(supplierBills.dueDate));
 	}
 
-	async listSupplierBills(
-		organizationId: string,
-		filters: { status?: string; supplierCompanyId?: string },
-		pagination: { page: number; limit: number },
+	/**
+	 * Fetches one page of the tenant's supplier bills, newest first.
+	 *
+	 * @param request - Tenant, page settings and the optional status/supplier filters
+	 */
+	async paginate(
+		request: TSupplierBillPaginationRequest,
 	): Promise<TPaginationResult<TSupplierBillSelect>> {
+		const { organizationId, status, supplierCompanyId, page, limit } = request;
 		const conditions = [
 			eq(supplierBills.organizationId, organizationId),
 			isNull(supplierBills.deletedAt),
 		];
-		if (filters.status) conditions.push(eq(supplierBills.status, filters.status));
-		if (filters.supplierCompanyId) {
-			conditions.push(eq(supplierBills.supplierCompanyId, filters.supplierCompanyId));
+		if (status) conditions.push(eq(supplierBills.status, status));
+		if (supplierCompanyId) {
+			conditions.push(eq(supplierBills.supplierCompanyId, supplierCompanyId));
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database
@@ -125,16 +133,8 @@ export class SupplierBillRepository implements ISupplierBillRepository {
 			.from(supplierBills)
 			.where(where)
 			.orderBy(desc(supplierBills.createdAt))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 }

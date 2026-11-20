@@ -9,6 +9,7 @@ import {
 	tasks,
 } from '@drizzle/schemas/project.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, asc, count, desc, eq, exists, ilike, inArray, isNull, lt, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
@@ -75,7 +76,7 @@ export class ProjectRepository implements IProjectRepository {
 			.orderBy(desc(projects.createdAt), desc(projects.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async listByCustomer(customerId: string) {

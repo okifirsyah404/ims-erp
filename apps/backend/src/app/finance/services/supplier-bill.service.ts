@@ -32,7 +32,10 @@ import {
 	BillNotFoundError,
 	BillOrderNotBillableError,
 } from '../errors/ledger.errors';
-import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
+import type {
+	ISupplierBillRepository,
+	TSupplierBillPaginationRequest,
+} from '../contracts/supplier-bill.repository.interface';
 import type { ISupplierBillItemRepository } from '../contracts/supplier-bill-item.repository.interface';
 import type { IApOpenItemRepository } from '../contracts/ap-open-item.repository.interface';
 
@@ -262,12 +265,11 @@ export class SupplierBillService {
 		return this.detail(ctx.organizationId, created.id);
 	}
 
+	/** Fetches one page of the tenant's supplier bills. */
 	async list(
-		organizationId: string,
-		filters: { status?: string; supplierCompanyId?: string },
-		pagination: { page: number; limit: number },
+		request: TSupplierBillPaginationRequest,
 	): Promise<TPaginationResult<TSupplierBillSelect>> {
-		return this.bills.listSupplierBills(organizationId, filters, pagination);
+		return this.bills.paginate(request);
 	}
 
 	async get(organizationId: string, id: string): Promise<TSupplierBillSelect> {

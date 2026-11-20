@@ -7,7 +7,10 @@ import {
 	AccountInUseError,
 	AccountNotFoundError,
 } from '../errors/ledger.errors';
-import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
+import type {
+	IChartOfAccountRepository,
+	TAccountPaginationRequest,
+} from '../contracts/chart-of-account.repository.interface';
 
 export type TCreateAccountInput = {
 	code: string;
@@ -44,12 +47,11 @@ export class AccountService {
 		@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
 	) {}
 
+	/** Fetches one page of the tenant's chart of accounts. */
 	async listAccounts(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filters: { accountType?: string; isActive?: boolean } = {},
+		request: TAccountPaginationRequest,
 	): Promise<TPaginationResult<TChartOfAccountSelect>> {
-		return this.accounts.listAccounts(organizationId, pagination, filters);
+		return this.accounts.paginateAccounts(request);
 	}
 
 	async getAccount(

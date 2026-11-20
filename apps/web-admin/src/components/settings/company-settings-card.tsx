@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -15,14 +15,10 @@ import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
 	COMPANY_SETTING_VALUE_TYPES,
@@ -63,6 +59,48 @@ export function CompanySettingsCard({
 	);
 	const [editing, setEditing] = useState<TCompanySetting | null>(null);
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TCompanySetting, CellData>[]
+	>(() => {
+		const base: ColumnDef<DataTableFeatures, TCompanySetting, CellData>[] = [
+			{
+				accessorKey: 'settingGroup',
+				header: t('settings:settings.group'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				accessorKey: 'settingKey',
+				header: t('settings:settings.key'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'valueType',
+				header: t('settings:settings.valueType'),
+				cell: ({ row }) => t(`settings:settings.type.${row.original.valueType}`),
+			},
+			{
+				id: 'value',
+				header: t('settings:settings.value'),
+				meta: { cellClassName: 'font-mono' },
+				cell: ({ row }) => row.original.value ?? '—',
+			},
+		];
+		if (!canEdit) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<Button variant='outline' size='sm' onClick={() => setEditing(row.original)}>
+						{t('settings:settings.edit')}
+					</Button>
+				),
+			},
+		];
+	}, [canEdit, t]);
+
 	return (
 		<Card>
 			<CardHeader>
@@ -70,39 +108,17 @@ export function CompanySettingsCard({
 				<CardDescription>{description ?? t('settings:settings.description')}</CardDescription>
 			</CardHeader>
 			<CardContent>
-				{isPending ? null : isError ? (
-					<p className='text-sm text-destructive'>{error.message}</p>
-				) : settings.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>{emptyText ?? t('settings:settings.empty')}</p>
+				{isError ? (
+					<ErrorState error={error} size='sm' />
+				) : !isPending && settings.length === 0 ? (
+					<EmptyState title={emptyText ?? t('settings:settings.empty')} size='sm' />
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('settings:settings.group')}</TableHead>
-								<TableHead>{t('settings:settings.key')}</TableHead>
-								<TableHead>{t('settings:settings.valueType')}</TableHead>
-								<TableHead>{t('settings:settings.value')}</TableHead>
-								{canEdit && <TableHead />}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{settings.map((setting) => (
-								<TableRow key={`${setting.settingGroup}.${setting.settingKey}`}>
-									<TableCell className='font-mono text-xs'>{setting.settingGroup}</TableCell>
-									<TableCell className='font-mono text-xs'>{setting.settingKey}</TableCell>
-									<TableCell>{t(`settings:settings.type.${setting.valueType}`)}</TableCell>
-									<TableCell className='font-mono'>{setting.value ?? '—'}</TableCell>
-									{canEdit && (
-										<TableCell className='text-right'>
-											<Button variant='outline' size='sm' onClick={() => setEditing(setting)}>
-												{t('settings:settings.edit')}
-											</Button>
-										</TableCell>
-									)}
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable
+						columns={columns}
+						data={settings}
+						loading={isPending}
+						getRowId={(row) => `${row.settingGroup}.${row.settingKey}`}
+					/>
 				)}
 			</CardContent>
 			{editing && (

@@ -3,7 +3,7 @@ import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
 import { container } from 'tsyringe';
 import { z } from 'zod';
-import type { TInventoryAuditActor } from '../constants/audit-actor';
+import type { TAuditActor } from '@shared/audit';
 import {
 	DISPOSAL_SERVICE_TOKEN,
 	ITEM_CUSTODY_SERVICE_TOKEN,
@@ -25,14 +25,14 @@ import {
 	toolSetItemAddSchema,
 	toolSetUpdateSchema,
 } from '../contracts/item-operations.contract';
-import { idParamSchema } from '../contracts/product.contract';
+import { idParamSchema } from '../contracts/pagination.contract';
 import { ItemRuleViolationError } from '../errors/item.errors';
 
 /**
  * Audit actor derived from the guard-resolved session and request headers,
  * never from client input (house pattern).
  */
-function auditActor(erp: ErpContext, request: Request): TInventoryAuditActor {
+function auditActor(erp: ErpContext, request: Request): TAuditActor {
 	return {
 		userId: erp.session.user.id,
 		email: erp.session.user.email,
@@ -131,10 +131,14 @@ export class ItemOperationsController {
 				)
 				.get(
 					'/items/:id/movements',
-					async ({ params, query, erp }) => {
-						const { page, limit } = listQuery.parse(query);
-						return okPaginated(await custody.listMovements(id(params), erp.organizationId, page, limit));
-					},
+					async ({ params, query, erp }) =>
+						okPaginated(
+							await custody.listMovements({
+								itemId: id(params),
+								organizationId: erp.organizationId,
+								...listQuery.parse(query),
+							}),
+						),
 					{
 						erp: { permission: ['asset:read'] },
 						detail: { description: 'Movement trail of a unit' },
@@ -162,12 +166,14 @@ export class ItemOperationsController {
 				)
 				.get(
 					'/items/:id/condition-checks',
-					async ({ params, query, erp }) => {
-						const { page, limit } = listQuery.parse(query);
-						return okPaginated(
-							await maintenance.listConditionChecks(id(params), erp.organizationId, page, limit),
-						);
-					},
+					async ({ params, query, erp }) =>
+						okPaginated(
+							await maintenance.listConditionChecks({
+								itemId: id(params),
+								organizationId: erp.organizationId,
+								...listQuery.parse(query),
+							}),
+						),
 					{
 						erp: { permission: ['asset:read'] },
 						detail: { description: 'Condition check history' },
@@ -195,12 +201,14 @@ export class ItemOperationsController {
 				)
 				.get(
 					'/items/:id/maintenances',
-					async ({ params, query, erp }) => {
-						const { page, limit } = listQuery.parse(query);
-						return okPaginated(
-							await maintenance.listMaintenances(id(params), erp.organizationId, page, limit),
-						);
-					},
+					async ({ params, query, erp }) =>
+						okPaginated(
+							await maintenance.listMaintenances({
+								itemId: id(params),
+								organizationId: erp.organizationId,
+								...listQuery.parse(query),
+							}),
+						),
 					{
 						erp: { permission: ['asset:read'] },
 						detail: { description: 'Service history of a unit' },
@@ -269,10 +277,16 @@ export class ItemOperationsController {
 						const itemId = id(params);
 						const item = await items.findById(itemId);
 						if (!item || item.organizationId !== erp.organizationId) return ok(null);
+						const historyRequest = {
+							itemId,
+							organizationId: erp.organizationId,
+							page: 1,
+							limit: 20,
+						};
 						const [movements, checks, maintenances, docs] = await Promise.all([
-							custody.listMovements(itemId, erp.organizationId, 1, 20),
-							maintenance.listConditionChecks(itemId, erp.organizationId, 1, 20),
-							maintenance.listMaintenances(itemId, erp.organizationId, 1, 20),
+							custody.listMovements(historyRequest),
+							maintenance.listConditionChecks(historyRequest),
+							maintenance.listMaintenances(historyRequest),
 							documents.list(itemId, erp.organizationId),
 						]);
 						return ok({
@@ -292,10 +306,13 @@ export class ItemOperationsController {
 				)
 				.get(
 					'/disposals',
-					async ({ query, erp }) => {
-						const { page, limit } = listQuery.parse(query);
-						return okPaginated(await disposals.list(erp.organizationId, page, limit));
-					},
+					async ({ query, erp }) =>
+						okPaginated(
+							await disposals.list({
+								organizationId: erp.organizationId,
+								...listQuery.parse(query),
+							}),
+						),
 					{
 						erp: { permission: ['asset:read'] },
 						detail: { description: 'Paginated disposal records' },
@@ -342,10 +359,13 @@ export class ItemOperationsController {
 				/* ------------------------------ tool sets ---------------------------- */
 				.get(
 					'/tool-sets',
-					async ({ query, erp }) => {
-						const { page, limit } = listQuery.parse(query);
-						return okPaginated(await toolSets.list(erp.organizationId, page, limit));
-					},
+					async ({ query, erp }) =>
+						okPaginated(
+							await toolSets.list({
+								organizationId: erp.organizationId,
+								...listQuery.parse(query),
+							}),
+						),
 					{
 						erp: { permission: ['asset:read'] },
 						detail: { description: 'Paginated tool sets' },

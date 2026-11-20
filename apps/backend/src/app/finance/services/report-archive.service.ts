@@ -7,6 +7,7 @@ import {
 } from '@drizzle/schemas/finance.schema';
 import { REPORT_ARCHIVE_REPOSITORY_TOKEN, REPORT_SERVICE_TOKEN } from '../constants/ar-di';
 import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN } from '../constants/di';
+import type { TReportArchivePaginationRequest } from '../repositories/report-archive.repository';
 import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
 import type { ReportArchiveRepository } from '../repositories/report-archive.repository';
 import type { ReportService } from './report.service';
@@ -118,12 +119,11 @@ export class ReportArchiveService {
 		return created;
 	}
 
+	/** Fetches one page of archived reports. */
 	async list(
-		organizationId: string,
-		pagination: { page: number; limit: number },
-		filter: { periodYear?: number; periodMonth?: number } = {},
+		request: TReportArchivePaginationRequest,
 	): Promise<TPaginationResult<TReportArchiveSelect>> {
-		return this.repo.list(organizationId, pagination, filter);
+		return this.repo.paginate(request);
 	}
 
 	async get(organizationId: string, id: string): Promise<TReportArchiveSelect> {

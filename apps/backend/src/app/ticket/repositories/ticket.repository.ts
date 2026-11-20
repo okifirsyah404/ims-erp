@@ -2,6 +2,7 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import { likePattern } from '@drizzle/search';
 import { tickets, type TTicketSelect } from '@drizzle/schemas/ticket.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, count, desc, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
@@ -35,7 +36,7 @@ export class TicketRepository implements ITicketRepository {
 			.orderBy(desc(tickets.reportedAt), desc(tickets.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findById(id: string) {

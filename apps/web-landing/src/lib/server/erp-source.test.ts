@@ -64,7 +64,7 @@ const backendProduct = {
   applications: ["office"],
   popularity: 10,
   listedAt: "2026-11-01T03:00:00.000Z",
-  image: "https://erp.example.com/inventory/public/v1/catalog/products/turnstile-pro/image",
+  image: "https://erp.example.com/products/public/v1/catalog/products/turnstile-pro/image",
 };
 
 const query: CatalogListQuery = {
@@ -80,9 +80,9 @@ const query: CatalogListQuery = {
 };
 
 describe("route maps", () => {
-  test("every catalog operation is mapped under /inventory/public/v1/catalog", () => {
+  test("every catalog operation is mapped under /products/public/v1/catalog", () => {
     const ops = ["listProducts", "getProduct", "listCategories", "getFacets", "getStock", "getPricing", "listSolutions", "search", "priceCart"] as const;
-    for (const op of ops) expect(catalogRoutes[op]).toStartWith("/inventory/public/v1/catalog/");
+    for (const op of ops) expect(catalogRoutes[op]).toStartWith("/products/public/v1/catalog/");
   });
 
   test("website forms are mapped under /projects/public/v1; unpublished operations stay unmapped", () => {
@@ -108,7 +108,7 @@ describe("ERP catalog source", () => {
     expect(page.items[0]).toEqual(backendProduct as never);
     expect(page.pagination).toEqual({ page: 1, limit: 12, total: 1, totalPages: 1 });
     const { url, init } = calls[0]!;
-    expect(url.pathname).toBe("/inventory/public/v1/catalog/products");
+    expect(url.pathname).toBe("/products/public/v1/catalog/products");
     expect(url.searchParams.getAll("category")).toEqual(["turnstile", "gate"]);
     expect(url.searchParams.getAll("availability")).toEqual(["ready"]);
     expect(url.searchParams.get("min")).toBe("1000");
@@ -129,7 +129,7 @@ describe("ERP catalog source", () => {
   test("getProduct fills :slug (encoded) and returns the product", async () => {
     const { calls, fetcher } = mockFetch(() => envelope(backendProduct));
     expect((await catalogWith(fetcher).getProduct("turnstile pro"))?.slug).toBe("turnstile-pro");
-    expect(calls[0]!.url.pathname).toBe("/inventory/public/v1/catalog/products/turnstile%20pro");
+    expect(calls[0]!.url.pathname).toBe("/products/public/v1/catalog/products/turnstile%20pro");
   });
 
   test("getProduct returns null on the backend's 404 envelope", async () => {
@@ -149,16 +149,16 @@ describe("ERP catalog source", () => {
 
   test("categories, facets, stock, pricing, solutions pass backend shapes through", async () => {
     const bodies: Record<string, unknown> = {
-      "/inventory/public/v1/catalog/categories": [{ slug: "turnstile", name: "Turnstile", productCount: 3 }],
-      "/inventory/public/v1/catalog/facets": { total: 3, categories: { turnstile: 3 }, availability: { ready: 2, request: 1 } },
-      "/inventory/public/v1/catalog/stock": [{ slug: "turnstile-pro", status: "preorder", leadTimeLabel: "2 weeks" }],
-      "/inventory/public/v1/catalog/pricing": [{ slug: "turnstile-pro", price: null, currency: "IDR" }],
-      "/inventory/public/v1/catalog/solutions": [{ slug: "entragate-access", name: "Entragate Access", description: "", tags: [] }],
+      "/products/public/v1/catalog/categories": [{ slug: "turnstile", name: "Turnstile", productCount: 3 }],
+      "/products/public/v1/catalog/facets": { total: 3, categories: { turnstile: 3 }, availability: { ready: 2, request: 1 } },
+      "/products/public/v1/catalog/stock": [{ slug: "turnstile-pro", status: "preorder", leadTimeLabel: "2 weeks" }],
+      "/products/public/v1/catalog/pricing": [{ slug: "turnstile-pro", price: null, currency: "IDR" }],
+      "/products/public/v1/catalog/solutions": [{ slug: "entragate-access", name: "Entragate Access", description: "", tags: [] }],
     };
     const { calls, fetcher } = mockFetch(({ url }) => envelope(bodies[url.pathname]));
     const source = catalogWith(fetcher);
 
-    expect(await source.listCategories()).toEqual(bodies["/inventory/public/v1/catalog/categories"] as never);
+    expect(await source.listCategories()).toEqual(bodies["/products/public/v1/catalog/categories"] as never);
     expect((await source.getFacets()).availability).toEqual({ ready: 2, request: 1 });
     expect((await source.getStock(["a", "b"]))[0]!.leadTimeLabel).toBe("2 weeks");
     expect((await source.getPricing(["turnstile-pro"]))[0]!.price).toBeNull();

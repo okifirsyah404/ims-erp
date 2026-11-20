@@ -72,10 +72,10 @@ export class LedgerController {
 				'/ledger/accounts',
 				async ({ query, erp }) =>
 					okPaginated(
-						await accounts.listAccounts(
-							erp.organizationId,
-							accountListQuerySchema.parse(query),
-						),
+						await accounts.listAccounts({
+							organizationId: erp.organizationId,
+							...accountListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['chart_of_account:read'] },
@@ -150,10 +150,10 @@ export class LedgerController {
 				'/periods',
 				async ({ query, erp }) =>
 					okPaginated(
-						await periods.listPeriods(
-							erp.organizationId,
-							periodListQuerySchema.parse(query),
-						),
+						await periods.listPeriods({
+							organizationId: erp.organizationId,
+							...periodListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['accounting_period:read'] },
@@ -207,10 +207,10 @@ export class LedgerController {
 				'/ledger/journal',
 				async ({ query, erp }) =>
 					okPaginated(
-						await posting.listEntries(
-							erp.organizationId,
-							journalEntryListQuerySchema.parse(query),
-						),
+						await posting.listEntries({
+							organizationId: erp.organizationId,
+							...journalEntryListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['journal:read'] },
@@ -427,11 +427,10 @@ export class LedgerController {
 				'/cash-bank-transactions',
 				async ({ query, erp }) =>
 					okPaginated(
-						await cashBank.listMovements(
-							erp.organizationId,
-							cashBankMovementListQuerySchema.parse(query).cashBankAccountId,
-							cashBankMovementListQuerySchema.parse(query),
-						),
+						await cashBank.listMovements({
+							organizationId: erp.organizationId,
+							...cashBankMovementListQuerySchema.parse(query),
+						}),
 					),
 				{
 					erp: { permission: ['cash_bank:read'] },

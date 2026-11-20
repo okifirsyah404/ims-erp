@@ -18,14 +18,14 @@ export const Route = createFileRoute('/_authed/inventory/materials/')({
 });
 
 function MaterialsPage() {
-	const { t } = useTranslation(['inventory']);
+	const { t } = useTranslation(['inventory', 'product']);
 	const { page } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	return (
 		<AdminOnly>
 			<ItemKindList
 				kind='material'
-				title={t('inventory:materials.title')}
+				title={t('product:materials.title')}
 				page={page ?? 1}
 				onPageChange={(next) =>
 					void navigate({ search: (prev) => ({ ...prev, page: next }) })

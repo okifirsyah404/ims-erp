@@ -6,6 +6,7 @@
  */
 const common = {
 	'action.cancel': 'Cancel',
+	'action.confirm': 'Confirm',
 	'action.save': 'Save',
 	'action.saving': 'Saving…',
 	'action.delete': 'Delete',

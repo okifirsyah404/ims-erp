@@ -45,7 +45,7 @@ export function StorageDialog({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
 	const isEdit = storage !== undefined;
 
@@ -77,7 +77,7 @@ export function StorageDialog({
 					capacity: capacity || null,
 					isActive,
 				});
-				toast.success(t('inventory:warehouses.storageUpdated'));
+				toast.success(t('warehouse:warehouses.storageUpdated'));
 			} else {
 				await createStorage(warehouseId, {
 					code,
@@ -86,7 +86,7 @@ export function StorageDialog({
 					capacity: capacity || null,
 					isActive,
 				});
-				toast.success(t('inventory:warehouses.storageCreated'));
+				toast.success(t('warehouse:warehouses.storageCreated'));
 			}
 			await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
 			onOpenChange(false);
@@ -105,14 +105,14 @@ export function StorageDialog({
 				<DialogHeader>
 					<DialogTitle>
 						{isEdit
-							? t('inventory:warehouses.editStorage')
-							: t('inventory:warehouses.addStorage')}
+							? t('warehouse:warehouses.editStorage')
+							: t('warehouse:warehouses.addStorage')}
 					</DialogTitle>
 					<DialogDescription>
 						{storage?.code ? (
 							<span className='font-mono'>{storage.code}</span>
 						) : (
-							t('inventory:warehouses.storageCodeHint')
+							t('warehouse:warehouses.storageCodeHint')
 						)}
 					</DialogDescription>
 				</DialogHeader>
@@ -124,7 +124,7 @@ export function StorageDialog({
 					}}
 				>
 					<Field>
-						<FieldLabel>{t('inventory:warehouses.storageCode')}</FieldLabel>
+						<FieldLabel>{t('warehouse:warehouses.storageCode')}</FieldLabel>
 						<Input
 							value={code}
 							onChange={(event) => setCode(event.target.value)}
@@ -134,21 +134,21 @@ export function StorageDialog({
 						/>
 					</Field>
 					<Field>
-						<FieldLabel>{t('inventory:warehouses.storageName')}</FieldLabel>
+						<FieldLabel>{t('warehouse:warehouses.storageName')}</FieldLabel>
 						<Input
 							value={name}
 							onChange={(event) => setName(event.target.value)}
 						/>
 					</Field>
 					<Field>
-						<FieldLabel>{t('inventory:warehouses.binType')}</FieldLabel>
+						<FieldLabel>{t('warehouse:warehouses.binType')}</FieldLabel>
 						<Input
 							value={binType}
 							onChange={(event) => setBinType(event.target.value)}
 						/>
 					</Field>
 					<Field>
-						<FieldLabel>{t('inventory:warehouses.capacity')}</FieldLabel>
+						<FieldLabel>{t('warehouse:warehouses.capacity')}</FieldLabel>
 						<Input
 							type='number'
 							min='0'
@@ -157,13 +157,16 @@ export function StorageDialog({
 							onChange={(event) => setCapacity(event.target.value)}
 						/>
 					</Field>
-					<label className='flex items-center gap-2 text-sm'>
+					<Field orientation='horizontal'>
 						<Checkbox
+							id='storage-is-active'
 							checked={isActive}
 							onCheckedChange={(checked) => setIsActive(checked === true)}
 						/>
-						{t('inventory:warehouseForm.isActive')}
-					</label>
+						<FieldLabel htmlFor='storage-is-active'>
+							{t('warehouse:warehouseForm.isActive')}
+						</FieldLabel>
+					</Field>
 					<DialogFooter>
 						<Button
 							type='button'
@@ -173,7 +176,7 @@ export function StorageDialog({
 							{t('common:action.cancel')}
 						</Button>
 						<Button type='submit' disabled={submitting}>
-							{isEdit ? t('common:action.save') : t('inventory:warehouses.addStorage')}
+							{isEdit ? t('common:action.save') : t('warehouse:warehouses.addStorage')}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -190,12 +193,12 @@ export function StorageDialog({
  * tab stays declarative about its mutations.
  */
 export function useArchiveStorage(warehouseId: string) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: (storageId: string) => archiveStorage(warehouseId, storageId),
 		onSuccess: async () => {
-			toast.success(t('inventory:warehouses.storageArchived'));
+			toast.success(t('warehouse:warehouses.storageArchived'));
 			await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),

@@ -1,24 +1,22 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
-import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PackageOpen } from 'lucide-react';
-import { productsQueryOptions, type TProductKind } from '@/lib/inventory-api';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import {
+	productsQueryOptions,
+	type TProduct,
+	type TProductKind,
+} from '@/lib/inventory-api';
 
 /** Rows per page in the detail tabs. */
 const PAGE_SIZE = 10;
@@ -54,7 +52,7 @@ export function WarehouseItemTable({
 	warehouseId: string;
 	itemKind: TProductKind;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
 	const [page, setPage] = useState(1);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [submittedSearch, setSubmittedSearch] = useState('');
@@ -74,14 +72,80 @@ export function WarehouseItemTable({
 	const pagination = data?.pagination;
 	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TProduct, CellData>[]>(
+		() => [
+			{
+				id: 'image',
+				header: t('warehouse:warehouses.image'),
+				meta: { headClassName: 'w-16' },
+				cell: ({ row }) =>
+					row.original.imageUrl ? (
+						<img
+							src={row.original.imageUrl}
+							alt={row.original.name}
+							className='size-10 rounded object-cover'
+							loading='lazy'
+						/>
+					) : (
+						<div
+							aria-hidden='true'
+							className='flex size-10 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground'
+						>
+							{row.original.name.slice(0, 2).toUpperCase()}
+						</div>
+					),
+			},
+			{
+				accessorKey: 'sku',
+				header: t('product:items.sku'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'name', header: t('product:items.name') },
+			{
+				id: 'unitLabel',
+				header: t('product:items.unitLabel'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.unitLabel ?? '—',
+			},
+			{
+				id: 'quantity',
+				header: t('warehouse:warehouses.quantity'),
+				meta: { align: 'right', cellClassName: 'tabular-nums' },
+				cell: ({ row }) =>
+					row.original.quantityOnHand == null
+						? '—'
+						: formatQuantity(row.original.quantityOnHand),
+			},
+			{
+				accessorKey: 'minStockQty',
+				header: t('product:items.minStockQty'),
+				meta: { cellClassName: 'tabular-nums' },
+			},
+			{
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<Button
+						variant='ghost'
+						size='sm'
+						render={
+							<Link
+								to='/inventory/items/$itemId'
+								params={{ itemId: row.original.id }}
+							/>
+						}
+					>
+						{t('common:action.edit')}
+					</Button>
+				),
+			},
+		],
+		[t],
+	);
+
 	if (isError) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{error instanceof Error ? error.message : t('common:error.failed')}
-				</CardContent>
-			</Card>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	const rows = data?.rows ?? [];
@@ -91,7 +155,7 @@ export function WarehouseItemTable({
 			<CardContent className='flex flex-col gap-3'>
 				<Input
 					className='w-64'
-					placeholder={t('inventory:warehouses.searchPlaceholder')}
+					placeholder={t('warehouse:warehouses.searchPlaceholder')}
 					value={searchTerm}
 					onChange={(event) => setSearchTerm(event.target.value)}
 					onKeyDown={(event) => {
@@ -104,127 +168,17 @@ export function WarehouseItemTable({
 				{rows.length === 0 && !isPending ? (
 					<EmptyState
 						icon={PackageOpen}
-						title={t('inventory:items.emptyTitle')}
-						description={t('inventory:items.empty')}
+						title={t('product:items.emptyTitle')}
+						description={t('product:items.empty')}
 						className='py-4'
 					/>
-				) : rows.length === 0 && isPending ? (
-					<Table aria-busy>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-16'>
-									{t('inventory:warehouses.image')}
-								</TableHead>
-								<TableHead>{t('inventory:items.sku')}</TableHead>
-								<TableHead>{t('inventory:items.name')}</TableHead>
-								<TableHead>{t('inventory:items.unitLabel')}</TableHead>
-								<TableHead className='text-right'>
-									{t('inventory:warehouses.quantity')}
-								</TableHead>
-								<TableHead>{t('inventory:items.minStockQty')}</TableHead>
-								<TableHead className='text-right'>
-									<span className='sr-only'>{t('common:action.edit')}</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{Array.from({ length: 5 }, (_, index) => (
-								<TableRow key={`skeleton-${index}`}>
-									<TableCell>
-										<Skeleton className='size-10 rounded' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-24' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-40' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-16' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='ml-auto h-4 w-12' />
-									</TableCell>
-									<TableCell>
-										<Skeleton className='h-4 w-12' />
-									</TableCell>
-									<TableCell />
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
 				) : (
-					<Table aria-busy={isPending || undefined}>
-						<TableHeader>
-							<TableRow>
-								<TableHead className='w-16'>
-									{t('inventory:warehouses.image')}
-								</TableHead>
-								<TableHead>{t('inventory:items.sku')}</TableHead>
-								<TableHead>{t('inventory:items.name')}</TableHead>
-								<TableHead>{t('inventory:items.unitLabel')}</TableHead>
-								<TableHead className='text-right'>
-									{t('inventory:warehouses.quantity')}
-								</TableHead>
-								<TableHead>{t('inventory:items.minStockQty')}</TableHead>
-								<TableHead className='text-right'>
-									<span className='sr-only'>{t('common:action.edit')}</span>
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((item) => (
-								<TableRow key={item.id}>
-									<TableCell>
-										{item.imageUrl ? (
-											<img
-												src={item.imageUrl}
-												alt={item.name}
-												className='size-10 rounded object-cover'
-												loading='lazy'
-											/>
-										) : (
-											<div
-												aria-hidden='true'
-												className='flex size-10 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground'
-											>
-												{item.name.slice(0, 2).toUpperCase()}
-											</div>
-										)}
-									</TableCell>
-									<TableCell className='font-mono text-xs'>
-										{item.sku}
-									</TableCell>
-									<TableCell>{item.name}</TableCell>
-									<TableCell className='text-muted-foreground'>
-										{item.unitLabel ?? '—'}
-									</TableCell>
-									<TableCell className='text-right tabular-nums'>
-										{item.quantityOnHand == null
-											? '—'
-											: formatQuantity(item.quantityOnHand)}
-									</TableCell>
-									<TableCell className='tabular-nums'>
-										{item.minStockQty}
-									</TableCell>
-									<TableCell className='text-right'>
-										<Button
-											variant='ghost'
-											size='sm'
-											render={
-												<Link
-													to='/inventory/items/$itemId'
-													params={{ itemId: item.id }}
-												/>
-											}
-										>
-											{t('common:action.edit')}
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable
+						columns={columns}
+						data={rows}
+						getRowId={(item) => item.id}
+						loading={isPending}
+					/>
 				)}
 				{pagination && (
 					<PaginationControls

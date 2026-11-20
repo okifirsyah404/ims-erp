@@ -1,6 +1,7 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { movements, warehouses } from '@drizzle/schemas/inventory.schema';
+import { movements } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, desc, eq, gte, inArray, isNotNull, isNull, lte, ne, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
@@ -135,10 +136,7 @@ export class MovementRepository implements IMovementRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data: data as TProductMovementSelect[],
-		};
+		return paginationResult({ page, limit }, total, data as TProductMovementSelect[]);
 	}
 
 	/** Fetches one movement by id. */
@@ -209,7 +207,7 @@ export class MovementRepository implements IMovementRepository {
 	}
 
 	/** Every posted movement of one balance scope, in posting order. */
-	async ledgerRows(scopeOrganizationId: string | null) {
+	async ledgerRows(warehouseIds: string[]) {
 		const rows = await this.database
 			.select({
 				productId: movements.productId,
@@ -220,14 +218,14 @@ export class MovementRepository implements IMovementRepository {
 				unitCost: movements.unitCost,
 			})
 			.from(movements)
-			.where(and(productMovement, balanceScopeFilter(scopeOrganizationId), ne(movements.status, 'draft')))
+			.where(and(productMovement, balanceScopeFilter(warehouseIds), ne(movements.status, 'draft')))
 			.orderBy(asc(movements.occurredAt), asc(movements.createdAt), asc(movements.id));
 		return rows as Array<(typeof rows)[number] & { productId: string; warehouseId: string }>;
 	}
 
 	/** Sums signed quantities per `(item, warehouse, bin)` of one balance scope. */
 	async ledgerTotals(
-		scopeOrganizationId: string | null,
+		warehouseIds: string[],
 	): Promise<
 		Array<{
 			productId: string;
@@ -247,7 +245,7 @@ export class MovementRepository implements IMovementRepository {
 			.where(
 				and(
 					productMovement,
-					balanceScopeFilter(scopeOrganizationId),
+					balanceScopeFilter(warehouseIds),
 					// A draft movement was never posted, so it must not appear in
 					// the ledger's totals at all.
 					ne(movements.status, 'draft'),
@@ -286,15 +284,12 @@ function scopeFilter(scopeOrganizationId: string | null | undefined) {
  * therefore writes a tenant-attributed movement into a shared balance, so the
  * ledger must be selected by the warehouse, not by the movement's own column.
  *
- * @param scopeOrganizationId - `null` = shared warehouses
+ * The warehouse ids of the scope come from the `warehouse` module (ADR-0026),
+ * so the filter is a plain `IN` over ids resolved by the caller — never a
+ * subquery into `warehouse.warehouses`.
+ *
+ * @param warehouseIds - Every warehouse whose balances carry this scope
  */
-function balanceScopeFilter(scopeOrganizationId: string | null) {
-	return inArray(
-		movements.warehouseId,
-		sql`(select ${warehouses.id} from ${warehouses} where ${
-			scopeOrganizationId === null
-				? isNull(warehouses.organizationId)
-				: eq(warehouses.organizationId, scopeOrganizationId)
-		})`,
-	);
+function balanceScopeFilter(warehouseIds: string[]) {
+	return inArray(movements.warehouseId, warehouseIds);
 }

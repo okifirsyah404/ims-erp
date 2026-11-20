@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -14,20 +15,21 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { BillingCard } from '@/components/finance/billing-card';
 import { DeliveryCard } from '@/components/sales/delivery-card';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
-import { cancelSalesOrder, SALES_ORDER_STATUS_VARIANT, salesOrderQueryOptions } from '@/lib/sales-order-api';
+import {
+	cancelSalesOrder,
+	SALES_ORDER_STATUS_VARIANT,
+	salesOrderQueryOptions,
+	type TSalesOrderItem,
+} from '@/lib/sales-order-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/sales/orders/$orderId` — one sales order: lines, amounts, history. */
@@ -44,6 +46,54 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 	);
 }
 
+/** The order's lines; its own component so the column hooks run before the page's early returns. */
+function OrderItemsTable({ items, language }: { items: TSalesOrderItem[]; language: string }) {
+	const { t } = useTranslation(['sales', 'common']);
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSalesOrderItem, CellData>[]>(
+		() => [
+			{
+				id: 'name',
+				header: t('sales:line.name'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						{row.original.specification && (
+							<div className='whitespace-pre-line text-xs text-muted-foreground'>{row.original.specification}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'quantity',
+				header: t('sales:line.quantity'),
+				meta: { align: 'right' },
+				cell: ({ row }) => `${Number(row.original.quantity).toLocaleString(language)} ${row.original.unit}`,
+			},
+			{
+				id: 'quantityDelivered',
+				header: t('sales:order.delivered'),
+				meta: { align: 'right' },
+				cell: ({ row }) => Number(row.original.quantityDelivered).toLocaleString(language),
+			},
+			{
+				id: 'unitPrice',
+				header: t('sales:line.unitPrice'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.unitPrice),
+			},
+			{
+				id: 'lineTotal',
+				header: t('sales:line.total'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.lineTotal),
+			},
+		],
+		[t, language],
+	);
+
+	return <DataTable columns={columns} data={items} getRowId={(row) => row.id} />;
+}
+
 function SalesOrderDetailPage() {
 	const { t, i18n } = useTranslation(['sales', 'common']);
 	const { orderId } = Route.useParams();
@@ -54,11 +104,11 @@ function SalesOrderDetailPage() {
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(salesOrderQueryOptions(orderId));
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/sales/orders' className='text-sm hover:underline'>
 					{t('sales:orders.back')}
 				</Link>
@@ -130,37 +180,9 @@ function SalesOrderDetailPage() {
 				</Card>
 			</div>
 
-			<Card>
+			<Card className='gap-0 py-0'>
 				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('sales:line.name')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.quantity')}</TableHead>
-								<TableHead className='text-right'>{t('sales:order.delivered')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.unitPrice')}</TableHead>
-								<TableHead className='text-right'>{t('sales:line.total')}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.items.map((item) => (
-								<TableRow key={item.id}>
-									<TableCell>
-										<div className='font-medium'>{item.name}</div>
-										{item.specification && (
-											<div className='whitespace-pre-line text-xs text-muted-foreground'>{item.specification}</div>
-										)}
-									</TableCell>
-									<TableCell className='text-right'>
-										{Number(item.quantity).toLocaleString(language)} {item.unit}
-									</TableCell>
-									<TableCell className='text-right'>{Number(item.quantityDelivered).toLocaleString(language)}</TableCell>
-									<TableCell className='text-right'>{formatIdr(item.unitPrice)}</TableCell>
-									<TableCell className='text-right'>{formatIdr(item.lineTotal)}</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<OrderItemsTable items={data.items} language={language} />
 					<dl className='ml-auto flex max-w-sm flex-col gap-1 p-4 text-sm'>
 						<div className='flex justify-between'>
 							<dt>{t('sales:quotation.subtotal')}</dt>

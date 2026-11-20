@@ -116,11 +116,11 @@ export interface IMovementRepository {
 	 * the moving-average replay in `recomputeFromLedger`.
 	 */
 	ledgerRows(
-		scopeOrganizationId: string | null,
+		warehouseIds: string[],
 	): Promise<Pick<TProductMovementSelect, 'productId' | 'warehouseId' | 'binId' | 'movementType' | 'quantity' | 'unitCost'>[]>;
 
 	ledgerTotals(
-		scopeOrganizationId: string | null,
+		warehouseIds: string[],
 	): Promise<
 		Array<{
 			productId: string;

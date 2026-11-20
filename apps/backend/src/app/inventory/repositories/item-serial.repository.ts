@@ -6,8 +6,9 @@ import {
 	type SerialStatus,
 } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type {
 	IItemSerialRepository,
@@ -57,10 +58,7 @@ export class ItemSerialRepository implements IItemSerialRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	/** Fetches one alive unit by id. */
@@ -260,5 +258,74 @@ export class ItemSerialRepository implements IItemSerialRepository {
 			)
 			.returning({ serialNumber: itemSerials.serialNumber });
 		return rows.map((row) => row.serialNumber);
+	}
+
+	/**
+	 * Live serialized units currently held in a warehouse (ADR-0026).
+	 *
+	 * @remarks
+	 * Guards `warehouse` archive: soft-deleting a warehouse that still points
+	 * at live units would leave those units referencing a dead row. The unit
+	 * rows are this module's, so the count stays here and `warehouse` reads it
+	 * through `ExportedInventoryService`.
+	 */
+	async countLiveUnits(warehouseId: string): Promise<number> {
+		const [{ value }] = await this.database
+			.select({ value: count() })
+			.from(itemSerials)
+			.where(
+				and(
+					isNull(itemSerials.deletedAt),
+					eq(itemSerials.warehouseId, warehouseId),
+				),
+			);
+		return value;
+	}
+
+	/**
+	 * Live serialized units per warehouse, grouped by product id (ADR-0026).
+	 *
+	 * @remarks
+	 * The kinds are the `product` module's vocabulary, so this query groups by
+	 * product and the caller sums per kind through `ExportedProductService`.
+	 *
+	 * @param warehouseIds - The warehouses on the current page
+	 */
+	async countByWarehouse(
+		warehouseIds: string[],
+	): Promise<Array<{ warehouseId: string | null; productId: string; value: number }>> {
+		if (warehouseIds.length === 0) return [];
+		const rows = await this.database
+			.select({
+				warehouseId: itemSerials.warehouseId,
+				productId: itemSerials.productId,
+				value: count(),
+			})
+			.from(itemSerials)
+			.where(
+				and(
+					isNull(itemSerials.deletedAt),
+					inArray(itemSerials.warehouseId, warehouseIds),
+				),
+			)
+			.groupBy(itemSerials.warehouseId, itemSerials.productId);
+		return rows.flatMap((row) =>
+			row.productId ? [{ ...row, productId: row.productId }] : [],
+		);
+	}
+
+	/** Live serialized units of one product (archive guard). */
+	async countLiveUnitsByProduct(productId: string): Promise<number> {
+		const [{ value }] = await this.database
+			.select({ value: count() })
+			.from(itemSerials)
+			.where(
+				and(
+					eq(itemSerials.productId, productId),
+					isNull(itemSerials.deletedAt),
+					sql`status <> 'lost'`,
+				),
+			);
+		return value;
 	}
 }

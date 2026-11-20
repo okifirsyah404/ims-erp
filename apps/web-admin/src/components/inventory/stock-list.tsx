@@ -1,23 +1,20 @@
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { useConfirm } from '@/components/confirm-dialog';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { ItemThumb } from '@/components/item-thumb';
-import { balancesQueryOptions, recomputeBalances } from '@/lib/stock-api';
+import { balancesQueryOptions, recomputeBalances, type TStockBalance } from '@/lib/stock-api';
 import { useClampPage } from '@/lib/use-clamp-page';
 import { usePermission } from '@/lib/use-permission';
 
@@ -46,8 +43,9 @@ export function StockList({
 	page: number;
 	onPageChange: (page: number) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
+	const confirm = useConfirm();
 	const canSeeCost = usePermission('product.read_cost');
 	const [inStockOnly, setInStockOnly] = useState(false);
 	const { data, isPending, isError, error } = useQuery({
@@ -70,25 +68,102 @@ export function StockList({
 	useClampPage(page, pagination?.totalPages, onPageChange);
 	const effectivePage = Math.min(page, pagination?.totalPages ?? page);
 
-	if (isPending) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('common:state.loading')}
-				</CardContent>
-			</Card>
-		);
-	}
-
-	if (isError) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-destructive'>
-					{error.message}
-				</CardContent>
-			</Card>
-		);
-	}
+	const columns = useMemo<ColumnDef<DataTableFeatures, TStockBalance, CellData>[]>(
+		() => [
+			{
+				id: 'item',
+				header: t('inventory:stock.item'),
+				cell: ({ row }) => (
+					<div className='flex items-center gap-2'>
+						<ItemThumb
+							src={row.original.imageUrl}
+							name={row.original.itemName ?? row.original.productId}
+						/>
+						<Link
+							to='/inventory/items/$itemId'
+							params={{ itemId: row.original.productId }}
+							className='hover:underline'
+						>
+							{row.original.itemName ?? (
+								<span className='font-mono text-xs text-muted-foreground'>
+									{row.original.productId}
+								</span>
+							)}
+						</Link>
+					</div>
+				),
+			},
+			{
+				id: 'warehouse',
+				header: t('inventory:stock.warehouse'),
+				cell: ({ row }) => (
+					<Link
+						to='/warehouses/$warehouseId'
+						params={{ warehouseId: row.original.warehouseId }}
+						className='hover:underline'
+					>
+						{row.original.warehouseName ?? (
+							<span className='font-mono text-xs text-muted-foreground'>
+								{row.original.warehouseId}
+							</span>
+						)}
+					</Link>
+				),
+			},
+			{
+				id: 'bin',
+				header: t('inventory:stock.bin'),
+				cell: ({ row }) =>
+					row.original.binId === null ? (
+						<span className='text-muted-foreground'>
+							{t('inventory:stock.noBin')}
+						</span>
+					) : (
+						<span className='font-mono text-xs'>{row.original.binId}</span>
+					),
+			},
+			{
+				id: 'scope',
+				header: t('inventory:stock.scope'),
+				cell: ({ row }) =>
+					row.original.organizationId === null ? (
+						<Badge variant='secondary'>{t('inventory:stock.shared')}</Badge>
+					) : (
+						<Badge variant='outline'>
+							{t('warehouse:warehouses.organization')}
+						</Badge>
+					),
+			},
+			{
+				accessorKey: 'quantityOnHand',
+				header: t('inventory:stock.onHand'),
+				meta: { align: 'right', cellClassName: 'font-mono' },
+			},
+			{
+				accessorKey: 'quantityReserved',
+				header: t('inventory:stock.reserved'),
+				meta: {
+					align: 'right',
+					cellClassName: 'font-mono text-muted-foreground',
+				},
+			},
+			{
+				accessorKey: 'quantityAvailable',
+				header: t('inventory:stock.available'),
+				meta: { align: 'right', cellClassName: 'font-mono font-medium' },
+			},
+			{
+				id: 'lastMovement',
+				header: t('inventory:stock.lastMovement'),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				cell: ({ row }) =>
+					row.original.lastMovementAt === null
+						? '—'
+						: new Date(row.original.lastMovementAt).toLocaleString(),
+			},
+		],
+		[t],
+	);
 
 	const rows = data?.rows ?? [];
 
@@ -102,8 +177,9 @@ export function StockList({
 					</p>
 				</div>
 				<div className='flex shrink-0 items-center gap-2'>
-					<label className='flex items-center gap-2 text-sm'>
+					<Field orientation='horizontal' className='w-auto'>
 						<Checkbox
+							id='stock-in-stock-only'
 							checked={inStockOnly}
 							onCheckedChange={(checked) => {
 								setInStockOnly(checked === true);
@@ -112,8 +188,10 @@ export function StockList({
 								onPageChange(1);
 							}}
 						/>
-						{t('inventory:stock.inStockOnly')}
-					</label>
+						<FieldLabel htmlFor='stock-in-stock-only'>
+							{t('inventory:stock.inStockOnly')}
+						</FieldLabel>
+					</Field>
 					{canSeeCost && (
 						<Button
 							variant='outline'
@@ -141,10 +219,14 @@ export function StockList({
 					variant='ghost'
 					size='sm'
 					disabled={recompute.isPending}
-					onClick={() => {
-						const body = t('inventory:stock.recomputeConfirmBody');
-						const heading = t('inventory:stock.recomputeConfirm');
-						if (window.confirm(`${heading}\n\n${body}`)) {
+					onClick={async () => {
+						if (
+							await confirm({
+								title: t('inventory:stock.recomputeConfirm'),
+								description: t('inventory:stock.recomputeConfirmBody'),
+								destructive: true,
+							})
+						) {
 							recompute.mutate(undefined);
 						}
 					}}
@@ -166,109 +248,21 @@ export function StockList({
 				) : null}
 			</div>
 
-			{rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{t('inventory:stock.empty')}
-					</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && rows.length === 0 ? (
+				<EmptyState
+					title={t('inventory:stock.empty')}
+					bordered
+				/>
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('inventory:stock.item')}</TableHead>
-									<TableHead>{t('inventory:stock.warehouse')}</TableHead>
-									<TableHead>{t('inventory:stock.bin')}</TableHead>
-									<TableHead>{t('inventory:stock.scope')}</TableHead>
-									<TableHead className='text-right'>
-										{t('inventory:stock.onHand')}
-									</TableHead>
-									<TableHead className='text-right'>
-										{t('inventory:stock.reserved')}
-									</TableHead>
-									<TableHead className='text-right'>
-										{t('inventory:stock.available')}
-									</TableHead>
-									<TableHead>{t('inventory:stock.lastMovement')}</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{rows.map((row) => (
-									<TableRow key={row.id}>
-										<TableCell>
-											<div className='flex items-center gap-2'>
-												<ItemThumb
-													src={row.imageUrl}
-													name={row.itemName ?? row.productId}
-												/>
-												<Link
-													to='/inventory/items/$itemId'
-													params={{ itemId: row.productId }}
-													className='hover:underline'
-												>
-													{row.itemName ?? (
-														<span className='font-mono text-xs text-muted-foreground'>
-															{row.productId}
-														</span>
-													)}
-												</Link>
-											</div>
-										</TableCell>
-										<TableCell>
-											<Link
-												to='/inventory/warehouses/$warehouseId'
-												params={{ warehouseId: row.warehouseId }}
-												className='hover:underline'
-											>
-												{row.warehouseName ?? (
-													<span className='font-mono text-xs text-muted-foreground'>
-														{row.warehouseId}
-													</span>
-												)}
-											</Link>
-										</TableCell>
-										<TableCell>
-											{row.binId === null ? (
-												<span className='text-muted-foreground'>
-													{t('inventory:stock.noBin')}
-												</span>
-											) : (
-												<span className='font-mono text-xs'>{row.binId}</span>
-											)}
-										</TableCell>
-										<TableCell>
-											{row.organizationId === null ? (
-												<Badge variant='secondary'>
-													{t('inventory:stock.shared')}
-												</Badge>
-											) : (
-												<Badge variant='outline'>
-													{t('inventory:warehouses.organization')}
-												</Badge>
-											)}
-										</TableCell>
-										<TableCell className='text-right font-mono'>
-											{row.quantityOnHand}
-										</TableCell>
-										<TableCell className='text-right font-mono text-muted-foreground'>
-											{row.quantityReserved}
-										</TableCell>
-										<TableCell className='text-right font-mono font-medium'>
-											{row.quantityAvailable}
-										</TableCell>
-										<TableCell className='text-xs text-muted-foreground'>
-											{row.lastMovementAt === null
-												? '—'
-												: new Date(row.lastMovementAt).toLocaleString()}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable
+					columns={columns}
+					data={rows}
+					getRowId={(row) => row.id}
+					loading={isPending}
+					bordered
+				/>
 			)}
 
 			<PaginationControls

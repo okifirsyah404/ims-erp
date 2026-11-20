@@ -3,6 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { ErrorState } from '@/components/empty-state';
 import { BastDocument } from '@/components/projects/bast-document';
 import { bastQueryOptions } from '@/lib/handover-api';
 
@@ -27,7 +28,7 @@ function PrintBastPage() {
 				</Button>
 			</div>
 			{bast.isError ? (
-				<p className='text-sm text-destructive'>{bast.error.message}</p>
+				<ErrorState error={bast.error} bordered />
 			) : bast.data ? (
 				<div className='mx-auto w-full max-w-4xl rounded-md border p-12 print:max-w-none print:border-0 print:p-0'>
 					<BastDocument bast={bast.data} />

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Button } from '@ims-erp/ui/components/button';
 import {
@@ -10,17 +11,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { UserMinus } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
+	type TWarehouseManager,
 	assignWarehouseManager,
 	unassignWarehouseManager,
 	warehouseManagerCandidatesQueryOptions,
@@ -38,8 +36,9 @@ import { SearchableSelect, type TSearchableOption } from './searchable-select';
  * membership at all, which is why it cannot reuse `GET /admin/users`.
  */
 export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const queryClient = useQueryClient();
+	const confirm = useConfirm();
 	const [term, setTerm] = useState('');
 	const [selected, setSelected] = useState<TSearchableOption | null>(null);
 
@@ -58,7 +57,7 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 	const assign = useMutation({
 		mutationFn: (userId: string) => assignWarehouseManager(warehouseId, userId),
 		onSuccess: () => {
-			toast.success(t('inventory:warehouses.managerAssigned'));
+			toast.success(t('warehouse:warehouses.managerAssigned'));
 			setSelected(null);
 			setTerm('');
 			invalidate();
@@ -70,11 +69,61 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 		mutationFn: (userId: string) =>
 			unassignWarehouseManager(warehouseId, userId),
 		onSuccess: () => {
-			toast.success(t('inventory:warehouses.managerUnassigned'));
+			toast.success(t('warehouse:warehouses.managerUnassigned'));
 			invalidate();
 		},
 		onError: (error: Error) => toast.error(error.message),
 	});
+
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TWarehouseManager, CellData>[]
+	>(
+		() => [
+			{
+				id: 'account',
+				header: t('warehouse:warehouses.managerAccount'),
+				meta: { cellClassName: 'font-medium' },
+				cell: ({ row }) =>
+					row.original.name ?? row.original.email ?? (
+						<span className='text-muted-foreground'>
+							{t('warehouse:warehouses.managerUnknownAccount')}
+						</span>
+					),
+			},
+			{
+				id: 'assignedAt',
+				header: t('warehouse:warehouses.managerAssignedAt'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => new Date(row.original.assignedAt).toLocaleDateString(),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<Button
+						variant='ghost'
+						size='sm'
+						disabled={unassign.isPending}
+						onClick={async () => {
+							if (
+								await confirm({
+									title: t('warehouse:warehouses.unassignManagerConfirm'),
+									destructive: true,
+								})
+							) {
+								unassign.mutate(row.original.userId);
+							}
+						}}
+					>
+						<UserMinus className='mr-2 size-4' />
+						{t('warehouse:warehouses.unassignManagerAction')}
+					</Button>
+				),
+			},
+		],
+		[confirm, t, unassign],
+	);
 
 	const assignedIds = new Set((managers.data ?? []).map((row) => row.userId));
 	const available: TSearchableOption[] = (candidates.data ?? [])
@@ -93,21 +142,21 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t('inventory:warehouses.managersTitle')}</CardTitle>
-				<CardDescription>{t('inventory:warehouses.managersHint')}</CardDescription>
+				<CardTitle>{t('warehouse:warehouses.managersTitle')}</CardTitle>
+				<CardDescription>{t('warehouse:warehouses.managersHint')}</CardDescription>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-4'>
 				<div className='flex items-end gap-2'>
 					<div className='flex w-80 flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>
-							{t('inventory:warehouses.assignManager')}
+							{t('warehouse:warehouses.assignManager')}
 						</span>
 						<SearchableSelect
 							value={selected?.value ?? null}
 							options={options}
 							loading={candidates.isFetching}
-							placeholder={t('inventory:warehouses.assignManagerPlaceholder')}
-							emptyLabel={t('inventory:warehouses.assignManagerEmpty')}
+							placeholder={t('warehouse:warehouses.assignManagerPlaceholder')}
+							emptyLabel={t('warehouse:warehouses.assignManagerEmpty')}
 							onSearch={setTerm}
 							onChange={(value) =>
 								setSelected(
@@ -123,61 +172,21 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 						disabled={!selected || assign.isPending}
 						onClick={() => selected && assign.mutate(selected.value)}
 					>
-						{t('inventory:warehouses.assignManagerAction')}
+						{t('warehouse:warehouses.assignManagerAction')}
 					</Button>
 				</div>
 
-				{managers.isPending ? null : (managers.data ?? []).length === 0 ? (
-					<p className='py-6 text-sm text-muted-foreground'>
-						{t('inventory:warehouses.noManagers')}
-					</p>
+				{managers.isError ? (
+					<ErrorState error={managers.error} size='sm' />
+				) : !managers.isPending && (managers.data ?? []).length === 0 ? (
+					<EmptyState title={t('warehouse:warehouses.noManagers')} size='sm' />
 				) : (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('inventory:warehouses.managerAccount')}</TableHead>
-								<TableHead>
-									{t('inventory:warehouses.managerAssignedAt')}
-								</TableHead>
-								<TableHead className='w-24' />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{(managers.data ?? []).map((row) => (
-								<TableRow key={row.userId}>
-									<TableCell className='font-medium'>
-										{row.name ?? row.email ?? (
-											<span className='text-muted-foreground'>
-												{t('inventory:warehouses.managerUnknownAccount')}
-											</span>
-										)}
-									</TableCell>
-									<TableCell className='text-muted-foreground'>
-										{new Date(row.assignedAt).toLocaleDateString()}
-									</TableCell>
-									<TableCell>
-										<Button
-											variant='ghost'
-											size='sm'
-											disabled={unassign.isPending}
-											onClick={() => {
-												if (
-													window.confirm(
-														t('inventory:warehouses.unassignManagerConfirm'),
-													)
-												) {
-													unassign.mutate(row.userId);
-												}
-											}}
-										>
-											<UserMinus className='mr-2 size-4' />
-											{t('inventory:warehouses.unassignManagerAction')}
-										</Button>
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable
+						columns={columns}
+						data={managers.data ?? []}
+						getRowId={(row) => row.userId}
+						loading={managers.isPending}
+					/>
 				)}
 			</CardContent>
 		</Card>

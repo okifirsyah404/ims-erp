@@ -20,10 +20,13 @@ export class DepreciationController {
 		})
 			.get(
 				'',
-				async ({ query, erp }) => {
-					const { page, limit, itemId } = depreciationListQuerySchema.parse(query);
-					return okPaginated(await service.list(erp.organizationId, { itemId }, page, limit));
-				},
+				async ({ query, erp }) =>
+					okPaginated(
+						await service.list({
+							organizationId: erp.organizationId,
+							...depreciationListQuerySchema.parse(query),
+						}),
+					),
 				{ erp: { permission: ['asset:read'] }, detail: { description: 'Depreciation entries, newest period first' } },
 			)
 			.post(

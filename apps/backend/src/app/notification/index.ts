@@ -15,7 +15,7 @@ export * from './container';
 export type {
 	IPushNotificationRepository,
 	TPushNotificationInsert,
-	TPushNotificationListRequest,
+	TPushNotificationPaginationRequest,
 } from './contracts/notification.repository.interface';
 export type {
 	TPushNotificationView,

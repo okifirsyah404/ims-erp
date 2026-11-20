@@ -1,5 +1,5 @@
-import { PRODUCT_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ProductService } from '@app/inventory/services/product.service';
+import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ProductService } from '@app/product/services/product.service';
 import type { PoVatMode, PurchaseOrderStatus } from '@drizzle/schemas/procurement.schema';
 import { inject, injectable } from 'tsyringe';
 import { PURCHASE_ORDER_REPOSITORY_TOKEN } from '../constants/di';

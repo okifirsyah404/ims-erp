@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 
 import { PurchaseReturnForm } from '@/components/procurement/purchase-return-form';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { createPurchaseReturn, returnableReceiptsQueryOptions } from '@/lib/purchase-return-api';
 
@@ -29,8 +31,10 @@ function NewPurchaseReturnPage() {
 				<h1 className='text-2xl font-bold'>{t('procurement:returns.new')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('procurement:returns.newHint')}</p>
 			</div>
-			{receipts.isPending ? null : receipts.isError ? (
-				<p className='text-sm text-destructive'>{receipts.error.message}</p>
+			{receipts.isPending ? (
+				<SectionSkeleton lines={6} />
+			) : receipts.isError ? (
+				<ErrorState error={receipts.error} bordered />
 			) : (
 				<PurchaseReturnForm
 					receipts={receipts.data}

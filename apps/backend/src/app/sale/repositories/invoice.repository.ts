@@ -26,9 +26,10 @@ import {
 } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { inject, injectable } from 'tsyringe';
 import type {
-	TInvoiceListFilters,
+	TInvoicePaginationRequest,
 	TInvoiceRepository,
 	TInvoiceSummary,
 } from '../contracts/invoice.repository.interface';
@@ -93,25 +94,27 @@ export class InvoiceRepository implements TInvoiceRepository {
 		return row ?? null;
 	}
 
-	async list(
-		organizationId: string,
-		filters: TInvoiceListFilters,
-		pagination: { page: number; limit: number },
-	): Promise<{
-		data: TInvoiceSelect[];
-		meta: { page: number; limit: number; total: number; totalPages: number };
-	}> {
+	/**
+	 * Fetches one filtered page of the tenant's invoices, newest first.
+	 *
+	 * @param request - Tenant, page settings and the optional filters
+	 */
+	async paginate(
+		request: TInvoicePaginationRequest,
+	): Promise<TPaginationResult<TInvoiceSelect>> {
+		const { organizationId, status, customerId, termKind, search, overdueOn, page, limit } =
+			request;
 		const conditions = [
 			eq(invoices.organizationId, organizationId),
 			isNull(invoices.deletedAt),
 		];
-		if (filters.status) conditions.push(eq(invoices.status, filters.status));
-		if (filters.customerId) {
-			conditions.push(eq(invoices.customerId, filters.customerId));
+		if (status) conditions.push(eq(invoices.status, status));
+		if (customerId) {
+			conditions.push(eq(invoices.customerId, customerId));
 		}
-		if (filters.termKind) conditions.push(eq(invoices.termKind, filters.termKind));
-		if (filters.search) {
-			const pattern = likePattern(filters.search);
+		if (termKind) conditions.push(eq(invoices.termKind, termKind));
+		if (search) {
+			const pattern = likePattern(search);
 			conditions.push(
 				or(
 					ilike(invoices.code, pattern),
@@ -121,10 +124,10 @@ export class InvoiceRepository implements TInvoiceRepository {
 				)!,
 			);
 		}
-		if (filters.overdueOn) {
+		if (overdueOn) {
 			conditions.push(
 				or(eq(invoices.status, 'issued'), eq(invoices.status, 'partially_paid'))!,
-				sql`${invoices.dueDate} < ${filters.overdueOn}`,
+				sql`${invoices.dueDate} < ${overdueOn}`,
 			);
 		}
 		const where = and(...conditions);
@@ -137,17 +140,9 @@ export class InvoiceRepository implements TInvoiceRepository {
 			.from(invoices)
 			.where(where)
 			.orderBy(desc(invoices.createdAt))
-			.limit(pagination.limit)
-			.offset((pagination.page - 1) * pagination.limit);
-		return {
-			data,
-			meta: {
-				page: pagination.page,
-				limit: pagination.limit,
-				total,
-				totalPages: Math.ceil(total / pagination.limit) || 1,
-			},
-		};
+			.limit(limit)
+			.offset((page - 1) * limit);
+		return paginationResult(request, total, data);
 	}
 
 	async countDraftsInWindow(
@@ -433,14 +428,15 @@ export class InvoiceRepository implements TInvoiceRepository {
 			.orderBy(desc(receipts.createdAt), desc(receipts.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data: rows.map(({ receipt, invoiceCode, customerName }) => ({
+		return paginationResult(
+			{ page, limit },
+			total,
+			rows.map(({ receipt, invoiceCode, customerName }) => ({
 				...receipt,
 				invoiceCode,
 				customerName,
 			})),
-		};
+		);
 	}
 
 	addReceipt(

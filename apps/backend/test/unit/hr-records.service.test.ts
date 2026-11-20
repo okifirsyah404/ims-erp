@@ -255,7 +255,7 @@ describe('employee scope and bank account', () => {
 		const service = new EmployeeService(
 			{
 				findById: async (id: string) => staff.find((row) => row.id === id) ?? null,
-				list: async () => ({ meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [staff[0]!] }),
+				paginate: async () => ({ meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [staff[0]!] }),
 				codeTaken: async () => false,
 				managerExists: async () => true,
 				update: async (_id: string, patch: Record<string, unknown>) => {

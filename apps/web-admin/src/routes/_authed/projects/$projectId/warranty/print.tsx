@@ -3,6 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { ErrorState } from '@/components/empty-state';
 import { WarrantyDocument } from '@/components/projects/warranty-document';
 import { companyProfileQueryOptions } from '@/lib/company-api';
 import { warrantyQueryOptions } from '@/lib/handover-api';
@@ -29,7 +30,7 @@ function PrintWarrantyPage() {
 				</Button>
 			</div>
 			{warranty.isError ? (
-				<p className='text-sm text-destructive'>{warranty.error.message}</p>
+				<ErrorState error={warranty.error} bordered />
 			) : warranty.data && !profile.isPending ? (
 				<div className='mx-auto w-full max-w-4xl rounded-md border p-12 print:max-w-none print:border-0 print:p-0'>
 					<WarrantyDocument warranty={warranty.data} profile={profile.data} />

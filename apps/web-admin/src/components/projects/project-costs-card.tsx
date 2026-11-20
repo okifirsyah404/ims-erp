@@ -22,6 +22,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@ims-erp/ui/components/table';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
 import { addCost, COST_CATEGORIES, type TCostCategory, type TProjectDetail, voidCost } from '@/lib/project-api';
@@ -86,8 +87,9 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 					</p>
 				)}
 				{costs.entries.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>{t('projects:costs.empty')}</p>
+					<EmptyState title={t('projects:costs.empty')} size='sm' />
 				) : (
+					<div className='overflow-hidden rounded-md border'>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -132,6 +134,7 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 							))}
 						</TableBody>
 					</Table>
+					</div>
 				)}
 				{active && canRecord && (
 					<form

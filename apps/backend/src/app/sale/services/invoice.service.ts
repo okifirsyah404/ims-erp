@@ -45,6 +45,7 @@ import { businessDateOf } from '@utils/business-date.util';
 import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
 import type {
 	TCreateReceiptInput,
+	TInvoiceListRequest,
 	TReceiptListQuery,
 } from '../contracts/invoice.contract';
 import type { TReceiptSelect } from '@drizzle/schemas/sale.schema';
@@ -85,13 +86,20 @@ export class InvoiceService {
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
 	) {}
 
+	/**
+	 * Fetches one filtered page of the tenant's invoices.
+	 *
+	 * @param request - Tenant, page settings, filters, and the derived
+	 * `overdue` flag the client sends (turned into `overdueOn` here)
+	 */
 	async list(
-		organizationId: string,
-		filters: { status?: string; customerId?: string; termKind?: string; search?: string; overdue?: boolean },
-		pagination: { page: number; limit: number },
+		request: TInvoiceListRequest,
 	): Promise<TPaginationResult<TInvoiceSelect>> {
-		const { overdue, ...rest } = filters;
-		return this.repo.list(organizationId, { ...rest, ...(overdue ? { overdueOn: businessDateOf() } : {}) }, pagination);
+		const { overdue, ...rest } = request;
+		return this.repo.paginate({
+			...rest,
+			...(overdue ? { overdueOn: businessDateOf() } : {}),
+		});
 	}
 
 	/** Invoiced totals for one window (M01 dashboard); zero-filled per period. */

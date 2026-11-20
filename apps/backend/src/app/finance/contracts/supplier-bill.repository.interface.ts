@@ -1,6 +1,13 @@
 import type { TTx } from '@drizzle/types';
 import type { TSupplierBillSelect } from '@drizzle/schemas/finance.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+
+/** Filters of the supplier-bill listing. */
+export type TSupplierBillFilters = { status?: string; supplierCompanyId?: string };
+
+/** Page settings, tenant and filters of the supplier-bill listing. */
+export type TSupplierBillPaginationRequest = TPaginationRequest &
+	TSupplierBillFilters & { organizationId: string };
 
 export interface ISupplierBillRepository {
 	insertSupplierBill(
@@ -36,9 +43,8 @@ export interface ISupplierBillRepository {
 		tx?: TTx,
 	): Promise<TSupplierBillSelect | null>;
 	listOpenBillsDueBy(date: string): Promise<TSupplierBillSelect[]>;
-	listSupplierBills(
-		organizationId: string,
-		filters: { status?: string; supplierCompanyId?: string },
-		pagination: { page: number; limit: number },
+	/** Fetches one page of the tenant's supplier bills. */
+	paginate(
+		request: TSupplierBillPaginationRequest,
 	): Promise<TPaginationResult<TSupplierBillSelect>>;
 }

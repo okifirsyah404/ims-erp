@@ -99,6 +99,28 @@ profiles: `module-ownership.md`.
 - Root `bun run lint`, `bun run test`, `bun run build`, `bun run typecheck`
   green; locales 98 tests after removing the dead keys of deleted modules.
 
+### P8b - the single baseline re-split per schema (2026-11-21)
+
+ADR-0024 decision 6 said "per-schema baseline" but P8 shipped a single folder.
+2026-11-21 restored the ADR-0019 shape without changing a single statement:
+
+- The single baseline was archived to
+  `database/migrations-archive/v3-per-schema-20261121` and replaced by **20
+  folders**, `20261120214111_create_auth_schema` …
+  `20261120214130_create_warehouse_schema` (`auth` first, then alphabetical;
+  there are no cross-schema FKs, so the order is readability, not correctness).
+- Each folder was produced by `drizzle-kit generate` against a **cumulative**
+  `--schema` list, so the chain is 1 `base` + 19 chained `diff` snapshots and
+  `check`/`generate` agree by construction (generated, not hand-assembled).
+- Equivalence proven, not assumed: the 20 folders concatenate to the **same 728
+  statements** (0 missing, 0 extra, same multiset) as the archived baseline; and
+  `pg_dump --schema-only` of a database migrated from the chain is byte-identical
+  to one migrated from the single baseline (9669 lines, 169 tables, 22 schemas,
+  20 journal rows, 0 cross-schema FKs).
+- Gates re-run on a disposable database: `migrate` OK, `seed` OK and idempotent
+  (second run 0 inserts), `generate` "No schema changes", `check`
+  "Everything's fine", `validate-dbml.ts` OK (192 tables, 147 refs, 0 drift).
+
 ## Decisions worth knowing (full list: `docs/plan/database-refactor/00-overview.md`)
 
 - Q2: squashed per-schema baseline instead of an append chain (ADR-0019 naming).

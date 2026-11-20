@@ -7,8 +7,8 @@ Schema, keys, constraints, and conventions. Current declarations:
 > Rewritten 2026-11-20 for ADR-0024 (database normalization baseline v2):
 > **18 Postgres schemas, 188 tables** in `docs/database/docs.dbml`, plus the
 > schema-less `webhook` module. `docs.dbml` is canonical; the Drizzle files in
-> `apps/backend/drizzle/schemas/` mirror it, but the single baseline migration
-> creates **164** tables, so some `docs.dbml` tables are still target-only (for
+> `apps/backend/drizzle/schemas/` mirror it, but the baseline migrations create
+> **164** tables, so some `docs.dbml` tables are still target-only (for
 > example `human_resource.employee_addresses`; ticket templates and sub-tickets,
 > Q29). Per-module ownership, table counts and contracts live in
 > `docs/database/module-ownership.md`; this file keeps only the cross-cutting
@@ -136,12 +136,17 @@ never ships in a frontend bundle.
   `drizzle:generate`, SQL inspected by a human, then applied to a **disposable**
   database for testing. `drizzle-kit push` is for disposable DBs only.
 - Auth schema changes: hand-written, append-only edits to `auth.schema.ts`; never run `auth:generate` (AGENTS.md hard rule).
-- Baseline (ADR-0024, 2026-11-19): the schema is one migration,
-  `database/migrations/20261120061847_last_daredevil` (18 schemas, 164
-  `CREATE TABLE` statements, no cross-schema `REFERENCES`). The 31-step v1
-  chain is kept for history in `database/migrations-archive/v1` (not applied).
-  Verified on a disposable database on 2026-11-19: `drizzle:migrate`, then
-  `drizzle:seed` twice (second run inserted nothing), and a second
-  `drizzle-kit generate` reported no schema changes. The earlier "blocked on
-  main" branching-snapshot problem (2026-11-12) is resolved by this baseline
+- Baseline (ADR-0024, per-schema since 2026-11-21): the schema is **one
+  migration per Postgres schema**, `database/migrations/20261120214111_create_auth_schema`
+  through `20261120214130_create_warehouse_schema` (20 folders; 1 `base` + 19
+  chained `diff` snapshots, 20 schemas, 164 `CREATE TABLE` statements, no
+  cross-schema `REFERENCES`). The previous single baseline
+  (`20261120061847_last_daredevil`) and the 31-step v1 chain are kept for
+  history in `database/migrations-archive/` (`v1`, `v3-per-schema-20261121`;
+  not applied). Verified on a disposable database on 2026-11-21:
+  `drizzle:migrate`, then `drizzle:seed` twice (second run inserted nothing), a
+  second `drizzle-kit generate` reported no schema changes, `drizzle-kit check`
+  reported "Everything's fine", and `pg_dump --schema-only` of the resulting
+  database is identical to one built from the archived single baseline. The
+  earlier "blocked on main" branching-snapshot problem (2026-11-12) is resolved
   (`runbook.md`).

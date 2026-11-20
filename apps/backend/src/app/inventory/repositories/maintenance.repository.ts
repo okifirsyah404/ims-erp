@@ -9,7 +9,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, count, desc, eq, inArray, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { IMaintenanceRepository } from '../contracts/item-operations.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IMaintenanceRepository,
+	TItemHistoryPaginationRequest,
+} from '../contracts/item-operations.repository.interface';
 
 /** Drizzle implementation of {@link IMaintenanceRepository} on `inventory.maintenances`. */
 @injectable()
@@ -35,12 +39,15 @@ export class MaintenanceRepository implements IMaintenanceRepository {
 		return row;
 	}
 
-	async listByItem(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+	/**
+	 * Fetches one page of the unit's service history, newest first.
+	 *
+	 * @param request - Unit, tenant and page settings
+	 */
+	async paginateByItem(
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TMaintenanceSelect>> {
+		const { itemId, organizationId, page, limit } = request;
 		const where = and(
 			eq(maintenances.itemId, itemId),
 			eq(maintenances.organizationId, organizationId),
@@ -57,6 +64,6 @@ export class MaintenanceRepository implements IMaintenanceRepository {
 			.orderBy(desc(maintenances.createdAt), desc(maintenances.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult(request, total, data);
 	}
 }

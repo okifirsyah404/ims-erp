@@ -9,8 +9,8 @@ import type {
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import type {
-	TSignatureListQuery,
-	TSignatureRequestListQuery,
+	TSignaturePaginationRequest,
+	TSignatureRequestPaginationRequest,
 	TSignatureRequestView,
 	TSignatureView,
 } from './signature.contract';
@@ -25,9 +25,9 @@ import type {
  * service maps to `SignatureRequestStateError`.
  */
 export interface ISignatureRepository {
-	/** Live signature evidence, newest first, filtered by the register query. */
-	listSignatures(
-		filter: TSignatureListQuery,
+	/** Fetches one page of live signature evidence, newest first. */
+	paginate(
+		request: TSignaturePaginationRequest,
 	): Promise<TPaginationResult<TDocumentSignatureSelect>>;
 
 	/** Live signature evidence of one document, newest first. */
@@ -39,16 +39,14 @@ export interface ISignatureRepository {
 		tx?: TTx,
 	): Promise<TDocumentSignatureSelect>;
 
-	/** Live requests addressed to one signer, newest first. */
-	listIncoming(
-		signerUserId: string,
-		filter: TSignatureRequestListQuery,
+	/** Fetches one page of live requests addressed to one signer, newest first. */
+	paginateIncoming(
+		request: TSignatureRequestPaginationRequest & { signerUserId: string },
 	): Promise<TPaginationResult<TDocumentSignatureRequestSelect>>;
 
-	/** Live requests one requester created, newest first. */
-	listOutgoing(
-		requestedByUserId: string,
-		filter: TSignatureRequestListQuery,
+	/** Fetches one page of live requests one requester created, newest first. */
+	paginateOutgoing(
+		request: TSignatureRequestPaginationRequest & { requestedByUserId: string },
 	): Promise<TPaginationResult<TDocumentSignatureRequestSelect>>;
 
 	/** Live requests of one document, newest first. */

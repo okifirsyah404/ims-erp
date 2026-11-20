@@ -3,8 +3,8 @@
  *
  * Exercises the REAL Elysia pipeline for the warehouse routes (sessionGuard +
  * the `requireGlobalAdmin` policy + WarehouseController + WarehouseService)
- * through `app.handle()`, with Better Auth and the repositories mocked at their
- * seams.
+ * through `app.handle()`, with Better Auth, the warehouse module's
+ * repositories and the inventory facade mocked at their seams.
  *
  * The point of this file is the authorization wall, not the CRUD:
  * - every organization role is refused on **every** warehouse route, reads
@@ -13,6 +13,10 @@
  *   because the gate reads the *platform* role;
  * - an application admin who belongs to no organization is allowed, which is
  *   the whole reason these routes ride `sessionGuard` instead of `erpGuard`.
+ *
+ * ADR-0026 moved the estate into `@app/warehouse`; the unit/stock counts and
+ * the unlink guard now come from `ExportedInventoryService`, so that facade is
+ * doubled here instead of the inventory repositories.
  */
 import { beforeAll, beforeEach, describe, expect, test } from 'bun:test';
 import { Elysia } from 'elysia';
@@ -20,7 +24,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 import { container } from 'tsyringe';
-import type { TWarehouseSelect } from '@drizzle/schemas/inventory.schema';
+import type { TWarehouseSelect } from '@drizzle/schemas/warehouse.schema';
 import {
 	type TWarehouseAction,
 	warehouseGuard,
@@ -31,9 +35,9 @@ import {
 	installPermissionResolverMock,
 	resetFixture,
 } from './test-app';
-import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
-import type { IWarehouseAddressRepository } from '../../src/app/inventory/contracts/warehouse-address.repository.interface';
-import type { IWarehouseStorageRepository } from '../../src/app/inventory/contracts/warehouse-storage.repository.interface';
+import type { IWarehouseRepository } from '../../src/app/warehouse/contracts/warehouse.repository.interface';
+import type { IWarehouseAddressRepository } from '../../src/app/warehouse/contracts/warehouse-address.repository.interface';
+import type { IWarehouseStorageRepository } from '../../src/app/warehouse/contracts/warehouse-storage.repository.interface';
 
 let app: Elysia<any, any, any, any, any, any>;
 
@@ -46,7 +50,7 @@ const OTHER_WAREHOUSE_ID = '01920000-0000-7000-8000-0000000000dd';
  * Live person-in-charge grants, keyed by user id (ADR-0017).
  *
  * @remarks
- * Stands in for `inventory.warehouse_managers`: the guard only asks "which
+ * Stands in for `warehouse.warehouse_managers`: the guard only asks "which
  * warehouse ids does this user manage", so the fake is a set. A user absent
  * from the map holds no live grant — the same answer the repository gives when
  * every row is soft-deleted.
@@ -79,12 +83,13 @@ function seedWarehouse(organizationId: string | null): TWarehouseSelect {
 		code: 'MAIN',
 		name: 'Main warehouse',
 		responsibleEmployeeId: null,
+		imageUrl: null,
 		isDefault: true,
 		isActive: true,
 		createdAt: new Date(0),
 		updatedAt: null,
 		deletedAt: null,
-	} as TWarehouseSelect;
+	};
 }
 
 /**
@@ -175,11 +180,11 @@ const ALL_ACTIONS: readonly TWarehouseAction[] = [
  * declared but unused" claim in `progress.md` is checked against the code
  * instead of a copy of it that could drift. The controller routes every PIC
  * handler through `picRoute('<action>', ...)`, so those call sites are the
- * complete list.
+ * complete list. ADR-0026 moved the controller to `@app/warehouse`.
  */
 function readWarehouseActions(): string[] {
 	const source = readFileSync(
-		join(import.meta.dir, '../../src/app/inventory/controllers/warehouse.controller.ts'),
+		join(import.meta.dir, '../../src/app/warehouse/controllers/warehouse.controller.ts'),
 		'utf8',
 	);
 	const found = [...source.matchAll(/picRoute\('([a-z]+)'/g)].map((match) => match[1]);
@@ -193,9 +198,9 @@ beforeAll(async () => {
 	const seed = seedWarehouse(fixture.orgA);
 
 	const warehouseRepository: IWarehouseRepository = {
-		async paginate(r) {
+		async paginate(request) {
 			return {
-				meta: { page: r.page, limit: r.limit, total: 1, totalPages: 1 },
+				meta: { page: request.page, limit: request.limit, total: 1, totalPages: 1 },
 				data: [seed],
 			};
 		},
@@ -239,19 +244,14 @@ beforeAll(async () => {
 		async findNamesByIds(ids) {
 			return ids.includes(seed.id) ? [{ id: seed.id, name: seed.name }] : [];
 		},
-		async clearDefaultExcept() {},
-		async countLiveUnits() {
-			return 0;
+		async findByIds(ids) {
+			return ids.includes(seed.id)
+				? [{ id: seed.id, code: seed.code, name: seed.name }]
+				: [];
 		},
-		async countKinds(warehouseIds) {
-			return warehouseIds.map((warehouseId) => ({
-				warehouseId,
-				productsCount: 0,
-				componentsCount: 0,
-				materialsCount: 0,
-				equipmentsCount: 0,
-				storagesCount: 0,
-			}));
+		async clearDefaultExcept() {},
+		async countStorages(warehouseIds) {
+			return new Map(warehouseIds.map((warehouseId) => [warehouseId, 0]));
 		},
 	};
 
@@ -318,31 +318,38 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-		BORROWING_REQUEST_REPOSITORY_TOKEN,
-	ITEM_REPOSITORY_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
 		WAREHOUSE_MANAGER_SERVICE_TOKEN,
-	} = await import('../../src/app/inventory/constants/di');
+		WAREHOUSE_NUMBERING_SERVICE_TOKEN,
+	} = await import('../../src/app/warehouse/constants/di');
+	const { EXPORTED_INVENTORY_SERVICE_TOKEN } = await import(
+		'../../src/app/inventory/constants/di'
+	);
 	const { WAREHOUSE_PIC_RESOLVER_TOKEN } = await import(
 		'../../src/authorization/warehouse-pic-resolver'
 	);
-	const { INVENTORY_NUMBERING_SERVICE_TOKEN } = await import(
-		'../../src/app/inventory/constants/di'
-	);
 	const { WarehouseService } = await import(
-		'../../src/app/inventory/services/warehouse.service'
-	);
-	const { InventoryAuditWriter } = await import(
-		'../../src/app/inventory/services/inventory-audit.writer'
+		'../../src/app/warehouse/services/warehouse.service'
 	);
 	const { WarehouseController } = await import(
-		'../../src/app/inventory/controllers/warehouse.controller'
+		'../../src/app/warehouse/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
 	const { EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN } = await import(
 		'../../src/app/human-resource/constants/di'
 	);
+	const { AuditWriter } = await import('@shared/audit');
+
+	// The audit adapter is a class used as its own DI token (no
+	// `InjectionToken<T>` annotation), so `container.register(AuditWriter,
+	// { useValue })` does not typecheck and `registerInstance` would bind it as
+	// a *string key* instead of the constructor. Binding the class to its own
+	// factory is the typed equivalent (same pattern as `registerWarehouse`,
+	// which registers the instance eagerly).
+	container.register(AuditWriter, {
+		useFactory: () => new AuditWriterDouble(),
+	});
 
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useValue: warehouseRepository,
@@ -353,32 +360,58 @@ beforeAll(async () => {
 	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, {
 		useValue: storageRepository,
 	});
-	container.register(InventoryAuditWriter, {
-		useValue: new AuditWriterDouble(),
-	});
-	// ERP-0031: the unlink guard reads the borrowing request repository - noop here.
-	container.register(BORROWING_REQUEST_REPOSITORY_TOKEN, {
-		useValue: { async countOpenByOriginWarehouse() { return 0; } } as never,
-	});
-	// Equipment counts come from the item repository - noop here.
-	container.register(ITEM_REPOSITORY_TOKEN, {
-		useValue: { async countByWarehouse() { return []; } } as never,
-	});
+	// ADR-0026: what is physically in a warehouse (unit kinds, materials,
+	// equipment, open borrowings) is an `inventory` fact, read through the
+	// repository-only facade. Nothing is stocked in this fixture.
+	container.registerInstance(EXPORTED_INVENTORY_SERVICE_TOKEN, {
+		async countSerialKindsByWarehouse() {
+			return [];
+		},
+		async countMaterialStocks() {
+			return [];
+		},
+		async countItemsByWarehouse() {
+			return [];
+		},
+		async countLiveUnits() {
+			return 0;
+		},
+		async countOpenBorrowingsByOriginWarehouse() {
+			return 0;
+		},
+		async countSerials() {
+			return 0;
+		},
+		async serialExists() {
+			return false;
+		},
+		async availableByProducts() {
+			return [];
+		},
+		async productIdsInWarehouse() {
+			return [];
+		},
+		async isItemOwnedBy() {
+			return false;
+		},
+	} as never);
 	// Warehouse PIC validation goes through the HR module's export facade —
 	// noop here (the authorization tests never submit a PIC employee id).
-	container.register(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN, {
-		useValue: {
-			async findEmployeeById() {
-				return undefined;
-			},
-			async findEmployeeByUserId() {
-				return undefined;
-			},
-		} as never,
-	});
-	container.register(INVENTORY_NUMBERING_SERVICE_TOKEN, {
-		useValue: { next: async () => 'WH-00001' } as never,
-	});
+	container.registerInstance(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN, {
+		async findEmployeeById() {
+			return undefined;
+		},
+		async findEmployeeByUserId() {
+			return undefined;
+		},
+	} as never);
+	container.registerInstance(WAREHOUSE_NUMBERING_SERVICE_TOKEN, {
+		next: async (
+			_codeType: string,
+			_tx?: unknown,
+			_date?: Date,
+		): Promise<string> => 'WH-00001',
+	} as never);
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
 
 	// ADR-0017: the guard reads this port (never Drizzle). Live grants come

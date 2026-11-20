@@ -7,6 +7,7 @@ import {
 	useNavigate,
 	useParams,
 } from '@tanstack/react-router';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -26,8 +27,11 @@ import {
 } from '@ims-erp/ui/components/alert-dialog';
 import {
 	Card,
+	CardAction,
 	CardContent,
+	CardDescription,
 	CardHeader,
+	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
@@ -175,18 +179,18 @@ function OrganizationDetailPage() {
 	}
 	if (!organization) {
 		return (
-			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-muted-foreground'>
-					{t('orgDetail.notFound')}
-				</p>
-				<Button
-					variant='outline'
-					className='w-fit'
-					onClick={() => navigate({ to: '/organizations' })}
-				>
-					{t('orgDetail.backToList')}
-				</Button>
-			</div>
+			<EmptyState
+				title={t('orgDetail.notFound')}
+				bordered
+				action={
+					<Button
+						variant='outline'
+						onClick={() => navigate({ to: '/organizations' })}
+					>
+						{t('orgDetail.backToList')}
+					</Button>
+				}
+			/>
 		);
 	}
 
@@ -277,44 +281,44 @@ function OrganizationDetailPage() {
 				</TabsContent>
 				<TabsContent value='members' className='flex flex-col gap-6'>
 					<Card className='gap-0 py-0'>
-						<div className='flex items-center justify-between gap-4 border-b px-4 py-4'>
-							<div>
-								<h2 className='font-semibold leading-none'>
-									{t('orgDetail.members')}
-								</h2>
-								<p className='mt-1.5 text-sm text-muted-foreground'>
-									{t('orgDetail.membersDescription')}
-								</p>
-							</div>
+						<CardHeader className='border-b py-4'>
+							<CardTitle>{t('orgDetail.members')}</CardTitle>
+							<CardDescription>
+								{t('orgDetail.membersDescription')}
+							</CardDescription>
 							{canManageMembers && (
-								<Button className='shrink-0' onClick={() => setInviteOpen(true)}>
-									{t('orgDetail.addMember')}
-								</Button>
+								<CardAction>
+									<Button onClick={() => setInviteOpen(true)}>
+										{t('orgDetail.addMember')}
+									</Button>
+								</CardAction>
 							)}
-						</div>
+						</CardHeader>
 						{membersQuery.isPending ? (
 							<div className='grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6'>
 								{Array.from({ length: 6 }, (_, index) => (
-									<Card key={`member-skeleton-${index}`} className='gap-2 py-3'>
-										<div className='flex items-center gap-2.5 px-3'>
-											<Skeleton className='size-9 shrink-0 rounded-full' />
-											<div className='flex flex-1 flex-col gap-1.5'>
-												<Skeleton className='h-4 w-3/4' />
-												<Skeleton className='h-3 w-full' />
+									<Card key={`member-skeleton-${index}`} size='sm'>
+										<CardContent className='flex flex-col gap-2'>
+											<div className='flex items-center gap-2.5'>
+												<Skeleton className='size-9 shrink-0 rounded-full' />
+												<div className='flex flex-1 flex-col gap-1.5'>
+													<Skeleton className='h-4 w-3/4' />
+													<Skeleton className='h-3 w-full' />
+												</div>
 											</div>
-										</div>
-										<div className='flex items-center justify-between gap-2 px-3'>
-											<Skeleton className='h-5 w-24' />
-											<Skeleton className='h-3 w-16' />
-										</div>
-										<Skeleton className='mx-1 h-7' />
+											<div className='flex items-center justify-between gap-2'>
+												<Skeleton className='h-5 w-24' />
+												<Skeleton className='h-3 w-16' />
+											</div>
+											<Skeleton className='h-7' />
+										</CardContent>
 									</Card>
 								))}
 							</div>
+						) : membersQuery.isError ? (
+							<ErrorState error={membersQuery.error} size='sm' />
 						) : (members?.rows?.length ?? 0) === 0 ? (
-							<p className='py-6 text-center text-sm text-muted-foreground'>
-								{t('orgDetail.membersEmpty')}
-							</p>
+							<EmptyState size='sm' title={t('orgDetail.membersEmpty')} />
 						) : (
 							<div className='flex flex-col'>
 								<div className='grid flex-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-6'>

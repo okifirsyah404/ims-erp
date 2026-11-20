@@ -91,7 +91,7 @@ export class EmployeeService {
 	 */
 	async list(ctx: TEmployeeContext, query: TEmployeeListQuery): Promise<TEmployeePage> {
 		const organizationIds = ctx.organizationId ? [ctx.organizationId] : [];
-		const page = await this.repository.list({
+		const page = await this.repository.paginate({
 			...query,
 			organizationIds,
 			includeCompany: true,

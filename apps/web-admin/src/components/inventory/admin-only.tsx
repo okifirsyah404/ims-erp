@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { hasRole } from '@ims-erp/common';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { useSession } from '@/lib/auth-client';
+import { EmptyState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 /**
  * Renders its children only for application administrators.
@@ -21,14 +22,10 @@ export function AdminOnly({ children }: { children: ReactNode }) {
 	const { t } = useTranslation(['inventory']);
 	const { data: session, isPending } = useSession();
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (!hasRole(session?.user?.role, 'admin')) {
 		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('inventory:adminOnly')}
-				</CardContent>
-			</Card>
+			<EmptyState title={t('inventory:adminOnly')} bordered />
 		);
 	}
 	return <>{children}</>;

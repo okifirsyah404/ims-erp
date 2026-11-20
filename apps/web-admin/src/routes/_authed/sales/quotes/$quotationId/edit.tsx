@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { QuotationForm } from '@/components/sales/quotation-form';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { quotationQueryOptions, updateQuotation } from '@/lib/quotation-api';
 
@@ -27,8 +29,10 @@ function EditQuotationPage() {
 				{t('sales:quotations.edit')}
 				{data ? ` ${data.code}` : ''}
 			</h1>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
+			{isPending ? (
+				<SectionSkeleton lines={6} />
+			) : isError ? (
+				<ErrorState error={error} bordered />
 			) : data.status !== 'draft' ? (
 				<p className='text-sm text-muted-foreground'>{t('sales:detail.onlyDraftEditable')}</p>
 			) : (

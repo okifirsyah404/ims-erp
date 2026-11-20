@@ -4,7 +4,7 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -18,6 +18,9 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
 	SelectContent,
@@ -25,9 +28,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	DISPOSAL_METHODS,
@@ -38,6 +41,7 @@ import {
 	formatMoney,
 	requestDisposal,
 	assetsQueryOptions,
+	type TAssetDisposal,
 	type TDisposalMethod,
 } from '@/lib/asset-api';
 import { usePermission } from '@/lib/use-permission';
@@ -95,14 +99,84 @@ export function AssetDisposalList() {
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TAssetDisposal, CellData>[]
+	>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('assets:disposals.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'status',
+				header: t('assets:disposals.status'),
+				cell: ({ row }) => (
+					<Badge variant='secondary'>
+						{t(`assets:disposalStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'method',
+				header: t('assets:disposals.method'),
+				cell: ({ row }) =>
+					t(`assets:disposalMethod.${row.original.disposalMethod}`),
+			},
+			{
+				id: 'proceeds',
+				header: t('assets:disposals.proceeds'),
+				cell: ({ row }) =>
+					formatMoney(row.original.proceedsAmount, row.original.currencyCode),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => {
+					const disposal = row.original;
+					return canDispose ? (
+						<div className='flex justify-end gap-2'>
+							{disposal.status === 'draft' || disposal.status === 'submitted' ? (
+								<Button
+									size='sm'
+									variant='outline'
+									disabled={approve.isPending}
+									onClick={() => void approve.mutateAsync(disposal.id)}
+								>
+									{t('assets:disposals.approve')}
+								</Button>
+							) : null}
+							{disposal.status === 'approved' ? (
+								<Button
+									size='sm'
+									disabled={execute.isPending}
+									onClick={() => void execute.mutateAsync(disposal.id)}
+								>
+									{t('assets:disposals.execute')}
+								</Button>
+							) : null}
+							{disposal.status !== 'executed' &&
+							disposal.status !== 'cancelled' ? (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={cancel.isPending}
+									onClick={() => void cancel.mutateAsync(disposal.id)}
+								>
+									{t('assets:disposals.cancel')}
+								</Button>
+							) : null}
+						</div>
+					) : null;
+				},
+			},
+		],
+		[approve, cancel, canDispose, execute, t],
+	);
+
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:disposals.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -121,89 +195,21 @@ export function AssetDisposalList() {
 				) : null}
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={Trash2}
 					title={t('assets:disposals.emptyTitle')}
 					description={t('assets:disposals.empty')}
+					bordered
 				/>
 			) : (
-				<div className='overflow-hidden rounded-lg border'>
-					<table className='w-full text-sm'>
-						<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-							<tr>
-								<th className='px-3 py-2'>{t('assets:disposals.code')}</th>
-								<th className='px-3 py-2'>{t('assets:disposals.status')}</th>
-								<th className='px-3 py-2'>{t('assets:disposals.method')}</th>
-								<th className='px-3 py-2'>{t('assets:disposals.proceeds')}</th>
-								<th className='px-3 py-2' />
-							</tr>
-						</thead>
-						<tbody>
-							{data.rows.map((disposal) => (
-								<tr key={disposal.id} className='border-t'>
-									<td className='px-3 py-2 font-mono text-xs'>
-										{disposal.code}
-									</td>
-									<td className='px-3 py-2'>
-										<Badge variant='secondary'>
-											{t(`assets:disposalStatus.${disposal.status}`)}
-										</Badge>
-									</td>
-									<td className='px-3 py-2'>
-										{t(`assets:disposalMethod.${disposal.disposalMethod}`)}
-									</td>
-									<td className='px-3 py-2'>
-										{formatMoney(disposal.proceedsAmount, disposal.currencyCode)}
-									</td>
-									<td className='px-3 py-2'>
-										{canDispose ? (
-											<div className='flex justify-end gap-2'>
-												{disposal.status === 'draft' ||
-												disposal.status === 'submitted' ? (
-													<Button
-														size='sm'
-														variant='outline'
-														disabled={approve.isPending}
-														onClick={() =>
-															void approve.mutateAsync(disposal.id)
-														}
-													>
-														{t('assets:disposals.approve')}
-													</Button>
-												) : null}
-												{disposal.status === 'approved' ? (
-													<Button
-														size='sm'
-														disabled={execute.isPending}
-														onClick={() =>
-															void execute.mutateAsync(disposal.id)
-														}
-													>
-														{t('assets:disposals.execute')}
-													</Button>
-												) : null}
-												{disposal.status !== 'executed' &&
-												disposal.status !== 'cancelled' ? (
-													<Button
-														size='sm'
-														variant='ghost'
-														disabled={cancel.isPending}
-														onClick={() =>
-															void cancel.mutateAsync(disposal.id)
-														}
-													>
-														{t('assets:disposals.cancel')}
-													</Button>
-												) : null}
-											</div>
-										) : null}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={data?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls

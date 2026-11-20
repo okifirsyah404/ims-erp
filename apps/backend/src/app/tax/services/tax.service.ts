@@ -7,7 +7,7 @@ import type {
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 import { TAX_REPOSITORY_TOKEN } from '../constants/di';
-import type { TTaxRepository } from '../contracts/tax.repository.interface';
+import type { TTaxRepository, TTaxPaginationRequest, TTaxRecordPaginationRequest } from '../contracts/tax.repository.interface';
 import {
 	TaxRateNotFoundError,
 	TaxRecordLockedError,
@@ -106,11 +106,11 @@ export class TaxService {
 	 * Tax types (effective-dated rates)
 	 * -------------------------------------------------------------- */
 
+	/** Fetches one page of the tenant's tax types. */
 	async listTaxTypes(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+		request: TTaxPaginationRequest,
 	): Promise<TPaginationResult<TTaxSelect>> {
-		return this.repo.listTaxTypes(organizationId, pagination);
+		return this.repo.paginateTaxTypes(request);
 	}
 
 	async getTaxType(organizationId: string, id: string): Promise<TTaxSelect> {
@@ -229,12 +229,11 @@ export class TaxService {
 	 * Tax records (period working papers)
 	 * -------------------------------------------------------------- */
 
+	/** Fetches one page of the tenant's tax records, optionally by period. */
 	async listTaxRecords(
-		organizationId: string,
-		filter: { year?: number; month?: number },
-		pagination: { page: number; limit: number },
+		request: TTaxRecordPaginationRequest,
 	): Promise<TPaginationResult<TTaxRecordSelect>> {
-		return this.repo.listTaxRecords(organizationId, filter, pagination);
+		return this.repo.paginateTaxRecords(request);
 	}
 
 	async getTaxRecord(organizationId: string, id: string): Promise<TTaxRecordSelect> {
@@ -402,10 +401,9 @@ export class TaxService {
 	 * -------------------------------------------------------------- */
 
 	async listWithholding(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+		request: TTaxPaginationRequest,
 	): Promise<TPaginationResult<TWithholdingTaxRecordSelect>> {
-		return this.repo.listWithholding(organizationId, pagination);
+		return this.repo.paginateWithholding(request);
 	}
 
 	async getWithholding(

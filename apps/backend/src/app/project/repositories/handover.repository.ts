@@ -5,7 +5,8 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, count, desc, eq, exists, getTableColumns, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { IHandoverRepository, TBastData, TBastListRequest, TBastRow } from '../contracts/handover.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type { IHandoverRepository, TBastData, TBastPaginationRequest, TBastRow } from '../contracts/handover.repository.interface';
 
 /** Drizzle implementation of {@link IHandoverRepository}. */
 @injectable()
@@ -20,8 +21,13 @@ export class HandoverRepository implements IHandoverRepository {
 			.orderBy(desc(handover.bastDate), desc(handover.createdAt));
 	}
 
-	async paginateAll(request: TBastListRequest): Promise<TPaginationResult<TBastRow>> {
-		const { page, limit, search, involvedUserId } = request;
+	/**
+	 * Fetches one page of BASTs across the projects visible to the caller.
+	 *
+	 * @param request - Page settings, search term and the visibility filter
+	 */
+	async paginate(request: TBastPaginationRequest): Promise<TPaginationResult<TBastRow>> {
+		const { search, involvedUserId } = request;
 		const where = and(
 			isNull(handover.deletedAt),
 			isNull(projects.deletedAt),
@@ -62,9 +68,9 @@ export class HandoverRepository implements IHandoverRepository {
 			.innerJoin(projects, eq(projects.id, handover.projectId))
 			.where(where)
 			.orderBy(desc(handover.bastDate), desc(handover.createdAt))
-			.limit(limit)
-			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+			.limit(request.limit)
+			.offset((request.page - 1) * request.limit);
+		return paginationResult(request, total, data);
 	}
 
 	async find(projectId: string, handoverId: string) {

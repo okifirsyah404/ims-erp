@@ -11,18 +11,16 @@ import type {
 	TCustomerCompanySelect,
 	TCustomerSelect,
 } from '@drizzle/schemas/customer.schema';
-import type {
-	TCompanyListQuery,
-	TCustomerListQuery,
-} from '../../src/app/customer/contracts/customer.contract';
+import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	ICompanyAddressRepository,
 	ICompanyRepository,
 	ICustomerAddressRepository,
 	ICustomerPersonRepository,
+	TCompanyPaginationRequest,
+	TCustomerPaginationRequest,
 	TNewCompany,
 	TNewCustomer,
-	TPagination,
 } from '../../src/app/customer/contracts/customer.repository.interface';
 import {
 	CustomerCodeTakenError,
@@ -37,12 +35,17 @@ class FakeCompanies implements ICompanyRepository {
 	rows: TCustomerCompanySelect[] = [];
 	private seq = 0;
 
-	async paginate(_query: TCompanyListQuery) {
-		return this.rows.filter((row) => row.deletedAt === null);
-	}
-
-	async count(_query: TCompanyListQuery) {
-		return this.rows.filter((row) => row.deletedAt === null).length;
+	async paginate(request: TCompanyPaginationRequest) {
+		const rows = this.rows.filter((row) => row.deletedAt === null);
+		return {
+			meta: {
+				page: request.page,
+				limit: request.limit,
+				total: rows.length,
+				totalPages: Math.ceil(rows.length / request.limit),
+			},
+			data: rows,
+		};
 	}
 
 	async findById(id: string) {
@@ -92,13 +95,17 @@ class FakePeople implements ICustomerPersonRepository {
 	}
 	async touchPortalLogin() {}
 
-	async paginate(_query: TCustomerListQuery): Promise<TPagination<TCustomerSelect>> {
+	async paginate(request: TCustomerPaginationRequest): Promise<TPaginationResult<TCustomerSelect>> {
 		const rows = this.rows.filter((row) => row.deletedAt === null);
-		return { meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 }, rows };
-	}
-
-	async count(_query: TCustomerListQuery) {
-		return this.rows.filter((row) => row.deletedAt === null).length;
+		return {
+			meta: {
+				page: request.page,
+				limit: request.limit,
+				total: rows.length,
+				totalPages: Math.ceil(rows.length / request.limit),
+			},
+			data: rows,
+		};
 	}
 
 	async findById(id: string) {

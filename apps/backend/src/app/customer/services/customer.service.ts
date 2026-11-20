@@ -4,6 +4,7 @@ import type {
 	TCustomerCompanySelect,
 	TCustomerSelect,
 } from '@drizzle/schemas/customer.schema';
+import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 
 import {
@@ -14,11 +15,9 @@ import {
 } from '../constants/di';
 import type {
 	TCompanyAddressInput,
-	TCompanyListQuery,
 	TCreateCompanyInput,
 	TCreateCustomerInput,
 	TCustomerAddressInput,
-	TCustomerListQuery,
 	TUpdateCompanyAddressInput,
 	TUpdateCompanyInput,
 	TUpdateCustomerAddressInput,
@@ -29,6 +28,8 @@ import type {
 	ICompanyRepository,
 	ICustomerAddressRepository,
 	ICustomerPersonRepository,
+	TCompanyPaginationRequest,
+	TCustomerPaginationRequest,
 } from '../contracts/customer.repository.interface';
 import {
 	CustomerAddressNotFoundError,
@@ -45,12 +46,6 @@ export type TCustomerCompanyView = TCustomerCompanySelect & {
 /** One person with their addresses, the detail view. */
 export type TCustomerPersonView = TCustomerSelect & {
 	addresses: TCustomerAddressSelect[];
-};
-
-/** Paginated list envelope returned to the controller. */
-export type TCustomerPage<T> = {
-	meta: { page: number; limit: number; total: number; totalPages: number };
-	data: T[];
 };
 
 /**
@@ -76,20 +71,9 @@ export class CustomerService {
 
 	/* ------------------------------ companies ------------------------------ */
 
-	async listCompanies(query: TCompanyListQuery): Promise<TCustomerPage<TCustomerCompanySelect>> {
-		const [data, total] = await Promise.all([
-			this.companies.paginate(query),
-			this.companies.count(query),
-		]);
-		return {
-			meta: {
-				page: query.page,
-				limit: query.limit,
-				total,
-				totalPages: Math.max(1, Math.ceil(total / query.limit)),
-			},
-			data,
-		};
+	/** Fetches one filtered page of customer companies. */
+	async listCompanies(request: TCompanyPaginationRequest): Promise<TPaginationResult<TCustomerCompanySelect>> {
+		return this.companies.paginate(request);
 	}
 
 	async getCompany(id: string): Promise<TCustomerCompanyView> {
@@ -126,9 +110,9 @@ export class CustomerService {
 
 	/* ------------------------------- people -------------------------------- */
 
-	async listCustomers(query: TCustomerListQuery): Promise<TCustomerPage<TCustomerSelect>> {
-		const page = await this.people.paginate(query);
-		return { meta: page.meta, data: page.rows };
+	/** Fetches one filtered page of customer people. */
+	async listCustomers(request: TCustomerPaginationRequest): Promise<TPaginationResult<TCustomerSelect>> {
+		return this.people.paginate(request);
 	}
 
 	async getCustomer(id: string): Promise<TCustomerPersonView> {

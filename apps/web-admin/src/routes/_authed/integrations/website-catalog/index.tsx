@@ -1,12 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
@@ -22,7 +21,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	listingsQueryOptions,
@@ -59,20 +61,117 @@ function WebsiteCatalogPage() {
 	const [editing, setEditing] = useState<{ listing: TListing | null } | null>(null);
 	const [busy, setBusy] = useState(false);
 
-	const run = async (work: () => Promise<unknown>, done: string) => {
-		setBusy(true);
-		try {
-			await work();
-			await queryClient.invalidateQueries({ queryKey: ['catalog'] });
-			toast.success(done);
-			return true;
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-			return false;
-		} finally {
-			setBusy(false);
-		}
-	};
+	const run = useCallback(
+		async (work: () => Promise<unknown>, done: string) => {
+			setBusy(true);
+			try {
+				await work();
+				await queryClient.invalidateQueries({ queryKey: ['catalog'] });
+				toast.success(done);
+				return true;
+			} catch (cause) {
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+				return false;
+			} finally {
+				setBusy(false);
+			}
+		},
+		[queryClient, t],
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TListing, CellData>[]>(
+		() => [
+			{
+				id: 'item',
+				header: t('integrations:catalog.item'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.sku}</div>
+					</>
+				),
+			},
+			{
+				accessorKey: 'slug',
+				header: t('integrations:catalog.slug'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'price',
+				header: t('integrations:catalog.price'),
+				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) =>
+					row.original.priceMode === 'rfq'
+						? t('integrations:catalog.quotation')
+						: formatIdr(row.original.sellingPrice),
+			},
+			{
+				id: 'outOfStock',
+				header: t('integrations:catalog.outOfStock'),
+				cell: ({ row }) => t(`integrations:catalog.outOfStock.${row.original.outOfStockMode}`),
+			},
+			{
+				id: 'status',
+				header: t('integrations:catalog.status'),
+				cell: ({ row }) => (
+					<Badge variant={row.original.isPublished ? 'default' : 'outline'}>
+						{row.original.isPublished
+							? t('integrations:catalog.published')
+							: t('integrations:catalog.hidden')}
+					</Badge>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => {
+					const listing = row.original;
+					return (
+						<>
+							{canPublish && (
+								<Button
+									size='sm'
+									variant={listing.isPublished ? 'outline' : 'default'}
+									disabled={busy}
+									onClick={() =>
+										void run(
+											() => publishListing(listing.id, !listing.isPublished),
+											listing.isPublished
+												? t('integrations:catalog.hiddenDone')
+												: t('integrations:catalog.publishedDone'),
+										)
+									}
+								>
+									{listing.isPublished
+										? t('integrations:catalog.hide')
+										: t('integrations:catalog.publish')}
+								</Button>
+							)}
+							{canUpdate && (
+								<Button size='sm' variant='ghost' onClick={() => setEditing({ listing })}>
+									{t('integrations:catalog.edit')}
+								</Button>
+							)}
+							{canRemove && (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={busy}
+									onClick={() =>
+										void run(() => removeListing(listing.id), t('integrations:catalog.removed'))
+									}
+								>
+									{t('integrations:catalog.remove')}
+								</Button>
+							)}
+						</>
+					);
+				},
+			},
+		],
+		[t, busy, canPublish, canUpdate, canRemove, run],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -83,76 +182,12 @@ function WebsiteCatalogPage() {
 				</div>
 				{canCreate && <Button onClick={() => setEditing({ listing: null })}>{t('integrations:catalog.new')}</Button>}
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('integrations:catalog.empty')}</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.length === 0 ? (
+				<EmptyState title={t('integrations:catalog.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('integrations:catalog.item')}</TableHead>
-									<TableHead>{t('integrations:catalog.slug')}</TableHead>
-									<TableHead className='text-right'>{t('integrations:catalog.price')}</TableHead>
-									<TableHead>{t('integrations:catalog.outOfStock')}</TableHead>
-									<TableHead>{t('integrations:catalog.status')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{data.map((listing) => (
-									<TableRow key={listing.id}>
-										<TableCell>
-											<div className='font-medium'>{listing.name}</div>
-											<div className='text-xs text-muted-foreground'>{listing.sku}</div>
-										</TableCell>
-										<TableCell className='font-mono text-xs'>{listing.slug}</TableCell>
-										<TableCell className='text-right whitespace-nowrap'>
-											{listing.priceMode === 'rfq' ? t('integrations:catalog.quotation') : formatIdr(listing.sellingPrice)}
-										</TableCell>
-										<TableCell>{t(`integrations:catalog.outOfStock.${listing.outOfStockMode}`)}</TableCell>
-										<TableCell>
-											<Badge variant={listing.isPublished ? 'default' : 'outline'}>
-												{listing.isPublished ? t('integrations:catalog.published') : t('integrations:catalog.hidden')}
-											</Badge>
-										</TableCell>
-										<TableCell className='text-right whitespace-nowrap'>
-											{canPublish && (
-												<Button
-													size='sm'
-													variant={listing.isPublished ? 'outline' : 'default'}
-													disabled={busy}
-													onClick={() =>
-														void run(
-															() => publishListing(listing.id, !listing.isPublished),
-															listing.isPublished ? t('integrations:catalog.hiddenDone') : t('integrations:catalog.publishedDone'),
-														)
-													}
-												>
-													{listing.isPublished ? t('integrations:catalog.hide') : t('integrations:catalog.publish')}
-												</Button>
-											)}
-											{canUpdate && (
-												<Button size='sm' variant='ghost' onClick={() => setEditing({ listing })}>
-													{t('integrations:catalog.edit')}
-												</Button>
-											)}
-											{canRemove && (
-												<Button size='sm' variant='ghost' disabled={busy} onClick={() => void run(() => removeListing(listing.id), t('integrations:catalog.removed'))}>
-													{t('integrations:catalog.remove')}
-												</Button>
-											)}
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
 			)}
 			{editing && (
 				<ListingDialog

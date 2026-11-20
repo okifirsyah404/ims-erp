@@ -3,6 +3,9 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
+
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
@@ -32,6 +35,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState } from '@/components/empty-state';
 import { GatewayPaymentsCard } from '@/components/finance/gateway-payments-card';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
@@ -98,11 +102,11 @@ function InvoiceDetailPage() {
 		}
 	}
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/sales/invoices' className='text-sm hover:underline'>
 					{t('finance:invoices.back')}
 				</Link>
@@ -215,8 +219,9 @@ function InvoiceDetailPage() {
 				</CardHeader>
 				<CardContent className='p-0'>
 					{data.receipts.length === 0 ? (
-						<p className='p-4 text-sm text-muted-foreground'>{t('finance:receipt.empty')}</p>
+						<EmptyState title={t('finance:receipt.empty')} size='sm' />
 					) : (
+						<div className='overflow-hidden rounded-md border'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -247,6 +252,7 @@ function InvoiceDetailPage() {
 								))}
 							</TableBody>
 						</Table>
+						</div>
 					)}
 				</CardContent>
 			</Card>

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import {
 	AlertDialog,
@@ -14,7 +15,6 @@ import {
 } from '@ims-erp/ui/components/alert-dialog';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
@@ -26,14 +26,8 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
 	archiveItemCategory,
@@ -44,6 +38,7 @@ import {
 	updateItemCategory,
 } from '@/lib/item-category-api';
 import { usePermission } from '@/lib/use-permission';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 
 /**
  * Item categories (ADR-0011): one level, company-wide. Lists every live
@@ -51,7 +46,7 @@ import { usePermission } from '@/lib/use-permission';
  * `product:create|update|archive` grants (the server enforces them).
  */
 export function ItemCategoryList() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const queryClient = useQueryClient();
 	const canCreate = usePermission('product.create');
 	const canUpdate = usePermission('product.update');
@@ -73,7 +68,7 @@ export function ItemCategoryList() {
 				await updateItemCategory(editing.id, changes);
 			}
 			await refresh();
-			toast.success(t('inventory:categories.saved'));
+			toast.success(t('product:categories.saved'));
 			setEditing(null);
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
@@ -86,7 +81,7 @@ export function ItemCategoryList() {
 		try {
 			await archiveItemCategory(category.id);
 			await refresh();
-			toast.success(t('inventory:categories.archived'));
+			toast.success(t('product:categories.archived'));
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
 		} finally {
@@ -94,71 +89,83 @@ export function ItemCategoryList() {
 		}
 	}
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TItemCategory, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'sortOrder',
+				header: t('product:categories.sortOrder'),
+				meta: { headClassName: 'w-16' },
+			},
+			{
+				id: 'name',
+				header: t('product:categories.name'),
+				cell: ({ row }) => (
+					<>
+						{row.original.name}
+						{!row.original.isActive && (
+							<Badge variant='outline' className='ml-2'>
+								{t('product:categories.inactive')}
+							</Badge>
+						)}
+					</>
+				),
+			},
+			{
+				accessorKey: 'slug',
+				header: t('product:categories.slug'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'shortName',
+				header: t('product:categories.shortName'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => row.original.shortName ?? '—',
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<div className='flex justify-end gap-2'>
+						{canUpdate && (
+							<Button variant='outline' size='sm' onClick={() => setEditing(row.original)}>
+								{t('common:action.edit')}
+							</Button>
+						)}
+						{canArchive && (
+							<Button variant='outline' size='sm' onClick={() => setArchiving(row.original)}>
+								{t('product:categories.archive')}
+							</Button>
+						)}
+					</div>
+				),
+			},
+		],
+		[canArchive, canUpdate, t],
+	);
+
 	return (
 		<div className='flex flex-col gap-6'>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
 				<div>
-					<h1 className='text-2xl font-bold'>{t('inventory:categories.title')}</h1>
-					<p className='text-sm text-muted-foreground'>{t('inventory:categories.description')}</p>
+					<h1 className='text-2xl font-bold'>{t('product:categories.title')}</h1>
+					<p className='text-sm text-muted-foreground'>{t('product:categories.description')}</p>
 				</div>
-				{canCreate && <Button onClick={() => setEditing('new')}>{t('inventory:categories.new')}</Button>}
+				{canCreate && <Button onClick={() => setEditing('new')}>{t('product:categories.new')}</Button>}
 			</div>
 
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : categories.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-						{t('inventory:categories.empty')}
-					</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && categories.length === 0 ? (
+				<EmptyState title={t('product:categories.empty')} bordered />
 			) : (
-				<Card>
-					<CardContent className='p-0'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead className='w-16'>{t('inventory:categories.sortOrder')}</TableHead>
-									<TableHead>{t('inventory:categories.name')}</TableHead>
-									<TableHead>{t('inventory:categories.slug')}</TableHead>
-									<TableHead>{t('inventory:categories.shortName')}</TableHead>
-									<TableHead />
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{categories.map((category) => (
-									<TableRow key={category.id}>
-										<TableCell>{category.sortOrder}</TableCell>
-										<TableCell>
-											{category.name}
-											{!category.isActive && (
-												<Badge variant='outline' className='ml-2'>
-													{t('inventory:categories.inactive')}
-												</Badge>
-											)}
-										</TableCell>
-										<TableCell className='font-mono text-xs'>{category.slug}</TableCell>
-										<TableCell className='text-muted-foreground'>{category.shortName ?? '—'}</TableCell>
-										<TableCell className='text-right'>
-											<div className='flex justify-end gap-2'>
-												{canUpdate && (
-													<Button variant='outline' size='sm' onClick={() => setEditing(category)}>
-														{t('common:action.edit')}
-													</Button>
-												)}
-												{canArchive && (
-													<Button variant='outline' size='sm' onClick={() => setArchiving(category)}>
-														{t('inventory:categories.archive')}
-													</Button>
-												)}
-											</div>
-										</TableCell>
-									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</CardContent>
-				</Card>
+				<DataTable
+					columns={columns}
+					data={categories ?? []}
+					getRowId={(category) => category.id}
+					loading={isPending}
+					bordered
+				/>
 			)}
 
 			{editing && (
@@ -173,15 +180,15 @@ export function ItemCategoryList() {
 			<AlertDialog open={archiving !== null} onOpenChange={(open) => !open && setArchiving(null)}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>{t('inventory:categories.archive')}</AlertDialogTitle>
+						<AlertDialogTitle>{t('product:categories.archive')}</AlertDialogTitle>
 						<AlertDialogDescription>
-							{t('inventory:categories.archiveConfirm', { name: archiving?.name ?? '' })}
+							{t('product:categories.archiveConfirm', { name: archiving?.name ?? '' })}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel>{t('common:action.cancel')}</AlertDialogCancel>
 						<AlertDialogAction onClick={() => archiving && void handleArchive(archiving)}>
-							{t('inventory:categories.archive')}
+							{t('product:categories.archive')}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -202,7 +209,7 @@ function CategoryDialog({
 	onClose: () => void;
 	onSave: (input: TItemCategoryInput) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const [slug, setSlug] = useState(category?.slug ?? '');
 	const [name, setName] = useState(category?.name ?? '');
 	const [shortName, setShortName] = useState(category?.shortName ?? '');
@@ -228,12 +235,12 @@ function CategoryDialog({
 				>
 					<DialogHeader>
 						<DialogTitle>
-							{category ? t('inventory:categories.edit') : t('inventory:categories.new')}
+							{category ? t('product:categories.edit') : t('product:categories.new')}
 						</DialogTitle>
 					</DialogHeader>
 					<FieldGroup className='py-4'>
 						<Field>
-							<FieldLabel htmlFor='category-slug'>{t('inventory:categories.slug')}</FieldLabel>
+							<FieldLabel htmlFor='category-slug'>{t('product:categories.slug')}</FieldLabel>
 							<Input
 								id='category-slug'
 								className='font-mono'
@@ -244,11 +251,11 @@ function CategoryDialog({
 								disabled={category !== null}
 								onChange={(event) => setSlug(event.target.value.toLowerCase())}
 							/>
-							<FieldDescription>{t('inventory:categories.slugHint')}</FieldDescription>
+							<FieldDescription>{t('product:categories.slugHint')}</FieldDescription>
 						</Field>
 						<div className='grid gap-4 sm:grid-cols-[1fr_10rem]'>
 							<Field>
-								<FieldLabel htmlFor='category-name'>{t('inventory:categories.name')}</FieldLabel>
+								<FieldLabel htmlFor='category-name'>{t('product:categories.name')}</FieldLabel>
 								<Input
 									id='category-name'
 									required
@@ -258,7 +265,7 @@ function CategoryDialog({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='category-order'>{t('inventory:categories.sortOrder')}</FieldLabel>
+								<FieldLabel htmlFor='category-order'>{t('product:categories.sortOrder')}</FieldLabel>
 								<Input
 									id='category-order'
 									type='number'
@@ -271,7 +278,7 @@ function CategoryDialog({
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='category-short'>{t('inventory:categories.shortName')}</FieldLabel>
+							<FieldLabel htmlFor='category-short'>{t('product:categories.shortName')}</FieldLabel>
 							<Input
 								id='category-short'
 								maxLength={60}
@@ -281,7 +288,7 @@ function CategoryDialog({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='category-description'>
-								{t('inventory:categories.descriptionLabel')}
+								{t('product:categories.descriptionLabel')}
 							</FieldLabel>
 							<Textarea
 								id='category-description'
@@ -291,10 +298,14 @@ function CategoryDialog({
 								onChange={(event) => setDescription(event.target.value)}
 							/>
 						</Field>
-						<label className='flex items-center gap-2 text-sm'>
-							<Checkbox checked={isActive} onCheckedChange={(checked) => setIsActive(checked === true)} />
-							{t('inventory:categories.isActive')}
-						</label>
+						<Field orientation='horizontal'>
+							<Checkbox
+								id='category-is-active'
+								checked={isActive}
+								onCheckedChange={(checked) => setIsActive(checked === true)}
+							/>
+							<FieldLabel htmlFor='category-is-active'>{t('product:categories.isActive')}</FieldLabel>
+						</Field>
 					</FieldGroup>
 					<DialogFooter>
 						<Button type='button' variant='outline' onClick={onClose}>

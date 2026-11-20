@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -12,22 +12,18 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { CalendarCheck, CircleCheck, CircleX } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	closeChecklistQueryOptions,
 	ensurePeriod,
 	periodsQueryOptions,
 	transitionPeriod,
+	type TPeriod,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -115,9 +111,69 @@ export function ClosingPage() {
 		return null;
 	};
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TPeriod, CellData>[]>(() => {
+		const base: ColumnDef<DataTableFeatures, TPeriod, CellData>[] = [
+			{
+				accessorKey: 'code',
+				header: t('finance:common.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'range',
+				header: t('finance:periods.range'),
+				cell: ({ row }) => `${row.original.startDate} → ${row.original.endDate}`,
+			},
+			{
+				id: 'status',
+				header: t('finance:common.status'),
+				cell: ({ row }) => (
+					<Badge
+						variant={
+							row.original.status === 'open'
+								? 'secondary'
+								: row.original.status === 'locked'
+									? 'destructive'
+									: 'outline'
+						}
+					>
+						{t(`finance:${statusKey(row.original.status)}` as never)}
+					</Badge>
+				),
+			},
+		];
+		if (!(canClose || canReopen)) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: t('finance:common.actions'),
+				meta: { align: 'right' },
+				cell: ({ row }) => {
+					const action = nextAction(row.original.status);
+					return action ? (
+						<Button
+							size='sm'
+							variant='outline'
+							disabled={transition.isPending}
+							onClick={() =>
+								void transition.mutateAsync({
+									id: row.original.id,
+									to: action.to,
+								})
+							}
+						>
+							{t(action.labelKey as never)}
+						</Button>
+					) : null;
+				},
+			},
+		];
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- nextAction closes over canClose/canReopen
+	}, [canClose, canReopen, t, transition, transition.isPending]);
+
 	if (!canRead) {
 		return (
-			<EmptyState icon={CalendarCheck} title={t('finance:closing.title')} className='border' />
+			<EmptyState icon={CalendarCheck} title={t('finance:closing.title')} bordered />
 		);
 	}
 
@@ -133,7 +189,7 @@ export function ClosingPage() {
 			{canClose ? (
 				<Card>
 					<CardHeader>
-						<CardTitle className='text-base'>{t('finance:closing.checklist')}</CardTitle>
+						<CardTitle>{t('finance:closing.checklist')}</CardTitle>
 					</CardHeader>
 					<CardContent className='space-y-3'>
 						<div className='flex flex-wrap items-center gap-2'>
@@ -192,72 +248,18 @@ export function ClosingPage() {
 				</Card>
 			) : null}
 
-			{isPending ? null : isError ? (
-				<EmptyState icon={CalendarCheck} title={error.message} className='border' />
-			) : (periods?.rows.length ?? 0) === 0 ? (
-				<EmptyState icon={CalendarCheck} title={t('finance:periods.empty')} className='border' />
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && (periods?.rows.length ?? 0) === 0 ? (
+				<EmptyState icon={CalendarCheck} title={t('finance:periods.empty')} bordered />
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('finance:common.code')}</TableHead>
-								<TableHead>{t('finance:periods.range')}</TableHead>
-								<TableHead>{t('finance:common.status')}</TableHead>
-								{canClose || canReopen ? (
-									<TableHead className='text-right'>
-										{t('finance:common.actions')}
-									</TableHead>
-								) : null}
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{periods?.rows.map((period) => {
-								const action = nextAction(period.status);
-								return (
-									<TableRow key={period.id}>
-										<TableCell className='font-mono text-xs'>{period.code}</TableCell>
-										<TableCell>
-											{period.startDate} → {period.endDate}
-										</TableCell>
-										<TableCell>
-											<Badge
-												variant={
-													period.status === 'open'
-														? 'secondary'
-														: period.status === 'locked'
-															? 'destructive'
-															: 'outline'
-												}
-											>
-												{t(`finance:${statusKey(period.status)}` as never)}
-											</Badge>
-										</TableCell>
-										{canClose || canReopen ? (
-											<TableCell className='text-right'>
-												{action ? (
-													<Button
-														size='sm'
-														variant='outline'
-														disabled={transition.isPending}
-														onClick={() =>
-															void transition.mutateAsync({
-																id: period.id,
-																to: action.to,
-															})
-														}
-													>
-														{t(action.labelKey as never)}
-													</Button>
-												) : null}
-											</TableCell>
-										) : null}
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={periods?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 		</div>
 	);

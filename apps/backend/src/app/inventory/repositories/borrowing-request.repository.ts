@@ -10,6 +10,7 @@ import {
 } from '@drizzle/schemas/inventory.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import {
 	and,
 	asc,
@@ -69,10 +70,7 @@ export class BorrowingRequestRepository implements IBorrowingRequestRepository {
 			.orderBy(desc(borrowingRequests.createdAt), desc(borrowingRequests.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findById(id: string, organizationId: string): Promise<TBorrowingRequestSelect | null> {

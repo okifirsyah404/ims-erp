@@ -2,10 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { CircleAlert, Wrench } from 'lucide-react';
+import { Wrench } from 'lucide-react';
 import { getRouteApi } from '@tanstack/react-router';
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableRow,
+} from '@ims-erp/ui/components/table';
+
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	assetsQueryOptions,
 	assetDetailQueryOptions,
@@ -32,13 +40,7 @@ export function AssetServiceRecordList() {
 	});
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:service.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -50,11 +52,14 @@ export function AssetServiceRecordList() {
 				</p>
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{isPending ? (
+				<SectionSkeleton lines={6} />
+			) : !data || data.rows.length === 0 ? (
 				<EmptyState
 					icon={Wrench}
 					title={t('assets:service.emptyTitle')}
 					description={t('assets:service.empty')}
+					bordered
 				/>
 			) : (
 				<div className='space-y-4'>
@@ -111,33 +116,33 @@ function ServiceTrail({
 					{t('detail.noHistory')}
 				</p>
 			) : (
-				<table className='w-full text-sm'>
-					<tbody>
+				<Table>
+					<TableBody>
 						{rows.map((maintenance) => (
-							<tr key={maintenance.id} className='border-t'>
-								<td className='px-3 py-2 font-mono text-xs'>
+							<TableRow key={maintenance.id}>
+								<TableCell className='font-mono text-xs'>
 									{maintenance.code}
-								</td>
-								<td className='px-3 py-2'>
+								</TableCell>
+								<TableCell>
 									{t(`maintenanceType.${maintenance.maintenanceType}`)}
-								</td>
-								<td className='px-3 py-2'>
+								</TableCell>
+								<TableCell>
 									{maintenance.performedDate ?? maintenance.scheduledDate ?? '—'}
-								</td>
-								<td className='px-3 py-2'>
+								</TableCell>
+								<TableCell>
 									{formatMoney(maintenance.cost, maintenance.currencyCode)}
-								</td>
-								<td className='px-3 py-2'>
+								</TableCell>
+								<TableCell>
 									<Badge variant='secondary'>
 										{t(
 											`assets:maintenanceStatus.${maintenance.status}` as 'assets:maintenanceStatus.scheduled',
 										)}
 									</Badge>
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			)}
 		</div>
 	);

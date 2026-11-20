@@ -12,7 +12,7 @@ import type {
 } from '@drizzle/schemas/document.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TDocumentListQuery } from './document.contract';
+import type { TDocumentPaginationRequest } from './document.contract';
 
 /**
  * Persistence port for `document.*`: the registry, its templates, files,
@@ -20,7 +20,9 @@ import type { TDocumentListQuery } from './document.contract';
  */
 export interface IDocumentRepository {
 	/** Live documents, newest first, filtered by the registry query. */
-	list(filter: TDocumentListQuery): Promise<TPaginationResult<TDocumentSelect>>;
+	paginate(
+		request: TDocumentPaginationRequest,
+	): Promise<TPaginationResult<TDocumentSelect>>;
 
 	/** One live document, if it exists. */
 	findById(id: string): Promise<TDocumentSelect | null>;

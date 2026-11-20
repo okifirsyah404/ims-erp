@@ -14,16 +14,16 @@ import { describe, expect, test } from 'bun:test';
 import type {
 	TWarehouseManagerSelect,
 	TWarehouseSelect,
-} from '@drizzle/schemas/inventory.schema';
-import type { IWarehouseManagerRepository } from '../../src/app/inventory/contracts/warehouse-manager.repository.interface';
-import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
-import type { IWarehouseStorageRepository } from '../../src/app/inventory/contracts/warehouse-storage.repository.interface';
-import { WarehouseManagerService } from '../../src/app/inventory/services/warehouse-manager.service';
+} from '@drizzle/schemas/warehouse.schema';
+import type { IWarehouseManagerRepository } from '../../src/app/warehouse/contracts/warehouse-manager.repository.interface';
+import type { IWarehouseRepository } from '../../src/app/warehouse/contracts/warehouse.repository.interface';
+import type { IWarehouseStorageRepository } from '../../src/app/warehouse/contracts/warehouse-storage.repository.interface';
+import { WarehouseManagerService } from '../../src/app/warehouse/services/warehouse-manager.service';
 import {
 	WarehouseManagerExistsError,
 	WarehouseManagerUserNotFoundError,
 	WarehouseNotFoundError,
-} from '../../src/app/inventory/errors/inventory.errors';
+} from '../../src/app/warehouse/errors/warehouse.errors';
 import { AuditWriterDouble } from '../helpers/audit-writer-double';
 
 const WAREHOUSE = {

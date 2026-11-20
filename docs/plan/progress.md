@@ -12,34 +12,441 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## 2026-11-20 - Astro apps on @vite-pwa/astro 2 and @lucide/astro 1.77 (pin-back lifted)
+## 2026-11-23 - ADR-0026: product and warehouse become their own modules (schema split)
 
-Closes the "proper fix" open item of the 2026-11-20 pin-back entry.
+User request: separate `product` and `warehouse` from the inventory database
+schema and give each its own module; then move both onto their own API
+prefixes, move the whole frontend slice out of `inventory`, and give each
+module its own numbering series (`{COMPANY}` added to the pattern) and its own
+`settings` table. Decision record: `docs/architecture/decisions/ADR-0026-product-and-warehouse-modules.md`
+(supersedes the single-schema part of ADR-0008 and ADR-0024 Q14).
 
-- web-customer-portal `astro.config.mjs`: named `AstroPWAIntegration` import
-  (v2 has no default export); Workbox options `workbox` -> `generateSW`
-  (vite-plugin-pwa 2); `includeManifestIcons` / `includeManifestShortcutIcons`
-  off, since the `icons/*.png` glob already precaches them (`pwa-192.png`
-  was listed several times).
-- Renamed lucide icons: `circle-alert` -> `circle-exclamation-point`,
-  `triangle-alert` -> `triangle-exclamation-point`, `square-parking` ->
-  `square-letter-p` (portal: Flash, OrdersDesktop, ProductsDesktop, login,
-  register/details, track; landing: Alert, `lib/icons.ts`, whose
-  `square-parking` content key is kept).
-- Versions: `@lucide/astro` ^1.77.0 (landing + portal), `@vite-pwa/astro`
-  ^2.0.3, `vite-plugin-pwa` 2.0.0; `bun.lock` regenerated;
-  `.github/dependabot.yml` ignores for the three packages removed.
-- Verified on a fresh worktree of `origin/main` (`1c10c3e1`) after
-  `bun install`: web-landing `astro check` 0 errors, 24 tests, `astro build`
-  complete; web-customer-portal `astro check` 0 errors, 60 tests, `astro build`
-  complete, generated `sw.js` precaches `pwa-192.png` once; root
-  `bun run lint` 0 errors; `bun run test`: backend 1251/0 (needs
-  `apps/backend/.env`; without it 59 config ZodErrors), web-admin 123,
-  locales 98, react-email 6. The `astro check` hints (`await` on non-promises
-  in `erp-source.test.ts`) predate this change.
-- docs/database: reviewed, unchanged.
+**Schema (T1).** 20 Postgres schemas, 192 tables (188 before).
+`drizzle/schemas/product.schema.ts` owns `products`, `product_categories`,
+`settings`, `code_numberings`; `drizzle/schemas/warehouse.schema.ts` owns the
+six estate tables plus `settings` and `code_numberings`. `inventory` keeps 20
+tables. 16 former FKs from `inventory` into the moved tables became plain
+nullable uuid columns with the standard logical-reference note (ADR-0014):
+`item_serials.{product_id,warehouse_id,bin_id}`, `items.{warehouse_id,storage_id}`,
+`documents.product_id`, `movements.{product_id,warehouse_id,bin_id,target_warehouse_id,target_bin_id}`,
+`stocks.{product_id,warehouse_id,bin_id}`, `stock_adjustments.warehouse_id`,
+`stock_adjustment_items.{product_id,bin_id}`.
 
-Next executable task: live smoke test of backend + web-admin + landing + portal.
+**Cross-module reads (T3).** Every join/EXISTS across the new boundary is
+gone: stock valuation (products + warehouses + storages joins) now batches
+through the two facades and a `searchByNameOrSku` id set; `movement.repository`
+takes `warehouseIds` from `idsInScope`; `product.repository` asks
+`productIdsInWarehouse`/`availableByProducts`/`countSerials`;
+`warehouse.repository` lost `countKinds`/`countLiveUnits` (now
+`countSerialKindsByWarehouse`, `countMaterialStocks`, `countItemsByWarehouse`,
+`countLiveUnits` on the inventory facade + a local `countStorages`).
+
+**Cycle breaker.** `ExportedInventoryService ↔ ExportedProductService` is a
+real object-graph cycle. A factory registration for the port was not enough
+(tsyringe follows the lambda's emitted `design:paramtypes`), so the product
+kind lookup is now `ProductKindsPort`, constructed with a lazily-resolving
+closure (`useFactory: (c) => new ProductKindsPort(() => c.resolve(...))`) and
+the serial count flows the other way through `PRODUCT_SERIAL_COUNTS_TOKEN`.
+Boot verified: `scripts/__boot-check.ts` (throwaway) resolved both facades
+against the seeded disposable DB and returned a product snapshot, the
+warehouse name map and the serial-kind counts.
+
+**Movement (T5) - regenerated baseline.** `drizzle-kit generate` after the
+split produced one migration: 20 `CREATE SCHEMA`, 168 `CREATE TABLE`, only
+intra-module FKs. The previous baseline was archived to
+`database/migrations-archive/v2-product-warehouse-20261123` (same convention
+as `v1`) and the new one is `database/migrations/20261120192010_parched_venom`
+(`migration.sql` + `snapshot.json`, no `meta/` - matches the repo's baseline
+layout). A second `generate` reports "No schema changes". Applied to a
+disposable database `ims_erp_split_check`: `migrate` OK, `seed` OK
+(products 3, categories 11, warehouses 2, storages 3, serials 2, items 6), a
+second `seed` inserted 0 rows (idempotent).
+
+**Commands run (2026-11-23).**
+`bunx --bun drizzle-kit generate` → one migration, then "No schema changes, nothing to migrate".
+`POSTGRES_URL=…/ims_erp_split_check bunx --bun drizzle-kit migrate` → applied.
+`POSTGRES_URL=…/ims_erp_split_check bun run drizzle:seed` twice → second run 0 new rows.
+`bun docs/database/gen-logical-references.ts` → 190 refs, 25 targets, 147 intra-module refs.
+`bun docs/database/validate-dbml.ts` → `parsed: 192 tables, 147 refs / cross-module refs: 0 / timestamp gaps: 0 / drizzle parity drift: 0 / column parity drift: 0 / OK`.
+`cd packages/locales && bun test` → 98 pass, 0 fail (locale parity + dead keys).
+
+**Docs.** `docs/database/docs.dbml` (new `MODULE: Product` / `MODULE: Warehouse`
+sections, moved `Ref:`s, 4 new tables), `module-ownership.md` (20 modules,
+product/warehouse/inventory profiles, 147 refs),
+`docs/architecture/decisions/ADR-0026-*`, `AGENTS.md` (20 schemas / 192 tables,
+new catalog URL), this file.
+
+**Frontend slice (T6).** web-admin: API clients repointed (`/products`,
+`/product-categories`, `/product-listings`; unit routes stay
+`/products/:id/units`); routes moved to `routes/_authed/products/**` and
+`routes/_authed/warehouses/**` (categories joined product), `routeTree.gen.ts`
+regenerated; sidebar gained `section.product` and `section.warehouse` with the
+Product and Warehouse entries, leaving stock/purchasing/assets under
+`section.inventory`; breadcrumbs, `route-guard.ts` and the `warehouse-list`
+route API updated. Locales: new `product` and `warehouse` namespaces (en + id)
+carrying the product/catalogue/unit copy (91 keys) and the warehouse/address
+copy (118 keys); `inventory` keeps stock/items/movements/adjustments/value;
+`NAMESPACES`, `i18next.d.ts`, both `index.ts` bundles, `product:kind.` in the
+dead-key allow-list and nine Indonesian strings that were identical to English
+fixed. web-landing: catalog routes and tests now call
+`/products/public/v1/catalog`. Verified: web-admin `tsc -p tsconfig.app.json`
+clean, `bun test` 138 pass; web-landing `bun test` 24 pass; `packages/locales`
+`bun test` 106 pass (parity + dead keys).
+
+**Tests (T5).** `test/authorization` split into `product-authorization` (product
+module) and `inventory-authorization` (stock/items/borrowing), with the
+warehouse suite repointed at `@app/warehouse`; `stock-test-doubles` and
+`test-app` register the new modules; `audit-writer-double` uses `@shared/audit`.
+The unit suites follow the new seams: `SERIAL_UNIT_SERVICE_TOKEN` for the unit
+methods, `EXPORTED_INVENTORY_SERVICE_TOKEN` /
+`EXPORTED_WAREHOUSE_SERVICE_TOKEN` / `EXPORTED_PRODUCT_SERVICE_TOKEN` doubles for
+the facades, `countStorages`/`findByIds` for the warehouse repository, and
+`adjustment`'s stock double rebuilt as an explicit typed object. New
+`test/unit/module-seams.test.ts` covers the cross-module contracts (16 cases).
+`WarehouseService`'s HR dependency was narrowed to `Pick<ExportedEmployeeService,
+'findEmployeeById'>` so its double is structural instead of cast.
+
+**Commands run (2026-11-23, final).**
+`bunx tsc -p tsconfig.json --noEmit` (apps/backend) → 0 errors.
+`bun test` (apps/backend) → 1287 pass, 0 fail (99 files).
+`bun test` (packages/locales) → 106 pass, 0 fail.
+`bunx tsc -p tsconfig.app.json --noEmit` + `bun test` (apps/web-admin) → 0 errors, 138 pass.
+`bun test` (apps/web-landing) → 24 pass.
+`bun docs/database/validate-dbml.ts` → `OK`. The disposable verification database was dropped.
+
+**Open follow-ups (not claimed):** live UI smoke test of web-admin/landing
+against the seeded backend; `web-customer-portal`'s `tsconfig.json` still trips
+TS5101 (`baseUrl` deprecated), which is unrelated to this change.
+
+## 2026-11-22 - Backend: every paginated repository method is `paginate()` on one shared envelope helper
+
+User request: make `apps/backend/src/app/*` use `paginate()` instead of `list()`
+and friends, following the `location` module as the reference. No `ERP-*`
+backlog item is claimed (internal refactor: no endpoint, envelope, or schema
+change), so `backlog.md` / `features.md` do not move. `docs/database/` reviewed
+and unchanged — no table, column, index, constraint, status vocabulary, or
+column type changed; the grill-me pass had nothing to grill (tenant scoping and
+soft-delete filters are unchanged, only their argument plumbing moved).
+
+New shared helper `apps/backend/src/utils/pagination.util.ts`:
+`paginationResult(request, total, data)` builds `TPaginationResult<T>` with
+`totalPages = Math.ceil(total / limit)`. Every repository now uses it instead of
+hand-rolling `meta` — the old code had drifted across three spellings
+(`Math.ceil(...)`, `Math.ceil(...) || 1`, `Math.max(1, ...)`), so the same empty
+list reported 1 page in some modules and 0 in others.
+
+Renamed + reshaped to `paginate(request)` / `paginate<Thing>(request)` with one
+request object (`TPaginationRequest & { ...filters }`, tenant inside):
+
+- `audit` `list` -> `paginate`; `notification` `listForUser` ->
+  `paginateForUser`; `payment` `list` -> `paginate`; `user`
+  `invitation.list` -> `paginate`, `user-management.listUsers` ->
+  `paginateUsers`; `document` `list` -> `paginate`; `document/signature`
+  `listSignatures`/`listIncoming`/`listOutgoing` ->
+  `paginate`/`paginateIncoming`/`paginateOutgoing`.
+- `finance`: `listPeriods`, `listBankReconciliations`,
+  `listCashBankTransactions`, `listAccounts`, `listEntries`,
+  `listSupplierBills`, depreciation `list`, report-archive `list` ->
+  `paginate` / `paginateTransactions` / `paginateAccounts` / `paginateEntries`.
+- `human-resource` employee `list` -> `paginate`; `inventory` maintenance /
+  condition-check / item-movement `listByItem` -> `paginateByItem`, disposal and
+  tool-set `list` -> `paginate`; `sale` invoice `list` -> `paginate` (and it now
+  returns `TPaginationResult<T>` instead of an inline `{data, meta}`); `project`
+  handover `paginateAll` -> `paginate`; `tax` `listTaxTypes`/`listTaxRecords`/
+  `listWithholding` -> `paginateTaxTypes`/`paginateTaxRecords`/
+  `paginateWithholding`.
+- `supplier` and `customer` had the worst shape — `paginate()` returning bare
+  rows plus a separate `count()`, with the service hand-building `meta`. Both
+  `paginate()` methods now return `TPaginationResult<T>` and `count()` is gone
+  from both contracts. `customer`'s local `TPagination<T>` (which used `rows`
+  instead of `data`) and the service's `TCustomerPage<T>` are deleted.
+
+Also normalised to the shared helper without renaming (already `paginate*`):
+`location` (4), `inventory` (11), `procurement` (4), `sale` (4),
+`project` (4), `organization` (2), `automation` (2), `human-resource` (3),
+`user` (1), plus `StockValuationService.get` (a service that built its own
+`meta`).
+
+Three live bugs found and fixed by the reshape — the same defect each time, a
+controller passing the parsed query as *both* filters and pagination:
+
+- `finance/controllers/ledger.controller.ts` `GET /ledger/accounts` — the
+  `accountType`/`isActive` filters never reached the repository, so they were
+  silently dropped.
+- `finance/controllers/finance-operations.controller.ts`
+  `GET /supplier-bills`, `GET /reports/archives`, `GET /reconciliations` — same
+  duplicated-argument shape.
+- `sale/controllers/invoice.controller.ts` `GET /sales/invoices` and
+  `payment/controllers/payment-ledger.controller.ts` `GET /payments` — same.
+
+Behaviour change to note: `totalPages` is now `0` (was `1`) for an empty result
+set on every list endpoint. web-admin already clamps via `useClampPage`
+(`Math.max(totalPages, 1)`) and `PaginationControls` only renders when `> 1`,
+so no UI regression is expected — but an empty-list browser pass is still owed.
+
+Verification (all executed 2026-11-22):
+
+- `cd apps/backend && bunx tsc --noEmit` — 0 errors.
+- `cd apps/backend && bun test` — 1257 pass / 0 fail across 97 files (was 1251
+  before the new `pagination.util.test.ts` +6).
+- `bun run lint` — 0 errors (pre-existing warnings only).
+- `bun run test` (repo root) — 7/7 tasks: backend 1257, web-admin 129, locales
+  98, web-landing 24, web-customer-portal 60, react-email 6.
+- `bun docs/database/validate-dbml.ts` — OK.
+- NOT verified: no browser pass over empty lists (see the `totalPages` note),
+  and `graphify update .` was not run in this session.
+
+Stale test doubles that type-checking caught (all were `as never` casts or
+untyped literals, so nothing failed at runtime before the fix):
+`test/finance/*` (5 files), `test/tax/tax.service.test.ts`,
+`test/unit/{signature,user-admin,item-operations,handover-warranty,customer,supplier,hr-records}.service.test.ts`,
+`test/unit/payment-gateway.test.ts`.
+
+Next executable task: unchanged (see the entry below).
+
+## 2026-11-21 - Migrations re-split into one folder per Postgres schema
+
+User request: create one migration per schema in
+`apps/backend/database/migrations/` named `<datetime>_create_<schema>_schema`,
+derived from `apps/backend/drizzle/schemas/`. This restores ADR-0024 decision 6
+("per-schema baseline", extending ADR-0019), which the 2026-11-19/20 P8 cutover
+had shipped as a single folder.
+
+**What changed.** The single baseline `20261120192010_parched_venom` is archived
+to `database/migrations-archive/v3-per-schema-20261121` (same convention as
+`v1` and `v2-product-warehouse-20261123`) and replaced by **20 folders**:
+
+`20261120214111_create_auth_schema`, `..._create_audit_schema`,
+`..._create_automation_schema`, `..._create_company_schema`,
+`..._create_customer_schema`, `..._create_document_schema`,
+`..._create_finance_schema`, `..._create_human_resource_schema`,
+`..._create_inventory_schema`, `..._create_location_schema`,
+`..._create_notification_schema`, `..._create_payment_schema`,
+`..._create_procurement_schema`, `..._create_product_schema`,
+`..._create_project_schema`, `..._create_sale_schema`,
+`..._create_supplier_schema`, `..._create_tax_schema`,
+`..._create_ticket_schema`, `..._create_warehouse_schema`.
+
+`auth` is first (Better Auth owns the foundation tables), the rest alphabetical.
+The database has **0 cross-schema foreign keys**, so the order is a readability
+choice, not a correctness requirement — every folder is self-contained.
+
+**Generated, not hand-assembled.** Each folder came from `drizzle-kit generate`
+run against a **cumulative** `--schema` list (`audit.schema.ts`, then
+`audit + automation`, …), so the chain is 1 `base` + 19 chained `diff`
+snapshots: `check` and `generate` agree with `drizzle/schemas` by construction.
+No SQL statement was written or edited by hand.
+
+**Equivalence proven before the swap.** Two independent checks, both run before
+the old folder was removed:
+
+- Concatenating the 20 folders yields the **same 728 statements** as the
+  archived baseline (same multiset; 0 missing, 0 extra). Statement counts per
+  schema also matched the archived `snapshot.json` footprints exactly
+  (audit 7, auth 40, automation 17, company 10, customer 25, document 41,
+  finance 87, human_resource 43, inventory 106, location 16, notification 11,
+  payment 20, procurement 42, product 17, project 78, sale 76, supplier 21,
+  tax 21, ticket 18, warehouse 32).
+- A fresh `generateMigration(empty → drizzle/schemas)` reproduced the archived
+  `migration.sql` with **0 statement-level differences**, confirming the old
+  baseline carried no hand-written SQL tail (the ADR-0019 exception for
+  `NULLS NOT DISTINCT` / partial index predicates no longer applies — the
+  current snapshot models them).
+
+**Commands run (2026-11-21).**
+`bunx --bun drizzle-kit generate` (per-schema, cumulative `--schema`) → 20
+folders. `bunx --bun drizzle-kit generate` against the repo config → "No schema
+changes, nothing to migrate". `bunx --bun drizzle-kit check` → "Everything's
+fine". On a disposable `postgres:18-alpine` container
+(`POSTGRES_URL=postgresql://ci:ci@localhost:55432/perschema_check`):
+`drizzle-kit migrate` → applied; resulting database = 22 schemas, 169 tables
+(168 application + the `drizzle` journal table's schema), 20 journal rows,
+**0 cross-schema FKs**. `bun run database/seeders/index.ts` → seeded; second run
+→ 0 inserts (idempotent). `pg_dump --schema-only` of that database vs. one
+migrated from the archived single baseline → **identical** (9669 lines each,
+differing only in pg_dump's random `\restrict` session tokens).
+`bun docs/database/validate-dbml.ts` → `OK` (192 tables, 147 refs, 0
+cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity
+drift).
+
+**Docs.** `runbook.md` (baseline section), `data-model.md`, `project-audit.md`,
+`architecture/README.md`, `database/implementation-phases.md` (new P8b) and
+`AGENTS.md` (command-status row) now describe the per-schema chain; the
+single-baseline references are marked superseded, not deleted.
+`docs/database/docs.dbml` was reviewed and is **unchanged** — no table, column,
+index, constraint, cross-module link or status vocabulary moved; only the
+packaging of the same DDL changed.
+
+## 2026-11-21 - web-admin: `@ims-erp/ui` components instead of native elements, consistent Card composition
+
+User request: make `apps/web-admin` use `@ims-erp/ui` components wherever
+possible, and use `CardHeader` / `CardTitle` / `CardContent` / `CardAction` /
+`CardFooter` consistently. No `ERP-*` backlog item is claimed (UI refactor, no
+behavior, schema or API change), so `backlog.md` / `features.md` do not move.
+`docs/database/` reviewed and unchanged.
+
+What changed (107 files, `apps/web-admin/src` plus two locale bundles):
+
+- New shared helpers: `components/confirm-dialog.tsx` (`ConfirmProvider`,
+  `useConfirm()`, an `AlertDialog` replacing `window.confirm`; provider mounted
+  in `routes/__root.tsx`) and `components/card-empty.tsx` (`CardEmpty`, the
+  centered empty/error card). New key `common:action.confirm` in `en` and `id`.
+- Native `<table>` in data lists -> `Table*` (9 files, assets and tax),
+  `<input type='checkbox'>` -> `Checkbox` + `Field`/`FieldLabel`, hand-styled
+  `<input>`/`<select>` -> `Input`/`Select`, `window.confirm` -> `useConfirm()`
+  (about 17 call sites).
+- Cards: buttons in headers moved into `CardAction` (24 uses, was 0), empty and
+  error cards -> `CardEmpty`, table-wrapper cards -> `Card className='gap-0
+  py-0'` + `CardContent className='p-0'`, redundant `CardTitle text-base`,
+  `CardHeader pb-2` / `space-y-*` removed.
+
+Deliberately left native: print documents (`*-document.tsx`), `<form>`,
+`<ul>`/`<ol>`/`<img>`/`<a>`, hidden `type='file'` inputs, the drag-drop
+`<button>` in `image-dropzone`, and the item-search result rows in
+`quotation-form` / `purchase-order-form`. Still native and open: 3
+`window.prompt` calls that need typed input (`assets/borrowing-detail`,
+`finance/payments-table`, `projects/project-costs-card`). Not done: form actions
+in `CardFooter`, a `StatCard`, titles for untitled cards (needs new locale
+keys), and a lint rule against native elements.
+
+Verification (all executed 2026-11-21):
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` - 0 errors.
+- `bun run lint` - 0 errors (existing warnings only); `bun run test` - 7/7
+  tasks (web-admin 123, backend 1251, locales 98, web-landing 24,
+  web-customer-portal 60, react-email 6).
+- NOT verified: no rendered check in a browser. Table-wrapper and `CardAction`
+  changes alter spacing, so a visual pass over tax, assets, sales lists, and a
+  panel with header actions is still owed.
+
+Next executable task: unchanged (see the entry below).
+
+### Follow-up: Card composition aligned with the shadcn Card docs
+
+Reference: https://ui.shadcn.com/docs/components/base/card (our
+`packages/ui/src/components/card.tsx` already matches it; no UI-package change).
+Canonical shape: `Card > CardHeader(CardTitle, CardDescription, CardAction) >
+CardContent > CardFooter`; spacing from `size='sm'` / `--card-spacing`, not from
+per-use paddings.
+
+- Form actions moved into `CardFooter className='justify-end gap-2'` with the
+  `<form>` wrapping the `<Card>`: change-password/-email, profile-edit,
+  contract-form, organizations new/edit/member-edit, projects new, tickets new,
+  borrowing-form, asset-form, item-form, quotation-form, purchase-request-form,
+  purchase-order-form. `CardFooter` uses went 7 -> 22.
+- Hand-written `<h2>` card title -> `CardHeader`/`CardTitle`/`CardAction`
+  (`borrowing-list`); `pt-6` removed from `CardContent` (contract-form, project
+  forms, warranty, bast-form, borrowing-list, quotation pages); compact member
+  card and its skeleton -> `<Card size='sm'>`.
+- Six untitled panel cards got a `CardTitle`; 5 new keys (`en` + `id`):
+  `sales:quotation.termsAndNotes`, `inventory:items.details`,
+  `projects:bast.details`, `projects:warranty.details`,
+  `inventory:adjustmentForm.details`.
+
+Left as is, on purpose: forms whose buttons sit below several cards at page
+level (`adjustment-form`, `warehouse-form`, `warranty/index`) or whose last card
+renders conditionally (`sales-return-form`, `purchase-return-form`,
+`deliveries/new`, `receipts/new`) - moving buttons into a footer there would hide
+or relocate them; inline/embedded add-forms; auth screens (`components/form/*`);
+dialog forms. Cards left untitled where a title would duplicate an existing
+label (item image field, conversation thread, list-row cards).
+
+Verification (executed 2026-11-21): `bunx tsc -p tsconfig.app.json --noEmit` exit
+0; `bun run lint` 5/5 tasks, 0 errors (existing warnings only); `bun run test`
+7/7 tasks (web-admin 123, backend 1251, locales 98, web-landing 24,
+web-customer-portal 60, react-email 6). Working tree: 128 files changed, not
+committed. NOT verified: no rendered browser check. Footer bar, `size='sm'`
+and table-wrapper spacing change the look, so a visual pass is still owed.
+
+### Follow-up: Data Table and Empty aligned with the shadcn guides
+
+References: https://ui.shadcn.com/docs/components/base/data-table and
+`.../empty`. Decision recorded in
+`docs/architecture/decisions/ADR-0025-tanstack-table-for-web-admin.md`.
+
+- Added `@tanstack/react-table@^9.3.1` to `apps/web-admin` (no
+  `packages/ui` change).
+- `components/data-table/`: `data-table.tsx` (single renderer: guide frame via
+  `bordered`, `meta.align` applied to header _and_ cells so they cannot drift,
+  `empty`, `loading`, `rowClassName`), `data-table-features.ts` (one
+  `tableFeatures()` object; `columnMeta` slot types `meta`), and
+  `data-table-column-header.tsx` (sort button for client-sorted tables).
+- 72 files now render through `DataTable`; raw `<Table>` remains only where a
+  column model cannot express the markup: `TableFooter`/`colSpan` totals
+  (`tax-recap`, `finance/aging-table`, `hr/payroll`, `account/sessions-table`),
+  editable input rows (`hr/attendance`, `reconciliation` items,
+  `warehouse-item-table` skeleton, `project-costs-card`), header-less history
+  list (`asset-service-record-list`), the billing/gateway/invoice lists that
+  live inside a `Card`, and `*-document.tsx` print documents.
+- `EmptyState` rewritten on the ui `Empty` composition: optional `icon`,
+  `tone='error'`, `size='sm'`, `bordered` (the guide's outline variant).
+  `CardEmpty` deleted; 51 call sites and ~12 hand-rolled empty paragraphs now
+  use `EmptyState` (123 usages total). The 32 repeated `className='border'`
+  are gone in favour of `bordered`.
+- Tests: `test/data-table.test.tsx` (6) covers rows, `meta.align` on header and
+  cells, empty state, loading, `bordered`, `rowClassName`.
+
+Verification (executed 2026-11-21): `tsc -p tsconfig.app.json --noEmit` exit 0;
+`bun run test` 7/7 tasks (web-admin 129, backend 1251, locales 98,
+web-landing 24, web-customer-portal 60, react-email 6); `bun run lint` 5/5
+tasks, 0 errors. Working tree 144 files changed, not committed. NOT verified:
+no rendered browser check - the frame, `meta.align` right-alignment and
+`EmptyState` sizes change the look, so pages with wide tables (14 columns:
+`warehouse-item-table`), money columns and empty lists still need a visual pass.
+
+### Follow-up: empty, error and loading states unified (Empty + Skeleton)
+
+Request: show the ui `Empty` when data is empty or a load fails, and the ui
+`Skeleton` while loading. Components in `apps/web-admin/src/components/`:
+
+- `empty-state.tsx`: `EmptyState` (ui `Empty` composition) plus the new
+  `ErrorState` (icon, title `common:error.failed`, the thrown message as
+  description, `tone='error'`) and `errorMessage()`.
+- `page-skeleton.tsx`: `PageSkeleton` (heading + content cards, for detail and
+  edit pages) and `SectionSkeleton` (muted lines for panels).
+- `data-table/data-table.tsx`: `loading` now renders `Skeleton` rows, one cell
+  per column, header kept, `aria-busy`; `skeletonRows`; per-column width via
+  `meta.skeletonClassName`.
+- Roll-out across `apps/web-admin/src`: `ErrorState` 137 uses, `PageSkeleton` 36,
+  `SectionSkeleton` 34, `DataTable loading={isPending}` 48. Lists became
+  `isError ? ErrorState : !isPending && empty ? EmptyState : DataTable loading`;
+  detail/edit/guard pages return `PageSkeleton` instead of `null`; the hand-made
+  `SkeletonRows` in `admin/audit` and `admin/users` were removed.
+
+Deliberately unchanged: inline mutation/form errors (`transition.error`,
+`reversal.error`, `creation.error`, submit errors), `routes/_authed.index.tsx`
+(redirect-only `return null`), auth screens, `*-document.tsx`, sidebar
+`nav-user`, print routes' pending state (only their error branch changed),
+`notification-bell` (its error text is `notifications:loadFailed`; switching it
+to `ErrorState` would orphan that key and fail the dead-keys test).
+`signatureSection.error` in `documents/files/$documentId.tsx` IS a query error
+and was converted (one line, revert if unwanted). Behaviour changes to look at:
+list pages (`movement-list`, `stock-list`, `adjustment-list`) now keep the title
+and filters while loading/erroring; `items/$itemId`, `items/$itemId.edit`,
+`warehouses/$warehouseId.edit` show `ErrorState` for errors and `EmptyState`
+only for a genuinely missing record; the two returns edit pages show an error
+as soon as either query fails.
+
+Also cleaned 7 `exhaustive-deps` "unnecessary dependency `x.isPending`" warnings
+left by the earlier DataTable migration (`tax-record-list`, `asset-disposal-list`,
+`account-list`, `journal-page`).
+
+Verification (executed 2026-11-21): `bunx tsc -p tsconfig.app.json --noEmit`
+exit 0; `bun run test` 7/7 tasks (web-admin 138: +9 `test/states.test.tsx`, +2
+loading tests in `test/data-table.test.tsx`; backend 1257; locales 98;
+web-landing 24; web-customer-portal 60; react-email 6); `bun run lint` 5/5
+tasks, 0 errors (web-admin 16 warnings, all pre-existing categories:
+`only-export-components`, `set-state-in-effect`, one `exhaustive-deps` in
+`signatures/mine/$requestId/place.tsx`). NOT verified: no browser run. Skeleton
+heights, the bordered `ErrorState`, gated queries (`enabled: canRead`) for users
+without the permission, and the organization edit page (now `PageSkeleton`
+until loaded) still need a visual pass.
+
+Working tree note: 140 `apps/backend` files plus
+`docs/architecture/api-conventions.md` and untracked
+`apps/backend/src/utils/pagination.util.ts` (+ test) changed from a separate
+pagination refactor (timestamps 2026-11-20 22:16), not from this work. Keep them
+out of the web-admin commit.
 
 ## 2026-11-21 - Invite dialog: role ladder enforced end to end, permanent/temporary switch, employee email fix
 
@@ -195,6 +602,53 @@ Next executable task: UI smoke of web-admin (sign in, one screen per slice) and 
 - Pinned exactly to the versions that last built: `@lucide/astro` 1.61.0 (landing + portal), `@vite-pwa/astro` 1.2.0 and `vite-plugin-pwa` 1.3.0 (portal). `bun.lock` regenerated; `bun install --frozen-lockfile` reports no changes. `.github/dependabot.yml` ignores these three packages until the code is adapted, otherwise the next dependabot run reintroduces the break.
 - Verified from clean state after `bun install`: web-landing `typecheck` 0 errors, 24 tests pass, `astro build` complete; web-customer-portal `typecheck` 0 errors, 60 tests pass, `astro build` complete; root `bun run lint` 0 errors, `bun run test` 7/7, `bun run build` 5/5.
 - Open (proper fix, separate task): adapt the portal `astro.config.mjs` to `@vite-pwa/astro` 2.x (`AstroPWAIntegration` named export) and the landing icon imports to `@lucide/astro` >=1.73 (renamed/removed icons such as `triangle-alert`, `circle-alert`, `square-parking`), then remove the dependabot ignores and the pins.
+- docs/database: reviewed, unchanged.
+
+Next executable task: live smoke test of backend + web-admin + landing + portal.
+## 2026-11-20 - Astro apps on @vite-pwa/astro 2 and @lucide/astro 1.77 (pin-back lifted)
+
+Closes the "proper fix" open item of the 2026-11-20 pin-back entry above.
+
+- web-customer-portal `astro.config.mjs`: named `AstroPWAIntegration` import
+  (v2 has no default export); Workbox options `workbox` -> `generateSW`
+  (vite-plugin-pwa 2); `includeManifestIcons` / `includeManifestShortcutIcons`
+  off, since the `icons/*.png` glob already precaches them (`pwa-192.png`
+  was listed several times).
+- Renamed lucide icons: `circle-alert` -> `circle-exclamation-point`,
+  `triangle-alert` -> `triangle-exclamation-point`, `square-parking` ->
+  `square-letter-p` (portal: Flash, OrdersDesktop, ProductsDesktop, login,
+  register/details, track; landing: Alert, `lib/icons.ts`, whose
+  `square-parking` content key is kept).
+- Versions: `@lucide/astro` ^1.77.0 (landing + portal), `@vite-pwa/astro`
+  ^2.0.3, `vite-plugin-pwa` 2.0.0; `bun.lock` regenerated;
+  `.github/dependabot.yml` ignores for the three packages removed.
+- Verified before the merge with `main` (`1c10c3e1`) on a fresh worktree after
+  `bun install`: web-landing `astro check` 0 errors, 24 tests, `astro build`
+  complete; web-customer-portal `astro check` 0 errors, 60 tests, `astro build`
+  complete, generated `sw.js` precaches `pwa-192.png` once; root
+  `bun run lint` 0 errors; `bun run test`: backend 1251/0 (needs
+  `apps/backend/.env`; without it 59 config ZodErrors), web-admin 123,
+  locales 98, react-email 6. The `astro check` hints (`await` on non-promises
+  in `erp-source.test.ts`) predate this change.
+- Merged `main` (`aa5dc92d`, the ADR-0026 product/warehouse split) into this
+  branch; `main` is the base for both code and features. One conflict, in this
+  file: `main`'s entries were kept in full and this entry was inserted at its
+  chronological place, right after the pin-back entry whose open item it
+  closes. `bun.lock` merged without conflict and still resolves
+  `@lucide/astro` 1.77.0, `@vite-pwa/astro` 2.0.3, `vite-plugin-pwa` 2.0.0;
+  `bun install --frozen-lockfile` installs cleanly. `docs/architecture/project-audit.md`
+  had a stale "pinned back, adaptation open" row and now records the adaptation.
+  No code or feature regression against `main`: the tree differs from
+  `origin/main` only in the 12 Astro/dependabot files above plus this file and
+  the audit row.
+- Verified after the merge: `bun install --frozen-lockfile` clean;
+  `bun run lint` 0 errors (5/5 tasks, 23 pre-existing backend warnings);
+  `bun run test` 7/7 — backend 1287, web-admin 138, locales 106, landing 24,
+  portal 60, react-email 6, 0 failures; `bun run build` 5/5; web-landing
+  `astro check` 0 errors (5 hints), web-customer-portal `astro check` 0 errors
+  (10 hints), the same pre-existing `await` hints; generated `sw.js` precaches
+  `pwa-192.png` exactly once; `bun docs/database/validate-dbml.ts` OK (192
+  tables, 147 refs, 0 cross-module refs, 0 parity drift), matching `main`.
 - docs/database: reviewed, unchanged.
 
 Next executable task: live smoke test of backend + web-admin + landing + portal.

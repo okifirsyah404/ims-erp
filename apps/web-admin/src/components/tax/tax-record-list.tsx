@@ -4,12 +4,15 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
 	SelectContent,
@@ -17,9 +20,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, FileText, Plus } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	createTaxRecord,
@@ -84,9 +87,6 @@ export function TaxRecordList() {
 	const invalidate = () =>
 		queryClient.invalidateQueries({ queryKey: ['tax-records'] });
 
-	const typeName = (id: string) =>
-		types.data?.rows.find((row) => row.id === id)?.name ?? id;
-
 	const create = useMutation({
 		mutationFn: () =>
 			createTaxRecord({
@@ -134,14 +134,107 @@ export function TaxRecordList() {
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
+	const typeRows = types.data?.rows;
+	const columns = useMemo<ColumnDef<DataTableFeatures, TTaxRecord, CellData>[]>(() => {
+		const nameOf = (id: string) => typeRows?.find((row) => row.id === id)?.name ?? id;
+		const base: ColumnDef<DataTableFeatures, TTaxRecord, CellData>[] = [
+			{
+				accessorKey: 'code',
+				header: t('tax:records.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'taxType',
+				header: t('tax:records.taxType'),
+				cell: ({ row }) => nameOf(row.original.taxTypeId),
+			},
+			{
+				id: 'period',
+				header: t('tax:records.period'),
+				meta: { cellClassName: 'text-xs' },
+				cell: ({ row }) =>
+					`${row.original.periodYear}-${String(row.original.periodMonth).padStart(2, '0')}`,
+			},
+			{
+				id: 'taxableBase',
+				header: t('tax:records.taxableBase'),
+				meta: { align: 'right', cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (row.original.taxableBase / 100).toLocaleString(),
+			},
+			{
+				id: 'taxAmount',
+				header: t('tax:records.taxAmount'),
+				meta: { align: 'right', cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => (row.original.taxAmount / 100).toLocaleString(),
+			},
+			{
+				id: 'status',
+				header: t('tax:records.status'),
+				cell: ({ row }) => (
+					<Badge variant={statusTone(asFilingStatus(row.original.filingStatus))}>
+						{t(`tax:status.${asFilingStatus(row.original.filingStatus)}`)}
+					</Badge>
+				),
+			},
+		];
+		if (!(canVerify || canUpdate)) return base;
+		return [
+			...base,
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<>
+						{canUpdate && row.original.filingStatus === 'draft' ? (
+							<Button
+								variant='outline'
+								size='sm'
+								className='mr-1'
+								onClick={() => setEditing(row.original)}
+							>
+								{t('common:action.edit')}
+							</Button>
+						) : null}
+						{canVerify && row.original.filingStatus === 'draft' ? (
+							<Button
+								variant='outline'
+								size='sm'
+								className='mr-1'
+								disabled={transition.isPending}
+								onClick={() =>
+									void transition.mutateAsync({
+										id: row.original.id,
+										to: 'verified',
+									})
+								}
+							>
+								{t('tax:records.verify')}
+							</Button>
+						) : null}
+						{canVerify && row.original.filingStatus === 'verified' ? (
+							<Button
+								variant='outline'
+								size='sm'
+								disabled={transition.isPending}
+								onClick={() =>
+									void transition.mutateAsync({
+										id: row.original.id,
+										to: 'filed',
+									})
+								}
+							>
+								{t('tax:records.file')}
+							</Button>
+						) : null}
+					</>
+				),
+			},
+		];
+	}, [canUpdate, canVerify, t, transition, typeRows]);
+
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('tax:records.title')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -174,9 +267,9 @@ export function TaxRecordList() {
 									))}
 							</SelectContent>
 						</Select>
-						<input
+						<Input
 							type='number'
-							className='h-9 w-24 rounded-md border bg-transparent px-3 text-sm'
+							className='w-24'
 							value={periodYear}
 							min={2000}
 							max={2100}
@@ -229,107 +322,31 @@ export function TaxRecordList() {
 				</div>
 			) : null}
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={FileText}
 					title={t('tax:records.title')}
 					description={t('tax:records.empty')}
+					bordered
 				/>
 			) : (
 				<>
-					<div className='overflow-hidden rounded-lg border'>
-						<table className='w-full text-sm'>
-							<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-								<tr>
-									<th className='px-3 py-2'>{t('tax:records.code')}</th>
-									<th className='px-3 py-2'>{t('tax:records.taxType')}</th>
-									<th className='px-3 py-2'>{t('tax:records.period')}</th>
-									<th className='px-3 py-2 text-right'>
-										{t('tax:records.taxableBase')}
-									</th>
-									<th className='px-3 py-2 text-right'>
-										{t('tax:records.taxAmount')}
-									</th>
-									<th className='px-3 py-2'>{t('tax:records.status')}</th>
-									{canVerify || canUpdate ? <th className='px-3 py-2' /> : null}
-								</tr>
-							</thead>
-							<tbody>
-								{data.rows.map((row) => (
-									<tr key={row.id} className='border-t'>
-										<td className='px-3 py-2 font-mono text-xs'>{row.code}</td>
-										<td className='px-3 py-2'>{typeName(row.taxTypeId)}</td>
-										<td className='px-3 py-2 text-xs'>
-											{row.periodYear}-{String(row.periodMonth).padStart(2, '0')}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
-											{(row.taxableBase / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2 text-right font-mono text-xs'>
-											{(row.taxAmount / 100).toLocaleString()}
-										</td>
-										<td className='px-3 py-2'>
-											<Badge variant={statusTone(asFilingStatus(row.filingStatus))}>
-												{t(`tax:status.${asFilingStatus(row.filingStatus)}`)}
-											</Badge>
-										</td>
-										{canVerify || canUpdate ? (
-											<td className='px-3 py-2 text-right'>
-												{canUpdate && row.filingStatus === 'draft' ? (
-													<Button
-														variant='outline'
-														size='sm'
-														className='mr-1'
-														onClick={() => setEditing(row)}
-													>
-														{t('common:action.edit')}
-													</Button>
-												) : null}
-												{canVerify && row.filingStatus === 'draft' ? (
-													<Button
-														variant='outline'
-														size='sm'
-														className='mr-1'
-														disabled={transition.isPending}
-														onClick={() =>
-															void transition.mutateAsync({
-																id: row.id,
-																to: 'verified',
-															})
-														}
-													>
-														{t('tax:records.verify')}
-													</Button>
-												) : null}
-												{canVerify && row.filingStatus === 'verified' ? (
-													<Button
-														variant='outline'
-														size='sm'
-														disabled={transition.isPending}
-														onClick={() =>
-															void transition.mutateAsync({
-																id: row.id,
-																to: 'filed',
-															})
-														}
-													>
-														{t('tax:records.file')}
-													</Button>
-												) : null}
-											</td>
-										) : null}
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
-					<PaginationControls
-						page={page}
-						totalPages={data.pagination.totalPages}
-						onPageChange={(next) =>
-							void navigate({ search: (prev) => ({ ...prev, page: next }) })
-						}
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+						bordered
 					/>
+					{data ? (
+						<PaginationControls
+							page={page}
+							totalPages={data.pagination.totalPages}
+							onPageChange={(next) =>
+								void navigate({ search: (prev) => ({ ...prev, page: next }) })
+							}
+						/>
+					) : null}
 				</>
 			)}
 
