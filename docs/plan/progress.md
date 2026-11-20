@@ -12,6 +12,78 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0092 + ERP-0093: ticket thread gaps, project-stage notices
+
+Same branch, after ERP-0081 (`11c78a00`). User: finish the chat/ticket gaps
+(1) and project-stage notifications (2).
+
+**Numbering and main.** Checking numbers found `origin/main` 25+ commits
+ahead with the ADR-0024 DB refactor (`aftersales` → `ticket`, `sales` →
+`sale`, portal API `/customers/portal/v1`) and its own ERP-0070..0091, which
+collide with this branch's ERP-0069..0081. User decision (AskUserQuestion):
+continue here **without schema changes**, number new work from **ERP-0092**,
+renumber at merge; ticket **attachments wait** for the port onto main's
+`ticket` module (main's `ticket_messages` has no attachments either).
+
+**Gate 1.** `docs/database/docs.dbml` After-Sales
+(`service_tickets`, `service_ticket_comments`), Notification
+(`notification_templates`: no code CHECK), Projects read. `docs/database/`
+reviewed and **unchanged**: template codes are TypeScript constants + seed
+rows, no table/column/check changed.
+
+**Gate 2 (manual grill, answers).** Who hears the customer: the assignee;
+unassigned → the customer's account manager **if active staff** (a
+self-registered individual owns their own CRM customer — same rule as online
+orders); otherwise the ticket managers (`service_ticket:assign`) of every
+organization (tickets are company-wide). Duplicates: the notification job id
+was (template, user, sourceId) for 1 h, so a second reply on one ticket was
+silently dropped (also ERP-0077's `portal.ticket_replied`) → producers pass
+`dedupeKey` (message id; `<project>-<stage>`). Realtime: no socket for the
+portal; the open ticket polls every 15 s and reloads only when nothing is
+typed. Attachments: pickers hidden (`TICKET_ATTACHMENTS_ENABLED = false`)
+instead of dropping files silently. Project notices: on a stage change in
+`update` and on `close` (warranty = handed over), once per stage.
+
+**Changes.**
+- Notification: codes `aftersales.ticket_opened`,
+  `aftersales.customer_replied`, `aftersales.ticket_confirmed`,
+  `portal.project_stage_changed` (schema constants, seeder, web-admin
+  `notifications` locale en/id, `notificationText`); `TNotifyInput.dedupeKey`
+  → job id; `CustomerPortalNotifier` passes it (+ `project` source).
+- After-Sales `ServiceTicketService`: staff notified on portal ticket,
+  customer reply, confirmation; staff replies to the portal carry the message
+  id as dedupe key.
+- Projects `ProjectService`: `portal.project_stage_changed` on stage change
+  and close.
+- Portal presenter: project notice → `/projects/:id`, stage code read as
+  `portal.stage.*` (api locale `portal.notification.projectStageChanged.*`).
+- Web admin: a ticket notification opens `/projects/tickets/$ticketId`.
+- Portal app: "Our team marked this as fixed / Yes, it's fixed" on resolved
+  tickets (mobile + desktop, `confirmTicket` → `POST
+  /portal/v1/tickets/:id/confirm`), `/support/:id/thread.json` +
+  `scripts/ticket-poll.ts`, attachment pickers hidden.
+
+**Verification.**
+- `bun run typecheck` 6/6; `bun run lint` 0 errors; `bun run test` backend
+  1369/0 (new: staff notices incl. two replies, managers fallback,
+  self-owned individual, job-id dedupe key, project stage notices, portal
+  stage label), web-admin 123/0, locales 98/0; portal `astro check` 0.
+- `bun run drizzle:seed` twice on the local dev DB (127.0.0.1:15432
+  `ims_erp_main`) → complete both times (new templates).
+- Live: Dewi opened `0003/TKT/DEV/XI/26` and replied twice → admin,
+  customer_service, project_manager and owner got "New ticket" and **both**
+  "replied" notices; staff reply + resolve → poll endpoint changed to
+  `awaiting_you, canConfirm`, page showed the confirm box; "Yes, it's fixed"
+  closed the ticket and staff got "confirmed the fix"; Dewi got "New reply".
+  The first run sent staff notices to Dewi herself (self-owned customer) —
+  fixed with the active-staff rule above, re-run clean. Project:
+  `0001/PRJ/DEV/XI/26` created on dev for SO 0002, stage → delivery → portal
+  shows "Your project … moved to the Delivery stage."
+- Not done: a browser click-through of polling; attachments (deferred).
+
+**Next executable task:** end-to-end order test with the user; then plan the
+port of ERP-0069..0093 onto main (module renames, renumbering).
+
 ## 2026-11-20 - ERP-0081: portal security settings (2-step, devices, delete login)
 
 Same branch, after ERP-0080 (`c57c4bb9`). User: keep only what matters and

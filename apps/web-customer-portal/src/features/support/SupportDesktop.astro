@@ -15,6 +15,7 @@ import Timeline from "../../components/customer/Timeline.astro";
 import Media from "../../components/customer/Media.astro";
 import Conversation from "./Conversation.astro";
 import ChatComposer from "./ChatComposer";
+import ConfirmFix from "./ConfirmFix.astro";
 import { ticketChip } from "../../lib/status";
 import { firstReply, priorityLabel } from "../../lib/support";
 
@@ -163,6 +164,7 @@ const pane = "rounded-card bg-white ring-1 ring-border ring-inset";
             </header>
             <div class="min-h-0 flex-1 overflow-y-auto" data-thread>
               <Conversation messages={ticket.messages} latestId="latest-pane" class="p-6" />
+              {ticket.canConfirm && <ConfirmFix ticketId={ticket.id} class="mx-6 mb-4" />}
             </div>
             {
               open ? (

@@ -456,7 +456,14 @@ const PORTAL_NOTICES = {
 	'portal.invoice_issued': { key: 'invoiceIssued', kind: 'payment', href: (id: string) => `/payments/${id}` },
 	'portal.payment_received': { key: 'paymentReceived', kind: 'payment', href: (id: string) => `/payments/${id}` },
 	'portal.ticket_replied': { key: 'ticketReplied', kind: 'support', href: (id: string) => `/support/${id}` },
+	'portal.project_stage_changed': { key: 'projectStageChanged', kind: 'project', href: (id: string) => `/projects/${id}` },
 } as const;
+
+/** Variables in the reader's language: a project stage code becomes its label (ERP-0093). */
+function noticeVariables(p: TPresenter, variables: Record<string, string>): Record<string, string> {
+	const stage = variables.stage as ProjectStage | undefined;
+	return stage && (PROJECT_STAGES as readonly string[]).includes(stage) ? { ...variables, stage: p.t(`portal.stage.${stage}` as const) } : variables;
+}
 
 const jakartaDay = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(value);
 
@@ -464,7 +471,7 @@ const jakartaDay = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZone:
 export function portalNotification(p: TPresenter, notification: TNotificationView) {
 	const notice = PORTAL_NOTICES[notification.templateCode as keyof typeof PORTAL_NOTICES];
 	if (!notice) return null;
-	const variables = notification.variables ?? {};
+	const variables = noticeVariables(p, notification.variables ?? {});
 	const created = new Date(notification.createdAt);
 	const text = (part: 'title' | 'body') => p.t(`portal.notification.${notice.key}.${part}` as const, variables as never) as string;
 	return {

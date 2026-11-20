@@ -2,6 +2,7 @@ import * as React from "react";
 import { actions, isInputError } from "astro:actions";
 import { Camera, FileText, Paperclip, SendHorizontal, X } from "lucide-react";
 import { cn } from "cn";
+import { TICKET_ATTACHMENTS_ENABLED } from "@/lib/support";
 
 /**
  * 08.03 composer + quick replies. Messages (with up to 3 photo/PDF attachments) go
@@ -107,17 +108,21 @@ export default function ChatComposer({ ticketId, agentFirstName, quickReplies, v
             </ul>
           )}
           <div className="flex items-center gap-2">
-            <input ref={fileInput} type="file" accept={ACCEPT} multiple hidden onChange={(e) => (addFiles(e.target.files), (e.target.value = ""))} />
-            <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => (addFiles(e.target.files), (e.target.value = ""))} />
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              disabled={pending || files.length >= MAX_FILES}
-              aria-label="Attach photo or PDF"
-              className="flex size-11 shrink-0 items-center justify-center rounded-pill bg-surface text-fg hover:bg-surface-2 disabled:text-fg-muted"
-            >
-              <Paperclip className="size-5" aria-hidden="true" />
-            </button>
+            {TICKET_ATTACHMENTS_ENABLED && (
+              <>
+                <input ref={fileInput} type="file" accept={ACCEPT} multiple hidden onChange={(e) => (addFiles(e.target.files), (e.target.value = ""))} />
+                <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => (addFiles(e.target.files), (e.target.value = ""))} />
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={pending || files.length >= MAX_FILES}
+                  aria-label="Attach photo or PDF"
+                  className="flex size-11 shrink-0 items-center justify-center rounded-pill bg-surface text-fg hover:bg-surface-2 disabled:text-fg-muted"
+                >
+                  <Paperclip className="size-5" aria-hidden="true" />
+                </button>
+              </>
+            )}
             <label className="flex h-11 min-w-0 flex-1 items-center gap-2.5 rounded-pill bg-surface px-4 focus-within:ring-[1.5px] focus-within:ring-blue-600">
               <span className="sr-only">Message {agentFirstName}</span>
               <input
@@ -127,15 +132,17 @@ export default function ChatComposer({ ticketId, agentFirstName, quickReplies, v
                 placeholder={`Message ${agentFirstName}…`}
                 className="min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-fg-muted"
               />
-              <button
-                type="button"
-                onClick={() => cameraInput.current?.click()}
-                disabled={pending || files.length >= MAX_FILES}
-                aria-label="Take a photo"
-                className="shrink-0 text-fg-muted hover:text-fg disabled:opacity-50 md:hidden"
-              >
-                <Camera className="size-[18px]" aria-hidden="true" />
-              </button>
+              {TICKET_ATTACHMENTS_ENABLED && (
+                <button
+                  type="button"
+                  onClick={() => cameraInput.current?.click()}
+                  disabled={pending || files.length >= MAX_FILES}
+                  aria-label="Take a photo"
+                  className="shrink-0 text-fg-muted hover:text-fg disabled:opacity-50 md:hidden"
+                >
+                  <Camera className="size-[18px]" aria-hidden="true" />
+                </button>
+              )}
             </label>
             <button
               type="submit"

@@ -1,0 +1,29 @@
+---
+import { actions } from "astro:actions";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+
+/**
+ * A resolved ticket waits for the customer (ERP-0092): confirm the fix (the ticket
+ * closes) or reply below that it is not fixed yet.
+ */
+type Props = { ticketId: string; class?: string };
+const { ticketId, class: className } = Astro.props;
+const result = Astro.getActionResult(actions.portal.confirmTicket);
+---
+
+<section class:list={["flex flex-col gap-3 rounded-card bg-success-bg p-4 ring-1 ring-success-border ring-inset", className]} aria-labelledby={`confirm-${ticketId}`}>
+  <div class="flex items-start gap-2.5">
+    <CircleCheck size={20} class="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+    <div class="flex flex-col gap-1">
+      <h2 id={`confirm-${ticketId}`} class="text-[14.5px] font-bold text-fg">Our team marked this as fixed</h2>
+      <p class="text-[13px] leading-[1.45] text-fg-secondary">Is everything working again? Confirm to close the ticket, or reply below if it still needs work.</p>
+    </div>
+  </div>
+  {result?.error && <p role="alert" class="text-[13px] font-semibold text-danger">{result.error.message}</p>}
+  <form method="POST" action={actions.portal.confirmTicket}>
+    <input type="hidden" name="ticket" value={ticketId} />
+    <button type="submit" class="flex h-11 w-full items-center justify-center rounded-control bg-success text-[14.5px] font-semibold text-white hover:opacity-90">
+      Yes, it's fixed
+    </button>
+  </form>
+</section>

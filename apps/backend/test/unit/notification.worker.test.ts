@@ -138,6 +138,13 @@ describe('notificationJobId', () => {
 		expect(first).not.toContain(':');
 	});
 
+	test('a dedupe key tells events of one source apart (ERP-0092: messages of a ticket)', () => {
+		const first = notificationJobId({ templateCode: 'portal.ticket_replied', userId: 'user-1', sourceId: 'ticket-1', dedupeKey: 'message-1' });
+		const second = notificationJobId({ templateCode: 'portal.ticket_replied', userId: 'user-1', sourceId: 'ticket-1', dedupeKey: 'message-2' });
+		expect(first).toBe('notification-portal.ticket_replied-user-1-message-1');
+		expect(second).not.toBe(first);
+	});
+
 	test('without a source id, hashes the variables so replays dedupe', () => {
 		const variables = { organizationName: 'Entragate', role: 'member' };
 		const first = notificationJobId({

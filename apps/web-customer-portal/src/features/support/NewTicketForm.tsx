@@ -1,7 +1,7 @@
 import * as React from "react";
 import { actions, isInputError } from "astro:actions";
 import { Camera, Ellipsis, HardHat, MonitorCog, Package, Receipt, Send, ShieldCheck, Type, Wrench, X } from "lucide-react";
-import { firstReply } from "@/lib/support";
+import { firstReply, TICKET_ATTACHMENTS_ENABLED } from "@/lib/support";
 import { errorText, fieldBox, fieldInput, fieldLabel, primaryButton } from "../../components/customer/formStyles";
 
 /** 08.02 Create Ticket. Submits through actions.portal.createTicket, then shows 08.02b. */
@@ -195,6 +195,7 @@ export default function NewTicketForm({ products, initialProduct, initialCategor
         {errors.description && <p id="description-error" className={errorText}>{errors.description}</p>}
       </div>
 
+      {TICKET_ATTACHMENTS_ENABLED && (
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-2.5">
           <span className={fieldLabel}>Photos &amp; videos</span>
@@ -237,6 +238,7 @@ export default function NewTicketForm({ products, initialProduct, initialCategor
         </div>
         {errors.photos && <p className={errorText}>{errors.photos}</p>}
       </div>
+      )}
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white/96 shadow-[0_-8px_24px_#0A1A3F14] backdrop-blur-[20px]">
         <div className="app-column flex flex-col gap-2.5 px-5 pt-3.5 pb-safe">

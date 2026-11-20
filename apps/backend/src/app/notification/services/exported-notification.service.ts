@@ -21,6 +21,12 @@ export type TNotifyInput = {
 	sourceType?: string;
 	/** Producer entity id; also makes the job id deterministic. */
 	sourceId?: string;
+	/**
+	 * One event of a source that has many (ERP-0092: one message of a ticket).
+	 * Replaces `sourceId` in the job id, so a second message is not taken for a
+	 * replay of the first.
+	 */
+	dedupeKey?: string;
 	/** Navigation extras (deep link); never used for authorization. */
 	metadata?: Record<string, unknown>;
 };
@@ -38,6 +44,7 @@ export function toNotificationSendJob(
 		sourceType: input.sourceType ?? null,
 		sourceId: input.sourceId ?? null,
 		metadata: input.metadata ?? null,
+		...(input.dedupeKey ? { dedupeKey: input.dedupeKey } : {}),
 	};
 }
 

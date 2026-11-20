@@ -28,6 +28,8 @@ export type NotificationSendJobData = {
 	sourceType: string | null;
 	sourceId: string | null;
 	metadata: Record<string, unknown> | null;
+	/** Distinct event of the same source; used for the job id only (ERP-0092). */
+	dedupeKey?: string;
 };
 
 export const notificationQueue = new Queue<NotificationSendJobData>(
@@ -48,13 +50,14 @@ export function notificationJobId(input: {
 	templateCode: string;
 	userId: string;
 	sourceId?: string | null;
+	dedupeKey?: string;
 	variables?: Record<string, string>;
 }): string {
 	// NOTE: BullMQ reserves ':' in custom job ids (repeatable-job key
 	// delimiter), so the separator is a dash. The event's `sourceId` is the
 	// preferred suffix; without one the variables are hashed so a replayed
 	// producer call dedupes while two different organizations do not collide.
-	const suffix = input.sourceId ?? hashVariables(input.variables ?? {});
+	const suffix = input.dedupeKey ?? input.sourceId ?? hashVariables(input.variables ?? {});
 	return `notification-${input.templateCode}-${input.userId}-${suffix}`;
 }
 

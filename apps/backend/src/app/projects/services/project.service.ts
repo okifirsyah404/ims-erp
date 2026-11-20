@@ -4,7 +4,8 @@ import type { CodeNumberService } from '@app/code-number';
 import type { OrganizationService } from '@app/organization/services/organization.service';
 import { SALES_FULFILMENT_SERVICE_TOKEN } from '@app/sales/constants/di';
 import type { SalesFulfilmentService } from '@app/sales/services/sales-fulfilment.service';
-import { USER_SERVICE_TOKEN } from '@app/user/constants/di';
+import { CUSTOMER_PORTAL_NOTIFIER_TOKEN, USER_SERVICE_TOKEN } from '@app/user/constants/di';
+import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import type { UserService } from '@app/user/services/user.service';
 import { type IPermissionResolver, PERMISSION_RESOLVER_TOKEN } from '@authorization/permission-resolver';
 import { isUniqueViolation } from '@drizzle/errors';
@@ -142,7 +143,22 @@ export class ProjectService {
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
 		@inject(OBJECT_STORAGE_TOKEN) private readonly storage: Pick<IObjectStorage, 'put' | 'presignGet'>,
+		/** ERP-0093: tells the customer's portal logins when the project moves on. */
+		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
 	) {}
+
+	/** The customer hears that the project reached a stage (once per stage). */
+	private async stageReached(project: TProjectSelect): Promise<void> {
+		await this.portalNotifier.notify({
+			customerId: project.customerId,
+			templateCode: 'portal.project_stage_changed',
+			variables: { projectCode: project.code, projectName: project.title, stage: project.stage },
+			sourceType: 'project',
+			sourceId: project.id,
+			tags: [project.code],
+			dedupeKey: `${project.id}-${project.stage}`,
+		});
+	}
 
 	// Visibility -------------------------------------------------------------
 
@@ -339,7 +355,7 @@ export class ProjectService {
 	}
 
 	async update(ctx: TProjectContext, id: string, body: TUpdateProjectRequest): Promise<TProjectSelect> {
-		await this.requireActive(ctx, id);
+		const previousStage = (await this.requireActive(ctx, id)).stage;
 		await this.assertPic(ctx, body.picUserId);
 		if (body.targetStartDate && body.targetEndDate && body.targetEndDate < body.targetStartDate) throw new ProjectDatesError();
 		const updated = await this.repository.update(id, {
@@ -352,6 +368,7 @@ export class ProjectService {
 			notes: body.notes,
 		});
 		if (!updated) throw new ProjectNotActiveError();
+		if (updated.stage !== previousStage) await this.stageReached(updated);
 		return updated;
 	}
 
@@ -368,6 +385,7 @@ export class ProjectService {
 			closedAt: new Date(),
 		});
 		if (!closed) throw new ProjectNotActiveError();
+		await this.stageReached(closed);
 		return closed;
 	}
 

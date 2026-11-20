@@ -23,6 +23,12 @@ const notifications = {
 	'template.sales.invoiceIssued.title': 'Invoice {{invoiceNumber}} diterbitkan',
 	'template.sales.invoiceIssued.body':
 		'Invoice {{invoiceNumber}} untuk {{customerName}} diterbitkan sebesar {{amount}}.',
+	'template.aftersales.ticketOpened.title': 'Tiket baru {{ticketNumber}} dari {{customerName}}',
+	'template.aftersales.ticketOpened.body': '{{customerName}} membuka {{ticketNumber}} di portal pelanggan: {{subject}}',
+	'template.aftersales.customerReplied.title': '{{author}} membalas di {{ticketNumber}}',
+	'template.aftersales.customerReplied.body': '{{author}} ({{customerName}}) menulis di tiket {{ticketNumber}}: {{message}}',
+	'template.aftersales.ticketConfirmed.title': '{{customerName}} mengonfirmasi perbaikan {{ticketNumber}}',
+	'template.aftersales.ticketConfirmed.body': '{{confirmedBy}} mengonfirmasi di portal pelanggan bahwa tiket {{ticketNumber}} sudah beres. Tiket ditutup.',
 	'template.sales.onlineOrderReceived.title': 'Pesanan online {{quotationNumber}} dari {{customerName}}',
 	'template.sales.onlineOrderReceived.body':
 		'{{customerName}} memesan secara online ({{amount}}). Periksa dan ajukan draf SPH {{quotationNumber}}.',

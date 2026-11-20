@@ -1,5 +1,11 @@
 import { type TicketPriority } from "@/api/portal";
 
+/**
+ * Photos and files on tickets wait for the ticket module on main (user decision
+ * 2026-11-20); until then the pickers stay hidden so nothing is silently dropped.
+ */
+export const TICKET_ATTACHMENTS_ENABLED = false;
+
 /** Target first-reply time per ticket priority (shown on 08.02 / 08.02b). */
 export const firstReply: Record<TicketPriority, string> = { low: "< 1 working day", normal: "< 4 hours", urgent: "< 1 hour" };
 

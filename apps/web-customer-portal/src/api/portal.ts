@@ -226,6 +226,8 @@ export type TicketDetail = TicketSummary & {
   device?: { name: string; serial: string; image?: string };
   /** Ticket lifecycle shown in the desktop details pane (06.06). */
   activity?: TimelineEvent[];
+  /** The fix waits for the customer's confirmation (ERP-0092). */
+  canConfirm?: boolean;
 };
 
 export type CreateTicketInput = {
@@ -475,6 +477,8 @@ export interface PortalSource {
   getTicket(session: AuthTokens, id: string): Promise<TicketDetail | null>;
   createTicket(session: AuthTokens, input: CreateTicketInput, photos: File[]): Promise<{ id: string; number: string }>;
   postTicketMessage(session: AuthTokens, id: string, text: string, files?: File[]): Promise<void>;
+  /** The customer confirms a resolved ticket's fix; the ticket closes (ERP-0092). */
+  confirmTicket(session: AuthTokens, id: string): Promise<void>;
   listProducts(session: AuthTokens): Promise<RegisteredProduct[]>;
   getWarranty(session: AuthTokens, productId: string): Promise<WarrantyDetail | null>;
   lookupDevice(session: AuthTokens, serial: string): Promise<DeviceLookup | null>;
@@ -696,6 +700,7 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     },
     listTickets: (s) => get("listTickets", s),
     getTicket: (s, id) => orNull(get("getTicket", s, { id })),
+    confirmTicket: (s, id) => post("confirmTicket", s, {}, { id }),
     async createTicket(s, input, photos) {
       const form = new FormData();
       form.set("payload", JSON.stringify(input));

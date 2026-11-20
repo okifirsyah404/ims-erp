@@ -347,6 +347,8 @@ const api: Record<keyof typeof en, string> = {
 	'portal.notification.paymentReceived.body': 'Kami menerima {{amount}} untuk faktur {{invoiceNumber}}. Terima kasih.',
 	'portal.notification.ticketReplied.title': 'Balasan baru di tiket {{ticketNumber}}',
 	'portal.notification.ticketReplied.body': '{{author}} membalas tiket dukungan {{ticketNumber}} Anda.',
+	'portal.notification.projectStageChanged.title': 'Proyek {{projectCode}}: {{stage}}',
+	'portal.notification.projectStageChanged.body': 'Proyek Anda {{projectName}} masuk tahap {{stage}}.',
 	'portal.documents.folder.invoices': 'Faktur',
 	'portal.documents.folder.quotations': 'Penawaran',
 	'portal.documents.folder.warranty': 'Garansi',

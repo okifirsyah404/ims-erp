@@ -624,6 +624,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Ticket thread gaps — ERP-0092 (2026-11-20): staff notified of the customer's
+  side, confirm-fix button, thread auto-refresh; attachments deferred to the
+  port onto main. Project-stage notices to the customer — ERP-0093. Evidence:
+  `test/unit/customer-portal.test.ts`, `project.service.test.ts`,
+  `progress.md` 2026-11-20 ERP-0092 + ERP-0093.
 - Portal security settings — ERP-0081 (2026-11-20): 2-step sign-in by email
   code, active devices, delete own login (last business owner cannot); unused
   settings removed. Evidence: `test/unit/customer-portal.test.ts`,

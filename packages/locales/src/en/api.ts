@@ -350,6 +350,8 @@ const api = {
 	'portal.notification.paymentReceived.body': 'We received {{amount}} for invoice {{invoiceNumber}}. Thank you.',
 	'portal.notification.ticketReplied.title': 'New reply on ticket {{ticketNumber}}',
 	'portal.notification.ticketReplied.body': '{{author}} replied to your support ticket {{ticketNumber}}.',
+	'portal.notification.projectStageChanged.title': 'Project {{projectCode}}: {{stage}}',
+	'portal.notification.projectStageChanged.body': 'Your project {{projectName}} moved to the {{stage}} stage.',
 	'portal.documents.folder.invoices': 'Invoices',
 	'portal.documents.folder.quotations': 'Quotations',
 	'portal.documents.folder.warranty': 'Warranty',

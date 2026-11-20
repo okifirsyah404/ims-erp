@@ -361,6 +361,18 @@ export const server = {
       },
     }),
 
+    /** The customer confirms the fix of a resolved ticket (ERP-0092). */
+    confirmTicket: defineAction({
+      accept: "form",
+      input: z.object({ ticket: z.string().max(40) }),
+      handler: async (input, context) => {
+        const tokens = requireAuth(context);
+        await call(() => portal.confirmTicket(tokens, input.ticket));
+        context.session?.set("flash", { tone: "success", title: "Thanks for confirming", description: "The ticket is closed. Open a new one if the issue comes back." });
+        return { ok: true };
+      },
+    }),
+
     bookService: defineAction({
       accept: "form",
       input: z.object({

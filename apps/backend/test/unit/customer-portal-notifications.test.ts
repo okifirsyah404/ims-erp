@@ -91,5 +91,14 @@ describe('portal notification view', () => {
 
 	test('a staff template is not shown in the portal', () => {
 		expect(portalNotification(p, row({ templateCode: 'sales.invoice_issued' }))).toBeNull();
+		expect(portalNotification(p, row({ templateCode: 'aftersales.customer_replied' }))).toBeNull();
+	});
+
+	test('a project stage notice links the project and reads the stage in the reader language (ERP-0093)', () => {
+		const seen: unknown[] = [];
+		const reader = { ...p, t: (key: string, options?: unknown) => (seen.push([key, options]), key) } as unknown as TPresenter;
+		const notice = portalNotification(reader, row({ templateCode: 'portal.project_stage_changed', sourceId: 'pr-1', variables: { projectCode: 'PRJ-1', projectName: 'Lobi', stage: 'testing' } }));
+		expect(notice).toMatchObject({ kind: 'project', href: '/projects/pr-1' });
+		expect(seen).toContainEqual(['portal.notification.projectStageChanged.title', { projectCode: 'PRJ-1', projectName: 'Lobi', stage: 'portal.stage.testing' }]);
 	});
 });

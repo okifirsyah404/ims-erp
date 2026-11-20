@@ -11,9 +11,11 @@ export type TCustomerNotice = {
 	customerId: string | null | undefined;
 	templateCode: Extract<NotificationTemplateCode, `portal.${string}`>;
 	variables: Record<string, string>;
-	sourceType: 'quotation' | 'sales_order' | 'invoice' | 'service_ticket';
+	sourceType: 'quotation' | 'sales_order' | 'invoice' | 'service_ticket' | 'project';
 	sourceId: string;
 	tags?: string[];
+	/** One event of a source with many (a message of a ticket); see `TNotifyInput.dedupeKey`. */
+	dedupeKey?: string;
 };
 
 /**
@@ -43,6 +45,7 @@ export class CustomerPortalNotifier {
 				tags: notice.tags ?? [],
 				sourceType: notice.sourceType,
 				sourceId: notice.sourceId,
+				...(notice.dedupeKey ? { dedupeKey: notice.dedupeKey } : {}),
 			});
 		} catch (error) {
 			pinoLogger.error({ err: error, templateCode: notice.templateCode, sourceId: notice.sourceId }, 'customer portal notification failed');

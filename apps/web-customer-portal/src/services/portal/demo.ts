@@ -263,6 +263,7 @@ export const demoSource: PortalSource = {
     if (text) list.push({ kind: "message", id: crypto.randomUUID(), from: "customer", text, time: time(), read: false });
     state.messages.set(id, list);
   },
+  async confirmTicket() {},
   async listProducts() {
     return data.products;
   },

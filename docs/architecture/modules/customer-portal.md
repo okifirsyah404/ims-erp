@@ -59,6 +59,7 @@ document at `/docs` (tag "Customer portal").
 | `requestPasswordReset` | `POST /portal/v1/auth/password-reset` | `{ email }`; always 200 |
 | `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | `{ token, password (12-128) }`; 400 invalid/expired. Also sets the first password after an invitation |
 | `logout` | `POST /portal/v1/auth/logout` | session cookie; answers a clearing `Set-Cookie` |
+| `confirmTicket` | `POST /portal/v1/tickets/:id/confirm` | ERP-0092: the customer confirms a resolved ticket's fix → closed (channel `portal`); the assignee (or account manager / ticket managers) is notified. Ticket replies and new portal tickets notify staff too; the open ticket page polls the portal app's `/support/:id/thread.json` every 15 s. Ticket attachments are not stored yet (pickers hidden) |
 | `changePassword` | `POST /portal/v1/account/password` | `{ current, next (12-128) }`; 400 wrong current |
 | `listDevices` | `GET /portal/v1/account/devices` | ERP-0081: Better Auth sessions of the login `{ id, userAgent, ipAddress, createdAt, updatedAt, current }`; never the session token. The portal server forwards the visitor's `User-Agent` / `X-Forwarded-For` on sign-in |
 | `revokeDevice` | `DELETE /portal/v1/account/devices/:id` | by session id (the token is looked up server-side); 404 when gone or another login's |

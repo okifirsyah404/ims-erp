@@ -54,6 +54,11 @@ function navigateToSource(
 	// ERP-0070: online orders and customer answers point at the SPH.
 	if (notification.sourceType === 'quotation' && notification.sourceId) {
 		void navigate({ to: '/sales/quotes/$quotationId', params: { quotationId: notification.sourceId } });
+		return;
+	}
+	// ERP-0092: the customer's side of a service ticket opens the ticket.
+	if (notification.sourceType === 'service_ticket' && notification.sourceId) {
+		void navigate({ to: '/projects/tickets/$ticketId', params: { ticketId: notification.sourceId } });
 	}
 }
 

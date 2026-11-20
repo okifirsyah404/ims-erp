@@ -23,6 +23,12 @@ const notifications = {
 	'template.sales.invoiceIssued.title': 'Invoice {{invoiceNumber}} issued',
 	'template.sales.invoiceIssued.body':
 		'Invoice {{invoiceNumber}} for {{customerName}} was issued for {{amount}}.',
+	'template.aftersales.ticketOpened.title': 'New ticket {{ticketNumber}} from {{customerName}}',
+	'template.aftersales.ticketOpened.body': '{{customerName}} opened {{ticketNumber}} in the customer portal: {{subject}}',
+	'template.aftersales.customerReplied.title': '{{author}} replied on {{ticketNumber}}',
+	'template.aftersales.customerReplied.body': '{{author}} ({{customerName}}) wrote on ticket {{ticketNumber}}: {{message}}',
+	'template.aftersales.ticketConfirmed.title': '{{customerName}} confirmed the fix of {{ticketNumber}}',
+	'template.aftersales.ticketConfirmed.body': '{{confirmedBy}} confirmed in the customer portal that ticket {{ticketNumber}} is fixed. The ticket is closed.',
 	'template.sales.onlineOrderReceived.title': 'Online order {{quotationNumber}} from {{customerName}}',
 	'template.sales.onlineOrderReceived.body':
 		'{{customerName}} ordered online ({{amount}}). Review and submit draft SPH {{quotationNumber}}.',

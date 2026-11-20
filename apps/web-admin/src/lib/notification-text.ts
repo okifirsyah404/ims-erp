@@ -66,6 +66,43 @@ export function notificationText(
 					amount: variables.amount ?? '',
 				}),
 			};
+		// ERP-0092: the customer's side of a service ticket.
+		case 'aftersales.ticket_opened':
+			return {
+				title: t('template.aftersales.ticketOpened.title', {
+					ticketNumber: variables.ticketNumber ?? '',
+					customerName: variables.customerName ?? '',
+				}),
+				body: t('template.aftersales.ticketOpened.body', {
+					ticketNumber: variables.ticketNumber ?? '',
+					customerName: variables.customerName ?? '',
+					subject: variables.subject ?? '',
+				}),
+			};
+		case 'aftersales.customer_replied':
+			return {
+				title: t('template.aftersales.customerReplied.title', {
+					ticketNumber: variables.ticketNumber ?? '',
+					author: variables.author ?? '',
+				}),
+				body: t('template.aftersales.customerReplied.body', {
+					ticketNumber: variables.ticketNumber ?? '',
+					customerName: variables.customerName ?? '',
+					author: variables.author ?? '',
+					message: variables.message ?? '',
+				}),
+			};
+		case 'aftersales.ticket_confirmed':
+			return {
+				title: t('template.aftersales.ticketConfirmed.title', {
+					ticketNumber: variables.ticketNumber ?? '',
+					customerName: variables.customerName ?? '',
+				}),
+				body: t('template.aftersales.ticketConfirmed.body', {
+					ticketNumber: variables.ticketNumber ?? '',
+					confirmedBy: variables.confirmedBy ?? '',
+				}),
+			};
 		case 'sales.online_order_received':
 			return {
 				title: t('template.sales.onlineOrderReceived.title', {

@@ -98,6 +98,36 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		variables: ['ticketNumber', 'author'],
 	},
 	{
+		// Customer portal (ERP-0093): the portal renders its own localized copy (stage label included).
+		code: 'portal.project_stage_changed',
+		name: 'Project … moved to a new stage',
+		subjectTemplate: 'Project {{projectCode}} is now in {{stage}}',
+		bodyTemplate: 'Your project {{projectName}} ({{projectCode}}) moved to the {{stage}} stage.',
+		variables: ['projectCode', 'projectName', 'stage'],
+	},
+	{
+		// ERP-0092: staff hear about the customer's side of a service ticket.
+		code: 'aftersales.ticket_opened',
+		name: 'New ticket from the customer portal',
+		subjectTemplate: 'New ticket {{ticketNumber}} from {{customerName}}',
+		bodyTemplate: '{{customerName}} opened {{ticketNumber}} in the customer portal: {{subject}}',
+		variables: ['ticketNumber', 'customerName', 'subject'],
+	},
+	{
+		code: 'aftersales.customer_replied',
+		name: 'Customer replied on a ticket',
+		subjectTemplate: '{{author}} replied on {{ticketNumber}}',
+		bodyTemplate: '{{author}} ({{customerName}}) wrote on ticket {{ticketNumber}}: {{message}}',
+		variables: ['ticketNumber', 'customerName', 'author', 'message'],
+	},
+	{
+		code: 'aftersales.ticket_confirmed',
+		name: 'Customer confirmed a ticket fix',
+		subjectTemplate: '{{customerName}} confirmed the fix of {{ticketNumber}}',
+		bodyTemplate: '{{confirmedBy}} confirmed in the customer portal that ticket {{ticketNumber}} is fixed. The ticket is closed.',
+		variables: ['ticketNumber', 'customerName', 'confirmedBy'],
+	},
+	{
 		code: 'crm.company_change_requested',
 		name: 'Company data change requested in the customer portal',
 		subjectTemplate: '{{customerName}} asked to change company data',

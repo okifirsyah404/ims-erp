@@ -1,3 +1,5 @@
+import { EXPORTED_NOTIFICATION_SERVICE_TOKEN } from '@app/notification/constants/di';
+import type { ExportedNotificationService } from '@app/notification/services/exported-notification.service';
 import { CUSTOMER_PORTAL_NOTIFIER_TOKEN } from '@app/user/constants/di';
 import type { CustomerPortalNotifier } from '@app/user/services/customer-portal-notifier.service';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
@@ -74,7 +76,8 @@ export class ServiceTicketService {
 		@inject(WARRANTY_SERVICE_TOKEN) private readonly warranty: Pick<WarrantyService, 'check'>,
 		@inject(CUSTOMER_SERVICE_TOKEN) private readonly customers: Pick<CustomerService, 'getActiveCustomer'>,
 		@inject(PROJECT_LOOKUP_SERVICE_TOKEN) private readonly projects: Pick<ProjectLookupService, 'getProject'>,
-		@inject(ORGANIZATION_SERVICE_TOKEN) private readonly organizations: Pick<OrganizationService, 'getMemberRole' | 'listMembers'>,
+		@inject(ORGANIZATION_SERVICE_TOKEN)
+		private readonly organizations: Pick<OrganizationService, 'getMemberRole' | 'listMembers' | 'listOrganizations'>,
 		@inject(PERMISSION_RESOLVER_TOKEN) private readonly permissions: Pick<IPermissionResolver, 'hasPermission'>,
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
 		@inject(CODE_NUMBER_SERVICE_TOKEN) private readonly numbering: Pick<CodeNumberService, 'next'>,
@@ -85,7 +88,60 @@ export class ServiceTicketService {
 		@inject(SERVICE_TICKET_COMMENT_REPOSITORY_TOKEN) private readonly comments: IServiceTicketCommentRepository,
 		/** ERP-0077: tells the customer's portal logins. */
 		@inject(CUSTOMER_PORTAL_NOTIFIER_TOKEN) private readonly portalNotifier: Pick<CustomerPortalNotifier, 'notify'>,
+		/** ERP-0092: tells staff what the customer did in the portal. */
+		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN) private readonly staffNotifier: Pick<ExportedNotificationService, 'notify'>,
 	) {}
+
+	/**
+	 * Tells staff about the customer's side of a ticket (ERP-0092): the
+	 * assignee; while nobody is assigned the customer's account manager; and
+	 * without one (a self-registered individual) the ticket managers.
+	 * Never fails the customer's action.
+	 */
+	private async notifyStaff(
+		ticket: TServiceTicketSelect,
+		templateCode: 'aftersales.ticket_opened' | 'aftersales.customer_replied' | 'aftersales.ticket_confirmed',
+		variables: Record<string, string>,
+		dedupeKey?: string,
+	): Promise<void> {
+		const customer = await this.customers.getActiveCustomer(ticket.customerId).catch(() => null);
+		// An individual who signed up owns their own CRM customer: that is not an account manager.
+		const named = ticket.assigneeUserId ?? (await this.activeStaff(customer?.ownerUserId));
+		const recipients = named ? [named] : await this.ticketManagers().catch(() => []);
+		if (recipients.length === 0) return;
+		await this.staffNotifier.notify({
+			userIds: recipients,
+			templateCode,
+			variables: { ticketNumber: ticket.code, customerName: customer?.name ?? '', ...variables },
+			tags: [ticket.code],
+			sourceType: 'service_ticket',
+			sourceId: ticket.id,
+			...(dedupeKey ? { dedupeKey } : {}),
+		});
+	}
+
+	/** An active staff user id, or `null` for a portal login (global role `customer`, ADR-0024) or a removed user. */
+	private async activeStaff(userId: string | null | undefined): Promise<string | null> {
+		if (!userId) return null;
+		const user = await this.users.getUser(userId).catch(() => null);
+		if (!user || user.banned || user.deletedAt) return null;
+		const roles = (user.role ?? '').split(',').map((role) => role.trim());
+		return roles.includes('customer') ? null : user.id;
+	}
+
+	/** Members who may assign tickets (`service_ticket:assign`), in every organization (tickets are company-wide). */
+	private async ticketManagers(): Promise<string[]> {
+		const organizations = await this.organizations.listOrganizations({ page: 1, limit: 20 });
+		const managers: string[] = [];
+		for (const organization of organizations.data) {
+			const members = await this.organizations.listMembers(organization.id, { page: 1, limit: 100 });
+			for (const member of members.data) {
+				const roles = member.role.split(',').map((name) => name.trim());
+				if (await this.permissions.hasPermission(organization.id, roles, { service_ticket: ['assign'] })) managers.push(member.userId);
+			}
+		}
+		return managers;
+	}
 
 	private async view(ticket: TServiceTicketSelect): Promise<TTicketView> {
 		const user = ticket.assigneeUserId ? await this.users.getUser(ticket.assigneeUserId) : null;
@@ -274,6 +330,8 @@ export class ServiceTicketService {
 				sourceType: 'service_ticket',
 				sourceId: ticket.id,
 				tags: [ticket.code],
+				// ERP-0092: every reply notifies, not only the first within the job-id window.
+				dedupeKey: comment.id,
 			});
 		}
 		return comment;
@@ -316,6 +374,7 @@ export class ServiceTicketService {
 			complaint: `${body.subject}\n\n${body.description}`.trim(),
 			reportedAt: null,
 		});
+		await this.notifyStaff(ticket, 'aftersales.ticket_opened', { subject: body.subject.slice(0, 200) });
 		return this.getForCustomer(actor.customerId, ticket.id);
 	}
 
@@ -331,6 +390,7 @@ export class ServiceTicketService {
 			body: text,
 			visibility: 'customer',
 		});
+		await this.notifyStaff(ticket, 'aftersales.customer_replied', { author: actor.name, message: text.slice(0, 200) }, comment.id);
 		return this.portalMessage(comment);
 	}
 
@@ -361,6 +421,7 @@ export class ServiceTicketService {
 			issuedOn: businessDateOf(now),
 			issuedByUserId: actor.userId,
 		});
+		await this.notifyStaff(updated, 'aftersales.ticket_confirmed', { confirmedBy: actor.name });
 		return this.getForCustomer(actor.customerId, updated.id);
 	}
 

@@ -62,6 +62,7 @@ beforeEach(() => {
 		{
 			getMemberRole: async (_org, userId) => roles[userId] ?? null,
 			listMembers: async () => ({ meta: { page: 1, limit: 100, total: 3, totalPages: 1 }, data: Object.entries(roles).map(([userId, role]) => ({ userId, role, user: { name: userId } })) }) as never,
+			listOrganizations: async () => ({ meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [{ id: 'org' }] }) as never,
 		},
 		{ hasPermission: async (_org, names) => names.includes('customer_service') || names.includes('technician') },
 		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
@@ -81,6 +82,8 @@ beforeEach(() => {
 		},
 		// ERP-0022 message thread: not exercised here (see customer-portal.test.ts).
 		{ list: async () => [], latestCustomerVisible: async () => new Map(), create: async () => ({}) as never }, { notify: async () => {} },
+		// ERP-0092 staff notifications: asserted in customer-portal.test.ts.
+		{ notify: async () => {} },
 	);
 });
 

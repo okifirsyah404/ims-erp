@@ -37,6 +37,8 @@ let evidence: TProjectEvidenceSelect[];
 let costs: TProjectCostSelect[];
 let roles: Record<string, string>;
 let stored: string[];
+/** ERP-0093: what the customer's portal logins were told. */
+let notices: { templateCode: string; variables: Record<string, string>; dedupeKey?: string }[];
 let service: ProjectService;
 
 const order = {
@@ -146,6 +148,7 @@ beforeEach(() => {
 	evidence = [];
 	costs = [];
 	stored = [];
+	notices = [];
 	roles = { pm: 'project_manager', tech: 'technician', sales: 'sales' };
 	const grants: Record<string, string[]> = { project_manager: ['project:update', 'task:update'], technician: ['task:update'], sales: [] };
 	service = new ProjectService(
@@ -177,6 +180,7 @@ beforeEach(() => {
 			},
 			presignGet: (key: string) => `https://files/${key}`,
 		},
+		{ notify: async (notice) => void notices.push(notice) },
 	);
 });
 
@@ -246,6 +250,12 @@ describe('projects', () => {
 			notes: null,
 		});
 		expect((await service.stats(pm)).overdue).toBe(overdue + 1);
+		// ERP-0093: saving without a stage change tells the customer nothing; a new stage does, once per stage.
+		expect(notices).toEqual([]);
+		await service.update(pm, project.id, { picUserId: 'pm', siteName: null, targetStartDate: null, targetEndDate: '2000-01-01', stage: 'installation', notes: null });
+		expect(notices).toEqual([
+			expect.objectContaining({ templateCode: 'portal.project_stage_changed', variables: expect.objectContaining({ stage: 'installation' }), dedupeKey: `${project.id}-installation` }),
+		]);
 		await service.close(pm, project.id).catch(() => undefined);
 	});
 
@@ -259,6 +269,8 @@ describe('projects', () => {
 		expect((await service.get(pm, project.id)).canClose).toBe(true);
 		const closed = await service.close(pm, project.id);
 		expect(closed).toMatchObject({ status: 'closed', stage: 'warranty' });
+		// ERP-0093: the customer hears about the handover.
+		expect(notices.map((notice) => notice.variables.stage)).toEqual(['warranty']);
 		await expect(upload('testing')).rejects.toBeInstanceOf(ProjectNotActiveError);
 	});
 

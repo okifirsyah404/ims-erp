@@ -512,8 +512,20 @@ describe('portal sign-in', () => {
 
 let tickets: TServiceTicketSelect[];
 let comments: TServiceTicketCommentSelect[];
+/** ERP-0092: what staff and the customer's logins were told. */
+let staffNotices: { userIds: string[]; templateCode: string; variables?: Record<string, string>; sourceId?: string; dedupeKey?: string }[];
+let portalNotices: { templateCode: string; dedupeKey?: string }[];
 
-function ticketService(): ServiceTicketService {
+/** The customers fake with an account manager on every customer. */
+const managedCustomers = {
+	...customers,
+	getActiveCustomer: async (id: string) => {
+		const customer = await customers.getActiveCustomer(id);
+		return customer ? ({ ...(customer as object), ownerUserId: 'am-1' } as never) : null;
+	},
+};
+
+function ticketService(customerFake: typeof managedCustomers = managedCustomers): ServiceTicketService {
 	return new ServiceTicketService(
 		{
 			paginate: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
@@ -532,11 +544,24 @@ function ticketService(): ServiceTicketService {
 		{
 			check: async () => ({ customerId: null, projectId: null, projectCode: null, deviceDescription: null, inWarranty: false, warrantyEndsOn: null, warrantyCode: null }),
 		},
-		customers,
+		customerFake,
 		{ getProject: async () => null },
-		{ getMemberRole: async () => 'customer_service', listMembers: async () => ({ meta: { page: 1, limit: 100, total: 0, totalPages: 0 }, data: [] }) as never },
-		{ hasPermission: async () => true },
-		{ getUser: async (id: string) => ({ id, name: `User ${id}` }) as never },
+		{
+			getMemberRole: async () => 'customer_service',
+			// ERP-0092: one organization with a ticket manager and a technician.
+			listMembers: async () =>
+				({
+					meta: { page: 1, limit: 100, total: 2, totalPages: 1 },
+					data: [
+						{ userId: 'cs-lead', role: 'customer_service' },
+						{ userId: 'tech-9', role: 'technician' },
+					],
+				}) as never,
+			listOrganizations: async () => ({ meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [{ id: 'org' }] }) as never,
+		},
+		{ hasPermission: async (_org, roles, request) => !('service_ticket' in request && request.service_ticket?.includes('assign')) || roles.includes('customer_service') },
+		// `u-*` are portal logins (role `customer`); everyone else is staff.
+		{ getUser: async (id: string) => ({ id, name: `User ${id}`, role: id.startsWith('u-') ? 'customer' : null }) as never },
 		{ next: async () => '0001/TKT/IMS/XI/26' },
 		// M04: ticket events go to the outbox; not under test here.
 		{ publish: async () => {} } as never,
@@ -556,7 +581,9 @@ function ticketService(): ServiceTicketService {
 				comments.push(row);
 				return row;
 			},
-		}, { notify: async () => {} },
+		},
+		{ notify: async (notice) => void portalNotices.push(notice) },
+		{ notify: async (input) => void staffNotices.push(input) },
 	);
 }
 
@@ -569,6 +596,8 @@ describe('portal tickets', () => {
 	beforeEach(() => {
 		tickets = [];
 		comments = [];
+		staffNotices = [];
+		portalNotices = [];
 	});
 
 	test('opened from the portal: channel portal, the login as reporter', async () => {
@@ -627,6 +656,54 @@ describe('portal tickets', () => {
 		expect(tickets[0]!.confirmedByName).toBe('Budi');
 		expect(tickets[0]!.closedBy).toBe('u-a');
 		await expect(service.addCustomerMessage(actorA, ticket.id, 'lagi')).rejects.toBeInstanceOf(TicketStateError);
+	});
+
+	test('staff hear about the customer: new ticket, each reply and the confirmation (ERP-0092)', async () => {
+		const service = ticketService();
+		const ticket = await service.createFromPortal(actorA, { subject: 'Gate macet', description: 'Sejak pagi', projectId: null, serialNumber: null, deviceDescription: null });
+		// Nobody assigned yet: the account manager hears it.
+		expect(staffNotices).toEqual([
+			expect.objectContaining({
+				userIds: ['am-1'],
+				templateCode: 'aftersales.ticket_opened',
+				variables: { ticketNumber: '0001/TKT/IMS/XI/26', customerName: 'PT Alfa', subject: 'Gate macet' },
+				sourceId: ticket.id,
+			}),
+		]);
+		await service.assign(staff, ticket.id, 'tech-1');
+		const first = await service.addCustomerMessage(actorA, ticket.id, 'Halo');
+		const second = await service.addCustomerMessage(actorA, ticket.id, 'Masih macet');
+		const replies = staffNotices.filter((notice) => notice.templateCode === 'aftersales.customer_replied');
+		// The assignee hears each message; distinct keys so the second is not dropped as a replay.
+		expect(replies.map((notice) => [notice.userIds, notice.dedupeKey, notice.variables?.message])).toEqual([
+			[['tech-1'], first.id, 'Halo'],
+			[['tech-1'], second.id, 'Masih macet'],
+		]);
+		await service.addComment(staff, ticket.id, { body: 'Kami cek', visibility: 'customer' });
+		await service.addComment(staff, ticket.id, { body: 'Teknisi berangkat', visibility: 'customer' });
+		expect(new Set(portalNotices.map((notice) => notice.dedupeKey)).size).toBe(2);
+		await service.resolve(staff, ticket.id, { resolution: 'Motor diganti', serviceCost: 0 });
+		await service.confirmFromPortal(actorA, ticket.id);
+		expect(staffNotices[staffNotices.length - 1]).toMatchObject({ userIds: ['tech-1'], templateCode: 'aftersales.ticket_confirmed', variables: { confirmedBy: 'Budi' } });
+	});
+
+	test('no assignee and no account manager: the ticket managers hear it', async () => {
+		const service = ticketService(customers as typeof managedCustomers);
+		await service.createFromPortal(actorA, { subject: 'Gate macet', description: 'Sejak pagi', projectId: null, serialNumber: null, deviceDescription: null });
+		expect(staffNotices.map((notice) => notice.userIds)).toEqual([['cs-lead']]);
+	});
+
+	test("a self-registered individual owns their own customer: staff hear it, never the customer's login", async () => {
+		const selfOwned = {
+			...customers,
+			getActiveCustomer: async (id: string) => {
+				const customer = await customers.getActiveCustomer(id);
+				return customer ? ({ ...(customer as object), ownerUserId: 'u-a' } as never) : null;
+			},
+		};
+		const service = ticketService(selfOwned as typeof managedCustomers);
+		await service.createFromPortal(actorA, { subject: 'Gate macet', description: 'Sejak pagi', projectId: null, serialNumber: null, deviceDescription: null });
+		expect(staffNotices.map((notice) => notice.userIds)).toEqual([['cs-lead']]);
 	});
 });
 

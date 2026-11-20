@@ -10,6 +10,7 @@ import StatusChip from "../../components/customer/StatusChip.astro";
 import ChatComposer from "../../features/support/ChatComposer";
 import Conversation from "../../features/support/Conversation.astro";
 import SupportDesktop from "../../features/support/SupportDesktop.astro";
+import ConfirmFix from "../../features/support/ConfirmFix.astro";
 import { supportService } from "../../services";
 import { filterTickets, priorityLabel } from "../../lib/support";
 import { ticketChip } from "../../lib/status";
@@ -30,6 +31,16 @@ const agentFirstName = ticket.agent.name.split(" ")[0];
 ---
 
 <CustomerLayout title={`${ticket.number} · Support`} section="support" mainClass={open ? "max-xl:!pb-[110px]" : undefined} desktop="full">
+  {/* ERP-0092: the thread checks for new replies every 15 s (see scripts/ticket-poll.ts). */}
+  <span hidden data-ticket-poll={ticket.id} data-messages={ticket.messages.length} data-status={ticket.status} data-can-confirm={String(Boolean(ticket.canConfirm))}></span>
+  <button
+    type="button"
+    hidden
+    data-ticket-news
+    class="fixed top-3 left-1/2 z-40 -translate-x-1/2 rounded-pill bg-blue-600 px-4 py-2 text-[13px] font-semibold text-white shadow-[0_8px_24px_#0A1A3F33]"
+  >
+    New messages · Refresh
+  </button>
   <div class="hidden xl:block">
     <SupportDesktop list={filtered.list} openCount={filtered.open.length} tab={filtered.tab} query={filtered.query} ticket={ticket} whatsapp={whatsapp} />
   </div>
@@ -89,6 +100,7 @@ const agentFirstName = ticket.agent.name.split(" ")[0];
   </header>
 
   <Conversation messages={ticket.messages} class="p-4" />
+  {ticket.canConfirm && <ConfirmFix ticketId={ticket.id} class="mx-4 mb-4" />}
 
   {
     open ? (
@@ -106,6 +118,7 @@ const agentFirstName = ticket.agent.name.split(" ")[0];
 
 <script>
   import "../../scripts/back";
+  import "../../scripts/ticket-poll";
 
   // Land at the newest message, like a native chat.
   const latest = document.getElementById("latest");

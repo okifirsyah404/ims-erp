@@ -51,6 +51,8 @@ export const erpRoutes: PortalRoutes = {
   getTicket: "/portal/v1/tickets/:id",
   createTicket: "/portal/v1/tickets",
   postTicketMessage: "/portal/v1/tickets/:id/messages",
+  // The customer confirms the fix of a resolved ticket (ERP-0092)
+  confirmTicket: "/portal/v1/tickets/:id/confirm",
 
   // Devices and warranty
   listProducts: "/portal/v1/products",
