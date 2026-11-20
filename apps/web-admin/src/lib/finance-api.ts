@@ -105,7 +105,7 @@ export type TCashFlowCategory = (typeof CASH_FLOW_CATEGORIES)[number];
 
 export type TAccount = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	name: string;
 	accountType: TAccountType;
@@ -172,7 +172,7 @@ export function archiveAccount(id: string) {
 
 export type TPeriod = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	periodYear: number;
 	periodMonth: number;
@@ -215,7 +215,7 @@ export type TJournalLine = {
 
 export type TJournalEntry = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	accountingPeriodId: string;
 	entryDate: string;
@@ -331,7 +331,7 @@ export function postOpeningBalances() {
 
 export type TCashBankAccount = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	name: string;
 	accountType: string;
@@ -518,7 +518,7 @@ export const voidExecutedPayment = (id: string, reason: string) =>
 export type TSupplierBill = {
 	id: string;
 	code: string;
-	supplierCompanyId: string;
+	supplierCompanyId: string | null;
 	purchaseOrderId: string | null;
 	supplierInvoiceNumber: string | null;
 	billDate: string | null;
@@ -596,13 +596,13 @@ export type TBillableOrder = {
 	code: string | null;
 	subject: string;
 	status: string;
-	supplierCompanyId: string;
+	supplierCompanyId: string | null;
 	supplierName: string;
 	vatMode: 'none' | 'included' | 'added';
 	vatRateBps: number;
 	lines: {
 		id: string;
-		productId: string;
+		productId: string | null;
 		sku: string;
 		name: string;
 		unit: string;
@@ -773,7 +773,7 @@ export type TReportArchiveType = (typeof REPORT_ARCHIVE_TYPES)[number];
 
 export type TReportArchive = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	periodYear: number;
 	periodMonth: number;
 	reportType: TReportArchiveType;

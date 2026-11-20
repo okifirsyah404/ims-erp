@@ -438,9 +438,9 @@ export const documentSignatureRequests = documentSchema.table(
 		organizationId: text('organization_id'),
 		documentId: uuid('document_id').notNull(),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		requestedByUserId: text('requested_by_user_id').notNull(),
+		requestedByUserId: text('requested_by_user_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		signerUserId: text('signer_user_id').notNull(),
+		signerUserId: text('signer_user_id'),
 		/** Signer display name snapshot at request time. */
 		signerName: text('signer_name').notNull(),
 		status: text('status').notNull().default('pending'),
@@ -488,7 +488,7 @@ export const documentUserSignatures = documentSchema.table(
 		/** Logical reference to auth.organizations.id; NULL = company-wide. */
 		organizationId: text('organization_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		userId: text('user_id').notNull(),
+		userId: text('user_id'),
 		/** Object-storage key of the WebP signature/stamp image; never a public URL. */
 		objectKey: text('object_key').notNull(),
 		uploadedAt: unixTimestamp('uploaded_at').notNull(),

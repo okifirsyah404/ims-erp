@@ -92,7 +92,8 @@ export class TicketService {
 	/** Publishes `service_ticket.updated` to n8n (M04 stage 2) and returns the view. */
 	private async changed(ticket: TTicketSelect, change: TicketChange): Promise<TTicketView> {
 		const view = await this.view(ticket);
-		const customer = await this.customers.getActiveCustomer(ticket.customerId);
+		// ADR-0014: a ticket may carry no customer; the event then has no contact.
+		const customer = ticket.customerId ? await this.customers.getActiveCustomer(ticket.customerId) : null;
 		const contact = customer ? { phone: customer.phone, whatsapp: customer.whatsapp, email: customer.email } : null;
 		await this.outbox.publish('service_ticket.updated', { type: 'ticket', id: ticket.id }, ticketUpdatedEvent(ticket, change, view.assignee, contact));
 		return view;

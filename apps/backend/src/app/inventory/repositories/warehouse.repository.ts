@@ -206,7 +206,7 @@ export class WarehouseRepository implements IWarehouseRepository {
 	async listOrganizations(
 		warehouseId: string,
 	): Promise<Array<{ organizationId: string; createdAt: Date }>> {
-		return this.database
+		const rows = await this.database
 			.select({
 				organizationId: warehouseOrganizations.organizationId,
 				createdAt: warehouseOrganizations.createdAt,
@@ -219,6 +219,15 @@ export class WarehouseRepository implements IWarehouseRepository {
 				),
 			)
 			.orderBy(asc(warehouseOrganizations.createdAt));
+		// ADR-0014: the column is nullable; a link without an organization
+		// carries no tenant and is not a usable link, so it is skipped.
+		const links: Array<{ organizationId: string; createdAt: Date }> = [];
+		for (const row of rows) {
+			if (row.organizationId !== null) {
+				links.push({ organizationId: row.organizationId, createdAt: row.createdAt });
+			}
+		}
+		return links;
 	}
 
 	/**

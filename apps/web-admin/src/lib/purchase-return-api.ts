@@ -30,7 +30,7 @@ export type TPurchaseReturn = {
 	purchaseOrderId: string;
 	purchaseOrderCode: string | null;
 	supplierName: string;
-	warehouseId: string;
+	warehouseId: string | null;
 	binId: string | null;
 	status: TPurchaseReturnStatus;
 	returnDate: string;
@@ -47,7 +47,7 @@ export type TPurchaseReturn = {
 export type TPurchaseReturnItem = {
 	id: string;
 	goodsReceiptItemId: string;
-	productId: string;
+	productId: string | null;
 	sku: string;
 	name: string;
 	unit: string;
@@ -72,7 +72,7 @@ export type TReturnableReceipt = {
 	supplierName: string;
 	items: {
 		id: string;
-		productId: string;
+		productId: string | null;
 		sku: string;
 		name: string;
 		unit: string;

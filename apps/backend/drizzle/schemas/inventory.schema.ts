@@ -586,7 +586,7 @@ export const warehouseOrganizations = inventorySchema.table(
 			.notNull()
 			.references(() => warehouses.id, { onDelete: 'cascade' }),
 		/** Logical reference to auth.organizations.id — cross-module FK omitted. */
-		organizationId: text('organization_id').notNull(),
+		organizationId: text('organization_id'),
 		...softDeleteTimestamps,
 	},
 	(table) => [
@@ -1060,7 +1060,7 @@ export const stockAdjustments = inventorySchema.table(
 		id: uuid('id')
 			.primaryKey()
 			.default(sql`uuidv7()`),
-		organizationId: text('organization_id').notNull(),
+		organizationId: text('organization_id'),
 		code: varchar('code', { length: 32 }).notNull(),
 		warehouseId: uuid('warehouse_id')
 			.notNull()
@@ -1109,7 +1109,7 @@ export const stockAdjustmentItems = inventorySchema.table(
 		id: uuid('id')
 			.primaryKey()
 			.default(sql`uuidv7()`),
-		organizationId: text('organization_id').notNull(),
+		organizationId: text('organization_id'),
 		stockAdjustmentId: uuid('stock_adjustment_id')
 			.notNull()
 			.references(() => stockAdjustments.id, { onDelete: 'cascade' }),

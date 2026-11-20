@@ -174,7 +174,7 @@ export const quotations = saleSchema.table(
 		title: text('title').notNull(),
 		heading: varchar('heading', { length: 120 }),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
-		customerId: uuid('customer_id').notNull(),
+		customerId: uuid('customer_id'),
 		/** Logical reference to customer.companies.id — cross-module FK omitted. */
 		companyId: uuid('company_id'),
 		customerSnapshot: jsonb('customer_snapshot')
@@ -322,7 +322,7 @@ export const orders = saleSchema.table(
 			.references(() => quotations.id, { onDelete: 'restrict' }),
 		quotationCode: varchar('quotation_code', { length: 40 }).notNull(),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
-		customerId: uuid('customer_id').notNull(),
+		customerId: uuid('customer_id'),
 		/** Logical reference to customer.companies.id — cross-module FK omitted. */
 		companyId: uuid('company_id'),
 		/** Logical reference to project.leads.id — cross-module FK omitted. */
@@ -472,7 +472,7 @@ export const deliveryNotes = saleSchema.table(
 			.notNull()
 			.references(() => orders.id, { onDelete: 'restrict' }),
 		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
-		warehouseId: uuid('warehouse_id').notNull(),
+		warehouseId: uuid('warehouse_id'),
 		/** Logical reference to inventory.warehouse_storages.id — FK omitted. */
 		binId: uuid('bin_id'),
 		status: text('status')
@@ -570,7 +570,7 @@ export const returns = saleSchema.table(
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
 		customerId: uuid('customer_id'),
 		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
-		warehouseId: uuid('warehouse_id').notNull(),
+		warehouseId: uuid('warehouse_id'),
 		status: text('status').$type<ReturnStatus>().notNull().default('draft'),
 		returnDate: date('return_date').notNull(),
 		reason: text('reason').notNull(),
@@ -626,7 +626,7 @@ export const returnItems = saleSchema.table(
 			.notNull()
 			.references(() => orderItems.id, { onDelete: 'restrict' }),
 		/** Logical reference to inventory.products.id — cross-module FK omitted. */
-		productId: uuid('product_id').notNull(),
+		productId: uuid('product_id'),
 		sku: varchar('sku', { length: 64 }),
 		name: text('name').notNull(),
 		unit: varchar('unit', { length: 32 }).notNull(),
@@ -668,7 +668,7 @@ export const invoices = saleSchema.table(
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		/** Logical reference to auth.organizations.id — cross-module FK omitted. */
-		organizationId: text('organization_id').notNull(),
+		organizationId: text('organization_id'),
 		code: varchar('code', { length: 32 }),
 		invoiceType: text('invoice_type').notNull().default('sales'),
 		termKind: text('term_kind'),
@@ -767,7 +767,7 @@ export const invoiceItems = saleSchema.table(
 		id: uuid('id')
 			.primaryKey()
 			.default(sql`uuidv7()`),
-		organizationId: text('organization_id').notNull(),
+		organizationId: text('organization_id'),
 		invoiceId: uuid('invoice_id')
 			.notNull()
 			.references(() => invoices.id, { onDelete: 'cascade' }),
@@ -811,7 +811,7 @@ export const receipts = saleSchema.table(
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		/** Logical reference to auth.organizations.id — cross-module FK omitted. */
-		organizationId: text('organization_id').notNull(),
+		organizationId: text('organization_id'),
 		code: varchar('code', { length: 32 }).notNull(),
 		/** Plain id of a row in sale.invoices (same module). */
 		invoiceId: uuid('invoice_id').notNull(),

@@ -84,7 +84,10 @@ export class ProjectPortalService {
 	}
 
 	private async summary(project: Awaited<ReturnType<IProjectRepository['findById']>> & {}): Promise<TPortalProject> {
-		const [tasks, manager] = await Promise.all([this.projects.listTasks(project.id), this.users.getUser(project.picUserId)]);
+		const [tasks, manager] = await Promise.all([
+			this.projects.listTasks(project.id),
+			project.picUserId ? this.users.getUser(project.picUserId) : Promise.resolve(null),
+		]);
 		return {
 			id: project.id,
 			code: project.code,

@@ -315,6 +315,15 @@ describe('approving and receiving', () => {
 		).rejects.toBeInstanceOf(SalesReturnStateError);
 	});
 
+	test('a return without a warehouse cannot be received (ADR-0014: the link is nullable)', async () => {
+		const row = await approved([{ deliveryNoteItemId: CABLE_LINE, quantity: '1' }]);
+		returns.rows.find((r) => r.id === row.id)!.warehouseId = null;
+		await expect(
+			service.receive(actor, row.id, { lines: [{ salesReturnItemId: `${row.id}-0`, condition: 'good' }] }),
+		).rejects.toMatchObject({ key: 'sales.returnWarehouseRequired' });
+		expect(movements).toEqual([]);
+	});
+
 	test('a received return cannot be cancelled', async () => {
 		const row = await approved([{ deliveryNoteItemId: CABLE_LINE, quantity: '1' }]);
 		const [cable] = await returns.findItems(row.id);

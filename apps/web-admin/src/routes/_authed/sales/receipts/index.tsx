@@ -95,13 +95,17 @@ function ReceiptsPage() {
 												</div>
 											</TableCell>
 											<TableCell>
-												<Link
-													to='/sales/invoices/$invoiceId'
-													params={{ invoiceId: receipt.invoiceId }}
-													className='hover:underline'
-												>
-													{receipt.invoiceCode ?? '—'}
-												</Link>
+												{receipt.invoiceId ? (
+													<Link
+														to='/sales/invoices/$invoiceId'
+														params={{ invoiceId: receipt.invoiceId }}
+														className='hover:underline'
+													>
+														{receipt.invoiceCode ?? '-'}
+													</Link>
+												) : (
+													<span>{receipt.invoiceCode ?? '-'}</span>
+												)}
 											</TableCell>
 											<TableCell>{receipt.customerName}</TableCell>
 											<TableCell className='text-muted-foreground'>

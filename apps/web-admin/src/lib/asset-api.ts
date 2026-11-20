@@ -170,7 +170,7 @@ export type TAssetMaintenance = {
 /** One `finance.asset_depreciations` row. */
 export type TAssetDepreciation = {
 	id: string;
-	itemId: string;
+	itemId: string | null;
 	periodYear: number;
 	periodMonth: number;
 	depreciationMethod: string;

@@ -217,7 +217,7 @@ export const purchaseOrders = procurementSchema.table(
 			.default(sql`uuidv7()`),
 		code: varchar('code', { length: 40 }),
 		/** Logical reference to supplier.companies.id — cross-module FK omitted. */
-		supplierCompanyId: uuid('supplier_company_id').notNull(),
+		supplierCompanyId: uuid('supplier_company_id'),
 		/** Logical reference to supplier.suppliers.id — cross-module FK omitted. */
 		supplierPicId: uuid('supplier_pic_id'),
 		supplierSnapshot: jsonb('supplier_snapshot')
@@ -299,7 +299,7 @@ export const purchaseOrderItems = procurementSchema.table(
 			.notNull()
 			.references(() => purchaseOrders.id, { onDelete: 'cascade' }),
 		/** Logical reference to inventory.products.id — cross-module FK omitted. */
-		productId: uuid('product_id').notNull(),
+		productId: uuid('product_id'),
 		sku: varchar('sku', { length: 64 }).notNull(),
 		name: text('name').notNull(),
 		specification: text('specification'),
@@ -353,7 +353,7 @@ export const goodsReceipts = procurementSchema.table(
 			.notNull()
 			.references(() => purchaseOrders.id, { onDelete: 'restrict' }),
 		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
-		warehouseId: uuid('warehouse_id').notNull(),
+		warehouseId: uuid('warehouse_id'),
 		/** Logical reference to inventory.warehouse_storages.id — FK omitted. */
 		binId: uuid('bin_id'),
 		status: text('status').notNull().default('posted'),
@@ -387,7 +387,7 @@ export const goodsReceiptItems = procurementSchema.table(
 			.notNull()
 			.references(() => purchaseOrderItems.id, { onDelete: 'restrict' }),
 		/** Logical reference to inventory.products.id — cross-module FK omitted. */
-		productId: uuid('product_id').notNull(),
+		productId: uuid('product_id'),
 		sku: varchar('sku', { length: 64 }).notNull(),
 		name: text('name').notNull(),
 		unit: varchar('unit', { length: 32 }).notNull(),
@@ -428,9 +428,9 @@ export const purchaseReturns = procurementSchema.table(
 			.notNull()
 			.references(() => purchaseOrders.id, { onDelete: 'restrict' }),
 		/** Logical reference to supplier.companies.id — cross-module FK omitted. */
-		supplierCompanyId: uuid('supplier_company_id').notNull(),
+		supplierCompanyId: uuid('supplier_company_id'),
 		/** Logical reference to inventory.warehouses.id — cross-module FK omitted. */
-		warehouseId: uuid('warehouse_id').notNull(),
+		warehouseId: uuid('warehouse_id'),
 		/** Logical reference to inventory.warehouse_storages.id — FK omitted. */
 		binId: uuid('bin_id'),
 		status: text('status')
@@ -491,7 +491,7 @@ export const purchaseReturnItems = procurementSchema.table(
 			.notNull()
 			.references(() => purchaseOrderItems.id, { onDelete: 'restrict' }),
 		/** Logical reference to inventory.products.id — cross-module FK omitted. */
-		productId: uuid('product_id').notNull(),
+		productId: uuid('product_id'),
 		sku: varchar('sku', { length: 64 }).notNull(),
 		name: text('name').notNull(),
 		unit: varchar('unit', { length: 32 }).notNull(),

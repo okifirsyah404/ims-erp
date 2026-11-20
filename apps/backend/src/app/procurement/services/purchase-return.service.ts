@@ -40,6 +40,9 @@ import type {
 	TReturnedOnLine,
 } from '../contracts/purchase-return.repository.interface';
 import {
+	ProcurementWarehouseRequiredError,
+	PurchaseOrderItemUnavailableError,
+	PurchaseOrderSupplierUnavailableError,
 	PurchaseReturnCodeTakenError,
 	PurchaseReturnLineError,
 	PurchaseReturnNotFoundError,
@@ -144,7 +147,7 @@ export class PurchaseReturnService {
 		const row = await this.require(id);
 		const [items, warehouse] = await Promise.all([
 			this.returns.findItems(id),
-			this.warehouses.getWarehouse(row.warehouseId).catch(() => null),
+			row.warehouseId ? this.warehouses.getWarehouse(row.warehouseId).catch(() => null) : null,
 		]);
 		const bin = warehouse?.storages.find((storage) => storage.id === row.binId) ?? null;
 		return {
@@ -166,10 +169,10 @@ export class PurchaseReturnService {
 		return Promise.all(
 			lines.map(async (line) => {
 				const used: TReturnedOnLine = taken.get(line.id) ?? { quantityMilli: 0n, serialNumbers: [] };
-				const item = await this.items.getProduct(line.productId).catch(() => null);
+				const item = line.productId ? await this.items.getProduct(line.productId).catch(() => null) : null;
 				const isSerialized = item?.isSerialized ?? false;
 				let serialNumbers: string[] = [];
-				if (isSerialized) {
+				if (isSerialized && line.productId && receipt.warehouseId) {
 					// ERP-0065: units a customer returned damaged go back too.
 					const inStock = new Set(await this.items.supplierReturnableSerials(line.productId, receipt.warehouseId));
 					const onReturns = new Set(used.serialNumbers);
@@ -236,6 +239,11 @@ export class PurchaseReturnService {
 		if (!order || (order.status !== 'partially_received' && order.status !== 'received')) {
 			throw new PurchaseReturnReceiptError();
 		}
+		// ADR-0014: the receipt and the order no longer guarantee these; a return needs both.
+		const { warehouseId } = receipt;
+		if (!warehouseId) throw new ProcurementWarehouseRequiredError();
+		const { supplierCompanyId } = order;
+		if (!supplierCompanyId) throw new PurchaseOrderSupplierUnavailableError();
 		const returnable = new Map((await this.returnableLines(receipt, excludeReturnId)).map((entry) => [entry.line.id, entry]));
 		const seen = new Set<string>();
 		const items: TPurchaseReturnItemData[] = body.lines.map((line, index) => {
@@ -258,6 +266,7 @@ export class PurchaseReturnService {
 				}
 			}
 			const { line: receiptLine } = entry;
+			if (!receiptLine.productId) throw new PurchaseOrderItemUnavailableError(index + 1);
 			return {
 				goodsReceiptItemId: receiptLine.id,
 				purchaseOrderItemId: receiptLine.purchaseOrderItemId,
@@ -275,8 +284,8 @@ export class PurchaseReturnService {
 			header: {
 				goodsReceiptId: receipt.id,
 				purchaseOrderId: receipt.purchaseOrderId,
-				supplierCompanyId: order.supplierCompanyId,
-				warehouseId: receipt.warehouseId,
+				supplierCompanyId,
+				warehouseId,
 				binId: receipt.binId,
 				returnDate: body.returnDate ?? businessDateOf(),
 				reason: body.reason,
@@ -369,6 +378,8 @@ export class PurchaseReturnService {
 		const shipped = await this.transactions.run(async (tx) => {
 			const row = await this.returns.claimForShip(id, tx);
 			if (!row) throw new PurchaseReturnStateError('notApproved');
+			const { warehouseId } = row;
+			if (!warehouseId) throw new ProcurementWarehouseRequiredError();
 			const lines = await this.returns.findItems(id);
 			const receiptLines = new Map((await this.receipts.findItems(row.goodsReceiptId)).map((line) => [line.id, line]));
 			const shipped = await this.returns.returnedOnLines(
@@ -394,12 +405,14 @@ export class PurchaseReturnService {
 				throw new PurchaseReturnReceiptError();
 			}
 			for (const [index, line] of lines.entries()) {
+				const { productId } = line;
+				if (!productId) throw new PurchaseOrderItemUnavailableError(index + 1);
 				const posted = await this.stock.postMovement(
 					{
 						actorOrganizationId: actor.organizationId,
-						warehouseId: row.warehouseId,
+						warehouseId,
 						binId: row.binId,
-						productId: line.productId,
+						productId,
 						movementType: 'return_out',
 						quantity: line.quantity,
 						unitCost: line.unitCost,
@@ -415,9 +428,9 @@ export class PurchaseReturnService {
 				const serials = line.serialNumbers ?? [];
 				if (serials.length) {
 					const missing = await this.items.returnUnits(
-						line.productId,
+						productId,
 						serials,
-						{ warehouseId: row.warehouseId, movementId: posted.movement.id },
+						{ warehouseId, movementId: posted.movement.id },
 						tx,
 					);
 					if (missing.length) throw new PurchaseReturnLineError('notInStock', index + 1);

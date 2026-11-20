@@ -46,7 +46,7 @@ export type TLicensableApplication = {
 export type TLicenseContract = {
 	id: string;
 	code: string;
-	customerId: string;
+	customerId: string | null;
 	customerName: string;
 	licenseApplicationId: string;
 	applicationCode: string;

@@ -189,7 +189,7 @@ class FakeSignatureRepository implements Partial<ISignatureRepository> {
 			id: `img-${this.images.size + 1}`,
 			...values,
 		} as TDocumentUserSignatureSelect;
-		this.images.set(row.userId, row);
+		this.images.set(String(row.userId), row);
 		return row;
 	}
 
@@ -383,6 +383,20 @@ describe('sign', () => {
 			userIds: [REQUESTER],
 			templateCode: 'document.signature_signed',
 		});
+	});
+
+	test('signs a request whose requester was never recorded, notifying nobody (ADR-0014)', async () => {
+		const [request] = await service.createRequests(
+			{ documentId: documents.document!.id, signerUserIds: [SIGNER], note: null, expiresAt: null },
+			REQUESTER,
+		);
+		repository.requests[0]!.requestedByUserId = null;
+		notifications.length = 0;
+
+		const evidence = await service.sign(request!.id, SIGNER, null);
+
+		expect(evidence.signerUserId).toBe(SIGNER);
+		expect(notifications).toHaveLength(0);
 	});
 
 	test('records a self-reported wet-ink signature', async () => {

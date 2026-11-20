@@ -120,7 +120,12 @@ export class LicenseApiService {
 	async revokeApiKey(ctx: TApiKeyContext, applicationId: string, id: string): Promise<TLicenseApiKeySelect> {
 		const row = await this.repository.findApiKey(id);
 		if (!row || row.licenseApplicationId !== applicationId || row.status !== 'active') throw new ApiKeyIssueError('notFound');
-		await this.asMember(() => this.issuer.disable({ apiKeyId: row.apiKeyId, actorUserId: ctx.actorUserId }));
+		// ADR-0014: the Better Auth key id is a nullable reference; without one
+		// there is no issued key to disable and only the local row is revoked.
+		const issuedKeyId = row.apiKeyId;
+		if (issuedKeyId) {
+			await this.asMember(() => this.issuer.disable({ apiKeyId: issuedKeyId, actorUserId: ctx.actorUserId }));
+		}
 		const revoked = await this.repository.revokeApiKey(id, ctx.actorUserId);
 		if (!revoked) throw new ApiKeyIssueError('notFound');
 		return revoked;

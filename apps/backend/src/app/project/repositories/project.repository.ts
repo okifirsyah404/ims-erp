@@ -157,7 +157,12 @@ export class ProjectRepository implements IProjectRepository {
 			.select({ id: projects.orderId })
 			.from(projects)
 			.where(and(inArray(projects.orderId, salesOrderIds), isNull(projects.deletedAt), ne(projects.status, 'cancelled')));
-		return new Set(rows.map((row) => row.id));
+		// ADR-0014: orderId is nullable; a project without an order links to none.
+		const ids = new Set<string>();
+		for (const row of rows) {
+			if (row.id !== null) ids.add(row.id);
+		}
+		return ids;
 	}
 
 	create(data: TProjectCreateData, taskRows: TTaskData[]) {

@@ -162,8 +162,9 @@ export function WarehouseOrganizationsTab({
 							{(links.data ?? []).map((row) => (
 								<TableRow key={row.organizationId}>
 									<TableCell className='font-medium'>
-										{byId.get(row.organizationId)?.name ??
-											row.organizationId}
+										{(row.organizationId ? byId.get(row.organizationId)?.name : undefined) ??
+											row.organizationId ??
+											'-'}
 									</TableCell>
 									<TableCell className='text-muted-foreground'>
 										{new Date(row.createdAt).toLocaleDateString()}
@@ -172,14 +173,16 @@ export function WarehouseOrganizationsTab({
 										<Button
 											variant='ghost'
 											size='sm'
-											disabled={unlink.isPending}
+											disabled={unlink.isPending || !row.organizationId}
 											onClick={() => {
+												const organizationId = row.organizationId;
 												if (
+													organizationId &&
 													window.confirm(
 														t('inventory:warehouses.unlinkConfirm'),
 													)
 												) {
-													unlink.mutate(row.organizationId);
+													unlink.mutate(organizationId);
 												}
 											}}
 										>

@@ -61,7 +61,7 @@ export type TInvoice = {
 export type TReceipt = {
 	id: string;
 	code: string;
-	invoiceId: string;
+	invoiceId: string | null;
 	receivedDate: string;
 	amount: number;
 	method: TReceiptMethod;

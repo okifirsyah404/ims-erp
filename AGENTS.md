@@ -42,7 +42,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
 | `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-20 — lint 0 errors; `test` 7/7 tasks (backend 1232, web-admin 119, locales 98, web-landing 24, web-customer-portal 60). ⚠️ root `typecheck` does **not** cover web-admin (no script): use `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` (also part of `build`). The two Astro apps are checked with `astro check` (`bun run typecheck` inside each) |
-| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-11-19/20 — ADR-0024 **baseline**: one migration (`database/migrations/20261119145940_many_human_robot`: 18 schemas, 164 `CREATE TABLE`, 0 cross-schema `REFERENCES`); a second `generate` reports no changes; `migrate` + `seed` applied on a disposable database and the second `seed` inserted 0 rows. The pre-ADR-0024 chain is archived in `database/migrations-archive/v1` and is not applied. All use `bunx --bun drizzle-kit` (`--bun` is required: the driver is `drizzle-orm/bun-sql`). Seed content is deterministic (`faker.seed`). The old "blocked on main" note (branching snapshot chain) is resolved by the baseline; see `runbook.md` |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-11-19/20 — ADR-0024 **baseline**: one migration (`database/migrations/20261120061847_last_daredevil`: 18 schemas, 164 `CREATE TABLE`, 0 cross-schema `REFERENCES`; regenerated on 2026-11-20 when ADR-0014 nullability was enforced in Drizzle); a second `generate` reports no changes; `migrate` + `seed` applied on a disposable database and the second `seed` inserted 0 rows. The pre-ADR-0024 chain is archived in `database/migrations-archive/v1` and is not applied. All use `bunx --bun drizzle-kit` (`--bun` is required: the driver is `drizzle-orm/bun-sql`). Seed content is deterministic (`faker.seed`). The old "blocked on main" note (branching snapshot chain) is resolved by the baseline; see `runbook.md` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Docker
@@ -264,7 +264,7 @@ is an incomplete deletion.
 ```text
 edit docs/database/docs.dbml   # canonical; edit before Drizzle
 bun docs/database/gen-logical-references.ts
-bun docs/database/validate-dbml.ts   # must print OK: 0 cross-module refs, 0 timestamp gaps
+bun docs/database/validate-dbml.ts   # must print OK: 0 cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity drift (nullability + type, both ways)
 ```
 
 A non-zero exit from `validate-dbml.ts` means the module work is not done.

@@ -213,6 +213,8 @@ export type TReceiptData = Omit<
 	'id' | 'status' | 'createdAt' | 'updatedAt' | 'deletedAt'
 > & {
 	amount: number;
+	/** Required here even though the column is nullable (ADR-0014): a receipt is always posted inside one tenant. */
+	organizationId: string;
 };
 
 /** Computes totals from line inputs; pure, integer minor units (ADR-0002). */

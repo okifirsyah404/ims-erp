@@ -46,6 +46,7 @@ import {
 	SalesReturnLineError,
 	SalesReturnNotFoundError,
 	SalesReturnReceiveError,
+	SalesReturnWarehouseRequiredError,
 	SalesReturnSelfApprovalError,
 	SalesReturnStateError,
 } from '../errors/sales-return.errors';
@@ -147,7 +148,7 @@ export class SalesReturnService {
 		const row = await this.require(id);
 		const [items, warehouse] = await Promise.all([
 			this.returns.findItems(id),
-			this.warehouses.getWarehouse(row.warehouseId).catch(() => null),
+			row.warehouseId ? this.warehouses.getWarehouse(row.warehouseId).catch(() => null) : Promise.resolve(null),
 		]);
 		return {
 			...row,
@@ -245,6 +246,7 @@ export class SalesReturnService {
 	): Promise<{ header: TSalesReturnHeaderData; items: TSalesReturnItemData[] }> {
 		const note = await this.requireShipped(body.deliveryNoteId);
 		const warehouseId = body.warehouseId ?? note.warehouseId;
+		if (!warehouseId) throw new SalesReturnWarehouseRequiredError();
 		await this.stock.resolveScope(warehouseId);
 		const returnable = new Map((await this.returnableLines(note.id, excludeReturnId)).map((entry) => [entry.line.id, entry]));
 		const seen = new Set<string>();
@@ -381,7 +383,9 @@ export class SalesReturnService {
 		if (byLine.size !== body.lines.length || lines.length !== byLine.size || lines.some((line) => !byLine.has(line.id))) {
 			throw new SalesReturnReceiveError('lines');
 		}
-		const warehouse = await this.warehouses.getWarehouse(head.warehouseId);
+		const warehouseId = head.warehouseId;
+		if (!warehouseId) throw new SalesReturnWarehouseRequiredError();
+		const warehouse = await this.warehouses.getWarehouse(warehouseId);
 		const storages = new Set(warehouse.storages.filter((storage) => storage.isActive).map((storage) => storage.id));
 		if (body.lines.some((line) => line.binId && !storages.has(line.binId))) throw new SalesReturnReceiveError('bin');
 		const occurredAt = noon(body.receivedDate ?? businessDateOf());
@@ -413,12 +417,16 @@ export class SalesReturnService {
 			for (const [index, line] of lines.entries()) {
 				const choice = byLine.get(line.id)!;
 				const binId = choice.binId ?? null;
+				// ADR-0014: the product link is nullable; a line without a product
+				// is not a stock item and cannot be put back into stock.
+				const productId = line.productId;
+				if (!productId) throw new SalesReturnLineError('notStock', index + 1);
 				const posted = await this.stock.postMovement(
 					{
 						actorOrganizationId: actor.organizationId,
-						warehouseId: row.warehouseId,
+						warehouseId,
 						binId,
-						productId: line.productId,
+						productId,
 						movementType: 'return_in',
 						quantity: line.quantity,
 						unitCost: line.unitCost,
@@ -433,10 +441,10 @@ export class SalesReturnService {
 				const serials = line.serialNumbers ?? [];
 				if (serials.length) {
 					const missing = await this.items.receiveCustomerUnits(
-						line.productId,
+						productId,
 						serials,
 						{
-							warehouseId: row.warehouseId,
+							warehouseId,
 							binId,
 							status: choice.condition === 'good' ? 'in_stock' : 'damaged',
 							movementId: posted.movement.id,

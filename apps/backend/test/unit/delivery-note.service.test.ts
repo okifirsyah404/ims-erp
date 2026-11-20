@@ -244,6 +244,15 @@ describe('delivery notes', () => {
 		});
 	});
 
+	test('a note without a warehouse cannot ship (ADR-0014: the link is nullable)', async () => {
+		const note = await service.create('wh', body([{ orderItemId: LINE_A, quantity: 10 }]));
+		notes.find((row) => row.id === note.id)!.warehouseId = null;
+		await expect(service.ship({ userId: 'wh', organizationId: 'org' }, note.id)).rejects.toMatchObject({
+			key: 'sales.deliveryWarehouseRequired',
+		});
+		expect(movements).toEqual([]);
+	});
+
 	test('cancelling a prepared note gives its quantities back', async () => {
 		const note = await service.create('wh', body([{ orderItemId: LINE_A, quantity: 60 }]));
 		expect(soItems[0]!.quantityDelivered).toBe('60.000');

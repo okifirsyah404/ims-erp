@@ -188,7 +188,7 @@ export class ProjectService {
 	async list(ctx: TProjectContext, query: TProjectListQuery): Promise<TPaginationResult<TProjectView>> {
 		const result = await this.repository.paginate({ ...query, involvedUserId: ctx.canViewAll ? undefined : ctx.actorUserId });
 		const people = await this.people(result.data.map((project) => project.picUserId));
-		return { meta: result.meta, data: result.data.map((project) => ({ ...project, pic: people.get(project.picUserId) ?? null })) };
+		return { meta: result.meta, data: result.data.map((project) => ({ ...project, pic: project.picUserId ? (people.get(project.picUserId) ?? null) : null })) };
 	}
 
 	/**
@@ -253,11 +253,13 @@ export class ProjectService {
 
 	async get(ctx: TProjectContext, id: string): Promise<TProjectDetail> {
 		const project = await this.require(ctx, id);
+		const orderId = project.orderId;
 		const [tasks, evidence, costs, materials] = await Promise.all([
 			this.repository.listTasks(id),
 			this.repository.listEvidence(id),
 			ctx.canSeeCost ? this.repository.listCosts(id) : Promise.resolve(null),
-			ctx.canSeeCost ? this.sales.shippedMaterials(project.orderId) : Promise.resolve(null),
+			// ADR-0014: a project without a sales order has no shipped materials.
+			ctx.canSeeCost ? (orderId ? this.sales.shippedMaterials(orderId) : Promise.resolve([])) : Promise.resolve(null),
 		]);
 		const people = await this.people([
 			project.picUserId,
@@ -267,12 +269,12 @@ export class ProjectService {
 		const has = (kind: EvidenceKind) => evidence.some((file) => file.kind === kind);
 		return {
 			...project,
-			pic: people.get(project.picUserId) ?? null,
+			pic: project.picUserId ? (people.get(project.picUserId) ?? null) : null,
 			tasks: tasks.map((task) => ({ ...task, assignee: task.assigneeUserId ? (people.get(task.assigneeUserId) ?? null) : null })),
 			evidence: evidence.map((file) => ({
 				...file,
 				url: this.storage.presignGet(file.storageKey, { fileName: file.fileName, expiresIn: FILE_URL_TTL_SECONDS, inline: true }),
-				uploader: people.get(file.uploadedBy) ?? null,
+				uploader: file.uploadedBy ? (people.get(file.uploadedBy) ?? null) : null,
 			})),
 			evidenceComplete: { testing: has('testing'), training: has('training'), bast: has('bast') },
 			canClose: project.status === 'active' && REQUIRED_EVIDENCE.every(has),

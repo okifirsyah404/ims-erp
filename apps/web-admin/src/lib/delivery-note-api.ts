@@ -26,9 +26,9 @@ export type TDeliveryNote = {
 	code: string;
 	orderId: string;
 	orderCode: string;
-	customerId: string;
+	customerId: string | null;
 	customerName: string;
-	warehouseId: string;
+	warehouseId: string | null;
 	binId: string | null;
 	status: TDeliveryNoteStatus;
 	deliveryDate: string;

@@ -53,7 +53,7 @@ export type TPurchaseOrder = {
 	id: string;
 	code: string | null;
 	/** supplier.companies id; the PIC is supplier.suppliers. */
-	supplierCompanyId: string;
+	supplierCompanyId: string | null;
 	supplierPicId: string | null;
 	supplierSnapshot: TPoSupplierSnapshot;
 	category: TPurchaseCategory;
@@ -83,7 +83,7 @@ export type TPurchaseOrder = {
 
 export type TPurchaseOrderItem = {
 	id: string;
-	productId: string;
+	productId: string | null;
 	sku: string;
 	name: string;
 	specification: string | null;

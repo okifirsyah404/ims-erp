@@ -30,7 +30,7 @@ export type TSalesOrder = {
 	code: string;
 	quotationId: string;
 	quotationCode: string;
-	customerId: string;
+	customerId: string | null;
 	companyId: string | null;
 	customerSnapshot: TQuotationCustomerSnapshot;
 	customerPoNumber: string | null;

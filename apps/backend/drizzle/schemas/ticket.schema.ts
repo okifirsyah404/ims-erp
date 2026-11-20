@@ -111,7 +111,7 @@ export const tickets = ticketSchema.table(
 		/** Plain uuid until project-relative templates exist (Q22). */
 		ticketTemplateId: uuid('ticket_template_id'),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
-		customerId: uuid('customer_id').notNull(),
+		customerId: uuid('customer_id'),
 		/** Logical reference to customer.companies.id — cross-module FK omitted. */
 		companyId: uuid('company_id'),
 		customerName: text('customer_name').notNull(),

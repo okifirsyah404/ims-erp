@@ -45,7 +45,7 @@ export type TAdjustmentType = 'increase' | 'decrease' | 'recount';
 export type TStockAdjustment = {
 	id: string;
 	/** Always a tenant — an adjustment is always raised by an organization. */
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	warehouseId: string;
 	adjustmentType: TAdjustmentType;
@@ -71,9 +71,9 @@ export type TStockAdjustment = {
  */
 export type TStockAdjustmentItem = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	stockAdjustmentId: string;
-	productId: string;
+	productId: string | null;
 	binId: string | null;
 	quantityBefore: string;
 	quantityAfter: string;

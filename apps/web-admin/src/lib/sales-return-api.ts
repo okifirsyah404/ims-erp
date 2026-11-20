@@ -31,7 +31,7 @@ export type TSalesReturn = {
 	orderId: string;
 	orderCode: string;
 	customerName: string;
-	warehouseId: string;
+	warehouseId: string | null;
 	status: TSalesReturnStatus;
 	returnDate: string;
 	reason: string;
@@ -47,7 +47,7 @@ export type TSalesReturnItem = {
 	id: string;
 	deliveryNoteItemId: string;
 	orderItemId: string;
-	productId: string;
+	productId: string | null;
 	sku: string | null;
 	name: string;
 	unit: string;
@@ -72,7 +72,7 @@ export type TReturnableDelivery = {
 	orderId: string;
 	orderCode: string;
 	customerName: string;
-	warehouseId: string;
+	warehouseId: string | null;
 	items: {
 		id: string;
 		productId: string | null;

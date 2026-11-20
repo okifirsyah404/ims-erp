@@ -61,7 +61,7 @@ export const WITHHOLDING_STATUSES = [
 ] as const;
 export type WithholdingStatus = (typeof WITHHOLDING_STATUSES)[number];
 
-const organizationId = () => text('organization_id').notNull();
+const organizationId = () => text('organization_id');
 const currencyCode = () =>
 	varchar('currency_code', { length: 3 }).notNull().default('IDR');
 
@@ -186,7 +186,7 @@ export const taxCorrections = taxSchema.table(
 		/** Logical reference to document.documents.id — cross-module FK omitted. */
 		evidenceDocumentId: uuid('evidence_document_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		createdBy: text('created_by').notNull(),
+		createdBy: text('created_by'),
 		...timestamps,
 	},
 	(table) => [

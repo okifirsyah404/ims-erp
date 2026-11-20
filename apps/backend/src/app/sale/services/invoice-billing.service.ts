@@ -238,7 +238,7 @@ export class InvoiceBillingService {
 		if (!invoice.orderId) return { ...invoice, receipts, order: null };
 		const [found, siblings] = await Promise.all([this.orders.getOrderForPrint(invoice.orderId), this.invoices.listByOrder(invoice.orderId)]);
 		const terms = siblings.filter((sibling) => live(sibling) && sibling.status !== 'draft');
-		const payments = await Promise.all(terms.map((term) => this.invoices.listReceipts(term.organizationId, term.id)));
+		const payments = await Promise.all(terms.map((term) => this.invoices.listReceipts(term.organizationId ?? ctx.organizationId, term.id)));
 		return {
 			...invoice,
 			receipts,

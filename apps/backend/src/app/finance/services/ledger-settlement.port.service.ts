@@ -54,7 +54,8 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		if (!invoice) return null;
 		return {
 			id: invoice.id,
-			organizationId: invoice.organizationId,
+			// The lookup is scoped by organizationId, so a found row belongs to it (ADR-0014: the column is nullable).
+			organizationId,
 			paidTotal: invoice.paidTotal,
 			outstandingTotal: invoice.outstandingTotal,
 			status: invoice.status,
@@ -98,7 +99,8 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		if (!bill) return null;
 		return {
 			id: bill.id,
-			organizationId: bill.organizationId,
+			// The lookup is scoped by organizationId, so a found row belongs to it (ADR-0014: the column is nullable).
+			organizationId,
 			paidTotal: bill.paidTotal,
 			outstandingTotal: bill.outstandingTotal,
 			status: bill.status,

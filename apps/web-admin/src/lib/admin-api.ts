@@ -152,7 +152,7 @@ export async function deleteUser(organizationId: string, userId: string) {
 
 export type TAdminAudit = {
 	id: string;
-	actorUserId: string;
+	actorUserId: string | null;
 	actorEmail: string | null;
 	action: string;
 	targetType: string;

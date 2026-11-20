@@ -37,7 +37,7 @@ export const TICKET_STATUS_VARIANT: Record<TTicketStatus, 'default' | 'secondary
 export type TServiceTicket = {
 	id: string;
 	code: string;
-	customerId: string;
+	customerId: string | null;
 	customerName: string;
 	projectId: string | null;
 	serialNumber: string | null;

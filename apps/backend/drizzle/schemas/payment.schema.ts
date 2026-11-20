@@ -102,7 +102,7 @@ export const PAYABLE_TYPES = [
 ] as const;
 export type PayableType = (typeof PAYABLE_TYPES)[number];
 
-const organizationId = () => text('organization_id').notNull();
+const organizationId = () => text('organization_id');
 
 const timestamps = {
 	createdAt: unixTimestamp('created_at').notNull(),

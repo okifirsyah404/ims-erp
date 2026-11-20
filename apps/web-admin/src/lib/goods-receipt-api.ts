@@ -17,7 +17,7 @@ export type TGoodsReceipt = {
 	purchaseOrderId: string;
 	purchaseOrderCode: string | null;
 	supplierName: string;
-	warehouseId: string;
+	warehouseId: string | null;
 	binId: string | null;
 	receiptDate: string;
 	supplierDeliveryRef: string | null;
@@ -58,7 +58,7 @@ export type TReceivableOrder = {
 	supplierName: string;
 	items: {
 		id: string;
-		productId: string;
+		productId: string | null;
 		sku: string;
 		name: string;
 		unit: string;

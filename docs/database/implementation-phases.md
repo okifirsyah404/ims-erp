@@ -89,7 +89,7 @@ profiles: `module-ownership.md`.
 ### P8 in detail (the verified baseline)
 
 - `bunx --bun drizzle-kit generate` produced one baseline
-  (`database/migrations/20261119145940_many_human_robot`): 18 `CREATE SCHEMA`,
+  (`database/migrations/20261120061847_last_daredevil`): 18 `CREATE SCHEMA`,
   164 `CREATE TABLE`, 151 unique indexes, **0 cross-schema `REFERENCES`**
   (checked with a regex over the SQL).
 - A second `generate` reported "No schema changes".

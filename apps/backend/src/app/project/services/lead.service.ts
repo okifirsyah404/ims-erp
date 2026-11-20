@@ -197,7 +197,7 @@ export class LeadService {
 		return {
 			...lead,
 			assignee: lead.ownerUserId ? (people.get(lead.ownerUserId) ?? null) : null,
-			activities: activities.map((activity) => ({ ...activity, author: people.get(activity.createdBy) ?? null })),
+			activities: activities.map((activity) => ({ ...activity, author: activity.createdBy ? (people.get(activity.createdBy) ?? null) : null })),
 			attachments: attachments.map(({ storageKey: _key, deletedAt: _deleted, ...rest }) => rest),
 		};
 	}

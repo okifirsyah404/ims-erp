@@ -138,7 +138,7 @@ export function PurchaseOrderForm({
 	const [lines, setLines] = useState<TLineDraft[]>(
 		(order?.items ?? []).map((item) => ({
 			key: crypto.randomUUID(),
-			productId: item.productId,
+			productId: item.productId ?? '',
 			sku: item.sku,
 			name: item.name,
 			unit: item.unit,

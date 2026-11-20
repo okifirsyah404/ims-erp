@@ -137,7 +137,7 @@ never ships in a frontend bundle.
   database for testing. `drizzle-kit push` is for disposable DBs only.
 - Auth schema changes: hand-written, append-only edits to `auth.schema.ts`; never run `auth:generate` (AGENTS.md hard rule).
 - Baseline (ADR-0024, 2026-11-19): the schema is one migration,
-  `database/migrations/20261119145940_many_human_robot` (18 schemas, 164
+  `database/migrations/20261120061847_last_daredevil` (18 schemas, 164
   `CREATE TABLE` statements, no cross-schema `REFERENCES`). The 31-step v1
   chain is kept for history in `database/migrations-archive/v1` (not applied).
   Verified on a disposable database on 2026-11-19: `drizzle:migrate`, then

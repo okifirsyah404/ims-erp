@@ -110,7 +110,7 @@ export const auditLogs = auditSchema.table(
 	{
 		id: text('id').primaryKey(),
 		/** Logical reference to auth.users.id — cross-module FK omitted by rule. */
-		actorUserId: text('actor_user_id').notNull(),
+		actorUserId: text('actor_user_id'),
 		/** Denormalized actor display (email) for readability without joins. */
 		actorEmail: text('actor_email'),
 		action: text('action').notNull(),

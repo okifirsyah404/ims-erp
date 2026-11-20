@@ -13,6 +13,13 @@ export class PurchaseOrderSupplierUnavailableError extends AppError {
 	}
 }
 
+/** A receipt or return has no warehouse recorded (ADR-0014: the column is nullable). */
+export class ProcurementWarehouseRequiredError extends AppError {
+	constructor() {
+		super(422, 'procurement.warehouseRequired', 'This document has no warehouse');
+	}
+}
+
 export class PurchaseOrderItemUnavailableError extends AppError {
 	constructor(line: number) {
 		super(422, 'procurement.itemUnavailable', `Line ${line}: item not found or inactive`, { line });

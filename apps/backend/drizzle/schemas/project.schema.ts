@@ -210,11 +210,11 @@ export const projects = projectSchema.table(
 			.default(sql`uuidv7()`),
 		code: varchar('code', { length: 32 }).notNull(),
 		/** Logical reference to sale.orders.id — one live project per order. */
-		orderId: uuid('order_id').notNull(),
+		orderId: uuid('order_id'),
 		orderCode: varchar('order_code', { length: 32 }).notNull(),
 		quotationCode: varchar('quotation_code', { length: 40 }),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
-		customerId: uuid('customer_id').notNull(),
+		customerId: uuid('customer_id'),
 		/** Logical reference to customer.companies.id — cross-module FK omitted. */
 		companyId: uuid('company_id'),
 		leadId: uuid('lead_id').references((): AnyPgColumn => leads.id, {
@@ -230,7 +230,7 @@ export const projects = projectSchema.table(
 			.notNull()
 			.default(0),
 		/** Logical reference to auth.users.id; must hold `project:update`. */
-		picUserId: text('pic_user_id').notNull(),
+		picUserId: text('pic_user_id'),
 		targetStartDate: date('target_start_date'),
 		targetEndDate: date('target_end_date'),
 		stage: text('stage').$type<ProjectStage>().notNull().default('preparation'),
@@ -318,7 +318,7 @@ export const evidence = projectSchema.table(
 		contentType: varchar('content_type', { length: 100 }).notNull(),
 		sizeBytes: integer('size_bytes').notNull(),
 		note: varchar('note', { length: 500 }),
-		uploadedBy: text('uploaded_by').notNull(),
+		uploadedBy: text('uploaded_by'),
 		deletedBy: text('deleted_by'),
 		...timestamps,
 	},
@@ -520,7 +520,7 @@ export const leadActivities = projectSchema.table(
 		notes: text('notes').notNull(),
 		occurredAt: unixTimestamp('occurred_at').notNull(),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		createdBy: text('created_by').notNull(),
+		createdBy: text('created_by'),
 		...timestamps,
 	},
 	(table) => [
@@ -570,7 +570,7 @@ export const warranties = projectSchema.table(
 			.notNull()
 			.references(() => handover.id, { onDelete: 'restrict' }),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
-		customerId: uuid('customer_id').notNull(),
+		customerId: uuid('customer_id'),
 		/** Logical reference to customer.companies.id — cross-module FK omitted. */
 		companyId: uuid('company_id'),
 		issueDate: date('issue_date').notNull(),
@@ -651,7 +651,7 @@ export const licenseContracts = projectSchema.table(
 			.default(sql`uuidv7()`),
 		code: varchar('code', { length: 32 }).notNull(),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
-		customerId: uuid('customer_id').notNull(),
+		customerId: uuid('customer_id'),
 		/** Logical reference to customer.companies.id — cross-module FK omitted. */
 		companyId: uuid('company_id'),
 		customerName: text('customer_name').notNull(),
@@ -766,7 +766,7 @@ export const licenseApiKeys = projectSchema.table(
 			.notNull()
 			.references(() => licenseApplications.id, { onDelete: 'restrict' }),
 		/** Logical reference to auth.apikeys.id (config `licensing`). */
-		apiKeyId: text('api_key_id').notNull(),
+		apiKeyId: text('api_key_id'),
 		name: varchar('name', { length: 100 }).notNull(),
 		keyStart: varchar('key_start', { length: 20 }),
 		status: text('status')

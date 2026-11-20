@@ -123,7 +123,7 @@ export type TWarehouseUpdateInput = {
  * (ERP-0031).
  */
 export type TWarehouseOrganizationLink = {
-	organizationId: string;
+	organizationId: string | null;
 	createdAt: string;
 };
 

@@ -31,7 +31,7 @@ export type TDeliveryNoteItemData = Omit<
 /** A note as listed: with its order number and customer. */
 export type TDeliveryNoteRow = TDeliveryNoteSelect & {
 	orderCode: string;
-	customerId: string;
+	customerId: string | null;
 	customerName: string;
 };
 
@@ -71,7 +71,7 @@ export interface IDeliveryNoteRepository {
 
 export type TSerialShipment = {
 	orderId: string;
-	customerId: string;
+	customerId: string | null;
 	description: string;
 	deliveryNoteCode: string;
 	shippedAt: Date | null;

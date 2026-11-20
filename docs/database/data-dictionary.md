@@ -76,10 +76,10 @@ organization-scoped part of `sale` / `project` read `NULL` as
 "company-wide / global scope" where the table note says so ("Null means
 global/company-wide"). `audit.audit_logs` may record a global admin action
 outside any organization. Everywhere else `NULL` means "not linked".
-`inventory.stock_adjustments.organization_id` is `NOT NULL` in the Drizzle
-schema and in the table note, unlike the rest of `inventory.*`; the column
-line in `docs.dbml` does not yet say `not null` (known drift, to be reconciled
-with the next `docs.dbml` edit).
+There is no exception: `inventory.stock_adjustments.organization_id` is
+nullable like the rest of `inventory.*` (it was `NOT NULL` in the Drizzle
+schema until 2026-11-20, which contradicted ADR-0014). Its service still
+writes the caller's active organization.
 
 `location.*` tables are global reference data and carry no
 `organization_id`.
@@ -340,7 +340,7 @@ in `docs.dbml` matches the name in the migration.
 | Mandatory business attributes are `NOT NULL` | a row that exists is a complete statement |
 | Optional links are nullable | the link is optional in the flow |
 | Mutable state columns carry `NOT NULL DEFAULT` | an implicit default hides bugs |
-| `deleted_at`, `updated_at` are nullable | `NULL` has a meaning |
+| `deleted_at` is nullable; `updated_at` is `NOT NULL` where `docs.dbml` says so | `NULL` of `deleted_at` means "live"; `updated_at` is set by the service on every write |
 
 ## 2. Generic column names
 

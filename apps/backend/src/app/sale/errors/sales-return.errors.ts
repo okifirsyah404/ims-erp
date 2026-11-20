@@ -13,6 +13,13 @@ export class SalesReturnDeliveryError extends AppError {
 	}
 }
 
+/** Goods cannot come back without a warehouse to receive them (ADR-0014: the link is nullable). */
+export class SalesReturnWarehouseRequiredError extends AppError {
+	constructor() {
+		super(422, 'sales.returnWarehouseRequired', 'The sales return needs a warehouse to receive the goods');
+	}
+}
+
 /**
  * A return line that is unknown, not a stock item, more than is still
  * returnable, repeated, or whose serials are wrong.

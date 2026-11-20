@@ -29,7 +29,8 @@ export type TAuditQuery = z.infer<typeof auditQuerySchema>;
 /** Admin-facing audit row. */
 export type TAdminAudit = {
 	id: string;
-	actorUserId: string;
+	/** Null for system-originated entries (ADR-0014: no actor is guaranteed). */
+	actorUserId: string | null;
 	actorEmail: string | null;
 	action: string;
 	targetType: string;

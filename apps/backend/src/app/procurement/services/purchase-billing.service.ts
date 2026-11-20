@@ -21,7 +21,7 @@ export type TBillableOrder = {
 	vatRateBps: number;
 	lines: {
 		id: string;
-		productId: string;
+		productId: string | null;
 		sku: string;
 		name: string;
 		unit: string;
@@ -60,13 +60,16 @@ export class PurchaseBillingService {
 
 	private async toBillable(order: Awaited<ReturnType<IPurchaseOrderRepository['findById']>>): Promise<TBillableOrder | null> {
 		if (!order || !BILLABLE_STATUSES.includes(order.status)) return null;
+		// ADR-0014: an order without a supplier company cannot be billed.
+		const { supplierCompanyId } = order;
+		if (!supplierCompanyId) return null;
 		const lines = await this.orders.findItems(order.id);
 		return {
 			id: order.id,
 			code: order.code,
 			subject: order.subject,
 			status: order.status,
-			supplierCompanyId: order.supplierCompanyId,
+			supplierCompanyId,
 			supplierName: order.supplierSnapshot.name,
 			vatMode: order.vatMode,
 			vatRateBps: order.vatRateBps,
@@ -79,7 +82,9 @@ export class PurchaseBillingService {
 					unit: line.unit,
 					unitPrice: line.unitPrice,
 					quantityReceived: line.quantityReceived,
-					isStock: (await this.items.getProduct(line.productId).catch(() => null))?.isStockTracked ?? false,
+					isStock: line.productId
+						? ((await this.items.getProduct(line.productId).catch(() => null))?.isStockTracked ?? false)
+						: false,
 				})),
 			),
 		};

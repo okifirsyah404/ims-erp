@@ -113,8 +113,12 @@ let returnedUnits: string[];
 let documents: string[];
 let events: string[];
 let service: PurchaseReturnService;
+let receiptWarehouse: string | null;
+let orderSupplier: string | null;
 
 beforeEach(() => {
+	receiptWarehouse = WAREHOUSE;
+	orderSupplier = 'supplier-1';
 	returns = new FakeReturns();
 	orderStatus = 'received';
 	inStock = ['SN-1', 'SN-2', 'SN-3'];
@@ -132,7 +136,7 @@ beforeEach(() => {
 			},
 			async findById(id: string) {
 				return id === RECEIPT
-					? ({ id: RECEIPT, code: '0001/BPB/IMS/XI/26', purchaseOrderId: ORDER, warehouseId: WAREHOUSE, binId: null } as never)
+					? ({ id: RECEIPT, code: '0001/BPB/IMS/XI/26', purchaseOrderId: ORDER, warehouseId: receiptWarehouse, binId: null } as never)
 					: null;
 			},
 			async findItems() {
@@ -141,7 +145,7 @@ beforeEach(() => {
 		},
 		{
 			async findById() {
-				return { id: ORDER, status: orderStatus, supplierId: 'supplier-1' } as never;
+				return { id: ORDER, status: orderStatus, supplierCompanyId: orderSupplier } as never;
 			},
 			async unreceive(_orderId: string, input: { purchaseOrderItemId: string; quantity: string }[]) {
 				if (orderStatus !== 'received' && orderStatus !== 'partially_received') return { ok: false as const, reason: 'notReturnable' as const };
@@ -220,6 +224,18 @@ describe('creating a purchase return', () => {
 		);
 		const third = await service.create(CREATOR, body([{ goodsReceiptItemId: CABLE_LINE, quantity: '2' }]));
 		expect(third.status).toBe('draft');
+	});
+
+	test('refuses a receipt without a warehouse and an order without a supplier (ADR-0014)', async () => {
+		receiptWarehouse = null;
+		await expect(service.create(CREATOR, body([{ goodsReceiptItemId: CABLE_LINE, quantity: '1' }]))).rejects.toMatchObject({
+			key: 'procurement.warehouseRequired',
+		});
+		receiptWarehouse = WAREHOUSE;
+		orderSupplier = null;
+		await expect(service.create(CREATOR, body([{ goodsReceiptItemId: CABLE_LINE, quantity: '1' }]))).rejects.toMatchObject({
+			key: 'procurement.supplierUnavailable',
+		});
 	});
 
 	test('a cancelled return frees its quantity again', async () => {

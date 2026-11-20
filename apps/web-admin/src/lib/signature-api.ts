@@ -48,9 +48,9 @@ export type TSignatureRequest = {
 	documentCode: string | null;
 	documentTitle: string | null;
 	documentType: string | null;
-	requestedByUserId: string;
+	requestedByUserId: string | null;
 	requestedByName: string | null;
-	signerUserId: string;
+	signerUserId: string | null;
 	signerName: string;
 	status: TSignatureRequestStatus;
 	/** A pending row past `expiresAt` reads as `expired` without a write. */

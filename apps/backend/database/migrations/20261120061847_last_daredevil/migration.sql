@@ -36,7 +36,7 @@ CREATE SCHEMA "ticket";
 --> statement-breakpoint
 CREATE TABLE "audit"."audit_logs" (
 	"id" text PRIMARY KEY,
-	"actor_user_id" text NOT NULL,
+	"actor_user_id" text,
 	"actor_email" text,
 	"action" text NOT NULL,
 	"target_type" text NOT NULL,
@@ -553,8 +553,8 @@ CREATE TABLE "document"."signature_requests" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"organization_id" text,
 	"document_id" uuid NOT NULL,
-	"requested_by_user_id" text NOT NULL,
-	"signer_user_id" text NOT NULL,
+	"requested_by_user_id" text,
+	"signer_user_id" text,
 	"signer_name" text NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"note" text,
@@ -628,7 +628,7 @@ CREATE TABLE "document"."templates" (
 CREATE TABLE "document"."user_signatures" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"organization_id" text,
-	"user_id" text NOT NULL,
+	"user_id" text,
 	"object_key" text NOT NULL,
 	"uploaded_at" bigint NOT NULL,
 	"created_at" bigint NOT NULL,
@@ -663,7 +663,7 @@ CREATE TABLE "document"."documents" (
 --> statement-breakpoint
 CREATE TABLE "finance"."account_balances" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"account_id" uuid NOT NULL,
 	"accounting_period_id" uuid NOT NULL,
 	"balance_date" date NOT NULL,
@@ -681,7 +681,7 @@ CREATE TABLE "finance"."account_balances" (
 --> statement-breakpoint
 CREATE TABLE "finance"."accounting_periods" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"period_year" integer NOT NULL,
 	"period_month" integer NOT NULL,
@@ -702,7 +702,7 @@ CREATE TABLE "finance"."accounting_periods" (
 --> statement-breakpoint
 CREATE TABLE "finance"."ap_open_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"supplier_bill_id" uuid NOT NULL,
 	"supplier_company_id" uuid,
 	"bill_date" date,
@@ -723,8 +723,8 @@ CREATE TABLE "finance"."ap_open_items" (
 --> statement-breakpoint
 CREATE TABLE "finance"."ar_open_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
-	"invoice_id" uuid NOT NULL,
+	"organization_id" text,
+	"invoice_id" uuid,
 	"customer_id" uuid,
 	"invoice_date" date,
 	"due_date" date,
@@ -745,7 +745,7 @@ CREATE TABLE "finance"."ar_open_items" (
 CREATE TABLE "finance"."asset_depreciations" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"organization_id" text,
-	"item_id" uuid NOT NULL,
+	"item_id" uuid,
 	"period_year" integer NOT NULL,
 	"period_month" integer NOT NULL,
 	"depreciation_method" text DEFAULT 'straight_line' NOT NULL,
@@ -766,7 +766,7 @@ CREATE TABLE "finance"."asset_depreciations" (
 --> statement-breakpoint
 CREATE TABLE "finance"."bank_account_links" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"cash_bank_account_id" uuid NOT NULL,
 	"chart_of_account_id" uuid NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
@@ -777,7 +777,7 @@ CREATE TABLE "finance"."bank_account_links" (
 --> statement-breakpoint
 CREATE TABLE "finance"."bank_reconciliation_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"bank_reconciliation_id" uuid NOT NULL,
 	"cash_bank_transaction_id" uuid,
 	"statement_reference" text,
@@ -791,7 +791,7 @@ CREATE TABLE "finance"."bank_reconciliation_items" (
 --> statement-breakpoint
 CREATE TABLE "finance"."bank_reconciliations" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"cash_bank_account_id" uuid NOT NULL,
 	"reconciliation_date" date NOT NULL,
@@ -810,7 +810,7 @@ CREATE TABLE "finance"."bank_reconciliations" (
 --> statement-breakpoint
 CREATE TABLE "finance"."cash_bank_accounts" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"name" text NOT NULL,
 	"account_type" text DEFAULT 'bank' NOT NULL,
@@ -835,7 +835,7 @@ CREATE TABLE "finance"."cash_bank_accounts" (
 --> statement-breakpoint
 CREATE TABLE "finance"."cash_bank_transactions" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"cash_bank_account_id" uuid NOT NULL,
 	"transaction_date" date NOT NULL,
@@ -860,7 +860,7 @@ CREATE TABLE "finance"."cash_bank_transactions" (
 --> statement-breakpoint
 CREATE TABLE "finance"."chart_of_accounts" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"name" text NOT NULL,
 	"account_type" text NOT NULL,
@@ -898,7 +898,7 @@ CREATE TABLE "finance"."code_numberings" (
 --> statement-breakpoint
 CREATE TABLE "finance"."settings" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"setting_group" text NOT NULL,
 	"setting_key" text NOT NULL,
 	"setting_value" text,
@@ -910,7 +910,7 @@ CREATE TABLE "finance"."settings" (
 --> statement-breakpoint
 CREATE TABLE "finance"."journal_entries" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"accounting_period_id" uuid NOT NULL,
 	"entry_date" date NOT NULL,
@@ -942,7 +942,7 @@ CREATE TABLE "finance"."journal_entries" (
 --> statement-breakpoint
 CREATE TABLE "finance"."journal_lines" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"journal_entry_id" uuid NOT NULL,
 	"line_no" integer NOT NULL,
 	"account_id" uuid NOT NULL,
@@ -964,7 +964,7 @@ CREATE TABLE "finance"."journal_lines" (
 --> statement-breakpoint
 CREATE TABLE "finance"."opening_balances" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"account_id" uuid NOT NULL,
 	"as_of_date" date NOT NULL,
 	"debit_balance" bigint DEFAULT 0 NOT NULL,
@@ -981,7 +981,7 @@ CREATE TABLE "finance"."opening_balances" (
 --> statement-breakpoint
 CREATE TABLE "finance"."payment_terms" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"name" text NOT NULL,
 	"days" integer DEFAULT 0 NOT NULL,
@@ -997,7 +997,7 @@ CREATE TABLE "finance"."payment_terms" (
 --> statement-breakpoint
 CREATE TABLE "finance"."report_archives" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"period_year" integer NOT NULL,
 	"period_month" integer NOT NULL,
 	"report_type" text NOT NULL,
@@ -1013,7 +1013,7 @@ CREATE TABLE "finance"."report_archives" (
 --> statement-breakpoint
 CREATE TABLE "finance"."supplier_bill_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"supplier_bill_id" uuid NOT NULL,
 	"purchase_order_item_id" uuid,
 	"product_id" uuid,
@@ -1034,9 +1034,9 @@ CREATE TABLE "finance"."supplier_bill_items" (
 --> statement-breakpoint
 CREATE TABLE "finance"."supplier_bills" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
-	"supplier_company_id" uuid NOT NULL,
+	"supplier_company_id" uuid,
 	"purchase_order_id" uuid,
 	"supplier_invoice_number" varchar(100),
 	"bill_date" date,
@@ -1645,7 +1645,7 @@ CREATE TABLE "inventory"."products" (
 --> statement-breakpoint
 CREATE TABLE "inventory"."stock_adjustment_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"stock_adjustment_id" uuid NOT NULL,
 	"product_id" uuid NOT NULL,
 	"bin_id" uuid,
@@ -1663,7 +1663,7 @@ CREATE TABLE "inventory"."stock_adjustment_items" (
 --> statement-breakpoint
 CREATE TABLE "inventory"."stock_adjustments" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"warehouse_id" uuid NOT NULL,
 	"adjustment_type" text NOT NULL,
@@ -1758,7 +1758,7 @@ CREATE TABLE "inventory"."warehouse_managers" (
 CREATE TABLE "inventory"."warehouse_organizations" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"warehouse_id" uuid NOT NULL,
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"created_at" bigint NOT NULL,
 	"updated_at" bigint,
 	"deleted_at" bigint
@@ -1862,7 +1862,7 @@ CREATE TABLE "notification"."push_notification_templates" (
 CREATE TABLE "notification"."push_notifications" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"notification_template_id" uuid,
-	"user_id" text NOT NULL,
+	"user_id" text,
 	"template_code" varchar(64) NOT NULL,
 	"title" text NOT NULL,
 	"body" text,
@@ -1912,7 +1912,7 @@ CREATE TABLE "payment"."gateways" (
 --> statement-breakpoint
 CREATE TABLE "payment"."payment_allocations" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"payment_id" uuid NOT NULL,
 	"payable_type" text NOT NULL,
 	"payable_id" text NOT NULL,
@@ -1942,7 +1942,7 @@ CREATE TABLE "payment"."code_numberings" (
 --> statement-breakpoint
 CREATE TABLE "payment"."settings" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"setting_group" text NOT NULL,
 	"setting_key" text NOT NULL,
 	"setting_value" text,
@@ -1954,7 +1954,7 @@ CREATE TABLE "payment"."settings" (
 --> statement-breakpoint
 CREATE TABLE "payment"."payments" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"payment_type" text NOT NULL,
 	"direction" text NOT NULL,
@@ -2007,7 +2007,7 @@ CREATE TABLE "procurement"."goods_receipt_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"goods_receipt_id" uuid NOT NULL,
 	"purchase_order_item_id" uuid NOT NULL,
-	"product_id" uuid NOT NULL,
+	"product_id" uuid,
 	"sku" varchar(64) NOT NULL,
 	"name" text NOT NULL,
 	"unit" varchar(32) NOT NULL,
@@ -2025,7 +2025,7 @@ CREATE TABLE "procurement"."goods_receipts" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"code" varchar(32) NOT NULL,
 	"purchase_order_id" uuid NOT NULL,
-	"warehouse_id" uuid NOT NULL,
+	"warehouse_id" uuid,
 	"bin_id" uuid,
 	"status" text DEFAULT 'posted' NOT NULL,
 	"receipt_date" date NOT NULL,
@@ -2056,7 +2056,7 @@ CREATE TABLE "procurement"."code_numberings" (
 CREATE TABLE "procurement"."purchase_order_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"purchase_order_id" uuid NOT NULL,
-	"product_id" uuid NOT NULL,
+	"product_id" uuid,
 	"sku" varchar(64) NOT NULL,
 	"name" text NOT NULL,
 	"specification" text,
@@ -2076,7 +2076,7 @@ CREATE TABLE "procurement"."purchase_order_items" (
 CREATE TABLE "procurement"."purchase_orders" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"code" varchar(40),
-	"supplier_company_id" uuid NOT NULL,
+	"supplier_company_id" uuid,
 	"supplier_pic_id" uuid,
 	"supplier_snapshot" jsonb NOT NULL,
 	"category" text NOT NULL,
@@ -2171,7 +2171,7 @@ CREATE TABLE "procurement"."purchase_return_items" (
 	"purchase_return_id" uuid NOT NULL,
 	"goods_receipt_item_id" uuid NOT NULL,
 	"purchase_order_item_id" uuid NOT NULL,
-	"product_id" uuid NOT NULL,
+	"product_id" uuid,
 	"sku" varchar(64) NOT NULL,
 	"name" text NOT NULL,
 	"unit" varchar(32) NOT NULL,
@@ -2192,8 +2192,8 @@ CREATE TABLE "procurement"."purchase_returns" (
 	"code" varchar(32),
 	"goods_receipt_id" uuid NOT NULL,
 	"purchase_order_id" uuid NOT NULL,
-	"supplier_company_id" uuid NOT NULL,
-	"warehouse_id" uuid NOT NULL,
+	"supplier_company_id" uuid,
+	"warehouse_id" uuid,
 	"bin_id" uuid,
 	"status" text DEFAULT 'draft' NOT NULL,
 	"return_date" date NOT NULL,
@@ -2267,7 +2267,7 @@ CREATE TABLE "project"."evidence" (
 	"content_type" varchar(100) NOT NULL,
 	"size_bytes" integer NOT NULL,
 	"note" varchar(500),
-	"uploaded_by" text NOT NULL,
+	"uploaded_by" text,
 	"deleted_by" text,
 	"created_at" bigint NOT NULL,
 	"updated_at" bigint NOT NULL,
@@ -2308,7 +2308,7 @@ CREATE TABLE "project"."lead_activities" (
 	"activity_type" text NOT NULL,
 	"notes" text NOT NULL,
 	"occurred_at" bigint NOT NULL,
-	"created_by" text NOT NULL,
+	"created_by" text,
 	"created_at" bigint NOT NULL,
 	"updated_at" bigint NOT NULL,
 	"deleted_at" bigint,
@@ -2378,7 +2378,7 @@ CREATE TABLE "project"."license_activations" (
 CREATE TABLE "project"."license_api_keys" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"license_application_id" uuid NOT NULL,
-	"api_key_id" text NOT NULL,
+	"api_key_id" text,
 	"name" varchar(100) NOT NULL,
 	"key_start" varchar(20),
 	"status" text DEFAULT 'active' NOT NULL,
@@ -2411,7 +2411,7 @@ CREATE TABLE "project"."license_applications" (
 CREATE TABLE "project"."license_contracts" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"code" varchar(32) NOT NULL,
-	"customer_id" uuid NOT NULL,
+	"customer_id" uuid,
 	"company_id" uuid,
 	"customer_name" text NOT NULL,
 	"license_application_id" uuid NOT NULL,
@@ -2511,10 +2511,10 @@ CREATE TABLE "project"."settings" (
 CREATE TABLE "project"."projects" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"code" varchar(32) NOT NULL,
-	"order_id" uuid NOT NULL,
+	"order_id" uuid,
 	"order_code" varchar(32) NOT NULL,
 	"quotation_code" varchar(40),
-	"customer_id" uuid NOT NULL,
+	"customer_id" uuid,
 	"company_id" uuid,
 	"lead_id" uuid,
 	"customer_name" text NOT NULL,
@@ -2522,7 +2522,7 @@ CREATE TABLE "project"."projects" (
 	"site_name" varchar(200),
 	"address_id" uuid,
 	"contract_value" bigint DEFAULT 0 NOT NULL,
-	"pic_user_id" text NOT NULL,
+	"pic_user_id" text,
 	"target_start_date" date,
 	"target_end_date" date,
 	"stage" text DEFAULT 'preparation' NOT NULL,
@@ -2568,7 +2568,7 @@ CREATE TABLE "project"."warranties" (
 	"code" varchar(80) NOT NULL,
 	"project_id" uuid NOT NULL,
 	"handover_id" uuid NOT NULL,
-	"customer_id" uuid NOT NULL,
+	"customer_id" uuid,
 	"company_id" uuid,
 	"issue_date" date NOT NULL,
 	"start_date" date NOT NULL,
@@ -2615,7 +2615,7 @@ CREATE TABLE "sale"."delivery_notes" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
 	"code" varchar(32) NOT NULL,
 	"order_id" uuid NOT NULL,
-	"warehouse_id" uuid NOT NULL,
+	"warehouse_id" uuid,
 	"bin_id" uuid,
 	"status" text DEFAULT 'prepared' NOT NULL,
 	"delivery_date" date NOT NULL,
@@ -2644,7 +2644,7 @@ CREATE TABLE "sale"."delivery_notes" (
 --> statement-breakpoint
 CREATE TABLE "sale"."invoice_items" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"invoice_id" uuid NOT NULL,
 	"product_id" uuid,
 	"description" text,
@@ -2667,7 +2667,7 @@ CREATE TABLE "sale"."invoice_items" (
 --> statement-breakpoint
 CREATE TABLE "sale"."invoices" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32),
 	"invoice_type" text DEFAULT 'sales' NOT NULL,
 	"term_kind" text,
@@ -2760,7 +2760,7 @@ CREATE TABLE "sale"."orders" (
 	"code" varchar(32) NOT NULL,
 	"quotation_id" uuid NOT NULL,
 	"quotation_code" varchar(40) NOT NULL,
-	"customer_id" uuid NOT NULL,
+	"customer_id" uuid,
 	"company_id" uuid,
 	"lead_id" uuid,
 	"customer_snapshot" jsonb NOT NULL,
@@ -2835,7 +2835,7 @@ CREATE TABLE "sale"."quotations" (
 	"previous_revision_id" uuid,
 	"title" text NOT NULL,
 	"heading" varchar(120),
-	"customer_id" uuid NOT NULL,
+	"customer_id" uuid,
 	"company_id" uuid,
 	"customer_snapshot" jsonb NOT NULL,
 	"lead_id" uuid,
@@ -2878,7 +2878,7 @@ CREATE TABLE "sale"."quotations" (
 --> statement-breakpoint
 CREATE TABLE "sale"."receipts" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"invoice_id" uuid NOT NULL,
 	"payment_id" uuid,
@@ -2907,7 +2907,7 @@ CREATE TABLE "sale"."return_items" (
 	"return_id" uuid NOT NULL,
 	"delivery_note_item_id" uuid NOT NULL,
 	"order_item_id" uuid NOT NULL,
-	"product_id" uuid NOT NULL,
+	"product_id" uuid,
 	"sku" varchar(64),
 	"name" text NOT NULL,
 	"unit" varchar(32) NOT NULL,
@@ -2933,7 +2933,7 @@ CREATE TABLE "sale"."returns" (
 	"delivery_note_id" uuid NOT NULL,
 	"order_id" uuid NOT NULL,
 	"customer_id" uuid,
-	"warehouse_id" uuid NOT NULL,
+	"warehouse_id" uuid,
 	"status" text DEFAULT 'draft' NOT NULL,
 	"return_date" date NOT NULL,
 	"reason" text NOT NULL,
@@ -3110,13 +3110,13 @@ CREATE TABLE "tax"."code_numberings" (
 --> statement-breakpoint
 CREATE TABLE "tax"."corrections" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"tax_record_id" uuid NOT NULL,
 	"amount" bigint NOT NULL,
 	"currency_code" varchar(3) DEFAULT 'IDR' NOT NULL,
 	"reason" text NOT NULL,
 	"evidence_document_id" uuid,
-	"created_by" text NOT NULL,
+	"created_by" text,
 	"created_at" bigint NOT NULL,
 	"updated_at" bigint NOT NULL,
 	"deleted_at" bigint,
@@ -3126,7 +3126,7 @@ CREATE TABLE "tax"."corrections" (
 --> statement-breakpoint
 CREATE TABLE "tax"."records" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"tax_type_id" uuid NOT NULL,
 	"period_year" integer NOT NULL,
@@ -3149,7 +3149,7 @@ CREATE TABLE "tax"."records" (
 --> statement-breakpoint
 CREATE TABLE "tax"."taxes" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"name" text NOT NULL,
 	"tax_type" text NOT NULL,
@@ -3170,7 +3170,7 @@ CREATE TABLE "tax"."taxes" (
 --> statement-breakpoint
 CREATE TABLE "tax"."withholding_tax_records" (
 	"id" uuid PRIMARY KEY DEFAULT uuidv7(),
-	"organization_id" text NOT NULL,
+	"organization_id" text,
 	"code" varchar(32) NOT NULL,
 	"tax_type_id" uuid NOT NULL,
 	"counterparty_type" text,
@@ -3241,7 +3241,7 @@ CREATE TABLE "ticket"."tickets" (
 	"ticket_type" text DEFAULT 'other' NOT NULL,
 	"parent_ticket_id" uuid,
 	"ticket_template_id" uuid,
-	"customer_id" uuid NOT NULL,
+	"customer_id" uuid,
 	"company_id" uuid,
 	"customer_name" text NOT NULL,
 	"project_id" uuid,

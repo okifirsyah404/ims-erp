@@ -80,7 +80,10 @@ export class WarrantyService {
 	/** Prefilled fields: shipped devices with their serials, the profile's texts. */
 	async draft(ctx: TProjectContext, projectId: string): Promise<TWarrantyDraft> {
 		const project = await this.projects.requireProject(ctx, projectId);
-		const [shipped, profile] = await Promise.all([this.sales.shippedLines(project.orderId), this.profile.get()]);
+		// ADR-0014: a project may carry no sales order; then nothing was shipped
+		// through it and the draft starts with no items.
+		const orderId = project.orderId;
+		const [shipped, profile] = await Promise.all([orderId ? this.sales.shippedLines(orderId) : Promise.resolve([]), this.profile.get()]);
 		// One row per order line: shipped quantities summed, serials listed.
 		const byLine = new Map<string, { description: string; unit: string; quantity: number; serials: string[] }>();
 		for (const line of shipped) {
@@ -94,8 +97,8 @@ export class WarrantyService {
 			volume: `${row.quantity.toLocaleString('id-ID')} ${row.unit}`,
 			remarks: row.serials.length ? `SN: ${row.serials.join(', ')}` : '',
 		}));
-		if (items.length === 0) {
-			items = (await this.sales.orderLines(project.orderId)).map((line) => ({
+		if (items.length === 0 && orderId) {
+			items = (await this.sales.orderLines(orderId)).map((line) => ({
 				description: line.name,
 				volume: `${Number(line.quantity).toLocaleString('id-ID')} ${line.unit}`,
 				remarks: '',

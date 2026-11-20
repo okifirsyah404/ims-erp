@@ -79,11 +79,15 @@ export class HandoverService {
 	/** Prefilled fields from the order, the company and the PIC. */
 	async draft(ctx: TProjectContext, projectId: string): Promise<TBastDraft> {
 		const project = await this.projects.require(ctx, projectId);
+		// ADR-0014: the order and the PIC are optional links; without one the
+		// matching prefill is simply blank.
+		const orderId = project.orderId;
+		const picUserId = project.picUserId;
 		const [order, lines, profile, pic] = await Promise.all([
-			this.sales.getOrder(project.orderId),
-			this.sales.orderLines(project.orderId),
+			orderId ? this.sales.getOrder(orderId) : Promise.resolve(null),
+			orderId ? this.sales.orderLines(orderId) : Promise.resolve([]),
 			this.profile.get(),
-			this.users.getUser(project.picUserId),
+			picUserId ? this.users.getUser(picUserId) : Promise.resolve(null),
 		]);
 		const items = lines.map((line) => ({
 			description: line.name,

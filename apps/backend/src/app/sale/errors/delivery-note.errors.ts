@@ -34,6 +34,13 @@ export class DeliveryNoteBinError extends AppError {
 	}
 }
 
+/** A delivery note cannot ship without a warehouse (ADR-0014: the link is nullable). */
+export class DeliveryNoteWarehouseRequiredError extends AppError {
+	constructor() {
+		super(422, 'sales.deliveryWarehouseRequired', 'The delivery note needs a warehouse to ship from');
+	}
+}
+
 /** The note is not in the state the action needs. */
 export class DeliveryNoteStateError extends AppError {
 	constructor(action: 'ship' | 'deliver' | 'cancel') {

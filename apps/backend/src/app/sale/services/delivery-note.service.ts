@@ -30,6 +30,7 @@ import {
 	DeliveryNoteNotFoundError,
 	DeliveryNoteOrderNotDeliverableError,
 	DeliveryNoteStateError,
+	DeliveryNoteWarehouseRequiredError,
 } from '../errors/delivery-note.errors';
 
 export type TDeliveryNoteDetail = TDeliveryNoteRow & {
@@ -109,7 +110,7 @@ export class DeliveryNoteService {
 		if (!note) throw new DeliveryNoteNotFoundError();
 		const [items, warehouse] = await Promise.all([
 			this.notes.findItems(id),
-			this.warehouses.getWarehouse(note.warehouseId).catch(() => null),
+			note.warehouseId ? this.warehouses.getWarehouse(note.warehouseId).catch(() => null) : Promise.resolve(null),
 		]);
 		const bin = warehouse?.storages.find((storage) => storage.id === note.binId) ?? null;
 		return {
@@ -296,6 +297,9 @@ export class DeliveryNoteService {
 		const note = await this.notes.findById(id);
 		if (!note) throw new DeliveryNoteNotFoundError();
 		if (note.status !== 'prepared') throw new DeliveryNoteStateError('ship');
+		// ADR-0014: the database no longer guarantees a warehouse; shipping needs one.
+		const warehouseId = note.warehouseId;
+		if (!warehouseId) throw new DeliveryNoteWarehouseRequiredError();
 		const lines = await this.notes.findItems(id);
 		const kinds = await Promise.all(
 			lines.map(async (line) => (line.productId ? await this.items.getProduct(line.productId).catch(() => null) : null)),
@@ -315,7 +319,7 @@ export class DeliveryNoteService {
 					const posted = await this.stock.postMovement(
 						{
 							actorOrganizationId: actor.organizationId,
-							warehouseId: note.warehouseId,
+							warehouseId,
 							binId: note.binId,
 							productId: item.id,
 							movementType: 'issue',
@@ -335,7 +339,7 @@ export class DeliveryNoteService {
 					const missing = await this.items.sellUnits(
 						item.id,
 						line.serialNumbers,
-						{ warehouseId: note.warehouseId, customerId: note.customerId, movementId },
+						{ warehouseId, customerId: note.customerId, movementId },
 						tx,
 					);
 					if (missing.length > 0) throw new DeliveryNoteLineError('notInStock', index + 1);

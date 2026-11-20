@@ -369,7 +369,9 @@ export class LicensingService {
 					skipped += 1;
 					continue;
 				}
-				const customer = await this.customers.getActiveCustomer(contract.customerId);
+				// ADR-0014: a contract may carry no customer; the notice still goes
+				// out, with blank contact details.
+				const customer = contract.customerId ? await this.customers.getActiveCustomer(contract.customerId) : null;
 				const message = await this.outbox.publish(
 					'license.due',
 					{ type: 'license_contract', id: contract.id },

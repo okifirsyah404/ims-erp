@@ -70,7 +70,7 @@ export type TQuotation = {
 	title: string;
 	/** Coloured-bar title on the print; null prints "QUOTATION". */
 	heading: string | null;
-	customerId: string;
+	customerId: string | null;
 	/** The billed company, when the person acts for one. */
 	companyId: string | null;
 	customerSnapshot: TQuotationCustomerSnapshot;

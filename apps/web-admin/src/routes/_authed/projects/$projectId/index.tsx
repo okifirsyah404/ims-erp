@@ -58,7 +58,7 @@ function EditFields({ project, onChange }: { project: TProjectDetail; onChange: 
 	const { t } = useTranslation(['projects']);
 	const staff = useQuery(projectStaffQueryOptions());
 	const [draft, setDraft] = useState<TDraft>({
-		picUserId: project.picUserId,
+		picUserId: project.picUserId ?? '',
 		siteName: project.siteName ?? '',
 		targetStartDate: project.targetStartDate ?? '',
 		targetEndDate: project.targetEndDate ?? '',
@@ -249,9 +249,13 @@ function ProjectDetailPage() {
 				<CardContent className='grid gap-3 text-sm sm:grid-cols-3'>
 					<div>
 						<div className='text-muted-foreground'>{t('projects:field.deal')}</div>
-						<Link to='/sales/orders/$orderId' params={{ orderId: data.orderId }} className='hover:underline'>
-							{data.orderCode}
-						</Link>
+						{data.orderId ? (
+							<Link to='/sales/orders/$orderId' params={{ orderId: data.orderId }} className='hover:underline'>
+								{data.orderCode}
+							</Link>
+						) : (
+							<span>{data.orderCode ?? '-'}</span>
+						)}
 						{data.quotationCode && <div className='text-xs text-muted-foreground'>{data.quotationCode}</div>}
 					</div>
 					<Detail label={t('projects:field.pic')} value={data.pic?.name} />

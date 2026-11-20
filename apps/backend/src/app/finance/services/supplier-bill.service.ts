@@ -105,7 +105,8 @@ export class SupplierBillService {
 	) {}
 
 	/** Supplier contact for an event, never the bank details; `null` when unknown. */
-	private async supplierOf(supplierCompanyId: string): Promise<TBillEventSupplier | null> {
+	private async supplierOf(supplierCompanyId: string | null): Promise<TBillEventSupplier | null> {
+		if (!supplierCompanyId) return null;
 		const supplier = await this.suppliers.assertActiveCompany(supplierCompanyId).catch(() => null);
 		if (!supplier) return null;
 		return {

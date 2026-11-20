@@ -252,7 +252,7 @@ TableGroup "Automation" {
 // ---------------------------------------------------------------------------
 
 Table auth.users {
-  deleted_at bigint
+  deleted_at timestamp [note: "Better Auth owned table: the one place a soft-delete marker is a timestamp, not unix milliseconds (the adapter reads Date)."]
   id text [pk]
   name text [not null]
   email text [not null, unique]
@@ -337,7 +337,7 @@ Table auth.verifications {
 }
 
 Table auth.organizations {
-  deleted_at bigint
+  deleted_at timestamp [note: "Better Auth owned table: a timestamp, not unix milliseconds (the adapter reads Date)."]
   id text [pk]
   name text [not null]
   slug text [not null, unique]
@@ -446,7 +446,7 @@ Table auth.user_invitations {
   delivery_failed boolean [not null, default: false]
   claimed_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Unified invitation pipeline for both invite paths (ERP-owned table in the auth schema). Users are pre-created at invite time (users.status='pending'). Named user_invitations because Better Auth owns auth.invitations."
   Indexes {
     email [name: 'user_invitations_email_idx']
@@ -467,7 +467,7 @@ Table auth.organization_settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id. Intra-schema."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Organization-scoped configuration key value store. Was organization.settings; the planned organization.fiscal_settings columns became keys here (fiscal.year_start_month, fiscal.business_timezone, fiscal.default_currency_code) instead of a second table (ADR-0024 Q4). Company-wide settings live in company.settings."
   Indexes {
     (organization_id, setting_group, setting_key) [unique, name: 'organization_settings_scope_uq']
@@ -586,7 +586,7 @@ Table company.profiles {
   status text [not null, default: 'active']
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Legal and display profile of the one company. One live row, enforced by the partial unique index profiles_singleton_uq ON ((true)) WHERE deleted_at IS NULL."
   Checks {
@@ -603,7 +603,7 @@ Table company.addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false, note: "The address printed on the letterhead; at most one live row."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Office address of the company, company-wide. Was company.head_office_addresses (ADR-0024 Q21). Only village_id is stored; the path is resolved through ExportedLocationService."
 }
@@ -615,7 +615,7 @@ Table company.contacts {
   label varchar(100)
   is_primary boolean [not null, default: false, note: "The contact shown on the letterhead per type; at most one live row per type."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Company contact channel, company-wide."
   Indexes {
@@ -637,7 +637,7 @@ Table company.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Company-wide configuration key value store. Organization-scoped settings live in auth.organization_settings. is_secret is reserved and always false until a secret read path exists (ERP-0045)."
   Indexes {
     (setting_group, setting_key) [unique, name: 'company_settings_scope_uq']
@@ -671,7 +671,7 @@ Table customer.companies {
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Customer company (the B2B entity), company-wide. Was crm.customers rows of type company/government/partner (ADR-0024 Q16). Inactive companies cannot be used on new documents."
   Indexes {
@@ -706,7 +706,7 @@ Table customer.customers {
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "A person: an individual customer, or the contact/PIC of a customer company. Was crm.customer_contacts merged with crm.customers of type individual, plus the portal identity columns of auth.portal_identities (ADR-0024 Q5/Q16). A portal login is never an organization member, so every ERP route refuses it; only the portal routes accept an active login."
   Indexes {
@@ -734,7 +734,7 @@ Table customer.addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Address of a person (ADR-0024 Q10: only village_id is stored)."
   Indexes {
@@ -757,7 +757,7 @@ Table customer.company_addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Structured address of a customer company. The kind discriminator replaces a separate billing and shipping table. Data moved from the crm.customers address columns (ADR-0024 Q10)."
   Indexes {
@@ -779,7 +779,7 @@ Table customer.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Customer module configuration key value store."
   Indexes {
     (setting_group, setting_key) [unique, name: 'customer_settings_scope_uq']
@@ -799,7 +799,7 @@ Table customer.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the customer module (ADR-0024 Q6). Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING. Partial unique index on code_type WHERE deleted_at IS NULL."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -837,7 +837,7 @@ Table supplier.companies {
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
   Indexes {
@@ -865,7 +865,7 @@ Table supplier.suppliers {
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17)."
   Indexes {
@@ -887,7 +887,7 @@ Table supplier.addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Address of a supplier person (ADR-0024 Q10)."
   Indexes {
@@ -910,7 +910,7 @@ Table supplier.company_addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Structured address of a supplier company. Data moved from the procurement.suppliers address columns (ADR-0024 Q10)."
   Indexes {
@@ -931,7 +931,7 @@ Table supplier.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Supplier module configuration key value store."
   Indexes {
     (setting_group, setting_key) [unique, name: 'supplier_settings_scope_uq']
@@ -951,7 +951,7 @@ Table supplier.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the supplier module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -1044,7 +1044,7 @@ Table inventory.product_categories {
   description text
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Product category, one level, company-wide (ADR-0011): no organization_id. Was inventory.item_categories. A category with live products cannot be archived."
 }
@@ -1281,7 +1281,7 @@ Table inventory.stock_adjustments {
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
-  Note: "Stock adjustment document with an approval chain: draft -> submitted -> approved|rejected -> posted|cancelled. Only `posted` writes movements; posting is idempotent. organization_id is NOT NULL here, unlike the rest of inventory.*."
+  Note: "Stock adjustment document with an approval chain: draft -> submitted -> approved|rejected -> posted|cancelled. Only `posted` writes movements; posting is idempotent. organization_id is nullable like the rest of inventory.* (ADR-0014); the service writes the caller's organization."
   Indexes {
     (organization_id, code) [unique, name: 'stock_adjustments_org_code_uq']
     warehouse_id [name: 'stock_adjustments_warehouse_id_idx']
@@ -1733,7 +1733,7 @@ Table inventory.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the inventory module (ADR-0024 Q6). Absorbs the inventory and assets rows of code_number.series."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -1827,7 +1827,7 @@ Table sale.quotations {
   lost_reason text
   lost_note text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Quotation header (SPH), company-wide. draft -> submitted -> approved or rejected; approved -> sent; any open status -> lost; won only by creating its order; revising marks the row superseded and creates the next revision. Self approval is rejected by the service layer. Totals are a cache of the items."
   Indexes {
@@ -1864,7 +1864,7 @@ Table sale.quotation_items {
   line_total bigint [not null, default: 0, note: "round(quantity x unit_price) - discount_amount."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a quotation, company-wide like its header. Prices and names are snapshots; line total is derived, never trusted from the client."
   Indexes {
@@ -1887,7 +1887,7 @@ Table sale.quotation_status_history {
   changed_at bigint [not null]
   note text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Append-only status history of a quotation, company-wide. Written in the same transaction as the transition."
   Indexes {
@@ -1927,7 +1927,7 @@ Table sale.orders {
   cancelled_at bigint
   cancellation_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Confirmed customer order (was sales.sales_orders), company-wide. Created only from an approved or sent quotation, which becomes won in the same transaction; cancelling it reopens the quotation. Stock commitment is done by Inventory through a logical reservation."
   Indexes {
@@ -1964,7 +1964,7 @@ Table sale.order_items {
   fulfillment_status text [not null, default: 'pending']
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a sales order, copied from its quotation line (was sales.sales_order_items)."
   Indexes {
@@ -1990,7 +1990,7 @@ Table sale.order_status_history {
   changed_at bigint [not null]
   note text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Append-only status history of a sales order, company-wide."
   Indexes {
@@ -2024,7 +2024,7 @@ Table sale.delivery_notes {
   cancellation_reason text
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Delivery note (surat jalan), company-wide. Shipping posts one stock issue movement per stock-tracked line at the moving-average cost and marks the listed serial units sold, in one transaction through the Inventory module contract."
   Indexes {
@@ -2052,7 +2052,7 @@ Table sale.delivery_note_items {
   movement_id uuid [note: "Logical reference to inventory.movements.id. Cross-module FK intentionally omitted. Validated through the Inventory module contract."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a delivery note, copied from a sales order line."
   Indexes {
@@ -2090,7 +2090,7 @@ Table sale.returns {
   cancelled_at bigint
   cancelled_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Customer return for replacement (was sales.sales_returns), company-wide. draft -> submitted -> approved -> received; rejection returns to draft; cancelled before received. One-level approval, never by the creator. Receiving posts return_in stock movements at the delivery cost and puts the serial units back in stock or marks them damaged."
   Indexes {
@@ -2123,7 +2123,7 @@ Table sale.return_items {
   movement_id uuid [note: "The return_in movement posted on receiving. Logical reference to inventory.movements.id. Cross-module FK intentionally omitted."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a sales return (was sales.sales_return_items). The quantity never exceeds the delivery line minus what live (not cancelled) returns already take."
   Indexes {
@@ -2179,7 +2179,7 @@ Table sale.invoices {
   voided_at bigint
   void_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Customer invoice (faktur) for one billing term, company-wide per ADR-0012: organization_id is the issuing organization. Free terms: the invoices of an order never exceed its total and the settling term takes the exact remainder. draft -> issued -> partially_paid -> paid; unpaid draft or issued -> void; draft -> cancelled. Overdue is shown from due_date, never stored. Finance mirrors AR open items in finance.ar_open_items."
   Indexes {
     (organization_id, code) [unique, name: 'invoices_org_code_uq']
@@ -2219,7 +2219,7 @@ Table sale.invoice_items {
   sort_order integer [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a sales invoice. item_variant_id and unit_id are dropped with the catalog schema (ADR-0024 Q14)."
   Indexes {
@@ -2254,7 +2254,7 @@ Table sale.receipts {
   reversed_at bigint
   reversal_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Cash receipt register, kwitansi. It is the customer facing proof of a payment; the money movement stays in payment.payments. Issued against a sales invoice; never more than the invoice's outstanding amount."
   Indexes {
@@ -2367,7 +2367,7 @@ Table sale.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Sale module configuration key value store."
   Indexes {
     (setting_group, setting_key) [unique, name: 'sale_settings_scope_uq']
@@ -2387,7 +2387,7 @@ Table sale.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the sale module (ADR-0024 Q6). Absorbs the sales rows of code_number.series."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -2445,7 +2445,7 @@ Table procurement.purchase_requests {
   cancelled_at bigint
   cancelled_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Purchase request (PR), the approval gate before a purchase order, company-wide. draft -> submitted -> approved -> ordered; rejection returns to draft with the reason. One-level approval, never by the requester."
   Indexes {
@@ -2474,7 +2474,7 @@ Table procurement.purchase_request_items {
   notes text
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a purchase request, company-wide like its header. It is ordered when a live purchase order line references it."
   Indexes {
@@ -2523,7 +2523,7 @@ Table procurement.purchase_orders {
   cancelled_at bigint
   cancelled_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Purchase order to a supplier, company-wide. draft -> submitted -> approved -> sent -> partially_received -> received; rejection returns to draft; cancelled while nothing was received. One-level approval, never by the creator. The supplier bill and its payment stay in Finance."
   Indexes {
@@ -2556,7 +2556,7 @@ Table procurement.purchase_order_items {
   purchase_request_item_id uuid [note: "The purchase request line this line orders (same module). At most one live purchase order line per request line, enforced under a row lock by the service."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a purchase order, company-wide like its header. VAT is per purchase order."
   Indexes {
@@ -2583,7 +2583,7 @@ Table procurement.goods_receipts {
   received_by text [note: "Logical reference to auth.users.id."]
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Goods receipt note, company-wide. Posted on creation: the stock receipt movements (with unit cost) and serial units are written in the same transaction through the Inventory module contract. Immutable; corrections go through stock adjustments."
   Indexes {
@@ -2608,7 +2608,7 @@ Table procurement.goods_receipt_items {
   serial_numbers jsonb [note: "One serial per unit for serialized products."]
   movement_id uuid [note: "Logical reference to inventory.movements.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a goods receipt; its quantity became the stock receipt movement."
   Indexes {
@@ -2647,7 +2647,7 @@ Table procurement.purchase_returns {
   cancelled_at bigint
   cancelled_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Return of received goods to the supplier for replacement, company-wide like goods receipts. draft -> submitted -> approved -> shipped; rejection returns to draft; cancelled before shipped. One-level approval, never by the creator. Shipping posts return_out stock movements and marks the serial units returned."
   Indexes {
@@ -2677,7 +2677,7 @@ Table procurement.purchase_return_items {
   movement_id uuid [note: "The return_out movement posted on shipping. Logical reference to inventory.movements.id. Cross-module FK intentionally omitted."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a purchase return. The quantity never exceeds the goods receipt line minus what live (not cancelled) returns already take."
   Indexes {
@@ -2701,7 +2701,7 @@ Table procurement.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the procurement module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -2737,14 +2737,14 @@ Table finance.chart_of_accounts {
   account_type text [not null]
   normal_balance text [not null, default: 'debit']
   parent_account_id uuid
-  level smallint [not null, default: 1]
+  level integer [not null, default: 1]
   is_postable boolean [not null, default: true]
   is_system boolean [not null, default: false]
   is_active boolean [not null, default: true]
   cash_flow_category text [note: "Direct-method cash-flow mapping. Only set for accounts whose movement feeds the cash-flow statement."]
   description text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Chart of accounts (was accounting.chart_of_accounts). Only postable accounts accept journal lines. System accounts cannot be deleted."
   Indexes {
@@ -2774,7 +2774,7 @@ Table finance.accounting_periods {
   reopened_by text [note: "Logical reference to auth.users.id."]
   reopened_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Accounting period (was accounting.accounting_periods). A closed period rejects new journal entries."
   Indexes {
@@ -2811,7 +2811,7 @@ Table finance.journal_entries {
   posted_at bigint
   reversed_by_entry_id uuid
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Journal header (was accounting.journal_entries). Debit must equal credit; the posting service enforces it inside one transaction."
   Indexes {
@@ -2847,7 +2847,7 @@ Table finance.journal_lines {
   party_type text
   party_id text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Journal line (was accounting.journal_lines). Exactly one of debit and credit is positive."
   Indexes {
@@ -2873,7 +2873,7 @@ Table finance.opening_balances {
   description text
   posted_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Opening balance of an account at the start of the system (was accounting.opening_balances)."
   Indexes {
@@ -2897,7 +2897,7 @@ Table finance.account_balances {
   currency_code varchar(3) [not null, default: 'IDR']
   calculated_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Balance snapshot of an account at the end of a period, derived from the posted journal entries (was accounting.account_balances)."
   Indexes {
@@ -2916,7 +2916,7 @@ Table finance.bank_account_links {
   chart_of_account_id uuid [not null]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Links a cash or bank account to its general ledger account (was accounting.bank_account_links). Both ends are in this schema now (ADR-0024 Q19)."
   Indexes {
@@ -2935,7 +2935,7 @@ Table finance.report_archives {
   generated_by text [note: "Logical reference to auth.users.id."]
   generated_at bigint [not null]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Immutable snapshot of a financial statement for a closed month (was accounting.report_archives). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent."
   Indexes {
@@ -2957,7 +2957,7 @@ Table finance.payment_terms {
   discount_days integer
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Payment terms, for example cash on delivery or 30 days net."
   Indexes {
@@ -2987,7 +2987,7 @@ Table finance.cash_bank_accounts {
   is_primary boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Operational cash and bank account used by the payment ledger, by reconciliation and by document printing. Merged from finance.cash_bank_accounts and company.bank_accounts (ADR-0024 Q19): the company master columns (bank_code, branch_name, invoice_usage, is_primary) live here now. Partial unique indexes in the Drizzle schema keep code and invoice_usage unique among live rows."
   Indexes {
@@ -3019,7 +3019,7 @@ Table finance.cash_bank_transactions {
   posted_by text [note: "Logical reference to auth.users.id."]
   posted_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Movement on a cash or bank account, produced by a posted payment. Reconciliation works on this ledger."
   Indexes {
@@ -3049,7 +3049,7 @@ Table finance.bank_reconciliations {
   reconciled_at bigint
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Reconciliation of one bank statement against the book balance."
   Indexes {
@@ -3072,7 +3072,7 @@ Table finance.bank_reconciliation_items {
   is_matched boolean [not null, default: false]
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a reconciliation, matched against a book transaction."
   Indexes {
@@ -3100,7 +3100,7 @@ Table finance.supplier_bills {
   approved_by text [note: "Logical reference to auth.users.id."]
   approved_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Accounts payable document of a supplier. Payments are rows of payment.payments. A bill made from a purchase order carries lines in finance.supplier_bill_items and can never bill more than was received."
   Indexes {
@@ -3135,7 +3135,7 @@ Table finance.supplier_bill_items {
   is_stock boolean [not null, default: false, note: "Stock-tracked product: the line debits inventory instead of expense."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Line of a supplier bill made from a purchase order (ERP-0012). Per purchase order line, live (not void) bill lines never exceed the quantity received."
   Indexes {
@@ -3163,7 +3163,7 @@ Table finance.ar_open_items {
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'open']
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow - never computed by reading sale tables. Aging reports are built on this table. No deleted_at: the row is a running balance cleared by status (projection exemption)."
   Indexes {
     (organization_id, invoice_id) [unique, name: 'ar_open_items_org_invoice_uq']
@@ -3193,7 +3193,7 @@ Table finance.ap_open_items {
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'open']
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Accounts payable open-item sub-ledger, the AP twin of finance.ar_open_items. No deleted_at: the row is a running balance cleared by status (projection exemption)."
   Indexes {
     (organization_id, supplier_bill_id) [unique, name: 'ap_open_items_org_bill_uq']
@@ -3224,7 +3224,7 @@ Table finance.asset_depreciations {
   calculated_at bigint
   journal_entry_id uuid [note: "Same-schema reference to finance.journal_entries.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Monthly depreciation run of an item - the audit trail of the book value. Moved here from the assets schema; items.book_value and accumulated_depreciation are written only through InventoryItemService.applyDepreciation() called by finance."
   Indexes {
@@ -3248,7 +3248,7 @@ Table finance.settings {
   setting_value text
   description text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Finance configuration key value store (was accounting.accounting_settings), including the period-close checklist state."
   Indexes {
     (organization_id, setting_group, setting_key) [unique, name: 'finance_settings_scope_uq']
@@ -3265,7 +3265,7 @@ Table finance.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the finance module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -3510,7 +3510,7 @@ Table tax.taxes {
   effective_to date
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Effective dated tax rate, PPN or PPh (was accounting.tax_types). The rate is a decimal percentage, never a float amount. A rate change is a new row; ranges for the same code must not overlap (enforced in the service)."
   Indexes {
@@ -3540,7 +3540,7 @@ Table tax.records {
   verified_by text [note: "Logical reference to auth.users.id."]
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Tax recap workpaper for a period (was accounting.tax_records). Filing itself stays outside the ERP. Corrections are separate rows in tax.corrections; tax_amount is never edited to reflect them."
   Indexes {
@@ -3567,7 +3567,7 @@ Table tax.corrections {
   evidence_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Document module contract."]
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Signed correction against a tax recap (was accounting.tax_corrections). The original tax_amount is kept unchanged; net payable is the recap plus the sum of active corrections, computed at read time."
   Indexes {
@@ -3595,7 +3595,7 @@ Table tax.withholding_tax_records {
   period_month integer
   status text [not null, default: 'recorded']
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Withholding tax collected on a payment (was accounting.withholding_tax_records)."
   Indexes {
@@ -3620,7 +3620,7 @@ Table tax.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the tax module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -3680,7 +3680,7 @@ Table payment.payments {
   voided_at bigint
   void_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "THE single payment ledger of the ERP, receipts and disbursements both (merged with payment.gateway_payments per ADR-0024 Q18). A payment settles payables through payment.payment_allocations, so the direct invoice/bill/advance columns are gone. Execution requires approval and is not allowed by the requester. A paid webhook on an expired or failed gateway row still counts: money received is a fact; paid is applied once, and a replayed webhook finds receipt_id and does nothing."
   Indexes {
     (organization_id, code) [unique, name: 'payments_org_code_uq']
@@ -3711,7 +3711,7 @@ Table payment.payment_allocations {
   amount bigint [not null]
   allocated_at bigint [not null]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Allocation of one payment to one payable document, for documents settled in several instalments (ADR-0024 Q18). One payment may settle several payables and one payable may receive several payments. payable_id is text because the targets mix id types; the owning service resolves it through a resolver map of exported services."
   Indexes {
@@ -3745,7 +3745,7 @@ Table payment.gateways {
   rotated_at bigint
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Provider configuration of a payment gateway (ADR-0024 Q18). Secrets are AES-256-GCM encrypted with a key from the environment; the API never returns ciphertext or plaintext (write-only)."
   Indexes {
@@ -3768,7 +3768,7 @@ Table payment.settings {
   setting_value text
   description text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Payment module configuration key value store (default gateway, rounding rules)."
   Indexes {
     (organization_id, setting_group, setting_key) [unique, name: 'payment_settings_scope_uq']
@@ -3785,7 +3785,7 @@ Table payment.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the payment module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -3829,7 +3829,7 @@ Table project.projects {
   cancel_reason text
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Project executing a deal (sales order), company-wide. Closing needs function-test, training and signed-BAST evidence and moves the stage to warranty. type_id arrives together with project.types (ADR-0024 Q22)."
   Indexes {
@@ -3862,7 +3862,7 @@ Table project.tasks {
   created_by text [note: "Logical reference to auth.users.id."]
   deleted_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Checklist task of a project (was projects.project_tasks); a new project gets one task per stage up to handover."
   Indexes {
@@ -3888,7 +3888,7 @@ Table project.evidence {
   uploaded_by text [note: "Logical reference to auth.users.id."]
   deleted_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Evidence file of a project (function test, training, signed BAST, photo). Was projects.project_evidence."
   Indexes {
@@ -3915,7 +3915,7 @@ Table project.costs {
   voided_at bigint
   void_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Direct cost of a project (was projects.project_costs); visible only with project:read_cost. Corrected by voiding, never deleted."
   Indexes {
@@ -3948,7 +3948,7 @@ Table project.handover {
   cancelled_by text [note: "Logical reference to auth.users.id."]
   cancelled_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Project handover (Berita Acara Serah Terima, BAST), company-wide. Edited or cancelled only while the project is active. Was projects.project_handover."
   Indexes {
@@ -3971,7 +3971,7 @@ Table project.addresses {
   longitude numeric(10,7)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Project site address (ADR-0024 Q10: only village_id is stored)."
   Indexes {
@@ -4006,7 +4006,7 @@ Table project.leads {
   idempotency_key varchar(100) [note: "Website Idempotency-Key; a replay returns the original reference."]
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Prospect before a customer record exists (was crm.leads; ADR-0024 Q12). A lead may belong to a company that is already a customer, so one customer can have many leads and many projects. Visibility: holders of lead:assign see all leads, others only leads assigned to them (service rule)."
   Indexes {
@@ -4032,7 +4032,7 @@ Table project.lead_activities {
   occurred_at bigint [not null]
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Follow-up log of a lead (was crm.lead_activities)."
   Indexes {
@@ -4051,7 +4051,7 @@ Table project.lead_attachments {
   size_bytes integer [not null]
   storage_key text [not null, note: "Object-storage key; never sent to clients (downloads use short-lived presigned URLs)."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "File sent with a website RFQ (PDF, DWG, JPG, PNG; up to 10 files of 25 MB). Was crm.lead_attachments."
   Indexes {
@@ -4080,7 +4080,7 @@ Table project.warranties {
   service_terms text [not null]
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Warranty certificate (Surat Keterangan Garansi) of a project, company-wide. Was aftersales.warranty_certificates (ADR-0024 Q13). Service tickets check serials against it."
   Indexes {
@@ -4104,7 +4104,7 @@ Table project.license_applications {
   status text [not null, default: 'active']
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Software licensed to customers, company-wide. Was licensing.licensable_applications (ADR-0024 Q11)."
   Indexes {
@@ -4140,7 +4140,7 @@ Table project.license_contracts {
   terminated_at bigint
   termination_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Licensing contract with a customer, company-wide. Was licensing.license_contracts; sales_order_id renamed order_id. A renewal is a new draft contract; activating it marks the old one renewed. Grace period after end_date: 7 days, derived, never stored."
   Indexes {
@@ -4171,7 +4171,7 @@ Table project.license_keys {
   revoked_at bigint
   revoke_reason text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "License key issued under a contract, company-wide. Was licensing.license_keys."
   Indexes {
@@ -4197,7 +4197,7 @@ Table project.license_activations {
   deactivated_at bigint
   deactivated_by text [note: "Logical reference to auth.users.id. Null when the application released the seat."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "One seat of a license key taken by an installation, company-wide. Was licensing.license_activations. Active seats never exceed the key's max_activations."
   Indexes {
@@ -4222,7 +4222,7 @@ Table project.license_events {
   description text
   event_at bigint [not null]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Append-only log of license API calls and staff overrides, company-wide. Was licensing.license_events."
   Indexes {
@@ -4247,7 +4247,7 @@ Table project.license_api_keys {
   revoked_at bigint
   last_used_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Machine key an own application uses to call the license API, company-wide. Was licensing.application_api_keys. It can only validate, activate and deactivate keys of its own application."
   Indexes {
@@ -4516,7 +4516,7 @@ Table project.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Project module configuration key value store."
   Indexes {
     (setting_group, setting_key) [unique, name: 'project_settings_scope_uq']
@@ -4536,7 +4536,7 @@ Table project.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the project module (ADR-0024 Q6). Absorbs the projects, crm-lead, licensing and aftersales-warranty rows of code_number.series."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -4611,7 +4611,7 @@ Table ticket.tickets {
   closed_at bigint
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Service ticket (tiket servis), company-wide. Was aftersales.service_tickets (ADR-0024 Q13), reshaped with ticket_type, parent_ticket_id, company_id, warranty_id, item_serial_id and the template columns. Stores the warranty check made when it is reported; closed only with the customer's confirmation. A parent closes only when its children are closed (Q29)."
   Indexes {
@@ -4642,7 +4642,7 @@ Table ticket.ticket_messages {
   body text [not null]
   visibility text [not null, default: 'internal']
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Message thread of a ticket, company-wide like the ticket. Was aftersales.service_ticket_comments. Staff write internal notes or customer-visible replies; a customer writes from the portal (always customer-visible). Only customer-visible messages reach the portal."
   Indexes {
@@ -4704,7 +4704,7 @@ Table ticket.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Ticket module configuration key value store."
   Indexes {
     (setting_group, setting_key) [unique, name: 'ticket_settings_scope_uq']
@@ -4724,7 +4724,7 @@ Table ticket.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the ticket module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -4764,7 +4764,7 @@ Table human_resource.employees {
   termination_date bigint [note: "Unix milliseconds, not a business date."]
   manager_employee_id uuid
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Employee master. department_id / position_id / branch_id / cost_center_id are removed with the organization schema (ADR-0024 Q4). An employee may have a portal login: the link is user_id and it is not a foreign key."
   Indexes {
@@ -4815,7 +4815,7 @@ Table human_resource.attendances {
   notes text
   recorded_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "One attendance row per employee per day (was hr.attendance_records), entered by HR/admin or imported. Unique (employee_id, attendance_date) among live rows."
   Indexes {
@@ -4839,7 +4839,7 @@ Table human_resource.leave_types {
   annual_quota_days integer [not null, default: 0]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Leave type, company-wide. Seeded: annual leave (12 days, quota), sick, permit."
   Checks {
@@ -4862,7 +4862,7 @@ Table human_resource.leave_requests {
   decided_at bigint
   decision_note text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Leave request recorded by HR, company-wide. Approval writes attendance rows; cancelling an approved request removes them."
   Indexes {
@@ -4888,7 +4888,7 @@ Table human_resource.overtime_requests {
   decided_at bigint
   decision_note text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Overtime recorded by HR and approved, company-wide; approved hours feed the salary record."
   Indexes {
@@ -4911,7 +4911,7 @@ Table human_resource.employee_tasks {
   done_at bigint
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Simple task assigned to an employee outside projects; project tasks live in project.tasks."
   Indexes {
@@ -4937,7 +4937,7 @@ Table human_resource.employee_salaries {
   is_active boolean [not null, default: true]
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Effective dated salary agreement of an employee (ADR-0024 Q39): base salary, fixed allowances and the salary bank account (which absorbs hr.bank_accounts). Finance and payment read it through ExportedEmployeeService."
   Indexes {
@@ -4968,7 +4968,7 @@ Table human_resource.employee_salary_records {
   approved_at bigint
   created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Monthly salary record per employee (was hr.salary_summaries, ADR-0024 Q39), entered or imported by HR/finance and approved by the owner; approved rows are locked. Unique (period, employee_id) among live rows. Payment allocates against it (payable_type employee_salary_record)."
   Indexes {
@@ -5010,7 +5010,7 @@ Table human_resource.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Human resource module configuration key value store."
   Indexes {
     (setting_group, setting_key) [unique, name: 'human_resource_settings_scope_uq']
@@ -5030,7 +5030,7 @@ Table human_resource.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the human resource module (ADR-0024 Q6)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -5069,7 +5069,7 @@ Table document.templates {
   numbering_pattern text
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Reusable document template. A new version is a new row; an issued document keeps pointing at the version it used. numbering_pattern here is display-only; the numbering authority is <schema>.code_numberings."
   Indexes {
@@ -5100,7 +5100,7 @@ Table document.documents {
   is_current boolean [not null, default: true]
   supersedes_document_id uuid
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Document master (registry + issuance). A document is never hard deleted, a new version supersedes the old one."
   Indexes {
     (organization_id, code) [unique, name: 'documents_org_code_uq']
@@ -5126,7 +5126,7 @@ Table document.files {
   uploaded_by_user_id text [note: "Logical reference to auth.users.id."]
   uploaded_at bigint [not null]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Binary attachment of a document. The storage key never contains a public URL."
   Indexes {
@@ -5153,7 +5153,7 @@ Table document.signatures {
   source_file_id uuid [note: "PDF the signature was placed on; one of this document's files."]
   signed_file_key text [note: "Object-storage key of the signed PDF artifact. Once set the placement is final."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Signature evidence of a document. source_file_id and signed_file_key stay NULL for a signature that was only recorded (no PDF placement)."
   Indexes {
@@ -5179,7 +5179,7 @@ Table document.signature_requests {
   expires_at bigint
   responded_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Workflow state of a signature request. The immutable evidence lives in document.signatures. Expiry is evaluated at read time; no job flips the status. One live pending request per document and signer (partial unique index)."
   Indexes {
@@ -5200,7 +5200,7 @@ Table document.user_signatures {
   object_key text [not null, note: "Object-storage key of the WebP signature/stamp image; never a public URL."]
   uploaded_at bigint [not null]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Signature image a user uploads for themselves. One live image per user (partial unique index). Not rendered into any document layout yet."
   Indexes {
@@ -5218,7 +5218,7 @@ Table document.access_logs {
   ip_address text
   user_agent text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Access trail of a document. Audit reads are never cached and never skipped."
   Indexes {
@@ -5243,7 +5243,7 @@ Table document.shares {
   expires_at bigint
   is_revoked boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "External sharing of a document, for example a portal share with a customer."
   Indexes {
@@ -5263,7 +5263,7 @@ Table document.tags {
   tag text [not null]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Free form tag applied to documents."
   Indexes {
@@ -5277,7 +5277,7 @@ Table document.tag_links {
   document_id uuid [not null]
   document_tag_id uuid [not null]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Link between a document and a tag."
   Indexes {
@@ -5296,7 +5296,7 @@ Table document.settings {
   description text
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Document module configuration key value store (ADR-0024 Q32)."
   Indexes {
     (setting_group, setting_key) [unique, name: 'document_settings_scope_uq']
@@ -5316,7 +5316,7 @@ Table document.code_numberings {
   next_number bigint [not null, default: 1]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   Note: "Code series of the document module (ADR-0024 Q6/Q32)."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
@@ -5353,7 +5353,7 @@ Table notification.push_notification_templates {
   variables jsonb [note: "Declared variable names of the template, e.g. [\"organizationName\",\"role\"]."]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Copy of one notification event, keyed by a `module.event` code (org.member_added). App-scope: one template serves every organization. Was notification.notification_templates. The client renders it from code + variables through i18n; the server renders the English body as a fallback."
   Indexes {
@@ -5382,7 +5382,7 @@ Table notification.push_notifications {
   source_type text
   source_id text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "One in-app notification for one user (was notification.notifications). App-scope (no organization_id): the list is per user across every organization. Created as `sent` by the worker, which then pushes it over the realtime socket; `read` is set by the recipient."
   Indexes {
@@ -5450,7 +5450,7 @@ Table automation.outbox_messages {
   error_message varchar(500)
   dedupe_key varchar(200) [note: "Once-per-fact events (license.due:<contract>:<end>:<threshold>); a repeat publish is skipped. Unique when set."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Transactional outbox. The event is recorded with the business change, then delivered to the n8n webhook by a background queue that retries; a queue or webhook outage never fails the business action."
   Indexes {
@@ -5475,7 +5475,7 @@ Table automation.faq_entries {
   created_by text [note: "Logical reference to auth.users.id."]
   updated_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Approved answers the WhatsApp assistant may use. Company-wide."
   Indexes {
@@ -5496,7 +5496,7 @@ Table automation.whatsapp_conversations {
   last_message_at bigint [not null]
   last_inbound_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "One WhatsApp chat with the company number. Company-wide."
   Indexes {
@@ -5522,7 +5522,7 @@ Table automation.whatsapp_messages {
   error_message varchar(500)
   attempts smallint [not null, default: 0]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
   Note: "Every WhatsApp message of a conversation (log). Company-wide."
   Indexes {

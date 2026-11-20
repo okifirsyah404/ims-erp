@@ -119,7 +119,7 @@ export const pushNotifications = notificationSchema.table(
 			{ onDelete: 'set null' },
 		),
 		/** Logical reference to auth.users.id — cross-module FK omitted by rule. */
-		userId: text('user_id').notNull(),
+		userId: text('user_id'),
 		/** Denormalized `module.event` code, so a later template edit never rewrites history. */
 		templateCode: varchar('template_code', { length: 64 }).notNull(),
 		title: text('title').notNull(),

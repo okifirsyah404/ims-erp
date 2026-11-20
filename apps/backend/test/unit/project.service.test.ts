@@ -82,7 +82,8 @@ function fakeRepository(): IProjectRepository {
 		isInvolved: async (projectId, userId) =>
 			live(projectId)?.picUserId === userId || tasks.some((task) => task.projectId === projectId && task.assigneeUserId === userId && !task.deletedAt),
 		findLiveBySalesOrder: async (orderId) => rows.find((row) => row.orderId === orderId && row.status !== 'cancelled') ?? null,
-		salesOrdersWithProject: async (ids) => new Set(rows.filter((row) => ids.includes(row.orderId) && row.status !== 'cancelled').map((row) => row.orderId)),
+		salesOrdersWithProject: async (ids) =>
+			new Set(rows.flatMap((row) => (row.orderId !== null && ids.includes(row.orderId) && row.status !== 'cancelled' ? [row.orderId] : []))),
 		async create(data, defaults) {
 			const project = { ...data, id: crypto.randomUUID(), stage: 'preparation', status: 'active' } as TProjectSelect;
 			rows.push(project);

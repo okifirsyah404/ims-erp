@@ -152,7 +152,56 @@ for (const file of readdirSync(SCHEMA_DIR).filter(f => f.endsWith(".schema.ts"))
 console.log(`drizzle parity drift: ${drift.length}`);
 drift.forEach(d => console.error("  " + d));
 
-if (dups || cross || gaps.length || drift.length) process.exit(1);
+// ---------------------------------------------------------------------------
+// 6. Column parity, both directions, against the real Drizzle tables: for every
+//    table that exists in both, a column must have the same nullability and
+//    the same SQL type in docs.dbml and in the Drizzle schema. Check 5 only
+//    proves that names exist; it never noticed a NOT NULL on a cross-module id
+//    column (ADR-0014 says those are always nullable) or a type that differs.
+//    docs.dbml wins: a mismatch means the Drizzle file is the bug.
+//
+// Defaults and indexes are not compared: DBML cannot express partial or
+// expression indexes, and Drizzle `$onUpdate` / `$default` are not DB defaults.
+// ---------------------------------------------------------------------------
+const { getTableConfig, PgTable } = await import("drizzle-orm/pg-core");
+const { is } = await import("drizzle-orm");
+const dbmlColumns = new Map();
+for (const schema of db.schemas) {
+  for (const t of schema.tables ?? []) {
+    dbmlColumns.set(`${schema.name}.${t.name}`, new Map((t.fields ?? []).map(f => [f.name, f])));
+  }
+}
+const normType = (s) =>
+  String(s).toLowerCase().replace(/\(.*/, "").trim()
+    .replace("character varying", "varchar")
+    .replace("timestamp without time zone", "timestamp")
+    .replace("integer", "int");
+const columnDrift = [];
+for (const file of readdirSync(SCHEMA_DIR).filter(f => f.endsWith(".schema.ts"))) {
+  const mod = await import(join(SCHEMA_DIR, file));
+  for (const value of Object.values(mod)) {
+    if (!is(value, PgTable)) continue;
+    const config = getTableConfig(value);
+    const full = `${config.schema ?? "public"}.${config.name}`;
+    const declared = dbmlColumns.get(full);
+    if (!declared) continue; // reported by check 5
+    for (const col of config.columns) {
+      const field = declared.get(col.name);
+      if (!field) continue; // reported by check 5
+      const dbmlNotNull = Boolean(field.not_null) || Boolean(field.pk);
+      if (dbmlNotNull !== Boolean(col.notNull)) {
+        columnDrift.push(`${full}.${col.name}: docs.dbml ${dbmlNotNull ? "NOT NULL" : "nullable"}, Drizzle ${col.notNull ? "NOT NULL" : "nullable"}`);
+      }
+      const a = normType(field.type?.type_name ?? "");
+      const b = normType(col.getSQLType());
+      if (a !== b) columnDrift.push(`${full}.${col.name}: docs.dbml type ${a}, Drizzle type ${b}`);
+    }
+  }
+}
+console.log(`column parity drift (nullability, type): ${columnDrift.length}`);
+columnDrift.forEach(d => console.error("  " + d));
+
+if (dups || cross || gaps.length || drift.length || columnDrift.length) process.exit(1);
 console.log("OK");
 // @dbml/core leaves an open handle on Windows; force-exit or bun never returns
 process.exit(0);

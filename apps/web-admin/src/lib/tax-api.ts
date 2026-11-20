@@ -63,7 +63,7 @@ async function getDataPaginated<T>(path: string): Promise<TPaginated<T>> {
 
 export type TTaxType = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	name: string;
 	taxType: string;
@@ -136,7 +136,7 @@ export function recapXlsxUrl(year: number, month: number): string {
 
 export type TTaxRecord = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	taxTypeId: string;
 	periodYear: number;
@@ -205,7 +205,7 @@ export type TTaxCorrection = {
 	amount: number;
 	reason: string;
 	evidenceDocumentId: string | null;
-	createdBy: string;
+	createdBy: string | null;
 	createdAt: string;
 };
 
@@ -232,7 +232,7 @@ export function addCorrection(
 
 export type TWithholdingRecord = {
 	id: string;
-	organizationId: string;
+	organizationId: string | null;
 	code: string;
 	taxTypeId: string;
 	counterpartyType: string | null;

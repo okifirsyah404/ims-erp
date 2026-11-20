@@ -29,6 +29,7 @@ import {
 	GoodsReceiptLineError,
 	GoodsReceiptNotFoundError,
 	GoodsReceiptOrderNotReceivableError,
+	PurchaseOrderItemUnavailableError,
 } from '../errors/procurement.errors';
 
 export type TGoodsReceiptDetail = TGoodsReceiptRow & {
@@ -98,7 +99,7 @@ export class GoodsReceiptService {
 		if (!receipt) throw new GoodsReceiptNotFoundError();
 		const [items, warehouse] = await Promise.all([
 			this.receipts.findItems(id),
-			this.warehouses.getWarehouse(receipt.warehouseId).catch(() => null),
+			receipt.warehouseId ? this.warehouses.getWarehouse(receipt.warehouseId).catch(() => null) : null,
 		]);
 		const bin = warehouse?.storages.find((storage) => storage.id === receipt.binId) ?? null;
 		return {
@@ -149,7 +150,9 @@ export class GoodsReceiptService {
 						quantity: line.quantity,
 						quantityReceived: line.quantityReceived,
 						openQuantity: open(line),
-						isSerialized: (await this.items.getProduct(line.productId).catch(() => null))?.isSerialized ?? false,
+						isSerialized: line.productId
+							? ((await this.items.getProduct(line.productId).catch(() => null))?.isSerialized ?? false)
+							: false,
 					})),
 				);
 				return {
@@ -191,7 +194,10 @@ export class GoodsReceiptService {
 				const poItem = poItems.get(line.purchaseOrderItemId);
 				if (!poItem) throw new GoodsReceiptLineError('unknown', index + 1);
 				if (quantityToMilli(line.quantity) > quantityToMilli(open(poItem))) throw new GoodsReceiptLineError('over', index + 1);
-				const item = await this.items.getProduct(poItem.productId);
+				// ADR-0014: a PO line is not guaranteed to carry its product; no product, no stock.
+				const productId = poItem.productId;
+				if (!productId) throw new PurchaseOrderItemUnavailableError(index + 1);
+				const item = await this.items.getProduct(productId);
 				const serials = line.serialNumbers ?? [];
 				if (item.isSerialized) {
 					const units = Number(line.quantity);
@@ -199,7 +205,7 @@ export class GoodsReceiptService {
 						throw new GoodsReceiptLineError('serials', index + 1);
 					}
 				}
-				return { line, poItem, item, serials: item.isSerialized ? serials : [] };
+				return { line, poItem, productId, item, serials: item.isSerialized ? serials : [] };
 			}),
 		);
 
@@ -228,9 +234,9 @@ export class GoodsReceiptService {
 					receivedBy: actor.userId,
 					notes: body.notes,
 				},
-				lines.map(({ line, poItem, serials }) => ({
+				lines.map(({ line, poItem, productId, serials }) => ({
 					purchaseOrderItemId: poItem.id,
-					productId: poItem.productId,
+					productId,
 					sku: poItem.sku,
 					name: poItem.name,
 					unit: poItem.unit,
@@ -241,13 +247,13 @@ export class GoodsReceiptService {
 				tx,
 			);
 			for (const [index, row] of items.entries()) {
-				const { poItem, item, serials } = lines[index]!;
+				const { poItem, productId, item, serials } = lines[index]!;
 				const posted = await this.stock.postMovement(
 					{
 						actorOrganizationId: actor.organizationId,
 						warehouseId: body.warehouseId,
 						binId: body.binId ?? null,
-						productId: poItem.productId,
+						productId,
 						movementType: 'receipt',
 						quantity: row.quantity,
 						unitCost: row.unitCost,
@@ -262,7 +268,7 @@ export class GoodsReceiptService {
 				await this.receipts.setMovement(row.id, posted.movement.id, tx);
 				for (const serialNumber of serials) {
 					await this.items.registerUnit(
-						poItem.productId,
+						productId,
 						{
 							serialNumber,
 							organizationId: item.organizationId,

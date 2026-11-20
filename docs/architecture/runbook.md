@@ -117,7 +117,7 @@ stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 - 2026-11-19: the v1 chain (31 steps) was moved to
   `apps/backend/database/migrations-archive/v1` (history only, never applied)
   and replaced by **one baseline migration**,
-  `apps/backend/database/migrations/20261119145940_many_human_robot`
+  `apps/backend/database/migrations/20261120061847_last_daredevil`
   (18 schemas, 164 `CREATE TABLE` statements, 0 cross-schema `REFERENCES`).
 - Verified 2026-11-19 on a disposable database (dropped afterwards):
   `drizzle:migrate` applied it cleanly; `drizzle:seed` ran twice and the second

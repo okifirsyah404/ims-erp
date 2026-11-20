@@ -146,7 +146,7 @@ export type InvoiceUsage = (typeof INVOICE_USAGES)[number];
  * Shared column fragments
  * ------------------------------------------------------------------------ */
 
-const organizationId = () => text('organization_id').notNull();
+const organizationId = () => text('organization_id');
 const moneyAmount = (name: string) =>
 	bigint(name, { mode: 'number' }).notNull().default(0);
 const currencyCode = () =>
@@ -644,7 +644,7 @@ export const supplierBills = financeSchema.table(
 		organizationId: organizationId(),
 		code: varchar('code', { length: 32 }).notNull(),
 		/** Logical reference to supplier.companies.id — cross-module FK omitted. */
-		supplierCompanyId: uuid('supplier_company_id').notNull(),
+		supplierCompanyId: uuid('supplier_company_id'),
 		/** Logical reference to procurement.purchase_orders.id — FK omitted. */
 		purchaseOrderId: uuid('purchase_order_id'),
 		supplierInvoiceNumber: varchar('supplier_invoice_number', { length: 100 }),
@@ -723,7 +723,7 @@ export const arOpenItems = financeSchema.table(
 		id: uuid('id').primaryKey().default(sql`uuidv7()`),
 		organizationId: organizationId(),
 		/** Logical reference to sale.invoices.id — cross-module FK omitted. */
-		invoiceId: uuid('invoice_id').notNull(),
+		invoiceId: uuid('invoice_id'),
 		/** Logical reference to customer.customers.id — cross-module FK omitted. */
 		customerId: uuid('customer_id'),
 		invoiceDate: date('invoice_date'),
@@ -818,7 +818,7 @@ export const assetDepreciations = financeSchema.table(
 		id: uuid('id').primaryKey().default(sql`uuidv7()`),
 		organizationId: text('organization_id'),
 		/** Logical reference to inventory.items.id — cross-module FK omitted. */
-		itemId: uuid('item_id').notNull(),
+		itemId: uuid('item_id'),
 		periodYear: integer('period_year').notNull(),
 		periodMonth: integer('period_month').notNull(),
 		depreciationMethod: text('depreciation_method')

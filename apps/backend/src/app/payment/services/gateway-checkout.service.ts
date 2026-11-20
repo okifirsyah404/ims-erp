@@ -174,15 +174,18 @@ export class GatewayCheckoutService {
 		if (!event) return 'ignored';
 		if (!UUID.test(event.reference)) return 'unknown';
 
-		let recorded: { receipt: TReceiptSelect; invoiceId: string } | null = null;
+		let recorded: { receipt: TReceiptSelect; invoiceId: string; organizationId: string } | null = null;
 		const outcome = await this.payments.withLocked(event.reference, async (payment, tx): Promise<TWebhookOutcome> => {
 			if (payment.provider !== delivery.provider) return 'unknown';
 			if (payment.receiptId) return 'duplicate';
+			// ADR-0014: the row no longer guarantees its tenant; without one the payment cannot be applied.
+			const organizationId = payment.organizationId;
+			if (!organizationId) return 'unknown';
 
 			if (event.status !== 'paid') {
 				if (payment.status !== 'pending' || event.status === 'pending') return 'ignored';
 				await this.payments.update(
-					payment.organizationId,
+					organizationId,
 					payment.id,
 					{ status: event.status, lastEvent: event.raw as Record<string, unknown> },
 					tx as never,
@@ -203,9 +206,9 @@ export class GatewayCheckoutService {
 				lastEvent: event.raw as Record<string, unknown>,
 			};
 
-			const allocations = await this.payments.listAllocations(payment.organizationId, payment.id, tx);
+			const allocations = await this.payments.listAllocations(organizationId, payment.id, tx);
 			const invoiceId = allocations.find((allocation) => allocation.payableType === 'sale_invoice')?.payableId;
-			const invoice = invoiceId ? await this.invoices.findById(payment.organizationId, invoiceId, tx) : null;
+			const invoice = invoiceId ? await this.invoices.findById(organizationId, invoiceId, tx) : null;
 			if (
 				!invoiceId ||
 				!invoice ||
@@ -214,7 +217,7 @@ export class GatewayCheckoutService {
 				paidAmount <= 0
 			) {
 				await this.payments.update(
-					payment.organizationId,
+					organizationId,
 					payment.id,
 					{ ...paid, settlementNote: UNAPPLIED_NOTE },
 					tx as never,
@@ -231,7 +234,7 @@ export class GatewayCheckoutService {
 			const receipt = await this.invoices.addReceipt(
 				{
 					invoiceId,
-					organizationId: payment.organizationId,
+					organizationId,
 					code,
 					receivedDate,
 					amount: paidAmount,
@@ -246,7 +249,7 @@ export class GatewayCheckoutService {
 			);
 			if (!receipt) {
 				await this.payments.update(
-					payment.organizationId,
+					organizationId,
 					payment.id,
 					{ ...paid, settlementNote: UNAPPLIED_NOTE },
 					tx as never,
@@ -261,7 +264,7 @@ export class GatewayCheckoutService {
 					module: 'sale',
 					sourceType: 'receipt',
 					sourceId: receipt.id,
-					organizationId: payment.organizationId,
+					organizationId,
 					issuedOn: receivedDate,
 					issuedByUserId: null,
 				},
@@ -270,7 +273,7 @@ export class GatewayCheckoutService {
 			// Rounding to whole rupiah can overpay by less than 1 rupiah; more is noted.
 			const excess = paidAmount - receipt.amount;
 			await this.payments.update(
-				payment.organizationId,
+				organizationId,
 				payment.id,
 				{
 					...paid,
@@ -279,13 +282,17 @@ export class GatewayCheckoutService {
 				},
 				tx,
 			);
-			recorded = { receipt, invoiceId };
+			recorded = { receipt, invoiceId, organizationId };
 			return 'applied';
 		});
 		// After the commit, like a manual receipt: once per applied payment, never on a replay.
 		if (outcome === 'applied' && recorded) {
-			const applied = recorded as { receipt: TReceiptSelect; invoiceId: string };
-			const invoice = await this.invoices.findById(applied.receipt.organizationId, applied.invoiceId);
+			const applied = recorded as {
+				receipt: TReceiptSelect;
+				invoiceId: string;
+				organizationId: string;
+			};
+			const invoice = await this.invoices.findById(applied.organizationId, applied.invoiceId);
 			if (invoice) await this.invoices.publishReceiptRecorded(applied.receipt, invoice);
 		}
 		return outcome ?? 'unknown';

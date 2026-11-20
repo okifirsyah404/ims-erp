@@ -168,7 +168,7 @@ function ContractDetailPage() {
 					{canQuote && (data.status === 'draft' || data.status === 'active') && (
 						<Button
 							variant='outline'
-							render={<Link to='/sales/quotes/new' search={{ customerId: data.customerId }} />}
+							render={<Link to='/sales/quotes/new' search={{ customerId: data.customerId ?? undefined }} />}
 							nativeButton={false}
 						>
 							{t('licensing:action.quote')}

@@ -148,15 +148,16 @@ except `finance.settings` and `payment.settings`, which carry the column), and
 the company-wide core of `sale` / `project` / `procurement` / `ticket` /
 `human_resource` (ADR-0011).
 
-`organization_id text NOT NULL`: `auth.members`, `auth.invitations` and
+`organization_id text NOT NULL`: only `auth.members`, `auth.invitations` and
 `auth.organization_settings` (intra-schema foreign key to
-`auth.organizations.id`, `ON DELETE CASCADE`). In the Drizzle schemas the
-column is also `NOT NULL` on `inventory.warehouse_organizations`,
-`inventory.stock_adjustments`, `inventory.stock_adjustment_items`,
-`sale.invoices`, `sale.invoice_items`, `sale.receipts` and a few further
-`finance` / `payment` / `tax` columns, where `docs.dbml` still shows the column
-nullable (known drift between `docs.dbml` and the Drizzle files; parity checks
-do not compare nullability).
+`auth.organizations.id`, `ON DELETE CASCADE`). **Every other `organization_id`
+and every other cross-module id column is nullable**, in `docs.dbml` and in the
+Drizzle schemas alike (ADR-0014): the owning service decides whether the value
+is required for a use case and writes the active organization itself.
+`bun docs/database/validate-dbml.ts` (check 6) compares nullability and SQL
+type of every built column in both directions and fails on any mismatch; before
+2026-11-20 it only compared names, and 61 cross-module columns had drifted to
+`NOT NULL` in the Drizzle files.
 
 Scope carve-out: `NULL` means "company-wide" only on the tables whose note says
 "Null means global/company-wide" (mainly `inventory.*`) and on
