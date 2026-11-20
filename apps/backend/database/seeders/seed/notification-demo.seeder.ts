@@ -5,9 +5,9 @@ import { isProductionEnv } from '../../../config/providers/env';
 import { drizzleDB } from '../../../drizzle/db';
 import { users } from '../../../drizzle/schemas/auth.schema';
 import {
-	notificationTemplates,
-	notifications,
-	type NotificationTemplateCode,
+	pushNotificationTemplates,
+	pushNotifications,
+	type PushNotificationTemplateCode,
 } from '../../../drizzle/schemas/notification.schema';
 import { SEED_ORGANIZATION_NAME } from './organization.seeder';
 
@@ -22,7 +22,7 @@ const logger = pino({
 const DEMO_SOURCE_TYPE = 'seed_demo';
 
 /**
- * Three demo notifications for the seed admin, so the bell has something to
+ * Three demo pushNotifications for the seed admin, so the bell has something to
  * render (and a non-zero unread badge) on a freshly seeded database.
  *
  * @remarks
@@ -33,7 +33,7 @@ const DEMO_SOURCE_TYPE = 'seed_demo';
  */
 const DEMO_ROWS: ReadonlyArray<{
 	sourceId: string;
-	templateCode: NotificationTemplateCode;
+	templateCode: PushNotificationTemplateCode;
 	title: string;
 	body: string;
 	tags: string[];
@@ -95,7 +95,7 @@ const DEMO_ROWS: ReadonlyArray<{
  */
 export async function seedNotificationDemo(): Promise<void> {
 	if (isProductionEnv()) {
-		logger.info('Production environment; skipping demo notifications');
+		logger.info('Production environment; skipping demo pushNotifications');
 		return;
 	}
 
@@ -107,19 +107,19 @@ export async function seedNotificationDemo(): Promise<void> {
 	if (!user) {
 		logger.info(
 			{ email: appConfig.auth.seedAdminEmail },
-			'Seed admin not found; skipping demo notifications',
+			'Seed admin not found; skipping demo pushNotifications',
 		);
 		return;
 	}
 
 	const codes = DEMO_ROWS.map((row) => row.templateCode);
 	const templates = await drizzleDB
-		.select({ id: notificationTemplates.id, code: notificationTemplates.code })
-		.from(notificationTemplates)
+		.select({ id: pushNotificationTemplates.id, code: pushNotificationTemplates.code })
+		.from(pushNotificationTemplates)
 		.where(
 			and(
-				isNull(notificationTemplates.deletedAt),
-				inArray(notificationTemplates.code, codes),
+				isNull(pushNotificationTemplates.deletedAt),
+				inArray(pushNotificationTemplates.code, codes),
 			),
 		);
 	const templateIdByCode = new Map(
@@ -127,14 +127,14 @@ export async function seedNotificationDemo(): Promise<void> {
 	);
 
 	const existing = await drizzleDB
-		.select({ sourceId: notifications.sourceId })
-		.from(notifications)
+		.select({ sourceId: pushNotifications.sourceId })
+		.from(pushNotifications)
 		.where(
 			and(
-				eq(notifications.userId, user.id),
-				eq(notifications.sourceType, DEMO_SOURCE_TYPE),
+				eq(pushNotifications.userId, user.id),
+				eq(pushNotifications.sourceType, DEMO_SOURCE_TYPE),
 				inArray(
-					notifications.sourceId,
+					pushNotifications.sourceId,
 					DEMO_ROWS.map((row) => row.sourceId),
 				),
 			),
@@ -144,7 +144,7 @@ export async function seedNotificationDemo(): Promise<void> {
 	const now = Date.now();
 	const missing = DEMO_ROWS.filter((row) => !have.has(row.sourceId));
 	if (missing.length > 0) {
-		await drizzleDB.insert(notifications).values(
+		await drizzleDB.insert(pushNotifications).values(
 			missing.map((row) => {
 				const sentAt = new Date(now - row.ageMs);
 				return {
@@ -171,6 +171,6 @@ export async function seedNotificationDemo(): Promise<void> {
 
 	logger.info(
 		{ inserted: missing.length, userId: user.id },
-		'Demo notifications seeded',
+		'Demo pushNotifications seeded',
 	);
 }

@@ -24,10 +24,10 @@ import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import {
-	createItem,
-	itemsQueryOptions,
-	type TItemCreateInput,
-	type TItemKind,
+	createProduct,
+	productsQueryOptions,
+	type TProductCreateInput,
+	type TProductKind,
 } from '@/lib/inventory-api';
 import { useItemCategoryNames } from '@/lib/item-category-api';
 import { useClampPage } from '@/lib/use-clamp-page';
@@ -56,7 +56,7 @@ export function ItemKindList({
 	page,
 	onPageChange,
 }: {
-	kind: Extract<TItemKind, 'product' | 'component' | 'material'>;
+	kind: TProductKind;
 	title: string;
 	/** Current page, owned by the route's `page` search param. */
 	page: number;
@@ -69,7 +69,7 @@ export function ItemKindList({
 	const [creating, setCreating] = useState(false);
 
 	const { data, isPending, isError, error } = useQuery({
-		...itemsQueryOptions({ itemKind: kind, page, limit: PAGE_SIZE }),
+		...productsQueryOptions({ productKind: kind, page, limit: PAGE_SIZE }),
 		// Keeps the current page visible while the next one loads.
 		placeholderData: (previous) => previous,
 	});
@@ -164,7 +164,7 @@ export function ItemKindList({
 									<span className='text-muted-foreground'>
 										{t('inventory:items.category')}:{' '}
 									</span>
-									{(row.categoryId && categoryNames.get(row.categoryId)) ?? '—'}
+									{(row.productCategoryId && categoryNames.get(row.productCategoryId)) ?? '—'}
 								</p>
 								<div>
 									{row.isSerialized ? (
@@ -210,7 +210,7 @@ export function ItemKindList({
 					onCreated={() => {
 						setCreating(false);
 						void queryClient.invalidateQueries({
-							queryKey: ['inventory', 'items'],
+							queryKey: ['inventory', 'products'],
 						});
 					}}
 				/>
@@ -231,17 +231,17 @@ function CreateItemDialog({
 	onClose,
 	onCreated,
 }: {
-	kind: Extract<TItemKind, 'product' | 'component' | 'material'>;
+	kind: TProductKind;
 	onClose: () => void;
 	onCreated: () => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const [submitting, setSubmitting] = useState(false);
 
-	async function handleSubmit(input: TItemCreateInput | Record<string, unknown>) {
+	async function handleSubmit(input: TProductCreateInput | Record<string, unknown>) {
 		setSubmitting(true);
 		try {
-			const created = await createItem(input as TItemCreateInput);
+			const created = await createProduct(input as TProductCreateInput);
 			if (!created) throw new Error(t('common:error.failed'));
 			toast.success(t('inventory:form.created'));
 			onCreated();

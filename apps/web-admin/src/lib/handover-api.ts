@@ -4,7 +4,7 @@ import { currentLanguage } from '@/i18n';
 
 /**
  * API client for BAST documents (`/projects/:id/basts`) and warranty
- * certificates (`/warranty-certificates/projects/:projectId`), ADR-0011
+ * certificates (`/projects/warranties/projects/:projectId`), ADR-0011
  * step 6b.
  */
 
@@ -38,7 +38,7 @@ export type TBast = TBastInput & {
 export type TBastRow = TBast & { projectCode: string; customerName: string };
 
 export type TWarrantyInput = {
-	bastId: string;
+	handoverId: string;
 	issueDate: string;
 	months: number;
 	productSummary: string;
@@ -51,7 +51,7 @@ export type TWarrantyInput = {
 	serviceTerms: string;
 };
 
-export type TWarrantyDraft = Omit<TWarrantyInput, 'bastId'> & { bastId: string | null };
+export type TWarrantyDraft = Omit<TWarrantyInput, 'handoverId'> & { handoverId: string | null };
 
 export type TWarranty = TWarrantyInput & {
 	id: string;
@@ -121,16 +121,16 @@ export const cancelBast = (projectId: string, bastId: string) => send<TBast>(`/p
 export function warrantyQueryOptions(projectId: string) {
 	return queryOptions({
 		queryKey: ['projects', 'detail', projectId, 'warranty'] as const,
-		queryFn: async () => ((await request<TWarranty | null>(`/warranty-certificates/projects/${projectId}`)).data ?? null) as TWarranty | null,
+		queryFn: async () => ((await request<TWarranty | null>(`/projects/warranties/projects/${projectId}`)).data ?? null) as TWarranty | null,
 	});
 }
 
 export function warrantyDraftQueryOptions(projectId: string) {
 	return queryOptions({
 		queryKey: ['projects', 'detail', projectId, 'warranty-draft'] as const,
-		queryFn: async () => (await request<TWarrantyDraft>(`/warranty-certificates/projects/${projectId}/draft`)).data as TWarrantyDraft,
+		queryFn: async () => (await request<TWarrantyDraft>(`/projects/warranties/projects/${projectId}/draft`)).data as TWarrantyDraft,
 		staleTime: 0,
 	});
 }
 
-export const saveWarranty = (projectId: string, input: TWarrantyInput) => send<TWarranty>(`/warranty-certificates/projects/${projectId}`, 'PUT', input);
+export const saveWarranty = (projectId: string, input: TWarrantyInput) => send<TWarranty>(`/projects/warranties/projects/${projectId}`, 'PUT', input);

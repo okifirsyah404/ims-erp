@@ -22,27 +22,28 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import { container } from 'tsyringe';
 import type {
-	TItemSelect,
-	TStockBalanceSelect,
-	TStockMovementSelect,
+	TProductSelect,
+	TStockSelect,
+	TMovementSelect,
 	TWarehouseSelect,
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
+	TProductMovementSelect,
 	TMovementCreateData,
 	TMovementPaginationRequest,
 } from '../../src/app/inventory/contracts/movement.repository.interface';
 import type {
-	IBalanceRepository,
-	TBalanceDelta,
-	TBalanceKey,
-	TBalancePaginationRequest,
-} from '../../src/app/inventory/contracts/balance.repository.interface';
-import type { IItemRepository } from '../../src/app/inventory/contracts/item.repository.interface';
+	IStockRepository,
+	TStockDelta,
+	TStockKey,
+	TStockPaginationRequest,
+} from '../../src/app/inventory/contracts/stock.repository.interface';
+import type { IProductRepository } from '../../src/app/inventory/contracts/product.repository.interface';
 import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
 import {
-	BALANCE_REPOSITORY_TOKEN,
-	ITEM_REPOSITORY_TOKEN,
+	STOCK_REPOSITORY_TOKEN,
+	PRODUCT_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
@@ -89,10 +90,10 @@ function warehouse(
 }
 
 /** Balance key → sign-accumulating in-memory replica of the upsert. */
-type BalanceStore = Map<string, TStockBalanceSelect>;
+type BalanceStore = Map<string, TStockSelect>;
 
-const keyOf = (key: TBalanceKey): string =>
-	`${key.scopeOrganizationId ?? 'GLOBAL'}::${key.warehouseId}::${key.itemId}::${key.binId ?? ''}`;
+const keyOf = (key: TStockKey): string =>
+	`${key.scopeOrganizationId ?? 'GLOBAL'}::${key.warehouseId}::${key.productId}::${key.binId ?? ''}`;
 
 /**
  * In-memory movement repository.
@@ -101,8 +102,8 @@ const keyOf = (key: TBalanceKey): string =>
  * `claimForReversal` mirrors the real SQL: it only succeeds on a row whose
  * status is still `posted`, which is what makes a double reversal impossible.
  */
-function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] } {
-	const rows: TStockMovementSelect[] = [];
+function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[] } {
+	const rows: TProductMovementSelect[] = [];
 	let sequence = 0;
 
 	return {
@@ -121,14 +122,14 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 		async findById(id) {
 			return rows.find((row) => row.id === id) ?? null;
 		},
-		async create(data: TMovementCreateData) {
+		async create(data: TMovementCreateData, _tx?: never) {
 			sequence += 1;
 			const row = {
 				id: `movement-${sequence}`,
 				...data,
 				status: data.status ?? 'posted',
 				createdAt: data.createdAt ?? new Date(),
-			} as TStockMovementSelect;
+			} as TProductMovementSelect;
 			rows.push(row);
 			return row;
 		},
@@ -141,7 +142,7 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 				) ?? null
 			);
 		},
-		async claimForReversal(id) {
+		async claimForReversal(id: string, _tx?: never) {
 			const row = rows.find((row) => row.id === id);
 			// Exactly the SQL predicate: a row that is no longer `posted` cannot
 			// be claimed.
@@ -149,13 +150,13 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 			row.status = 'reversed';
 			return row;
 		},
-		async ledgerRows(scopeOrganizationId) {
+		async ledgerRows(scopeOrganizationId: string | null) {
 			return rows
 				.filter(
 					(row) => (WAREHOUSES.find((w) => w.id === row.warehouseId)?.organizationId ?? null) === scopeOrganizationId,
 				)
-				.map(({ itemId, warehouseId, binId, movementType, quantity, unitCost }) => ({
-					itemId,
+				.map(({ productId, warehouseId, binId, movementType, quantity, unitCost }) => ({
+					productId,
 					warehouseId,
 					binId,
 					movementType,
@@ -172,7 +173,7 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 					WAREHOUSES.find((w) => w.id === row.warehouseId)?.organizationId ??
 					null;
 				if (scope !== scopeOrganizationId) continue;
-				const key = `${row.warehouseId}::${row.itemId}::${row.binId ?? ''}`;
+				const key = `${row.warehouseId}::${row.productId}::${row.binId ?? ''}`;
 				// NOT `continue` for reversed rows: the entry must still exist so a
 				// fully reversed key is reported with a total of 0 and the service
 				// can remove its balance row.
@@ -183,9 +184,9 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 				);
 			}
 			return [...signed.entries()].map(([key, quantity]) => {
-				const [warehouseId, itemId, binId] = key.split('::');
+				const [warehouseId, productId, binId] = key.split('::');
 				return {
-					itemId,
+					productId,
 					warehouseId,
 					binId: binId === '' ? null : binId,
 					quantity: quantity.toFixed(3),
@@ -196,9 +197,9 @@ function fakeMovements(): IMovementRepository & { rows: TStockMovementSelect[] }
 }
 
 /** In-memory balance repository, mirroring the real upsert semantics. */
-function fakeBalances(store: BalanceStore): IBalanceRepository {
+function fakeBalances(store: BalanceStore): IStockRepository {
 	return {
-		async paginate(request: TBalancePaginationRequest) {
+		async paginate(request: TStockPaginationRequest) {
 			return {
 				meta: {
 					page: request.page,
@@ -229,7 +230,7 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 				(row) => row.organizationId === scopeOrganizationId,
 			);
 		},
-		async applyDelta(key, delta: TBalanceDelta) {
+		async applyDelta(key, delta: TStockDelta) {
 			const existing = store.get(keyOf(key));
 			if (!existing) {
 				// Mirror the repository: a negative opening delta is refused
@@ -240,7 +241,7 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 				const created = {
 					id: `balance-${store.size}`,
 					organizationId: key.scopeOrganizationId,
-					itemId: key.itemId,
+					productId: key.productId,
 					warehouseId: key.warehouseId,
 					binId: key.binId,
 					quantityOnHand: delta.quantity,
@@ -249,7 +250,7 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 					lastMovementAt: delta.occurredAt,
 					createdAt: new Date(),
 					updatedAt: null,
-				} as TStockBalanceSelect;
+				} as TStockSelect;
 				store.set(keyOf(key), created);
 				return created;
 			}
@@ -278,7 +279,7 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 			const created = {
 				id: `balance-${store.size}`,
 				organizationId: key.scopeOrganizationId,
-				itemId: key.itemId,
+				productId: key.productId,
 				warehouseId: key.warehouseId,
 				binId: key.binId,
 				quantityOnHand: quantity,
@@ -287,21 +288,21 @@ function fakeBalances(store: BalanceStore): IBalanceRepository {
 				lastMovementAt: null,
 				createdAt: new Date(),
 				updatedAt: null,
-			} as TStockBalanceSelect;
+			} as TStockSelect;
 			store.set(keyOf(key), created);
 			return created;
 		},
 		async remove(key) {
 			return store.delete(keyOf(key));
 		},
-		async availableByItems() {
+		async availableByProducts() {
 			return [];
 		},
 	};
 }
 
 /** Minimal warehouse repository: `findById` is all the service uses. */
-function fakeItems(): IItemRepository {
+function fakeItems(): IProductRepository {
 	return {
 		async paginate() {
 			return {
@@ -319,7 +320,7 @@ function fakeItems(): IItemRepository {
 			return null;
 		},
 		async create(data) {
-			return data as TItemSelect;
+			return data as TProductSelect;
 		},
 		async update() {
 			return null;
@@ -332,6 +333,18 @@ function fakeItems(): IItemRepository {
 		},
 		async countUnits() {
 			return 0;
+		},
+		async listListed() {
+			return [];
+		},
+		async listPublished() {
+			return [];
+		},
+		async findBySlug() {
+			return null;
+		},
+		async findPublishedBySlug() {
+			return null;
 		},
 	};
 }
@@ -432,20 +445,20 @@ beforeEach(() => {
 	} as never;
 
 	container.register(MOVEMENT_REPOSITORY_TOKEN, { useValue: movements });
-	container.register(BALANCE_REPOSITORY_TOKEN, {
+	container.register(STOCK_REPOSITORY_TOKEN, {
 		useValue: fakeBalances(balances),
 	});
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
 		useValue: fakeWarehouses(),
 	});
-	container.register(ITEM_REPOSITORY_TOKEN, {
+	container.register(PRODUCT_REPOSITORY_TOKEN, {
 		useValue: fakeItems(),
 	});
 	container.register(STOCK_SERVICE_TOKEN, { useValue: new StockService(
 		container.resolve(MOVEMENT_REPOSITORY_TOKEN),
-		container.resolve(BALANCE_REPOSITORY_TOKEN),
+		container.resolve(STOCK_REPOSITORY_TOKEN),
 		container.resolve(WAREHOUSE_REPOSITORY_TOKEN),
-		container.resolve(ITEM_REPOSITORY_TOKEN),
+		container.resolve(PRODUCT_REPOSITORY_TOKEN),
 		// Photo URLs are decoration only; the ledger tests do not assert them.
 		{ urlFor: () => null } as never,
 		createNumberingDouble(),
@@ -469,7 +482,7 @@ describe('stock — scope rule', () => {
 		const posted = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
@@ -485,7 +498,7 @@ describe('stock — scope rule', () => {
 		const posted = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
@@ -499,14 +512,14 @@ describe('stock — scope rule', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		const second = await service.postMovement({
 			actorOrganizationId: ORG_B,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '5.000',
 		});
@@ -521,14 +534,14 @@ describe('stock — scope rule', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '3.000',
 		});
@@ -546,12 +559,12 @@ describe('stock — negative stock is refused', () => {
 		'adjustment_out',
 		'return_out',
 		'consumption',
-		'borrowing_out',
+		"issue",
 	] as const)('%s cannot take the balance below zero', async (movementType) => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '5.000',
 		});
@@ -560,7 +573,7 @@ describe('stock — negative stock is refused', () => {
 			service.postMovement({
 				actorOrganizationId: ORG_A,
 				warehouseId: ORG_A_WAREHOUSE,
-				itemId: ITEM_ID,
+				productId: ITEM_ID,
 				movementType,
 				quantity: '6.000',
 				...(movementType === 'transfer_out'
@@ -577,14 +590,14 @@ describe('stock — negative stock is refused', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '5.000',
 		});
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '5.000',
 		});
@@ -596,7 +609,7 @@ describe('stock — negative stock is refused', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_B,
 			warehouseId: ORG_B_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '100.000',
 		});
@@ -606,7 +619,7 @@ describe('stock — negative stock is refused', () => {
 			service.postMovement({
 				actorOrganizationId: ORG_A,
 				warehouseId: ORG_A_WAREHOUSE,
-				itemId: ITEM_ID,
+				productId: ITEM_ID,
 				movementType: 'issue',
 				quantity: '1.000',
 			}),
@@ -619,14 +632,14 @@ describe('stock — reversal', () => {
 		const receipt = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '4.000',
 		});
@@ -645,14 +658,14 @@ describe('stock — reversal', () => {
 		const receipt = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '10.000',
 		});
@@ -674,14 +687,14 @@ describe('stock — reversal', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		const issue = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '4.000',
 		});
@@ -696,7 +709,7 @@ describe('stock — reversal', () => {
 		const receipt = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
@@ -713,7 +726,7 @@ describe('stock — reversal', () => {
 		const receipt = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
@@ -729,14 +742,14 @@ describe('stock — reversal', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		const issue = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '4.000',
 		});
@@ -761,28 +774,28 @@ describe('stock — the ledger is the truth', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '10.000',
 		});
 		const orgAIssue = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '3.000',
 		});
 		await service.postMovement({
 			actorOrganizationId: ORG_B,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '7.000',
 		});
 		const globalIssue = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: GLOBAL_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'issue',
 			quantity: '2.000',
 		});
@@ -815,7 +828,7 @@ describe('stock — the ledger is the truth', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '9.000',
 		});
@@ -831,7 +844,7 @@ describe('stock — the ledger is the truth', () => {
 		const receipt = await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '4.000',
 		});
@@ -847,14 +860,14 @@ describe('stock — the ledger is the truth', () => {
 		await service.postMovement({
 			actorOrganizationId: ORG_A,
 			warehouseId: ORG_A_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '9.000',
 		});
 		await service.postMovement({
 			actorOrganizationId: ORG_B,
 			warehouseId: ORG_B_WAREHOUSE,
-			itemId: ITEM_ID,
+			productId: ITEM_ID,
 			movementType: 'receipt',
 			quantity: '2.000',
 		});
@@ -873,7 +886,7 @@ describe('stock — moving-average cost (ADR-0011 §5)', () => {
 			service.postMovement({
 				actorOrganizationId: ORG_A,
 				warehouseId: ORG_A_WAREHOUSE,
-				itemId: ITEM_ID,
+				productId: ITEM_ID,
 				movementType,
 				quantity,
 				unitCost,

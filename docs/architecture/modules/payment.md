@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "payment (NestJS-era audit)". It is kept for history. Current owner: payment (schema `payment`: payments, payment_allocations, gateways) - see docs/database/module-ownership.md.
+> Mapping: finance.payments / sales.receipts scaffolds -> payment.payments; gateway callbacks -> webhook module.
+
 > 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
 
 # Payment Module

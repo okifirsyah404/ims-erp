@@ -6,17 +6,23 @@ import type {
 import { queryOptions } from '@tanstack/react-query';
 
 /**
- * API client for the asset module endpoints (`/assets*`).
+ * API client for the asset register: physical tool/asset units owned by the
+ * inventory module (`/inventory/items*`, `/inventory/item-categories*`,
+ * `/inventory/tool-sets*`, `/inventory/disposals*`) plus the finance-owned
+ * depreciation log (`/finance/depreciations`).
  *
  * @remarks
  * Tenant scope comes from the caller's active organization server-side.
  * `asset:*` permissions gate every call; the UI only hides controls it knows
- * will fail (D16).
+ * will fail (D16). The wrappers are hand-written and untyped against the
+ * backend, so every shape below mirrors `inventory.schema.ts` /
+ * `finance.schema.ts` and the zod contracts under
+ * `apps/backend/src/app/inventory/contracts` (ADR-0024).
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** Asset lifecycle statuses, mirroring `ASSET_STATUSES` (D7). */
+/** Item lifecycle statuses, mirroring `ITEM_STATUSES`. */
 export const ASSET_STATUSES = [
 	'ready',
 	'borrowed',
@@ -27,18 +33,19 @@ export const ASSET_STATUSES = [
 ] as const;
 export type TAssetStatus = (typeof ASSET_STATUSES)[number];
 
-/** Type codes come from the `assets.asset_types` lookup (D10). */
-export type TAssetType = string;
-
-/** One row of the asset-type lookup; `name` is the display label. */
-export type TAssetTypeRow = {
-	id: string;
-	code: string;
-	name: string;
-	defaultUsefulLifeMonths: number | null;
-	defaultDepreciationMethod: string;
-	isActive: boolean;
-};
+/**
+ * Item kinds, mirroring `ITEM_KINDS`. They replace the old
+ * `assets.asset_types` lookup: a closed vocabulary instead of a table.
+ */
+export const ITEM_KINDS = [
+	'equipment',
+	'vehicle',
+	'tool',
+	'furniture',
+	'it',
+	'intangible',
+] as const;
+export type TItemKind = (typeof ITEM_KINDS)[number];
 
 export const ASSET_CONDITIONS = ['new', 'good', 'fair', 'poor', 'damaged'] as const;
 export type TAssetCondition = (typeof ASSET_CONDITIONS)[number];
@@ -55,15 +62,15 @@ export const DISPOSAL_STATUSES = [
 ] as const;
 export type TDisposalStatus = (typeof DISPOSAL_STATUSES)[number];
 
-/** One asset master row. Money arrives as integer minor units. */
-export type TAsset = {
+/** One item row as `GET /inventory/items/:id/history` returns it. Money is integer minor units. */
+export type TAssetCore = {
 	id: string;
 	organizationId: string;
 	code: string;
 	name: string;
 	description: string | null;
-	categoryId: string | null;
-	assetType: TAssetType;
+	itemKind: TItemKind;
+	itemCategoryId: string | null;
 	serialNumber: string | null;
 	barcode: string | null;
 	acquisitionDate: string | null;
@@ -79,8 +86,6 @@ export type TAsset = {
 	status: TAssetStatus;
 	/** Optional display image URL for the asset card. */
 	imageUrl: string | null;
-	/** Resolved storage warehouse name; `null` when unallocated or unknown. */
-	warehouseName: string | null;
 	deactivationReason: string | null;
 	locationDescription: string | null;
 	warehouseId: string | null;
@@ -92,13 +97,19 @@ export type TAsset = {
 	deletedAt: string | null;
 };
 
+/** One item row of the list endpoint, decorated with its warehouse name. */
+export type TAsset = TAssetCore & {
+	/** Resolved storage warehouse name; `null` when unallocated or unknown. */
+	warehouseName: string | null;
+};
+
 export type TAssetCategory = {
 	id: string;
 	organizationId: string;
 	code: string;
 	name: string;
 	parentCategoryId: string | null;
-	assetType: TAssetType;
+	itemKind: TItemKind;
 	defaultUsefulLifeMonths: number | null;
 	defaultDepreciationMethod: string;
 	isActive: boolean;
@@ -107,12 +118,14 @@ export type TAssetCategory = {
 	deletedAt: string | null;
 };
 
+/** One row of the item movement trail (`inventory.movements`, item rows only). */
 export type TAssetMovement = {
 	id: string;
-	assetId: string;
+	itemId: string;
 	movementType:
 		| 'receipt'
-		| 'transfer'
+		| 'transfer_in'
+		| 'transfer_out'
 		| 'borrow_out'
 		| 'borrow_return'
 		| 'project_site'
@@ -120,18 +133,17 @@ export type TAssetMovement = {
 		| 'lost';
 	fromLocation: string | null;
 	toLocation: string | null;
-	fromWarehouseId: string | null;
-	fromStorageId: string | null;
-	toWarehouseId: string | null;
-	toStorageId: string | null;
-	movedAt: string;
-	condition: string | null;
+	warehouseId: string | null;
+	binId: string | null;
+	targetWarehouseId: string | null;
+	targetBinId: string | null;
+	occurredAt: string;
 	notes: string | null;
 };
 
 export type TAssetConditionCheck = {
 	id: string;
-	assetId: string;
+	itemId: string;
 	checkDate: string;
 	condition: TAssetCondition;
 	findings: string | null;
@@ -143,7 +155,7 @@ export type TAssetMaintenance = {
 	id: string;
 	organizationId: string;
 	code: string;
-	assetId: string;
+	itemId: string;
 	maintenanceType: 'preventive' | 'corrective' | 'calibration' | 'inspection';
 	scheduledDate: string | null;
 	performedDate: string | null;
@@ -155,9 +167,10 @@ export type TAssetMaintenance = {
 	nextServiceDate: string | null;
 };
 
+/** One `finance.asset_depreciations` row. */
 export type TAssetDepreciation = {
 	id: string;
-	assetId: string;
+	itemId: string | null;
 	periodYear: number;
 	periodMonth: number;
 	depreciationMethod: string;
@@ -172,7 +185,7 @@ export type TAssetDisposal = {
 	id: string;
 	organizationId: string;
 	code: string;
-	assetId: string;
+	itemId: string;
 	disposalDate: string | null;
 	disposalMethod: TDisposalMethod;
 	proceedsAmount: number;
@@ -187,11 +200,15 @@ export type TAssetDisposal = {
 	executedAt: string | null;
 };
 
+/** A stored item document; `url` is a short-lived signed download link. */
 export type TAssetDocument = {
 	id: string;
-	assetId: string;
-	documentId: string;
-	documentType: 'invoice' | 'manual' | 'certificate' | 'photo' | 'contract';
+	itemId: string | null;
+	documentType: 'photo' | 'manual' | 'datasheet' | 'certificate' | 'invoice' | 'contract';
+	fileName: string;
+	mimeType: string;
+	sizeBytes: number;
+	url: string;
 	createdAt: string;
 };
 
@@ -208,20 +225,20 @@ export type TToolSet = {
 export type TToolSetItem = {
 	id: string;
 	toolSetId: string;
-	assetId: string;
+	itemId: string;
 	quantity: string;
 };
 
+/** `GET /inventory/items/:id/history`; `null` when the unit is unknown to the tenant. */
 export type TAssetDetail = {
-	asset: TAsset;
+	item: TAssetCore;
 	history: {
 		movements: TAssetMovement[];
 		conditionChecks: TAssetConditionCheck[];
 		maintenances: TAssetMaintenance[];
-		depreciations: TAssetDepreciation[];
 		documents: TAssetDocument[];
 	};
-};
+} | null;
 
 type ListMeta = TPaginationMeta;
 type TPaginated<T> = { rows: T[]; pagination: TPaginationMeta };
@@ -267,17 +284,33 @@ async function getDataPaginated<T>(path: string): Promise<TPaginated<T>> {
 	return { rows: envelope.data, pagination: envelope.pagination };
 }
 
-/* ------------------------------- assets -------------------------------- */
+/* ------------------------------- items --------------------------------- */
 
 export type TAssetListParams = {
 	page: number;
 	limit: number;
 	search?: string;
 	status?: TAssetStatus;
-	assetType?: string;
-	categoryId?: string;
+	itemKind?: string;
+	itemCategoryId?: string;
 	includeArchived?: boolean;
 };
+
+/** Fields accepted when registering an item (`createItemSchema`). */
+export type TAssetCreateInput = {
+	name: string;
+	description?: string | null;
+	itemCategoryId?: string | null;
+	itemKind?: TItemKind;
+	serialNumber?: string | null;
+	barcode?: string | null;
+	acquisitionDate?: string | null;
+	acquisitionCost?: number;
+	locationDescription?: string | null;
+};
+
+/** Fields accepted when editing an item (`updateItemSchema`): the kind is immutable. */
+export type TAssetUpdateInput = Partial<Omit<TAssetCreateInput, 'itemKind'>>;
 
 export function assetsQueryOptions(params: TAssetListParams) {
 	const search = new URLSearchParams({
@@ -286,41 +319,43 @@ export function assetsQueryOptions(params: TAssetListParams) {
 	});
 	if (params.search) search.set('search', params.search);
 	if (params.status) search.set('status', params.status);
-	if (params.assetType) search.set('assetType', params.assetType);
-	if (params.categoryId) search.set('categoryId', params.categoryId);
+	if (params.itemKind) search.set('itemKind', params.itemKind);
+	if (params.itemCategoryId) search.set('itemCategoryId', params.itemCategoryId);
 	if (params.includeArchived) search.set('includeArchived', 'true');
 	return queryOptions({
 		queryKey: ['assets', params],
 		queryFn: () =>
-			getDataPaginated<TAsset>(`/assets?${search.toString()}`),
+			getDataPaginated<TAsset>(`/inventory/items?${search.toString()}`),
 	});
 }
 
 export function assetDetailQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['assets', 'detail', id],
-		queryFn: () => getData<TAssetDetail>(`/assets/${id}`),
+		queryFn: () => getData<TAssetDetail>(`/inventory/items/${id}/history`),
 	});
 }
 
-export function createAsset(input: Record<string, unknown>) {
-	return sendData<TAsset>('/assets', 'POST', input);
+export function createAsset(input: TAssetCreateInput) {
+	return sendData<TAssetCore>('/inventory/items', 'POST', input);
 }
 
-export function updateAsset(id: string, input: Record<string, unknown>) {
-	return sendData<TAsset>(`/assets/${id}`, 'PATCH', input);
+export function updateAsset(id: string, input: TAssetUpdateInput) {
+	return sendData<TAssetCore>(`/inventory/items/${id}`, 'PATCH', input);
 }
 
 export function deactivateAsset(id: string, reason: string) {
-	return sendData<TAsset>(`/assets/${id}/deactivate`, 'POST', { reason });
+	return sendData<TAssetCore>(`/inventory/items/${id}/deactivate`, 'POST', {
+		reason,
+	});
 }
 
 export function reactivateAsset(id: string) {
-	return sendData<TAsset>(`/assets/${id}/reactivate`, 'POST');
+	return sendData<TAssetCore>(`/inventory/items/${id}/reactivate`, 'POST');
 }
 
 export function archiveAsset(id: string) {
-	return sendData<void>(`/assets/${id}`, 'DELETE');
+	return sendData<void>(`/inventory/items/${id}`, 'DELETE');
 }
 
 /* ----------------------------- categories ------------------------------ */
@@ -338,79 +373,99 @@ export function assetCategoriesQueryOptions(params: {
 	return queryOptions({
 		queryKey: ['asset-categories', params],
 		queryFn: () =>
-			getDataPaginated<TAssetCategory>(`/asset-categories?${search.toString()}`),
+			getDataPaginated<TAssetCategory>(
+				`/inventory/item-categories?${search.toString()}`,
+			),
 	});
 }
 
-export function createAssetCategory(input: Record<string, unknown>) {
-	return sendData<TAssetCategory>('/asset-categories', 'POST', input);
+export function createAssetCategory(input: {
+	code: string;
+	name: string;
+	itemKind?: TItemKind;
+	parentCategoryId?: string | null;
+	defaultUsefulLifeMonths?: number | null;
+	defaultDepreciationMethod?: 'straight_line' | 'declining_balance' | 'none';
+}) {
+	return sendData<TAssetCategory>('/inventory/item-categories', 'POST', input);
 }
 
-export function updateAssetCategory(id: string, input: Record<string, unknown>) {
-	return sendData<TAssetCategory>(`/asset-categories/${id}`, 'PATCH', input);
+export function updateAssetCategory(
+	id: string,
+	input: Partial<{
+		name: string;
+		parentCategoryId: string | null;
+		itemKind: TItemKind;
+		defaultUsefulLifeMonths: number | null;
+		defaultDepreciationMethod: 'straight_line' | 'declining_balance' | 'none';
+		isActive: boolean;
+	}>,
+) {
+	return sendData<TAssetCategory>(`/inventory/item-categories/${id}`, 'PATCH', input);
 }
 
 export function archiveAssetCategory(id: string) {
-	return sendData<void>(`/asset-categories/${id}`, 'DELETE');
+	return sendData<void>(`/inventory/item-categories/${id}`, 'DELETE');
 }
-
-/* ----------------------------- asset types ----------------------------- */
-
-/** Active asset types (global lookup). */
-export function assetTypesQueryOptions() {
-	return queryOptions({
-		queryKey: ['asset-types'],
-		queryFn: () => getData<TAssetTypeRow[]>('/assets/types'),
-	});
-}
-
-/* ------------------------------- custody ------------------------------- */
-
-/* removed: custody is borrowing-owned since ERP-0036 (D12). */
 
 /* ------------------------------ location ------------------------------- */
 
-/** Places a ready asset into a warehouse storage (receipt movement). */
+/** Places a ready item into a warehouse storage (receipt movement). */
 export function placeAsset(
-	assetId: string,
+	itemId: string,
 	input: {
 		warehouseId: string;
 		storageId?: string | null;
 		locationDescription?: string | null;
 	},
 ) {
-	return sendData<TAssetMovement>(`/assets/${assetId}/place`, 'POST', input);
+	return sendData<TAssetMovement>(`/inventory/items/${itemId}/place`, 'POST', input);
 }
 
-/** Moves a ready asset to another storage, clearing the source. */
+/** Moves a ready item to another storage, clearing the source. */
 export function transferAsset(
-	assetId: string,
+	itemId: string,
 	input: {
 		toWarehouseId: string;
 		toStorageId?: string | null;
 		notes?: string | null;
 	},
 ) {
-	return sendData<TAssetMovement>(`/assets/${assetId}/transfer`, 'POST', input);
+	return sendData<TAssetMovement>(
+		`/inventory/items/${itemId}/transfer`,
+		'POST',
+		input,
+	);
 }
 
 /* ------------------------------ movements ------------------------------ */
 
+/** Records an off-site move; the backend only accepts `project_site`. */
 export function moveAsset(
-	assetId: string,
-	input: { movementType: string; toLocation?: string | null; notes?: string | null },
+	itemId: string,
+	input: {
+		movementType: 'project_site';
+		fromLocation?: string | null;
+		toLocation?: string | null;
+		notes?: string | null;
+	},
 ) {
-	return sendData<TAssetMovement>(`/assets/${assetId}/movements`, 'POST', input);
+	return sendData<TAssetMovement>(`/inventory/items/${itemId}/movements`, 'POST', input);
 }
 
 /* --------------------------- condition checks --------------------------- */
 
 export function recordConditionCheck(
-	assetId: string,
-	input: { checkDate: string; condition: string; findings?: string | null },
+	itemId: string,
+	input: {
+		checkDate: string;
+		condition: TAssetCondition;
+		findings?: string | null;
+		nextCheckDate?: string | null;
+	},
 ) {
 	return sendData<TAssetConditionCheck>(
-		`/assets/${assetId}/condition-checks`,
+		`/inventory/items/${itemId}/condition-checks`,
 		'POST',
 		input,
 	);
@@ -419,47 +474,62 @@ export function recordConditionCheck(
 /* ----------------------------- maintenances ---------------------------- */
 
 export function logMaintenance(
-	assetId: string,
-	input: Record<string, unknown>,
+	itemId: string,
+	input: {
+		maintenanceType?: TAssetMaintenance['maintenanceType'];
+		scheduledDate?: string | null;
+		performedDate?: string | null;
+		vendorName?: string | null;
+		cost?: number;
+		description?: string | null;
+		status?: TAssetMaintenance['status'];
+		nextServiceDate?: string | null;
+	},
 ) {
-	return sendData<TAssetMaintenance>(`/assets/${assetId}/maintenances`, 'POST', input);
-}
-
-export function maintenancesQueryOptions(params: {
-	page: number;
-	limit: number;
-}) {
-	const search = new URLSearchParams({
-		page: String(params.page),
-		limit: String(params.limit),
-	});
-	return queryOptions({
-		queryKey: ['asset-maintenances', params],
-		// Organization-wide maintenance listing rides the asset's own route;
-		// the dedicated page reuses the first page of each active asset. For
-		// now the service-records page lists per-asset history lazily.
-		queryFn: () =>
-			getDataPaginated<TAssetMaintenance>(`/assets?${search.toString()}`),
-		enabled: false,
-	});
+	return sendData<TAssetMaintenance>(
+		`/inventory/items/${itemId}/maintenances`,
+		'POST',
+		input,
+	);
 }
 
 /* ----------------------------- depreciations --------------------------- */
 
+/** Depreciation entries of one item (finance-owned, newest period first). */
+export function assetDepreciationsQueryOptions(itemId: string) {
+	const search = new URLSearchParams({ itemId, page: '1', limit: '20' });
+	return queryOptions({
+		queryKey: ['asset-depreciations', itemId],
+		queryFn: () =>
+			getDataPaginated<TAssetDepreciation>(
+				`/finance/depreciations?${search.toString()}`,
+			),
+	});
+}
+
+/** Records one period's entry; idempotent per item and period (D14). */
 export function recordDepreciation(
-	assetId: string,
+	itemId: string,
 	input: { periodYear: number; periodMonth: number; depreciationAmount: number },
 ) {
-	return sendData<TAssetDepreciation>(`/assets/${assetId}/depreciations`, 'POST', input);
+	return sendData<TAssetDepreciation>('/finance/depreciations', 'POST', {
+		itemId,
+		...input,
+	});
 }
 
 /* ------------------------------- disposals ----------------------------- */
 
 export function requestDisposal(
-	assetId: string,
-	input: Record<string, unknown>,
+	itemId: string,
+	input: {
+		disposalDate?: string | null;
+		disposalMethod?: TDisposalMethod;
+		proceedsAmount?: number;
+		buyerName?: string | null;
+	},
 ) {
-	return sendData<TAssetDisposal>(`/assets/${assetId}/disposals`, 'POST', input);
+	return sendData<TAssetDisposal>(`/inventory/items/${itemId}/disposals`, 'POST', input);
 }
 
 export function disposalsQueryOptions(params: { page: number; limit: number }) {
@@ -470,20 +540,20 @@ export function disposalsQueryOptions(params: { page: number; limit: number }) {
 	return queryOptions({
 		queryKey: ['asset-disposals', params],
 		queryFn: () =>
-			getDataPaginated<TAssetDisposal>(`/assets/disposals?${search.toString()}`),
+			getDataPaginated<TAssetDisposal>(`/inventory/disposals?${search.toString()}`),
 	});
 }
 
 export function approveDisposal(disposalId: string) {
-	return sendData<TAssetDisposal>(`/assets/disposals/${disposalId}/approve`, 'POST');
+	return sendData<TAssetDisposal>(`/inventory/disposals/${disposalId}/approve`, 'POST');
 }
 
 export function executeDisposal(disposalId: string) {
-	return sendData<TAssetDisposal>(`/assets/disposals/${disposalId}/execute`, 'POST');
+	return sendData<TAssetDisposal>(`/inventory/disposals/${disposalId}/execute`, 'POST');
 }
 
 export function cancelDisposal(disposalId: string) {
-	return sendData<TAssetDisposal>(`/assets/disposals/${disposalId}/cancel`, 'POST');
+	return sendData<TAssetDisposal>(`/inventory/disposals/${disposalId}/cancel`, 'POST');
 }
 
 /* ------------------------------- tool sets ----------------------------- */
@@ -496,7 +566,7 @@ export function toolSetsQueryOptions(params: { page: number; limit: number }) {
 	return queryOptions({
 		queryKey: ['asset-tool-sets', params],
 		queryFn: () =>
-			getDataPaginated<TToolSet>(`/assets/tool-sets?${search.toString()}`),
+			getDataPaginated<TToolSet>(`/inventory/tool-sets?${search.toString()}`),
 	});
 }
 
@@ -504,22 +574,23 @@ export function toolSetDetailQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['asset-tool-sets', 'detail', id],
 		queryFn: () =>
-			getData<TToolSet & { items: TToolSetItem[] }>(`/assets/tool-sets/${id}`),
+			getData<TToolSet & { items: TToolSetItem[] }>(`/inventory/tool-sets/${id}`),
 	});
 }
 
 export function createToolSet(input: { name: string; description?: string | null }) {
-	return sendData<TToolSet>('/assets/tool-sets', 'POST', input);
+	return sendData<TToolSet>('/inventory/tool-sets', 'POST', input);
 }
 
-export function addToolSetItem(toolSetId: string, assetId: string) {
-	return sendData<TToolSetItem>(`/assets/tool-sets/${toolSetId}/items`, 'POST', {
-		assetId,
+export function addToolSetItem(toolSetId: string, itemId: string) {
+	return sendData<TToolSetItem>(`/inventory/tool-sets/${toolSetId}/items`, 'POST', {
+		itemId,
 	});
 }
 
-export function removeToolSetItem(toolSetId: string, itemId: string) {
-	return sendData<void>(`/assets/tool-sets/${toolSetId}/items/${itemId}`, 'DELETE');
+/** Removes one tool-set row (`rowId` is the `tool_set_items.id`, not the item id). */
+export function removeToolSetItem(toolSetId: string, rowId: string) {
+	return sendData<void>(`/inventory/tool-sets/${toolSetId}/items/${rowId}`, 'DELETE');
 }
 
 /** Formats an integer minor-unit amount for display. */

@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "organization". It is kept for history. Current owner: auth (schema `auth`: organizations, members, invitations, organization_settings) - see docs/database/module-ownership.md.
+> Mapping: organization schema removed -> auth; HTTP /organizations stays in apps/backend/src/app/organization.
+
 # Organization Module
 
 > Updated 2026-11-02. Reflects the Elysia backend (`apps/backend`) and

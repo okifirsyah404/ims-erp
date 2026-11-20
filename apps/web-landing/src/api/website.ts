@@ -271,10 +271,13 @@ export function createErpWebsiteSource(config: ErpWebsiteConfig): WebsiteSource 
     });
 
   return {
-    submitRfq: (submission, attachments, auth) =>
-      (auth ? customerClient(auth) : client).post(path("submitRfq"), withFiles(submission, attachments, "attachments"), { idempotencyKey: crypto.randomUUID() }),
-    sendContactMessage: (message) => client.post(path("sendContactMessage"), message),
-    requestDemo: (request) => client.post(path("requestDemo"), request, { idempotencyKey: crypto.randomUUID() }),
+    // Always the service key: the ERP's public RFQ route only accepts the website API key
+    // (a customer token would be rejected with 401). Linking an RFQ to the signed-in customer
+    // is not supported by the ERP yet (`linkedToAccount` comes back false), so `auth` is unused.
+    submitRfq: async (submission, attachments) =>
+      client.post(path("submitRfq"), withFiles(submission, attachments, "attachments"), { idempotencyKey: crypto.randomUUID() }),
+    sendContactMessage: async (message) => client.post(path("sendContactMessage"), message),
+    requestDemo: async (request) => client.post(path("requestDemo"), request, { idempotencyKey: crypto.randomUUID() }),
     async applyPromo(code, subtotal) {
       try {
         return await client.post(path("applyPromo"), { code, subtotal });
@@ -283,8 +286,8 @@ export function createErpWebsiteSource(config: ErpWebsiteConfig): WebsiteSource 
         throw error;
       }
     },
-    getCart: (auth) => customerClient(auth).get(path("getCart")),
-    syncCart: (auth, lines, mode) => customerClient(auth).post(path("syncCart"), { lines, mode }),
+    getCart: async (auth) => customerClient(auth).get(path("getCart")),
+    syncCart: async (auth, lines, mode) => customerClient(auth).post(path("syncCart"), { lines, mode }),
     async quoteOrder(order, auth) {
       return parseOrThrow("quoteOrder", orderQuoteSchema, await customerClient(auth).post(path("quoteOrder"), order));
     },

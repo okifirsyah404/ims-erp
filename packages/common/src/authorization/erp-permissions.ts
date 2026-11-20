@@ -25,6 +25,8 @@ export const erpStatements = {
 	company: ['read', 'update'],
 	/** Numbering series (ERP-0042; was `company_setting`). */
 	code_number: ['read', 'update'],
+	/** Online payment gateways and their write-only secrets (ADR-0024 Q18). */
+	payment_gateway: ['read', 'update'],
 	branch: ['read', 'create', 'update', 'archive'],
 	department: ['read', 'create', 'update', 'archive'],
 	master_data: ['read', 'create', 'update', 'archive', 'import', 'export'],

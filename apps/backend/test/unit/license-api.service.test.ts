@@ -5,13 +5,13 @@
  * installation, limit enforced, release) and the call log.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TApplicationApiKeySelect, TLicenseActivationSelect, TLicenseKeySelect } from '@drizzle/schemas/licensing.schema';
+import type { TLicenseApiKeySelect, TLicenseActivationSelect, TLicenseKeySelect } from '@drizzle/schemas/project.schema';
 import { businessDateOf } from '@utils/business-date.util';
-import type { TKeyWithContract } from '../../src/app/licensing/contracts/license-api.contract';
-import type { TContractRow } from '../../src/app/licensing/contracts/licensing.contract';
-import { ApiKeyIssueError, LicenseApiAuthError, LicenseRefusedError } from '../../src/app/licensing/errors/licensing.errors';
-import { LicenseApiService, type TApiClient } from '../../src/app/licensing/services/license-api.service';
-import { addDays, GRACE_DAYS, licenseState } from '../../src/app/licensing/utils/license';
+import type { TKeyWithContract } from '../../src/app/project/contracts/license-api.contract';
+import type { TContractRow } from '../../src/app/project/contracts/licensing.contract';
+import { ApiKeyIssueError, LicenseApiAuthError, LicenseRefusedError } from '../../src/app/project/errors/licensing.errors';
+import { LicenseApiService, type TApiClient } from '../../src/app/project/services/license-api.service';
+import { addDays, GRACE_DAYS, licenseState } from '../../src/app/project/utils/license';
 
 const APP = '0190a1b2-0000-7000-8000-00000000a002';
 const OTHER_APP = '0190a1b2-0000-7000-8000-00000000a009';
@@ -20,19 +20,19 @@ const today = businessDateOf();
 let found: Record<string, TKeyWithContract>;
 let activations: TLicenseActivationSelect[];
 let events: { eventType: string; result: string; licenseKeyId?: string | null }[];
-let apiKeys: TApplicationApiKeySelect[];
+let apiKeys: TLicenseApiKeySelect[];
 let renewalsActivated: number;
 let issuerCalls: { kind: 'issue' | 'disable'; userId: string }[];
 let refuseIssuer: boolean;
 let service: LicenseApiService;
-const client: TApiClient = { applicationApiKeyId: 'ak-1', applicationId: APP };
+const client: TApiClient = { licenseApiKeyId: 'ak-1', applicationId: APP };
 
 function entry(value: string, contract: Partial<TContractRow>, key: Partial<TLicenseKeySelect> = {}): TKeyWithContract {
 	return {
 		key: { id: `key-${value}`, licenseKey: value, status: 'active', expiresOn: null, maxActivations: 2, ...key } as TLicenseKeySelect,
 		contract: {
 			id: `contract-${value}`,
-			licensableApplicationId: APP,
+			licenseApplicationId: APP,
 			applicationCode: 'ECL',
 			applicationName: 'Entragate Cloud',
 			customerName: 'PT Pelanggan',
@@ -52,11 +52,11 @@ beforeEach(() => {
 		OLD: entry('OLD', { endDate: addDays(today, -(GRACE_DAYS + 1)) }),
 		SUSP: entry('SUSP', { status: 'suspended' }),
 		REVOKED: entry('REVOKED', {}, { status: 'revoked' }),
-		FOREIGN: entry('FOREIGN', { licensableApplicationId: OTHER_APP }),
+		FOREIGN: entry('FOREIGN', { licenseApplicationId: OTHER_APP }),
 	};
 	activations = [];
 	events = [];
-	apiKeys = [{ id: 'ak-1', apiKeyId: 'ba-1', licensableApplicationId: APP, status: 'active' } as TApplicationApiKeySelect];
+	apiKeys = [{ id: 'ak-1', apiKeyId: 'ba-1', licenseApplicationId: APP, status: 'active' } as TLicenseApiKeySelect];
 	renewalsActivated = 0;
 	issuerCalls = [];
 	refuseIssuer = false;
@@ -65,7 +65,7 @@ beforeEach(() => {
 			listApiKeys: async () => apiKeys,
 			findApiKey: async (id) => apiKeys.find((row) => row.id === id) ?? null,
 			findApiKeyByAuthId: async (id) => apiKeys.find((row) => row.apiKeyId === id) ?? null,
-			createApiKey: async (data) => ({ ...data, id: 'ak-new', status: 'active' }) as TApplicationApiKeySelect,
+			createApiKey: async (data) => ({ ...data, id: 'ak-new', status: 'active' }) as TLicenseApiKeySelect,
 			revokeApiKey: async (id) => Object.assign(apiKeys.find((row) => row.id === id)!, { status: 'revoked' }),
 			touchApiKey: async () => {},
 			findKeyWithContract: async (value) => found[value] ?? null,
@@ -148,7 +148,7 @@ describe('machine authentication', () => {
 		await expect(service.authenticate(null)).rejects.toMatchObject({ status: 401, key: 'licensing.api.missing' });
 		await expect(service.authenticate('Bearer elk_wrong')).rejects.toMatchObject({ status: 401, key: 'licensing.api.invalid' });
 		await expect(service.authenticate('Bearer elk_busy')).rejects.toMatchObject({ status: 429 });
-		expect(await service.authenticate('Bearer elk_good')).toEqual({ applicationApiKeyId: 'ak-1', applicationId: APP });
+		expect(await service.authenticate('Bearer elk_good')).toEqual({ licenseApiKeyId: 'ak-1', applicationId: APP });
 		apiKeys[0].status = 'revoked';
 		await expect(service.authenticate('Bearer elk_good')).rejects.toBeInstanceOf(LicenseApiAuthError);
 	});
@@ -236,7 +236,7 @@ describe('application keys', () => {
 	});
 
 	test('the list names who issued and who revoked each key', async () => {
-		apiKeys[0] = { ...apiKeys[0]!, createdBy: 'u1', revokedBy: 'owner-1' } as TApplicationApiKeySelect;
+		apiKeys[0] = { ...apiKeys[0]!, createdBy: 'u1', revokedBy: 'owner-1' } as TLicenseApiKeySelect;
 		const [row] = await service.listApiKeys('org', APP);
 		expect(row).toMatchObject({ createdByName: 'Sari Sales', revokedByName: 'Owner' });
 	});

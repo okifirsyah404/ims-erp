@@ -78,12 +78,10 @@ const DYNAMIC_PREFIXES = [
 	'numbering.pattern.',
 	// Website inquiry errors compose `publicApi.${kind}`.
 	'publicApi.',
-	// The numbering settings page labels server values (document type,
-	// reset policy) by composing the key.
-	'settings:numbering.type.',
-	'settings:numbering.reset.',
 	// Customer type and status labels come from server values.
 	'crm:customerType.',
+	// Address kinds (company: billing/shipping/., person: residence/office/.) come from the server.
+	'crm:address.kind.',
 	'crm:customerStatus.',
 	'crm:leadStatus.',
 	'crm:leadSource.',
@@ -212,6 +210,7 @@ const DYNAMIC_PREFIXES = [
 	'assets:maintenanceStatus.',
 	'assets:toolSetStatus.',
 	'assets:movementType.',
+	'assets:itemKind.',
 	// Finance/accounting (M09): statuses, enum labels and report sections are
 	// server values, so the label keys are composed at runtime.
 	'finance:accountType.',

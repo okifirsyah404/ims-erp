@@ -1,69 +1,92 @@
 import type {
-	TBankAccountSelect,
+	TCompanyAddressSelect,
 	TCompanyProfileSelect,
 	TCompanySettingSelect,
 	TContactSelect,
-	THeadOfficeAddressSelect,
 } from '@drizzle/schemas/company.schema';
 import type { TTx } from '@drizzle/types';
-import type {
-	TCompanyProfileInput,
-	TCompanySettingValueType,
-	TInvoiceBankAccount,
-} from './company.contract';
+import type { TCompanySettingValueType } from './company.contract';
 
-/**
- * Flat profile as the repository persists it: the letterhead columns of
- * `company.profiles` plus the primary address and contacts it keeps in sync.
- */
-export type TCompanyProfileData = Omit<TCompanyProfileInput, 'bankAccounts'> & {
-	updatedBy: string;
+/** Letterhead columns of `company.profiles` (everything but id, audit and image keys). */
+export type TCompanyProfileColumns = Omit<
+	TCompanyProfileSelect,
+	| 'id'
+	| 'createdAt'
+	| 'updatedAt'
+	| 'deletedAt'
+	| 'logoObjectKey'
+	| 'signatureObjectKey'
+	| 'onboardingObjectKey'
+	| 'status'
+>;
+
+/** A contact channel the flat profile keeps in sync. */
+export type TContactChannel = {
+	contactType: string;
+	value: string;
+	label: string;
+	isPrimary: boolean;
 };
 
-/** The two invoice accounts; `null` removes one. */
-export type TInvoiceAccountsData = {
-	vat: TInvoiceBankAccount | null;
-	nonVat: TInvoiceBankAccount | null;
-};
-
-/** Everything a profile read needs, already joined. */
+/** Everything a profile read needs, already assembled by the service/facade. */
 export type TCompanyProfileRecord = {
 	profile: TCompanyProfileSelect;
-	address: THeadOfficeAddressSelect | null;
+	address: TCompanyAddressSelect | null;
 	contacts: TContactSelect[];
 };
 
-/** Persistence port for `company.profiles` and the tables it owns. */
-export interface ICompanyRepository {
-	/** The live profile with its primary address and contacts, if saved. */
-	findProfile(tx?: TTx): Promise<TCompanyProfileRecord | null>;
-
-	/** Live bank accounts that are printed on invoices. */
-	findInvoiceAccounts(tx?: TTx): Promise<TBankAccountSelect[]>;
-
-	/** Saves the profile, its primary address, contacts and (optionally) invoice accounts. */
-	save(
-		data: TCompanyProfileData,
-		accounts?: TInvoiceAccountsData,
-	): Promise<{ record: TCompanyProfileRecord; accounts: TBankAccountSelect[] }>;
+/** Persistence port for `company.profiles` (singleton live row). */
+export interface ICompanyProfileRepository {
+	/** The live profile row, or `null` before the first save. Cached outside a tx. */
+	find(tx?: TTx): Promise<TCompanyProfileSelect | null>;
 
 	/**
-	 * Sets (or clears) one profile image key of the live profile; `null` when
-	 * there is none.
+	 * Updates the live profile, or inserts the first one. With `tx` the cache
+	 * is left alone: the caller calls {@link invalidate} after the commit.
 	 */
+	save(data: TCompanyProfileColumns, tx?: TTx): Promise<TCompanyProfileSelect>;
+
+	/** Evicts the cached profile; call after the surrounding transaction commits. */
+	invalidate(): Promise<void>;
+
+	/** Sets (or clears) one image key of the live profile; `null` when there is no profile. */
 	setImage(
 		kind: 'logo' | 'signature' | 'onboarding',
 		key: string | null,
-	): Promise<TCompanyProfileRecord | null>;
+	): Promise<TCompanyProfileSelect | null>;
+}
 
+/** Persistence port for `company.addresses`. */
+export interface ICompanyAddressRepository {
+	/** The live primary address, or `null`. */
+	findPrimary(tx?: TTx): Promise<TCompanyAddressSelect | null>;
+
+	/** Keeps exactly one live primary address; `addressLine: null` soft-deletes it. */
+	savePrimary(
+		data: { addressLine: string | null; postalCode: string | null },
+		tx?: TTx,
+	): Promise<void>;
+}
+
+/** Persistence port for `company.contacts`. */
+export interface ICompanyContactRepository {
+	/** Every live contact channel. */
+	findAll(tx?: TTx): Promise<TContactSelect[]>;
+
+	/** Keeps one live row per channel type; a `null` value removes the type. */
+	syncChannels(channels: Array<TContactChannel | { contactType: string; value: null }>, tx?: TTx): Promise<void>;
+}
+
+/** Persistence port for `company.settings`. */
+export interface ICompanySettingRepository {
 	/** Every live company setting. */
-	findSettings(): Promise<TCompanySettingSelect[]>;
+	findAll(): Promise<TCompanySettingSelect[]>;
 
 	/** The live setting for a group/key, if any. */
-	findSetting(group: string, key: string): Promise<TCompanySettingSelect | null>;
+	find(group: string, key: string): Promise<TCompanySettingSelect | null>;
 
 	/** Creates or updates the live setting for a group/key. */
-	upsertSetting(
+	upsert(
 		group: string,
 		key: string,
 		data: { valueType: TCompanySettingValueType; value: string | null; updatedBy: string },

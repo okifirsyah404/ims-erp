@@ -8,7 +8,7 @@ import { conversationListQuerySchema, idParamSchema, replyBodySchema } from '../
  * WhatsApp inbox (`/automation/whatsapp`, M04 stage 2): conversations, the
  * handoff queue and admin replies. Reading needs `whatsapp:read`; replying,
  * handing back to the assistant, closing, resending and turning a chat into
- * a CRM lead `whatsapp:reply`.
+ * a project lead `whatsapp:reply`.
  */
 export class WhatsappController {
 	static plugin() {
@@ -35,7 +35,7 @@ export class WhatsappController {
 			)
 			.post('/conversations/:id/lead', async ({ params, erp }) => ok(await service.captureLead(erp.session.user.id, id(params))), {
 				erp: { permission: ['whatsapp:reply'] },
-				detail: { description: 'Turns the chat into a CRM lead (source whatsapp, unassigned); idempotent per chat' },
+				detail: { description: 'Turns the chat into a project lead (source whatsapp, unassigned); idempotent per chat' },
 			})
 			.post('/conversations/:id/resume', async ({ params }) => ok(await service.resume(id(params))), {
 				erp: { permission: ['whatsapp:reply'] },

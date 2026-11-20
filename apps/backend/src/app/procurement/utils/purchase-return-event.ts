@@ -28,7 +28,7 @@ export function purchaseReturnUpdatedEvent(
 		goodsReceiptCode: row.goodsReceiptCode,
 		purchaseOrderCode: row.purchaseOrderCode,
 		supplier: {
-			id: row.supplierId,
+			id: row.supplierCompanyId,
 			code: supplier?.code ?? null,
 			name: supplier?.name ?? row.supplierName,
 			phone: supplier?.phone ?? null,

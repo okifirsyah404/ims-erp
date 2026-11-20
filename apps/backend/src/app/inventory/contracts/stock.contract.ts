@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { MOVEMENT_TYPES } from '@drizzle/schemas/inventory.schema';
-import { inventoryPaginationSchema } from './item.contract';
+import { inventoryPaginationSchema } from './product.contract';
 import { booleanQuerySchema } from './warehouse.contract';
 
 /**
@@ -53,7 +53,7 @@ export const movementListQuerySchema = inventoryPaginationSchema
 	.extend({
 		scope: scopeQuerySchema,
 		warehouseId: z.uuid().optional(),
-		itemId: z.uuid().optional(),
+		productId: z.uuid().optional(),
 		movementType: z.enum(MOVEMENT_TYPES).optional(),
 		status: z.enum(['draft', 'posted', 'reversed']).optional(),
 		occurredFrom: dateQuerySchema,
@@ -87,7 +87,7 @@ export const balanceListQuerySchema = inventoryPaginationSchema
 	.extend({
 		scope: scopeQuerySchema,
 		warehouseId: z.uuid().optional(),
-		itemId: z.uuid().optional(),
+		productId: z.uuid().optional(),
 		binId: z.uuid().optional(),
 		inStockOnly: booleanQuerySchema.optional(),
 	})
@@ -113,7 +113,7 @@ export const balanceListQuerySchema = inventoryPaginationSchema
 export const receiptSchema = z.object({
 	warehouseId: z.uuid(),
 	binId: z.uuid().nullable().optional(),
-	itemId: z.uuid(),
+	productId: z.uuid(),
 	quantity: quantitySchema,
 	occurredAt: z.iso.datetime({ offset: true }).optional(),
 	referenceType: z.string().max(64).nullable().optional(),

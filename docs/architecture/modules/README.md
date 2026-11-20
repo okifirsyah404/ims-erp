@@ -10,37 +10,64 @@ Excel Tracker/UAT details live there too).
 Status vocabulary: `planned / in-progress / implemented / verified / accepted /
 blocked`.
 
-## Core / platform
+## Module index (ADR-0024, 2026-11-20)
 
-| Doc | Code path | Owner | Status |
+The ERP has 18 Postgres schemas / 188 tables plus the schema-less `webhook`
+module. Ownership, tables and contracts: `docs/database/module-ownership.md`.
+Deprecated pages are kept for history (owner decision) and start with a banner
+naming the current owner. The `user` and `organization` backend modules both
+sit in the `auth` schema (Better Auth owns those tables).
+
+### Current
+
+| Module | Schema | Page | Status |
 |---|---|---|---|
-| [authentication + authorization](authentication.md) | `src/providers/better-auth/*`, (planned) authorization core | A | partially implemented (auth config real; runtime unverified; authorization core absent) |
-| [infrastructure](infrastructure.md) | `src/providers/{better-auth,keyv,logger}/*`, `drizzle/{container,db}.ts` | A | mostly implemented, bootstrap unverified |
+| Identity (users, organizations) | `auth` | [user](user.md), [authentication](authentication.md) | current (user: banner with 2026-11-20 corrections); organization HTTP: see deprecated `organization` |
+| Location | `location` | - | current, no page (ownership profile only) |
+| Company | `company` | [company](company.md) | current (fixed in place: bank accounts moved to `finance`) |
+| Customer | `customer` | [customer-portal](customer-portal.md) (portal API) | current for the portal API (fixed in place: `/customers/portal/v1`); `customer.md` deprecated |
+| Supplier | `supplier` | [supplier](supplier.md) | current (rewritten 2026-11-20) |
+| Inventory | `inventory` | [inventory](inventory.md) | current (banner: absorbs assets, catalog, warehouse) |
+| Sale | `sale` | [sale](sale.md) | current (new) |
+| Procurement | `procurement` | - | current, no page; `purchasing.md` deprecated |
+| Finance | `finance` | [finance](finance.md) | current (banner: absorbs accounting) |
+| Tax | `tax` | [tax](tax.md) | current (names fixed; route table partly pre-refactor, see banner) |
+| Payment | `payment` | - | current, no page; `payment.md` deprecated |
+| Project | `project` | [project](project.md), [licensing-integration](licensing-integration.md) | current (new); the license how-to is still accurate |
+| Ticket | `ticket` | [ticket](ticket.md) | current (new) |
+| Human Resource | `human_resource` | [human-resource](human-resource.md) | current (new) |
+| Document | `document` | [document](document.md) | current |
+| Notification | `notification` | [notification](notification.md) | current (table names fixed) |
+| Audit | `audit` | - | current, no page |
+| Automation | `automation` | [automation](automation.md) | current (catalog reference fixed) |
+| Webhook | none | [webhook](webhook.md) | current (new) |
 
-## Existing domain modules (Elysia — `apps/backend/src/app`)
+### Platform and cross-cutting
 
-| Doc | Code path | Status | Related commercial tasks |
-|---|---|---|---|
-| [user](user.md) | `src/app/user` | partially implemented | T02 (roles/audit), T03 |
-| [organization](organization.md) | `src/app/organization` | scaffold | T02, T15 |
-| [company](company.md) | `src/app/company` | implemented 2026-11-13 (ERP-0042) - company profile, contacts, bank accounts, company-wide settings | ERP-0042 |
-| [code-number](code-number.md) | `src/app/code-number` | implemented 2026-11-13 (ERP-0042) - the one numbering authority (`code_number.series`) | ERP-0009, ERP-0042 |
-| [document](document.md) | `src/app/document` | implemented 2026-11-13 (ERP-0042) - issued document registry, files, signatures, shares, tags; PDF rendering out of scope | ERP-0042 |
-| [notification](notification.md) | `src/app/notification` | implemented 2026-11-13 (ADR-0016) - in-app inbox, templates, first consumer of the `/ws` socket | ERP-0047 |
-| [automation](automation.md) | `src/app/automation` | implemented 2026-11-07 (ADR-0020) - ERP events to n8n through an outbox, WhatsApp assistant (WAHA + FAQ + handoff) | ERP-0021 |
-| [location](location.md) | `src/app/location` | scaffold | T07 |
+| Page | Status |
+|---|---|
+| [authentication](authentication.md) | current in substance; carries the NestJS-era banner of 2026-10-28 (not re-audited) |
+| [infrastructure](infrastructure.md) | current in substance; carries the NestJS-era banner of 2026-10-28 (not re-audited) |
+| [website-and-portal](website-and-portal.md) | current (apps and API clients) |
 
-## Assessed / planned owners (no module directory yet)
+### Deprecated (kept for history)
 
-| Doc | Assessment | Related commercial tasks |
+| Page | Pre-refactor module | Replacement |
 |---|---|---|
-| [finance](finance.md) | COA/journals/ledger/posting engine — owner to be created | T04, T06, T11 |
-| [tax](tax.md) | tax configuration/workpapers — owner to be created | T12 |
-| [asset-project](asset-project.md) | assets/equipment + projects — owner to be created | T07 (assets), T08 (projects) |
-| [customer-portal](customer-portal.md) | `apps/backend/src/app/portal` (no tables) + portal logins in `src/app/user` | T26 + T25 account part, stage 1 implemented (ERP-0022) |
-| [licensing-subscription](licensing-subscription.md) | `apps/backend/src/app/licensing` (register + license API) | T09, T23 implemented; T24 blocked |
-| [investor](investor.md) | `erp.investors` table exists; module absent | T13, T29–T30 |
-
+| [asset-project](asset-project.md) | assets/projects | deprecated -> [inventory](inventory.md), [project](project.md) |
+| [code-number](code-number.md) | code-number | deprecated -> per-module `code_numberings` in every schema |
+| [customer](customer.md) | crm | deprecated -> `customer` schema (`customer-portal.md`, ownership doc) |
+| [employee](employee.md) | hr | deprecated -> [human-resource](human-resource.md) |
+| [expense](expense.md) | expense | deprecated -> [finance](finance.md) (`expense_claims`, advances, settlements) |
+| [investor](investor.md) | investor | deprecated -> none (never built) |
+| [licensing-subscription](licensing-subscription.md) | licensing | deprecated -> [project](project.md) |
+| [organization](organization.md) | organization | deprecated -> `auth` schema (HTTP stays in `src/app/organization`) |
+| [payment](payment.md) | payment (NestJS audit) | deprecated -> `payment` schema (ownership doc) |
+| [product](product.md) | catalog | deprecated -> [inventory](inventory.md) |
+| [purchasing](purchasing.md) | purchasing | deprecated -> `procurement`, [supplier](supplier.md), finance bills |
+| [reporting](reporting.md) | reporting | deprecated -> `finance.report_archives`, dashboard |
+| [sales](sales.md) | sales | deprecated -> [sale](sale.md) |
+| [warehouse](warehouse.md) | warehouse | deprecated -> [inventory](inventory.md) |
 ## Cross-module rules (apply everywhere)
 
 - Repositories use the Drizzle client from `drizzle/container.ts`; routes never

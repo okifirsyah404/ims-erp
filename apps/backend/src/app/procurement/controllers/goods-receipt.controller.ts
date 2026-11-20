@@ -9,7 +9,7 @@ import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import { GOODS_RECEIPT_SERVICE_TOKEN } from '../constants/di';
 import { createGoodsReceiptSchema, goodsReceiptListQuerySchema } from '../contracts/goods-receipt.contract';
-import { idParamSchema } from '../contracts/supplier.contract';
+import { idParamSchema } from '../contracts/params.schema';
 import type { TGoodsReceiptDetail } from '../services/goods-receipt.service';
 
 /** Unit cost is restricted to `product:read_cost` (owner, finance, purchasing). */
@@ -34,7 +34,7 @@ export class GoodsReceiptController {
 				product: ['read_cost'],
 			});
 
-		return domainPlugin({ name: 'procurement-goods-receipts', prefix: '/goods-receipts', tags: ['Procurement'], guards: 'erp' })
+		return domainPlugin({ name: 'procurement-goods-receipts', prefix: '/procurement/goods-receipts', tags: ['Procurement'], guards: 'erp' })
 			.get('', async ({ query }) => okPaginated(await service.list(goodsReceiptListQuerySchema.parse(query))), {
 				erp: { permission: ['stock:read'] },
 				detail: { description: 'Paginated goods receipts' },

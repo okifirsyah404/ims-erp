@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 import { runWithEndpointContext } from '@better-auth/core/context';
-import type { TUserInvitationSelect } from '@drizzle/schemas/role.schema';
+import type { TUserInvitationSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import {
 	INVITATION_MAILER_TOKEN,

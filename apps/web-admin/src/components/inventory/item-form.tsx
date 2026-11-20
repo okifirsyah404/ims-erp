@@ -28,26 +28,26 @@ import {
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {
-	ITEM_KINDS,
 	ITEM_UNIT_LABELS,
-	type TItem,
-	type TItemCreateInput,
-	type TItemKind,
+	PRODUCT_KINDS,
 	type TItemUnitLabel,
-	type TItemUpdateInput,
+	type TProduct,
+	type TProductCreateInput,
+	type TProductKind,
+	type TProductUpdateInput,
 } from '@/lib/inventory-api';
 
 /**
- * The item create/edit form.
+ * The product create/edit form.
  *
  * @remarks
- * `sku` and `itemKind` are rendered read-only when editing: the backend treats
- * both as immutable because they drive uniqueness and the unit status matrix,
- * so surfacing them as editable would only produce a 400.
+ * `sku` and `productKind` are rendered read-only when editing: the backend
+ * treats both as immutable because they drive uniqueness and the serial status
+ * matrix, so surfacing them as editable would only produce a 400.
  *
- * The service/stock coupling is mirrored here — choosing `service` clears and
- * disables both tracking flags, because a service is never serialized and
- * never stocked (enforced again server-side).
+ * A product kind is product, component or material (consumables only); tools
+ * are physical `items` managed under assets, and services are neither stocked
+ * nor serialized.
  */
 export function ItemForm({
 	item,
@@ -57,14 +57,14 @@ export function ItemForm({
 	onSubmit,
 	onCancel,
 }: {
-	/** Existing item when editing; absent when creating. */
-	item?: TItem;
+	/** Existing product when editing; absent when creating. */
+	item?: TProduct;
 	/** Preselects the kind on create, so a kind page creates its own kind. */
-	defaultItemKind?: TItemKind;
+	defaultItemKind?: TProductKind;
 	/** Hides the page heading — the dialog wrapper supplies its own. */
 	compact?: boolean;
 	submitting: boolean;
-	onSubmit: (input: TItemCreateInput | TItemUpdateInput) => void;
+	onSubmit: (input: TProductCreateInput | TProductUpdateInput) => void;
 	onCancel: () => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
@@ -73,10 +73,10 @@ export function ItemForm({
 	const [sku, setSku] = useState(item?.sku ?? '');
 	const [serialNumber, setSerialNumber] = useState(item?.serialNumber ?? '');
 	const [name, setName] = useState(item?.name ?? '');
-	const [itemKind, setItemKind] = useState<TItemKind>(
-		item?.itemKind ?? defaultItemKind ?? 'product',
+	const [productKind, setProductKind] = useState<TProductKind>(
+		item?.productKind ?? defaultItemKind ?? 'product',
 	);
-	const [categoryId, setCategoryId] = useState(item?.categoryId ?? '');
+	const [categoryId, setCategoryId] = useState(item?.productCategoryId ?? '');
 	const [unitLabel, setUnitLabel] = useState<TItemUnitLabel>(item?.unitLabel ?? 'pcs');
 	const [brand, setBrand] = useState(item?.brand ?? '');
 	const [specification, setSpecification] = useState(item?.specification ?? '');
@@ -84,7 +84,7 @@ export function ItemForm({
 	// Active categories for the picker, plus the item's own (maybe inactive).
 	const { data: allCategories = [] } = useQuery(itemCategoriesQueryOptions(true));
 	const categoryOptions = allCategories.filter(
-		(category) => category.isActive || category.id === item?.categoryId,
+		(category) => category.isActive || category.id === item?.productCategoryId,
 	);
 	const [description, setDescription] = useState(item?.description ?? '');
 	const [barcode, setBarcode] = useState(item?.barcode ?? '');
@@ -96,8 +96,8 @@ export function ItemForm({
 		String(item?.purchasePrice ?? 0),
 	);
 
-	function handleKindChange(next: TItemKind) {
-		setItemKind(next);
+	function handleKindChange(next: TProductKind) {
+		setProductKind(next);
 	}
 
 	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -106,7 +106,7 @@ export function ItemForm({
 			name,
 			serialNumber: serialNumber.trim() || null,
 			description: description || null,
-			categoryId: categoryId || null,
+			productCategoryId: categoryId || null,
 			unitLabel,
 			brand: brand.trim() || null,
 			specification: specification.trim() || null,
@@ -122,7 +122,7 @@ export function ItemForm({
 		onSubmit(
 			isEdit
 				? shared
-				: { ...shared, sku, itemKind, currencyCode: 'IDR' },
+				: { ...shared, sku, productKind, currencyCode: 'IDR' },
 		);
 	}
 
@@ -195,21 +195,21 @@ export function ItemForm({
 							</Field>
 
 							<Field>
-								<FieldLabel htmlFor='itemKind'>
+								<FieldLabel htmlFor='productKind'>
 									{t('inventory:items.kind')}
 								</FieldLabel>
 								<Select
-									value={itemKind}
+									value={productKind}
 									disabled={isEdit}
 									onValueChange={(value: string | null) =>
-										handleKindChange(value as TItemKind)
+										handleKindChange(value as TProductKind)
 									}
 								>
-									<SelectTrigger id='itemKind' className='w-full'>
+									<SelectTrigger id='productKind' className='w-full'>
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										{ITEM_KINDS.map((kind) => (
+										{PRODUCT_KINDS.map((kind) => (
 											<SelectItem key={kind} value={kind}>
 												{t(`inventory:kind.${kind}`)}
 											</SelectItem>

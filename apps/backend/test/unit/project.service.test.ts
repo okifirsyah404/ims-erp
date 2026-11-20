@@ -6,14 +6,14 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
-	TProjectCostSelect,
-	TProjectEvidenceSelect,
+	TCostSelect,
+	TEvidenceSelect,
 	TProjectSelect,
-	TProjectTaskSelect,
-} from '@drizzle/schemas/projects.schema';
-import { PROJECT_STAGES } from '@drizzle/schemas/projects.schema';
-import type { TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
-import type { IProjectRepository } from '../../src/app/projects/contracts/project.repository.interface';
+	TTaskSelect,
+} from '@drizzle/schemas/project.schema';
+import { PROJECT_STAGES } from '@drizzle/schemas/project.schema';
+import type { TOrderSelect } from '@drizzle/schemas/sale.schema';
+import type { IProjectRepository } from '../../src/app/project/contracts/project.repository.interface';
 import {
 	ProjectDealError,
 	ProjectEvidenceMissingError,
@@ -22,8 +22,8 @@ import {
 	ProjectNotActiveError,
 	ProjectNotFoundError,
 	ProjectStaffError,
-} from '../../src/app/projects/errors/project.errors';
-import { ProjectService, type TProjectContext } from '../../src/app/projects/services/project.service';
+} from '../../src/app/project/errors/project.errors';
+import { ProjectService, type TProjectContext } from '../../src/app/project/services/project.service';
 
 const SO = '0190a1b2-0000-7000-8000-00000000a001';
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
@@ -32,9 +32,9 @@ const pm: TProjectContext = { organizationId: 'org', actorUserId: 'pm', canViewA
 const tech: TProjectContext = { organizationId: 'org', actorUserId: 'tech', canViewAll: false, canSeeCost: false, canAssignTasks: false, canManage: false };
 
 let rows: TProjectSelect[];
-let tasks: TProjectTaskSelect[];
-let evidence: TProjectEvidenceSelect[];
-let costs: TProjectCostSelect[];
+let tasks: TTaskSelect[];
+let evidence: TEvidenceSelect[];
+let costs: TCostSelect[];
 let roles: Record<string, string>;
 let stored: string[];
 let service: ProjectService;
@@ -50,7 +50,7 @@ const order = {
 	grandTotal: 11_100_000_000,
 	orderDate: '2026-11-06',
 	createdAt: new Date(),
-} as unknown as TSalesOrderSelect;
+} as unknown as TOrderSelect;
 
 function fakeRepository(): IProjectRepository {
 	const live = (id: string) => rows.find((row) => row.id === id && !row.deletedAt) ?? null;
@@ -81,13 +81,14 @@ function fakeRepository(): IProjectRepository {
 		listByCustomer: async (customerId) => rows.filter((row) => row.customerId === customerId && !row.deletedAt && row.status !== 'cancelled'),
 		isInvolved: async (projectId, userId) =>
 			live(projectId)?.picUserId === userId || tasks.some((task) => task.projectId === projectId && task.assigneeUserId === userId && !task.deletedAt),
-		findLiveBySalesOrder: async (salesOrderId) => rows.find((row) => row.salesOrderId === salesOrderId && row.status !== 'cancelled') ?? null,
-		salesOrdersWithProject: async (ids) => new Set(rows.filter((row) => ids.includes(row.salesOrderId) && row.status !== 'cancelled').map((row) => row.salesOrderId)),
+		findLiveBySalesOrder: async (orderId) => rows.find((row) => row.orderId === orderId && row.status !== 'cancelled') ?? null,
+		salesOrdersWithProject: async (ids) =>
+			new Set(rows.flatMap((row) => (row.orderId !== null && ids.includes(row.orderId) && row.status !== 'cancelled' ? [row.orderId] : []))),
 		async create(data, defaults) {
 			const project = { ...data, id: crypto.randomUUID(), stage: 'preparation', status: 'active' } as TProjectSelect;
 			rows.push(project);
 			defaults.forEach((task, position) =>
-				tasks.push({ ...task, id: crypto.randomUUID(), projectId: project.id, position, status: 'todo' } as TProjectTaskSelect),
+				tasks.push({ ...task, id: crypto.randomUUID(), projectId: project.id, position, status: 'todo' } as TTaskSelect),
 			);
 			return project;
 		},
@@ -104,7 +105,7 @@ function fakeRepository(): IProjectRepository {
 		listTasks: async (projectId) => tasks.filter((task) => task.projectId === projectId && !task.deletedAt),
 		findTask: async (projectId, taskId) => tasks.find((task) => task.id === taskId && task.projectId === projectId && !task.deletedAt) ?? null,
 		async addTask(projectId, actor, data) {
-			const task = { ...data, id: crypto.randomUUID(), projectId, position: tasks.length, status: 'todo', createdBy: actor } as TProjectTaskSelect;
+			const task = { ...data, id: crypto.randomUUID(), projectId, position: tasks.length, status: 'todo', createdBy: actor } as TTaskSelect;
 			tasks.push(task);
 			return task;
 		},
@@ -120,7 +121,7 @@ function fakeRepository(): IProjectRepository {
 		listEvidence: async (projectId) => evidence.filter((file) => file.projectId === projectId && !file.deletedAt),
 		findEvidence: async (projectId, id) => evidence.find((file) => file.id === id && file.projectId === projectId && !file.deletedAt) ?? null,
 		async addEvidence(data) {
-			const file = { ...data, id: crypto.randomUUID() } as TProjectEvidenceSelect;
+			const file = { ...data, id: crypto.randomUUID() } as TEvidenceSelect;
 			evidence.push(file);
 			return file;
 		},
@@ -129,7 +130,7 @@ function fakeRepository(): IProjectRepository {
 		},
 		listCosts: async (projectId) => costs.filter((cost) => cost.projectId === projectId),
 		async addCost(data) {
-			const cost = { ...data, id: crypto.randomUUID(), voidedAt: null } as TProjectCostSelect;
+			const cost = { ...data, id: crypto.randomUUID(), voidedAt: null } as TCostSelect;
 			costs.push(cost);
 			return cost;
 		},
@@ -180,25 +181,25 @@ beforeEach(() => {
 	);
 });
 
-const createProject = () => service.create(pm, { salesOrderId: SO, picUserId: 'pm', siteName: 'Lobi', targetStartDate: '2026-11-10', targetEndDate: '2026-11-30', notes: null });
+const createProject = () => service.create(pm, { orderId: SO, picUserId: 'pm', siteName: 'Lobi', targetStartDate: '2026-11-10', targetEndDate: '2026-11-30', notes: null });
 const upload = (kind: 'testing' | 'training' | 'bast', bytes: Uint8Array<ArrayBuffer> = PNG) =>
 	service.addEvidence(pm, rows[0]!.id, { file: new File([bytes], `${kind}.png`, { type: 'image/png' }), kind });
 
 describe('projects', () => {
 	test('created from a deal: snapshot, number and the default checklist; one live project per deal', async () => {
 		const project = await createProject();
-		expect(project).toMatchObject({ code: '0001/PRJ/IMS/XI/26', salesOrderCode: order.code, customerName: 'PT Contoh', contractValue: 11_100_000_000 });
+		expect(project).toMatchObject({ code: '0001/PRJ/IMS/XI/26', orderCode: order.code, customerName: 'PT Contoh', contractValue: 11_100_000_000 });
 		expect(tasks.map((task) => task.stage)).toEqual(['preparation', 'delivery', 'installation', 'testing', 'training', 'handover']);
 		await expect(createProject()).rejects.toBeInstanceOf(ProjectDealError);
 		expect((await service.openDeals()).map((deal) => deal.hasProject)).toEqual([true]);
-		await expect(service.create(pm, { salesOrderId: SO, picUserId: 'sales', siteName: null, targetStartDate: null, targetEndDate: null, notes: null })).rejects.toBeInstanceOf(
+		await expect(service.create(pm, { orderId: SO, picUserId: 'sales', siteName: null, targetStartDate: null, targetEndDate: null, notes: null })).rejects.toBeInstanceOf(
 			ProjectDealError,
 		);
 	});
 
 	test('the PIC must manage projects; assignees must work tasks', async () => {
 		rows = [];
-		await expect(service.create(pm, { salesOrderId: SO, picUserId: 'sales', siteName: null, targetStartDate: null, targetEndDate: null, notes: null })).rejects.toBeInstanceOf(
+		await expect(service.create(pm, { orderId: SO, picUserId: 'sales', siteName: null, targetStartDate: null, targetEndDate: null, notes: null })).rejects.toBeInstanceOf(
 			ProjectStaffError,
 		);
 		const project = await createProject();

@@ -63,6 +63,9 @@ export function CashBankPage() {
 	const [bankName, setBankName] = useState('');
 	const [openingBalance, setOpeningBalance] = useState('');
 	const [glAccountId, setGlAccountId] = useState('none');
+	// The backend does not return the GL link of an account (it lives in a link
+	// table), so show the links set in this session only.
+	const [linkedGl, setLinkedGl] = useState<Record<string, string>>({});
 
 	const [movementAccountId, setMovementAccountId] = useState('none');
 	const [movementDate, setMovementDate] = useState(today());
@@ -118,7 +121,8 @@ export function CashBankPage() {
 	const linkGl = useMutation({
 		mutationFn: (input: { id: string; glAccountId: string | null }) =>
 			updateCashBankAccount(input.id, { glAccountId: input.glAccountId }),
-		onSuccess: async () => {
+		onSuccess: async (_account, input) => {
+			setLinkedGl((previous) => ({ ...previous, [input.id]: input.glAccountId ?? 'none' }));
 			toast.success(t('finance:cashBank.updated'));
 			invalidate();
 		},
@@ -150,11 +154,8 @@ export function CashBankPage() {
 		);
 	}
 
-	const selectedAccount = accounts?.find(
-		(account) => account.id === movementAccountId,
-	);
-	const glLinked = selectedAccount?.glAccountId != null;
-	const canPostMovement = canCreate && glLinked && movementAccountId !== 'none';
+	// A movement needs a GL-linked account; the backend rejects it otherwise.
+	const canPostMovement = canCreate && movementAccountId !== 'none';
 
 	return (
 		<div className='space-y-4'>
@@ -261,7 +262,7 @@ export function CashBankPage() {
 								<TableHead className='text-right'>
 									{t('finance:cashBank.currentBalance')}
 								</TableHead>
-								<TableHead>{t('finance:cashBank.glLink')}</TableHead>
+								{canUpdate ? <TableHead>{t('finance:cashBank.glLink')}</TableHead> : null}
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -279,10 +280,10 @@ export function CashBankPage() {
 									<TableCell className='text-right'>
 										{formatMoney(account.currentBalance)}
 									</TableCell>
+									{canUpdate ? (
 									<TableCell>
-										{canUpdate ? (
 											<Select
-												value={account.glAccountId ?? 'none'}
+												value={linkedGl[account.id] ?? 'none'}
 												disabled={linkGl.isPending}
 												onValueChange={(value: string | null) =>
 													void linkGl.mutateAsync({
@@ -305,14 +306,8 @@ export function CashBankPage() {
 														))}
 												</SelectContent>
 											</Select>
-										) : account.glAccountId ? (
-											<Badge variant='secondary'>{t('finance:accounts.isActive')}</Badge>
-										) : (
-											<Badge variant='destructive'>
-												{t('finance:cashBank.glLinkRequired')}
-											</Badge>
-										)}
 									</TableCell>
+									) : null}
 								</TableRow>
 							))}
 						</TableBody>
@@ -321,6 +316,10 @@ export function CashBankPage() {
 			)}
 
 			<h2 className='pt-2 font-semibold'>{t('finance:cashBank.movements')}</h2>
+
+			{canCreate ? (
+				<p className='text-muted-foreground text-xs'>{t('finance:cashBank.glLinkRequired')}</p>
+			) : null}
 
 			{canCreate ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>

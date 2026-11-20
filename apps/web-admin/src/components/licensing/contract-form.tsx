@@ -41,9 +41,9 @@ export function ContractForm({
 	const applications = useQuery(applicationsQueryOptions(true));
 	const orders = useQuery(salesOrdersQueryOptions({ limit: 100 }));
 	const [customerId, setCustomerId] = useState(initial?.customerId ?? '');
-	const [applicationId, setApplicationId] = useState(initial?.licensableApplicationId ?? '');
+	const [applicationId, setApplicationId] = useState(initial?.licenseApplicationId ?? '');
 	const [packageName, setPackageName] = useState(initial?.packageName ?? '');
-	const [salesOrderId, setSalesOrderId] = useState(initial?.salesOrderId ?? '');
+	const [salesOrderId, setSalesOrderId] = useState(initial?.orderId ?? '');
 	const [startDate, setStartDate] = useState(initial?.startDate ?? '');
 	const [endDate, setEndDate] = useState(initial?.endDate ?? '');
 	const [billingCycle, setBillingCycle] = useState<TBillingCycle>(initial?.billingCycle ?? 'annual');
@@ -51,7 +51,7 @@ export function ContractForm({
 	const [notes, setNotes] = useState(initial?.notes ?? '');
 	const [busy, setBusy] = useState(false);
 
-	const pickable = (applications.data ?? []).filter((app) => app.status === 'active' || app.id === initial?.licensableApplicationId);
+	const pickable = (applications.data ?? []).filter((app) => app.status === 'active' || app.id === initial?.licenseApplicationId);
 	const customerOrders = (orders.data?.rows ?? []).filter((order) => order.customerId === customerId && order.status !== 'cancelled');
 
 	return (
@@ -62,9 +62,9 @@ export function ContractForm({
 				try {
 					await onSubmit({
 						customerId,
-						licensableApplicationId: applicationId,
+						licenseApplicationId: applicationId,
 						packageName: packageName.trim() || null,
-						salesOrderId: salesOrderId || null,
+						orderId: salesOrderId || null,
 						startDate: startDate || null,
 						endDate: endDate || null,
 						billingCycle,

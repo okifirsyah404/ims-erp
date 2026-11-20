@@ -1,8 +1,8 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
-	items,
-	serialTrackedItems,
-	stockBalances,
+	products,
+	itemSerials,
+	stocks,
 	warehouseAddresses,
 	warehouseOrganizations,
 	warehouseStorages,
@@ -206,7 +206,7 @@ export class WarehouseRepository implements IWarehouseRepository {
 	async listOrganizations(
 		warehouseId: string,
 	): Promise<Array<{ organizationId: string; createdAt: Date }>> {
-		return this.database
+		const rows = await this.database
 			.select({
 				organizationId: warehouseOrganizations.organizationId,
 				createdAt: warehouseOrganizations.createdAt,
@@ -219,6 +219,15 @@ export class WarehouseRepository implements IWarehouseRepository {
 				),
 			)
 			.orderBy(asc(warehouseOrganizations.createdAt));
+		// ADR-0014: the column is nullable; a link without an organization
+		// carries no tenant and is not a usable link, so it is skipped.
+		const links: Array<{ organizationId: string; createdAt: Date }> = [];
+		for (const row of rows) {
+			if (row.organizationId !== null) {
+				links.push({ organizationId: row.organizationId, createdAt: row.createdAt });
+			}
+		}
+		return links;
 	}
 
 	/**
@@ -303,19 +312,19 @@ export class WarehouseRepository implements IWarehouseRepository {
 
 		const unitRows = await this.database
 			.select({
-				warehouseId: serialTrackedItems.warehouseId,
-				itemKind: items.itemKind,
+				warehouseId: itemSerials.warehouseId,
+				itemKind: products.productKind,
 				value: count(),
 			})
-			.from(serialTrackedItems)
-			.innerJoin(items, eq(items.id, serialTrackedItems.itemId))
+			.from(itemSerials)
+			.innerJoin(products, eq(products.id, itemSerials.productId))
 			.where(
 				and(
-					isNull(serialTrackedItems.deletedAt),
-					inArray(serialTrackedItems.warehouseId, warehouseIds),
+					isNull(itemSerials.deletedAt),
+					inArray(itemSerials.warehouseId, warehouseIds),
 				),
 			)
-			.groupBy(serialTrackedItems.warehouseId, items.itemKind);
+			.groupBy(itemSerials.warehouseId, products.productKind);
 
 		const storageRows = await this.database
 			.select({
@@ -335,20 +344,20 @@ export class WarehouseRepository implements IWarehouseRepository {
 		// distinct material items with positive on-hand quantity per warehouse.
 		const materialRows = await this.database
 			.select({
-				warehouseId: stockBalances.warehouseId,
-				value: countDistinct(stockBalances.itemId),
+				warehouseId: stocks.warehouseId,
+				value: countDistinct(stocks.productId),
 			})
-			.from(stockBalances)
-			.innerJoin(items, eq(items.id, stockBalances.itemId))
+			.from(stocks)
+			.innerJoin(products, eq(products.id, stocks.productId))
 			.where(
 				and(
-					isNull(items.deletedAt),
-					eq(items.itemKind, 'material'),
-					gt(stockBalances.quantityOnHand, '0'),
-					inArray(stockBalances.warehouseId, warehouseIds),
+					isNull(products.deletedAt),
+					eq(products.productKind, 'material'),
+					gt(stocks.quantityOnHand, '0'),
+					inArray(stocks.warehouseId, warehouseIds),
 				),
 			)
-			.groupBy(stockBalances.warehouseId);
+			.groupBy(stocks.warehouseId);
 
 		const byWarehouse = new Map<string, TWarehouseKindCounts>(
 			warehouseIds.map((warehouseId) => [
@@ -510,11 +519,11 @@ export class WarehouseRepository implements IWarehouseRepository {
 	async countLiveUnits(warehouseId: string): Promise<number> {
 		const [{ value }] = await this.database
 			.select({ value: count() })
-			.from(serialTrackedItems)
+			.from(itemSerials)
 			.where(
 				and(
-					isNull(serialTrackedItems.deletedAt),
-					eq(serialTrackedItems.warehouseId, warehouseId),
+					isNull(itemSerials.deletedAt),
+					eq(itemSerials.warehouseId, warehouseId),
 				),
 			);
 		return value;

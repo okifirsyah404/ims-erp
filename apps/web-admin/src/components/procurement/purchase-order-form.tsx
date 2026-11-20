@@ -21,24 +21,24 @@ import {
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { Search } from 'lucide-react';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
-import { listItems, type TItem } from '@/lib/inventory-api';
+import { listProducts, type TProduct } from '@/lib/inventory-api';
 import {
 	openRequestLinesQueryOptions,
 	PO_VAT_MODES,
 	previewPoTotals,
 	PURCHASE_CATEGORIES,
-	suppliersQueryOptions,
 	type TOpenRequestLine,
 	type TPoVatMode,
 	type TPurchaseCategory,
 	type TPurchaseOrderDetail,
 	type TPurchaseOrderInput,
 } from '@/lib/procurement-api';
+import { supplierCompaniesQueryOptions, supplierPeopleQueryOptions } from '@/lib/supplier-api';
 
 type TLineDraft = {
 	key: string;
-	/** Empty while a free-text purchase request line is not mapped to an item yet. */
-	itemId: string;
+	/** inventory.products id; empty while a free-text purchase request line is not mapped yet. */
+	productId: string;
 	sku: string;
 	name: string;
 	unit: string;
@@ -51,13 +51,13 @@ type TLineDraft = {
 };
 
 /** Item search used to map a free-text request line to an item of the master. */
-function ItemMapper({ id, onPick }: { id: string; onPick: (item: TItem) => void }) {
+function ItemMapper({ id, onPick }: { id: string; onPick: (item: TProduct) => void }) {
 	const { t } = useTranslation(['procurement']);
 	const [search, setSearch] = useState('');
 	const deferred = useDeferredValue(search.trim());
 	const items = useQuery({
 		queryKey: ['inventory', 'items', 'po-mapper', deferred] as const,
-		queryFn: () => listItems({ search: deferred || undefined, activeOnly: true, limit: 10 }),
+		queryFn: () => listProducts({ search: deferred || undefined, activeOnly: true, limit: 10 }),
 		enabled: deferred !== '',
 	});
 	return (
@@ -91,7 +91,7 @@ function ItemMapper({ id, onPick }: { id: string; onPick: (item: TItem) => void 
 function fromRequestLine(line: TOpenRequestLine): TLineDraft {
 	return {
 		key: crypto.randomUUID(),
-		itemId: line.itemId ?? '',
+		productId: line.productId ?? '',
 		sku: line.sku ?? '',
 		name: line.name,
 		unit: line.unit,
@@ -119,7 +119,8 @@ export function PurchaseOrderForm({
 	onCancel: () => void;
 }) {
 	const { t } = useTranslation(['procurement', 'common']);
-	const [supplierId, setSupplierId] = useState(order?.supplierId ?? '');
+	const [supplierId, setSupplierId] = useState(order?.supplierCompanyId ?? '');
+	const [supplierPicId, setSupplierPicId] = useState(order?.supplierPicId ?? '');
 	const [supplierSearch, setSupplierSearch] = useState('');
 	const [category, setCategory] = useState<TPurchaseCategory>(order?.category ?? 'hardware');
 	const [subject, setSubject] = useState(order?.subject ?? '');
@@ -137,7 +138,7 @@ export function PurchaseOrderForm({
 	const [lines, setLines] = useState<TLineDraft[]>(
 		(order?.items ?? []).map((item) => ({
 			key: crypto.randomUUID(),
-			itemId: item.itemId,
+			productId: item.productId ?? '',
 			sku: item.sku,
 			name: item.name,
 			unit: item.unit,
@@ -166,10 +167,11 @@ export function PurchaseOrderForm({
 	const [itemSearch, setItemSearch] = useState('');
 	const deferredSupplier = useDeferredValue(supplierSearch.trim());
 	const deferredItem = useDeferredValue(itemSearch.trim());
-	const suppliers = useQuery(suppliersQueryOptions({ status: 'active', search: deferredSupplier || undefined, limit: 20 }));
+	const suppliers = useQuery(supplierCompaniesQueryOptions({ status: 'active', search: deferredSupplier || undefined, limit: 20 }));
+	const supplierPeople = useQuery(supplierPeopleQueryOptions(supplierId));
 	const items = useQuery({
 		queryKey: ['inventory', 'items', 'po-picker', deferredItem] as const,
-		queryFn: () => listItems({ search: deferredItem || undefined, activeOnly: true, limit: 20 }),
+		queryFn: () => listProducts({ search: deferredItem || undefined, activeOnly: true, limit: 20 }),
 		enabled: deferredItem !== '',
 	});
 
@@ -180,12 +182,12 @@ export function PurchaseOrderForm({
 	const patch = (key: string, value: Partial<TLineDraft>) =>
 		setLines((current) => current.map((line) => (line.key === key ? { ...line, ...value } : line)));
 
-	function addItem(item: TItem) {
+	function addItem(item: TProduct) {
 		setLines((current) => [
 			...current,
 			{
 				key: crypto.randomUUID(),
-				itemId: item.id,
+				productId: item.id,
 				sku: item.sku,
 				name: item.name,
 				unit: item.unitLabel,
@@ -200,9 +202,9 @@ export function PurchaseOrderForm({
 	}
 
 	/** Maps a free-text request line to an item: name, SKU and unit come from the master. */
-	function mapItem(key: string, item: TItem) {
+	function mapItem(key: string, item: TProduct) {
 		patch(key, {
-			itemId: item.id,
+			productId: item.id,
 			sku: item.sku,
 			name: item.name,
 			unit: item.unitLabel,
@@ -210,7 +212,7 @@ export function PurchaseOrderForm({
 		});
 	}
 
-	const unmapped = lines.some((line) => !line.itemId);
+	const unmapped = lines.some((line) => !line.productId);
 
 	const text = (value: string) => value.trim() || null;
 	const input = (id: string, label: string, value: string, set: (value: string) => void, props: React.ComponentProps<typeof Input> = {}) => (
@@ -226,7 +228,8 @@ export function PurchaseOrderForm({
 			onSubmit={(event) => {
 				event.preventDefault();
 				onSubmit({
-					supplierId,
+					supplierCompanyId: supplierId,
+					supplierPicId: supplierPicId || null,
 					category,
 					subject: subject.trim(),
 					orderDate,
@@ -241,7 +244,7 @@ export function PurchaseOrderForm({
 					terms: text(terms),
 					notes: text(notes),
 					lines: lines.map((line) => ({
-						itemId: line.itemId,
+						productId: line.productId,
 						quantity: line.quantity,
 						unitPrice: rupiahToMinor(line.unitPrice),
 						specification: text(line.specification),
@@ -275,21 +278,44 @@ export function PurchaseOrderForm({
 							<Select
 								required
 								value={supplierId === '' ? 'none' : supplierId}
-								onValueChange={(value: string | null) => setSupplierId(value == null || value === 'none' ? '' : value)}
+								onValueChange={(value: string | null) => {
+									setSupplierId(value == null || value === 'none' ? '' : value);
+									setSupplierPicId('');
+								}}
 							>
 								<SelectTrigger id='po-supplier' className='w-full'>
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value='none'>{t('procurement:po.pickSupplier')}</SelectItem>
-									{order && !supplierOptions.some((row) => row.id === order.supplierId) && (
-										<SelectItem value={order.supplierId}>
+									{order && !supplierOptions.some((row) => row.id === order.supplierCompanyId) && (
+										<SelectItem value={order.supplierCompanyId}>
 											{order.supplierSnapshot.code} — {order.supplierSnapshot.name}
 										</SelectItem>
 									)}
 									{supplierOptions.map((row) => (
 										<SelectItem key={row.id} value={row.id}>
 											{row.code} — {row.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='po-supplier-pic'>{t('procurement:po.supplierPic')}</FieldLabel>
+							<Select
+								value={supplierPicId === '' ? 'none' : supplierPicId}
+								onValueChange={(value: string | null) => setSupplierPicId(value == null || value === 'none' ? '' : value)}
+							>
+								<SelectTrigger id='po-supplier-pic' className='w-full' disabled={supplierId === ''}>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value='none'>{t('procurement:po.noPic')}</SelectItem>
+									{(supplierPeople.data ?? []).map((person) => (
+										<SelectItem key={person.id} value={person.id}>
+											{person.name}
+											{person.title ? ` (${person.title})` : ''}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -345,7 +371,7 @@ export function PurchaseOrderForm({
 									{t('procurement:po.removeLine')}
 								</Button>
 							</div>
-							{!line.itemId && (
+							{!line.productId && (
 								<div className='sm:col-span-6'>
 									<ItemMapper id={`po-map-${line.key}`} onPick={(item) => mapItem(line.key, item)} />
 								</div>
@@ -428,7 +454,7 @@ export function PurchaseOrderForm({
 															· {Number(line.quantity)} {line.unit} · {line.purchaseRequestCode ?? '—'} · {line.requestedByName ?? '—'}
 														</span>
 													</span>
-													<span className='text-muted-foreground'>{line.itemId ? formatIdr(line.estimatedUnitPrice) : t('procurement:pr.freeText')}</span>
+													<span className='text-muted-foreground'>{line.productId ? formatIdr(line.estimatedUnitPrice) : t('procurement:pr.freeText')}</span>
 												</button>
 											</li>
 										))}

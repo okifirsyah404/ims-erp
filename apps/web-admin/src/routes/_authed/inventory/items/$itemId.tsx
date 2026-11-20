@@ -36,19 +36,26 @@ import { Input } from '@ims-erp/ui/components/input';
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { useItemCategoryNames } from '@/lib/item-category-api';
 import {
-	archiveItem,
-	itemQueryOptions,
-	itemUnitsQueryOptions,
-	registerUnit,
+	archiveProduct,
+	productQueryOptions,
+	productSerialsQueryOptions,
+	registerSerial,
 	replaceProvisionalSerial,
-	type TItem,
-	type TItemUnit,
+	type TProduct,
+	type TProductSerial,
 } from '@/lib/inventory-api';
 import { DocumentImageField } from '@/components/documents/document-image-field';
 import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/inventory/items/$itemId` — item detail plus its serialized units. */
+/**
+ * `/inventory/items/$itemId` — product detail plus its serialized units.
+ *
+ * @remarks
+ * The path keeps its historical `items` segment; `$itemId` is a **product** id
+ * (`/inventory/products/:id` on the backend). Physical assets live under
+ * `/assets`.
+ */
 export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
 	component: ItemDetailPage,
 });
@@ -60,12 +67,12 @@ function ItemDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	const { data: item, isPending, isError } = useQuery(itemQueryOptions(itemId));
-	const { data: units } = useQuery(itemUnitsQueryOptions(itemId));
+	const { data: item, isPending, isError } = useQuery(productQueryOptions(itemId));
+	const { data: units } = useQuery(productSerialsQueryOptions(itemId));
 
 	const [archiving, setArchiving] = useState(false);
 	const canUpdate = usePermission('product.update');
-	const setItem = (saved: TItem) => queryClient.setQueryData(itemQueryOptions(itemId).queryKey, saved);
+	const setItem = (saved: TProduct) => queryClient.setQueryData(productQueryOptions(itemId).queryKey, saved);
 
 	if (isPending) return null;
 
@@ -82,9 +89,9 @@ function ItemDetailPage() {
 	async function handleArchive() {
 		setArchiving(true);
 		try {
-			await archiveItem(itemId);
+			await archiveProduct(itemId);
 			toast.success(t('inventory:form.archived'));
-			await queryClient.invalidateQueries({ queryKey: ['inventory', 'items'] });
+			await queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] });
 			void navigate({ to: '/inventory/products' });
 		} catch (error) {
 			toast.error(
@@ -102,7 +109,7 @@ function ItemDetailPage() {
 					<div>
 						<div className='flex items-center gap-2'>
 							<h1 className='text-2xl font-bold'>{item.name}</h1>
-							<Badge variant='outline'>{t(`inventory:kind.${item.itemKind}`)}</Badge>
+							<Badge variant='outline'>{t(`inventory:kind.${item.productKind}`)}</Badge>
 						</div>
 						<p className='font-mono text-xs text-muted-foreground'>
 							{item.code} · {item.sku}
@@ -154,7 +161,7 @@ function ItemDetailPage() {
 					<CardContent className='grid grid-cols-2 gap-4 p-4 text-sm sm:grid-cols-4'>
 						<Detail
 							label={t('inventory:items.category')}
-							value={item.categoryId ? (categoryNames.get(item.categoryId) ?? null) : null}
+							value={item.productCategoryId ? (categoryNames.get(item.productCategoryId) ?? null) : null}
 						/>
 						<Detail label={t('inventory:items.brand')} value={item.brand} />
 						<Detail
@@ -207,10 +214,10 @@ function ItemDetailPage() {
 							imageUrl={item.imageUrl}
 							disabled={!canUpdate}
 							onUpload={async (file) => {
-								setItem(await uploadDocumentImage<TItem>(`/items/${itemId}/image`, file));
+								setItem(await uploadDocumentImage<TProduct>(`/inventory/products/${itemId}/image`, file));
 							}}
 							onRemove={async () => {
-								setItem(await removeDocumentImage<TItem>(`/items/${itemId}/image`));
+								setItem(await removeDocumentImage<TProduct>(`/inventory/products/${itemId}/image`));
 							}}
 						/>
 					</CardContent>
@@ -240,14 +247,16 @@ function Detail({
 }
 
 /**
- * The unit list for a serialized item.
+ * The serial list for a serialized product.
  *
  * @remarks
- * Registering a unit with no serial and `pre_order` mints a provisional
- * serial (`PO-…`) server-side; that serial can be replaced exactly once, and
- * the replace control is only offered while the unit is still provisional.
+ * Registering needs a real serial number: the backend's `POST
+ * /inventory/products/:id/units` contract rejects an empty one, so the form can
+ * no longer mint a `pre_order` unit with a provisional serial. Provisional
+ * serials that already exist (from purchasing) can still be replaced exactly
+ * once, and the replace control is only offered while the unit is provisional.
  */
-function UnitsPanel({ itemId, units }: { itemId: string; units: TItemUnit[] }) {
+function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[] }) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
 	const [serial, setSerial] = useState('');
@@ -256,9 +265,9 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TItemUnit[] }) {
 	async function refresh() {
 		await Promise.all([
 			queryClient.invalidateQueries({
-				queryKey: itemUnitsQueryOptions(itemId).queryKey,
+				queryKey: productSerialsQueryOptions(itemId).queryKey,
 			}),
-			queryClient.invalidateQueries({ queryKey: ['inventory', 'items'] }),
+			queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
 		]);
 	}
 
@@ -266,9 +275,9 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TItemUnit[] }) {
 		event.preventDefault();
 		setRegistering(true);
 		try {
-			await registerUnit(itemId, {
-				serialNumber: serial.trim() || undefined,
-				status: serial.trim() ? 'in_stock' : 'pre_order',
+			await registerSerial(itemId, {
+				serialNumber: serial.trim(),
+				status: 'in_stock',
 			});
 			toast.success(t('inventory:unit.registered'));
 			setSerial('');
@@ -310,6 +319,7 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TItemUnit[] }) {
 						</label>
 						<Input
 							id='serial'
+							required
 							value={serial}
 							onChange={(event) => setSerial(event.target.value)}
 						/>

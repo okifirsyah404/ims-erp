@@ -23,7 +23,7 @@ export function PayablesPage() {
 				title={t('finance:payables.title')}
 				description={t('finance:payables.description')}
 				partyLabel={t('finance:aging.party.supplier')}
-				partyKey='supplierId'
+				partyKey='supplierCompanyId'
 				queryFor={apAgingQueryOptions}
 				enabled={canRead}
 				asOfDate={search.asOf}

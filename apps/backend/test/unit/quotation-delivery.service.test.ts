@@ -13,7 +13,7 @@ import { afterAll, beforeEach, describe, expect, test } from 'bun:test';
 import { appConfig } from '@config/providers/config';
 import { createRenderToken, verifyRenderToken } from '../../src/providers/pdf/render-token';
 import type { IPdfRenderer } from '../../src/providers/pdf/pdf-renderer';
-import { QuotationDeliveryService } from '../../src/app/sales/services/quotation-delivery.service';
+import { QuotationDeliveryService } from '../../src/app/sale/services/quotation-delivery.service';
 
 const ID = '01930000-0000-7000-8000-0000000000aa';
 const SECRET = 'render-secret-for-tests-only';
@@ -113,7 +113,7 @@ describe('quotation delivery', () => {
 
 		expect(rendered).toHaveLength(1);
 		expect(rendered[0]).toStartWith(`http://web.test/print/quotations/${ID}?token=`);
-		expect(attached[0]).toMatchObject({ source: { module: 'sales', sourceType: 'quotation', sourceId: ID }, actor: 'sales-1' });
+		expect(attached[0]).toMatchObject({ source: { module: 'sale', sourceType: 'quotation', sourceId: ID }, actor: 'sales-1' });
 		expect(attached[0].file.name).toBe('1376-QT-IMS-XI-26.pdf');
 		expect(attached[0].file.type).toBe('application/pdf');
 		expect(shares).toEqual([{ id: 'doc-1', days: 30, actor: 'sales-1' }]);
@@ -125,7 +125,7 @@ describe('quotation delivery', () => {
 			customer: { name: 'PT Maju', whatsapp: '081234567890' },
 			owner: { userId: 'sales-1', name: 'Sari' },
 			pdf: {
-				url: 'https://erp.test/public/v1/documents/tok-1/file',
+				url: 'https://erp.test/documents/public/v1/shares/tok-1/file',
 				fileName: '1376-QT-IMS-XI-26.pdf',
 				expiresAt: '2026-12-17T03:00:00.000Z',
 			},

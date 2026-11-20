@@ -21,19 +21,31 @@ import { queryOptions } from '@tanstack/react-query';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** A movement's direction is a property of its type; the quantity is signed. */
-export type TMovementType =
-	| 'receipt'
-	| 'issue'
-	| 'transfer_in'
-	| 'transfer_out'
-	| 'adjustment_in'
-	| 'adjustment_out'
-	| 'return_in'
-	| 'return_out'
-	| 'consumption'
-	| 'borrowing_out'
-	| 'borrowing_in';
+/**
+ * A movement's direction is a property of its type; the quantity is unsigned.
+ *
+ * @remarks
+ * Mirrors `MOVEMENT_TYPES` in the backend schema. The last five types only ever
+ * concern a physical item (asset) and never appear in the product stock ledger;
+ * they are kept so a row of any type still has a label.
+ */
+export const MOVEMENT_TYPES = [
+	'receipt',
+	'issue',
+	'transfer_in',
+	'transfer_out',
+	'adjustment_in',
+	'adjustment_out',
+	'return_in',
+	'return_out',
+	'consumption',
+	'borrow_out',
+	'borrow_return',
+	'project_site',
+	'disposal',
+	'lost',
+] as const;
+export type TMovementType = (typeof MOVEMENT_TYPES)[number];
 
 /** Movement types that decrease stock. Mirrors `isOutbound` on the backend. */
 export const OUTBOUND_MOVEMENT_TYPES: ReadonlySet<TMovementType> = new Set([
@@ -42,7 +54,6 @@ export const OUTBOUND_MOVEMENT_TYPES: ReadonlySet<TMovementType> = new Set([
 	'adjustment_out',
 	'return_out',
 	'consumption',
-	'borrowing_out',
 ]);
 
 /** One stock movement (an append-only ledger row). */
@@ -51,16 +62,18 @@ export type TStockMovement = {
 	organizationId: string | null;
 	code: string;
 	movementType: TMovementType;
-	itemId: string;
-	/** Resolved item name; `null` when archived or unknown. */
+	productId: string;
+	/** Resolved product name; `null` when archived or unknown. */
 	itemName: string | null;
-	/** Item photo URL; `null` when the item has no photo. */
+	/** Product photo URL; `null` when the product has no photo. */
 	imageUrl?: string | null;
 	warehouseId: string;
 	/** Resolved warehouse name; `null` when archived or unknown. */
 	warehouseName: string | null;
 	binId: string | null;
 	targetWarehouseId: string | null;
+	/** IDR minor units; absent for callers without `product:read_cost`. */
+	unitCost?: number;
 	/** Unsigned; direction comes from `movementType`. */
 	quantity: string;
 	referenceType: string | null;
@@ -77,10 +90,10 @@ export type TStockMovement = {
 export type TStockBalance = {
 	id: string;
 	organizationId: string | null;
-	itemId: string;
-	/** Resolved item name; `null` when archived or unknown. */
+	productId: string;
+	/** Resolved product name; `null` when archived or unknown. */
 	itemName: string | null;
-	/** Item photo URL; `null` when the item has no photo. */
+	/** Product photo URL; `null` when the product has no photo. */
 	imageUrl?: string | null;
 	warehouseId: string;
 	/** Resolved warehouse name; `null` when archived or unknown. */
@@ -89,6 +102,10 @@ export type TStockBalance = {
 	quantityOnHand: string;
 	quantityReserved: string;
 	quantityAvailable: string;
+	/** Moving-average cost, IDR minor units; absent without `product:read_cost`. */
+	averageCost?: number;
+	/** `quantityOnHand` valued at cost; absent without `product:read_cost`. */
+	totalValue?: number;
 	lastMovementAt: string | null;
 	createdAt: string;
 	updatedAt: string | null;
@@ -105,7 +122,7 @@ export type TStockPostResult = {
 export type TStockMovementInput = {
 	warehouseId: string;
 	binId?: string | null;
-	itemId: string;
+	productId: string;
 	/** Positive; the endpoint decides the direction. */
 	quantity: number;
 	occurredAt?: string;
@@ -121,7 +138,7 @@ export type TMovementListParams = {
 	/** `'global'` selects the shared rows; omit for the caller's scope. */
 	scope?: string;
 	warehouseId?: string;
-	itemId?: string;
+	productId?: string;
 	movementType?: TMovementType;
 	status?: 'draft' | 'posted' | 'reversed';
 	referenceType?: string;
@@ -133,7 +150,7 @@ export type TBalanceListParams = {
 	limit?: number;
 	scope?: string;
 	warehouseId?: string;
-	itemId?: string;
+	productId?: string;
 	binId?: string;
 	inStockOnly?: boolean;
 };

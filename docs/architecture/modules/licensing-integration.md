@@ -27,9 +27,9 @@ endpoints are in the [License API reference](/licensing-api).
 
 | When | Call | On success | Otherwise |
 | --- | --- | --- | --- |
-| Setup: the customer enters the key | `POST /licensing/v1/activate` with `licenseKey`, a stable `instanceId`, a `deviceName` | store the key and `instanceId` | show the reason: `404` wrong key, `403` not usable (expired, suspended…), `409` all seats in use |
-| Start-up, then every few hours | `POST /licensing/v1/validate` with `licenseKey` + `instanceId` | `valid: true` → run; `warning: true` → show "renew before `graceEndsOn`" | `valid: false` → lock the licensed features and show `status`; `not_activated` → activate again |
-| Uninstall / move to another device | `POST /licensing/v1/deactivate` | the seat is free | `404`: nothing to release |
+| Setup: the customer enters the key | `POST /projects/api/v1/licenses/activate` with `licenseKey`, a stable `instanceId`, a `deviceName` | store the key and `instanceId` | show the reason: `404` wrong key, `403` not usable (expired, suspended…), `409` all seats in use |
+| Start-up, then every few hours | `POST /projects/api/v1/licenses/validate` with `licenseKey` + `instanceId` | `valid: true` → run; `warning: true` → show "renew before `graceEndsOn`" | `valid: false` → lock the licensed features and show `status`; `not_activated` → activate again |
+| Uninstall / move to another device | `POST /projects/api/v1/licenses/deactivate` | the seat is free | `404`: nothing to release |
 
 - **`instanceId`** must stay the same for one installation. Generate a UUID on
   first run and keep it, or use the server's name. A new id takes a new
@@ -52,7 +52,7 @@ const ERP = process.env.ERP_URL!; // e.g. https://erp.entragate.co.id
 const KEY = process.env.ERP_LICENSE_API_KEY!; // elk_…
 
 async function license(path: 'validate' | 'activate' | 'deactivate', body: object) {
-  const response = await fetch(`${ERP}/licensing/v1/${path}`, {
+  const response = await fetch(`${ERP}/projects/api/v1/licenses/${path}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', 'Accept-Language': 'id' },
     body: JSON.stringify(body),
@@ -72,7 +72,7 @@ else if (result.warning) showRenewalBanner(result.graceEndsOn);
 ## Example (curl)
 
 ```bash
-curl -X POST "$ERP_URL/licensing/v1/validate" \
+curl -X POST "$ERP_URL/projects/api/v1/licenses/validate" \
   -H "Authorization: Bearer $ERP_LICENSE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"licenseKey":"ABCDE-FGHJK-LMNPQ-RS234","instanceId":"gym-jakarta-pc01"}'

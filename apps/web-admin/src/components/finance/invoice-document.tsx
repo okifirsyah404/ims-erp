@@ -1,6 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 
 import type { TCompanyProfile } from '@/lib/company-api';
+import { cashBankAccountsQueryOptions, type TCashBankAccount } from '@/lib/finance-api';
 import { formatBusinessDate } from '@/lib/format';
 import type { TInvoiceDetail, TScheduleRow } from '@/lib/invoice-api';
 import { terbilangRupiah } from '@/lib/terbilang';
@@ -33,13 +35,29 @@ function Section({ children }: { children: React.ReactNode }) {
  * Labels come from the `id` bundle (`getFixedT`): the company's documents
  * are Indonesian whatever the UI language.
  */
+/** The account printed for one usage: primary first, otherwise the first active one. */
+function pickInvoiceBank(accounts: TCashBankAccount[] | undefined, usage: 'vat' | 'non_vat') {
+	const candidates = (accounts ?? []).filter((account) => account.isActive && account.invoiceUsage === usage && account.accountNumber);
+	const account = candidates.find((candidate) => candidate.isPrimary) ?? candidates[0];
+	if (!account) return null;
+	return { bankName: account.bankName ?? account.name, accountNumber: account.accountNumber ?? '', accountHolder: account.accountHolder ?? '' };
+}
+
 export function InvoiceDocument({ invoice, profile }: { invoice: TInvoiceDetail; profile: TCompanyProfile | null | undefined }) {
 	const { i18n } = useTranslation();
 	const t = i18n.getFixedT('id', 'finance');
 	const order = invoice.order;
-	const customer = invoice.customerSnapshot;
+	// A free-items invoice has no snapshot; the document then prints dashes.
+	const customer = invoice.customerSnapshot ?? { name: '-', email: null, phone: null, whatsapp: null, addressLine: null, postalCode: null, taxId: null };
 	const discountBps = order && order.subtotal > 0 ? Math.round((order.discountTotal * 10_000) / order.subtotal) : 0;
-	const banks = profile?.bankAccounts;
+	// Bank details come from the finance cash/bank accounts (ADR-0024 Q19): the
+	// primary active account of each invoice usage. A viewer without
+	// cash_bank:read gets no accounts and the block is simply not printed.
+	const { data: accounts } = useQuery(cashBankAccountsQueryOptions());
+	const banks = {
+		vat: pickInvoiceBank(accounts, 'vat'),
+		nonVat: pickInvoiceBank(accounts, 'non_vat'),
+	};
 	const vatPercent = percent(invoice.vatRateBps || 1100);
 	type TRow = { term: TScheduleRow; payment: TScheduleRow['payments'][number] | null };
 	const payments: TRow[] = (order?.schedule ?? []).flatMap((term): TRow[] =>
@@ -228,7 +246,7 @@ export function InvoiceDocument({ invoice, profile }: { invoice: TInvoiceDetail;
 								<td className={cell}>{index + 1}</td>
 								<td className={cell}>{payment ? formatBusinessDate(payment.receivedDate, 'id') : '-'}</td>
 								<td className={cell}>{term.percentageBps ? `${percent(term.percentageBps)}%` : '-'}</td>
-								<td className={cell}>{stage(term.description)}</td>
+								<td className={cell}>{stage(term.description ?? '')}</td>
 								<td className={cell}>{payment ? t(`method.${payment.method}` as const) : '-'}</td>
 								<td className={cell}>{rp(payment ? payment.amount : term.grandTotal)}</td>
 							</tr>

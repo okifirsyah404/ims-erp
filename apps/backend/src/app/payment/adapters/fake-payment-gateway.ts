@@ -1,7 +1,7 @@
-import type { TGatewayPaymentStatus } from '@drizzle/schemas/payment.schema';
-import type { ReceiptMethod } from '@drizzle/schemas/sales.schema';
+import type { PaymentMethod } from '@drizzle/schemas/payment.schema';
 import type {
 	IPaymentGateway,
+	TGatewayEventStatus,
 	TCheckout,
 	TCheckoutRequest,
 	TGatewayEvent,
@@ -13,11 +13,11 @@ import { canonicalJson, hmacHex, safeEqual } from '../utils/gateway-signature';
 /** Body of a fake webhook: what a local tester posts. */
 export type TFakeWebhookBody = {
 	reference: string;
-	status: TGatewayPaymentStatus;
+	status: TGatewayEventStatus;
 	/** Whole rupiah. */
 	amount?: number;
 	channel?: string;
-	method?: ReceiptMethod;
+	method?: PaymentMethod;
 };
 
 /**

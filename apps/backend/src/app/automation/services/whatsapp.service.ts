@@ -1,5 +1,5 @@
-import { LEAD_SERVICE_TOKEN } from '@app/crm/constants/di';
-import type { LeadService } from '@app/crm/services/lead.service';
+import { LEAD_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { LeadService } from '@app/project/services/lead.service';
 import type { HandoffReason, MessageAuthor, TConversationSelect, TWhatsappMessageSelect } from '@drizzle/schemas/automation.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { pinoLogger } from '@providers/logger/logger';
@@ -189,11 +189,11 @@ export class WhatsappService {
 	}
 
 	/**
-	 * Turns the chat into a CRM lead (ERP-0021 lead capture): name and
+	 * Turns the chat into a project lead (ERP-0021 lead capture): name and
 	 * WhatsApp number from the chat, the customer's recent messages as the
 	 * needs. A chat that already has a lead returns it unchanged. Two admins
 	 * clicking at the same moment could create two leads; only the first is
-	 * linked (conditional update) and the other stays in CRM unlinked.
+	 * linked (conditional update) and the other stays in the project module unlinked.
 	 */
 	async captureLead(actorUserId: string, id: string): Promise<TConversationSelect> {
 		const conversation = await this.require(id);

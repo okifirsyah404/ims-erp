@@ -2,8 +2,8 @@ import type { TPaginationResult } from '@ims-erp/common';
 import type {
 	NotificationChannel,
 	NotificationStatus,
-	TNotificationSelect,
-	TNotificationTemplateSelect,
+	TPushNotificationSelect,
+	TPushNotificationTemplateSelect,
 } from '@drizzle/schemas/notification.schema';
 
 /**
@@ -11,7 +11,7 @@ import type {
  *
  * @remarks
  * One repository owns both tables of the module: the inbox
- * (`notification.notifications`) and the template lookup the worker needs
+ * (`notification.push_notifications`) and the template lookup the worker needs
  * (`notification.notification_templates`). Services hold no Drizzle handle.
  *
  * Reads filter `deleted_at IS NULL`; `pruneRead` is the only hard delete and
@@ -20,7 +20,7 @@ import type {
  */
 
 /** One row to append to the inbox, before the repository stamps timestamps. */
-export type TNotificationInsert = {
+export type TPushNotificationInsert = {
 	userId: string;
 	notificationTemplateId: string | null;
 	templateCode: string;
@@ -37,38 +37,38 @@ export type TNotificationInsert = {
 };
 
 /** Caller-scoped list request. `unreadOnly` excludes rows already read. */
-export type TNotificationListRequest = {
+export type TPushNotificationListRequest = {
 	userId: string;
 	page: number;
 	limit: number;
 	unreadOnly: boolean;
 };
 
-export interface INotificationRepository {
+export interface IPushNotificationRepository {
 	/** Appends one inbox row and returns it as stored. */
-	insert(entry: TNotificationInsert): Promise<TNotificationSelect>;
+	insert(entry: TPushNotificationInsert): Promise<TPushNotificationSelect>;
 
 	/** Resolves an active template by its `module.event` code. */
 	findTemplateByCode(
 		code: string,
-	): Promise<TNotificationTemplateSelect | null>;
+	): Promise<TPushNotificationTemplateSelect | null>;
 
 	/** One row, only when it belongs to the caller. */
 	findByIdForUser(
 		id: string,
 		userId: string,
-	): Promise<TNotificationSelect | null>;
+	): Promise<TPushNotificationSelect | null>;
 
 	/** Newest-first page of the caller's inbox. */
 	listForUser(
-		request: TNotificationListRequest,
-	): Promise<TPaginationResult<TNotificationSelect>>;
+		request: TPushNotificationListRequest,
+	): Promise<TPaginationResult<TPushNotificationSelect>>;
 
 	/** Unread rows for one user. */
 	countUnread(userId: string): Promise<number>;
 
 	/** Marks one row read; `null` when it is missing or not the caller's. */
-	markRead(id: string, userId: string): Promise<TNotificationSelect | null>;
+	markRead(id: string, userId: string): Promise<TPushNotificationSelect | null>;
 
 	/** Marks every unread row of the caller; returns how many changed. */
 	markAllRead(userId: string): Promise<number>;
@@ -81,4 +81,4 @@ export interface INotificationRepository {
 	pruneRead(cutoff: Date): Promise<number>;
 }
 
-export type { TNotificationSelect };
+export type { TPushNotificationSelect };

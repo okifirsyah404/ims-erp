@@ -12,6 +12,7 @@ import type {
 	IVillageRepository,
 } from '../contracts/village.repository.interface';
 import type { LocationService } from '../services/location.service';
+import type { ExportedLocationService } from '../services/exported-location.service';
 
 /**
  * Injection tokens for the location module's repositories and service.
@@ -40,3 +41,7 @@ export const VILLAGE_REPOSITORY_TOKEN: InjectionToken<IVillageRepository> =
 export const LOCATION_SERVICE_TOKEN: InjectionToken<LocationService> = Symbol(
 	'LOCATION_SERVICE',
 );
+
+/** Token resolving to the repository-only {@link ExportedLocationService}. */
+export const EXPORTED_LOCATION_SERVICE_TOKEN: InjectionToken<ExportedLocationService> =
+	Symbol('EXPORTED_LOCATION_SERVICE');

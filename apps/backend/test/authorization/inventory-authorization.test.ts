@@ -2,7 +2,7 @@
  * Inventory authorization integration tests.
  *
  * Exercises the REAL Elysia pipeline for the item routes (erpGuard macro +
- * ItemController + ItemService) through `app.handle()`, with Better Auth and
+ * ProductController + ProductService) through `app.handle()`, with Better Auth and
  * the repositories mocked at their seams.
  *
  * The point of this file is not the CRUD itself (covered by the service
@@ -21,9 +21,9 @@ import {
 	installPermissionResolverMock,
 	resetFixture,
 } from './test-app';
-import type { IItemRepository } from '../../src/app/inventory/contracts/item.repository.interface';
-import type { ISerialUnitRepository } from '../../src/app/inventory/contracts/serial-unit.repository.interface';
-import type { TItemSelect } from '@drizzle/schemas/inventory.schema';
+import type { IProductRepository } from '../../src/app/inventory/contracts/product.repository.interface';
+import type { IItemSerialRepository } from '../../src/app/inventory/contracts/item-serial.repository.interface';
+import type { TProductSelect } from '@drizzle/schemas/inventory.schema';
 
 let app: Elysia<any, any, any, any, any, any>;
 
@@ -48,15 +48,15 @@ const jsonRequest = (
 	});
 
 /** Minimal item row so the list endpoint has something to return. */
-function seedRow(organizationId: string): TItemSelect {
+function seedRow(organizationId: string): TProductSelect {
 	return {
 		id: '01920000-0000-7000-8000-000000000001',
 		organizationId,
 		sku: 'CTRL-01',
 		name: 'Door controller',
 		description: null,
-		itemKind: 'product',
-		categoryId: null,
+		productKind: 'product',
+		productCategoryId: null,
 		brand: null,
 		specification: null,
 		isActive: true,
@@ -72,7 +72,7 @@ function seedRow(organizationId: string): TItemSelect {
 		createdAt: new Date(0),
 		updatedAt: null,
 		deletedAt: null,
-	} as TItemSelect;
+	} as TProductSelect;
 }
 
 beforeAll(async () => {
@@ -81,7 +81,7 @@ beforeAll(async () => {
 
 	const rows = [seedRow(fixture.orgA)];
 
-	const itemRepository: IItemRepository = {
+	const itemRepository: IProductRepository = {
 		async findActiveByIds() {
 			return [];
 		},
@@ -126,12 +126,15 @@ beforeAll(async () => {
 		async countUnits() {
 			return 0;
 		},
-		async findNamesByIds() {
+		listListed: async () => [],
+		listPublished: async () => [],
+		findBySlug: async () => null,
+		findPublishedBySlug: async () => null,		async findNamesByIds() {
 			return [];
 		},
 	};
 
-	const serialUnitRepository: ISerialUnitRepository = {
+	const serialUnitRepository: IItemSerialRepository = {
 		async paginate(r) {
 			return {
 				meta: { page: r.page, limit: r.limit, total: 0, totalPages: 0 },
@@ -172,46 +175,44 @@ beforeAll(async () => {
 
 	// Import after mocks are installed (bun mock.module is hoist-sensitive).
 	const {
-		ITEM_CATEGORY_REPOSITORY_TOKEN,
-		ITEM_REPOSITORY_TOKEN,
-		SERIAL_UNIT_REPOSITORY_TOKEN,
-		ITEM_SERVICE_TOKEN,
-		ITEM_IMAGE_SERVICE_TOKEN,
+		PRODUCT_CATEGORY_REPOSITORY_TOKEN,
+		PRODUCT_REPOSITORY_TOKEN,
+		ITEM_SERIAL_REPOSITORY_TOKEN,
+		PRODUCT_SERVICE_TOKEN,
+		PRODUCT_IMAGE_SERVICE_TOKEN,
 	} = await import('../../src/app/inventory/constants/di');
-	const { ItemService } = await import(
-		'../../src/app/inventory/services/item.service'
+	const { ProductService } = await import(
+		'../../src/app/inventory/services/product.service'
 	);
 	const { InventoryAuditWriter } = await import(
 		'../../src/app/inventory/services/inventory-audit.writer'
 	);
-	const { ItemController } = await import(
-		'../../src/app/inventory/controllers/item.controller'
+	const { ProductController } = await import(
+		'../../src/app/inventory/controllers/product.controller'
 	);
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
-	container.register(ITEM_REPOSITORY_TOKEN, { useValue: itemRepository });
-	container.register(SERIAL_UNIT_REPOSITORY_TOKEN, {
+	container.register(PRODUCT_REPOSITORY_TOKEN, { useValue: itemRepository });
+	container.register(ITEM_SERIAL_REPOSITORY_TOKEN, {
 		useValue: serialUnitRepository,
 	});
 	// No category is involved in the authorization suite.
-	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, {
+	container.register(PRODUCT_CATEGORY_REPOSITORY_TOKEN, {
 		useValue: { findById: async () => null } as never,
 	});
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
 	});
-	// ERP-0043: item codes come from the numbering authority.
-	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
-		'../../src/app/code-number/constants/di'
-	);
-	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+	// ADR-0024 Q6: item codes come from the module's own numbering series.
+	const { INVENTORY_NUMBERING_SERVICE_TOKEN } = await import('../../src/app/inventory/constants/di');
+	container.register(INVENTORY_NUMBERING_SERVICE_TOKEN, {
 		useValue: { next: async () => 'PRD-00001' } as never,
 	});
-	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
+	container.register(PRODUCT_SERVICE_TOKEN, { useClass: ProductService });
 	// Photos are not part of the authorization suite.
-	container.register(ITEM_IMAGE_SERVICE_TOKEN, { useValue: { withImageUrl: (item: object) => ({ ...item, imageUrl: null }) } as never });
+	container.register(PRODUCT_IMAGE_SERVICE_TOKEN, { useValue: { withImageUrl: (item: object) => ({ ...item, imageUrl: null }) } as never });
 
-	app = new Elysia().use(erpGuard()).use(ItemController.plugin());
+	app = new Elysia().use(erpGuard()).use(ProductController.plugin());
 });
 
 beforeEach(() => {
@@ -220,17 +221,17 @@ beforeEach(() => {
 
 describe('item routes — authentication', () => {
 	test('GET /items without a session returns 401', async () => {
-		const response = await app.handle(jsonRequest('GET', '/items'));
+		const response = await app.handle(jsonRequest('GET', '/inventory/products'));
 		expect(response.status).toBe(401);
 	});
 
 	test('POST /items without a session returns 401', async () => {
 		const response = await app.handle(
-			jsonRequest('POST', '/items', undefined, {
+			jsonRequest('POST', '/inventory/products', undefined, {
 				organizationId: fixture.orgA,
 				sku: 'X',
 				name: 'X',
-				itemKind: 'product',
+				productKind: 'product',
 			}),
 		);
 		expect(response.status).toBe(401);
@@ -240,14 +241,14 @@ describe('item routes — authentication', () => {
 describe('item routes — organization scope', () => {
 	test('a global admin without membership is refused (403, not bypass)', async () => {
 		const response = await app.handle(
-			jsonRequest('GET', '/items', 'globalAdmin'),
+			jsonRequest('GET', '/inventory/products', 'globalAdmin'),
 		);
 		expect(response.status).toBe(403);
 	});
 
 	test('an owner can read items', async () => {
 		const response = await app.handle(
-			jsonRequest('GET', '/items', 'owner', undefined, fixture.orgA),
+			jsonRequest('GET', '/inventory/products', 'owner', undefined, fixture.orgA),
 		);
 		expect(response.status).toBe(200);
 		const body = await response.json();
@@ -258,13 +259,13 @@ describe('item routes — organization scope', () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
-				'/items',
+				'/inventory/products',
 				'owner',
 				{
 					organizationId: fixture.orgA,
 					sku: 'NEW-01',
 					name: 'New controller',
-					itemKind: 'product',
+					productKind: 'product',
 					isSerialized: true,
 					isStockTracked: true,
 				},
@@ -280,13 +281,13 @@ describe('item routes — organization scope', () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
-				'/items',
+				'/inventory/products',
 				'member',
 				{
 					organizationId: fixture.orgA,
 					sku: 'M-01',
 					name: 'Blocked',
-					itemKind: 'product',
+					productKind: 'product',
 				},
 				fixture.orgA,
 			),
@@ -300,13 +301,13 @@ describe('item routes — validation', () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
-				'/items',
+				'/inventory/products',
 				'owner',
 				{
 					organizationId: fixture.orgA,
 					sku: 'BAD',
 					name: 'Bad kind',
-					itemKind: 'spaceship',
+					productKind: 'spaceship',
 				},
 				fixture.orgA,
 			),
@@ -316,7 +317,7 @@ describe('item routes — validation', () => {
 
 	test('rejects an invalid uuid path param with 400', async () => {
 		const response = await app.handle(
-			jsonRequest('GET', '/items/not-a-uuid', 'owner', undefined, fixture.orgA),
+			jsonRequest('GET', '/inventory/products/not-a-uuid', 'owner', undefined, fixture.orgA),
 		);
 		expect(response.status).toBe(400);
 	});

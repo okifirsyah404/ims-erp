@@ -247,7 +247,7 @@ disetujui owner.
 ## 9. Asisten chat masuk (ERP) dengan Meta: belum dibangun
 
 Saat ini chat pelanggan masuk dari **WAHA langsung ke ERP** (`POST
-/integrations/whatsapp/webhook`), dan ERP membalas lewat WAHA. Untuk nomor Meta, yang perlu
+/webhooks/whatsapp`), dan ERP membalas lewat WAHA. Untuk nomor Meta, yang perlu
 ditambahkan di ERP (modul `automation`, M04):
 1. **Webhook Meta di ERP:**
    - `GET` untuk verifikasi (`hub.mode=subscribe`, `hub.verify_token`, membalas `hub.challenge`);

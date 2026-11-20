@@ -25,21 +25,20 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { toast } from '@/components/toast';
 import {
-	createListing,
 	listingsQueryOptions,
 	OUT_OF_STOCK_MODES,
 	PRICE_MODES,
 	publishListing,
 	removeListing,
+	saveListing,
 	slugify,
 	type TListing,
 	type TListingInput,
 	type TOutOfStockMode,
 	type TPriceMode,
-	updateListing,
 } from '@/lib/catalog-api';
 import { formatIdr } from '@/lib/format';
-import { itemsQueryOptions } from '@/lib/inventory-api';
+import { productsQueryOptions } from '@/lib/inventory-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/integrations/website-catalog` — what the public website shows (M04 stage 1). */
@@ -50,7 +49,9 @@ export const Route = createFileRoute('/_authed/integrations/website-catalog/')({
 function WebsiteCatalogPage() {
 	const { t } = useTranslation(['integrations', 'common']);
 	const queryClient = useQueryClient();
-	const canCreate = usePermission('catalog.create');
+	// Saving a listing creates it on first save, so "new" needs the update grant
+	// (`PUT /inventory/product-listings/:id` is gated by `catalog:update`).
+	const canCreate = usePermission('catalog.update');
 	const canUpdate = usePermission('catalog.update');
 	const canPublish = usePermission('catalog.publish');
 	const canRemove = usePermission('catalog.archive');
@@ -106,12 +107,12 @@ function WebsiteCatalogPage() {
 								{data.map((listing) => (
 									<TableRow key={listing.id}>
 										<TableCell>
-											<div className='font-medium'>{listing.item?.name ?? '—'}</div>
-											<div className='text-xs text-muted-foreground'>{listing.item?.sku}</div>
+											<div className='font-medium'>{listing.name}</div>
+											<div className='text-xs text-muted-foreground'>{listing.sku}</div>
 										</TableCell>
 										<TableCell className='font-mono text-xs'>{listing.slug}</TableCell>
 										<TableCell className='text-right whitespace-nowrap'>
-											{listing.priceMode === 'rfq' || !listing.item ? t('integrations:catalog.quotation') : formatIdr(listing.item.sellingPrice)}
+											{listing.priceMode === 'rfq' ? t('integrations:catalog.quotation') : formatIdr(listing.sellingPrice)}
 										</TableCell>
 										<TableCell>{t(`integrations:catalog.outOfStock.${listing.outOfStockMode}`)}</TableCell>
 										<TableCell>
@@ -158,11 +159,8 @@ function WebsiteCatalogPage() {
 					listing={editing.listing}
 					busy={busy}
 					onClose={() => setEditing(null)}
-					onSave={async (input) => {
-						const done = await run(
-							() => (editing.listing ? updateListing(editing.listing.id, input) : createListing(input)),
-							t('integrations:catalog.saved'),
-						);
+					onSave={async (productId, input) => {
+						const done = await run(() => saveListing(productId, input), t('integrations:catalog.saved'));
 						if (done) setEditing(null);
 					}}
 				/>
@@ -180,15 +178,15 @@ function ListingDialog({
 	listing: TListing | null;
 	busy: boolean;
 	onClose: () => void;
-	onSave: (input: TListingInput) => Promise<void>;
+	onSave: (productId: string, input: TListingInput) => Promise<void>;
 }) {
 	const { t } = useTranslation(['integrations', 'common']);
 	const [search, setSearch] = useState('');
 	const deferred = useDeferredValue(search.trim());
-	const items = useQuery({ ...itemsQueryOptions({ search: deferred || undefined, limit: 20 }), enabled: !listing });
-	const [itemId, setItemId] = useState(listing?.itemId ?? '');
+	const items = useQuery({ ...productsQueryOptions({ search: deferred || undefined, limit: 20 }), enabled: !listing });
+	const [itemId, setItemId] = useState(listing?.id ?? '');
 	const [slug, setSlug] = useState(listing?.slug ?? '');
-	const [specs, setSpecs] = useState(listing?.specs ?? '');
+	const [specs, setSpecs] = useState(listing?.listingSpecs ?? '');
 	const [priceMode, setPriceMode] = useState<TPriceMode>(listing?.priceMode ?? 'list');
 	const [priceCaption, setPriceCaption] = useState(listing?.priceCaption ?? '');
 	const [outOfStockMode, setOutOfStockMode] = useState<TOutOfStockMode>(listing?.outOfStockMode ?? 'request');
@@ -202,8 +200,7 @@ function ListingDialog({
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();
-						void onSave({
-							itemId,
+						void onSave(itemId, {
 							slug,
 							specs: specs.trim() || null,
 							priceMode,
@@ -226,7 +223,7 @@ function ListingDialog({
 							<FieldLabel htmlFor='listing-item'>{t('integrations:catalog.item')}</FieldLabel>
 							{listing ? (
 								<p className='text-sm'>
-									{listing.item?.sku} — {listing.item?.name}
+									{listing.sku} — {listing.name}
 								</p>
 							) : (
 								<>

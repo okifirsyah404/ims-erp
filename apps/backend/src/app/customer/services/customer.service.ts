@@ -1,0 +1,230 @@
+import type {
+	TCustomerAddressSelect,
+	TCustomerCompanyAddressSelect,
+	TCustomerCompanySelect,
+	TCustomerSelect,
+} from '@drizzle/schemas/customer.schema';
+import { inject, injectable } from 'tsyringe';
+
+import {
+	COMPANY_ADDRESS_REPOSITORY_TOKEN,
+	COMPANY_REPOSITORY_TOKEN,
+	CUSTOMER_ADDRESS_REPOSITORY_TOKEN,
+	CUSTOMER_PERSON_REPOSITORY_TOKEN,
+} from '../constants/di';
+import type {
+	TCompanyAddressInput,
+	TCompanyListQuery,
+	TCreateCompanyInput,
+	TCreateCustomerInput,
+	TCustomerAddressInput,
+	TCustomerListQuery,
+	TUpdateCompanyAddressInput,
+	TUpdateCompanyInput,
+	TUpdateCustomerAddressInput,
+	TUpdateCustomerInput,
+} from '../contracts/customer.contract';
+import type {
+	ICompanyAddressRepository,
+	ICompanyRepository,
+	ICustomerAddressRepository,
+	ICustomerPersonRepository,
+} from '../contracts/customer.repository.interface';
+import {
+	CustomerAddressNotFoundError,
+	CustomerCodeTakenError,
+	CustomerNotFoundError,
+	CustomerStatusUnchangedError,
+} from '../errors/customer.errors';
+
+/** One company with its addresses, the detail view. */
+export type TCustomerCompanyView = TCustomerCompanySelect & {
+	addresses: TCustomerCompanyAddressSelect[];
+};
+
+/** One person with their addresses, the detail view. */
+export type TCustomerPersonView = TCustomerSelect & {
+	addresses: TCustomerAddressSelect[];
+};
+
+/** Paginated list envelope returned to the controller. */
+export type TCustomerPage<T> = {
+	meta: { page: number; limit: number; total: number; totalPages: number };
+	data: T[];
+};
+
+/**
+ * Customer master-data use cases (company-wide, ADR-0011).
+ *
+ * @remarks
+ * Permission checks live in the controller guards. Codes are unique across
+ * live companies and live people together, because documents refer to either
+ * by code.
+ */
+@injectable()
+export class CustomerService {
+	constructor(
+		@inject(COMPANY_REPOSITORY_TOKEN)
+		private readonly companies: ICompanyRepository,
+		@inject(CUSTOMER_PERSON_REPOSITORY_TOKEN)
+		private readonly people: ICustomerPersonRepository,
+		@inject(COMPANY_ADDRESS_REPOSITORY_TOKEN)
+		private readonly companyAddresses: ICompanyAddressRepository,
+		@inject(CUSTOMER_ADDRESS_REPOSITORY_TOKEN)
+		private readonly addresses: ICustomerAddressRepository,
+	) {}
+
+	/* ------------------------------ companies ------------------------------ */
+
+	async listCompanies(query: TCompanyListQuery): Promise<TCustomerPage<TCustomerCompanySelect>> {
+		const [data, total] = await Promise.all([
+			this.companies.paginate(query),
+			this.companies.count(query),
+		]);
+		return {
+			meta: {
+				page: query.page,
+				limit: query.limit,
+				total,
+				totalPages: Math.max(1, Math.ceil(total / query.limit)),
+			},
+			data,
+		};
+	}
+
+	async getCompany(id: string): Promise<TCustomerCompanyView> {
+		const company = await this.companies.findById(id);
+		if (!company) throw new CustomerNotFoundError();
+		return { ...company, addresses: await this.companyAddresses.listByCompany(id) };
+	}
+
+	async createCompany(input: TCreateCompanyInput, actorUserId: string): Promise<TCustomerCompanySelect> {
+		await this.assertCodeFree(input.code);
+		return this.companies.create({ ...input, createdBy: actorUserId });
+	}
+
+	async updateCompany(id: string, patch: TUpdateCompanyInput): Promise<TCustomerCompanySelect> {
+		if (patch.code !== undefined) await this.assertCodeFree(patch.code, id);
+		const row = await this.companies.update(id, patch);
+		if (!row) throw new CustomerNotFoundError();
+		return row;
+	}
+
+	async setCompanyActive(id: string, active: boolean): Promise<TCustomerCompanySelect> {
+		const current = await this.companies.findById(id);
+		if (!current) throw new CustomerNotFoundError();
+		const target = active ? 'active' : 'inactive';
+		if (current.status === target) throw new CustomerStatusUnchangedError(active);
+		const updated = await this.companies.transitionStatus(
+			id,
+			current.status as 'active' | 'inactive',
+			active ? 'active' : 'inactive',
+		);
+		if (!updated) throw new CustomerStatusUnchangedError(active);
+		return updated;
+	}
+
+	/* ------------------------------- people -------------------------------- */
+
+	async listCustomers(query: TCustomerListQuery): Promise<TCustomerPage<TCustomerSelect>> {
+		const page = await this.people.paginate(query);
+		return { meta: page.meta, data: page.rows };
+	}
+
+	async getCustomer(id: string): Promise<TCustomerPersonView> {
+		const customer = await this.people.findById(id);
+		if (!customer) throw new CustomerNotFoundError();
+		return { ...customer, addresses: await this.addresses.listByCustomer(id) };
+	}
+
+	async createCustomer(input: TCreateCustomerInput, actorUserId: string): Promise<TCustomerSelect> {
+		if (input.companyId) await this.assertCompany(input.companyId);
+		await this.assertCodeFree(input.code);
+		return this.people.create({ ...input, createdBy: actorUserId });
+	}
+
+	async updateCustomer(id: string, patch: TUpdateCustomerInput): Promise<TCustomerSelect> {
+		if (patch.companyId) await this.assertCompany(patch.companyId);
+		if (patch.code !== undefined) await this.assertCodeFree(patch.code, id);
+		const row = await this.people.update(id, patch);
+		if (!row) throw new CustomerNotFoundError();
+		return row;
+	}
+
+	async setCustomerActive(id: string, active: boolean): Promise<TCustomerSelect> {
+		const current = await this.people.findById(id);
+		if (!current) throw new CustomerNotFoundError();
+		const target = active ? 'active' : 'inactive';
+		if (current.status === target) throw new CustomerStatusUnchangedError(active);
+		const updated = await this.people.transitionStatus(
+			id,
+			current.status as 'active' | 'inactive',
+			active ? 'active' : 'inactive',
+		);
+		if (!updated) throw new CustomerStatusUnchangedError(active);
+		return updated;
+	}
+
+	/**
+	 * An active person, or `null` — for documents naming the person.
+	 *
+	 * @remarks
+	 * Same answer as `ExportedCustomerService.getActiveCustomer`; kept here so
+	 * the HTTP-side service exposes the identical read.
+	 */
+	async getActiveCustomer(id: string): Promise<TCustomerSelect | null> {
+		const customer = await this.people.findById(id);
+		return customer?.status === 'active' ? customer : null;
+	}
+
+	/* ------------------------------ addresses ------------------------------ */
+
+	async addCompanyAddress(companyId: string, data: TCompanyAddressInput) {
+		await this.assertCompany(companyId);
+		return this.companyAddresses.create(companyId, data);
+	}
+
+	async updateCompanyAddress(companyId: string, addressId: string, patch: TUpdateCompanyAddressInput) {
+		const row = await this.companyAddresses.update(companyId, addressId, patch);
+		if (!row) throw new CustomerAddressNotFoundError();
+		return row;
+	}
+
+	async removeCompanyAddress(companyId: string, addressId: string): Promise<void> {
+		if (!(await this.companyAddresses.softDelete(companyId, addressId))) {
+			throw new CustomerAddressNotFoundError();
+		}
+	}
+
+	async addCustomerAddress(customerId: string, data: TCustomerAddressInput) {
+		if (!(await this.people.findById(customerId))) throw new CustomerNotFoundError();
+		return this.addresses.create(customerId, data);
+	}
+
+	async updateCustomerAddress(customerId: string, addressId: string, patch: TUpdateCustomerAddressInput) {
+		const row = await this.addresses.update(customerId, addressId, patch);
+		if (!row) throw new CustomerAddressNotFoundError();
+		return row;
+	}
+
+	async removeCustomerAddress(customerId: string, addressId: string): Promise<void> {
+		if (!(await this.addresses.softDelete(customerId, addressId))) {
+			throw new CustomerAddressNotFoundError();
+		}
+	}
+
+	/* ------------------------------ internals ------------------------------ */
+
+	private async assertCompany(id: string): Promise<void> {
+		if (!(await this.companies.findById(id))) throw new CustomerNotFoundError();
+	}
+
+	/** Throws when a live company or person already holds `code`, except `exceptId`. */
+	private async assertCodeFree(code: string, exceptId?: string): Promise<void> {
+		const company = await this.companies.findByCode(code);
+		const person = await this.people.findByCode(code);
+		if ((company && company.id !== exceptId) || (person && person.id !== exceptId)) {
+			throw new CustomerCodeTakenError(code);
+		}
+	}
+}

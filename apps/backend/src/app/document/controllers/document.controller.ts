@@ -180,7 +180,7 @@ export class DocumentController {
 const shareTokenParamsSchema = z.object({ token: z.uuid() });
 
 /**
- * Anonymous public share links (`/public/v1/documents/:token`).
+ * Anonymous public share links (`/documents/public/v1/shares/:token`).
  *
  * @remarks
  * The token is the only credential, so the response is a narrow projection:
@@ -188,12 +188,15 @@ const shareTokenParamsSchema = z.object({ token: z.uuid() });
  * organization, no access trail.
  */
 export class PublicDocumentController {
-	static plugin() {
+	/**
+	 * @param prefix - The public share path: `/documents/public/v1/shares`.
+	 */
+	static plugin(prefix = '/documents/public/v1/shares') {
 		const service = container.resolve(DOCUMENT_SERVICE_TOKEN);
 
 		return domainPlugin({
-			name: 'public-documents',
-			prefix: '/public/v1/documents',
+			name: `public-documents:${prefix}`,
+			prefix,
 			tags: ['Document'],
 		})
 			.get('/:token', async ({ params }) => ok(await service.resolvePublicShare(params.token)), {

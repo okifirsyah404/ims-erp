@@ -5,25 +5,25 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type {
 	MovementType,
-	TStockBalanceSelect,
-	TStockMovementSelect,
+	TStockSelect,
 	TWarehouseSelect,
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
 	TMovementPaginationRequest,
+	TProductMovementSelect,
 } from '../contracts/movement.repository.interface';
 import type {
-	IBalanceRepository,
-	TBalanceKey,
-	TBalancePaginationRequest,
-} from '../contracts/balance.repository.interface';
-import type { IItemRepository } from '../contracts/item.repository.interface';
+	IStockRepository,
+	TStockKey,
+	TStockPaginationRequest,
+} from '../contracts/stock.repository.interface';
+import type { IProductRepository } from '../contracts/product.repository.interface';
 import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
 import {
-	BALANCE_REPOSITORY_TOKEN,
-	ITEM_IMAGE_SERVICE_TOKEN,
-	ITEM_REPOSITORY_TOKEN,
+	STOCK_REPOSITORY_TOKEN,
+	PRODUCT_IMAGE_SERVICE_TOKEN,
+	PRODUCT_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 } from '../constants/di';
@@ -34,13 +34,13 @@ import {
 } from '../errors/inventory.errors';
 import type { TTx } from '@drizzle/types';
 import { applyMovementCost, type TCostState } from '../utils/moving-average';
-import type { CodeNumberService } from '@app/code-number';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { ItemImageService } from './item-image.service';
+import { INVENTORY_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { InventoryNumberingService } from './inventory-numbering.service';
+import type { ProductImageService } from './product-image.service';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 
 /** One balance row decorated with readable item and warehouse names. */
-export type TStockBalanceWithNames = TStockBalanceSelect & {
+export type TStockBalanceWithNames = TStockSelect & {
 	/** Resolved item name; `null` when the item is archived or unknown. */
 	itemName: string | null;
 	/** Resolved warehouse name; `null` when the warehouse is archived or unknown. */
@@ -50,7 +50,7 @@ export type TStockBalanceWithNames = TStockBalanceSelect & {
 };
 
 /** One movement row decorated with readable item and warehouse names. */
-export type TStockMovementWithNames = TStockMovementSelect & {
+export type TStockMovementWithNames = TProductMovementSelect & {
 	itemName: string | null;
 	warehouseName: string | null;
 	/** Item photo URL; `null` when the item has no photo or is unknown. */
@@ -66,7 +66,7 @@ export type TPostMovementInput = {
 	actorOrganizationId: string;
 	warehouseId: string;
 	binId?: string | null;
-	itemId: string;
+	productId: string;
 	movementType: MovementType;
 	/** Always positive; direction comes from {@link isOutbound}. */
 	quantity: string;
@@ -87,8 +87,8 @@ export type TPostMovementInput = {
 
 /** A movement plus the balance it produced. */
 export type TPostedMovement = {
-	movement: TStockMovementSelect;
-	balance: TStockBalanceSelect;
+	movement: TProductMovementSelect;
+	balance: TStockSelect;
 	/** The balance scope the row lives in (the warehouse's, not the caller's). */
 	scopeOrganizationId: string | null;
 };
@@ -122,23 +122,23 @@ export class StockService {
 	constructor(
 		@inject(MOVEMENT_REPOSITORY_TOKEN)
 		private readonly movementRepository: IMovementRepository,
-		@inject(BALANCE_REPOSITORY_TOKEN)
-		private readonly balanceRepository: IBalanceRepository,
+		@inject(STOCK_REPOSITORY_TOKEN)
+		private readonly balanceRepository: IStockRepository,
 		@inject(WAREHOUSE_REPOSITORY_TOKEN)
 		private readonly warehouseRepository: IWarehouseRepository,
 		/** Name resolution for stock-row decoration (items and warehouses). */
-		@inject(ITEM_REPOSITORY_TOKEN)
-		private readonly itemRepository: IItemRepository,
+		@inject(PRODUCT_REPOSITORY_TOKEN)
+		private readonly itemRepository: IProductRepository,
 		/** Turns an item's stored photo key into a URL for the same rows. */
-		@inject(ITEM_IMAGE_SERVICE_TOKEN)
-		private readonly itemImages: Pick<ItemImageService, 'urlFor'>,
+		@inject(PRODUCT_IMAGE_SERVICE_TOKEN)
+		private readonly itemImages: Pick<ProductImageService, 'urlFor'>,
 		/**
 		 * ERP-0009 numbering authority: movement codes are sequence-allocated
 		 * inside the posting transaction (hardening plan D4), replacing the
 		 * former random-suffix scheme.
 		 */
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: InventoryAuditWriter,
 		/**
@@ -158,16 +158,16 @@ export class StockService {
 	): Promise<TPaginationResult<TStockMovementWithNames>> {
 		const result = await this.movementRepository.paginate(request);
 		const names = await this.resolveNames(
-			result.data.flatMap((row) => [row.itemId, row.warehouseId]),
+			result.data.flatMap((row) => [row.productId, row.warehouseId]),
 		);
 		return {
 			...result,
 			data: result.data.map((row) => ({
 				...row,
-				itemName: names.items.get(row.itemId)?.name ?? null,
+				itemName: names.items.get(row.productId)?.name ?? null,
 				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
 				imageUrl: this.itemImages.urlFor(
-					names.items.get(row.itemId)?.imageObjectKey ?? null,
+					names.items.get(row.productId)?.imageObjectKey ?? null,
 				),
 			})),
 		};
@@ -175,20 +175,20 @@ export class StockService {
 
 	/** Fetches one page of balances, with item/warehouse names. */
 	async paginateBalances(
-		request: TBalancePaginationRequest,
+		request: TStockPaginationRequest,
 	): Promise<TPaginationResult<TStockBalanceWithNames>> {
 		const result = await this.balanceRepository.paginate(request);
 		const names = await this.resolveNames(
-			result.data.flatMap((row) => [row.itemId, row.warehouseId]),
+			result.data.flatMap((row) => [row.productId, row.warehouseId]),
 		);
 		return {
 			...result,
 			data: result.data.map((row) => ({
 				...row,
-				itemName: names.items.get(row.itemId)?.name ?? null,
+				itemName: names.items.get(row.productId)?.name ?? null,
 				warehouseName: names.warehouses.get(row.warehouseId) ?? null,
 				imageUrl: this.itemImages.urlFor(
-					names.items.get(row.itemId)?.imageObjectKey ?? null,
+					names.items.get(row.productId)?.imageObjectKey ?? null,
 				),
 			})),
 		};
@@ -271,18 +271,18 @@ export class StockService {
 	 *
 	 * @param scopeOrganizationId - The warehouse-derived scope, not the caller's
 	 * @param warehouseId - The warehouse
-	 * @param itemId - The item
+	 * @param productId - The item
 	 * @param binId - The bin, or `null` for unassigned stock
 	 */
 	balanceFor(
 		scopeOrganizationId: string | null,
 		warehouseId: string,
-		itemId: string,
+		productId: string,
 		binId: string | null,
-	): Promise<TStockBalanceSelect | null> {
+	): Promise<TStockSelect | null> {
 		return this.balanceRepository.findByKey({
 			scopeOrganizationId,
-			itemId,
+			productId,
 			warehouseId,
 			binId,
 		});
@@ -313,9 +313,9 @@ export class StockService {
 		const { scopeOrganizationId } = await this.resolveScope(input.warehouseId);
 		const outbound = isOutbound(input.movementType);
 		const occurredAt = input.occurredAt ?? new Date();
-		const key: TBalanceKey = {
+		const key: TStockKey = {
 			scopeOrganizationId,
-			itemId: input.itemId,
+			productId: input.productId,
 			warehouseId: input.warehouseId,
 			binId: input.binId ?? null,
 		};
@@ -349,7 +349,7 @@ export class StockService {
 					organizationId: input.actorOrganizationId,
 					code,
 					movementType: input.movementType,
-					itemId: input.itemId,
+					productId: input.productId,
 					warehouseId: input.warehouseId,
 					binId: input.binId ?? null,
 					targetWarehouseId: input.targetWarehouseId ?? null,
@@ -396,7 +396,7 @@ export class StockService {
 					meta: {
 						code: posted.movement.code,
 						movementType: input.movementType,
-						itemId: input.itemId,
+						productId: input.productId,
 						warehouseId: input.warehouseId,
 						binId: input.binId ?? null,
 						quantity: input.quantity,
@@ -444,9 +444,9 @@ export class StockService {
 		const { scopeOrganizationId } = await this.resolveScope(
 			original.warehouseId,
 		);
-		const key: TBalanceKey = {
+		const key: TStockKey = {
 			scopeOrganizationId,
-			itemId: original.itemId,
+			productId: original.productId,
 			warehouseId: original.warehouseId,
 			binId: original.binId,
 		};
@@ -495,7 +495,7 @@ export class StockService {
 					organizationId: actorOrganizationId,
 					code: await this.movementCode(tx, actorOrganizationId),
 					movementType: reversalType,
-					itemId: original.itemId,
+					productId: original.productId,
 					warehouseId: original.warehouseId,
 					binId: original.binId,
 					targetWarehouseId: null,
@@ -540,7 +540,7 @@ export class StockService {
 					reversalOf: original.code,
 					reversalOfId: original.id,
 					movementType: reversalType,
-					itemId: original.itemId,
+					productId: original.productId,
 					warehouseId: original.warehouseId,
 					quantity: original.quantity,
 				},
@@ -554,7 +554,7 @@ export class StockService {
 	 *
 	 * @remarks
 	 * The repair operation *and* the test oracle. Derived purely from
-	 * `stock_movements`, so it is idempotent: running it twice yields the same
+	 * `movements`, so it is idempotent: running it twice yields the same
 	 * rows as running it once, and it overwrites rather than accumulating.
 	 *
 	 * A key whose ledger total is zero has its balance row removed, so a fully
@@ -575,7 +575,7 @@ export class StockService {
 
 		const byKey = new Map(
 			totals.map((total) => [
-				keyOf(total.itemId, total.warehouseId, total.binId),
+				keyOf(total.productId, total.warehouseId, total.binId),
 				total.quantity,
 			]),
 		);
@@ -583,9 +583,9 @@ export class StockService {
 		let written = 0;
 		for (const total of totals) {
 			const quantity = Number(total.quantity ?? '0');
-			const key: TBalanceKey = {
+			const key: TStockKey = {
 				scopeOrganizationId,
-				itemId: total.itemId,
+				productId: total.productId,
 				warehouseId: total.warehouseId,
 				binId: total.binId,
 			};
@@ -604,11 +604,11 @@ export class StockService {
 		// Rows that exist but have no ledger entry at all are stale.
 		let removed = 0;
 		for (const row of existing) {
-			if (byKey.has(keyOf(row.itemId, row.warehouseId, row.binId))) continue;
+			if (byKey.has(keyOf(row.productId, row.warehouseId, row.binId))) continue;
 			if (
 				await this.balanceRepository.remove({
 					scopeOrganizationId,
-					itemId: row.itemId,
+					productId: row.productId,
 					warehouseId: row.warehouseId,
 					binId: row.binId,
 				})
@@ -619,11 +619,11 @@ export class StockService {
 
 		// Cost is path-dependent, so it is replayed in posting order rather than
 		// summed (ADR-0011 §5).
-		const costs = new Map<string, TCostState & { key: TBalanceKey }>();
+		const costs = new Map<string, TCostState & { key: TStockKey }>();
 		for (const row of await this.movementRepository.ledgerRows(scopeOrganizationId)) {
-			const id = keyOf(row.itemId, row.warehouseId, row.binId);
+			const id = keyOf(row.productId, row.warehouseId, row.binId);
 			const state = costs.get(id) ?? {
-				key: { scopeOrganizationId, itemId: row.itemId, warehouseId: row.warehouseId, binId: row.binId },
+				key: { scopeOrganizationId, productId: row.productId, warehouseId: row.warehouseId, binId: row.binId },
 				quantity: '0',
 				averageCost: 0,
 				totalValue: 0,
@@ -654,7 +654,7 @@ export class StockService {
 		tx: TTx,
 		_organizationId: string | null,
 	): Promise<string> {
-		return this.numbering.next('stock_movement', { tx });
+		return this.numbering.next('stock_movement', tx);
 	}
 }
 
@@ -665,11 +665,11 @@ function costState(locked: { quantityOnHand: string; averageCost: number; totalV
 
 /** Key for grouping ledger totals and balance rows. */
 function keyOf(
-	itemId: string,
+	productId: string,
 	warehouseId: string,
 	binId: string | null,
 ): string {
-	return `${itemId}::${warehouseId}::${binId ?? ''}`;
+	return `${productId}::${warehouseId}::${binId ?? ''}`;
 }
 
 /** Negates a positive decimal string without touching precision. */

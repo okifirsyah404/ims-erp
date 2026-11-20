@@ -1,3 +1,5 @@
+> Updated 2026-11-20 (ADR-0024): schema `company` now owns `profiles`, `addresses`, `contacts`, `settings` and `code_numberings`. The bank accounts described below moved to `finance.cash_bank_accounts`; table names in this page that differ are pre-refactor (current list: docs/database/module-ownership.md).
+
 # Company Module
 
 > Created 2026-11-13 (ERP-0042, ADR-0015). Reflects `apps/backend/src/app/company`
@@ -9,7 +11,7 @@ The one legal company behind every organization: its letterhead profile, head
 office address, contact channels, the bank accounts printed on invoices, and
 the company-wide key/value settings store. One company per application
 (ADR-0011); multiple *organizations* sit under it, and a later multi-company
-model (`company_id` on `organization.*`) is deliberately unbuilt (ADR-0007).
+model (`company_id` on `auth.organizations`) is deliberately unbuilt (ADR-0007).
 
 Before ERP-0042 all of this lived inside the Organization module, alongside the
 numbering series and the document registry. It was split out because the three

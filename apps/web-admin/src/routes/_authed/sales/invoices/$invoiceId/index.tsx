@@ -174,13 +174,17 @@ function InvoiceDetailPage() {
 						<CardTitle>{t('finance:invoice.billTo')}</CardTitle>
 					</CardHeader>
 					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
-						<Detail label={t('finance:invoice.customer')} value={data.customerSnapshot.name} />
+						<Detail label={t('finance:invoice.customer')} value={data.customerSnapshot?.name ?? null} />
 						<Detail label={t('sales:quotation.attention')} value={data.order?.attention} />
 						<div>
 							<div className='text-muted-foreground'>{t('finance:invoice.salesOrder')}</div>
-							<Link to='/sales/orders/$orderId' params={{ orderId: data.salesOrderId }} className='hover:underline'>
-								{data.salesOrderCode}
-							</Link>
+							{data.orderId ? (
+								<Link to='/sales/orders/$orderId' params={{ orderId: data.orderId }} className='hover:underline'>
+									{data.orderCode}
+								</Link>
+							) : (
+								'-'
+							)}
 						</div>
 						<Detail label={t('finance:invoice.reference')} value={data.quotationCode} />
 					</CardContent>

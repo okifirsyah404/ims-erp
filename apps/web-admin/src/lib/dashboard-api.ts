@@ -240,7 +240,7 @@ export function salesSummaryQueryOptions(organizationId: string | null, window: 
 	return queryOptions({
 		queryKey: ['dashboard', 'sales', organizationId, window.from, window.to, window.groupBy] as const,
 		queryFn: () =>
-			getJson<TInvoiceSummary>('/invoices/summary', {
+			getJson<TInvoiceSummary>('/sales/invoices/summary', {
 				from: window.from,
 				to: window.to,
 				groupBy: window.groupBy,
@@ -251,18 +251,18 @@ export function salesSummaryQueryOptions(organizationId: string | null, window: 
 	});
 }
 
-/** Cash and bank balances, every account (`GET /cash-bank/accounts`). */
+/** Cash and bank balances, every account (`GET /finance/cash-bank-accounts`). */
 export function dashboardCashQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'cash', organizationId] as const,
-		queryFn: () => getJson<TCashBankAccount[]>('/cash-bank/accounts'),
+		queryFn: () => getJson<TCashBankAccount[]>('/finance/cash-bank-accounts'),
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
 	});
 }
 
-/** Profit and loss for a window (`GET /reports/profit-and-loss`). */
+/** Profit and loss for a window (`GET /finance/reports/profit-and-loss`). */
 export function dashboardProfitQueryOptions(
 	organizationId: string | null,
 	range: { from: string; to: string },
@@ -271,7 +271,7 @@ export function dashboardProfitQueryOptions(
 	return queryOptions({
 		queryKey: ['dashboard', 'profit', organizationId, range.from, range.to] as const,
 		queryFn: () =>
-			getJson<TProfitAndLoss>('/reports/profit-and-loss', {
+			getJson<TProfitAndLoss>('/finance/reports/profit-and-loss', {
 				startDate: range.from,
 				endDate: range.to,
 			}),
@@ -281,11 +281,11 @@ export function dashboardProfitQueryOptions(
 	});
 }
 
-/** Item count: the `total` of a one-row page (`GET /items`). */
+/** Product count: the `total` of a one-row page (`GET /inventory/products`). */
 export function dashboardItemCountQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'items', organizationId] as const,
-		queryFn: async () => (await getPage('/items', { page: '1', limit: '1' })).total,
+		queryFn: async () => (await getPage('/inventory/products', { page: '1', limit: '1' })).total,
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
@@ -319,7 +319,7 @@ export function dashboardProjectsQueryOptions(organizationId: string | null, ena
 export function dashboardSubscriptionsQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'subscriptions', organizationId] as const,
-		queryFn: () => getJson<TLicenseSummary>('/licenses/summary'),
+		queryFn: () => getJson<TLicenseSummary>('/projects/licenses/summary'),
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
@@ -330,7 +330,7 @@ export function dashboardSubscriptionsQueryOptions(organizationId: string | null
 export function dashboardRecentInvoicesQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'recent-invoices', organizationId] as const,
-		queryFn: () => getPage<TInvoice>('/invoices', { page: '1', limit: '5' }),
+		queryFn: () => getPage<TInvoice>('/sales/invoices', { page: '1', limit: '5' }),
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
@@ -342,7 +342,7 @@ export function dashboardRecentReceiptsQueryOptions(organizationId: string | nul
 	return queryOptions({
 		queryKey: ['dashboard', 'recent-receipts', organizationId] as const,
 		queryFn: () =>
-			getPage<TReceipt & { invoiceCode: string | null; customerName: string }>('/receipts', {
+			getPage<TReceipt & { invoiceCode: string | null; customerName: string }>('/sales/receipts', {
 				page: '1',
 				limit: '5',
 			}),

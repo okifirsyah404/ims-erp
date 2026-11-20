@@ -1,3 +1,5 @@
+> Updated 2026-11-20 (ADR-0024): the two tables were renamed `push_notification_templates` and `push_notifications`; the module is otherwise unchanged. Historical migration names below keep the old table names.
+
 # Notification Module
 
 ## Purpose and boundary
@@ -20,8 +22,8 @@ WhatsApp AI handoff of M04 stage 2.
 **Backend module, REST surface, producers, seeders and the web-admin bell all
 landed.** Phases 0–7 of `docs/plan/plans/ws-notification.md`:
 
-- `docs/database/docs.dbml` — `notification.notification_templates` and
-  `notification.notifications` moved out of the `automation` schema.
+- `docs/database/docs.dbml` — `notification.push_notification_templates` and
+  `notification.push_notifications` moved out of the `automation` schema.
 - `docs/database/module-ownership.md` — module 27.
 - ADR-0016 — why the module is app-scope and why there is one socket.
 - `apps/backend/drizzle/schemas/notification.schema.ts` — the two tables,
@@ -132,8 +134,8 @@ Schema `notification`, app-scope (no `organization_id`):
 
 | Table | Holds |
 |---|---|
-| `notification.notification_templates` | copy per `module.event` code, its channel and declared variables |
-| `notification.notifications` | one row per recipient: `user_id`, `template_code`, `title`, `body`, `tags`, `variables`, `metadata`, `status`, `sent_at`, `read_at`, `source_type`/`source_id` |
+| `notification.push_notification_templates` | copy per `module.event` code, its channel and declared variables |
+| `notification.push_notifications` | one row per recipient: `user_id`, `template_code`, `title`, `body`, `tags`, `variables`, `metadata`, `status`, `sent_at`, `read_at`, `source_type`/`source_id` |
 
 Rules:
 

@@ -1,8 +1,8 @@
-import type { TGatewayPaymentStatus } from '@drizzle/schemas/payment.schema';
-import type { ReceiptMethod } from '@drizzle/schemas/sales.schema';
+import type { PaymentMethod } from '@drizzle/schemas/payment.schema';
 import { pinoLogger } from '@providers/logger/logger';
 import type {
 	IPaymentGateway,
+	TGatewayEventStatus,
 	TCheckout,
 	TCheckoutRequest,
 	TGatewayEvent,
@@ -27,7 +27,7 @@ type TXenditCallback = {
 };
 
 /** Xendit `payment_method` → receipt method. */
-const METHOD: Record<string, ReceiptMethod> = {
+const METHOD: Record<string, PaymentMethod> = {
 	CREDIT_CARD: 'card',
 	EWALLET: 'e_wallet',
 	QR_CODE: 'e_wallet',
@@ -35,7 +35,7 @@ const METHOD: Record<string, ReceiptMethod> = {
 };
 
 /** Xendit invoice status → gateway payment status. */
-function statusOf(status: string | undefined): TGatewayPaymentStatus {
+function statusOf(status: string | undefined): TGatewayEventStatus {
 	if (status === 'PAID' || status === 'SETTLED') return 'paid';
 	if (status === 'EXPIRED') return 'expired';
 	return 'pending';

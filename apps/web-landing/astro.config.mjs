@@ -35,7 +35,7 @@ export default defineConfig({
       ERP_RESPONSE_ENVELOPE: envField.enum({ context: "server", access: "secret", values: ["none", "data"], optional: true }),
       // International format without "+", e.g. 6281280002020 (09.02 Contact).
       PUBLIC_WHATSAPP_NUMBER: envField.string({ context: "client", access: "public", default: "6281280002020" }),
-      // Path of the ERP RFQ endpoint, relative to ERP_API_BASE_URL. Unset until the ERP contract is published.
+      // Optional override of the RFQ route (default /projects/public/v1/rfq in website/routes.ts).
       ERP_RFQ_PATH: envField.string({
         context: "server",
         access: "secret",

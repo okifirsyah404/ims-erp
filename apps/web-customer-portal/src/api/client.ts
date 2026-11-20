@@ -1,3 +1,5 @@
+import type { TApiErrorMessage, TApiPaginatedResponse, TApiResponse } from "@ims-erp/common";
+
 /**
  * Duplicated on purpose: the website (apps/web-landing) and the portal
  * (apps/web-customer-portal) are separate Astro deployments and may not import
@@ -35,7 +37,9 @@ export type RequestOptions = {
 export class ApiError extends Error {
   readonly status: number;
   readonly body: unknown;
-  /** Human-readable messages from a NestJS error body (`message: string | string[]`). */
+  /** Field-level errors of the ERP error envelope (`errors` of `TApiResponse`). */
+  readonly errors: TApiErrorMessage[];
+  /** Human-readable messages: the envelope's `errors[].message`, else its `message`. */
   readonly messages: string[];
   readonly requestId?: string;
 
@@ -44,18 +48,26 @@ export class ApiError extends Error {
     this.name = "ApiError";
     this.status = status;
     this.body = body;
-    this.messages = nestMessages(body);
+    this.errors = envelopeErrors(body);
+    this.messages = envelopeMessages(body, this.errors);
     this.requestId = requestId;
   }
 }
 
-/** Reads `{ statusCode, message, error }` (NestJS HttpException) into a list of messages. */
-function nestMessages(body: unknown): string[] {
+/** Reads `errors` out of the ERP error envelope (`errorEnvelope` in the backend). */
+function envelopeErrors(body: unknown): TApiErrorMessage[] {
   if (!body || typeof body !== "object") return [];
-  const message = (body as { message?: unknown }).message;
-  if (typeof message === "string") return [message];
-  if (Array.isArray(message)) return message.filter((m): m is string => typeof m === "string");
-  return [];
+  const errors = (body as Partial<TApiResponse>).errors;
+  if (!Array.isArray(errors)) return [];
+  return errors.filter((e): e is TApiErrorMessage => !!e && typeof e === "object" && typeof e.message === "string");
+}
+
+/** The envelope's field errors, falling back to its top-level `message`. */
+function envelopeMessages(body: unknown, errors: TApiErrorMessage[]): string[] {
+  if (errors.length > 0) return errors.map((e) => e.message);
+  if (!body || typeof body !== "object") return [];
+  const message = (body as Partial<TApiResponse | TApiPaginatedResponse<unknown>>).message;
+  return typeof message === "string" && message ? [message] : [];
 }
 
 /**

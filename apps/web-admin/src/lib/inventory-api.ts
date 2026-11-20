@@ -6,9 +6,14 @@ import { queryOptions } from '@tanstack/react-query';
 import { organizationHeaders } from './organization-store';
 
 /**
- * API client for the inventory item endpoints (`/items`).
+ * API client for the product master endpoints (`/inventory/products`).
  *
  * @remarks
+ * A **product** is the stocked/sold SKU master (formerly "item"; ADR-0024).
+ * Physical tools and assets are `items` on the backend and live in
+ * `asset-api.ts`. Serialized instances of a product are `item_serials`, exposed
+ * here as {@link TProductSerial}.
+ *
  * Tenant scope comes from the `x-organization-id` header the backend prefers
  * over the session value, so reads always hit the organization the UI is
  * showing. `product:*` permissions gate every call server-side; the UI only
@@ -17,11 +22,11 @@ import { organizationHeaders } from './organization-store';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** Item kinds, mirroring `ITEM_KINDS` in the backend schema. */
-export const ITEM_KINDS = ['product', 'component', 'material'] as const;
-export type TItemKind = (typeof ITEM_KINDS)[number];
+/** Product kinds, mirroring `PRODUCT_KINDS` in the backend schema. */
+export const PRODUCT_KINDS = ['product', 'component', 'material'] as const;
+export type TProductKind = (typeof PRODUCT_KINDS)[number];
 
-/** Fixed unit list (ADR-0011); mirrors `ITEM_UNITS` in the backend schema; not to be confused with `TItemUnit`, a serialized unit. */
+/** Fixed unit list (ADR-0011); mirrors `ITEM_UNITS` in the backend schema. */
 export const ITEM_UNIT_LABELS = [
 	'pcs',
 	'unit',
@@ -40,39 +45,41 @@ export const ITEM_UNIT_LABELS = [
 ] as const;
 export type TItemUnitLabel = (typeof ITEM_UNIT_LABELS)[number];
 
-/** Unit statuses, mirroring `UNIT_STATUSES`. The stored value for "ready" is `in_stock`. */
-export const UNIT_STATUSES = [
+/**
+ * Serial statuses, mirroring `SERIAL_STATUSES`. The stored value for "ready" is
+ * `in_stock`. There is no `borrowed`: lending is tracked on physical items.
+ */
+export const SERIAL_STATUSES = [
 	'pre_order',
 	'in_stock',
-	'borrowed',
 	'lost',
 	'sold',
 	'applied_warranty',
 	'returned',
 	'damaged',
 ] as const;
-export type TUnitStatus = (typeof UNIT_STATUSES)[number];
+export type TSerialStatus = (typeof SERIAL_STATUSES)[number];
 
-/** One item master row. `minStockQty` arrives as a decimal string. */
-export type TItem = {
+/** One product master row. `minStockQty` arrives as a decimal string. */
+export type TProduct = {
 	id: string;
 	organizationId: string | null;
 	/** Human reference from the numbering authority (ERP-0043); read-only. */
 	code: string;
 	sku: string;
-	/** Optional manufacturer serial of the item master itself (ERP-0043). */
+	/** Optional manufacturer serial of the product master itself (ERP-0043). */
 	serialNumber: string | null;
 	name: string;
 	description: string | null;
-	itemKind: TItemKind;
-	/** Item category (ADR-0011); resolve the name via `useItemCategoryNames`. */
-	categoryId: string | null;
+	productKind: TProductKind;
+	/** Product category (ADR-0011); resolve the name via `useItemCategoryNames`. */
+	productCategoryId: string | null;
 	brand: string | null;
 	specification: string | null;
-	/** Short-lived URL of the document photo (detail endpoint only). */
+	/** Short-lived URL of the document photo (single/detail endpoints). */
 	imageUrl?: string | null;
 	unitLabel: TItemUnitLabel;
-	/** Inactive items are not offered for new documents. */
+	/** Inactive products are not offered for new documents. */
 	isActive: boolean;
 	isSerialized: boolean;
 	isStockTracked: boolean;
@@ -86,22 +93,22 @@ export type TItem = {
 	updatedAt: string | null;
 	deletedAt: string | null;
 	/**
-	 * Total `quantity_on_hand` for this item in the requested warehouse,
-	 * summed over `stock_balances` bins. Present only when the list request
-	 * carried `warehouseId` (decimal string, like the numeric column).
+	 * Total `quantity_on_hand` for this product in the requested warehouse,
+	 * summed over `stocks` bins. Present only when the list request carried
+	 * `warehouseId` (decimal string, like the numeric column).
 	 */
 	quantityOnHand?: string | null;
 };
 
-/** One serialized unit. */
-export type TItemUnit = {
+/** One serialized unit of a product (`inventory.item_serials`). */
+export type TProductSerial = {
 	id: string;
 	organizationId: string | null;
-	itemId: string;
+	productId: string;
 	serialNumber: string;
 	isProvisionalSerial: boolean;
 	assetTag: string | null;
-	status: TUnitStatus;
+	status: TSerialStatus;
 	warehouseId: string | null;
 	binId: string | null;
 	acquiredOn: string | null;
@@ -113,13 +120,13 @@ export type TItemUnit = {
 };
 
 /** Fields the create form submits. `code` is server-allocated (ERP-0043). */
-export type TItemCreateInput = {
+export type TProductCreateInput = {
 	sku: string;
 	serialNumber?: string | null;
 	name: string;
-	itemKind: TItemKind;
+	productKind: TProductKind;
 	description?: string | null;
-	categoryId?: string | null;
+	productCategoryId?: string | null;
 	brand?: string | null;
 	specification?: string | null;
 	unitLabel: TItemUnitLabel;
@@ -133,8 +140,10 @@ export type TItemCreateInput = {
 	currencyCode: string;
 };
 
-/** Fields the edit form submits. `sku`/`itemKind` are immutable. */
-export type TItemUpdateInput = Partial<Omit<TItemCreateInput, 'sku' | 'itemKind'>>;
+/** Fields the edit form submits. `sku`/`productKind` are immutable. */
+export type TProductUpdateInput = Partial<
+	Omit<TProductCreateInput, 'sku' | 'productKind'>
+>;
 
 async function request<T>(
 	path: string,
@@ -157,132 +166,152 @@ async function request<T>(
 	return envelope;
 }
 
-/** Fetches one page of items, optionally filtered by kind. */
-export async function listItems(params?: {
+/** Fetches one page of products, optionally filtered by kind. */
+export async function listProducts(params?: {
 	page?: number;
 	limit?: number;
-	itemKind?: TItemKind;
+	productKind?: TProductKind;
 	search?: string;
-	categoryId?: string;
-	/** Only items offered for new documents. */
+	productCategoryId?: string;
+	/** Only products offered for new documents. */
 	activeOnly?: boolean;
-	/** Only items with at least one live unit in this warehouse. */
+	/** Only products with a live serial or stock balance in this warehouse. */
 	warehouseId?: string;
 	includeArchived?: boolean;
 }) {
 	const search = new URLSearchParams();
 	if (params?.page) search.set('page', String(params.page));
 	if (params?.limit) search.set('limit', String(params.limit));
-	if (params?.itemKind) search.set('itemKind', params.itemKind);
+	if (params?.productKind) search.set('productKind', params.productKind);
 	if (params?.search) search.set('search', params.search);
-	if (params?.categoryId) search.set('categoryId', params.categoryId);
+	if (params?.productCategoryId) {
+		search.set('productCategoryId', params.productCategoryId);
+	}
 	if (params?.activeOnly) search.set('activeOnly', 'true');
 	if (params?.warehouseId) search.set('warehouseId', params.warehouseId);
 	if (params?.includeArchived) search.set('includeArchived', 'true');
 	const query = search.toString();
 
-	const envelope = (await request<TItem[]>(
-		`/items${query ? `?${query}` : ''}`,
-	)) as TApiPaginatedResponse<TItem>;
+	const envelope = (await request<TProduct[]>(
+		`/inventory/products${query ? `?${query}` : ''}`,
+	)) as TApiPaginatedResponse<TProduct>;
 	return { rows: envelope.data, pagination: envelope.pagination };
 }
 
-/** Fetches one item. */
-export async function getItem(itemId: string) {
-	const envelope = await request<TItem>(`/items/${itemId}`);
+/** Fetches one product. */
+export async function getProduct(productId: string) {
+	const envelope = await request<TProduct>(`/inventory/products/${productId}`);
 	return envelope.data;
 }
 
-/** Creates an item. */
-export async function createItem(input: TItemCreateInput) {
-	const envelope = await request<TItem>('/items', {
+/** Creates a product. */
+export async function createProduct(input: TProductCreateInput) {
+	const envelope = await request<TProduct>('/inventory/products', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
 	return envelope.data;
 }
 
-/** Updates an item's mutable fields. */
-export async function updateItem(itemId: string, input: TItemUpdateInput) {
-	const envelope = await request<TItem>(`/items/${itemId}`, {
-		method: 'PATCH',
-		body: JSON.stringify(input),
-	});
+/** Updates a product's mutable fields. */
+export async function updateProduct(
+	productId: string,
+	input: TProductUpdateInput,
+) {
+	const envelope = await request<TProduct>(
+		`/inventory/products/${productId}`,
+		{
+			method: 'PATCH',
+			body: JSON.stringify(input),
+		},
+	);
 	return envelope.data;
 }
 
-/** Archives an item (soft delete). */
-export async function archiveItem(itemId: string) {
-	await request(`/items/${itemId}`, { method: 'DELETE' });
+/** Archives a product (soft delete). */
+export async function archiveProduct(productId: string) {
+	await request(`/inventory/products/${productId}`, { method: 'DELETE' });
 }
 
-/** Fetches one page of an item's units. */
-export async function listItemUnits(itemId: string, params?: { limit?: number }) {
+/** Fetches one page of a product's serialized units. */
+export async function listProductSerials(
+	productId: string,
+	params?: { limit?: number },
+) {
 	const search = new URLSearchParams();
 	search.set('limit', String(params?.limit ?? 100));
-	const envelope = (await request<TItemUnit[]>(
-		`/items/${itemId}/units?${search.toString()}`,
-	)) as TApiPaginatedResponse<TItemUnit>;
+	const envelope = (await request<TProductSerial[]>(
+		`/inventory/products/${productId}/units?${search.toString()}`,
+	)) as TApiPaginatedResponse<TProductSerial>;
 	return envelope.data;
 }
 
-/** Registers a unit. An empty serial with `status: 'pre_order'` mints a provisional one. */
-export async function registerUnit(
-	itemId: string,
+/**
+ * Registers a serialized unit.
+ *
+ * @remarks
+ * The endpoint requires a non-empty `serialNumber` (the backend zod contract
+ * rejects an empty one even for `pre_order`), so the caller must supply it.
+ */
+export async function registerSerial(
+	productId: string,
 	input: {
-		serialNumber?: string;
-		status?: TUnitStatus;
+		serialNumber: string;
+		status?: TSerialStatus;
 		assetTag?: string | null;
 		notes?: string | null;
 		acquiredOn?: string | null;
 		warrantyExpiresOn?: string | null;
 	},
 ) {
-	const envelope = await request<TItemUnit>(`/items/${itemId}/units`, {
-		method: 'POST',
-		body: JSON.stringify(input),
-	});
+	const envelope = await request<TProductSerial>(
+		`/inventory/products/${productId}/units`,
+		{
+			method: 'POST',
+			body: JSON.stringify(input),
+		},
+	);
 	return envelope.data;
 }
 
 /** Replaces a pre-ordered unit's provisional serial, exactly once. */
 export async function replaceProvisionalSerial(
-	itemId: string,
-	unitId: string,
+	productId: string,
+	serialId: string,
 	serialNumber: string,
 ) {
-	const envelope = await request<TItemUnit>(
-		`/items/${itemId}/units/${unitId}`,
+	const envelope = await request<TProductSerial>(
+		`/inventory/products/${productId}/units/${serialId}`,
 		{ method: 'PATCH', body: JSON.stringify({ serialNumber }) },
 	);
 	return envelope.data;
 }
 
 // Reusable query options.
-export const itemsQueryOptions = (params: {
-	itemKind?: TItemKind;
+export const productsQueryOptions = (params: {
+	productKind?: TProductKind;
 	search?: string;
 	warehouseId?: string;
 	page?: number;
 	limit?: number;
 }) =>
 	queryOptions({
-		queryKey: ['inventory', 'items', params] as const,
+		queryKey: ['inventory', 'products', params] as const,
 		// 24 is the list page size: a 3-column card grid with 8 rows.
-		queryFn: () => listItems({ ...params, limit: params.limit ?? 24 }),
+		queryFn: () => listProducts({ ...params, limit: params.limit ?? 24 }),
 	});
 
-export function itemQueryOptions(itemId: string) {
+export function productQueryOptions(productId: string) {
 	return queryOptions({
-		queryKey: ['inventory', 'items', itemId] as const,
-		queryFn: () => getItem(itemId),
+		queryKey: ['inventory', 'products', productId] as const,
+		queryFn: () => getProduct(productId),
 		retry: false,
 	});
 }
 
-export function itemUnitsQueryOptions(itemId: string) {
+export function productSerialsQueryOptions(productId: string) {
 	return queryOptions({
-		queryKey: ['inventory', 'items', itemId, 'units'] as const,
-		queryFn: () => listItemUnits(itemId),
+		queryKey: ['inventory', 'products', productId, 'serials'] as const,
+		queryFn: () => listProductSerials(productId),
 	});
 }

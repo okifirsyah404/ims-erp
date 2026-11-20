@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import type { TNotificationSelect } from '../../src/app/notification/contracts/notification.repository.interface';
+import type { TPushNotificationSelect } from '../../src/app/notification/contracts/notification.repository.interface';
 import type {
-	INotificationRepository,
-	TNotificationInsert,
+	IPushNotificationRepository,
+	TPushNotificationInsert,
 } from '../../src/app/notification/contracts/notification.repository.interface';
 import {
 	notificationJobId,
@@ -14,9 +14,9 @@ import {
 } from '../../src/app/notification/queues/notification.worker';
 import type { TRealtimeMessage } from '../../src/providers/realtime/realtime.message';
 import type { IRealtimeHub } from '../../src/providers/realtime/realtime.hub';
-import type { TNotificationTemplateSelect } from '../../drizzle/schemas/notification.schema';
+import type { TPushNotificationTemplateSelect } from '../../drizzle/schemas/notification.schema';
 
-const TEMPLATE: TNotificationTemplateSelect = {
+const TEMPLATE: TPushNotificationTemplateSelect = {
 	id: 'tpl-1',
 	code: 'org.member_added',
 	name: 'Organization member added',
@@ -30,7 +30,7 @@ const TEMPLATE: TNotificationTemplateSelect = {
 	deletedAt: null,
 };
 
-function storedRow(entry: TNotificationInsert): TNotificationSelect {
+function storedRow(entry: TPushNotificationInsert): TPushNotificationSelect {
 	const now = new Date();
 	return {
 		id: 'n-1',
@@ -54,15 +54,15 @@ function storedRow(entry: TNotificationInsert): TNotificationSelect {
 	};
 }
 
-function fakeRepository(template: TNotificationTemplateSelect | null = TEMPLATE) {
-	const inserts: TNotificationInsert[] = [];
+function fakeRepository(template: TPushNotificationTemplateSelect | null = TEMPLATE) {
+	const inserts: TPushNotificationInsert[] = [];
 	const prunedCutoffs: Date[] = [];
 
 	const repository = {
 		async findTemplateByCode() {
 			return template;
 		},
-		async insert(entry: TNotificationInsert) {
+		async insert(entry: TPushNotificationInsert) {
 			inserts.push(entry);
 			return storedRow(entry);
 		},
@@ -70,7 +70,7 @@ function fakeRepository(template: TNotificationTemplateSelect | null = TEMPLATE)
 			prunedCutoffs.push(cutoff);
 			return 2;
 		},
-	} as unknown as INotificationRepository;
+	} as unknown as IPushNotificationRepository;
 
 	return { repository, inserts, prunedCutoffs };
 }

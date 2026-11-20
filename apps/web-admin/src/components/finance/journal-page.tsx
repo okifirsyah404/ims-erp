@@ -296,7 +296,8 @@ export function JournalPage() {
 									<TableCell className='font-mono text-xs'>{entry.code}</TableCell>
 									<TableCell>{entry.entryDate}</TableCell>
 									<TableCell className='font-mono text-xs'>
-										{entry.sourceType}
+										{entry.sourceModule}
+										{entry.sourceType ? ` / ${entry.sourceType}` : ''}
 									</TableCell>
 									<TableCell className='max-w-72 truncate'>
 										{entry.description ?? t('finance:common.none')}

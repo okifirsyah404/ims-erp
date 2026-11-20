@@ -1,7 +1,7 @@
 import { Queue } from 'bullmq';
 import { appConfig } from '@config/providers/config';
 import { queueConnection } from '@providers/queue/queue.connection';
-import type { NotificationTemplateCode } from '@drizzle/schemas/notification.schema';
+import type { PushNotificationTemplateCode } from '@drizzle/schemas/notification.schema';
 
 /**
  * BullMQ queue backing the notification inbox (D5).
@@ -22,7 +22,7 @@ export const NOTIFICATION_PRUNE_JOB = 'prune';
 /** Payload of a `send` job. */
 export type NotificationSendJobData = {
 	userId: string;
-	templateCode: NotificationTemplateCode;
+	templateCode: PushNotificationTemplateCode;
 	variables: Record<string, string>;
 	tags: string[];
 	sourceType: string | null;

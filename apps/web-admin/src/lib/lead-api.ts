@@ -6,7 +6,7 @@ import { erpRoleGrants } from './permissions';
 import type { TCustomerInput } from './customer-api';
 
 /**
- * API client for leads (`/leads`, ADR-0011 step 3b).
+ * API client for leads (`/projects/leads`, owned by the project module, ADR-0024).
  *
  * @remarks
  * Leads are company-wide. The server decides visibility: `lead:assign`
@@ -53,7 +53,9 @@ export type TLead = {
 	ownerUserId: string | null;
 	assignee: TPerson | null;
 	nextFollowUpAt: string | null;
+	/** Customer person the lead was converted into (`customer.customers`). */
 	customerId: string | null;
+	companyId: string | null;
 	lostReason: string | null;
 	channel: TLeadChannel | null;
 	reference: string | null;
@@ -124,7 +126,7 @@ export function leadsQueryOptions(params: TLeadListParams) {
 			for (const [key, value] of Object.entries(params)) {
 				if (value !== undefined && value !== '' && value !== false) search.set(key, String(value));
 			}
-			const envelope = (await request<TLead[]>(`/leads${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TLead>;
+			const envelope = (await request<TLead[]>(`/projects/leads${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TLead>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
 	});
@@ -133,25 +135,25 @@ export function leadsQueryOptions(params: TLeadListParams) {
 export function leadQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['crm', 'leads', id] as const,
-		queryFn: async () => (await request<TLeadDetail>(`/leads/${id}`)).data as TLeadDetail,
+		queryFn: async () => (await request<TLeadDetail>(`/projects/leads/${id}`)).data as TLeadDetail,
 		retry: false,
 	});
 }
 
-export const createLead = (input: TLeadInput & { assignedTo?: string | null }) => send<TLead>('/leads', 'POST', input);
-export const updateLead = (id: string, input: Partial<TLeadInput>) => send<TLead>(`/leads/${id}`, 'PATCH', input);
+export const createLead = (input: TLeadInput & { assignedTo?: string | null }) => send<TLead>('/projects/leads', 'POST', input);
+export const updateLead = (id: string, input: Partial<TLeadInput>) => send<TLead>(`/projects/leads/${id}`, 'PATCH', input);
 export const setLeadStatus = (id: string, status: TLeadStatus, lostReason?: string) =>
-	send<TLead>(`/leads/${id}/status`, 'POST', { status, lostReason });
-export const assignLead = (id: string, userId: string | null) => send<TLead>(`/leads/${id}/assign`, 'POST', { userId });
+	send<TLead>(`/projects/leads/${id}/status`, 'POST', { status, lostReason });
+export const assignLead = (id: string, userId: string | null) => send<TLead>(`/projects/leads/${id}/assign`, 'POST', { userId });
 export const addLeadActivity = (
 	id: string,
 	input: { activityType: TLeadActivityType; notes: string; nextFollowUpAt?: number | null },
-) => send<TLeadActivity>(`/leads/${id}/activities`, 'POST', input);
+) => send<TLeadActivity>(`/projects/leads/${id}/activities`, 'POST', input);
 export const convertLead = (id: string, input: { customerId: string } | { customer: TCustomerInput }) =>
-	send<TLead>(`/leads/${id}/convert`, 'POST', input);
-export const archiveLead = (id: string) => send<null>(`/leads/${id}`, 'DELETE');
+	send<TLead>(`/projects/leads/${id}/convert`, 'POST', input);
+export const archiveLead = (id: string) => send<null>(`/projects/leads/${id}`, 'DELETE');
 export const leadAttachmentUrl = (leadId: string, attachmentId: string) =>
-	send<{ url: string; expiresIn: number }>(`/leads/${leadId}/attachments/${attachmentId}/url`, 'GET');
+	send<{ url: string; expiresIn: number }>(`/projects/leads/${leadId}/attachments/${attachmentId}/url`, 'GET');
 
 /** Roles whose catalog grants include `lead:read` (UX filter only). */
 function canReadLeads(role: string): boolean {

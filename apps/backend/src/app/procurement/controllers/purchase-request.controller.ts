@@ -10,7 +10,7 @@ import {
 	purchaseRequestListQuerySchema,
 	requestableItemsQuerySchema,
 } from '../contracts/purchase-request.contract';
-import { idParamSchema } from '../contracts/supplier.contract';
+import { idParamSchema } from '../contracts/params.schema';
 
 /**
  * REST controller for purchase requests (`/purchase-requests`, M05). HTTP
@@ -28,7 +28,7 @@ export class PurchaseRequestController {
 			organizationId: erp.organizationId,
 		});
 
-		return domainPlugin({ name: 'procurement-purchase-requests', prefix: '/purchase-requests', tags: ['Procurement'], guards: 'erp' })
+		return domainPlugin({ name: 'procurement-purchase-requests', prefix: '/procurement/purchase-requests', tags: ['Procurement'], guards: 'erp' })
 			.get(
 				'',
 				async ({ query, erp }) => okPaginated(await service.list(purchaseRequestListQuerySchema.parse(query), erp.session.user.id)),

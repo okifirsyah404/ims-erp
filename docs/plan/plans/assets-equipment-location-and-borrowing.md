@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Assets & Equipment: Location Tracking and Borrowing Ownership
 
 > Status: design approved through a 7-round grilling session (2026-11-05).

@@ -13,6 +13,8 @@ import Elysia from 'elysia';
 import { LocationController } from './controllers/location.controller';
 
 export { registerLocation } from './container';
+export { ExportedLocationService } from './services/exported-location.service';
+export type { TVillagePath } from './contracts/village.repository.interface';
 
 /** Elysia instance mounting every location controller, in route order. */
 export function locationModule() {

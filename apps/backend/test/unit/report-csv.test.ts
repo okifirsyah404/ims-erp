@@ -7,7 +7,7 @@ import {
 	balanceSheetToCsv,
 	cashFlowToCsv,
 	profitAndLossToCsv,
-} from '../../src/app/accounting/utils/report-csv';
+} from '../../src/app/finance/utils/report-csv';
 
 const line = (code: string, name: string, amount: number) => ({
 	accountId: `id-${code}`,

@@ -1,23 +1,28 @@
 /**
- * Guard tests for the inventory seeder's data.
+ * Guard tests for the inventory seeder's data (ADR-0024 Q14/Q24).
  *
  * @remarks
- * The seeder runs against a live database, which is not available in CI, so
- * the values it inserts are asserted statically instead. This catches the
- * failure mode a type system cannot: a seed row that violates a **CHECK
- * constraint** at insert time, which would only surface when someone runs
- * `drizzle:seed` on a fresh database.
+ * The seeder runs against a live database, which is not available in CI, so the
+ * values it inserts are asserted statically instead. This catches the failure
+ * mode a type system cannot: a seed row that violates a **CHECK constraint** at
+ * insert time, which would only surface when someone runs `drizzle:seed` on a
+ * fresh database.
  *
  * The constraints mirrored here are from `inventory.schema.ts`:
- * - `inventory_items_kind_check` — the three consumable kinds.
- * - `inventory_items_prices_check` — prices >= 0.
- * - `inventory_items_min_stock_check` — `min_stock_qty >= 0`.
+ * - `products_kind_check` - the three product kinds.
+ * - `products_prices_check` - prices >= 0.
+ * - `products_min_stock_check` - `min_stock_qty >= 0`.
+ * - `items_status_check` / `items_condition_check` - the item unit matrix.
  */
 import { describe, expect, test } from 'bun:test';
-import { ITEM_KINDS, UNIT_STATUSES } from '@drizzle/schemas/inventory.schema';
+import {
+	ITEM_CONDITIONS,
+	ITEM_STATUSES,
+	PRODUCT_KINDS,
+} from '@drizzle/schemas/inventory.schema';
 
 /**
- * The seeded catalogue, mirroring `SEED_ITEMS` in
+ * The seeded catalogue, mirroring `SEED_PRODUCTS` in
  * `database/seeders/seed/inventory.seeder.ts`.
  *
  * @remarks
@@ -25,10 +30,10 @@ import { ITEM_KINDS, UNIT_STATUSES } from '@drizzle/schemas/inventory.schema';
  * connection at import time. The shape is asserted against the real schema
  * vocabulary below, so a drift in kinds or units fails here.
  */
-const SEED_ITEMS = [
+const SEED_PRODUCTS = [
 	{
 		sku: 'CTRL-DOOR-01',
-		itemKind: 'product',
+		productKind: 'product',
 		isSerialized: true,
 		isStockTracked: true,
 		minStockQty: '2.000',
@@ -38,7 +43,7 @@ const SEED_ITEMS = [
 	},
 	{
 		sku: 'CMP-PSU-12V',
-		itemKind: 'component',
+		productKind: 'component',
 		isSerialized: false,
 		isStockTracked: true,
 		minStockQty: '10.000',
@@ -48,7 +53,7 @@ const SEED_ITEMS = [
 	},
 	{
 		sku: 'MAT-CABLE-CAT6',
-		itemKind: 'material',
+		productKind: 'material',
 		isSerialized: false,
 		isStockTracked: true,
 		minStockQty: '100.000',
@@ -58,54 +63,70 @@ const SEED_ITEMS = [
 	},
 ] as const;
 
-describe('seeded items satisfy the schema CHECK constraints', () => {
-	test('every kind is a known item kind', () => {
-		for (const item of SEED_ITEMS) {
-			expect(ITEM_KINDS).toContain(item.itemKind);
+/** The seeded tool fleet, mirroring `SEED_ITEMS` in the same seeder. */
+const SEED_ITEMS = [
+	{ code: 'AST-SEED-001', itemKind: 'tool', status: 'borrowed', condition: 'good' },
+	{ code: 'AST-SEED-002', itemKind: 'tool', status: 'ready', condition: 'good' },
+	{ code: 'AST-SEED-003', itemKind: 'tool', status: 'lost', condition: 'damaged' },
+	{ code: 'AST-SEED-004', itemKind: 'tool', status: 'ready', condition: 'good' },
+	{ code: 'AST-SEED-005', itemKind: 'tool', status: 'ready', condition: 'fair' },
+	{ code: 'AST-SEED-006', itemKind: 'equipment', status: 'ready', condition: 'good' },
+] as const;
+
+describe('seeded products satisfy the schema CHECK constraints', () => {
+	test('every kind is a known product kind', () => {
+		for (const product of SEED_PRODUCTS) {
+			expect(PRODUCT_KINDS).toContain(product.productKind);
 		}
 	});
 
-	test('every consumable kind is represented', () => {
+	test('every product kind is represented', () => {
 		// The seed exists to give every kind a row, because kind drives the
-		// unit status matrix.
-		expect(new Set(SEED_ITEMS.map((i) => i.itemKind)).size).toBe(
-			ITEM_KINDS.length,
+		// serial and stock-tracking matrix.
+		expect(new Set(SEED_PRODUCTS.map((p) => p.productKind)).size).toBe(
+			PRODUCT_KINDS.length,
 		);
 	});
 
 	test('prices are non-negative', () => {
-		for (const item of SEED_ITEMS) {
-			expect(item.sellingPrice).toBeGreaterThanOrEqual(0);
-			expect(item.purchasePrice).toBeGreaterThanOrEqual(0);
+		for (const product of SEED_PRODUCTS) {
+			expect(product.sellingPrice).toBeGreaterThanOrEqual(0);
+			expect(product.purchasePrice).toBeGreaterThanOrEqual(0);
 		}
 	});
 
 	test('minStockQty is non-negative and has numeric(18,3) scale', () => {
-		for (const item of SEED_ITEMS) {
-			expect(Number(item.minStockQty)).toBeGreaterThanOrEqual(0);
-			expect(item.minStockQty).toMatch(/^\d+\.\d{3}$/);
+		for (const product of SEED_PRODUCTS) {
+			expect(Number(product.minStockQty)).toBeGreaterThanOrEqual(0);
+			expect(product.minStockQty).toMatch(/^\d+\.\d{3}$/);
 		}
 	});
 
 	test('SKUs are unique', () => {
-		expect(new Set(SEED_ITEMS.map((i) => i.sku)).size).toBe(SEED_ITEMS.length);
+		expect(new Set(SEED_PRODUCTS.map((p) => p.sku)).size).toBe(SEED_PRODUCTS.length);
 	});
 
-	test('only serialized items carry serial numbers', () => {
-		for (const item of SEED_ITEMS) {
-			if (!item.isSerialized) expect(item.serials).toHaveLength(0);
+	test('only serialized products carry serial numbers', () => {
+		for (const product of SEED_PRODUCTS) {
+			if (!product.isSerialized) expect(product.serials).toHaveLength(0);
 		}
 	});
 });
 
-describe('seeded units use a valid status', () => {
-	test('units are seeded as in_stock', () => {
-		// "Siap" in the UI is `in_stock` in the API — never `ready`.
-		expect(UNIT_STATUSES).toContain('in_stock');
+describe('seeded item units use the schema vocabularies', () => {
+	test('every status and condition is a known value', () => {
+		for (const item of SEED_ITEMS) {
+			expect(ITEM_STATUSES).toContain(item.status);
+			expect(ITEM_CONDITIONS).toContain(item.condition);
+		}
 	});
 
-	test('serial numbers are unique across the seed', () => {
-		const all = SEED_ITEMS.flatMap((item) => item.serials);
+	test('codes are unique', () => {
+		expect(new Set(SEED_ITEMS.map((i) => i.code)).size).toBe(SEED_ITEMS.length);
+	});
+
+	test('serial numbers are unique across the products', () => {
+		const all = SEED_PRODUCTS.flatMap((product) => product.serials);
 		expect(new Set(all).size).toBe(all.length);
 	});
 });

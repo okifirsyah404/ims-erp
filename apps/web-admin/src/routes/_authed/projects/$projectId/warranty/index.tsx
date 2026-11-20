@@ -37,7 +37,7 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 	const [busy, setBusy] = useState(false);
 	const set = (patch: Partial<TWarrantyDraft>) => setValue((current) => ({ ...current, ...patch }));
 	// Default to the latest issued BAST once the list arrives.
-	const bastId = value.bastId ?? issued[0]?.id ?? '';
+	const handoverId = value.handoverId ?? issued[0]?.id ?? '';
 	const texts = [
 		['coverage', t('projects:warranty.coverage')],
 		['exclusions', t('projects:warranty.exclusions')],
@@ -51,7 +51,7 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 				event.preventDefault();
 				setBusy(true);
 				try {
-					await saveWarranty(projectId, { ...value, bastId, projectLocation: value.projectLocation?.trim() || null });
+					await saveWarranty(projectId, { ...value, handoverId, projectLocation: value.projectLocation?.trim() || null });
 					await queryClient.invalidateQueries({ queryKey: ['projects'] });
 					toast.success(t('projects:warranty.saved'));
 					void navigate({ to: '/projects/$projectId/warranty/print', params: { projectId } });
@@ -67,7 +67,7 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
 						<Field>
 							<FieldLabel htmlFor='warranty-bast'>{t('projects:warranty.bast')}</FieldLabel>
-							<Select value={bastId || 'none'} onValueChange={(value: string | null) => set({ bastId: value === null || value === 'none' ? '' : value })}>
+							<Select value={handoverId || 'none'} onValueChange={(value: string | null) => set({ handoverId: value === null || value === 'none' ? '' : value })}>
 								<SelectTrigger id='warranty-bast' className='w-full'>
 									<SelectValue />
 								</SelectTrigger>
@@ -149,7 +149,7 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 				<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects/$projectId', params: { projectId } })}>
 					{t('common:action.cancel')}
 				</Button>
-				<Button type='submit' disabled={busy || !bastId}>
+				<Button type='submit' disabled={busy || !handoverId}>
 					{t('projects:warranty.save')}
 				</Button>
 			</div>

@@ -10,21 +10,21 @@ import { AppError } from '@http/errors';
 import type { ApiKey } from '@providers/i18n/translator';
 
 /** The requested item does not exist (or is soft-deleted). */
-export class ItemNotFoundError extends AppError {
+export class ProductNotFoundError extends AppError {
 	constructor() {
 		super(404, 'inventory.itemNotFound', 'Item not found');
 	}
 }
 
 /** The requested item unit does not exist (or is soft-deleted). */
-export class UnitNotFoundError extends AppError {
+export class SerialNotFoundError extends AppError {
 	constructor() {
 		super(404, 'inventory.unitNotFound', 'Item unit not found');
 	}
 }
 
 /** The item already exists for this tenant. */
-export class ItemSkuTakenError extends AppError {
+export class ProductSkuTakenError extends AppError {
 	constructor() {
 		super(409, 'inventory.skuTaken', 'An item with this SKU already exists');
 	}
@@ -60,7 +60,7 @@ export class InventoryRuleViolationError extends AppError {
 }
 
 /** An item with live units cannot be archived. */
-export class ItemHasUnitsError extends AppError {
+export class ProductHasSerialsError extends AppError {
 	constructor(count: number) {
 		super(
 			422,
@@ -276,21 +276,21 @@ export class AdjustmentHasNoLinesError extends AppError {
 }
 
 /** The requested item category does not exist (or is archived). */
-export class ItemCategoryNotFoundError extends AppError {
+export class ProductCategoryNotFoundError extends AppError {
 	constructor() {
 		super(404, 'inventory.categoryNotFound', 'Item category not found');
 	}
 }
 
 /** A live category already uses this slug. */
-export class ItemCategorySlugTakenError extends AppError {
+export class ProductCategorySlugTakenError extends AppError {
 	constructor() {
 		super(409, 'inventory.categorySlugTaken', 'An item category with this slug already exists');
 	}
 }
 
 /** A category with live items cannot be archived (deactivate it instead). */
-export class ItemCategoryHasItemsError extends AppError {
+export class ProductCategoryHasProductsError extends AppError {
 	constructor(count: number) {
 		super(
 			409,
@@ -302,7 +302,7 @@ export class ItemCategoryHasItemsError extends AppError {
 }
 
 /** An item names a category that does not exist, is archived, or inactive. */
-export class ItemCategoryUnavailableError extends AppError {
+export class ProductCategoryUnavailableError extends AppError {
 	constructor() {
 		super(422, 'inventory.categoryUnavailable', 'The item category is not available');
 	}

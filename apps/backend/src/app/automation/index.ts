@@ -6,7 +6,6 @@ import Elysia from 'elysia';
 
 import { FaqController } from './controllers/faq.controller';
 import { OutboxController } from './controllers/outbox.controller';
-import { WhatsappWebhookController } from './controllers/whatsapp-webhook.controller';
 import { WhatsappController } from './controllers/whatsapp.controller';
 
 export { registerAutomation } from './container';
@@ -18,6 +17,5 @@ export function automationModule() {
 	return new Elysia({ name: 'automation' })
 		.use(OutboxController.plugin())
 		.use(WhatsappController.plugin())
-		.use(FaqController.plugin())
-		.use(WhatsappWebhookController.plugin());
+		.use(FaqController.plugin());
 }

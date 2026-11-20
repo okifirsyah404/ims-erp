@@ -19,14 +19,37 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { SUPPLIER_TYPES, type TSupplier, type TSupplierInput, type TSupplierType } from '@/lib/procurement-api';
+import {
+	SUPPLIER_TYPES,
+	type TSupplierCompany,
+	type TSupplierCompanyInput,
+	type TSupplierType,
+} from '@/lib/supplier-api';
 
-type TTextField = Exclude<keyof TSupplierInput, 'supplierType' | 'paymentTermsDays'>;
+type TTextField =
+	| 'code'
+	| 'name'
+	| 'legalName'
+	| 'taxId'
+	| 'email'
+	| 'phone'
+	| 'whatsapp'
+	| 'website'
+	| 'paymentTermNote'
+	| 'bankName'
+	| 'bankAccountNumber'
+	| 'bankAccountHolder'
+	| 'notes';
+
+const TEXT_KEYS: TTextField[] = [
+	'code', 'name', 'legalName', 'taxId', 'email', 'phone', 'whatsapp', 'website', 'paymentTermNote',
+	'bankName', 'bankAccountNumber', 'bankAccountHolder', 'notes',
+];
 
 /**
- * Create/edit dialog for a supplier. Bank fields are only shown when the
- * caller may see them (a new supplier, or `bankVisible`); otherwise they are
- * not sent, so nothing is blanked.
+ * Create/edit dialog for a supplier company. Bank fields are only shown to
+ * callers holding `supplier:read_bank` (UX only; the server is authoritative),
+ * and are not sent otherwise, so nothing is blanked.
  */
 export function SupplierFormDialog({
 	supplier,
@@ -35,24 +58,18 @@ export function SupplierFormDialog({
 	onClose,
 	onSave,
 }: {
-	supplier: TSupplier | null;
+	supplier: TSupplierCompany | null;
 	canSeeBank: boolean;
 	submitting: boolean;
 	onClose: () => void;
-	onSave: (input: Partial<TSupplierInput>) => void;
+	onSave: (input: Partial<TSupplierCompanyInput>) => void;
 }) {
 	const { t } = useTranslation(['procurement', 'common']);
-	const showBank = supplier ? supplier.bankVisible : canSeeBank;
 	const [supplierType, setSupplierType] = useState<TSupplierType>(supplier?.supplierType ?? 'company');
 	const [days, setDays] = useState(String(supplier?.paymentTermsDays ?? 0));
-	const [values, setValues] = useState<Record<TTextField, string>>(() => {
-		const keys: TTextField[] = [
-			'code', 'name', 'legalName', 'taxId', 'email', 'phone', 'whatsapp', 'website', 'addressLine', 'postalCode',
-			'picName', 'picTitle', 'picPhone', 'picEmail', 'paymentTermNote', 'bankName', 'bankAccountNumber',
-			'bankAccountHolder', 'notes',
-		];
-		return Object.fromEntries(keys.map((key) => [key, (supplier?.[key] as string | null) ?? ''])) as Record<TTextField, string>;
-	});
+	const [values, setValues] = useState<Record<TTextField, string>>(
+		() => Object.fromEntries(TEXT_KEYS.map((key) => [key, supplier?.[key] ?? ''])) as Record<TTextField, string>,
+	);
 
 	const field = (key: TTextField, props: React.ComponentProps<typeof Input> = {}, hint?: string) => (
 		<Field>
@@ -74,15 +91,15 @@ export function SupplierFormDialog({
 					onSubmit={(event) => {
 						event.preventDefault();
 						const text = (value: string) => value.trim() || null;
-						const input: Partial<TSupplierInput> = {
+						const input: Partial<TSupplierCompanyInput> = {
 							code: values.code.trim(),
 							name: values.name.trim(),
 							supplierType,
 							paymentTermsDays: Number(days || '0'),
 						};
-						for (const key of Object.keys(values) as TTextField[]) {
+						for (const key of TEXT_KEYS) {
 							if (key === 'code' || key === 'name') continue;
-							if (!showBank && key.startsWith('bank')) continue;
+							if (!canSeeBank && key.startsWith('bank')) continue;
 							(input as Record<string, unknown>)[key] = text(values[key]);
 						}
 						onSave(input);
@@ -92,7 +109,7 @@ export function SupplierFormDialog({
 						<DialogTitle>{supplier ? t('procurement:suppliers.edit') : t('procurement:suppliers.new')}</DialogTitle>
 					</DialogHeader>
 					<FieldGroup className='grid gap-4 py-4 sm:grid-cols-2'>
-						{field('code', { required: true, maxLength: 32, pattern: '[A-Za-z0-9]+', className: 'uppercase' }, t('procurement:supplier.codeHint'))}
+						{field('code', { required: true, maxLength: 32, minLength: 2, pattern: '[A-Za-z0-9]+', className: 'uppercase' }, t('procurement:supplier.codeHint'))}
 						<Field>
 							<FieldLabel htmlFor='supplier-type'>{t('procurement:supplier.supplierType')}</FieldLabel>
 							<Select
@@ -113,26 +130,11 @@ export function SupplierFormDialog({
 						</Field>
 						{field('name', { required: true, maxLength: 200 })}
 						{field('legalName', { maxLength: 200 })}
-						{field('taxId', { inputMode: 'numeric', maxLength: 25 })}
+						{field('taxId', { inputMode: 'numeric', maxLength: 16 })}
 						{field('website', { type: 'url', maxLength: 200, placeholder: 'https://' })}
 						{field('email', { type: 'email', maxLength: 254 })}
 						{field('phone', { type: 'tel', maxLength: 30 })}
 						{field('whatsapp', { type: 'tel', maxLength: 30 })}
-						{field('postalCode', { inputMode: 'numeric', maxLength: 10, pattern: '[0-9]*' })}
-						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='supplier-addressLine'>{t('procurement:supplier.addressLine')}</FieldLabel>
-							<Textarea
-								id='supplier-addressLine'
-								rows={2}
-								maxLength={500}
-								value={values.addressLine}
-								onChange={(event) => setValues((current) => ({ ...current, addressLine: event.target.value }))}
-							/>
-						</Field>
-						{field('picName', { maxLength: 120 })}
-						{field('picTitle', { maxLength: 100 })}
-						{field('picPhone', { type: 'tel', maxLength: 30 })}
-						{field('picEmail', { type: 'email', maxLength: 254 })}
 						<Field>
 							<FieldLabel htmlFor='supplier-days'>{t('procurement:supplier.paymentTermsDays')}</FieldLabel>
 							<Input
@@ -146,11 +148,11 @@ export function SupplierFormDialog({
 							/>
 						</Field>
 						{field('paymentTermNote', { maxLength: 300 }, t('procurement:supplier.paymentTermNoteHint'))}
-						{showBank && (
+						{canSeeBank && (
 							<>
-								{field('bankName', { maxLength: 100 })}
-								{field('bankAccountNumber', { inputMode: 'numeric', maxLength: 40 })}
-								{field('bankAccountHolder', { maxLength: 150 })}
+								{field('bankName', { maxLength: 200 })}
+								{field('bankAccountNumber', { inputMode: 'numeric', maxLength: 100 })}
+								{field('bankAccountHolder', { maxLength: 200 })}
 							</>
 						)}
 						<Field className='sm:col-span-2'>

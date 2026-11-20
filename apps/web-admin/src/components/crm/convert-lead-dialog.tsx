@@ -26,12 +26,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Search } from 'lucide-react';
-import {
-	CUSTOMER_TYPES,
-	customersQueryOptions,
-	type TCustomerInput,
-	type TCustomerType,
-} from '@/lib/customer-api';
+import { customersQueryOptions, type TCustomerInput } from '@/lib/customer-api';
 import type { TLead } from '@/lib/lead-api';
 
 type TConvertInput = { customerId: string } | { customer: TCustomerInput };
@@ -54,7 +49,6 @@ export function ConvertLeadDialog({
 	const { t } = useTranslation(['crm', 'common']);
 	const [mode, setMode] = useState<'new' | 'existing'>('new');
 	const [code, setCode] = useState('');
-	const [customerType, setCustomerType] = useState<TCustomerType>(lead.companyName ? 'company' : 'individual');
 	const [name, setName] = useState(lead.companyName ?? lead.name);
 	const [search, setSearch] = useState('');
 	const [customerId, setCustomerId] = useState('');
@@ -76,16 +70,14 @@ export function ConvertLeadDialog({
 								: {
 										customer: {
 											code: code.trim(),
-											customerType,
+											companyId: null,
+											customerType: 'individual',
 											name: name.trim(),
-											legalName: null,
-											taxId: null,
+											position: null,
 											email: lead.email,
 											phone: lead.phone,
 											whatsapp: lead.whatsapp,
-											addressLine: null,
-											villageId: null,
-											postalCode: null,
+											isPrimary: false,
 											notes: lead.needs,
 										},
 									},
@@ -126,24 +118,6 @@ export function ConvertLeadDialog({
 											value={code}
 											onChange={(e) => setCode(e.target.value)}
 										/>
-									</Field>
-									<Field>
-										<FieldLabel htmlFor='convert-type'>{t('crm:customer.customerType')}</FieldLabel>
-										<Select
-											value={customerType}
-											onValueChange={(value: string | null) => setCustomerType(value as TCustomerType)}
-										>
-											<SelectTrigger id='convert-type' className='w-full'>
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												{CUSTOMER_TYPES.map((type) => (
-													<SelectItem key={type} value={type}>
-														{t(`crm:customerType.${type}`)}
-													</SelectItem>
-												))}
-											</SelectContent>
-										</Select>
 									</Field>
 								</div>
 								<Field>

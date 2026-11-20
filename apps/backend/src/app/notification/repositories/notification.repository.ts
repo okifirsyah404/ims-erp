@@ -4,15 +4,15 @@ import { inject, injectable } from 'tsyringe';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/tokens';
 import {
-	notifications,
-	notificationTemplates,
-	type TNotificationSelect,
-	type TNotificationTemplateSelect,
+	pushNotifications,
+	pushNotificationTemplates,
+	type TPushNotificationSelect,
+	type TPushNotificationTemplateSelect,
 } from '@drizzle/schemas/notification.schema';
 import type {
-	INotificationRepository,
-	TNotificationInsert,
-	TNotificationListRequest,
+	IPushNotificationRepository,
+	TPushNotificationInsert,
+	TPushNotificationListRequest,
 } from '../contracts/notification.repository.interface';
 
 /**
@@ -24,15 +24,15 @@ import type {
  * because retention (D10) is a storage rule, not a feature-level delete.
  */
 @injectable()
-export class NotificationRepository implements INotificationRepository {
+export class PushNotificationRepository implements IPushNotificationRepository {
 	constructor(
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
 	) {}
 
-	async insert(entry: TNotificationInsert): Promise<TNotificationSelect> {
+	async insert(entry: TPushNotificationInsert): Promise<TPushNotificationSelect> {
 		const now = new Date();
 		const [row] = await this.database
-			.insert(notifications)
+			.insert(pushNotifications)
 			.values({
 				...entry,
 				createdAt: now,
@@ -40,70 +40,70 @@ export class NotificationRepository implements INotificationRepository {
 			})
 			.returning();
 
-		return row as TNotificationSelect;
+		return row as TPushNotificationSelect;
 	}
 
 	async findTemplateByCode(
 		code: string,
-	): Promise<TNotificationTemplateSelect | null> {
+	): Promise<TPushNotificationTemplateSelect | null> {
 		const [row] = await this.database
 			.select()
-			.from(notificationTemplates)
+			.from(pushNotificationTemplates)
 			.where(
 				and(
-					eq(notificationTemplates.code, code),
-					isNull(notificationTemplates.deletedAt),
+					eq(pushNotificationTemplates.code, code),
+					isNull(pushNotificationTemplates.deletedAt),
 				),
 			)
 			.limit(1);
 
-		return (row as TNotificationTemplateSelect | undefined) ?? null;
+		return (row as TPushNotificationTemplateSelect | undefined) ?? null;
 	}
 
 	async findByIdForUser(
 		id: string,
 		userId: string,
-	): Promise<TNotificationSelect | null> {
+	): Promise<TPushNotificationSelect | null> {
 		const [row] = await this.database
 			.select()
-			.from(notifications)
+			.from(pushNotifications)
 			.where(
 				and(
-					eq(notifications.id, id),
-					eq(notifications.userId, userId),
-					isNull(notifications.deletedAt),
+					eq(pushNotifications.id, id),
+					eq(pushNotifications.userId, userId),
+					isNull(pushNotifications.deletedAt),
 				),
 			)
 			.limit(1);
 
-		return (row as TNotificationSelect | undefined) ?? null;
+		return (row as TPushNotificationSelect | undefined) ?? null;
 	}
 
 	async listForUser(
-		request: TNotificationListRequest,
-	): Promise<TPaginationResult<TNotificationSelect>> {
+		request: TPushNotificationListRequest,
+	): Promise<TPaginationResult<TPushNotificationSelect>> {
 		const { userId, page, limit, unreadOnly } = request;
 		const where = and(
-			eq(notifications.userId, userId),
-			isNull(notifications.deletedAt),
-			unreadOnly ? ne(notifications.status, 'read') : undefined,
+			eq(pushNotifications.userId, userId),
+			isNull(pushNotifications.deletedAt),
+			unreadOnly ? ne(pushNotifications.status, 'read') : undefined,
 		);
 
 		const [{ value: total }] = await this.database
 			.select({ value: count() })
-			.from(notifications)
+			.from(pushNotifications)
 			.where(where);
 
 		const data = await this.database
 			.select()
-			.from(notifications)
+			.from(pushNotifications)
 			.where(where)
-			.orderBy(desc(notifications.createdAt))
+			.orderBy(desc(pushNotifications.createdAt))
 			.offset((page - 1) * limit)
 			.limit(limit);
 
 		return {
-			data: data as TNotificationSelect[],
+			data: data as TPushNotificationSelect[],
 			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
 		};
 	}
@@ -111,12 +111,12 @@ export class NotificationRepository implements INotificationRepository {
 	async countUnread(userId: string): Promise<number> {
 		const [{ value }] = await this.database
 			.select({ value: count() })
-			.from(notifications)
+			.from(pushNotifications)
 			.where(
 				and(
-					eq(notifications.userId, userId),
-					isNull(notifications.deletedAt),
-					ne(notifications.status, 'read'),
+					eq(pushNotifications.userId, userId),
+					isNull(pushNotifications.deletedAt),
+					ne(pushNotifications.status, 'read'),
 				),
 			);
 
@@ -126,49 +126,49 @@ export class NotificationRepository implements INotificationRepository {
 	async markRead(
 		id: string,
 		userId: string,
-	): Promise<TNotificationSelect | null> {
+	): Promise<TPushNotificationSelect | null> {
 		const [row] = await this.database
-			.update(notifications)
+			.update(pushNotifications)
 			.set({ status: 'read', readAt: new Date(), updatedAt: new Date() })
 			.where(
 				and(
-					eq(notifications.id, id),
-					eq(notifications.userId, userId),
-					isNull(notifications.deletedAt),
+					eq(pushNotifications.id, id),
+					eq(pushNotifications.userId, userId),
+					isNull(pushNotifications.deletedAt),
 				),
 			)
 			.returning();
 
-		return (row as TNotificationSelect | undefined) ?? null;
+		return (row as TPushNotificationSelect | undefined) ?? null;
 	}
 
 	async markAllRead(userId: string): Promise<number> {
 		const rows = await this.database
-			.update(notifications)
+			.update(pushNotifications)
 			.set({ status: 'read', readAt: new Date(), updatedAt: new Date() })
 			.where(
 				and(
-					eq(notifications.userId, userId),
-					isNull(notifications.deletedAt),
-					ne(notifications.status, 'read'),
+					eq(pushNotifications.userId, userId),
+					isNull(pushNotifications.deletedAt),
+					ne(pushNotifications.status, 'read'),
 				),
 			)
-			.returning({ id: notifications.id });
+			.returning({ id: pushNotifications.id });
 
 		return rows.length;
 	}
 
 	async pruneRead(cutoff: Date): Promise<number> {
 		const rows = await this.database
-			.delete(notifications)
+			.delete(pushNotifications)
 			.where(
 				and(
-					eq(notifications.status, 'read'),
-					isNull(notifications.deletedAt),
-					lt(notifications.readAt, cutoff),
+					eq(pushNotifications.status, 'read'),
+					isNull(pushNotifications.deletedAt),
+					lt(pushNotifications.readAt, cutoff),
 				),
 			)
-			.returning({ id: notifications.id });
+			.returning({ id: pushNotifications.id });
 
 		return rows.length;
 	}

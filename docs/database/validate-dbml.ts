@@ -28,23 +28,24 @@ for (const schema of db.schemas) {
 const allRefs = db.schemas.flatMap((s) => s.refs ?? []);
 console.log(`parsed: ${tables.length} tables, ${allRefs.length} refs`);
 
-// module mapping: schemas belonging to one module
-const moduleOf = (s) =>
-  s === "warehouse" || s === "inventory" ? "Inventory" : s;
+// module mapping: one schema per module (ADR-0024). `auth` is shared by the
+// `user` and `organization` modules, which is why it is one entry here too.
+const moduleOf = (s) => s;
 
 // unique bare table names (so refs resolve unambiguously)
 const nameMap = new Map();
 let dups = 0;
-// Bare-name duplicates that are tolerated because the surviving name is
-// unambiguous in practice. `items` was superseded by inventory.items
-// (ADR-0008): catalog.items is retained only until the catalogue satellites
-// are adopted, and no new ref may target it.
-// "item_categories": inventory.item_categories supersedes the unbuilt
-// catalog.item_categories (ADR-0011), the same way inventory.items does.
-// "bank_accounts": company.bank_accounts (company master, ERP-0042) and
-// hr.bank_accounts (employee salary accounts) are different entities; refs
-// always use the schema-qualified name.
-const DUP_ALLOWED = new Set(["payments", "items", "item_categories", "bank_accounts", "settings"]);
+// Bare-name duplicates that are tolerated because refs always use the
+// schema-qualified name (ADR-0024): several schemas own a table with one of
+// these names by design.
+const DUP_ALLOWED = new Set([
+  "settings",
+  "code_numberings",
+  "addresses",
+  "company_addresses",
+  "companies",
+  "documents",
+]);
 for (const t of tables) {
   if (nameMap.has(t.name) && nameMap.get(t.name) !== t.schema && !DUP_ALLOWED.has(t.name)) {
     console.error(`DUPLICATE table name: ${t.schema}.${t.name} also in ${nameMap.get(t.name)}`); dups++;
@@ -71,28 +72,17 @@ console.log(`cross-module refs: ${cross}`);
 
 // timestamp coverage
 // Better Auth core tables only (the 9 adapter-managed tables); the ERP-owned
-// auth.* extension tables (user_profiles, portal_identities, ...) are checked
+// auth.* extension tables (user_invitations, organization_settings) are checked
 // like every other business table.
 const AUTH_CORE = new Set(["users", "sessions", "accounts", "verifications",
   "organizations", "members", "invitations", "passkeys", "apikeys"]);
 const TIMESTAMP_EXEMPT = new Set([
   // Better Auth managed core tables (own conventions, adapter contract)
   ...tables.filter(t => t.schema === "auth" && AUTH_CORE.has(t.name)).map(t => `auth.${t.name}`),
-  // transitional live scaffold, replaced in step S3/S7
-  "sales.quotations", "sales.payments",
-  // append-only ledger / history (deleted_at meaningless, documented in notes)
-  "inventory.stock_movements", "ticket.ticket_status_history", "audit.audit_logs",
-  // append-only business timeline (never edited, never soft-deleted)
-  "assets.borrowing_events",
-  // projection
-  "inventory.stock_balances",
-  // serial/lot rows are stock facts closed by disposition, not business entities
-  "inventory.serial_tracked_items", "inventory.lot_batches",
-  // allocation line of a payment: cascade-deleted with the payment, never
-  // soft-deleted on its own
-  "payment.payment_allocations",
-  // open-item sub-ledgers: running balances cleared by status, not soft-deleted
-  "finance.ar_open_items", "finance.ap_open_items",
+  // append-only ledgers (deleted_at meaningless, documented in notes)
+  "inventory.movements", "audit.audit_logs", "inventory.borrowing_events", "inventory.borrowing_request_events",
+  // projections: running balances cleared by status, not soft-deleted
+  "inventory.stocks", "finance.ar_open_items", "finance.ap_open_items",
 ]);
 
 const gaps = [];
@@ -162,7 +152,56 @@ for (const file of readdirSync(SCHEMA_DIR).filter(f => f.endsWith(".schema.ts"))
 console.log(`drizzle parity drift: ${drift.length}`);
 drift.forEach(d => console.error("  " + d));
 
-if (dups || cross || gaps.length || drift.length) process.exit(1);
+// ---------------------------------------------------------------------------
+// 6. Column parity, both directions, against the real Drizzle tables: for every
+//    table that exists in both, a column must have the same nullability and
+//    the same SQL type in docs.dbml and in the Drizzle schema. Check 5 only
+//    proves that names exist; it never noticed a NOT NULL on a cross-module id
+//    column (ADR-0014 says those are always nullable) or a type that differs.
+//    docs.dbml wins: a mismatch means the Drizzle file is the bug.
+//
+// Defaults and indexes are not compared: DBML cannot express partial or
+// expression indexes, and Drizzle `$onUpdate` / `$default` are not DB defaults.
+// ---------------------------------------------------------------------------
+const { getTableConfig, PgTable } = await import("drizzle-orm/pg-core");
+const { is } = await import("drizzle-orm");
+const dbmlColumns = new Map();
+for (const schema of db.schemas) {
+  for (const t of schema.tables ?? []) {
+    dbmlColumns.set(`${schema.name}.${t.name}`, new Map((t.fields ?? []).map(f => [f.name, f])));
+  }
+}
+const normType = (s) =>
+  String(s).toLowerCase().replace(/\(.*/, "").trim()
+    .replace("character varying", "varchar")
+    .replace("timestamp without time zone", "timestamp")
+    .replace("integer", "int");
+const columnDrift = [];
+for (const file of readdirSync(SCHEMA_DIR).filter(f => f.endsWith(".schema.ts"))) {
+  const mod = await import(join(SCHEMA_DIR, file));
+  for (const value of Object.values(mod)) {
+    if (!is(value, PgTable)) continue;
+    const config = getTableConfig(value);
+    const full = `${config.schema ?? "public"}.${config.name}`;
+    const declared = dbmlColumns.get(full);
+    if (!declared) continue; // reported by check 5
+    for (const col of config.columns) {
+      const field = declared.get(col.name);
+      if (!field) continue; // reported by check 5
+      const dbmlNotNull = Boolean(field.not_null) || Boolean(field.pk);
+      if (dbmlNotNull !== Boolean(col.notNull)) {
+        columnDrift.push(`${full}.${col.name}: docs.dbml ${dbmlNotNull ? "NOT NULL" : "nullable"}, Drizzle ${col.notNull ? "NOT NULL" : "nullable"}`);
+      }
+      const a = normType(field.type?.type_name ?? "");
+      const b = normType(col.getSQLType());
+      if (a !== b) columnDrift.push(`${full}.${col.name}: docs.dbml type ${a}, Drizzle type ${b}`);
+    }
+  }
+}
+console.log(`column parity drift (nullability, type): ${columnDrift.length}`);
+columnDrift.forEach(d => console.error("  " + d));
+
+if (dups || cross || gaps.length || drift.length || columnDrift.length) process.exit(1);
 console.log("OK");
 // @dbml/core leaves an open handle on Windows; force-exit or bun never returns
 process.exit(0);

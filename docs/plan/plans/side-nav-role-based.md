@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Role-Based Sidebar, Route Guards, and Warehouse Person-in-Charge
 
 > Status: **done / verified 2026-11-14** (ADR-0017 accepted 2026-11-14). Phase 0 and

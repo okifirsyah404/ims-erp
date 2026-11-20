@@ -1,0 +1,36 @@
+import type { DependencyContainer } from 'tsyringe';
+
+import {
+	EXPORTED_SUPPLIER_SERVICE_TOKEN,
+	SUPPLIER_COMPANY_REPOSITORY_TOKEN,
+	SUPPLIER_PERSON_REPOSITORY_TOKEN,
+	SUPPLIER_SERVICE_TOKEN,
+} from './constants/di';
+import { ExportedSupplierService } from './services/exported-supplier.service';
+import { SupplierService } from './services/supplier.service';
+import { SupplierCompanyRepository } from './repositories/supplier-company.repository';
+import { SupplierRepository } from './repositories/supplier.repository';
+
+export * from './constants/di';
+
+/**
+ * Registers the supplier module's repositories, service and exported facade.
+ *
+ * @remarks
+ * Called from the composition root (`src/index.ts`) before the HTTP app is
+ * built.
+ */
+export function registerSupplier(container: DependencyContainer): void {
+	container.register(SUPPLIER_COMPANY_REPOSITORY_TOKEN, {
+		useClass: SupplierCompanyRepository,
+	});
+	container.register(SUPPLIER_PERSON_REPOSITORY_TOKEN, {
+		useClass: SupplierRepository,
+	});
+	container.register(SUPPLIER_SERVICE_TOKEN, {
+		useClass: SupplierService,
+	});
+	container.register(EXPORTED_SUPPLIER_SERVICE_TOKEN, {
+		useClass: ExportedSupplierService,
+	});
+}

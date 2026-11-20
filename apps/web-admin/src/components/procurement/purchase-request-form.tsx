@@ -19,7 +19,7 @@ import {
 type TLineDraft = {
 	key: string;
 	/** Empty for a free-text line. */
-	itemId: string;
+	productId: string;
 	sku: string;
 	name: string;
 	unit: string;
@@ -31,7 +31,7 @@ type TLineDraft = {
 
 const blankText = (): TLineDraft => ({
 	key: crypto.randomUUID(),
-	itemId: '',
+	productId: '',
 	sku: '',
 	name: '',
 	unit: '',
@@ -66,7 +66,7 @@ export function PurchaseRequestForm({
 	const [lines, setLines] = useState<TLineDraft[]>(
 		(request?.lines ?? []).map((line) => ({
 			key: crypto.randomUUID(),
-			itemId: line.itemId ?? '',
+			productId: line.productId ?? '',
 			sku: line.sku ?? '',
 			name: line.name,
 			unit: line.unit,
@@ -93,7 +93,7 @@ export function PurchaseRequestForm({
 			...current,
 			{
 				key: crypto.randomUUID(),
-				itemId: item.id,
+				productId: item.id,
 				sku: item.sku,
 				name: item.name,
 				unit: item.unitLabel,
@@ -120,9 +120,9 @@ export function PurchaseRequestForm({
 					requestDate,
 					neededBy: neededBy || null,
 					lines: lines.map((line) => ({
-						itemId: line.itemId || null,
-						name: line.itemId ? null : text(line.name),
-						unit: line.itemId ? null : text(line.unit),
+						productId: line.productId || null,
+						name: line.productId ? null : text(line.name),
+						unit: line.productId ? null : text(line.unit),
 						quantity: line.quantity,
 						estimatedUnitPrice: line.price.trim() === '' ? null : rupiahToMinor(line.price),
 						specification: text(line.specification),
@@ -176,7 +176,7 @@ export function PurchaseRequestForm({
 						<div key={line.key} className='grid gap-3 rounded-md border p-3 sm:grid-cols-6'>
 							<div className='flex items-center justify-between sm:col-span-6'>
 								<span className='text-sm font-medium'>
-									{index + 1}. {line.itemId ? `${line.name} · ${line.sku}` : t('procurement:pr.freeText')}
+									{index + 1}. {line.productId ? `${line.name} · ${line.sku}` : t('procurement:pr.freeText')}
 								</span>
 								<Button
 									type='button'
@@ -187,7 +187,7 @@ export function PurchaseRequestForm({
 									{t('procurement:po.removeLine')}
 								</Button>
 							</div>
-							{!line.itemId && (
+							{!line.productId && (
 								<>
 									<Field className='sm:col-span-4'>
 										<FieldLabel htmlFor={`pr-name-${line.key}`}>{t('procurement:pr.itemName')}</FieldLabel>

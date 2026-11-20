@@ -25,7 +25,7 @@ export type TDocument = {
 	title: string;
 	status: TDocumentStatus;
 	/** Business date (`YYYY-MM-DD`, Asia/Jakarta). */
-	issuedOn: string;
+	issuedOn: string | null;
 	module: string | null;
 	sourceType: string | null;
 	sourceId: string | null;
@@ -157,5 +157,5 @@ export function revokeDocumentShare(id: string, shareId: string) {
 
 /** The anonymous URL a share token resolves to. */
 export function publicShareUrl(token: string): string {
-	return `${API_URL}/public/v1/documents/${token}`;
+	return `${API_URL}/documents/public/v1/shares/${token}`;
 }

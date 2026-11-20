@@ -18,7 +18,7 @@ bersamaan).
 ## 1. Alur
 
 ```text
-WhatsApp pelanggan ──► WAHA ──POST /integrations/whatsapp/webhook──► ERP
+WhatsApp pelanggan ──► WAHA ──POST /webhooks/whatsapp──► ERP
 ERP ──POST /api/sendText──► WAHA ──► WhatsApp pelanggan     (balasan)
 Outbox ERP ──POST N8N_WEBHOOK_URL──► n8n ──► WAHA / email  (notifikasi)
 ERP ──POST <AI_BASE_URL>/chat/completions──► penyedia AI   (opsional)
@@ -68,7 +68,7 @@ berarti ketiganya sudah diisi. Nilainya tidak pernah ditampilkan. Tanpa
 
 1. Jalankan sesi WAHA dan scan QR dengan nomor khusus.
 2. Di pengaturan webhook sesi:
-   - URL: `<APP_URL>/integrations/whatsapp/webhook`
+   - URL: `<APP_URL>/webhooks/whatsapp`
    - Event: hanya `message`
    - HMAC key: nilai `WAHA_WEBHOOK_SECRET`
      (WAHA lalu mengirim `X-Webhook-Hmac`, HMAC-SHA512 dari body).

@@ -8,7 +8,22 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export const OUTBOX_STATUSES = ['pending', 'published', 'failed'] as const;
 export type TOutboxStatus = (typeof OUTBOX_STATUSES)[number];
-export const OUTBOX_TOPICS = ['lead.created', 'invoice.issued', 'receipt.recorded', 'license.due', 'service_ticket.updated'] as const;
+/** Mirrors the backend `OUTBOX_TOPICS` (automation/contracts/outbox.contract.ts). */
+export const OUTBOX_TOPICS = [
+	'lead.created',
+	'invoice.issued',
+	'receipt.recorded',
+	'license.due',
+	'service_ticket.updated',
+	'whatsapp.handoff',
+	'lead.follow_up_due',
+	'quotation.follow_up_due',
+	'quotation.sent',
+	'supplier_bill.recorded',
+	'supplier_bill.due',
+	'purchase_return.updated',
+	'sales_return.updated',
+] as const;
 export type TOutboxTopic = (typeof OUTBOX_TOPICS)[number];
 
 export const OUTBOX_STATUS_VARIANT: Record<TOutboxStatus, 'default' | 'secondary' | 'destructive'> = {

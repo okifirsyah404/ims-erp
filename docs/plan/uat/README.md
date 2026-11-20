@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # UAT scripts (ERP-0024, phase 7)
 
 User acceptance test scripts for the modules owned by programmer B: M02, M03,

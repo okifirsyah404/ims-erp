@@ -10,34 +10,35 @@
 import { container } from 'tsyringe';
 import type {
 	TStockAdjustmentSelect,
-	TStockBalanceSelect,
-	TStockMovementSelect,
+	TStockSelect,
+	TMovementSelect,
 	TWarehouseSelect,
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
+	TProductMovementSelect,
 	TMovementCreateData,
 	TMovementPaginationRequest,
 } from '../../src/app/inventory/contracts/movement.repository.interface';
 import type {
-	IBalanceRepository,
-	TBalancePaginationRequest,
-} from '../../src/app/inventory/contracts/balance.repository.interface';
+	IStockRepository,
+	TStockPaginationRequest,
+} from '../../src/app/inventory/contracts/stock.repository.interface';
 import type {
 	IAdjustmentRepository,
 	TAdjustmentPaginationRequest,
 } from '../../src/app/inventory/contracts/adjustment.repository.interface';
 import type {
-	IItemRepository,
-	TItemPaginationRequest,
-} from '../../src/app/inventory/contracts/item.repository.interface';
+	IProductRepository,
+	TProductPaginationRequest,
+} from '../../src/app/inventory/contracts/product.repository.interface';
 import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
 import type { TPostMovementInput } from '../../src/app/inventory/services/stock.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
-	BALANCE_REPOSITORY_TOKEN,
-	ITEM_REPOSITORY_TOKEN,
+	STOCK_REPOSITORY_TOKEN,
+	PRODUCT_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
@@ -111,13 +112,13 @@ export function installStockDoubles(): void {
 		async findById() {
 			return null;
 		},
-		async create(data: TMovementCreateData) {
+		async create(data: TMovementCreateData, _tx?: unknown) {
 			// The ledger row records the ACTING organization (who did it), which
 			// is what a caller-identity assertion needs — it is not the balance
 			// scope, which follows the warehouse.
 			capture.postedMovement = data as unknown as TPostMovementInput;
 			capture.movementActorOrganizationId = data.organizationId ?? null;
-			return { ...data, id: 'movement-1' } as TStockMovementSelect;
+			return { ...data, id: 'movement-1' } as TProductMovementSelect;
 		},
 		async findReversalOf() {
 			return null;
@@ -133,8 +134,8 @@ export function installStockDoubles(): void {
 		},
 	};
 
-	const balances: IBalanceRepository = {
-		async paginate(request: TBalancePaginationRequest) {
+	const balances: IStockRepository = {
+		async paginate(request: TStockPaginationRequest) {
 			capture.balanceScope = request.scopeOrganizationId;
 			return emptyPage(request.page, request.limit);
 		},
@@ -152,7 +153,7 @@ export function installStockDoubles(): void {
 			return {
 				id: 'balance-1',
 				organizationId: key.scopeOrganizationId,
-				itemId: key.itemId,
+				productId: key.productId,
 				warehouseId: key.warehouseId,
 				binId: key.binId,
 				quantityOnHand: '0.000',
@@ -161,15 +162,15 @@ export function installStockDoubles(): void {
 				lastMovementAt: null,
 				createdAt: new Date(0),
 				updatedAt: null,
-			} as TStockBalanceSelect;
+			} as TStockSelect;
 		},
 		async setQuantity() {
-			return {} as TStockBalanceSelect;
+			return {} as TStockSelect;
 		},
 		async remove() {
 			return false;
 		},
-		async availableByItems() {
+		async availableByProducts() {
 			return [];
 		},
 	};
@@ -285,8 +286,8 @@ export function installStockDoubles(): void {
 		},
 	};
 
-	const items: IItemRepository = {
-		async paginate(_request: TItemPaginationRequest) {
+	const items: IProductRepository = {
+		async paginate(_request: TProductPaginationRequest) {
 			return emptyPage(1, 20);
 		},
 		async findById(id: string) {
@@ -310,7 +311,7 @@ export function installStockDoubles(): void {
 		async countUnits() {
 			return 0;
 		},
-	} as unknown as IItemRepository;
+	} as unknown as IProductRepository;
 
 	// The services open `database.transaction` for their multi-statement writes;
 	// the double runs the callback directly because the repositories are stubs.
@@ -319,10 +320,10 @@ export function installStockDoubles(): void {
 	} as never;
 
 	container.register(MOVEMENT_REPOSITORY_TOKEN, { useValue: movements });
-	container.register(BALANCE_REPOSITORY_TOKEN, { useValue: balances });
+	container.register(STOCK_REPOSITORY_TOKEN, { useValue: balances });
 	container.register(ADJUSTMENT_REPOSITORY_TOKEN, { useValue: adjustments });
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, { useValue: warehouses });
-	container.register(ITEM_REPOSITORY_TOKEN, { useValue: items });
+	container.register(PRODUCT_REPOSITORY_TOKEN, { useValue: items });
 	container.register(STOCK_SERVICE_TOKEN, {
 		useValue: new StockService(
 			movements,

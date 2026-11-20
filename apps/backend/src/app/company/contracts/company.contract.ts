@@ -10,28 +10,15 @@ const text = (max: number) =>
 		.nullish()
 		.transform((v) => v ?? null);
 
-/** One bank account printed on invoices; `null` removes it. */
-const invoiceBankAccountSchema = z
-	.object({
-		bankName: z.string().trim().min(1).max(100),
-		accountNumber: z
-			.string()
-			.trim()
-			.min(1)
-			.max(50)
-			.regex(/^[0-9 .-]+$/),
-		accountHolder: z.string().trim().min(1).max(200),
-	})
-	.nullable();
-
 /**
- * Editable company profile (letterhead, signatory, banks, default terms).
+ * Editable company profile (letterhead, signatory, default terms).
  *
  * @remarks
- * The flat shape is the API contract. Storage is split since ERP-0042: the
- * letterhead address lives in `company.head_office_addresses`, the phone,
- * email and website in `company.contacts`. The repository keeps them in sync,
- * so clients never see the split.
+ * The flat shape is the API contract. Storage is split: the letterhead
+ * address lives in `company.addresses`, the phone, email and website in
+ * `company.contacts`. The service keeps them in sync, so clients never see
+ * the split. Invoice bank accounts moved to `finance.cash_bank_accounts`
+ * (ADR-0024 Q19) and are no longer part of this contract.
  */
 export const companyProfileSchema = z.object({
 	legalName: z.string().trim().min(1).max(200),
@@ -59,18 +46,6 @@ export const companyProfileSchema = z.object({
 	warrantyCoverage: text(8000),
 	warrantyExclusions: text(8000),
 	warrantyServiceTerms: text(8000),
-	/**
-	 * Omitted = leave the accounts unchanged (callers who may not see them
-	 * must not blank them by saving the profile).
-	 */
-	bankAccounts: z
-		.object({
-			/** Printed on invoices with VAT. */
-			vat: invoiceBankAccountSchema,
-			/** Printed on invoices without VAT. */
-			nonVat: invoiceBankAccountSchema,
-		})
-		.optional(),
 });
 
 export type TCompanyProfileInput = z.output<typeof companyProfileSchema>;
@@ -81,12 +56,9 @@ export type TCompanyProfileInput = z.output<typeof companyProfileSchema>;
  */
 export const companyProfilePatchSchema = companyProfileSchema.partial();
 export type TCompanyProfilePatch = z.output<typeof companyProfilePatchSchema>;
-type TInvoiceBankAccounts = NonNullable<TCompanyProfileInput['bankAccounts']>;
-export type TInvoiceBankAccount = NonNullable<TInvoiceBankAccounts['vat']>;
 
-/** What clients get; `bankAccounts` is `null` for callers without access. */
-export type TCompanyProfileView = Omit<TCompanyProfileInput, 'bankAccounts'> & {
-	bankAccounts: TInvoiceBankAccounts | null;
+/** What clients get. */
+export type TCompanyProfileView = TCompanyProfileInput & {
 	/** Short-lived inline URLs of the letterhead logo, signature and onboarding image. */
 	logoUrl: string | null;
 	signatureUrl: string | null;
@@ -100,10 +72,7 @@ export type TCompanyProfileView = Omit<TCompanyProfileInput, 'bankAccounts'> & {
  * Read-only projection of the flat profile plus the object-storage keys, so a
  * consumer never touches `company.*` tables directly.
  */
-export type TCompanyProfileSnapshot = Omit<
-	TCompanyProfileView,
-	'bankAccounts' | 'logoUrl' | 'signatureUrl' | 'onboardingUrl'
-> & {
+export type TCompanyProfileSnapshot = TCompanyProfileInput & {
 	logoObjectKey: string | null;
 	signatureObjectKey: string | null;
 	onboardingObjectKey: string | null;

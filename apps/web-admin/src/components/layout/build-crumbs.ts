@@ -48,9 +48,8 @@ const LABELS: Record<string, NavKey> = {
 	'/organizations/$organizationId/members/$memberId/edit':
 		'breadcrumb.memberEdit',
 	'/admin/company': 'item.companyProfile',
-	'/admin/code-numbers': 'item.codeNumbers',
 	'/settings/company': 'item.companyProfile',
-	'/settings/code-numbers': 'item.codeNumbers',
+	'/settings/payment-gateways': 'item.paymentGateways',
 	'/settings/documents': 'item.documentSettings',
 	'/documents/files': 'item.files',
 	'/documents/files/$documentId': 'breadcrumb.documentDetail',

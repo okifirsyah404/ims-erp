@@ -4,7 +4,7 @@ import { authTokensSchema, loginFailureFrom, loginSuccessSchema, parseOrThrow, p
 /**
  * Customer-portal contract (apps/web-customer-portal). Types describe what the portal needs; the
  * ERP adapter maps them onto ERP endpoints whose paths are supplied via `PortalRoutes`.
- * No path is hard-coded here — the ERP API contract has not been published yet.
+ * No path is hard-coded here — the routes live in `src/services/portal/erp-routes.ts`.
  */
 
 // ── Shared ────────────────────────────────────────────────────────────────
@@ -535,12 +535,16 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   const path = (op: keyof PortalSource, params: Record<string, string> = {}) => {
     const template = config.routes[op];
     if (!template) throw new PortalNotConfiguredError(op);
-    return template.replace(/:(\w+)/g, (_, key: string) => encodeURIComponent(params[key] ?? ""));
+    // A device id is `<certificate uuid>:<line>`; ":" is a legal path character, so keep it
+    // readable for the ERP's id matcher instead of sending %3A.
+    return template.replace(/:(\w+)/g, (_, key: string) => encodeURIComponent(params[key] ?? "").replaceAll("%3A", ":"));
   };
 
-  const get = <T>(op: keyof PortalSource, session: AuthTokens, params?: Record<string, string>) =>
+  // async: an unmapped operation must reject (PortalNotConfiguredError), never throw synchronously,
+  // so callers like `unlessNotConnected(promise, …)` always receive a promise.
+  const get = async <T>(op: keyof PortalSource, session: AuthTokens, params?: Record<string, string>) =>
     clientFor(session).get<T>(path(op, params));
-  const post = <T>(op: keyof PortalSource, session: AuthTokens | undefined, body: unknown, params?: Record<string, string>) =>
+  const post = async <T>(op: keyof PortalSource, session: AuthTokens | undefined, body: unknown, params?: Record<string, string>) =>
     clientFor(session).post<T>(path(op, params), body);
   const orNull = async <T>(promise: Promise<T>): Promise<T | null> => {
     try {
@@ -565,13 +569,36 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     },
     register: (input) => post("register", undefined, input),
     async verifyEmail(input) {
-      const session = await orNull(post("verifyEmail", undefined, input));
-      return session === null ? null : parseOrThrow("verifyEmail", sessionSchema, session);
+      // The ERP answers a wrong or expired code with 400 (and 404/410 for an unknown sign-up).
+      try {
+        const session = await post("verifyEmail", undefined, input);
+        return parseOrThrow("verifyEmail", sessionSchema, session);
+      } catch (error) {
+        if (error instanceof ApiError && [400, 404, 410].includes(error.status)) return null;
+        throw error;
+      }
     },
-    resendVerification: (input) => post("resendVerification", undefined, input),
-    requestPasswordReset: (input) => post("requestPasswordReset", undefined, input),
-    resetPassword: (input) => post("resetPassword", undefined, input),
-    logout: (session) => post("logout", session, {}),
+    async resendVerification(input) {
+      await post("resendVerification", undefined, input);
+    },
+    async requestPasswordReset(input) {
+      // The ERP resets by email only; a phone-only request has nowhere to go.
+      if (!input.email) throw new PortalNotConfiguredError("requestPasswordReset (phone)");
+      await post("requestPasswordReset", undefined, { email: input.email });
+    },
+    async resetPassword(input) {
+      try {
+        await post("resetPassword", undefined, input);
+        return true;
+      } catch (error) {
+        // 400: invalid or expired link.
+        if (error instanceof ApiError && error.status === 400) return false;
+        throw error;
+      }
+    },
+    async logout(session) {
+      await post("logout", session, {});
+    },
     async refreshSession(refreshToken) {
       try {
         return parseOrThrow("refreshSession", authTokensSchema, await post("refreshSession", undefined, { refreshToken }));
@@ -625,29 +652,31 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     getBookingOptions: (s) => get("getBookingOptions", s),
     bookService: (s, input) => post("bookService", s, input),
     getProfile: (s) => get("getProfile", s),
-    listDocuments: (s, folder) => clientFor(s).get(`${path("listDocuments")}${folder ? `?folder=${encodeURIComponent(folder)}` : ""}`),
+    listDocuments: async (s, folder) => clientFor(s).get(`${path("listDocuments")}${folder ? `?folder=${encodeURIComponent(folder)}` : ""}`),
     getInvoice: (s, id) => orNull(get("getInvoice", s, { id })),
     getBadges: (s) => get("getBadges", s),
     getAccount: (s) => get("getAccount", s),
-    updatePersonal: (s, input) => clientFor(s).patch(path("updatePersonal"), input),
-    updateCompany: (s, input) => clientFor(s).patch(path("updateCompany"), input),
+    updatePersonal: async (s, input) => clientFor(s).patch(path("updatePersonal"), input),
+    updateCompany: async (s, input) => clientFor(s).patch(path("updateCompany"), input),
     inviteMember: (s, input) => post("inviteMember", s, input),
-    removeMember: (s, id) => clientFor(s).delete(path("removeMember", { id })),
-    saveSite: (s, site) => (site.id ? clientFor(s).patch(path("saveSite", { id: site.id }), site) : post("saveSite", s, site)),
-    deleteSite: (s, id) => clientFor(s).delete(path("deleteSite", { id })),
-    updateSettings: (s, patch) => clientFor(s).patch(path("updateSettings"), patch),
+    removeMember: async (s, id) => clientFor(s).delete(path("removeMember", { id })),
+    saveSite: async (s, site) => (site.id ? clientFor(s).patch(path("saveSite", { id: site.id }), site) : post("saveSite", s, site)),
+    deleteSite: async (s, id) => clientFor(s).delete(path("deleteSite", { id })),
+    updateSettings: async (s, patch) => clientFor(s).patch(path("updateSettings"), patch),
     async changePassword(s, input) {
       try {
         await post("changePassword", s, input);
         return true;
       } catch (error) {
-        if (error instanceof ApiError && (error.status === 400 || error.status === 401 || error.status === 403)) return false;
+        // 400 = wrong current password. A 401 means the session ended: let it propagate so the
+        // middleware signs the user out instead of reporting a wrong password.
+        if (error instanceof ApiError && error.status === 400) return false;
         throw error;
       }
     },
     listWishlist: (s) => get("listWishlist", s),
-    removeWishlistItem: (s, id) => clientFor(s).delete(path("removeWishlistItem", { id })),
-    lookupPublicOrder: (orderNumber) => orNull(clientFor().get(path("lookupPublicOrder", { id: orderNumber }))),
+    removeWishlistItem: async (s, id) => clientFor(s).delete(path("removeWishlistItem", { id })),
+    lookupPublicOrder: async (orderNumber) => orNull(clientFor().get(path("lookupPublicOrder", { id: orderNumber }))),
     listRfqs: (s) => get("listRfqs", s),
     async requestRfqClaim(s, reference) {
       try {

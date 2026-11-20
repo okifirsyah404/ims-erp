@@ -42,7 +42,7 @@ export function AgingTable({
 	title: string;
 	description: string;
 	partyLabel: string;
-	partyKey: 'customerId' | 'supplierId';
+	partyKey: 'customerId' | 'supplierCompanyId';
 	queryFor: (asOf: string | undefined) => ReturnType<
 		typeof import('@/lib/finance-api').arAgingQueryOptions
 	>;

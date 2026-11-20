@@ -8,34 +8,34 @@ import type {
 	QuotationStatus,
 	TQuotationItemSelect,
 	TQuotationSelect,
-	TSalesOrderItemSelect,
-	TSalesOrderSelect,
-} from '@drizzle/schemas/sales.schema';
-import { cancelSalesOrderSchema, createSalesOrderSchema } from '../../src/app/sales/contracts/sales-order.contract';
+	TOrderItemSelect,
+	TOrderSelect,
+} from '@drizzle/schemas/sale.schema';
+import { cancelSalesOrderSchema, createSalesOrderSchema } from '../../src/app/sale/contracts/sales-order.contract';
 import type {
 	ISalesOrderRepository,
 	TSalesOrderHeaderData,
 	TSalesOrderItemData,
-} from '../../src/app/sales/contracts/sales-order.repository.interface';
-import { QuotationNotFoundError } from '../../src/app/sales/errors/quotation.errors';
+} from '../../src/app/sale/contracts/sales-order.repository.interface';
+import { QuotationNotFoundError } from '../../src/app/sale/errors/quotation.errors';
 import {
 	SalesOrderBilledError,
 	SalesOrderExistsError,
 	SalesOrderNotCancellableError,
 	SalesOrderNotFoundError,
 	SalesOrderQuotationNotReadyError,
-} from '../../src/app/sales/errors/sales-order.errors';
-import { SalesOrderHasProjectError } from '../../src/app/projects/errors/project.errors';
-import { SalesOrderDeliveredError } from '../../src/app/sales/errors/delivery-note.errors';
-import { SalesOrderService, type TSalesOrderContext } from '../../src/app/sales/services/sales-order.service';
+} from '../../src/app/sale/errors/sales-order.errors';
+import { SalesOrderHasProjectError } from '../../src/app/project/errors/project.errors';
+import { SalesOrderDeliveredError } from '../../src/app/sale/errors/delivery-note.errors';
+import { SalesOrderService, type TSalesOrderContext } from '../../src/app/sale/services/sales-order.service';
 
 const Q = '0190a1b2-0000-7000-8000-0000000000f1';
 
 let quotations: Map<string, TQuotationSelect>;
 
 class FakeOrders implements ISalesOrderRepository {
-	rows: TSalesOrderSelect[] = [];
-	items = new Map<string, TSalesOrderItemSelect[]>();
+	rows: TOrderSelect[] = [];
+	items = new Map<string, TOrderItemSelect[]>();
 	history: { id: string; to: string }[] = [];
 
 	async paginate(request: Parameters<ISalesOrderRepository['paginate']>[0]) {
@@ -60,9 +60,9 @@ class FakeOrders implements ISalesOrderRepository {
 		if (await this.findLiveByQuotation(header.quotationId)) throw Object.assign(new Error('dup'), { code: '23505' });
 		quotation.status = 'won';
 		quotation.closedBy = actor;
-		const order = { ...header, id: crypto.randomUUID(), status: 'confirmed' } as TSalesOrderSelect;
+		const order = { ...header, id: crypto.randomUUID(), status: 'confirmed' } as TOrderSelect;
 		this.rows.push(order);
-		this.items.set(order.id, items as TSalesOrderItemSelect[]);
+		this.items.set(order.id, items as TOrderItemSelect[]);
 		this.history.push({ id: order.id, to: 'confirmed' });
 		return order;
 	}
@@ -141,7 +141,7 @@ beforeEach(() => {
 			findById: async (id: string) => quotations.get(id) ?? null,
 			findItems: async () =>
 				[
-					{ id: 'qi-1', itemId: 'it-1', sku: 'SG-01', name: 'Swing gate', specification: null, unit: 'set', quantity: '2', unitPrice: 50_000_000, discountAmount: 0, lineTotal: 100_000_000 },
+					{ id: 'qi-1', productId: 'it-1', sku: 'SG-01', name: 'Swing gate', specification: null, unit: 'set', quantity: '2', unitPrice: 50_000_000, discountAmount: 0, lineTotal: 100_000_000 },
 				] as TQuotationItemSelect[],
 		},
 		{ next: async () => '0001/SO/IMS/XI/26' },
@@ -184,8 +184,8 @@ describe('creating an order from an SPH', () => {
 		expect(registered).toEqual([
 			expect.objectContaining({
 				code: '0001/SO/IMS/XI/26',
-				documentType: 'sales_order',
-				module: 'sales',
+				documentType: 'order',
+				module: 'sale',
 				sourceType: 'sales_order',
 				sourceId: order.id,
 				issuedOn: '2026-11-06',
@@ -238,7 +238,7 @@ describe('cancelling', () => {
 		expect(cancelled).toMatchObject({ status: 'cancelled', cancellationReason: 'Customer batal' });
 		expect(quotations.get(Q)!.status).toBe('sent');
 		// ERP-0044: a cancelled order is voided in the registry.
-		expect(voided).toEqual([`sales/sales_order/${order.id}`]);
+		expect(voided).toEqual([`sale/order/${order.id}`]);
 		await expect(service.cancel(manager, order.id, 'lagi')).rejects.toBeInstanceOf(SalesOrderNotCancellableError);
 		// The reopened SPH can become an order again.
 		expect((await create(sales)).status).toBe('confirmed');

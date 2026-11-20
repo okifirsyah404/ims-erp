@@ -2,20 +2,18 @@
 // is missing, and this project has `emitDecoratorMetadata: true`. Must stay the
 // first import — before `tsyringe` itself is pulled in.
 import { registerInventory } from '@app/inventory';
-import { registerCrm } from '@app/crm';
+import { registerCustomer } from '@app/customer';
 import { registerProcurement } from '@app/procurement';
-import { registerProjects } from '@app/projects';
-import { registerAftersales } from '@app/aftersales';
-import { registerHr } from '@app/hr';
-import { registerLicenseDueSchedule, registerLicensing, startLicenseDueWorker } from '@app/licensing';
-import { registerLeadFollowUpSchedule, startLeadFollowUpWorker } from '@app/crm';
-import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sales';
-import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/accounting';
-import { registerPortal } from '@app/portal';
-import { registerCatalog } from '@app/catalog';
+import { registerLicenseDueSchedule, startLicenseDueWorker } from '@app/project';
+import { registerLeadFollowUpSchedule, registerProject, startLeadFollowUpWorker } from '@app/project';
+import { registerTicket } from '@app/ticket';
+import { registerHumanResource } from '@app/human-resource';
+import { registerWebhook } from '@app/webhook';
+import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
+import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
-import { registerAssets } from '@app/assets';
-import { registerAccounting } from '@app/accounting';
+import { registerFinance } from '@app/finance';
+import { registerTax } from '@app/tax';
 import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
@@ -38,7 +36,7 @@ import { container } from 'tsyringe';
 import { createApp } from './app/app';
 import { registerAudit } from './app/audit';
 import { registerLocation } from './app/location/container';
-import { registerSales } from './app/sales/container';
+import { registerSales } from './app/sale/container';
 import { registerPayment } from './app/payment';
 import { registerUser, startAvatarWorker } from './app/user';
 import { registerOrganization, startOrgLogoWorker } from './app/organization';
@@ -49,7 +47,7 @@ import {
 	startNotificationWorker,
 } from './app/notification';
 import { registerCompany } from './app/company';
-import { registerCodeNumber } from './app/code-number';
+import { registerSupplier } from './app/supplier';
 import { registerDocument } from './app/document';
 import { registerAuthorization } from './authorization/container';
 
@@ -63,28 +61,27 @@ registerPayment(container);
 // document code ({COMPANY}) through COMPANY_SERVICE_TOKEN. Both are injected
 // into the document services of every module.
 registerCompany(container);
-registerCodeNumber(container);
+registerSupplier(container);
 registerOrganization(container);
 registerNotification(container);
 registerDocument(container);
 // Audit before the modules that resolve AUDIT_SERVICE_TOKEN eagerly
 // (registerInventory builds the shared InventoryAuditWriter at
-// registration time; registerAssets documents the same expectation).
+// registration time).
 registerAudit(container);
 registerInventory(container);
-registerAssets(container);
-// Automation before the modules that publish events (CRM, …).
+// Automation before the modules that publish events (project leads, …).
 registerAutomation(container);
-registerCrm(container);
+// Customer (with the portal, ADR-0024 Q28) needs the user module's exported
+// service at resolve time; project (leads) needs customer and company.
+registerCustomer(container);
+registerProject(container);
+registerTicket(container);
+registerHumanResource(container);
+registerWebhook(container);
 registerProcurement(container);
-registerProjects(container);
-registerAftersales(container);
-registerHr(container);
-registerLicensing(container);
-// Customer portal (ERP-0022): composes user, CRM, projects and after-sales.
-registerPortal(container);
-registerAccounting(container);
-registerCatalog(container);
+registerFinance(container);
+registerTax(container);
 registerUser(container);
 registerAuthorization(container);
 

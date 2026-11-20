@@ -21,7 +21,6 @@ import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	assetCategoriesQueryOptions,
-	assetTypesQueryOptions,
 	createAssetCategory,
 } from '@/lib/asset-api';
 import { usePermission } from '@/lib/use-permission';
@@ -54,16 +53,12 @@ export function AssetCategoryList() {
 		placeholderData: (previous) => previous,
 	});
 
-	const types = useQuery(assetTypesQueryOptions());
-	const typeName = (code: string) =>
-		types.data?.find((row) => row.code === code)?.name ?? code;
-
 	const create = useMutation({
 		mutationFn: () =>
 			createAssetCategory({
 				code,
 				name,
-				assetType: 'equipment',
+				itemKind: 'equipment',
 				defaultDepreciationMethod: 'straight_line',
 			}),
 		onSuccess: async () => {
@@ -131,7 +126,7 @@ export function AssetCategoryList() {
 							<tr>
 								<th className='px-3 py-2'>{t('assets:categories.code')}</th>
 								<th className='px-3 py-2'>{t('assets:categories.name')}</th>
-								<th className='px-3 py-2'>{t('assets:categories.assetType')}</th>
+								<th className='px-3 py-2'>{t('assets:categories.itemKind')}</th>
 								<th className='px-3 py-2'>{t('assets:categories.depMethod')}</th>
 								<th className='px-3 py-2'>{t('assets:categories.lifeMonths')}</th>
 							</tr>
@@ -149,7 +144,7 @@ export function AssetCategoryList() {
 										)}
 									</td>
 									<td className='px-3 py-2'>
-										{typeName(category.assetType)}
+										{t(`assets:itemKind.${category.itemKind}`)}
 									</td>
 									<td className='px-3 py-2'>
 										{category.defaultDepreciationMethod}

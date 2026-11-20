@@ -6,12 +6,27 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@ims-erp/ui/components/dialog';
+import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Input } from '@ims-erp/ui/components/input';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
 import { toast } from '@/components/toast';
-import { setSupplierActive, supplierQueryOptions, updateSupplier } from '@/lib/procurement-api';
+import {
+	createSupplierPerson,
+	removeSupplierPerson,
+	setSupplierCompanyActive,
+	supplierCompanyQueryOptions,
+	updateSupplierCompany,
+} from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/procurement/suppliers/$supplierId` — one supplier. */
+/** `/procurement/suppliers/$supplierId` - one supplier company with its contact people. */
 export const Route = createFileRoute('/_authed/procurement/suppliers/$supplierId')({
 	component: SupplierDetailPage,
 });
@@ -20,8 +35,77 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 	return (
 		<div>
 			<div className='text-muted-foreground'>{label}</div>
-			<div className='whitespace-pre-line'>{value || '—'}</div>
+			<div className='whitespace-pre-line'>{value || '-'}</div>
 		</div>
+	);
+}
+
+function PersonDialog({
+	submitting,
+	onClose,
+	onSave,
+}: {
+	submitting: boolean;
+	onClose: () => void;
+	onSave: (input: { name: string; title: string | null; phone: string | null; email: string | null; isPrimary: boolean }) => void;
+}) {
+	const { t } = useTranslation(['procurement', 'common']);
+	const [name, setName] = useState('');
+	const [title, setTitle] = useState('');
+	const [phone, setPhone] = useState('');
+	const [email, setEmail] = useState('');
+	const [isPrimary, setIsPrimary] = useState(false);
+	return (
+		<Dialog open onOpenChange={(open) => !open && onClose()}>
+			<DialogContent className='sm:max-w-lg'>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault();
+						onSave({
+							name: name.trim(),
+							title: title.trim() || null,
+							phone: phone.trim() || null,
+							email: email.trim() || null,
+							isPrimary,
+						});
+					}}
+				>
+					<DialogHeader>
+						<DialogTitle>{t('procurement:suppliers.addPerson')}</DialogTitle>
+					</DialogHeader>
+					<FieldGroup className='grid gap-4 py-4 sm:grid-cols-2'>
+						<Field className='sm:col-span-2'>
+							<FieldLabel htmlFor='person-name'>{t('procurement:supplier.picName')}</FieldLabel>
+							<Input id='person-name' required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='person-title'>{t('procurement:supplier.picTitle')}</FieldLabel>
+							<Input id='person-title' maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} />
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='person-phone'>{t('procurement:supplier.picPhone')}</FieldLabel>
+							<Input id='person-phone' type='tel' maxLength={30} value={phone} onChange={(event) => setPhone(event.target.value)} />
+						</Field>
+						<Field className='sm:col-span-2'>
+							<FieldLabel htmlFor='person-email'>{t('procurement:supplier.picEmail')}</FieldLabel>
+							<Input id='person-email' type='email' value={email} onChange={(event) => setEmail(event.target.value)} />
+						</Field>
+						<label className='flex items-center gap-2 text-sm sm:col-span-2'>
+							<input type='checkbox' checked={isPrimary} onChange={(event) => setIsPrimary(event.target.checked)} />
+							{t('procurement:supplier.isPrimary')}
+						</label>
+					</FieldGroup>
+					<DialogFooter>
+						<Button type='button' variant='outline' onClick={onClose}>
+							{t('common:action.cancel')}
+						</Button>
+						<Button type='submit' disabled={submitting || name.trim() === ''}>
+							{t('common:action.save')}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -33,8 +117,9 @@ function SupplierDetailPage() {
 	const canArchive = usePermission('supplier.archive');
 	const canSeeBank = usePermission('supplier.read_bank');
 	const [editing, setEditing] = useState(false);
+	const [addingPerson, setAddingPerson] = useState(false);
 	const [busy, setBusy] = useState(false);
-	const { data, isPending, isError, error } = useQuery(supplierQueryOptions(supplierId));
+	const { data, isPending, isError, error } = useQuery(supplierCompanyQueryOptions(supplierId));
 
 	async function run(action: () => Promise<unknown>, message: string) {
 		setBusy(true);
@@ -43,6 +128,7 @@ function SupplierDetailPage() {
 			await queryClient.invalidateQueries({ queryKey: ['procurement', 'suppliers'] });
 			toast.success(message);
 			setEditing(false);
+			setAddingPerson(false);
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
 		} finally {
@@ -78,7 +164,7 @@ function SupplierDetailPage() {
 							disabled={busy}
 							onClick={() =>
 								void run(
-									() => setSupplierActive(supplierId, data.status !== 'active'),
+									() => setSupplierCompanyActive(supplierId, data.status !== 'active'),
 									data.status === 'active' ? t('procurement:suppliers.deactivated') : t('procurement:suppliers.activated'),
 								)
 							}
@@ -100,7 +186,6 @@ function SupplierDetailPage() {
 						<Detail label={t('procurement:supplier.website')} value={data.website} />
 						<Detail label={t('procurement:supplier.email')} value={data.email} />
 						<Detail label={t('procurement:supplier.phone')} value={data.phone} />
-						<Detail label={t('procurement:supplier.addressLine')} value={[data.addressLine, data.postalCode].filter(Boolean).join(' ')} />
 					</CardContent>
 				</Card>
 				<Card>
@@ -108,12 +193,9 @@ function SupplierDetailPage() {
 						<CardTitle>{t('procurement:suppliers.purchasing')}</CardTitle>
 					</CardHeader>
 					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
-						<Detail label={t('procurement:supplier.picName')} value={[data.picName, data.picTitle && `(${data.picTitle})`].filter(Boolean).join(' ')} />
-						<Detail label={t('procurement:supplier.picPhone')} value={data.picPhone} />
-						<Detail label={t('procurement:supplier.picEmail')} value={data.picEmail} />
 						<Detail label={t('procurement:supplier.paymentTermsDays')} value={String(data.paymentTermsDays)} />
 						<Detail label={t('procurement:supplier.paymentTermNote')} value={data.paymentTermNote} />
-						{data.bankVisible && (
+						{canSeeBank && (
 							<Detail
 								label={t('procurement:suppliers.bank')}
 								value={[data.bankName, data.bankAccountNumber, data.bankAccountHolder].filter(Boolean).join(' · ')}
@@ -122,13 +204,57 @@ function SupplierDetailPage() {
 					</CardContent>
 				</Card>
 			</div>
+			<Card>
+				<CardHeader className='flex flex-row items-center justify-between'>
+					<CardTitle>{t('procurement:suppliers.people')}</CardTitle>
+					{canUpdate && (
+						<Button variant='outline' size='sm' onClick={() => setAddingPerson(true)}>
+							{t('procurement:suppliers.addPerson')}
+						</Button>
+					)}
+				</CardHeader>
+				<CardContent className='flex flex-col gap-3 text-sm'>
+					{data.people.length === 0 && <p className='text-muted-foreground'>{t('procurement:suppliers.noPeople')}</p>}
+					{data.people.map((person) => (
+						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
+							<div>
+								<div className='font-medium'>
+									{person.name}
+									{person.title ? ` (${person.title})` : ''}{' '}
+									{person.isPrimary && <Badge variant='secondary'>{t('procurement:suppliers.primary')}</Badge>}
+								</div>
+								<div className='text-muted-foreground'>{[person.phone, person.email].filter(Boolean).join(' · ') || '-'}</div>
+							</div>
+							{canUpdate && (
+								<Button
+									variant='ghost'
+									size='sm'
+									disabled={busy}
+									onClick={() => void run(() => removeSupplierPerson(person.id), t('procurement:suppliers.personRemoved'))}
+								>
+									{t('common:action.delete')}
+								</Button>
+							)}
+						</div>
+					))}
+				</CardContent>
+			</Card>
 			{editing && (
 				<SupplierFormDialog
 					supplier={data}
 					canSeeBank={canSeeBank}
 					submitting={busy}
 					onClose={() => setEditing(false)}
-					onSave={(input) => void run(() => updateSupplier(supplierId, input), t('procurement:suppliers.saved'))}
+					onSave={(input) => void run(() => updateSupplierCompany(supplierId, input), t('procurement:suppliers.saved'))}
+				/>
+			)}
+			{addingPerson && (
+				<PersonDialog
+					submitting={busy}
+					onClose={() => setAddingPerson(false)}
+					onSave={(input) =>
+						void run(() => createSupplierPerson({ ...input, companyId: supplierId, whatsapp: null }), t('procurement:suppliers.personSaved'))
+					}
 				/>
 			)}
 		</div>

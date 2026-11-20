@@ -8,7 +8,7 @@ import {
 	purchaseOrderDecisionSchema,
 	purchaseOrderListQuerySchema,
 } from '../contracts/purchase-order.contract';
-import { idParamSchema } from '../contracts/supplier.contract';
+import { idParamSchema } from '../contracts/params.schema';
 
 /**
  * REST controller for purchase orders (`/purchase-orders`, ADR-0011 step
@@ -20,7 +20,7 @@ export class PurchaseOrderController {
 		const service = container.resolve(PURCHASE_ORDER_SERVICE_TOKEN);
 		const id = (params: unknown) => idParamSchema.parse(params).id;
 
-		return domainPlugin({ name: 'procurement-purchase-orders', prefix: '/purchase-orders', tags: ['Procurement'], guards: 'erp' })
+		return domainPlugin({ name: 'procurement-purchase-orders', prefix: '/procurement/purchase-orders', tags: ['Procurement'], guards: 'erp' })
 			.get('', async ({ query }) => okPaginated(await service.list(purchaseOrderListQuerySchema.parse(query))), {
 				erp: { permission: ['purchase_order:read'] },
 				detail: { description: 'Paginated purchase orders' },

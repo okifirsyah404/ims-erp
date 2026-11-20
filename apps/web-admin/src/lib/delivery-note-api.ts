@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for delivery notes / surat jalan (`/delivery-notes`, ADR-0011
+ * API client for delivery notes / surat jalan (`/sales/delivery-notes`, ADR-0011
  * step 5a). A note is numbered when prepared; shipping posts the stock
  * issue and sells the serial units on the server. `unitCost` is null for
  * callers without `product:read_cost`.
@@ -24,11 +24,11 @@ export const DELIVERY_NOTE_STATUS_VARIANT: Record<TDeliveryNoteStatus, 'default'
 export type TDeliveryNote = {
 	id: string;
 	code: string;
-	salesOrderId: string;
-	salesOrderCode: string;
-	customerId: string;
+	orderId: string;
+	orderCode: string;
+	customerId: string | null;
 	customerName: string;
-	warehouseId: string;
+	warehouseId: string | null;
 	binId: string | null;
 	status: TDeliveryNoteStatus;
 	deliveryDate: string;
@@ -51,8 +51,8 @@ export type TDeliveryNote = {
 
 export type TDeliveryNoteItem = {
 	id: string;
-	salesOrderItemId: string;
-	itemId: string | null;
+	orderItemId: string;
+	productId: string | null;
 	sku: string | null;
 	name: string;
 	unit: string;
@@ -88,7 +88,7 @@ export type TDeliverableOrder = {
 	customerContact: string | null;
 	items: {
 		id: string;
-		itemId: string | null;
+		productId: string | null;
 		sku: string | null;
 		name: string;
 		unit: string;
@@ -102,10 +102,10 @@ export type TDeliverableOrder = {
 };
 
 export type TDeliveryNoteInput = {
-	salesOrderId: string;
+	orderId: string;
 	warehouseId: string;
 	binId: string | null;
-	deliveryDate: string;
+	deliveryDate: string | null;
 	projectName: string | null;
 	projectLocation: string | null;
 	recipientName: string | null;
@@ -115,7 +115,7 @@ export type TDeliveryNoteInput = {
 	driverName: string | null;
 	vehicleNumber: string | null;
 	notes: string | null;
-	lines: { salesOrderItemId: string; quantity: string; serialNumbers: string[] | null; remarks: string | null }[];
+	lines: { orderItemId: string; quantity: string; serialNumbers: string[] | null; remarks: string | null }[];
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {
@@ -139,7 +139,7 @@ export function deliveryNotesQueryOptions(params: {
 	page?: number;
 	limit?: number;
 	search?: string;
-	salesOrderId?: string;
+	orderId?: string;
 	status?: TDeliveryNoteStatus;
 }) {
 	return queryOptions({
@@ -150,7 +150,7 @@ export function deliveryNotesQueryOptions(params: {
 				if (value !== undefined && value !== '') search.set(key, String(value));
 			}
 			const envelope = (await request<TDeliveryNote[]>(
-				`/delivery-notes${search.size ? `?${search}` : ''}`,
+				`/sales/delivery-notes${search.size ? `?${search}` : ''}`,
 			)) as TApiPaginatedResponse<TDeliveryNote>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
@@ -160,7 +160,7 @@ export function deliveryNotesQueryOptions(params: {
 export function deliveryNoteQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['sales', 'delivery-notes', id] as const,
-		queryFn: async () => (await request<TDeliveryNoteDetail>(`/delivery-notes/${id}`)).data as TDeliveryNoteDetail,
+		queryFn: async () => (await request<TDeliveryNoteDetail>(`/sales/delivery-notes/${id}`)).data as TDeliveryNoteDetail,
 		retry: false,
 	});
 }
@@ -168,38 +168,38 @@ export function deliveryNoteQueryOptions(id: string) {
 export function deliverableOrdersQueryOptions() {
 	return queryOptions({
 		queryKey: ['sales', 'deliverable-orders'] as const,
-		queryFn: async () => (await request<TDeliverableOrder[]>('/delivery-notes/deliverable-orders')).data as TDeliverableOrder[],
+		queryFn: async () => (await request<TDeliverableOrder[]>('/sales/delivery-notes/deliverable-orders')).data as TDeliverableOrder[],
 	});
 }
 
 export function shippingWarehousesQueryOptions() {
 	return queryOptions({
 		queryKey: ['sales', 'shipping-warehouses'] as const,
-		queryFn: async () => (await request<TShippingWarehouse[]>('/delivery-notes/warehouses')).data as TShippingWarehouse[],
+		queryFn: async () => (await request<TShippingWarehouse[]>('/sales/delivery-notes/warehouses')).data as TShippingWarehouse[],
 	});
 }
 
-export function inStockSerialsQueryOptions(itemId: string, warehouseId: string) {
+export function inStockSerialsQueryOptions(productId: string, warehouseId: string) {
 	return queryOptions({
-		queryKey: ['sales', 'in-stock-serials', itemId, warehouseId] as const,
+		queryKey: ['sales', 'in-stock-serials', productId, warehouseId] as const,
 		queryFn: async () =>
-			(await request<string[]>(`/delivery-notes/serials?itemId=${itemId}&warehouseId=${warehouseId}`)).data as string[],
-		enabled: !!itemId && !!warehouseId,
+			(await request<string[]>(`/sales/delivery-notes/serials?productId=${productId}&warehouseId=${warehouseId}`)).data as string[],
+		enabled: !!productId && !!warehouseId,
 	});
 }
 
 export async function createDeliveryNote(input: TDeliveryNoteInput): Promise<TDeliveryNoteDetail> {
-	return (await request<TDeliveryNoteDetail>('/delivery-notes', { method: 'POST', body: JSON.stringify(input) }))
+	return (await request<TDeliveryNoteDetail>('/sales/delivery-notes', { method: 'POST', body: JSON.stringify(input) }))
 		.data as TDeliveryNoteDetail;
 }
 
 export async function shipDeliveryNote(id: string): Promise<TDeliveryNoteDetail> {
-	return (await request<TDeliveryNoteDetail>(`/delivery-notes/${id}/ship`, { method: 'POST' })).data as TDeliveryNoteDetail;
+	return (await request<TDeliveryNoteDetail>(`/sales/delivery-notes/${id}/ship`, { method: 'POST' })).data as TDeliveryNoteDetail;
 }
 
 export async function deliverDeliveryNote(id: string, receiverName: string): Promise<TDeliveryNoteDetail> {
 	return (
-		await request<TDeliveryNoteDetail>(`/delivery-notes/${id}/deliver`, {
+		await request<TDeliveryNoteDetail>(`/sales/delivery-notes/${id}/deliver`, {
 			method: 'POST',
 			body: JSON.stringify({ receiverName }),
 		})
@@ -208,7 +208,7 @@ export async function deliverDeliveryNote(id: string, receiverName: string): Pro
 
 export async function cancelDeliveryNote(id: string, reason: string): Promise<TDeliveryNoteDetail> {
 	return (
-		await request<TDeliveryNoteDetail>(`/delivery-notes/${id}/cancel`, {
+		await request<TDeliveryNoteDetail>(`/sales/delivery-notes/${id}/cancel`, {
 			method: 'POST',
 			body: JSON.stringify({ reason }),
 		})

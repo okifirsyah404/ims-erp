@@ -1,9 +1,9 @@
 import type { InjectionToken } from 'tsyringe';
-import type { INotificationRepository } from '../contracts/notification.repository.interface';
+import type { IPushNotificationRepository } from '../contracts/notification.repository.interface';
 import type { NotificationService } from '../services/notification.service';
 import type {
 	ExportedNotificationService,
-	TNotificationDispatcher,
+	TPushNotificationDispatcher,
 } from '../services/exported-notification.service';
 
 /**
@@ -21,13 +21,13 @@ import type {
  * (`TypeInfo not known for "Object"`). Registering the real queue under a token
  * keeps the seam injectable and the class constructible by hand in tests.
  */
-export const NOTIFICATION_REPOSITORY_TOKEN: InjectionToken<INotificationRepository> =
-	Symbol('NOTIFICATION_REPOSITORY');
+export const PUSH_NOTIFICATION_REPOSITORY_TOKEN: InjectionToken<IPushNotificationRepository> =
+	Symbol('PUSH_NOTIFICATION_REPOSITORY');
 
 export const NOTIFICATION_SERVICE_TOKEN: InjectionToken<NotificationService> =
 	Symbol('NOTIFICATION_SERVICE');
 
-export const NOTIFICATION_DISPATCHER_TOKEN: InjectionToken<TNotificationDispatcher> =
+export const NOTIFICATION_DISPATCHER_TOKEN: InjectionToken<TPushNotificationDispatcher> =
 	Symbol('NOTIFICATION_DISPATCHER');
 
 export const EXPORTED_NOTIFICATION_SERVICE_TOKEN: InjectionToken<ExportedNotificationService> =

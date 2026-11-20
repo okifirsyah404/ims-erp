@@ -16,6 +16,7 @@ import {
 	unixTimestamp,
 	unixTimestampNullable,
 } from '@drizzle/datatypes/unix-timestamp';
+import { createCodeNumberingTable } from '@shared/numbering/table';
 import { sql } from 'drizzle-orm';
 import {
 	bigint,
@@ -437,9 +438,9 @@ export const documentSignatureRequests = documentSchema.table(
 		organizationId: text('organization_id'),
 		documentId: uuid('document_id').notNull(),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		requestedByUserId: text('requested_by_user_id').notNull(),
+		requestedByUserId: text('requested_by_user_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		signerUserId: text('signer_user_id').notNull(),
+		signerUserId: text('signer_user_id'),
 		/** Signer display name snapshot at request time. */
 		signerName: text('signer_name').notNull(),
 		status: text('status').notNull().default('pending'),
@@ -487,7 +488,7 @@ export const documentUserSignatures = documentSchema.table(
 		/** Logical reference to auth.organizations.id; NULL = company-wide. */
 		organizationId: text('organization_id'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		userId: text('user_id').notNull(),
+		userId: text('user_id'),
 		/** Object-storage key of the WebP signature/stamp image; never a public URL. */
 		objectKey: text('object_key').notNull(),
 		uploadedAt: unixTimestamp('uploaded_at').notNull(),
@@ -499,8 +500,47 @@ export const documentUserSignatures = documentSchema.table(
 			.where(sql`deleted_at IS NULL`),
 	],
 );
-export type TDocumentTemplateInsert = typeof documentTemplates.$inferInsert;
-export type TDocumentTemplateSelect = typeof documentTemplates.$inferSelect;
+/* ------------------------------------------------------------------------ *
+ * document.settings / document.code_numberings (ADR-0024 Q32)
+ * ------------------------------------------------------------------------ */
+
+/** Document module configuration key value store. */
+export const documentSettings = documentSchema.table(
+	'settings',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		settingGroup: text('setting_group').notNull(),
+		settingKey: text('setting_key').notNull(),
+		settingValue: text('setting_value'),
+		valueType: text('value_type').notNull().default('string'),
+		description: text('description'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		updatedBy: text('updated_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('document_settings_scope_uq')
+			.on(table.settingGroup, table.settingKey)
+			.where(sql`deleted_at IS NULL`),
+		check(
+			'document_settings_value_type_check',
+			sql`value_type IN ('string', 'number', 'boolean', 'json', 'date')`,
+		),
+	],
+);
+
+export const documentCodeNumberings = createCodeNumberingTable(documentSchema);
+
+export type TDocumentSettingSelect = typeof documentSettings.$inferSelect;
+export type TDocumentSettingInsert = typeof documentSettings.$inferInsert;
+export type TDocumentCodeNumberingSelect =
+	typeof documentCodeNumberings.$inferSelect;
+export type TDocumentCodeNumberingInsert =
+	typeof documentCodeNumberings.$inferInsert;
+
+export type TDocumentTemplateInsert = typeof documentTemplates.$inferInsert;export type TDocumentTemplateSelect = typeof documentTemplates.$inferSelect;
 export type TDocumentSignatureRequestSelect = typeof documentSignatureRequests.$inferSelect;
 export type TDocumentSignatureRequestInsert = typeof documentSignatureRequests.$inferInsert;
 export type TDocumentUserSignatureSelect = typeof documentUserSignatures.$inferSelect;

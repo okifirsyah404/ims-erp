@@ -12,6 +12,781 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - docs.dbml and Drizzle brought into agreement: ADR-0014 enforced on 61 columns, parity check strengthened
+
+- Finding: `validate-dbml.ts` check 5 only proved that every Drizzle table and column *name* exists in `docs.dbml`; "drizzle parity drift: 0" said nothing about nullability or types. A both-directions comparison found 185 nullability and 3 type differences. 61 of them were cross-module id columns declared `NOT NULL` in Drizzle (all `organization_id` of finance/tax/payment/sale/inventory tables, `sale.quotations.customer_id`, `sale.orders.customer_id`, `delivery_notes.warehouse_id`, `procurement.purchase_orders.supplier_company_id`, `*.product_id` lines, `project.projects.order_id/customer_id/pic_user_id`, `ticket.tickets.customer_id`, `audit.audit_logs.actor_user_id`, `notification.push_notifications.user_id`, ...), which ADR-0014 and the AGENTS.md hard rule forbid. The earlier note of "about ten" in the docs sync entry under-reported this.
+- Decision (owner): follow ADR-0014 with no exception, including `organization_id` on finance, tax and payment (nullable; the service writes the caller's active organization). `updated_at` follows Drizzle in `docs.dbml` (124 columns `[not null]`); `auth.users.deleted_at` and `auth.organizations.deleted_at` are `timestamp` in `docs.dbml` (Better Auth owned); `finance.chart_of_accounts.level` is `integer`.
+- `validate-dbml.ts` gains check 6: for every built column, nullability and SQL type of `docs.dbml` and the real Drizzle tables must match, both ways (defaults and indexes are not compared: DBML cannot express partial indexes, and `$onUpdate` is not a DB default). It currently prints "column parity drift (nullability, type): 0".
+- Drizzle: `.notNull()` removed from 61 columns (3 local `organizationId()` helpers in finance, payment, tax plus 36 individual columns). Service layer made the decision per site instead of non-null assertions: new guards `DeliveryNoteWarehouseRequiredError` (`sales.deliveryWarehouseRequired`), `SalesReturnWarehouseRequiredError` (`sales.returnWarehouseRequired`), `ProcurementWarehouseRequiredError` (`procurement.warehouseRequired`), existing `PurchaseOrderItemUnavailableError` / `PurchaseOrderSupplierUnavailableError` for lines without a product or orders without a supplier; a gateway webhook payment without organization returns `unknown`; optional values (project PIC, order, customer contact, signature requester/signer, API key id) are widened to `| null` and skipped safely. New unit tests: delivery note without warehouse cannot ship, sales return without warehouse cannot be received, purchase return without warehouse or supplier is refused, signature works with a null requester. web-admin response types widened in 18 `lib/*-api.ts` files (inputs stay required); six UI spots handle null (links become plain text, unmapped line stays blocked).
+- Baseline regenerated (nothing deployed): `20261120061847_last_daredevil` replaces `20261119145940_many_human_robot` (164 `CREATE TABLE`, 0 cross-schema `REFERENCES`); a second `generate` reports no changes; on a disposable database `drizzle:migrate` applied, `drizzle:seed` ran and the second seed inserted 0 rows; the database was dropped.
+- Verified: backend `tsc` 0 errors; `bun test test/unit test/finance test/tax test/authorization test/notification` 1236 pass; locales 98 pass; web-admin `tsc -p tsconfig.app.json` 0 errors; `bun run lint` 0 errors; `bun run test` 7/7; `bun run build` 5/5; `gen-logical-references.ts` 169 refs / 25 targets; `validate-dbml.ts` OK with drizzle parity 0 and column parity 0.
+- docs/database: updated (`docs.dbml` types and `updated_at`, `integrity-and-consistency.md` section 3.5, `data-dictionary.md` scope carve-out and `updated_at` convention).
+- Open: no guard tests for the goods-receipt and purchase-return product guards; `docs/architecture/api-conventions.md` and the module pages still describe the migration name `20261119145940_many_human_robot` (AGENTS.md, runbook and phases doc must point at the new baseline); defaults and indexes are still not compared by the validator.
+
+Next executable task: update the baseline name in AGENTS.md/runbook/phases docs, then the live UI smoke test.
+## 2026-11-20 - Docs sync after ADR-0024: AGENTS.md, docs/database, docs/architecture (module boundary and schema segregation)
+
+- `AGENTS.md`: command-status rows updated with the verified 2026-11-19/20 facts (baseline migration, root `typecheck` does not cover web-admin, test counts); new hard rule "Schema segregation" (18 schemas / 188 tables, `user` and `organization` modules share `auth`, `webhook` has no schema, per-module `code_numberings`, removed modules and schemas); URL layout (admin paths, per-module prefixes, no aliases, the single external URLs, shared pagination contract); Gate 1 numbers (188 tables / 18 schemas, `docs.dbml` about 5,500 lines, no two-schema exception); locale namespace list.
+- `docs/database/implementation-phases.md` rewritten as the history of ADR-0024 P0-P8 (target table, per-phase scope with commits and evidence, decisions, what is still open, verified commands). `data-dictionary.md`, `integrity-and-consistency.md` and the prose of `logical-references.md` aligned with `docs.dbml` and the Drizzle schemas (tenant column rule, numbering, soft-delete exemptions, status vocabularies, FK counts, no composite tenant FKs). `module-ownership.md`: stale counts (231 refs, 524 columns) and the alias sentence corrected. `docs.dbml` header note no longer claims composite tenant FKs. `gen-logical-references.ts` no longer labels inventory targets "(warehouse schema)"; `logical-references.md` regenerated.
+- `docs/architecture/*.md` (architecture, data-model, domain-map, security-and-access, project-audit, README, api-conventions, runbook) updated; `docs/architecture/modules/`: 14 pages marked deprecated with the old-to-new mapping, 10 corrected in place, `sale.md`, `ticket.md`, `project.md`, `human-resource.md`, `webhook.md` created, `supplier.md` rewritten, README turned into an index (current / platform / deprecated). 34 historical plan, UAT and module-plan files got a one-line "written before ADR-0024" banner. User-guide WhatsApp pages use `/webhooks/whatsapp`.
+- Verified: `bun docs/database/gen-logical-references.ts` regenerated 169 refs across 25 targets; `bun docs/database/validate-dbml.ts` printed OK (188 tables, 162 intra-module refs, 0 cross-module refs, 0 timestamp gaps, 0 parity drift). A grep for stale tokens over the live docs leaves only explanatory or labelled-historical mentions. No code changed.
+- Open (found, not decided): `docs.dbml` and Drizzle disagree on `organization_id` nullability for `inventory.warehouse_organizations`, `inventory.stock_adjustments(+_items)`, `sale.invoices(+_items)`, `sale.receipts` and one column each in finance/payment/tax (the parity check does not compare nullability); `<schema>.code_numberings.updated_at` is `NOT NULL` in Drizzle but nullable in the dbml; `finance.journal_entries_org_code_uq` is not partial in Drizzle; the `code_number` permission resource is declared with no route; the ADR-0024 file still says `proposed`; `docs/architecture/modules/tax.md` route table still shows `/tax/*`; `finance.md` internals still describe the old accounting layout (banner only); a few new module pages state rules taken from controller and permission names rather than service logic.
+- docs/database: updated in this same change (see above).
+
+Next executable task: resolve the dbml/Drizzle nullability drift (decide which side wins, per AGENTS.md `docs.dbml` wins), then live UI smoke.
+## 2026-11-20 - Pagination of the public catalog uses the `@ims-erp/common` contract
+
+- Backend: `GET /inventory/public/v1/catalog/products` now answers `okPaginated(...)`: rows in `data`, the shared `TPaginationMeta` (`{ page, limit, total, totalPages }`) in `pagination`. `queryProducts` returns `TPaginationResult<TWebProduct>` (`{ meta, data }`) and clamps an out-of-range page to the last page; the query parameter `pageSize` is now `limit` (the `TPaginationRequest` name used by every staff list). `totalPages` is `ceil(total / limit)` (0 for an empty result), the repository convention.
+- web-landing: `CatalogListQuery` carries `limit`; `CatalogPage` is `{ items, pagination: TPaginationMeta }` (`CatalogResult` in `lib/catalog.ts` likewise); the zod page schema validates the four `pagination` fields; the catalog results/pagination components read `pagination.total|page|totalPages`; the demo source builds the same shape. `unwrapEnvelope` (landing and portal) now returns `{ items: data, pagination }` for a paginated envelope so the contract survives unwrapping; the portal has no paginated operation yet.
+- Tests: backend `product-listing.service.test.ts` asserts `meta`, landing `erp-source.test.ts` feeds a backend-shaped paginated envelope and asserts `pagination` and the `limit` query parameter, portal test asserts the paginated unwrap.
+- Verified: backend `tsc` 0 errors; `bun run lint` 0 errors; `bun run test` 7/7; landing `astro check` 0 errors and build OK; portal `astro check` 0 errors and build OK. Search (`/search`) is not a page and stays a grouped result. No live run.
+- docs/database: reviewed, unchanged.
+## 2026-11-20 - Live API smoke test against a disposable database (no UI)
+
+- Setup: disposable database `ims_smoke` (created, then dropped afterwards): `drizzle:migrate` applied the baseline, `drizzle:seed` ran (about 90 s), backend started with `bun run src/index.ts` (`NODE_ENV=test`).
+- Boot: all controllers resolved through the DI container at startup with no crash, so no missing registration is left in any module container (the earlier HR numbering gap was the only one).
+- Reads: signed in as the seeded owner and called 69 GET list/detail endpoints across inventory, stock, sale, customer, supplier, procurement, finance, tax, payment, project, ticket, human-resource, document, notification, automation, company, location, audit: 65 returned 200, 4 returned 400 only because they need query parameters (`/admin/customers/portal-accounts`, `/projects/warranties`, `/human-resources/attendances/day`, `/human-resources/salary-records`), none returned 404 or 5xx. The queries run against the new baseline schema.
+- Writes: `POST /suppliers/companies` with bank fields 201; `POST /human-resources/employees` 201 (confirms the numbering DI fix); `POST /admin/payments/gateways` 201 with `PAYMENT_SECRET_KEY` set and 409 "secret not available" without it; the gateway list never contained the secret (only `hasSecret`, `secretLast4`).
+- Supplier bank gate: owner sees bank fields; the seeded `auditor` (holds `supplier:read` only) gets 200 with no bank fields in the list or the detail.
+- Removed aliases: `/payments/gateway/xendit` and `/public/v1/catalog/products` answer 404; `/inventory/public/v1/catalog/categories` without a key answers 401; `/customers/portal/v1/me` without a session 401.
+- Webhooks (no gateway configured): `/webhooks/xendit` 404 "Unknown payment provider"; `/webhooks/whatsapp` HTTP 401 and `/webhooks/nope` HTTP 404. Observation: for `rejected` and `unknown` outcomes the response body envelope still says `status: 200` while the HTTP status is 401/404 (the controller sets `set.status` but returns `ok({ outcome })`); consider `errorEnvelope` for these.
+- Not exercised: any UI (web-admin, web-landing, web-customer-portal were not opened), webhooks with a configured gateway and a valid signature, portal login success (my payload guess was wrong, 400), public catalog and website forms with a real API key, the license machine API, write paths of most modules, a supplier write with bank fields by a role that can update but lacks `supplier:read_bank` (only the read side was proven), `GET /health` (404: no such route).
+- docs/database: reviewed, unchanged.
+
+Next executable task: UI smoke of web-admin (sign in, one screen per slice) and portal/landing against the same seeded backend; then the Astro dependency adaptation and the small ADR-0024 leftovers.
+## 2026-11-20 - Astro dependency pin-back (fixes the broken web-landing / web-customer-portal builds)
+
+- Pinned exactly to the versions that last built: `@lucide/astro` 1.61.0 (landing + portal), `@vite-pwa/astro` 1.2.0 and `vite-plugin-pwa` 1.3.0 (portal). `bun.lock` regenerated; `bun install --frozen-lockfile` reports no changes. `.github/dependabot.yml` ignores these three packages until the code is adapted, otherwise the next dependabot run reintroduces the break.
+- Verified from clean state after `bun install`: web-landing `typecheck` 0 errors, 24 tests pass, `astro build` complete; web-customer-portal `typecheck` 0 errors, 60 tests pass, `astro build` complete; root `bun run lint` 0 errors, `bun run test` 7/7, `bun run build` 5/5.
+- Open (proper fix, separate task): adapt the portal `astro.config.mjs` to `@vite-pwa/astro` 2.x (`AstroPWAIntegration` named export) and the landing icon imports to `@lucide/astro` >=1.73 (renamed/removed icons such as `triangle-alert`, `circle-alert`, `square-parking`), then remove the dependabot ignores and the pins.
+- docs/database: reviewed, unchanged.
+
+Next executable task: live smoke test of backend + web-admin + landing + portal.
+## 2026-11-20 - web-landing and web-customer-portal use the `@ims-erp/common` API contract (ERP-0091 follow-up)
+
+- Both apps now depend on `@ims-erp/common` (`workspace:*`, **devDependency**, `import type` only, so the `xlsx`/`papaparse` runtime deps of the package never reach the production image). `bun.lock` gets exactly the two workspace lines; Dockerfiles copy `packages/common/package.json` in the install stages so `--frozen-lockfile` stays valid.
+- `src/api/client.ts` (the two copies stay identical): `ApiError` now reads the real ERP error envelope (`TApiResponse.errors: TApiErrorMessage[]`, exposed as `error.errors`; `messages` = `errors[].message`, else the envelope `message`). It used to parse the NestJS shape (`message: string | string[]`) that the backend no longer emits, so field-level validation messages were dropped. `unwrap` is documented against `TApiResponse` / `TApiPaginatedResponse`.
+- `lib/server/envelope.ts` (landing) and `services/portal/envelope.ts` (portal) are typed with `TApiResponse` / `TApiPaginatedResponse`; behaviour unchanged (landing: non-envelope -> `undefined`; portal: non-envelope -> raw body).
+- Tests: one new case per app asserting the 422 field errors (landing 24 pass, portal 60 pass).
+- Verified: root `bun run lint` 0 errors, `bun run test` 7/7 (backend 1232, landing 24, portal 60). `astro check` of web-landing shows only the 3 lucide module errors below; portal 0 TS errors.
+- **Finding, unrelated to this change (reproduced with my changes stashed): both Astro apps do not build from a fresh `--frozen-lockfile` install of `HEAD`.** `bun install` rebuilt `node_modules` to the lockfile and then: (1) web-customer-portal: `astro.config` fails with "`@vite-pwa/astro` does not provide an export named 'default'" - the dependabot bump to `@vite-pwa/astro` 2.0.2 (PR #127) exposes `AstroPWAIntegration`, not a default export; (2) web-landing: `@lucide/astro` 1.73.0 has no `triangle-alert`, `circle-alert`, `square-parking` icons (and others), so `astro build`/`astro check` fail on those imports. The earlier green `bun run build` in this session ran on a `node_modules` that predated those bumps, so it did not catch this. Docker builds (`--frozen-lockfile`) are therefore also affected. Not fixed here: the fix is a dependency decision (pin back, or adapt `astro.config.mjs` and the icon imports), tracked as an open item.
+- docs/database: reviewed, unchanged.
+
+Next executable task: decide and fix the broken Astro dependency state (above), then the live smoke test.
+## 2026-11-20 - Slice 6: web-landing and web-customer-portal connected to the ERP API (ERP-0091)
+
+- web-landing: catalog routes (`/inventory/public/v1/catalog/*`) and website forms (`/projects/public/v1/{rfq,contact,demo}`) filled in (`lib/server/catalog/routes.ts`, `lib/server/website/routes.ts`); `ERP_RFQ_PATH` kept only as an optional override. Auth is the existing `Authorization: Bearer ewk_...` website API key (create with `apps/backend/scripts/create-website-api-key.ts <org-slug>`); the `{ data }` envelope is unwrapped by default (`ERP_RESPONSE_ENVELOPE=none` opts out). Fixed: signed-in RFQ sent the customer token (401) - it now always uses the service key; unmapped operations threw synchronously - now `async` so `.catch` sees them. Product/page/facet/stock/pricing/cart/RFQ/contact/demo shapes already matched; no zod schema loosened. Tests: `erp-source.test.ts` (23, mocked fetch).
+- web-customer-portal: `erp-routes.ts` held the pre-ADR-0024 `/portal/v1/*` map (every call would 404); repointed to `/customers/portal/v1/*` (auth, account, members, home, badges, projects, tickets, devices/warranty). Status-code semantics fixed in `api/portal.ts`: `verifyEmail` 400 -> null, `resetPassword` returns boolean, `changePassword` only 400 = wrong password (401 propagates), phone-only reset raises not-configured, device id `<uuid>:<line>` keeps its colon, unmapped ops reject asynchronously, envelope unwrapped by default, `Accept-Language` sent. Session handling unchanged (server-side session, opaque httpOnly cookie, 7-day token, no refresh). Tests: `erp-source.test.ts` (59, mocked fetch).
+- Verified: web-landing `bun run test` 23 pass, typecheck 0 errors, build OK; portal `bun run test` 59 pass, typecheck 0 errors, build OK; root `bun run lint` 0 errors, `bun run test` 7/7, `bun run build` 5/5. Nothing ran against a live backend.
+- Also in this commit: `human-resource/container.ts` registers `HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN` and `HUMAN_RESOURCE_NUMBERING_SERVICE_TOKEN`. `EmployeeService` injects the numbering service token, which was never registered, so resolving the employee service would have failed at startup/first use. The edit appeared in the working tree during this slice without an owner; typecheck is clean. Other containers have not been audited for the same gap.
+- Backend gaps found by the two slices (no backend edits made): catalog `rating` always 0; RFQ not linked to the signed-in customer (`linkedToAccount: false`); product photos need an https `APP_URL`; no routes for promo, cart, quote/place order, payment status, order tracking (landing) and for orders, quotations, invoices, payments, notifications, documents, profile summary, sites, wishlist, device register, service booking, onboarding, `updatePersonal`/`updateCompany`, ticket confirm UI (portal); business sign-up returns 403 (invitation-only) but the portal defaults to that flow and shows a generic error; `inviteMember.approvalLimit` ignored; ticket attachments return 422.
+- Open decision: `docker-compose` defaults `PORTAL_ERP_API_BASE_URL` to `http://backend:3000` and the portal rejects plain http for non-localhost hosts, so the default fails at startup (TLS or an explicit internal-http opt-in).
+- docs/database: reviewed, unchanged.
+
+Next executable task: live smoke test of backend + web-admin + landing + portal (also exercises DI resolution of every module), then the small ADR-0024 leftovers.
+## 2026-11-20 - Slice 6 and alias removal (Q34 revised): no aliases, portal/landing need no repoint
+
+- Decision (user, 2026-11-20): there is no production server and no deployed client, so the Q34 aliases were removed instead of finalised.
+- Backend: removed the second mounts `/public/v1/documents`, `/public/v1/catalog`, `/public/v1/render/quotations`, `/licensing/v1`, `/public/v1` (website API) and the webhook aliases `/payments/gateway/*`, `/integrations/whatsapp/*`. The only URLs are `/webhooks/{xendit,singapay,whatsapp}`, `/projects/api/v1/licenses`, `/projects/public/v1`, `/inventory/public/v1/catalog`, `/sales/public/v1/render/quotations`, `/documents/public/v1/shares`. Server-built links updated: quotation PDF share URL (`quotation-delivery.service.ts`) and product listing image URL (`product-listing.service.ts`); web-admin `quotation-api` render URL and `catalog-api` comment. Tests: `quotation-delivery.service.test.ts` URL expectation and `payment-gateway.test.ts` SingaPay `webhookPath` (the signature signs the path; the service default was already `/webhooks/singapay`).
+- web-landing and web-customer-portal: no repoint needed. Their ERP route maps (`erp-routes.ts`, `catalogRoutes`) are intentionally empty and the apps run on demo data, so connecting them to the ERP API is new feature work, not part of this migration.
+- Docs: live references updated in `docs/architecture/{security-and-access.md,api/licensing.yaml,modules/automation.md,document.md,licensing-integration.md,licensing-subscription.md,sales.md}` and `apps/backend/.env.example` (webhook URLs). ADR files keep their historical text. `docs/plan/database-refactor` Q34 notes revised in `00-overview.md`, `02-shared-patterns.md`, `99-cutover.md`.
+- Verified: backend `tsc` 0 errors, web-admin `tsc -p tsconfig.app.json` 0 errors, `bun run lint` 0 errors, `bun run test` 5/5 (backend 1232 pass), `bun run build` 5/5, `validate-dbml.ts` OK.
+- Open (no longer blockers): provider dashboard URLs do not need changing today; configure `/webhooks/*` when the first environment is deployed. Remaining refactor leftovers: legacy `crm.*` error keys in `customer.errors.ts`, `ExportedFinanceService`/`ExportedJournalService`, ticket templates and sub-tickets (Q29), `employee_addresses` Drizzle table + controller, supplier addresses endpoints, the reconciliation match route path, ERP-0070..0089 all still `in-progress` (none `accepted`).
+- docs/database: reviewed, unchanged.
+
+Next executable task: close ADR-0024 leftovers (see Open), then pick the next backlog item.
+## 2026-11-20 - Frontend slice 5: human-resource, documents, automation (web-admin)
+
+- Human resource (5A): `hr-api` / `hr-records-api` `/hr/*` -> `/human-resources/*` (employees, `attendances`, `employee-tasks`, `salary-records`; leave, overtime, leave-types and active-employees under the bare `/human-resources` prefix; bank account under `/human-resources/employees/:id`). Bug fixed: the bank form sent `accountNumber`/`accountHolder` while the backend takes `bankAccountNumber`/`bankAccountHolder` (saves would have been rejected). Create input takes `organizationRoles: string[]`. Frontend route paths (`/hr/*`) unchanged.
+- Documents/automation (5B): public share link uses `/documents/public/v1/shares/:token` (old `/public/v1/documents` stays a backend alias); `OUTBOX_TOPICS` extended from 5 to 13 topics with en/id labels; `TDocument.issuedOn` nullable. Notification, signature, whatsapp, FAQ, admin, organization and location wrappers already matched the backend.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; `bun run lint` 0 errors; `bun run test` 5/5; `bun run build` 5/5. Endpoints checked by reading controllers; no live UI run.
+- Open: `employee_addresses` exists only in `docs.dbml` (no Drizzle table or controller) so no address UI; organization list `warehousesCount` is always 0 from the backend and the projects count is a client-side placeholder (both pre-existing); `TSignature` omits `signatureImageUrl`, `sourceFileId`, `hasSignedPdf`.
+- docs/database: reviewed, unchanged (the `employee_addresses` gap is recorded here, not changed).
+
+Next executable task: frontend slice 6 (web-customer-portal, web-landing, then drop or finalise the Q34 aliases).
+## 2026-11-20 - Frontend slice 4: project, lead, handover, license, ticket (web-admin)
+
+- Project (4A): `lead-api` `/leads*` -> `/projects/leads*`; warranty certificates `/warranty-certificates/projects/:id` -> `/projects/warranties/projects/:id` (`bastId` -> `handoverId`); `project-api` `salesOrderId/Code` -> `orderId/orderCode`, `TProject` gains `companyId`, `leadId`; `TLead` gains `companyId`. BAST routes (`/projects/basts`, `/projects/:id/basts*`), stats, open-deals, staff, tasks, evidence, costs were already correct. Lead conversion marks the lead won and links a customer person; it does not open a project (backend behaviour, no UI added).
+- License/ticket (4B): `license-api` `/licenses*` -> `/projects/licenses*` (`licensableApplicationId` -> `licenseApplicationId`, `salesOrderId` -> `orderId`); `service-ticket-api` `/service-tickets*` -> `/tickets*`; `dashboard-api` licenses summary repointed. No capability was dropped; ticket templates and sub-tickets stay target-only with no UI.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; `bun run lint` 0 errors; `bun run test` 5/5; `bun run build` 5/5. Endpoints checked by reading controllers; no live UI run.
+- Open: tickets for company customers are unsupported (backend `getActiveCustomer` resolves people only) - design decision needed; license event type names (e.g. `key_revoked`) not compared with the backend; `lead-api`/`handover-api` do not send the organization header (pre-existing); the new project tables (types, phases, milestones, daily reports, site assignments, KPIs, changes, work plans) have no UI.
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 5 (human-resource, document, signature, notification, automation, whatsapp wrappers).
+## 2026-11-20 - Frontend slice 3: finance, tax, payment gateway page, company (web-admin)
+
+- Finance (3A): `finance-api` moved to `/finance/ledger/{accounts,journal,opening-balances}`, `/finance/periods`, `/finance/cash-bank-accounts|transactions`, `/finance/supplier-bills` (`supplierCompanyId`, items with `productId`), `/finance/reconciliations`, `/finance/ar|ap/aging`, `/finance/reports/*`, `/finance/close/checklist`. Tax (`tax-api`): `/tax/*` -> `/taxes/*` (`/taxes/withholdings`), now sends `x-organization-id`. Reconciliation item listing removed (the backend never had that route; the old wrapper called a 404). Cash-bank GL link `glAccountId` is no longer returned (separate table).
+- Company/payment (3B): `company-api` `/company/*` -> `/companies/*`; numbering UI, `/code-numbers` routes and nav entry removed (numbering is per module, no controller). New `lib/payment-api.ts` + settings page `settings/payment-gateways` over `/admin/payments/gateways` (secrets and webhook token are write-only password inputs, empty = keep, last four characters shown); nav + crumbs; `routeTree.gen.ts` regenerated by the router plugin.
+- Permission catalog: `payment_gateway: ['read','update']` added to `packages/common/src/authorization/erp-permissions.ts`. The backend gateway controller already required it but the resource did not exist, so nobody could be granted it; today only `owner` holds it through the all-statements spread. Whether finance should also get `read` is a business decision, not made here.
+- Invoice print (`invoice-document.tsx`): bank block now reads `finance.cash_bank_accounts` (primary active account per `invoiceUsage` vat/non_vat) instead of the removed `company.bank_accounts` profile field; a viewer without `cash_bank:read` simply gets no bank block.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; `bun run lint` 0 errors; `bun run test` 5/5 green; `bun run build` 5/5 green. Endpoints checked by reading controllers; no live UI run.
+- Open: `payments-table.tsx` still imports payment functions from `finance-api` (`/payments*`); backend inconsistency in the match route (`/finance/bank-reconciliations/:id/items/:id/match` vs the other routes under `/finance/reconciliations`); no routes or UI for expense claims, advances, credit memos; gateway `config` JSON has no UI field.
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 4 (project, lead, license, handover, ticket wrappers; `salesOrderId` in `project-api`).
+## 2026-11-20 - Frontend slice 2: sale, customer, procurement, supplier wrappers + supplier bank gate (web-admin, backend fix)
+
+- Sale/customer (2A): `quotation-api`, `sales-order-api`, `delivery-note-api`, `sales-return-api`, `invoice-api`, `customer-api`, `portal-account-api` and three `dashboard-api` URLs now use `/sales/*`, `/payments/checkouts/*`, `/customers/people|companies`, `/admin/customers/portal-accounts`. `customer_contacts` is gone: people are customers; CRM screens rebuilt around a company form + person form + address dialog (`contact-form-dialog` deleted). Quotations drop `customerContactId`, add `companyId`; lines use `productId`.
+- Procurement/supplier (2B): new `lib/supplier-api.ts` (`/suppliers/companies`, `/suppliers/people`); PO/PR/receipt/return wrappers under `/procurement/*` with `supplierCompanyId`, optional `supplierPicId` and `productId`. Supplier form lost individual type, address and postal code (no backend endpoint); PICs are a "Contact people" card.
+- Backend security fix found by 2B: `SupplierController` only checked `supplier:read`, so `GET /suppliers/companies*` returned bank columns to every reader and create/update accepted bank fields without `supplier:read_bank`. Now bank columns are stripped from every company response and a bank write without the permission is a 403 (`SupplierBankForbiddenError`, locale key `supplier.bankForbidden` en/id). Same pattern as `product:read_cost` in `stock.controller.ts`. No dedicated controller test yet (the helpers are closure-local); covered only by typecheck and the existing supplier service tests.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; backend `tsc` 0 errors; `bun run lint` 0 errors; `bun run test` 5/5 tasks green; `bun test test/unit/supplier.service.test.ts` 8 pass. Routes, params and fields checked by reading backend controllers/contracts; no live UI run.
+- Open: no UI for invoice cancel/patch, free-item invoices and `/payments` ledger screens; address editing has no UI; `finance-api.ts` still sends `supplierId` to `/bills` (slice 3); `project-api.ts` still declares `salesOrderId` (slice 4); company detail uses `?kind=company` instead of a new route (avoids hand-editing `routeTree.gen.ts`).
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 3 (finance, tax, payment wrappers + gateway settings page + company bank tab).
+## 2026-11-19 - Frontend slice 1: inventory, assets, borrowing wrappers (ERP-0090 frontend, web-admin)
+
+- `lib/asset-api.ts`, `lib/borrowing-api.ts` and `components/assets/*` now call `/inventory/items`, `/inventory/item-categories`, `/inventory/borrowing-requests`, `/inventory/borrowings`, `/inventory/disposals`, `/inventory/tool-sets` and `/finance/depreciations`. Asset types lookup removed (static `ITEM_KINDS`); borrowing is the request/issue split.
+- `lib/inventory-api`, `stock-api`, `adjustment-api`, `warehouse-api`, `stock-valuation-api`, `item-category-api`, `catalog-api` follow products/product-categories/product-listings (`productKind`, `productCategoryId`, `productId`; address `addressLine`; new movement types). Frontend route paths unchanged; `$itemId` is now a product id.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` in `apps/web-admin` 0 errors; `bun run lint` 0 errors; `bun run test` 5/5 tasks green (web-admin 119, locales 98, backend 1232). Endpoint prefixes checked against the backend controllers by reading. No live UI run.
+- Finding: the root `bun run typecheck` does not cover web-admin (no `typecheck` script); the real check is `tsc -p tsconfig.app.json` (also part of `build`).
+- Open: approved borrowing requests have no inline buttons (list cannot tell issued from not); backend `createUnitSchema` requires `serialNumber` while `ProductService.registerUnit` mints one for `pre_order` (unreachable over HTTP); `stock-api`/`warehouse-api` do not send `organizationHeaders()` (pre-existing).
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 2 (sale + procurement wrappers: returns, delivery notes, goods receipts, suppliers).
+## 2026-11-19 - P8: cutover, backend (ERP-0088)
+
+- Seeders rewritten on the new schemas: `inventory` (product categories, products, serials, tool fleet as `items`, opening stock as `receipt` movements + `stocks`), new `finance` (cash/bank accounts, replaces `company.bank_accounts`), `company` (`company.addresses`), `hr` (own numbering service). `assets` and `item-category` seeders removed.
+- Migrations: v1 chain moved to `apps/backend/database/migrations-archive/v1/` (31 steps, kept for history); `bunx --bun drizzle-kit generate` produced one baseline `20261119145940_many_human_robot` (18 schemas, 164 `CREATE TABLE` statements, 0 cross-schema `REFERENCES`, 151 unique indexes). Second `generate`: "No schema changes".
+- Disposable DB `ims_migration_check`: `drizzle:migrate` applied cleanly; `drizzle:seed` twice (second run inserted 0 everywhere); database dropped afterwards.
+- Verification: `tsc` 0 errors (seeders included); `bun run lint`, `build`, `typecheck`, `test` green workspace-wide (backend 1232 pass on unit+finance+tax+authorization+notification; locales 98 pass after removing 13 dead `api` keys of deleted modules: `numbering.*`, `sales.paymentNotFound`, `procurement.villageNotFound`); `bun docs/database/validate-dbml.ts` OK (188 tables, 162 intra-module refs, 169 logical reference columns).
+- `docs/database/module-ownership.md` module table now lists the 18 schemas; the 18 module profiles below it were rewritten the same day from `docs.dbml` (validate-dbml OK).
+- Not done: provider dashboard webhook URL updates (Xendit, SingaPay, WAHA, Meta), decision on dropping the Q34 aliases, legacy `crm.*` error keys, all frontend work.
+- docs/database: reviewed; `docs.dbml` unchanged in this step.
+
+Next executable task: frontend catch-up for the new backend (web-admin API wrappers/routes first), then drop the Q34 aliases once clients move.
+## 2026-11-19 - P7: document numbering, push notifications, webhook module, module vocabulary (ERP-0085/0086/0087/0089 backend)
+
+- `document`: own numbering (`DocumentCodeNumberingRepository`, `DocumentNumberingService` over `document.code_numberings`); the registry still takes the owning module's `code`, it just no longer borrows another module's service. Public share links moved to `/documents/public/v1/shares` with the `/public/v1/documents` alias (Q34).
+- `notification`: tables and types renamed to `push_notifications` / `push_notification_templates` (Q32); `TPushNotification*`, `PushNotificationTemplateCode`; URL stays `/notifications`. Seeders follow.
+- New `webhook` module (ERP-0089, no schema, no repository): `POST /webhooks/<provider>` with raw-body capture, 200 for `accepted|duplicate|ignored` and 401 for `rejected`, 404 for an unknown provider; aliases `/payments/gateway/<provider>` and `/integrations/whatsapp`. It delegates to `ExportedPaymentWebhookService` (payment) and the new `ExportedWhatsappWebhookService` (automation) and never touches a table or a secret.
+- `automation`: the WhatsApp webhook controller is gone; the module publishes `ExportedWhatsappWebhookService`. Outbox aggregate types re-pointed (`service_ticket` -> `ticket`); topics unchanged so n8n keeps working. Doc comments no longer say CRM.
+- `audit`: no schema change; only the module vocabulary in comments/prose was re-pointed.
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/` and `test/` (23 seeder errors remain, P8); `bun test test/unit` -> 790 pass / 0 fail; `bun test test/finance test/tax test/authorization test/notification` -> 441 pass / 0 fail; `bun docs/database/validate-dbml.ts` -> OK (drift 0).
+- Still open: web-admin wrappers (`documents-api.ts`, `signature-api.ts`, `document-image-api.ts`, `notification-api.ts`, `automation-api.ts`, `whatsapp-api.ts`), provider dashboards (Xendit, SingaPay, WAHA, Meta) and seeders (P8).
+## 2026-11-19 - P6: project absorbs licensing + warranty, ticket replaces aftersales, human-resource (ERP-0082/0083/0084 backend)
+
+- `src/app/projects` and `src/app/licensing` merged into `src/app/project` (git mv; one module, one schema). Tables renamed `project_tasks|costs|evidence|handover` -> `tasks|costs|evidence|handover`; `projects` gains `company_id`, `lead_id`, `order_id`/`order_code`, `address_id`; `warranty_certificates` -> `warranties` with `handover_id`; `licensable_applications` -> `license_applications`, `application_api_keys` -> `license_api_keys`, `license_contracts` gains `license_application_id`/`company_id`/`order_id`.
+- URLs: `/projects`, `/projects/handovers`, `/projects/leads`, `/projects/warranties`, `/projects/licenses/*`; machine license API `/projects/api/v1/licenses/*` plus the `/licensing/v1/*` alias; website API `/projects/public/v1/*` plus the `/public/v1` alias (Q34).
+- `src/app/aftersales` -> `src/app/ticket` (git mv): `service_tickets` -> `tickets`, `service_ticket_comments` -> `ticket_messages`; own numbering (`ticket.code_numberings`, `TicketNumberingService`); `/tickets`; warranty moved to project, so a ticket checks it through `WARRANTY_SERVICE_TOKEN` (project).
+- `src/app/hr` -> `src/app/human-resource`: `hr.attendance_records` -> `human_resource.attendances`, `salary_summaries` -> `employee_salary_records`, `bank_accounts` absorbed into `employee_salaries` (Q39: base salary, fixed allowances, bank account masked without `employee:read_private`); own numbering; `ExportedHrService` -> `ExportedEmployeeService`; URLs `/human-resources/{employees,attendances,employee-tasks,salary-records}`.
+- Numbering call shape unified: `next(type, tx?, date?, context?)`; project, BAST and warranty pass the date and the `{CUSTOMER}` token through it.
+- Consumers re-pointed: the `customer` portal reads tickets through `TICKET_SERVICE_TOKEN` and warranties through the project module; inventory's warehouse PIC validation uses `EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN`; `src/index.ts` and `src/app/app.ts` register and mount `project`, `ticket`, `human-resource`.
+- Test harnesses updated for the new URLs and vocabularies (`/inventory/products`, `/taxes*`, `/sales/invoices`, `/human-resources/*`), the removed legacy `/sales/payments` flow, and the per-module numbering services.
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/` and `test/` (24 seeder errors remain, P8); `bun test test/unit` -> 790 pass / 0 fail; `bun test test/finance test/tax test/authorization` -> 439 pass / 0 fail; `bun docs/database/validate-dbml.ts` -> OK.
+- Still open: web-admin (`project-api.ts`, `handover-api.ts`, `license-api.ts`, `lead-api.ts`, `service-ticket-api.ts` -> `ticket-api.ts`, `hr-api.ts`, `hr-records-api.ts`), web-customer-portal ticket calls, web-landing form endpoints, seeders (P8), ticket templates and sub-tickets (Q29, target-only in dbml).
+## 2026-11-19 - P5: finance absorbs accounting, tax split, payment rework (ERP-0079/0080/0081 backend)
+
+- `src/app/accounting` -> `src/app/finance` (git mv, `registerFinance`/`financeModule`, schema `finance`, `@drizzle/schemas/finance.schema`). `accounting.schema.ts` is gone; every module imports `finance.schema.ts` instead.
+- Own numbering: `FinanceNumberingService` over `finance.code_numberings` (`journal_entry`, `supplier_bill`, `cash_bank_transaction`, `bank_reconciliation`, `asset_depreciation`). `payment` and `tax` got theirs too; the shared `code-number` module and its schema were deleted (`CODE_TYPES` now lives in `@shared/numbering`).
+- Re-points: `supplier_bills.supplier_company_id` (via `ExportedSupplierService.assertActiveCompany`), `supplier_bill_items.product_id`, `ap_open_items.supplier_company_id`, `ar_open_items.invoice_id`; header+items repositories kept.
+- New `DepreciationService` + `DepreciationRepository` + `/finance/depreciations` (`asset:*` permissions): idempotent per (item, period), snapshots opening/closing book value and moves the valuation through `ItemService.applyDepreciation`. `GET/POST`.
+- `tax` module split out (`src/app/tax`, `registerTax`, `/taxes`, `/taxes/:id`, `/taxes/records`, `/taxes/corrections`, `/taxes/withholdings`): `taxTypes` -> `taxes` table/type names, own numbering, error keys keep the `accounting.` prefix so locale bundles are unchanged; `tax-xlsx`/`tax-csv`/`tax-math` moved with it.
+- `payment` rewritten (Q18): one ledger (`payment.payments`, `channel` manual/gateway, provider columns, `receipt_id`), polymorphic `payment_allocations { payable_type, payable_id, amount }` with `syncAllocations`, `payment.gateways` with AES-256-GCM sealed secrets (`PAYMENT_SECRET_KEY`, `utils/secret-cipher.ts`, write-only API: `hasSecret`/`secretLast4`), `PaymentNumberingService`, `GatewayCheckoutService` (checkouts are payment rows allocated to the invoice), `GatewayConfigService`, `ExportedPaymentWebhookService` (for P7). `sales.payments`-era repository, registry and webhook controller are gone; adapters take their config per gateway row.
+- URLs: `/finance/ledger/*`, `/finance/cash-bank-accounts`, `/finance/cash-bank-transactions`, `/finance/supplier-bills`, `/finance/reconciliations`, `/finance/reports`, `/finance/depreciations`; `/payments`, `/payments/checkouts/*`, `/admin/payments/gateways`.
+- Journal `source_module` vocabulary applied: `finance`, `sale`, `payment`, `tax` (was `accounting`/`sales`). Invoice events carry `payableType`/`payableId`. `document.issue` now takes the owning module's `code` (the registry never numbers).
+- Commands: `bunx tsc --noEmit` -> 0 errors in `finance`, `tax`, `payment`, `document`, `sale`, `procurement`, `inventory`, `src/index.ts`, `src/app/app.ts`; `bun test` finance + tax + payment-gateway + depreciation -> 113 pass / 0 fail; `bun docs/database/validate-dbml.ts` -> OK (drift 0).
+- Still open: web-admin (finance-api, tax-api, payment screens, gateway settings, company bank tab), seeders (P8), `ExportedFinanceService`/`ExportedJournalService` (tax recap reads), consumers in aftersales/hr/projects/licensing (P6), test-app authorization harness for the deleted code-number module (21 errors).
+## 2026-11-19 - P4 step 2: sale on the new schema (ERP-0077 backend)
+
+- Folder `src/app/sales` -> `src/app/sale` (git mv; imports `@app/sale`). Schema renames applied: `sales_orders`/`items` -> `orders`/`order_items`, `sales_returns`/`items` -> `returns`/`return_items`; FK columns `order_id`, `order_item_id`, `return_id`, `invoice_id` (receipts), `product_id`, `movement_id`; types `TOrder*`, `TReturn*`, `TCustomerSnapshot`.
+- Removed the legacy `sales.payments` flow (`SalesService`, `/sales` payment controller, payment repository/contract/token).
+- Quotations: person `customer_id` plus optional `company_id` (replaces `customer_contact_id`); the snapshot comes from `ExportedCustomerService.getSnapshot`; orders copy `company_id` and `lead_id` from the quotation. `QUOTATION_OPEN_STATUSES` now lives in the quotation contract.
+- Own numbering: `sale.code_numberings` (`SaleCodeNumberingRepository`, `SaleNumberingService`); code types `quotation`, `order`, `delivery_note`, `invoice`, `receipt`, `return`; document registry module is `sale` and types `order`/`invoice`/`return`.
+- Items via `ProductService` (`getActiveProducts`, `getProduct`, `inStockSerials`, `sellUnits`, `receiveCustomerUnits`); company letterhead via `CompanyService.get()`.
+- URLs: `/sales/quotations|orders|delivery-notes|returns|invoices|receipts`; SPH render `/sales/public/v1/render/quotations` plus alias `/public/v1/render/quotations` (links already sent).
+- New `ExportedOrderService` (repository-only: `findOrder`, `isOrderOpen`) for project (P6).
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/app/sale`, `src/index.ts`, `src/app/app.ts`; `bun test` delivery-note, invoice-has-live, invoice-summary, sales-*, quotation* -> 63 pass / 0 fail; `validate-dbml.ts` -> OK. Blocked: `test/unit/invoice-billing.service.test.ts` cannot load (the accounting ledger contract imports the removed accounting schema; P5). Header+items repositories kept (not one per table).
+- Still open: web-admin (quotation, sales-order, delivery-note, sales-return, invoice, dashboard wrappers, routes, sidebar), sale seeder (P8); consumers in payment (P5), aftersales/projects/licensing (P6) still use old names.
+## 2026-11-19 - P4 step 1: procurement on the new schema (ERP-0078 backend; ERP-0075 supplier cleanup)
+
+- Supplier master removed from `procurement` (controller, service, repository, contract, errors, tokens). POs carry `supplier_company_id` + optional `supplier_pic_id` (PIC must belong to the company; inactive company refused); the printed snapshot fills the PIC block.
+- Own numbering: `procurement.code_numberings` (`ProcurementCodeNumberingRepository`, `ProcurementNumberingService`, same `next(type, {date, context, tx})` shape as the old `CodeNumberService`); `{SUPPLIER}`/`{CATEGORY}` context kept for POs.
+- Items now `ProductService` (`product_id`, `getProduct`, `getActiveProducts`, `registerUnit`, `supplierReturnableSerials`, `returnUnits`); `stock_movement_id` -> `movement_id`.
+- URLs `/procurement/purchase-requests|purchase-orders|goods-receipts|purchase-returns`; supplier CRUD only under the supplier module.
+- `PurchaseBillingService.TBillableOrder.supplierId` -> `supplierCompanyId`; accounting's `SUPPLIER_SERVICE_TOKEN` import from `@app/procurement` is gone and is fixed in P5.
+- Shared: `CODE_TYPES` exported from `@shared/numbering`; `document.contract.ts` re-pointed to it; procurement imports `DOCUMENT_SERVICE_TOKEN` from `@app/document/constants/di` (the module index still pulls the legacy `code-number` module until P7).
+- Commands: `bunx tsc --noEmit` -> 0 errors in `src/app/procurement` and its tests; `bun test` procurement, purchase-request, purchase-return, goods-receipt -> 32 pass / 0 fail; `validate-dbml.ts` -> OK. Deviation: header+items repositories are kept (not one per table).
+- Still open: web-admin (`procurement-api.ts`, `goods-receipt-api.ts`, `purchase-return-api.ts`, supplier pages), procurement seeder (P8), `ExportedPurchaseOrderService` for finance (P5).
+## 2026-11-19 - P3 step 2c: item operations, catalog absorbed, `assets` and `catalog` deleted (ERP-0076, backend done)
+
+- Added `MaintenanceService`, `DisposalService`, `ItemDocumentService`, `ToolSetService`, `ItemService.applyDepreciation()` (finance hook, P5), `ItemOperationsController` (`/inventory/items/:id/{place,transfer,movements,condition-checks,maintenances,documents,disposals,history}`, `/inventory/disposals`, `/inventory/tool-sets`).
+- `catalog` moved into inventory as `ProductListingService` (listing columns on `products`): admin `/inventory/product-listings`, public `/inventory/public/v1/catalog` plus the `/public/v1/catalog` alias. `src/app/assets` and `src/app/catalog` deleted with their registrations, mounts and old tests.
+- Added `ExportedInventoryService` (replaces the warehouse and asset facades: name map, item counts per warehouse, `isItemOwnedBy`); the warehouse unit test now uses `countOpenByOriginWarehouse`.
+- Still open: frontend and seeders (P8). Backend P3 closed.
+- Commands: `bun test test/unit/item-operations.test.ts test/unit/product-listing.service.test.ts` -> 21 pass / 0 fail; 185 pass / 0 fail across warehouse, product, stock, adjustment, valuation, borrowing, item and listing tests; `bun docs/database/validate-dbml.ts` -> OK; `bunx tsc --noEmit` -> 0 errors under `src/app/inventory`, `src/index.ts`, `src/app/app.ts`; remaining errors are other phases and seeders.
+- `docs/database/` reviewed in this step: no table change beyond 2a/2b.
+## 2026-11-19 - docs.dbml note normalization: Location methods, module vocabulary, ADR-0014 nullable flip (ERP-0070 / ERP-0037, docs side)
+
+Docs-only change. `docs/database/docs.dbml` is canonical, so it changed first;
+no Drizzle schema, app code, seeder or migration was touched (owner decision:
+the Drizzle columns stay `not null` until ERP-0037).
+
+- **Location notes (Q10, `modules/location.md` step 1):** the 8 address tables
+  (`company.addresses`, `customer.addresses`, `customer.company_addresses`,
+  `supplier.addresses`, `supplier.company_addresses`,
+  `inventory.warehouse_addresses`, `project.addresses`,
+  `human_resource.employee_addresses`) now name
+  `ExportedLocationService.assertVillage` on write and
+  `ExportedLocationService.resolveVillagePath` for the derived
+  province/regency/district path. The note prefix is unchanged, so
+  `gen-logical-references.ts` still detects every one.
+- **ADR-0014 nullable flip:** 87 cross-module logical-reference columns went
+  from `not null` to nullable - per schema: finance 31, project 19, sale 13,
+  procurement 7, tax 5, inventory 3, document 3, payment 2, ticket 2,
+  notification 1, audit 1. The project header note now states that cross-module
+  links are nullable. Intra-schema `auth` columns were left alone
+  (`auth.members`, `auth.invitations`, `auth.organization_settings` stay
+  `not null`), and `inventory.warehouses.organization_id` keeps its documented
+  frozen-at-`NULL` exception (ADR-0010).
+- **Tenant notes:** every non-auth `organization_id` (84 columns) now carries
+  the full logical-reference note - 38 new notes, 16 tenancy notes extended,
+  19 short notes completed with the validation clause, 10 already complete:
+  83 complete notes plus the 1 frozen exception.
+- **Module vocabulary:** 15 notes re-pointed to the target module names -
+  `HR` 6 -> `Human Resource`, `Projects` 6 -> `Project`, `Documents` 2 ->
+  `Document`, `Organization` 1 -> `Identity`.
+- **`finance.journal_lines.cost_center_id`:** the broken note (it described a
+  dropped concept as a reference to `auth.organizations`) was rewritten. The
+  column stays because `finance.schema.ts` still declares it and Drizzle was
+  out of scope.
+- **`logical-references.md`:** regenerated, plus the hand-written sections that
+  had drifted with the refactor: the example is now `customer.customers`
+  (nullable), rule 3 states the nullable rule as applied, and the "Contract
+  obligations per target" table was replaced - it listed 32 tables from removed
+  schemas (`catalog`, `crm`, `hr`, `payroll`, `organization`, `accounting`,
+  `assets`, `aftersales`, `warehouse`) and now lists the 25 real targets with
+  the exported service that validates each (only method names the plan fixes
+  are spelled out). Removed the `approval.*` reference from the actor rules.
+- **Generator bug fixed:** `gen-logical-references.ts` emitted the
+  "Distribution" table rows without a newline, collapsing the table into one
+  line; each row now ends with `\n`.
+- **Commands and results:**
+  - `bun docs/database/gen-logical-references.ts` ->
+    `regenerated: 169 refs across 25 targets, 162 intra-module refs`
+  - `bun docs/database/validate-dbml.ts` -> `parsed: 188 tables, 162 refs`,
+    `cross-module refs: 0`, `timestamp gaps: 0`, `drizzle parity drift: 0`,
+    `OK`
+  - an ad-hoc checker (temp file, not committed) asserted: 8/8 village notes
+    name the methods, 0 cross-module `not null` references, 0 non-auth
+    `not null` `organization_id`, 83 complete tenant notes + 1 frozen, no stale
+    module names.
+- **Accepted divergence:** `docs.dbml` now describes nullable columns while the
+  18 Drizzle schema files still declare `not null`. `validate-dbml.ts` compares
+  table and column names only, so it stays green. ERP-0037 owns the Drizzle
+  flip plus the service presence checks and stays `planned`.
+  `docs/database/` beyond these two files (`module-ownership.md`,
+  `data-dictionary.md`, `integrity-and-consistency.md`,
+  `implementation-phases.md`) is still the pre-refactor version; that is P8
+  work per `99-cutover.md` §5.
+- **Recorded, not forgotten:** 8 status/kind columns still lack a `Checks`
+  block (`auth.invitations.status`, `auth.user_invitations.status`,
+  `auth.passkeys.device_type`, `inventory.items.item_kind`,
+  `inventory.item_categories.item_kind`, `sale.quotation_status_history.to_status`,
+  `sale.order_status_history.to_status`, `audit.audit_logs.target_type`) -
+  Drizzle has no check for them either, so a docs-only fix would diverge from
+  the migration source; `01-target-schema.md` does not list
+  `inventory.borrowing_request_events` although `docs.dbml` and
+  `modules/inventory.md` do; the four `project.*` rows marked "same-module
+  reference, no FK by design" contradict the intra-module FK rule and need an
+  architecture decision.
+
+## 2026-11-19 - P3 step 2b: borrowing request/borrowing split, item custody and movements (ERP-0076, partial)
+
+Backend only. Owner chose option A for the open event-model question.
+
+- **docs.dbml first, then Drizzle** (hard rule order): new table
+  `inventory.borrowing_request_events` (request half timeline: requested,
+  approved, rejected, cancelled, due_date_extended; no movement column) and
+  `borrowing_events` narrowed to issued, returned, marked_late, marked_lost,
+  due_date_extended, closed. `gen-logical-references.ts` -> 162 intra-module refs;
+  `validate-dbml.ts` OK (188 tables, 0 cross-module refs, 0 timestamp gaps, 0
+  parity drift); `validate-dbml.ts` timestamp exemption list gained the new
+  append-only table; `inventory.schema.ts` gained `borrowingRequestEvents`,
+  `BORROWING_REQUEST_EVENT_TYPES`, narrowed `BORROWING_EVENT_TYPES`.
+- **Repositories (one class per table):** `BorrowingRequestRepository`,
+  `BorrowingRepository`, `BorrowingItemRepository`, `BorrowingEventRepository` +
+  `BorrowingRequestEventRepository` (append-only), `ItemMovementRepository` (the
+  item rows of `movements`), `MaintenanceRepository` (open probe only),
+  `ToolSetRepository` + `ToolSetItemRepository` (status and membership only).
+  Full maintenance/tool-set CRUD arrives in 2c.
+- **Services:** `ItemCustodyService` (status derivation, custody snapshot,
+  `borrow_out` / `borrow_return` / `lost` / `receipt` / `transfer_out` /
+  `project_site` movements; every movement code comes from
+  `InventoryNumberingService` inside the transaction; `condition` goes into the
+  movement note because `movements` has no such column), `BorrowingRequestService`
+  (draft, submit, approve with self-approval guard, reject, cancel, extend, view
+  with guest-PII projection, tool-set expansion), `BorrowingService` (issue creates
+  the `borrowings` row and approves a `requested` request implicitly for
+  issue/approve holders; return per item or all; mark lost; extend; close; late
+  sweep; guest-PII retention sweep keyed on the borrowing's `closed_at`).
+- **URLs:** `/inventory/borrowing-requests` (+ `/:id/issue`) and
+  `/inventory/borrowings`; permissions stay `asset_borrowing:*`. Body fields:
+  `items[]` (was `lines[]`), `borrowingItemId` (was `lineId`).
+- **Boundary changes:** `WarehouseService` unlink guard now reads
+  `BorrowingRequestRepository.countOpenByOriginWarehouse` (same schema); the
+  `IWarehouseBorrowingGuard` port, its Noop and the assets-side implementation are
+  deleted.
+- Deleted from `assets`: borrowing service, repository, controller, interface,
+  `warehouse-borrowing-guard`, and `test/unit/asset-borrowing.service.test.ts`
+  (replaced by `test/unit/borrowing.service.test.ts`).
+
+Commands and outcomes:
+
+```text
+bun docs/database/gen-logical-references.ts -> 162 intra-module refs
+bun docs/database/validate-dbml.ts           -> OK
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json | Select-String "^(src/app/inventory|test/unit/borrowing)"
+  -> 0 lines
+bun test test/unit/{product,product-category,serial-status-matrix,stock,adjustment,stock-valuation,borrowing}*.test.ts
+  -> 143 pass / 0 fail   (borrowing alone: 16 pass, 59 expect() calls)
+```
+
+Not done: maintenance, condition checks, disposals, documents and tool-set CRUD
+(`AssetOperationsService` still in `assets`, red), depreciation (leaves for
+finance, P5), `assets` + `catalog` removal and the `ExportedInventoryService`.
+Known deviation to fix in 2c: `ItemCustodyService` is one service for custody +
+movements; `ItemService` still owns item lifecycle only. `docs/database/`
+updated (this entry).
+
+**Next executable task:** ERP-0076 step 2c - `MaintenanceService`,
+`DisposalService`, condition checks, documents, tool-set CRUD out of
+`AssetOperationsService`; then delete `assets`, migrate `catalog` into
+`ProductListingService`, write `ExportedInventoryService`.
+
+## 2026-11-19 - P3 step 2a: items and item categories moved from `assets` into `inventory` (ERP-0076, partial)
+
+Backend only. Step 2 is split because the rest of `assets` is not a rename: it
+sits on a changed data model (see "Design findings"). This slice is the part that
+is.
+
+- **Moved with `git mv` + compile-driven fixes** (asset -> item): contract,
+  repository interface and repository, service, controller for `items` (was
+  `assets.assets`) and `item_categories` (was `asset_categories`), plus the
+  domain errors (`errors/item.errors.ts`: `ItemNotFoundError`,
+  `ItemCategory*Error`, `ItemRuleViolationError`, `ItemTransitionError`; locale
+  keys `assets.*` kept). Fields: `assetType` -> `itemKind`, `categoryId` ->
+  `itemCategoryId`, `supplierId` -> `supplierCompanyId`. Tokens
+  `ITEM_REPOSITORY_TOKEN`, `ITEM_CATEGORY_REPOSITORY_TOKEN`, `ITEM_SERVICE_TOKEN`,
+  `ITEM_CATEGORY_SERVICE_TOKEN`, all registered in `registerInventory`.
+- **URLs:** `/inventory/items` (new `/kinds` replaces `/types`, since
+  `asset_types` is now the closed `ITEM_KINDS` vocabulary) and
+  `/inventory/item-categories`. Permissions stay `asset:*` (RBAC rename is not
+  part of this epic).
+- **Boundaries fixed:** `ItemService` takes codes from
+  `InventoryNumberingService` (`asset` code type, inside the transaction) and the
+  `ITransactionRunner` instead of `DRIZZLE_TOKEN`; `WarehouseService` no longer
+  injects `ExportedAssetService` - it counts equipment through
+  `ITEM_REPOSITORY_TOKEN.countByWarehouse` (same schema).
+
+Commands and outcomes:
+
+```text
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json | Select-String "^src/app/inventory"
+  -> 0 lines
+bun test test/unit/product.service.test.ts test/unit/stock.service.test.ts \
+  test/unit/adjustment.service.test.ts -> 94 pass / 0 fail
+```
+
+Design findings for the rest of step 2 (read before starting 2b/2c):
+
+- **Item movements are not a rename.** `assets.asset_movements` (from/to
+  warehouse + storage, `moved_at`, `moved_by_user_id`, `condition`) becomes rows of
+  `inventory.movements` with `item_id`, `quantity = 1`, `code` (needs
+  `InventoryNumberingService`, type `stock_movement`), `warehouse_id`/`bin_id`,
+  `target_warehouse_id`/`target_bin_id`, `occurred_at`, `created_by`; the old
+  `transfer` type is `transfer_out`/`transfer_in` (the table forces
+  `target_warehouse_id` for them) and `condition` has no column (goes into
+  `notes`). Needs an `ItemMovementRepository` (create + list by item) next to the
+  product-ledger `MovementRepository`; the product ledger reads must keep
+  filtering on `product_id`.
+- **Borrowing splits in two (Q26).** `borrowing_requests` carries draft ->
+  requested -> approved/rejected/cancelled, the borrower identity (user /
+  customer / guest PII) and `tool_set_id`; `borrowings` (unique per request) is
+  created at **issue** and carries issued -> partially_returned -> returned ->
+  closed. `borrowing_items` points at the request always and at the borrowing
+  once issued; `borrowing_events` references `borrowing_id` + `borrowing_item_id`
+  + `movement_id`, so `requested`/`approved`/`rejected`/`cancelled` events (no
+  borrowing yet) need either a borrowing row or a relaxed FK - **to decide in
+  the grill pass before coding** (proposed: events of the request half are
+  recorded on the request's own timeline, i.e. `docs.dbml` gets
+  `borrowing_request_events`, or `borrowing_events.borrowing_id` becomes
+  nullable with a `borrowing_request_id`).
+- `AssetOperationsService` (1154 lines) mixes custody sync, movements,
+  conditions, maintenance, depreciation, disposal, documents and tool sets; the
+  plan splits it into `MaintenanceService`, `DisposalService`, tool-set and
+  document services. Depreciation leaves for `finance` (P5).
+
+Not done: borrowing (requests, borrowings, items, events), maintenance,
+condition checks, disposals, documents, tool sets, item movements; removal of
+`assets` (it now has dangling imports to the moved files and stays red) and
+`catalog`; `ExportedInventoryService`; frontend. `docs/database/` reviewed and
+unchanged except the open event-table question above (no edit yet).
+
+**Next executable task:** ERP-0076 step 2b - decide the borrowing-event model
+(grill), then `ItemMovementRepository`, `ItemOperationsService` split, borrowing
+request/borrowing services, tool sets, maintenance, disposal.
+
+## 2026-11-19 - P3 step 1: inventory stock side on the new schema (ERP-0076, partial)
+
+Backend only (owner's choice), same "typecheck red until P8" rule. Scope of this
+step: everything in `src/app/inventory` that concerns products, stock and the
+warehouse family; assets, catalog and borrowing are the next steps.
+
+- **Renames (git mv + regex, then compile-driven fixes).** `item.*` ->
+  `product.*` (contract, repository interface, repository, service, controller,
+  image and catalog services); `item-category.*` -> `product-category.*`;
+  `serial-unit.*` -> `item-serial.*`; `balance.*` -> `stock.*`. Tokens:
+  `PRODUCT_REPOSITORY_TOKEN`, `PRODUCT_SERVICE_TOKEN`, `PRODUCT_CATEGORY_*`,
+  `ITEM_SERIAL_REPOSITORY_TOKEN`, `STOCK_REPOSITORY_TOKEN`,
+  `PRODUCT_IMAGE_SERVICE_TOKEN`, `PRODUCT_CATALOG_SERVICE_TOKEN`. Errors:
+  `ProductNotFoundError`, `ProductSkuTakenError`, `ProductHasSerialsError`,
+  `SerialNotFoundError`, `ProductCategory*Error` (locale keys unchanged).
+  Controllers now mount `/inventory/products` and `/inventory/product-categories`.
+- **New:** `InventoryCodeNumberingRepository` + `InventoryNumberingService`
+  (`inventory.code_numberings`, `{COMPANY}` from `ExportedCompanyService`; the
+  allocation joins the caller's transaction); `constants/serial-status.ts`
+  (`SERIAL_STATUS_TRANSITIONS`, moved out of the schema file). Product, stock,
+  adjustment and warehouse services allocate codes through it.
+- **Ledger.** `movements` now holds product and item (asset) movements, so the
+  stock repository reads only rows with `product_id` and `warehouse_id` set
+  (`TProductMovementSelect`); `borrowing_out` left the outbound list (item
+  movements never reach `stocks`). Warehouse address column `street` ->
+  `addressLine`; the warehouse repository counts through `products`,
+  `item_serials` and `stocks`.
+- **Tests renamed and re-pointed:** `product.service`, `product-category.service`,
+  `serial-status-matrix`, `stock.service`, `adjustment.service`,
+  `stock-valuation.service`.
+
+Commands and outcomes:
+
+```text
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json | Select-String "^src/app/inventory"
+  -> 0 lines (inventory compiles clean)
+bun test test/unit/product.service.test.ts test/unit/product-category.service.test.ts \
+  test/unit/serial-status-matrix.test.ts test/unit/stock.service.test.ts \
+  test/unit/adjustment.service.test.ts test/unit/stock-valuation.service.test.ts
+  -> 106 pass / 0 fail
+```
+
+Not done / blocked:
+
+- `warehouse.service` still injects `ExportedAssetService` from `assets`
+  (equipment counts) and `assets`/`catalog` still compile against the deleted
+  `asset.schema` / `catalog.schema`: step 2 (items, item categories, documents,
+  tool sets, maintenance, disposal, borrowing) removes both.
+- `ExportedInventoryService` (replacing `ExportedWarehouseService` +
+  `ExportedAssetService`) is not written yet; consumers in sales, procurement and
+  catalog still import the old tokens (fixed in P4/P5 and with `catalog`).
+- `test/authorization/inventory-authorization.test.ts` cannot load: its
+  `test-app.ts` mounts `code-number` (deleted in P8).
+- `docs/database/` reviewed and unchanged (the dbml already described these
+  tables).
+- web-admin/web-landing not updated (`/items` -> `/inventory/products`,
+  `/item-categories` -> `/inventory/product-categories`).
+
+**Next executable task:** ERP-0076 step 2 - absorb `assets` into `inventory`
+(item + item-category repositories, `ItemService`, then borrowing request /
+borrowing / borrowing item, maintenance, disposal, tool sets), then delete
+`assets` and `catalog`, write `ExportedInventoryService`.
+
+## 2026-11-19 - P1/P2 closed on the backend: company, user, portal -> customer, leads -> project (ERP-0072/0073/0074)
+
+Same branch, same accepted "typecheck red until P8" rule. The owner chose
+"finish P2 before P3" and "backend only for P3", so this step closes the P1/P2
+leftovers.
+
+- **company (ERP-0073).** One repository per table (`CompanyProfileRepository`
+  with cache-aside, `CompanyAddressRepository`, `CompanyContactRepository`,
+  `CompanySettingRepository`); the old 348-line repository is gone. Profile +
+  address + contacts save in one transaction through `ITransactionRunner`, and
+  the profile cache is evicted after commit (`invalidate()`). New
+  `ExportedCompanyService` (repository-only: `getLetterhead`, `getDocumentCode`,
+  `requireDocumentCode`, `getDisplayName`). Invoice bank accounts are no longer
+  part of the contract (finance, P5); controller prefix is **`/companies`**.
+- **user (ERP-0072).** `role.schema` imports -> `auth.schema`; invitation insert
+  now sets `createdAt/updatedAt`. The portal parts (`PortalAccountService`,
+  controller, `portal-identity.repository`, mailer) left the module; new
+  `ExportedUserService` over `IUserAccountGateway` (`BetterAuthUserAccountGateway`)
+  gives other modules users, credentials, password tokens and sessions.
+- **customer + portal (ERP-0074).** The `portal` module is deleted; its auth,
+  account and data services live in `customer`. The login is the person's
+  `customer.customers` row (`user_id`, `portal_role`, `portal_status`): revoke sets
+  `portal_status = revoked` and frees `user_id`; `PortalContext` is now
+  `{ userId, customerId (person), companyId | null, role, user, accessToken }`
+  (no `identityId` / `contactId`); portal reads are scoped by
+  `companyId ?? customerId`. URLs: `/customers/portal/v1[/auth]`,
+  `/admin/customers/portal-accounts`. Better Auth's portal sign-in gate
+  (`session.auth.ts`) reads `customer.customers`. New locale key
+  `portal.noCompany` (en + id).
+- **leads (Q12, moved early from P6).** `crm` is deleted. Leads, activities,
+  attachments, the follow-up queue/worker and the website inquiry API now live in
+  `src/app/project/` (`/projects/leads`; the public inquiry URL stays `/public/v1`
+  until the Q34 alias cut-over, P8). One repository per table
+  (`lead`, `lead-activity`, `lead-attachment`, `code-numbering`); website
+  references are numbered in `project.code_numberings` through
+  `ProjectNumberingService` in the same transaction as the lead (the `web_*` code
+  types moved from `sale` to `project` in `shared/numbering/domain.ts`);
+  conversion goes through `CustomerService.createCustomer` / `getActiveCustomer`.
+  `LEAD_OPEN_STATUSES` added to `project.schema.ts`.
+- Wiring: `src/index.ts` registers `registerCustomer` + `registerProject` (portal
+  and crm registrations removed); `src/app/app.ts` mounts `customerModule()` +
+  `projectModule()`. Consumers in not-yet-rebuilt modules only had their
+  import paths re-pointed (quotation, whatsapp, warranty, service-ticket,
+  licensing, `test-app.ts`).
+
+Commands and outcomes:
+
+```text
+cd apps/backend && bun test test/unit/company.service.test.ts test/unit/portal-account.test.ts \
+  test/unit/lead.service.test.ts test/unit/customer.service.test.ts \
+  test/unit/supplier.service.test.ts test/unit/invitation.service.test.ts test/unit/user
+  -> 78 pass / 0 fail / 217 expect() calls (6 files)
+cd packages/locales && bun test            -> 98 pass / 0 fail (parity + dead keys)
+bun docs/database/validate-dbml.ts         -> OK (0 timestamp gaps, parity drift 0)
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json
+  -> 0 errors in src/app/{company,user,project,supplier,location,organization}
+  -> src/app/customer: 8 errors, all portal data reads waiting for P6
+     (aftersales/projects schemas and services); remaining errors are the
+     not-yet-migrated modules (inventory, sales, procurement, accounting, ...)
+graphify update .                          -> graph refreshed
+```
+
+Not done / blocked:
+
+- `test/unit/portal-data.test.ts` (tickets, projects, devices; split from the old
+  `customer-portal.test.ts`) is **blocked on P6** (ticket/project modules and
+  their exported services); it does not compile today.
+- Consumers of the removed `COMPANY_SERVICE_TOKEN.getProfile/getDisplayName` and
+  bank accounts (`code-number`, `accounting/tax.controller`, sales/projects/
+  aftersales print services) still point at the old API; they are re-pointed in
+  their own phases (P4-P7). `test/unit/code-number.service.test.ts` fails to
+  compile for the same reason (module deleted in P8).
+- web-admin, web-customer-portal and web-landing are **not updated** (URL and
+  shape changes: `/company` -> `/companies`, `/portal/v1` -> `/customers/portal/v1`,
+  `/admin/portal-accounts` -> `/admin/customers/portal-accounts`, `/leads` ->
+  `/projects/leads`, portal identity `customerId`/`companyId`); that is step 6 of
+  each module and the owner asked for backend-first.
+- `docs/database/` reviewed and unchanged (the dbml already described these
+  tables; `validate-dbml.ts` OK). `docs/plan/database-refactor/modules/project.md`
+  should note that leads arrived in P2 (done below).
+
+**Next executable task:** ERP-0076 - P3 inventory (backend only): foundation
+(DI tokens, constants, `ExportedInventoryService`, `inventory.code_numberings`),
+then product/stock/movement, warehouse + item serials, item/tool set, borrowing,
+maintenance/disposal, removal of `assets` + `catalog`.
+
+## 2026-11-19 - P2 customer module compile-clean (ERP-0074, partial: leads and portal open)
+
+- `src/app/customer/` rewritten to the schema: `CustomerCompanyRepository`
+  (`CompanyRepository`), `CustomerPersonRepository`, `CompanyAddressRepository`,
+  `CustomerAddressRepository` (split: one repository per table), `CustomerService`
+  (`@injectable` + `@inject` tokens), `ExportedCustomerService` (repository-only).
+  `TNewCompany` / `TNewCustomer` insert types keep `createdAt`/`updatedAt` out of
+  callers.
+- Fixed while testing: status transitions to the same status now throw
+  `CustomerStatusUnchangedError` before the write (was silently a no-op).
+- `cd apps/backend && bunx tsc --noEmit -p tsconfig.json | Select-String src/app/customer` → 0 lines.
+- `bun test test/unit/customer.service.test.ts test/unit/supplier.service.test.ts` → 17 pass, 0 fail.
+- Not done: `crm` removal (leads still in `crm`, depend on `CUSTOMER_SERVICE_TOKEN`);
+  portal absorption into `customer` (`/customers/portal/v1`, blocked on ERP-0072
+  `ExportedUserService`); `index.ts` / `app.ts` still mount `crm`.
+- `docs/database/` reviewed; `docs.dbml` unchanged in this step (already aligned in P0).
+
+## 2026-11-19 - P2 supplier module split out (ERP-0075), procurement re-pointed
+
+Same branch, same accepted "typecheck red until P8" rule.
+
+- **New `src/app/supplier/`** (schema `supplier`, ADR-0024 Q17): contracts
+  (`supplier.contract.ts` with zod schemas + view types, `params.schema.ts`),
+  two repositories — `supplier-company.repository.ts` (cache-aside id+code,
+  status transition) and `supplier.repository.ts` (people/PIC, single primary
+  per company, soft delete) — `SupplierService` (company CRUD + activate/
+  deactivate guards, people CRUD), `ExportedSupplierService`
+  (`assertActiveCompany`, `findCompanyByCode`, `getPurchaseSnapshot`,
+  `getBankDetails`), `SupplierController` at **`/suppliers`**
+  (`/suppliers/companies`, `/suppliers/people`), container + module entry.
+  Bank detail gating stays at read sites; `ExportedSupplierService` only
+  transports.
+- **Wired**: `src/index.ts` registers `registerSupplier`; `src/app/app.ts`
+  mounts `supplierModule()` after `companyModule()`.
+- **Procurement re-point (partial)**: `purchase-order.service.ts` now injects
+  `EXPORTED_SUPPLIER_SERVICE_TOKEN` and snapshots from the supplier **company**
+  row (`supplierCompanyId`; PIC columns read from `supplier.suppliers` land
+  with the P4 re-point). The old `procurement/controllers/supplier.controller.ts`
+  and `procurement/services/supplier.service.ts` still exist and are the P4
+  deletion candidates — they compile against the removed `procurement.suppliers`
+  table and must be deleted in P4.
+
+Commands and outcomes:
+
+```text
+cd apps/backend && bun test test/unit/supplier.service.test.ts
+  -> 8 pass / 0 fail / 12 expect() calls
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json
+  -> 0 errors in src/app/supplier, src/app/app.ts, src/index.ts
+  -> remaining errors: inventory (P3 products), procurement items->products and
+     purchase-return/request/billing (P4), sales (P4), catalog (delete), portal
+     (P2 customer), company.repository (P1 company), payment (P5), seeders (P8)
+```
+
+Deferred / partial:
+
+- **Customer module (ERP-0074) not started.** `crm` folder still owns the
+  master data; `crm.schema.ts` is gone, so every crm file is broken until the
+  `customer` module replaces it (companies/customers split, addresses,
+  `code_numberings`, `ExportedCustomerService`, portal absorption).
+- **Leads still live in `crm`** but their tables are now `project.leads`
+  (`project.schema.ts`). Moving the lead repositories/services/controllers into
+  `project` is P6 per the plan; they could be moved early if the customer split
+  makes it cheaper.
+- **Web-admin / web-customer-portal consumers** untouched (step 6).
+- `bun run lint` / `bun run test` workspace-wide not run (workspace does not
+  typecheck until P8).
+
+
+
+## 2026-11-19 - P0 schema contract: docs.dbml + Drizzle rewritten (ERP-0070), location P1 (ERP-0071)
+
+Branch `refactor(db)/schema-and-table-normalization`. Scope: steps 1-2 for
+**all** modules (the schema is one contract) plus the P1 location service.
+Application code (repositories, services, controllers, seeders, web apps) is
+**not** migrated yet; `bun run typecheck` is red by design until P8 (accepted
+in the session plan).
+
+- **`docs/database/docs.dbml`** rewritten to the ADR-0024 target: **19 schemas,
+  187 tables, 161 intra-module `Ref`s, 0 cross-module refs**. Removed schemas:
+  `accounting`, `aftersales`, `assets`, `catalog`, `code_number`, `crm`,
+  `licensing`, `organization`, `payroll`, `approval`, `budgeting`, `investor`,
+  `commerce`; `sales` -> `sale`, `projects` -> `project`, `hr` ->
+  `human_resource`; new `customer`, `supplier`, `tax`. Target-only tables carry
+  `status: target` in their note (Q22) and are absent from Drizzle.
+- **Drizzle layer** (`apps/backend/drizzle/schemas`, 18 files):
+  new `customer`, `supplier`, `sale`, `tax`, `project`, `ticket`,
+  `human-resource`; rewritten `auth` (folded `role.schema.ts`, added
+  `organization_settings`), `company` (`addresses`, no `bank_accounts`),
+  `inventory` (absorbed asset + catalog), `procurement` (supplier re-point,
+  `product_id`, `movement_id`), `finance` (absorbed accounting, depreciation,
+  `cash_bank_accounts` merged), `payment` (gateway merged, polymorph
+  allocations), `document` (+ `settings`, `code_numberings`), `notification`
+  (`push_*`); deleted `accounting`, `aftersales`, `asset`, `catalog`,
+  `code-number`, `crm`, `hr`, `licensing`, `organization`, `portal`, `projects`,
+  `role`, `sales`.
+- **`src/shared/numbering/`** added: `domain.ts` (token grammar, per-code-type
+  patterns/reset, rendering — moved off the deleted `code-number.schema`),
+  `table.ts` (`createCodeNumberingTable(schema)`), `repository-base.ts`
+  (`allocate` / `next` / `findAll` / `saveSettings`), `index.ts`. New tsconfig
+  path `@shared/*`.
+- **`drizzle/db.ts`** no longer spreads relation parts: no repository used
+  `db.query.*`, and the per-schema relation exports are gone. Documented in the
+  file.
+- **`docs/database/validate-dbml.ts`** updated (`DUP_ALLOWED` = settings,
+  code_numberings, addresses, company_addresses, companies, documents;
+  `TIMESTAMP_EXEMPT` = auth core, `inventory.movements`,
+  `inventory.borrowing_events`, `inventory.stocks`, `audit.audit_logs`,
+  `finance.ar/ap_open_items`; `moduleOf` is identity). `gen-logical-references.ts`
+  labels updated.
+- **P1 location**: `IVillageRepository.findVillagePaths(ids)` (one batched
+  left join village -> district -> regency -> province),
+  `ExportedLocationService` (`assertVillage`, `resolveVillagePath`) +
+  `EXPORTED_LOCATION_SERVICE_TOKEN`, `VillageNotFoundError`
+  (`location.villageNotFound`), container registration and module re-export.
+- **P1 auth (partial)**: `organization/repositories/organization.repository.ts`
+  no longer imports `inventory.schema` (the named boundary violation);
+  `warehousesCount` is 0 until `ExportedWarehouseService` is injected into the
+  service.
+
+Commands and outcomes:
+
+```text
+bun docs/database/gen-logical-references.ts
+  -> regenerated: 131 refs across 25 targets, 161 intra-module refs
+bun docs/database/validate-dbml.ts
+  -> parsed: 187 tables, 161 refs / cross-module refs: 0 / timestamp gaps: 0
+     / drizzle parity drift: 0 / OK
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json
+  -> 0 errors under drizzle/ and src/shared/; errors remain in
+     database/seeders/** (P8) and the un-migrated modules (P1-P7)
+```
+
+Deferred / partial (recorded, not silently skipped):
+
+- **Portal removal moved to ERP-0074.** `auth.portal_identities` is gone from
+  the schema, so `user/contracts/portal-account.contract.ts`,
+  `user/repositories/portal-identity.repository.ts`,
+  `user/services/portal-account.service.ts`, `user/controllers/portal-account.controller.ts`,
+  the `portal` module and `authorization/portal-auth.ts` are broken until the
+  `customer` module owns them (P2). Deleting them in P1 would break
+  `authorization`, `providers/better-auth` and `projects` with nothing to
+  replace them.
+- **Company P1 not started**: repository split into profile/address/contact/
+  setting, `ExportedCompanyService.getDocumentCode/getLetterhead`, `/companies`
+  prefix, bank-account endpoints removed (finance serves them from P5).
+- **`docs/database/`** beyond `docs.dbml`: `module-ownership.md`,
+  `data-dictionary.md`, `integrity-and-consistency.md`,
+  `implementation-phases.md` still describe the v1 module map; the full sync is
+  the P8 cutover step (`99-cutover.md` §5). `logical-references.md` **was**
+  regenerated.
+- `bun run lint` / `bun run test` not run: the workspace does not typecheck
+  until P8, so their result would carry no signal.
+
+
+
+Docs only on `refactor(db)/schema-and-table-normalization`; no code changed.
+- **Q37** tool sets are kept: `inventory.tool_sets` + `tool_set_items`
+  (`item_id`), `borrowing_requests.tool_set_id` for lending a whole kit.
+- **Q38** webhooks get their own module `webhook` with no schema
+  (`/webhooks/<provider>`); payment and automation publish
+  `ExportedPaymentWebhookService` / `ExportedWhatsappWebhookService`; old paths
+  stay as aliases. New `modules/webhook.md`, backlog ERP-0089 (`planned`),
+  ADR-0024 notes the no-schema module.
+- **Q39** salary stays in HR: `human_resource.employee_salaries` (absorbs
+  `hr.bank_accounts`) and `human_resource.employee_salary_records` (was
+  `salary_summaries`); finance/payment read them via `ExportedEmployeeService`.
+  The "salary menu" open item is closed.
+- Updated: `00-overview.md`, `01-target-schema.md`, `02-shared-patterns.md`,
+  `99-cutover.md`, `modules/{inventory,finance,human-resource,payment,audit-automation}.md`,
+  `backlog.md` (ERP-0076/0079/0081/0084/0088 text, ERP-0089 added),
+  `features.md`. `docs/database/` reviewed and unchanged.
+
+## 2026-11-19 - Database normalization plan written (ERP-0070..ERP-0088, planned)
+
+Branch `refactor(db)/schema-and-table-normalization` (from `main` `929209c6`).
+Docs only - **no code, schema, migration or seed changed**.
+
+**What was done.**
+- Grill session with the owner (36 decisions, Q1-Q36) on the requested schema
+  normalization: one module per schema (`auth` shared by `user` +
+  `organization`), no cross-schema FK, polymorph only for "one of more than
+  three targets", one repository per table, service-to-service through
+  exported services, per-schema `code_numberings`, squash to a new baseline,
+  plural module URL prefixes with aliases for external callers.
+- Plan written to `docs/plan/database-refactor/` (`00-overview.md`,
+  `01-target-schema.md`, `02-shared-patterns.md`, 15 `modules/*.md`,
+  `99-cutover.md`); `ADR-0024-database-normalization-baseline-v2.md`
+  (**proposed**); backlog rows ERP-0070..ERP-0088 (`planned`).
+- Facts gathered read-only for the plan: 140 Drizzle tables vs 280 in
+  `docs.dbml` (140 target-only); no production database (ADR-0011/0018/0019);
+  `drizzle:generate` still blocked (runbook); boundary violations found:
+  `accounting` repositories import `finance.schema` (7 files),
+  `organization/repositories/organization.repository.ts:8` imports the
+  `inventory` schema, `user` reads `portal.schema.ts`.
+
+**Gate 1 / Gate 2.** `docs/database/docs.dbml` was read (module sections of
+every affected schema); `module-ownership.md`, `integrity-and-consistency.md`,
+`data-dictionary.md`, `logical-references.md` were not re-read in this session
+because no schema is edited yet - each module phase must read them before
+step 1. The grill pass is recorded in `00-overview.md` (decision table + open
+items).
+
+**`docs/database/` reviewed and unchanged** (plan only; the dbml rewrite is
+ERP-0070 step 1). No commands beyond read-only `git`/file inspection were run;
+lint/test/typecheck were not run because no code changed.
+
+**Next executable task:** ERP-0070 - owner reviews the open items in
+`docs/plan/database-refactor/00-overview.md` and ADR-0024, then P0 starts with
+the `docs.dbml` rewrite.
+
 ## 2026-11-19 - PR #114 merged `main` in (ERP-0039 n8n workflow); the dependency notes are now obsolete
 
 `origin/main` (`5bd6fc9d`, #116 and #117 merged) was merged into

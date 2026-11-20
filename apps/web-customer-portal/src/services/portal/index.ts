@@ -1,4 +1,3 @@
-import { ApiError } from "@/api/client";
 import { createErpPortalSource, type PortalSource } from "@/api/portal";
 import {
   ERP_API_BASE_URL,
@@ -6,43 +5,13 @@ import {
   ERP_RESPONSE_ENVELOPE,
   PORTAL_DATA_SOURCE,
 } from "astro:env/server";
-import { SessionExpiredError } from "../errors";
 import { demoSource } from "./demo";
+import { envelopeUnwrapper } from "./envelope";
 import { erpRoutes } from "./erp-routes";
+import { withSessionExpiry } from "./session-expiry";
 
 // MODE (not DEV): the preview tooling may run `astro dev` with NODE_ENV=production.
 export const portalMode: "demo" | "erp" = PORTAL_DATA_SOURCE ?? (import.meta.env.MODE === "development" ? "demo" : "erp");
-
-/** Operations that run before a session exists; a 401 there is a normal auth result. */
-const SESSIONLESS: ReadonlySet<keyof PortalSource> = new Set([
-  "login",
-  "register",
-  "verifyEmail",
-  "resendVerification",
-  "requestPasswordReset",
-  "resetPassword",
-  "refreshSession",
-  "lookupPublicOrder",
-  "logout",
-]);
-
-/** Turns ERP 401s on authenticated calls into SessionExpiredError (handled by the middleware). */
-function withSessionExpiry(source: PortalSource): PortalSource {
-  return new Proxy(source, {
-    get(target, key, receiver) {
-      const value = Reflect.get(target, key, receiver);
-      if (typeof value !== "function" || SESSIONLESS.has(key as keyof PortalSource)) return value;
-      return async (...args: unknown[]) => {
-        try {
-          return await value.apply(target, args);
-        } catch (error) {
-          if (error instanceof ApiError && error.status === 401) throw new SessionExpiredError();
-          throw error;
-        }
-      };
-    },
-  });
-}
 
 function createSource(): PortalSource {
   if (portalMode === "demo") return demoSource;
@@ -54,8 +23,9 @@ function createSource(): PortalSource {
       baseUrl: ERP_API_BASE_URL,
       routes: erpRoutes,
       timeoutMs: ERP_API_TIMEOUT_MS,
-      unwrap: ERP_RESPONSE_ENVELOPE === "data" ? (body) => (body as { data?: unknown } | undefined)?.data : undefined,
-      defaultHeaders: { "X-Client": "entragate-customer-portal" },
+      unwrap: envelopeUnwrapper(ERP_RESPONSE_ENVELOPE),
+      // The portal copy is English, so the ERP's labels and error messages are too.
+      defaultHeaders: { "X-Client": "entragate-customer-portal", "Accept-Language": "en" },
     }),
   );
 }

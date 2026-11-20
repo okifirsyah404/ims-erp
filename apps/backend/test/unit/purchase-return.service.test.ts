@@ -33,19 +33,19 @@ const READER_LINE = '0190a1b2-0000-7000-8000-0000000000c2';
 const CABLE = '0190a1b2-0000-7000-8000-0000000000b1';
 const READER = '0190a1b2-0000-7000-8000-0000000000b2';
 
-const receiptLine = (id: string, itemId: string, quantity: string, unitCost: number, serials: string[] | null) =>
+const receiptLine = (id: string, productId: string, quantity: string, unitCost: number, serials: string[] | null) =>
 	({
 		id,
 		goodsReceiptId: RECEIPT,
 		purchaseOrderItemId: `${id}-po`,
-		itemId,
-		sku: itemId === CABLE ? 'CBL' : 'RDR',
-		name: itemId === CABLE ? 'Cable' : 'Reader',
+		productId,
+		sku: productId === CABLE ? 'CBL' : 'RDR',
+		name: productId === CABLE ? 'Cable' : 'Reader',
 		unit: 'pcs',
 		quantity,
 		unitCost,
 		serialNumbers: serials,
-		stockMovementId: null,
+		movementId: null,
 	}) as TGoodsReceiptItemSelect;
 
 class FakeReturns implements IPurchaseReturnRepository {
@@ -68,7 +68,7 @@ class FakeReturns implements IPurchaseReturnRepository {
 			code: null,
 			status: 'draft',
 			rejectionReason: null,
-			items: items.map((item, index) => ({ ...item, id: `${id}-${index}`, purchaseReturnId: id, stockMovementId: null, sortOrder: index })),
+			items: items.map((item, index) => ({ ...item, id: `${id}-${index}`, purchaseReturnId: id, movementId: null, sortOrder: index })),
 		} as unknown as TPurchaseReturnSelect & { items: TPurchaseReturnItemSelect[] };
 		this.rows.push(row);
 		return row;
@@ -99,22 +99,26 @@ class FakeReturns implements IPurchaseReturnRepository {
 		const row = this.rows.find((r) => r.id === id);
 		return row && row.status === 'approved' ? row : null;
 	}
-	async setMovement(itemId: string, movementId: string) {
-		for (const row of this.rows) for (const item of row.items) if (item.id === itemId) item.stockMovementId = movementId;
+	async setMovement(productId: string, movementId: string) {
+		for (const row of this.rows) for (const item of row.items) if (item.id === productId) item.movementId = movementId;
 	}
 }
 
 let returns: FakeReturns;
 let orderStatus: string;
 let inStock: string[];
-let movements: { movementType: string; quantity: string; warehouseId: string; itemId: string }[];
+let movements: { movementType: string; quantity: string; warehouseId: string; productId: string }[];
 let unreceived: { purchaseOrderItemId: string; quantity: string }[];
 let returnedUnits: string[];
 let documents: string[];
 let events: string[];
 let service: PurchaseReturnService;
+let receiptWarehouse: string | null;
+let orderSupplier: string | null;
 
 beforeEach(() => {
+	receiptWarehouse = WAREHOUSE;
+	orderSupplier = 'supplier-1';
 	returns = new FakeReturns();
 	orderStatus = 'received';
 	inStock = ['SN-1', 'SN-2', 'SN-3'];
@@ -132,7 +136,7 @@ beforeEach(() => {
 			},
 			async findById(id: string) {
 				return id === RECEIPT
-					? ({ id: RECEIPT, code: '0001/BPB/IMS/XI/26', purchaseOrderId: ORDER, warehouseId: WAREHOUSE, binId: null } as never)
+					? ({ id: RECEIPT, code: '0001/BPB/IMS/XI/26', purchaseOrderId: ORDER, warehouseId: receiptWarehouse, binId: null } as never)
 					: null;
 			},
 			async findItems() {
@@ -141,7 +145,7 @@ beforeEach(() => {
 		},
 		{
 			async findById() {
-				return { id: ORDER, status: orderStatus, supplierId: 'supplier-1' } as never;
+				return { id: ORDER, status: orderStatus, supplierCompanyId: orderSupplier } as never;
 			},
 			async unreceive(_orderId: string, input: { purchaseOrderItemId: string; quantity: string }[]) {
 				if (orderStatus !== 'received' && orderStatus !== 'partially_received') return { ok: false as const, reason: 'notReturnable' as const };
@@ -150,13 +154,13 @@ beforeEach(() => {
 			},
 		},
 		{
-			async postMovement(input: { movementType: string; quantity: string; warehouseId: string; itemId: string }) {
-				movements.push({ movementType: input.movementType, quantity: input.quantity, warehouseId: input.warehouseId, itemId: input.itemId });
+			async postMovement(input: { movementType: string; quantity: string; warehouseId: string; productId: string }) {
+				movements.push({ movementType: input.movementType, quantity: input.quantity, warehouseId: input.warehouseId, productId: input.productId });
 				return { movement: { id: crypto.randomUUID() } } as never;
 			},
 		},
 		{
-			async getItem(id: string) {
+			async getProduct(id: string) {
 				return { id, isSerialized: id === READER } as never;
 			},
 			async supplierReturnableSerials() {
@@ -220,6 +224,18 @@ describe('creating a purchase return', () => {
 		);
 		const third = await service.create(CREATOR, body([{ goodsReceiptItemId: CABLE_LINE, quantity: '2' }]));
 		expect(third.status).toBe('draft');
+	});
+
+	test('refuses a receipt without a warehouse and an order without a supplier (ADR-0014)', async () => {
+		receiptWarehouse = null;
+		await expect(service.create(CREATOR, body([{ goodsReceiptItemId: CABLE_LINE, quantity: '1' }]))).rejects.toMatchObject({
+			key: 'procurement.warehouseRequired',
+		});
+		receiptWarehouse = WAREHOUSE;
+		orderSupplier = null;
+		await expect(service.create(CREATOR, body([{ goodsReceiptItemId: CABLE_LINE, quantity: '1' }]))).rejects.toMatchObject({
+			key: 'procurement.supplierUnavailable',
+		});
 	});
 
 	test('a cancelled return frees its quantity again', async () => {
@@ -297,15 +313,15 @@ describe('shipping a purchase return', () => {
 		const shipped = await service.ship({ userId: 'user-warehouse', organizationId: 'org-1' }, row.id);
 		expect(shipped.status).toBe('shipped');
 		expect(movements).toEqual([
-			{ movementType: 'return_out', quantity: '2', warehouseId: WAREHOUSE, itemId: CABLE },
-			{ movementType: 'return_out', quantity: '1', warehouseId: WAREHOUSE, itemId: READER },
+			{ movementType: 'return_out', quantity: '2', warehouseId: WAREHOUSE, productId: CABLE },
+			{ movementType: 'return_out', quantity: '1', warehouseId: WAREHOUSE, productId: READER },
 		]);
 		expect(returnedUnits).toEqual(['SN-3']);
 		expect(unreceived).toEqual([
 			{ purchaseOrderItemId: `${CABLE_LINE}-po`, quantity: '2' },
 			{ purchaseOrderItemId: `${READER_LINE}-po`, quantity: '1' },
 		]);
-		expect((await returns.findItems(row.id)).every((item) => item.stockMovementId)).toBe(true);
+		expect((await returns.findItems(row.id)).every((item) => item.movementId)).toBe(true);
 		expect(events).toEqual([
 			'purchase_return.updated:submitted',
 			'purchase_return.updated:approved',

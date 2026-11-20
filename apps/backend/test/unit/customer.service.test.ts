@@ -1,162 +1,265 @@
 /**
- * Customer service unit tests (ADR-0011 port step 3a).
+ * Customer module unit tests.
  *
  * @remarks
- * Company-wide customers: unique live codes (pre-check and the race path),
- * the village checked through the Location contract, active/inactive
- * transitions, and `getActiveCustomer` as the contract other modules use.
+ * Repository doubles only, no database. Covers code uniqueness across live
+ * companies and people, activation guards, company existence checks, and the
+ * `ExportedCustomerService` read facade.
  */
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import type {
-	CustomerStatus,
-	TCustomerContactSelect,
+	TCustomerCompanySelect,
 	TCustomerSelect,
-} from '@drizzle/schemas/crm.schema';
-import {
-	createCustomerSchema,
-	type TCreateContactInput,
-	type TCreateCustomerInput,
-	type TCustomerListQuery,
-	type TUpdateContactInput,
-	type TUpdateCustomerInput,
-} from '../../src/app/crm/contracts/customer.contract';
+} from '@drizzle/schemas/customer.schema';
 import type {
-	ICustomerContactRepository,
-	ICustomerRepository,
-} from '../../src/app/crm/contracts/customer.repository.interface';
+	TCompanyListQuery,
+	TCustomerListQuery,
+} from '../../src/app/customer/contracts/customer.contract';
+import type {
+	ICompanyAddressRepository,
+	ICompanyRepository,
+	ICustomerAddressRepository,
+	ICustomerPersonRepository,
+	TNewCompany,
+	TNewCustomer,
+	TPagination,
+} from '../../src/app/customer/contracts/customer.repository.interface';
 import {
 	CustomerCodeTakenError,
-	CustomerContactNotFoundError,
 	CustomerNotFoundError,
 	CustomerStatusUnchangedError,
-	VillageNotFoundError,
-} from '../../src/app/crm/errors/crm.errors';
-import { CustomerService } from '../../src/app/crm/services/customer.service';
+} from '../../src/app/customer/errors/customer.errors';
+import { CustomerService } from '../../src/app/customer/services/customer.service';
+import { ExportedCustomerService } from '../../src/app/customer/services/exported-customer.service';
 
-const KNOWN_VILLAGE = '01920000-0000-7000-8000-0000000000e1';
+/** Shared in-memory store: companies and people live in one code namespace. */
+class FakeCompanies implements ICompanyRepository {
+	rows: TCustomerCompanySelect[] = [];
+	private seq = 0;
 
-class FakeCustomers implements ICustomerRepository {
-	rows: TCustomerSelect[] = [];
-	/** Simulates a concurrent insert winning between pre-check and insert. */
-	raceOnNextCreate = false;
-
-	async paginate(_query: TCustomerListQuery) {
-		return { meta: { page: 1, limit: 20, total: this.rows.length, totalPages: 1 }, data: this.rows };
+	async paginate(_query: TCompanyListQuery) {
+		return this.rows.filter((row) => row.deletedAt === null);
 	}
+
+	async count(_query: TCompanyListQuery) {
+		return this.rows.filter((row) => row.deletedAt === null).length;
+	}
+
 	async findById(id: string) {
-		return this.rows.find((r) => r.id === id) ?? null;
+		return this.rows.find((row) => row.id === id && row.deletedAt === null) ?? null;
 	}
+
 	async findByCode(code: string) {
-		return this.rows.find((r) => r.code === code) ?? null;
+		return this.rows.find((row) => row.code === code && row.deletedAt === null) ?? null;
 	}
-	async create(data: TCreateCustomerInput & { createdBy: string }) {
-		if (this.raceOnNextCreate) {
-			this.raceOnNextCreate = false;
-			throw Object.assign(new Error('duplicate key'), { cause: { code: '23505' } });
+
+	async create(data: TNewCompany) {
+		this.seq += 1;
+		const now = new Date();
+		const row = { ...data, id: `co${this.seq}`, createdAt: now, updatedAt: now, deletedAt: null } as TCustomerCompanySelect;
+		this.rows.push(row);
+		return row;
+	}
+
+	async update(id: string, patch: Partial<TCustomerCompanySelect>) {
+		const row = await this.findById(id);
+		if (!row) return null;
+		Object.assign(row, patch);
+		return row;
+	}
+
+	async transitionStatus(id: string, from: 'active' | 'inactive', to: 'active' | 'inactive') {
+		const row = await this.findById(id);
+		if (!row || row.status !== from) return null;
+		row.status = to;
+		return row;
+	}
+}
+
+class FakePeople implements ICustomerPersonRepository {
+	rows: TCustomerSelect[] = [];
+	private seq = 0;
+
+	/* Portal logins are covered by portal-account.test.ts; unused here. */
+	async listPortalAccounts() {
+		return [];
+	}
+	async grantPortalAccess() {
+		return null;
+	}
+	async revokePortalAccess() {
+		return null;
+	}
+	async touchPortalLogin() {}
+
+	async paginate(_query: TCustomerListQuery): Promise<TPagination<TCustomerSelect>> {
+		const rows = this.rows.filter((row) => row.deletedAt === null);
+		return { meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 }, rows };
+	}
+
+	async count(_query: TCustomerListQuery) {
+		return this.rows.filter((row) => row.deletedAt === null).length;
+	}
+
+	async findById(id: string) {
+		return this.rows.find((row) => row.id === id && row.deletedAt === null) ?? null;
+	}
+
+	async findByCode(code: string) {
+		return this.rows.find((row) => row.code === code && row.deletedAt === null) ?? null;
+	}
+
+	async findByUserId(userId: string) {
+		return this.rows.find((row) => row.userId === userId && row.deletedAt === null) ?? null;
+	}
+
+	async create(data: TNewCustomer) {
+		this.seq += 1;
+		const now = new Date();
+		const row = { ...data, id: `cu${this.seq}`, createdAt: now, updatedAt: now, deletedAt: null } as TCustomerSelect;
+		this.rows.push(row);
+		return row;
+	}
+
+	async update(id: string, patch: Partial<TCustomerSelect>) {
+		const row = await this.findById(id);
+		if (!row) return null;
+		Object.assign(row, patch);
+		return row;
+	}
+
+	async clearPrimary(companyId: string) {
+		for (const row of this.rows) {
+			if (row.companyId === companyId) row.isPrimary = false;
 		}
-		const row = { ...data, id: crypto.randomUUID(), status: 'active' } as TCustomerSelect;
-		this.rows.push(row);
+	}
+
+	async transitionStatus(id: string, from: 'active' | 'inactive', to: 'active' | 'inactive') {
+		const row = await this.findById(id);
+		if (!row || row.status !== from) return null;
+		row.status = to;
 		return row;
-	}
-	async update(id: string, patch: TUpdateCustomerInput) {
-		const row = await this.findById(id);
-		return row ? Object.assign(row, patch) : null;
-	}
-	async transitionStatus(id: string, from: CustomerStatus, to: CustomerStatus) {
-		const row = await this.findById(id);
-		return row && row.status === from ? Object.assign(row, { status: to }) : null;
 	}
 }
 
-class FakeContacts implements ICustomerContactRepository {
-	rows: (TCustomerContactSelect & { deleted?: boolean })[] = [];
-	async listByCustomer(customerId: string) {
-		return this.rows.filter((r) => r.customerId === customerId && !r.deleted);
-	}
-	async create(customerId: string, data: TCreateContactInput) {
-		const row = { ...data, id: crypto.randomUUID(), customerId } as TCustomerContactSelect;
-		this.rows.push(row);
-		return row;
-	}
-	async update(customerId: string, id: string, patch: TUpdateContactInput) {
-		const row = this.rows.find((r) => r.id === id && r.customerId === customerId && !r.deleted);
-		return row ? Object.assign(row, patch) : null;
-	}
-	async findById(customerId: string, id: string) {
-		return this.rows.find((r) => r.id === id && r.customerId === customerId && !r.deleted) ?? null;
-	}
-	async softDelete(customerId: string, id: string) {
-		const row = this.rows.find((r) => r.id === id && r.customerId === customerId && !r.deleted);
-		if (row) row.deleted = true;
-		return !!row;
-	}
+/** Address ports are not exercised by these tests. */
+const unusedCompanyAddresses = {} as ICompanyAddressRepository;
+const unusedCustomerAddresses = {} as ICustomerAddressRepository;
+
+const ACTOR = 'user-1';
+
+function companyInput(code: string) {
+	return {
+		code,
+		companyType: 'company' as const,
+		name: `PT ${code}`,
+		legalName: null,
+		taxId: null,
+		email: null,
+		phone: null,
+		whatsapp: null,
+		website: null,
+		status: 'active' as const,
+		notes: null,
+	};
 }
 
-const input = (code: string, extra: Record<string, unknown> = {}) =>
-	createCustomerSchema.parse({ code, customerType: 'company', name: `PT ${code}`, ...extra });
+function personInput(code: string, companyId: string | null = null) {
+	return {
+		code,
+		companyId,
+		customerType: companyId ? ('contact' as const) : ('individual' as const),
+		name: `Person ${code}`,
+		position: null,
+		email: null,
+		phone: null,
+		whatsapp: null,
+		isPrimary: false,
+		status: 'active' as const,
+		notes: null,
+	};
+}
 
-describe('CustomerService', () => {
-	let customers: FakeCustomers;
-	let contacts: FakeContacts;
-	let service: CustomerService;
+function setup() {
+	const companies = new FakeCompanies();
+	const people = new FakePeople();
+	const service = new CustomerService(companies, people, unusedCompanyAddresses, unusedCustomerAddresses);
+	const exported = new ExportedCustomerService(companies, people);
+	return { companies, people, service, exported };
+}
 
-	beforeEach(() => {
-		customers = new FakeCustomers();
-		contacts = new FakeContacts();
-		service = new CustomerService(customers, contacts, {
-			getVillage: async (id: string) => (id === KNOWN_VILLAGE ? ({ id } as never) : null),
-		});
-	});
-
-	test('input is normalised: upper-case code, NPWP digits, empty text to null', () => {
-		const parsed = input('cus-01', { taxId: '01.234.567.8-901.000', email: '', notes: '  ' });
-		expect(parsed.code).toBe('CUS-01');
-		expect(parsed.taxId).toBe('012345678901000');
-		expect(parsed.email).toBeNull();
-		expect(parsed.notes).toBeNull();
-		expect(() => input('CUS', { taxId: '123' })).toThrow();
-	});
-
-	test('codes are unique among live customers, including the race path', async () => {
-		const created = await service.create(input('CUS-01'), 'user-1');
-		expect(created.createdBy).toBe('user-1');
-		await expect(service.create(input('cus-01'), 'user-1')).rejects.toBeInstanceOf(CustomerCodeTakenError);
-		customers.raceOnNextCreate = true;
-		await expect(service.create(input('CUS-02'), 'user-1')).rejects.toBeInstanceOf(CustomerCodeTakenError);
-		// Renaming onto another customer's code is refused too; keeping one's own is fine.
-		const other = await service.create(input('CUS-03'), 'user-1');
-		await expect(service.update(other.id, { code: 'CUS-01' })).rejects.toBeInstanceOf(CustomerCodeTakenError);
-		await expect(service.update(other.id, { code: 'CUS-03', name: 'Baru' })).resolves.toMatchObject({ name: 'Baru' });
-	});
-
-	test('the address village is checked through the Location contract', async () => {
-		await expect(
-			service.create(input('CUS-01', { villageId: '01920000-0000-7000-8000-0000000000ff' }), 'user-1'),
-		).rejects.toBeInstanceOf(VillageNotFoundError);
-		await expect(service.create(input('CUS-01', { villageId: KNOWN_VILLAGE }), 'user-1')).resolves.toBeDefined();
-	});
-
-	test('deactivated customers are not offered to other modules; transitions are idempotent-safe', async () => {
-		const customer = await service.create(input('CUS-01'), 'user-1');
-		expect(await service.getActiveCustomer(customer.id)).not.toBeNull();
-		await service.setActive(customer.id, false);
-		expect(await service.getActiveCustomer(customer.id)).toBeNull();
-		await expect(service.setActive(customer.id, false)).rejects.toBeInstanceOf(CustomerStatusUnchangedError);
-		await service.setActive(customer.id, true);
-		expect(await service.getActiveCustomer(customer.id)).not.toBeNull();
-		await expect(service.get('01920000-0000-7000-8000-000000000404')).rejects.toBeInstanceOf(CustomerNotFoundError);
-	});
-
-	test('contacts belong to their customer; a removed contact is gone', async () => {
-		const customer = await service.create(input('CUS-01'), 'user-1');
-		const other = await service.create(input('CUS-02'), 'user-1');
-		const contact = await service.addContact(customer.id, { name: 'Budi', position: null, email: null, phone: null, whatsapp: null, isPrimary: true });
-		expect((await service.get(customer.id)).contacts).toHaveLength(1);
-		await expect(service.updateContact(other.id, contact.id, { name: 'X' })).rejects.toBeInstanceOf(
-			CustomerContactNotFoundError,
+describe('CustomerService: code uniqueness', () => {
+	test('rejects a company code already used by a live company', async () => {
+		const { service } = setup();
+		await service.createCompany(companyInput('ACME'), ACTOR);
+		await expect(service.createCompany(companyInput('ACME'), ACTOR)).rejects.toBeInstanceOf(
+			CustomerCodeTakenError,
 		);
-		await service.removeContact(customer.id, contact.id);
-		expect((await service.get(customer.id)).contacts).toHaveLength(0);
-		await expect(service.removeContact(customer.id, contact.id)).rejects.toBeInstanceOf(CustomerContactNotFoundError);
+	});
+
+	test('rejects a person code already used by a company (one namespace)', async () => {
+		const { service } = setup();
+		await service.createCompany(companyInput('SHARED'), ACTOR);
+		await expect(service.createCustomer(personInput('SHARED'), ACTOR)).rejects.toBeInstanceOf(
+			CustomerCodeTakenError,
+		);
+	});
+
+	test('allows a code freed by an archived row', async () => {
+		const { service, companies } = setup();
+		const created = await service.createCompany(companyInput('OLD'), ACTOR);
+		companies.rows[0].deletedAt = new Date();
+		expect(created.id).toBeDefined();
+		await expect(service.createCompany(companyInput('OLD'), ACTOR)).resolves.toBeDefined();
+	});
+});
+
+describe('CustomerService: parent checks and activation', () => {
+	test('createCustomer rejects an unknown companyId', async () => {
+		const { service } = setup();
+		await expect(
+			service.createCustomer(personInput('P1', 'missing-company'), ACTOR),
+		).rejects.toBeInstanceOf(CustomerNotFoundError);
+	});
+
+	test('deactivating an inactive company is refused', async () => {
+		const { service } = setup();
+		const company = await service.createCompany(companyInput('DEACT'), ACTOR);
+		await service.setCompanyActive(company.id, false);
+		await expect(service.setCompanyActive(company.id, false)).rejects.toBeInstanceOf(
+			CustomerStatusUnchangedError,
+		);
+	});
+
+	test('reactivating a person moves inactive to active', async () => {
+		const { service } = setup();
+		const person = await service.createCustomer(personInput('P2'), ACTOR);
+		await service.setCustomerActive(person.id, false);
+		const reactivated = await service.setCustomerActive(person.id, true);
+		expect(reactivated.status).toBe('active');
+	});
+});
+
+describe('ExportedCustomerService: read facade', () => {
+	test('getSnapshot returns the company when companyId is given', async () => {
+		const { service, exported } = setup();
+		const company = await service.createCompany(companyInput('SNAP'), ACTOR);
+		const snapshot = await exported.getSnapshot({ companyId: company.id });
+		expect(snapshot?.code).toBe('SNAP');
+		expect(snapshot?.type).toBe('company');
+	});
+
+	test('getSnapshot returns null for an unknown id', async () => {
+		const { exported } = setup();
+		expect(await exported.getSnapshot({ companyId: 'nope' })).toBeNull();
+		expect(await exported.getSnapshot({})).toBeNull();
+	});
+
+	test('getActiveCustomer hides an inactive person', async () => {
+		const { service, exported } = setup();
+		const person = await service.createCustomer(personInput('P3'), ACTOR);
+		expect(await exported.getActiveCustomer(person.id)).not.toBeNull();
+		await service.setCustomerActive(person.id, false);
+		expect(await exported.getActiveCustomer(person.id)).toBeNull();
 	});
 });

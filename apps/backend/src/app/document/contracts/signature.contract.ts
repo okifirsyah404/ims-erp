@@ -72,9 +72,11 @@ export type TSignatureRequestView = {
 	documentCode: string | null;
 	documentTitle: string | null;
 	documentType: string | null;
-	requestedByUserId: string;
+	/** Null when the requester was never recorded (ADR-0014). */
+	requestedByUserId: string | null;
 	requestedByName: string | null;
-	signerUserId: string;
+	/** Null when the signer was never recorded (ADR-0014); nobody can sign it. */
+	signerUserId: string | null;
 	signerName: string;
 	status: (typeof SIGNATURE_REQUEST_STATUSES)[number];
 	/** `pending` past `expiresAt` reads as `expired` without a write. */

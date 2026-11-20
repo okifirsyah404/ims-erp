@@ -116,7 +116,7 @@ const ROUTES: ReadonlyArray<{
 	{
 		method: 'PUT',
 		path: `/warehouses/${WAREHOUSE_ID}/address`,
-		body: { street: 'Jl. Sudirman 1' },
+		body: { addressLine: 'Jl. Sudirman 1' },
 	},
 	{ method: 'DELETE', path: `/warehouses/${WAREHOUSE_ID}/address` },
 	{ method: 'GET', path: `/warehouses/${WAREHOUSE_ID}/storages` },
@@ -318,7 +318,8 @@ beforeAll(async () => {
 	const {
 		WAREHOUSE_REPOSITORY_TOKEN,
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-		WAREHOUSE_BORROWING_GUARD_TOKEN,
+		BORROWING_REQUEST_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
 		WAREHOUSE_MANAGER_SERVICE_TOKEN,
@@ -326,8 +327,8 @@ beforeAll(async () => {
 	const { WAREHOUSE_PIC_RESOLVER_TOKEN } = await import(
 		'../../src/authorization/warehouse-pic-resolver'
 	);
-	const { CODE_NUMBER_SERVICE_TOKEN } = await import(
-		'../../src/app/code-number/constants/di'
+	const { INVENTORY_NUMBERING_SERVICE_TOKEN } = await import(
+		'../../src/app/inventory/constants/di'
 	);
 	const { WarehouseService } = await import(
 		'../../src/app/inventory/services/warehouse.service'
@@ -339,11 +340,8 @@ beforeAll(async () => {
 		'../../src/app/inventory/controllers/warehouse.controller'
 	);
 	const { sessionGuard } = await import('../../src/authorization/elysia-auth');
-	const { EXPORTED_ASSET_SERVICE_TOKEN } = await import(
-		'../../src/app/assets/constants/di'
-	);
-	const { EXPORTED_HR_SERVICE_TOKEN } = await import(
-		'../../src/app/hr/constants/di'
+	const { EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN } = await import(
+		'../../src/app/human-resource/constants/di'
 	);
 
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, {
@@ -358,17 +356,17 @@ beforeAll(async () => {
 	container.register(InventoryAuditWriter, {
 		useValue: new AuditWriterDouble(),
 	});
-	// ERP-0031: the unlink guard port — noop here (no borrowings under test).
-	container.register(WAREHOUSE_BORROWING_GUARD_TOKEN, {
-		useValue: { async countOpenBorrowings() { return 0; } },
+	// ERP-0031: the unlink guard reads the borrowing request repository - noop here.
+	container.register(BORROWING_REQUEST_REPOSITORY_TOKEN, {
+		useValue: { async countOpenByOriginWarehouse() { return 0; } } as never,
 	});
-	// Equipment counts come from the assets module's export facade — noop here.
-	container.register(EXPORTED_ASSET_SERVICE_TOKEN, {
+	// Equipment counts come from the item repository - noop here.
+	container.register(ITEM_REPOSITORY_TOKEN, {
 		useValue: { async countByWarehouse() { return []; } } as never,
 	});
 	// Warehouse PIC validation goes through the HR module's export facade —
 	// noop here (the authorization tests never submit a PIC employee id).
-	container.register(EXPORTED_HR_SERVICE_TOKEN, {
+	container.register(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN, {
 		useValue: {
 			async findEmployeeById() {
 				return undefined;
@@ -378,7 +376,7 @@ beforeAll(async () => {
 			},
 		} as never,
 	});
-	container.register(CODE_NUMBER_SERVICE_TOKEN, {
+	container.register(INVENTORY_NUMBERING_SERVICE_TOKEN, {
 		useValue: { next: async () => 'WH-00001' } as never,
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });

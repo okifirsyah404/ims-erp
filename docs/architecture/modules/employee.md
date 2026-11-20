@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "employee / hr". It is kept for history. Current owner: human_resource (schema `human_resource`, page `human-resource.md`) - see docs/database/module-ownership.md.
+> Mapping: hr -> human_resource; module dir apps/backend/src/app/human-resource.
+
 # HR Module — Employees & Attendance (M08)
 
 Code: `apps/backend/src/app/hr/` (schema `hr`), web

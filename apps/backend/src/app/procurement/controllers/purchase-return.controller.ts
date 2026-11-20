@@ -15,7 +15,7 @@ import {
 	purchaseReturnListQuerySchema,
 	purchaseReturnShipSchema,
 } from '../contracts/purchase-return.contract';
-import { idParamSchema } from '../contracts/supplier.contract';
+import { idParamSchema } from '../contracts/params.schema';
 import type { TPurchaseReturnDetail } from '../services/purchase-return.service';
 
 /** Unit cost and totals are restricted to `product:read_cost` (owner, finance, purchasing). */
@@ -43,7 +43,7 @@ export class PurchaseReturnController {
 			});
 		const id = (params: unknown) => idParamSchema.parse(params).id;
 
-		return domainPlugin({ name: 'procurement-purchase-returns', prefix: '/purchase-returns', tags: ['Procurement'], guards: 'erp' })
+		return domainPlugin({ name: 'procurement-purchase-returns', prefix: '/procurement/purchase-returns', tags: ['Procurement'], guards: 'erp' })
 			.get(
 				'',
 				async ({ query, erp }) => {

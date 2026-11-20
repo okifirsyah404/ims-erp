@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
-import type { CodeNumberService } from '@app/code-number';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
+import { INVENTORY_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { InventoryNumberingService } from './inventory-numbering.service';
 import { InventoryAuditWriter } from './inventory-audit.writer';
 import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
 import type { TInventoryAuditActor } from '../constants/audit-actor';
@@ -28,14 +28,14 @@ import type {
 } from '../contracts/warehouse-storage.repository.interface';
 import {
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
-	WAREHOUSE_BORROWING_GUARD_TOKEN,
+	BORROWING_REQUEST_REPOSITORY_TOKEN,
+	ITEM_REPOSITORY_TOKEN,
 	WAREHOUSE_REPOSITORY_TOKEN,
 	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 } from '../constants/di';
-import { EXPORTED_ASSET_SERVICE_TOKEN } from '@app/assets/constants/di';
-import { EXPORTED_HR_SERVICE_TOKEN } from '@app/hr/constants/di';
-import type { ExportedHrService } from '@app/hr/services/exported-hr.service';
-import type { ExportedAssetService } from '@app/assets/services/exported-asset.service';import {
+import { EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN } from '@app/human-resource/constants/di';
+import type { ExportedEmployeeService } from '@app/human-resource/services/exported-employee.service';
+import {
 	InventoryRuleViolationError,
 	StorageCodeTakenError,
 	StorageNotFoundError,
@@ -46,7 +46,8 @@ import type { ExportedAssetService } from '@app/assets/services/exported-asset.s
 	WarehouseNotFoundError,
 	WarehousePicInvalidError,
 } from '../errors/inventory.errors';
-import type { IWarehouseBorrowingGuard } from '../contracts/warehouse-borrowing-guard.port';
+import type { IBorrowingRequestRepository } from '../contracts/borrowing.repository.interface';
+import type { IItemRepository } from '../contracts/item.repository.interface';
 
 /** A warehouse with its 1:1 address, its bins, and its kind counts. */
 export type TWarehouseDetail = TWarehouseSelect & {
@@ -108,17 +109,17 @@ export class WarehouseService {
 		 * provides the real implementation; tests and asset-less compositions
 		 * register a noop.
 		 */
-		@inject(WAREHOUSE_BORROWING_GUARD_TOKEN)
-		private readonly borrowingGuard: IWarehouseBorrowingGuard,
+		@inject(BORROWING_REQUEST_REPOSITORY_TOKEN)
+		private readonly borrowingGuard: Pick<IBorrowingRequestRepository, 'countOpenByOriginWarehouse'>,
 		/** Equipment counts come from the assets module via its export facade. */
-		@inject(EXPORTED_ASSET_SERVICE_TOKEN)
-		private readonly exportedAssetService: ExportedAssetService,
+		@inject(ITEM_REPOSITORY_TOKEN)
+		private readonly itemRepository: Pick<IItemRepository, 'countByWarehouse'>,
 		/** PIC validation reads hr.employees through the HR export facade. */
-		@inject(EXPORTED_HR_SERVICE_TOKEN)
-		private readonly exportedHrService: ExportedHrService,
+		@inject(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN)
+		private readonly exportedHrService: ExportedEmployeeService,
 		/** Codes of warehouses created without an explicit one (ERP-0042). */
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
 	) {}
 
 	/** Fetches one filtered page of warehouses, decorated with kind counts. */
@@ -197,8 +198,8 @@ export class WarehouseService {
 	}
 
 	/**
-	 * Merges alive equipment-asset counts (from the assets module) into the
-	 * inventory-computed kind counts, per warehouse.
+	 * Merges alive equipment item counts into the inventory-computed product
+	 * kind counts, per warehouse.
 	 *
 	 * @remarks
 	 * Equipment is an asset (`assets.assets`, `assetType = 'equipment'`), not an
@@ -211,7 +212,7 @@ export class WarehouseService {
 	): Promise<TWarehouseKindCounts[]> {
 		if (counts.length === 0) return [];
 		const warehouseIds = counts.map((row) => row.warehouseId);
-		const equipmentRows = await this.exportedAssetService.countByWarehouse(
+		const equipmentRows = await this.itemRepository.countByWarehouse(
 			warehouseIds,
 			'equipment',
 		);
@@ -676,7 +677,7 @@ export class WarehouseService {
 		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<{ removed: boolean }> {
 		await this.requireWarehouse(warehouseId);
-		const openBorrowings = await this.borrowingGuard.countOpenBorrowings(
+		const openBorrowings = await this.borrowingGuard.countOpenByOriginWarehouse(
 			warehouseId,
 			organizationId,
 		);

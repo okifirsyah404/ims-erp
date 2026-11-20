@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type {
 	NotificationChannel,
 	NotificationStatus,
-	TNotificationSelect,
+	TPushNotificationSelect,
 } from '@drizzle/schemas/notification.schema';
 
 /**
@@ -28,7 +28,7 @@ export const notificationQuerySchema = z.object({
 		.optional()
 		.transform((value) => value === 'true'),
 });
-export type TNotificationQuery = z.infer<typeof notificationQuerySchema>;
+export type TPushNotificationQuery = z.infer<typeof notificationQuerySchema>;
 
 /** Path parameter for the single-notification routes. */
 export const notificationIdParamsSchema = z.object({
@@ -36,10 +36,10 @@ export const notificationIdParamsSchema = z.object({
 	// Postgres and surface as a 500 instead of a validation error.
 	id: z.uuid(),
 });
-export type TNotificationIdParams = z.infer<typeof notificationIdParamsSchema>;
+export type TPushNotificationIdParams = z.infer<typeof notificationIdParamsSchema>;
 
 /** One notification as the client receives it. */
-export type TNotificationView = {
+export type TPushNotificationView = {
 	id: string;
 	templateCode: string;
 	title: string;
@@ -57,7 +57,7 @@ export type TNotificationView = {
 };
 
 /** Maps a stored row onto the wire shape. */
-export function toNotificationView(row: TNotificationSelect): TNotificationView {
+export function toNotificationView(row: TPushNotificationSelect): TPushNotificationView {
 	return {
 		id: row.id,
 		templateCode: row.templateCode,

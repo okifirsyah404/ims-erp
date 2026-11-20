@@ -6,21 +6,21 @@
  * code; texts from the profile or the sample's defaults; serials in the items.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
-import type { TWarrantyCertificateSelect } from '@drizzle/schemas/aftersales.schema';
-import type { TProjectHandoverSelect, TProjectSelect } from '@drizzle/schemas/projects.schema';
-import { WarrantyBastRequiredError, WarrantyProjectCancelledError } from '../../src/app/aftersales/errors/warranty.errors';
-import { WarrantyService } from '../../src/app/aftersales/services/warranty.service';
-import { DEFAULT_WARRANTY_EXCLUSIONS, customerNumberCode, warrantyEndDate } from '../../src/app/aftersales/utils/warranty';
-import { BastNotFoundError, ProjectNotActiveError } from '../../src/app/projects/errors/project.errors';
-import { HandoverService } from '../../src/app/projects/services/handover.service';
-import type { TProjectContext } from '../../src/app/projects/services/project.service';
+import type { TWarrantySelect } from '@drizzle/schemas/project.schema';
+import type { THandoverSelect, TProjectSelect } from '@drizzle/schemas/project.schema';
+import { WarrantyBastRequiredError, WarrantyProjectCancelledError } from '../../src/app/project/errors/warranty.errors';
+import { WarrantyService } from '../../src/app/project/services/warranty.service';
+import { DEFAULT_WARRANTY_EXCLUSIONS, customerNumberCode, warrantyEndDate } from '../../src/app/project/utils/warranty';
+import { BastNotFoundError, ProjectNotActiveError } from '../../src/app/project/errors/project.errors';
+import { HandoverService } from '../../src/app/project/services/handover.service';
+import type { TProjectContext } from '../../src/app/project/services/project.service';
 
 const ctx: TProjectContext = { organizationId: 'org', actorUserId: 'pm', canViewAll: true, canSeeCost: true, canAssignTasks: true, canManage: true };
 const PROJECT = '0190a1b2-0000-7000-8000-00000000b001';
 
 let project: TProjectSelect;
-let basts: TProjectHandoverSelect[];
-let certificates: TWarrantyCertificateSelect[];
+let basts: THandoverSelect[];
+let certificates: TWarrantySelect[];
 let numbers: { type: string; context?: unknown }[];
 let handover: HandoverService;
 let warranty: WarrantyService;
@@ -45,7 +45,7 @@ const bastBody = (date = '2025-12-24') => ({
 });
 
 beforeEach(() => {
-	project = { id: PROJECT, status: 'active', salesOrderId: 'so-1', customerId: 'cust-1', customerName: 'PT ADHI', title: 'Swing gate & parkir', siteName: 'OIKN', picUserId: 'pm' } as TProjectSelect;
+	project = { id: PROJECT, status: 'active', orderId: 'so-1', customerId: 'cust-1', customerName: 'PT ADHI', title: 'Swing gate & parkir', siteName: 'OIKN', picUserId: 'pm' } as TProjectSelect;
 	basts = [];
 	certificates = [];
 	numbers = [];
@@ -53,8 +53,9 @@ beforeEach(() => {
 	registered = [];
 	voided = [];
 	const numbering = {
-		async next(type: string, options?: { context?: unknown }) {
-			numbers.push({ type, context: options?.context });
+		// The project numbering service is `next(type, tx, date, context)`.
+		async next(type: string, _tx?: unknown, _date?: unknown, context?: unknown) {
+			numbers.push({ type, context });
 			return `${String(numbers.length).padStart(3, '0')}/${type}`;
 		},
 	};
@@ -64,7 +65,7 @@ beforeEach(() => {
 			paginateAll: async () => ({ meta: { page: 1, limit: 20, total: basts.length, totalPages: 1 }, data: [] }),
 			find: async (projectId, id) => basts.find((row) => row.id === id && row.projectId === projectId) ?? null,
 			async create(projectId, code, actor, data) {
-				const row = { ...data, id: crypto.randomUUID(), projectId, code, status: 'issued', createdBy: actor } as TProjectHandoverSelect;
+				const row = { ...data, id: crypto.randomUUID(), projectId, code, status: 'issued', createdBy: actor } as THandoverSelect;
 				basts.push(row);
 				return row;
 			},
@@ -84,7 +85,7 @@ beforeEach(() => {
 		},
 		{ get: async () => ({ legalName: 'CV Inti Multi Solusi', ...profileTexts }) as never },
 		{ getUser: async () => ({ id: 'pm', name: 'Agus Supriyadi' }) as never },
-		numbering,
+		numbering as never,
 		{
 			// ERP-0044: registry side effects are asserted through `registered` / `voided`.
 			register: async (input) => {
@@ -102,7 +103,7 @@ beforeEach(() => {
 			findByProject: async (projectId) => certificates.find((row) => row.projectId === projectId) ?? null,
 			listByCustomer: async (customerId) => certificates.filter((row) => row.customerId === customerId),
 			async create(code, actor, data) {
-				const row = { ...data, id: crypto.randomUUID(), code, createdBy: actor } as TWarrantyCertificateSelect;
+				const row = { ...data, id: crypto.randomUUID(), code, createdBy: actor } as TWarrantySelect;
 				certificates.push(row);
 				return row;
 			},
@@ -114,18 +115,18 @@ beforeEach(() => {
 		{
 			shippedLines: async () =>
 				[
-					{ salesOrderItemId: 'l1', name: 'Swing Gate', unit: 'unit', quantity: '1.000', serialNumbers: ['SG-1'] },
-					{ salesOrderItemId: 'l1', name: 'Swing Gate', unit: 'unit', quantity: '1.000', serialNumbers: ['SG-2'] },
+					{ orderItemId: 'l1', name: 'Swing Gate', unit: 'unit', quantity: '1.000', serialNumbers: ['SG-1'] },
+					{ orderItemId: 'l1', name: 'Swing Gate', unit: 'unit', quantity: '1.000', serialNumbers: ['SG-2'] },
 				] as never,
 			orderLines: async () => [] as never,
 			findShipmentBySerial: async (serial: string) =>
-				serial.startsWith('SG-') ? { salesOrderId: 'so-1', customerId: 'cust-1', description: 'Swing Gate', deliveryNoteCode: 'SJ-1', shippedAt: new Date() } : null,
+				serial.startsWith('SG-') ? { orderId: 'so-1', customerId: 'cust-1', description: 'Swing Gate', deliveryNoteCode: 'SJ-1', shippedAt: new Date() } : null,
 		},
-		{ get: async () => ({ code: 'app' }) as never },
+		{ getSnapshot: async () => ({ code: 'app' }) as never },
 		{ get: async () => ({ ...profileTexts }) as never },
-		numbering,
+		numbering as never,
 		{
-			liveProjectOfOrder: async (orderId: string) => (orderId === project.salesOrderId ? project : null),
+			liveProjectOfOrder: async (orderId: string) => (orderId === project.orderId ? project : null),
 			getProject: async (id: string) => (id === PROJECT ? project : null),
 		},
 		{
@@ -172,22 +173,22 @@ describe('warranty certificate', () => {
 		const draft = await warranty.draft(ctx, PROJECT);
 		expect(draft.items).toEqual([{ description: 'Swing Gate', volume: '2 unit', remarks: 'SN: SG-1, SG-2' }]);
 		expect(draft.exclusions).toBe(DEFAULT_WARRANTY_EXCLUSIONS);
-		const body = { ...draft, bastId: crypto.randomUUID() };
+		const body = { ...draft, handoverId: crypto.randomUUID() };
 		await expect(warranty.save(ctx, PROJECT, body)).rejects.toBeInstanceOf(WarrantyBastRequiredError);
 		const bast = await handover.create(ctx, PROJECT, bastBody('2025-12-24'));
-		const certificate = await warranty.save(ctx, PROJECT, { ...body, bastId: bast.id });
+		const certificate = await warranty.save(ctx, PROJECT, { ...body, handoverId: bast.id });
 		expect(certificate).toMatchObject({ startDate: '2025-12-24', endDate: '2026-12-23', months: 12 });
-		expect(numbers[numbers.length - 1]).toEqual({ type: 'warranty', context: { customer: 'APP' } });
+		expect(numbers[numbers.length - 1]).toMatchObject({ type: 'warranty', context: { customer: 'APP' } });
 		// ERP-0044: the certificate is registered once, on create.
 		expect(registered.filter((row) => row.documentType === 'warranty')).toEqual([
 			expect.objectContaining({ code: certificate.code, sourceId: certificate.id }),
 		]);
 		// Saving again updates the same certificate (still editable after closing).
 		project.status = 'closed';
-		const again = await warranty.save(ctx, PROJECT, { ...body, bastId: bast.id, months: 24 });
+		const again = await warranty.save(ctx, PROJECT, { ...body, handoverId: bast.id, months: 24 });
 		expect(again).toMatchObject({ id: certificate.id, code: certificate.code, endDate: '2027-12-23' });
 		project.status = 'cancelled';
-		await expect(warranty.save(ctx, PROJECT, { ...body, bastId: bast.id })).rejects.toBeInstanceOf(WarrantyProjectCancelledError);
+		await expect(warranty.save(ctx, PROJECT, { ...body, handoverId: bast.id })).rejects.toBeInstanceOf(WarrantyProjectCancelledError);
 	});
 
 	test('the company profile texts replace the defaults', async () => {
@@ -200,7 +201,7 @@ describe('warranty check', () => {
 	test('serial → shipment → project → certificate; in warranty up to the end date', async () => {
 		const bast = await handover.create(ctx, PROJECT, bastBody('2025-12-24'));
 		const draft = await warranty.draft(ctx, PROJECT);
-		await warranty.save(ctx, PROJECT, { ...draft, bastId: bast.id });
+		await warranty.save(ctx, PROJECT, { ...draft, handoverId: bast.id });
 		expect(await warranty.check({ serialNumber: 'SG-1' }, '2026-12-23')).toMatchObject({
 			customerId: 'cust-1',
 			projectId: PROJECT,

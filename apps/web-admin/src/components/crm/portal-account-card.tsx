@@ -27,6 +27,7 @@ import {
 	revokePortalAccount,
 	type TPortalAccount,
 	type TPortalRole,
+	type TPortalScope,
 } from '@/lib/portal-account-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -38,13 +39,13 @@ const select = 'h-9 w-full rounded-md border bg-transparent px-3 text-sm';
  * emailed link), resend the link or revoke. UX only — the API checks
  * `portal_account:*`.
  */
-export function PortalAccountCard({ customerId, defaultName, defaultEmail }: { customerId: string; defaultName: string; defaultEmail: string | null }) {
+export function PortalAccountCard({ scope, defaultName, defaultEmail }: { scope: TPortalScope; defaultName: string; defaultEmail: string | null }) {
 	const { t, i18n } = useTranslation(['crm', 'common']);
 	const queryClient = useQueryClient();
 	const canRead = usePermission('portal_account.read');
 	const canInvite = usePermission('portal_account.invite');
 	const canRevoke = usePermission('portal_account.revoke');
-	const { data: accounts = [], isPending } = useQuery(portalAccountsQueryOptions(customerId, canRead));
+	const { data: accounts = [], isPending } = useQuery(portalAccountsQueryOptions(scope, canRead));
 	const [name, setName] = useState(defaultName);
 	const [email, setEmail] = useState(defaultEmail ?? '');
 	const [role, setRole] = useState<TPortalRole>('owner');
@@ -57,7 +58,7 @@ export function PortalAccountCard({ customerId, defaultName, defaultEmail }: { c
 		setBusy(true);
 		try {
 			await work();
-			await queryClient.invalidateQueries({ queryKey: ['crm', 'portal-account', customerId] });
+			await queryClient.invalidateQueries({ queryKey: ['crm', 'portal-account', scope.companyId ?? scope.customerId] });
 			toast.success(done);
 			return true;
 		} catch (cause) {
@@ -111,7 +112,7 @@ export function PortalAccountCard({ customerId, defaultName, defaultEmail }: { c
 						className='grid gap-3 sm:grid-cols-[1fr_1fr_10rem_auto] sm:items-end'
 						onSubmit={(event) => {
 							event.preventDefault();
-							void run(() => invitePortalAccount({ customerId, name: name.trim(), email: email.trim(), role }), t('crm:portal.invited')).then((ok) => {
+							void run(() => invitePortalAccount({ ...scope, name: name.trim(), email: email.trim(), role }), t('crm:portal.invited')).then((ok) => {
 								if (ok && accounts.length > 0) {
 									setName('');
 									setEmail('');

@@ -66,8 +66,6 @@ describe('locale values', () => {
 			'settings:settings.type.json',
 			// `Logo` is the same word in Indonesian.
 			'settings:companyProfile.image.logo',
-			// `Material` is the same word in both languages.
-			'settings:numbering.type.item_material',
 			'common:language.switchToEnglish',
 			'common:language.switchToIndonesian',
 			'nav:section.platform',
@@ -84,7 +82,6 @@ describe('locale values', () => {
 			'admin:users.status',
 			'admin:users.filterStatus',
 			// "Invoice" and "Status" are the Indonesian words too.
-			'settings:numbering.type.sales_invoice',
 			'documents:status',
 			// Digit-only phone example: the placeholder is a number pattern,
 			// not prose, so it is identical in both bundles.
@@ -189,9 +186,10 @@ describe('locale values', () => {
 			'dashboard:widget.cash.total',
 			// Business terms the company uses verbatim in Indonesian documents.
 			'settings:companyProfile.email',
-			'settings:numbering.type.sales_order',
-			'settings:numbering.type.invoice',
-			'settings:numbering.type.purchase_order',
+			// "Mode", "Status" and "Live" are the Indonesian words too.
+			'settings:paymentGateways.mode',
+			'settings:paymentGateways.modeLive',
+			'settings:paymentGateways.status',
 			// "Slug" is the same technical term in Indonesian.
 			'inventory:categories.slug',
 			'crm:customer.email',

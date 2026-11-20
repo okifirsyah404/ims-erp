@@ -1,0 +1,29 @@
+import { InjectionToken } from 'tsyringe';
+import type { ISupplierCompanyRepository } from '../contracts/supplier.repository.interface';
+import type { ISupplierRepository } from '../contracts/supplier.repository.interface';
+import type { SupplierService } from '../services/supplier.service';
+import type { ExportedSupplierService } from '../services/exported-supplier.service';
+
+/** Token resolving to the {@link ISupplierCompanyRepository} implementation. */
+export const SUPPLIER_COMPANY_REPOSITORY_TOKEN: InjectionToken<ISupplierCompanyRepository> =
+	Symbol('SUPPLIER_COMPANY_REPOSITORY');
+
+/** Token resolving to the {@link ISupplierRepository} implementation. */
+export const SUPPLIER_PERSON_REPOSITORY_TOKEN: InjectionToken<ISupplierRepository> =
+	Symbol('SUPPLIER_PERSON_REPOSITORY');
+
+/** Token resolving to the {@link SupplierService} implementation. */
+export const SUPPLIER_SERVICE_TOKEN: InjectionToken<SupplierService> = Symbol(
+	'SUPPLIER_SERVICE',
+);
+
+/**
+ * Token resolving to the repository-only `ExportedSupplierService`.
+ *
+ * @remarks
+ * `procurement` (PO snapshot) and `inventory` (`items.supplier_company_id`)
+ * consume this facade; it depends only on this module's repositories, so it
+ * cannot create a cycle.
+ */
+export const EXPORTED_SUPPLIER_SERVICE_TOKEN: InjectionToken<ExportedSupplierService> =
+	Symbol('EXPORTED_SUPPLIER_SERVICE');

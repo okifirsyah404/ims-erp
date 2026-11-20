@@ -3,7 +3,7 @@ import {
 	ADJUSTMENT_STATUSES,
 	ADJUSTMENT_TYPES,
 } from '@drizzle/schemas/inventory.schema';
-import { inventoryPaginationSchema } from './item.contract';
+import { inventoryPaginationSchema } from './product.contract';
 
 /**
  * Request schemas for the stock adjustment document workflow.
@@ -37,7 +37,7 @@ export const countedQuantitySchema = z.coerce
  * difference, so a client never states which way stock moves.
  */
 export const adjustmentLineSchema = z.object({
-	itemId: z.uuid(),
+	productId: z.uuid(),
 	binId: z.uuid().nullable().optional(),
 	quantityAfter: countedQuantitySchema,
 	/**

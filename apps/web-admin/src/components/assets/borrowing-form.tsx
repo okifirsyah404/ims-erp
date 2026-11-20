@@ -24,7 +24,7 @@ import {
 	GUEST_ID_TYPES,
 	createBorrowing,
 	type TBorrowerInput,
-	type TBorrowingLineInput,
+	type TBorrowingItemInput,
 	type TBorrowingPurpose,
 	type TGuestIdType,
 } from '@/lib/borrowing-api';
@@ -35,7 +35,7 @@ import { toast } from '@/components/toast';
 type TUnitDraft = {
 	/** React key, so removing a row cannot reuse another row's state. */
 	key: number;
-	assetId: string;
+	itemId: string;
 	label: string;
 };
 
@@ -123,13 +123,13 @@ export function BorrowingForm() {
 
 	function addUnit() {
 		if (unitSelect === '') return;
-		if (units.some((unit) => unit.assetId === unitSelect)) return;
+		if (units.some((unit) => unit.itemId === unitSelect)) return;
 		const asset = readyAssets.data?.rows.find((row) => row.id === unitSelect);
 		setUnits((current) => [
 			...current,
 			{
 				key: nextKey++,
-				assetId: unitSelect,
+				itemId: unitSelect,
 				label: asset ? `${asset.code} · ${asset.name}` : unitSelect,
 			},
 		]);
@@ -141,8 +141,8 @@ export function BorrowingForm() {
 		const borrower = buildBorrower();
 		if (!borrower || !dueAt || units.length === 0) return;
 
-		const lines: TBorrowingLineInput[] = units.map((unit) => ({
-			assetId: unit.assetId,
+		const items: TBorrowingItemInput[] = units.map((unit) => ({
+			itemId: unit.itemId,
 		}));
 
 		creation.mutate({
@@ -150,7 +150,7 @@ export function BorrowingForm() {
 			purpose,
 			dueAt: new Date(dueAt).toISOString(),
 			notes: notes === '' ? null : notes,
-			lines,
+			items,
 		});
 	}
 
@@ -364,7 +364,7 @@ export function BorrowingForm() {
 									{(readyAssets.data?.rows ?? [])
 										.filter(
 											(asset) =>
-												!units.some((unit) => unit.assetId === asset.id),
+												!units.some((unit) => unit.itemId === asset.id),
 										)
 										.map((asset) => (
 											<option key={asset.id} value={asset.id}>

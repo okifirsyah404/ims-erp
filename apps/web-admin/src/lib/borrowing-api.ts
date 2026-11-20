@@ -5,13 +5,23 @@ import type {
 import { queryOptions } from '@tanstack/react-query';
 
 /**
- * API client for the borrowing workflow (`/borrowings`).
+ * API client for the borrowing workflow (`/inventory/borrowing-requests` and
+ * `/inventory/borrowings`).
  *
  * @remarks
- * A borrowing is a **document with a custody chain and a physical ledger
- * effect**, not a bare movement: `requested → approved → issued →
- * partially_returned → returned → closed`, plus `rejected` / `cancelled`. Only
- * `issue`, `return`, and `mark-lost` write movements, each exactly once.
+ * Since ADR-0024 a borrowing is two documents:
+ *
+ * - a **request** (`borrowing_requests`): `draft → requested → approved`, plus
+ *   `rejected` / `cancelled`. It carries the borrower, the purpose and the
+ *   requested items. It never moves stock.
+ * - a **borrowing** (`borrowings`), created when the request is issued:
+ *   `issued → partially_returned → returned → closed`. Only `issue`, `return`
+ *   and `mark-lost` write movements, each exactly once.
+ *
+ * Every detail read is keyed by the **request id** and answers the request view
+ * (`TBorrowingView`) with the borrowing nested once it exists; the actions that
+ * belong to the issue document (return, extend after issue, mark lost, close)
+ * are addressed by `view.borrowing.id`.
  *
  * **The client never sends a status, an approver, a code, or an organization.**
  * All are decided by the backend from the session — a client that could set them
@@ -19,7 +29,7 @@ import { queryOptions } from '@tanstack/react-query';
  * reason, so the buttons here can only request an edge, never assert one.
  *
  * **Guest PII is whatever the server chose to send.** A caller without
- * `borrowing:mark_lost` receives the identity fields as `null` with
+ * `asset_borrowing:mark_lost` receives the identity fields as `null` with
  * `guestIdentityRedacted: true`; this client renders the redaction marker rather
  * than assuming the fields exist, because it has no way to know the caller's
  * tier.
@@ -27,17 +37,25 @@ import { queryOptions } from '@tanstack/react-query';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-/** Borrowing document status, mirroring the backend state machine. */
-export type TBorrowingStatus =
+/** Request-half statuses (`BORROWING_REQUEST_STATUSES`). */
+export type TBorrowingRequestStatus =
 	| 'draft'
 	| 'requested'
 	| 'approved'
 	| 'rejected'
+	| 'cancelled';
+
+/** Issue-document statuses (`BORROWING_STATUSES`). */
+export type TBorrowingDocumentStatus =
 	| 'issued'
 	| 'partially_returned'
 	| 'returned'
-	| 'closed'
-	| 'cancelled';
+	| 'closed';
+
+/** Either half's status: what the screens badge. */
+export type TBorrowingStatus =
+	| TBorrowingRequestStatus
+	| TBorrowingDocumentStatus;
 
 /** The three borrower paths. */
 export const BORROWER_TYPES = ['user', 'customer', 'guest'] as const;
@@ -60,13 +78,13 @@ export type TReturnCondition = (typeof RETURN_CONDITIONS)[number];
 export const GUEST_ID_TYPES = ['ktp', 'sim', 'passport', 'other'] as const;
 export type TGuestIdType = (typeof GUEST_ID_TYPES)[number];
 
-/** One borrowing (header). */
-export type TBorrowing = {
+/** One borrowing request (list row and the base of the detail view). */
+export type TBorrowingRequest = {
 	id: string;
-	/** Always a tenant: a borrowing belongs to the organization that issued it. */
+	/** Always a tenant: a request belongs to the organization that raised it. */
 	organizationId: string;
 	code: string;
-	status: TBorrowingStatus;
+	status: TBorrowingRequestStatus;
 	purpose: TBorrowingPurpose;
 	borrowerType: TBorrowerType;
 	borrowerUserId: string | null;
@@ -90,27 +108,42 @@ export type TBorrowing = {
 	requestedAt: string | null;
 	approvedBy: string | null;
 	approvedAt: string | null;
-	issuedBy: string | null;
-	issuedAt: string | null;
 	dueAt: string;
-	closedBy: string | null;
-	closedAt: string | null;
-	/** Set when the borrowing lends a whole tool set (D6). */
+	/** Set when the request lends a whole tool set (D6). */
 	toolSetId: string | null;
 	notes: string | null;
 	createdAt: string;
 	updatedAt: string | null;
 	deletedAt: string | null;
-	/** List projection: first borrowed asset's photo; `null` when none. */
+	/** List projection only: first requested item's photo; `null` when none. */
 	imageUrl?: string | null;
-	/** Detail projection only: `true` when guest identity fields were withheld. */
-	guestIdentityRedacted?: boolean;
 };
 
-/** One borrowed unit. A line is exactly one asset. */export type TBorrowingLine = {
+/** The issue/return document of an issued request. */
+export type TBorrowingDocument = {
 	id: string;
-	borrowingId: string;
-	assetId: string;
+	organizationId: string;
+	code: string;
+	borrowingRequestId: string;
+	status: TBorrowingDocumentStatus;
+	issuedBy: string | null;
+	issuedAt: string | null;
+	dueAt: string;
+	closedBy: string | null;
+	closedAt: string | null;
+	notes: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+	deletedAt: string | null;
+};
+
+/** One borrowed unit. An item is exactly one physical unit. */
+export type TBorrowingItem = {
+	id: string;
+	borrowingRequestId: string;
+	/** `null` until the request is issued. */
+	borrowingId: string | null;
+	itemId: string;
 	/** The warehouse the unit left from; a return restores it here. */
 	originWarehouseId: string | null;
 	originStorageId: string | null;
@@ -131,41 +164,45 @@ export type TBorrowing = {
 };
 
 /**
- * One timeline entry.
+ * One timeline entry, from either half of the lifecycle.
  *
  * @remarks
- * **`issued`, `returned`, and `marked_lost` always carry an `assetMovementId`** —
- * the backend's CHECK constraint requires it, which is how the trail proves a
+ * **`issued`, `returned`, and `marked_lost` always carry a `movementId`** — the
+ * backend's CHECK constraint requires it, which is how the trail proves a
  * physical event was actually written to the ledger rather than merely claimed.
  * Every other event carries `null`. `marked_late` also has a null actor: it is
  * the sweep, not a person.
  */
 export type TBorrowingEvent = {
 	id: string;
-	borrowingLineId: string | null;
+	/** `request` before issue, `borrowing` after. */
+	scope: 'request' | 'borrowing';
+	borrowingItemId: string | null;
 	eventType: string;
-	assetMovementId: string | null;
+	movementId: string | null;
 	actorUserId: string | null;
 	occurredAt: string;
 	note: string | null;
 };
 
-/** One borrowing with its lines and full timeline. */
-export type TBorrowingDetail = {
-	borrowing: TBorrowing;
-	lines: TBorrowingLine[];
+/** One request with its borrowing (once issued), items and full timeline. */
+export type TBorrowingView = TBorrowingRequest & {
+	/** The issue document; `null` until the request is issued. */
+	borrowing: TBorrowingDocument | null;
+	items: TBorrowingItem[];
 	events: TBorrowingEvent[];
+	/** `true` when guest identity fields were withheld from this caller. */
+	guestIdentityRedacted: boolean;
 };
 
-/** The flat shape the API returns for a detail read. */
-type TBorrowingView = TBorrowing & {
-	lines: TBorrowingLine[];
-	events: TBorrowingEvent[];
-};
+/** The status a screen should badge: the issue document's once it exists. */
+export function borrowingStatusOf(view: TBorrowingView): TBorrowingStatus {
+	return view.borrowing?.status ?? view.status;
+}
 
 /** One requested unit. */
-export type TBorrowingLineInput = {
-	assetId: string;
+export type TBorrowingItemInput = {
+	itemId: string;
 	dueAt?: string | null;
 	siteAddressText?: string | null;
 	projectId?: string | null;
@@ -191,9 +228,11 @@ export type TBorrowingCreateInput = TBorrowerInput & {
 	purpose: TBorrowingPurpose;
 	dueAt: string;
 	notes?: string | null;
-	/** Lends a whole tool set; the backend expands it to one line per member. */
+	/** Lends a whole tool set; the backend expands it to one item per member. */
 	toolSetId?: string | null;
-	lines: TBorrowingLineInput[];
+	/** Starts as a draft instead of being raised immediately. */
+	draft?: boolean;
+	items: TBorrowingItemInput[];
 };
 
 async function request<T>(
@@ -215,21 +254,11 @@ async function request<T>(
 	return envelope;
 }
 
-/**
- * Unwraps the flat detail shape the service returns into the screen shape, or
- * passes `null` through so the detail page renders "not found".
- */
-function toDetail(data: TBorrowingView | null): TBorrowingDetail | null {
-	if (data === null) return null;
-	const { lines, events, ...borrowing } = data;
-	return { borrowing, lines, events };
-}
-
-/** Fetches one page of borrowings. */
-export async function listBorrowings(params?: {
+/** Fetches one page of borrowing requests. */
+export async function listBorrowingRequests(params?: {
 	page?: number;
 	limit?: number;
-	status?: TBorrowingStatus;
+	status?: TBorrowingRequestStatus;
 	borrowerType?: TBorrowerType;
 	search?: string;
 }) {
@@ -241,116 +270,170 @@ export async function listBorrowings(params?: {
 	if (params?.search) search.set('search', params.search);
 	const query = search.toString();
 
-	const envelope = (await request<TBorrowing[]>(
-		`/borrowings${query ? `?${query}` : ''}`,
-	)) as TApiPaginatedResponse<TBorrowing>;
+	const envelope = (await request<TBorrowingRequest[]>(
+		`/inventory/borrowing-requests${query ? `?${query}` : ''}`,
+	)) as TApiPaginatedResponse<TBorrowingRequest>;
 	return { rows: envelope.data, pagination: envelope.pagination };
 }
 
-/** Fetches one borrowing with its lines and timeline. */
-export async function getBorrowing(borrowingId: string) {
-	const envelope = await request<TBorrowingView>(
-		`/borrowings/${borrowingId}`,
-	);
-	return toDetail(envelope.data);
+/** Fetches one page of issue documents (borrowings proper). */
+export async function listBorrowingDocuments(params?: {
+	page?: number;
+	limit?: number;
+	status?: TBorrowingDocumentStatus;
+	search?: string;
+}) {
+	const search = new URLSearchParams();
+	if (params?.page) search.set('page', String(params.page));
+	if (params?.limit) search.set('limit', String(params.limit));
+	if (params?.status) search.set('status', params.status);
+	if (params?.search) search.set('search', params.search);
+	const query = search.toString();
+
+	const envelope = (await request<TBorrowingDocument[]>(
+		`/inventory/borrowings${query ? `?${query}` : ''}`,
+	)) as TApiPaginatedResponse<TBorrowingDocument>;
+	return { rows: envelope.data, pagination: envelope.pagination };
 }
 
-/** Raises a borrowing. It starts in `requested`. */
+/** Fetches one request with its borrowing, items and timeline. */
+export async function getBorrowing(requestId: string) {
+	const envelope = await request<TBorrowingView>(
+		`/inventory/borrowing-requests/${requestId}`,
+	);
+	return envelope.data as TBorrowingView;
+}
+
+/** Raises a request. It starts in `requested` (or `draft` when asked). */
 export async function createBorrowing(input: TBorrowingCreateInput) {
-	const envelope = await request<TBorrowingView>('/borrowings', {
+	const envelope = await request<TBorrowingView>('/inventory/borrowing-requests', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
-	return toDetail(envelope.data);
+	return envelope.data as TBorrowingView;
 }
 
-/** The edges that need no body. */
+/** The request-level edges that need no body. */
 export type TBorrowingAction =
 	| 'submit'
 	| 'approve'
 	| 'reject'
 	| 'issue'
-	| 'cancel'
-	| 'close';
+	| 'cancel';
 
 /**
- * Requests one bodyless transition.
+ * Requests one bodyless request-level transition.
  *
+ * @param requestId - The request's id
  * @param action - The edge to request
  * @remarks
  * The backend decides whether the edge is legal **and** whether this caller may
  * take it; a refusal is a 422 or 403 surfaced as a thrown `Error`.
  */
 export async function transitionBorrowing(
-	borrowingId: string,
+	requestId: string,
 	action: TBorrowingAction,
 ) {
 	const envelope = await request<TBorrowingView>(
-		`/borrowings/${borrowingId}/${action}`,
+		`/inventory/borrowing-requests/${requestId}/${action}`,
 		{ method: 'POST' },
 	);
-	return toDetail(envelope.data);
+	return envelope.data as TBorrowingView;
 }
 
-/** Returns one line, or every open line when `lineId` is omitted. */
+/** Closes a returned borrowing, starting the guest-PII retention clock. */
+export async function closeBorrowing(borrowingId: string) {
+	const envelope = await request<TBorrowingView>(
+		`/inventory/borrowings/${borrowingId}/close`,
+		{ method: 'POST' },
+	);
+	return envelope.data as TBorrowingView;
+}
+
+/** Returns one item, or every open item when `borrowingItemId` is omitted. */
 export async function returnBorrowing(
 	borrowingId: string,
 	input: {
-		lineId?: string;
+		borrowingItemId?: string;
 		condition: TReturnCondition;
 		note?: string | null;
 	},
 ) {
 	const envelope = await request<TBorrowingView>(
-		`/borrowings/${borrowingId}/return`,
+		`/inventory/borrowings/${borrowingId}/return`,
 		{ method: 'POST', body: JSON.stringify(input) },
 	);
-	return toDetail(envelope.data);
+	return envelope.data as TBorrowingView;
 }
 
-/** Extends the due date. Nothing physical moves. */
+/** Extends the due date of an issued borrowing. Nothing physical moves. */
 export async function extendBorrowing(borrowingId: string, dueAt: string) {
 	const envelope = await request<TBorrowingView>(
-		`/borrowings/${borrowingId}/extend`,
+		`/inventory/borrowings/${borrowingId}/extend`,
 		{ method: 'POST', body: JSON.stringify({ dueAt }) },
 	);
-	return toDetail(envelope.data);
+	return envelope.data as TBorrowingView;
+}
+
+/** Moves the due date of a request that has not been issued yet. */
+export async function extendBorrowingRequest(requestId: string, dueAt: string) {
+	const envelope = await request<TBorrowingView>(
+		`/inventory/borrowing-requests/${requestId}/extend`,
+		{ method: 'POST', body: JSON.stringify({ dueAt }) },
+	);
+	return envelope.data as TBorrowingView;
 }
 
 /**
- * Reports one line lost.
+ * Reports one item lost.
  *
  * @remarks
- * Reduces stock by one at the line's origin warehouse. The unit is not restored
- * anywhere — it is gone, which is why this needs `borrowing:mark_lost`.
+ * Writes a `lost` movement and parks the unit as lost. The unit is not restored
+ * anywhere — it is gone, which is why this needs `asset_borrowing:mark_lost`.
  */
-export async function markBorrowingLineLost(
+export async function markBorrowingItemLost(
 	borrowingId: string,
-	input: { lineId: string; note?: string | null },
+	input: { borrowingItemId: string; note?: string | null },
 ) {
 	const envelope = await request<TBorrowingView>(
-		`/borrowings/${borrowingId}/mark-lost`,
+		`/inventory/borrowings/${borrowingId}/mark-lost`,
 		{ method: 'POST', body: JSON.stringify(input) },
 	);
-	return toDetail(envelope.data);
+	return envelope.data as TBorrowingView;
 }
 
-/** Query options for the borrowing list. */
-export const borrowingsQueryOptions = (params: {
-	page?: number;
-	limit?: number;
-	status?: TBorrowingStatus;
-	borrowerType?: TBorrowerType;
-	search?: string;
-} = {}) =>
+/** Query options for the request list. */
+export const borrowingRequestsQueryOptions = (
+	params: {
+		page?: number;
+		limit?: number;
+		status?: TBorrowingRequestStatus;
+		borrowerType?: TBorrowerType;
+		search?: string;
+	} = {},
+) =>
 	queryOptions({
-		queryKey: ['assets', 'borrowings', params] as const,
-		queryFn: () => listBorrowings(params),
+		queryKey: ['assets', 'borrowings', 'requests', params] as const,
+		queryFn: () => listBorrowingRequests(params),
 	});
 
-/** Query options for one borrowing. */
-export const borrowingQueryOptions = (borrowingId: string) =>
+/** Query options for the issued-borrowing list. */
+export const borrowingDocumentsQueryOptions = (
+	params: {
+		page?: number;
+		limit?: number;
+		status?: TBorrowingDocumentStatus;
+		search?: string;
+	} = {},
+) =>
 	queryOptions({
-		queryKey: ['assets', 'borrowings', borrowingId] as const,
-		queryFn: () => getBorrowing(borrowingId),
+		queryKey: ['assets', 'borrowings', 'issued', params] as const,
+		queryFn: () => listBorrowingDocuments(params),
+	});
+
+/** Query options for one request (the detail view). */
+export const borrowingQueryOptions = (requestId: string) =>
+	queryOptions({
+		queryKey: ['assets', 'borrowings', 'detail', requestId] as const,
+		queryFn: () => getBorrowing(requestId),
 	});

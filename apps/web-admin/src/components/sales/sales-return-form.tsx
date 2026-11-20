@@ -35,8 +35,8 @@ function withOwnLines(receipts: TReturnableDelivery[], initial?: TSalesReturnDet
 				id: initial.deliveryNoteId,
 				code: initial.deliveryNoteCode,
 				deliveryDate: '',
-				salesOrderId: initial.salesOrderId,
-				salesOrderCode: initial.salesOrderCode,
+				orderId: initial.orderId,
+				orderCode: initial.orderCode,
 				customerName: initial.customerName,
 				warehouseId: initial.warehouseId,
 				items: [],
@@ -49,7 +49,7 @@ function withOwnLines(receipts: TReturnableDelivery[], initial?: TSalesReturnDet
 		} else {
 			merged.items.push({
 				id: line.deliveryNoteItemId,
-				itemId: line.itemId,
+				productId: line.productId,
 				sku: line.sku,
 				name: line.name,
 				unit: line.unit,
@@ -145,7 +145,7 @@ export function SalesReturnForm({
 									<SelectItem value='none'>{t('sales:returns.pickDelivery')}</SelectItem>
 									{options.map((row) => (
 										<SelectItem key={row.id} value={row.id}>
-											{row.code} — {row.salesOrderCode ?? '—'} — {row.customerName}
+											{row.code} — {row.orderCode ?? '—'} — {row.customerName}
 											{row.deliveryDate ? ` — ${formatBusinessDate(row.deliveryDate, i18n.language)}` : ''}
 										</SelectItem>
 									))}

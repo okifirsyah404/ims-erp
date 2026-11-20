@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Dashboard on Real Data, Client Organization Context, and Switcher Polish
 
 > Status: **approved plan** (grilled 2026-11-15, three rounds, 24 locked

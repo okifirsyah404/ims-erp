@@ -1,11 +1,11 @@
-import { ITEM_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { WarehouseService } from '@app/inventory/services/warehouse.service';
-import type { ItemService } from '@app/inventory/services/item.service';
+import type { ProductService } from '@app/inventory/services/product.service';
 import type { StockService } from '@app/inventory/services/stock.service';
 import { exVatUnitCost } from '@app/inventory/utils/moving-average';
-import { CODE_NUMBER_SERVICE_TOKEN } from '@app/code-number';
-import type { CodeNumberService } from '@app/code-number';
-import { DOCUMENT_SERVICE_TOKEN } from '@app/document';
+import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
+import type { ProcurementNumberingService } from './procurement-numbering.service';
+import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
 import type {
 	TGoodsReceiptItemSelect,
@@ -29,6 +29,7 @@ import {
 	GoodsReceiptLineError,
 	GoodsReceiptNotFoundError,
 	GoodsReceiptOrderNotReceivableError,
+	PurchaseOrderItemUnavailableError,
 } from '../errors/procurement.errors';
 
 export type TGoodsReceiptDetail = TGoodsReceiptRow & {
@@ -48,7 +49,7 @@ export type TReceivingWarehouse = {
 /** A PO the warehouse can receive against, with what is still open per line. */
 export type TReceivableOrder = Pick<TPurchaseOrderSelect, 'id' | 'code' | 'subject' | 'status' | 'orderDate'> & {
 	supplierName: string;
-	items: (Pick<TPurchaseOrderItemSelect, 'id' | 'itemId' | 'sku' | 'name' | 'unit' | 'quantity' | 'quantityReceived'> & {
+	items: (Pick<TPurchaseOrderItemSelect, 'id' | 'productId' | 'sku' | 'name' | 'unit' | 'quantity' | 'quantityReceived'> & {
 		openQuantity: string;
 		isSerialized: boolean;
 	})[];
@@ -76,10 +77,10 @@ export class GoodsReceiptService {
 		private readonly orders: Pick<IPurchaseOrderRepository, 'findById' | 'findItems' | 'paginate' | 'receive'>,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement' | 'resolveScope'>,
-		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getItem' | 'registerUnit'>,
-		@inject(CODE_NUMBER_SERVICE_TOKEN)
-		private readonly numbering: Pick<CodeNumberService, 'next'>,
+		@inject(PRODUCT_SERVICE_TOKEN)
+		private readonly items: Pick<ProductService, 'getProduct' | 'registerUnit'>,
+		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 		@inject(WAREHOUSE_SERVICE_TOKEN)
@@ -98,7 +99,7 @@ export class GoodsReceiptService {
 		if (!receipt) throw new GoodsReceiptNotFoundError();
 		const [items, warehouse] = await Promise.all([
 			this.receipts.findItems(id),
-			this.warehouses.getWarehouse(receipt.warehouseId).catch(() => null),
+			receipt.warehouseId ? this.warehouses.getWarehouse(receipt.warehouseId).catch(() => null) : null,
 		]);
 		const bin = warehouse?.storages.find((storage) => storage.id === receipt.binId) ?? null;
 		return {
@@ -142,14 +143,16 @@ export class GoodsReceiptService {
 				const withKind = await Promise.all(
 					lines.map(async (line) => ({
 						id: line.id,
-						itemId: line.itemId,
+						productId: line.productId,
 						sku: line.sku,
 						name: line.name,
 						unit: line.unit,
 						quantity: line.quantity,
 						quantityReceived: line.quantityReceived,
 						openQuantity: open(line),
-						isSerialized: (await this.items.getItem(line.itemId).catch(() => null))?.isSerialized ?? false,
+						isSerialized: line.productId
+							? ((await this.items.getProduct(line.productId).catch(() => null))?.isSerialized ?? false)
+							: false,
 					})),
 				);
 				return {
@@ -191,7 +194,10 @@ export class GoodsReceiptService {
 				const poItem = poItems.get(line.purchaseOrderItemId);
 				if (!poItem) throw new GoodsReceiptLineError('unknown', index + 1);
 				if (quantityToMilli(line.quantity) > quantityToMilli(open(poItem))) throw new GoodsReceiptLineError('over', index + 1);
-				const item = await this.items.getItem(poItem.itemId);
+				// ADR-0014: a PO line is not guaranteed to carry its product; no product, no stock.
+				const productId = poItem.productId;
+				if (!productId) throw new PurchaseOrderItemUnavailableError(index + 1);
+				const item = await this.items.getProduct(productId);
 				const serials = line.serialNumbers ?? [];
 				if (item.isSerialized) {
 					const units = Number(line.quantity);
@@ -199,7 +205,7 @@ export class GoodsReceiptService {
 						throw new GoodsReceiptLineError('serials', index + 1);
 					}
 				}
-				return { line, poItem, item, serials: item.isSerialized ? serials : [] };
+				return { line, poItem, productId, item, serials: item.isSerialized ? serials : [] };
 			}),
 		);
 
@@ -228,9 +234,9 @@ export class GoodsReceiptService {
 					receivedBy: actor.userId,
 					notes: body.notes,
 				},
-				lines.map(({ line, poItem, serials }) => ({
+				lines.map(({ line, poItem, productId, serials }) => ({
 					purchaseOrderItemId: poItem.id,
-					itemId: poItem.itemId,
+					productId,
 					sku: poItem.sku,
 					name: poItem.name,
 					unit: poItem.unit,
@@ -241,13 +247,13 @@ export class GoodsReceiptService {
 				tx,
 			);
 			for (const [index, row] of items.entries()) {
-				const { poItem, item, serials } = lines[index]!;
+				const { poItem, productId, item, serials } = lines[index]!;
 				const posted = await this.stock.postMovement(
 					{
 						actorOrganizationId: actor.organizationId,
 						warehouseId: body.warehouseId,
 						binId: body.binId ?? null,
-						itemId: poItem.itemId,
+						productId,
 						movementType: 'receipt',
 						quantity: row.quantity,
 						unitCost: row.unitCost,
@@ -262,7 +268,7 @@ export class GoodsReceiptService {
 				await this.receipts.setMovement(row.id, posted.movement.id, tx);
 				for (const serialNumber of serials) {
 					await this.items.registerUnit(
-						poItem.itemId,
+						productId,
 						{
 							serialNumber,
 							organizationId: item.organizationId,
@@ -271,7 +277,7 @@ export class GoodsReceiptService {
 							binId: body.binId ?? null,
 							acquiredOn: receiptDate,
 							purchaseOrderLineId: poItem.id,
-							stockMovementId: posted.movement.id,
+							movementId: posted.movement.id,
 						},
 						tx,
 					);

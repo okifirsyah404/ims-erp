@@ -1,5 +1,5 @@
-import { ITEM_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ItemService } from '@app/inventory/services/item.service';
+import { PRODUCT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ProductService } from '@app/inventory/services/product.service';
 import type { PoVatMode, PurchaseOrderStatus } from '@drizzle/schemas/procurement.schema';
 import { inject, injectable } from 'tsyringe';
 import { PURCHASE_ORDER_REPOSITORY_TOKEN } from '../constants/di';
@@ -15,13 +15,13 @@ export type TBillableOrder = {
 	code: string | null;
 	subject: string;
 	status: PurchaseOrderStatus;
-	supplierId: string;
+	supplierCompanyId: string;
 	supplierName: string;
 	vatMode: PoVatMode;
 	vatRateBps: number;
 	lines: {
 		id: string;
-		itemId: string;
+		productId: string | null;
 		sku: string;
 		name: string;
 		unit: string;
@@ -54,32 +54,37 @@ export class PurchaseBillingService {
 	constructor(
 		@inject(PURCHASE_ORDER_REPOSITORY_TOKEN)
 		private readonly orders: Pick<IPurchaseOrderRepository, 'findById' | 'findItems' | 'paginate'>,
-		@inject(ITEM_SERVICE_TOKEN)
-		private readonly items: Pick<ItemService, 'getItem'>,
+		@inject(PRODUCT_SERVICE_TOKEN)
+		private readonly items: Pick<ProductService, 'getProduct'>,
 	) {}
 
 	private async toBillable(order: Awaited<ReturnType<IPurchaseOrderRepository['findById']>>): Promise<TBillableOrder | null> {
 		if (!order || !BILLABLE_STATUSES.includes(order.status)) return null;
+		// ADR-0014: an order without a supplier company cannot be billed.
+		const { supplierCompanyId } = order;
+		if (!supplierCompanyId) return null;
 		const lines = await this.orders.findItems(order.id);
 		return {
 			id: order.id,
 			code: order.code,
 			subject: order.subject,
 			status: order.status,
-			supplierId: order.supplierId,
+			supplierCompanyId,
 			supplierName: order.supplierSnapshot.name,
 			vatMode: order.vatMode,
 			vatRateBps: order.vatRateBps,
 			lines: await Promise.all(
 				lines.map(async (line) => ({
 					id: line.id,
-					itemId: line.itemId,
+					productId: line.productId,
 					sku: line.sku,
 					name: line.name,
 					unit: line.unit,
 					unitPrice: line.unitPrice,
 					quantityReceived: line.quantityReceived,
-					isStock: (await this.items.getItem(line.itemId).catch(() => null))?.isStockTracked ?? false,
+					isStock: line.productId
+						? ((await this.items.getProduct(line.productId).catch(() => null))?.isStockTracked ?? false)
+						: false,
 				})),
 			),
 		};

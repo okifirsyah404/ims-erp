@@ -13,7 +13,7 @@ mock.module('@providers/better-auth/auth', () => ({
 		},
 	},
 }));
-import type { TUserInvitationSelect } from '../../drizzle/schemas/role.schema';
+import type { TUserInvitationSelect } from '../../drizzle/schemas/auth.schema';
 import type { TUserSelect } from '../../drizzle/schemas/auth.schema';
 import type { IInvitationRepository } from '../../src/app/user/contracts/invitation.repository.interface';
 import type { IUserManagementRepository } from '../../src/app/user/contracts/user-management.repository.interface';

@@ -1,7 +1,7 @@
 import {
 	CODE_TYPES,
 	type CodeType,
-} from '@drizzle/schemas/code-number.schema';
+} from '@shared/numbering';
 import {
 	DOCUMENT_STATUSES,
 	type DocumentAccessAction,
@@ -31,7 +31,9 @@ export type TDocumentListQuery = z.output<typeof documentListQuerySchema>;
 
 /** Issue a document: the code is allocated by the numbering authority. */
 export const issueDocumentSchema = z.object({
-	/** Code type whose series numbers this document (`QT`, `INV`, …). */
+	/** The code the owning module allocated from its own series (ADR-0024 Q6). */
+	code: z.string().trim().min(1).max(40),
+	/** Code type of that code (`QT`, `INV`, …), for grouping and search. */
 	documentType: z.enum(CODE_TYPES),
 	title: z.string().trim().min(1).max(500),
 	module: optionalText(64),

@@ -6,15 +6,15 @@ import {
 	REALTIME_HUB_TOKEN,
 } from '@providers/realtime/realtime.hub';
 import {
-	type TNotificationQuery,
-	type TNotificationView,
+	type TPushNotificationQuery,
+	type TPushNotificationView,
 	toNotificationView,
 } from '../contracts/notification.contract';
 import type {
-	INotificationRepository,
-	TNotificationSelect,
+	IPushNotificationRepository,
+	TPushNotificationSelect,
 } from '../contracts/notification.repository.interface';
-import { NOTIFICATION_REPOSITORY_TOKEN } from '../constants/di';
+import { PUSH_NOTIFICATION_REPOSITORY_TOKEN } from '../constants/di';
 import { NotificationNotFoundError } from '../errors/notification.errors';
 
 /**
@@ -32,16 +32,16 @@ import { NotificationNotFoundError } from '../errors/notification.errors';
 @injectable()
 export class NotificationService {
 	constructor(
-		@inject(NOTIFICATION_REPOSITORY_TOKEN)
-		private readonly repository: INotificationRepository,
+		@inject(PUSH_NOTIFICATION_REPOSITORY_TOKEN)
+		private readonly repository: IPushNotificationRepository,
 		@inject(REALTIME_HUB_TOKEN)
 		private readonly hub: IRealtimeHub,
 	) {}
 
 	async list(
 		userId: string,
-		query: TNotificationQuery,
-	): Promise<TPaginationResult<TNotificationView>> {
+		query: TPushNotificationQuery,
+	): Promise<TPaginationResult<TPushNotificationView>> {
 		const page = await this.repository.listForUser({
 			userId,
 			page: query.page,
@@ -57,7 +57,7 @@ export class NotificationService {
 	}
 
 	/** Marks one row read; a row owned by someone else is a 404. */
-	async markRead(id: string, userId: string): Promise<TNotificationView> {
+	async markRead(id: string, userId: string): Promise<TPushNotificationView> {
 		const row = await this.repository.markRead(id, userId);
 		if (!row) throw new NotificationNotFoundError();
 
@@ -84,7 +84,7 @@ export class NotificationService {
 	async assertOwnedBy(
 		id: string,
 		userId: string,
-	): Promise<TNotificationSelect> {
+	): Promise<TPushNotificationSelect> {
 		const row = await this.repository.findByIdForUser(id, userId);
 		if (!row) throw new NotificationNotFoundError();
 		return row;

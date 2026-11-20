@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # UAT — M08 Employees and Attendance
 
 Scope: employees (ERP-0034) with bank account and leave balance, attendance

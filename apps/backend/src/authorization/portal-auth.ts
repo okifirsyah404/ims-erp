@@ -6,7 +6,7 @@
  *
  *   1. reads `Authorization: Bearer <access token>` (the token the portal's
  *      server received from `POST /portal/v1/auth/login`);
- *   2. asks the {@link IPortalSessionResolver} (the portal module) for the
+ *   2. asks the {@link IPortalSessionResolver} (the customer module) for the
  *      Better Auth session behind it AND an active customer portal identity;
  *   3. answers 401 otherwise.
  *
@@ -22,17 +22,17 @@ import { AppError } from '@http/errors';
 /** What a portal route knows about its caller. */
 export type PortalContext = {
 	userId: string;
-	identityId: string;
+	/** The person (`customer.customers` row) behind the login (owner decision D2). */
 	customerId: string;
-	/** The customer contact behind the login (owner decision D2). */
-	contactId: string | null;
+	/** The company the person belongs to; `null` for an individual customer. */
+	companyId: string | null;
 	role: 'owner' | 'approver' | 'finance' | 'viewer';
 	user: { id: string; name: string; email: string };
 	/** The access token of this request (for logout / password change). */
 	accessToken: string;
 };
 
-/** Implemented by the portal module: bearer token → portal context, or `null`. */
+/** Implemented by the customer module: bearer token → portal context, or `null`. */
 export interface IPortalSessionResolver {
 	resolve(accessToken: string): Promise<PortalContext | null>;
 }

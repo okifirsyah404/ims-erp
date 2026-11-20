@@ -259,7 +259,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 									return (
 										<TableRow key={line.id}>
 											<TableCell className='font-mono text-xs'>
-												{line.itemId}
+												{line.productId}
 											</TableCell>
 											<TableCell className='text-right font-mono text-muted-foreground'>
 												{line.quantityBefore}

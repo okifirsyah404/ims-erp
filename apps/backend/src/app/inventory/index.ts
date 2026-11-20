@@ -1,7 +1,13 @@
 import Elysia from 'elysia';
 
-import { ItemCategoryController } from './controllers/item-category.controller';
+import { ProductCategoryController } from './controllers/product-category.controller';
+import { ProductController } from './controllers/product.controller';
+import { BorrowingController, BorrowingRequestController } from './controllers/borrowing.controller';
 import { ItemController } from './controllers/item.controller';
+import { ProductListingController } from './controllers/product-listing.controller';
+import { PublicCatalogController } from './controllers/public-catalog.controller';
+import { ItemOperationsController } from './controllers/item-operations.controller';
+import { ItemCategoryController } from './controllers/item-category.controller';
 import { StockController } from './controllers/stock.controller';
 import { StockValuationController } from './controllers/stock-valuation.controller';
 import { WarehouseController } from './controllers/warehouse.controller';
@@ -21,8 +27,17 @@ export { registerInventory } from './container';
  */
 export function inventoryModule() {
 	return new Elysia({ name: 'inventory' })
+		.use(ProductController.plugin())
+		.use(ProductCategoryController.plugin())
 		.use(ItemController.plugin())
 		.use(ItemCategoryController.plugin())
+		.use(ProductListingController.plugin())
+		// Server-to-server website API (API-key guard, no session): the primary URL
+		// at `/inventory/public/v1/catalog`.
+		.use(PublicCatalogController.plugin())
+		.use(ItemOperationsController.plugin())
+		.use(BorrowingRequestController.plugin())
+		.use(BorrowingController.plugin())
 		.use(WarehouseController.linkedPlugin())
 		.use(WarehouseController.plugin())
 		.use(StockValuationController.plugin())

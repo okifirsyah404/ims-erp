@@ -1,0 +1,329 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { Badge } from '@ims-erp/ui/components/badge';
+import { Button } from '@ims-erp/ui/components/button';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@ims-erp/ui/components/dialog';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Input } from '@ims-erp/ui/components/input';
+import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@ims-erp/ui/components/table';
+import { toast } from '@/components/toast';
+import {
+	createGateway,
+	GATEWAY_MODES,
+	GATEWAY_PROVIDERS,
+	gatewaysQueryOptions,
+	setDefaultGateway,
+	updateGateway,
+	type TGateway,
+	type TGatewayMode,
+	type TGatewayProvider,
+} from '@/lib/payment-api';
+
+/**
+ * The configured payment gateways. Secrets are write-only: the list shows only
+ * whether one is loaded (and its last four characters), and the dialogs use
+ * password inputs that are never pre-filled.
+ */
+export function PaymentGatewaysPanel({ canEdit }: { canEdit: boolean }) {
+	const { t } = useTranslation(['settings', 'common']);
+	const queryClient = useQueryClient();
+	const { data = [], isPending, isError, error } = useQuery(gatewaysQueryOptions());
+	const [dialog, setDialog] = useState<{ gateway: TGateway | null } | null>(null);
+	const refresh = () => queryClient.invalidateQueries({ queryKey: gatewaysQueryOptions().queryKey });
+
+	async function makeDefault(gateway: TGateway) {
+		try {
+			await setDefaultGateway(gateway.id);
+			await refresh();
+			toast.success(t('settings:paymentGateways.defaultSet'));
+		} catch (cause) {
+			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+		}
+	}
+
+	if (isPending) return null;
+	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+
+	return (
+		<div className='flex flex-col gap-4'>
+			{canEdit && (
+				<div>
+					<Button onClick={() => setDialog({ gateway: null })}>{t('settings:paymentGateways.add')}</Button>
+				</div>
+			)}
+			{data.length === 0 ? (
+				<p className='text-sm text-muted-foreground'>{t('settings:paymentGateways.empty')}</p>
+			) : (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>{t('settings:paymentGateways.name')}</TableHead>
+							<TableHead>{t('settings:paymentGateways.provider')}</TableHead>
+							<TableHead>{t('settings:paymentGateways.mode')}</TableHead>
+							<TableHead>{t('settings:paymentGateways.status')}</TableHead>
+							<TableHead>{t('settings:paymentGateways.secret')}</TableHead>
+							<TableHead>{t('settings:paymentGateways.webhookToken')}</TableHead>
+							<TableHead>{t('settings:paymentGateways.rotatedAt')}</TableHead>
+							{canEdit && <TableHead />}
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{data.map((gateway) => (
+							<TableRow key={gateway.id}>
+								<TableCell>
+									<div className='font-medium'>{gateway.name}</div>
+									<div className='font-mono text-xs text-muted-foreground'>{gateway.code}</div>
+								</TableCell>
+								<TableCell className='font-mono text-xs'>{gateway.provider}</TableCell>
+								<TableCell>
+									{gateway.mode === 'live'
+										? t('settings:paymentGateways.modeLive')
+										: t('settings:paymentGateways.modeSandbox')}
+								</TableCell>
+								<TableCell className='flex flex-wrap gap-1'>
+									<Badge variant={gateway.isActive ? 'default' : 'secondary'}>
+										{gateway.isActive ? t('common:status.active') : t('common:status.inactive')}
+									</Badge>
+									{gateway.isDefault && (
+										<Badge variant='outline'>{t('settings:paymentGateways.defaultBadge')}</Badge>
+									)}
+								</TableCell>
+								<TableCell>
+									{gateway.hasSecret
+										? gateway.secretLast4
+											? t('settings:paymentGateways.configuredLast4', { last4: gateway.secretLast4 })
+											: t('settings:paymentGateways.configured')
+										: t('settings:paymentGateways.notConfigured')}
+								</TableCell>
+								<TableCell>
+									{gateway.hasWebhookToken
+										? t('settings:paymentGateways.configured')
+										: t('settings:paymentGateways.notConfigured')}
+								</TableCell>
+								<TableCell>
+									{gateway.rotatedAt
+										? new Date(gateway.rotatedAt).toLocaleString()
+										: t('settings:paymentGateways.neverRotated')}
+								</TableCell>
+								{canEdit && (
+									<TableCell className='flex justify-end gap-2'>
+										{!gateway.isDefault && gateway.isActive && (
+											<Button variant='outline' size='sm' onClick={() => void makeDefault(gateway)}>
+												{t('settings:paymentGateways.makeDefault')}
+											</Button>
+										)}
+										<Button variant='outline' size='sm' onClick={() => setDialog({ gateway })}>
+											{t('common:action.edit')}
+										</Button>
+									</TableCell>
+								)}
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			)}
+			{dialog && (
+				<GatewayDialog
+					gateway={dialog.gateway}
+					onClose={() => setDialog(null)}
+					onSaved={() => {
+						setDialog(null);
+						void refresh();
+						toast.success(t('settings:paymentGateways.saved'));
+					}}
+				/>
+			)}
+		</div>
+	);
+}
+
+function GatewayDialog({
+	gateway,
+	onClose,
+	onSaved,
+}: {
+	gateway: TGateway | null;
+	onClose: () => void;
+	onSaved: () => void;
+}) {
+	const { t } = useTranslation(['settings', 'common']);
+	const isNew = gateway === null;
+	const [provider, setProvider] = useState<TGatewayProvider>(gateway?.provider ?? 'xendit');
+	const [code, setCode] = useState(gateway?.code ?? '');
+	const [name, setName] = useState(gateway?.name ?? '');
+	const [mode, setMode] = useState<TGatewayMode>(gateway?.mode ?? 'sandbox');
+	const [isActive, setIsActive] = useState(gateway?.isActive ?? true);
+	// Secrets start empty and are never filled from the server.
+	const [secret, setSecret] = useState('');
+	const [webhookToken, setWebhookToken] = useState('');
+	const [submitting, setSubmitting] = useState(false);
+
+	async function submit(event: React.FormEvent) {
+		event.preventDefault();
+		setSubmitting(true);
+		try {
+			const secrets = {
+				...(secret ? { secret } : {}),
+				...(webhookToken ? { webhookToken } : {}),
+			};
+			if (gateway) {
+				await updateGateway(gateway.id, { name, mode, isActive, ...secrets });
+			} else {
+				await createGateway({ provider, code, name, mode, isActive, ...secrets });
+			}
+			onSaved();
+		} catch (cause) {
+			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Dialog open onOpenChange={(open) => !open && onClose()}>
+			<DialogContent className='sm:max-w-lg'>
+				<form onSubmit={(event) => void submit(event)}>
+					<DialogHeader>
+						<DialogTitle>
+							{isNew
+								? t('settings:paymentGateways.createTitle')
+								: t('settings:paymentGateways.editTitle', { name: gateway.name })}
+						</DialogTitle>
+						<DialogDescription>{t('settings:paymentGateways.dialogDescription')}</DialogDescription>
+					</DialogHeader>
+					<FieldGroup className='py-4'>
+						{isNew && (
+							<>
+								<Field>
+									<FieldLabel htmlFor='gateway-provider'>{t('settings:paymentGateways.provider')}</FieldLabel>
+									<NativeSelect
+										id='gateway-provider'
+										className='w-full'
+										value={provider}
+										onChange={(event) => setProvider(event.target.value as TGatewayProvider)}
+									>
+										{GATEWAY_PROVIDERS.map((value) => (
+											<NativeSelectOption key={value} value={value}>
+												{value}
+											</NativeSelectOption>
+										))}
+									</NativeSelect>
+								</Field>
+								<Field>
+									<FieldLabel htmlFor='gateway-code'>{t('settings:paymentGateways.code')}</FieldLabel>
+									<Input
+										id='gateway-code'
+										className='font-mono'
+										required
+										minLength={2}
+										maxLength={32}
+										pattern='[A-Za-z0-9_\-]+'
+										value={code}
+										onChange={(event) => setCode(event.target.value)}
+									/>
+									<FieldDescription>{t('settings:paymentGateways.codeHint')}</FieldDescription>
+								</Field>
+							</>
+						)}
+						<Field>
+							<FieldLabel htmlFor='gateway-name'>{t('settings:paymentGateways.name')}</FieldLabel>
+							<Input
+								id='gateway-name'
+								required
+								minLength={2}
+								maxLength={120}
+								value={name}
+								onChange={(event) => setName(event.target.value)}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='gateway-mode'>{t('settings:paymentGateways.mode')}</FieldLabel>
+							<NativeSelect
+								id='gateway-mode'
+								className='w-full'
+								value={mode}
+								onChange={(event) => setMode(event.target.value as TGatewayMode)}
+							>
+								{GATEWAY_MODES.map((value) => (
+									<NativeSelectOption key={value} value={value}>
+										{value === 'live'
+											? t('settings:paymentGateways.modeLive')
+											: t('settings:paymentGateways.modeSandbox')}
+									</NativeSelectOption>
+								))}
+							</NativeSelect>
+						</Field>
+						<Field orientation='horizontal'>
+							<input
+								id='gateway-active'
+								type='checkbox'
+								checked={isActive}
+								onChange={(event) => setIsActive(event.target.checked)}
+							/>
+							<FieldLabel htmlFor='gateway-active'>{t('common:status.active')}</FieldLabel>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='gateway-secret'>{t('settings:paymentGateways.secret')}</FieldLabel>
+							<Input
+								id='gateway-secret'
+								type='password'
+								autoComplete='new-password'
+								minLength={8}
+								maxLength={512}
+								value={secret}
+								onChange={(event) => setSecret(event.target.value)}
+							/>
+							<FieldDescription>
+								{isNew
+									? t('settings:paymentGateways.secretHintNew')
+									: t('settings:paymentGateways.secretHintRotate')}
+							</FieldDescription>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='gateway-webhook-token'>{t('settings:paymentGateways.webhookToken')}</FieldLabel>
+							<Input
+								id='gateway-webhook-token'
+								type='password'
+								autoComplete='new-password'
+								minLength={8}
+								maxLength={512}
+								value={webhookToken}
+								onChange={(event) => setWebhookToken(event.target.value)}
+							/>
+							<FieldDescription>
+								{isNew
+									? t('settings:paymentGateways.secretHintNew')
+									: t('settings:paymentGateways.secretHintRotate')}
+							</FieldDescription>
+						</Field>
+					</FieldGroup>
+					<DialogFooter>
+						<Button type='button' variant='outline' onClick={onClose}>
+							{t('common:action.cancel')}
+						</Button>
+						<Button type='submit' disabled={submitting}>
+							{submitting ? t('common:action.saving') : t('common:action.save')}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
+}

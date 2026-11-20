@@ -90,7 +90,7 @@ export class GoodsReceiptRepository implements IGoodsReceiptRepository {
 		return { receipt, items: rows };
 	}
 
-	async setMovement(goodsReceiptItemId: string, stockMovementId: string, tx: TTx): Promise<void> {
-		await tx.update(goodsReceiptItems).set({ stockMovementId }).where(eq(goodsReceiptItems.id, goodsReceiptItemId));
+	async setMovement(goodsReceiptItemId: string, movementId: string, tx: TTx): Promise<void> {
+		await tx.update(goodsReceiptItems).set({ movementId }).where(eq(goodsReceiptItems.id, goodsReceiptItemId));
 	}
 }

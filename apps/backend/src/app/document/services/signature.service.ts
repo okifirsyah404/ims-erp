@@ -138,7 +138,9 @@ export class SignatureService {
 			result.data.map((row) =>
 				this.requestView(row, {
 					document: documents.get(row.documentId) ?? null,
-					requestedByName: people.get(row.requestedByUserId) ?? null,
+					requestedByName: row.requestedByUserId
+						? (people.get(row.requestedByUserId) ?? null)
+						: null,
 				}),
 			),
 		);
@@ -168,8 +170,8 @@ export class SignatureService {
 	}
 
 	/** Display names for a set of user ids. */
-	private async people(ids: string[]) {
-		const unique = [...new Set(ids)];
+	private async people(ids: (string | null)[]) {
+		const unique = [...new Set(ids.filter((id): id is string => id !== null))];
 		const found = await Promise.all(unique.map((id) => this.users.getUser(id)));
 		const map = new Map<string, string>();
 		for (const [index, user] of found.entries()) {
@@ -192,7 +194,9 @@ export class SignatureService {
 			requests: requests.map((row) =>
 				this.requestView(row, {
 					document: documents.get(row.documentId) ?? null,
-					requestedByName: people.get(row.requestedByUserId) ?? null,
+					requestedByName: row.requestedByUserId
+						? (people.get(row.requestedByUserId) ?? null)
+						: null,
 				}),
 			),
 		};
@@ -296,13 +300,16 @@ export class SignatureService {
 			signatureImageKey: image?.objectKey ?? null,
 			organizationId: request.organizationId,
 		});
-		await this.notifications.notify({
-			userIds: [request.requestedByUserId],
-			templateCode: 'document.signature_signed',
-			variables: { signerName: request.signerName },
-			sourceType: 'document',
-			sourceId: request.documentId,
-		});
+		// A request whose requester was never recorded has nobody to notify.
+		if (request.requestedByUserId) {
+			await this.notifications.notify({
+				userIds: [request.requestedByUserId],
+				templateCode: 'document.signature_signed',
+				variables: { signerName: request.signerName },
+				sourceType: 'document',
+				sourceId: request.documentId,
+			});
+		}
 		const document = await this.documents.findById(request.documentId);
 		return this.signatureView(evidence, document);
 	}
@@ -326,13 +333,15 @@ export class SignatureService {
 			declineReason: reason,
 		});
 		if (!row) throw new SignatureRequestStateError();
-		await this.notifications.notify({
-			userIds: [request.requestedByUserId],
-			templateCode: 'document.signature_declined',
-			variables: { signerName: request.signerName, reason },
-			sourceType: 'document',
-			sourceId: request.documentId,
-		});
+		if (request.requestedByUserId) {
+			await this.notifications.notify({
+				userIds: [request.requestedByUserId],
+				templateCode: 'document.signature_declined',
+				variables: { signerName: request.signerName, reason },
+				sourceType: 'document',
+				sourceId: request.documentId,
+			});
+		}
 		return this.requestView(row);
 	}
 
@@ -362,7 +371,7 @@ export class SignatureService {
 		const rows = await this.repository.listUserSignatures(userIds);
 		const urls = new Map<string, string>();
 		for (const row of rows) {
-			urls.set(row.userId, this.presignImage(row.objectKey));
+			if (row.userId) urls.set(row.userId, this.presignImage(row.objectKey));
 		}
 		return urls;
 	}
@@ -534,7 +543,7 @@ export class SignatureService {
 		const status = expired ? 'expired' : (row.status as TSignatureRequestView['status']);
 		// The image snapshot and the signed-PDF fact live on the evidence row;
 		// enrich when it exists so the UI never resolves them itself.
-		const signature = row.status === 'signed'
+		const signature = row.status === 'signed' && row.signerUserId
 			? await this.repository.findLatestSignature(row.documentId, row.signerUserId)
 			: null;
 		return {

@@ -17,13 +17,17 @@ import {
 	TableRow,
 } from '@ims-erp/ui/components/table';
 import { Search } from 'lucide-react';
+import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import {
 	CUSTOMER_STATUSES,
+	companiesQueryOptions,
+	createCompany,
 	createCustomer,
 	customersQueryOptions,
+	type TCompanyInput,
 	type TCustomerInput,
 	type TCustomerStatus,
 } from '@/lib/customer-api';
@@ -31,7 +35,9 @@ import { usePermission } from '@/lib/use-permission';
 
 const PAGE_SIZE = 20;
 
-/** `/crm/customers` — company-wide customer list (ADR-0011 step 3a). */
+type TTab = 'companies' | 'people';
+
+/** `/crm/customers` - company-wide customer companies and people (ADR-0024). */
 export const Route = createFileRoute('/_authed/crm/customers/')({
 	component: CustomerListPage,
 });
@@ -41,29 +47,35 @@ function CustomerListPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const canCreate = usePermission('customer.create');
+	const [tab, setTab] = useState<TTab>('companies');
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState('');
 	const [status, setStatus] = useState<TCustomerStatus | ''>('');
 	const [creating, setCreating] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const deferredSearch = useDeferredValue(search.trim());
-	const { data, isPending, isError, error } = useQuery(
-		customersQueryOptions({
-			page,
-			limit: PAGE_SIZE,
-			search: deferredSearch || undefined,
-			status: status || undefined,
-		}),
-	);
+	const params = { page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined };
+	const companies = useQuery({ ...companiesQueryOptions(params), enabled: tab === 'companies' });
+	const people = useQuery({ ...customersQueryOptions(params), enabled: tab === 'people' });
+	const active = tab === 'companies' ? companies : people;
 	const filtered = deferredSearch !== '' || status !== '';
 
-	async function handleCreate(input: TCustomerInput) {
+	function switchTab(next: TTab) {
+		setTab(next);
+		setPage(1);
+	}
+
+	async function handleCreate(work: () => Promise<{ id: string }>, kind: TTab) {
 		setSubmitting(true);
 		try {
-			const created = await createCustomer(input);
+			const created = await work();
 			await queryClient.invalidateQueries({ queryKey: ['crm', 'customers'] });
 			toast.success(t('crm:customers.saved'));
-			void navigate({ to: '/crm/customers/$customerId', params: { customerId: created.id } });
+			void navigate({
+				to: '/crm/customers/$customerId',
+				params: { customerId: created.id },
+				search: kind === 'companies' ? { kind: 'company' } : {},
+			});
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
 		} finally {
@@ -78,7 +90,20 @@ function CustomerListPage() {
 					<h1 className='text-2xl font-bold'>{t('crm:customers.title')}</h1>
 					<p className='text-sm text-muted-foreground'>{t('crm:customers.description')}</p>
 				</div>
-				{canCreate && <Button onClick={() => setCreating(true)}>{t('crm:customers.new')}</Button>}
+				{canCreate && (
+					<Button onClick={() => setCreating(true)}>
+						{tab === 'companies' ? t('crm:customers.newCompany') : t('crm:customers.new')}
+					</Button>
+				)}
+			</div>
+
+			<div className='flex flex-wrap gap-2'>
+				<Button variant={tab === 'companies' ? 'default' : 'outline'} onClick={() => switchTab('companies')}>
+					{t('crm:customers.tab.companies')}
+				</Button>
+				<Button variant={tab === 'people' ? 'default' : 'outline'} onClick={() => switchTab('people')}>
+					{t('crm:customers.tab.people')}
+				</Button>
 			</div>
 
 			<div className='flex flex-wrap gap-2'>
@@ -118,9 +143,9 @@ function CustomerListPage() {
 				</Select>
 			</div>
 
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
+			{active.isPending ? null : active.isError ? (
+				<p className='text-sm text-destructive'>{active.error.message}</p>
+			) : (active.data?.rows.length ?? 0) === 0 ? (
 				<Card>
 					<CardContent className='py-8 text-center text-sm text-muted-foreground'>
 						{filtered ? t('crm:customers.noResults') : t('crm:customers.empty')}
@@ -141,49 +166,78 @@ function CustomerListPage() {
 									</TableRow>
 								</TableHeader>
 								<TableBody>
-									{data.rows.map((customer) => (
-										<TableRow key={customer.id}>
-											<TableCell className='font-mono text-xs'>{customer.code}</TableCell>
-											<TableCell>
-												<Link
-													to='/crm/customers/$customerId'
-													params={{ customerId: customer.id }}
-													className='font-medium hover:underline'
-												>
-													{customer.name}
-												</Link>
-											</TableCell>
-											<TableCell>{t(`crm:customerType.${customer.customerType}`)}</TableCell>
-											<TableCell className='text-muted-foreground'>
-												{customer.phone ?? customer.whatsapp ?? '—'}
-											</TableCell>
-											<TableCell>
-												<Badge variant={customer.status === 'active' ? 'secondary' : 'outline'}>
-													{t(`crm:customerStatus.${customer.status}`)}
-												</Badge>
-											</TableCell>
-										</TableRow>
-									))}
+									{tab === 'companies'
+										? companies.data?.rows.map((company) => (
+												<TableRow key={company.id}>
+													<TableCell className='font-mono text-xs'>{company.code}</TableCell>
+													<TableCell>
+														<Link
+															to='/crm/customers/$customerId'
+															params={{ customerId: company.id }}
+															search={{ kind: 'company' }}
+															className='font-medium hover:underline'
+														>
+															{company.name}
+														</Link>
+													</TableCell>
+													<TableCell>{t(`crm:customerType.${company.companyType}`)}</TableCell>
+													<TableCell className='text-muted-foreground'>{company.phone ?? company.whatsapp ?? '-'}</TableCell>
+													<TableCell>
+														<Badge variant={company.status === 'active' ? 'secondary' : 'outline'}>
+															{t(`crm:customerStatus.${company.status}`)}
+														</Badge>
+													</TableCell>
+												</TableRow>
+											))
+										: people.data?.rows.map((customer) => (
+												<TableRow key={customer.id}>
+													<TableCell className='font-mono text-xs'>{customer.code}</TableCell>
+													<TableCell>
+														<Link
+															to='/crm/customers/$customerId'
+															params={{ customerId: customer.id }}
+															className='font-medium hover:underline'
+														>
+															{customer.name}
+														</Link>
+													</TableCell>
+													<TableCell>{t(`crm:customerType.${customer.customerType}`)}</TableCell>
+													<TableCell className='text-muted-foreground'>{customer.phone ?? customer.whatsapp ?? '-'}</TableCell>
+													<TableCell>
+														<Badge variant={customer.status === 'active' ? 'secondary' : 'outline'}>
+															{t(`crm:customerStatus.${customer.status}`)}
+														</Badge>
+													</TableCell>
+												</TableRow>
+											))}
 								</TableBody>
 							</Table>
 						</CardContent>
 					</Card>
-					{data.pagination.totalPages > 1 && (
+					{active.data && active.data.pagination.totalPages > 1 && (
 						<PaginationControls
-							page={data.pagination.page}
-							totalPages={data.pagination.totalPages}
+							page={active.data.pagination.page}
+							totalPages={active.data.pagination.totalPages}
 							onPageChange={setPage}
 						/>
 					)}
 				</>
 			)}
 
-			{creating && (
+			{creating && tab === 'companies' && (
+				<CompanyFormDialog
+					company={null}
+					submitting={submitting}
+					onClose={() => setCreating(false)}
+					onSave={(input: TCompanyInput) => void handleCreate(() => createCompany(input), 'companies')}
+				/>
+			)}
+			{creating && tab === 'people' && (
 				<CustomerFormDialog
 					customer={null}
 					submitting={submitting}
 					onClose={() => setCreating(false)}
-					onSave={(input) => void handleCreate(input)}
+					onSave={(input: TCustomerInput) => void handleCreate(() => createCustomer(input), 'people')}
 				/>
 			)}
 		</div>

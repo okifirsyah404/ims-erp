@@ -1,4 +1,4 @@
-import type { TUserInvitationSelect } from '@drizzle/schemas/role.schema';
+import type { TUserInvitationSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 
 /**

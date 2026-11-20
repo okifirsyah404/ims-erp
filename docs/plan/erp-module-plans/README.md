@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # ERP Module Plans — v5.1 Baseline
 
 Detailed per-module breakdown of `docs/plan/erp-plan-en.md` (v5.1, 2026-10-21,

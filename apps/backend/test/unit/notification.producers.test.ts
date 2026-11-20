@@ -38,7 +38,7 @@ function organizationRow(name = 'Entragate') {
 }
 
 function makeOrganizationService(options: {
-	notifications: ExportedNotificationService;
+	pushNotifications: ExportedNotificationService;
 	gateway?: Partial<IOrganizationAuthGateway>;
 	users?: { findActiveByEmail: (email: string) => Promise<{ id: string } | null> };
 	invitations?: { invite: () => Promise<{ invitation: { id: string } }> };
@@ -60,14 +60,14 @@ function makeOrganizationService(options: {
 		(options.invitations ?? {}) as never,
 		(options.users ?? { findActiveByEmail: async () => null }) as never,
 		{} as never,
-		options.notifications,
+		options.pushNotifications,
 	);
 }
 
 describe('addMember producer', () => {
 	test('enqueues org.member_added for the new member with the organization tag', async () => {
-		const { calls, service: notifications } = recordingNotifications();
-		const service = makeOrganizationService({ notifications });
+		const { calls, service: pushNotifications } = recordingNotifications();
+		const service = makeOrganizationService({ pushNotifications });
 
 		await service.addMember(new Headers(), 'org-1', {
 			userId: 'u-new',
@@ -90,7 +90,7 @@ describe('addMember producer', () => {
 		const failing = new ExportedNotificationService(async () => {
 			throw new Error('redis down');
 		});
-		const service = makeOrganizationService({ notifications: failing });
+		const service = makeOrganizationService({ pushNotifications: failing });
 
 		await expect(
 			service.addMember(new Headers(), 'org-1', {
@@ -103,8 +103,8 @@ describe('addMember producer', () => {
 
 describe('createOrganization producer', () => {
 	test('the creator gets org.org_created', async () => {
-		const { calls, service: notifications } = recordingNotifications();
-		const service = makeOrganizationService({ notifications });
+		const { calls, service: pushNotifications } = recordingNotifications();
+		const service = makeOrganizationService({ pushNotifications });
 
 		await service.createOrganization(
 			new Headers(),
@@ -124,9 +124,9 @@ describe('createOrganization producer', () => {
 	});
 
 	test('an attached active user gets org.member_added, not the creator template', async () => {
-		const { calls, service: notifications } = recordingNotifications();
+		const { calls, service: pushNotifications } = recordingNotifications();
 		const service = makeOrganizationService({
-			notifications,
+			pushNotifications,
 			users: { findActiveByEmail: async () => ({ id: 'u-budi' }) },
 		});
 
@@ -156,9 +156,9 @@ describe('createOrganization producer', () => {
 	});
 
 	test('an invited (not yet active) user is not notified — the claim is', async () => {
-		const { calls, service: notifications } = recordingNotifications();
+		const { calls, service: pushNotifications } = recordingNotifications();
 		const service = makeOrganizationService({
-			notifications,
+			pushNotifications,
 			invitations: { invite: async () => ({ invitation: { id: 'inv-1' } }) },
 		});
 
@@ -180,7 +180,7 @@ describe('createOrganization producer', () => {
 
 describe('invitation claim producer', () => {
 	function makeClaimService(options: {
-		notifications: ExportedNotificationService;
+		pushNotifications: ExportedNotificationService;
 		organizationRole?: string;
 	}) {
 		const invitations = {
@@ -205,7 +205,7 @@ describe('invitation claim producer', () => {
 			{ sendInvite: mock(() => Promise.resolve()) } as never,
 			{} as never,
 			{ record: mock(() => Promise.resolve()) } as never,
-			options.notifications,
+			options.pushNotifications,
 		);
 		// Claim's own token validation is covered elsewhere; this test is about
 		// the notification fired once the membership exists.
@@ -227,9 +227,9 @@ describe('invitation claim producer', () => {
 	}
 
 	test('a successful org claim enqueues org.member_added once', async () => {
-		const { calls, service: notifications } = recordingNotifications();
+		const { calls, service: pushNotifications } = recordingNotifications();
 		const { service } = makeClaimService({
-			notifications,
+			pushNotifications,
 			organizationRole: 'admin,sales',
 		});
 
@@ -254,7 +254,7 @@ describe('invitation claim producer', () => {
 		const failing = new ExportedNotificationService(async () => {
 			throw new Error('redis down');
 		});
-		const { service } = makeClaimService({ notifications: failing });
+		const { service } = makeClaimService({ pushNotifications: failing });
 
 		const result = await service.claim(
 			'raw-token',

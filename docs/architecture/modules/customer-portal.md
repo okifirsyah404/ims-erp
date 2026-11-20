@@ -1,3 +1,5 @@
+> Updated 2026-11-20 (ADR-0024): the portal API now lives in the `customer` module at `/customers/portal/v1` (was `/portal/v1`); tickets are owned by `ticket`, warranties by `project`. Request/response shapes below are unchanged.
+
 # Customer Portal Module (ERP-0022, stage 1)
 
 Decision record: [ADR-0022](../decisions/ADR-0022-customer-portal-api.md).
@@ -12,12 +14,12 @@ own tickets) + the account part of M12 T25 + warranties.
 
 | Piece | Owner | Where |
 | --- | --- | --- |
-| Portal logins (`auth.portal_identities`), invite / resend / revoke | Identity | `src/app/user` (`PortalAccountService`, `/admin/portal-accounts`) |
-| Sign-in, sessions, passwords, lockout; the `/portal/v1` routes | Portal (no tables) | `src/app/portal` |
+| Portal logins (`customer.customers`), invite / resend / revoke | Customer | `src/app/customer` (`PortalAccountService`, `/admin/customers/portal-accounts`) |
+| Sign-in, sessions, passwords, lockout; the `/customers/portal/v1` routes | Customer | `src/app/customer` (`portal.controller.ts`) |
 | Bearer → session → customer guard | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
-| Project view without costs | Projects | `ProjectPortalService` |
-| Tickets, message thread, customer confirmation | After-sales | `ServiceTicketService.*ForCustomer / *FromPortal`, `service_ticket_comments` |
-| Devices and warranty | After-sales | `WarrantyService.listForCustomer / getForCustomer` |
+| Project view without costs | Project | `ProjectPortalService` |
+| Tickets, message thread, customer confirmation | Ticket | `ticket` module (`ticket.tickets`, `ticket.ticket_messages`) |
+| Devices and warranty | Project | `WarrantyService` (`project.warranties`) |
 
 Rules (owner decisions D1/D2, 2026-11-14): one login per person (customer
 contact) with a role `owner | approver | finance | viewer`; individuals sign
@@ -42,29 +44,29 @@ labels. Authenticated routes need `Authorization: Bearer <accessToken>`.
 
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
-| `login` | `POST /portal/v1/auth/login` | `{ email, password, accountType? }` → `{ ok: true, user, tokens: { accessToken, expiresAt } }`; 401 wrong credentials, 423 locked (5 failures, 15 min) |
-| `register` | `POST /portal/v1/auth/register` | `{ accountType, name, email, phone?, password }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
-| `verifyEmail` | `POST /portal/v1/auth/verify-email` | `{ email, code }` → `{ user, tokens }` (creates customer, contact, owner login); 400 wrong/expired (5 attempts, 10 min) |
-| `resendVerification` | `POST /portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
-| `requestPasswordReset` | `POST /portal/v1/auth/password-reset` | `{ email }`; always 200 |
-| `resetPassword` | `POST /portal/v1/auth/password-reset/confirm` | `{ token, password }`; 400 invalid/expired. Also sets the first password after an invitation |
-| `logout` | `POST /portal/v1/auth/logout` | bearer |
-| `changePassword` | `POST /portal/v1/account/password` | `{ current, next }`; 400 wrong current |
-| — (session user) | `GET /portal/v1/me` | `PortalUser` |
-| `getHome` | `GET /portal/v1/home` | active project + open tickets; quotations/activity empty in stage 1 |
-| `getBadges` | `GET /portal/v1/badges` | `openTickets`; the rest 0 in stage 1 |
-| `listProjects` | `GET /portal/v1/projects` | `ProjectSummary[]` |
-| `getProject` | `GET /portal/v1/projects/:id` | `ProjectDetail`; file links are signed for 5 minutes |
-| `listTickets` | `GET /portal/v1/tickets` | `TicketSummary[]` |
-| `getTicket` | `GET /portal/v1/tickets/:id` | `TicketDetail` + `canConfirm` |
-| `createTicket` | `POST /portal/v1/tickets` | JSON or the form (`payload`); photos → 422 in stage 1 |
-| `postTicketMessage` | `POST /portal/v1/tickets/:id/messages` | `{ text }`; files → 422 |
-| — (new) | `POST /portal/v1/tickets/:id/confirm` | the customer confirms a resolved ticket → closed |
-| `listProducts` | `GET /portal/v1/products` | one device per warranty-certificate line, id `<certificate>:<line>` |
-| `getWarranty` | `GET /portal/v1/products/:id/warranty` | `WarrantyDetail` |
-| `getAccount` | `GET /portal/v1/account` | `AccountSettings` with the members; sites/notifications/security are defaults (not stored yet) |
-| `inviteMember` | `POST /portal/v1/account/members` | owner only: `{ email, name?, role: approver\|finance\|viewer }` → `CompanyMember`; 403 other roles |
-| `removeMember` | `DELETE /portal/v1/account/members/:id` | owner only; 422 for oneself |
+| `login` | `POST /customers/portal/v1/auth/login` | `{ email, password, accountType? }` → `{ ok: true, user, tokens: { accessToken, expiresAt } }`; 401 wrong credentials, 423 locked (5 failures, 15 min) |
+| `register` | `POST /customers/portal/v1/auth/register` | `{ accountType, name, email, phone?, password }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
+| `verifyEmail` | `POST /customers/portal/v1/auth/verify-email` | `{ email, code }` → `{ user, tokens }` (creates customer, contact, owner login); 400 wrong/expired (5 attempts, 10 min) |
+| `resendVerification` | `POST /customers/portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
+| `requestPasswordReset` | `POST /customers/portal/v1/auth/password-reset` | `{ email }`; always 200 |
+| `resetPassword` | `POST /customers/portal/v1/auth/password-reset/confirm` | `{ token, password }`; 400 invalid/expired. Also sets the first password after an invitation |
+| `logout` | `POST /customers/portal/v1/auth/logout` | bearer |
+| `changePassword` | `POST /customers/portal/v1/account/password` | `{ current, next }`; 400 wrong current |
+| — (session user) | `GET /customers/portal/v1/me` | `PortalUser` |
+| `getHome` | `GET /customers/portal/v1/home` | active project + open tickets; quotations/activity empty in stage 1 |
+| `getBadges` | `GET /customers/portal/v1/badges` | `openTickets`; the rest 0 in stage 1 |
+| `listProjects` | `GET /customers/portal/v1/projects` | `ProjectSummary[]` |
+| `getProject` | `GET /customers/portal/v1/projects/:id` | `ProjectDetail`; file links are signed for 5 minutes |
+| `listTickets` | `GET /customers/portal/v1/tickets` | `TicketSummary[]` |
+| `getTicket` | `GET /customers/portal/v1/tickets/:id` | `TicketDetail` + `canConfirm` |
+| `createTicket` | `POST /customers/portal/v1/tickets` | JSON or the form (`payload`); photos → 422 in stage 1 |
+| `postTicketMessage` | `POST /customers/portal/v1/tickets/:id/messages` | `{ text }`; files → 422 |
+| — (new) | `POST /customers/portal/v1/tickets/:id/confirm` | the customer confirms a resolved ticket → closed |
+| `listProducts` | `GET /customers/portal/v1/products` | one device per warranty-certificate line, id `<certificate>:<line>` |
+| `getWarranty` | `GET /customers/portal/v1/products/:id/warranty` | `WarrantyDetail` |
+| `getAccount` | `GET /customers/portal/v1/account` | `AccountSettings` with the members; sites/notifications/security are defaults (not stored yet) |
+| `inviteMember` | `POST /customers/portal/v1/account/members` | owner only: `{ email, name?, role: approver\|finance\|viewer }` → `CompanyMember`; 403 other roles |
+| `removeMember` | `DELETE /customers/portal/v1/account/members/:id` | owner only; 422 for oneself |
 
 Not built yet (stage 2, routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),

@@ -32,7 +32,7 @@ tags:
     description: Validate a key, take a seat for an installation, release it.
 
 paths:
-  /licensing/v1/validate:
+  /projects/api/v1/licenses/validate:
     post:
       tags: [License]
       operationId: validateLicense
@@ -134,7 +134,7 @@ paths:
         '401': { $ref: '#/components/responses/ApiKeyRejected' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
-  /licensing/v1/activate:
+  /projects/api/v1/licenses/activate:
     post:
       tags: [License]
       operationId: activateLicense
@@ -180,7 +180,7 @@ paths:
         '409': { $ref: '#/components/responses/SeatLimit' }
         '429': { $ref: '#/components/responses/RateLimited' }
 
-  /licensing/v1/deactivate:
+  /projects/api/v1/licenses/deactivate:
     post:
       tags: [License]
       operationId: deactivateLicense

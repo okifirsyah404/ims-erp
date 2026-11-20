@@ -6,6 +6,7 @@ import {
   products,
   sortOptions,
 } from "../data/catalog";
+import type { TPaginationMeta } from "@ims-erp/common";
 import type { ProductDetail, ProductSummary, StockStatus } from "../types/catalog";
 import { templateDetail } from "../data/product-details";
 import { catalogSource } from "./server/catalog";
@@ -72,14 +73,12 @@ export function catalogHref(query: CatalogQuery, patch: Partial<Record<keyof Cat
 
 export type CatalogResult = {
   items: ProductSummary[];
-  total: number;
-  page: number;
-  pageCount: number;
+  pagination: TPaginationMeta;
 };
 
 /** One page of catalog results from the configured source (sample data or ERP). */
 export async function listProducts(query: CatalogQuery): Promise<CatalogResult> {
-  return catalogSource.listProducts({ ...query, pageSize: PAGE_SIZE });
+  return catalogSource.listProducts({ ...query, limit: PAGE_SIZE });
 }
 
 const stockLabels: Record<StockStatus, string> = {

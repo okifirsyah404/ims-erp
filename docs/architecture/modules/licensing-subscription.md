@@ -1,3 +1,6 @@
+> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "licensing". It is kept for history. Current owner: project (schema `project`: license_* tables; HTTP /projects/licenses and /projects/api/v1/licenses) - see docs/database/module-ownership.md.
+> Mapping: licensing -> project.
+
 # Licensing & Subscription Module (M03)
 
 Code: `apps/backend/src/app/licensing/` (schema `licensing`, company-wide),
@@ -76,7 +79,7 @@ masked (last 4) without `read_key`.
 
 ## License API — integration note for the pilot application
 
-Base URL: the ERP backend, prefix `/licensing/v1`. Server-to-server or from
+Base URL: the ERP backend, prefix `/projects/api/v1/licenses`. Server-to-server or from
 the installed application; every request sends
 `Authorization: Bearer elk_…` (issued under **Subscription & Licensing →
 API Keys**, shown once). Rate limit: 120 calls per minute per key (429). A

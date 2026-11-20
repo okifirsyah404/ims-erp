@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -29,11 +29,11 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
 import {
-	assetTypesQueryOptions,
 	createAsset,
+	ITEM_KINDS,
 	updateAsset,
-	type TAsset,
-	type TAssetType,
+	type TAssetCore,
+	type TItemKind,
 } from '@/lib/asset-api';
 
 /**
@@ -47,7 +47,7 @@ export function AssetForm({
 	onCancel,
 	compact = false,
 }: {
-	asset?: TAsset;
+	asset?: TAssetCore;
 	/** Called after a successful save instead of navigating (dialog usage). */
 	onSuccess?: () => void;
 	/** Called by Cancel instead of navigating (dialog usage). */
@@ -60,8 +60,7 @@ export function AssetForm({
 	const queryClient = useQueryClient();
 
 	const [name, setName] = useState(asset?.name ?? '');
-	const [assetType, setAssetType] = useState<TAssetType>(asset?.assetType ?? 'equipment');
-	const types = useQuery(assetTypesQueryOptions());
+	const [itemKind, setItemKind] = useState<TItemKind>(asset?.itemKind ?? 'equipment');
 	const [serialNumber, setSerialNumber] = useState(asset?.serialNumber ?? '');
 	const [acquisitionCost, setAcquisitionCost] = useState(
 		String(asset?.acquisitionCost ?? '0'),
@@ -75,15 +74,15 @@ export function AssetForm({
 		mutationFn: () => {
 			const payload = {
 				name,
-				assetType,
 				serialNumber: serialNumber || null,
 				acquisitionCost: Number(acquisitionCost) || 0,
 				acquisitionDate: acquisitionDate || null,
 				locationDescription: location || null,
 			};
+			// The kind is fixed at registration; the update contract has no field for it.
 			return asset
 				? updateAsset(asset.id, payload)
-				: createAsset(payload);
+				: createAsset({ ...payload, itemKind });
 		},
 		onSuccess: async () => {
 			toast.success(asset ? t('updated') : t('created'));
@@ -121,16 +120,21 @@ export function AssetForm({
 						onChange={(event) => setName(event.target.value)}
 					/>
 					<Select
-						value={assetType}
-						onValueChange={(value: string | null) => setAssetType(value as TAssetType)}
+						value={itemKind}
+						disabled={asset !== undefined}
+						onValueChange={(value: string | null) => setItemKind(value as TItemKind)}
 					>
 						<SelectTrigger>
-							<SelectValue />
+							<SelectValue>
+								{(value: string | null) =>
+									value ? t(`itemKind.${value as TItemKind}`) : null
+								}
+							</SelectValue>
 						</SelectTrigger>
 						<SelectContent>
-							{(types.data ?? []).map((type) => (
-								<SelectItem key={type.code} value={type.code}>
-									{type.name}
+							{ITEM_KINDS.map((kind) => (
+								<SelectItem key={kind} value={kind}>
+									{t(`itemKind.${kind}`)}
 								</SelectItem>
 							))}
 						</SelectContent>

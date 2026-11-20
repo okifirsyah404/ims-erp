@@ -77,7 +77,7 @@ function AttendancePage() {
 			<ImportDialog
 				open={importing}
 				onOpenChange={setImporting}
-				templatePath='/hr/attendance/template'
+				templatePath='/human-resources/attendances/template'
 				templateName='template-absensi.xlsx'
 				templateLabel={t('hr:attendance.template')}
 				onImport={importAttendance}

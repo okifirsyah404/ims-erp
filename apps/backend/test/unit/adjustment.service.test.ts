@@ -28,12 +28,12 @@ import type {
 	TAdjustmentPaginationRequest,
 } from '../../src/app/inventory/contracts/adjustment.repository.interface';
 import type {
-	IItemRepository,
-} from '../../src/app/inventory/contracts/item.repository.interface';
+	IProductRepository,
+} from '../../src/app/inventory/contracts/product.repository.interface';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
-	ITEM_REPOSITORY_TOKEN,
+	PRODUCT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
 } from '../../src/app/inventory/constants/di';
 import {
@@ -174,8 +174,8 @@ function fakeStock(onHand: Record<string, string> = {}) {
 		async resolveScope() {
 			return { warehouse: { id: WAREHOUSE_ID }, scopeOrganizationId: ORG_A };
 		},
-		async balanceFor(_scope: string | null, _wh: string, itemId: string) {
-			const quantity = onHand[itemId];
+		async balanceFor(_scope: string | null, _wh: string, productId: string) {
+			const quantity = onHand[productId];
 			return quantity === undefined ? null : { quantityOnHand: quantity };
 		},
 		async postMovement(input: TPostMovementInput) {
@@ -187,7 +187,7 @@ function fakeStock(onHand: Record<string, string> = {}) {
 }
 
 /** Minimal item repository: `findById` is all the service uses. */
-function fakeItems(): IItemRepository {
+function fakeItems(): IProductRepository {
 	return {
 		async paginate() {
 			return { meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] };
@@ -211,12 +211,12 @@ function fakeItems(): IItemRepository {
 		async countLiveUnits() {
 			return 0;
 		},
-	} as unknown as IItemRepository;
+	} as unknown as IProductRepository;
 }
 
 let adjustments: ReturnType<typeof fakeAdjustments>;
 let stock: ReturnType<typeof fakeStock>;
-let items: IItemRepository;
+let items: IProductRepository;
 let service: AdjustmentService;
 
 /** Builds the service against a fresh fake world. */
@@ -247,7 +247,7 @@ function build(onHand: Record<string, string> = {}) {
 	} as never;
 
 	container.register(ADJUSTMENT_REPOSITORY_TOKEN, { useValue: adjustments });
-	container.register(ITEM_REPOSITORY_TOKEN, { useValue: items });
+	container.register(PRODUCT_REPOSITORY_TOKEN, { useValue: items });
 	container.register(STOCK_SERVICE_TOKEN, { useValue: stock.service });
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useValue: new AdjustmentService(
@@ -274,7 +274,7 @@ async function raise(
 		{
 			warehouseId: WAREHOUSE_ID,
 			adjustmentType: 'recount',
-			lines: [{ itemId: lineItemId, quantityAfter }],
+			lines: [{ productId: lineItemId, quantityAfter }],
 		},
 		actor(REQUESTER),
 	);
@@ -570,7 +570,7 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 				warehouseId: WAREHOUSE_ID,
 				adjustmentType: 'increase',
 				reasonCode: 'opening_stock',
-				lines: [{ itemId: ITEM_ID, quantityAfter: '5.000', unitCost: 1_250_000 }],
+				lines: [{ productId: ITEM_ID, quantityAfter: '5.000', unitCost: 1_250_000 }],
 			},
 			actor(REQUESTER),
 		);
@@ -582,7 +582,7 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 		build({ [ITEM_ID]: '10.000' });
 		const down = await service.create(
 			ORG_A,
-			{ warehouseId: WAREHOUSE_ID, adjustmentType: 'decrease', lines: [{ itemId: ITEM_ID, quantityAfter: '8.000', unitCost: 99 }] },
+			{ warehouseId: WAREHOUSE_ID, adjustmentType: 'decrease', lines: [{ productId: ITEM_ID, quantityAfter: '8.000', unitCost: 99 }] },
 			actor(REQUESTER),
 		);
 		await approved(down.adjustment.id);
@@ -612,8 +612,8 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 				warehouseId: WAREHOUSE_ID,
 				adjustmentType: 'recount',
 				lines: [
-					{ itemId: ITEM_ID, quantityAfter: '5.000' }, // unchanged
-					{ itemId: ITEM_ID_2, quantityAfter: '9.000' }, // +7
+					{ productId: ITEM_ID, quantityAfter: '5.000' }, // unchanged
+					{ productId: ITEM_ID_2, quantityAfter: '9.000' }, // +7
 				],
 			},
 			actor(REQUESTER),
@@ -624,7 +624,7 @@ describe('adjustment — posting writes one movement per CHANGED line', () => {
 
 		expect(stock.posted).toHaveLength(1);
 		expect(stock.posted[0]).toMatchObject({
-			itemId: ITEM_ID_2,
+			productId: ITEM_ID_2,
 			quantity: '7.000',
 		});
 	});

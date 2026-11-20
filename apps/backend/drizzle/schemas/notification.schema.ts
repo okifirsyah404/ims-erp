@@ -10,7 +10,7 @@
  * - `user_id` is a logical reference to `auth.users.id` — cross-module FK
  *   omitted by rule; validated through the Identity module contract.
  * - The one FK is intra-module: `notifications.notification_template_id` →
- *   `notification_templates.id`, `on delete set null`, so a deleted template
+ *   `push_notification_templates.id`, `on delete set null`, so a deleted template
  *   never erases delivery history.
  * - Operational timestamps are unix milliseconds.
  */
@@ -59,7 +59,7 @@ export const NOTIFICATION_TEMPLATE_KEYS = {
 	'document.signature_signed': 'document.signatureSigned',
 	'document.signature_declined': 'document.signatureDeclined',
 } as const;
-export type NotificationTemplateCode = (typeof NOTIFICATION_TEMPLATE_CODES)[number];
+export type PushNotificationTemplateCode = (typeof NOTIFICATION_TEMPLATE_CODES)[number];
 
 const timestamps = {
 	createdAt: unixTimestamp('created_at').notNull(),
@@ -70,11 +70,11 @@ const timestamps = {
 };
 
 /* ------------------------------------------------------------------------ *
- * notification.notification_templates
+ * notification.push_notification_templates
  * ------------------------------------------------------------------------ */
 
-export const notificationTemplates = notificationSchema.table(
-	'notification_templates',
+export const pushNotificationTemplates = notificationSchema.table(
+	'push_notification_templates',
 	{
 		id: uuid('id')
 			.primaryKey()
@@ -92,12 +92,12 @@ export const notificationTemplates = notificationSchema.table(
 		...timestamps,
 	},
 	(table) => [
-		uniqueIndex('notification_templates_code_uq')
+		uniqueIndex('push_push_notification_templates_code_uq')
 			.on(table.code)
 			.where(sql`deleted_at IS NULL`),
-		index('notification_templates_channel_idx').on(table.channel),
+		index('push_push_notification_templates_channel_idx').on(table.channel),
 		check(
-			'notification_templates_channel_check',
+			'push_push_notification_templates_channel_check',
 			sql`${table.channel} IN ('email', 'whatsapp', 'in_app', 'webhook')`,
 		),
 	],
@@ -107,19 +107,19 @@ export const notificationTemplates = notificationSchema.table(
  * notification.notifications
  * ------------------------------------------------------------------------ */
 
-export const notifications = notificationSchema.table(
-	'notifications',
+export const pushNotifications = notificationSchema.table(
+	'push_notifications',
 	{
 		id: uuid('id')
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		/** Intra-module FK: the template used at send time, kept for reference only. */
 		notificationTemplateId: uuid('notification_template_id').references(
-			() => notificationTemplates.id,
+			() => pushNotificationTemplates.id,
 			{ onDelete: 'set null' },
 		),
 		/** Logical reference to auth.users.id — cross-module FK omitted by rule. */
-		userId: text('user_id').notNull(),
+		userId: text('user_id'),
 		/** Denormalized `module.event` code, so a later template edit never rewrites history. */
 		templateCode: varchar('template_code', { length: 64 }).notNull(),
 		title: text('title').notNull(),
@@ -139,23 +139,23 @@ export const notifications = notificationSchema.table(
 		...timestamps,
 	},
 	(table) => [
-		index('notifications_user_id_idx').on(table.userId),
-		index('notifications_user_status_idx').on(table.userId, table.status),
-		index('notifications_status_idx').on(table.status),
-		index('notifications_created_at_idx').on(table.createdAt),
-		index('notifications_template_id_idx').on(table.notificationTemplateId),
+		index('push_notifications_user_id_idx').on(table.userId),
+		index('push_notifications_user_status_idx').on(table.userId, table.status),
+		index('push_notifications_status_idx').on(table.status),
+		index('push_notifications_created_at_idx').on(table.createdAt),
+		index('push_notifications_template_id_idx').on(table.notificationTemplateId),
 		check(
-			'notifications_channel_check',
+			'push_notifications_channel_check',
 			sql`${table.channel} IN ('email', 'whatsapp', 'in_app', 'webhook')`,
 		),
 		check(
-			'notifications_status_check',
+			'push_notifications_status_check',
 			sql`${table.status} IN ('queued', 'sending', 'sent', 'delivered', 'read', 'failed', 'cancelled')`,
 		),
 	],
 );
 
-export type TNotificationTemplateSelect = typeof notificationTemplates.$inferSelect;
-export type TNotificationTemplateInsert = typeof notificationTemplates.$inferInsert;
-export type TNotificationSelect = typeof notifications.$inferSelect;
-export type TNotificationInsert = typeof notifications.$inferInsert;
+export type TPushNotificationTemplateSelect = typeof pushNotificationTemplates.$inferSelect;
+export type TPushNotificationTemplateInsert = typeof pushNotificationTemplates.$inferInsert;
+export type TPushNotificationSelect = typeof pushNotifications.$inferSelect;
+export type TPushNotificationInsert = typeof pushNotifications.$inferInsert;

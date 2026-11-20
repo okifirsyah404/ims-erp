@@ -201,16 +201,16 @@ export function StockList({
 											<div className='flex items-center gap-2'>
 												<ItemThumb
 													src={row.imageUrl}
-													name={row.itemName ?? row.itemId}
+													name={row.itemName ?? row.productId}
 												/>
 												<Link
 													to='/inventory/items/$itemId'
-													params={{ itemId: row.itemId }}
+													params={{ itemId: row.productId }}
 													className='hover:underline'
 												>
 													{row.itemName ?? (
 														<span className='font-mono text-xs text-muted-foreground'>
-															{row.itemId}
+															{row.productId}
 														</span>
 													)}
 												</Link>

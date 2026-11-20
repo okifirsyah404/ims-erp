@@ -1,5 +1,5 @@
-import { CATALOG_SERVICE_TOKEN } from '@app/catalog/constants/di';
-import type { CatalogService } from '@app/catalog/services/catalog.service';
+import { PRODUCT_LISTING_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { ProductListingService } from '@app/inventory/services/product-listing.service';
 import type { HandoffReason } from '@drizzle/schemas/automation.schema';
 import { pinoLogger } from '@providers/logger/logger';
 import { inject, injectable } from 'tsyringe';
@@ -29,7 +29,7 @@ export class AssistantService {
 		@inject(WHATSAPP_REPOSITORY_TOKEN) private readonly repository: IWhatsappRepository,
 		@inject(WHATSAPP_SERVICE_TOKEN) private readonly whatsapp: Pick<WhatsappService, 'send' | 'handoff'>,
 		@inject(FAQ_REPOSITORY_TOKEN) private readonly faqs: Pick<IFaqRepository, 'list'>,
-		@inject(CATALOG_SERVICE_TOKEN) private readonly catalog: Pick<CatalogService, 'matchProducts'>,
+		@inject(PRODUCT_LISTING_SERVICE_TOKEN) private readonly catalog: Pick<ProductListingService, 'matchProducts'>,
 		@inject(ASSISTANT_MODEL_TOKEN) private readonly model: IAssistantModel,
 	) {}
 

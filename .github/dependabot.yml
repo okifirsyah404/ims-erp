@@ -20,6 +20,12 @@ updates:
     open-pull-requests-limit: 10
     ignore:
       - dependency-name: "typescript"
+      # Pinned back on 2026-11-20: @vite-pwa/astro 2.x dropped the default export
+      # (portal astro.config) and @lucide/astro >=1.73 dropped icons the apps import.
+      # Lift these once the code is adapted (see docs/plan/progress.md).
+      - dependency-name: "@vite-pwa/astro"
+      - dependency-name: "vite-plugin-pwa"
+      - dependency-name: "@lucide/astro"
     groups:
       workspace-minor-patch:
         update-types: ["minor", "patch"]

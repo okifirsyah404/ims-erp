@@ -125,7 +125,7 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 						setBusy(true);
 						try {
 							const invoice = await createInvoice({
-								salesOrderId: summary.salesOrderId,
+								orderId: summary.orderId,
 								term: term(),
 								description: description.trim() || null,
 								dueDate: dueDate || null,

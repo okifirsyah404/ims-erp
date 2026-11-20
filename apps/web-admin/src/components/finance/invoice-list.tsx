@@ -150,9 +150,9 @@ export function InvoiceList({ title, description, termKind }: { title: string; d
 												>
 													{invoice.code ?? t('finance:invoice.draftNumber')}
 												</Link>
-												<div className='text-xs text-muted-foreground'>{invoice.salesOrderCode}</div>
+												<div className='text-xs text-muted-foreground'>{invoice.orderCode}</div>
 											</TableCell>
-											<TableCell>{invoice.customerSnapshot.name}</TableCell>
+											<TableCell>{invoice.customerSnapshot?.name ?? '-'}</TableCell>
 											<TableCell>{invoice.description}</TableCell>
 											<TableCell className='text-muted-foreground'>
 												{formatBusinessDate(invoice.dueDate, i18n.language)}

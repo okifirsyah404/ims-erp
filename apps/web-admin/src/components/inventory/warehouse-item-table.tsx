@@ -18,7 +18,7 @@ import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState } from '@/components/empty-state';
 import { PackageOpen } from 'lucide-react';
-import { itemsQueryOptions, type TItemKind } from '@/lib/inventory-api';
+import { productsQueryOptions, type TProductKind } from '@/lib/inventory-api';
 
 /** Rows per page in the detail tabs. */
 const PAGE_SIZE = 10;
@@ -42,9 +42,9 @@ function formatQuantity(value: string): string {
  * Server-side pagination and search: page and search are component state
  * that flows into the query key, so each change is a fresh request, and
  * `placeholderData` keeps the previous page visible while the next loads.
- * `warehouseId` narrows to items with stock in the warehouse (backend EXISTS
- * filter over live units) and decorates each row with the item's
- * `quantity_on_hand` summed over `stock_balances` bins — the Quantity column
+ * `warehouseId` narrows to products with stock in the warehouse (backend EXISTS
+ * filter over live serials or stock balances) and decorates each row with the
+ * product's `quantity_on_hand` summed over `stocks` bins — the Quantity column
  * therefore covers serialized and quantity-tracked items alike.
  */
 export function WarehouseItemTable({
@@ -52,7 +52,7 @@ export function WarehouseItemTable({
 	itemKind,
 }: {
 	warehouseId: string;
-	itemKind: Extract<TItemKind, 'product' | 'component' | 'material'>;
+	itemKind: TProductKind;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
 	const [page, setPage] = useState(1);
@@ -60,8 +60,8 @@ export function WarehouseItemTable({
 	const [submittedSearch, setSubmittedSearch] = useState('');
 
 	const { data, isPending, isError, error } = useQuery({
-		...itemsQueryOptions({
-			itemKind,
+		...productsQueryOptions({
+			productKind: itemKind,
 			warehouseId,
 			search: submittedSearch || undefined,
 			page,

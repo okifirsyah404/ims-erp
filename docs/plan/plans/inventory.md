@@ -1,3 +1,5 @@
+> Historical plan written before ADR-0024; module and schema names below are the pre-refactor ones (see docs/database/module-ownership.md for the current mapping).
+
 # Inventory Module Plan — Items, Warehouses, Stock, Borrowing
 
 > Status: draft plan (sharpened through a grilling session; 3 open questions
