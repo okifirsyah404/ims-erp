@@ -1,7 +1,11 @@
-import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { ProductService } from '@app/inventory/services/product.service';
+import { STOCK_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import { WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ProductService } from '@app/product/services/product.service';
+import { SERIAL_UNIT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { SerialUnitService } from '@app/inventory/services/serial-unit.service';
 import type { StockService } from '@app/inventory/services/stock.service';
-import type { WarehouseService } from '@app/inventory/services/warehouse.service';
+import type { WarehouseService } from '@app/warehouse/services/warehouse.service';
 import { SALE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { SaleNumberingService } from './sale-numbering.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
@@ -89,7 +93,10 @@ export class DeliveryNoteService {
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement' | 'resolveScope'>,
 		@inject(PRODUCT_SERVICE_TOKEN)
-		private readonly items: Pick<ProductService, 'getProduct' | 'inStockSerials' | 'sellUnits'>,
+		private readonly items: Pick<ProductService, 'getProduct'>,
+		/** Unit custody stayed in inventory when the product master moved (ADR-0026). */
+		@inject(SERIAL_UNIT_SERVICE_TOKEN)
+		private readonly units: Pick<SerialUnitService, 'inStockSerials' | 'sellUnits'>,
 		@inject(SALE_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<SaleNumberingService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN)
@@ -141,7 +148,7 @@ export class DeliveryNoteService {
 
 	/** Serials of an item that are in stock in a warehouse (to pick from). */
 	inStockSerials(productId: string, warehouseId: string): Promise<string[]> {
-		return this.items.inStockSerials(productId, warehouseId);
+		return this.units.inStockSerials(productId, warehouseId);
 	}
 
 	/** Confirmed and in-progress orders with something left to deliver. */
@@ -226,7 +233,7 @@ export class DeliveryNoteService {
 					if (!Number.isInteger(units) || serials.length !== units || new Set(serials).size !== serials.length) {
 						throw new DeliveryNoteLineError('serials', index + 1);
 					}
-					const available = new Set(await this.items.inStockSerials(item.id, body.warehouseId));
+					const available = new Set(await this.units.inStockSerials(item.id, body.warehouseId));
 					if (serials.some((serial) => !available.has(serial))) throw new DeliveryNoteLineError('notInStock', index + 1);
 				}
 				return { line, orderItem, serials: item?.isSerialized ? serials : [] };
@@ -336,7 +343,7 @@ export class DeliveryNoteService {
 					await this.notes.setLineIssue(line.id, { movementId, unitCost: posted.movement.unitCost ?? 0 }, tx);
 				}
 				if (item.isSerialized && line.serialNumbers?.length) {
-					const missing = await this.items.sellUnits(
+					const missing = await this.units.sellUnits(
 						item.id,
 						line.serialNumbers,
 						{ warehouseId, customerId: note.customerId, movementId },

@@ -9,11 +9,12 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, asc, count, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	IEmployeeRepository,
 } from '../contracts/employee.repository.interface';
 import type {
-	TEmployeeListQuery,
+	TEmployeePaginationRequest,
 	TEmployeePickerRow,
 } from '../contracts/hr.contract';
 
@@ -29,28 +30,30 @@ import type {
 export class EmployeeRepository implements IEmployeeRepository {
 	constructor(@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase) {}
 
-	async list(
-		filter: TEmployeeListQuery & {
-			organizationIds: string[] | null;
-			includeCompany: boolean;
-		},
+	/**
+	 * Fetches one page of employees visible to the caller.
+	 *
+	 * @param request - Page settings, filters and the resolved scope branches
+	 */
+	async paginate(
+		request: TEmployeePaginationRequest,
 	): Promise<TPaginationResult<TEmployeeSelect>> {
-		const { page, limit, search, status, organizationId, scope } = filter;
+		const { page, limit, search, status, organizationId, scope } = request;
 		const conditions = [isNull(employees.deletedAt)];
 
 		if (scope === 'company') {
 			conditions.push(isNull(employees.organizationId));
-		} else if (filter.organizationIds !== null) {
-			const scopes = filter.organizationIds.length
-				? [inArray(employees.organizationId, filter.organizationIds)]
+		} else if (request.organizationIds !== null) {
+			const scopes = request.organizationIds.length
+				? [inArray(employees.organizationId, request.organizationIds)]
 				: [];
-			if (filter.includeCompany) scopes.push(isNull(employees.organizationId));
+			if (request.includeCompany) scopes.push(isNull(employees.organizationId));
 			// At least one branch must exist, else nothing matches.
 			conditions.push(scopes.length ? or(...scopes)! : sql`false`);
 		}
 
 		if (scope === 'organization') {
-			conditions.push(eq(employees.organizationId, filter.organizationId ?? ''));
+			conditions.push(eq(employees.organizationId, organizationId ?? ''));
 		} else if (organizationId && scope !== 'company') {
 			conditions.push(eq(employees.organizationId, organizationId));
 		}
@@ -82,10 +85,7 @@ export class EmployeeRepository implements IEmployeeRepository {
 		]);
 
 		const total = Number(totals?.value ?? 0);
-		return {
-			meta: { page, limit, total, totalPages: Math.max(1, Math.ceil(total / limit)) },
-			data: rows,
-		};
+		return paginationResult(request, total, rows);
 	}
 
 	async findById(id: string, tx?: TTx): Promise<TEmployeeSelect | null> {

@@ -11,7 +11,10 @@ import {
 	BankReconciliationStateError,
 	CashBankAccountNotFoundError,
 } from '../errors/ledger.errors';
-import type { IBankReconciliationRepository } from '../contracts/bank-reconciliation.repository.interface';
+import type {
+	IBankReconciliationRepository,
+	TBankReconciliationPaginationRequest,
+} from '../contracts/bank-reconciliation.repository.interface';
 import type { ICashBankRepository } from '../contracts/cash-bank.repository.interface';
 
 export type TReconciliationActionContext = {
@@ -56,12 +59,11 @@ export class BankReconciliationService {
 		private readonly numbering: FinanceNumberingService,
 	) {}
 
+	/** Fetches one page of the tenant's reconciliations. */
 	async list(
-		organizationId: string,
-		filters: { cashBankAccountId?: string; status?: string },
-		pagination: { page: number; limit: number },
+		request: TBankReconciliationPaginationRequest,
 	): Promise<TPaginationResult<unknown>> {
-		return this.reconciliations.listBankReconciliations(organizationId, filters, pagination);
+		return this.reconciliations.paginate(request);
 	}
 
 	async get(organizationId: string, id: string): Promise<unknown> {

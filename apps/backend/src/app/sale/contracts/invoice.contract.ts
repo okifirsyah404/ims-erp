@@ -100,6 +100,17 @@ export type TInvoiceTermCreateInput = z.output<typeof invoiceTermCreateSchema>;
 export type TInvoiceIssueInput = z.output<typeof invoiceIssueSchema>;
 
 /**
+ * Page settings and filters of `GET /sales/invoices`.
+ *
+ * @remarks
+ * `overdue` is a client-facing boolean the service turns into the
+ * repository's `overdueOn` business date; the repository never sees it.
+ */
+export type TInvoiceListRequest = z.output<typeof invoiceListQuerySchema> & {
+	organizationId: string;
+};
+
+/**
  * Window for the dashboard's invoiced-sales aggregate (M01).
  *
  * @remarks

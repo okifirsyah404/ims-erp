@@ -42,7 +42,7 @@ export class NotificationService {
 		userId: string,
 		query: TPushNotificationQuery,
 	): Promise<TPaginationResult<TPushNotificationView>> {
-		const page = await this.repository.listForUser({
+		const page = await this.repository.paginateForUser({
 			userId,
 			page: query.page,
 			limit: query.limit,

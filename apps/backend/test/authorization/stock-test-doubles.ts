@@ -6,13 +6,17 @@
  * resolve different services, and the capture needs to be shared between them.
  * The repositories are stubbed at their DI seams, so the REAL controllers and
  * services run; only persistence is faked.
+ *
+ * ADR-0026 moved the product master to `@app/product` and the warehouse estate
+ * to `@app/warehouse`. `StockService` / `AdjustmentService` now read those
+ * modules through their repository-only export facades
+ * (`EXPORTED_PRODUCT_SERVICE_TOKEN`, `EXPORTED_WAREHOUSE_SERVICE_TOKEN`), so
+ * the doubles are registered at those seams instead of as foreign repositories.
  */
 import { container } from 'tsyringe';
 import type {
 	TStockAdjustmentSelect,
 	TStockSelect,
-	TMovementSelect,
-	TWarehouseSelect,
 } from '@drizzle/schemas/inventory.schema';
 import type {
 	IMovementRepository,
@@ -28,21 +32,29 @@ import type {
 	IAdjustmentRepository,
 	TAdjustmentPaginationRequest,
 } from '../../src/app/inventory/contracts/adjustment.repository.interface';
-import type {
-	IProductRepository,
-	TProductPaginationRequest,
-} from '../../src/app/inventory/contracts/product.repository.interface';
-import type { IWarehouseRepository } from '../../src/app/inventory/contracts/warehouse.repository.interface';
 import type { TPostMovementInput } from '../../src/app/inventory/services/stock.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
 	ADJUSTMENT_SERVICE_TOKEN,
 	STOCK_REPOSITORY_TOKEN,
-	PRODUCT_REPOSITORY_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	STOCK_SERVICE_TOKEN,
-	WAREHOUSE_REPOSITORY_TOKEN,
 } from '../../src/app/inventory/constants/di';
+import {
+	PRODUCT_REPOSITORY_TOKEN,
+	PRODUCT_CATEGORY_REPOSITORY_TOKEN,
+	EXPORTED_PRODUCT_SERVICE_TOKEN,
+} from '../../src/app/product/constants/di';
+import {
+	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
+	WAREHOUSE_REPOSITORY_TOKEN,
+	WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
+	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
+} from '../../src/app/warehouse/constants/di';
+import type { TProductSnapshot } from '../../src/app/product/services/exported-product.service';
+import type { TWarehouseSelect } from '@drizzle/schemas/warehouse.schema';
+import type { IProductRepository } from '../../src/app/product/contracts/product.repository.interface';
+import type { IWarehouseRepository } from '../../src/app/warehouse/contracts/warehouse.repository.interface';
 import { StockService } from '../../src/app/inventory/services/stock.service';
 import { AdjustmentService } from '../../src/app/inventory/services/adjustment.service';
 import { createNumberingDouble } from '../helpers/numbering-double';
@@ -64,6 +76,8 @@ export type TAdjustmentCapture = {
 	movementActorOrganizationId: string | null;
 	/** The document `findById` should answer with, if any. */
 	adjustment: TStockAdjustmentSelect | null;
+	/** Product ids the product facade was asked to validate. */
+	assertedProducts: string[];
 };
 
 /** Mutable capture bag, reset between tests. */
@@ -73,6 +87,7 @@ export const capture: TAdjustmentCapture = {
 	postedMovement: null,
 	movementActorOrganizationId: null,
 	adjustment: null,
+	assertedProducts: [],
 };
 
 /** Clears captured state. Call from `beforeEach`. */
@@ -82,6 +97,7 @@ export function resetCapture(): void {
 	capture.postedMovement = null;
 	capture.movementActorOrganizationId = null;
 	capture.adjustment = null;
+	capture.assertedProducts = [];
 }
 
 const WAREHOUSE: TWarehouseSelect = {
@@ -90,17 +106,37 @@ const WAREHOUSE: TWarehouseSelect = {
 	code: 'MAIN',
 	name: 'Main warehouse',
 	responsibleEmployeeId: null,
+	imageUrl: null,
 	isDefault: true,
 	isActive: true,
 	createdAt: new Date(0),
 	updatedAt: null,
 	deletedAt: null,
-} as TWarehouseSelect;
+};
 
 const emptyPage = (page: number, limit: number) => ({
 	meta: { page, limit, total: 0, totalPages: 0 },
 	data: [],
 });
+
+/** The product snapshot every asserted id resolves to. */
+function productSnapshot(productId: string): TProductSnapshot {
+	return {
+		id: productId,
+		code: 'PRD-00001',
+		sku: 'CTRL-01',
+		name: 'Door controller',
+		unitLabel: 'pcs',
+		sellingPrice: 0,
+		purchasePrice: 0,
+		specification: null,
+		productKind: 'product',
+		imageObjectKey: null,
+		isActive: true,
+		isSerialized: true,
+		isStockTracked: true,
+	};
+}
 
 /** Registers every stock/adjustment repository and service double. */
 export function installStockDoubles(): void {
@@ -126,10 +162,10 @@ export function installStockDoubles(): void {
 		async claimForReversal() {
 			return null;
 		},
-		async ledgerRows() {
+		async ledgerRows(_warehouseIds: string[]) {
 			return [];
 		},
-		async ledgerTotals() {
+		async ledgerTotals(_warehouseIds: string[]) {
 			return [];
 		},
 	};
@@ -171,6 +207,12 @@ export function installStockDoubles(): void {
 			return false;
 		},
 		async availableByProducts() {
+			return [];
+		},
+		async productIdsInWarehouse() {
+			return [];
+		},
+		async countMaterialStocks() {
 			return [];
 		},
 	};
@@ -270,34 +312,32 @@ export function installStockDoubles(): void {
 		async findNamesByIds() {
 			return [];
 		},
-		async clearDefaultExcept() {},
-		async countLiveUnits() {
-			return 0;
+		async findByIds(ids) {
+			return ids.includes(WAREHOUSE.id)
+				? [{ id: WAREHOUSE.id, code: WAREHOUSE.code, name: WAREHOUSE.name }]
+				: [];
 		},
-		async countKinds(warehouseIds) {
-			return warehouseIds.map((warehouseId) => ({
-				warehouseId,
-				productsCount: 0,
-				componentsCount: 0,
-				materialsCount: 0,
-				equipmentsCount: 0,
-				storagesCount: 0,
-			}));
+		async clearDefaultExcept() {},
+		async countStorages() {
+			return new Map<string, number>();
 		},
 	};
 
-	const items: IProductRepository = {
-		async paginate(_request: TProductPaginationRequest) {
-			return emptyPage(1, 20);
+	const products: IProductRepository = {
+		async paginate(request) {
+			return emptyPage(request.page, request.limit);
 		},
-		async findById(id: string) {
-			return { id } as never;
+		async findById() {
+			return null;
+		},
+		async findActiveByIds() {
+			return [];
 		},
 		async findBySku() {
 			return null;
 		},
 		async create() {
-			return {} as never;
+			throw new Error('not used in this suite');
 		},
 		async update() {
 			return null;
@@ -305,13 +345,67 @@ export function installStockDoubles(): void {
 		async archive() {
 			return null;
 		},
-		async countLiveUnits() {
-			return 0;
+		async findNamesByIds() {
+			return [];
+		},
+		async findByIds() {
+			return [];
+		},
+		async productKinds() {
+			return [];
+		},
+		async searchByNameOrSku() {
+			return [];
+		},
+		async listListed() {
+			return [];
+		},
+		async listPublished() {
+			return [];
+		},
+		async findBySlug() {
+			return null;
+		},
+		async findPublishedBySlug() {
+			return null;
 		},
 		async countUnits() {
 			return 0;
 		},
-	} as unknown as IProductRepository;
+	};
+
+	const storages = {
+		async findById() {
+			return null;
+		},
+		async listByWarehouse() {
+			return [];
+		},
+		async findByCode() {
+			return null;
+		},
+		async create() {
+			throw new Error('not used in this suite');
+		},
+		async update() {
+			return null;
+		},
+		async archive() {
+			return null;
+		},
+	};
+
+	const addresses = {
+		async findByWarehouseId() {
+			return null;
+		},
+		async upsert() {
+			throw new Error('not used in this suite');
+		},
+		async remove() {
+			return false;
+		},
+	};
 
 	// The services open `database.transaction` for their multi-statement writes;
 	// the double runs the callback directly because the repositories are stubs.
@@ -319,19 +413,107 @@ export function installStockDoubles(): void {
 		transaction: async (callback: (tx: null) => unknown) => callback(null),
 	} as never;
 
+	const exportedProducts = {
+		async assertProduct(productId: string) {
+			capture.assertedProducts.push(productId);
+			return productSnapshot(productId);
+		},
+		async isProductActive(productId: string) {
+			return capture.assertedProducts.includes(productId);
+		},
+		async productsById(ids: string[]) {
+			return new Map(ids.map((id) => [id, productSnapshot(id)]));
+		},
+		async getNameMap(ids: string[]) {
+			return new Map(ids.map((id) => [id, productSnapshot(id).name]));
+		},
+		async countUnits() {
+			return 0;
+		},
+		async categoryExists() {
+			return false;
+		},
+		async productKinds(ids: string[]) {
+			return new Map(ids.map((id) => [id, 'product']));
+		},
+		async findBySearch() {
+			return [];
+		},
+	};
+
+	const exportedWarehouses = {
+		async warehouseExists(warehouseId: string) {
+			return warehouseId === WAREHOUSE.id;
+		},
+		async warehouseIsActive(warehouseId: string) {
+			return warehouseId === WAREHOUSE.id && WAREHOUSE.isActive;
+		},
+		async storageInWarehouse() {
+			return false;
+		},
+		async getNameMap(ids: string[]) {
+			return new Map(
+				ids.filter((id) => id === WAREHOUSE.id).map((id) => [id, WAREHOUSE.name]),
+			);
+		},
+		async organizationScope(warehouseId: string) {
+			return warehouseId === WAREHOUSE.id
+				? { found: true as const, organizationId: WAREHOUSE.organizationId }
+				: { found: false as const };
+		},
+		async isLinked(warehouseId: string, organizationId: string) {
+			return warehouseId === WAREHOUSE.id && organizationId === ORG_A;
+		},
+		async warehousesById(ids: string[]) {
+			return new Map(
+				ids
+					.filter((id) => id === WAREHOUSE.id)
+					.map((id) => [id, { id, code: WAREHOUSE.code, name: WAREHOUSE.name }]),
+			);
+		},
+		async findByWarehouseIds(ids: string[]) {
+			return new Map(
+				ids
+					.filter((id) => id === WAREHOUSE.id)
+					.map((id) => [id, { id, code: WAREHOUSE.code, name: WAREHOUSE.name }]),
+			);
+		},
+		async idsInScope(organizationId: string | null) {
+			return WAREHOUSE.organizationId === organizationId ? [WAREHOUSE.id] : [];
+		},
+		async hasAddress() {
+			return false;
+		},
+	};
+
 	container.register(MOVEMENT_REPOSITORY_TOKEN, { useValue: movements });
 	container.register(STOCK_REPOSITORY_TOKEN, { useValue: balances });
 	container.register(ADJUSTMENT_REPOSITORY_TOKEN, { useValue: adjustments });
+	// The warehouse storage/address seams stay registered so the module's other
+	// consumers resolve; the stock services only reach the estate through the
+	// export facade below (ADR-0026).
 	container.register(WAREHOUSE_REPOSITORY_TOKEN, { useValue: warehouses });
-	container.register(PRODUCT_REPOSITORY_TOKEN, { useValue: items });
+	container.register(WAREHOUSE_STORAGE_REPOSITORY_TOKEN, { useValue: storages });
+	container.register(WAREHOUSE_ADDRESS_REPOSITORY_TOKEN, { useValue: addresses });
+	// Export facades are registered by instance: their tokens are typed against
+	// the concrete service class, and a structural literal is not assignable to
+	// a constructor type (`InjectionToken<T>` = `constructor<T> | string |
+	// symbol`). The stub reproduces exactly the methods the consuming services
+	// pick, so the `as never` only bridges the private fields, not the API.
+	container.registerInstance(EXPORTED_WAREHOUSE_SERVICE_TOKEN, exportedWarehouses as never);
+	container.register(PRODUCT_REPOSITORY_TOKEN, { useValue: products });
+	container.registerInstance(PRODUCT_CATEGORY_REPOSITORY_TOKEN, {
+		findById: async () => null,
+	} as never);
+	container.registerInstance(EXPORTED_PRODUCT_SERVICE_TOKEN, exportedProducts as never);
 	container.register(STOCK_SERVICE_TOKEN, {
 		useValue: new StockService(
 			movements,
 			balances,
-			warehouses,
-			items,
+			exportedWarehouses,
+			exportedProducts,
 			// Photo URLs are decoration only; these doubles never assert them.
-			{ urlFor: () => null } as never,
+			{ presignGet: () => '' },
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,
@@ -340,7 +522,7 @@ export function installStockDoubles(): void {
 	container.register(ADJUSTMENT_SERVICE_TOKEN, {
 		useValue: new AdjustmentService(
 			adjustments,
-			items,
+			exportedProducts,
 			container.resolve(STOCK_SERVICE_TOKEN),
 			createNumberingDouble(),
 			new AuditWriterDouble(),

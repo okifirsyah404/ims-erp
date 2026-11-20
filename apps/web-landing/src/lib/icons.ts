@@ -21,7 +21,7 @@ import Receipt from "@lucide/astro/icons/receipt";
 import Rotate3d from "@lucide/astro/icons/rotate-3d";
 import ScanFace from "@lucide/astro/icons/scan-face";
 import ShieldCheck from "@lucide/astro/icons/shield-check";
-import SquareParking from "@lucide/astro/icons/square-parking";
+import SquareParking from "@lucide/astro/icons/square-letter-p";
 import Tag from "@lucide/astro/icons/tag";
 import Ticket from "@lucide/astro/icons/ticket";
 import Truck from "@lucide/astro/icons/truck";

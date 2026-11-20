@@ -7,6 +7,7 @@ import type common from '../en/common';
  */
 const common_: Record<keyof typeof common, string> = {
 	'action.cancel': 'Batal',
+	'action.confirm': 'Konfirmasi',
 	'action.save': 'Simpan',
 	'action.saving': 'Menyimpan…',
 	'action.delete': 'Hapus',

@@ -15,6 +15,7 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -103,6 +104,13 @@ export function ProfileEditForm() {
 	}
 
 	return (
+		<form
+			onSubmit={(event) => {
+				event.preventDefault();
+				setFormError(null);
+				saveMutation.mutate();
+			}}
+		>
 		<Card>
 			<CardHeader>
 				<CardTitle>{t('profile.editTitle')}</CardTitle>
@@ -143,72 +151,63 @@ export function ProfileEditForm() {
 							<FieldDescription>{t('profile.avatarHint')}</FieldDescription>
 						</div>
 					</div>
-					<form
-						onSubmit={(event) => {
-							event.preventDefault();
-							setFormError(null);
-							saveMutation.mutate();
-						}}
-					>
-						<FieldGroup>
-							<Field>
-								<FieldLabel htmlFor='edit-name'>{t('profile.name')}</FieldLabel>
-								<Input
-									id='edit-name'
-									required
-									minLength={1}
-									maxLength={120}
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-								/>
-							</Field>
-							<Field>
-								<FieldLabel htmlFor='edit-username'>
-									{t('profile.username')}
-								</FieldLabel>
-								<Input
-									id='edit-username'
-									minLength={3}
-									maxLength={30}
-									value={username}
-									onChange={(e) => setUsername(e.target.value)}
-								/>
-								<FieldDescription>{t('profile.bioHint')}</FieldDescription>
-							</Field>
-							<Field>
-								<FieldLabel htmlFor='edit-bio'>{t('profile.bio')}</FieldLabel>
-								<Textarea
-									id='edit-bio'
-									maxLength={1000}
-									rows={3}
-									value={bio}
-									onChange={(e) => setBio(e.target.value)}
-								/>
-								<FieldDescription>{t('profile.bioHint')}</FieldDescription>
-							</Field>
-							{formError && (
-								<p className='text-destructive text-sm' role='alert'>
-									{formError}
-								</p>
-							)}
-							<div className='flex gap-2'>
-								<Button type='submit' disabled={saveMutation.isPending}>
-									{saveMutation.isPending
-										? t('form.saving')
-										: t('profile.saveChanges')}
-								</Button>
-								<Button
-									type='button'
-									variant='ghost'
-									render={<a href='/profiles' />}
-								>
-									{t('common:action.cancel')}
-								</Button>
-							</div>
-						</FieldGroup>
-					</form>
+					<Field>
+						<FieldLabel htmlFor='edit-name'>{t('profile.name')}</FieldLabel>
+						<Input
+							id='edit-name'
+							required
+							minLength={1}
+							maxLength={120}
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+						/>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor='edit-username'>
+							{t('profile.username')}
+						</FieldLabel>
+						<Input
+							id='edit-username'
+							minLength={3}
+							maxLength={30}
+							value={username}
+							onChange={(e) => setUsername(e.target.value)}
+						/>
+						<FieldDescription>{t('profile.bioHint')}</FieldDescription>
+					</Field>
+					<Field>
+						<FieldLabel htmlFor='edit-bio'>{t('profile.bio')}</FieldLabel>
+						<Textarea
+							id='edit-bio'
+							maxLength={1000}
+							rows={3}
+							value={bio}
+							onChange={(e) => setBio(e.target.value)}
+						/>
+						<FieldDescription>{t('profile.bioHint')}</FieldDescription>
+					</Field>
+					{formError && (
+						<p className='text-destructive text-sm' role='alert'>
+							{formError}
+						</p>
+					)}
 				</FieldGroup>
 			</CardContent>
+			<CardFooter className='justify-end gap-2'>
+				<Button type='submit' disabled={saveMutation.isPending}>
+					{saveMutation.isPending
+						? t('form.saving')
+						: t('profile.saveChanges')}
+				</Button>
+				<Button
+					type='button'
+					variant='ghost'
+					render={<a href='/profiles' />}
+				>
+					{t('common:action.cancel')}
+				</Button>
+			</CardFooter>
 		</Card>
+		</form>
 	);
 }

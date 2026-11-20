@@ -8,6 +8,7 @@ import {
 	village,
 } from '@drizzle/schemas/location.schema';
 import { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { and, asc, count, eq, ilike, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
@@ -72,10 +73,7 @@ export class VillageRepository implements IVillageRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult(request, total, data);
 	}
 
 	/**

@@ -2,14 +2,24 @@ import type {
 	TSupplierCompanySelect,
 	TSupplierSelect,
 } from '@drizzle/schemas/supplier.schema';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 import type {
 	TSupplierCompanyCreateInput,
-	TSupplierCompanyListQuery,
 	TSupplierCompanyUpdateInput,
 	TSupplierCreateInput,
-	TSupplierListQuery,
 	TSupplierUpdateInput,
 } from './supplier.contract';
+
+/** Page settings plus the optional company filter of the supplier-person listing. */
+export type TSupplierPaginationRequest = TPaginationRequest & {
+	companyId?: string;
+};
+
+/** Page settings plus the filters of the supplier-company listing. */
+export type TSupplierCompanyPaginationRequest = TPaginationRequest & {
+	status?: string;
+	search?: string;
+};
 
 /**
  * Persistence port for `supplier.companies` and `supplier.suppliers`.
@@ -20,11 +30,10 @@ import type {
  * repository (ADR-0024 "one repository per table").
  */
 export interface ISupplierCompanyRepository {
+	/** Fetches one filtered page of supplier companies with its pagination metadata. */
 	paginate(
-		query: TSupplierCompanyListQuery,
-	): Promise<TSupplierCompanySelect[]>;
-
-	count(query: TSupplierCompanyListQuery): Promise<number>;
+		request: TSupplierCompanyPaginationRequest,
+	): Promise<TPaginationResult<TSupplierCompanySelect>>;
 
 	findById(id: string): Promise<TSupplierCompanySelect | null>;
 
@@ -49,9 +58,10 @@ export interface ISupplierCompanyRepository {
 
 /** Persistence port for `supplier.suppliers` (live rows only). */
 export interface ISupplierRepository {
-	paginate(query: TSupplierListQuery): Promise<TSupplierSelect[]>;
-
-	count(query: TSupplierListQuery): Promise<number>;
+	/** Fetches one filtered page of supplier people with its pagination metadata. */
+	paginate(
+		request: TSupplierPaginationRequest,
+	): Promise<TPaginationResult<TSupplierSelect>>;
 
 	findById(id: string): Promise<TSupplierSelect | null>;
 

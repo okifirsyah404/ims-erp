@@ -1,6 +1,6 @@
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TAdminUserRow, TUserListRequest } from './admin-listing.types';
+import type { TAdminUserRow, TUserPaginationRequest } from './admin-listing.types';
 
 /**
  * Data-access contract over the user-management-owned columns of
@@ -54,8 +54,8 @@ export interface IUserManagementRepository {
 	 * Admin listing (phase 4): paginated users with their active
 	 * organization memberships, filterable by status/role/search.
 	 */
-	listUsers(
-		request: TUserListRequest,
+	paginateUsers(
+		request: TUserPaginationRequest,
 	): Promise<TPaginationResult<TAdminUserRow>>;
 	/** Finds a user including soft-deleted rows by id (admin lifecycle). */
 	findAnyById(id: string): Promise<TUserSelect | null>;

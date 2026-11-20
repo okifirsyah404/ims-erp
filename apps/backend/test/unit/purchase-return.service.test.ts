@@ -163,6 +163,9 @@ beforeEach(() => {
 			async getProduct(id: string) {
 				return { id, isSerialized: id === READER } as never;
 			},
+		},
+		{
+			/** ADR-0026: the units stayed in `inventory`, so returns go through it. */
 			async supplierReturnableSerials() {
 				return inStock;
 			},

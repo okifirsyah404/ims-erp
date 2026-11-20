@@ -61,7 +61,7 @@ export class HandoverService {
 
 	/** BASTs across the projects visible to the caller. */
 	listAll(ctx: TProjectContext, query: { page: number; limit: number; search?: string }): Promise<TPaginationResult<TBastRow>> {
-		return this.basts.paginateAll({ ...query, involvedUserId: ctx.canViewAll ? undefined : ctx.actorUserId });
+		return this.basts.paginate({ ...query, involvedUserId: ctx.canViewAll ? undefined : ctx.actorUserId });
 	}
 
 	async list(ctx: TProjectContext, projectId: string): Promise<THandoverSelect[]> {

@@ -7,7 +7,9 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
+	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
@@ -31,10 +33,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { CircleAlert, Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
+import { Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import {
 	archiveWarehouse,
@@ -46,8 +50,8 @@ import {
 } from '@/lib/warehouse-api';
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
 
-/** The route API for `/inventory/warehouses` (validated search params). */
-const routeApi = getRouteApi('/_authed/inventory/warehouses/');
+/** The route API for `/warehouses` (validated search params). */
+const routeApi = getRouteApi('/_authed/warehouses/');
 
 /** Rows per page. A card grid is wider than a table, so fewer per page. */
 const PAGE_SIZE = 12;
@@ -70,7 +74,7 @@ type TSortDir = 'asc' | 'desc';
  */
 export function WarehouseList() {
 	const { isAppAdmin, isPending } = useWarehouseAccess();
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	return isAppAdmin ? <AdminWarehouseList /> : <PicWarehouseList />;
 }
 
@@ -82,13 +86,13 @@ export function WarehouseList() {
  * belong on both screens.
  */
 function useWarehouseLifecycle() {
-	const { t } = useTranslation(['inventory']);
+	const { t } = useTranslation(['inventory', 'warehouse', 'product']);
 	const queryClient = useQueryClient();
 
 	const archive = useMutation({
 		mutationFn: (warehouseId: string) => archiveWarehouse(warehouseId),
 		onSuccess: async () => {
-			toast.success(t('inventory:warehouses.archived'));
+			toast.success(t('warehouse:warehouses.archived'));
 			await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -100,8 +104,8 @@ function useWarehouseLifecycle() {
 		onSuccess: async (_data, variables) => {
 			toast.success(
 				variables.isActive
-					? t('inventory:warehouses.activated')
-					: t('inventory:warehouses.deactivated'),
+					? t('warehouse:warehouses.activated')
+					: t('warehouse:warehouses.deactivated'),
 			);
 			await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
 		},
@@ -113,7 +117,7 @@ function useWarehouseLifecycle() {
 
 /** The application-admin list: every warehouse, filters, and pagination. */
 function AdminWarehouseList() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
 	const navigate = routeApi.useNavigate();
 	const search = routeApi.useSearch();
 	const [searchDraft, setSearchDraft] = useState(search.search ?? '');
@@ -133,6 +137,7 @@ function AdminWarehouseList() {
 	});
 
 	const { archive, toggleActive } = useWarehouseLifecycle();
+	const confirm = useConfirm();
 
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
@@ -142,18 +147,18 @@ function AdminWarehouseList() {
 			<div className='flex flex-wrap items-start justify-between gap-4'>
 				<div>
 					<h1 className='text-2xl font-bold'>
-						{t('inventory:warehouses.title')}
+						{t('warehouse:warehouses.title')}
 					</h1>
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:warehouses.description')}
+						{t('warehouse:warehouses.description')}
 					</p>
 				</div>
 				<Button
-					render={<Link to='/inventory/warehouses/new' />}
+					render={<Link to='/warehouses/new' />}
 					className='shrink-0'
 				>
 					<Plus className='mr-2 size-4' aria-hidden='true' />
-					{t('inventory:warehouses.new')}
+					{t('warehouse:warehouses.new')}
 				</Button>
 			</div>
 
@@ -165,8 +170,8 @@ function AdminWarehouseList() {
 					</InputGroupAddon>
 					<InputGroupInput
 						type='search'
-						aria-label={t('inventory:warehouses.searchPlaceholder')}
-						placeholder={t('inventory:warehouses.searchPlaceholder')}
+						aria-label={t('warehouse:warehouses.searchPlaceholder')}
+						placeholder={t('warehouse:warehouses.searchPlaceholder')}
 						value={searchDraft}
 						onChange={(event) => setSearchDraft(event.target.value)}
 						onKeyDown={(event) => {
@@ -207,23 +212,16 @@ function AdminWarehouseList() {
 
 			{/* Cards -------------------------------------------------------- */}
 			{isError ? (
-				<EmptyState
-					icon={CircleAlert}
-					title={t('common:error.failed')}
-					description={
-						error instanceof Error ? error.message : undefined
-					}
-					className='border'
-				/>
+				<ErrorState error={error} bordered />
 			) : rows.length === 0 && !isPending ? (
 				<EmptyState
 					icon={Warehouse}
-					title={t('inventory:warehouses.emptyTitle')}
-					description={t('inventory:warehouses.empty')}
-					className='border'
+					bordered
+					title={t('warehouse:warehouses.emptyTitle')}
+					description={t('warehouse:warehouses.empty')}
 					action={
-						<Button render={<Link to='/inventory/warehouses/new' />}>
-							{t('inventory:warehouses.new')}
+						<Button render={<Link to='/warehouses/new' />}>
+							{t('warehouse:warehouses.new')}
 						</Button>
 					}
 				/>
@@ -244,11 +242,13 @@ function AdminWarehouseList() {
 											isActive: !warehouse.isActive,
 										})
 									}
-									onArchive={() => {
+									onArchive={async () => {
 										if (
-											window.confirm(
-												`${t('inventory:warehouses.archiveConfirmTitle')}\n\n${t('inventory:warehouses.archiveConfirmBody')}`,
-											)
+											await confirm({
+												title: t('warehouse:warehouses.archiveConfirmTitle'),
+												description: t('warehouse:warehouses.archiveConfirmBody'),
+												destructive: true,
+											})
 										) {
 											archive.mutate(warehouse.id);
 										}
@@ -282,10 +282,11 @@ function AdminWarehouseList() {
  * the kind counts, which come from the admin listing.
  */
 function PicWarehouseList() {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
 	const [term, setTerm] = useState('');
 	const { data, isPending, isError, error } = useQuery(myWarehousesQueryOptions());
 	const { archive, toggleActive } = useWarehouseLifecycle();
+	const confirm = useConfirm();
 
 	const needle = term.trim().toLowerCase();
 	const rows = (data ?? []).filter(
@@ -298,9 +299,9 @@ function PicWarehouseList() {
 	return (
 		<div className='flex flex-col gap-6'>
 			<div>
-				<h1 className='text-2xl font-bold'>{t('inventory:warehouses.title')}</h1>
+				<h1 className='text-2xl font-bold'>{t('warehouse:warehouses.title')}</h1>
 				<p className='text-sm text-muted-foreground'>
-					{t('inventory:warehouses.description')}
+					{t('warehouse:warehouses.description')}
 				</p>
 			</div>
 
@@ -310,26 +311,21 @@ function PicWarehouseList() {
 				</InputGroupAddon>
 				<InputGroupInput
 					type='search'
-					aria-label={t('inventory:warehouses.searchPlaceholder')}
-					placeholder={t('inventory:warehouses.searchPlaceholder')}
+					aria-label={t('warehouse:warehouses.searchPlaceholder')}
+					placeholder={t('warehouse:warehouses.searchPlaceholder')}
 					value={term}
 					onChange={(event) => setTerm(event.target.value)}
 				/>
 			</InputGroup>
 
 			{isError ? (
-				<EmptyState
-					icon={CircleAlert}
-					title={t('common:error.failed')}
-					description={error instanceof Error ? error.message : undefined}
-					className='border'
-				/>
+				<ErrorState error={error} bordered />
 			) : rows.length === 0 && !isPending ? (
 				<EmptyState
 					icon={Warehouse}
-					title={t('inventory:warehouses.emptyTitle')}
-					description={t('inventory:warehouses.empty')}
-					className='border'
+					bordered
+					title={t('warehouse:warehouses.emptyTitle')}
+					description={t('warehouse:warehouses.empty')}
 				/>
 			) : (
 				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
@@ -348,11 +344,13 @@ function PicWarehouseList() {
 											isActive: !warehouse.isActive,
 										})
 									}
-									onArchive={() => {
+									onArchive={async () => {
 										if (
-											window.confirm(
-												`${t('inventory:warehouses.archiveConfirmTitle')}\n\n${t('inventory:warehouses.archiveConfirmBody')}`,
-											)
+											await confirm({
+												title: t('warehouse:warehouses.archiveConfirmTitle'),
+												description: t('warehouse:warehouses.archiveConfirmBody'),
+												destructive: true,
+											})
 										) {
 											archive.mutate(warehouse.id);
 										}
@@ -390,7 +388,7 @@ function WarehouseFiltersPopover({
 	}) => void;
 	onReset: () => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
 	const [open, setOpen] = useState(false);
 	const [draftStatus, setDraftStatus] = useState<TStatusFilter | undefined>(status);
 	const [draftSortBy, setDraftSortBy] = useState<TSortField>(sortBy ?? 'name');
@@ -412,18 +410,18 @@ function WarehouseFiltersPopover({
 				render={
 					<Button variant={status ? 'default' : 'outline'}>
 						<Funnel className='mr-2 size-4' aria-hidden='true' />
-						{t('inventory:warehouses.filters')}
+						{t('warehouse:warehouses.filters')}
 					</Button>
 				}
 			/>
 			<PopoverContent align='start' className='w-72'>
 				<PopoverHeader>
-					<PopoverTitle>{t('inventory:warehouses.filtersTitle')}</PopoverTitle>
+					<PopoverTitle>{t('warehouse:warehouses.filtersTitle')}</PopoverTitle>
 				</PopoverHeader>
 				<div className='flex flex-col gap-3'>
 					<div className='flex flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>
-							{t('inventory:warehouses.filterStatus')}
+							{t('warehouse:warehouses.filterStatus')}
 						</span>
 						<Select
 							value={draftStatus ?? 'all'}
@@ -438,21 +436,21 @@ function WarehouseFiltersPopover({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value='all'>
-									{t('inventory:warehouses.statusAll')}
+									{t('warehouse:warehouses.statusAll')}
 								</SelectItem>
 								<SelectItem value='active'>{t('common:status.active')}</SelectItem>
 								<SelectItem value='inactive'>
 									{t('common:status.inactive')}
 								</SelectItem>
 								<SelectItem value='archived'>
-									{t('inventory:warehouses.statusArchived')}
+									{t('warehouse:warehouses.statusArchived')}
 								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 					<div className='flex flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>
-							{t('inventory:warehouses.sortBy')}
+							{t('warehouse:warehouses.sortBy')}
 						</span>
 						<Select
 							value={draftSortBy}
@@ -465,20 +463,20 @@ function WarehouseFiltersPopover({
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value='name'>
-									{t('inventory:warehouses.sortName')}
+									{t('warehouse:warehouses.sortName')}
 								</SelectItem>
 								<SelectItem value='code'>
-									{t('inventory:warehouses.sortCode')}
+									{t('warehouse:warehouses.sortCode')}
 								</SelectItem>
 								<SelectItem value='status'>
-									{t('inventory:warehouses.sortStatus')}
+									{t('warehouse:warehouses.sortStatus')}
 								</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 					<div className='flex flex-col gap-1'>
 						<span className='text-xs text-muted-foreground'>
-							{t('inventory:warehouses.sortOrder')}
+							{t('warehouse:warehouses.sortOrder')}
 						</span>
 						<Select
 							value={draftSortDir}
@@ -488,8 +486,8 @@ function WarehouseFiltersPopover({
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value='asc'>{t('inventory:warehouses.sortAsc')}</SelectItem>
-								<SelectItem value='desc'>{t('inventory:warehouses.sortDesc')}</SelectItem>
+								<SelectItem value='asc'>{t('warehouse:warehouses.sortAsc')}</SelectItem>
+								<SelectItem value='desc'>{t('warehouse:warehouses.sortDesc')}</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -506,7 +504,7 @@ function WarehouseFiltersPopover({
 							setOpen(false);
 						}}
 					>
-						{t('inventory:warehouses.reset')}
+						{t('warehouse:warehouses.reset')}
 					</Button>
 					<Button
 						size='sm'
@@ -519,7 +517,7 @@ function WarehouseFiltersPopover({
 							setOpen(false);
 						}}
 					>
-						{t('inventory:warehouses.apply')}
+						{t('warehouse:warehouses.apply')}
 					</Button>
 				</div>
 			</PopoverContent>
@@ -545,7 +543,7 @@ function WarehouseCard({
 	onToggleActive?: () => void;
 	onArchive?: () => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
 
 	if (!warehouse) {
 		return (
@@ -574,17 +572,17 @@ function WarehouseCard({
 	const stats: Array<[string, number]> =
 		'productsCount' in warehouse
 			? [
-					[t('inventory:warehouses.products'), warehouse.productsCount],
-					[t('inventory:warehouses.components'), warehouse.componentsCount],
-					[t('inventory:warehouses.materials'), warehouse.materialsCount],
-					[t('inventory:warehouses.equipments'), warehouse.equipmentsCount],
-					[t('inventory:warehouses.storages'), warehouse.storagesCount],
+					[t('warehouse:warehouses.products'), warehouse.productsCount],
+					[t('warehouse:warehouses.components'), warehouse.componentsCount],
+					[t('warehouse:warehouses.materials'), warehouse.materialsCount],
+					[t('warehouse:warehouses.equipments'), warehouse.equipmentsCount],
+					[t('warehouse:warehouses.storages'), warehouse.storagesCount],
 				]
-			: [[t('inventory:warehouses.storages'), warehouse.storages.length]];
+			: [[t('warehouse:warehouses.storages'), warehouse.storages.length]];
 
 	return (
 		<Link
-			to='/inventory/warehouses/$warehouseId'
+			to='/warehouses/$warehouseId'
 			params={{ warehouseId: warehouse.id }}
 			className='group'
 		>
@@ -604,34 +602,30 @@ function WarehouseCard({
 						<PackageOpen className='size-10' />
 					</div>
 				)}
-				<CardHeader className='flex items-start justify-between gap-2 space-y-0'>
-					<div className='flex min-w-0 flex-col gap-0.5'>
-						<CardTitle className='truncate text-base'>
-							{warehouse.name}
-						</CardTitle>
-						<p className='truncate font-mono text-xs text-muted-foreground'>
-							{warehouse.code}
-						</p>
-					</div>
-					<div className='flex shrink-0 flex-col items-end gap-1'>
+				<CardHeader>
+					<CardTitle className='truncate'>{warehouse.name}</CardTitle>
+					<CardDescription className='truncate font-mono text-xs'>
+						{warehouse.code}
+					</CardDescription>
+					<CardAction className='flex flex-col items-end gap-1'>
 						{warehouse.organizationId === null ? (
 							<Badge variant='outline'>
-								{t('inventory:warehouses.global')}
+								{t('warehouse:warehouses.global')}
 							</Badge>
 						) : (
 							<Badge variant='secondary'>
-								{t('inventory:warehouses.organization')}
+								{t('warehouse:warehouses.organization')}
 							</Badge>
 						)}
 						{warehouse.isDefault ? (
-							<Badge>{t('inventory:warehouses.default')}</Badge>
+							<Badge>{t('warehouse:warehouses.default')}</Badge>
 						) : null}
 						{!warehouse.isActive ? (
 							<Badge variant='outline'>
-								{t('inventory:warehouses.inactive')}
+								{t('warehouse:warehouses.inactive')}
 							</Badge>
 						) : null}
-					</div>
+					</CardAction>
 				</CardHeader>
 				<CardContent>
 					<div
@@ -659,8 +653,8 @@ function WarehouseCard({
 						}}
 					>
 						{warehouse.isActive
-							? t('inventory:warehouses.deactivate')
-							: t('inventory:warehouses.activate')}
+							? t('warehouse:warehouses.deactivate')
+							: t('warehouse:warehouses.activate')}
 					</Button>
 					<Button
 						variant='ghost'
@@ -671,7 +665,7 @@ function WarehouseCard({
 							onArchive?.();
 						}}
 					>
-						{t('inventory:detail.archive')}
+						{t('product:detail.archive')}
 					</Button>
 				</CardFooter>
 			</Card>

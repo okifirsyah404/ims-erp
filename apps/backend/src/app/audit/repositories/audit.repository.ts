@@ -4,10 +4,11 @@ import { and, count, desc, eq, gte, lt } from 'drizzle-orm';
 import type { TPaginationResult } from '@ims-erp/common';
 import { DRIZZLE_TOKEN } from '@di/tokens';
 import { auditLogs, type TAuditLogSelect } from '@drizzle/schemas/audit.schema';
+import { paginationResult } from '@utils/pagination.util';
 import type {
 	IAuditRepository,
 	TAuditEntry,
-	TAuditListRequest,
+	TAuditPaginationRequest,
 } from '../contracts/audit.repository.interface';
 
 /**
@@ -49,8 +50,17 @@ export class AuditRepository implements IAuditRepository {
 		});
 	}
 
-	async list(
-		request: TAuditListRequest,
+	/**
+	 * Fetches one filtered page of ledger rows, newest first.
+	 *
+	 * @remarks
+	 * Never cached: filters change the result set per request, and an audit
+	 * read must reflect rows appended moments ago.
+	 *
+	 * @param request - Page settings plus optional filters
+	 */
+	async paginate(
+		request: TAuditPaginationRequest,
 	): Promise<TPaginationResult<TAuditLogSelect>> {
 		const { action, actorUserId, targetType, organizationId, from, to, page, limit } =
 			request;
@@ -86,9 +96,6 @@ export class AuditRepository implements IAuditRepository {
 			.offset((page - 1) * limit)
 			.limit(limit);
 
-		return {
-			data,
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
-		};
+		return paginationResult(request, total, data);
 	}
 }

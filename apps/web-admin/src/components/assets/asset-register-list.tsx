@@ -13,6 +13,7 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -21,12 +22,13 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Boxes, CircleAlert, PackageSearch, Plus } from 'lucide-react';
+import { Boxes, PackageSearch, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { AssetForm } from '@/components/assets/asset-form';
 import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { toast } from '@/components/toast';
 import { useClampPage } from '@/lib/use-clamp-page';
 import {
@@ -87,13 +89,7 @@ export function AssetRegisterList() {
 	useClampPage(page, meta?.totalPages, goToPage);
 
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:register.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -187,8 +183,9 @@ export function AssetRegisterList() {
 						))}
 					</SelectContent>
 				</Select>
-				<label className='flex items-center gap-2 text-sm text-muted-foreground'>
+				<Field orientation='horizontal' className='w-auto'>
 					<Checkbox
+						id='asset-include-archived'
 						checked={search.includeArchived === true}
 						onCheckedChange={(checked) =>
 							void navigate({
@@ -200,21 +197,23 @@ export function AssetRegisterList() {
 							})
 						}
 					/>
-					{t('assets:register.includeArchived')}
-				</label>
+					<FieldLabel htmlFor='asset-include-archived'>
+						{t('assets:register.includeArchived')}
+					</FieldLabel>
+				</Field>
 			</div>
 
 			{/* Grid --------------------------------------------------------- */}
 			{isPending ? (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{Array.from({ length: 6 }, (_, index) => (
-						<Card key={index} className='animate-pulse'>
+						<Card key={index}>
 							<CardHeader>
-								<CardTitle className='h-5 w-1/2 rounded bg-muted' />
+								<Skeleton className='h-5 w-1/2' />
 							</CardHeader>
 							<CardContent className='space-y-2'>
-								<div className='h-4 w-3/4 rounded bg-muted' />
-								<div className='h-4 w-1/2 rounded bg-muted' />
+								<Skeleton className='h-4 w-3/4' />
+								<Skeleton className='h-4 w-1/2' />
 							</CardContent>
 						</Card>
 					))}
@@ -224,15 +223,16 @@ export function AssetRegisterList() {
 					icon={PackageSearch}
 					title={t('assets:register.emptyTitle')}
 					description={t('assets:register.empty')}
+					bordered
 				/>
 			) : (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{data.rows.map((asset) => (
 						<Card key={asset.id} className='flex flex-col overflow-hidden'>
 							<ItemThumb variant='cover' src={asset.imageUrl} name={asset.name} />
-							<CardHeader className='pb-2'>
+							<CardHeader>
 								<div className='flex items-start justify-between gap-2'>
-									<CardTitle className='text-base'>
+									<CardTitle>
 										<Link
 											to='/assets/register/$assetId'
 											params={{ assetId: asset.id }}

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -75,10 +76,10 @@ export function TicketThread({ ticketId, canWrite, closed }: { ticketId: string;
 							<FieldLabel htmlFor='ticket-comment'>{t('projects:thread.message')}</FieldLabel>
 							<Textarea id='ticket-comment' required maxLength={4000} rows={3} value={body} onChange={(event) => setBody(event.target.value)} />
 						</Field>
-						<label className='flex items-center gap-2'>
-							<input type='checkbox' checked={toCustomer} onChange={(event) => setToCustomer(event.target.checked)} />
-							{t('projects:thread.visibleToCustomer')}
-						</label>
+						<Field orientation='horizontal'>
+							<Checkbox id='ticket-to-customer' checked={toCustomer} onCheckedChange={(checked) => setToCustomer(checked === true)} />
+							<FieldLabel htmlFor='ticket-to-customer'>{t('projects:thread.visibleToCustomer')}</FieldLabel>
+						</Field>
 						<div>
 							<Button type='submit' disabled={busy || !body.trim()}>
 								{t('projects:thread.send')}

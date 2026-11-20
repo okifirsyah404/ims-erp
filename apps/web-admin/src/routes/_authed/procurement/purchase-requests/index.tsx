@@ -1,21 +1,25 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
+import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
 import {
 	PR_STATUS_VARIANT,
 	PURCHASE_REQUEST_STATUSES,
 	purchaseRequestsQueryOptions,
+	type TPurchaseRequest,
 	type TPurchaseRequestStatus,
 } from '@/lib/procurement-api';
 import { usePermission } from '@/lib/use-permission';
@@ -37,6 +41,54 @@ function PurchaseRequestListPage() {
 	const deferredSearch = useDeferredValue(search.trim());
 	const { data, isPending, isError, error } = useQuery(
 		purchaseRequestsQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined, mine }),
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TPurchaseRequest, CellData>[]>(
+		() => [
+			{
+				id: 'code',
+				header: t('procurement:pr.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/procurement/purchase-requests/$purchaseRequestId'
+							params={{ purchaseRequestId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code ?? t('procurement:pr.noNumber')}
+						</Link>
+						<div className='text-xs text-muted-foreground'>{row.original.subject}</div>
+					</>
+				),
+			},
+			{
+				id: 'requestedBy',
+				header: t('procurement:pr.requestedBy'),
+				cell: ({ row }) => row.original.requestedByName ?? '—',
+			},
+			{
+				id: 'neededBy',
+				header: t('procurement:pr.neededBy'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.neededBy, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('procurement:po.status'),
+				cell: ({ row }) => (
+					<Badge variant={PR_STATUS_VARIANT[row.original.status]}>
+						{t(`procurement:prStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+			{
+				id: 'estimatedTotal',
+				header: t('procurement:pr.estimatedTotal'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.estimatedTotal),
+			},
+		],
+		[t, i18n.language],
 	);
 
 	return (
@@ -83,63 +135,32 @@ function PurchaseRequestListPage() {
 						))}
 					</SelectContent>
 				</Select>
-				<label className='flex items-center gap-2 text-sm'>
+				<Field orientation='horizontal' className='w-auto'>
 					<Checkbox
+						id='pr-mine'
 						checked={mine}
 						onCheckedChange={(checked) => {
 							setMine(checked === true);
 							setPage(1);
 						}}
 					/>
-					{t('procurement:prs.mine')}
-				</label>
+					<FieldLabel htmlFor='pr-mine'>{t('procurement:prs.mine')}</FieldLabel>
+				</Field>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('procurement:prs.empty')}</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
+				<EmptyState title={t('procurement:prs.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('procurement:pr.code')}</TableHead>
-										<TableHead>{t('procurement:pr.requestedBy')}</TableHead>
-										<TableHead>{t('procurement:pr.neededBy')}</TableHead>
-										<TableHead>{t('procurement:po.status')}</TableHead>
-										<TableHead className='text-right'>{t('procurement:pr.estimatedTotal')}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((row) => (
-										<TableRow key={row.id}>
-											<TableCell>
-												<Link
-													to='/procurement/purchase-requests/$purchaseRequestId'
-													params={{ purchaseRequestId: row.id }}
-													className='font-medium hover:underline'
-												>
-													{row.code ?? t('procurement:pr.noNumber')}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{row.subject}</div>
-											</TableCell>
-											<TableCell>{row.requestedByName ?? '—'}</TableCell>
-											<TableCell className='text-muted-foreground'>{formatBusinessDate(row.neededBy, i18n.language)}</TableCell>
-											<TableCell>
-												<Badge variant={PR_STATUS_VARIANT[row.status]}>{t(`procurement:prStatus.${row.status}`)}</Badge>
-											</TableCell>
-											<TableCell className='text-right'>{formatIdr(row.estimatedTotal)}</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
-					{data.pagination.totalPages > 1 && (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						getRowId={(row) => row.id}
+						loading={isPending}
+						bordered
+					/>
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}
 				</>

@@ -6,6 +6,8 @@ import email_ from './email';
 import dashboard_ from './dashboard';
 import finance_ from './finance';
 import inventory_ from './inventory';
+import product_ from './product';
+import warehouse_ from './warehouse';
 import nav_ from './nav';
 import account_ from './account';
 import api_ from './api';
@@ -33,6 +35,8 @@ export const id = {
 	admin: admin_,
 	assets: assets_,
 	inventory: inventory_,
+	product: product_,
+	warehouse: warehouse_,
 	finance: finance_,
 	dashboard: dashboard_,
 	api: api_,

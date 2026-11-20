@@ -9,7 +9,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { IDepreciationRepository } from '../contracts/depreciation.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IDepreciationRepository,
+	TDepreciationPaginationRequest,
+} from '../contracts/depreciation.repository.interface';
 
 /** Drizzle queries of `finance.asset_depreciations`. */
 @injectable()
@@ -49,16 +53,19 @@ export class DepreciationRepository implements IDepreciationRepository {
 		return row!;
 	}
 
-	async list(
-		organizationId: string,
-		filter: { itemId?: string },
-		page: number,
-		limit: number,
+	/**
+	 * Fetches one page of depreciation entries, newest period first.
+	 *
+	 * @param request - Tenant, page settings and the optional item filter
+	 */
+	async paginate(
+		request: TDepreciationPaginationRequest,
 	): Promise<TPaginationResult<TAssetDepreciationSelect>> {
+		const { organizationId, itemId, page, limit } = request;
 		const where = and(
 			isNull(assetDepreciations.deletedAt),
 			eq(assetDepreciations.organizationId, organizationId),
-			filter.itemId ? eq(assetDepreciations.itemId, filter.itemId) : undefined,
+			itemId ? eq(assetDepreciations.itemId, itemId) : undefined,
 		);
 		const [rows, [total]] = await Promise.all([
 			this.database
@@ -70,7 +77,6 @@ export class DepreciationRepository implements IDepreciationRepository {
 				.offset((page - 1) * limit),
 			this.database.select({ value: count() }).from(assetDepreciations).where(where),
 		]);
-		const totalRows = total?.value ?? 0;
-		return { meta: { page, limit, total: totalRows, totalPages: Math.ceil(totalRows / limit) }, data: rows };
+		return paginationResult(request, Number(total?.value ?? 0), rows);
 	}
 }

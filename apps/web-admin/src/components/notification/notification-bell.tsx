@@ -16,6 +16,7 @@ import {
 } from '@ims-erp/ui/components/popover';
 import { Separator } from '@ims-erp/ui/components/separator';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { EmptyState } from '@/components/empty-state';
 import {
 	markAllNotificationsRead,
 	markNotificationRead,
@@ -203,13 +204,9 @@ export function NotificationBell() {
 							<Skeleton className='h-12 w-full' />
 						</div>
 					) : isError ? (
-						<p className='px-3 py-6 text-center text-sm text-muted-foreground'>
-							{t('loadFailed')}
-						</p>
+						<EmptyState size='sm' title={t('loadFailed')} />
 					) : items.length === 0 ? (
-						<p className='px-3 py-6 text-center text-sm text-muted-foreground'>
-							{t('empty')}
-						</p>
+						<EmptyState size='sm' title={t('empty')} />
 					) : (
 						<ul className='flex flex-col divide-y'>
 							{items.map((notification) => (

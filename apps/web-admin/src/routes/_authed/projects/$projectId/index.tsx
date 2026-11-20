@@ -22,6 +22,8 @@ import { ProjectCostsCard } from '@/components/projects/project-costs-card';
 import { ProjectDocumentsCard } from '@/components/projects/project-documents-card';
 import { ProjectEvidenceCard } from '@/components/projects/project-evidence-card';
 import { ProjectTasksCard } from '@/components/projects/project-tasks-card';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
@@ -145,11 +147,11 @@ function ProjectDetailPage() {
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(projectQueryOptions(projectId));
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/projects' className='text-sm hover:underline'>
 					{t('projects:detail.back')}
 				</Link>

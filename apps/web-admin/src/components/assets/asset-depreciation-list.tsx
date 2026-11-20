@@ -3,11 +3,14 @@ import {
 	useQuery,
 	useQueryClient,
 } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Dialog,
 	DialogContent,
@@ -16,15 +19,16 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { CircleAlert, TrendingDown } from 'lucide-react';
+import { TrendingDown } from 'lucide-react';
 import { getRouteApi } from '@tanstack/react-router';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	assetsQueryOptions,
 	formatMoney,
 	recordDepreciation,
+	type TAsset,
 } from '@/lib/asset-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -51,14 +55,41 @@ export function AssetDepreciationList() {
 		placeholderData: (previous) => previous,
 	});
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TAsset, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('assets:register.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{ accessorKey: 'name', header: t('assets:register.name') },
+			{
+				id: 'bookValue',
+				header: t('assets:register.bookValue'),
+				cell: ({ row }) =>
+					formatMoney(row.original.bookValue, row.original.currencyCode),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					canUpdate && row.original.status !== 'disposed' ? (
+						<Button
+							size='sm'
+							variant='outline'
+							onClick={() => setTarget(row.original.id)}
+						>
+							{t('assets:depreciation.record')}
+						</Button>
+					) : null,
+			},
+		],
+		[canUpdate, t],
+	);
+
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:depreciation.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -72,47 +103,21 @@ export function AssetDepreciationList() {
 				</p>
 			</div>
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={TrendingDown}
 					title={t('assets:depreciation.emptyTitle')}
 					description={t('assets:depreciation.empty')}
+					bordered
 				/>
 			) : (
-				<div className='overflow-hidden rounded-lg border'>
-					<table className='w-full text-sm'>
-						<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-							<tr>
-								<th className='px-3 py-2'>{t('assets:register.code')}</th>
-								<th className='px-3 py-2'>{t('assets:register.name')}</th>
-								<th className='px-3 py-2'>{t('assets:register.bookValue')}</th>
-								<th className='px-3 py-2' />
-							</tr>
-						</thead>
-						<tbody>
-							{data.rows.map((asset) => (
-								<tr key={asset.id} className='border-t'>
-									<td className='px-3 py-2 font-mono text-xs'>{asset.code}</td>
-									<td className='px-3 py-2'>{asset.name}</td>
-									<td className='px-3 py-2'>
-										{formatMoney(asset.bookValue, asset.currencyCode)}
-									</td>
-									<td className='px-3 py-2 text-right'>
-										{canUpdate && asset.status !== 'disposed' ? (
-											<Button
-												size='sm'
-												variant='outline'
-												onClick={() => setTarget(asset.id)}
-											>
-												{t('assets:depreciation.record')}
-											</Button>
-										) : null}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={data?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls

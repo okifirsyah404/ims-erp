@@ -68,7 +68,7 @@ export function LocationCascade({
 	onChange: (next: TLocationSelection) => void;
 	disabled?: boolean;
 }) {
-	const { t } = useTranslation(['inventory']);
+	const { t } = useTranslation(['inventory', 'warehouse']);
 	const [terms, setTerms] = useState({
 		province: '',
 		regency: '',
@@ -144,53 +144,53 @@ export function LocationCascade({
 	return (
 		<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 			<Field>
-				<FieldLabel>{t('inventory:address.province')}</FieldLabel>
+				<FieldLabel>{t('warehouse:address.province')}</FieldLabel>
 				<SearchableSelect
 					value={hydrated.provinceId}
 					options={toOptions(provinces.data?.rows)}
 					loading={provinces.isFetching}
 					disabled={disabled}
-					placeholder={t('inventory:address.searchProvince')}
-					emptyLabel={t('inventory:address.noResults')}
+					placeholder={t('warehouse:address.searchProvince')}
+					emptyLabel={t('warehouse:address.noResults')}
 					onSearch={setTerm('province')}
 					onChange={(next) => select('provinceId', next)}
 				/>
 			</Field>
 			<Field>
-				<FieldLabel>{t('inventory:address.regency')}</FieldLabel>
+				<FieldLabel>{t('warehouse:address.regency')}</FieldLabel>
 				<SearchableSelect
 					value={hydrated.regencyId}
 					options={toOptions(regencies.data?.rows)}
 					loading={regencies.isFetching}
 					disabled={disabled || !hydrated.provinceId}
-					placeholder={t('inventory:address.searchRegency')}
-					emptyLabel={t('inventory:address.noResults')}
+					placeholder={t('warehouse:address.searchRegency')}
+					emptyLabel={t('warehouse:address.noResults')}
 					onSearch={setTerm('regency')}
 					onChange={(next) => select('regencyId', next)}
 				/>
 			</Field>
 			<Field>
-				<FieldLabel>{t('inventory:address.district')}</FieldLabel>
+				<FieldLabel>{t('warehouse:address.district')}</FieldLabel>
 				<SearchableSelect
 					value={hydrated.districtId}
 					options={toOptions(districts.data?.rows)}
 					loading={districts.isFetching}
 					disabled={disabled || !hydrated.regencyId}
-					placeholder={t('inventory:address.searchDistrict')}
-					emptyLabel={t('inventory:address.noResults')}
+					placeholder={t('warehouse:address.searchDistrict')}
+					emptyLabel={t('warehouse:address.noResults')}
 					onSearch={setTerm('district')}
 					onChange={(next) => select('districtId', next)}
 				/>
 			</Field>
 			<Field>
-				<FieldLabel>{t('inventory:address.village')}</FieldLabel>
+				<FieldLabel>{t('warehouse:address.village')}</FieldLabel>
 				<SearchableSelect
 					value={hydrated.villageId}
 					options={toOptions(villages.data?.rows)}
 					loading={villages.isFetching}
 					disabled={disabled || !hydrated.districtId}
-					placeholder={t('inventory:address.searchVillage')}
-					emptyLabel={t('inventory:address.noResults')}
+					placeholder={t('warehouse:address.searchVillage')}
+					emptyLabel={t('warehouse:address.noResults')}
 					onSearch={setTerm('village')}
 					onChange={(next) => select('villageId', next)}
 				/>

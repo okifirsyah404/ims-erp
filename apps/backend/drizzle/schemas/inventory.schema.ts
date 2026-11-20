@@ -2,10 +2,11 @@
  * Inventory module schema — owns the `inventory` Postgres schema.
  *
  * @remarks
- * Absorbs the former `assets` and `catalog` schemas (ADR-0024 Q14/Q15):
+ * Absorbs the former `assets` schema (ADR-0024 Q15). The product master and the
+ * warehouse estate moved to the `product` and `warehouse` modules (ADR-0026);
+ * every id that points at them is a plain nullable column checked by the owning
+ * module's contract.
  *
- * - `products` — stocked/sold SKU master (was `inventory.items`), now carrying
- *   the website listing columns of `catalog.web_listings` 1:1.
  * - `item_serials` — serial units of a product (was `serial_tracked_items`).
  * - `items` — one row per physical tool/asset unit (was `assets.assets`).
  * - `movements` — the stock ledger and the asset location trail merged, with
@@ -46,35 +47,6 @@ export const inventorySchema = pgSchema('inventory');
 /* ------------------------------------------------------------------------ *
  * Vocabularies
  * ------------------------------------------------------------------------ */
-
-/** Product kinds: consumables only. Tools are `items`, services neither. */
-export const PRODUCT_KINDS = ['product', 'component', 'material'] as const;
-export type ProductKind = (typeof PRODUCT_KINDS)[number];
-
-/** Fixed unit list (ADR-0011), guarded by a CHECK. */
-export const ITEM_UNITS = [
-	'pcs',
-	'unit',
-	'set',
-	'paket',
-	'titik',
-	'm',
-	'roll',
-	'kg',
-	'jam',
-	'bulan',
-	'tahun',
-	'lic',
-	'lot',
-	'pulau',
-] as const;
-export type ItemUnit = (typeof ITEM_UNITS)[number];
-
-/** What the public website shows when nothing is available. */
-export const PRICE_MODES = ['list', 'rfq'] as const;
-export type PriceMode = (typeof PRICE_MODES)[number];
-export const OUT_OF_STOCK_MODES = ['out', 'preorder', 'request'] as const;
-export type OutOfStockMode = (typeof OUT_OF_STOCK_MODES)[number];
 
 /** Serial unit statuses. `sold` / `applied_warranty` are product-only. */
 export const SERIAL_STATUSES = [
@@ -322,314 +294,6 @@ const day = (name: string) => date(name, { mode: 'string' });
 const money = (name: string) => bigint(name, { mode: 'number' });
 
 /* ------------------------------------------------------------------------ *
- * inventory.products
- * ------------------------------------------------------------------------ */
-
-/**
- * Product (SKU) master, plus its website listing (ADR-0024 Q14).
- *
- * @remarks
- * One product master for the whole ERP; `catalog.items` is superseded
- * (ADR-0008). `product_kind` is product|component|material only — physical tools
- * are `inventory.items` and services are neither stocked nor serialized.
- */
-export const products = inventorySchema.table(
-	'products',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		/** Human reference from the numbering authority; immutable. */
-		code: varchar('code', { length: 32 }).notNull(),
-		/** Manufacturer/business SKU, typed by the user; immutable. */
-		sku: varchar('sku', { length: 64 }).notNull(),
-		serialNumber: text('serial_number'),
-		name: text('name').notNull(),
-		description: text('description'),
-		productKind: text('product_kind').notNull(),
-		productCategoryId: uuid('product_category_id').references(
-			() => productCategories.id,
-			{ onDelete: 'restrict' },
-		),
-		brand: varchar('brand', { length: 100 }),
-		specification: text('specification'),
-		imageObjectKey: text('image_object_key'),
-		unitLabel: varchar('unit_label', { length: 32 }).notNull().default('pcs'),
-		isActive: boolean('is_active').notNull().default(true),
-		isSerialized: boolean('is_serialized').notNull().default(false),
-		isStockTracked: boolean('is_stock_tracked').notNull().default(true),
-		minStockQty: numeric('min_stock_qty', { precision: 18, scale: 3 })
-			.notNull()
-			.default('0'),
-		barcode: text('barcode'),
-		/** Exact integer IDR minor units (ADR-0002). Never a float. */
-		sellingPrice: money('selling_price').notNull().default(0),
-		purchasePrice: money('purchase_price').notNull().default(0),
-		currencyCode: varchar('currency_code', { length: 3 })
-			.notNull()
-			.default('IDR'),
-		// --- website listing (was catalog.web_listings) ---
-		slug: varchar('slug', { length: 120 }),
-		isPublished: boolean('is_published').notNull().default(false),
-		publishedAt: unixTimestampNullable('published_at'),
-		listingSpecs: varchar('listing_specs', { length: 400 }),
-		priceMode: text('price_mode').notNull().default('list'),
-		priceCaption: varchar('price_caption', { length: 120 }),
-		outOfStockMode: text('out_of_stock_mode').notNull().default('request'),
-		leadTimeLabel: varchar('lead_time_label', { length: 60 }),
-		applications: jsonb('applications')
-			.$type<string[]>()
-			.notNull()
-			.default([]),
-		popularity: integer('popularity').notNull().default(0),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		createdBy: text('created_by'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		...scopedUnique(table.organizationId, table.code, {
-			orgScoped: 'products_org_code_uq',
-			global: 'products_global_code_uq',
-		}),
-		...scopedUnique(table.organizationId, table.sku, {
-			orgScoped: 'products_org_sku_uq',
-			global: 'products_global_sku_uq',
-		}),
-		uniqueIndex('products_slug_uq')
-			.on(table.slug)
-			.where(sql`deleted_at IS NULL AND slug IS NOT NULL`),
-		index('products_kind_idx').on(table.productKind),
-		index('products_org_name_idx').on(table.organizationId, table.name),
-		index('products_barcode_idx').on(table.barcode),
-		check(
-			'products_kind_check',
-			sql`product_kind IN ('product', 'component', 'material')`,
-		),
-		check('products_prices_check', sql`selling_price >= 0 AND purchase_price >= 0`),
-		check('products_min_stock_check', sql`min_stock_qty >= 0`),
-		check(
-			'products_unit_label_check',
-			sql`unit_label IN ('pcs', 'unit', 'set', 'paket', 'titik', 'm', 'roll', 'kg', 'jam', 'bulan', 'tahun', 'lic', 'lot', 'pulau')`,
-		),
-		check('products_price_mode_check', sql`price_mode IN ('list', 'rfq')`),
-		check(
-			'products_out_of_stock_mode_check',
-			sql`out_of_stock_mode IN ('out', 'preorder', 'request')`,
-		),
-		check('products_popularity_check', sql`popularity >= 0`),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
- * inventory.product_categories
- * ------------------------------------------------------------------------ */
-
-/** Product category, one level, company-wide. Was `inventory.item_categories`. */
-export const productCategories = inventorySchema.table(
-	'product_categories',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		slug: varchar('slug', { length: 64 }).notNull(),
-		name: varchar('name', { length: 120 }).notNull(),
-		shortName: varchar('short_name', { length: 60 }),
-		sortOrder: integer('sort_order').notNull().default(0),
-		description: text('description'),
-		isActive: boolean('is_active').notNull().default(true),
-		createdAt: unixTimestamp('created_at').notNull(),
-		updatedAt: unixTimestamp('updated_at')
-			.notNull()
-			.$onUpdate(() => new Date()),
-		deletedAt: unixTimestampNullable('deleted_at'),
-	},
-	(table) => [
-		uniqueIndex('product_categories_slug_uq')
-			.on(table.slug)
-			.where(sql`deleted_at IS NULL`),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
- * inventory.warehouses (+ address, storage, manager, organization, settings)
- * ------------------------------------------------------------------------ */
-
-/**
- * Warehouse master. Address fields live in `warehouse_addresses` (strict 1:1).
- *
- * @remarks
- * `organization_id` is frozen at NULL (ADR-0010): every warehouse is global and
- * organization access comes from `warehouse_organizations`. Writes are
- * application-admin-only.
- */
-export const warehouses = inventorySchema.table(
-	'warehouses',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		organizationId: organizationId(),
-		code: varchar('code', { length: 32 }).notNull(),
-		name: text('name').notNull(),
-		/** Display-only person in charge; grants no access (ADR-0010). */
-		responsibleEmployeeId: uuid('responsible_employee_id'),
-		isDefault: boolean('is_default').notNull().default(false),
-		isActive: boolean('is_active').notNull().default(true),
-		imageUrl: text('image_url'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		...scopedUnique(table.organizationId, table.code, {
-			orgScoped: 'warehouses_org_code_uq',
-			global: 'warehouses_global_code_uq',
-		}),
-		index('warehouses_is_default_idx').on(table.isDefault),
-		index('warehouses_is_active_idx').on(table.isActive),
-		uniqueIndex('warehouses_org_default_uq')
-			.on(table.organizationId)
-			.where(
-				sql`organization_id IS NOT NULL AND is_default AND deleted_at IS NULL`,
-			),
-		uniqueIndex('warehouses_global_default_uq')
-			.on(
-				sql`coalesce(${table.organizationId}, '00000000-0000-0000-0000-000000000000')`,
-			)
-			.where(sql`organization_id IS NULL AND is_default AND deleted_at IS NULL`),
-	],
-);
-
-/** Warehouse address, strictly 1:1. Only `village_id` is stored (Q10). */
-export const warehouseAddresses = inventorySchema.table(
-	'warehouse_addresses',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'cascade' }),
-		label: text('label'),
-		addressLine: text('address_line').notNull(),
-		rt: varchar('rt', { length: 8 }),
-		rw: varchar('rw', { length: 8 }),
-		postalCode: varchar('postal_code', { length: 10 }),
-		/** Logical reference to location.villages.id — cross-module FK omitted. */
-		villageId: uuid('village_id'),
-		latitude: numeric('latitude', { precision: 10, scale: 7 }),
-		longitude: numeric('longitude', { precision: 10, scale: 7 }),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		uniqueIndex('warehouse_addresses_warehouse_uq').on(table.warehouseId),
-		index('warehouse_addresses_village_id_idx').on(table.villageId),
-	],
-);
-
-/** Storage location (bin) inside a warehouse. No zone level (ADR-0008). */
-export const warehouseStorages = inventorySchema.table(
-	'warehouse_storages',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'cascade' }),
-		code: varchar('code', { length: 32 }).notNull(),
-		name: text('name'),
-		binType: text('bin_type'),
-		capacity: numeric('capacity', { precision: 18, scale: 3 }),
-		isActive: boolean('is_active').notNull().default(true),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		index('warehouse_storages_warehouse_id_idx').on(table.warehouseId),
-		uniqueIndex('warehouse_storages_warehouse_code_uq')
-			.on(table.warehouseId, table.code)
-			.where(sql`deleted_at IS NULL`),
-	],
-);
-
-/** Per-user, per-warehouse person-in-charge grant (ADR-0017). */
-export const warehouseManagers = inventorySchema.table(
-	'warehouse_managers',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'cascade' }),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		userId: text('user_id'),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		assignedBy: text('assigned_by'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		uniqueIndex('warehouse_managers_uq')
-			.on(table.warehouseId, table.userId)
-			.where(sql`deleted_at IS NULL`),
-		index('warehouse_managers_user_id_idx').on(table.userId),
-	],
-);
-
-/** Link granting an organization access to a global warehouse (ADR-0010). */
-export const warehouseOrganizations = inventorySchema.table(
-	'warehouse_organizations',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'cascade' }),
-		/** Logical reference to auth.organizations.id — cross-module FK omitted. */
-		organizationId: text('organization_id'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		index('warehouse_organizations_warehouse_id_idx').on(table.warehouseId),
-		index('warehouse_organizations_organization_id_idx').on(
-			table.organizationId,
-		),
-		uniqueIndex('warehouse_organizations_uq')
-			.on(table.warehouseId, table.organizationId)
-			.where(sql`deleted_at IS NULL`),
-	],
-);
-
-/** Per-warehouse configuration key value store (ADR-0024 Q27). */
-export const warehouseSettings = inventorySchema.table(
-	'warehouse_settings',
-	{
-		id: uuid('id')
-			.primaryKey()
-			.default(sql`uuidv7()`),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'cascade' }),
-		settingKey: text('setting_key').notNull(),
-		settingValue: text('setting_value'),
-		valueType: text('value_type').notNull().default('string'),
-		description: text('description'),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		updatedBy: text('updated_by'),
-		...softDeleteTimestamps,
-	},
-	(table) => [
-		uniqueIndex('warehouse_settings_uq')
-			.on(table.warehouseId, table.settingKey)
-			.where(sql`deleted_at IS NULL`),
-		check(
-			'warehouse_settings_value_type_check',
-			sql`value_type IN ('string', 'number', 'boolean', 'json', 'date')`,
-		),
-	],
-);
-
-/* ------------------------------------------------------------------------ *
  * inventory.item_categories / inventory.items
  * ------------------------------------------------------------------------ */
 
@@ -711,12 +375,10 @@ export const items = inventorySchema.table(
 		status: text('status').notNull().default('ready'),
 		deactivationReason: text('deactivation_reason'),
 		locationDescription: text('location_description'),
-		warehouseId: uuid('warehouse_id').references(() => warehouses.id, {
-			onDelete: 'set null',
-		}),
-		storageId: uuid('storage_id').references(() => warehouseStorages.id, {
-			onDelete: 'set null',
-		}),
+		/** Logical reference to warehouse.warehouses.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		warehouseId: uuid('warehouse_id'),
+		/** Logical reference to warehouse.warehouse_storages.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		storageId: uuid('storage_id'),
 		/** Written only by `syncCustody`; never accepted from a request body. */
 		custodianEmployeeId: uuid('custodian_employee_id'),
 		borrowedSince: unixTimestampNullable('borrowed_since'),
@@ -790,21 +452,18 @@ export const itemSerials = inventorySchema.table(
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		organizationId: organizationId(),
-		productId: uuid('product_id')
-			.notNull()
-			.references(() => products.id, { onDelete: 'restrict' }),
+		/** Logical reference to product.products.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		productId: uuid('product_id'),
 		serialNumber: text('serial_number').notNull(),
 		isProvisionalSerial: boolean('is_provisional_serial')
 			.notNull()
 			.default(false),
 		assetTag: text('asset_tag'),
 		status: text('status').notNull().default('in_stock'),
-		warehouseId: uuid('warehouse_id').references(() => warehouses.id, {
-			onDelete: 'set null',
-		}),
-		binId: uuid('bin_id').references(() => warehouseStorages.id, {
-			onDelete: 'set null',
-		}),
+		/** Logical reference to warehouse.warehouses.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		warehouseId: uuid('warehouse_id'),
+		/** Logical reference to warehouse.warehouse_storages.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		binId: uuid('bin_id'),
 		acquiredOn: day('acquired_on'),
 		warrantyExpiresOn: day('warranty_expires_on'),
 		purchaseOrderLineId: uuid('purchase_order_line_id'),
@@ -902,25 +561,19 @@ export const movements = inventorySchema.table(
 		organizationId: organizationId(),
 		code: varchar('code', { length: 32 }).notNull(),
 		movementType: text('movement_type').notNull(),
-		productId: uuid('product_id').references(() => products.id, {
-			onDelete: 'restrict',
-		}),
+		/** Logical reference to product.products.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		productId: uuid('product_id'),
 		itemId: uuid('item_id').references(() => items.id, {
 			onDelete: 'restrict',
 		}),
-		warehouseId: uuid('warehouse_id').references(() => warehouses.id, {
-			onDelete: 'restrict',
-		}),
-		binId: uuid('bin_id').references(() => warehouseStorages.id, {
-			onDelete: 'set null',
-		}),
-		targetWarehouseId: uuid('target_warehouse_id').references(
-			() => warehouses.id,
-			{ onDelete: 'restrict' },
-		),
-		targetBinId: uuid('target_bin_id').references(() => warehouseStorages.id, {
-			onDelete: 'set null',
-		}),
+		/** Logical reference to warehouse.warehouses.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		warehouseId: uuid('warehouse_id'),
+		/** Logical reference to warehouse.warehouse_storages.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		binId: uuid('bin_id'),
+		/** Logical reference to warehouse.warehouses.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		targetWarehouseId: uuid('target_warehouse_id'),
+		/** Logical reference to warehouse.warehouse_storages.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		targetBinId: uuid('target_bin_id'),
 		fromLocation: text('from_location'),
 		toLocation: text('to_location'),
 		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
@@ -995,15 +648,12 @@ export const stocks = inventorySchema.table(
 			.primaryKey()
 			.default(sql`uuidv7()`),
 		organizationId: organizationId(),
-		productId: uuid('product_id')
-			.notNull()
-			.references(() => products.id, { onDelete: 'restrict' }),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'restrict' }),
-		binId: uuid('bin_id').references(() => warehouseStorages.id, {
-			onDelete: 'set null',
-		}),
+		/** Logical reference to product.products.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		productId: uuid('product_id'),
+		/** Logical reference to warehouse.warehouses.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		warehouseId: uuid('warehouse_id'),
+		/** Logical reference to warehouse.warehouse_storages.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		binId: uuid('bin_id'),
 		quantityOnHand: numeric('quantity_on_hand', { precision: 18, scale: 3 })
 			.notNull()
 			.default('0'),
@@ -1062,9 +712,8 @@ export const stockAdjustments = inventorySchema.table(
 			.default(sql`uuidv7()`),
 		organizationId: text('organization_id'),
 		code: varchar('code', { length: 32 }).notNull(),
-		warehouseId: uuid('warehouse_id')
-			.notNull()
-			.references(() => warehouses.id, { onDelete: 'restrict' }),
+		/** Logical reference to warehouse.warehouses.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		warehouseId: uuid('warehouse_id'),
 		adjustmentType: text('adjustment_type').notNull(),
 		status: text('status').notNull().default('draft'),
 		reasonCode: text('reason_code'),
@@ -1113,12 +762,10 @@ export const stockAdjustmentItems = inventorySchema.table(
 		stockAdjustmentId: uuid('stock_adjustment_id')
 			.notNull()
 			.references(() => stockAdjustments.id, { onDelete: 'cascade' }),
-		productId: uuid('product_id')
-			.notNull()
-			.references(() => products.id, { onDelete: 'restrict' }),
-		binId: uuid('bin_id').references(() => warehouseStorages.id, {
-			onDelete: 'set null',
-		}),
+		/** Logical reference to product.products.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		productId: uuid('product_id'),
+		/** Logical reference to warehouse.warehouse_storages.id — cross-module FK omitted (ADR-0014, ADR-0026). */
+		binId: uuid('bin_id'),
 		quantityBefore: numeric('quantity_before', { precision: 18, scale: 3 })
 			.notNull()
 			.default('0'),
@@ -1623,10 +1270,6 @@ export const inventoryCodeNumberings =
  * Inferred types
  * ------------------------------------------------------------------------ */
 
-export type TProductSelect = typeof products.$inferSelect;
-export type TProductInsert = typeof products.$inferInsert;
-export type TProductCategorySelect = typeof productCategories.$inferSelect;
-export type TProductCategoryInsert = typeof productCategories.$inferInsert;
 export type TItemSerialSelect = typeof itemSerials.$inferSelect;
 export type TItemSerialInsert = typeof itemSerials.$inferInsert;
 export type TItemSelect = typeof items.$inferSelect;
@@ -1665,20 +1308,6 @@ export type TToolSetSelect = typeof toolSets.$inferSelect;
 export type TToolSetInsert = typeof toolSets.$inferInsert;
 export type TToolSetItemSelect = typeof toolSetItems.$inferSelect;
 export type TToolSetItemInsert = typeof toolSetItems.$inferInsert;
-export type TWarehouseSelect = typeof warehouses.$inferSelect;
-export type TWarehouseInsert = typeof warehouses.$inferInsert;
-export type TWarehouseAddressSelect = typeof warehouseAddresses.$inferSelect;
-export type TWarehouseAddressInsert = typeof warehouseAddresses.$inferInsert;
-export type TWarehouseStorageSelect = typeof warehouseStorages.$inferSelect;
-export type TWarehouseStorageInsert = typeof warehouseStorages.$inferInsert;
-export type TWarehouseManagerSelect = typeof warehouseManagers.$inferSelect;
-export type TWarehouseManagerInsert = typeof warehouseManagers.$inferInsert;
-export type TWarehouseOrganizationSelect =
-	typeof warehouseOrganizations.$inferSelect;
-export type TWarehouseOrganizationInsert =
-	typeof warehouseOrganizations.$inferInsert;
-export type TWarehouseSettingSelect = typeof warehouseSettings.$inferSelect;
-export type TWarehouseSettingInsert = typeof warehouseSettings.$inferInsert;
 export type TInventorySettingSelect = typeof inventorySettings.$inferSelect;
 export type TInventorySettingInsert = typeof inventorySettings.$inferInsert;
 export type TInventoryCodeNumberingSelect =

@@ -18,10 +18,11 @@ import { inject, injectable } from 'tsyringe';
 
 import type { ICacheClient } from '@cache/cache.client';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import type { TUserSelect } from '@drizzle/schemas/auth.schema';
 import { members, organizations, users } from '@drizzle/schemas/auth.schema';
 import type { IUserManagementRepository } from '../contracts/user-management.repository.interface';
-import type { TAdminUserRow, TUserListRequest } from '../contracts/admin-listing.types';
+import type { TAdminUserRow, TUserPaginationRequest } from '../contracts/admin-listing.types';
 import {
 	USER_CACHE_PREFIX,
 	userCacheKey,
@@ -215,8 +216,13 @@ export class UserManagementRepository implements IUserManagementRepository {
 		return rows;
 	}
 
-	async listUsers(
-		request: TUserListRequest,
+	/**
+	 * Fetches one filtered page of users for the admin table.
+	 *
+	 * @param request - Page settings, filters and the sort column/direction
+	 */
+	async paginateUsers(
+		request: TUserPaginationRequest,
 	): Promise<TPaginationResult<TAdminUserRow>> {
 		const {
 			status,
@@ -317,13 +323,14 @@ export class UserManagementRepository implements IUserManagementRepository {
 			byUser.set(row.userId, bucket);
 		}
 
-		return {
-			data: rows.map((row) => ({
+		return paginationResult(
+			request,
+			total,
+			rows.map((row) => ({
 				user: row.user,
 				organizations: byUser.get(row.user.id) ?? [],
 			})),
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) || 1 },
-		};
+		);
 	}
 
 	/**

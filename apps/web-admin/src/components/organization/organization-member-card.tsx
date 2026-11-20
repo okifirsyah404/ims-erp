@@ -4,7 +4,7 @@ import { erpRoleLabel } from '@ims-erp/common';
 import { Avatar, AvatarFallback, AvatarImage } from '@ims-erp/ui/components/avatar';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card } from '@ims-erp/ui/components/card';
+import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Link } from '@tanstack/react-router';
 
 export interface OrganizationMemberCardProps {
@@ -29,7 +29,7 @@ export interface OrganizationMemberCardProps {
  * Compact card for the members grid on the organization detail page (6
  * columns on wide screens). Identity first (avatar, name, email), then role
  * badge and join date, with a small edit action. Plain flex containers are
- * used instead of `CardHeader` — its shadcn base class is `grid`, which
+ * used inside one `CardContent` instead of `CardHeader` — its base class is `grid`, which
  * stacks the avatar and name block vertically (observed in Firefox).
  */
 export function OrganizationMemberCard({
@@ -49,8 +49,9 @@ export function OrganizationMemberCard({
 		.toUpperCase();
 
 	return (
-		<Card className='gap-2 py-3'>
-			<div className='flex items-center gap-2.5 px-3'>
+		<Card size='sm'>
+			<CardContent className='flex flex-col gap-2'>
+			<div className='flex items-center gap-2.5'>
 				<Avatar className='size-9 shrink-0'>
 					{member.user?.image ? (
 						<AvatarImage src={member.user.image} alt={displayName} />
@@ -62,7 +63,7 @@ export function OrganizationMemberCard({
 					<p className='truncate text-xs text-muted-foreground'>{email}</p>
 				</div>
 			</div>
-			<div className='flex items-center justify-between gap-2 px-3'>
+			<div className='flex items-center justify-between gap-2'>
 				<Badge variant='outline' className='min-w-0 max-w-[130px] truncate'>
 					{erpRoleLabel(member.role, i18n.language)}
 				</Badge>
@@ -73,7 +74,7 @@ export function OrganizationMemberCard({
 			<Button
 				variant='ghost'
 				size='sm'
-				className='mx-1 h-7 justify-start text-xs text-muted-foreground'
+				className='-mx-2 h-7 justify-start text-xs text-muted-foreground'
 				render={
 					<Link
 						to='/organizations/$organizationId/members/$memberId/edit'
@@ -83,6 +84,7 @@ export function OrganizationMemberCard({
 			>
 				{t('common:action.edit')}
 			</Button>
+			</CardContent>
 		</Card>
 	);
 }

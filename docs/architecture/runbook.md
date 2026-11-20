@@ -109,26 +109,41 @@ bun run drizzle:seed       # seed runners (database/seeders) — verified idempo
 generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
 stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 
-**Migration baseline (ADR-0024, 2026-11-19).** History, kept honest:
+**Migration baseline (ADR-0024 + ADR-0019, per-schema since 2026-11-21).**
+History, kept honest:
 
 - 2026-11-12 → 2026-11-19: `generate` / `migrate` were **blocked on main**
   ("Conflicting migrations detected", a branching snapshot chain), and
   migrations were hand-written and verified with `database/migrate-reset.ts`.
 - 2026-11-19: the v1 chain (31 steps) was moved to
   `apps/backend/database/migrations-archive/v1` (history only, never applied)
-  and replaced by **one baseline migration**,
-  `apps/backend/database/migrations/20261120061847_last_daredevil`
+  and replaced by a single baseline migration, `20261120061847_last_daredevil`
   (18 schemas, 164 `CREATE TABLE` statements, 0 cross-schema `REFERENCES`).
-- Verified 2026-11-19 on a disposable database (dropped afterwards):
-  `drizzle:migrate` applied it cleanly; `drizzle:seed` ran twice and the second
-  run inserted nothing; a second `drizzle-kit generate` printed
-  "No schema changes". On 2026-11-20 a fresh disposable database (`ims_smoke`)
-  was migrated and seeded again for the live API smoke test.
+- 2026-11-21: that single baseline was re-split into **one migration per
+  Postgres schema** — 20 folders, `20261120214111_create_auth_schema` through
+  `20261120214130_create_warehouse_schema` — restoring the ADR-0019 property
+  that a reader can see which migration introduced which table. The single
+  baseline is archived at
+  `apps/backend/database/migrations-archive/v3-per-schema-20261121` (history
+  only, never applied). The chain is **1 `base` + 19 chained `diff` snapshots**
+  in dependency order (`auth` first, then alphabetical), produced by
+  `drizzle-kit generate` against a cumulative `--schema` list — generated, not
+  hand-assembled, so `check`/`generate` agree by construction.
+- Verified 2026-11-19 (single baseline) and 2026-11-21 (per-schema chain) on
+  disposable databases (dropped afterwards): `drizzle:migrate` applied it
+  cleanly; `drizzle:seed` ran twice and the second run inserted nothing; a
+  second `drizzle-kit generate` printed "No schema changes"; `drizzle-kit check`
+  printed "Everything's fine". On 2026-11-20 a fresh disposable database
+  (`ims_smoke`) was migrated and seeded again for the live API smoke test. The
+  2026-11-21 run additionally proved the split is **equivalent** to the
+  archived baseline: the 20 folders concatenate to the same 728 statements, and
+  `pg_dump --schema-only` of a database built from the chain is identical to one
+  built from the single baseline (9669 lines, 169 tables, 22 schemas, 20 journal
+  rows, 0 cross-schema FKs).
 - So `generate` and `migrate` work again. New schema changes: edit
   `docs/database/docs.dbml` first, then the Drizzle schema, run
   `bun run drizzle:generate`, inspect the SQL, and apply it to a **disposable**
-  database only. Not re-verified here: a *second* migration step stacked on the
-  baseline (none has been generated yet).
+  database only.
 
 Disposable-database recipe (also used for the reset tooling):
 

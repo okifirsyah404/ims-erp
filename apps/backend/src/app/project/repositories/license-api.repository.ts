@@ -11,6 +11,7 @@ import type { TTx } from '@drizzle/types';
 import { and, asc, count, desc, eq, getTableColumns, inArray, isNull, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type { ILicenseApiRepository, TEventListQuery } from '../contracts/license-api.contract';
 
 /** Drizzle implementation of {@link ILicenseApiRepository}. */
@@ -182,7 +183,7 @@ export class LicenseApiRepository implements ILicenseApiRepository {
 			.orderBy(desc(licenseEvents.eventAt), desc(licenseEvents.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 }
 

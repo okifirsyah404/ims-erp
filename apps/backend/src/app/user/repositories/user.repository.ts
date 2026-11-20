@@ -6,6 +6,7 @@ import {
 	users,
 } from '@drizzle/schemas/auth.schema';
 import { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import {
 	and,
@@ -93,10 +94,7 @@ export class UserRepository implements IUserRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data,
-		};
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async create(item: TUserInsert): Promise<TUserSelect> {

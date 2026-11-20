@@ -3,6 +3,7 @@ import { likePattern } from '@drizzle/search';
 import { licenseApplications, licenseContracts, licenseKeys } from '@drizzle/schemas/project.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
+import { paginationResult } from '@utils/pagination.util';
 import { and, asc, count, desc, eq, getTableColumns, gte, ilike, inArray, isNotNull, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
@@ -94,7 +95,7 @@ export class LicensingRepository implements ILicensingRepository {
 			.orderBy(dueBefore ? asc(licenseContracts.endDate) : desc(licenseContracts.createdAt), desc(licenseContracts.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult({ page, limit }, total, data);
 	}
 
 	async findContract(id: string) {

@@ -1,6 +1,10 @@
-import { PRODUCT_SERVICE_TOKEN, STOCK_SERVICE_TOKEN, WAREHOUSE_SERVICE_TOKEN } from '@app/inventory/constants/di';
-import type { WarehouseService } from '@app/inventory/services/warehouse.service';
-import type { ProductService } from '@app/inventory/services/product.service';
+import { STOCK_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import { WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { WarehouseService } from '@app/warehouse/services/warehouse.service';
+import type { ProductService } from '@app/product/services/product.service';
+import { SERIAL_UNIT_SERVICE_TOKEN } from '@app/inventory/constants/di';
+import type { SerialUnitService } from '@app/inventory/services/serial-unit.service';
 import type { StockService } from '@app/inventory/services/stock.service';
 import { exVatUnitCost } from '@app/inventory/utils/moving-average';
 import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
@@ -78,7 +82,10 @@ export class GoodsReceiptService {
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stock: Pick<StockService, 'postMovement' | 'resolveScope'>,
 		@inject(PRODUCT_SERVICE_TOKEN)
-		private readonly items: Pick<ProductService, 'getProduct' | 'registerUnit'>,
+		private readonly items: Pick<ProductService, 'getProduct'>,
+		/** Unit registration stayed in inventory when the product master moved (ADR-0026). */
+		@inject(SERIAL_UNIT_SERVICE_TOKEN)
+		private readonly units: Pick<SerialUnitService, 'registerUnit'>,
 		@inject(PROCUREMENT_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<ProcurementNumberingService, 'next'>,
 		@inject(TRANSACTION_RUNNER_TOKEN)
@@ -267,7 +274,7 @@ export class GoodsReceiptService {
 				);
 				await this.receipts.setMovement(row.id, posted.movement.id, tx);
 				for (const serialNumber of serials) {
-					await this.items.registerUnit(
+					await this.units.registerUnit(
 						productId,
 						{
 							serialNumber,

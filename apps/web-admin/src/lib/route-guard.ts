@@ -37,7 +37,7 @@ export async function canOpenPath(
 	// `read`/`update`/`archive`/`import`/`export` but never `create`
 	// (ADR-0017 §2, plan decision 22), so the page behind this path would only
 	// render a "not allowed" card for a PIC.
-	if (pathname === '/inventory/warehouses/new') {
+	if (pathname === '/warehouses/new') {
 		return hasRole(session.user.role, 'admin');
 	}
 

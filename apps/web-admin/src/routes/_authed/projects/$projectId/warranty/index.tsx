@@ -11,6 +11,8 @@ import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { DocumentItemsEditor } from '@/components/projects/document-items-editor';
+import { ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatBusinessDate } from '@/lib/format';
 import {
@@ -63,7 +65,10 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 			}}
 		>
 			<Card>
-				<CardContent className='pt-6'>
+				<CardHeader>
+					<CardTitle>{t('projects:warranty.details')}</CardTitle>
+				</CardHeader>
+				<CardContent>
 					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
 						<Field>
 							<FieldLabel htmlFor='warranty-bast'>{t('projects:warranty.bast')}</FieldLabel>
@@ -171,12 +176,14 @@ function WarrantyPage() {
 				<p className='text-sm text-muted-foreground'>{t('projects:warranty.hint')}</p>
 			</div>
 			{existing.isError ? (
-				<p className='text-sm text-destructive'>{existing.error.message}</p>
+				<ErrorState error={existing.error} bordered />
 			) : draft.isError ? (
-				<p className='text-sm text-destructive'>{draft.error.message}</p>
+				<ErrorState error={draft.error} bordered />
 			) : initial ? (
 				<WarrantyForm projectId={projectId} initial={initial} />
-			) : null}
+			) : (
+				<SectionSkeleton lines={6} />
+			)}
 		</div>
 	);
 }

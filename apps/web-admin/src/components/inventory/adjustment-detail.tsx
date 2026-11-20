@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -9,20 +11,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import type { TranslationKey } from '@ims-erp/locales';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { formatIdr } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
 import {
 	adjustmentQueryOptions,
 	transitionAdjustment,
+	type TStockAdjustmentItem,
 } from '@/lib/adjustment-api';
 
 /**
@@ -51,35 +50,74 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 		},
 	});
 
-	if (isPending) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('common:state.loading')}
-				</CardContent>
-			</Card>
-		);
-	}
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TStockAdjustmentItem, CellData>[]
+	>(() => {
+		const base: ColumnDef<DataTableFeatures, TStockAdjustmentItem, CellData>[] = [
+			{
+				id: 'item',
+				header: t('inventory:adjustmentForm.item'),
+				meta: { cellClassName: 'font-mono text-xs' },
+				cell: ({ row }) => row.original.productId,
+			},
+			{
+				id: 'qtyBefore',
+				header: t('inventory:adjustments.qtyBefore'),
+				meta: { align: 'right', cellClassName: 'font-mono text-muted-foreground' },
+				cell: ({ row }) => row.original.quantityBefore,
+			},
+			{
+				id: 'qtyAfter',
+				header: t('inventory:adjustments.qtyAfter'),
+				meta: { align: 'right', cellClassName: 'font-mono' },
+				cell: ({ row }) => row.original.quantityAfter,
+			},
+			{
+				id: 'delta',
+				header: t('inventory:adjustments.delta'),
+				meta: { align: 'right', cellClassName: 'font-mono font-medium' },
+				// Counted totals in, difference out — the movement the backend
+				// will write if this line is posted.
+				cell: ({ row }) => {
+					const delta =
+						Number(row.original.quantityAfter) -
+						Number(row.original.quantityBefore);
+					return (
+						<>
+							{delta > 0 ? '+' : ''}
+							{delta.toFixed(3)}
+						</>
+					);
+				},
+			},
+		];
+		if (canSeeCost) {
+			base.push({
+				id: 'unitCost',
+				header: t('inventory:adjustmentForm.unitCost'),
+				meta: { align: 'right', cellClassName: 'font-mono' },
+				cell: ({ row }) =>
+					row.original.unitCost === null ? '—' : formatIdr(row.original.unitCost),
+			});
+		}
+		base.push({
+			id: 'note',
+			header: t('inventory:adjustmentForm.lineNote'),
+			meta: { cellClassName: 'text-xs text-muted-foreground' },
+			cell: ({ row }) => row.original.note ?? '—',
+		});
+		return base;
+	}, [canSeeCost, t]);
 
-	if (isError) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-destructive'>
-					{error.message}
-				</CardContent>
-			</Card>
-		);
-	}
+	if (isPending) return <PageSkeleton />;
+
+	if (isError) return <ErrorState error={error} bordered />;
 
 	// The query is typed `T | null`, so a successful-but-empty response would
 	// otherwise blow up on destructuring. Surface it instead of crashing.
 	if (data === null) {
 		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{t('inventory:adjustments.notFound')}
-				</CardContent>
-			</Card>
+			<EmptyState title={t('inventory:adjustments.notFound')} bordered />
 		);
 	}
 
@@ -231,59 +269,11 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 							{t('inventory:adjustments.noLines')}
 						</CardContent>
 					) : (
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>{t('inventory:adjustmentForm.item')}</TableHead>
-									<TableHead className='text-right'>
-										{t('inventory:adjustments.qtyBefore')}
-									</TableHead>
-									<TableHead className='text-right'>
-										{t('inventory:adjustments.qtyAfter')}
-									</TableHead>
-									<TableHead className='text-right'>
-										{t('inventory:adjustments.delta')}
-									</TableHead>
-									{canSeeCost && (
-										<TableHead className='text-right'>{t('inventory:adjustmentForm.unitCost')}</TableHead>
-									)}
-									<TableHead>{t('inventory:adjustmentForm.lineNote')}</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{lines.map((line) => {
-									// Counted totals in, difference out — the movement the
-									// backend will write if this line is posted.
-									const delta =
-										Number(line.quantityAfter) - Number(line.quantityBefore);
-									return (
-										<TableRow key={line.id}>
-											<TableCell className='font-mono text-xs'>
-												{line.productId}
-											</TableCell>
-											<TableCell className='text-right font-mono text-muted-foreground'>
-												{line.quantityBefore}
-											</TableCell>
-											<TableCell className='text-right font-mono'>
-												{line.quantityAfter}
-											</TableCell>
-											<TableCell className='text-right font-mono font-medium'>
-												{delta > 0 ? '+' : ''}
-												{delta.toFixed(3)}
-											</TableCell>
-											{canSeeCost && (
-												<TableCell className='text-right font-mono'>
-													{line.unitCost === null ? '—' : formatIdr(line.unitCost)}
-												</TableCell>
-											)}
-											<TableCell className='text-xs text-muted-foreground'>
-												{line.note ?? '—'}
-											</TableCell>
-										</TableRow>
-									);
-								})}
-							</TableBody>
-						</Table>
+						<DataTable
+							columns={columns}
+							data={lines}
+							getRowId={(line) => line.id}
+						/>
 					)}
 				</CardContent>
 			</Card>

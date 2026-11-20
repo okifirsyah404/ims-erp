@@ -3,7 +3,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for **product** categories (`/inventory/product-categories`,
+ * API client for **product** categories (`/product-categories`,
  * ADR-0011).
  *
  * @remarks
@@ -57,7 +57,7 @@ export function itemCategoriesQueryOptions(includeInactive = false) {
 	return queryOptions({
 		queryKey: ['inventory', 'item-categories', { includeInactive }] as const,
 		queryFn: () =>
-			request<TItemCategory[]>(`/inventory/product-categories${includeInactive ? '?includeInactive=true' : ''}`),
+			request<TItemCategory[]>(`/product-categories${includeInactive ? '?includeInactive=true' : ''}`),
 	});
 }
 
@@ -68,19 +68,19 @@ export function useItemCategoryNames(): ReadonlyMap<string, string> {
 }
 
 export function createItemCategory(input: TItemCategoryInput) {
-	return request<TItemCategory>('/inventory/product-categories', {
+	return request<TItemCategory>('/product-categories', {
 		method: 'POST',
 		body: JSON.stringify(input),
 	});
 }
 
 export function updateItemCategory(id: string, input: Omit<TItemCategoryInput, 'slug'>) {
-	return request<TItemCategory>(`/inventory/product-categories/${id}`, {
+	return request<TItemCategory>(`/product-categories/${id}`, {
 		method: 'PATCH',
 		body: JSON.stringify(input),
 	});
 }
 
 export function archiveItemCategory(id: string) {
-	return request<TItemCategory>(`/inventory/product-categories/${id}`, { method: 'DELETE' });
+	return request<TItemCategory>(`/product-categories/${id}`, { method: 'DELETE' });
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { quantityToMilli } from '@utils/money.util';
-import { ITEM_UNITS } from '@drizzle/schemas/inventory.schema';
+import { ITEM_UNITS } from '@drizzle/schemas/product.schema';
 import { QUOTATION_LOST_REASONS, QUOTATION_STATUSES } from '@drizzle/schemas/sale.schema';
 
 /**

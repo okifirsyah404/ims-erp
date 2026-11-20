@@ -24,7 +24,7 @@ export class AuditQueryService {
 	 * @param query validated filters (page/limit/action/actor/target/org/range)
 	 */
 	async list(query: TAuditQuery): Promise<TPaginationResult<TAdminAudit>> {
-		const result = await this.repository.list({
+		const result = await this.repository.paginate({
 			action: query.action,
 			actorUserId: query.actorUserId,
 			targetType: query.targetType,

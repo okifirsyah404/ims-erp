@@ -34,6 +34,7 @@ const sales = {
 	'quotation.grandTotal': 'Grand total',
 	'quotation.terms': 'Terms and conditions',
 	'quotation.notes': 'Notes',
+	'quotation.termsAndNotes': 'Terms and notes',
 	'quotation.rejectedReason': 'Reason for rejection',
 	'quotation.lostReason': 'Reason lost',
 	'quotation.lostNote': 'Note',

@@ -3,12 +3,13 @@ import { Link } from '@tanstack/react-router';
 import { PackageSearch, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
+	CardDescription,
 	CardFooter,
 	CardHeader,
 	CardTitle,
@@ -19,7 +20,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { EmptyState } from '@/components/empty-state';
 import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -33,6 +33,7 @@ import { useItemCategoryNames } from '@/lib/item-category-api';
 import { useClampPage } from '@/lib/use-clamp-page';
 import { usePermission } from '@/lib/use-permission';
 import { ItemForm } from './item-form';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 /** Cards per page: 3 columns × 8 rows. */
 const PAGE_SIZE = 24;
 
@@ -42,7 +43,7 @@ const PAGE_SIZE = 24;
  * @remarks
  * One component for all three kind routes rather than three near-identical
  * pages: the kind is the only difference, and it is a filter, not a layout.
- * The sidebar exposes three separate entries (`/inventory/products`,
+ * The sidebar exposes three separate entries (`/products`,
  * `/components`, …) so the URL stays meaningful and bookmarkable.
  *
  * `page` is a URL search param (owned by the route) so a page survives a
@@ -62,7 +63,7 @@ export function ItemKindList({
 	page: number;
 	onPageChange: (page: number) => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const queryClient = useQueryClient();
 	const categoryNames = useItemCategoryNames();
 	const canCreate = usePermission('product.create');
@@ -82,13 +83,7 @@ export function ItemKindList({
 	useClampPage(page, pagination?.totalPages, onPageChange);
 
 	if (isError) {
-		return (
-			<Card>
-				<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-					{error instanceof Error ? error.message : t('common:error.failed')}
-				</CardContent>
-			</Card>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -97,13 +92,13 @@ export function ItemKindList({
 				<div>
 					<h1 className='text-2xl font-bold'>{title}</h1>
 					<p className='text-sm text-muted-foreground'>
-						{t('inventory:items.description')}
+						{t('product:items.description')}
 					</p>
 				</div>
 				{canCreate ? (
 					<Button className='shrink-0' onClick={() => setCreating(true)}>
 						<Plus className='size-4' data-icon='inline-start' />
-						{t('inventory:form.newItem')}
+						{t('product:form.newItem')}
 					</Button>
 				) : null}
 			</div>
@@ -126,8 +121,8 @@ export function ItemKindList({
 			) : rows.length === 0 ? (
 				<EmptyState
 					icon={PackageSearch}
-					title={t('inventory:items.emptyTitle')}
-					description={t('inventory:items.empty')}
+					title={t('product:items.emptyTitle')}
+					description={t('product:items.empty')}
 				/>
 			) : (
 				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
@@ -138,42 +133,42 @@ export function ItemKindList({
 								src={row.imageUrl}
 								name={row.name}
 							/>
-							<CardHeader className='pb-2'>
-								<div className='flex items-start justify-between gap-2'>
-									<CardTitle className='text-base'>
-										<Link
-											to='/inventory/items/$itemId'
-											params={{ itemId: row.id }}
-											className='hover:underline'
-										>
-											{row.name}
-										</Link>
-									</CardTitle>
-									{row.isActive ? null : (
-										<Badge variant='outline'>
-											{t('inventory:items.inactive')}
-										</Badge>
-									)}
-								</div>
-								<p className='font-mono text-xs text-muted-foreground'>
+							<CardHeader>
+								<CardTitle>
+									<Link
+										to='/inventory/items/$itemId'
+										params={{ itemId: row.id }}
+										className='hover:underline'
+									>
+										{row.name}
+									</Link>
+								</CardTitle>
+								<CardDescription className='font-mono text-xs'>
 									{row.code} · {row.sku}
-								</p>
+								</CardDescription>
+								{row.isActive ? null : (
+									<CardAction>
+										<Badge variant='outline'>
+											{t('product:items.inactive')}
+										</Badge>
+									</CardAction>
+								)}
 							</CardHeader>
 							<CardContent className='flex-1 space-y-2 text-sm'>
 								<p>
 									<span className='text-muted-foreground'>
-										{t('inventory:items.category')}:{' '}
+										{t('product:items.category')}:{' '}
 									</span>
 									{(row.productCategoryId && categoryNames.get(row.productCategoryId)) ?? '—'}
 								</p>
 								<div>
 									{row.isSerialized ? (
 										<Badge variant='secondary'>
-											{t('inventory:items.serialized')}
+											{t('product:items.serialized')}
 										</Badge>
 									) : (
 										<Badge variant='outline'>
-											{t('inventory:items.quantityTracked')}
+											{t('product:items.quantityTracked')}
 										</Badge>
 									)}
 								</div>
@@ -235,7 +230,7 @@ function CreateItemDialog({
 	onClose: () => void;
 	onCreated: () => void;
 }) {
-	const { t } = useTranslation(['inventory', 'common']);
+	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const [submitting, setSubmitting] = useState(false);
 
 	async function handleSubmit(input: TProductCreateInput | Record<string, unknown>) {
@@ -243,7 +238,7 @@ function CreateItemDialog({
 		try {
 			const created = await createProduct(input as TProductCreateInput);
 			if (!created) throw new Error(t('common:error.failed'));
-			toast.success(t('inventory:form.created'));
+			toast.success(t('product:form.created'));
 			onCreated();
 		} catch (error) {
 			toast.error(
@@ -258,7 +253,7 @@ function CreateItemDialog({
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
 				<DialogHeader>
-					<DialogTitle>{t('inventory:form.newItem')}</DialogTitle>
+					<DialogTitle>{t('product:form.newItem')}</DialogTitle>
 				</DialogHeader>
 				<ItemForm
 					compact

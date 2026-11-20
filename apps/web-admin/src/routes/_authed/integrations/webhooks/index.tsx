@@ -1,12 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
 import {
 	Select,
 	SelectContent,
@@ -14,7 +13,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import {
@@ -24,6 +26,7 @@ import {
 	outboxQueryOptions,
 	outboxSummaryQueryOptions,
 	retryOutbox,
+	type TOutboxMessage,
 	type TOutboxStatus,
 	type TOutboxTopic,
 } from '@/lib/automation-api';
@@ -46,19 +49,94 @@ function WebhooksPage() {
 	const { data, isPending, isError, error } = useQuery(outboxQueryOptions({ page, status: status || undefined, topic: topic || undefined }));
 	const [busy, setBusy] = useState<string | null>(null);
 
-	const send = async (id: string) => {
-		setBusy(id);
-		try {
-			const message = await retryOutbox(id);
-			await queryClient.invalidateQueries({ queryKey: ['automation'] });
-			if (message.status === 'published') toast.success(t('integrations:outbox.sent'));
-			else toast.error(t('integrations:outbox.notSent', { reason: message.errorMessage ?? message.status }));
-		} catch (cause) {
-			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
-		} finally {
-			setBusy(null);
-		}
-	};
+	const send = useCallback(
+		async (id: string) => {
+			setBusy(id);
+			try {
+				const message = await retryOutbox(id);
+				await queryClient.invalidateQueries({ queryKey: ['automation'] });
+				if (message.status === 'published') toast.success(t('integrations:outbox.sent'));
+				else toast.error(t('integrations:outbox.notSent', { reason: message.errorMessage ?? message.status }));
+			} catch (cause) {
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+			} finally {
+				setBusy(null);
+			}
+		},
+		[queryClient, t],
+	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TOutboxMessage, CellData>[]>(
+		() => [
+			{
+				id: 'at',
+				header: t('integrations:outbox.at'),
+				meta: { cellClassName: 'whitespace-nowrap' },
+				cell: ({ row }) => formatDateTime(row.original.createdAt, i18n.language),
+			},
+			{
+				id: 'event',
+				header: t('integrations:outbox.event'),
+				cell: ({ row }) => (
+					<>
+						{t(`integrations:outbox.topic.${row.original.topic}`)}
+						<div className='font-mono text-xs text-muted-foreground'>{row.original.id}</div>
+					</>
+				),
+			},
+			{
+				id: 'record',
+				header: t('integrations:outbox.record'),
+				meta: { cellClassName: 'max-w-64 truncate text-sm' },
+				cell: ({ row }) =>
+					String(
+						row.original.payload.reference ??
+							row.original.payload.name ??
+							row.original.aggregateId ??
+							'—',
+					),
+			},
+			{
+				accessorKey: 'attempts',
+				header: t('integrations:outbox.attempts'),
+				meta: { align: 'right', cellClassName: 'tabular-nums' },
+			},
+			{
+				id: 'result',
+				header: t('integrations:outbox.result'),
+				cell: ({ row }) => (
+					<>
+						<Badge variant={OUTBOX_STATUS_VARIANT[row.original.status]}>
+							{t(`integrations:outbox.status.${row.original.status}`)}
+						</Badge>
+						{(row.original.responseStatus || row.original.errorMessage) && (
+							<div className='max-w-72 truncate text-xs text-muted-foreground'>
+								{row.original.responseStatus ? `HTTP ${row.original.responseStatus} ` : ''}
+								{row.original.errorMessage ?? ''}
+							</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'actions',
+				header: '',
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					canSend && row.original.status !== 'published' ? (
+						<Button
+							size='sm'
+							variant='outline'
+							disabled={busy === row.original.id}
+							onClick={() => void send(row.original.id)}
+						>
+							{t('integrations:outbox.send')}
+						</Button>
+					) : null,
+			},
+		],
+		[t, i18n.language, canSend, busy, send],
+	);
 
 	return (
 		<div className='flex flex-col gap-6 p-6'>
@@ -114,62 +192,14 @@ function WebhooksPage() {
 					</SelectContent>
 				</Select>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('integrations:outbox.empty')}</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
+				<EmptyState title={t('integrations:outbox.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('integrations:outbox.at')}</TableHead>
-										<TableHead>{t('integrations:outbox.event')}</TableHead>
-										<TableHead>{t('integrations:outbox.record')}</TableHead>
-										<TableHead className='text-right'>{t('integrations:outbox.attempts')}</TableHead>
-										<TableHead>{t('integrations:outbox.result')}</TableHead>
-										<TableHead />
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((message) => (
-										<TableRow key={message.id}>
-											<TableCell className='whitespace-nowrap'>{formatDateTime(message.createdAt, i18n.language)}</TableCell>
-											<TableCell>
-												{t(`integrations:outbox.topic.${message.topic}`)}
-												<div className='font-mono text-xs text-muted-foreground'>{message.id}</div>
-											</TableCell>
-											<TableCell className='max-w-64 truncate text-sm'>
-												{String(message.payload.reference ?? message.payload.name ?? message.aggregateId ?? '—')}
-											</TableCell>
-											<TableCell className='text-right tabular-nums'>{message.attempts}</TableCell>
-											<TableCell>
-												<Badge variant={OUTBOX_STATUS_VARIANT[message.status]}>{t(`integrations:outbox.status.${message.status}`)}</Badge>
-												{(message.responseStatus || message.errorMessage) && (
-													<div className='max-w-72 truncate text-xs text-muted-foreground'>
-														{message.responseStatus ? `HTTP ${message.responseStatus} ` : ''}
-														{message.errorMessage ?? ''}
-													</div>
-												)}
-											</TableCell>
-											<TableCell className='text-right'>
-												{canSend && message.status !== 'published' && (
-													<Button size='sm' variant='outline' disabled={busy === message.id} onClick={() => void send(message.id)}>
-														{t('integrations:outbox.send')}
-													</Button>
-												)}
-											</TableCell>
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
-					{data.pagination.totalPages > 1 && (
+					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}
 				</>

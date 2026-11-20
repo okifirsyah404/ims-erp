@@ -9,7 +9,11 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { and, count, desc, eq, isNull } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
-import type { IDisposalRepository } from '../contracts/item-operations.repository.interface';
+import { paginationResult } from '@utils/pagination.util';
+import type {
+	IDisposalRepository,
+	TDisposalPaginationRequest,
+} from '../contracts/item-operations.repository.interface';
 
 /** Drizzle implementation of {@link IDisposalRepository} on `inventory.disposals`. */
 @injectable()
@@ -30,11 +34,15 @@ export class DisposalRepository implements IDisposalRepository {
 		return row ?? null;
 	}
 
-	async list(
-		organizationId: string,
-		page: number,
-		limit: number,
+	/**
+	 * Fetches one page of the tenant's disposal documents, newest first.
+	 *
+	 * @param request - Tenant and page settings
+	 */
+	async paginate(
+		request: TDisposalPaginationRequest,
 	): Promise<TPaginationResult<TDisposalSelect>> {
+		const { organizationId, page, limit } = request;
 		const where = and(eq(disposals.organizationId, organizationId), isNull(disposals.deletedAt));
 		const [{ value: total }] = await this.database
 			.select({ value: count() })
@@ -47,7 +55,7 @@ export class DisposalRepository implements IDisposalRepository {
 			.orderBy(desc(disposals.createdAt), desc(disposals.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return { meta: { page, limit, total, totalPages: Math.ceil(total / limit) }, data };
+		return paginationResult(request, total, data);
 	}
 
 	async update(

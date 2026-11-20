@@ -8,16 +8,16 @@ import {
 } from '../constants/di';
 import type {
 	TSupplierCompanyCreateInput,
-	TSupplierCompanyListQuery,
 	TSupplierCompanyUpdateInput,
 	TSupplierCreateInput,
-	TSupplierListQuery,
 	TSupplierCompanyView,
 	TSupplierUpdateInput,
 } from '../contracts/supplier.contract';
 import type {
 	ISupplierCompanyRepository,
 	ISupplierRepository,
+	TSupplierCompanyPaginationRequest,
+	TSupplierPaginationRequest,
 } from '../contracts/supplier.repository.interface';
 import {
 	SupplierCompanyCodeTakenError,
@@ -42,20 +42,9 @@ export class SupplierService {
 		private readonly people: ISupplierRepository,
 	) {}
 
-	async listCompanies(query: TSupplierCompanyListQuery) {
-		const [data, total] = await Promise.all([
-			this.companies.paginate(query),
-			this.companies.count(query),
-		]);
-		return {
-			meta: {
-				page: query.page,
-				limit: query.limit,
-				total,
-				totalPages: Math.max(1, Math.ceil(total / query.limit)),
-			},
-			data,
-		};
+	/** Fetches one filtered page of supplier companies. */
+	async listCompanies(request: TSupplierCompanyPaginationRequest) {
+		return this.companies.paginate(request);
 	}
 
 	async getCompany(id: string): Promise<TSupplierCompanyView> {
@@ -63,7 +52,7 @@ export class SupplierService {
 		if (!company) throw new SupplierCompanyNotFoundError();
 
 		const people = await this.people.paginate({ page: 1, limit: 100, companyId: id });
-		return { ...company, people };
+		return { ...company, people: people.data };
 	}
 
 	async createCompany(
@@ -100,20 +89,9 @@ export class SupplierService {
 		);
 	}
 
-	async listPeople(query: TSupplierListQuery) {
-		const [data, total] = await Promise.all([
-			this.people.paginate(query),
-			this.people.count(query),
-		]);
-		return {
-			meta: {
-				page: query.page,
-				limit: query.limit,
-				total,
-				totalPages: Math.max(1, Math.ceil(total / query.limit)),
-			},
-			data,
-		};
+	/** Fetches one filtered page of supplier people. */
+	async listPeople(request: TSupplierPaginationRequest) {
+		return this.people.paginate(request);
 	}
 
 	async createPerson(data: TSupplierCreateInput, actorUserId: string) {

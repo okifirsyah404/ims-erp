@@ -303,7 +303,7 @@ let service: GatewayCheckoutService;
 function makeService() {
 	const payments: IPaymentRepository = {
 		findById: async (_org, id) => rows.find((row) => row.id === id) ?? null,
-		list: async () => ({ data: rows, meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 } }),
+		paginate: async () => ({ data: rows, meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 } }),
 		countOpen: async () => 0,
 		async insert(data) {
 			const row = {

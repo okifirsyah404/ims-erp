@@ -3,6 +3,7 @@ import { whatsappConversations, whatsappMessages } from '@drizzle/schemas/automa
 import { and, count, desc, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
+import { paginationResult } from '@utils/pagination.util';
 import type { IWhatsappRepository, TConversationListQuery } from '../contracts/whatsapp.contract';
 
 /** Drizzle implementation of {@link IWhatsappRepository}. */
@@ -59,10 +60,11 @@ export class WhatsappRepository implements IWhatsappRepository {
 			.orderBy(desc(whatsappConversations.lastMessageAt), desc(whatsappConversations.id))
 			.limit(limit)
 			.offset((page - 1) * limit);
-		return {
-			meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
-			data: rows.map((row) => ({ ...row.conversation, lastMessage: row.lastMessage })),
-		};
+		return paginationResult(
+			{ page, limit },
+			total,
+			rows.map((row) => ({ ...row.conversation, lastMessage: row.lastMessage })),
+		);
 	}
 
 	async countByStatus() {

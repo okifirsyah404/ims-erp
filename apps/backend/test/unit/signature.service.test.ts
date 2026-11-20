@@ -207,7 +207,7 @@ class FakeSignatureRepository implements Partial<ISignatureRepository> {
 		return this.requests.filter((row) => row.documentId === documentId);
 	}
 
-	async listOutgoing(requestedByUserId: string) {
+	async paginateOutgoing({ requestedByUserId }: { requestedByUserId: string }) {
 		const rows = this.requests.filter((row) => row.requestedByUserId === requestedByUserId);
 		return {
 			meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 },
@@ -215,7 +215,7 @@ class FakeSignatureRepository implements Partial<ISignatureRepository> {
 		};
 	}
 
-	async listIncoming(signerUserId: string) {
+	async paginateIncoming({ signerUserId }: { signerUserId: string }) {
 		const rows = this.requests.filter((row) => row.signerUserId === signerUserId);
 		return {
 			meta: { page: 1, limit: 20, total: rows.length, totalPages: 1 },

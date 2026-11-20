@@ -40,7 +40,7 @@ import {
 	UnitNotOnBorrowingError,
 } from '../errors/borrowing.errors';
 import type { BorrowingRequestService } from './borrowing-request.service';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { AuditWriter } from '@shared/audit';
 import type { InventoryNumberingService } from './inventory-numbering.service';
 import type { ItemCustodyService } from './item-custody.service';
 
@@ -119,7 +119,7 @@ export class BorrowingService {
 		private readonly toolSets: Pick<IToolSetRepository, 'setStatus'>,
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 	) {}

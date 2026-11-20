@@ -13,6 +13,8 @@ import { supplierModule } from './supplier';
 import { customerModule } from './customer';
 import { documentModule } from './document';
 import { inventoryModule } from './inventory';
+import { productModule } from './product';
+import { warehouseModule } from './warehouse';
 import { locationModule } from './location';
 import { notificationModule } from './notification';
 import { organizationModule } from './organization';
@@ -112,7 +114,9 @@ export function createApp() {
 			.use(ticketModule())
 			.use(humanResourceModule())
 			.use(webhookModule())
-			.use(inventoryModule())
+			.use(productModule())
+	.use(warehouseModule())
+	.use(inventoryModule())
 			.use(financeModule())
 			.use(taxModule())
 				);

@@ -18,6 +18,8 @@ import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { TicketThread } from '@/components/aftersales/ticket-thread';
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { authClient } from '@/lib/auth-client';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
@@ -69,11 +71,11 @@ function TicketDetailPage() {
 	const [confirmChannel, setConfirmChannel] = useState<TTicketChannel>('phone');
 	const [busy, setBusy] = useState(false);
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/projects/tickets' className='text-sm hover:underline'>
 					{t('projects:tickets.back')}
 				</Link>

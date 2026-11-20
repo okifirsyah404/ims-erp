@@ -14,7 +14,7 @@ import {
 	markLostSchema,
 	returnBorrowingSchema,
 } from '../contracts/borrowing.contract';
-import { idParamSchema } from '../contracts/product.contract';
+import { idParamSchema } from '../contracts/pagination.contract';
 
 /**
  * Builds the actor context for one request.

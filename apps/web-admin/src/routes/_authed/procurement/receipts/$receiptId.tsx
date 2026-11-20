@@ -1,19 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
-import { goodsReceiptQueryOptions } from '@/lib/goods-receipt-api';
+import { goodsReceiptQueryOptions, type TGoodsReceiptItem } from '@/lib/goods-receipt-api';
 import { usePermission } from '@/lib/use-permission';
 
 /** `/procurement/receipts/$receiptId` — one posted goods receipt. */
@@ -30,6 +29,58 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 	);
 }
 
+/** The receipt's lines; its own component so the column hooks run before the page's early returns. */
+function ReceiptItemsTable({
+	items,
+	canSeeCost,
+	language,
+}: {
+	items: TGoodsReceiptItem[];
+	canSeeCost: boolean;
+	language: string;
+}) {
+	const { t } = useTranslation(['procurement', 'common']);
+	const columns = useMemo<ColumnDef<DataTableFeatures, TGoodsReceiptItem, CellData>[]>(() => {
+		const costColumn: ColumnDef<DataTableFeatures, TGoodsReceiptItem, CellData>[] = canSeeCost
+			? [
+					{
+						id: 'unitCost',
+						header: t('procurement:receipt.unitCost'),
+						meta: { align: 'right' },
+						cell: ({ row }) => formatIdr(row.original.unitCost),
+					},
+				]
+			: [];
+		return [
+			{
+				id: 'item',
+				header: t('procurement:po.item'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.sku}</div>
+					</>
+				),
+			},
+			{
+				id: 'quantity',
+				header: t('procurement:receipt.quantity'),
+				meta: { align: 'right' },
+				cell: ({ row }) => `${Number(row.original.quantity).toLocaleString(language)} ${row.original.unit}`,
+			},
+			...costColumn,
+			{
+				id: 'serialNumbers',
+				header: t('procurement:receipt.serialNumbers'),
+				meta: { cellClassName: 'text-sm' },
+				cell: ({ row }) => row.original.serialNumbers?.join(', ') ?? '—',
+			},
+		];
+	}, [t, canSeeCost, language]);
+
+	return <DataTable columns={columns} data={items} getRowId={(row) => row.id} />;
+}
+
 function GoodsReceiptDetailPage() {
 	const { t, i18n } = useTranslation(['procurement', 'common']);
 	const { receiptId } = Route.useParams();
@@ -38,8 +89,8 @@ function GoodsReceiptDetailPage() {
 	const { data, isPending, isError, error } = useQuery(goodsReceiptQueryOptions(receiptId));
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
 
-	if (isPending) return null;
-	if (isError) return <p className='text-sm text-destructive'>{error.message}</p>;
+	if (isPending) return <PageSkeleton />;
+	if (isError) return <ErrorState error={error} bordered />;
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -83,33 +134,9 @@ function GoodsReceiptDetailPage() {
 					<Detail label={t('procurement:receipt.supplierDeliveryRef')} value={data.supplierDeliveryRef} />
 				</CardContent>
 			</Card>
-			<Card>
+			<Card className='gap-0 py-0'>
 				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('procurement:po.item')}</TableHead>
-								<TableHead className='text-right'>{t('procurement:receipt.quantity')}</TableHead>
-								{canSeeCost && <TableHead className='text-right'>{t('procurement:receipt.unitCost')}</TableHead>}
-								<TableHead>{t('procurement:receipt.serialNumbers')}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.items.map((item) => (
-								<TableRow key={item.id}>
-									<TableCell>
-										<div className='font-medium'>{item.name}</div>
-										<div className='text-xs text-muted-foreground'>{item.sku}</div>
-									</TableCell>
-									<TableCell className='text-right'>
-										{Number(item.quantity).toLocaleString(language)} {item.unit}
-									</TableCell>
-									{canSeeCost && <TableCell className='text-right'>{formatIdr(item.unitCost)}</TableCell>}
-									<TableCell className='text-sm'>{item.serialNumbers?.join(', ') ?? '—'}</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<ReceiptItemsTable items={data.items} canSeeCost={canSeeCost} language={language} />
 				</CardContent>
 			</Card>
 			{data.notes && <p className='text-sm text-muted-foreground'>{data.notes}</p>}

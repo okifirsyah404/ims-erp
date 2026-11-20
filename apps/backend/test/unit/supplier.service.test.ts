@@ -13,12 +13,14 @@ import type {
 } from '@drizzle/schemas/supplier.schema';
 import {
 	type TSupplierCompanyCreateInput,
-	type TSupplierCompanyListQuery,
 	type TSupplierCompanyUpdateInput,
 	type TSupplierCreateInput,
-	type TSupplierListQuery,
 	type TSupplierUpdateInput,
 } from '../../src/app/supplier/contracts/supplier.contract';
+import type {
+	TSupplierCompanyPaginationRequest,
+	TSupplierPaginationRequest,
+} from '../../src/app/supplier/contracts/supplier.repository.interface';
 import type {
 	ISupplierCompanyRepository,
 	ISupplierRepository,
@@ -64,12 +66,17 @@ class FakeCompanies implements ISupplierCompanyRepository {
 		};
 	}
 
-	async paginate(query: TSupplierCompanyListQuery) {
-		return this.rows.filter((row) => row.deletedAt === null);
-	}
-
-	async count() {
-		return this.rows.filter((row) => row.deletedAt === null).length;
+	async paginate(request: TSupplierCompanyPaginationRequest) {
+		const rows = this.rows.filter((row) => row.deletedAt === null);
+		return {
+			meta: {
+				page: request.page,
+				limit: request.limit,
+				total: rows.length,
+				totalPages: Math.ceil(rows.length / request.limit),
+			},
+			data: rows,
+		};
 	}
 
 	async findById(id: string) {
@@ -135,16 +142,21 @@ class FakePeople implements ISupplierRepository {
 		};
 	}
 
-	async paginate(query: TSupplierListQuery) {
-		return this.rows.filter(
+	async paginate(request: TSupplierPaginationRequest) {
+		const rows = this.rows.filter(
 			(row) =>
 				row.deletedAt === null &&
-				(query.companyId ? row.companyId === query.companyId : true),
+				(request.companyId ? row.companyId === request.companyId : true),
 		);
-	}
-
-	async count(query: TSupplierListQuery) {
-		return (await this.paginate(query)).length;
+		return {
+			meta: {
+				page: request.page,
+				limit: request.limit,
+				total: rows.length,
+				totalPages: Math.ceil(rows.length / request.limit),
+			},
+			data: rows,
+		};
 	}
 
 	async findById(id: string) {

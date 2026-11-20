@@ -1,32 +1,28 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDeferredValue, useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate, formatIdr } from '@/lib/format';
 import {
 	SALES_RETURN_STATUSES,
 	salesReturnsQueryOptions,
 	SALES_RETURN_STATUS_VARIANT,
+	type TSalesReturn,
 	type TSalesReturnStatus,
 } from '@/lib/sales-return-api';
 import { usePermission } from '@/lib/use-permission';
@@ -49,6 +45,54 @@ function SalesReturnListPage() {
 	const { data, isPending, isError, error } = useQuery(
 		salesReturnsQueryOptions({ page, limit: PAGE_SIZE, search: deferredSearch || undefined, status: status || undefined }),
 	);
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSalesReturn, CellData>[]>(() => {
+		const base: ColumnDef<DataTableFeatures, TSalesReturn, CellData>[] = [
+			{
+				id: 'code',
+				header: t('sales:return.code'),
+				cell: ({ row }) => (
+					<>
+						<Link
+							to='/sales/returns/$salesReturnId'
+							params={{ salesReturnId: row.original.id }}
+							className='font-medium hover:underline'
+						>
+							{row.original.code ?? t('sales:return.noNumber')}
+						</Link>
+						<div className='text-xs text-muted-foreground'>{row.original.reason}</div>
+					</>
+				),
+			},
+			{ accessorKey: 'deliveryNoteCode', header: t('sales:delivery.code') },
+			{ accessorKey: 'customerName', header: t('sales:return.customer') },
+			{
+				id: 'returnDate',
+				header: t('sales:return.date'),
+				meta: { cellClassName: 'text-muted-foreground' },
+				cell: ({ row }) => formatBusinessDate(row.original.returnDate, i18n.language),
+			},
+			{
+				id: 'status',
+				header: t('sales:return.status'),
+				cell: ({ row }) => (
+					<Badge variant={SALES_RETURN_STATUS_VARIANT[row.original.status]}>
+						{t(`sales:returnStatus.${row.original.status}`)}
+					</Badge>
+				),
+			},
+		];
+		if (!canSeeCost) return base;
+		return [
+			...base,
+			{
+				id: 'totalAmount',
+				header: t('sales:return.total'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.totalAmount),
+			},
+		];
+	}, [t, i18n.language, canSeeCost]);
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -99,54 +143,20 @@ function SalesReturnListPage() {
 					</SelectContent>
 				</Select>
 			</div>
-			{isPending ? null : isError ? (
-				<p className='text-sm text-destructive'>{error.message}</p>
-			) : data.rows.length === 0 ? (
-				<Card>
-					<CardContent className='py-8 text-center text-sm text-muted-foreground'>{t('sales:returns.empty')}</CardContent>
-				</Card>
+			{isError ? (
+				<ErrorState error={error} bordered />
+			) : !isPending && data.rows.length === 0 ? (
+				<EmptyState title={t('sales:returns.empty')} bordered />
 			) : (
 				<>
-					<Card>
-						<CardContent className='p-0'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>{t('sales:return.code')}</TableHead>
-										<TableHead>{t('sales:delivery.code')}</TableHead>
-										<TableHead>{t('sales:return.customer')}</TableHead>
-										<TableHead>{t('sales:return.date')}</TableHead>
-										<TableHead>{t('sales:return.status')}</TableHead>
-										{canSeeCost && <TableHead className='text-right'>{t('sales:return.total')}</TableHead>}
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{data.rows.map((row) => (
-										<TableRow key={row.id}>
-											<TableCell>
-												<Link
-													to='/sales/returns/$salesReturnId'
-													params={{ salesReturnId: row.id }}
-													className='font-medium hover:underline'
-												>
-													{row.code ?? t('sales:return.noNumber')}
-												</Link>
-												<div className='text-xs text-muted-foreground'>{row.reason}</div>
-											</TableCell>
-											<TableCell>{row.deliveryNoteCode}</TableCell>
-											<TableCell>{row.customerName}</TableCell>
-											<TableCell className='text-muted-foreground'>{formatBusinessDate(row.returnDate, i18n.language)}</TableCell>
-											<TableCell>
-												<Badge variant={SALES_RETURN_STATUS_VARIANT[row.status]}>{t(`sales:returnStatus.${row.status}`)}</Badge>
-											</TableCell>
-											{canSeeCost && <TableCell className='text-right'>{formatIdr(row.totalAmount)}</TableCell>}
-										</TableRow>
-									))}
-								</TableBody>
-							</Table>
-						</CardContent>
-					</Card>
-					{data.pagination.totalPages > 1 && (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						getRowId={(row) => row.id}
+						loading={isPending}
+						bordered
+					/>
+					{data && data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}
 				</>

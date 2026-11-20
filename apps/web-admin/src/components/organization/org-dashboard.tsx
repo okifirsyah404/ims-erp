@@ -15,6 +15,7 @@ import {
 import { Badge } from '@ims-erp/ui/components/badge';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardHeader,
 	CardTitle,
@@ -53,7 +54,7 @@ function RolesCard() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-base'>{t('orgDashboard.roles.title')}</CardTitle>
+				<CardTitle>{t('orgDashboard.roles.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
 				{roleCounts.map((role) => (
@@ -85,7 +86,7 @@ function ProjectsCard() {
 	return (
 		<Card className='lg:col-span-2'>
 			<CardHeader>
-				<CardTitle className='text-base'>{t('orgDashboard.projects.title')}</CardTitle>
+				<CardTitle>{t('orgDashboard.projects.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-3 text-sm'>
 				{projects.map((project) => (
@@ -114,11 +115,13 @@ function SalesCard() {
 	const total = salesByMonth.reduce((sum, row) => sum + row.sales, 0);
 	return (
 		<Card className='lg:col-span-2'>
-			<CardHeader className='flex flex-row items-center justify-between'>
-				<CardTitle className='text-base'>{t('orgDashboard.sales.title')}</CardTitle>
-				<span className='text-sm font-medium tabular-nums'>
+			<CardHeader>
+				<CardTitle>{t('orgDashboard.sales.title')}</CardTitle>
+				<CardAction>
+					<span className='text-sm font-medium tabular-nums'>
 					{t('orgDashboard.sales.total6m', { total: rupiah(total) })}
 				</span>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<ChartContainer config={salesConfig} className='h-[180px] w-full'>
@@ -151,7 +154,7 @@ function InventoryCard() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-base'>{t('orgDashboard.inventory.title')}</CardTitle>
+				<CardTitle>{t('orgDashboard.inventory.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
 				<div className='flex justify-between'>
@@ -184,7 +187,7 @@ function ActivityCard() {
 	return (
 		<Card className='lg:col-span-3'>
 			<CardHeader>
-				<CardTitle className='text-base'>{t('orgDashboard.activity.title')}</CardTitle>
+				<CardTitle>{t('orgDashboard.activity.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
 				{activities.map((activity, index) => (
@@ -209,11 +212,13 @@ function ProfitLossCard() {
 	const expense = profitAndLossByMonth.reduce((sum, row) => sum + row.expense, 0);
 	return (
 		<Card className='lg:col-span-2'>
-			<CardHeader className='flex flex-row items-center justify-between'>
-				<CardTitle className='text-base'>{t('orgDashboard.pl.title')}</CardTitle>
-				<span className='text-sm font-medium tabular-nums'>
+			<CardHeader>
+				<CardTitle>{t('orgDashboard.pl.title')}</CardTitle>
+				<CardAction>
+					<span className='text-sm font-medium tabular-nums'>
 					{t('orgDashboard.pl.net', { net: rupiah(revenue - expense) })}
 				</span>
+				</CardAction>
 			</CardHeader>
 			<CardContent>
 				<ChartContainer config={plConfig} className='h-[200px] w-full'>
@@ -259,7 +264,7 @@ function CashBankCard() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className='text-base'>{t('orgDashboard.cash.title')}</CardTitle>
+				<CardTitle>{t('orgDashboard.cash.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='flex flex-col gap-2 text-sm'>
 				{cashAccounts.filter((a) => a.type === 'bank').map(renderAccount)}
@@ -291,7 +296,7 @@ export function OrganizationDashboard({
 		<div className='grid gap-4 lg:grid-cols-3'>
 			<Card className='lg:col-span-3'>
 				<CardHeader>
-					<CardTitle className='text-base'>{t('orgDetail.details')}</CardTitle>
+					<CardTitle>{t('orgDetail.details')}</CardTitle>
 				</CardHeader>
 				<CardContent className='grid grid-cols-[140px_1fr] gap-2 text-sm'>
 					<span className='text-muted-foreground'>{t('orgDetail.name')}</span>

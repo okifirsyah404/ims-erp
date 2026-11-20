@@ -16,9 +16,7 @@ import {
 	ItemCategoryNotFoundError,
 	ItemRuleViolationError,
 } from '../errors/item.errors';
-import { InventoryAuditWriter } from '../services/inventory-audit.writer';
-import { SYSTEM_AUDIT_ACTOR } from '../constants/audit-actor';
-import type { TInventoryAuditActor } from '../constants/audit-actor';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import { ITEM_KINDS } from '@drizzle/schemas/inventory.schema';
 import { DEPRECIATION_METHODS } from '@drizzle/schemas/inventory.schema';
 
@@ -39,7 +37,7 @@ export class ItemCategoryService {
 		@inject(ITEM_CATEGORY_REPOSITORY_TOKEN)
 		private readonly categories: IItemCategoryRepository,
 		/** Fire-and-forget audit writer, shared with the inventory module. */
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 	) {}
 
 	paginate(
@@ -56,7 +54,7 @@ export class ItemCategoryService {
 
 	async createCategory(
 		data: TItemCategoryCreateData,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemCategorySelect> {
 		this.assertShape(data);
 
@@ -88,7 +86,7 @@ export class ItemCategoryService {
 	async updateCategory(
 		id: string,
 		data: TItemCategoryUpdateData,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemCategorySelect> {
 		const current = await this.requireCategory(id);
 
@@ -133,7 +131,7 @@ export class ItemCategoryService {
 			meta: {
 				kind: 'asset_category',
 				code: current.code,
-				...InventoryAuditWriter.snapshot(
+				...AuditWriter.snapshot(
 					{
 						name: current.name,
 						itemKind: current.itemKind,
@@ -154,7 +152,7 @@ export class ItemCategoryService {
 
 	async archiveCategory(
 		id: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemCategorySelect> {
 		const current = await this.requireCategory(id);
 		const archived = await this.categories.archive(id);

@@ -1,12 +1,11 @@
 import type { InventoryDocumentType, TInventoryDocumentSelect } from '@drizzle/schemas/inventory.schema';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
-import { SYSTEM_AUDIT_ACTOR, type TInventoryAuditActor } from '../constants/audit-actor';
 import { INVENTORY_DOCUMENT_REPOSITORY_TOKEN, ITEM_REPOSITORY_TOKEN } from '../constants/di';
 import type { IInventoryDocumentRepository } from '../contracts/item-operations.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import { ItemNotFoundError, ItemRuleViolationError } from '../errors/item.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 
 /** Largest file one document may carry. */
 export const ITEM_DOCUMENT_MAX_BYTES = 25 * 1024 * 1024;
@@ -39,7 +38,7 @@ export class ItemDocumentService {
 		private readonly documents: IInventoryDocumentRepository,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: Pick<IObjectStorage, 'put' | 'presignGet'>,
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 	) {}
 
 	/**
@@ -53,7 +52,7 @@ export class ItemDocumentService {
 		organizationId: string,
 		file: File,
 		documentType: InventoryDocumentType,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TItemDocumentView> {
 		const item = await this.itemRepository.findById(itemId);
 		if (!item || item.organizationId !== organizationId) throw new ItemNotFoundError();

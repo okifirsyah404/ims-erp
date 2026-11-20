@@ -1,6 +1,17 @@
 import type { TTx } from '@drizzle/types';
 import type { TAccountingPeriodSelect } from '@drizzle/schemas/finance.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+
+/**
+ * Page settings plus the tenant of the accounting-period listing.
+ *
+ * @remarks
+ * `organizationId` travels inside the request so every paginated finance
+ * method has the same shape.
+ */
+export type TPeriodPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+};
 
 export interface IAccountingPeriodRepository {
 	findPeriodByMonth(
@@ -10,9 +21,9 @@ export interface IAccountingPeriodRepository {
 		tx?: TTx,
 	): Promise<TAccountingPeriodSelect | null>;
 	findPeriodById(organizationId: string, id: string): Promise<TAccountingPeriodSelect | null>;
-	listPeriods(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+	/** Fetches one page of the tenant's accounting periods. */
+	paginate(
+		request: TPeriodPaginationRequest,
 	): Promise<TPaginationResult<TAccountingPeriodSelect>>;
 	insertPeriod(
 		row: {

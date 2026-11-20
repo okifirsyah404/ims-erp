@@ -27,6 +27,8 @@ import {
 } from '@ims-erp/ui/components/combobox';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { SearchableSelect } from '@/components/inventory/searchable-select';
 import { documentsQueryOptions } from '@/lib/documents-api';
@@ -246,11 +248,10 @@ function RequestSignaturePage() {
 					<CardDescription>{t('signatures:outgoingHint')}</CardDescription>
 				</CardHeader>
 				<CardContent className='flex flex-col gap-2'>
-					{outgoing.isError && (
-						<p className='text-sm text-destructive'>{outgoing.error.message}</p>
-					)}
-					{!outgoing.isPending && (outgoing.data?.rows ?? []).length === 0 && (
-						<p className='text-sm text-muted-foreground'>{t('signatures:outgoingEmpty')}</p>
+					{canRequest && outgoing.isPending && <SectionSkeleton />}
+					{outgoing.isError && <ErrorState error={outgoing.error} size='sm' />}
+					{!outgoing.isPending && !outgoing.isError && (outgoing.data?.rows ?? []).length === 0 && (
+						<EmptyState title={t('signatures:outgoingEmpty')} size='sm' />
 					)}
 					{(outgoing.data?.rows ?? []).map((request) => (
 						<div

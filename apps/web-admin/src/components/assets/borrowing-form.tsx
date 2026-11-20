@@ -7,6 +7,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardContent,
+	CardFooter,
 	CardDescription,
 	CardHeader,
 	CardTitle,
@@ -161,7 +162,7 @@ export function BorrowingForm() {
 		<form onSubmit={handleSubmit}>
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-base'>
+					<CardTitle>
 						{t('assets:borrowingForm.new')}
 					</CardTitle>
 					<CardDescription>
@@ -407,14 +408,15 @@ export function BorrowingForm() {
 								</ol>
 							)}
 						</Field>
-
-						<Button type='submit' disabled={!canSubmit}>
-							{creation.isPending
-								? t('assets:borrowingForm.creating')
-								: t('assets:borrowingForm.create')}
-						</Button>
 					</FieldGroup>
 				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button type='submit' disabled={!canSubmit}>
+						{creation.isPending
+							? t('assets:borrowingForm.creating')
+							: t('assets:borrowingForm.create')}
+					</Button>
+				</CardFooter>
 			</Card>
 		</form>
 	);

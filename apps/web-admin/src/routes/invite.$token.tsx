@@ -2,6 +2,7 @@ import { ClaimInvitationForm } from '@/components/form/claim-invitation-form';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
+import { PageSkeleton } from '@/components/page-skeleton';
 import { resolveClaimToken, type TClaimTarget } from '@/lib/claim-api';
 
 /**
@@ -49,7 +50,9 @@ function InviteClaimPage() {
 	if (loading) {
 		return (
 			<div className='flex min-h-svh items-center justify-center bg-muted p-6'>
-				<p className='text-muted-foreground'>{t('common:state.loading')}</p>
+				<div className='w-full max-w-sm'>
+					<PageSkeleton cards={1} />
+				</div>
 			</div>
 		);
 	}

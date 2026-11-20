@@ -1,6 +1,7 @@
 import type { TPaginationResult } from '@ims-erp/common';
 import type { MovementType, TMovementSelect } from '@drizzle/schemas/inventory.schema';
 import type { TTx } from '@drizzle/types';
+import type { TItemHistoryPaginationRequest } from './item-operations.repository.interface';
 
 /** An item (asset) movement: `item_id` set, `product_id` null, quantity 1. */
 export type TItemMovementSelect = TMovementSelect & { itemId: string };
@@ -35,11 +36,8 @@ export type TItemMovementCreateData = {
 export interface IItemMovementRepository {
 	create(data: TItemMovementCreateData, tx?: TTx): Promise<TItemMovementSelect>;
 
-	/** The location trail of one unit, newest first. */
-	listByItem(
-		itemId: string,
-		organizationId: string,
-		page: number,
-		limit: number,
+	/** Fetches one page of the unit's location trail, newest first. */
+	paginateByItem(
+		request: TItemHistoryPaginationRequest,
 	): Promise<TPaginationResult<TItemMovementSelect>>;
 }

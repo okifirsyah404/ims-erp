@@ -6,7 +6,6 @@ import type {
 import type { TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { SYSTEM_AUDIT_ACTOR, type TInventoryAuditActor } from '../constants/audit-actor';
 import {
 	INVENTORY_NUMBERING_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
@@ -17,10 +16,11 @@ import type { TToolSetCreateInput, TToolSetUpdateInput } from '../contracts/item
 import type {
 	IToolSetItemRepository,
 	IToolSetRepository,
+	TToolSetPaginationRequest,
 } from '../contracts/item-operations.repository.interface';
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import { ItemNotFoundError, ItemRuleViolationError } from '../errors/item.errors';
-import { InventoryAuditWriter } from './inventory-audit.writer';
+import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import type { InventoryNumberingService } from './inventory-numbering.service';
 
 /**
@@ -42,7 +42,7 @@ export class ToolSetService {
 		private readonly itemRepository: Pick<IItemRepository, 'findById'>,
 		@inject(INVENTORY_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<InventoryNumberingService, 'next'>,
-		private readonly audit: InventoryAuditWriter,
+		private readonly audit: AuditWriter,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
 	) {}
@@ -50,7 +50,7 @@ export class ToolSetService {
 	async create(
 		organizationId: string,
 		data: TToolSetCreateInput,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TToolSetSelect> {
 		const created = await this.transactions.run(async (tx) =>
 			this.toolSets.create(
@@ -85,19 +85,18 @@ export class ToolSetService {
 		return { ...toolSet, items: await this.toolSetItems.listByToolSet(id) };
 	}
 
+	/** Fetches one page of the tenant's tool sets. */
 	list(
-		organizationId: string,
-		page: number,
-		limit: number,
+		request: TToolSetPaginationRequest,
 	): Promise<TPaginationResult<TToolSetSelect>> {
-		return this.toolSets.list(organizationId, page, limit);
+		return this.toolSets.paginate(request);
 	}
 
 	async update(
 		id: string,
 		organizationId: string,
 		data: TToolSetUpdateInput,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TToolSetSelect> {
 		const current = await this.requireToolSet(id, organizationId);
 		const updated = await this.toolSets.update(id, data);
@@ -110,7 +109,7 @@ export class ToolSetService {
 			organizationId,
 			meta: {
 				code: current.code,
-				...InventoryAuditWriter.snapshot(
+				...AuditWriter.snapshot(
 					{ name: current.name, status: current.status },
 					{ name: updated.name, status: updated.status },
 				),
@@ -123,7 +122,7 @@ export class ToolSetService {
 	async archive(
 		id: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<void> {
 		const current = await this.requireToolSet(id, organizationId);
 		if ((await this.toolSetItems.listByToolSet(id)).length > 0) {
@@ -148,7 +147,7 @@ export class ToolSetService {
 		toolSetId: string,
 		organizationId: string,
 		data: { itemId: string; quantity: number },
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<TToolSetItemSelect> {
 		await this.requireToolSet(toolSetId, organizationId);
 		await this.requireItemInScope(data.itemId, organizationId);
@@ -174,7 +173,7 @@ export class ToolSetService {
 		toolSetId: string,
 		rowId: string,
 		organizationId: string,
-		actor: TInventoryAuditActor = SYSTEM_AUDIT_ACTOR,
+		actor: TAuditActor = SYSTEM_AUDIT_ACTOR,
 	): Promise<void> {
 		await this.requireToolSet(toolSetId, organizationId);
 		if (!(await this.toolSetItems.remove(toolSetId, rowId))) throw new ItemNotFoundError();

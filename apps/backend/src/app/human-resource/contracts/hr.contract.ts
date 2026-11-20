@@ -102,6 +102,20 @@ export const employeePickerQuerySchema = z.object({
 export type TCreateEmployee = z.output<typeof createEmployeeSchema>;
 export type TUpdateEmployee = z.output<typeof updateEmployeeSchema>;
 export type TEmployeeListQuery = z.output<typeof employeeListQuerySchema>;
+
+/**
+ * Page settings and filters of the employee listing, plus the caller's scope.
+ *
+ * @remarks
+ * `organizationIds`/`includeCompany` are resolved by the service from the
+ * caller's context, not supplied by the client.
+ */
+export type TEmployeePaginationRequest = TEmployeeListQuery & {
+	/** Restrict to these organization ids (null = company-level only). */
+	organizationIds: string[] | null;
+	/** Include company-level rows (organization_id IS NULL). */
+	includeCompany: boolean;
+};
 export type TEmployeePickerQuery = z.output<typeof employeePickerQuerySchema>;
 
 /** Picker row: minimal dropdown payload. */

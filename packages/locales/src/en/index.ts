@@ -6,6 +6,8 @@ import email from './email';
 import dashboard from './dashboard';
 import finance from './finance';
 import inventory from './inventory';
+import product from './product';
+import warehouse from './warehouse';
 import nav from './nav';
 import account from './account';
 import api from './api';
@@ -36,6 +38,8 @@ export const en = {
 	admin,
 	assets,
 	inventory,
+	product,
+	warehouse,
 	finance,
 	dashboard,
 	api,

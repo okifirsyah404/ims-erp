@@ -10,7 +10,7 @@
 import { describe, expect, test } from 'bun:test';
 import type {
 	IPushNotificationRepository,
-	TPushNotificationListRequest,
+	TPushNotificationPaginationRequest,
 } from '../../src/app/notification/contracts/notification.repository.interface';
 import { NotificationService } from '../../src/app/notification/services/notification.service';
 import { NotificationNotFoundError } from '../../src/app/notification/errors/notification.errors';
@@ -49,12 +49,12 @@ function build(options: {
 	markAllReadResult?: number;
 	unread?: number;
 } = {}) {
-	const listRequests: TPushNotificationListRequest[] = [];
+	const listRequests: TPushNotificationPaginationRequest[] = [];
 	const published: { userId: string; message: TRealtimeMessage }[] = [];
 	let unreadCalls = 0;
 
 	const repository = {
-		async listForUser(request: TPushNotificationListRequest) {
+		async paginateForUser(request: TPushNotificationPaginationRequest) {
 			listRequests.push(request);
 			const rows = options.rows ?? [];
 			return {

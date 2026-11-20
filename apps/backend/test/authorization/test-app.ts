@@ -259,7 +259,7 @@ import type { IQuotationRepository } from '../../src/app/sale/contracts/quotatio
 import { EXPORTED_CUSTOMER_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
 import { SALE_NUMBERING_SERVICE_TOKEN } from '../../src/app/sale/constants/di';
 import { LEAD_SERVICE_TOKEN } from '../../src/app/project/constants/di';
-import { PRODUCT_SERVICE_TOKEN } from '../../src/app/inventory/constants/di';
+import { PRODUCT_SERVICE_TOKEN } from '../../src/app/product/constants/di';
 import { USER_SERVICE_TOKEN } from '../../src/app/user/constants/di';
 import { OBJECT_STORAGE_TOKEN } from '../../src/providers/s3/object-storage';
 

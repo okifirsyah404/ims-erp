@@ -1,7 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { ErrorState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -15,15 +19,9 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { toast } from '@/components/toast';
 import {
 	cancelDeliveryNote,
@@ -31,6 +29,7 @@ import {
 	deliverDeliveryNote,
 	deliveryNoteQueryOptions,
 	shipDeliveryNote,
+	type TDeliveryNoteItem,
 } from '@/lib/delivery-note-api';
 import { formatBusinessDate, formatDateTime, formatIdr } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -51,6 +50,73 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 
 type TAction = 'ship' | 'deliver' | 'cancel' | null;
 
+/** The delivery note's lines; its own component so the column hooks run before the page's early returns. */
+function DeliveryItemsTable({
+	items,
+	canSeeCost,
+	language,
+}: {
+	items: TDeliveryNoteItem[];
+	canSeeCost: boolean;
+	language: string;
+}) {
+	const { t } = useTranslation(['sales', 'common']);
+	const columns = useMemo<ColumnDef<DataTableFeatures, TDeliveryNoteItem, CellData>[]>(() => {
+		const costColumn: ColumnDef<DataTableFeatures, TDeliveryNoteItem, CellData>[] = canSeeCost
+			? [
+					{
+						id: 'unitCost',
+						header: t('sales:delivery.unitCost'),
+						meta: { align: 'right' },
+						cell: ({ row }) => (row.original.unitCost === null ? '—' : formatIdr(row.original.unitCost)),
+					},
+				]
+			: [];
+		return [
+			{
+				id: 'item',
+				header: t('sales:sj.item'),
+				cell: ({ row }) => (
+					<>
+						<div className='font-medium'>{row.original.name}</div>
+						{row.original.sku && <div className='text-xs text-muted-foreground'>{row.original.sku}</div>}
+					</>
+				),
+			},
+			{
+				id: 'quantity',
+				header: t('sales:delivery.quantity'),
+				meta: { align: 'right' },
+				cell: ({ row }) => `${Number(row.original.quantity).toLocaleString(language)} ${row.original.unit}`,
+			},
+			{
+				id: 'unitPrice',
+				header: t('sales:delivery.unitPrice'),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.unitPrice),
+			},
+			...costColumn,
+			{
+				id: 'remarks',
+				header: t('sales:delivery.remarks'),
+				meta: { cellClassName: 'text-sm' },
+				cell: ({ row }) => (
+					<>
+						{row.original.remarks && <div>{row.original.remarks}</div>}
+						{row.original.serialNumbers?.length ? (
+							<div className='text-muted-foreground'>
+								{t('sales:sj.serials')}: {row.original.serialNumbers.join(', ')}
+							</div>
+						) : null}
+					</>
+				),
+			},
+		];
+	}, [t, canSeeCost, language]);
+
+	return <DataTable columns={columns} data={items} getRowId={(row) => row.id} />;
+}
+
 function DeliveryNoteDetailPage() {
 	const { t, i18n } = useTranslation(['sales', 'common']);
 	const { deliveryNoteId } = Route.useParams();
@@ -64,11 +130,11 @@ function DeliveryNoteDetailPage() {
 	const { data, isPending, isError, error } = useQuery(deliveryNoteQueryOptions(deliveryNoteId));
 	const language = i18n.language === 'en' ? 'en-GB' : 'id-ID';
 
-	if (isPending) return null;
+	if (isPending) return <PageSkeleton />;
 	if (isError) {
 		return (
 			<div className='flex flex-col gap-6'>
-				<p className='text-sm text-destructive'>{error.message}</p>
+				<ErrorState error={error} bordered />
 				<Link to='/sales/deliveries' className='text-sm hover:underline'>
 					{t('sales:deliveries.back')}
 				</Link>
@@ -188,42 +254,9 @@ function DeliveryNoteDetailPage() {
 				</Card>
 			</div>
 
-			<Card>
+			<Card className='gap-0 py-0'>
 				<CardContent className='p-0'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('sales:sj.item')}</TableHead>
-								<TableHead className='text-right'>{t('sales:delivery.quantity')}</TableHead>
-								<TableHead className='text-right'>{t('sales:delivery.unitPrice')}</TableHead>
-								{canSeeCost && <TableHead className='text-right'>{t('sales:delivery.unitCost')}</TableHead>}
-								<TableHead>{t('sales:delivery.remarks')}</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{data.items.map((item) => (
-								<TableRow key={item.id}>
-									<TableCell>
-										<div className='font-medium'>{item.name}</div>
-										{item.sku && <div className='text-xs text-muted-foreground'>{item.sku}</div>}
-									</TableCell>
-									<TableCell className='text-right'>
-										{Number(item.quantity).toLocaleString(language)} {item.unit}
-									</TableCell>
-									<TableCell className='text-right'>{formatIdr(item.unitPrice)}</TableCell>
-									{canSeeCost && <TableCell className='text-right'>{item.unitCost === null ? '—' : formatIdr(item.unitCost)}</TableCell>}
-									<TableCell className='text-sm'>
-										{item.remarks && <div>{item.remarks}</div>}
-										{item.serialNumbers?.length ? (
-											<div className='text-muted-foreground'>
-												{t('sales:sj.serials')}: {item.serialNumbers.join(', ')}
-											</div>
-										) : null}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+					<DeliveryItemsTable items={data.items} canSeeCost={canSeeCost} language={language} />
 				</CardContent>
 			</Card>
 			{data.notes && <p className='whitespace-pre-line text-sm text-muted-foreground'>{data.notes}</p>}

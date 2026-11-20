@@ -2,7 +2,7 @@
 // Run: bun docs/database/validate-dbml.ts
 // Verifies:
 //   1. the DBML parses (@dbml/core, dbmlv2)
-//   2. no Ref crosses a module boundary (warehouse+inventory = one module)
+//   2. no Ref crosses a module boundary (one schema = one module, ADR-0026)
 //   3. every business table has created_at/updated_at/deleted_at
 //      (documented exceptions: append-only ledgers, projections, Better Auth
 //      core tables, transitional sales scaffold)

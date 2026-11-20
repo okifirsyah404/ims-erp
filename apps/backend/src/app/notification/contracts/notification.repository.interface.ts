@@ -1,4 +1,4 @@
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 import type {
 	NotificationChannel,
 	NotificationStatus,
@@ -37,10 +37,8 @@ export type TPushNotificationInsert = {
 };
 
 /** Caller-scoped list request. `unreadOnly` excludes rows already read. */
-export type TPushNotificationListRequest = {
+export type TPushNotificationPaginationRequest = TPaginationRequest & {
 	userId: string;
-	page: number;
-	limit: number;
 	unreadOnly: boolean;
 };
 
@@ -60,8 +58,8 @@ export interface IPushNotificationRepository {
 	): Promise<TPushNotificationSelect | null>;
 
 	/** Newest-first page of the caller's inbox. */
-	listForUser(
-		request: TPushNotificationListRequest,
+	paginateForUser(
+		request: TPushNotificationPaginationRequest,
 	): Promise<TPaginationResult<TPushNotificationSelect>>;
 
 	/** Unread rows for one user. */

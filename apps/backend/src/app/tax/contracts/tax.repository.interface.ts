@@ -4,7 +4,24 @@ import type {
 	TTaxSelect,
 	TWithholdingTaxRecordSelect,
 } from '@drizzle/schemas/tax.schema';
-import type { TPaginationResult } from '@ims-erp/common';
+import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
+
+/**
+ * Page settings plus the tenant of a tax listing.
+ *
+ * @remarks
+ * Every tax listing is tenant-scoped, so `organizationId` is required here
+ * rather than passed positionally.
+ */
+export type TTaxPaginationRequest = TPaginationRequest & {
+	organizationId: string;
+};
+
+/** Page settings, tenant and the period filters of the tax-record listing. */
+export type TTaxRecordPaginationRequest = TTaxPaginationRequest & {
+	year?: number;
+	month?: number;
+};
 
 /**
  * Data-access contract for the tax slice of the accounting module.
@@ -20,10 +37,9 @@ export type TTaxRepository = {
 		code: string,
 	): Promise<TTaxSelect[]>;
 
-	/** Lists the tenant's tax type rows, active or not. */
-	listTaxTypes(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+	/** Fetches one page of the tenant's tax type rows, active or not. */
+	paginateTaxTypes(
+		request: TTaxPaginationRequest,
 	): Promise<TPaginationResult<TTaxSelect>>;
 
 	findTaxTypeById(
@@ -63,10 +79,8 @@ export type TTaxRepository = {
 		taxTypeId: string,
 	): Promise<number>;
 
-	listTaxRecords(
-		organizationId: string,
-		filter: { year?: number; month?: number },
-		pagination: { page: number; limit: number },
+	paginateTaxRecords(
+		request: TTaxRecordPaginationRequest,
 	): Promise<TPaginationResult<TTaxRecordSelect>>;
 
 	findTaxRecordById(
@@ -142,9 +156,8 @@ export type TTaxRepository = {
 		}>
 	>;
 
-	listWithholding(
-		organizationId: string,
-		pagination: { page: number; limit: number },
+	paginateWithholding(
+		request: TTaxPaginationRequest,
 	): Promise<TPaginationResult<TWithholdingTaxRecordSelect>>;
 
 	findWithholdingById(

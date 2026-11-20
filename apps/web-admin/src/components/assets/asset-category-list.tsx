@@ -4,24 +4,28 @@ import {
 	useQueryClient,
 } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
-import { CircleAlert, Layers, Plus } from 'lucide-react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table/data-table';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { Layers, Plus } from 'lucide-react';
 import {
 	Pagination,
 	PaginationContent,
 	PaginationItem,
 } from '@ims-erp/ui/components/pagination';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	assetCategoriesQueryOptions,
 	createAssetCategory,
+	type TAssetCategory,
 } from '@/lib/asset-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -70,14 +74,47 @@ export function AssetCategoryList() {
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
+	const columns = useMemo<
+		ColumnDef<DataTableFeatures, TAssetCategory, CellData>[]
+	>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('assets:categories.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'name',
+				header: t('assets:categories.name'),
+				cell: ({ row }) => (
+					<>
+						{row.original.name}{' '}
+						{row.original.isActive ? null : (
+							<Badge variant='outline'>archived</Badge>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'itemKind',
+				header: t('assets:categories.itemKind'),
+				cell: ({ row }) => t(`assets:itemKind.${row.original.itemKind}`),
+			},
+			{
+				accessorKey: 'defaultDepreciationMethod',
+				header: t('assets:categories.depMethod'),
+			},
+			{
+				id: 'lifeMonths',
+				header: t('assets:categories.lifeMonths'),
+				cell: ({ row }) => row.original.defaultUsefulLifeMonths ?? '—',
+			},
+		],
+		[t],
+	);
+
 	if (isError) {
-		return (
-			<EmptyState
-				icon={CircleAlert}
-				title={t('assets:categories.emptyTitle')}
-				description={error.message}
-			/>
-		);
+		return <ErrorState error={error} bordered />;
 	}
 
 	return (
@@ -113,50 +150,21 @@ export function AssetCategoryList() {
 				</div>
 			) : null}
 
-			{isPending ? null : !data || data.rows.length === 0 ? (
+			{!isPending && (!data || data.rows.length === 0) ? (
 				<EmptyState
 					icon={Layers}
 					title={t('assets:categories.emptyTitle')}
 					description={t('assets:categories.empty')}
+					bordered
 				/>
 			) : (
-				<div className='overflow-hidden rounded-lg border'>
-					<table className='w-full text-sm'>
-						<thead className='bg-muted/50 text-left text-xs text-muted-foreground'>
-							<tr>
-								<th className='px-3 py-2'>{t('assets:categories.code')}</th>
-								<th className='px-3 py-2'>{t('assets:categories.name')}</th>
-								<th className='px-3 py-2'>{t('assets:categories.itemKind')}</th>
-								<th className='px-3 py-2'>{t('assets:categories.depMethod')}</th>
-								<th className='px-3 py-2'>{t('assets:categories.lifeMonths')}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{data.rows.map((category) => (
-								<tr key={category.id} className='border-t'>
-									<td className='px-3 py-2 font-mono text-xs'>
-										{category.code}
-									</td>
-									<td className='px-3 py-2'>
-										{category.name}{' '}
-										{category.isActive ? null : (
-											<Badge variant='outline'>archived</Badge>
-										)}
-									</td>
-									<td className='px-3 py-2'>
-										{t(`assets:itemKind.${category.itemKind}`)}
-									</td>
-									<td className='px-3 py-2'>
-										{category.defaultDepreciationMethod}
-									</td>
-									<td className='px-3 py-2'>
-										{category.defaultUsefulLifeMonths ?? '—'}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+				<DataTable
+					columns={columns}
+					data={data?.rows ?? []}
+					loading={isPending}
+					getRowId={(row) => row.id}
+					bordered
+				/>
 			)}
 
 			<PaginationControls
