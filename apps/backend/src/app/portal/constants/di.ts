@@ -6,6 +6,7 @@ import type { PortalSalesService } from '../services/portal-sales.service';
 import type { PortalRfqService } from '../services/portal-rfq.service';
 import type { PublicTrackingService } from '../services/public-tracking.service';
 import type { PortalAccountPagesService } from '../services/portal-account-pages.service';
+import type { PortalDocumentFileService } from '../services/portal-document-file.service';
 
 /** Injection tokens of the customer portal module (ERP-0022). */
 export const PORTAL_SESSION_GATEWAY_TOKEN: InjectionToken<IPortalSessionGateway> = Symbol('PORTAL_SESSION_GATEWAY');
@@ -18,3 +19,6 @@ export const PORTAL_SALES_SERVICE_TOKEN: InjectionToken<PortalSalesService> = Sy
 
 /** Profile, personal data, sites, settings, onboarding and documents (ERP-0075). */
 export const PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN: InjectionToken<PortalAccountPagesService> = Symbol('PORTAL_ACCOUNT_PAGES_SERVICE');
+
+/** Document downloads (PDF on request, project files; ERP-0079). */
+export const PORTAL_DOCUMENT_FILE_SERVICE_TOKEN: InjectionToken<PortalDocumentFileService> = Symbol('PORTAL_DOCUMENT_FILE_SERVICE');

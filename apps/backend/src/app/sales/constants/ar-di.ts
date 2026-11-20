@@ -1,6 +1,7 @@
 import type { InjectionToken } from 'tsyringe';
 import type { InvoiceService } from '../services/invoice.service';
 import type { InvoiceBillingService } from '../services/invoice-billing.service';
+import type { InvoiceRenderService } from '../services/invoice-render.service';
 import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
 import type { IExportedInvoiceService } from '../contracts/exported-invoice.contract';
 import type { IInvoicePaymentPort } from '../contracts/invoice-payment.port';
@@ -25,3 +26,6 @@ export const INVOICE_PAYMENT_PORT_TOKEN: InjectionToken<IInvoicePaymentPort> = S
 /** Published to Accounting: invoice reads, the AR mirror totals write and the draft count. */
 export const EXPORTED_INVOICE_SERVICE_TOKEN: InjectionToken<IExportedInvoiceService> =
 	Symbol('EXPORTED_INVOICE_SERVICE');
+
+/** Invoice print-view data for the PDF renderer (ERP-0079). */
+export const INVOICE_RENDER_SERVICE_TOKEN: InjectionToken<InvoiceRenderService> = Symbol('INVOICE_RENDER_SERVICE_TOKEN');

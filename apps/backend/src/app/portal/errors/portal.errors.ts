@@ -86,3 +86,10 @@ export class PublicTrackingRateLimitedError extends AppError {
 		super(429, 'portal.tooManyLookups', 'Too many lookups. Please wait a few minutes and try again.');
 	}
 }
+
+/** PDF rendering is not configured on this server (ERP-0079). */
+export class PortalPdfUnavailableError extends AppError {
+	constructor() {
+		super(503, 'portal.pdfUnavailable', 'This document cannot be downloaded right now. Please try again later.');
+	}
+}

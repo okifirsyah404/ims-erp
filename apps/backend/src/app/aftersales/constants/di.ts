@@ -2,6 +2,7 @@
  * Injection tokens for the after-sales module (M07, ADR-0011 steps 6b–6c).
  */
 import type { InjectionToken } from 'tsyringe';
+import type { WarrantyRenderService } from '../services/warranty-render.service';
 import type { IWarrantyRepository } from '../contracts/warranty.contract';
 import type { WarrantyService } from '../services/warranty.service';
 import type { IServiceTicketCommentRepository, IServiceTicketRepository } from '../contracts/service-ticket.contract';
@@ -22,3 +23,6 @@ export const SERVICE_TICKET_COMMENT_REPOSITORY_TOKEN: InjectionToken<IServiceTic
 );
 
 export const SERVICE_TICKET_SERVICE_TOKEN: InjectionToken<ServiceTicketService> = Symbol('SERVICE_TICKET_SERVICE_TOKEN');
+
+/** Warranty-certificate print-view data for the PDF renderer (ERP-0079). */
+export const WARRANTY_RENDER_SERVICE_TOKEN: InjectionToken<WarrantyRenderService> = Symbol('WARRANTY_RENDER_SERVICE_TOKEN');

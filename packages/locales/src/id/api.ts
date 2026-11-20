@@ -378,6 +378,7 @@ const api: Record<keyof typeof en, string> = {
 	'portal.rfqNotClaimable': 'Permintaan ini tidak dapat ditambahkan ke akun Anda',
 	'portal.rfqClaimCodeInvalid': 'Kode salah atau sudah kedaluwarsa',
 	'portal.tooManyLookups': 'Terlalu banyak pencarian. Tunggu beberapa menit lalu coba lagi.',
+	'portal.pdfUnavailable': 'Dokumen ini belum bisa diunduh saat ini. Silakan coba lagi nanti.',
 	'portal.sales.status.accepted': 'Disetujui',
 	'portal.sales.meta.inReview': 'Tim sales kami sedang menyiapkan penawaran ini',
 	'portal.sales.meta.sent': 'Dikirim {{date}}',

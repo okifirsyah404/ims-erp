@@ -14,6 +14,7 @@ import type { TCustomerAddressSelect, TCustomerContactSelect } from '@drizzle/sc
 import { inject, injectable } from 'tsyringe';
 import { PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import { PortalRoleForbiddenError } from '../errors/portal.errors';
+import { documentFileUrl } from '../utils/portal-presenter';
 import type { PortalSalesService } from './portal-sales.service';
 import type { PortalService } from './portal.service';
 
@@ -218,15 +219,38 @@ export class PortalAccountPagesService {
 		const details = await Promise.all(projects.map((project) => this.portalService.getProject(portal, project.id).catch(() => null)));
 		const certificates = new Map(devices.map((device) => [device.certificate.id, device.certificate]));
 		const entries: TPortalDocumentEntry[] = [
-			...invoices.map((invoice) => ({ id: invoice.id, folder: 'invoices' as const, name: invoice.code ?? '', date: invoice.issueDate, kind: 'pdf' as const, amountMinor: invoice.grandTotal })),
+			...invoices.map((invoice) => ({
+				id: invoice.id,
+				folder: 'invoices' as const,
+				name: invoice.code ?? '',
+				date: invoice.issueDate,
+				kind: 'pdf' as const,
+				amountMinor: invoice.grandTotal,
+				url: documentFileUrl('invoice', invoice.id),
+			})),
 			...quotations
 				.filter((quotation) => quotation.status !== 'draft')
-				.map((quotation) => ({ id: quotation.id, folder: 'quotations' as const, name: quotation.code ?? '', date: quotation.sentAt ?? quotation.createdAt, kind: 'pdf' as const, amountMinor: quotation.grandTotal })),
-			...[...certificates.values()].map((certificate) => ({ id: certificate.id, folder: 'warranty' as const, name: certificate.code, date: certificate.issueDate, kind: 'pdf' as const })),
+				.map((quotation) => ({
+					id: quotation.id,
+					folder: 'quotations' as const,
+					name: quotation.code ?? '',
+					date: quotation.sentAt ?? quotation.createdAt,
+					kind: 'pdf' as const,
+					amountMinor: quotation.grandTotal,
+					url: documentFileUrl('quotation', quotation.id),
+				})),
+			...[...certificates.values()].map((certificate) => ({
+				id: certificate.id,
+				folder: 'warranty' as const,
+				name: certificate.code,
+				date: certificate.issueDate,
+				kind: 'pdf' as const,
+				url: documentFileUrl('warranty', certificate.id),
+			})),
 			...details
 				.filter((detail): detail is TPortalProjectDetail => detail !== null)
 				.flatMap((detail) =>
-					detail.files.map((file) => ({ id: file.id, folder: 'drawings' as const, name: file.fileName, date: file.createdAt, kind: kindOf(file.fileName), url: file.url })),
+					detail.files.map((file) => ({ id: file.id, folder: 'drawings' as const, name: file.fileName, date: file.createdAt, kind: kindOf(file.fileName), url: documentFileUrl('file', file.id) })),
 				),
 		];
 		const time = (value: Date | string | null) => (value ? new Date(value).getTime() : 0);

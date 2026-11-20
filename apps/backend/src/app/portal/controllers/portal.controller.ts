@@ -7,7 +7,8 @@ import { resolveLanguage, translator } from '@providers/i18n/translator';
 import { customerSiteSchema } from '@app/crm/contracts/customer-address.contract';
 import { companyChangeSchema } from '@app/crm/contracts/customer-change-request.contract';
 import { NOTIFICATION_INBOX_SERVICE_TOKEN } from '@app/notification/constants/di';
-import { PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { PORTAL_PDF_KINDS } from '../services/portal-document-file.service';
+import { PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN, PORTAL_DOCUMENT_FILE_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import { quotationSummary } from '../utils/portal-sales-presenter';
 import { portalMemberInviteSchema, portalSignupSchema } from '@app/user/contracts/portal-account.contract';
 import {
@@ -170,6 +171,7 @@ export class PortalController {
 		const service = container.resolve(PORTAL_SERVICE_TOKEN);
 		const pages = container.resolve(PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN);
 		const inbox = container.resolve(NOTIFICATION_INBOX_SERVICE_TOKEN);
+		const files = container.resolve(PORTAL_DOCUMENT_FILE_SERVICE_TOKEN);
 		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		// A malformed id is answered 404 like an unknown one: the portal reads 404 as "not found".
 		const id = (params: unknown) => {
@@ -313,6 +315,32 @@ export class PortalController {
 					detail: {
 						summary: 'Notifications',
 						description: 'The latest 50 notifications of this login (SPH sent, order shipped, invoice issued, payment received, support reply; ERP-0077), newest first; opening the list marks them read',
+					},
+				},
+			)
+			.get(
+				'/documents/:kind/:id/file',
+				async (ctx) => {
+					const params = ctx.params as { kind?: string; id?: string };
+					const fileId = id({ id: params.id });
+					if (params.kind === 'file') return ctx.redirect(await files.projectFileUrl(ctx.portal, fileId), 302);
+					const kind = PORTAL_PDF_KINDS.find((entry) => entry === params.kind);
+					if (!kind) throw new PortalNotFoundError();
+					const file = await files.pdf(ctx.portal, kind, fileId);
+					return new Response(new Blob([file.bytes as Uint8Array<ArrayBuffer>]), {
+						headers: {
+							'Content-Type': file.contentType,
+							'Content-Disposition': `attachment; filename="${file.fileName}"`,
+							'Cache-Control': 'private, no-store',
+						},
+					});
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Download a document',
+						description:
+							'kind quotation | invoice | warranty: a PDF rendered on request from the print view (sent SPHs only); kind file: a customer-visible project file (302 to a short-lived link). 404 when it is not this customer document; 503 when PDF rendering is not configured.',
 					},
 				},
 			)

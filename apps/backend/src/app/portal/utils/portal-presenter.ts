@@ -37,6 +37,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const locale = (p: TPresenter) => (p.language === 'id' ? 'id-ID' : 'en-GB');
 
 /** `2026-11-14` or a Date → "14 Nov 2026" / "14 Nov 2026" in the caller's language. */
+/**
+ * The portal's download path for a document (ERP-0079): the portal server streams it from
+ * `GET /portal/v1/documents/:kind/:id/file` with the customer's session, so links work
+ * without the ERP's session or storage being reachable from the browser.
+ */
+export const documentFileUrl = (kind: 'quotation' | 'invoice' | 'warranty' | 'file', id: string) => `/documents/file/${kind}/${id}`;
+
 export function dateLabel(p: TPresenter, value: string | Date | null | undefined): string {
 	if (!value) return '';
 	// A business date (`YYYY-MM-DD`) is a Jakarta day; a full timestamp (e.g. a cached ISO string) is a moment.
@@ -210,7 +217,7 @@ export function projectDetail(p: TPresenter, project: TPortalProjectDetail) {
 				name: file.fileName,
 				meta: `${p.t(`portal.evidence.${file.kind as 'testing' | 'training' | 'bast' | 'photo'}`)} · ${dateLabel(p, file.createdAt)}`,
 				kind: file.contentType === 'application/pdf' ? ('pdf' as const) : ('file' as const),
-				url: file.url,
+				url: documentFileUrl('file', file.id),
 			})),
 		],
 		manager: { name: project.manager?.name ?? '', role: p.t('portal.label.projectManager') },
@@ -349,7 +356,8 @@ export function warrantyDetail(p: TPresenter, device: TPortalDevice) {
 			id: certificate.id,
 			name: p.t('portal.label.warrantyCertificate', { code: certificate.code }),
 			meta: dateLabel(p, certificate.issueDate),
-			kind: 'file' as const,
+			kind: 'pdf' as const,
+			url: documentFileUrl('warranty', certificate.id),
 		},
 	};
 }

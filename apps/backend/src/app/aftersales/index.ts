@@ -12,6 +12,7 @@ import Elysia from 'elysia';
 
 import { ServiceTicketController } from './controllers/service-ticket.controller';
 import { WarrantyController } from './controllers/warranty.controller';
+import { WarrantyRenderController } from './controllers/warranty-render.controller';
 
 export { registerAftersales } from './container';
 
@@ -19,5 +20,6 @@ export { registerAftersales } from './container';
 export function aftersalesModule() {
 	return new Elysia({ name: 'aftersales' })
 		.use(WarrantyController.plugin())
+		.use(WarrantyRenderController.plugin())
 		.use(ServiceTicketController.plugin());
 }

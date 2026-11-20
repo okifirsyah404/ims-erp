@@ -11,7 +11,7 @@ import type { TCustomerInvoice } from '@app/sales/contracts/customer-sales.contr
 import type { TQuotationDetail, TQuotationView } from '@app/sales/services/quotation.service';
 import type { TSalesOrderDetail } from '@app/sales/services/sales-order.service';
 import type { TInvoiceSelect, TSalesOrderSelect } from '@drizzle/schemas/sales.schema';
-import { dateLabel, type TPresenter } from './portal-presenter';
+import { dateLabel, documentFileUrl, type TPresenter } from './portal-presenter';
 
 /** "25 Oct" / "25 Okt": the portal's quotation screens add the year themselves. */
 function shortDate(p: TPresenter, value: string | null): string {
@@ -244,6 +244,7 @@ export function invoiceDetail(p: TPresenter, invoice: TCustomerInvoice) {
 				method: receipt.method,
 			})),
 		milestones: [],
+		document: { id: invoice.id, name: invoice.code ?? '', meta: dateLabel(p, invoice.issueDate), kind: 'pdf' as const, url: documentFileUrl('invoice', invoice.id) },
 	};
 }
 

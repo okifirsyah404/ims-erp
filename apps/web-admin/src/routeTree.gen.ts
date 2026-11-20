@@ -39,7 +39,9 @@ import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports
 import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/index'
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
+import { Route as PrintInvoicesInvoiceIdRouteImport } from './routes/print/invoices.$invoiceId'
 import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
+import { Route as PrintWarrantiesCertificateIdRouteImport } from './routes/print/warranties.$certificateId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCodeNumbersIndexRouteImport } from './routes/_authed/admin/code-numbers/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -327,10 +329,21 @@ const AuthedSubscriptionNewRoute = AuthedSubscriptionNewRouteImport.update({
   path: '/subscription/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const PrintInvoicesInvoiceIdRoute = PrintInvoicesInvoiceIdRouteImport.update({
+  id: '/print/invoices/$invoiceId',
+  path: '/print/invoices/$invoiceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrintQuotationsQuotationIdRoute =
   PrintQuotationsQuotationIdRouteImport.update({
     id: '/print/quotations/$quotationId',
     path: '/print/quotations/$quotationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const PrintWarrantiesCertificateIdRoute =
+  PrintWarrantiesCertificateIdRouteImport.update({
+    id: '/print/warranties/$certificateId',
+    path: '/print/warranties/$certificateId',
     getParentRoute: () => rootRouteImport,
   } as any)
 const AuthedAdminAuditIndexRoute = AuthedAdminAuditIndexRouteImport.update({
@@ -1135,7 +1148,9 @@ export interface FileRoutesByFullPath {
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/print/invoices/$invoiceId': typeof PrintInvoicesInvoiceIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
+  '/print/warranties/$certificateId': typeof PrintWarrantiesCertificateIdRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
@@ -1299,7 +1314,9 @@ export interface FileRoutesByTo {
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/print/invoices/$invoiceId': typeof PrintInvoicesInvoiceIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
+  '/print/warranties/$certificateId': typeof PrintWarrantiesCertificateIdRoute
   '/account': typeof AuthedAccountIndexRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
@@ -1467,7 +1484,9 @@ export interface FileRoutesById {
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
   '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/print/invoices/$invoiceId': typeof PrintInvoicesInvoiceIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
+  '/print/warranties/$certificateId': typeof PrintWarrantiesCertificateIdRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
@@ -1635,7 +1654,9 @@ export interface FileRouteTypes {
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
+    | '/print/invoices/$invoiceId'
     | '/print/quotations/$quotationId'
+    | '/print/warranties/$certificateId'
     | '/account/'
     | '/assets/'
     | '/crm/'
@@ -1799,7 +1820,9 @@ export interface FileRouteTypes {
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
+    | '/print/invoices/$invoiceId'
     | '/print/quotations/$quotationId'
+    | '/print/warranties/$certificateId'
     | '/account'
     | '/assets'
     | '/crm'
@@ -1966,7 +1989,9 @@ export interface FileRouteTypes {
     | '/_authed/profiles/edit'
     | '/_authed/projects/new'
     | '/_authed/subscription/new'
+    | '/print/invoices/$invoiceId'
     | '/print/quotations/$quotationId'
+    | '/print/warranties/$certificateId'
     | '/_authed/account/'
     | '/_authed/assets/'
     | '/_authed/crm/'
@@ -2122,7 +2147,9 @@ export interface RootRouteChildren {
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
+  PrintInvoicesInvoiceIdRoute: typeof PrintInvoicesInvoiceIdRoute
   PrintQuotationsQuotationIdRoute: typeof PrintQuotationsQuotationIdRoute
+  PrintWarrantiesCertificateIdRoute: typeof PrintWarrantiesCertificateIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -2337,11 +2364,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSubscriptionNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/print/invoices/$invoiceId': {
+      id: '/print/invoices/$invoiceId'
+      path: '/print/invoices/$invoiceId'
+      fullPath: '/print/invoices/$invoiceId'
+      preLoaderRoute: typeof PrintInvoicesInvoiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/print/quotations/$quotationId': {
       id: '/print/quotations/$quotationId'
       path: '/print/quotations/$quotationId'
       fullPath: '/print/quotations/$quotationId'
       preLoaderRoute: typeof PrintQuotationsQuotationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/print/warranties/$certificateId': {
+      id: '/print/warranties/$certificateId'
+      path: '/print/warranties/$certificateId'
+      fullPath: '/print/warranties/$certificateId'
+      preLoaderRoute: typeof PrintWarrantiesCertificateIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/admin/audit/': {
@@ -3734,7 +3775,9 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,
+  PrintInvoicesInvoiceIdRoute: PrintInvoicesInvoiceIdRoute,
   PrintQuotationsQuotationIdRoute: PrintQuotationsQuotationIdRoute,
+  PrintWarrantiesCertificateIdRoute: PrintWarrantiesCertificateIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

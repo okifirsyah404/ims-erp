@@ -196,3 +196,17 @@ you can't recreate.
 - After schema changes: generated migration inspected by a human.
 - After touches: run lint + tests in the affected workspace and update
   `progress.md` with the exact commands and outcomes.
+
+## PDF documents (SPH, invoice, warranty) — ERP-0067 / ERP-0079
+
+The backend renders PDFs by opening the web admin's public print pages
+(`/print/quotations|invoices|warranties/:id?token=…`) in headless Chromium. Locally:
+
+- set `PDF_CHROMIUM_PATH` in `apps/backend/.env` to an installed Chrome/Edge
+  (e.g. `C:/Program Files/Google/Chrome/Application/chrome.exe`);
+- `PDF_RENDER_BASE_URL` defaults to `APP_WEB_URL` (the web admin, `http://localhost:5173`),
+  which must be running.
+
+Without them the portal's download answers 503 "cannot be downloaded right now"
+(verified 2026-11-20: with Chrome set, the portal downloaded a 173 KB invoice and a
+153 KB SPH PDF).

@@ -197,13 +197,15 @@ describe('PortalAccountPagesService', () => {
 		expect(calls).toEqual(['change:Dewi:PT Baru']);
 	});
 
-	test('documents: newest first, drafts left out, project files with their link', async () => {
+	test('documents: newest first, drafts left out, each with its portal download link', async () => {
 		const documents = await pages.documents(portal('viewer'));
 		expect(documents.map((entry) => [entry.folder, entry.name])).toEqual([
 			['quotations', 'QT-1'],
 			['invoices', 'INV-1'],
 			['drawings', 'denah.dwg'],
 		]);
-		expect(documents.find((entry) => entry.folder === 'drawings')).toMatchObject({ kind: 'dwg', url: 'https://storage.example/denah' });
+		expect(documents.find((entry) => entry.folder === 'drawings')).toMatchObject({ kind: 'dwg', url: '/documents/file/file/f1' });
+		expect(documents.find((entry) => entry.folder === 'invoices')!.url).toBe('/documents/file/invoice/inv1');
+		expect(documents.find((entry) => entry.folder === 'quotations')!.url).toBe('/documents/file/quotation/q1');
 	});
 });

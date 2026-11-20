@@ -381,6 +381,7 @@ const api = {
 	'portal.rfqNotClaimable': 'This request cannot be added to your account',
 	'portal.rfqClaimCodeInvalid': 'The code is wrong or has expired',
 	'portal.tooManyLookups': 'Too many lookups. Please wait a few minutes and try again.',
+	'portal.pdfUnavailable': 'This document cannot be downloaded right now. Please try again later.',
 	'portal.sales.status.accepted': 'Accepted',
 	'portal.sales.meta.inReview': 'Our sales team is preparing this quotation',
 	'portal.sales.meta.sent': 'Sent {{date}}',

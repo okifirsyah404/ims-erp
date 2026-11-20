@@ -19,6 +19,15 @@ export class WarrantyRepository implements IWarrantyRepository {
 		return row ?? null;
 	}
 
+	async findById(id: string) {
+		const [row] = await this.database
+			.select()
+			.from(warrantyCertificates)
+			.where(and(eq(warrantyCertificates.id, id), isNull(warrantyCertificates.deletedAt)))
+			.limit(1);
+		return row ?? null;
+	}
+
 	async listByCustomer(customerId: string) {
 		return this.database
 			.select()

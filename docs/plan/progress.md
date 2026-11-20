@@ -12,6 +12,54 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0079: document downloads in the customer portal
+
+Same branch, after ERP-0078 (`86743101`). User: "documents cannot be
+downloaded". `docs/database/` reviewed and unchanged.
+
+**Root causes.** The library listed invoices, SPHs and certificates without
+links; SPH buttons were hard-disabled ("available once connected"); invoice
+pages had no document; project files had presigned `http://` MinIO links
+that the portal's `safeHref` drops; only the SPH had a token-based print view
+and the renderer was not configured locally (`PDF_CHROMIUM_PATH` unset).
+
+**Design (Gate 2, manual).** PDFs are rendered on request from the same
+layouts staff print (no stored copies to keep in step): the owning module
+exposes print data behind a 2-minute render token (Sales: invoice, with the
+organization in the signed id; After-sales: warranty certificate); the web
+admin has public print pages; the portal module checks ownership (sent SPHs
+only), renders with headless Chromium and streams the PDF; the portal app
+proxies it at `/documents/file/:kind/:id` because the browser only holds the
+portal session. Project files: 302 to the short-lived storage link, followed
+by the portal proxy.
+
+**Changes.**
+- Backend: `InvoiceRenderService` + `GET /public/v1/render/invoices/:id`;
+  `WarrantyRenderService` + `GET /public/v1/render/warranties/:id`;
+  `IWarrantyRepository.findById`; `PortalDocumentFileService` + `GET
+  /portal/v1/documents/:kind/:id/file`; error `portal.pdfUnavailable`
+  (en/id); presenters set `url` for invoices, SPHs, certificates and project
+  files (`documentFileUrl`), invoice detail gets its `document`.
+- Web admin: `/print/invoices/$invoiceId`, `/print/warranties/$certificateId`,
+  `RenderReady` wrapper, `lib/print-render-api.ts`; `routeTree.gen.ts`.
+- Portal app: `/documents/file/[kind]/[id]` proxy; SPH "Download PDF"
+  buttons enabled once the SPH is sent (mobile and desktop).
+- Local: `PDF_CHROMIUM_PATH` set in `apps/backend/.env` (git-ignored) to the
+  installed Chrome; runbook section added.
+
+**Verification.**
+- Unit: `portal-document-file.test.ts` 4 new; `handover-warranty` fake
+  extended; backend typecheck 0; web-admin `tsc -b` 0; portal `astro check` 0.
+- Live (dev portal login, servers restarted): `/documents` lists links;
+  invoice download 200 `application/pdf` 173,487 bytes `%PDF-`, attachment
+  `0001-INV-DEV-XI-26.pdf`; SPH download 200 153,512 bytes; unknown id 404;
+  a screenshot of `/print/invoices/…` with a fresh token shows the full invoice.
+- Not done: warranty and project-file downloads live (the dev customer has
+  none); a browser click-through.
+
+**Next executable task:** ERP-0080 portal order tracking from real data
+(timeline, delivery notes; courier/AWB ready for RajaOngkir).
+
 ## 2026-11-20 - ERP-0078: website sign-in back to the page; order and quotation in one checkout
 
 Same branch, after ERP-0077 (`0eb3364a`). User tested the build and reported:

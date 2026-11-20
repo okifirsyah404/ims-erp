@@ -624,6 +624,9 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Document downloads in the customer portal — ERP-0079 (2026-11-20): SPH,
+  invoice and warranty PDFs rendered on request; project files. Evidence:
+  `test/unit/portal-document-file.test.ts` (4), `progress.md` 2026-11-20 ERP-0079.
 - Website sign-in back to the page + order with price-on-request items — ERP-0078
   (2026-11-20). Evidence: `progress.md` 2026-11-20 ERP-0078.
 - Customer notifications in the portal — ERP-0077 (2026-11-20): SPH sent,

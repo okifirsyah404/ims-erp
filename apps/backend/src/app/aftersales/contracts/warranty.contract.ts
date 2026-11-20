@@ -40,6 +40,8 @@ export type TWarrantyData = Omit<TWarrantyCertificateInsert, 'id' | 'code' | 'cr
 /** Persistence port for `aftersales.warranty_certificates` (live rows). */
 export interface IWarrantyRepository {
 	findByProject(projectId: string): Promise<TWarrantyCertificateSelect | null>;
+	/** A live certificate by id (the PDF render view, ERP-0079). */
+	findById(id: string): Promise<TWarrantyCertificateSelect | null>;
 	/** Every live certificate of a customer, newest first (portal, ERP-0022). */
 	listByCustomer(customerId: string): Promise<TWarrantyCertificateSelect[]>;
 	create(code: string, actorUserId: string, data: TWarrantyData): Promise<TWarrantyCertificateSelect>;

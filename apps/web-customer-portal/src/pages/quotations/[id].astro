@@ -26,6 +26,8 @@ import { quotationChip } from "../../lib/status";
 
 /** 05.06 Quotation Details & Approval (+ 05.06b/c sheets). */
 const quote = await quotationsService.get(Astro.locals.tokens!, Astro.params.id ?? "");
+// ERP-0079: the SPH PDF downloads once sales has sent it (an online order "in review" has none yet).
+const pdfHref = !quote || quote.status === "in_review" ? undefined : `/documents/file/quotation/${quote.id}`;
 if (!quote) return Astro.rewrite("/404");
 
 const actionable = quote.status === "needs_approval" || quote.status === "revised";
@@ -44,7 +46,7 @@ const meta = [
   <div class="hidden xl:block"><QuotationDesktop quote={quote} /></div>
   <div class="xl:hidden">
   <TopBar title={quote.number} back="/quotations">
-    <IconButton slot="action" label="Download PDF" disabled title="PDF will be available once connected to the ERP"><Download size={20} aria-hidden="true" /></IconButton>
+    {pdfHref ? <IconButton slot="action" label="Download PDF" href={pdfHref}><Download size={20} aria-hidden="true" /></IconButton> : <IconButton slot="action" label="Download PDF" disabled title="Available once our sales team sends the quotation"><Download size={20} aria-hidden="true" /></IconButton>}
   </TopBar>
 
   <div class="flex flex-col gap-5 px-5 pt-2 pb-6">
@@ -146,10 +148,17 @@ const meta = [
     }
 
     <div class="flex gap-2.5">
-      <span class="flex flex-1 flex-col items-center gap-2 rounded-lg bg-surface px-2 py-3.5 text-[12px] font-semibold text-fg-secondary/60" title="Available once connected to the ERP">
-        <FileDown size={20} class="text-blue-600/60" aria-hidden="true" />
-        Download PDF
-      </span>
+      {pdfHref ? (
+        <a href={pdfHref} class="flex flex-1 flex-col items-center gap-2 rounded-lg bg-surface px-2 py-3.5 text-[12px] font-semibold text-fg-secondary">
+          <FileDown size={20} class="text-blue-600" aria-hidden="true" />
+          Download PDF
+        </a>
+      ) : (
+        <span class="flex flex-1 flex-col items-center gap-2 rounded-lg bg-surface px-2 py-3.5 text-[12px] font-semibold text-fg-secondary/60" title="Available once our sales team sends the quotation">
+          <FileDown size={20} class="text-blue-600/60" aria-hidden="true" />
+          Download PDF
+        </span>
+      )}
       {
         actionable ? (
           <a href="#revise" class="flex flex-1 flex-col items-center gap-2 rounded-lg bg-surface px-2 py-3.5 text-[12px] font-semibold text-fg-secondary">

@@ -14,6 +14,7 @@ import { DeliveryNoteController } from './controllers/delivery-note.controller';
 import { InvoiceController } from './controllers/invoice.controller';
 import { QuotationController } from './controllers/quotation.controller';
 import { QuotationRenderController } from './controllers/quotation-render.controller';
+import { InvoiceRenderController } from './controllers/invoice-render.controller';
 import { ReceiptController } from './controllers/receipt.controller';
 import { SalesController } from './controllers/sales.controller';
 import { SalesOrderController } from './controllers/sales-order.controller';
@@ -35,6 +36,7 @@ export function salesModule() {
 	return new Elysia({ name: 'sales' })
 		.use(QuotationController.plugin())
 		.use(QuotationRenderController.plugin())
+		.use(InvoiceRenderController.plugin())
 		.use(SalesOrderController.plugin())
 		.use(DeliveryNoteController.plugin())
 		.use(SalesReturnController.plugin())
