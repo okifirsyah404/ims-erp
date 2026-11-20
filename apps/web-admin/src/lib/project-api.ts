@@ -33,10 +33,12 @@ export type TPerson = { userId: string; name: string };
 export type TProject = {
 	id: string;
 	code: string;
-	salesOrderId: string;
-	salesOrderCode: string;
+	orderId: string;
+	orderCode: string;
 	quotationCode: string | null;
 	customerId: string;
+	companyId: string | null;
+	leadId: string | null;
 	customerName: string;
 	title: string;
 	siteName: string | null;
@@ -205,7 +207,7 @@ export function projectStaffQueryOptions() {
 	});
 }
 
-export const createProject = (input: TProjectInput & { salesOrderId: string }) => send<TProject>('/projects', 'POST', input);
+export const createProject = (input: TProjectInput & { orderId: string }) => send<TProject>('/projects', 'POST', input);
 export const updateProject = (id: string, input: TProjectInput & { stage: TProjectStage }) => send<TProject>(`/projects/${id}`, 'PUT', input);
 export const closeProject = (id: string) => send<TProject>(`/projects/${id}/close`, 'POST');
 export const cancelProject = (id: string, reason: string) => send<TProject>(`/projects/${id}/cancel`, 'POST', { reason });

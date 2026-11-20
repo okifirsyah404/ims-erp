@@ -12,6 +12,15 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - Frontend slice 4: project, lead, handover, license, ticket (web-admin)
+
+- Project (4A): `lead-api` `/leads*` -> `/projects/leads*`; warranty certificates `/warranty-certificates/projects/:id` -> `/projects/warranties/projects/:id` (`bastId` -> `handoverId`); `project-api` `salesOrderId/Code` -> `orderId/orderCode`, `TProject` gains `companyId`, `leadId`; `TLead` gains `companyId`. BAST routes (`/projects/basts`, `/projects/:id/basts*`), stats, open-deals, staff, tasks, evidence, costs were already correct. Lead conversion marks the lead won and links a customer person; it does not open a project (backend behaviour, no UI added).
+- License/ticket (4B): `license-api` `/licenses*` -> `/projects/licenses*` (`licensableApplicationId` -> `licenseApplicationId`, `salesOrderId` -> `orderId`); `service-ticket-api` `/service-tickets*` -> `/tickets*`; `dashboard-api` licenses summary repointed. No capability was dropped; ticket templates and sub-tickets stay target-only with no UI.
+- Verified: `bunx tsc -p tsconfig.app.json --noEmit` (web-admin) 0 errors; `bun run lint` 0 errors; `bun run test` 5/5; `bun run build` 5/5. Endpoints checked by reading controllers; no live UI run.
+- Open: tickets for company customers are unsupported (backend `getActiveCustomer` resolves people only) - design decision needed; license event type names (e.g. `key_revoked`) not compared with the backend; `lead-api`/`handover-api` do not send the organization header (pre-existing); the new project tables (types, phases, milestones, daily reports, site assignments, KPIs, changes, work plans) have no UI.
+- docs/database: reviewed, unchanged.
+
+Next executable task: frontend slice 5 (human-resource, document, signature, notification, automation, whatsapp wrappers).
 ## 2026-11-20 - Frontend slice 3: finance, tax, payment gateway page, company (web-admin)
 
 - Finance (3A): `finance-api` moved to `/finance/ledger/{accounts,journal,opening-balances}`, `/finance/periods`, `/finance/cash-bank-accounts|transactions`, `/finance/supplier-bills` (`supplierCompanyId`, items with `productId`), `/finance/reconciliations`, `/finance/ar|ap/aging`, `/finance/reports/*`, `/finance/close/checklist`. Tax (`tax-api`): `/tax/*` -> `/taxes/*` (`/taxes/withholdings`), now sends `x-organization-id`. Reconciliation item listing removed (the backend never had that route; the old wrapper called a 404). Cash-bank GL link `glAccountId` is no longer returned (separate table).

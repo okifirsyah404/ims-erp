@@ -319,7 +319,7 @@ export function dashboardProjectsQueryOptions(organizationId: string | null, ena
 export function dashboardSubscriptionsQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'subscriptions', organizationId] as const,
-		queryFn: () => getJson<TLicenseSummary>('/licenses/summary'),
+		queryFn: () => getJson<TLicenseSummary>('/projects/licenses/summary'),
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,

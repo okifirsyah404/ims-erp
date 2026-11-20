@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for service tickets (`/service-tickets`, ADR-0011 step 6c).
+ * API client for service tickets (`/tickets`, ADR-0011 step 6c).
  * The warranty is checked when a ticket is opened and stored on it.
  */
 
@@ -23,7 +23,8 @@ export type TTicketComment = {
 	authorName: string;
 	body: string;
 	visibility: 'internal' | 'customer';
-	createdAt: number;
+	/** ISO timestamp. */
+	createdAt: string;
 };
 
 export const TICKET_STATUS_VARIANT: Record<TTicketStatus, 'default' | 'secondary' | 'outline'> = {
@@ -107,7 +108,7 @@ export function ticketsQueryOptions(params: { page?: number; search?: string; st
 			for (const [key, value] of Object.entries(params)) {
 				if (value !== undefined && value !== '') search.set(key, String(value));
 			}
-			const envelope = (await request<TServiceTicket[]>(`/service-tickets${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TServiceTicket>;
+			const envelope = (await request<TServiceTicket[]>(`/tickets${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TServiceTicket>;
 			return { rows: envelope.data, pagination: envelope.pagination };
 		},
 	});
@@ -116,7 +117,7 @@ export function ticketsQueryOptions(params: { page?: number; search?: string; st
 export function ticketQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['tickets', 'detail', id] as const,
-		queryFn: async () => (await request<TServiceTicket>(`/service-tickets/${id}`)).data as TServiceTicket,
+		queryFn: async () => (await request<TServiceTicket>(`/tickets/${id}`)).data as TServiceTicket,
 		retry: false,
 	});
 }
@@ -124,7 +125,7 @@ export function ticketQueryOptions(id: string) {
 export function techniciansQueryOptions(enabled: boolean) {
 	return queryOptions({
 		queryKey: ['tickets', 'technicians'] as const,
-		queryFn: async () => (await request<{ userId: string; name: string }[]>('/service-tickets/technicians')).data as { userId: string; name: string }[],
+		queryFn: async () => (await request<{ userId: string; name: string }[]>('/tickets/technicians')).data as { userId: string; name: string }[],
 		enabled,
 	});
 }
@@ -133,24 +134,24 @@ export async function checkWarranty(query: { serialNumber?: string; projectId?: 
 	const search = new URLSearchParams();
 	if (query.serialNumber) search.set('serialNumber', query.serialNumber);
 	if (query.projectId) search.set('projectId', query.projectId);
-	return (await request<TWarrantyCheck>(`/service-tickets/warranty-check?${search}`)).data as TWarrantyCheck;
+	return (await request<TWarrantyCheck>(`/tickets/warranty-check?${search}`)).data as TWarrantyCheck;
 }
 
-export const createTicket = (input: TTicketInput) => send<TServiceTicket>('/service-tickets', 'POST', input);
-export const assignTicket = (id: string, assigneeUserId: string) => send<TServiceTicket>(`/service-tickets/${id}/assign`, 'POST', { assigneeUserId });
-export const startTicket = (id: string) => send<TServiceTicket>(`/service-tickets/${id}/start`, 'POST');
-export const resolveTicket = (id: string, input: { resolution: string; serviceCost: number }) => send<TServiceTicket>(`/service-tickets/${id}/resolve`, 'POST', input);
-export const reopenTicket = (id: string) => send<TServiceTicket>(`/service-tickets/${id}/reopen`, 'POST');
+export const createTicket = (input: TTicketInput) => send<TServiceTicket>('/tickets', 'POST', input);
+export const assignTicket = (id: string, assigneeUserId: string) => send<TServiceTicket>(`/tickets/${id}/assign`, 'POST', { assigneeUserId });
+export const startTicket = (id: string) => send<TServiceTicket>(`/tickets/${id}/start`, 'POST');
+export const resolveTicket = (id: string, input: { resolution: string; serviceCost: number }) => send<TServiceTicket>(`/tickets/${id}/resolve`, 'POST', input);
+export const reopenTicket = (id: string) => send<TServiceTicket>(`/tickets/${id}/reopen`, 'POST');
 export const closeTicket = (id: string, input: { confirmedByName: string; confirmationChannel: TTicketChannel }) =>
-	send<TServiceTicket>(`/service-tickets/${id}/close`, 'POST', input);
+	send<TServiceTicket>(`/tickets/${id}/close`, 'POST', input);
 
 export function ticketCommentsQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['tickets', 'comments', id] as const,
-		queryFn: async () => (await request<TTicketComment[]>(`/service-tickets/${id}/comments`)).data ?? [],
+		queryFn: async () => (await request<TTicketComment[]>(`/tickets/${id}/comments`)).data ?? [],
 	});
 }
 
 export async function addTicketComment(id: string, input: { body: string; visibility: 'internal' | 'customer' }) {
-	return (await request<TTicketComment>(`/service-tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(input) })).data;
+	return (await request<TTicketComment>(`/tickets/${id}/comments`, { method: 'POST', body: JSON.stringify(input) })).data;
 }

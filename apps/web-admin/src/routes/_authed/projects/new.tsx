@@ -28,7 +28,7 @@ function NewProjectPage() {
 	const deals = useQuery(openDealsQueryOptions());
 	const staff = useQuery(projectStaffQueryOptions());
 	const [dealSearch, setDealSearch] = useState('');
-	const [salesOrderId, setSalesOrderId] = useState('');
+	const [orderId, setOrderId] = useState('');
 	const [picUserId, setPicUserId] = useState('');
 	const [siteName, setSiteName] = useState('');
 	const [targetStartDate, setTargetStartDate] = useState('');
@@ -40,7 +40,7 @@ function NewProjectPage() {
 	const open = (deals.data ?? []).filter(
 		(deal) => !deal.hasProject && (!query || `${deal.code} ${deal.quotationCode} ${deal.title} ${deal.customerName}`.toLowerCase().includes(query)),
 	);
-	const deal = deals.data?.find((row) => row.id === salesOrderId);
+	const deal = deals.data?.find((row) => row.id === orderId);
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -54,7 +54,7 @@ function NewProjectPage() {
 					setSubmitting(true);
 					try {
 						const created = await createProject({
-							salesOrderId,
+							orderId,
 							picUserId,
 							siteName: siteName.trim() || null,
 							targetStartDate: targetStartDate || null,
@@ -90,7 +90,7 @@ function NewProjectPage() {
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='project-deal'>{t('projects:field.deal')}</FieldLabel>
-								<Select value={salesOrderId || 'none'} onValueChange={(value: string | null) => setSalesOrderId(value === null || value === 'none' ? '' : value)}>
+								<Select value={orderId || 'none'} onValueChange={(value: string | null) => setOrderId(value === null || value === 'none' ? '' : value)}>
 									<SelectTrigger id='project-deal' className='w-full'>
 										<SelectValue />
 									</SelectTrigger>
@@ -157,7 +157,7 @@ function NewProjectPage() {
 					<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects' })}>
 						{t('common:action.cancel')}
 					</Button>
-					<Button type='submit' disabled={submitting || !salesOrderId || !picUserId}>
+					<Button type='submit' disabled={submitting || !orderId || !picUserId}>
 						{t('projects:new.submit')}
 					</Button>
 				</div>

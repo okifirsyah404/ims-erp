@@ -205,8 +205,8 @@ function ContractDetailPage() {
 						{formatIdr(data.contractValue)} · {t(`licensing:cycle.${data.billingCycle}`)}
 					</Detail>
 					<Detail label={t('licensing:field.salesOrder')}>
-						{data.salesOrderId && (
-							<Link to='/sales/orders/$orderId' params={{ orderId: data.salesOrderId }} className='hover:underline'>
+						{data.orderId && (
+							<Link to='/sales/orders/$orderId' params={{ orderId: data.orderId }} className='hover:underline'>
 								{t('licensing:detail.openOrder')}
 							</Link>
 						)}
