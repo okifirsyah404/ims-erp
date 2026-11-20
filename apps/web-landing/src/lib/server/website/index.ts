@@ -1,6 +1,7 @@
 import { createErpWebsiteSource, type WebsiteSource } from "@/api/website";
 import { ERP_API_BASE_URL, ERP_API_TIMEOUT_MS, ERP_API_TOKEN, ERP_RESPONSE_ENVELOPE, WEB_DATA_SOURCE } from "astro:env/server";
 import { demoWebsiteSource } from "./demo";
+import { unwrapEnvelope } from "../envelope";
 import { erpRoutes } from "./erp-routes";
 
 // MODE (not DEV): the preview tooling may run `astro dev` with NODE_ENV=production.
@@ -14,7 +15,8 @@ function createSource(): WebsiteSource {
     token: ERP_API_TOKEN,
     routes: erpRoutes,
     timeoutMs: ERP_API_TIMEOUT_MS,
-    unwrap: ERP_RESPONSE_ENVELOPE === "data" ? (body) => (body as { data?: unknown } | undefined)?.data : undefined,
+    // The ERP always wraps success bodies as { data }; "none" opts out.
+    unwrap: ERP_RESPONSE_ENVELOPE === "none" ? undefined : unwrapEnvelope,
     defaultHeaders: { "X-Client": "entragate-website" },
   });
 }

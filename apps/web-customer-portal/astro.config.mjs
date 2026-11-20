@@ -37,16 +37,16 @@ export default defineConfig({
 
   env: {
     schema: {
-      // External NestJS ERP API root, e.g. https://erp.entragate.com/api/v1 (server-side only;
-      // the browser never talks to the ERP). Route paths live in src/lib/server/portal/erp-routes.ts.
+      // ERP backend root, e.g. https://erp.entragate.com (server-side only; the browser never
+      // talks to the ERP). Route paths (/customers/portal/v1/...) live in src/services/portal/erp-routes.ts.
       ERP_API_BASE_URL: envField.string({ context: "server", access: "secret", optional: true, url: true }),
       ERP_API_TIMEOUT_MS: envField.number({ context: "server", access: "secret", optional: true, int: true, min: 1000, max: 60000 }),
-      // "data" when the ERP wraps success bodies as { data: … } (common NestJS interceptor).
+      // "none" only for a backend that does not wrap success bodies as { data: … }; the ERP does, so unset = unwrap.
       ERP_RESPONSE_ENVELOPE: envField.enum({ context: "server", access: "secret", values: ["none", "data"], optional: true }),
       // Extra origins allowed to serve images (CSP img-src), comma separated, e.g. https://files.entragate.com.
       ERP_ASSET_ORIGINS: envField.string({ context: "server", access: "secret", optional: true }),
       // "demo" serves the design's fixture data; "erp" talks to the ERP. Defaults to
-      // demo in development and erp in production (see src/lib/server/portal/index.ts).
+      // demo in development and erp in production (see src/services/portal/index.ts).
       PORTAL_DATA_SOURCE: envField.enum({ context: "server", access: "secret", values: ["demo", "erp"], optional: true }),
       // Public website origin. Unset = http://localhost:4321 in development, https://entragate.com in production (src/lib/urls.ts).
       PUBLIC_WEB_URL: envField.string({ context: "client", access: "public", optional: true }),

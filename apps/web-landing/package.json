@@ -12,7 +12,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "test": "bun test"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.9",

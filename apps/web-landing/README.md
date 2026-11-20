@@ -16,10 +16,10 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
 | Variable | Purpose |
 | --- | --- |
 | `WEB_DATA_SOURCE` | `demo` (sample data, forms answered locally) or `erp`. Defaults to `demo` in development and `erp` in production. |
-| `ERP_API_BASE_URL` | External NestJS ERP API root. Must be https. |
-| `ERP_API_TOKEN` | Service token for server-to-server calls. Never sent to the browser. |
-| `ERP_API_TIMEOUT_MS`, `ERP_RESPONSE_ENVELOPE` | Request timeout; set the envelope to `data` if the ERP wraps bodies as `{ data }`. |
-| `ERP_RFQ_PATH` | Legacy RFQ path. Other routes live in `src/lib/server/website/erp-routes.ts`. |
+| `ERP_API_BASE_URL` | ERP backend (Elysia) root, e.g. `https://erp.example.com`. Must be https outside localhost. |
+| `ERP_API_TOKEN` | Website API key (`ewk_…`, sent as `Authorization: Bearer`). Create with `bun run scripts/create-website-api-key.ts <org-slug>` in `apps/backend`. Never sent to the browser. |
+| `ERP_API_TIMEOUT_MS`, `ERP_RESPONSE_ENVELOPE` | Request timeout; the ERP wraps bodies as `{ data }` and the site unwraps them unless the envelope is `none`. |
+| `ERP_RFQ_PATH` | Optional override of the RFQ route; the default is already mapped. |
 | `PUBLIC_CUSTOMER_URL` | Customer Portal origin (sign-in, tickets, orders). |
 | `PUBLIC_WHATSAPP_NUMBER` | Sales WhatsApp in international format without `+`. |
 
@@ -31,12 +31,19 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
 - **Catalog contract.** `CatalogSource` in `packages/api-client/src/services/catalog.ts`:
   `listProducts`, `getProduct`, `listCategories`, `getFacets`, `getStock`, `getPricing`,
   `listSolutions`, `search` and `priceCart` (zod-validated product payloads). The web
-  adapter lives in `src/lib/server/catalog/` — `catalogRoutes` is empty until the ERP
-  publishes paths. Demo mode uses the labelled sample (`demo.ts`, "Sample data" badge);
-  in ERP mode an unmapped route shows "catalog temporarily unavailable" instead of
-  falling back to sample data.
-- **Endpoints.** Set the relative paths in `erp-routes.ts`. Until then, production returns
+  adapter lives in `src/lib/server/catalog/`; `routes.ts` maps every operation to
+  `/inventory/public/v1/catalog/*` (backend `public-catalog.controller.ts`). Demo mode uses
+  the labelled sample (`demo.ts`, "Sample data" badge); in ERP mode an unavailable ERP
+  shows "catalog temporarily unavailable" instead of falling back to sample data.
+- **Endpoints.** `src/lib/server/website/routes.ts` maps `submitRfq`, `sendContactMessage`
+  and `requestDemo` to `/projects/public/v1/{rfq,contact,demo}`. Promo, cart, quote, order,
+  payment-status and tracking operations have no ERP endpoint yet: in ERP mode they return
   "not connected yet" messages instead of guessing endpoints.
+- **Known ERP gaps.** Product `rating` is always `0`; RFQs are not linked to the signed-in
+  customer (`linkedToAccount` is `false`, the website key is always used); product photos
+  only appear when the ERP's `APP_URL` is https (the photo is a redirect URL the browser loads).
+- **Tests.** `bun run test` feeds backend-shaped payloads through the ERP sources with a mocked
+  `fetch` (`src/lib/server/erp-source.test.ts`). Nothing in the suite talks to a live backend.
 - **Server-side only.** All calls run in Astro Actions, so the token never reaches the browser.
 - **Order pricing.** Prices are always recomputed on the server from the catalog
   (`computeTotals` in `src/data/checkout.ts`).
@@ -109,5 +116,4 @@ Design source: `designs/entragate-final.pen`. Photography is shipped as WebP in 
   proves ownership with a code emailed to the RFQ's address.
 - **ERP operations still to map** (`WebsiteRoutes`): `getCart`, `syncCart`, `quoteOrder`,
   `placeOrder` (customer token + Idempotency-Key), `getPaymentStatus` (`:orderNumber`),
-  `submitRfq` (accepts an optional customer token), plus the existing contact/demo/promo/tracking
-  routes and the catalog routes.
+  `applyPromo` and `trackOrder`. RFQ, contact, demo and the catalog are mapped.

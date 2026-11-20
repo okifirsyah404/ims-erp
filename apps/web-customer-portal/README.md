@@ -6,6 +6,7 @@ Astro SSR (Node standalone adapter) with React islands. It deploys independently
 ```sh
 bun run dev      # http://localhost:4322 (demo data)
 bun run build    # dist/server/entry.mjs + dist/client
+bun run test     # unit tests (ERP source against backend-shaped payloads)
 node dist/server/entry.mjs
 ```
 
@@ -13,28 +14,55 @@ node dist/server/entry.mjs
 
 | Variable | Scope | Purpose |
 | --- | --- | --- |
-| `PORTAL_DATA_SOURCE` | server | `demo` (design fixtures) or `erp`. Defaults to `demo` in development, `erp` otherwise. |
-| `ERP_API_BASE_URL` | server, secret | NestJS ERP API root, e.g. `https://erp.entragate.com/api/v1`. Must be https (http only for localhost). |
+| `PORTAL_DATA_SOURCE` | server | Data source switch: `demo` (design fixtures, nothing leaves the process) or `erp` (live ERP). Defaults to `demo` in development, `erp` otherwise. |
+| `ERP_API_BASE_URL` | server, secret | ERP backend **root**, e.g. `https://erp.entragate.com` or `http://localhost:3001`. The portal appends `/customers/portal/v1/...`. Must be https (http only for localhost). Required when the source is `erp`. |
 | `ERP_API_TIMEOUT_MS` | server | Per-request timeout (default 15000). |
-| `ERP_RESPONSE_ENVELOPE` | server | `data` if the ERP wraps success bodies as `{ data: … }`, else `none`. |
+| `ERP_RESPONSE_ENVELOPE` | server | The ERP wraps success bodies as `{ requestId, status, message, timestamp, data }` and the portal unwraps them by default; set `none` only for a backend that does not. |
 | `ERP_ASSET_ORIGINS` | server | Extra https origins allowed for images (CSP), comma separated. |
 | `PUBLIC_WEB_URL` | client | Marketing site, for "request a quote" links. |
 | `PUBLIC_SUPPORT_WHATSAPP`, `PUBLIC_SUPPORT_PHONE` | client | Enables the WhatsApp and call buttons. |
 | `HOST`, `PORT` | runtime | Node adapter listen address. |
 
 The build needs none of the ERP secrets. A missing ERP configuration surfaces on the first request.
+There is no service key: every call after sign-in carries the customer's own session token.
 
-## ERP integration (external NestJS API)
+### Running against the ERP
 
-The ERP repository is not modified from here. The portal consumes it **server-side only**:
-the browser talks exclusively to this origin (CSP `connect-src 'self'`), and ERP access and
-refresh tokens live in the server session. The cookie only carries an opaque session id.
+1. Start the backend (`apps/backend`) and set its `PORTAL_URL` to this portal's origin
+   (invitation and password-reset emails link to `<PORTAL_URL>/reset-password?token=…`).
+2. In the portal `.env`: `PORTAL_DATA_SOURCE=erp` and `ERP_API_BASE_URL=http://localhost:3001`.
+3. `bun run dev`. Demo mode still works by setting `PORTAL_DATA_SOURCE=demo` (the default
+   in development). In `erp` mode the "Demo mode" banner is hidden and nothing is fixture data.
 
-- **Contract.** `PortalSource` in `packages/api-client/src/services/portal.ts` lists every
-  operation the UI needs, with typed requests and responses.
-- **Endpoints.** `src/services/portal/erp-routes.ts` maps operations to relative paths
-  (`/portal/orders/:id`). It is empty until the ERP team publishes its routes. Unmapped
-  operations fail with "This feature isn't connected yet" instead of guessing.
+A staff user must first invite a customer (admin `Customer portal` card), or an individual
+signs up from `/register` (a 6-digit code is emailed). Business self sign-up is refused by the
+ERP (403, invitation only).
+
+## ERP integration (Elysia backend, `apps/backend`)
+
+The portal consumes the ERP **server-side only**: the browser talks exclusively to this origin
+(CSP `connect-src 'self'`). The customer's ERP access token (a Better Auth session token with
+no refresh token) lives in the server-side session; the cookie only carries an opaque id.
+
+- **Contract.** `PortalSource` in `src/api/portal.ts` lists every operation the UI needs, with
+  typed requests and responses. The backend answers in those shapes
+  (`apps/backend/src/app/customer/utils/portal-presenter.ts`), so only a few operations need
+  adapting (see below).
+- **Endpoints.** `src/services/portal/erp-routes.ts` maps operations to the backend's
+  `/customers/portal/v1/*` routes (reference: `docs/architecture/modules/customer-portal.md`).
+  Connected today: sign-in, sign-up with email code, password reset and change, logout,
+  account and members (invite/remove), home, badges, projects, tickets (list, detail, create,
+  messages) and devices with warranty. Everything else (orders, quotations, invoices and
+  payments, notifications, documents, profile summary, sites, settings, wishlist, device
+  registration, service booking, public order lookup, RFQs, onboarding) has **no backend
+  route yet**: it is left unmapped, so screens show `/coming-soon` or an empty section and
+  actions answer "This feature isn't connected yet" instead of guessing.
+- **Adaptations in `src/api/portal.ts`** (the backend's status codes differ from the generic
+  adapter): wrong/expired sign-up code (400) → `verifyEmail` returns `null`; invalid reset link
+  (400) → `resetPassword` returns `false`; wrong current password (400) → `changePassword`
+  returns `false`, while a 401 ends the session; phone-only password reset is not supported
+  (email only); a device id `<certificate>:<line>` keeps its colon in the URL.
+  Every request sends `Accept-Language: en` (the ERP localises labels and error messages).
 - **Domain services.** `src/services/index.ts` groups the contract for pages and actions:
   `authService`, `customerService` (home, badges, profile, account, notifications,
   documents, wishlist), `ordersService`, `projectsService`, `quotationsService`,
@@ -51,7 +79,7 @@ refresh tokens live in the server session. The cookie only carries an opaque ses
   status only (no prices, addresses or contacts). It is rate limited per client address
   (20 lookups / 10 min, in memory). The ERP endpoint should also require something the
   customer holds (AWB or email) and apply its own rate limit before going live.
-- **Transport** (`packages/api-client/src/client.ts`):
+- **Transport** (`src/api/client.ts`):
   - Bearer token on every request.
   - Requests are pinned to the base URL's origin and path (no absolute or `..` paths).
   - `redirect: "error"`, `cache: "no-store"`, timeouts.
@@ -61,13 +89,14 @@ refresh tokens live in the server session. The cookie only carries an opaque ses
   are validated with zod (`portal-schemas.ts`). A mismatch raises `ErpContractError`
   instead of trusting the data. URLs rendered from ERP data pass through
   `src/lib/safe-url.ts`.
-- **NestJS errors.** `{ statusCode, message }` bodies become `ApiError.messages`.
+- **ERP errors.** The error envelope `{ requestId, status, message, data: null, errors[] }`
+  becomes `ApiError` (`messages` carries the translated `message`).
   - 400/409/422 messages are shown to the user.
   - Other failures are logged with the request id and shown as a generic message.
-  - Login failures (401/423) map to the "attempts left" and "account locked" states.
+  - Login failures (401/423) map to the "incorrect password" and "account locked" states.
 - **Sessions.**
-  - Access tokens refresh one minute before expiry through `refreshSession`. Concurrent
-    requests share a single refresh.
+  - The ERP issues one 7-day session token and no refresh token (`refreshSession` is
+    intentionally unmapped). When it expires the user is sent back to `/login`.
   - A 401 on any authenticated call signs the user out and returns them to `/login`
     with a "session ended" notice.
 

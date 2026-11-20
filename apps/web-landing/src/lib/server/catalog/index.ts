@@ -1,19 +1,13 @@
-import { createErpCatalogSource, type CatalogRoutes, type CatalogSource } from "@/api/catalog";
+import { createErpCatalogSource, type CatalogSource } from "@/api/catalog";
 import { ERP_API_BASE_URL, ERP_API_TIMEOUT_MS, ERP_API_TOKEN, ERP_RESPONSE_ENVELOPE } from "astro:env/server";
+import { unwrapEnvelope } from "../envelope";
 import { websiteMode } from "../website";
 import { demoCatalogSource } from "./demo";
+import { catalogRoutes } from "./routes";
 
-/**
- * ERP catalog endpoints, relative to ERP_API_BASE_URL. Intentionally empty until the ERP
- * team publishes them (the ERP repository is not modified from here). Unmapped operations
- * raise CatalogNotConfiguredError, which the catalog and search show as "unavailable".
- *
- * Example:
- *   listProducts: "/public/catalog/products",
- *   getProduct: "/public/catalog/products/:slug",
- *   search: "/public/catalog/search",
- */
-export const catalogRoutes: CatalogRoutes = {};
+// ERP catalog endpoints live in ./routes (unmapped operations raise
+// CatalogNotConfiguredError, which the catalog and search show as "unavailable").
+export { catalogRoutes };
 
 function createSource(): CatalogSource {
   if (websiteMode === "demo") return demoCatalogSource;
@@ -23,7 +17,8 @@ function createSource(): CatalogSource {
     token: ERP_API_TOKEN,
     routes: catalogRoutes,
     timeoutMs: ERP_API_TIMEOUT_MS,
-    unwrap: ERP_RESPONSE_ENVELOPE === "data" ? (body) => (body as { data?: unknown } | undefined)?.data : undefined,
+    // The ERP always wraps success bodies as { data }; "none" opts out.
+    unwrap: ERP_RESPONSE_ENVELOPE === "none" ? undefined : unwrapEnvelope,
     defaultHeaders: { "X-Client": "entragate-website" },
   });
 }

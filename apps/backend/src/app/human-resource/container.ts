@@ -50,6 +50,12 @@ export function registerHumanResource(container: DependencyContainer): void {
 	container.register(EMPLOYEE_REPOSITORY_TOKEN, {
 		useClass: EmployeeRepository,
 	});
+	container.register(HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN, {
+		useClass: HumanResourceCodeNumberingRepository,
+	});
+	container.register(HUMAN_RESOURCE_NUMBERING_SERVICE_TOKEN, {
+		useClass: HumanResourceNumberingService,
+	});
 	container.register(EMPLOYEE_SERVICE_TOKEN, {
 		useClass: EmployeeService,
 	});

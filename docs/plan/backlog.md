@@ -114,6 +114,8 @@ module).
 | ERP-0087 | DB refactor: audit + automation reference re-point, webhook URL | grilled design 2026-11-19 (Q1-Q36), `docs/plan/database-refactor/` | backend `audit`/`automation`, web-admin | `modules/audit-automation.md` exit | ERP-0082, ERP-0083 | A | 0.5 | in-progress (backend done 2026-11-19: outbox aggregate types re-pointed, WhatsApp webhook exported to the webhook module; web-admin open) |
 | ERP-0088 | DB refactor cutover: baseline migrations, seeders, URL aliases, doc sync | grilled design 2026-11-19 (Q1-Q36), `docs/plan/database-refactor/` | backend `database`, docs | `99-cutover.md`; migrate + seed twice on disposable DB; lint/test/typecheck green | ERP-0071..ERP-0087, ERP-0089 | A | 3 | in-progress (backend baseline + seeders verified 2026-11-19; aliases, provider URLs, frontend open) |
 | ERP-0089 | DB refactor: `webhook` module without a schema (`/webhooks/<provider>`, delegates to payment/automation exported services, old-path aliases) | review of the plan 2026-11-19 (Q38), `docs/plan/database-refactor/modules/webhook.md` | backend `webhook`, `payment`, `automation` | `modules/webhook.md` exit; `webhook` imports no `@drizzle/schemas/*` | ERP-0081, ERP-0087 | A | 1 | in-progress (backend done 2026-11-19: `/webhooks/<provider>` plus the legacy aliases, `ExportedPaymentWebhookService` and `ExportedWhatsappWebhookService`, no schema import; provider dashboards at cutover) |
+| ERP-0090 | web-admin API wrappers and screens on the ADR-0024 backend (inventory, sale, procurement, finance, tax, payment gateway page, project, ticket, human-resource, document) | ADR-0024 follow-up, `progress.md` 2026-11-19/20 frontend slices 1-5 | web-admin, locales | tsc `-p tsconfig.app.json`, lint, test, build green; endpoints checked by reading controllers; smoke test against a live backend still open | ERP-0071..ERP-0089 | A | 3 | in-progress (code done, live UI check open) |
+| ERP-0091 | Connect web-landing (public catalog + RFQ/contact/demo) and web-customer-portal (`/customers/portal/v1`) to the ERP API | `progress.md` 2026-11-20 slice 6 | web-landing, web-customer-portal | mocked-fetch tests (landing 23, portal 59), typecheck, build; live backend check open; backend gaps listed in progress | ERP-0090 | B | 2 | in-progress (code done, live check open) |
 
 Original commercial mapping (`pending`):
 
@@ -126,4 +128,3 @@ Original commercial mapping (`pending`):
 Overall effort above (≈50d of pair-days across A+B) intentionally exceeds the
 30-day window: it is the dependency-based forecast of remaining work, not a
 promise. `plan.md` scores the variance instead of compressing tasks.
-

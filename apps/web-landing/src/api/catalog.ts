@@ -175,12 +175,13 @@ export function createErpCatalogSource(config: ErpCatalogConfig): CatalogSource 
         throw error;
       }
     },
-    listCategories: () => client.get(path("listCategories")),
-    getFacets: () => client.get(path("getFacets")),
-    getStock: (slugs) => client.get(path("getStock"), { query: { slug: slugs } }),
-    getPricing: (slugs) => client.get(path("getPricing"), { query: { slug: slugs } }),
-    listSolutions: () => client.get(path("listSolutions")),
-    search: (q, limit) => client.get(path("search"), { query: { q, limit } }),
-    priceCart: (lines) => client.post(path("priceCart"), { lines }),
+    // `async` so an unmapped route rejects instead of throwing synchronously.
+    listCategories: async () => client.get(path("listCategories")),
+    getFacets: async () => client.get(path("getFacets")),
+    getStock: async (slugs) => client.get(path("getStock"), { query: { slug: slugs } }),
+    getPricing: async (slugs) => client.get(path("getPricing"), { query: { slug: slugs } }),
+    listSolutions: async () => client.get(path("listSolutions")),
+    search: async (q, limit) => client.get(path("search"), { query: { q, limit } }),
+    priceCart: async (lines) => client.post(path("priceCart"), { lines }),
   };
 }
