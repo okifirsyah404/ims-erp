@@ -142,6 +142,35 @@ export const publicTrackSchema = z.object({
 	contact: z.string().trim().min(4).max(160),
 });
 
+/** Account pages (ERP-0075). */
+export const portalPersonalSchema = z.object({
+	name: z.string().trim().min(1).max(120),
+	phone: z
+		.string()
+		.trim()
+		.min(6)
+		.max(30)
+		.regex(/^[0-9+()\-\s]+$/),
+	jobTitle: z.string().trim().max(100).optional(),
+});
+
+export const portalSettingsSchema = z.object({
+	notifications: z.object({ push: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }).partial().optional(),
+	/** Face ID and two-step are not supported by the ERP; sent values are ignored. */
+	security: z.object({ faceId: z.boolean(), twoStep: z.boolean() }).partial().optional(),
+	preferences: z.object({ language: z.enum(['en', 'id']), currency: z.literal('IDR'), appearance: z.enum(['light', 'system']) }).partial().optional(),
+});
+
+export const portalOnboardingSchema = z.object({
+	siteAddress: z.string().trim().min(5).max(500),
+	invites: z
+		.array(z.object({ email: z.string().trim().toLowerCase().email().max(254), role: z.enum(['approver', 'finance', 'viewer']) }))
+		.max(10)
+		.default([]),
+});
+
+export const portalDocumentQuerySchema = z.object({ folder: z.enum(['invoices', 'quotations', 'warranty', 'drawings']).optional() });
+
 export const portalOrderNumberParamSchema = z.object({ orderNumber: z.string().trim().min(1).max(64) });
 
 export type TPortalCheckout = z.output<typeof portalCheckoutSchema>;

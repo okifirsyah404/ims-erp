@@ -46,6 +46,20 @@ export class CustomerContactNotFoundError extends AppError {
 	}
 }
 
+/** The address (site) is not the customer's or was removed (ERP-0075). */
+export class CustomerAddressNotFoundError extends AppError {
+	constructor() {
+		super(404, 'crm.addressNotFound', 'Site not found');
+	}
+}
+
+/** Too many installation sites on one customer (ERP-0075). */
+export class CustomerSiteLimitError extends AppError {
+	constructor(max: number) {
+		super(422, 'crm.siteLimit', `At most ${max} sites per customer`, { max });
+	}
+}
+
 /** The lead does not exist, is archived, or is not visible to the caller. */
 export class LeadNotFoundError extends AppError {
 	constructor() {

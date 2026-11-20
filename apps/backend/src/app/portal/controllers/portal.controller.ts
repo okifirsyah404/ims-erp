@@ -4,26 +4,34 @@ import { requestBodyDoc } from '@http/openapi';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
-import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { customerSiteSchema } from '@app/crm/contracts/customer-address.contract';
+import { PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SALES_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import { quotationSummary } from '../utils/portal-sales-presenter';
 import { portalMemberInviteSchema, portalSignupSchema } from '@app/user/contracts/portal-account.contract';
 import {
 	portalChangePasswordSchema,
+	portalDocumentQuerySchema,
 	portalIdParamSchema,
 	portalLoginSchema,
 	portalMessageSchema,
+	portalOnboardingSchema,
 	portalPasswordConfirmSchema,
 	portalPasswordResetSchema,
+	portalPersonalSchema,
 	portalProductParamSchema,
 	portalResendSchema,
+	portalSettingsSchema,
 	portalTicketSchema,
 	portalVerifySchema,
 } from '../contracts/portal.contract';
 import {
 	accountSettings,
 	companyMember,
+	companySite,
+	documentLibrary,
 	deviceSummary,
 	portalUser,
+	profileSummary,
 	projectDetail,
 	projectSummary,
 	type TPresenter,
@@ -157,6 +165,7 @@ export class PortalController {
 	static plugin() {
 		const auth = container.resolve(PORTAL_AUTH_SERVICE_TOKEN);
 		const service = container.resolve(PORTAL_SERVICE_TOKEN);
+		const pages = container.resolve(PORTAL_ACCOUNT_PAGES_SERVICE_TOKEN);
 		const sales = container.resolve(PORTAL_SALES_SERVICE_TOKEN);
 		// A malformed id is answered 404 like an unknown one: the portal reads 404 as "not found".
 		const id = (params: unknown) => {
@@ -195,10 +204,96 @@ export class PortalController {
 			.get(
 				'/account',
 				async (ctx) => {
-					const [customer, members] = await Promise.all([service.customer(ctx.portal), service.members(ctx.portal)]);
-					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members));
+					const [customer, members, contact, sites, preferences] = await Promise.all([
+						service.customer(ctx.portal),
+						service.members(ctx.portal),
+						pages.contactOf(ctx.portal),
+						pages.listSites(ctx.portal),
+						pages.preferencesOf(ctx.portal),
+					]);
+					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members, { contact, sites, preferences }));
 				},
-				{ portal: true, detail: { summary: 'Account', description: 'Account, company and the members (logins) of the customer' } },
+				{
+					portal: true,
+					detail: { summary: 'Account', description: 'Account, company, members (logins), installation sites and the login settings of the customer' },
+				},
+			)
+			.patch(
+				'/account/personal',
+				async (ctx) => {
+					await pages.updatePersonal(ctx.portal, portalPersonalSchema.parse(ctx.body), ctx.request.headers);
+					return noContent();
+				},
+				{
+					portal: true,
+					detail: { summary: 'Update personal data', description: 'Name of the login; phone and job title on the CRM contact behind it (ERP-0075)', ...requestBodyDoc(portalPersonalSchema) },
+				},
+			)
+			.patch(
+				'/account/settings',
+				async (ctx) => {
+					await pages.updateSettings(ctx.portal, portalSettingsSchema.parse(ctx.body));
+					return noContent();
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Update settings',
+						description: 'Notification channels and language of this login (ERP-0075); face ID and two-step are not supported and ignored',
+						...requestBodyDoc(portalSettingsSchema),
+					},
+				},
+			)
+			.post(
+				'/account/sites',
+				async (ctx) => ctx.status(201, created(companySite(await pages.saveSite(ctx.portal, customerSiteSchema.parse(ctx.body))))),
+				{
+					portal: true,
+					detail: { summary: 'Add an installation site', description: 'Owners and approvers (403 otherwise); the first site becomes primary; at most 30', ...requestBodyDoc(customerSiteSchema) },
+				},
+			)
+			.patch(
+				'/account/sites/:id',
+				async (ctx) => ok(companySite(await pages.saveSite(ctx.portal, customerSiteSchema.parse(ctx.body), id(ctx.params)))),
+				{ portal: true, detail: { summary: 'Update an installation site', description: 'Owners and approvers; 404 when not this customer site', ...requestBodyDoc(customerSiteSchema) } },
+			)
+			.delete(
+				'/account/sites/:id',
+				async (ctx) => {
+					await pages.removeSite(ctx.portal, id(ctx.params));
+					return noContent();
+				},
+				{ portal: true, detail: { summary: 'Remove an installation site', description: 'Owners and approvers; 404 when not this customer site' } },
+			)
+			.post(
+				'/onboarding',
+				async (ctx) => ok(await pages.completeOnboarding(ctx.portal, portalOnboardingSchema.parse(ctx.body))),
+				{
+					portal: true,
+					detail: {
+						summary: 'Finish onboarding',
+						description: 'The first installation site (when there is none) and colleague invites; an invite that fails does not stop the others (owners and approvers)',
+						...requestBodyDoc(portalOnboardingSchema),
+					},
+				},
+			)
+			.get('/profile', async (ctx) => ok(profileSummary(presenter(ctx), await pages.profile(ctx.portal))), {
+				portal: true,
+				detail: { summary: 'Profile figures', description: 'Counts and amounts for the profile page (ERP-0075)' },
+			})
+			.get(
+				'/documents',
+				async (ctx) => {
+					const { folder } = portalDocumentQuerySchema.parse(ctx.query);
+					return ok(documentLibrary(presenter(ctx), await pages.documents(ctx.portal), folder));
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Document library',
+						description: 'Invoices and quotations (listed), warranty certificates and the customer-visible project files (with a short-lived link), newest first; ?folder= filters',
+					},
+				},
 			)
 			.post(
 				'/account/members',

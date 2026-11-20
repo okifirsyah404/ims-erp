@@ -141,6 +141,45 @@ export const customerContacts = crmSchema.table(
 	(table) => [index('customer_contacts_customer_id_idx').on(table.customerId)],
 );
 
+export const CUSTOMER_ADDRESS_KINDS = ['billing', 'shipping', 'service', 'site', 'other'] as const;
+export type CustomerAddressKind = (typeof CUSTOMER_ADDRESS_KINDS)[number];
+
+/**
+ * Structured address of a customer (company-wide like the customer, ERP-0075).
+ * The customer portal manages kind `site` (installation sites and their PIC).
+ */
+export const customerAddresses = crmSchema.table(
+	'customer_addresses',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		customerId: uuid('customer_id')
+			.notNull()
+			.references(() => customers.id, { onDelete: 'cascade' }),
+		kind: text('kind').$type<CustomerAddressKind>().notNull().default('billing'),
+		label: text('label'),
+		contactName: text('contact_name'),
+		contactPhone: text('contact_phone'),
+		addressLine: text('address_line'),
+		/** Logical references to location.* — cross-module FKs omitted (ADR-0014, nullable). */
+		villageId: uuid('village_id'),
+		districtId: uuid('district_id'),
+		regencyId: uuid('regency_id'),
+		provinceId: uuid('province_id'),
+		postalCode: varchar('postal_code', { length: 10 }),
+		isPrimary: boolean('is_primary').notNull().default(false),
+		...timestamps,
+	},
+	(table) => [
+		index('customer_addresses_customer_id_idx').on(table.customerId),
+		index('customer_addresses_kind_idx').on(table.customerId, table.kind, table.isPrimary),
+		check('customer_addresses_kind_check', sql`${table.kind} IN ('billing', 'shipping', 'service', 'site', 'other')`),
+	],
+);
+
+export type TCustomerAddressSelect = typeof customerAddresses.$inferSelect;
+
 /* ------------------------------------------------------------------------ *
  * crm.leads
  * ------------------------------------------------------------------------ */

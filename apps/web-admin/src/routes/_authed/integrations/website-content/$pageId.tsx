@@ -13,7 +13,8 @@ import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/fiel
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
-import { cleanContent, ContentFields, useFieldLabel } from '@/components/website/content-form';
+import { ContentFields } from '@/components/website/content-form';
+import { cleanContent, useFieldLabel } from '@/lib/website-content-form';
 import { usePermission } from '@/lib/use-permission';
 import {
 	createWebPage,

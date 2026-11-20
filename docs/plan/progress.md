@@ -12,6 +12,89 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-20 - ERP-0075: customer portal account pages
+
+Same branch, after ERP-0074 (`e64c86af`).
+
+**User decisions (2026-11-20).** Company name / NPWP / industry from the
+portal become a request reviewed by sales (ERP-0076); sites build the
+designed `crm.customer_addresses`; customer notifications come from ERP
+events (ERP-0077); settings store notification channels and language only
+(face ID and two-step shown off).
+
+**Gate 1 (`docs/database/`).** Read: `docs.dbml` CRM (`customers`,
+`customer_contacts`, `customer_addresses`), Identity
+(`portal_identities`, `user_preferences`), `module-ownership.md` §1 and
+§6, `integrity-and-consistency.md` (addresses, soft delete),
+`logical-references.md`. Skipped: `data-dictionary.md`,
+`implementation-phases.md` (the addresses step is the one being built).
+
+**Gate 2 (manual `grill-me` fallback).**
+- `crm.customer_addresses` was designed with `organization_id text NOT
+  NULL`, which breaks two rules at once: customers are company-wide
+  (ADR-0011) and a cross-module reference must be nullable (ADR-0014). The
+  column is dropped in `docs.dbml` first (index now `(customer_id, kind,
+  is_primary)`); the location ids stay nullable logical references.
+- Ownership: CRM owns addresses (`CustomerAddressService`), Identity owns
+  `user_preferences` (`UserPreferenceService`), the portal module composes
+  (`PortalAccountPagesService`) with the guard's customer, user and contact.
+- Rules: the portal edits kind `site` only; owners and approvers manage
+  sites and onboarding; one primary per customer and kind, first site primary,
+  an update keeps the flag, removing the primary promotes the oldest; 30 sites.
+- Personal data: the name lives on the login (Better Auth `updateSelf` with
+  the request's session), phone and job title on the CRM contact.
+- Preferences: text values per key (`portal.notify.email|whatsapp|push`,
+  `portal.language`), defaults email on / WhatsApp, push off.
+- Documents: built from what exists — issued invoices and sent SPHs are
+  listed (no file link yet), warranty certificates, project files with their
+  short-lived link.
+
+**Changes.**
+- `docs.dbml` (addresses fixed, `user_preferences` note and live-row
+  unique); references regenerated (545); validate OK. Drizzle
+  `customerAddresses` (crm) and `user-preference.schema.ts` (auth);
+  migration `20261120061331_erp0075_addresses_preferences` (drizzle-kit,
+  inspected; header).
+- CRM: address contract, repository, `CustomerAddressService`, errors
+  `crm.addressNotFound` / `crm.siteLimit` (en/id), `GET
+  /customers/:id/addresses` (`customer:read`).
+- Identity: `UserPreferenceRepository` / `UserPreferenceService`.
+- Portal: `PortalAccountPagesService`; routes `/profile`,
+  `/account/personal`, `/account/settings`, `/account/sites[/:id]`,
+  `/onboarding`, `/documents`; `GET /account` now returns the contact's
+  phone and job title, the sites and the saved settings; presenters
+  `companySite`, `profileSummary`, `documentLibrary`; labels
+  `portal.documents.folder.*` (en/id).
+- Fix: `dateLabel` read any string as a business date, so a cached ISO
+  timestamp gave "date value is not finite"; full timestamps now parse as
+  moments and an invalid date shows nothing.
+- Web admin: customer page **Addresses & sites** card (read-only, query in
+  `lib/customer-address-api.ts`), `crm`
+  labels en/id, dead-key prefix for address kinds.
+- Portal app: `getProfile`, `updatePersonal`, `updateSettings`,
+  `saveSite`, `deleteSite`, `completeOnboarding`, `listDocuments` mapped.
+
+**Verification.**
+- `POSTGRES_DB=ims_erp_scratch NODE_ENV=development bun run
+  drizzle:migrate-reset` and `NODE_ENV=development bun run drizzle:migrate`.
+- Unit: `portal-account-pages.test.ts` 8 new; backend typecheck 0; web-admin
+  `tsc -b` 0; locales 98 pass.
+- Live (dev portal login, re-signed after the reset cleared Redis): add site
+  (also with the adapter's trailing slash) 201 primary; second site primary
+  → the first loses it; update without `primary` (after the fix) keeps the
+  flag; removing the primary promoted the remaining site; delete twice → 200
+  then 404; personal data → login name and contact phone/job title read back;
+  settings → WhatsApp on and language `id` read back, two-step stays off;
+  profile 200 (after the date fix); documents 4 (1 invoice, 3 SPHs; warranty
+  folder empty); onboarding 200; staff `GET /customers/:id/addresses` as
+  marketing 200 with the portal's site. Probe sites removed and WhatsApp
+  switched back off afterwards.
+- Not done: browser walk-through of the portal account pages and the web
+  admin card; invoice and SPH files are listed without a download link.
+
+**Next executable task:** ERP-0076 company-data change requests from the
+portal, reviewed by sales.
+
 ## 2026-11-20 - ERP-0074: website account cart and wishlist
 
 Same branch, after ERP-0073 (`17e58e4a`).

@@ -594,9 +594,9 @@ Table auth.user_preferences {
   preference_value text
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Per user UI and behaviour preferences. Server side truth stays in the owning module."
+  Note: "Per user UI and behaviour preferences (ERP-0075 builds it for portal logins: notification channels and language). Server side truth stays in the owning module. Keys are dotted names, values text (booleans as 'true'/'false')."
   Indexes {
-    (user_id, preference_key) [unique, name: 'user_preferences_key_uq']
+    (user_id, preference_key) [unique, name: 'user_preferences_key_uq', note: 'live rows only: WHERE deleted_at IS NULL']
   }
 }
 
@@ -1118,7 +1118,6 @@ Table crm.customer_contacts {
 
 Table crm.customer_addresses {
   id uuid [pk, default: `uuidv7()`]
-  organization_id text [not null, note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   customer_id uuid [not null]
   kind text [not null, default: 'billing']
   label text
@@ -1134,10 +1133,10 @@ Table crm.customer_addresses {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Structured Indonesian address of a customer. The kind discriminator replaces a separate billing and shipping table."
+  Note: "Structured Indonesian address of a customer, company-wide like the customer (ADR-0011; ERP-0075 dropped the designed organization column). The kind discriminator replaces a separate billing and shipping table. The customer portal manages kind 'site' (installation sites with their PIC); at most one live primary per customer and kind (service rule)."
   Indexes {
     customer_id [name: 'customer_addresses_customer_id_idx']
-    (organization_id, kind, is_primary) [name: 'customer_addresses_kind_idx']
+    (customer_id, kind, is_primary) [name: 'customer_addresses_kind_idx']
   }
   Checks {
     `kind IN ('billing', 'shipping', 'service', 'site', 'other')`

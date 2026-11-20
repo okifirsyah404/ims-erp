@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { WEBSITE_CONTENT_TYPES, websiteContentFieldKeys } from '@ims-erp/common';
 import { en as bundles } from '@ims-erp/locales';
-import { cleanContent } from '../../src/components/website/content-form';
+import { cleanContent } from '../../src/lib/website-content-form';
 
 /**
  * The website content editor (ERP-0071) renders its form from the shared

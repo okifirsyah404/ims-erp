@@ -89,6 +89,8 @@ const DYNAMIC_PREFIXES = [
 	'settings:numbering.reset.',
 	// Customer type and status labels come from server values.
 	'crm:customerType.',
+	// Customer address kinds (ERP-0075).
+	'crm:addresses.kind.',
 	'crm:customerStatus.',
 	'crm:leadStatus.',
 	'crm:leadSource.',
@@ -197,6 +199,8 @@ const DYNAMIC_PREFIXES = [
 	'portal.sales.order.',
 	// Website RFQ status labels compose `portal.rfq.status.${status}` (ERP-0072).
 	'portal.rfq.status.',
+	// Document library folder labels (ERP-0075).
+	'portal.documents.folder.',
 	// Order tracking labels compose the stage name (ERP-0073).
 	'tracking.stage.',
 	'tracking.text.',

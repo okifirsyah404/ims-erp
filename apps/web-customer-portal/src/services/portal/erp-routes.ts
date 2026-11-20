@@ -12,8 +12,9 @@ import { type PortalRoutes } from "@/api/portal";
  * show as an error and actions as "This feature isn't connected yet":
  * - `refreshSession` on purpose: ERP sessions are Better Auth's 7-day sessions and
  *   there is no refresh token; the portal signs the user out when they expire.
- * - not built in the ERP yet: onboarding, notifications, device lookup/registration,
- *   service booking, profile, documents, personal/company/settings updates and sites.
+ * - not built in the ERP yet: notifications (ERP-0077) and company updates (a change
+ *   request reviewed by sales, ERP-0076).
+ * - deferred by the owner (2026-11-20): device lookup/registration and service booking.
  *
  * Ordering itself happens on the website (catalog + checkout, user decision 2026-11-19);
  * the order arrives here as a quotation "in review" (ERP-0070).
@@ -69,6 +70,15 @@ export const erpRoutes: PortalRoutes = {
 
   // Sign-in-free order lookup (ERP-0073): minimal status, no customer, prices or addresses
   lookupPublicOrder: "/public/v1/orders/:id/status",
+
+  // Account pages (ERP-0075)
+  getProfile: "/portal/v1/profile",
+  updatePersonal: "/portal/v1/account/personal",
+  updateSettings: "/portal/v1/account/settings",
+  saveSite: "/portal/v1/account/sites/:id",
+  deleteSite: "/portal/v1/account/sites/:id",
+  completeOnboarding: "/portal/v1/onboarding",
+  listDocuments: "/portal/v1/documents",
 
   // Products saved on the website (ERP-0074)
   listWishlist: "/portal/v1/wishlist",

@@ -12,6 +12,7 @@ import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-
 import { Switch } from '@ims-erp/ui/components/switch';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { toast } from '@/components/toast';
+import { useFieldLabel } from '@/lib/website-content-form';
 import { type TWebAsset, uploadWebAsset, webAssetsQueryOptions } from '@/lib/website-content-api';
 
 /**
@@ -21,32 +22,6 @@ import { type TWebAsset, uploadWebAsset, webAssetsQueryOptions } from '@/lib/web
  */
 
 type TValue = Record<string, unknown>;
-
-/** Label of a registry field (`integrations:website.content.field.<key>`). */
-export function useFieldLabel() {
-	const { t } = useTranslation('integrations');
-	return (key: string) => t(`website.content.field.${key}` as never) as string;
-}
-
-/** Drops empty strings, empty lists and empty groups (recursively) and trims text. */
-export function cleanContent(value: unknown): unknown {
-	if (typeof value === 'string') {
-		const trimmed = value.trim();
-		return trimmed === '' ? undefined : trimmed;
-	}
-	if (Array.isArray(value)) {
-		const entries = value.map(cleanContent).filter((entry) => entry !== undefined);
-		return entries.length === 0 ? undefined : entries;
-	}
-	if (value && typeof value === 'object') {
-		const entries = Object.entries(value).flatMap(([key, entry]) => {
-			const cleaned = cleanContent(entry);
-			return cleaned === undefined ? [] : [[key, cleaned] as const];
-		});
-		return entries.length === 0 ? undefined : Object.fromEntries(entries);
-	}
-	return value ?? undefined;
-}
 
 export function ContentFields({
 	fields,

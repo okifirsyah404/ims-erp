@@ -1,7 +1,7 @@
 import { container } from 'tsyringe';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
-import { CUSTOMER_SERVICE_TOKEN } from '../constants/di';
+import { CUSTOMER_ADDRESS_SERVICE_TOKEN, CUSTOMER_SERVICE_TOKEN } from '../constants/di';
 import {
 	contactParamSchema,
 	createCustomerSchema,
@@ -23,6 +23,7 @@ import {
 export class CustomerController {
 	static plugin() {
 		const service = container.resolve(CUSTOMER_SERVICE_TOKEN);
+		const addresses = container.resolve(CUSTOMER_ADDRESS_SERVICE_TOKEN);
 
 		return domainPlugin({ name: 'crm-customers', prefix: '/customers', tags: ['CRM'], guards: 'erp' })
 			.get('', async ({ query }) => okPaginated(await service.list(customerListQuerySchema.parse(query))), {
@@ -53,6 +54,14 @@ export class CustomerController {
 				erp: { permission: ['customer:archive'] },
 				detail: { description: 'Reactivates a customer' },
 			})
+			.get(
+				'/:id/addresses',
+				async ({ params }) => ok(await addresses.list(idParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['customer:read'] },
+					detail: { description: 'Addresses of a customer, primary first; installation sites (kind site) are kept by the customer in the portal (ERP-0075)' },
+				},
+			)
 			.post(
 				'/:id/contacts',
 				async ({ params, body, status }) =>

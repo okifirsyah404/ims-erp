@@ -113,13 +113,18 @@ Services: `PortalSalesService` (portal) over `CustomerSalesService`
 | website `getCart` / `syncCart` | `GET /portal/v1/cart`, `POST /portal/v1/cart/sync` | as the signed-in customer (ERP-0074): `{ lines[{productSlug, quantity, options?}], mode: merge|replace }` → the saved cart; merge keeps the larger quantity per product + options; unknown/unpublished products dropped; 50 lines |
 | website `syncWishlist` | `POST /portal/v1/wishlist/sync` | `{ slugs[], mode }` → saved slugs (100 max); merge once after sign-in, replace after each heart toggle |
 | `listWishlist` / `removeWishlistItem` | `GET /portal/v1/wishlist`, `DELETE /portal/v1/wishlist/:id` | saved products still published (`WishlistItem`: name, category, price label, stock, image); removing another account's item → 404 |
+| `getProfile` | `GET /portal/v1/profile` | counts and amounts for the profile page (orders, projects, devices, tickets, SPHs awaiting, outstanding, sites, warranties expiring in 60 days, documents, members, approvers) — ERP-0075 |
+| `updatePersonal` | `PATCH /portal/v1/account/personal` | `{ name, phone, jobTitle? }`: the name on the login (Better Auth), phone and job title on the CRM contact behind it |
+| `updateSettings` | `PATCH /portal/v1/account/settings` | notification channels and language per login (`auth.user_preferences`); face ID / two-step not supported (ignored, shown off) |
+| `saveSite` / `deleteSite` | `POST /portal/v1/account/sites`, `PATCH` / `DELETE /account/sites/:id` | installation sites (`crm.customer_addresses` kind `site`): owners and approvers (403 otherwise); first site primary, removing the primary promotes the oldest; 30 max |
+| `completeOnboarding` | `POST /portal/v1/onboarding` | `{ siteAddress, invites[] }`: the first site (when none) and colleague invites; failed invites are reported, not fatal |
+| `listDocuments` | `GET /portal/v1/documents?folder=` | invoices and sent SPHs (listed), warranty certificates, customer-visible project files (short-lived link) |
 | website `submitRfq` (signed in) | `POST /public/v1/rfq` | website key **and** the customer's session cookie → the RFQ joins that account (`linkedToAccount: true`); a guest RFQ answers `false` |
 
 Not built yet (routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
-`completeOnboarding`, notifications, device registration and lookup, service
-booking, profile, documents, `updatePersonal`/`updateCompany`/`updateSettings`,
-sites. Deferred by owner decision (2026-11-20): device registration and service
+notifications (ERP-0077), `updateCompany` (a change request reviewed by sales,
+ERP-0076). Deferred by owner decision (2026-11-20): device registration and service
 booking, promo codes.
 
 ## Staff side

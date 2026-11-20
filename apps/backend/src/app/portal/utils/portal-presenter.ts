@@ -9,6 +9,9 @@
  */
 import type { TWishlistEntry } from '@app/commerce/services/account-shop.service';
 import type { TPortalRfqView } from '../services/portal-rfq.service';
+import type { TPortalDocumentEntry, TPortalDocumentFolder, TPortalProfileFacts } from '../services/portal-account-pages.service';
+import type { TPortalPreferences } from '@app/user/services/user-preference.service';
+import type { TCustomerAddressSelect, TCustomerContactSelect } from '@drizzle/schemas/crm.schema';
 import type { TPortalTicket, TPortalTicketDetail } from '@app/aftersales/contracts/service-ticket.contract';
 import type { TPortalProject, TPortalProjectDetail } from '@app/projects/services/project-portal.service';
 import type { TPortalAccountView } from '@app/user/contracts/portal-account.contract';
@@ -35,7 +38,9 @@ const locale = (p: TPresenter) => (p.language === 'id' ? 'id-ID' : 'en-GB');
 /** `2026-11-14` or a Date → "14 Nov 2026" / "14 Nov 2026" in the caller's language. */
 export function dateLabel(p: TPresenter, value: string | Date | null | undefined): string {
 	if (!value) return '';
-	const date = typeof value === 'string' ? new Date(`${value}T00:00:00+07:00`) : value;
+	// A business date (`YYYY-MM-DD`) is a Jakarta day; a full timestamp (e.g. a cached ISO string) is a moment.
+	const date = typeof value === 'string' ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00+07:00` : value) : value;
+	if (Number.isNaN(date.getTime())) return '';
 	return new Intl.DateTimeFormat(locale(p), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(date);
 }
 
@@ -100,18 +105,33 @@ export function companyMember(p: TPresenter, account: TPortalAccountView) {
 }
 
 /** The portal's `AccountSettings`; sites, notification channels and security are not stored yet. */
-export function accountSettings(p: TPresenter, portal: PortalContext, customer: TCustomerSelect | null, members: TPortalAccountView[]) {
+/** What the account page shows besides the customer and members (ERP-0075). */
+export type TAccountExtras = { contact: TCustomerContactSelect | null; sites: TCustomerAddressSelect[]; preferences: TPortalPreferences | null };
+
+export function accountSettings(
+	p: TPresenter,
+	portal: PortalContext,
+	customer: TCustomerSelect | null,
+	members: TPortalAccountView[],
+	extras: TAccountExtras = { contact: null, sites: [], preferences: null },
+) {
 	const business = customer ? customer.customerType !== 'individual' : true;
+	const { contact, sites, preferences } = extras;
 	return {
-		personal: { name: portal.user.name, email: portal.user.email, phone: '' },
+		personal: {
+			name: portal.user.name,
+			email: portal.user.email,
+			phone: contact?.phone ?? '',
+			...(contact?.position ? { jobTitle: contact.position } : {}),
+		},
 		...(customer && business
 			? { company: { name: customer.name, shortName: initials(customer.name), ...(customer.taxId ? { npwp: customer.taxId } : {}), verified: true } }
 			: {}),
 		members: members.map((member) => companyMember(p, member)),
-		sites: [],
-		notifications: { push: false, email: true, whatsapp: false },
+		sites: sites.map(companySite),
+		notifications: preferences?.notifications ?? { push: false, email: true, whatsapp: false },
 		security: { faceId: false, twoStep: false, passwordChangedLabel: '', activeDevices: 1 },
-		preferences: { language: p.language, currency: 'IDR' as const, appearance: 'system' as const },
+		preferences: { language: preferences?.language ?? p.language, currency: 'IDR' as const, appearance: 'system' as const },
 	};
 }
 
@@ -346,5 +366,60 @@ export function wishlistItem(p: TPresenter, entry: TWishlistEntry) {
 		stock: product.stock === 'out' ? ('request' as const) : product.stock,
 		...(product.image ? { image: product.image } : {}),
 		addedLabel: p.t('portal.wishlist.added', { date: dateLabel(p, entry.addedAt) }),
+	};
+}
+
+/** An installation site in the portal's `CompanySite` shape (ERP-0075). */
+export function companySite(site: TCustomerAddressSelect) {
+	return {
+		id: site.id,
+		name: site.label ?? '',
+		address: site.addressLine ?? '',
+		picName: site.contactName ?? '',
+		picPhone: site.contactPhone ?? '',
+		...(site.isPrimary ? { primary: true } : {}),
+	};
+}
+
+const rupiah = (minor: number) => `Rp ${Math.round(minor / 100).toLocaleString('id-ID')}`;
+
+/** The profile page's figures (`ProfileSummary`, ERP-0075). */
+export function profileSummary(p: TPresenter, facts: TPortalProfileFacts) {
+	return {
+		stats: { orders: facts.orders, projects: facts.projects, devices: facts.devices, tickets: facts.tickets },
+		quotationsAwaiting: facts.quotationsAwaiting,
+		outstanding: Math.round(facts.outstandingMinor / 100),
+		orderCount: facts.orders,
+		memberSince: facts.memberSince ? dateLabel(p, facts.memberSince) : '',
+		deviceCount: facts.devices,
+		siteCount: facts.sites,
+		warrantyExpiring: facts.warrantyExpiring,
+		documentCount: facts.documents,
+		memberCount: facts.members,
+		approverCount: facts.approvers,
+	};
+}
+
+const DOCUMENT_FOLDERS: TPortalDocumentFolder[] = ['invoices', 'quotations', 'warranty', 'drawings'];
+
+/** The document library (`DocumentLibrary`, ERP-0075), filtered to one folder when asked. */
+export function documentLibrary(p: TPresenter, entries: TPortalDocumentEntry[], folder?: TPortalDocumentFolder) {
+	return {
+		total: entries.length,
+		folders: DOCUMENT_FOLDERS.map((key) => ({
+			key,
+			label: p.t(`portal.documents.folder.${key}` as const),
+			count: entries.filter((entry) => entry.folder === key).length,
+		})),
+		files: entries
+			.filter((entry) => !folder || entry.folder === folder)
+			.map((entry) => ({
+				id: entry.id,
+				name: entry.name,
+				meta: [dateLabel(p, entry.date), entry.amountMinor !== undefined ? rupiah(entry.amountMinor) : null].filter(Boolean).join(' · '),
+				kind: entry.kind,
+				...(entry.url ? { url: entry.url } : {}),
+				folder: entry.folder,
+			})),
 	};
 }

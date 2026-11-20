@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components
 import { ContactFormDialog } from '@/components/crm/contact-form-dialog';
 import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
 import { PortalAccountCard } from '@/components/crm/portal-account-card';
+import { CustomerAddressesCard } from '@/components/crm/customer-addresses-card';
 import { toast } from '@/components/toast';
 import {
 	addContact,
@@ -179,6 +180,8 @@ function CustomerDetailPage() {
 					))}
 				</CardContent>
 			</Card>
+
+			<CustomerAddressesCard customerId={customer.id} />
 
 			<PortalAccountCard
 				customerId={customer.id}

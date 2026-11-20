@@ -6,6 +6,8 @@
  * (e.g. sales resolving the customer of a quotation).
  */
 import type { InjectionToken } from 'tsyringe';
+import type { ICustomerAddressRepository } from '../contracts/customer-address.contract';
+import type { CustomerAddressService } from '../services/customer-address.service';
 import type {
 	ICustomerContactRepository,
 	ICustomerRepository,
@@ -28,3 +30,7 @@ export const LEAD_ACTIVITY_REPOSITORY_TOKEN: InjectionToken<ILeadActivityReposit
 export const LEAD_SERVICE_TOKEN: InjectionToken<LeadService> = Symbol('LEAD_SERVICE');
 export const WEBSITE_INQUIRY_SERVICE_TOKEN: InjectionToken<WebsiteInquiryService> =
 	Symbol('WEBSITE_INQUIRY_SERVICE');
+
+export const CUSTOMER_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ICustomerAddressRepository> = Symbol('CUSTOMER_ADDRESS_REPOSITORY');
+/** Customer addresses / installation sites (ERP-0075), exported for the portal module. */
+export const CUSTOMER_ADDRESS_SERVICE_TOKEN: InjectionToken<CustomerAddressService> = Symbol('CUSTOMER_ADDRESS_SERVICE');

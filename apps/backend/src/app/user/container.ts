@@ -6,9 +6,13 @@ import { BetterAuthUserGateway } from './adapters/better-auth-user';
 import { BetterAuthUserManagementGateway } from './adapters/better-auth-user-management';
 import { QueueInvitationMailer } from './adapters/queue-mailer';
 import { UserService } from './services/user.service';
+import { UserPreferenceRepository } from './repositories/user-preference.repository';
+import { UserPreferenceService } from './services/user-preference.service';
 import { InvitationService } from './services/invitation.service';
 import { UserAdminService } from './services/user-admin.service';
 import {
+	USER_PREFERENCE_REPOSITORY_TOKEN,
+	USER_PREFERENCE_SERVICE_TOKEN,
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
 	INVITATION_SERVICE_TOKEN,
@@ -84,4 +88,6 @@ export function registerUser(container: DependencyContainer): void {
 	container.register(PORTAL_AUTH_GATEWAY_TOKEN, { useClass: BetterAuthPortalGateway });
 	container.register(PORTAL_MAILER_TOKEN, { useClass: QueuePortalMailer });
 	container.register(PORTAL_ACCOUNT_SERVICE_TOKEN, { useClass: PortalAccountService });
+	container.register(USER_PREFERENCE_REPOSITORY_TOKEN, { useClass: UserPreferenceRepository });
+	container.register(USER_PREFERENCE_SERVICE_TOKEN, { useClass: UserPreferenceService });
 }

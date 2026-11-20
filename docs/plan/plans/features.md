@@ -624,6 +624,11 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - None.
 
 ### implemented
+- Customer portal account pages — ERP-0075 (2026-11-20): profile figures,
+  personal data, installation sites (also shown to staff on the customer
+  page), notification channels and language, onboarding, document library.
+  Evidence: migration `20261120061331_erp0075_addresses_preferences`,
+  `test/unit/portal-account-pages.test.ts` (8), `progress.md` 2026-11-20 ERP-0075.
 - Website account cart and wishlist — ERP-0074 (2026-11-20): a signed-in
   customer's cart and saved products follow the account across devices; the
   portal lists and removes saved products. Evidence: migration
