@@ -124,6 +124,7 @@
       },
       "devDependencies": {
         "@astrojs/check": "^0.9.12",
+        "@ims-erp/common": "workspace:*",
         "@vite-pwa/astro": "^2.0.2",
         "typescript": "^6.0.3",
         "vite-plugin-pwa": "2.0.0",
@@ -146,6 +147,7 @@
       },
       "devDependencies": {
         "@astrojs/check": "^0.9.12",
+        "@ims-erp/common": "workspace:*",
         "typescript": "^6.0.3",
       },
     },

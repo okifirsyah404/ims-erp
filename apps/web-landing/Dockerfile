@@ -15,6 +15,7 @@ COPY package.json bun.lock bunfig.toml ./
 # bun requires its manifest at install time. Other workspaces are skipped with
 # a note by bun.
 COPY packages/design-tokens/package.json packages/design-tokens/
+COPY packages/common/package.json packages/common/
 COPY apps/web-landing/package.json apps/web-landing/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	bun install --frozen-lockfile --ignore-scripts
@@ -40,6 +41,7 @@ FROM oven/bun:1.4-alpine AS prod-deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
 COPY packages/design-tokens/package.json packages/design-tokens/
+COPY packages/common/package.json packages/common/
 COPY apps/web-landing/package.json apps/web-landing/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	bun install --frozen-lockfile --production --ignore-scripts

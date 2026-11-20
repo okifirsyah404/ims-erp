@@ -1,10 +1,15 @@
+import type { TApiPaginatedResponse, TApiResponse } from "@ims-erp/common";
+
 /**
  * The ERP's success envelope (`ok()` / `created()` / `noContent()` in
- * apps/backend/src/http/response.ts): `{ requestId, status, message, timestamp, data }`.
+ * apps/backend/src/http/response.ts), typed as `TApiResponse` / `TApiPaginatedResponse` in
+ * `@ims-erp/common`: `{ requestId, status, message, timestamp, data }`.
  * `noContent()` answers 200 with `data: null`.
  */
 export function unwrapEnvelope(body: unknown): unknown {
-  if (body && typeof body === "object" && "data" in body) return (body as { data: unknown }).data;
+  if (body && typeof body === "object" && "data" in body) {
+    return (body as TApiResponse<unknown> | TApiPaginatedResponse<unknown>).data;
+  }
   return body;
 }
 

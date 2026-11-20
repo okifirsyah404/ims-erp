@@ -334,6 +334,25 @@ describe("authenticated reads", () => {
     expect((error as ApiError).messages[0]).toBe("Attachments are not supported yet");
   });
 
+  test("a 422 reports the envelope's field errors, not just the top-level message", async () => {
+    const body = {
+      requestId: "r-2",
+      status: 422,
+      message: "Validation failed",
+      timestamp: 1,
+      data: null,
+      errors: [{ field: "subject", message: "Subject is required" }],
+    };
+    const source = sourceWith(
+      mockFetch(() => new Response(JSON.stringify(body), { status: 422, headers: { "content-type": "application/json" } })).fetcher,
+    );
+    const error = await source
+      .createTicket(session, { category: "other", priority: "low", subject: "", description: "Missing subject here." }, [])
+      .catch((e: unknown) => e);
+    expect((error as ApiError).errors).toEqual([{ field: "subject", message: "Subject is required" }]);
+    expect((error as ApiError).messages).toEqual(["Subject is required"]);
+  });
+
   test("postTicketMessage sends JSON { text } to the ticket thread", async () => {
     const { calls, fetcher } = mockFetch(() => envelope({ id: "msg-1" }, 201));
     await sourceWith(fetcher).postTicketMessage(session, backendTicket.id, "Thanks, it works now");

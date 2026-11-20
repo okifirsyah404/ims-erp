@@ -270,6 +270,32 @@ describe("ERP website source", () => {
     expect((error as ApiError).status).toBe(422);
   });
 
+  test("a 422 reports the envelope's field errors, not just the top-level message", async () => {
+    const { fetcher } = mockFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            requestId: "r-2",
+            status: 422,
+            message: "Validation failed",
+            timestamp: 1,
+            data: null,
+            errors: [
+              { field: "email", message: "Invalid email" },
+              { field: null, message: "Message is too short" },
+            ],
+          }),
+          { status: 422, headers: { "content-type": "application/json" } },
+        ),
+    );
+    const error = await websiteWith(fetcher).sendContactMessage({ topic: "sales", name: "B", email: "bad", message: "x", source: "web" }).catch((e: unknown) => e);
+    expect((error as ApiError).errors).toEqual([
+      { field: "email", message: "Invalid email" },
+      { field: null, message: "Message is too short" },
+    ]);
+    expect((error as ApiError).messages).toEqual(["Invalid email", "Message is too short"]);
+  });
+
   test("not configured: operations the ERP does not publish throw WebsiteNotConfiguredError", async () => {
     const { calls, fetcher } = mockFetch(() => envelope({}));
     const source = websiteWith(fetcher);
