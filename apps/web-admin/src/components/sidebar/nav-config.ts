@@ -7,7 +7,7 @@ import {
 	FileText,
 	Globe,
 	GraduationCap,
-	Hash,
+	CreditCard,
 	HandCoins,
 	KeyRound,
 	Calculator,
@@ -294,7 +294,12 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		labelKey: 'section.settings',
 		items: [
 			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
-			{ titleKey: 'item.codeNumbers', url: '/settings/code-numbers', icon: Hash, permission: 'code_number.read' },
+			{
+				titleKey: 'item.paymentGateways',
+				url: '/settings/payment-gateways',
+				icon: CreditCard,
+				permission: 'payment_gateway.read',
+			},
 			// No catalog resource yet: hidden. The document settings page carries
 			// no permission of its own (its values are edited per group), so it
 			// stays open like the settings section itself.

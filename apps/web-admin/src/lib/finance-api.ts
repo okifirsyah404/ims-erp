@@ -7,9 +7,14 @@ import { queryOptions } from '@tanstack/react-query';
 import { organizationHeaders } from './organization-store';
 
 /**
- * API client for the M09 accounting endpoints (`/accounts`, `/periods`,
- * `/journal`, `/opening-balances`, `/cash-bank/*`, `/payments*`, `/bills*`,
- * `/ar|ap/aging`, `/reports/*`, `/close/*`, `/bank-reconciliations*`).
+ * API client for the finance module (ADR-0024: accounting was absorbed into
+ * finance). Routes: `/finance/ledger/{accounts,journal,opening-balances}`,
+ * `/finance/periods`, `/finance/cash-bank-{accounts,transactions}`,
+ * `/finance/supplier-bills*`, `/finance/{ar,ap}/aging`, `/finance/reports/*`,
+ * `/finance/close/*`, `/finance/reconciliations*` (depreciation entries live in
+ * `asset-api`).
+ * The payment functions below still point at the payment module's routes and
+ * are owned by the payment slice.
  *
  * @remarks
  * Tenant scope is decided by the backend from the `x-organization-id` header
@@ -129,7 +134,7 @@ export function accountsQueryOptions(params: {
 		search.set('isActive', String(params.isActive));
 	return queryOptions({
 		queryKey: ['accounts', params],
-		queryFn: () => getDataPaginated<TAccount>(`/accounts?${search}`),
+		queryFn: () => getDataPaginated<TAccount>(`/finance/ledger/accounts?${search}`),
 	});
 }
 
@@ -143,7 +148,7 @@ export function createAccount(input: {
 	cashFlowCategory?: TCashFlowCategory | null;
 	description?: string | null;
 }) {
-	return sendData<TAccount>('/accounts', 'POST', input);
+	return sendData<TAccount>('/finance/ledger/accounts', 'POST', input);
 }
 
 export function updateAccount(
@@ -156,11 +161,11 @@ export function updateAccount(
 		description: string | null;
 	}>,
 ) {
-	return sendData<TAccount>(`/accounts/${id}`, 'PATCH', input);
+	return sendData<TAccount>(`/finance/ledger/accounts/${id}`, 'PATCH', input);
 }
 
 export function archiveAccount(id: string) {
-	return sendData<{ removed: boolean }>(`/accounts/${id}`, 'DELETE');
+	return sendData<{ removed: boolean }>(`/finance/ledger/accounts/${id}`, 'DELETE');
 }
 
 /* --------------------------- accounting periods --------------------------- */
@@ -184,16 +189,16 @@ export function periodsQueryOptions(params: { page: number; limit: number }) {
 	return queryOptions({
 		queryKey: ['periods', params],
 		queryFn: () =>
-			getDataPaginated<TPeriod>(`/periods?page=${params.page}&limit=${params.limit}`),
+			getDataPaginated<TPeriod>(`/finance/periods?page=${params.page}&limit=${params.limit}`),
 	});
 }
 
 export function ensurePeriod(periodYear: number, periodMonth: number) {
-	return sendData<TPeriod>('/periods', 'POST', { periodYear, periodMonth });
+	return sendData<TPeriod>('/finance/periods', 'POST', { periodYear, periodMonth });
 }
 
 export function transitionPeriod(id: string, to: 'closed' | 'locked' | 'open') {
-	return sendData<TPeriod>(`/periods/${id}/transition`, 'POST', { to });
+	return sendData<TPeriod>(`/finance/periods/${id}/transition`, 'POST', { to });
 }
 
 /* ----------------------------- journal (F2) ------------------------------- */
@@ -201,6 +206,7 @@ export function transitionPeriod(id: string, to: 'closed' | 'locked' | 'open') {
 export type TJournalLine = {
 	id: string;
 	journalEntryId: string;
+	lineNo: number;
 	accountId: string;
 	debit: number;
 	credit: number;
@@ -211,12 +217,16 @@ export type TJournalEntry = {
 	id: string;
 	organizationId: string;
 	code: string;
+	accountingPeriodId: string;
 	entryDate: string;
-	sourceType: string;
+	/** Posting module: finance | sale | procurement | inventory | payment | tax | human_resource. */
+	sourceModule: string;
+	sourceType: string | null;
 	sourceId: string | null;
 	description: string | null;
 	status: string;
-	reversalOfEntryId: string | null;
+	totalDebit: number;
+	totalCredit: number;
 	reversedByEntryId: string | null;
 	idempotencyKey: string | null;
 	lines?: TJournalLine[];
@@ -226,22 +236,26 @@ export function journalQueryOptions(params: {
 	page: number;
 	limit: number;
 	status?: string;
+	year?: number;
+	month?: number;
 }) {
 	const search = new URLSearchParams({
 		page: String(params.page),
 		limit: String(params.limit),
 	});
 	if (params.status) search.set('status', params.status);
+	if (params.year != null) search.set('year', String(params.year));
+	if (params.month != null) search.set('month', String(params.month));
 	return queryOptions({
 		queryKey: ['journal', params],
-		queryFn: () => getDataPaginated<TJournalEntry>(`/journal?${search}`),
+		queryFn: () => getDataPaginated<TJournalEntry>(`/finance/ledger/journal?${search}`),
 	});
 }
 
 export function journalEntryQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['journal', id],
-		queryFn: () => getData<TJournalEntry>(`/journal/${id}`),
+		queryFn: () => getData<TJournalEntry>(`/finance/ledger/journal/${id}`),
 	});
 }
 
@@ -255,14 +269,14 @@ export function postJournalEntry(input: {
 		description?: string | null;
 	}>;
 }) {
-	return sendData<TJournalEntry>('/journal', 'POST', input);
+	return sendData<TJournalEntry>('/finance/ledger/journal', 'POST', input);
 }
 
 export function reverseJournalEntry(
 	id: string,
 	input?: { entryDate?: string; description?: string | null },
 ) {
-	return sendData<TJournalEntry>(`/journal/${id}/reverse`, 'POST', input);
+	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}/reverse`, 'POST', input);
 }
 
 /* ------------------------ opening balances (F3) --------------------------- */
@@ -280,7 +294,7 @@ export type TOpeningBalanceRow = {
 export function openingBalancesQueryOptions() {
 	return queryOptions({
 		queryKey: ['opening-balances'],
-		queryFn: () => getData<TOpeningBalanceRow[]>('/opening-balances'),
+		queryFn: () => getData<TOpeningBalanceRow[]>('/finance/ledger/opening-balances'),
 	});
 }
 
@@ -291,7 +305,7 @@ export function addOpeningBalanceRow(input: {
 	creditBalance: number;
 	description?: string | null;
 }) {
-	return sendData<TOpeningBalanceRow>('/opening-balances', 'POST', input);
+	return sendData<TOpeningBalanceRow>('/finance/ledger/opening-balances', 'POST', input);
 }
 
 export function updateOpeningBalanceRow(
@@ -302,15 +316,15 @@ export function updateOpeningBalanceRow(
 		description: string | null;
 	}>,
 ) {
-	return sendData<TOpeningBalanceRow>(`/opening-balances/${id}`, 'PATCH', input);
+	return sendData<TOpeningBalanceRow>(`/finance/ledger/opening-balances/${id}`, 'PATCH', input);
 }
 
 export function removeOpeningBalanceRow(id: string) {
-	return sendData<{ removed: boolean }>(`/opening-balances/${id}`, 'DELETE');
+	return sendData<{ removed: boolean }>(`/finance/ledger/opening-balances/${id}`, 'DELETE');
 }
 
 export function postOpeningBalances() {
-	return sendData<{ entryId: string }>('/opening-balances/post', 'POST');
+	return sendData<{ entryId: string }>('/finance/ledger/opening-balances/post', 'POST');
 }
 
 /* --------------------------- cash & bank (F3) ----------------------------- */
@@ -322,17 +336,22 @@ export type TCashBankAccount = {
 	name: string;
 	accountType: string;
 	bankName: string | null;
+	bankCode: string | null;
+	branchName: string | null;
 	accountNumber: string | null;
 	accountHolder: string | null;
 	openingBalance: number;
 	currentBalance: number;
 	currencyCode: string;
+	/** Account printed on invoices with VAT (`vat`) or without (`non_vat`). */
+	invoiceUsage: 'vat' | 'non_vat' | null;
+	isPrimary: boolean;
 	isActive: boolean;
-	glAccountId?: string | null;
 };
 
 export type TCashBankTransaction = {
 	id: string;
+	code: string;
 	cashBankAccountId: string;
 	transactionDate: string;
 	direction: 'in' | 'out';
@@ -345,7 +364,7 @@ export type TCashBankTransaction = {
 export function cashBankAccountsQueryOptions() {
 	return queryOptions({
 		queryKey: ['cash-bank-accounts'],
-		queryFn: () => getData<TCashBankAccount[]>('/cash-bank/accounts'),
+		queryFn: () => getData<TCashBankAccount[]>('/finance/cash-bank-accounts'),
 	});
 }
 
@@ -359,7 +378,7 @@ export function createCashBankAccount(input: {
 	openingBalance?: number;
 	glAccountId?: string | null;
 }) {
-	return sendData<TCashBankAccount>('/cash-bank/accounts', 'POST', input);
+	return sendData<TCashBankAccount>('/finance/cash-bank-accounts', 'POST', input);
 }
 
 export function updateCashBankAccount(
@@ -373,7 +392,7 @@ export function updateCashBankAccount(
 		glAccountId: string | null;
 	}>,
 ) {
-	return sendData<TCashBankAccount>(`/cash-bank/accounts/${id}`, 'PATCH', input);
+	return sendData<TCashBankAccount>(`/finance/cash-bank-accounts/${id}`, 'PATCH', input);
 }
 
 export function cashBankTransactionsQueryOptions(params: {
@@ -390,7 +409,7 @@ export function cashBankTransactionsQueryOptions(params: {
 	return queryOptions({
 		queryKey: ['cash-bank-transactions', params],
 		queryFn: () =>
-			getDataPaginated<TCashBankTransaction>(`/cash-bank/transactions?${search}`),
+			getDataPaginated<TCashBankTransaction>(`/finance/cash-bank-transactions?${search}`),
 	});
 }
 
@@ -403,7 +422,7 @@ export function postCashBankMovement(input: {
 	referenceNumber?: string | null;
 	counterpartAccountId: string;
 }) {
-	return sendData<TCashBankTransaction>('/cash-bank/transactions', 'POST', input);
+	return sendData<TCashBankTransaction>('/finance/cash-bank-transactions', 'POST', input);
 }
 
 /* --------------------------- payments (F4/F5) ----------------------------- */
@@ -499,7 +518,7 @@ export const voidExecutedPayment = (id: string, reason: string) =>
 export type TSupplierBill = {
 	id: string;
 	code: string;
-	supplierId: string | null;
+	supplierCompanyId: string;
 	purchaseOrderId: string | null;
 	supplierInvoiceNumber: string | null;
 	billDate: string | null;
@@ -514,31 +533,61 @@ export type TSupplierBill = {
 	notes: string | null;
 };
 
+/** A line of a supplier bill, as returned in the bill detail. */
+export type TSupplierBillItem = {
+	id: string;
+	supplierBillId: string;
+	purchaseOrderItemId: string | null;
+	productId: string | null;
+	name: string;
+	unit: string;
+	quantity: string;
+	unitPrice: number;
+	lineTotal: number;
+	taxBase: number;
+	isStock: boolean;
+	sortOrder: number;
+};
+
+export type TSupplierBillDetail = TSupplierBill & { items: TSupplierBillItem[] };
+
+export function billQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ['bills', id],
+		queryFn: () => getData<TSupplierBillDetail>(`/finance/supplier-bills/${id}`),
+	});
+}
+
 export function billsQueryOptions(params: {
 	page: number;
 	limit: number;
 	status?: string;
+	supplierCompanyId?: string;
 }) {
 	const search = new URLSearchParams({
 		page: String(params.page),
 		limit: String(params.limit),
 	});
 	if (params.status) search.set('status', params.status);
+	if (params.supplierCompanyId)
+		search.set('supplierCompanyId', params.supplierCompanyId);
 	return queryOptions({
 		queryKey: ['bills', params],
-		queryFn: () => getDataPaginated<TSupplierBill>(`/bills?${search}`),
+		queryFn: () => getDataPaginated<TSupplierBill>(`/finance/supplier-bills?${search}`),
 	});
 }
 
 export function createBill(input: {
-	supplierId: string;
+	supplierCompanyId: string;
+	purchaseOrderId?: string | null;
 	billDate: string;
 	dueDate?: string | null;
 	subtotal: number;
 	taxTotal: number;
+	currencyCode?: string;
 	notes?: string | null;
 }) {
-	return sendData<TSupplierBill>('/bills', 'POST', input);
+	return sendData<TSupplierBill>('/finance/supplier-bills', 'POST', input);
 }
 
 /** A purchase order with received goods, as Finance bills it (ERP-0012). */
@@ -546,13 +595,14 @@ export type TBillableOrder = {
 	id: string;
 	code: string | null;
 	subject: string;
-	supplierId: string;
+	status: string;
+	supplierCompanyId: string;
 	supplierName: string;
 	vatMode: 'none' | 'included' | 'added';
 	vatRateBps: number;
 	lines: {
 		id: string;
-		itemId: string;
+		productId: string;
 		sku: string;
 		name: string;
 		unit: string;
@@ -567,7 +617,7 @@ export type TBillableOrder = {
 export function billableOrdersQueryOptions() {
 	return queryOptions({
 		queryKey: ['bills', 'billable-orders'],
-		queryFn: () => getData<TBillableOrder[]>('/bills/billable-orders'),
+		queryFn: () => getData<TBillableOrder[]>('/finance/supplier-bills/billable-orders'),
 	});
 }
 
@@ -578,13 +628,13 @@ export function createBillFromOrder(input: {
 	dueDate: string | null;
 	lines: { purchaseOrderItemId: string; quantity: string }[];
 }) {
-	return sendData<TSupplierBill>('/bills/from-purchase-order', 'POST', input);
+	return sendData<TSupplierBill>('/finance/supplier-bills/from-purchase-order', 'POST', input);
 }
 
 export const cancelBill = (id: string) =>
-	sendData<TSupplierBill>(`/bills/${id}/cancel`, 'POST');
+	sendData<TSupplierBill>(`/finance/supplier-bills/${id}/cancel`, 'POST');
 export const recordBill = (id: string) =>
-	sendData<TSupplierBill>(`/bills/${id}/record`, 'POST');
+	sendData<TSupplierBill>(`/finance/supplier-bills/${id}/record`, 'POST');
 
 /* ---------------------------- aging (F4/F5) ------------------------------- */
 
@@ -602,30 +652,34 @@ export type TAgingResponse = {
 	buckets: readonly TAgingBucket[];
 	rows: Array<{
 		customerId?: string | null;
-		supplierId?: string | null;
+		supplierCompanyId?: string | null;
 		buckets: Record<TAgingBucket, number>;
 		total: number;
 	}>;
 	grandTotal: number;
 };
 
-export function arAgingQueryOptions(asOfDate?: string) {
+export function arAgingQueryOptions(asOfDate?: string, customerId?: string) {
+	const search = new URLSearchParams();
+	if (asOfDate) search.set('asOfDate', asOfDate);
+	if (customerId) search.set('customerId', customerId);
+	const query = search.toString();
 	return queryOptions({
-		queryKey: ['ar-aging', asOfDate ?? 'today'],
+		queryKey: ['ar-aging', asOfDate ?? 'today', customerId ?? 'all'],
 		queryFn: () =>
-			getData<TAgingResponse>(
-				asOfDate ? `/ar/aging?asOfDate=${asOfDate}` : '/ar/aging',
-			),
+			getData<TAgingResponse>(`/finance/ar/aging${query ? `?${query}` : ''}`),
 	});
 }
 
-export function apAgingQueryOptions(asOfDate?: string) {
+export function apAgingQueryOptions(asOfDate?: string, supplierCompanyId?: string) {
+	const search = new URLSearchParams();
+	if (asOfDate) search.set('asOfDate', asOfDate);
+	if (supplierCompanyId) search.set('supplierCompanyId', supplierCompanyId);
+	const query = search.toString();
 	return queryOptions({
-		queryKey: ['ap-aging', asOfDate ?? 'today'],
+		queryKey: ['ap-aging', asOfDate ?? 'today', supplierCompanyId ?? 'all'],
 		queryFn: () =>
-			getData<TAgingResponse>(
-				asOfDate ? `/ap/aging?asOfDate=${asOfDate}` : '/ap/aging',
-			),
+			getData<TAgingResponse>(`/finance/ap/aging${query ? `?${query}` : ''}`),
 	});
 }
 
@@ -685,7 +739,7 @@ export function profitAndLossQueryOptions(startDate: string, endDate: string) {
 		queryKey: ['pl', startDate, endDate],
 		queryFn: () =>
 			getData<TProfitAndLoss>(
-				`/reports/profit-and-loss?startDate=${startDate}&endDate=${endDate}`,
+				`/finance/reports/profit-and-loss?startDate=${startDate}&endDate=${endDate}`,
 			),
 	});
 }
@@ -694,7 +748,7 @@ export function balanceSheetQueryOptions(asOfDate: string) {
 	return queryOptions({
 		queryKey: ['balance-sheet', asOfDate],
 		queryFn: () =>
-			getData<TBalanceSheet>(`/reports/balance-sheet?asOfDate=${asOfDate}`),
+			getData<TBalanceSheet>(`/finance/reports/balance-sheet?asOfDate=${asOfDate}`),
 	});
 }
 
@@ -703,7 +757,7 @@ export function cashFlowQueryOptions(startDate: string, endDate: string) {
 		queryKey: ['cash-flow', startDate, endDate],
 		queryFn: () =>
 			getData<TCashFlowStatement>(
-				`/reports/cash-flow?startDate=${startDate}&endDate=${endDate}`,
+				`/finance/reports/cash-flow?startDate=${startDate}&endDate=${endDate}`,
 			),
 	});
 }
@@ -743,19 +797,19 @@ export function reportArchivesQueryOptions(params: {
 	return queryOptions({
 		queryKey: ['report-archives', params],
 		queryFn: () =>
-			getDataPaginated<TReportArchive>(`/reports/archives?${search}`),
+			getDataPaginated<TReportArchive>(`/finance/reports/archives?${search}`),
 	});
 }
 
 export function reportArchiveQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['report-archive', id],
-		queryFn: () => getData<TReportArchive>(`/reports/archives/${id}`),
+		queryFn: () => getData<TReportArchive>(`/finance/reports/archives/${id}`),
 	});
 }
 
 export function archiveMonth(periodYear: number, periodMonth: number) {
-	return sendData<TReportArchive[]>('/reports/archives', 'POST', {
+	return sendData<TReportArchive[]>('/finance/reports/archives', 'POST', {
 		periodYear,
 		periodMonth,
 	});
@@ -782,7 +836,7 @@ export function closeChecklistQueryOptions(year: number, month: number) {
 	return queryOptions({
 		queryKey: ['close-checklist', year, month],
 		queryFn: () =>
-			getData<TCloseChecklist>(`/close/checklist?periodYear=${year}&periodMonth=${month}`),
+			getData<TCloseChecklist>(`/finance/close/checklist?periodYear=${year}&periodMonth=${month}`),
 	});
 }
 
@@ -794,7 +848,7 @@ export type TBankReconciliationItem = {
 	cashBankTransactionId: string | null;
 	statementReference: string | null;
 	statementAmount: number | null;
-	matchedAt: string | null;
+	isMatched: boolean;
 	notes: string | null;
 };
 
@@ -823,22 +877,14 @@ export function reconciliationsQueryOptions(params: {
 	return queryOptions({
 		queryKey: ['reconciliations', params],
 		queryFn: () =>
-			getDataPaginated<TBankReconciliation>(`/bank-reconciliations?${search}`),
+			getDataPaginated<TBankReconciliation>(`/finance/reconciliations?${search}`),
 	});
 }
 
 export function reconciliationQueryOptions(id: string) {
 	return queryOptions({
 		queryKey: ['reconciliations', id],
-		queryFn: () => getData<TBankReconciliation>(`/bank-reconciliations/${id}`),
-	});
-}
-
-export function reconciliationItemsQueryOptions(id: string) {
-	return queryOptions({
-		queryKey: ['reconciliations', id, 'items'],
-		queryFn: () =>
-			getData<TBankReconciliationItem[]>(`/bank-reconciliations/${id}/items`),
+		queryFn: () => getData<TBankReconciliation>(`/finance/reconciliations/${id}`),
 	});
 }
 
@@ -848,7 +894,7 @@ export function createReconciliation(input: {
 	statementBalance: number;
 	notes?: string | null;
 }) {
-	return sendData<TBankReconciliation>('/bank-reconciliations', 'POST', input);
+	return sendData<TBankReconciliation>('/finance/reconciliations', 'POST', input);
 }
 
 export function addReconciliationItems(
@@ -861,7 +907,7 @@ export function addReconciliationItems(
 	}>,
 ) {
 	return sendData<TBankReconciliationItem[]>(
-		`/bank-reconciliations/${id}/items`,
+		`/finance/reconciliations/${id}/items`,
 		'POST',
 		{ items },
 	);
@@ -873,13 +919,19 @@ export function matchReconciliationItem(
 	cashBankTransactionId: string | null,
 ) {
 	return sendData<TBankReconciliationItem>(
-		`/bank-reconciliations/${id}/items/${itemId}/match`,
+		`/finance/bank-reconciliations/${id}/items/${itemId}/match`,
 		'POST',
 		{ cashBankTransactionId },
 	);
 }
 
+/**
+ * Matches a statement item. The backend mounts this one route at
+ * `/finance/bank-reconciliations/:id/items/:productId/match` (the last segment
+ * is the item id despite its name); the other reconciliation routes live under
+ * `/finance/reconciliations`.
+ */
 export const reconcileReconciliation = (id: string) =>
-	sendData<TBankReconciliation>(`/bank-reconciliations/${id}/reconcile`, 'POST');
+	sendData<TBankReconciliation>(`/finance/reconciliations/${id}/reconcile`, 'POST');
 export const closeReconciliation = (id: string) =>
-	sendData<TBankReconciliation>(`/bank-reconciliations/${id}/close`, 'POST');
+	sendData<TBankReconciliation>(`/finance/reconciliations/${id}/close`, 'POST');

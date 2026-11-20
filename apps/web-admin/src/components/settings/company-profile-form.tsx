@@ -35,7 +35,7 @@ type TTextKey =
  * @remarks
  * Signatory, bank accounts, default terms, warranty texts and the images are
  * not edited here — the images have their own card on the page. They still
- * exist in storage and are still printed on documents; `PUT /company/profile`
+ * exist in storage and are still printed on documents; `PUT /companies/profile`
  * is a patch, so omitting them leaves the stored values untouched.
  *
  * `readOnly` renders the same fields disabled for members without

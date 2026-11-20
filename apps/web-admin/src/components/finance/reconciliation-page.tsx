@@ -32,8 +32,8 @@ import {
 	matchReconciliationItem,
 	cashBankTransactionsQueryOptions,
 	reconcileReconciliation,
-	reconciliationItemsQueryOptions,
 	reconciliationsQueryOptions,
+	type TBankReconciliationItem,
 	toMinor,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
@@ -73,10 +73,12 @@ export function ReconciliationPage() {
 		enabled: canReconcile,
 	});
 
-	const { data: items } = useQuery({
-		...reconciliationItemsQueryOptions(selectedId ?? ''),
-		enabled: canRead && selectedId != null,
-	});
+	// The backend has no endpoint listing statement items, so this page shows the
+	// items added or matched in the current session, keyed by reconciliation.
+	const [itemsByReconciliation, setItemsByReconciliation] = useState<
+		Record<string, TBankReconciliationItem[]>
+	>({});
+	const items = selectedId ? itemsByReconciliation[selectedId] : undefined;
 
 	const reconciliation = page?.rows.find((row) => row.id === selectedId) ?? null;
 
@@ -116,7 +118,13 @@ export function ReconciliationPage() {
 					statementAmount: statementAmount ? toMinor(statementAmount) : null,
 				},
 			]),
-		onSuccess: async () => {
+		onSuccess: async (added) => {
+			if (selectedId) {
+				setItemsByReconciliation((previous) => ({
+					...previous,
+					[selectedId]: [...(previous[selectedId] ?? []), ...added],
+				}));
+			}
 			toast.success(t('finance:reconciliation.itemsAdded'));
 			setStatementReference('');
 			setStatementAmount('');
@@ -132,7 +140,15 @@ export function ReconciliationPage() {
 				input.itemId,
 				input.cashBankTransactionId,
 			),
-		onSuccess: async () => {
+		onSuccess: async (updated) => {
+			if (selectedId) {
+				setItemsByReconciliation((previous) => ({
+					...previous,
+					[selectedId]: (previous[selectedId] ?? []).map((item) =>
+						item.id === updated.id ? updated : item,
+					),
+				}));
+			}
 			toast.success(t('finance:reconciliation.matchedDone'));
 			invalidate();
 		},
@@ -312,12 +328,12 @@ export function ReconciliationPage() {
 											: ''}
 									</span>
 									<span className='flex items-center gap-2'>
-										<Badge variant={item.matchedAt ? 'secondary' : 'outline'}>
-											{item.matchedAt
+										<Badge variant={item.isMatched ? 'secondary' : 'outline'}>
+											{item.isMatched
 												? t('finance:reconciliation.matched')
 												: t('finance:reconciliation.unmatched')}
 										</Badge>
-										{canReconcile && !item.matchedAt && reconciliation.status !== 'closed' ? (
+										{canReconcile && !item.isMatched && reconciliation.status !== 'closed' ? (
 											<Select
 												value='none'
 												disabled={match.isPending}

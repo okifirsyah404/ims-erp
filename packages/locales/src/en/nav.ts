@@ -109,8 +109,8 @@ const nav = {
 	'item.users': 'Users',
 	'item.auditLog': 'Audit Log',
 	'item.companyProfile': 'Company',
-	'item.codeNumbers': 'Code numbering',
 	'item.documentSettings': 'Document',
+	'item.paymentGateways': 'Payment gateways',
 
 	'theme.label': 'Theme',
 	'theme.light': 'Light theme',

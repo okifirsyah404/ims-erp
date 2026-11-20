@@ -4,9 +4,10 @@ import type {
 	TPaginationMeta,
 } from '@ims-erp/common';
 import { queryOptions } from '@tanstack/react-query';
+import { organizationHeaders } from './organization-store';
 
 /**
- * API client for the tax slice (`/tax*`) of the accounting module (ERP-0016).
+ * API client for the tax module (`/taxes*`, ERP-0016; split out of accounting by ADR-0024).
  *
  * @remarks
  * Tenant scope comes from the caller's active organization server-side.
@@ -21,8 +22,10 @@ type TPaginated<T> = { rows: T[]; pagination: TPaginationMeta };
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {
 	const response = await fetch(`${API_URL}${path}`, {
 		credentials: 'include',
-		headers:
-			init?.body != null ? { 'Content-Type': 'application/json' } : undefined,
+		headers: {
+			...organizationHeaders(),
+			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+		},
 		...init,
 	});
 	const envelope = (await response.json()) as TApiResponse<T>;
@@ -81,20 +84,20 @@ export function taxTypesQueryOptions(params: TTaxTypeListParams) {
 	});
 	return queryOptions({
 		queryKey: ['tax-types', params],
-		queryFn: () => getDataPaginated<TTaxType>(`/tax/types?${search.toString()}`),
+		queryFn: () => getDataPaginated<TTaxType>(`/taxes?${search.toString()}`),
 	});
 }
 
 export function createTaxType(input: Record<string, unknown>) {
-	return sendData<TTaxType>('/tax/types', 'POST', input);
+	return sendData<TTaxType>('/taxes', 'POST', input);
 }
 
 export function updateTaxType(id: string, input: Record<string, unknown>) {
-	return sendData<TTaxType>(`/tax/types/${id}`, 'PATCH', input);
+	return sendData<TTaxType>(`/taxes/${id}`, 'PATCH', input);
 }
 
 export function deleteTaxType(id: string) {
-	return sendData<{ removed: boolean }>(`/tax/types/${id}`, 'DELETE');
+	return sendData<{ removed: boolean }>(`/taxes/${id}`, 'DELETE');
 }
 
 /* ------------------------------- recap --------------------------------- */
@@ -115,18 +118,18 @@ export type TRecap = { lines: TRecapLine[]; totalNetPayable: number };
 export function recapQueryOptions(year: number, month: number) {
 	return queryOptions({
 		queryKey: ['tax-recap', year, month],
-		queryFn: () => getData<TRecap>(`/tax/recap?year=${year}&month=${month}`),
+		queryFn: () => getData<TRecap>(`/taxes/recap?year=${year}&month=${month}`),
 	});
 }
 
 /** Builds the CSV download URL (the browser streams it with the session cookie). */
 export function recapCsvUrl(year: number, month: number): string {
-	return `${API_URL}/tax/export.csv?year=${year}&month=${month}`;
+	return `${API_URL}/taxes/export.csv?year=${year}&month=${month}`;
 }
 
 /** Builds the XLSX download URL (phase 3). */
 export function recapXlsxUrl(year: number, month: number): string {
-	return `${API_URL}/tax/export.xlsx?year=${year}&month=${month}`;
+	return `${API_URL}/taxes/export.xlsx?year=${year}&month=${month}`;
 }
 
 /* ------------------------------ records -------------------------------- */
@@ -163,20 +166,20 @@ export function taxRecordsQueryOptions(params: TTaxRecordListParams) {
 	return queryOptions({
 		queryKey: ['tax-records', params],
 		queryFn: () =>
-			getDataPaginated<TTaxRecord>(`/tax/records?${search.toString()}`),
+			getDataPaginated<TTaxRecord>(`/taxes/records?${search.toString()}`),
 	});
 }
 
 export function createTaxRecord(input: Record<string, unknown>) {
-	return sendData<TTaxRecord>('/tax/records', 'POST', input);
+	return sendData<TTaxRecord>('/taxes/records', 'POST', input);
 }
 
 export function updateTaxRecord(id: string, input: Record<string, unknown>) {
-	return sendData<TTaxRecord>(`/tax/records/${id}`, 'PATCH', input);
+	return sendData<TTaxRecord>(`/taxes/records/${id}`, 'PATCH', input);
 }
 
 export function transitionTaxRecord(id: string, to: string, filedOn?: string | null) {
-	return sendData<TTaxRecord>(`/tax/records/${id}/transition`, 'POST', {
+	return sendData<TTaxRecord>(`/taxes/records/${id}/transition`, 'POST', {
 		to,
 		filedOn: filedOn ?? null,
 	});
@@ -188,7 +191,7 @@ export function previewTax(input: {
 	date: string;
 }) {
 	return sendData<{ taxAmount: number; rate: string; effectiveFrom: string }>(
-		'/tax/records/preview',
+		'/taxes/records/preview',
 		'POST',
 		input,
 	);
@@ -210,7 +213,7 @@ export function correctionsQueryOptions(recordId: string) {
 	return queryOptions({
 		queryKey: ['tax-corrections', recordId],
 		queryFn: () =>
-			getData<TTaxCorrection[]>(`/tax/records/${recordId}/corrections`),
+			getData<TTaxCorrection[]>(`/taxes/records/${recordId}/corrections`),
 	});
 }
 
@@ -219,7 +222,7 @@ export function addCorrection(
 	input: { amount: number; reason: string; evidenceDocumentId?: string | null },
 ) {
 	return sendData<TTaxCorrection>(
-		`/tax/records/${recordId}/corrections`,
+		`/taxes/records/${recordId}/corrections`,
 		'POST',
 		input,
 	);
@@ -250,21 +253,21 @@ export function withholdingQueryOptions(params: { page: number; limit: number })
 	return queryOptions({
 		queryKey: ['tax-withholding', params],
 		queryFn: () =>
-			getDataPaginated<TWithholdingRecord>(`/tax/withholding?${search.toString()}`),
+			getDataPaginated<TWithholdingRecord>(`/taxes/withholdings?${search.toString()}`),
 	});
 }
 
 export function createWithholding(input: Record<string, unknown>) {
-	return sendData<TWithholdingRecord>('/tax/withholding', 'POST', input);
+	return sendData<TWithholdingRecord>('/taxes/withholdings', 'POST', input);
 }
 
 export function updateWithholding(id: string, input: Record<string, unknown>) {
-	return sendData<TWithholdingRecord>(`/tax/withholding/${id}`, 'PATCH', input);
+	return sendData<TWithholdingRecord>(`/taxes/withholdings/${id}`, 'PATCH', input);
 }
 
 export function transitionWithholding(id: string, to: string) {
 	return sendData<TWithholdingRecord>(
-		`/tax/withholding/${id}/transition`,
+		`/taxes/withholdings/${id}/transition`,
 		'POST',
 		{ to },
 	);

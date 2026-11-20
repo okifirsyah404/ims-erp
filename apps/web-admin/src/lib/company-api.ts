@@ -3,26 +3,20 @@ import { queryOptions } from '@tanstack/react-query';
 import { currentLanguage } from '@/i18n';
 
 /**
- * API client for the company profile (`/company/profile`) and the code
- * numbering series (`/code-numbers`).
+ * API client for the company profile (`/companies/profile`), settings and branding.
  *
  * @remarks
- * Both are company-wide (ADR-0011): one profile and one numbering series per
- * code type, whichever organization (department) is active. Any member may
- * read the profile; the invoice bank accounts come back `null` without
- * `invoice:read` or `company:read`. Saving needs `company:update`, numbering
- * needs `code_number:read` / `code_number:update`.
+ * Company-wide (ADR-0011): one profile, whichever organization (department) is
+ * active. Any member may read the profile; saving needs `company:update`,
+ * settings need `company:read` / `company:update`. Invoice bank accounts are no
+ * longer part of the profile: they live in `finance.cash_bank_accounts`
+ * (`/finance/cash-bank-accounts`, ADR-0024 Q19). Numbering is per module and has
+ * no endpoint here.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 /** One bank account printed on invoices. */
-export type TInvoiceBankAccount = {
-	bankName: string;
-	accountNumber: string;
-	accountHolder: string;
-};
-
 export type TCompanyProfile = {
 	legalName: string;
 	tradingName: string | null;
@@ -45,8 +39,11 @@ export type TCompanyProfile = {
 	logoUrl: string | null;
 	signatureUrl: string | null;
 	onboardingUrl: string | null;
-	/** `null` when the caller may not see bank accounts. */
-	bankAccounts: { vat: TInvoiceBankAccount | null; nonVat: TInvoiceBankAccount | null } | null;
+	/**
+	 * Always absent since ADR-0024 (bank accounts moved to finance); kept optional
+	 * only so the invoice document keeps compiling.
+	 * @deprecated
+	 */
 };
 
 /**
@@ -54,59 +51,8 @@ export type TCompanyProfile = {
  * stored value, so the form only sends the fields it still edits.
  */
 export type TCompanyProfileInput = Partial<
-	Omit<TCompanyProfile, 'bankAccounts' | 'logoUrl' | 'signatureUrl'>
+	Omit<TCompanyProfile, 'logoUrl' | 'signatureUrl'>
 >;
-
-export const RESET_POLICIES = ['never', 'yearly', 'monthly'] as const;
-export type TResetPolicy = (typeof RESET_POLICIES)[number];
-
-/** Every code type the numbering authority serves (mirrors `CODE_TYPES`). */
-export const CODE_TYPES = [
-	'quotation',
-	'sales_order',
-	'sales_invoice',
-	'receipt',
-	'web_rfq',
-	'web_contact',
-	'web_demo',
-	'purchase_order',
-	'purchase_request',
-	'goods_receipt',
-	'stock_adjustment',
-	'delivery_note',
-	'project',
-	'bast',
-	'warranty',
-	'service_ticket',
-	'license_contract',
-	'stock_movement',
-	'asset',
-	'asset_maintenance',
-	'asset_disposal',
-	'asset_tool_set',
-	'asset_borrowing',
-	'bank_reconciliation',
-	'cash_bank_transaction',
-	'payment',
-	'journal_entry',
-	'supplier_bill',
-	'employee',
-	'warehouse',
-	'purchase_return',
-	'sales_return',
-] as const;
-export type TCodeType = (typeof CODE_TYPES)[number];
-
-export type TCodeNumberSetting = {
-	codeType: TCodeType;
-	typeCode: string;
-	pattern: string;
-	resetPolicy: TResetPolicy;
-	/** True while the code default applies. */
-	isDefault: boolean;
-	/** What the next number would get (not reserved). */
-	nextNumber: string;
-};
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	const response = await fetch(`${API_URL}${path}`, {
@@ -130,11 +76,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export function companyProfileQueryOptions() {
 	return queryOptions({
 		queryKey: ['company-profile'],
-		queryFn: () => request<TCompanyProfile | null>('/company/profile'),
+		queryFn: () => request<TCompanyProfile | null>('/companies/profile'),
 	});
 }
 
-/** Public branding for the login page (`GET /company/branding`, no session). */
+/** Public branding for the login page (`GET /companies/branding`, no session). */
 export type TCompanyBranding = {
 	name: string | null;
 	onboardingUrl: string | null;
@@ -143,12 +89,12 @@ export type TCompanyBranding = {
 export function companyBrandingQueryOptions() {
 	return queryOptions({
 		queryKey: ['company-branding'],
-		queryFn: () => request<TCompanyBranding>('/company/branding'),
+		queryFn: () => request<TCompanyBranding>('/companies/branding'),
 	});
 }
 
 export function saveCompanyProfile(input: TCompanyProfileInput) {
-	return request<TCompanyProfile>('/company/profile', {
+	return request<TCompanyProfile>('/companies/profile', {
 		method: 'PUT',
 		body: JSON.stringify(input),
 	});
@@ -168,7 +114,7 @@ export type TCompanySetting = {
 export function companySettingsQueryOptions() {
 	return queryOptions({
 		queryKey: ['company-settings'],
-		queryFn: () => request<TCompanySetting[]>('/company/settings'),
+		queryFn: () => request<TCompanySetting[]>('/companies/settings'),
 	});
 }
 
@@ -177,34 +123,7 @@ export function saveCompanySetting(
 	key: string,
 	input: { valueType: TCompanySettingValueType; value: string | null },
 ) {
-	return request<TCompanySetting>(`/company/settings/${encodeURIComponent(group)}/${encodeURIComponent(key)}`, {
-		method: 'PUT',
-		body: JSON.stringify(input),
-	});
-}
-
-/** Every numbering series with its next number. */
-export function numberingQueryOptions() {
-	return queryOptions({
-		queryKey: ['code-numbers'],
-		queryFn: () => request<TCodeNumberSetting[]>('/code-numbers'),
-	});
-}
-
-/** Renders a pattern without saving it (the server validates it). */
-export async function previewNumbering(
-	codeType: TCodeType,
-	input: { pattern: string; resetPolicy: TResetPolicy },
-) {
-	const data = await request<{ nextNumber: string }>(`/code-numbers/${codeType}/preview`, {
-		method: 'POST',
-		body: JSON.stringify(input),
-	});
-	return data.nextNumber;
-}
-
-export function saveNumbering(codeType: TCodeType, input: { pattern: string; resetPolicy: TResetPolicy }) {
-	return request<TCodeNumberSetting>(`/code-numbers/${codeType}`, {
+	return request<TCompanySetting>(`/companies/settings/${encodeURIComponent(group)}/${encodeURIComponent(key)}`, {
 		method: 'PUT',
 		body: JSON.stringify(input),
 	});

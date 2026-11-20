@@ -11,7 +11,6 @@ import { CompanySettingsCard } from '@/components/settings/company-settings-card
 import { toast } from '@/components/toast';
 import {
 	companyProfileQueryOptions,
-	numberingQueryOptions,
 	saveCompanyProfile,
 	type TCompanyProfile,
 	type TCompanyProfileInput,
@@ -42,8 +41,8 @@ function CompanyProfilePage() {
 			const path = kind === 'logo' ? 'logo' : 'onboarding';
 			const saved =
 				action === 'upload'
-					? await uploadDocumentImage<TCompanyProfile>(`/company/profile/${path}`, file!)
-					: await removeDocumentImage<TCompanyProfile>(`/company/profile/${path}`);
+					? await uploadDocumentImage<TCompanyProfile>(`/companies/profile/${path}`, file!)
+					: await removeDocumentImage<TCompanyProfile>(`/companies/profile/${path}`);
 			setProfile(saved);
 			toast.success(t('settings:companyProfile.imageSaved'));
 		} catch (cause) {
@@ -56,8 +55,6 @@ function CompanyProfilePage() {
 		try {
 			const saved = await saveCompanyProfile(input);
 			queryClient.setQueryData(companyProfileQueryOptions().queryKey, saved);
-			// Numbers use the document code: refresh their preview too.
-			await queryClient.invalidateQueries({ queryKey: numberingQueryOptions().queryKey });
 			toast.success(t('settings:companyProfile.saved'));
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));

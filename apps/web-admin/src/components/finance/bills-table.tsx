@@ -5,6 +5,13 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Table,
@@ -23,6 +30,7 @@ import {
 	recordBill,
 	toMinor,
 } from '@/lib/finance-api';
+import { supplierCompaniesQueryOptions } from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
 import { BillFromOrderForm } from './bill-from-order-form';
 
@@ -41,7 +49,7 @@ export function BillsTable() {
 	const [page, setPage] = useState(1);
 	const [showForm, setShowForm] = useState(false);
 	const [showFromOrder, setShowFromOrder] = useState(false);
-	const [supplierId, setSupplierId] = useState('');
+	const [supplierCompanyId, setSupplierCompanyId] = useState('');
 	const [billDate, setBillDate] = useState(today());
 	const [dueDate, setDueDate] = useState('');
 	const [subtotal, setSubtotal] = useState('');
@@ -53,13 +61,18 @@ export function BillsTable() {
 		enabled: canRead,
 	});
 
+	const suppliers = useQuery({
+		...supplierCompaniesQueryOptions({ status: 'active', limit: 100 }),
+		enabled: canCreate && showForm,
+	});
+
 	const invalidate = () =>
 		queryClient.invalidateQueries({ queryKey: ['bills'] });
 
 	const create = useMutation({
 		mutationFn: () =>
 			createBill({
-				supplierId,
+				supplierCompanyId,
 				billDate,
 				dueDate: dueDate || null,
 				subtotal: toMinor(subtotal),
@@ -117,12 +130,24 @@ export function BillsTable() {
 
 			{canCreate && showForm ? (
 				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<Input
-						className='w-56'
-						placeholder='Supplier ID (UUID)'
-						value={supplierId}
-						onChange={(event) => setSupplierId(event.target.value)}
-					/>
+					<Select
+						value={supplierCompanyId || 'none'}
+						onValueChange={(value: string | null) =>
+							setSupplierCompanyId(value == null || value === 'none' ? '' : value)
+						}
+					>
+						<SelectTrigger className='w-64'>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value='none'>{t('finance:aging.party.supplier')}</SelectItem>
+							{suppliers.data?.rows.map((row) => (
+								<SelectItem key={row.id} value={row.id}>
+									{row.code} - {row.name}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					<DatePicker
 						className='w-40'
 						value={billDate}
@@ -147,7 +172,7 @@ export function BillsTable() {
 					/>
 					<Button
 						size='sm'
-						disabled={create.isPending || !supplierId || !subtotal}
+						disabled={create.isPending || !supplierCompanyId || !subtotal}
 						onClick={() => void create.mutateAsync()}
 					>
 						{create.isPending ? t('finance:common.creating') : t('finance:common.create')}

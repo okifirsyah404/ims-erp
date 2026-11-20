@@ -251,18 +251,18 @@ export function salesSummaryQueryOptions(organizationId: string | null, window: 
 	});
 }
 
-/** Cash and bank balances, every account (`GET /cash-bank/accounts`). */
+/** Cash and bank balances, every account (`GET /finance/cash-bank-accounts`). */
 export function dashboardCashQueryOptions(organizationId: string | null, enabled: boolean) {
 	return queryOptions({
 		queryKey: ['dashboard', 'cash', organizationId] as const,
-		queryFn: () => getJson<TCashBankAccount[]>('/cash-bank/accounts'),
+		queryFn: () => getJson<TCashBankAccount[]>('/finance/cash-bank-accounts'),
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
 	});
 }
 
-/** Profit and loss for a window (`GET /reports/profit-and-loss`). */
+/** Profit and loss for a window (`GET /finance/reports/profit-and-loss`). */
 export function dashboardProfitQueryOptions(
 	organizationId: string | null,
 	range: { from: string; to: string },
@@ -271,7 +271,7 @@ export function dashboardProfitQueryOptions(
 	return queryOptions({
 		queryKey: ['dashboard', 'profit', organizationId, range.from, range.to] as const,
 		queryFn: () =>
-			getJson<TProfitAndLoss>('/reports/profit-and-loss', {
+			getJson<TProfitAndLoss>('/finance/reports/profit-and-loss', {
 				startDate: range.from,
 				endDate: range.to,
 			}),
