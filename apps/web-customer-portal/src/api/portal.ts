@@ -1,5 +1,5 @@
 import { ApiError, createApiClient, type ApiClient, type ApiClientOptions } from "./client";
-import { authTokensSchema, loginFailureFrom, loginSuccessSchema, parseOrThrow, paymentIntentSchema, sessionSchema } from "./portal-schemas";
+import { authTokensSchema, ErpContractError, loginFailureFrom, loginSuccessSchema, parseOrThrow, paymentIntentSchema, sessionSchema } from "./portal-schemas";
 
 /**
  * Customer-portal contract (apps/web-customer-portal). Types describe what the portal needs; the
@@ -26,7 +26,13 @@ export type PortalUser = {
   company?: { id: string; name: string; npwp?: string; shortName: string };
 };
 
-export type AuthTokens = { accessToken: string; refreshToken?: string; expiresAt: ISODate };
+/**
+ * The signed-in session, kept only in the portal's server-side session (never sent to the
+ * browser). `sessionCookie` is the ERP's session cookie as `name=value`, received as
+ * `Set-Cookie` on sign-in and sent back as the `Cookie` header (ERP-0094, ADR-0027).
+ * `refreshToken` exists only in demo mode: ERP sessions slide and are never refreshed.
+ */
+export type AuthTokens = { sessionCookie: string; refreshToken?: string; expiresAt: ISODate };
 
 export type LoginResult =
   | { ok: true; user: PortalUser; tokens: AuthTokens }
@@ -519,12 +525,35 @@ function assertSafeConfig({ baseUrl, routes }: ErpPortalConfig) {
   }
 }
 
+/**
+ * The ERP session cookie (`name=value`) from a sign-in response's `Set-Cookie`, or
+ * `null`. Only a non-empty value is taken; attributes (Path, HttpOnly, …) are dropped
+ * because the cookie is never handed to a browser.
+ */
+function sessionCookieFrom(response: Response): string | null {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  const values = headers.getSetCookie?.() ?? [response.headers.get("set-cookie") ?? ""];
+  for (const value of values) {
+    const pair = value.split(";", 1)[0]?.trim() ?? "";
+    if (SESSION_COOKIE_PAIR.test(pair)) return pair;
+  }
+  return null;
+}
+
+/** `name=value`: an RFC 6265 token name and a non-empty value without separators. */
+const SESSION_COOKIE_PAIR = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+=[^;\s,]{16,8192}$/;
+
+function tokensFrom(operation: string, cookie: string | null, expiresAt: string): AuthTokens {
+  if (!cookie) throw new ErpContractError(operation, ["set-cookie: the ERP sent no session cookie"]);
+  return { sessionCookie: cookie, expiresAt };
+}
+
 export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   assertSafeConfig(config);
   const clientFor = (session?: AuthTokens): ApiClient =>
     createApiClient({
       baseUrl: config.baseUrl,
-      token: session?.accessToken,
+      sessionCookie: session?.sessionCookie,
       fetcher: config.fetcher,
       timeoutMs: config.timeoutMs,
       retries: config.retries,
@@ -558,7 +587,10 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   return {
     async login(input) {
       try {
-        return parseOrThrow("login", loginSuccessSchema, await post("login", undefined, input));
+        let cookie: string | null = null;
+        const body = await clientFor().post(path("login"), input, { onResponse: (response) => (cookie = sessionCookieFrom(response)) });
+        const { user, session } = parseOrThrow("login", loginSuccessSchema, body);
+        return { ok: true, user, tokens: tokensFrom("login", cookie, session.expiresAt) };
       } catch (error) {
         if (error instanceof ApiError && [401, 403, 423].includes(error.status)) {
           const failure = loginFailureFrom(error.status, error.body);
@@ -571,8 +603,10 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     async verifyEmail(input) {
       // The ERP answers a wrong or expired code with 400 (and 404/410 for an unknown sign-up).
       try {
-        const session = await post("verifyEmail", undefined, input);
-        return parseOrThrow("verifyEmail", sessionSchema, session);
+        let cookie: string | null = null;
+        const body = await clientFor().post(path("verifyEmail"), input, { onResponse: (response) => (cookie = sessionCookieFrom(response)) });
+        const { user, session } = parseOrThrow("verifyEmail", sessionSchema, body);
+        return { user, tokens: tokensFrom("verifyEmail", cookie, session.expiresAt) };
       } catch (error) {
         if (error instanceof ApiError && [400, 404, 410].includes(error.status)) return null;
         throw error;

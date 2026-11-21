@@ -81,6 +81,7 @@ export class PortalAccountService {
 			| 'hasPassword'
 			| 'issuePasswordToken'
 			| 'revokeSessions'
+			| 'grantCustomerRole'
 		>,
 		@inject(PORTAL_MAILER_TOKEN) private readonly mailer: IPortalMailer,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
@@ -234,6 +235,7 @@ export class PortalAccountService {
 			portalInvitedBy: null,
 			createdBy: pending.userId,
 		});
+		await this.users.grantCustomerRole(pending.userId);
 		await this.cache.del(key);
 		const resolved = await this.resolveCustomer(person.userId ?? pending.userId);
 		if (!resolved) throw new PortalInvalidCodeError();
@@ -325,6 +327,7 @@ export class PortalAccountService {
 						createdBy: actorUserId,
 					});
 			if (!granted) throw new PortalAccountNotFoundError();
+			await this.users.grantCustomerRole(user.id);
 			await this.sendInvitation(user, link);
 			return this.view(granted);
 		} catch (error) {

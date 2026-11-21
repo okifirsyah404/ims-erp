@@ -7,7 +7,9 @@ import { type PortalRoutes } from "@/api/portal";
  * `apps/backend/src/app/customer/controllers/portal.controller.ts` (ADR-0024 Q28 moved
  * the prefix from `/portal/v1` to `/customers/portal/v1`; the old paths are gone).
  * Success bodies are the ERP envelope `{ requestId, status, message, timestamp, data }`
- * (see ./envelope.ts); authenticated routes take `Authorization: Bearer <accessToken>`.
+ * (see ./envelope.ts). Sign-in and sign-up verification answer `Set-Cookie` with the ERP's
+ * session cookie; authenticated routes take it back as the `Cookie` header (ERP-0094,
+ * ADR-0027). It lives only in the portal's server-side session, never in a browser.
  *
  * `:id` placeholders are URL-encoded at call time (a device id `<uuid>:<line>` keeps its
  * colon); absolute URLs, `//` and `..` are rejected at startup. Operations left out raise

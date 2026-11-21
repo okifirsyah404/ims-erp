@@ -1,8 +1,10 @@
-> Updated 2026-11-20 (ADR-0024): the portal API now lives in the `customer` module at `/customers/portal/v1` (was `/portal/v1`); tickets are owned by `ticket`, warranties by `project`. Request/response shapes below are unchanged.
+> Updated 2026-11-20 (ADR-0024): the portal API now lives in the `customer` module at `/customers/portal/v1` (was `/portal/v1`); tickets are owned by `ticket`, warranties by `project`.
+>
+> Updated 2026-11-21 (ERP-0094, [ADR-0027](../decisions/ADR-0027-portal-session-cookie-and-customer-role.md)): the session is Better Auth's own session cookie held by the portal's server (`Set-Cookie` on sign-in, `Cookie` on every call, no bearer token), and only a login with the global `customer` role passes the guard.
 
 # Customer Portal Module (ERP-0022, stage 1)
 
-Decision record: [ADR-0022](../decisions/ADR-0022-customer-portal-api.md).
+Decision records: [ADR-0022](../decisions/ADR-0022-customer-portal-api.md), session transport and role [ADR-0027](../decisions/ADR-0027-portal-session-cookie-and-customer-role.md).
 API reference: Swagger/OpenAPI served by `@elysia/openapi` from the backend at `/docs`.
 Full gap analysis against the website repo (all 51 portal, 9 catalog and 10
 website operations, open owner decisions): `docs/plan/plans/website-integration.md`.
@@ -16,7 +18,8 @@ own tickets) + the account part of M12 T25 + warranties.
 | --- | --- | --- |
 | Portal logins (`customer.customers`), invite / resend / revoke | Customer | `src/app/customer` (`PortalAccountService`, `/admin/customers/portal-accounts`) |
 | Sign-in, sessions, passwords, lockout; the `/customers/portal/v1` routes | Customer | `src/app/customer` (`portal.controller.ts`) |
-| Bearer → session → customer guard | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
+| Session cookie → `customer` role → active portal login guard | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
+| `customer` role granted on invitation and verified sign-up | User (identity) | `ExportedUserService.grantCustomerRole` → `BetterAuthUserAccountGateway` |
 | Project view without costs | Project | `ProjectPortalService` |
 | Tickets, message thread, customer confirmation | Ticket | `ticket` module (`ticket.tickets`, `ticket.ticket_messages`) |
 | Devices and warranty | Project | `WarrantyService` (`project.warranties`) |
@@ -40,17 +43,30 @@ answer 503. The portal sets `ERP_API_BASE_URL` to the ERP and these routes.
 Responses use the ERP envelope `{ requestId, status, message, timestamp, data }`
 (errors add `errors[]`) — configure the
 adapter with `unwrap` for `data`. Send `Accept-Language: id` or `en` for the
-labels. Authenticated routes need `Authorization: Bearer <accessToken>`.
+labels.
+
+**Session (ADR-0027).** `login` and `verifyEmail` answer `Set-Cookie` with Better
+Auth's session cookie (its own name and attributes); the body carries only the
+user and `session.expiresAt`, never the token. The portal's server keeps the
+`name=value` pair in its server-side Astro session and sends it as the `Cookie`
+header on every authenticated route; the browser never holds it.
+`Authorization: Bearer` is not accepted. `logout` answers a clearing
+`Set-Cookie`. The guard, sign-in and sign-up verification require the global
+role `customer` (comma-joined `auth.users.role`) **and** an active portal login;
+a staff login gets the same 401 as a wrong password. New passwords are 12-128
+characters (`register`, `resetPassword`, `changePassword`). Every route
+publishes a `summary` and the zod schema it parses as the OpenAPI
+`requestBody` (`src/http/openapi.ts`).
 
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
-| `login` | `POST /customers/portal/v1/auth/login` | `{ email, password, accountType? }` → `{ ok: true, user, tokens: { accessToken, expiresAt } }`; 401 wrong credentials, 423 locked (5 failures, 15 min) |
+| `login` | `POST /customers/portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` + `{ ok: true, user, session: { expiresAt } }`; 401 wrong credentials or no `customer` role, 423 locked (5 failures, 15 min) |
 | `register` | `POST /customers/portal/v1/auth/register` | `{ accountType, name, email, phone?, password }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
-| `verifyEmail` | `POST /customers/portal/v1/auth/verify-email` | `{ email, code }` → `{ user, tokens }` (creates customer, contact, owner login); 400 wrong/expired (5 attempts, 10 min) |
+| `verifyEmail` | `POST /customers/portal/v1/auth/verify-email` | `{ email, code }` → `Set-Cookie` + `{ user, session: { expiresAt } }` (creates the individual customer with an owner login and grants `customer`); 400 wrong/expired (5 attempts, 10 min) |
 | `resendVerification` | `POST /customers/portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
 | `requestPasswordReset` | `POST /customers/portal/v1/auth/password-reset` | `{ email }`; always 200 |
 | `resetPassword` | `POST /customers/portal/v1/auth/password-reset/confirm` | `{ token, password }`; 400 invalid/expired. Also sets the first password after an invitation |
-| `logout` | `POST /customers/portal/v1/auth/logout` | bearer |
+| `logout` | `POST /customers/portal/v1/auth/logout` | session cookie; answers a clearing `Set-Cookie` |
 | `changePassword` | `POST /customers/portal/v1/account/password` | `{ current, next }`; 400 wrong current |
 | — (session user) | `GET /customers/portal/v1/me` | `PortalUser` |
 | `getHome` | `GET /customers/portal/v1/home` | active project + open tickets; quotations/activity empty in stage 1 |
@@ -87,7 +103,10 @@ order lookup, RFQs.
 
 ## Tests
 
-`test/unit/customer-portal.test.ts` (invitations and refusals, sign-in and
-lockout, cross-customer denial for projects/tickets/devices, no internal notes
-or costs, confirmation, the guard on a real route). E2E against a disposable
-database: `progress.md` 2026-11-14.
+`test/unit/portal-account.test.ts` (invitations and refusals, the `customer`
+role granted on invitation and sign-up, sign-in and lockout, the session cookie
+on sign-in / cleared on logout, bearer refused, a login without `customer`
+refused, password length, the guard on a real route) and
+`test/unit/portal-data.test.ts` (cross-customer denial for projects, tickets
+and devices, no internal notes or costs, confirmation). E2E against a
+disposable database: `progress.md` 2026-11-14 and 2026-11-21 (ERP-0094).

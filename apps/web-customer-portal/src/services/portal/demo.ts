@@ -46,7 +46,7 @@ const state: DemoState = (globalDemo.__entragateDemoState ??= {
 
 // Short-lived access token + refresh token, mirroring the ERP flow so refresh is exercised in demo mode.
 const tokens = (): AuthTokens => ({
-  accessToken: `demo.${crypto.randomUUID()}`,
+  sessionCookie: `demo_session=demo.${crypto.randomUUID()}`,
   refreshToken: `demo-refresh.${crypto.randomUUID()}`,
   expiresAt: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
 });

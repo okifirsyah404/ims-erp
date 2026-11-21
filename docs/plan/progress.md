@@ -12,6 +12,127 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - ERP-0094: server-held portal session cookie and customer-only portal (port of branch ERP-0069)
+
+Port step P1 (first half) of `docs/plan/port-portal-onto-main.md`, decision
+D10, owner go given 2026-11-21. Source: commit `8745d5a4` on
+`feat/erp-0069-portal-session` (ERP-0069, old `portal` module), re-applied on
+branch `feat/erp-0094-portal-session-cookie` from `origin/main` `638ab9fa`
+onto main's layout (`customer` module, `/customers/portal/v1`, login columns
+on `customer.customers`). Branch ADR-0024 ported as **ADR-0027** (accepted as
+proposed per D10). ERP-0094 and ADR-0027 re-checked free on `origin/main`,
+every remote branch and open PRs (none) before use.
+
+**Gates.** Gate 1: read `docs/database/docs.dbml` (`// MODULE:` index, Identity
+`auth.users` incl. `role`, Customer `customer.customers` portal columns) and
+`module-ownership.md`; skipped `integrity-and-consistency.md`,
+`data-dictionary.md`, `logical-references.md`, `implementation-phases.md`: no
+table, column, index, constraint, status vocabulary or cross-module id column
+changes. Gate 2: decisions taken already (D10: server-held Better Auth cookie
++ global `customer` role; owner go 2026-11-21); answers recorded: module
+ownership - portal auth stays in `customer`, the role write goes through the
+identity module (`ExportedUserService.grantCustomerRole` →
+`IUserAccountGateway`), never an `auth.*` query from `customer`; tenant
+scoping - none (company-wide, ADR-0011); soft delete - backfill only for
+`customer.customers` rows with `user_id` set and `deleted_at` null;
+datetimes - none stored; role vocabulary - `customer` is already declared in
+`ac/admin-ac.ts`, comma-joined `user.role`, default `user` replaced, other
+roles kept. **docs/database/ was reviewed and is unchanged.**
+
+**Backend (`apps/backend`).**
+- `authorization/portal-auth.ts`: guard hands the request headers to
+  `IPortalSessionResolver.resolve(headers)`; `bearerToken()` removed;
+  `PortalContext.accessToken` → `sessionToken`.
+- `customer/adapters/better-auth-portal-session.ts`: `tokenFromHeaders`
+  (Better Auth cookie name), `sessionCookie` / `clearedSessionCookie`
+  (Better Auth's own name and attributes), `getSession` returns `roles`.
+- `customer/services/portal-auth.service.ts`: login / verifySignup return
+  `{ context, session }`; login, verification and resolve require
+  `PORTAL_CUSTOMER_ROLE` (`customer`) and an active portal login (same 401).
+- `customer/controllers/portal.controller.ts`: `Set-Cookie` on login and
+  verify-email, body `{ ok, user, session: { expiresAt } }` (no token);
+  logout answers a clearing `Set-Cookie`; every route has a `summary`, the
+  POST routes publish their zod schema as `requestBody`
+  (new `src/http/openapi.ts` `requestBodyDoc`; main had no equivalent).
+- `user`: `grantCustomerRole` on `IUserAccountGateway`,
+  `BetterAuthUserAccountGateway` (main's equivalent of the branch's
+  `user/adapters/better-auth-portal.ts`) and `ExportedUserService`;
+  `PortalAccountService` calls it on invitation (staff and owner) and on
+  verified sign-up.
+- Passwords: `portalNewPasswordSchema` (12-128) for reset-confirm and change,
+  sign-up 12-128. The portal's forms were already 12-128 on main.
+- `providers/mailer/mailer.templates.tsx`: portal invitation and sign-up code
+  emails awaited `appName()` (subjects read `[object Promise]` on main too).
+- Migration `database/migrations/20261121064831_erp0094_portal_customer_role`:
+  created with `bunx --bun drizzle-kit generate --custom --name
+  erp0094_portal_customer_role` (snapshot chained, no deltas), SQL
+  hand-written: data-only, idempotent backfill of `customer` onto
+  `auth.users.role` for users of live portal logins.
+
+**Apps.** `web-customer-portal` and `web-landing` `src/api/client.ts` (kept
+identical): `sessionCookie` option sent as `Cookie`, `onResponse` hook; main's
+client already relayed the envelope's `errors[].message`, so that part of the
+branch was not needed. Portal: `AuthTokens.sessionCookie`, the cookie is read
+from `Set-Cookie` on login / verify-email (no cookie → `ErpContractError`),
+`api/connect/token.ts` hands `sessionCookie` to the website, demo source and
+`erp-routes.ts` doc updated. Website: `CustomerAuth.sessionCookie`,
+`App.SessionData.customer.sessionCookie`, hand-off in `lib/server/auth.ts`.
+
+**Docs.** `docs/architecture/decisions/ADR-0027-portal-session-cookie-and-customer-role.md`
+(listed in `docs/architecture/README.md`), `docs/architecture/modules/customer-portal.md`
+(session section, route notes, tests), port plan P1 marked in progress.
+
+**Verified (commands run in the worktree `ims-erp-p1`).**
+- `bun install` (fresh worktree): 1245 packages installed.
+- `apps/backend`: `bun run typecheck` clean; `bun test` 1321 pass, 0 fail
+  (101 files; `test/unit/portal-account.test.ts` 24 pass incl. new cases:
+  role granted on invitation and verified sign-up, cookie resolves, no cookie /
+  unknown cookie / bearer resolve to nothing, login without `customer` → same
+  401, verified sign-up without the role refused, HTTP: `Set-Cookie` on login,
+  no token in the body, bearer 401, cookie 200, logout clears the cookie;
+  password 12-128 on sign-up / reset / change). The known `Bun.Image`
+  failures did not appear in this run. `bun run lint` 0 errors (23 warnings,
+  none in touched files).
+- `apps/web-customer-portal`: `bun test` 61 pass; `bun run check` 0 errors,
+  0 warnings, 11 hints. `apps/web-landing`: `bun test` 25 pass (new: customer
+  calls send `Cookie`, never `Authorization`); `bun run check` 0 errors,
+  0 warnings, 5 hints.
+- Root: `bun run lint` 5/5 tasks, 0 errors; `bun run typecheck` 6/6 tasks.
+- `bun docs/database/validate-dbml.ts` → OK. `bunx --bun drizzle-kit check`
+  → "Everything's fine"; `bunx --bun drizzle-kit generate` → "No schema
+  changes, nothing to migrate".
+- Live, disposable database `ims_erp_p1` (container `ims-erp-postgres-1`,
+  started for this check together with `ims-erp-redis-1`):
+  `database/migrate-reset.ts` applied 21 migrations (journal 21 rows) and
+  seeded. A portal login (individual, owner, active) was created with role
+  `user`; the migration SQL run twice: `UPDATE 1`, then `UPDATE 0`; role →
+  `customer`. Role rule checked on samples: NULL / '' / `user` → `customer`,
+  `user, investor` → `investor,customer`. Backend on `APP_PORT=3010
+  SCHEDULER_ENABLED=false`: login 200 with `Set-Cookie:
+  better-auth.session_token=…; Path; Max-Age; HttpOnly; SameSite`, body keys
+  `ok,user,session` (no token); `GET /me` with the cookie 200, with
+  `Authorization: Bearer <same token>` 401, without credentials 401; logout
+  200 with `Max-Age=0` clearing cookie, old cookie then 401; the seeded staff
+  admin (credentials confirmed valid on Better Auth's own sign-in, 200) → 401
+  at portal sign-in, no cookie; wrong password 401; role set back to `user`
+  → portal login 401, restored → 200. OpenAPI (`/docs/json`): 23/23 portal
+  operations have a summary, 10/12 POSTs a request body (logout and
+  ticket confirm have none). The backend process started for the check was
+  stopped afterwards.
+
+**Not done / open.**
+- No browser walk-through of the portal sign-in or the website hand-off.
+- ERP-0106 (2-step sign-in, devices, delete login, D3 columns) - the rest of
+  P1 - not started.
+- Observed, not changed: the `docs.dbml` note on `customer.customers.portal_status`
+  says revoking also sets `deleted_at`, while `CustomerRepository.revokePortalAccess`
+  frees `user_id` and keeps the row; the backfill covers both. Main already
+  uses ERP-0092 (code number settings), which the port plan keeps for the
+  ticket-thread-gaps slice; that renumbering needs a decision before P6.
+
+Next executable task: ERP-0106 (rest of P1) on a fresh branch from
+`origin/main` after this branch is reviewed.
+
 ## 2026-11-21 - ERP-0092: code number settings page restored (Settings -> Code Number)
 
 User request: bring back the code number settings page under Settings ->

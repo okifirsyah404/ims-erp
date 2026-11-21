@@ -695,6 +695,19 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M07 Projects and After-Sales
 
 ### implemented
+- ERP-0094 portal session cookie + customer-only portal (2026-11-21, port of
+  branch ERP-0069, ADR-0027): `/customers/portal/v1` sign-in and sign-up
+  verification answer `Set-Cookie` with Better Auth's session cookie (no
+  token in the body), logout clears it, the guard reads only `Cookie` (bearer
+  401) and requires the global `customer` role plus an active portal login;
+  the role is granted on invitation and verified sign-up and backfilled by
+  migration `20261121064831_erp0094_portal_customer_role`; new passwords
+  12-128; OpenAPI summaries + request bodies. web-customer-portal and
+  web-landing keep the cookie server-side. Evidence: `src/app/customer`,
+  `src/authorization/portal-auth.ts`, `test/unit/portal-account.test.ts`,
+  `apps/web-customer-portal/src/services/portal/erp-source.test.ts`,
+  `progress.md` 2026-11-21 (live check on a disposable DB). Open: browser
+  walk-through; ERP-0106 (2-step, devices, delete login) follows in P1.
 - Customer portal stage 1 — T26 + the account part of T25, ERP-0022
   (ADR-0022): one login per customer contact with a role, staff invitations,
   owners manage colleagues, individuals sign up with an emailed code, the web

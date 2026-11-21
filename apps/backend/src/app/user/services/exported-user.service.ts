@@ -57,6 +57,11 @@ export class ExportedUserService {
 		return this.accounts.issuePasswordToken(userId, ttlSeconds);
 	}
 
+	/** Gives the user the global `customer` role the portal guard requires (ADR-0027). */
+	grantCustomerRole(userId: string): Promise<void> {
+		return this.accounts.grantCustomerRole(userId);
+	}
+
 	/** Ends every session of the user; the user row stays (history). */
 	revokeSessions(userId: string): Promise<void> {
 		return this.accounts.revokeSessions(userId);

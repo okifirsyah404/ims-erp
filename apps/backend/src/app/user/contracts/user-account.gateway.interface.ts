@@ -19,4 +19,10 @@ export interface IUserAccountGateway {
 	issuePasswordToken(userId: string, ttlSeconds: number): Promise<string>;
 	revokeSessions(userId: string): Promise<void>;
 	isOrganizationMember(userId: string): Promise<boolean>;
+	/**
+	 * Adds the global `customer` role (admin plugin, comma-joined `user.role`):
+	 * the default `user` role is replaced, any other role is kept. The customer
+	 * portal guard requires it (ADR-0027).
+	 */
+	grantCustomerRole(userId: string): Promise<void>;
 }

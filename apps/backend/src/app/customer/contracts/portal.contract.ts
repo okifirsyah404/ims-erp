@@ -1,10 +1,16 @@
 import { z } from 'zod';
 
 /**
- * Request schemas and ports of the customer portal API (`/portal/v1`,
- * ERP-0022). The portal app (`apps/web-customer-portal`) calls these from
+ * Request schemas and ports of the customer portal API
+ * (`/customers/portal/v1`, ERP-0022). The portal app (`apps/web-customer-portal`) calls these from
  * its server only; the shapes follow its `PortalSource` contract.
  */
+
+/**
+ * A new portal password: the same rule the portal's own form validation
+ * applies (`apps/web-customer-portal`, ERP-0094), so the two never disagree.
+ */
+export const portalNewPasswordSchema = z.string().min(12).max(128);
 
 export const portalLoginSchema = z.object({
 	email: z.string().trim().toLowerCase().email().max(254),
@@ -17,12 +23,12 @@ export const portalPasswordResetSchema = z.object({ email: z.string().trim().toL
 
 export const portalPasswordConfirmSchema = z.object({
 	token: z.string().min(16).max(256),
-	password: z.string().min(8).max(128),
+	password: portalNewPasswordSchema,
 });
 
 export const portalChangePasswordSchema = z.object({
 	current: z.string().min(1).max(128),
-	next: z.string().min(8).max(128),
+	next: portalNewPasswordSchema,
 });
 
 export const portalTicketSchema = z.object({
@@ -47,8 +53,14 @@ export const portalProductParamSchema = z.object({ id: z.string().regex(/^[0-9a-
 export type TPortalLoginRequest = z.output<typeof portalLoginSchema>;
 export type TPortalTicketInput = z.output<typeof portalTicketSchema>;
 
-/** A Better Auth session issued for the portal. */
-export type TPortalSession = { token: string; userId: string; expiresAt: Date };
+/**
+ * A Better Auth session issued for the portal. `token` is the signed session
+ * cookie value; `roles` are the user's global (admin plugin) roles.
+ */
+export type TPortalSession = { token: string; userId: string; roles: string[]; expiresAt: Date };
+
+/** The global role every portal login carries (ADR-0027); nothing else passes the portal guard. */
+export const PORTAL_CUSTOMER_ROLE = 'customer';
 
 /** Better Auth port for portal sessions and passwords. */
 export interface IPortalSessionGateway {
@@ -56,8 +68,14 @@ export interface IPortalSessionGateway {
 	signIn(email: string, password: string, headers: Headers): Promise<TPortalSession | null>;
 	/** A session for a user who just verified a sign-up code. */
 	createSession(userId: string): Promise<TPortalSession | null>;
-	/** The live session behind an access token, or `null`. */
+	/** The live session behind a session token, or `null`. */
 	getSession(token: string): Promise<TPortalSession | null>;
+	/** The session token carried by a request's `Cookie` header, or `null`. */
+	tokenFromHeaders(headers: Headers): Promise<string | null>;
+	/** A `Set-Cookie` value that hands the session to the portal's server. */
+	sessionCookie(session: TPortalSession): Promise<string>;
+	/** A `Set-Cookie` value that clears the session cookie. */
+	clearedSessionCookie(): Promise<string>;
 	signOut(token: string): Promise<void>;
 	/** `false` when the current password is wrong. */
 	changePassword(token: string, current: string, next: string): Promise<boolean>;

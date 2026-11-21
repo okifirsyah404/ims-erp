@@ -8,8 +8,13 @@ import type { TApiErrorMessage, TApiPaginatedResponse, TApiResponse } from "@ims
 export type ApiClientOptions = {
   baseUrl: string;
   fetcher?: typeof fetch;
-  /** Bearer token sent with every request (server-side only). */
+  /** Bearer token sent with every request (server-side only), e.g. the website's API key. */
   token?: string;
+  /**
+   * ERP session cookie (`name=value`) sent as the `Cookie` header with every request
+   * (server-side only): the customer portal session (ERP-0094, ADR-0027).
+   */
+  sessionCookie?: string;
   /** Request timeout in milliseconds. */
   timeoutMs?: number;
   /** Extra attempts for idempotent requests (GET) on network errors and 502/503/504. */
@@ -31,6 +36,8 @@ export type RequestOptions = {
   signal?: AbortSignal;
   /** Sent as `Idempotency-Key` so the ERP can de-duplicate retried mutations. */
   idempotencyKey?: string;
+  /** Called with the successful response before its body is read (e.g. to read `Set-Cookie`). */
+  onResponse?: (response: Response) => void;
 };
 
 /** Error thrown for non-2xx ERP responses and network failures (`status` 0). */
@@ -72,7 +79,7 @@ function envelopeMessages(body: unknown, errors: TApiErrorMessage[]): string[] {
 
 /**
  * Joins `path` onto `baseUrl` and refuses anything that would leave the ERP origin
- * (absolute URLs, `//host`, `..` tricks), so the bearer token can't be sent elsewhere.
+ * (absolute URLs, `//host`, `..` tricks), so credentials can't be sent elsewhere.
  */
 function buildUrl(baseUrl: string, path: string, query?: RequestOptions["query"]): string {
   const base = new URL(baseUrl);
@@ -106,13 +113,14 @@ export function createApiClient({
   baseUrl,
   fetcher = fetch,
   token,
+  sessionCookie,
   timeoutMs = 15_000,
   retries = 1,
   defaultHeaders = {},
   unwrap = (body) => body,
 }: ApiClientOptions) {
   async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { method = "GET", query, body, headers = {}, signal, idempotencyKey } = options;
+    const { method = "GET", query, body, headers = {}, signal, idempotencyKey, onResponse } = options;
     const isForm = typeof FormData !== "undefined" && body instanceof FormData;
     const url = buildUrl(baseUrl, path, query);
     const requestId = crypto.randomUUID();
@@ -131,8 +139,9 @@ export function createApiClient({
             ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
             ...defaultHeaders,
             ...headers,
-            // Last so callers can't override or drop it by accident.
+            // Last so callers can't override or drop them by accident.
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(sessionCookie ? { Cookie: sessionCookie } : {}),
           },
           body: body === undefined ? undefined : isForm ? (body as FormData) : JSON.stringify(body),
           cache: "no-store",
@@ -158,6 +167,7 @@ export function createApiClient({
       if (!response.ok) {
         throw new ApiError(`ERP API error: ${response.status}`, response.status, payload, requestId);
       }
+      onResponse?.(response);
       return unwrap(payload) as T;
     }
   }
