@@ -3,9 +3,9 @@
 **Status: proposal for discussion with Oki (2026-11-20).** Owner go for step
 P1 given 2026-11-21: **P1 / ERP-0094 (session cookie + `customer` role,
 ADR-0027) is in progress on branch `feat/erp-0094-portal-session-cookie`**
-(from `origin/main` `638ab9fa`; implemented and verified locally, not pushed,
-no PR). ERP-0106 (rest of P1: 2-step sign-in, devices, delete login, D3
-columns) implemented on the same branch 2026-11-21 (not pushed, no PR).
+(from `origin/main` `638ab9fa`, implemented and verified locally). ERP-0106
+(rest of P1: 2-step sign-in, devices, delete login, D3 columns) implemented on
+the same branch 2026-11-21. Both pushed 2026-11-21 as **PR #139** (in review).
 Other steps not approved yet. Written on `feat/erp-0069-portal-session` (Dafrin's local branch,
 **not pushed yet**; commit ids below refer to it) after comparing it with
 `origin/main` at `1c10c3e1`.

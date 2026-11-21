@@ -169,9 +169,13 @@ adapter methods; `revokeDevice` async so an unmapped route rejects),
 - The only-owner check and the revoke are two statements; two owners
   deleting their logins at the same moment could both pass. Not guarded.
 
-Next executable task: P1 review and PR (`feat/erp-0094-portal-session-cookie`,
-ERP-0094 + ERP-0106) after the owner's go; then P2 (ERP-0100, ERP-0101) on a
-fresh branch from `origin/main`.
+P1 pushed 2026-11-21 as **PR #139** (`feat/erp-0094-portal-session-cookie`,
+ERP-0094 + ERP-0106; owner go), in review. Work continues on plain branches in
+the main checkout (no extra worktrees, owner request 2026-11-21).
+
+Next executable task: P2 (ERP-0100, ERP-0101: portal account pages and
+company-data change requests; plan D5, D6) on a fresh branch from
+`origin/main`, after the D5 decision.
 
 ## 2026-11-21 - ERP-0094: server-held portal session cookie and customer-only portal (port of branch ERP-0069)
 
