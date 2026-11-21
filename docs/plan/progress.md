@@ -12,6 +12,12 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-22 - PR #141: inventory cards, photo uploads, filters, Rupiah input, per-kind item routes
+
+- Branch `feat/inventory-cards-photos-filters` (3 commits: backend, web-admin + packages, docs) opened as
+  https://github.com/okifirsyah404/ims-erp/pull/141 against `main`. The entries below describe its contents. The two new migrations
+  must be applied (`bun run drizzle:migrate`) on any database that runs it; browser verification is still outstanding (see each entry).
+
 ## 2026-11-22 - Item list filters like the warehouse list, plus price and stock sliders
 
 - No backlog item; `docs/database/` unchanged (no schema change). `GET /products` gains `status` (`all|active|inactive`), `minPrice`/`maxPrice`
