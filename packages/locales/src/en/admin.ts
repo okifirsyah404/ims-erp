@@ -147,7 +147,6 @@ const admin = {
 	'orgs.slug': 'Slug',
 	'orgs.create': 'Create',
 	'orgs.creating': 'Creating…',
-	'orgs.details': 'Organization details',
 	'orgs.slugDescription': 'The slug is permanent and used in URLs and API contexts.',
 	'orgs.slugInvalid': 'Use lowercase letters, digits and single dashes.',
 	// Organization profile image (ERP-0041).

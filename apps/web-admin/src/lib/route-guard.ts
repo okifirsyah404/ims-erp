@@ -28,19 +28,6 @@ export async function canOpenPath(
 	session: GuardSession,
 	queryClient: QueryClient,
 ): Promise<boolean> {
-	// Creating an organization is platform administration, not an org
-	// permission: the nav leaf for `/organizations` only carries
-	// `organization.read`.
-	if (pathname === '/organizations/new') return hasRole(session.user.role, 'admin');
-
-	// Same reasoning for a new warehouse: a person-in-charge grant carries
-	// `read`/`update`/`archive`/`import`/`export` but never `create`
-	// (ADR-0017 §2, plan decision 22), so the page behind this path would only
-	// render a "not allowed" card for a PIC.
-	if (pathname === '/warehouses/new') {
-		return hasRole(session.user.role, 'admin');
-	}
-
 	const leaf: SidebarItem | null = findNavLeaf(navSections, pathname);
 	if (!leaf || leaf.url === '/') return true;
 

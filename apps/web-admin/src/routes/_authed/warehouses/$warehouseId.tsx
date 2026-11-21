@@ -23,7 +23,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
-import { MapPin, PackageOpen } from 'lucide-react';
+import { MapPin, PackageOpen, SearchX } from 'lucide-react';
 import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
 import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage-dialog';
 import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table';
@@ -120,7 +120,7 @@ function WarehouseDetail() {
 	if (!warehouse) {
 		return (
 			<WarehouseAccessGate>
-				<EmptyState title={t('warehouse:warehouses.notFound')} bordered />
+				<EmptyState icon={SearchX} title={t('warehouse:warehouses.notFound')} bordered />
 			</WarehouseAccessGate>
 		);
 	}

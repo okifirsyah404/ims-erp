@@ -33,6 +33,7 @@ import { BorrowingService } from './services/borrowing.service';
 import { ItemCustodyService } from './services/item-custody.service';
 import { ItemRepository } from './repositories/item.repository';
 import { ItemCategoryRepository } from './repositories/item-category.repository';
+import { ItemImageService } from './services/item-image.service';
 import { ItemService } from './services/item.service';
 import { ItemCategoryService } from './services/item-category.service';
 import { ExportedInventoryService } from './services/exported-inventory.service';
@@ -69,6 +70,7 @@ import {
 	ITEM_CATEGORY_REPOSITORY_TOKEN,
 	ITEM_CATEGORY_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
+	ITEM_IMAGE_SERVICE_TOKEN,
 	ITEM_SERVICE_TOKEN,
 	MOVEMENT_REPOSITORY_TOKEN,
 	ITEM_SERIAL_REPOSITORY_TOKEN,
@@ -114,6 +116,7 @@ export function registerInventory(container: DependencyContainer): void {
 	container.register(ITEM_REPOSITORY_TOKEN, { useClass: ItemRepository });
 	container.register(ITEM_CATEGORY_REPOSITORY_TOKEN, { useClass: ItemCategoryRepository });
 	container.register(ITEM_SERVICE_TOKEN, { useClass: ItemService });
+	container.register(ITEM_IMAGE_SERVICE_TOKEN, { useClass: ItemImageService });
 	container.register(ITEM_CATEGORY_SERVICE_TOKEN, { useClass: ItemCategoryService });
 	container.register(SERIAL_UNIT_SERVICE_TOKEN, { useClass: SerialUnitService });
 

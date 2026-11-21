@@ -1,5 +1,9 @@
+import { MoneyInput } from '@/components/money-input';
+import { ImageDropzone } from '@/components/organization/image-dropzone';
+import { uploadDocumentImage } from '@/lib/document-image-api';
+import { minorToRupiah, rupiahToMinor } from '@/lib/format';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -56,7 +60,7 @@ export function AssetForm({
 	/** Drops the page heading, for the create dialog. */
 	compact?: boolean;
 }) {
-	const { t } = useTranslation('assets');
+	const { t } = useTranslation(['assets', 'common']);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
@@ -64,26 +68,45 @@ export function AssetForm({
 	const [itemKind, setItemKind] = useState<TItemKind>(asset?.itemKind ?? 'equipment');
 	const [serialNumber, setSerialNumber] = useState(asset?.serialNumber ?? '');
 	const [acquisitionCost, setAcquisitionCost] = useState(
-		String(asset?.acquisitionCost ?? '0'),
+		minorToRupiah(asset?.acquisitionCost ?? 0),
 	);
+	// Create only: the photo endpoint is id-scoped, so the picked file is
+	// uploaded right after the asset exists.
+	const [imageFile, setImageFile] = useState<File | null>(null);
+	const imagePreviewUrl = useMemo(
+		() => (imageFile ? URL.createObjectURL(imageFile) : null),
+		[imageFile],
+	);
+	useEffect(() => {
+		if (!imagePreviewUrl) return;
+		return () => URL.revokeObjectURL(imagePreviewUrl);
+	}, [imagePreviewUrl]);
 	const [acquisitionDate, setAcquisitionDate] = useState(
 		asset?.acquisitionDate ?? '',
 	);
 	const [location, setLocation] = useState(asset?.locationDescription ?? '');
 
 	const save = useMutation({
-		mutationFn: () => {
+		mutationFn: async () => {
 			const payload = {
 				name,
 				serialNumber: serialNumber || null,
-				acquisitionCost: Number(acquisitionCost) || 0,
+				acquisitionCost: rupiahToMinor(acquisitionCost),
 				acquisitionDate: acquisitionDate || null,
 				locationDescription: location || null,
 			};
 			// The kind is fixed at registration; the update contract has no field for it.
-			return asset
-				? updateAsset(asset.id, payload)
-				: createAsset({ ...payload, itemKind });
+			if (asset) return updateAsset(asset.id, payload);
+			const created = await createAsset({ ...payload, itemKind });
+			// A failed photo upload must not lose the asset that was just created.
+			if (imageFile) {
+				try {
+					await uploadDocumentImage(`/inventory/items/${created.id}/image`, imageFile);
+				} catch (error) {
+					toast.error(error instanceof Error ? error.message : t('common:error.failed'));
+				}
+			}
+			return created;
 		},
 		onSuccess: async () => {
 			toast.success(asset ? t('updated') : t('created'));
@@ -94,95 +117,131 @@ export function AssetForm({
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
+	const fields = (
+		<>
+			<Input
+				placeholder={t('register.name')}
+				value={name}
+				onChange={(event) => setName(event.target.value)}
+			/>
+			<Select
+				value={itemKind}
+				disabled={asset !== undefined}
+				onValueChange={(value: string | null) => setItemKind(value as TItemKind)}
+			>
+				<SelectTrigger>
+					<SelectValue>
+						{(value: string | null) =>
+							value ? t(`itemKind.${value as TItemKind}`) : null
+						}
+					</SelectValue>
+				</SelectTrigger>
+				<SelectContent>
+					{ITEM_KINDS.map((kind) => (
+						<SelectItem key={kind} value={kind}>
+							{t(`itemKind.${kind}`)}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+			<Input
+				placeholder={t('register.serialNumber')}
+				value={serialNumber}
+				onChange={(event) => setSerialNumber(event.target.value)}
+			/>
+			<MoneyInput
+				placeholder={t('register.acquisitionCost')}
+				value={acquisitionCost}
+				onValueChange={setAcquisitionCost}
+			/>
+			<DatePicker value={acquisitionDate} onChange={setAcquisitionDate} />
+			<Input
+				placeholder={t('register.location')}
+				value={location}
+				onChange={(event) => setLocation(event.target.value)}
+			/>
+		</>
+	);
+
+	const actions = (
+		<>
+			<Button
+				variant='outline'
+				onClick={() => (onCancel ? onCancel() : void navigate({ to: '/assets/register' }))}
+			>
+				{t('form.cancel')}
+			</Button>
+			<Button disabled={!name || save.isPending} onClick={() => void save.mutateAsync()}>
+				{save.isPending
+					? asset
+						? t('form.saving')
+						: t('form.creating')
+					: asset
+						? t('form.save')
+						: t('form.create')}
+			</Button>
+		</>
+	);
+
+	// Inside a dialog the dialog is the surface: no card, and the shared sticky
+	// `DialogFooter` keeps the actions visible while the form scrolls.
+	if (compact) {
+		return (
+			<div className='flex flex-col gap-4'>
+				{!asset && (
+					<div className='flex flex-col items-center gap-2'>
+						<ImageDropzone
+							previewUrl={imagePreviewUrl}
+							disabled={save.isPending}
+							label={t('register.photo')}
+							hint={t('common:image.drop')}
+							onSelect={setImageFile}
+							onReject={(reason) =>
+								toast.error(
+									t(reason === 'size' ? 'common:image.sourceTooLarge' : 'common:image.wrongType'),
+								)
+							}
+						/>
+						{imageFile && (
+							<>
+								<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
+									{imageFile.name}
+								</p>
+								<Button
+									type='button'
+									variant='ghost'
+									size='sm'
+									disabled={save.isPending}
+									onClick={() => setImageFile(null)}
+								>
+									{t('common:image.remove')}
+								</Button>
+							</>
+						)}
+					</div>
+				)}
+				<div className='flex flex-col gap-3'>{fields}</div>
+				<DialogFooter>{actions}</DialogFooter>
+			</div>
+		);
+	}
+
 	return (
 		<div className='mx-auto max-w-xl space-y-4'>
-			{compact ? null : (
-				<div>
-					<h1 className='text-xl font-semibold'>
-						{asset ? t('form.editAsset') : t('form.newAsset')}
-					</h1>
-					<p className='text-sm text-muted-foreground'>
-						{asset
-							? t('form.editAssetDescription')
-							: t('form.newAssetDescription')}
-					</p>
-				</div>
-			)}
+			<div>
+				<h1 className='text-xl font-semibold'>
+					{asset ? t('form.editAsset') : t('form.newAsset')}
+				</h1>
+				<p className='text-sm text-muted-foreground'>
+					{asset ? t('form.editAssetDescription') : t('form.newAssetDescription')}
+				</p>
+			</div>
 			<Card>
 				<CardHeader>
-					<CardTitle className='text-sm'>
-						{t('register.name')}
-					</CardTitle>
+					<CardTitle className='text-sm'>{t('register.name')}</CardTitle>
 				</CardHeader>
-				<CardContent className='space-y-3'>
-					<Input
-						placeholder={t('register.name')}
-						value={name}
-						onChange={(event) => setName(event.target.value)}
-					/>
-					<Select
-						value={itemKind}
-						disabled={asset !== undefined}
-						onValueChange={(value: string | null) => setItemKind(value as TItemKind)}
-					>
-						<SelectTrigger>
-							<SelectValue>
-								{(value: string | null) =>
-									value ? t(`itemKind.${value as TItemKind}`) : null
-								}
-							</SelectValue>
-						</SelectTrigger>
-						<SelectContent>
-							{ITEM_KINDS.map((kind) => (
-								<SelectItem key={kind} value={kind}>
-									{t(`itemKind.${kind}`)}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-					<Input
-						placeholder={t('register.serialNumber')}
-						value={serialNumber}
-						onChange={(event) => setSerialNumber(event.target.value)}
-					/>
-					<Input
-						type='number'
-						placeholder={t('register.acquisitionCost')}
-						value={acquisitionCost}
-						onChange={(event) => setAcquisitionCost(event.target.value)}
-					/>
-					<DatePicker
-						value={acquisitionDate}
-						onChange={setAcquisitionDate}
-					/>
-					<Input
-						placeholder={t('register.location')}
-						value={location}
-						onChange={(event) => setLocation(event.target.value)}
-					/>
-				</CardContent>
-				<CardFooter className='justify-end gap-2'>
-					<Button
-						variant='outline'
-						onClick={() =>
-							onCancel ? onCancel() : void navigate({ to: '/assets/register' })
-						}
-					>
-						{t('form.cancel')}
-					</Button>
-					<Button
-						disabled={!name || save.isPending}
-						onClick={() => void save.mutateAsync()}
-					>
-						{save.isPending
-							? asset
-								? t('form.saving')
-								: t('form.creating')
-							: asset
-								? t('form.save')
-								: t('form.create')}
-					</Button>
-				</CardFooter>
+				<CardContent className='space-y-3'>{fields}</CardContent>
+				<CardFooter className='justify-end gap-2'>{actions}</CardFooter>
 			</Card>
 		</div>
 	);

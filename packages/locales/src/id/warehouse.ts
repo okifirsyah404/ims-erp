@@ -57,8 +57,6 @@ const warehouse = {
 	'warehouses.activated': 'Gudang diaktifkan',
 	'warehouses.deactivated': 'Gudang dinonaktifkan',
 	'warehouses.archiveConfirmTitle': 'Arsipkan gudang ini?',
-	'warehouses.archiveConfirmBody':
-		'Mengarsipkan menyembunyikan gudang dari daftar. Gudang yang masih menyimpan unit tidak dapat diarsipkan.',
 	'warehouses.archived': 'Gudang diarsipkan',
 	'warehouses.addStorage': 'Tambah penyimpanan',
 	'warehouses.editStorage': 'Ubah penyimpanan',
@@ -108,6 +106,7 @@ const warehouse = {
 	'warehouseForm.edit': 'Ubah gudang',
 	'warehouseForm.editDescription':
 		'Kode dan cakupan tidak dapat diubah setelah dibuat.',
+	'warehouseForm.photo': 'Foto gudang',
 	'warehouseForm.details': 'Detail',
 	'warehouseForm.detailsDescription':
 		'Hanya satu gudang yang dapat menjadi utama dalam satu cakupan.',

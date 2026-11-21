@@ -4,7 +4,7 @@ import type { IPermissionResolver } from '@authorization/permission-resolver';
 import { domainPlugin } from '@http/plugin';
 import { created, ok, okPaginated } from '@http/response';
 import { container } from 'tsyringe';
-import { BORROWING_REQUEST_SERVICE_TOKEN, BORROWING_SERVICE_TOKEN } from '../constants/di';
+import { BORROWING_REQUEST_SERVICE_TOKEN, BORROWING_SERVICE_TOKEN, ITEM_IMAGE_SERVICE_TOKEN } from '../constants/di';
 import type { TBorrowingActor } from '../contracts/borrowing-view.types';
 import {
 	borrowingListQuerySchema,
@@ -54,6 +54,7 @@ function actorResolver(resolver: IPermissionResolver) {
 export class BorrowingRequestController {
 	static plugin() {
 		const requests = container.resolve(BORROWING_REQUEST_SERVICE_TOKEN);
+		const itemImages = container.resolve(ITEM_IMAGE_SERVICE_TOKEN);
 		const borrowings = container.resolve(BORROWING_SERVICE_TOKEN);
 		const actorFor = actorResolver(container.resolve<IPermissionResolver>(PERMISSION_RESOLVER_TOKEN));
 		const id = (params: unknown) => idParamSchema.parse(params).id;
@@ -66,13 +67,20 @@ export class BorrowingRequestController {
 		})
 			.get(
 				'',
-				async ({ query, erp }) =>
-					okPaginated(
-						await requests.paginate({
-							...borrowingRequestListQuerySchema.parse(query),
-							organizationId: erp.organizationId,
-						}),
-					),
+				async ({ query, erp }) => {
+					const page = await requests.paginate({
+						...borrowingRequestListQuerySchema.parse(query),
+						organizationId: erp.organizationId,
+					});
+					return okPaginated({
+						...page,
+						// The card photo: the first requested unit's signed photo URL.
+						data: page.data.map(({ imageObjectKey, ...row }) => ({
+							...row,
+							imageUrl: itemImages.urlFor(imageObjectKey),
+						})),
+					});
+				},
 				{
 					erp: { permission: ['asset_borrowing:read'] },
 					detail: { description: 'Paginated borrowing requests' },

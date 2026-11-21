@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
@@ -281,7 +282,7 @@ export function CashBankPage() {
 						variant='outline'
 						onClick={() => setShowAccountForm((value) => !value)}
 					>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:cashBank.create')}
 					</Button>
 				) : null}
@@ -319,11 +320,11 @@ export function CashBankPage() {
 						value={bankName}
 						onChange={(event) => setBankName(event.target.value)}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('finance:cashBank.openingBalance')}
 						value={openingBalance}
-						onChange={(event) => setOpeningBalance(event.target.value)}
+						onValueChange={setOpeningBalance}
 					/>
 					<Select value={glAccountId} onValueChange={(value: string | null) => setGlAccountId(value ?? 'none')}>
 						<SelectTrigger className='w-64'>
@@ -414,11 +415,11 @@ export function CashBankPage() {
 							</SelectItem>
 						</SelectContent>
 					</Select>
-					<Input
+					<MoneyInput
 						className='w-36'
 						placeholder={t('finance:common.amount')}
 						value={movementAmount}
-						onChange={(event) => setMovementAmount(event.target.value)}
+						onValueChange={setMovementAmount}
 					/>
 					<Select value={counterpartAccountId} onValueChange={(value: string | null) => setCounterpartAccountId(value ?? 'none')}>
 						<SelectTrigger className='w-64'>

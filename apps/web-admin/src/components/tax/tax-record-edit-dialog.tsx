@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +13,6 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
-import { Input } from '@ims-erp/ui/components/input';
 import { toast } from '@/components/toast';
 import { updateTaxRecord, type TTaxRecord } from '@/lib/tax-api';
 
@@ -83,13 +83,10 @@ export function TaxRecordEditDialog({
 				>
 					<Field>
 						<FieldLabel>{t('tax:records.taxableBase')}</FieldLabel>
-						<Input
-							type='number'
-							min='0'
-							step='0.01'
+						<MoneyInput
 							value={taxableBase}
-							onChange={(event) => setTaxableBase(event.target.value)}
 							required
+							onValueChange={setTaxableBase}
 						/>
 					</Field>
 					<DialogFooter>

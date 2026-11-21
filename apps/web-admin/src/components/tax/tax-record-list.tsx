@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import {
 	useMutation,
 	useQuery,
@@ -293,11 +294,11 @@ export function TaxRecordList() {
 								)}
 							</SelectContent>
 						</Select>
-						<Input
+						<MoneyInput
 							className='w-44'
 							placeholder={t('tax:records.taxableBase')}
 							value={taxableBase}
-							onChange={(event) => setTaxableBase(event.target.value)}
+							onValueChange={setTaxableBase}
 						/>
 						<Button
 							variant='outline'

@@ -7,6 +7,18 @@ import type common from '../en/common';
  */
 const common_: Record<keyof typeof common, string> = {
 	'action.cancel': 'Batal',
+	'cardMenu.label': 'Aksi',
+	'cardMenu.stockAdjustment': 'Penyesuaian stok',
+	'cardMenu.archive': 'Arsipkan',
+	'cardMenu.activate': 'Aktifkan',
+	'cardMenu.delete': 'Hapus',
+	'cardMenu.archiveTitle': 'Arsipkan "{{name}}"?',
+	'cardMenu.archiveBody':
+		'Ditandai nonaktif: tetap muncul di daftar dengan lencana nonaktif dan tidak ditawarkan lagi untuk dokumen baru. Anda bisa mengaktifkannya kembali kapan saja.',
+	'cardMenu.deleteTitle': 'Hapus "{{name}}"?',
+	'cardMenu.deleteBody':
+		'Dihapus dari daftar. Catatan yang sudah memakainya tetap menyimpan riwayatnya. Tindakan ini tidak bisa dibatalkan dari layar ini.',
+	'cardMenu.reasonPlaceholder': 'Alasan (wajib)',
 	'action.confirm': 'Konfirmasi',
 	'action.save': 'Simpan',
 	'action.saving': 'Menyimpan…',

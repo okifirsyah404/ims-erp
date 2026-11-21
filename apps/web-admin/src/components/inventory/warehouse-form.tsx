@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -15,9 +15,12 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
+import { DialogFooter } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { Separator } from '@ims-erp/ui/components/separator';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { ImageDropzone } from '@/components/organization/image-dropzone';
+import { toast } from '@/components/toast';
 import type {
 	TWarehouseDetail,
 	TWarehouseCreateInput,
@@ -28,6 +31,45 @@ import {
 	LocationCascade,
 	type TLocationSelection,
 } from './location-cascade';
+
+/**
+ * One titled block of the form: a card on a page, a plain section in a dialog
+ * (the dialog is already the surface, so a card would only add dead space).
+ */
+function FormSection({
+	compact,
+	title,
+	description,
+	className,
+	children,
+}: {
+	compact?: boolean;
+	title: string;
+	description: string;
+	className?: string;
+	children: ReactNode;
+}) {
+	if (compact) {
+		return (
+			<section className='flex flex-col gap-3'>
+				<div>
+					<h3 className='text-sm font-medium'>{title}</h3>
+					<p className='text-xs text-muted-foreground'>{description}</p>
+				</div>
+				<div className={className}>{children}</div>
+			</section>
+		);
+	}
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>{title}</CardTitle>
+				<CardDescription>{description}</CardDescription>
+			</CardHeader>
+			<CardContent className={className}>{children}</CardContent>
+		</Card>
+	);
+}
 
 /**
  * The warehouse create/edit form.
@@ -44,18 +86,36 @@ import {
  */
 export function WarehouseForm({
 	warehouse,
+	compact,
 	submitting,
 	onSubmit,
 	onCancel,
 }: {
 	/** Existing warehouse when editing; absent when creating. */
 	warehouse?: TWarehouseDetail;
+	/** Inside a dialog: no page heading or card chrome, the dialog supplies both. */
+	compact?: boolean;
 	submitting: boolean;
-	onSubmit: (input: TWarehouseCreateInput | TWarehouseUpdateInput) => void;
+	/** `imageFile` is the photo picked on create (uploaded by the caller). */
+	onSubmit: (
+		input: TWarehouseCreateInput | TWarehouseUpdateInput,
+		imageFile?: File | null,
+	) => void;
 	onCancel: () => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const isEdit = warehouse != null;
+
+	const [imageFile, setImageFile] = useState<File | null>(null);
+	// Object URL preview for the picked photo; revoked when it is replaced.
+	const imagePreviewUrl = useMemo(
+		() => (imageFile ? URL.createObjectURL(imageFile) : null),
+		[imageFile],
+	);
+	useEffect(() => {
+		if (!imagePreviewUrl) return;
+		return () => URL.revokeObjectURL(imagePreviewUrl);
+	}, [imagePreviewUrl]);
 
 	const [code, setCode] = useState(warehouse?.code ?? '');
 	const [name, setName] = useState(warehouse?.name ?? '');
@@ -99,30 +159,68 @@ export function WarehouseForm({
 						// Omitted organizationId means global.
 						address,
 					},
+			isEdit ? null : imageFile,
 		);
 	}
 
 	return (
 		<form className='flex flex-col gap-6' onSubmit={handleSubmit}>
-			<div>
-				<h1 className='text-2xl font-bold'>
-					{isEdit ? t('warehouse:warehouseForm.edit') : t('warehouse:warehouseForm.new')}
-				</h1>
-				<p className='text-sm text-muted-foreground'>
-					{isEdit
-						? t('warehouse:warehouseForm.editDescription')
-						: t('warehouse:warehouseForm.newDescription')}
-				</p>
-			</div>
+			{compact ? null : (
+				<div>
+					<h1 className='text-2xl font-bold'>
+						{isEdit ? t('warehouse:warehouseForm.edit') : t('warehouse:warehouseForm.new')}
+					</h1>
+					<p className='text-sm text-muted-foreground'>
+						{isEdit
+							? t('warehouse:warehouseForm.editDescription')
+							: t('warehouse:warehouseForm.newDescription')}
+					</p>
+				</div>
+			)}
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t('warehouse:warehouseForm.details')}</CardTitle>
-					<CardDescription>
-						{t('warehouse:warehouseForm.detailsDescription')}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
+			<FormSection
+				compact={compact}
+				title={t('warehouse:warehouseForm.details')}
+				description={t('warehouse:warehouseForm.detailsDescription')}
+			>
+				{/* Create only: the photo endpoint is id-scoped, so the caller
+				    uploads the picked file right after the warehouse exists. */}
+				{!isEdit && (
+					<div className='mb-4 flex flex-col items-center gap-2'>
+						<ImageDropzone
+							previewUrl={imagePreviewUrl}
+							disabled={submitting}
+							label={t('warehouse:warehouseForm.photo')}
+							hint={t('common:image.drop')}
+							onSelect={setImageFile}
+							onReject={(reason) =>
+								toast.error(
+									t(
+										reason === 'size'
+											? 'common:image.sourceTooLarge'
+											: 'common:image.wrongType',
+									),
+								)
+							}
+						/>
+						{imageFile && (
+							<>
+								<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
+									{imageFile.name}
+								</p>
+								<Button
+									type='button'
+									variant='ghost'
+									size='sm'
+									disabled={submitting}
+									onClick={() => setImageFile(null)}
+								>
+									{t('common:image.remove')}
+								</Button>
+							</>
+						)}
+					</div>
+				)}
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='warehouse-code'>
@@ -175,17 +273,14 @@ export function WarehouseForm({
 							</FieldLabel>
 						</Field>
 					</div>
-				</CardContent>
-			</Card>
+			</FormSection>
 
-			<Card>
-				<CardHeader>
-					<CardTitle>{t('warehouse:warehouseForm.address')}</CardTitle>
-					<CardDescription>
-						{t('warehouse:warehouseForm.addressDescription')}
-					</CardDescription>
-				</CardHeader>
-				<CardContent className='flex flex-col gap-4'>
+			<FormSection
+				compact={compact}
+				title={t('warehouse:warehouseForm.address')}
+				description={t('warehouse:warehouseForm.addressDescription')}
+				className='flex flex-col gap-4'
+			>
 					<FieldGroup>
 						<Field>
 							<FieldLabel htmlFor='warehouse-address-label'>
@@ -251,21 +346,31 @@ export function WarehouseForm({
 						initialVillageId={warehouse?.address?.villageId}
 						onChange={setLocation}
 					/>
-				</CardContent>
-			</Card>
+			</FormSection>
 
-			<div className='flex gap-2'>
-				<Button type='submit' disabled={submitting}>
-					{submitting
-						? t('warehouse:warehouseForm.saving')
-						: isEdit
-							? t('common:action.save')
-							: t('warehouse:warehouseForm.create')}
-				</Button>
-				<Button type='button' variant='outline' onClick={onCancel}>
-					{t('common:action.cancel')}
-				</Button>
-			</div>
+			{(() => {
+				const actions = (
+					<>
+						<Button type='submit' disabled={submitting}>
+							{submitting
+								? t('warehouse:warehouseForm.saving')
+								: isEdit
+									? t('common:action.save')
+									: t('warehouse:warehouseForm.create')}
+						</Button>
+						<Button type='button' variant='outline' onClick={onCancel}>
+							{t('common:action.cancel')}
+						</Button>
+					</>
+				);
+				// In a dialog the shared sticky `DialogFooter` keeps the actions
+				// visible while the form scrolls.
+				return compact ? (
+					<DialogFooter>{actions}</DialogFooter>
+				) : (
+					<div className='flex gap-2'>{actions}</div>
+				);
+			})()}
 		</form>
 	);
 }

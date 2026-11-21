@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import {
 	useMutation,
 	useQuery,
@@ -270,17 +271,17 @@ export function WithholdingList() {
 						value={counterparty}
 						onChange={(event) => setCounterparty(event.target.value)}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('tax:withholding.baseAmount')}
 						value={baseAmount}
-						onChange={(event) => setBaseAmount(event.target.value)}
+						onValueChange={setBaseAmount}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('tax:withholding.taxAmount')}
 						value={taxAmount}
-						onChange={(event) => setTaxAmount(event.target.value)}
+						onValueChange={setTaxAmount}
 					/>
 					<Button
 						disabled={
