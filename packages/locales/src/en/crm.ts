@@ -27,6 +27,7 @@ const crm = {
 
 	'customer.code': 'Code',
 	'customer.codeHint': 'Letters, digits and . _ - /; stored in upper case.',
+	'customer.codeAutoHint': 'Leave empty to generate it from the code number settings.',
 	'customer.name': 'Name',
 	'customer.legalName': 'Legal name',
 	'customer.customerType': 'Type',

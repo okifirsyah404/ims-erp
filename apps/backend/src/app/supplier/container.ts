@@ -2,10 +2,14 @@ import type { DependencyContainer } from 'tsyringe';
 
 import {
 	EXPORTED_SUPPLIER_SERVICE_TOKEN,
+	SUPPLIER_CODE_NUMBERING_REPOSITORY_TOKEN,
 	SUPPLIER_COMPANY_REPOSITORY_TOKEN,
+	SUPPLIER_NUMBERING_SERVICE_TOKEN,
 	SUPPLIER_PERSON_REPOSITORY_TOKEN,
 	SUPPLIER_SERVICE_TOKEN,
 } from './constants/di';
+import { SupplierCodeNumberingRepository } from './repositories/code-numbering.repository';
+import { SupplierNumberingService } from './services/supplier-numbering.service';
 import { ExportedSupplierService } from './services/exported-supplier.service';
 import { SupplierService } from './services/supplier.service';
 import { SupplierCompanyRepository } from './repositories/supplier-company.repository';
@@ -32,5 +36,12 @@ export function registerSupplier(container: DependencyContainer): void {
 	});
 	container.register(EXPORTED_SUPPLIER_SERVICE_TOKEN, {
 		useClass: ExportedSupplierService,
+	});
+	// Numbering (`supplier.code_numberings`).
+	container.register(SUPPLIER_CODE_NUMBERING_REPOSITORY_TOKEN, {
+		useClass: SupplierCodeNumberingRepository,
+	});
+	container.register(SUPPLIER_NUMBERING_SERVICE_TOKEN, {
+		useClass: SupplierNumberingService,
 	});
 }

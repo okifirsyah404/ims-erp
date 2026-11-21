@@ -69,7 +69,8 @@ export function ConvertLeadDialog({
 								? { customerId }
 								: {
 										customer: {
-											code: code.trim(),
+											// Empty: the server generates the code.
+											code: code.trim() || undefined,
 											companyId: null,
 											customerType: 'individual',
 											name: name.trim(),
@@ -111,13 +112,13 @@ export function ConvertLeadDialog({
 										<FieldLabel htmlFor='convert-code'>{t('crm:customer.code')}</FieldLabel>
 										<Input
 											id='convert-code'
-											required
 											maxLength={32}
 											pattern='[A-Za-z0-9._\-\/]+'
 											className='uppercase'
 											value={code}
 											onChange={(e) => setCode(e.target.value)}
 										/>
+										<FieldDescription>{t('crm:customer.codeAutoHint')}</FieldDescription>
 									</Field>
 								</div>
 								<Field>

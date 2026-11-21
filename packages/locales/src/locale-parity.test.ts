@@ -66,6 +66,8 @@ describe('locale values', () => {
 			'settings:settings.type.json',
 			// `Logo` is the same word in Indonesian.
 			'settings:companyProfile.image.logo',
+			// `Material` is the same word in both languages.
+			'settings:numbering.type.item_material',
 			'common:language.switchToEnglish',
 			'common:language.switchToIndonesian',
 			'nav:section.platform',

@@ -35,6 +35,12 @@ export type SidebarItem = {
 	/** Shown only to application administrators. */
 	appAdminOnly?: true;
 	/**
+	 * Also shown to application administrators, on top of `permission` /
+	 * `anyPermission`, for routes the backend opens to an app admin without
+	 * an organization permission (code numbering, `adminOrErpGuard`).
+	 */
+	orAppAdmin?: true;
+	/**
 	 * Shown to application administrators or to a warehouse person in charge
 	 * (ADR-0017).
 	 *

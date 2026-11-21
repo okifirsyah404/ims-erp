@@ -7,6 +7,8 @@ import {
 	COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	COMPANY_REPOSITORY_TOKEN,
 	CUSTOMER_ADDRESS_REPOSITORY_TOKEN,
+	CUSTOMER_CODE_NUMBERING_REPOSITORY_TOKEN,
+	CUSTOMER_NUMBERING_SERVICE_TOKEN,
 	CUSTOMER_PERSON_REPOSITORY_TOKEN,
 	CUSTOMER_SERVICE_TOKEN,
 	EXPORTED_CUSTOMER_SERVICE_TOKEN,
@@ -21,6 +23,8 @@ import {
 	CustomerAddressRepository,
 } from './repositories/address.repository';
 import { CompanyRepository } from './repositories/company.repository';
+import { CustomerCodeNumberingRepository } from './repositories/code-numbering.repository';
+import { CustomerNumberingService } from './services/customer-numbering.service';
 import { CustomerPersonRepository } from './repositories/customer.repository';
 import { CustomerService } from './services/customer.service';
 import { ExportedCustomerService } from './services/exported-customer.service';
@@ -59,6 +63,13 @@ export function registerCustomer(container: DependencyContainer): void {
 	});
 	container.register(EXPORTED_CUSTOMER_SERVICE_TOKEN, {
 		useClass: ExportedCustomerService,
+	});
+	// Numbering (`customer.code_numberings`).
+	container.register(CUSTOMER_CODE_NUMBERING_REPOSITORY_TOKEN, {
+		useClass: CustomerCodeNumberingRepository,
+	});
+	container.register(CUSTOMER_NUMBERING_SERVICE_TOKEN, {
+		useClass: CustomerNumberingService,
 	});
 
 	// Customer portal.

@@ -43,6 +43,13 @@ describe('filterNav', () => {
 		expect(filterNav([sec(items)], ctx(['quotation.read']))[0].items).toHaveLength(1);
 	});
 
+	test('orAppAdmin shows for the permission or for an app admin', () => {
+		const items = [leaf('a', { permission: 'code_number.read' as never, orAppAdmin: true })];
+		expect(filterNav([sec(items)], ctx([]))).toEqual([]);
+		expect(filterNav([sec(items)], ctx(['code_number.read']))[0].items).toHaveLength(1);
+		expect(filterNav([sec(items)], ctx([], true))[0].items).toHaveLength(1);
+	});
+
 	test('appAdminOnly ignores permissions and needs admin', () => {
 		const items = [leaf('a', { appAdminOnly: true })];
 		expect(filterNav([sec(items)], ctx(['x.y']))).toEqual([]);

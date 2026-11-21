@@ -190,10 +190,53 @@ function personInput(code: string, companyId: string | null = null) {
 function setup() {
 	const companies = new FakeCompanies();
 	const people = new FakePeople();
-	const service = new CustomerService(companies, people, unusedCompanyAddresses, unusedCustomerAddresses);
+	const numbering = new FakeCustomerNumbering();
+	const service = new CustomerService(
+		companies,
+		people,
+		unusedCompanyAddresses,
+		unusedCustomerAddresses,
+		numbering as never,
+	);
 	const exported = new ExportedCustomerService(companies, people);
-	return { companies, people, service, exported };
+	return { companies, people, numbering, service, exported };
 }
+
+/** Numbering double: one counter per code type, records the organization. */
+class FakeCustomerNumbering {
+	calls: { codeType: string; organizationId: string | null | undefined }[] = [];
+	private readonly counters = new Map<string, number>();
+
+	async next(codeType: string, _tx?: unknown, _date?: Date, organizationId?: string | null) {
+		this.calls.push({ codeType, organizationId });
+		const seq = (this.counters.get(codeType) ?? 0) + 1;
+		this.counters.set(codeType, seq);
+		const type = codeType === 'customer' ? 'CUS' : 'CMP';
+		return `${type}-${String(seq).padStart(5, '0')}`;
+	}
+}
+
+describe('CustomerService: generated codes', () => {
+	test('an omitted company code is generated as customer_company', async () => {
+		const { service, numbering } = setup();
+		const company = await service.createCompany({ ...companyInput('X'), code: undefined }, ACTOR, 'org-1');
+		expect(company.code).toBe('CMP-00001');
+		expect(numbering.calls).toEqual([{ codeType: 'customer_company', organizationId: 'org-1' }]);
+	});
+
+	test('an omitted person code is generated as customer', async () => {
+		const { service } = setup();
+		const person = await service.createCustomer({ ...personInput('X'), code: undefined }, ACTOR, 'org-1');
+		expect(person.code).toBe('CUS-00001');
+	});
+
+	test('a typed code is kept and nothing is allocated', async () => {
+		const { service, numbering } = setup();
+		const company = await service.createCompany(companyInput('ACME'), ACTOR, 'org-1');
+		expect(company.code).toBe('ACME');
+		expect(numbering.calls).toHaveLength(0);
+	});
+});
 
 describe('CustomerService: code uniqueness', () => {
 	test('rejects a company code already used by a live company', async () => {

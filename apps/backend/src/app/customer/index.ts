@@ -9,6 +9,7 @@
  */
 import Elysia from 'elysia';
 
+import { CustomerCodeNumberingController } from './controllers/code-numbering.controller';
 import { CustomerController } from './controllers/customer.controller';
 import { PortalAccountController } from './controllers/portal-account.controller';
 import { PortalAuthController, PortalController } from './controllers/portal.controller';
@@ -30,6 +31,7 @@ export { EXPORTED_CUSTOMER_SERVICE_TOKEN } from './constants/di';
 export function customerModule() {
 	return new Elysia({ name: 'customer' })
 		.use(CustomerController.plugin())
+		.use(CustomerCodeNumberingController.plugin())
 		.use(PortalAccountController.plugin())
 		.use(PortalAuthController.plugin())
 		.use(PortalController.plugin());

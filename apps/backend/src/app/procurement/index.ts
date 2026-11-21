@@ -4,6 +4,7 @@
  */
 import Elysia from 'elysia';
 
+import { ProcurementCodeNumberingController } from './controllers/code-numbering.controller';
 import { GoodsReceiptController } from './controllers/goods-receipt.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
 import { PurchaseReturnController } from './controllers/purchase-return.controller';
@@ -19,6 +20,8 @@ export type { PurchaseBillingService, TBillableOrder } from './services/purchase
 /** Elysia instance mounting every procurement controller, in route order. */
 export function procurementModule() {
 	return new Elysia({ name: 'procurement' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(ProcurementCodeNumberingController.plugin())
 		.use(PurchaseRequestController.plugin())
 		.use(PurchaseOrderController.plugin())
 		.use(GoodsReceiptController.plugin())

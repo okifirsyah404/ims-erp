@@ -30,6 +30,7 @@ const crm: Record<keyof typeof en, string> = {
 
 	'customer.code': 'Kode',
 	'customer.codeHint': 'Huruf, angka, dan . _ - /; disimpan dalam huruf besar.',
+	'customer.codeAutoHint': 'Kosongkan untuk dibuat otomatis dari pengaturan nomor kode.',
 	'customer.name': 'Nama',
 	'customer.legalName': 'Nama badan usaha',
 	'customer.customerType': 'Jenis',

@@ -259,6 +259,21 @@ const api = {
 		'Fill in the company profile (with its document code) first',
 	'supplier.bankForbidden': 'You may not read or change supplier bank details',
 	'company.settingInvalid': 'The value does not match its type',
+	'numbering.unknownCodeType': 'Unknown code type',
+	'numbering.organizationRequired':
+		'This number uses {ORG}: pick an active organization first',
+	'numbering.codeTooLong':
+		'The generated code {{code}} is longer than {{max}} characters; shorten the numbering pattern',
+	'numbering.pattern.length': 'The pattern must be 1-100 characters',
+	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
+	'numbering.pattern.tokenNotForType':
+		'Token {{token}} is only available for: {{types}}',
+	'numbering.pattern.tokenTakesNoWidth': 'Token {{token}} does not take a width',
+	'numbering.pattern.seqWidth': 'The {SEQ:n} width must be between 1 and 10',
+	'numbering.pattern.seqOnce': 'The pattern must contain {SEQ} exactly once',
+	'numbering.pattern.braces': 'Unbalanced or malformed token braces',
+	'numbering.pattern.literals':
+		'Only letters, digits, space, / - . _ are allowed outside tokens',
 	'document.notFound': 'Document not found',
 	'document.notVoidable': 'This document cannot be voided',
 	'document.fileNotFound': 'File not found',

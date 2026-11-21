@@ -13,6 +13,8 @@ import { and, eq, isNull, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 
 import {
+	CODE_MAX_LENGTH,
+	CODE_TYPE_CODES,
 	type CodeType,
 	type ResetPolicy,
 	defaultPattern,
@@ -20,7 +22,9 @@ import {
 	periodKey as periodKeyOf,
 	renderNumber,
 	type TNumberContext,
+	usesOrganizationToken,
 } from './domain';
+import { GeneratedCodeTooLongError, OrganizationRequiredForCodeError } from './errors';
 import type { createCodeNumberingTable } from './table';
 
 /** Every `<schema>.code_numberings` table has this exact shape. */
@@ -97,11 +101,19 @@ export abstract class CodeNumberingRepositoryBase {
 	/**
 	 * Allocates a number and renders it with the effective pattern.
 	 *
+	 * @remarks
+	 * `{ORG}` is resolved lazily: `resolveOrganizationCode` is only called when
+	 * the effective pattern uses the token, so most numbers cost no extra read.
+	 * Both checks run before the counter moves.
+	 *
 	 * @param codeType - Code type to allocate
 	 * @param companyCode - `{COMPANY}` token value from the company profile
 	 * @param date - Business date the number belongs to
 	 * @param tx - Transaction the allocation must join
 	 * @param context - Values for the per-document tokens ({SUPPLIER}, ...)
+	 * @param resolveOrganizationCode - `{ORG}` value of the issuing organization
+	 * @throws {OrganizationRequiredForCodeError} The pattern uses `{ORG}` and no resolver was given
+	 * @throws {GeneratedCodeTooLongError} The code does not fit {@link CODE_MAX_LENGTH}
 	 */
 	async next(
 		codeType: CodeType,
@@ -109,20 +121,34 @@ export abstract class CodeNumberingRepositoryBase {
 		date: Date,
 		tx?: TTx,
 		context?: TNumberContext,
+		resolveOrganizationCode?: () => Promise<string>,
 	): Promise<string> {
 		const row = await this.findByType(codeType, tx);
 		const reset =
 			(row?.resetPolicy as ResetPolicy | null) ??
 			defaultResetPolicy(codeType);
 		const pattern = row?.pattern ?? defaultPattern(codeType);
+		let organizationCode: string | undefined;
+		if (usesOrganizationToken(pattern)) {
+			if (!resolveOrganizationCode) throw new OrganizationRequiredForCodeError();
+			organizationCode = await resolveOrganizationCode();
+		}
+		const max = CODE_MAX_LENGTH[codeType];
 		const seq = await this.allocate(codeType, periodKeyOf(reset, date), tx);
-		return renderNumber(pattern, {
+		const code = renderNumber(pattern, {
 			seq,
-			typeCode: codeType,
+			typeCode: CODE_TYPE_CODES[codeType],
 			companyCode,
+			organizationCode,
 			date,
 			context,
 		});
+		// Thrown after the allocation on purpose: the caller's transaction
+		// rolls the counter back with it.
+		if (max !== undefined && code.length > max) {
+			throw new GeneratedCodeTooLongError(code, max);
+		}
+		return code;
 	}
 
 	async saveSettings(settings: TCodeNumberSettings, key: string, tx?: TTx) {

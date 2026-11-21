@@ -25,6 +25,7 @@ export type NavContext = {
  */
 export function leafVisible(item: SidebarItem, ctx: NavContext): boolean {
 	if (item.appAdminOnly) return ctx.isAppAdmin;
+	if (item.orAppAdmin && ctx.isAppAdmin) return true;
 	if (item.warehousePic) return ctx.isAppAdmin || ctx.isPic;
 	if (item.open) return true;
 	if (item.internalRole) return ctx.hasInternalRole;

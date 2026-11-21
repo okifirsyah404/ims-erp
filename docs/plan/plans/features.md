@@ -33,6 +33,9 @@ assets operations surface). §7 item 3 (statement exports + monthly archive +
 
 Plan: `docs/plan/database-refactor/`. Decision: ADR-0024 (`proposed`).
 
+### implemented
+- ERP-0092 code number settings (2026-11-21): `/settings/code-numbers` (Settings -> Code Number) shows one card per `<schema>.code_numberings` (14 schemas) served by each owning module at `{prefix}/code-numberings` through the shared `codeNumberingController` + `CodeNumberingServiceBase`; app admin always, else `code_number:read`/`update`, warehouse card app-admin only. New `{ORG}` token (upper-cased org slug, every code type); customer/supplier codes generated when left empty. Evidence: `test/unit/code-numbering.test.ts`, `test/authorization/code-numbering-authorization.test.ts`, web-admin `test/unit/code-numbering-api.test.ts`; `progress.md` 2026-11-21. No live/browser check yet.
+
 ### in-progress
 - ERP-0076 inventory: **backend done** (steps 1, 2a-2c); web-admin, web-landing and seeders open (P8). Item operations under /inventory/items/:id, /inventory/disposals, /inventory/tool-sets. **ADR-0026 split the product master and the warehouse estate out (2026-11-23):** `src/app/product/` (schema `product`, `/products`, `/product-categories`, `/product-listings`, website catalog at `/products/public/v1/catalog`) and `src/app/warehouse/` (schema `warehouse`, `/warehouses`); each owns its `settings`, `code_numberings` and `{COMPANY}`-token series; unit routes stay `/products/:id/units` but are served by `inventory`'s `SerialUnitService`. Frontend slice and the unit-test port are the open items.
 - ERP-0078 procurement: **backend done** (supplier master gone, own numbering, products, `/procurement/*`); web-admin, seeder and `ExportedPurchaseOrderService` (P5) open.

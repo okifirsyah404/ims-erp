@@ -30,6 +30,7 @@ const procurement: Record<keyof typeof en, string> = {
 
 	'supplier.code': 'Kode',
 	'supplier.codeHint': 'Huruf dan angka; dicetak di nomor PO, mis. HIT.',
+	'supplier.codeAutoHint': 'Kosongkan untuk dibuat otomatis dari pengaturan nomor kode; isi kode singkat (mis. HIT) agar tercetak di nomor PO.',
 	'supplier.supplierType': 'Jenis',
 	'supplier.name': 'Nama',
 	'supplier.legalName': 'Nama resmi',

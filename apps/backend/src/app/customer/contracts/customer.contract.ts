@@ -52,13 +52,22 @@ const codeSchema = z
 	.regex(/^[A-Za-z0-9._\-/]+$/)
 	.transform((value) => value.toUpperCase());
 
+/**
+ * Code on create: optional. Empty or omitted, the service generates it from
+ * `customer.code_numberings`; a typed code is kept (upper-cased).
+ */
+const createCodeSchema = z.preprocess(
+	(value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+	codeSchema.optional(),
+);
+
 /* ------------------------------------------------------------------------ *
  * Companies
  * ------------------------------------------------------------------------ */
 
 export const createCompanySchema = z
 	.object({
-		code: codeSchema,
+		code: createCodeSchema,
 		companyType: z.enum(['company', 'government', 'partner']).default('company'),
 		name: z.string().trim().min(1).max(200),
 		legalName: optionalText(200),
@@ -75,7 +84,11 @@ export const createCompanySchema = z
 /** Parsed create input for a customer company. */
 export type TCreateCompanyInput = z.output<typeof createCompanySchema>;
 
-export const updateCompanySchema = createCompanySchema.partial().strict();
+// Update keeps the code strict: an existing code is changed, never regenerated.
+export const updateCompanySchema = createCompanySchema
+	.partial()
+	.extend({ code: codeSchema.optional() })
+	.strict();
 
 /** Parsed update input for a customer company. */
 export type TUpdateCompanyInput = z.output<typeof updateCompanySchema>;
@@ -97,7 +110,7 @@ export type TCompanyListQuery = z.output<typeof companyListQuerySchema>;
 
 export const createCustomerSchema = z
 	.object({
-		code: codeSchema,
+		code: createCodeSchema,
 		companyId: z.uuid().nullish().transform((value) => value ?? null),
 		customerType: z.enum(['individual', 'contact']).default('individual'),
 		name: z.string().trim().min(1).max(200),
@@ -113,7 +126,10 @@ export const createCustomerSchema = z
 /** Parsed create input for a customer person. */
 export type TCreateCustomerInput = z.output<typeof createCustomerSchema>;
 
-export const updateCustomerSchema = createCustomerSchema.partial().strict();
+export const updateCustomerSchema = createCustomerSchema
+	.partial()
+	.extend({ code: codeSchema.optional() })
+	.strict();
 
 /** Parsed update input for a customer person. */
 export type TUpdateCustomerInput = z.output<typeof updateCustomerSchema>;

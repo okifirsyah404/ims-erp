@@ -10,6 +10,7 @@
  */
 import Elysia from 'elysia';
 
+import { FinanceCodeNumberingController } from './controllers/code-numbering.controller';
 import { DepreciationController } from './controllers/depreciation.controller';
 import { LedgerController } from './controllers/ledger.controller';
 import { FinanceOperationsController } from './controllers/finance-operations.controller';
@@ -26,6 +27,8 @@ export { PostingService } from './services/posting.service';
 /** Elysia instance mounting every finance controller, in route order. */
 export function financeModule() {
 	return new Elysia({ name: 'finance' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(FinanceCodeNumberingController.plugin())
 		.use(LedgerController.plugin())
 		.use(DepreciationController.plugin())
 		.use(FinanceOperationsController.plugin());

@@ -40,7 +40,7 @@ export interface ISupplierCompanyRepository {
 	findByCode(code: string): Promise<TSupplierCompanySelect | null>;
 
 	create(
-		data: TSupplierCompanyCreateInput & { createdBy: string },
+		data: TSupplierCompanyCreateInput & { code: string; createdBy: string },
 	): Promise<TSupplierCompanySelect>;
 
 	update(

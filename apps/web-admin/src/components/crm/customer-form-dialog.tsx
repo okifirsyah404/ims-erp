@@ -62,7 +62,8 @@ export function CustomerFormDialog({
 					onSubmit={(event) => {
 						event.preventDefault();
 						onSave({
-							code: code.trim(),
+							// Empty on create: the server generates the code.
+							code: code.trim() || undefined,
 							companyId: companyId || null,
 							customerType: companyId ? 'contact' : 'individual',
 							name: name.trim(),
@@ -84,14 +85,16 @@ export function CustomerFormDialog({
 								<FieldLabel htmlFor='customer-code'>{t('crm:customer.code')}</FieldLabel>
 								<Input
 									id='customer-code'
-									required
+									required={!!customer}
 									maxLength={32}
 									pattern='[A-Za-z0-9._\-\/]+'
 									className='uppercase'
 									value={code}
 									onChange={(event) => setCode(event.target.value)}
 								/>
-								<FieldDescription>{t('crm:customer.codeHint')}</FieldDescription>
+								<FieldDescription>
+									{customer ? t('crm:customer.codeHint') : t('crm:customer.codeAutoHint')}
+								</FieldDescription>
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='customer-company'>{t('crm:customer.company')}</FieldLabel>

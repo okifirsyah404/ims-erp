@@ -14,6 +14,7 @@
  */
 import Elysia from 'elysia';
 
+import { PaymentCodeNumberingController } from './controllers/code-numbering.controller';
 import { GatewayCheckoutController, GatewayConfigController } from './controllers/gateway.controller';
 import { PaymentLedgerController } from './controllers/payment-ledger.controller';
 
@@ -42,6 +43,8 @@ export {
 /** Elysia instance mounting the payment controllers, in route order. */
 export function paymentModule() {
 	return new Elysia({ name: 'payment' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(PaymentCodeNumberingController.plugin())
 		// The ledger CRUD/actions first; the checkout and admin paths have their
 		// own prefixes and never collide with `/payments/:id`.
 		.use(PaymentLedgerController.plugin())

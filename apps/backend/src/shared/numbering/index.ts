@@ -9,3 +9,5 @@
 export * from './domain';
 export * from './table';
 export * from './repository-base';
+export * from './errors';
+export * from './service-base';

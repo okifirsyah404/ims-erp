@@ -11,8 +11,10 @@ import {
 	COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	COMPANY_REPOSITORY_TOKEN,
 	CUSTOMER_ADDRESS_REPOSITORY_TOKEN,
+	CUSTOMER_NUMBERING_SERVICE_TOKEN,
 	CUSTOMER_PERSON_REPOSITORY_TOKEN,
 } from '../constants/di';
+import type { CustomerNumberingService } from './customer-numbering.service';
 import type {
 	TCompanyAddressInput,
 	TCreateCompanyInput,
@@ -67,6 +69,8 @@ export class CustomerService {
 		private readonly companyAddresses: ICompanyAddressRepository,
 		@inject(CUSTOMER_ADDRESS_REPOSITORY_TOKEN)
 		private readonly addresses: ICustomerAddressRepository,
+		@inject(CUSTOMER_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering: Pick<CustomerNumberingService, 'next'>,
 	) {}
 
 	/* ------------------------------ companies ------------------------------ */
@@ -82,9 +86,19 @@ export class CustomerService {
 		return { ...company, addresses: await this.companyAddresses.listByCompany(id) };
 	}
 
-	async createCompany(input: TCreateCompanyInput, actorUserId: string): Promise<TCustomerCompanySelect> {
-		await this.assertCodeFree(input.code);
-		return this.companies.create({ ...input, createdBy: actorUserId });
+	/**
+	 * Creates a customer company; an empty code is generated (customer_company).
+	 *
+	 * @param organizationId - The caller's organization, for the {ORG} token
+	 */
+	async createCompany(
+		input: TCreateCompanyInput,
+		actorUserId: string,
+		organizationId?: string | null,
+	): Promise<TCustomerCompanySelect> {
+		const code = input.code ?? (await this.numbering.next('customer_company', undefined, new Date(), organizationId));
+		await this.assertCodeFree(code);
+		return this.companies.create({ ...input, code, createdBy: actorUserId });
 	}
 
 	async updateCompany(id: string, patch: TUpdateCompanyInput): Promise<TCustomerCompanySelect> {
@@ -121,10 +135,20 @@ export class CustomerService {
 		return { ...customer, addresses: await this.addresses.listByCustomer(id) };
 	}
 
-	async createCustomer(input: TCreateCustomerInput, actorUserId: string): Promise<TCustomerSelect> {
+	/**
+	 * Creates a customer person; an empty code is generated (customer).
+	 *
+	 * @param organizationId - The caller's organization, for the {ORG} token
+	 */
+	async createCustomer(
+		input: TCreateCustomerInput,
+		actorUserId: string,
+		organizationId?: string | null,
+	): Promise<TCustomerSelect> {
 		if (input.companyId) await this.assertCompany(input.companyId);
-		await this.assertCodeFree(input.code);
-		return this.people.create({ ...input, createdBy: actorUserId });
+		const code = input.code ?? (await this.numbering.next('customer', undefined, new Date(), organizationId));
+		await this.assertCodeFree(code);
+		return this.people.create({ ...input, code, createdBy: actorUserId });
 	}
 
 	async updateCustomer(id: string, patch: TUpdateCustomerInput): Promise<TCustomerSelect> {

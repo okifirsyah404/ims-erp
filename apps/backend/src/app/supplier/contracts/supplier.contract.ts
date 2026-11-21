@@ -10,7 +10,16 @@ import { z } from 'zod';
  * ------------------------------------------------------------------------ */
 
 export const supplierCompanyCreateSchema = z.object({
-	code: z.string().min(2).max(32),
+	/**
+	 * Optional on create: left empty, the code is generated from
+	 * `supplier.code_numberings` (default `{COMPANY}-{ORG}-{TYPE}-{SEQ:5}`). A
+	 * typed code is kept as-is, so a short supplier code for the PO `{SUPPLIER}`
+	 * token stays possible.
+	 */
+	code: z.preprocess(
+		(value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+		z.string().trim().min(2).max(32).optional(),
+	),
 	name: z.string().min(1).max(200),
 	legalName: z.string().max(200).optional().nullable(),
 	supplierType: z.enum(['company', 'government']).default('company'),

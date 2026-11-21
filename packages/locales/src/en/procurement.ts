@@ -29,6 +29,7 @@ const procurement = {
 
 	'supplier.code': 'Code',
 	'supplier.codeHint': 'Letters and digits; printed in PO numbers, e.g. HIT.',
+	'supplier.codeAutoHint': 'Leave empty to generate it from the code number settings; type a short code (e.g. HIT) to print it in PO numbers.',
 	'supplier.supplierType': 'Type',
 	'supplier.name': 'Name',
 	'supplier.legalName': 'Legal name',

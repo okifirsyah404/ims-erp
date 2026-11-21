@@ -111,6 +111,7 @@ const nav = {
 	'item.users': 'Users',
 	'item.auditLog': 'Audit Log',
 	'item.companyProfile': 'Company',
+	'item.codeNumbers': 'Code Number',
 	'item.documentSettings': 'Document',
 	'item.paymentGateways': 'Payment gateways',
 

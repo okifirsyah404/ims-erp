@@ -12,6 +12,92 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - ERP-0092: code number settings page restored (Settings -> Code Number)
+
+User request: bring back the code number settings page under Settings ->
+Code Number, covering every `<schema>.code_numberings`, hiding each section
+the caller may not access. Decisions taken in the session: `code_number:read`
+/`update` for organization members, application admins always, warehouse
+series application-admin only (ADR-0008); customer and supplier codes are
+generated when a create leaves `code` empty (a typed code is kept, so a short
+supplier code for the PO `{SUPPLIER}` token stays possible); new `{ORG}` token
+= upper-cased slug of the issuing organization, allowed for every code type;
+the counter stays global (no schema change).
+
+**Gates.** Read `docs/database/docs.dbml` (customer, supplier, product,
+warehouse, inventory code_numberings blocks) and `module-ownership.md`;
+skipped `integrity-and-consistency.md`, `data-dictionary.md` and
+`implementation-phases.md` (no column, constraint or status vocabulary
+change), and `logical-references.md` (no new cross-module id column; the
+only new cross-module call is a service contract). The design was settled
+in a plan-mode question round with the user instead of the `grill-me`
+skill; the answers above are the record.
+
+**Backend.**
+- `src/shared/numbering`: `{TYPE}` bug fixed (`repository-base.ts` rendered
+  the code type name, e.g. `quotation`, instead of `QT`; the test double
+  masked it). `CODE_TYPES_BY_SCHEMA` split into `product`/`warehouse` keys
+  (ADR-0026) and their defaults now carry `{COMPANY}` as the ADR says.
+  `{ORG}` token, `organizationCodeFromSlug`, `CODE_MAX_LENGTH` (customer and
+  supplier codes are varchar(32): a longer generated code is refused with
+  `GeneratedCodeTooLongError`). `{ORG}` is resolved lazily, only when the
+  effective pattern uses it; without an organization ->
+  `OrganizationRequiredForCodeError` (422). New `errors.ts`,
+  `service-base.ts` (`CodeNumberingServiceBase`: `issue`, `listSettings`,
+  `previewSetting`, `updateSetting`) and `controller.ts`
+  (`codeNumberingController`).
+- `authorization/elysia-auth.ts`: `adminOrErpGuard` (macro `adminOrErp`) +
+  guard set `admin-or-erp` in `domainPlugin`.
+- All 12 `<Module>NumberingService`s extend the base; new
+  `CustomerNumberingService`/`SupplierNumberingService` + repositories +
+  tokens. Each of the 14 modules mounts
+  `controllers/code-numbering.controller.ts` at `{prefix}/code-numberings`.
+- `organization`: `ExportedOrganizationService.requireOrganizationCode`
+  (`EXPORTED_ORGANIZATION_SERVICE_TOKEN`).
+- Customer/supplier create contracts: `code` optional on create (update
+  stays strict); services generate with the caller's organization; lead
+  conversion passes `ctx.organizationId`.
+- Open: the other ~40 `numbering.next` call sites do not pass an
+  `organizationId` yet, so `{ORG}` in a pattern for those code types makes
+  issuing fail with a clear 422 until each caller passes it.
+
+**Frontend (web-admin).** `/settings/code-numbers` (new route,
+`routeTree.gen.ts` regenerated with `@tanstack/router-generator`), nav item
+`item.codeNumbers` with new `orAppAdmin` flag (`filter-nav.ts`), crumbs,
+`lib/code-numbering-api.ts`, `components/settings/numbering-settings.tsx`
+(one card per schema; cards without access are not rendered, so their
+query never runs; live preview; too-long warning). Customer, company,
+convert-lead and supplier forms: code optional on create with a hint.
+
+**Locales.** `settings:numbering.*`, `nav:item.codeNumbers`,
+`crm:customer.codeAutoHint`, `procurement:supplier.codeAutoHint`,
+`api:numbering.*` in en + id; dead-key prefixes and one identical-value
+allowance (`Material`) added.
+
+**docs/database.** `docs.dbml` notes of `customer.code_numberings` and
+`supplier.code_numberings` updated; `module-ownership.md` lists
+`ExportedOrganizationService`. No table/column change, no migration.
+
+**Commands (all run 2026-11-21, repo root unless noted):**
+- `apps/backend: bun run typecheck` -> 0 errors
+- `apps/backend: bun test test/unit/code-numbering.test.ts` -> 15 pass;
+  `bun test test/authorization/code-numbering-authorization.test.ts` -> 8 pass
+- `bun run test` -> 7/7 tasks; backend 1315 pass, web-admin 144, locales 106,
+  web-customer-portal 60, web-landing 24, react-email 6, 0 fail
+- `bun run typecheck` -> 6/6 tasks;
+  `apps/web-admin: bunx tsc -p tsconfig.app.json --noEmit` -> 0 errors
+- `bun run lint` -> 0 errors (existing warnings only, none in touched files)
+- `bun docs/database/gen-logical-references.ts` -> 190 refs;
+  `bun docs/database/validate-dbml.ts` -> OK
+
+Not done: no live HTTP run against a database and no browser walk-through
+of the page.
+
+Next executable task: browser walk-through of `/settings/code-numbers` as
+owner, org admin, auditor and application admin; then pass `organizationId`
+through the remaining `numbering.next` callers so `{ORG}` works for every
+code type.
+
 ## 2026-11-23 - ADR-0026: product and warehouse become their own modules (schema split)
 
 User request: separate `product` and `warehouse` from the inventory database

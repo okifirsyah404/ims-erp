@@ -8,6 +8,8 @@ import type {
 	ICustomerPersonRepository,
 } from '../contracts/customer.repository.interface';
 import type { CustomerService } from '../services/customer.service';
+import type { CustomerNumberingService } from '../services/customer-numbering.service';
+import type { CustomerCodeNumberingRepository } from '../repositories/code-numbering.repository';
 import type { ExportedCustomerService } from '../services/exported-customer.service';
 import type { PortalAccountService } from '../services/portal-account.service';
 import type { PortalAuthService } from '../services/portal-auth.service';
@@ -33,6 +35,14 @@ export const CUSTOMER_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ICustomerAddressR
 export const CUSTOMER_SERVICE_TOKEN: InjectionToken<CustomerService> = Symbol(
 	'CUSTOMER_SERVICE',
 );
+
+/** Token resolving to the repository of `customer.code_numberings`. */
+export const CUSTOMER_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<CustomerCodeNumberingRepository> =
+	Symbol('CUSTOMER_CODE_NUMBERING_REPOSITORY');
+
+/** Token resolving to the {@link CustomerNumberingService} (codes + numbering settings). */
+export const CUSTOMER_NUMBERING_SERVICE_TOKEN: InjectionToken<CustomerNumberingService> =
+	Symbol('CUSTOMER_NUMBERING_SERVICE');
 
 /** Token resolving to the repository-only {@link ExportedCustomerService}. */
 export const EXPORTED_CUSTOMER_SERVICE_TOKEN: InjectionToken<ExportedCustomerService> =

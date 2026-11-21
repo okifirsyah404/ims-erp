@@ -321,7 +321,7 @@ export class LeadService {
 			if (!customer) throw new LeadCustomerUnavailableError();
 			customerId = customer.id;
 		} else {
-			customerId = (await this.customers.createCustomer(input.customer, ctx.actorUserId)).id;
+			customerId = (await this.customers.createCustomer(input.customer, ctx.actorUserId, ctx.organizationId)).id;
 		}
 		const converted = await this.leads.markConverted(id, customerId);
 		if (!converted) throw new LeadAlreadyConvertedError();

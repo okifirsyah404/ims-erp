@@ -7,6 +7,7 @@
  */
 import Elysia from 'elysia';
 
+import { TaxCodeNumberingController } from './controllers/code-numbering.controller';
 import { TaxController } from './controllers/tax.controller';
 
 export { registerTax } from './container';
@@ -15,5 +16,8 @@ export type { TaxService } from './services/tax.service';
 
 /** Elysia instance mounting every tax controller. */
 export function taxModule() {
-	return new Elysia({ name: 'tax' }).use(TaxController.plugin());
+	return new Elysia({ name: 'tax' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(TaxCodeNumberingController.plugin())
+		.use(TaxController.plugin());
 }
