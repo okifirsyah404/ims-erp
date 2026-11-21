@@ -10,6 +10,7 @@
  */
 import Elysia from 'elysia';
 
+import { SaleCodeNumberingController } from './controllers/code-numbering.controller';
 import { DeliveryNoteController } from './controllers/delivery-note.controller';
 import { InvoiceController } from './controllers/invoice.controller';
 import { QuotationController } from './controllers/quotation.controller';
@@ -32,6 +33,8 @@ export { InvoiceNotFoundError, InvoiceNotPayableError } from './errors/invoice.e
 /** Elysia instance mounting every sales controller, in route order. */
 export function salesModule() {
 	return new Elysia({ name: 'sales' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(SaleCodeNumberingController.plugin())
 		.use(QuotationController.plugin())
 		.use(QuotationRenderController.plugin())
 		.use(SalesOrderController.plugin())

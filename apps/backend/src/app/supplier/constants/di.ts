@@ -3,6 +3,16 @@ import type { ISupplierCompanyRepository } from '../contracts/supplier.repositor
 import type { ISupplierRepository } from '../contracts/supplier.repository.interface';
 import type { SupplierService } from '../services/supplier.service';
 import type { ExportedSupplierService } from '../services/exported-supplier.service';
+import type { SupplierNumberingService } from '../services/supplier-numbering.service';
+import type { SupplierCodeNumberingRepository } from '../repositories/code-numbering.repository';
+
+/** Token resolving to the repository of `supplier.code_numberings`. */
+export const SUPPLIER_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<SupplierCodeNumberingRepository> =
+	Symbol('SUPPLIER_CODE_NUMBERING_REPOSITORY');
+
+/** Token resolving to the {@link SupplierNumberingService} (codes + numbering settings). */
+export const SUPPLIER_NUMBERING_SERVICE_TOKEN: InjectionToken<SupplierNumberingService> =
+	Symbol('SUPPLIER_NUMBERING_SERVICE');
 
 /** Token resolving to the {@link ISupplierCompanyRepository} implementation. */
 export const SUPPLIER_COMPANY_REPOSITORY_TOKEN: InjectionToken<ISupplierCompanyRepository> =

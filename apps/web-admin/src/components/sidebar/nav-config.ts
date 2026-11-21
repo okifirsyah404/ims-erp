@@ -9,6 +9,7 @@ import {
 	GraduationCap,
 	CreditCard,
 	HandCoins,
+	Hash,
 	KeyRound,
 	Calculator,
 	LayoutDashboard,
@@ -37,6 +38,7 @@ import type { SidebarItem } from './sidebar-item';
  * - `permission`: shown when the active organization holds it.
  * - `open`: shown to every logged-in user with an internal role.
  * - `appAdminOnly`: shown to application administrators only.
+ * - `orAppAdmin`: with `permission`, also shown to application administrators.
  * - `warehousePic`: shown to application administrators or to a warehouse
  *   person in charge (ADR-0017). A PIC grant is a table row, not an
  *   organization permission, so it is its own flag.
@@ -309,6 +311,15 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		labelKey: 'section.settings',
 		items: [
 			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
+			// Every `<schema>.code_numberings` on one page. The backend opens it to
+			// application admins too (`adminOrErpGuard`), hence `orAppAdmin`.
+			{
+				titleKey: 'item.codeNumbers',
+				url: '/settings/code-numbers',
+				icon: Hash,
+				permission: 'code_number.read',
+				orAppAdmin: true,
+			},
 			{
 				titleKey: 'item.paymentGateways',
 				url: '/settings/payment-gateways',

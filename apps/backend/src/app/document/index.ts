@@ -7,6 +7,7 @@
  */
 import Elysia from 'elysia';
 
+import { DocumentCodeNumberingController } from './controllers/code-numbering.controller';
 import { DocumentController, PublicDocumentController } from './controllers/document.controller';
 import {
 	DocumentSignatureController,
@@ -33,6 +34,8 @@ export type {
 /** Elysia instance mounting the document controllers (registry + public links). */
 export function documentModule() {
 	return new Elysia({ name: 'document' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(DocumentCodeNumberingController.plugin())
 		.use(DocumentController.plugin())
 		.use(DocumentSignatureController.plugin())
 		.use(SignatureController.plugin())

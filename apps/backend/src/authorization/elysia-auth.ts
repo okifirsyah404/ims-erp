@@ -426,3 +426,107 @@ export function warehouseGuard() {
 			}),
 		});
 }
+
+/** Context resolved by {@link adminOrErpGuard}. */
+export type AdminOrErpContext = {
+	session: SessionPayload;
+	/**
+	 * Selected organization (header > active session). Validated by
+	 * membership for an organization member; for an application admin it is
+	 * the selection as sent and may be `null`.
+	 */
+	organizationId: string | null;
+	/** Whether the caller holds the platform administrator role. */
+	isAppAdmin: boolean;
+};
+
+/**
+ * Guard for application-wide settings an application admin always reaches and
+ * an organization role may be granted (the code-numbering settings).
+ *
+ * @remarks
+ * A third path next to {@link erpGuard} and {@link sessionGuard}:
+ * - application admin -> allowed, with or without an organization context
+ *   (ADR-0007: an admin manages global records without a membership);
+ * - `appAdminOnly` -> everyone else is refused (the warehouse series follows
+ *   ADR-0008: warehouses are application-admin-only);
+ * - otherwise the caller needs an organization context, a live membership in
+ *   it and every requested permission - exactly what `erpGuard` checks.
+ *
+ * Status mapping: no session 401; web-admin gate closed, no organization,
+ * no membership, missing permission or not an admin on `appAdminOnly` 403.
+ */
+export function adminOrErpGuard() {
+	const permissionResolver = container.resolve<IPermissionResolver>(
+		PERMISSION_RESOLVER_TOKEN,
+	);
+
+	return new Elysia({ name: 'admin-or-erp-guard' })
+		.error({ ErpAuthError })
+		.onError({ as: 'global' }, ({ code, error, set }) => {
+			if (code === 'ErpAuthError') {
+				set.status = error.status;
+				return envelope(error.status, error.message);
+			}
+			return undefined;
+		})
+		.macro({
+			adminOrErp: (options: {
+				/** Permissions an organization member needs (ALL must pass). */
+				permission?: readonly PermissionRequirement[];
+				/** Refuse everyone who is not an application admin. */
+				appAdminOnly?: boolean;
+			}) => ({
+				resolve: async (context: Context): Promise<{ erp: AdminOrErpContext }> => {
+					const headers = context.request.headers;
+					const session = await resolveSession(headers);
+					if (!session) {
+						throw new ErpAuthError(401, 'Authentication required');
+					}
+					if (!(await isWebAdminSessionAllowed(session.user.id))) {
+						throw new ErpAuthError(
+							403,
+							'Web-admin access requires an internal organization role',
+						);
+					}
+
+					const organizationId = selectOrganizationId(
+						headers,
+						session.session.activeOrganizationId ?? null,
+					);
+					if (hasAppRole(session.user.role, GLOBAL_ADMIN_ROLE)) {
+						return { erp: { session, organizationId, isAppAdmin: true } };
+					}
+					if (options.appAdminOnly) {
+						throw new ErpAuthError(403, 'Application administrator role required');
+					}
+					if (!organizationId) {
+						throw new ErpAuthError(
+							403,
+							'Organization context required (set active organization or send x-organization-id)',
+						);
+					}
+					const member = await resolveMember(headers, organizationId, session.user.id);
+					if (!member) {
+						throw new ErpAuthError(403, 'Organization membership required');
+					}
+					const roleNames = member.role.split(',').map((r) => r.trim());
+					for (const requirement of options.permission ?? []) {
+						const parsed = parseRequirement(requirement);
+						if (!parsed) {
+							throw new ErpAuthError(403, 'Invalid permission requirement');
+						}
+						const allowed = await permissionResolver.hasPermission(
+							organizationId,
+							roleNames,
+							{ [parsed.resource]: parsed.actions } as never,
+						);
+						if (!allowed) {
+							throw new ErpAuthError(403, 'Insufficient permissions');
+						}
+					}
+					return { erp: { session, organizationId, isAppAdmin: false } };
+				},
+			}),
+		});
+}

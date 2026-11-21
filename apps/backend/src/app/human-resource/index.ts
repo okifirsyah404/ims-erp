@@ -5,6 +5,7 @@
  */
 import Elysia from 'elysia';
 
+import { HumanResourceCodeNumberingController } from './controllers/code-numbering.controller';
 import { AttendanceController } from './controllers/attendance.controller';
 import { EmployeeController } from './controllers/employee.controller';
 import { LeaveController } from './controllers/leave.controller';
@@ -30,6 +31,8 @@ export type { ExportedEmployeeService } from './services/exported-employee.servi
  */
 export function humanResourceModule() {
 	return new Elysia({ name: 'human-resource' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(HumanResourceCodeNumberingController.plugin())
 		.use(EmployeeController.plugin())
 		.use(HrPeopleController.plugin())
 		.use(AttendanceController.plugin())

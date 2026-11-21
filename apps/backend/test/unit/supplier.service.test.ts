@@ -196,15 +196,49 @@ class FakePeople implements ISupplierRepository {
 	}
 }
 
+/** Numbering double: records the organization it was asked for. */
+class FakeSupplierNumbering {
+	calls: { codeType: string; organizationId: string | null | undefined }[] = [];
+	private seq = 0;
+
+	async next(codeType: string, _tx?: unknown, _date?: Date, organizationId?: string | null) {
+		this.calls.push({ codeType, organizationId });
+		this.seq += 1;
+		return `IMS-ORG-SUP-${String(this.seq).padStart(5, '0')}`;
+	}
+}
+
 describe('SupplierService', () => {
 	let companies: FakeCompanies;
 	let people: FakePeople;
+	let numbering: FakeSupplierNumbering;
 	let service: SupplierService;
 
 	beforeEach(() => {
 		companies = new FakeCompanies();
 		people = new FakePeople();
-		service = new SupplierService(companies, people);
+		numbering = new FakeSupplierNumbering();
+		service = new SupplierService(companies, people, numbering as never);
+	});
+
+	test('an empty code is generated with the caller organization', async () => {
+		const company = await service.createCompany(
+			{ name: 'PT Acme', supplierType: 'company', paymentTermsDays: 0 } as TSupplierCompanyCreateInput,
+			'u1',
+			'org-1',
+		);
+		expect(company.code).toBe('IMS-ORG-SUP-00001');
+		expect(numbering.calls).toEqual([{ codeType: 'supplier_company', organizationId: 'org-1' }]);
+	});
+
+	test('a typed code is kept and nothing is allocated', async () => {
+		const company = await service.createCompany(
+			{ code: 'HIT', name: 'PT Hit', supplierType: 'company', paymentTermsDays: 0 } as TSupplierCompanyCreateInput,
+			'u1',
+			'org-1',
+		);
+		expect(company.code).toBe('HIT');
+		expect(numbering.calls).toHaveLength(0);
 	});
 
 	test('rejects a duplicate company code', async () => {

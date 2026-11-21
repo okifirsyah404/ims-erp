@@ -69,6 +69,7 @@ export class CustomerController {
 							await service.createCompany(
 								createCompanySchema.parse(body),
 								erp.session.user.id,
+								erp.organizationId,
 							),
 						),
 					),
@@ -200,6 +201,7 @@ export class CustomerController {
 							await service.createCustomer(
 								createCustomerSchema.parse(body),
 								erp.session.user.id,
+								erp.organizationId,
 							),
 						),
 					),

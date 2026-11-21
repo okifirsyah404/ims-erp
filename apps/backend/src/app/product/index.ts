@@ -1,5 +1,6 @@
 import Elysia from 'elysia';
 
+import { ProductCodeNumberingController } from './controllers/code-numbering.controller';
 import { ProductCategoryController } from './controllers/product-category.controller';
 import { ProductController } from './controllers/product.controller';
 import { ProductListingController } from './controllers/product-listing.controller';
@@ -18,6 +19,8 @@ export { registerProduct } from './container';
  */
 export function productModule() {
 	return new Elysia({ name: 'product' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(ProductCodeNumberingController.plugin())
 		// Server-to-server website API (API-key guard, no session): the primary
 		// URL at `/products/public/v1/catalog`.
 		.use(PublicCatalogController.plugin())

@@ -1,25 +1,41 @@
 import { EXPORTED_COMPANY_SERVICE_TOKEN } from '@app/company/constants/di';
 import type { ExportedCompanyService } from '@app/company/services/exported-company.service';
+import { EXPORTED_ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
+import type { ExportedOrganizationService } from '@app/organization/services/exported-organization.service';
 import type { TTx } from '@drizzle/types';
 import type { CodeType } from '@shared/numbering';
+import { CodeNumberingServiceBase } from '@shared/numbering';
 import { inject, injectable } from 'tsyringe';
 import { TICKET_CODE_NUMBERING_REPOSITORY_TOKEN } from '../constants/di';
 import type { TicketCodeNumberingRepository } from '../repositories/code-numbering.repository';
 
-/** Issues the ticket codes (`ticket`) from `ticket.code_numberings`. */
+/** Issues the ticket codes (`ticket`) from `ticket.code_numberings` and serves their settings. */
 @injectable()
-export class TicketNumberingService {
+export class TicketNumberingService extends CodeNumberingServiceBase {
+	protected readonly schema = 'ticket';
+
 	constructor(
 		@inject(TICKET_CODE_NUMBERING_REPOSITORY_TOKEN)
-		private readonly numberings: Pick<TicketCodeNumberingRepository, 'next'>,
+		numberings: TicketCodeNumberingRepository,
 		@inject(EXPORTED_COMPANY_SERVICE_TOKEN)
-		private readonly company: Pick<ExportedCompanyService, 'requireDocumentCode'>,
-	) {}
+		company: Pick<ExportedCompanyService, 'requireDocumentCode'>,
+		@inject(EXPORTED_ORGANIZATION_SERVICE_TOKEN)
+		organizations?: Pick<ExportedOrganizationService, 'requireOrganizationCode'>,
+	) {
+		super(numberings, company, organizations);
+	}
 
 	/**
+	 * @param organizationId - Issuing organization, for the `{ORG}` token
 	 * @throws {CompanyProfileRequiredError} Before the company profile was first saved
+	 * @throws {OrganizationRequiredForCodeError} The pattern uses `{ORG}` without an organization
 	 */
-	async next(codeType: CodeType, tx?: TTx, date: Date = new Date()): Promise<string> {
-		return this.numberings.next(codeType, await this.company.requireDocumentCode(tx), date, tx);
+	async next(
+		codeType: CodeType,
+		tx?: TTx,
+		date: Date = new Date(),
+		organizationId?: string | null,
+	): Promise<string> {
+		return this.issue(codeType, { tx, date, organizationId });
 	}
 }

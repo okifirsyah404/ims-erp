@@ -18,6 +18,7 @@ import type { IOrganizationRepository } from '../contracts/organization.reposito
 import type { IOrganizationSlugResolverPort } from '@app/user/contracts/organization-slug-resolver.port';
 import type { IOrganizationAuthGateway } from '../contracts/organization-auth.gateway.interface';
 import type { OrganizationService } from '../services/organization.service';
+import type { ExportedOrganizationService } from '../services/exported-organization.service';
 
 /** Token resolving to the {@link IOrganizationRepository} implementation. */
 export const ORGANIZATION_REPOSITORY_TOKEN: InjectionToken<IOrganizationRepository> =
@@ -35,3 +36,11 @@ export const ORGANIZATION_AUTH_GATEWAY_TOKEN: InjectionToken<IOrganizationAuthGa
 /** Token resolving to the {@link OrganizationService} implementation. */
 export const ORGANIZATION_SERVICE_TOKEN: InjectionToken<OrganizationService> =
 	Symbol('ORGANIZATION_SERVICE_TOKEN');
+
+/**
+ * Repository-only facade other modules use for organization facts (the
+ * `{ORG}` numbering token). Never inject {@link ORGANIZATION_SERVICE_TOKEN}
+ * across modules.
+ */
+export const EXPORTED_ORGANIZATION_SERVICE_TOKEN: InjectionToken<ExportedOrganizationService> =
+	Symbol('EXPORTED_ORGANIZATION_SERVICE_TOKEN');

@@ -8,6 +8,7 @@
  */
 import Elysia from 'elysia';
 
+import { TicketCodeNumberingController } from './controllers/code-numbering.controller';
 import { TicketController } from './controllers/ticket.controller';
 
 export { registerTicket } from './container';
@@ -16,5 +17,8 @@ export type { TicketService } from './services/ticket.service';
 
 /** Elysia instance mounting every ticket controller. */
 export function ticketModule() {
-	return new Elysia({ name: 'ticket' }).use(TicketController.plugin());
+	return new Elysia({ name: 'ticket' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(TicketCodeNumberingController.plugin())
+		.use(TicketController.plugin());
 }

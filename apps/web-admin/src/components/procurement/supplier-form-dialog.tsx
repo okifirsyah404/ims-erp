@@ -92,7 +92,8 @@ export function SupplierFormDialog({
 						event.preventDefault();
 						const text = (value: string) => value.trim() || null;
 						const input: Partial<TSupplierCompanyInput> = {
-							code: values.code.trim(),
+							// Empty on create: the server generates the code.
+							code: values.code.trim() || undefined,
 							name: values.name.trim(),
 							supplierType,
 							paymentTermsDays: Number(days || '0'),
@@ -109,7 +110,11 @@ export function SupplierFormDialog({
 						<DialogTitle>{supplier ? t('procurement:suppliers.edit') : t('procurement:suppliers.new')}</DialogTitle>
 					</DialogHeader>
 					<FieldGroup className='grid gap-4 py-4 sm:grid-cols-2'>
-						{field('code', { required: true, maxLength: 32, minLength: 2, pattern: '[A-Za-z0-9]+', className: 'uppercase' }, t('procurement:supplier.codeHint'))}
+						{field(
+							'code',
+							{ required: !!supplier, maxLength: 32, minLength: 2, pattern: '[A-Za-z0-9]+', className: 'uppercase' },
+							supplier ? t('procurement:supplier.codeHint') : t('procurement:supplier.codeAutoHint'),
+						)}
 						<Field>
 							<FieldLabel htmlFor='supplier-type'>{t('procurement:supplier.supplierType')}</FieldLabel>
 							<Select

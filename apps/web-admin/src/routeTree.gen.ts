@@ -127,6 +127,7 @@ import { Route as AuthedSalesQuotesNewRouteImport } from './routes/_authed/sales
 import { Route as AuthedSalesReceiptsIndexRouteImport } from './routes/_authed/sales/receipts/index'
 import { Route as AuthedSalesReturnsIndexRouteImport } from './routes/_authed/sales/returns/index'
 import { Route as AuthedSalesReturnsNewRouteImport } from './routes/_authed/sales/returns/new'
+import { Route as AuthedSettingsCodeNumbersIndexRouteImport } from './routes/_authed/settings/code-numbers/index'
 import { Route as AuthedSettingsCompanyIndexRouteImport } from './routes/_authed/settings/company/index'
 import { Route as AuthedSettingsDocumentsIndexRouteImport } from './routes/_authed/settings/documents/index'
 import { Route as AuthedSettingsPaymentGatewaysIndexRouteImport } from './routes/_authed/settings/payment-gateways/index'
@@ -828,6 +829,12 @@ const AuthedSalesReturnsNewRoute = AuthedSalesReturnsNewRouteImport.update({
   path: '/sales/returns/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedSettingsCodeNumbersIndexRoute =
+  AuthedSettingsCodeNumbersIndexRouteImport.update({
+    id: '/settings/code-numbers/',
+    path: '/settings/code-numbers/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedSettingsCompanyIndexRoute =
   AuthedSettingsCompanyIndexRouteImport.update({
     id: '/settings/company/',
@@ -1207,6 +1214,7 @@ export interface FileRoutesByFullPath {
   '/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
   '/sales/returns/': typeof AuthedSalesReturnsIndexRoute
+  '/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
   '/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
   '/settings/payment-gateways/': typeof AuthedSettingsPaymentGatewaysIndexRoute
@@ -1367,6 +1375,7 @@ export interface FileRoutesByTo {
   '/sales/quotes': typeof AuthedSalesQuotesIndexRoute
   '/sales/receipts': typeof AuthedSalesReceiptsIndexRoute
   '/sales/returns': typeof AuthedSalesReturnsIndexRoute
+  '/settings/code-numbers': typeof AuthedSettingsCodeNumbersIndexRoute
   '/settings/company': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents': typeof AuthedSettingsDocumentsIndexRoute
   '/settings/payment-gateways': typeof AuthedSettingsPaymentGatewaysIndexRoute
@@ -1531,6 +1540,7 @@ export interface FileRoutesById {
   '/_authed/sales/quotes/': typeof AuthedSalesQuotesIndexRoute
   '/_authed/sales/receipts/': typeof AuthedSalesReceiptsIndexRoute
   '/_authed/sales/returns/': typeof AuthedSalesReturnsIndexRoute
+  '/_authed/settings/code-numbers/': typeof AuthedSettingsCodeNumbersIndexRoute
   '/_authed/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/_authed/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
   '/_authed/settings/payment-gateways/': typeof AuthedSettingsPaymentGatewaysIndexRoute
@@ -1695,6 +1705,7 @@ export interface FileRouteTypes {
     | '/sales/quotes/'
     | '/sales/receipts/'
     | '/sales/returns/'
+    | '/settings/code-numbers/'
     | '/settings/company/'
     | '/settings/documents/'
     | '/settings/payment-gateways/'
@@ -1855,6 +1866,7 @@ export interface FileRouteTypes {
     | '/sales/quotes'
     | '/sales/receipts'
     | '/sales/returns'
+    | '/settings/code-numbers'
     | '/settings/company'
     | '/settings/documents'
     | '/settings/payment-gateways'
@@ -2018,6 +2030,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/quotes/'
     | '/_authed/sales/receipts/'
     | '/_authed/sales/returns/'
+    | '/_authed/settings/code-numbers/'
     | '/_authed/settings/company/'
     | '/_authed/settings/documents/'
     | '/_authed/settings/payment-gateways/'
@@ -2898,6 +2911,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSalesReturnsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings/code-numbers/': {
+      id: '/_authed/settings/code-numbers/'
+      path: '/settings/code-numbers'
+      fullPath: '/settings/code-numbers/'
+      preLoaderRoute: typeof AuthedSettingsCodeNumbersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/company/': {
       id: '/_authed/settings/company/'
       path: '/settings/company'
@@ -3399,6 +3419,7 @@ interface AuthedRouteChildren {
   AuthedSalesQuotesIndexRoute: typeof AuthedSalesQuotesIndexRoute
   AuthedSalesReceiptsIndexRoute: typeof AuthedSalesReceiptsIndexRoute
   AuthedSalesReturnsIndexRoute: typeof AuthedSalesReturnsIndexRoute
+  AuthedSettingsCodeNumbersIndexRoute: typeof AuthedSettingsCodeNumbersIndexRoute
   AuthedSettingsCompanyIndexRoute: typeof AuthedSettingsCompanyIndexRoute
   AuthedSettingsDocumentsIndexRoute: typeof AuthedSettingsDocumentsIndexRoute
   AuthedSettingsPaymentGatewaysIndexRoute: typeof AuthedSettingsPaymentGatewaysIndexRoute
@@ -3562,6 +3583,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSalesQuotesIndexRoute: AuthedSalesQuotesIndexRoute,
   AuthedSalesReceiptsIndexRoute: AuthedSalesReceiptsIndexRoute,
   AuthedSalesReturnsIndexRoute: AuthedSalesReturnsIndexRoute,
+  AuthedSettingsCodeNumbersIndexRoute: AuthedSettingsCodeNumbersIndexRoute,
   AuthedSettingsCompanyIndexRoute: AuthedSettingsCompanyIndexRoute,
   AuthedSettingsDocumentsIndexRoute: AuthedSettingsDocumentsIndexRoute,
   AuthedSettingsPaymentGatewaysIndexRoute:

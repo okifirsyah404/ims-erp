@@ -9,6 +9,7 @@
  */
 import Elysia from 'elysia';
 
+import { ProjectCodeNumberingController } from './controllers/code-numbering.controller';
 import { LeadController } from './controllers/lead.controller';
 import { LicenseApiController } from './controllers/license-api.controller';
 import { LicensingController } from './controllers/licensing.controller';
@@ -40,6 +41,8 @@ export type { LicensingService } from './services/licensing.service';
 /** Elysia instance mounting the project module's controllers, in route order. */
 export function projectModule() {
 	return new Elysia({ name: 'project' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(ProjectCodeNumberingController.plugin())
 		.use(LeadController.plugin())
 		.use(ProjectController.plugin())
 		.use(WarrantyController.plugin())

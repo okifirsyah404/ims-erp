@@ -78,6 +78,11 @@ const DYNAMIC_PREFIXES = [
 	'numbering.pattern.',
 	// Website inquiry errors compose `publicApi.${kind}`.
 	'publicApi.',
+	// The code number settings page labels server values (schema, code type,
+	// reset policy) by composing the key.
+	'settings:numbering.section.',
+	'settings:numbering.type.',
+	'settings:numbering.reset.',
 	// Customer type and status labels come from server values.
 	'crm:customerType.',
 	// Address kinds (company: billing/shipping/., person: residence/office/.) come from the server.

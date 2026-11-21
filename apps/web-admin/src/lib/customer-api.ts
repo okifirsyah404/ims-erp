@@ -96,7 +96,8 @@ export type TCompanyAddress = {
 export type TCompanyDetail = TCompany & { addresses: TCompanyAddress[] };
 
 export type TCustomerInput = {
-	code: string;
+	/** Optional on create: omitted, the server generates it (`customer.code_numberings`). */
+	code?: string;
 	companyId: string | null;
 	customerType: TCustomerType;
 	name: string;
@@ -109,7 +110,8 @@ export type TCustomerInput = {
 };
 
 export type TCompanyInput = {
-	code: string;
+	/** Optional on create: omitted, the server generates it (`customer.code_numberings`). */
+	code?: string;
 	companyType: TCompanyType;
 	name: string;
 	legalName: string | null;

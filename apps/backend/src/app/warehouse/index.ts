@@ -1,5 +1,6 @@
 import Elysia from 'elysia';
 
+import { WarehouseCodeNumberingController } from './controllers/code-numbering.controller';
 import { WarehouseController } from './controllers/warehouse.controller';
 
 export { registerWarehouse } from './container';
@@ -15,6 +16,8 @@ export { registerWarehouse } from './container';
  */
 export function warehouseModule() {
 	return new Elysia({ name: 'warehouse' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(WarehouseCodeNumberingController.plugin())
 		.use(WarehouseController.linkedPlugin())
 		.use(WarehouseController.plugin());
 }

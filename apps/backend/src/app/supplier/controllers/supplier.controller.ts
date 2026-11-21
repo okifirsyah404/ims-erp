@@ -85,7 +85,7 @@ export class SupplierController {
 				async ({ body, erp, status }) => {
 					const input = supplierCompanyCreateSchema.parse(body);
 					await assertBankWrite(erp, input);
-					return status(201, created(await view(erp, await service.createCompany(input, erp.session.user.id))));
+					return status(201, created(await view(erp, await service.createCompany(input, erp.session.user.id, erp.organizationId))));
 				},
 				{
 					erp: { permission: ['supplier:create'] },

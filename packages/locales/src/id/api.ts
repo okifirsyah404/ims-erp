@@ -254,6 +254,21 @@ const api: Record<keyof typeof en, string> = {
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
 	'supplier.bankForbidden': 'Anda tidak boleh melihat atau mengubah data bank pemasok',
 	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
+	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
+	'numbering.organizationRequired':
+		'Nomor ini memakai {ORG}: pilih organisasi aktif terlebih dahulu',
+	'numbering.codeTooLong':
+		'Kode yang dihasilkan {{code}} lebih dari {{max}} karakter; persingkat pola penomorannya',
+	'numbering.pattern.length': 'Pola harus 1-100 karakter',
+	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
+	'numbering.pattern.tokenNotForType':
+		'Token {{token}} hanya tersedia untuk: {{types}}',
+	'numbering.pattern.tokenTakesNoWidth': 'Token {{token}} tidak memakai lebar digit',
+	'numbering.pattern.seqWidth': 'Lebar {SEQ:n} harus antara 1 dan 10',
+	'numbering.pattern.seqOnce': 'Pola harus memuat {SEQ} tepat satu kali',
+	'numbering.pattern.braces': 'Kurung kurawal token tidak seimbang atau salah',
+	'numbering.pattern.literals':
+		'Di luar token hanya boleh huruf, angka, spasi, / - . _',
 	'document.notFound': 'Dokumen tidak ditemukan',
 	'document.notVoidable': 'Dokumen ini tidak dapat dibatalkan',
 	'document.fileNotFound': 'File tidak ditemukan',

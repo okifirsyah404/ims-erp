@@ -84,7 +84,9 @@ no central code-number module.
   carries the comma-joined role keys. The portal login moved to
   `customer.customers`; profile/preferences are no longer separate tables.
 - **Contract**: `ExportedUserService` (`findById`, `findByEmail`,
-  `issuePasswordToken`) and the organization/membership guards.
+  `issuePasswordToken`), `ExportedOrganizationService`
+  (`requireOrganizationCode`: the `{ORG}` numbering token, the upper-cased
+  organization slug) and the organization/membership guards.
 
 ### 2. Location - `location`
 

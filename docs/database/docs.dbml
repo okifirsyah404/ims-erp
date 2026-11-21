@@ -810,7 +810,7 @@ Table customer.code_numberings {
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Code series of the customer module (ADR-0024 Q6). Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING. Partial unique index on code_type WHERE deleted_at IS NULL."
+  Note: "Code series of the customer module (ADR-0024 Q6). Allocation is one atomic INSERT ... ON CONFLICT DO UPDATE ... RETURNING. Partial unique index on code_type WHERE deleted_at IS NULL. Issues customer and customer_company codes when a create leaves code empty (default {TYPE}-{SEQ:5}, never reset); a generated code must fit the 32-character code column. Pattern tokens include {ORG}, the upper-cased slug of the issuing organization."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`
@@ -962,7 +962,7 @@ Table supplier.code_numberings {
   updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
-  Note: "Code series of the supplier module (ADR-0024 Q6)."
+  Note: "Code series of the supplier module (ADR-0024 Q6). Issues supplier_company codes when a create leaves code empty (default {COMPANY}-{ORG}-{TYPE}-{SEQ:5}, never reset; {ORG} is the upper-cased slug of the issuing organization). A generated code must fit the 32-character code column; a typed code is kept, so a short code for the PO {SUPPLIER} token stays possible."
   Checks {
     `reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')`
     `next_number > 0`

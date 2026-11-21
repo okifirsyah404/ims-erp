@@ -11,6 +11,8 @@
  *   {SEQ} / {SEQ:n}  sequence, optionally zero-padded to n digits (1-10)
  *   {TYPE}           code type code (QT, SO, INV, KW, ...)
  *   {COMPANY}        company document code from the company profile (`IMS`)
+ *   {ORG}            slug of the issuing organization, upper-cased
+ *                    (`pt-entragate-hit` -> `PT-ENTRAGATE-HIT`); every code type
  *   {MM}             month 01-12      {MM_ROMAN}  month I-XII
  *   {YY}             2-digit year     {YYYY}      4-digit year
  *   {SUPPLIER} {CATEGORY}  purchase orders only
@@ -20,23 +22,25 @@
 
 export const BUSINESS_TIME_ZONE = 'Asia/Jakarta';
 
-export type ResetPolicy = 'never' | 'yearly' | 'monthly';
+/** Counter restart policies (the `reset_policy` CHECK). */
+export const RESET_POLICIES = ['never', 'yearly', 'monthly'] as const;
+
+export type ResetPolicy = (typeof RESET_POLICIES)[number];
 
 /** Every code type any module allocates, grouped by owning schema. */
 export const CODE_TYPES_BY_SCHEMA = {
 	customer: ['customer', 'customer_company'],
 	supplier: ['supplier_company'],
+	// Split out of inventory by ADR-0026.
+	product: ['item_product', 'item_material', 'item_component'],
+	warehouse: ['warehouse'],
 	inventory: [
-		'item_product',
-		'item_material',
-		'item_component',
 		'asset',
 		'stock_movement',
 		'stock_adjustment',
 		'borrowing',
 		'maintenance',
 		'disposal',
-		'warehouse',
 		'tool_set',
 	],
 	sale: [
@@ -157,15 +161,29 @@ const FIXED_PATTERNS: Partial<
 	disposal: { pattern: '{TYPE}-{YYYY}-{SEQ:5}', reset: 'yearly' },
 	tool_set: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 	borrowing: { pattern: '{TYPE}-{YYYY}{MM}-{SEQ:4}', reset: 'monthly' },
-	warehouse: { pattern: '{TYPE}-{SEQ:4}', reset: 'never' },
-	item_product: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
-	item_material: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
-	item_component: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
+	// ADR-0026: product and warehouse codes carry the issuing company.
+	warehouse: { pattern: '{TYPE}-{COMPANY}-{SEQ:4}', reset: 'never' },
+	item_product: { pattern: '{TYPE}-{COMPANY}-{SEQ:5}', reset: 'never' },
+	item_material: { pattern: '{TYPE}-{COMPANY}-{SEQ:5}', reset: 'never' },
+	item_component: { pattern: '{TYPE}-{COMPANY}-{SEQ:5}', reset: 'never' },
 	customer: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
 	customer_company: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
-	supplier_company: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
+	// Generated supplier codes name the company and the organization that
+	// registered the supplier, e.g. `IMS-PT-ENTRAGATE-SUP-00001`.
+	supplier_company: { pattern: '{COMPANY}-{ORG}-{TYPE}-{SEQ:5}', reset: 'never' },
 	lead_reference: { pattern: '{TYPE}-{YYYY}-{SEQ:5}', reset: 'yearly' },
 	employee: { pattern: '{TYPE}-{SEQ:5}', reset: 'never' },
+};
+
+/**
+ * Length of the column a generated code is stored in, for the code types whose
+ * column is shorter than any pattern can render. A longer code is rejected
+ * instead of being cut off (customer and supplier codes are varchar(32)).
+ */
+export const CODE_MAX_LENGTH: Partial<Record<CodeType, number>> = {
+	customer: 32,
+	customer_company: 32,
+	supplier_company: 32,
 };
 
 /** Default pattern per code type (used until the owner overrides it). */
@@ -206,6 +224,30 @@ export const PREVIEW_CONTEXT: TNumberContext = {
 	customer: 'CUS',
 };
 
+/** Placeholder for `{ORG}` in a preview made without an active organization. */
+export const PREVIEW_ORGANIZATION_CODE = 'ORG';
+
+/** Allowed lengths of a pattern (the `pattern` column is varchar(100)). */
+export const PATTERN_MAX_LENGTH = 100;
+
+/** True when `pattern` contains the `{ORG}` token. */
+export function usesOrganizationToken(pattern: string): boolean {
+	return pattern.includes('{ORG}');
+}
+
+/**
+ * The `{ORG}` value of an organization slug: upper-cased, every character
+ * outside `A-Z 0-9 -` turned into `-`, repeated and edge dashes removed
+ * (`pt entragate_hit` -> `PT-ENTRAGATE-HIT`).
+ */
+export function organizationCodeFromSlug(slug: string): string {
+	return slug
+		.toUpperCase()
+		.replace(/[^A-Z0-9-]+/g, '-')
+		.replace(/-{2,}/g, '-')
+		.replace(/^-|-$/g, '');
+}
+
 /**
  * One problem with a pattern. `code` maps to the locale key
  * `numbering.pattern.<code>`; `params` fill its placeholders.
@@ -228,6 +270,7 @@ const KNOWN_TOKENS = new Set([
 	'SEQ',
 	'TYPE',
 	'COMPANY',
+	'ORG',
 	'MM',
 	'MM_ROMAN',
 	'YY',
@@ -263,7 +306,7 @@ export function validatePattern(
 	codeType: CodeType,
 ): TPatternProblem[] {
 	const problems: TPatternProblem[] = [];
-	if (pattern.length === 0 || pattern.length > 100)
+	if (pattern.length === 0 || pattern.length > PATTERN_MAX_LENGTH)
 		problems.push({ code: 'length' });
 	let seqCount = 0;
 	for (const match of pattern.matchAll(TOKEN_RE)) {
@@ -326,6 +369,8 @@ export function renderNumber(
 		seq: number;
 		typeCode: string;
 		companyCode: string;
+		/** `{ORG}` value; only read when the pattern uses the token. */
+		organizationCode?: string;
 		date: Date;
 		context?: TNumberContext;
 	},
@@ -339,6 +384,8 @@ export function renderNumber(
 				return values.typeCode;
 			case 'COMPANY':
 				return values.companyCode;
+			case 'ORG':
+				return values.organizationCode ?? '';
 			case 'MM':
 				return String(month).padStart(2, '0');
 			case 'MM_ROMAN':

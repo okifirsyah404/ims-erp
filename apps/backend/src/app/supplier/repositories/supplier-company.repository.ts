@@ -115,7 +115,7 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 	}
 
 	async create(
-		data: TSupplierCompanyCreateInput & { createdBy: string },
+		data: TSupplierCompanyCreateInput & { code: string; createdBy: string },
 	): Promise<TSupplierCompanySelect> {
 		const now = new Date();
 		const [row] = await this.database

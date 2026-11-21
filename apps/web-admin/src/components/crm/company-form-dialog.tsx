@@ -57,7 +57,8 @@ export function CompanyFormDialog({
 					onSubmit={(event) => {
 						event.preventDefault();
 						onSave({
-							code: code.trim(),
+							// Empty on create: the server generates the code.
+							code: code.trim() || undefined,
 							companyType,
 							name: name.trim(),
 							legalName: text(legalName),
@@ -79,14 +80,16 @@ export function CompanyFormDialog({
 								<FieldLabel htmlFor='company-code'>{t('crm:customer.code')}</FieldLabel>
 								<Input
 									id='company-code'
-									required
+									required={!!company}
 									maxLength={32}
 									pattern='[A-Za-z0-9._\-\/]+'
 									className='uppercase'
 									value={code}
 									onChange={(event) => setCode(event.target.value)}
 								/>
-								<FieldDescription>{t('crm:customer.codeHint')}</FieldDescription>
+								<FieldDescription>
+									{company ? t('crm:customer.codeHint') : t('crm:customer.codeAutoHint')}
+								</FieldDescription>
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor='company-type'>{t('crm:customer.customerType')}</FieldLabel>

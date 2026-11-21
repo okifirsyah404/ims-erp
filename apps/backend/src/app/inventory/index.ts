@@ -1,5 +1,6 @@
 import Elysia from 'elysia';
 
+import { InventoryCodeNumberingController } from './controllers/code-numbering.controller';
 import { BorrowingController, BorrowingRequestController } from './controllers/borrowing.controller';
 import { ItemController } from './controllers/item.controller';
 import { SerialUnitController } from './controllers/serial-unit.controller';
@@ -24,6 +25,8 @@ export { registerInventory } from './container';
  */
 export function inventoryModule() {
 	return new Elysia({ name: 'inventory' })
+		// Static `/code-numberings` routes: settings of this module's series.
+		.use(InventoryCodeNumberingController.plugin())
 		.use(ItemController.plugin())
 		// Nested under the product it describes, but the unit rows and the status
 		// matrix are this module's (ADR-0026).
