@@ -1,28 +1,29 @@
 ---
-import Bell from "@lucide/astro/icons/bell";
-import Mail from "@lucide/astro/icons/mail";
-import MessageCircle from "@lucide/astro/icons/message-circle";
-import ScanFace from "@lucide/astro/icons/scan-face";
 import KeyRound from "@lucide/astro/icons/key-round";
-import ShieldCheck from "@lucide/astro/icons/shield-check";
 import Smartphone from "@lucide/astro/icons/smartphone";
 import Languages from "@lucide/astro/icons/languages";
 import Coins from "@lucide/astro/icons/coins";
-import SunMoon from "@lucide/astro/icons/sun-moon";
-import Download from "@lucide/astro/icons/download";
 import Trash from "@lucide/astro/icons/trash";
 import ChevronRight from "@lucide/astro/icons/chevron-right";
 import CustomerLayout from "../../layouts/CustomerLayout.astro";
 import TopBar from "../../components/customer/TopBar.astro";
 import IconTile from "../../components/customer/IconTile.astro";
-import SettingToggle from "../../features/account/SettingToggle";
 import { customerService } from "../../services";
 
-/** 05.10 Settings — notifications, security, preferences and privacy. */
+/**
+ * 05.10 Settings — security, preferences and the account. Kept to what works (user decision
+ * 2026-11-20): WhatsApp / email updates, Face ID, data download and appearance were removed;
+ * devices and deleting the login are real (ERP-0106). Push notices come over the ERP's
+ * websocket and a second sign-in factor will be Better Auth's, so neither is a toggle here
+ * (owner decision 2026-11-21). The language is the portal's own cookie (`setLanguage`), sent
+ * to the ERP as Accept-Language.
+ */
 const account = await customerService.account(Astro.locals.tokens!);
-const { notifications, security, preferences } = account;
+const { security, preferences } = account;
+const language = Astro.locals.language;
 const languages = { en: "English", id: "Bahasa Indonesia" };
-const appearances = { light: "Light", system: "System" };
+const flash = await Astro.session?.get("flash");
+if (flash) Astro.session?.delete("flash");
 const row = "flex min-h-[64px] items-center gap-3.5 px-4 py-3";
 const card = "flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset";
 const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted uppercase";
@@ -32,58 +33,30 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
   <TopBar title="Settings" back="/profile" />
 
   <div class="flex flex-col gap-5 px-5 pt-1 pb-8">
-    <section class="flex flex-col gap-2.5" aria-labelledby="s-notifications">
-      <h2 id="s-notifications" class={heading}>Notifications</h2>
-      <ul class={card}>
-        {
-          [
-            { key: "push", icon: Bell, title: "Push notifications", detail: "Orders, projects & tickets" },
-            { key: "email", icon: Mail, title: "Email updates", detail: "Invoices & quotations" },
-            { key: "whatsapp", icon: MessageCircle, title: "WhatsApp updates", detail: "Delivery & technician arrival" },
-          ].map(({ key, icon: Icon, title, detail }) => (
-            <li class={row}>
-              <IconTile tone="neutral" size={38}><Icon size={18} /></IconTile>
-              <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span class="text-[15px] font-semibold text-fg">{title}</span>
-                <span class="text-[12.5px] text-fg-muted">{detail}</span>
-              </span>
-              <SettingToggle client:visible setting={key as "push" | "email" | "whatsapp"} label={title} defaultChecked={notifications[key as keyof typeof notifications]} />
-            </li>
-          ))
-        }
-      </ul>
-    </section>
-
+    {flash && <p role="status" class="rounded-md bg-success-bg p-3.5 text-[13.5px] font-semibold text-success ring-1 ring-success-border ring-inset">{flash.title}</p>}
     <section class="flex flex-col gap-2.5" aria-labelledby="s-security">
       <h2 id="s-security" class={heading}>Security</h2>
       <ul class={card}>
-        <li class={row}>
-          <IconTile tone="neutral" size={38}><ScanFace size={18} /></IconTile>
-          <span class="flex-1 text-[15px] font-semibold text-fg">Sign in with Face ID</span>
-          <SettingToggle client:visible setting="faceId" label="Sign in with Face ID" defaultChecked={security.faceId} />
-        </li>
         <li>
           <a href="/settings/password" class:list={[row, "hover:bg-surface"]}>
             <IconTile tone="neutral" size={38}><KeyRound size={18} /></IconTile>
             <span class="flex min-w-0 flex-1 flex-col gap-0.5">
               <span class="text-[15px] font-semibold text-fg">Change password</span>
-              <span class="text-[12.5px] text-fg-muted">{security.passwordChangedLabel}</span>
+              <span class="text-[12.5px] text-fg-muted">{security.passwordChangedLabel || "Use at least 12 characters"}</span>
             </span>
             <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
           </a>
         </li>
-        <li class={row}>
-          <IconTile tone="neutral" size={38}><ShieldCheck size={18} /></IconTile>
-          <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span class="text-[15px] font-semibold text-fg">2-step verification</span>
-            <span class="text-[12.5px] text-fg-muted">Email code on new devices</span>
-          </span>
-          <SettingToggle client:visible setting="twoStep" label="2-step verification" defaultChecked={security.twoStep} />
-        </li>
-        <li class={row}>
-          <IconTile tone="neutral" size={38}><Smartphone size={18} /></IconTile>
-          <span class="flex-1 text-[15px] font-semibold text-fg">Active devices</span>
-          <span class="text-[14px] font-medium text-fg-muted">{security.activeDevices}</span>
+        <li>
+          <a href="/settings/devices" class:list={[row, "hover:bg-surface"]}>
+            <IconTile tone="neutral" size={38}><Smartphone size={18} /></IconTile>
+            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="text-[15px] font-semibold text-fg">Active devices</span>
+              <span class="text-[12.5px] text-fg-muted">See and sign out devices</span>
+            </span>
+            <span class="text-[14px] font-medium text-fg-muted">{security.activeDevices}</span>
+            <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
+          </a>
         </li>
       </ul>
     </section>
@@ -94,8 +67,8 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
         <li class={row}>
           <IconTile tone="neutral" size={38}><Languages size={18} /></IconTile>
           <label for="pref-language" class="flex-1 text-[15px] font-semibold text-fg">Language</label>
-          <select id="pref-language" data-setting="language" class="rounded-md bg-surface py-2 pr-2 pl-3 text-[14px] font-medium text-fg-secondary outline-none focus-visible:ring-[1.5px] focus-visible:ring-blue-600">
-            {Object.entries(languages).map(([value, label]) => <option value={value} selected={preferences.language === value}>{label}</option>)}
+          <select id="pref-language" data-language class="rounded-md bg-surface py-2 pr-2 pl-3 text-[14px] font-medium text-fg-secondary outline-none focus-visible:ring-[1.5px] focus-visible:ring-blue-600">
+            {Object.entries(languages).map(([value, label]) => <option value={value} selected={language === value}>{label}</option>)}
           </select>
         </li>
         <li class={row}>
@@ -103,36 +76,19 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
           <span class="flex-1 text-[15px] font-semibold text-fg">Currency</span>
           <span class="text-[14px] font-medium text-fg-muted" title="Prices are quoted in Rupiah">{preferences.currency}</span>
         </li>
-        <li class={row}>
-          <IconTile tone="neutral" size={38}><SunMoon size={18} /></IconTile>
-          <label for="pref-appearance" class="flex-1 text-[15px] font-semibold text-fg">Appearance</label>
-          <select id="pref-appearance" data-setting="appearance" class="rounded-md bg-surface py-2 pr-2 pl-3 text-[14px] font-medium text-fg-secondary outline-none focus-visible:ring-[1.5px] focus-visible:ring-blue-600">
-            {Object.entries(appearances).map(([value, label]) => <option value={value} selected={preferences.appearance === value}>{label}</option>)}
-          </select>
-        </li>
       </ul>
       <p class="px-1 text-[12px] text-fg-muted" data-pref-status role="status"></p>
     </section>
 
-    <section class="flex flex-col gap-2.5" aria-labelledby="s-privacy">
-      <h2 id="s-privacy" class={heading}>Privacy</h2>
+    <section class="flex flex-col gap-2.5" aria-labelledby="s-account">
+      <h2 id="s-account" class={heading}>Account</h2>
       <ul class={card}>
         <li>
-          <a href="/support/new?category=other&subject=Data%20export%20request" class:list={[row, "hover:bg-surface"]}>
-            <IconTile tone="neutral" size={38}><Download size={18} /></IconTile>
-            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span class="text-[15px] font-semibold text-fg">Download my data</span>
-              <span class="text-[12.5px] text-fg-muted">Request an export through support</span>
-            </span>
-            <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
-          </a>
-        </li>
-        <li>
-          <a href="/support/new?category=other&subject=Account%20deletion%20request" class:list={[row, "hover:bg-surface"]}>
+          <a href="/settings/delete-account" class:list={[row, "hover:bg-surface"]}>
             <IconTile tone="danger" size={38}><Trash size={18} /></IconTile>
             <span class="flex min-w-0 flex-1 flex-col gap-0.5">
               <span class="text-[15px] font-semibold text-danger">Delete account</span>
-              <span class="text-[12.5px] text-fg-muted">Requires admin approval</span>
+              <span class="text-[12.5px] text-fg-muted">Removes your login; orders and documents stay</span>
             </span>
             <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
           </a>
@@ -146,14 +102,13 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
   import { actions } from "astro:actions";
 
   const status = document.querySelector<HTMLElement>("[data-pref-status]");
-  document.querySelectorAll<HTMLSelectElement>("select[data-setting]").forEach((select) => {
+  document.querySelectorAll<HTMLSelectElement>("select[data-language]").forEach((select) => {
     let previous = select.value;
     select.addEventListener("change", async () => {
       const form = new FormData();
-      form.set("key", select.dataset.setting!);
-      form.set("value", select.value);
+      form.set("language", select.value);
       select.disabled = true;
-      const { error } = await actions.account.updateSetting(form);
+      const { error } = await actions.account.setLanguage(form);
       select.disabled = false;
       if (error) {
         select.value = previous;

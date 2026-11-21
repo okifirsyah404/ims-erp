@@ -1,0 +1,51 @@
+---
+import { actions, isInputError } from "astro:actions";
+import LockKeyhole from "@lucide/astro/icons/lock-keyhole";
+import TriangleAlert from "@lucide/astro/icons/triangle-exclamation-point";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import AppField from "../../components/customer/AppField.astro";
+
+/**
+ * Settings › Delete account (ERP-0106, owner decision 2026-11-20): removes this login only.
+ * Orders, invoices, documents and the company stay; the only owner of a company cannot.
+ */
+const result = Astro.getActionResult(actions.account.closeAccount);
+if (result && !result.error) return Astro.redirect("/login?reason=closed", 303);
+const fields = result?.error && isInputError(result.error) ? result.error.fields : {};
+const formError = result?.error && !isInputError(result.error) ? result.error.message : undefined;
+---
+
+<CustomerLayout title="Delete account" section="profile">
+  <TopBar title="Delete account" back="/settings" />
+  <form method="POST" action={actions.account.closeAccount} class="flex flex-col gap-5 px-5 pt-2 pb-8" novalidate>
+    <div class="flex gap-3 rounded-card bg-danger-bg p-4 ring-1 ring-danger-border ring-inset">
+      <TriangleAlert size={20} class="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
+      <div class="flex flex-col gap-1.5 text-[13.5px] leading-[1.5] text-fg">
+        <p class="font-semibold text-danger">This deletes your login</p>
+        <ul class="list-disc pl-4 text-fg-secondary">
+          <li>You are signed out on every device and cannot sign in again.</li>
+          <li>Your orders, invoices, documents and company data stay with Entragate and your colleagues.</li>
+          <li>If you are the only owner of a company account, make a colleague an owner first.</li>
+        </ul>
+      </div>
+    </div>
+
+    {formError && <p role="alert" class="rounded-md bg-danger-bg p-3.5 text-[13.5px] font-semibold text-danger ring-1 ring-danger-border ring-inset">{formError}</p>}
+
+    <AppField label="Password" name="password" type="password" autocomplete="current-password" required error={fields.password?.[0]} invalid={formError === "Your password is incorrect"}>
+      <LockKeyhole slot="icon" />
+    </AppField>
+
+    <label class="flex items-start gap-3 text-[14px] leading-[1.45] text-fg">
+      <input type="checkbox" name="confirm" class="mt-0.5 size-5 shrink-0 accent-danger" required />
+      <span>I understand that I will lose access to this portal.</span>
+    </label>
+    {fields.confirm?.[0] && <p role="alert" class="-mt-3 text-[13px] font-semibold text-danger">{fields.confirm[0]}</p>}
+
+    <button type="submit" class="flex h-[54px] items-center justify-center rounded-control bg-danger text-[16px] font-semibold text-white hover:opacity-90">
+      Delete my account
+    </button>
+    <a href="/settings" class="text-center text-[14px] font-semibold text-blue-600">Keep my account</a>
+  </form>
+</CustomerLayout>

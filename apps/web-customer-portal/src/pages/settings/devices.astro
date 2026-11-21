@@ -1,0 +1,78 @@
+---
+import { actions } from "astro:actions";
+import Laptop from "@lucide/astro/icons/laptop";
+import Smartphone from "@lucide/astro/icons/smartphone";
+import LogOut from "@lucide/astro/icons/log-out";
+import CustomerLayout from "../../layouts/CustomerLayout.astro";
+import TopBar from "../../components/customer/TopBar.astro";
+import IconTile from "../../components/customer/IconTile.astro";
+import ConfirmAction from "../../features/account/ConfirmAction";
+import { customerService } from "../../services";
+import { deviceLabel, displayIp, isMobileAgent } from "../../lib/device-label";
+
+/** Settings › Active devices (ERP-0106): where this login is signed in; sign others out. */
+const signedOut = Astro.getActionResult(actions.account.signOutOtherDevices);
+const devices = await customerService.devices(Astro.locals.tokens!);
+const others = devices.filter((device) => !device.current);
+const when = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" });
+const card = "flex flex-col divide-y divide-border rounded-card bg-white ring-1 ring-border ring-inset";
+---
+
+<CustomerLayout title="Active devices" section="profile">
+  <TopBar title="Active devices" back="/settings" />
+  <div class="flex flex-col gap-5 px-5 pt-1 pb-8">
+    <p class="text-[14px] leading-[1.5] text-fg-secondary">
+      These browsers and phones are signed in to your account. If you don’t recognise one, sign it out and change your password.
+    </p>
+    {signedOut?.data && <p role="status" class="rounded-md bg-success-bg p-3.5 text-[13.5px] font-semibold text-success ring-1 ring-success-border ring-inset">Other devices were signed out.</p>}
+    {signedOut?.error && <p role="alert" class="rounded-md bg-danger-bg p-3.5 text-[13.5px] font-semibold text-danger ring-1 ring-danger-border ring-inset">{signedOut.error.message}</p>}
+
+    <ul class={card}>
+      {
+        devices.map((device) => (
+          <li class="flex min-h-[72px] items-center gap-3.5 px-4 py-3">
+            <IconTile tone={device.current ? "info" : "neutral"} size={38}>
+              {isMobileAgent(device.userAgent) ? <Smartphone size={18} /> : <Laptop size={18} />}
+            </IconTile>
+            <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span class="flex items-center gap-2 text-[15px] font-semibold text-fg">
+                {deviceLabel(device.userAgent)}
+                {device.current && <span class="rounded-pill bg-success-bg px-2 py-0.5 text-[11px] font-bold text-success">This device</span>}
+              </span>
+              <span class="text-[12.5px] text-fg-muted">
+                {device.current ? "Active now" : `Last active ${when(device.updatedAt)}`}
+                {displayIp(device.ipAddress) && ` · ${displayIp(device.ipAddress)}`}
+              </span>
+            </span>
+            {!device.current && (
+              <ConfirmAction
+                client:visible
+                operation="revokeDevice"
+                id={device.id}
+                triggerLabel="Sign out"
+                title="Sign this device out?"
+                description={`${deviceLabel(device.userAgent)} will need to sign in again.`}
+                confirmLabel="Sign out"
+              />
+            )}
+          </li>
+        ))
+      }
+    </ul>
+
+    {
+      others.length > 0 && (
+        <form method="POST" action={actions.account.signOutOtherDevices}>
+          <button
+            type="submit"
+            class="flex h-[50px] w-full items-center justify-center gap-2 rounded-control bg-white text-[15px] font-semibold text-danger ring-1 ring-border ring-inset hover:bg-surface"
+          >
+            <LogOut size={17} aria-hidden="true" />
+            Sign out all other devices
+          </button>
+        </form>
+      )
+    }
+  </div>
+</CustomerLayout>

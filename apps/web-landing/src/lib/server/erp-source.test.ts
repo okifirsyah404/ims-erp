@@ -251,9 +251,18 @@ describe("ERP website source", () => {
 
   test("a signed-in RFQ still authenticates with the website key, never the customer token", async () => {
     const { calls, fetcher } = mockFetch(() => envelope({ reference: "RFQ-2026-00003", linkedToAccount: false }, 201));
-    const auth: CustomerAuth = { accessToken: "customer-token", customerId: "c-1" };
+    const auth: CustomerAuth = { sessionCookie: "better-auth.session_token=customer-session", customerId: "c-1" };
     await websiteWith(fetcher).submitRfq(rfq, [], auth);
     expect((calls[0]!.init.headers as Record<string, string>).Authorization).toBe(`Bearer ${KEY}`);
+  });
+
+  test("customer-scoped calls send the ERP session cookie as Cookie, never a bearer header (ADR-0027)", async () => {
+    const { calls, fetcher } = mockFetch(() => envelope({ lines: [] }));
+    const auth: CustomerAuth = { sessionCookie: "better-auth.session_token=customer-session", customerId: "c-1" };
+    await websiteWith(fetcher, { ...websiteRoutes, getCart: "/customers/portal/v1/cart" }).getCart(auth);
+    const headers = calls[0]!.init.headers as Record<string, string>;
+    expect(headers.Cookie).toBe(auth.sessionCookie);
+    expect(headers.Authorization).toBeUndefined();
   });
 
   test("contact and demo post to their routes and return the reference", async () => {

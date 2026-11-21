@@ -47,7 +47,8 @@ export const portalSignupSchema = z.object({
 		.regex(/^[0-9+()\-\s]*$/)
 		.optional()
 		.transform((value) => (value ? value : null)),
-	password: z.string().min(8).max(128),
+	/** Same rule as `portalNewPasswordSchema` and the portal's form (ERP-0094). */
+	password: z.string().min(12).max(128),
 });
 export type TPortalSignup = z.output<typeof portalSignupSchema>;
 

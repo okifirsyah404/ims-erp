@@ -51,3 +51,10 @@ export class PortalNotFoundError extends AppError {
 		super(404, 'common.notFound', 'Not found');
 	}
 }
+
+/** The device (session) is gone or belongs to another login (ERP-0106). */
+export class PortalDeviceNotFoundError extends AppError {
+	constructor() {
+		super(404, 'portal.deviceNotFound', 'That device is no longer signed in');
+	}
+}

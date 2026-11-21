@@ -28,9 +28,8 @@ export const account: AccountSettings = {
     { id: "site-campus", name: "Campus · Gate A", address: "Jl. Raya Bogor KM 30, Depok 16451", picName: "Yudi", picPhone: "0813 2290 1180" },
     { id: "site-wh", name: "Warehouse Cikarang", address: "Kawasan Industri Jababeka Blok F, Cikarang 17530", picName: "Rahmat", picPhone: "0811 7720 3301" },
   ],
-  notifications: { push: true, email: true, whatsapp: false },
-  security: { faceId: true, twoStep: true, passwordChangedLabel: "Last changed 3 months ago", activeDevices: 2 },
-  preferences: { language: "en", currency: "IDR", appearance: "light" },
+  security: { passwordChangedLabel: "Last changed 3 months ago", activeDevices: 2 },
+  preferences: { language: "en", currency: "IDR" },
 };
 
 export const wishlist: WishlistItem[] = [

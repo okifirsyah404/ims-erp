@@ -27,6 +27,7 @@ export const customerService = {
   notifications: (t: T) => portal.listNotifications(t),
   documents: (t: T, folder?: Parameters<typeof portal.listDocuments>[1]) => portal.listDocuments(t, folder),
   wishlist: (t: T) => portal.listWishlist(t),
+  devices: (t: T) => portal.listDevices(t),
 };
 
 export const ordersService = {

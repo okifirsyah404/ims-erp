@@ -695,6 +695,32 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M07 Projects and After-Sales
 
 ### implemented
+- ERP-0094 portal session cookie + customer-only portal (2026-11-21, port of
+  branch ERP-0069, ADR-0027): `/customers/portal/v1` sign-in and sign-up
+  verification answer `Set-Cookie` with Better Auth's session cookie (no
+  token in the body), logout clears it, the guard reads only `Cookie` (bearer
+  401) and requires an active portal login, returning the global roles; the
+  portal app admits only the `customer` role (moved from the ERP 2026-11-21);
+  the role is granted on invitation and verified sign-up and backfilled by
+  migration `20261121064831_erp0094_portal_customer_role`; new passwords
+  12-128; OpenAPI summaries + request bodies. web-customer-portal and
+  web-landing keep the cookie server-side. Evidence: `src/app/customer`,
+  `src/authorization/portal-auth.ts`, `test/unit/portal-account.test.ts`,
+  `apps/web-customer-portal/src/services/portal/erp-source.test.ts`,
+  `progress.md` 2026-11-21 (live check on a disposable DB). Open: browser
+  walk-through; ERP-0106 (2-step, devices, delete login) follows in P1.
+- ERP-0106 portal security settings (2026-11-21, port of branch ERP-0081,
+  P1): signed-in devices (Better Auth sessions by id, no tokens; sign out one
+  or all others) and delete own login after the password (customer data
+  kept, only company owner refused). Portal: `/settings/devices`,
+  `/settings/delete-account`, settings page trimmed to working controls. The
+  emailed two-step code and the stored settings (push, two-step, language;
+  D3 columns + migration) were removed the same day by owner decision: the
+  language is the portal's cookie sent as `Accept-Language`, push comes over
+  the backend websocket, a second factor will be Better Auth's (not built).
+  Evidence: `src/app/customer`, `test/unit/portal-account.test.ts`,
+  `erp-source.test.ts`, `progress.md` 2026-11-21. Open: browser walk-through;
+  Better Auth 2FA; account pages are P2 (ERP-0100).
 - Customer portal stage 1 — T26 + the account part of T25, ERP-0022
   (ADR-0022): one login per customer contact with a role, staff invitations,
   owners manage colleagues, individuals sign up with an emailed code, the web

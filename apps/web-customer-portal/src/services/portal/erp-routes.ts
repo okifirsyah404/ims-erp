@@ -7,7 +7,11 @@ import { type PortalRoutes } from "@/api/portal";
  * `apps/backend/src/app/customer/controllers/portal.controller.ts` (ADR-0024 Q28 moved
  * the prefix from `/portal/v1` to `/customers/portal/v1`; the old paths are gone).
  * Success bodies are the ERP envelope `{ requestId, status, message, timestamp, data }`
- * (see ./envelope.ts); authenticated routes take `Authorization: Bearer <accessToken>`.
+ * (see ./envelope.ts). Sign-in and sign-up verification answer `Set-Cookie` with the ERP's
+ * session cookie; authenticated routes take it back as the `Cookie` header (ERP-0094,
+ * ADR-0027). It lives only in the portal's server-side session, never in a browser.
+ * Every call carries the visitor's language as `Accept-Language` (the portal's own cookie;
+ * the ERP stores no portal language).
  *
  * `:id` placeholders are URL-encoded at call time (a device id `<uuid>:<line>` keeps its
  * colon); absolute URLs, `//` and `..` are rejected at startup. Operations left out raise
@@ -18,7 +22,7 @@ import { type PortalRoutes } from "@/api/portal";
  * - no backend route yet (stage 2): `completeOnboarding`, notifications, orders,
  *   quotations (list/detail/accept/revision), invoices and payments (list/detail/pay,
  *   methods), device lookup/registration, service booking, profile summary, documents,
- *   `updatePersonal` / `updateCompany` / `updateSettings`, sites, wishlist, public order
+ *   `updatePersonal` / `updateCompany`, sites, wishlist, public order
  *   lookup and RFQs.
  */
 const PORTAL = "/customers/portal/v1";
@@ -34,6 +38,11 @@ export const erpRoutes: PortalRoutes = {
   logout: `${PORTAL}/auth/logout`,
   changePassword: `${PORTAL}/account/password`,
   getAccount: `${PORTAL}/account`,
+  // Devices and deleting the login (ERP-0106)
+  listDevices: `${PORTAL}/account/devices`,
+  revokeDevice: `${PORTAL}/account/devices/:id`,
+  signOutOtherDevices: `${PORTAL}/account/devices/sign-out-others`,
+  closeAccount: `${PORTAL}/account/close`,
   inviteMember: `${PORTAL}/account/members`,
   removeMember: `${PORTAL}/account/members/:id`,
 

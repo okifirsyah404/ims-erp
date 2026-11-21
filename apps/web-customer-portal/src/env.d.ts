@@ -24,5 +24,7 @@ declare namespace App {
   interface Locals {
     user?: PortalUser;
     tokens?: AuthTokens;
+    /** The visitor's language (portal cookie), sent to the ERP as Accept-Language. */
+    language: import("@/lib/language").PortalLanguage;
   }
 }

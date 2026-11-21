@@ -5,6 +5,7 @@ import {
   ERP_RESPONSE_ENVELOPE,
   PORTAL_DATA_SOURCE,
 } from "astro:env/server";
+import { currentLanguage } from "../language";
 import { demoSource } from "./demo";
 import { envelopeUnwrapper } from "./envelope";
 import { erpRoutes } from "./erp-routes";
@@ -24,8 +25,9 @@ function createSource(): PortalSource {
       routes: erpRoutes,
       timeoutMs: ERP_API_TIMEOUT_MS,
       unwrap: envelopeUnwrapper(ERP_RESPONSE_ENVELOPE),
-      // The portal copy is English, so the ERP's labels and error messages are too.
-      defaultHeaders: { "X-Client": "entragate-customer-portal", "Accept-Language": "en" },
+      defaultHeaders: { "X-Client": "entragate-customer-portal" },
+      // The visitor's language (the portal's own cookie) as Accept-Language on every call.
+      language: currentLanguage,
     }),
   );
 }

@@ -710,7 +710,7 @@ Table customer.customers {
   owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   user_id text [note: "Portal login of this person. Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. One live login per person (partial unique index in the Drizzle schema)."]
   portal_role text [note: "What the person may do for the company: owner (everything, manages members), approver (accepts quotations), finance (invoices, payments), viewer (read only)."]
-  portal_status text [note: "active | suspended | revoked. Revoking also sets deleted_at and a new invitation creates a new row."]
+  portal_status text [note: "active | suspended | revoked. Revoking frees user_id (the row, its history and documents stay); a new invitation grants the login on the same row."]
   portal_invited_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null for an individual's own sign-up."]
   portal_last_login_at bigint
   notes text
