@@ -66,6 +66,8 @@ export function portalUser(portal: PortalContext, subject: TPortalSubject | null
 		name: portal.user.name,
 		initials: initials(portal.user.name),
 		email: portal.user.email,
+		// Global roles; the customer portal admits only `customer` (ADR-0027).
+		roles: portal.roles,
 		...(subject?.person.phone ? { phone: subject.person.phone } : {}),
 		accountType: company ? ('business' as const) : ('individual' as const),
 		verified: true,
@@ -96,8 +98,19 @@ export function companyMember(p: TPresenter, account: TPortalAccountView) {
 	};
 }
 
-/** The portal's `AccountSettings`; sites, notification channels and security are not stored yet. */
-export function accountSettings(p: TPresenter, portal: PortalContext, subject: TPortalSubject | null, members: TPortalAccountView[]) {
+/**
+ * The portal's `AccountSettings`. Sites are not stored yet (P2). Nothing here
+ * is a stored setting (owner decision 2026-11-21): the language is the
+ * request's `Accept-Language`, push notices come over the backend websocket
+ * and a second sign-in factor is Better Auth's job.
+ */
+export function accountSettings(
+	p: TPresenter,
+	portal: PortalContext,
+	subject: TPortalSubject | null,
+	members: TPortalAccountView[],
+	deviceCount = 1,
+) {
 	const company = subject?.company ?? null;
 	return {
 		personal: { name: portal.user.name, email: portal.user.email, phone: subject?.person.phone ?? '' },
@@ -106,9 +119,20 @@ export function accountSettings(p: TPresenter, portal: PortalContext, subject: T
 			: {}),
 		members: members.map((member) => companyMember(p, member)),
 		sites: [],
-		notifications: { push: false, email: true, whatsapp: false },
-		security: { faceId: false, twoStep: false, passwordChangedLabel: '', activeDevices: 1 },
-		preferences: { language: p.language, currency: 'IDR' as const, appearance: 'system' as const },
+		security: { passwordChangedLabel: '', activeDevices: Math.max(1, deviceCount) },
+		preferences: { language: p.language, currency: 'IDR' as const },
+	};
+}
+
+/** A signed-in device (session) of the login; never its token. */
+export function signedInDevice(device: { id: string; userAgent: string | null; ipAddress: string | null; createdAt: Date; updatedAt: Date; current: boolean }) {
+	return {
+		id: device.id,
+		userAgent: device.userAgent,
+		ipAddress: device.ipAddress,
+		createdAt: device.createdAt.toISOString(),
+		updatedAt: device.updatedAt.toISOString(),
+		current: device.current,
 	};
 }
 

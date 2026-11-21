@@ -15,6 +15,7 @@ export const demoUser: PortalUser = {
   accountType: "business",
   verified: true,
   company: { id: "cmp_mln", name: "PT Maju Logistik Nusantara", npwp: "01.234.567.8-901.000", shortName: "ML" },
+  roles: ["customer"],
 };
 
 export const orders: OrderSummary[] = [

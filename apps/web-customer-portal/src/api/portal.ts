@@ -1,5 +1,5 @@
 import { ApiError, createApiClient, type ApiClient, type ApiClientOptions } from "./client";
-import { authTokensSchema, loginFailureFrom, loginSuccessSchema, parseOrThrow, paymentIntentSchema, sessionSchema } from "./portal-schemas";
+import { authTokensSchema, ErpContractError, loginFailureFrom, loginSuccessSchema, parseOrThrow, paymentIntentSchema, sessionSchema } from "./portal-schemas";
 
 /**
  * Customer-portal contract (apps/web-customer-portal). Types describe what the portal needs; the
@@ -24,9 +24,23 @@ export type PortalUser = {
   accountType: AccountType;
   verified: boolean;
   company?: { id: string; name: string; npwp?: string; shortName: string };
+  /**
+   * Global (Better Auth) roles of the login. The ERP does not know which client calls it, so
+   * it returns them and this portal admits only `customer` (ADR-0027, `isPortalCustomer`).
+   */
+  roles: string[];
 };
 
-export type AuthTokens = { accessToken: string; refreshToken?: string; expiresAt: ISODate };
+/**
+ * The signed-in session, kept only in the portal's server-side session (never sent to the
+ * browser). `sessionCookie` is the ERP's session cookie as `name=value`, received as
+ * `Set-Cookie` on sign-in and sent back as the `Cookie` header (ERP-0094, ADR-0027).
+ * `refreshToken` exists only in demo mode: ERP sessions slide and are never refreshed.
+ */
+export type AuthTokens = { sessionCookie: string; refreshToken?: string; expiresAt: ISODate };
+
+/** The visitor behind a sign-in, forwarded so the ERP can list the device (ERP-0106). */
+export type ClientInfo = { userAgent?: string; ip?: string };
 
 export type LoginResult =
   | { ok: true; user: PortalUser; tokens: AuthTokens }
@@ -334,23 +348,32 @@ export type CompanyMember = {
 
 export type CompanySite = { id: string; name: string; address: string; picName: string; picPhone: string; primary?: boolean };
 
-export type NotificationPrefs = { push: boolean; email: boolean; whatsapp: boolean };
-
 export type AccountSettings = {
   personal: { name: string; email: string; phone: string; jobTitle?: string };
   company?: { name: string; shortName: string; npwp?: string; industry?: string; verified: boolean; approvalRule?: string };
   members: CompanyMember[];
   sites: CompanySite[];
-  notifications: NotificationPrefs;
-  security: { faceId: boolean; twoStep: boolean; passwordChangedLabel: string; activeDevices: number };
-  preferences: { language: "en" | "id"; currency: "IDR"; appearance: "light" | "system" };
+  security: { passwordChangedLabel: string; activeDevices: number };
+  /**
+   * `language` is the one this portal sent as `Accept-Language` (its own cookie, not an ERP
+   * setting). Push notices arrive over the ERP's websocket and a second sign-in factor is
+   * Better Auth's job, so neither is a setting here (owner decision 2026-11-21).
+   */
+  preferences: { language: "en" | "id"; currency: "IDR" };
 };
 
-export type SettingsPatch = Partial<{
-  notifications: Partial<NotificationPrefs>;
-  security: Partial<Pick<AccountSettings["security"], "faceId" | "twoStep">>;
-  preferences: Partial<AccountSettings["preferences"]>;
-}>;
+/** A browser or app signed in to this login (ERP-0106). */
+export type SignedInDevice = {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  current: boolean;
+};
+
+/** Deleting one's own login: the password is checked; the only owner of a company cannot. */
+export type CloseAccountResult = { ok: true } | { ok: false; reason: "wrong_password" | "last_owner"; message?: string };
 
 // ── Wishlist ──────────────────────────────────────────────────────────────
 export type WishlistItem = {
@@ -416,7 +439,7 @@ export type RfqClaimChallenge = { reference: string; maskedEmail: string; expire
 // ── Source contract───────────────────────────────────────────────────────
 /** Everything the portal reads/writes. Implemented by the ERP adapter (and the app's demo source). */
 export interface PortalSource {
-  login(input: { email: string; password: string; accountType: AccountType }): Promise<LoginResult>;
+  login(input: { email: string; password: string; accountType: AccountType; client?: ClientInfo }): Promise<LoginResult>;
   register(input: RegisterInput): Promise<{ email: string }>;
   verifyEmail(input: { email: string; code: string }): Promise<{ user: PortalUser; tokens: AuthTokens } | null>;
   resendVerification(input: { email: string }): Promise<void>;
@@ -464,9 +487,12 @@ export interface PortalSource {
   removeMember(session: AuthTokens, id: string): Promise<void>;
   saveSite(session: AuthTokens, site: Omit<CompanySite, "id"> & { id?: string }): Promise<CompanySite>;
   deleteSite(session: AuthTokens, id: string): Promise<void>;
-  updateSettings(session: AuthTokens, patch: SettingsPatch): Promise<void>;
   /** `false` when the current password is wrong. */
   changePassword(session: AuthTokens, input: { current: string; next: string }): Promise<boolean>;
+  listDevices(session: AuthTokens): Promise<SignedInDevice[]>;
+  revokeDevice(session: AuthTokens, id: string): Promise<void>;
+  signOutOtherDevices(session: AuthTokens): Promise<void>;
+  closeAccount(session: AuthTokens, input: { password: string }): Promise<CloseAccountResult>;
   listWishlist(session: AuthTokens): Promise<WishlistItem[]>;
   removeWishlistItem(session: AuthTokens, id: string): Promise<void>;
   /** Sign-in-free lookup (07.05). Needs the order number only; returns a minimal status. */
@@ -489,6 +515,14 @@ export interface PortalSource {
  */
 export type PortalRoutes = Partial<Record<keyof PortalSource, string>>;
 
+/** `User-Agent` / `X-Forwarded-For` of the visitor for the ERP's session record. */
+function clientHeaders(client?: ClientInfo): Record<string, string> {
+  return {
+    ...(client?.userAgent ? { "User-Agent": client.userAgent.slice(0, 512) } : {}),
+    ...(client?.ip ? { "X-Forwarded-For": client.ip } : {}),
+  };
+}
+
 export class PortalNotConfiguredError extends Error {
   constructor(operation: string) {
     super(`ERP route for "${operation}" is not configured.`);
@@ -501,6 +535,11 @@ export type ErpPortalConfig = {
   baseUrl: string;
   routes: PortalRoutes;
   fetcher?: typeof fetch;
+  /**
+   * The visitor's language, sent as `Accept-Language` on every call so the ERP answers labels,
+   * dates and error messages in it (the same header web-admin sends from `currentLanguage()`).
+   */
+  language?: () => string | undefined;
 } & Pick<ApiClientOptions, "timeoutMs" | "retries" | "unwrap" | "defaultHeaders">;
 
 /** Fails fast on misconfiguration that could leak tokens (plain http, absolute route paths). */
@@ -519,17 +558,45 @@ function assertSafeConfig({ baseUrl, routes }: ErpPortalConfig) {
   }
 }
 
+/**
+ * The ERP session cookie (`name=value`) from a sign-in response's `Set-Cookie`, or
+ * `null`. Only a non-empty value is taken; attributes (Path, HttpOnly, …) are dropped
+ * because the cookie is never handed to a browser.
+ */
+function sessionCookieFrom(response: Response): string | null {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  const values = headers.getSetCookie?.() ?? [response.headers.get("set-cookie") ?? ""];
+  for (const value of values) {
+    const pair = value.split(";", 1)[0]?.trim() ?? "";
+    if (SESSION_COOKIE_PAIR.test(pair)) return pair;
+  }
+  return null;
+}
+
+/** `name=value`: an RFC 6265 token name and a non-empty value without separators. */
+const SESSION_COOKIE_PAIR = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+=[^;\s,]{16,8192}$/;
+
+function tokensFrom(operation: string, cookie: string | null, expiresAt: string): AuthTokens {
+  if (!cookie) throw new ErpContractError(operation, ["set-cookie: the ERP sent no session cookie"]);
+  return { sessionCookie: cookie, expiresAt };
+}
+
+/** Default headers with the visitor's `Accept-Language` on top, when one is known. */
+function withLanguage(headers: Record<string, string> | undefined, language: string | undefined): Record<string, string> | undefined {
+  return language ? { ...headers, "Accept-Language": language } : headers;
+}
+
 export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   assertSafeConfig(config);
   const clientFor = (session?: AuthTokens): ApiClient =>
     createApiClient({
       baseUrl: config.baseUrl,
-      token: session?.accessToken,
+      sessionCookie: session?.sessionCookie,
       fetcher: config.fetcher,
       timeoutMs: config.timeoutMs,
       retries: config.retries,
       unwrap: config.unwrap,
-      defaultHeaders: config.defaultHeaders,
+      defaultHeaders: withLanguage(config.defaultHeaders, config.language?.()),
     });
 
   const path = (op: keyof PortalSource, params: Record<string, string> = {}) => {
@@ -556,9 +623,15 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   };
 
   return {
-    async login(input) {
+    async login({ client, ...input }) {
       try {
-        return parseOrThrow("login", loginSuccessSchema, await post("login", undefined, input));
+        let cookie: string | null = null;
+        const body = await clientFor().post(path("login"), input, {
+          headers: clientHeaders(client),
+          onResponse: (response) => (cookie = sessionCookieFrom(response)),
+        });
+        const { user, session } = parseOrThrow("login", loginSuccessSchema, body);
+        return { ok: true, user, tokens: tokensFrom("login", cookie, session.expiresAt) };
       } catch (error) {
         if (error instanceof ApiError && [401, 403, 423].includes(error.status)) {
           const failure = loginFailureFrom(error.status, error.body);
@@ -571,8 +644,10 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     async verifyEmail(input) {
       // The ERP answers a wrong or expired code with 400 (and 404/410 for an unknown sign-up).
       try {
-        const session = await post("verifyEmail", undefined, input);
-        return parseOrThrow("verifyEmail", sessionSchema, session);
+        let cookie: string | null = null;
+        const body = await clientFor().post(path("verifyEmail"), input, { onResponse: (response) => (cookie = sessionCookieFrom(response)) });
+        const { user, session } = parseOrThrow("verifyEmail", sessionSchema, body);
+        return { user, tokens: tokensFrom("verifyEmail", cookie, session.expiresAt) };
       } catch (error) {
         if (error instanceof ApiError && [400, 404, 410].includes(error.status)) return null;
         throw error;
@@ -662,7 +737,6 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     removeMember: async (s, id) => clientFor(s).delete(path("removeMember", { id })),
     saveSite: async (s, site) => (site.id ? clientFor(s).patch(path("saveSite", { id: site.id }), site) : post("saveSite", s, site)),
     deleteSite: async (s, id) => clientFor(s).delete(path("deleteSite", { id })),
-    updateSettings: async (s, patch) => clientFor(s).patch(path("updateSettings"), patch),
     async changePassword(s, input) {
       try {
         await post("changePassword", s, input);
@@ -671,6 +745,21 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
         // 400 = wrong current password. A 401 means the session ended: let it propagate so the
         // middleware signs the user out instead of reporting a wrong password.
         if (error instanceof ApiError && error.status === 400) return false;
+        throw error;
+      }
+    },
+    listDevices: (s) => get("listDevices", s),
+    revokeDevice: async (s, id) => clientFor(s).delete(path("revokeDevice", { id })),
+    async signOutOtherDevices(s) {
+      await post("signOutOtherDevices", s, {});
+    },
+    async closeAccount(s, input) {
+      try {
+        await post("closeAccount", s, input);
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 400) return { ok: false, reason: "wrong_password" };
+        if (error instanceof ApiError && error.status === 409) return { ok: false, reason: "last_owner", message: error.messages[0] };
         throw error;
       }
     },

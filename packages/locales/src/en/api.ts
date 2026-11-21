@@ -324,6 +324,8 @@ const api = {
 	'portal.ownerOnly': 'Only an account owner can manage members',
 	'portal.removeSelf': 'You cannot remove your own access',
 	'portal.noCompany': 'This account has no company to invite members to',
+	'portal.lastOwner': 'You are the only owner of this company account. Make a colleague an owner first, or ask us to close the account.',
+	'portal.deviceNotFound': 'That device is no longer signed in',
 	'portal.contactUnavailable': 'The contact is missing or belongs to another customer',
 	'portal.role.owner': 'Owner',
 	'portal.role.approver': 'Approver',

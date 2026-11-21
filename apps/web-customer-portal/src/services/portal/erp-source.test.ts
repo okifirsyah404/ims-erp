@@ -17,15 +17,20 @@ import { withSessionExpiry } from "./session-expiry";
 const BASE = "http://localhost:3001";
 const PREFIX = "/customers/portal/v1";
 const TOKEN = "ba_session_token_0123456789abcdef";
-const session: AuthTokens = { accessToken: TOKEN, expiresAt: new Date(Date.now() + 3_600_000).toISOString() };
+/** The ERP session cookie as the portal keeps it (`name=value`, ERP-0094, ADR-0027). */
+const COOKIE = `better-auth.session_token=${TOKEN}`;
+const session: AuthTokens = { sessionCookie: COOKIE, expiresAt: new Date(Date.now() + 3_600_000).toISOString() };
 
 type Call = { url: URL; init: RequestInit };
 
-const envelope = (data: unknown, status = 200) =>
+const envelope = (data: unknown, status = 200, extraHeaders: Record<string, string> = {}) =>
   new Response(JSON.stringify({ requestId: "r-1", status, message: status === 201 ? "Created" : "OK", timestamp: 1, data }), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...extraHeaders },
   });
+
+/** A sign-in answer: the session as `Set-Cookie` (Better Auth's attributes), never in the body. */
+const signedIn = (data: unknown) => envelope(data, 200, { "set-cookie": `${COOKIE}; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax` });
 
 /** `errorEnvelope()` as written by `toErrorResponse` for an `AppError`. */
 const errorEnvelope = (status: number, message: string) =>
@@ -44,7 +49,7 @@ function mockFetch(respond: (call: Call) => Response | Promise<Response>) {
   return { calls, fetcher };
 }
 
-const sourceWith = (fetcher: typeof fetch, timeoutMs = 1000): PortalSource =>
+const sourceWith = (fetcher: typeof fetch, timeoutMs = 1000, language: () => string | undefined = () => "en"): PortalSource =>
   createErpPortalSource({
     baseUrl: BASE,
     routes: erpRoutes,
@@ -52,7 +57,8 @@ const sourceWith = (fetcher: typeof fetch, timeoutMs = 1000): PortalSource =>
     retries: 0,
     timeoutMs,
     unwrap: unwrapEnvelope,
-    defaultHeaders: { "X-Client": "entragate-customer-portal", "Accept-Language": "en" },
+    defaultHeaders: { "X-Client": "entragate-customer-portal" },
+    language,
   });
 
 const header = (call: Call, name: string) => new Headers(call.init.headers).get(name);
@@ -67,8 +73,9 @@ const backendUser = {
   accountType: "business",
   verified: true,
   company: { id: "11111111-2222-4333-8444-555555555555", name: "Maju Logistik", npwp: "01.234.567.8-901.000", shortName: "ML" },
+  roles: ["customer"],
 };
-const backendTokens = { accessToken: TOKEN, expiresAt: "2026-11-27T10:00:00.000Z" };
+const backendSession = { expiresAt: "2026-11-27T10:00:00.000Z" };
 
 describe("route map", () => {
   test("every mapped route is under the backend's /customers/portal/v1 prefix", () => {
@@ -99,20 +106,84 @@ describe("envelope", () => {
   });
 });
 
+describe("security settings (ERP-0106)", () => {
+  test("login forwards the visitor's browser and address, never in the body", async () => {
+    const { calls, fetcher } = mockFetch(() => signedIn({ ok: true, user: backendUser, session: backendSession }));
+    const result = await sourceWith(fetcher).login({
+      email: "hendra@majulogistik.co.id",
+      password: "secret-password",
+      accountType: "business",
+      client: { userAgent: "Firefox/1", ip: "203.0.113.9" },
+    });
+    expect(result.ok).toBe(true);
+    expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/login`);
+    expect(header(calls[0]!, "user-agent")).toBe("Firefox/1");
+    expect(header(calls[0]!, "x-forwarded-for")).toBe("203.0.113.9");
+    expect(JSON.parse(String(calls[0]!.init.body))).not.toHaveProperty("client");
+  });
+
+  test("two-step sign-in and settings are gone: no route is mapped for them", () => {
+    expect(Object.keys(erpRoutes)).not.toContain("verifyLoginCode");
+    expect(Object.keys(erpRoutes)).not.toContain("resendLoginCode");
+    expect(Object.keys(erpRoutes)).not.toContain("updateSettings");
+  });
+
+  test("every call carries the visitor's current language as Accept-Language", async () => {
+    let language = "id";
+    const { calls, fetcher } = mockFetch(() => envelope([]));
+    const source = sourceWith(fetcher, 1000, () => language);
+    await source.listDevices(session);
+    language = "en";
+    await source.listDevices(session);
+    expect(calls.map((call) => header(call, "accept-language"))).toEqual(["id", "en"]);
+    expect(header(calls[0]!, "x-client")).toBe("entragate-customer-portal");
+  });
+
+  test("devices: list, sign one out by id, sign out the others", async () => {
+    const devices = [{ id: "sid-1", userAgent: "Firefox/1", ipAddress: null, createdAt: "2026-11-21T01:00:00.000Z", updatedAt: "2026-11-21T01:00:00.000Z", current: true }];
+    const { calls, fetcher } = mockFetch(({ url }) => (url.pathname.endsWith("/account/devices") ? envelope(devices) : envelope(null)));
+    const source = sourceWith(fetcher);
+    expect(await source.listDevices(session)).toEqual(devices);
+    await source.revokeDevice(session, "sid/2");
+    await source.signOutOtherDevices(session);
+    expect(calls.map((call) => [call.init.method ?? "GET", call.url.pathname])).toEqual([
+      ["GET", `${PREFIX}/account/devices`],
+      ["DELETE", `${PREFIX}/account/devices/sid%2F2`],
+      ["POST", `${PREFIX}/account/devices/sign-out-others`],
+    ]);
+    for (const call of calls) expect(header(call, "cookie")).toBe(COOKIE);
+  });
+
+  test("closeAccount: 400 is a wrong password, 409 the only owner with the ERP's message", async () => {
+    let status = 400;
+    const { fetcher } = mockFetch(() => (status === 200 ? envelope(null) : errorEnvelope(status, status === 409 ? "You are the only owner" : "The current password is wrong")));
+    const source = sourceWith(fetcher);
+    expect(await source.closeAccount(session, { password: "x" })).toEqual({ ok: false, reason: "wrong_password" });
+    status = 409;
+    expect(await source.closeAccount(session, { password: "x" })).toEqual({ ok: false, reason: "last_owner", message: "You are the only owner" });
+    status = 200;
+    expect(await source.closeAccount(session, { password: "x" })).toEqual({ ok: true });
+  });
+});
+
 describe("authentication", () => {
-  test("login posts the credentials without a token and returns the validated session", async () => {
-    const { calls, fetcher } = mockFetch(() => envelope({ ok: true, user: backendUser, tokens: backendTokens }));
+  test("login posts the credentials without a session and keeps the Set-Cookie session server-side", async () => {
+    const { calls, fetcher } = mockFetch(() => signedIn({ ok: true, user: backendUser, session: backendSession }));
     const result = await sourceWith(fetcher).login({ email: "hendra@majulogistik.co.id", password: "secret-password", accountType: "business" });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.user.company?.shortName).toBe("ML");
-      expect(result.tokens.accessToken).toBe(TOKEN);
+      // The ERP passes the global roles through; the portal decides (ADR-0027).
+      expect(result.user.roles).toEqual(["customer"]);
+      expect(result.tokens.sessionCookie).toBe(COOKIE);
+      expect(result.tokens.expiresAt).toBe(backendSession.expiresAt);
       expect(result.tokens.refreshToken).toBeUndefined();
     }
     expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/login`);
     expect(calls[0]!.init.method).toBe("POST");
     expect(header(calls[0]!, "authorization")).toBeNull();
+    expect(header(calls[0]!, "cookie")).toBeNull();
     expect(header(calls[0]!, "accept-language")).toBe("en");
     expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ email: "hendra@majulogistik.co.id", password: "secret-password", accountType: "business" });
   });
@@ -129,7 +200,12 @@ describe("authentication", () => {
   });
 
   test("a login body that breaks the contract raises ErpContractError", async () => {
-    const source = sourceWith(mockFetch(() => envelope({ ok: true, user: backendUser, tokens: { accessToken: "short", expiresAt: "nope" } })).fetcher);
+    const source = sourceWith(mockFetch(() => signedIn({ ok: true, user: backendUser, session: { expiresAt: "nope" } })).fetcher);
+    await expect(source.login({ email: "a@b.co", password: "x", accountType: "business" })).rejects.toBeInstanceOf(ErpContractError);
+  });
+
+  test("a sign-in without a session cookie raises ErpContractError", async () => {
+    const source = sourceWith(mockFetch(() => envelope({ ok: true, user: backendUser, session: backendSession })).fetcher);
     await expect(source.login({ email: "a@b.co", password: "x", accountType: "business" })).rejects.toBeInstanceOf(ErpContractError);
   });
 
@@ -150,9 +226,9 @@ describe("authentication", () => {
   });
 
   test("verifyEmail returns the session for the right code and null for a wrong or expired one (400)", async () => {
-    const good = mockFetch(() => envelope({ user: backendUser, tokens: backendTokens }));
+    const good = mockFetch(() => signedIn({ user: backendUser, session: backendSession }));
     const verified = await sourceWith(good.fetcher).verifyEmail({ email: "ani@example.com", code: "482913" });
-    expect(verified?.tokens.accessToken).toBe(TOKEN);
+    expect(verified?.tokens.sessionCookie).toBe(COOKIE);
     expect(good.calls[0]!.url.pathname).toBe(`${PREFIX}/auth/verify-email`);
 
     const bad = sourceWith(mockFetch(() => errorEnvelope(400, "Invalid or expired code")).fetcher);
@@ -192,7 +268,8 @@ describe("authentication", () => {
     const { calls, fetcher } = mockFetch(() => envelope(null));
     await sourceWith(fetcher).logout(session);
     expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/logout`);
-    expect(header(calls[0]!, "authorization")).toBe(`Bearer ${TOKEN}`);
+    expect(header(calls[0]!, "cookie")).toBe(COOKIE);
+    expect(header(calls[0]!, "authorization")).toBeNull();
   });
 
   test("changePassword: 400 is a wrong current password, 401 is an ended session", async () => {
@@ -246,9 +323,8 @@ describe("authenticated reads", () => {
           { id: "m-1", name: "Hendra Wijaya", email: "hendra@majulogistik.co.id", initials: "HW", role: "owner", admin: true, status: "active", lastActiveLabel: "1 hour ago" },
         ],
         sites: [],
-        notifications: { push: false, email: true, whatsapp: false },
-        security: { faceId: false, twoStep: false, passwordChangedLabel: "", activeDevices: 1 },
-        preferences: { language: "en", currency: "IDR", appearance: "system" },
+        security: { passwordChangedLabel: "", activeDevices: 1 },
+        preferences: { language: "en", currency: "IDR" },
       });
     });
     const source = sourceWith(fetcher);
@@ -262,7 +338,10 @@ describe("authenticated reads", () => {
     expect(account.sites).toEqual([]);
 
     expect(calls.map((c) => c.url.pathname)).toEqual([`${PREFIX}/home`, `${PREFIX}/badges`, `${PREFIX}/account`]);
-    for (const call of calls) expect(header(call, "authorization")).toBe(`Bearer ${TOKEN}`);
+    for (const call of calls) {
+      expect(header(call, "cookie")).toBe(COOKIE);
+      expect(header(call, "authorization")).toBeNull();
+    }
   });
 
   test("projects: list, detail, and 404 → null", async () => {
@@ -481,7 +560,6 @@ describe("operations the backend has no route for", () => {
     ["updateCompany", (s) => s.updateCompany(session, { name: "Maju Logistik" })],
     ["saveSite", (s) => s.saveSite(session, { name: "HQ", address: "Jl. Sudirman 1", picName: "A", picPhone: "0812000011" })],
     ["deleteSite", (s) => s.deleteSite(session, "1")],
-    ["updateSettings", (s) => s.updateSettings(session, { notifications: { push: true } })],
     ["listWishlist", (s) => s.listWishlist(session)],
     ["removeWishlistItem", (s) => s.removeWishlistItem(session, "1")],
     ["lookupPublicOrder", (s) => s.lookupPublicOrder("SO-2026-0001")],

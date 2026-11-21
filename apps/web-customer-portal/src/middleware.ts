@@ -1,6 +1,10 @@
 import { type PortalSource } from "@/api/portal";
+import type { APIContext, MiddlewareNext } from "astro";
 import { defineMiddleware } from "astro:middleware";
 import { ERP_API_BASE_URL, ERP_ASSET_ORIGINS } from "astro:env/server";
+import { LANGUAGE_COOKIE, resolveLanguage } from "@/lib/language";
+import { isPortalCustomer } from "@/lib/portal-role";
+import { runWithLanguage } from "./services/language";
 import { ensureFreshAuth, safeNext, signOut } from "./services/auth";
 import { SessionExpiredError } from "./services/errors";
 import { isConnected } from "./services/portal";
@@ -112,12 +116,21 @@ function withSecurityHeaders(response: Response) {
 export const onRequest = defineMiddleware(async (context, next) => {
   // Prerendered pages (the offline fallback) are built once with no request or session.
   if (context.isPrerendered) return next();
+  // The language lives in the portal's own cookie and reaches the ERP as Accept-Language.
+  const language = resolveLanguage(context.cookies.get(LANGUAGE_COOKIE)?.value);
+  context.locals.language = language;
+  return runWithLanguage(language, () => handle(context, next));
+});
+
+async function handle(context: APIContext, next: MiddlewareNext): Promise<Response> {
 
   const { pathname, search } = context.url;
   const session = context.session;
 
   const stored = session ? await session.get("auth") : undefined;
-  const auth = stored && session ? await ensureFreshAuth(session, stored) : undefined;
+  // Only the global `customer` role holds a portal session (ADR-0027): the ERP leaves that
+  // decision to the client, so a stored session without it is dropped here.
+  const auth = stored && session && isPortalCustomer(stored.user) ? await ensureFreshAuth(session, stored) : undefined;
   if (stored && !auth) {
     signOut(session!);
   } else if (auth) {
@@ -159,4 +172,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
     response.headers.set("Cache-Control", "private, no-store");
   }
   return response;
-});
+}

@@ -105,10 +105,11 @@ export type PublicTracking = {
 
 // ── Customer-scoped checkout (login-gated, 03.03) ─────────────────────────
 /**
- * Customer identity for checkout calls: the ERP access token obtained through the Customer
- * Portal sign-in hand-off. Held server-side in the website session only.
+ * Customer identity for checkout calls: the ERP session cookie (`name=value`, ADR-0027)
+ * obtained through the Customer Portal sign-in hand-off. Held server-side in the website
+ * session only and sent as the `Cookie` header.
  */
-export type CustomerAuth = { accessToken: string; customerId: string };
+export type CustomerAuth = { sessionCookie: string; customerId: string };
 
 export type CartLine = { productSlug: string; quantity: number; options?: Record<string, string> };
 
@@ -262,7 +263,7 @@ export function createErpWebsiteSource(config: ErpWebsiteConfig): WebsiteSource 
   const customerClient = (auth: CustomerAuth) =>
     createApiClient({
       baseUrl: config.baseUrl,
-      token: auth.accessToken,
+      sessionCookie: auth.sessionCookie,
       fetcher: config.fetcher,
       timeoutMs: config.timeoutMs,
       retries: config.retries,

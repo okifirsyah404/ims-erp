@@ -1,8 +1,10 @@
 import { ActionError, defineAction, type ActionAPIContext } from "astro:actions";
 import { z } from "astro/zod";
 import { ApiError } from "@/api/client";
-import { PortalNotConfiguredError, type SettingsPatch } from "@/api/portal";
+import { PortalNotConfiguredError, type AuthTokens, type PortalUser } from "@/api/portal";
+import { LANGUAGE_COOKIE, LANGUAGE_COOKIE_MAX_AGE, PORTAL_LANGUAGES } from "@/lib/language";
 import { portal } from "../services/portal";
+import { isPortalCustomer } from "@/lib/portal-role";
 import { signIn, signOut } from "../services/auth";
 import { SessionExpiredError, logUpstreamError } from "../services/errors";
 
@@ -44,6 +46,29 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
 
 const password = z.string().min(12, "Use at least 12 characters").max(128);
 
+/**
+ * Admits only a login carrying the global `customer` role (ADR-0027): the ERP returns the
+ * roles and leaves the decision to the client. Any other login has its fresh ERP session
+ * ended and gets the same answer as a wrong password, so the portal never reveals staff
+ * accounts.
+ */
+async function admitCustomer(result: { user: PortalUser; tokens: AuthTokens }, message: string) {
+  if (isPortalCustomer(result.user)) return;
+  await portal.logout(result.tokens).catch((error: unknown) => logUpstreamError("auth.reject-role", error));
+  throw new ActionError({ code: "UNAUTHORIZED", message });
+}
+
+/** The visitor's browser and address, so the ERP can list the device (ERP-0106). */
+function clientOf(context: ActionAPIContext) {
+  let ip: string | undefined;
+  try {
+    ip = context.clientAddress;
+  } catch {
+    ip = undefined;
+  }
+  return { userAgent: context.request.headers.get("user-agent") ?? undefined, ip };
+}
+
 export const server = {
   auth: {
     /** 04.01 Login / 04.08 error state. */
@@ -57,7 +82,7 @@ export const server = {
       }),
       handler: async (input, context) => {
         const result = await call(() =>
-          portal.login({ email: input.email, password: input.password, accountType: input.account_type }),
+          portal.login({ email: input.email, password: input.password, accountType: input.account_type, client: clientOf(context) }),
         );
         if (!result.ok) {
           if (result.reason === "locked") {
@@ -77,6 +102,7 @@ export const server = {
                 : "Incorrect email or password",
           });
         }
+        await admitCustomer(result, "Incorrect email or password");
         await signIn(context.session!, result.user, result.tokens, input.remember);
         return { ok: true };
       },
@@ -143,6 +169,7 @@ export const server = {
         const result = await call(() => portal.verifyEmail({ email: pending.email, code: input.code }));
         if (!result) throw new ActionError({ code: "UNAUTHORIZED", message: "That code is incorrect or expired." });
         context.session?.delete("pendingVerification");
+        await admitCustomer(result, "This account can't use the customer portal.");
         await signIn(context.session!, result.user, result.tokens, true);
         return { accountType: pending.accountType };
       },
@@ -496,23 +523,22 @@ export const server = {
       },
     }),
 
-    /** Single preference toggle/select; sent immediately from the settings screens. */
-    updateSetting: defineAction({
+    /**
+     * The visitor's language. Kept in the portal's own cookie (not an ERP setting) and sent
+     * to the ERP as Accept-Language on every call; it also applies before sign-in.
+     */
+    setLanguage: defineAction({
       accept: "form",
-      input: z.object({
-        key: z.enum(["push", "email", "whatsapp", "faceId", "twoStep", "language", "appearance"]),
-        value: z.string().max(20),
-      }),
+      input: z.object({ language: z.enum(PORTAL_LANGUAGES) }),
       handler: async (input, context) => {
-        const tokens = requireAuth(context);
-        const on = input.value === "true";
-        let patch: SettingsPatch;
-        if (input.key === "push" || input.key === "email" || input.key === "whatsapp") patch = { notifications: { [input.key]: on } };
-        else if (input.key === "faceId" || input.key === "twoStep") patch = { security: { [input.key]: on } };
-        else if (input.key === "language") patch = { preferences: { language: input.value === "id" ? "id" : "en" } };
-        else patch = { preferences: { appearance: input.value === "system" ? "system" : "light" } };
-        await call(() => portal.updateSettings(tokens, patch));
-        return { ok: true };
+        context.cookies.set(LANGUAGE_COOKIE, input.language, {
+          path: "/",
+          maxAge: LANGUAGE_COOKIE_MAX_AGE,
+          httpOnly: true,
+          sameSite: "lax",
+          secure: import.meta.env.PROD,
+        });
+        return { language: input.language };
       },
     }),
 
@@ -530,6 +556,50 @@ export const server = {
         const changed = await call(() => portal.changePassword(tokens, { current: input.current, next: input.password }));
         if (!changed) throw new ActionError({ code: "BAD_REQUEST", message: "Your current password is incorrect" });
         context.session?.set("flash", { tone: "success", title: "Password changed", description: "Use your new password the next time you sign in." });
+        return { ok: true };
+      },
+    }),
+
+    /** Signs one other device out (ERP-0106). */
+    revokeDevice: defineAction({
+      accept: "form",
+      input: z.object({ id: z.string().min(1).max(128) }),
+      handler: async (input, context) => {
+        const tokens = requireAuth(context);
+        await call(() => portal.revokeDevice(tokens, input.id));
+        return { ok: true };
+      },
+    }),
+
+    signOutOtherDevices: defineAction({
+      accept: "form",
+      handler: async (_input, context) => {
+        const tokens = requireAuth(context);
+        await call(() => portal.signOutOtherDevices(tokens));
+        return { ok: true };
+      },
+    }),
+
+    /** Deletes the login only; orders, documents and the company stay (ERP-0106). */
+    closeAccount: defineAction({
+      accept: "form",
+      input: z.object({
+        password: z.string().min(1, "Enter your password").max(128),
+        confirm: z.boolean().refine((value) => value, "Tick the box to confirm"),
+      }),
+      handler: async (input, context) => {
+        const tokens = requireAuth(context);
+        const result = await call(() => portal.closeAccount(tokens, { password: input.password }));
+        if (!result.ok) {
+          throw new ActionError({
+            code: "BAD_REQUEST",
+            message:
+              result.reason === "wrong_password"
+                ? "Your password is incorrect"
+                : (result.message ?? "You are the only owner of this company account. Make a colleague an owner first."),
+          });
+        }
+        signOut(context.session!);
         return { ok: true };
       },
     }),
