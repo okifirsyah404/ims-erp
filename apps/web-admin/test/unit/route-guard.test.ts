@@ -77,7 +77,7 @@ describe('canOpenPath', () => {
 	});
 
 	test('path with no nav leaf is allowed here (backend still enforces)', async () => {
-		expect(await canOpenPath('/account', investorOnly, fakeClient([]))).toBe(true);
+		expect(await canOpenPath('/accounts', investorOnly, fakeClient([]))).toBe(true);
 	});
 
 	test('warehouse page: allowed for an app admin or a person in charge', async () => {

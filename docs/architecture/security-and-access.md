@@ -214,6 +214,22 @@ Rules:
 - Exports, counts, search, and dashboard aggregations go through the same
   scoping.
 
+## Sign-in (invitation-only, ADR-0027)
+
+- Accounts come from invitations only. Google sign-in has
+  `disableSignUp: true`: an unknown email ends at `/login?error=signup_disabled`
+  and writes nothing.
+- The web-admin login gate (`ac/login-gate.ts` `webAdminDenial`, run in
+  `session.create.before` and per request) requires an **active** account
+  (`status = 'active'`, not soft-deleted) before the role rule; refusals carry
+  `ACCOUNT_NOT_ACTIVE` / `WEB_ADMIN_ACCESS_DENIED` and a translated message.
+  Pending invitees must claim first; deactivated users cannot sign in by any
+  method.
+- `databaseHooks.account.create.before` refuses linking a social account to an
+  inactive owner (`credential` exempt for the claim).
+- Linking follows Better Auth defaults: same email only, local email must be
+  verified for implicit linking (otherwise `account_not_linked`).
+
 ## Business approvals
 
 Permissions are necessary but never sufficient for approvals:
@@ -326,7 +342,10 @@ table as they land; the catalog resources (`audit_log:read`,
   cannot drift. (Fixed in W7: admin deactivate/restore/delete previously left
   the self-service read path serving a stale row for up to 5 minutes —
   including a soft-deleted user still readable at `GET /users/:id`.) Verified
-  live by `apps/backend/scripts/smoke-cache-invalidation.ts`.
+  live by `apps/backend/scripts/smoke-cache-invalidation.ts`. Better Auth's
+  own writes (update-user, admin API, email verification, change-email) evict
+  the same keys through `databaseHooks.user.update.after`
+  (`options/user-cache.auth.ts`, ERP-0107).
 
 ## Bootstrap / seeding
 

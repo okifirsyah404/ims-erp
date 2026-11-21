@@ -16,6 +16,15 @@ const auth_: Record<keyof typeof auth, string> = {
 	'login.invalidCredentials': 'Email/username atau kata sandi salah',
 	'login.orContinueWith': 'Atau lanjutkan dengan',
 	'login.googleSignIn': 'Masuk dengan Google',
+	'login.googleNotRegistered':
+		'Akun Google ini belum terdaftar. Akses hanya melalui undangan: minta administrator untuk mengundang Anda.',
+	'login.accountNotActive':
+		'Akun Anda belum aktif. Terima undangan yang dikirim ke email Anda terlebih dahulu, atau hubungi administrator.',
+	'login.noAccess': 'Akun ini tidak memiliki akses ke ERP. Hubungi administrator.',
+	'login.googleNotLinked':
+		'Akun dengan email ini sudah ada, tetapi Google belum terhubung. Masuk dengan kata sandi, lalu hubungkan Google di pengaturan Akun.',
+	'login.banned': 'Akun ini diblokir. Hubungi administrator.',
+	'login.googleFailed': 'Masuk dengan Google gagal. Silakan coba lagi.',
 
 	'forgot.title': 'Lupa kata sandi Anda?',
 	'forgot.subtitle':

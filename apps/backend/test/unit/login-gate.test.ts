@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import {
+	ACCOUNT_NOT_ACTIVE,
+	WEB_ADMIN_ACCESS_DENIED,
 	hasInternalOrgRole,
+	isAccountActive,
 	isWebAdminAllowed,
+	webAdminDenial,
 } from '../../src/providers/better-auth/ac/login-gate';
 import { hasAppRole } from '../../src/providers/better-auth/ac/admin-ac';
 
@@ -53,5 +57,48 @@ describe('isWebAdminAllowed (ADR-0017 §8, amended by ADR-0018)', () => {
 
 	test('user whose memberships hold only null/empty roles is rejected', () => {
 		expect(isWebAdminAllowed({ userRole: 'user', memberRoles: [null, ''] })).toBe(false);
+	});
+});
+
+describe('isAccountActive (ERP-0107)', () => {
+	test('only an active, not deleted row may sign in', () => {
+		expect(isAccountActive({ status: 'active', deletedAt: null })).toBe(true);
+		expect(isAccountActive({ status: 'pending', deletedAt: null })).toBe(false);
+		expect(isAccountActive({ status: 'deactivated', deletedAt: null })).toBe(false);
+		expect(isAccountActive({ status: 'active', deletedAt: new Date() })).toBe(false);
+	});
+
+	test('a null status (row older than the column) counts as active', () => {
+		expect(isAccountActive({ status: null, deletedAt: null })).toBe(true);
+	});
+});
+
+describe('webAdminDenial (ERP-0107)', () => {
+	const admin = { userRole: 'admin', memberRoles: [] as string[] };
+
+	test('allowed: active admin or active internal member', () => {
+		expect(webAdminDenial({ ...admin, status: 'active', deletedAt: null })).toBeNull();
+		expect(
+			webAdminDenial({ userRole: 'user', memberRoles: ['sales'], status: 'active', deletedAt: null }),
+		).toBeNull();
+	});
+
+	test('a pending invitation is refused even for an invited admin', () => {
+		expect(webAdminDenial({ ...admin, status: 'pending', deletedAt: null })).toBe(ACCOUNT_NOT_ACTIVE);
+	});
+
+	test('deactivated and deleted accounts are refused before the role check', () => {
+		expect(webAdminDenial({ ...admin, status: 'deactivated', deletedAt: null })).toBe(
+			ACCOUNT_NOT_ACTIVE,
+		);
+		expect(webAdminDenial({ ...admin, status: 'active', deletedAt: new Date() })).toBe(
+			ACCOUNT_NOT_ACTIVE,
+		);
+	});
+
+	test('an active account without an internal role keeps the role denial', () => {
+		expect(
+			webAdminDenial({ userRole: 'investor', memberRoles: [], status: 'active', deletedAt: null }),
+		).toBe(WEB_ADMIN_ACCESS_DENIED);
 	});
 });

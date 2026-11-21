@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15. Full inventory of what has no code yet:
+Last synced: 2026-11-15 (ERP-0107 account pages added 2026-11-21). Full inventory of what has no code yet:
 `plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
 "missing feature" claims that actually ship, e.g. the report API and the
 assets operations surface). §7 item 3 (statement exports + monthly archive +
@@ -1011,9 +1011,24 @@ Status wording from `progress.md`; none is `accepted`.
 - Username login + `/username-availability` —
   `providers/better-auth/plugins/username.auth.ts`; probe 200 in progress.
   Username login tab (phase 5) has no closing entry.
-- Account pages (profile, email, password, sessions) — `apps/web-admin/src/
-  routes/_authed.account.*`, `_authed.profiles.*`, `/users/me*`. No progress
-  entry.
+- Account pages — since ERP-0107 (2026-11-21, **implemented**) one
+  `/accounts` page of cards (username with live availability, email with
+  verification + change-email, connected Google account, password or
+  password-setup link, sessions) and `/profiles` as the profile editor
+  itself (dropzone photo saved on Save, bio textarea); `/account/*` and
+  `/profiles/edit` removed. Backend: Better Auth `user.changeEmail.enabled`
+  (the email form never worked before), verification policy, and a
+  `user.update.after` hook evicting the `GET /users/me` cache. Evidence:
+  backend `test/unit/email-change-verification.auth.test.ts`, web-admin
+  `test/unit/account-search.test.ts`, in-process E2E 11/11 and browser check
+  in `progress.md` 2026-11-21 "ERP-0107". Google link round trip not run
+  (needs a real Google account). Same day, ADR-0027: invitation-only sign-in
+  — Google never signs up (`disableSignUp`), only `active` accounts get a
+  session on any method (pending invitees and deactivated users refused with
+  `ACCOUNT_NOT_ACTIVE`), no social link on inactive owners, `/login` shows
+  mapped Google errors. Evidence: `login-gate.test.ts`,
+  `google-login-hardening.auth.test.ts`, web-admin `login-error.test.ts`,
+  in-process E2E 14/14.
 - Forgot/reset password — `apps/web-admin/src/routes/{forgot,reset}-password`.
   No progress entry.
 - Avatar pipeline (DiceBear → WebP → S3 via BullMQ) — user module queues;

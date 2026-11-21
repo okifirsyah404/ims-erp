@@ -369,6 +369,10 @@ const api: Record<keyof typeof en, string> = {
 	'auth.ownerGrantRequired':
 		'Hanya pemilik organisasi yang dapat memberikan peran pemilik',
 	'auth.roleNotGrantable': 'Peran tidak dapat diberikan: {{roles}}',
+	'auth.accountNotActive':
+		'Akun ini belum aktif. Terima undangan Anda terlebih dahulu, atau hubungi administrator.',
+	'auth.webAdminAccessDenied':
+		'Akun ini tidak memiliki akses ke ERP. Hubungi administrator.',
 
 	// Borrowing (S4)
 	'assets.borrowingNotFound': 'Peminjaman tidak ditemukan',

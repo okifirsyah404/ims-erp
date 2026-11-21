@@ -7,6 +7,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
+	CardAction,
 	CardContent,
 	CardDescription,
 	CardHeader,
@@ -35,11 +36,11 @@ const SESSION_SKELETON_CELLS = [
 ] as const;
 
 /**
- * Session management (`/account/sessions`). Lists the signed-in user's
+ * Session management card on `/accounts`. Lists the signed-in user's
  * active sessions via Better Auth's `listSessions`, with per-row revoke
- * and a bulk "revoke all other sessions" action.
+ * and a bulk "revoke all other sessions" action in the card header.
  */
-export function SessionsTable() {
+export function SessionsTable({ id }: { id?: string }) {
 	const queryClient = useQueryClient();
 	const { t } = useTranslation('account');
 	const sessionsQuery = useQuery({
@@ -87,12 +88,24 @@ export function SessionsTable() {
 	).length;
 
 	return (
-		<Card>
+		<Card id={id} size='sm' className='scroll-mt-4'>
 			<CardHeader>
 				<CardTitle>{t('sessions.title')}</CardTitle>
 				<CardDescription>{t('sessions.description')}</CardDescription>
+				{othersCount > 0 && (
+					<CardAction>
+						<Button
+							variant='outline'
+							size='sm'
+							disabled={revokeOthersMutation.isPending}
+							onClick={() => revokeOthersMutation.mutate()}
+						>
+							{t('sessions.revokeAll', { count: othersCount })}
+						</Button>
+					</CardAction>
+				)}
 			</CardHeader>
-			<CardContent className='flex flex-col gap-4'>
+			<CardContent>
 				<div className='overflow-x-auto'>
 					<Table>
 						<TableHeader>
@@ -128,7 +141,10 @@ export function SessionsTable() {
 							)}
 							{sessions.map((session) => (
 								<TableRow key={session.token}>
-									<TableCell>
+									<TableCell
+										className='max-w-56 truncate'
+										title={session.userAgent ?? undefined}
+									>
 										{session.userAgent ?? t('sessions.unknownDevice')}
 									</TableCell>
 									<TableCell>
@@ -170,17 +186,6 @@ export function SessionsTable() {
 						</TableBody>
 					</Table>
 				</div>
-				{othersCount > 0 && (
-					<div>
-						<Button
-							variant='outline'
-							disabled={revokeOthersMutation.isPending}
-							onClick={() => revokeOthersMutation.mutate()}
-						>
-							{t('sessions.revokeAll', { count: othersCount })}
-						</Button>
-					</div>
-				)}
 			</CardContent>
 		</Card>
 	);

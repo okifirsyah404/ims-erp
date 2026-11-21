@@ -3,7 +3,8 @@ import { useRef, useState } from 'react';
 import { pickImageFile, rejectImageFile, type TImageRejectReason } from '@/lib/image-file';
 
 /**
- * Click-or-drag image picker (ERP-0041). Presentational only: the caller owns
+ * Click-or-drag image picker (ERP-0041; shared with the self profile avatar
+ * since ERP-0107). Presentational only: the caller owns
  * the file (and therefore the encode/upload timing). A `<button>` wraps the
  * area so keyboard users get Enter/Space for free; the hidden file input is
  * the single source of selection for both click and drop.
