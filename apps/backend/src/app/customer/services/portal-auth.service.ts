@@ -7,7 +7,6 @@ import type { TPortalSignup } from '../contracts/portal-account.contract';
 import type { PortalAccountService } from './portal-account.service';
 import {
 	type IPortalSessionGateway,
-	PORTAL_CUSTOMER_ROLE,
 	PORTAL_LOCK_SECONDS,
 	PORTAL_MAX_FAILED_LOGINS,
 	type TPortalDeviceSession,
@@ -46,9 +45,11 @@ const rawToken = (cookieToken: string) => cookieToken.split('.')[0]!;
  * Customer-portal sign-in, sessions and passwords (ERP-0022; ERP-0094).
  *
  * - Sign-in is email + password through Better Auth, accepted only for a
- *   login carrying the global `customer` role AND an active customer portal
- *   login (`customer.customers`). A staff login, an unknown email and a wrong
- *   password all answer the same 401.
+ *   login with an active customer portal login (`customer.customers`). A
+ *   staff login, an unknown email and a wrong password all answer the same
+ *   401. The global `customer` role is not checked here: the ERP cannot tell
+ *   which client is calling, so it returns the user's roles and the customer
+ *   portal admits only `customer` (ADR-0027 as amended 2026-11-21).
  * - The session travels as Better Auth's session cookie between the ERP and
  *   the portal's server (ADR-0027); this service never returns it in a body.
  * - Server-side calls bypass Better Auth's own rate limiter, so failed
@@ -92,7 +93,7 @@ export class PortalAuthService implements IPortalSessionResolver {
 		if (failures.lockedUntil && failures.lockedUntil > Date.now()) throw new PortalLockedError();
 
 		const session = await this.sessions.signIn(body.email, body.password, headers);
-		const identity = session && isCustomer(session) ? await this.accounts.resolveCustomer(session.userId) : null;
+		const identity = session ? await this.accounts.resolveCustomer(session.userId) : null;
 		if (!session || !identity) {
 			// A valid staff login must not keep a session it cannot use here.
 			if (session) await this.sessions.signOut(session.token);
@@ -113,7 +114,7 @@ export class PortalAuthService implements IPortalSessionResolver {
 			return { twoStep: true, challenge, email: maskEmail(identity.user.email) };
 		}
 		await this.accounts.recordLogin(identity.customerId);
-		return { context: { ...identity, sessionToken: session.token }, session };
+		return { context: { ...identity, roles: session.roles, sessionToken: session.token }, session };
 	}
 
 	/**
@@ -125,12 +126,9 @@ export class PortalAuthService implements IPortalSessionResolver {
 		const identity = await this.accounts.resolveCustomer(userId);
 		if (!identity) throw new PortalInvalidCredentialsError();
 		const session = await this.sessions.createSession(userId, headers);
-		if (!session || !isCustomer(session)) {
-			if (session) await this.sessions.signOut(session.token);
-			throw new PortalInvalidCredentialsError();
-		}
+		if (!session) throw new PortalInvalidCredentialsError();
 		await this.accounts.recordLogin(identity.customerId);
-		return { context: { ...identity, sessionToken: session.token }, session };
+		return { context: { ...identity, roles: session.roles, sessionToken: session.token }, session };
 	}
 
 	resendLoginCode(challenge: string): Promise<void> {
@@ -183,18 +181,18 @@ export class PortalAuthService implements IPortalSessionResolver {
 		const identity = await this.accounts.verifySignup(email, code);
 		// The request headers name the device in the devices list (ERP-0106).
 		const session = await this.sessions.createSession(identity.userId, headers);
-		if (!session || !isCustomer(session)) throw new PortalInvalidTokenError();
+		if (!session) throw new PortalInvalidTokenError();
 		await this.accounts.recordLogin(identity.customerId);
-		return { context: { ...identity, sessionToken: session.token }, session };
+		return { context: { ...identity, roles: session.roles, sessionToken: session.token }, session };
 	}
 
-	/** {@link IPortalSessionResolver}: session cookie → `customer` role + active portal login. */
+	/** {@link IPortalSessionResolver}: session cookie → active portal login, with the user's roles. */
 	async resolve(headers: Headers): Promise<PortalContext | null> {
 		const token = await this.sessions.tokenFromHeaders(headers);
 		const session = token ? await this.sessions.getSession(token) : null;
-		if (!session || !isCustomer(session)) return null;
+		if (!session) return null;
 		const identity = await this.accounts.resolveCustomer(session.userId);
-		return identity ? { ...identity, sessionToken: session.token } : null;
+		return identity ? { ...identity, roles: session.roles, sessionToken: session.token } : null;
 	}
 
 	/** `Set-Cookie` that hands a session to the portal's server. */
@@ -223,9 +221,4 @@ export class PortalAuthService implements IPortalSessionResolver {
 	async changePassword(portal: PortalContext, current: string, next: string): Promise<void> {
 		if (!(await this.sessions.changePassword(portal.sessionToken, current, next))) throw new PortalWrongPasswordError();
 	}
-}
-
-/** Only a login carrying the global `customer` role may use the portal (ADR-0027). */
-function isCustomer(session: TPortalSession): boolean {
-	return session.roles.includes(PORTAL_CUSTOMER_ROLE);
 }

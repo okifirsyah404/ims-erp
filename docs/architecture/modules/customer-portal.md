@@ -1,6 +1,6 @@
 > Updated 2026-11-20 (ADR-0024): the portal API now lives in the `customer` module at `/customers/portal/v1` (was `/portal/v1`); tickets are owned by `ticket`, warranties by `project`.
 >
-> Updated 2026-11-21 (ERP-0094, [ADR-0027](../decisions/ADR-0027-portal-session-cookie-and-customer-role.md)): the session is Better Auth's own session cookie held by the portal's server (`Set-Cookie` on sign-in, `Cookie` on every call, no bearer token), and only a login with the global `customer` role passes the guard.
+> Updated 2026-11-21 (ERP-0094, [ADR-0027](../decisions/ADR-0027-portal-session-cookie-and-customer-role.md)): the session is Better Auth's own session cookie held by the portal's server (`Set-Cookie` on sign-in, `Cookie` on every call, no bearer token). Only a login with the global `customer` role may use the portal: the ERP returns `user.roles` and the portal's server enforces the role (amended 2026-11-21: the ERP cannot tell which client calls it).
 >
 > Updated 2026-11-21 (ERP-0106, port plan P1/D3): login settings on `customer.customers` (`portal_language`, `portal_two_step`, `portal_push`), two-step sign-in by an emailed code, signed-in devices, deleting one's own login.
 
@@ -21,7 +21,8 @@ own tickets) + the account part of M12 T25 + warranties.
 | Portal logins (`customer.customers`), invite / resend / revoke | Customer | `src/app/customer` (`PortalAccountService`, `/admin/customers/portal-accounts`) |
 | Sign-in, sessions, passwords, lockout, two-step code, devices; the `/customers/portal/v1` routes | Customer | `src/app/customer` (`portal.controller.ts`, `PortalAuthService`) |
 | Login settings (language, two-step, push) and deleting one's own login | Customer | `PortalAccountService` (columns on `customer.customers`, port plan D3) |
-| Session cookie → `customer` role → active portal login guard | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
+| Session cookie → active portal login guard (returns the user's roles) | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
+| Only the `customer` role holds a portal session (sign-in actions + middleware) | Customer portal app | `apps/web-customer-portal/src/lib/portal-role.ts`, `src/actions/index.ts`, `src/middleware.ts` |
 | `customer` role granted on invitation and verified sign-up | User (identity) | `ExportedUserService.grantCustomerRole` → `BetterAuthUserAccountGateway` |
 | Project view without costs | Project | `ProjectPortalService` |
 | Tickets, message thread, customer confirmation | Ticket | `ticket` module (`ticket.tickets`, `ticket.ticket_messages`) |
@@ -83,7 +84,7 @@ individual customer (no company) is their own account and may.
 
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
-| `login` | `POST /customers/portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` + `{ ok: true, user, session: { expiresAt } }`; 401 wrong credentials or no `customer` role, 423 locked (5 failures, 15 min) |
+| `login` | `POST /customers/portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` + `{ ok: true, user, session: { expiresAt } }` (`user.roles` = global roles; the portal refuses any login without `customer`); 401 wrong credentials or no active portal login, 423 locked (5 failures, 15 min) |
 | `register` | `POST /customers/portal/v1/auth/register` | `{ accountType, name, email, phone?, password }` → `{ email }`; `business` → 403 (invitation); same answer for a known email |
 | `verifyEmail` | `POST /customers/portal/v1/auth/verify-email` | `{ email, code }` → `Set-Cookie` + `{ user, session: { expiresAt } }` (creates the individual customer with an owner login and grants `customer`); 400 wrong/expired (5 attempts, 10 min) |
 | `resendVerification` | `POST /customers/portal/v1/auth/verify-email/resend` | `{ email }`; always 200 |
@@ -136,12 +137,13 @@ order lookup, RFQs.
 `test/unit/portal-account.test.ts` (invitations and refusals, the `customer`
 role granted on invitation and sign-up, sign-in and lockout, the session cookie
 on sign-in / cleared on logout, bearer refused, a login without `customer`
-refused, password length, the guard on a real route; ERP-0106: settings and
+passed through with its roles for the client to refuse, password length, the guard on a real route; ERP-0106: settings and
 their reset on revoke, two-step sign-in incl. attempts, expiry, resend,
 lockout and language, devices without tokens, deleting one's own login incl.
 the only-owner refusal, and the HTTP routes) and
 `test/unit/portal-data.test.ts` (cross-customer denial for projects, tickets
-and devices, no internal notes or costs, confirmation). E2E against a
+and devices, no internal notes or costs, confirmation). The portal's own role
+check is covered by `apps/web-customer-portal/src/lib/portal-role.test.ts`. E2E against a
 disposable database: `progress.md` 2026-11-14 and 2026-11-21 (ERP-0094, ERP-0106).
 
 Left for P2 (ERP-0100): account pages (profile, company change request,

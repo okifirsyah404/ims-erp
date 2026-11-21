@@ -6,7 +6,9 @@
   unmerged branch `feat/erp-0069-portal-session` (commit `8745d5a4`, ERP-0069);
   renumbered because ADR-0024..0026 are taken on `main`. Number checked against
   `origin/main`, every remote branch and the open pull requests (none) on
-  2026-11-21.
+  2026-11-21. **Amended 2026-11-21** (owner request, same PR #139): the
+  `customer` role check moved from the ERP to the customer portal - see
+  decision 2.
 - **Amends:** [ADR-0022](ADR-0022-customer-portal-api.md) decisions 1 and 3
   (how a portal caller is recognised and how the session travels). Everything
   else in ADR-0022 stands, as reshaped by ADR-0024 (the portal lives in the
@@ -42,9 +44,18 @@
      default `user` role is replaced and any other role kept. Existing logins
      are backfilled by the data-only migration
      `20261121064831_erp0094_portal_customer_role` (every `customer.customers`
-     row with `user_id` set and `deleted_at` null). The guard, the sign-in and
-     the sign-up verification all require the role **and** an active portal
-     login (`portal_status = 'active'`); either one alone answers 401.
+     row with `user_id` set and `deleted_at` null).
+     **Who checks the role (amended 2026-11-21):** the ERP does not. It cannot
+     tell which client sent a request (web admin, customer portal, website),
+     so the guard, the sign-in, the code sign-in and the sign-up verification
+     require only a live session **and** an active portal login
+     (`portal_status = 'active'`, 401 otherwise), and return the user's global
+     roles as `user.roles` (sign-in bodies and `/me`). The customer portal's
+     server admits only `customer`: its sign-in actions end the fresh ERP
+     session and answer like a wrong password for any other login, and its
+     middleware drops a stored session whose user lacks the role
+     (`apps/web-customer-portal/src/lib/portal-role.ts`). The original text
+     had the ERP refuse a login without the role with 401.
   3. **The portal validates first, the ERP validates again.** The portal's
      Astro Actions are the user-facing validation; the ERP's zod schemas stay
      authoritative and are aligned with them (a new password is 12-128
@@ -55,9 +66,13 @@
      `requestBodyDoc`), plus a `summary`, without changing how requests are
      validated.
 - **Consequences:**
-  - Staff can never use the portal (no `customer` role, no portal login) and a
-    customer can never use the web admin (no organization membership, the
-    login gate).
+  - Staff can never use the portal (no portal login at the ERP, no `customer`
+    role at the portal) and a customer can never use the web admin (no
+    organization membership, the login gate).
+  - A login with an active portal login but without the `customer` role is
+    accepted by the ERP's portal routes; only the portal refuses it. Such a
+    login is created only by a manual role change, since the identity module
+    grants the role with every portal login.
   - The ERP session never reaches a browser, so no cross-site cookie, CORS
     credential or bearer handling is needed; the ERP sees an ordinary Better
     Auth session (sliding expiry, revocation, `changePassword`).

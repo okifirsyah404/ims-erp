@@ -66,6 +66,8 @@ export function portalUser(portal: PortalContext, subject: TPortalSubject | null
 		name: portal.user.name,
 		initials: initials(portal.user.name),
 		email: portal.user.email,
+		// Global roles; the customer portal admits only `customer` (ADR-0027).
+		roles: portal.roles,
 		...(subject?.person.phone ? { phone: subject.person.phone } : {}),
 		accountType: company ? ('business' as const) : ('individual' as const),
 		verified: true,

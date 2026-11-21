@@ -81,9 +81,6 @@ export type TPortalTicketInput = z.output<typeof portalTicketSchema>;
  */
 export type TPortalSession = { token: string; userId: string; roles: string[]; expiresAt: Date };
 
-/** The global role every portal login carries (ADR-0027); nothing else passes the portal guard. */
-export const PORTAL_CUSTOMER_ROLE = 'customer';
-
 /** A signed-in device of the login (ERP-0106); the session token never leaves the ERP. */
 export type TPortalDeviceSession = { id: string; token: string; userAgent: string | null; ipAddress: string | null; createdAt: Date; updatedAt: Date };
 

@@ -80,7 +80,7 @@ export class PortalAuthController {
 				{
 					detail: {
 						summary: 'Sign in',
-						description: `Email + password sign-in for a login with the \`customer\` role; 401 wrong credentials or a staff login, 423 locked after 5 failures. With two-step sign-in on, answers \`{ ok: false, twoStep: true, challenge, email }\` (masked email), sets no cookie and emails a 6-digit code; \`/auth/login/verify\` finishes. ${SESSION_COOKIE_NOTE}`,
+						description: `Email + password sign-in for a login with an active portal login; 401 wrong credentials or a staff login, 423 locked after 5 failures. With two-step sign-in on, answers \`{ ok: false, twoStep: true, challenge, email }\` (masked email), sets no cookie and emails a 6-digit code; \`/auth/login/verify\` finishes. \`user.roles\` carries the global roles; the ERP does not gate on them, the client does (the customer portal admits only \`customer\`, ADR-0027). ${SESSION_COOKIE_NOTE}`,
 						...requestBodyDoc(portalLoginSchema),
 					},
 				},

@@ -72,6 +72,7 @@ const backendUser = {
   accountType: "business",
   verified: true,
   company: { id: "11111111-2222-4333-8444-555555555555", name: "Maju Logistik", npwp: "01.234.567.8-901.000", shortName: "ML" },
+  roles: ["customer"],
 };
 const backendSession = { expiresAt: "2026-11-27T10:00:00.000Z" };
 
@@ -174,6 +175,8 @@ describe("authentication", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.user.company?.shortName).toBe("ML");
+      // The ERP passes the global roles through; the portal decides (ADR-0027).
+      expect(result.user.roles).toEqual(["customer"]);
       expect(result.tokens.sessionCookie).toBe(COOKIE);
       expect(result.tokens.expiresAt).toBe(backendSession.expiresAt);
       expect(result.tokens.refreshToken).toBeUndefined();

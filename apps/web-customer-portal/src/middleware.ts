@@ -1,6 +1,7 @@
 import { type PortalSource } from "@/api/portal";
 import { defineMiddleware } from "astro:middleware";
 import { ERP_API_BASE_URL, ERP_ASSET_ORIGINS } from "astro:env/server";
+import { isPortalCustomer } from "@/lib/portal-role";
 import { ensureFreshAuth, safeNext, signOut } from "./services/auth";
 import { SessionExpiredError } from "./services/errors";
 import { isConnected } from "./services/portal";
@@ -117,7 +118,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const session = context.session;
 
   const stored = session ? await session.get("auth") : undefined;
-  const auth = stored && session ? await ensureFreshAuth(session, stored) : undefined;
+  // Only the global `customer` role holds a portal session (ADR-0027): the ERP leaves that
+  // decision to the client, so a stored session without it is dropped here.
+  const auth = stored && session && isPortalCustomer(stored.user) ? await ensureFreshAuth(session, stored) : undefined;
   if (stored && !auth) {
     signOut(session!);
   } else if (auth) {

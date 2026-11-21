@@ -52,7 +52,6 @@ import {
 	PortalAttachmentsUnsupportedError,
 	PortalDeviceNotFoundError,
 	PortalInvalidCredentialsError,
-	PortalInvalidTokenError,
 	PortalLockedError,
 	PortalWrongPasswordError,
 } from '../../src/app/customer/errors/portal.errors';
@@ -457,6 +456,7 @@ describe('portal sign-in', () => {
 		expect(context.companyId).toBe(COMPANY_A);
 		expect(context.role).toBe('owner');
 		expect(session.roles).toContain('customer');
+		expect(context.roles).toContain('customer');
 		const setCookie = await auth.sessionCookie(session);
 		const cookie = new Headers({ cookie: setCookie.split(';')[0]! });
 		expect((await auth.resolve(cookie))?.customerId).toBe(people[0]!.id);
@@ -476,12 +476,13 @@ describe('portal sign-in', () => {
 		expect(await auth.resolve(new Headers({ cookie: 'sid=session-staff-1' }))).toBeNull();
 	});
 
-	test('a login without the customer role gets the same 401 and does not resolve, even with an active portal login', async () => {
+	test('the ERP does not gate on the customer role: it returns the roles and the client decides (ADR-0027 amended)', async () => {
 		const budi = users.find((user) => user.email === 'budi@alfa.co.id')!;
 		budi.roles = ['user'];
-		await expect(auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers())).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
-		expect(signedOut).toEqual([`session-${budi.id}`]);
-		expect(await auth.resolve(new Headers({ cookie: `sid=session-${budi.id}` }))).toBeNull();
+		const { context } = signedIn(await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers()));
+		expect(context.roles).toEqual(['user']);
+		expect(signedOut).toEqual([]);
+		expect((await auth.resolve(new Headers({ cookie: `sid=session-${budi.id}` })))?.roles).toEqual(['user']);
 	});
 
 	test('five wrong passwords lock the email, even for the right password', async () => {
@@ -500,7 +501,7 @@ describe('portal sign-in', () => {
 		expect((await auth.resolve(new Headers({ cookie: `sid=${context.sessionToken}` })))?.customerId).toBe(context.customerId);
 	});
 
-	test('a verified sign-up without the customer role is not signed in', async () => {
+	test('a verified sign-up hands its roles to the client instead of being rejected', async () => {
 		await accounts.startSignup({ accountType: 'individual', name: 'Dewi', email: 'dewi@mail.id', phone: null, password: FAKE_PASSWORD_1 });
 		const code = mails.find((mail) => mail.kind === 'code')!.code!;
 		const plain = new PortalAuthService(
@@ -511,7 +512,8 @@ describe('portal sign-in', () => {
 			accounts,
 			fakeCache(),
 		);
-		await expect(plain.verifySignup('dewi@mail.id', code)).rejects.toBeInstanceOf(PortalInvalidTokenError);
+		const { context } = await plain.verifySignup('dewi@mail.id', code);
+		expect(context.roles).toEqual(['user']);
 	});
 
 	test('a revoked login no longer resolves', async () => {

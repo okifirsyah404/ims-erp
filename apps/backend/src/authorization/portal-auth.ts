@@ -9,13 +9,16 @@
  *      the cookie the portal's server stored after
  *      `POST /customers/portal/v1/auth/login` and forwards on every call (the
  *      browser never holds it);
- *   2. gets back the caller only when the session is live, its user carries
- *      the global `customer` role AND an active portal login exists
- *      (`customer.customers.portal_status = 'active'`);
+ *   2. gets back the caller only when the session is live AND an active
+ *      portal login exists (`customer.customers.portal_status = 'active'`);
  *   3. answers 401 otherwise. `Authorization: Bearer` is not accepted.
  *
- * Staff never pass: they have no `customer` role and no portal login, and a
- * customer never passes the ERP guards (no organization membership).
+ * The ERP cannot tell which client (web admin, customer portal, website)
+ * sent a request, so it does not gate on the global `customer` role: it
+ * returns the user's roles and the customer portal admits only `customer`
+ * (ADR-0027 as amended 2026-11-21). Staff still never pass here (no portal
+ * login), and a customer never passes the ERP guards (no organization
+ * membership).
  */
 import { Elysia } from 'elysia';
 import type { InjectionToken } from 'tsyringe';
@@ -31,6 +34,8 @@ export type PortalContext = {
 	companyId: string | null;
 	role: 'owner' | 'approver' | 'finance' | 'viewer';
 	user: { id: string; name: string; email: string };
+	/** The user's global (admin plugin) roles; the client decides what they admit. */
+	roles: string[];
 	/** The Better Auth session token of this request (for logout / password change). */
 	sessionToken: string;
 };

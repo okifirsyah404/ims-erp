@@ -699,7 +699,8 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   branch ERP-0069, ADR-0027): `/customers/portal/v1` sign-in and sign-up
   verification answer `Set-Cookie` with Better Auth's session cookie (no
   token in the body), logout clears it, the guard reads only `Cookie` (bearer
-  401) and requires the global `customer` role plus an active portal login;
+  401) and requires an active portal login, returning the global roles; the
+  portal app admits only the `customer` role (moved from the ERP 2026-11-21);
   the role is granted on invitation and verified sign-up and backfilled by
   migration `20261121064831_erp0094_portal_customer_role`; new passwords
   12-128; OpenAPI summaries + request bodies. web-customer-portal and

@@ -1,8 +1,9 @@
 import { ActionError, defineAction, type ActionAPIContext } from "astro:actions";
 import { z } from "astro/zod";
 import { ApiError } from "@/api/client";
-import { PortalNotConfiguredError, type SettingsPatch } from "@/api/portal";
+import { PortalNotConfiguredError, type AuthTokens, type PortalUser, type SettingsPatch } from "@/api/portal";
 import { portal } from "../services/portal";
+import { isPortalCustomer } from "@/lib/portal-role";
 import { signIn, signOut } from "../services/auth";
 import { SessionExpiredError, logUpstreamError } from "../services/errors";
 
@@ -43,6 +44,18 @@ async function call<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 const password = z.string().min(12, "Use at least 12 characters").max(128);
+
+/**
+ * Admits only a login carrying the global `customer` role (ADR-0027): the ERP returns the
+ * roles and leaves the decision to the client. Any other login has its fresh ERP session
+ * ended and gets the same answer as a wrong password, so the portal never reveals staff
+ * accounts.
+ */
+async function admitCustomer(result: { user: PortalUser; tokens: AuthTokens }, message: string) {
+  if (isPortalCustomer(result.user)) return;
+  await portal.logout(result.tokens).catch((error: unknown) => logUpstreamError("auth.reject-role", error));
+  throw new ActionError({ code: "UNAUTHORIZED", message });
+}
 
 /** The visitor's browser and address, so the ERP can list the device (ERP-0106). */
 function clientOf(context: ActionAPIContext) {
@@ -92,6 +105,7 @@ export const server = {
                 : "Incorrect email or password",
           });
         }
+        await admitCustomer(result, "Incorrect email or password");
         await signIn(context.session!, result.user, result.tokens, input.remember);
         return { ok: true, twoStep: false };
       },
@@ -107,6 +121,7 @@ export const server = {
         const result = await call(() => portal.verifyLoginCode({ challenge: pending.challenge, code: input.code, client: clientOf(context) }));
         if (!result) throw new ActionError({ code: "BAD_REQUEST", message: "That code is wrong or has expired." });
         context.session?.delete("pendingSignIn");
+        await admitCustomer(result, "Incorrect email or password");
         await signIn(context.session!, result.user, result.tokens, pending.remember);
         return { ok: true };
       },
@@ -183,6 +198,7 @@ export const server = {
         const result = await call(() => portal.verifyEmail({ email: pending.email, code: input.code }));
         if (!result) throw new ActionError({ code: "UNAUTHORIZED", message: "That code is incorrect or expired." });
         context.session?.delete("pendingVerification");
+        await admitCustomer(result, "This account can't use the customer portal.");
         await signIn(context.session!, result.user, result.tokens, true);
         return { accountType: pending.accountType };
       },

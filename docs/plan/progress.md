@@ -12,6 +12,52 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - ERP-0094 amended: the `customer` role is checked by the customer portal, not the ERP
+
+Owner request on PR #139 (`feat/erp-0094-portal-session-cookie`): the ERP
+cannot tell which client sent a request (web admin, customer portal,
+website), so the `customer` role check belongs to the portal. ADR-0027
+decision 2 amended in place (dated note).
+
+**Changed.**
+- Backend `customer`: `PortalAuthService` no longer refuses a session without
+  the `customer` role (`login`, `verifyLoginCode`, `verifySignup`, `resolve`);
+  it still requires a live session and an active portal login. The roles
+  travel on `PortalContext.roles` (`src/authorization/portal-auth.ts`) and are
+  returned as `user.roles` by `portalUser()` (sign-in bodies, `/me`).
+  `PORTAL_CUSTOMER_ROLE` removed from `portal.contract.ts`. The identity
+  module still grants the role with every portal login (unchanged).
+- `apps/web-customer-portal`: `PortalUser.roles` + zod schema;
+  `src/lib/portal-role.ts` (`isPortalCustomer`); the `login`,
+  `verifyLoginCode` and `verifyEmail` actions end the fresh ERP session and
+  answer like a wrong password for a login without `customer`; the middleware
+  drops a stored session whose user lacks the role (sessions stored before
+  this change have no `roles` and are signed out once).
+- Tests: `portal-account.test.ts` - the two "no `customer` role → 401" cases
+  now assert the roles are passed through; new
+  `apps/web-customer-portal/src/lib/portal-role.test.ts`; `erp-source.test.ts`
+  fixture carries `roles`.
+- Docs: ADR-0027, `docs/architecture/modules/customer-portal.md`,
+  `backlog.md` ERP-0094, `features.md`. `docs/database/` reviewed and
+  unchanged (no table, column or vocabulary change).
+
+**Commands.**
+- `cd packages/common && bun run build` - needed first: the local `dist` was
+  stale (7 typecheck errors and 6 test load errors on `employmentTypeSchema` /
+  `assignableOrganizationRoles`, present without this change too).
+- `cd apps/backend && bun test` → 1333 pass / 0 fail; `bunx tsc --noEmit` → 0
+  errors; `bun run lint` → exit 0, no warning in touched files.
+- `cd apps/web-customer-portal && bun test` → 66 pass / 0 fail;
+  `bun run typecheck` (`astro check`) → 0 errors, 0 warnings.
+- `bun docs/database/validate-dbml.ts` → OK.
+
+**Not done.** Not re-checked live; the earlier live check "login without
+`customer` → 401" now answers 200 at the ERP and is refused by the portal.
+No browser walk-through. Not reviewed.
+
+Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
+decision, once PR #139 is reviewed.
+
 ## 2026-11-21 - ERP-0106: portal security settings - two-step sign-in, active devices, delete own login (port of branch ERP-0081)
 
 Port step P1 (second half) of `docs/plan/port-portal-onto-main.md`, decision

@@ -36,6 +36,7 @@ export const portalUserSchema = z.object({
   company: z
     .object({ id: z.string().max(128), name: z.string().max(200), npwp: z.string().max(40).optional(), shortName: z.string().max(8) })
     .optional(),
+  roles: z.array(z.string().min(1).max(64)).max(32),
 }) satisfies z.ZodType<PortalUser>;
 
 export const sessionSchema = z.object({ user: portalUserSchema, session: sessionInfoSchema });

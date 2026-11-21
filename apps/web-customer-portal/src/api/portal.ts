@@ -24,6 +24,11 @@ export type PortalUser = {
   accountType: AccountType;
   verified: boolean;
   company?: { id: string; name: string; npwp?: string; shortName: string };
+  /**
+   * Global (Better Auth) roles of the login. The ERP does not know which client calls it, so
+   * it returns them and this portal admits only `customer` (ADR-0027, `isPortalCustomer`).
+   */
+  roles: string[];
 };
 
 /**
