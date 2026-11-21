@@ -1,4 +1,5 @@
 import { PORTAL_ROLES, type PortalRole, type PortalStatus } from '@drizzle/schemas/customer.schema';
+import type { LanguageCode } from '@ims-erp/locales';
 import { z } from 'zod';
 
 const email = z.string().trim().toLowerCase().email().max(254);
@@ -90,9 +91,17 @@ export type TPortalCustomerIdentity = {
 	user: { id: string; name: string; email: string };
 };
 
-/** Mail port: invitation, password reset and sign-up code emails. */
+/**
+ * Settings of one portal login (ERP-0106, port plan D3): stored on the
+ * person's `customer.customers` row. `language` null = the browser's.
+ */
+export type TPortalLoginSettings = { language: 'en' | 'id' | null; twoStep: boolean; push: boolean };
+
+/** Mail port: invitation, password reset, sign-up and sign-in code emails. */
 export interface IPortalMailer {
 	sendInvitation(input: { to: string; name: string; url: string }): Promise<void>;
 	sendPasswordReset(input: { to: string; name: string; url: string }): Promise<void>;
 	sendSignupCode(input: { to: string; name: string; code: string }): Promise<void>;
+	/** The two-step sign-in code (ERP-0106), in the login's chosen language when set. */
+	sendLoginCode(input: { to: string; name: string; code: string; language?: LanguageCode }): Promise<void>;
 }

@@ -1,6 +1,8 @@
 > Updated 2026-11-20 (ADR-0024): the portal API now lives in the `customer` module at `/customers/portal/v1` (was `/portal/v1`); tickets are owned by `ticket`, warranties by `project`.
 >
 > Updated 2026-11-21 (ERP-0094, [ADR-0027](../decisions/ADR-0027-portal-session-cookie-and-customer-role.md)): the session is Better Auth's own session cookie held by the portal's server (`Set-Cookie` on sign-in, `Cookie` on every call, no bearer token), and only a login with the global `customer` role passes the guard.
+>
+> Updated 2026-11-21 (ERP-0106, port plan P1/D3): login settings on `customer.customers` (`portal_language`, `portal_two_step`, `portal_push`), two-step sign-in by an emailed code, signed-in devices, deleting one's own login.
 
 # Customer Portal Module (ERP-0022, stage 1)
 
@@ -17,7 +19,8 @@ own tickets) + the account part of M12 T25 + warranties.
 | Piece | Owner | Where |
 | --- | --- | --- |
 | Portal logins (`customer.customers`), invite / resend / revoke | Customer | `src/app/customer` (`PortalAccountService`, `/admin/customers/portal-accounts`) |
-| Sign-in, sessions, passwords, lockout; the `/customers/portal/v1` routes | Customer | `src/app/customer` (`portal.controller.ts`) |
+| Sign-in, sessions, passwords, lockout, two-step code, devices; the `/customers/portal/v1` routes | Customer | `src/app/customer` (`portal.controller.ts`, `PortalAuthService`) |
+| Login settings (language, two-step, push) and deleting one's own login | Customer | `PortalAccountService` (columns on `customer.customers`, port plan D3) |
 | Session cookie → `customer` role → active portal login guard | Authorization | `src/authorization/portal-auth.ts`, `domainPlugin({ guards: 'portal' })` |
 | `customer` role granted on invitation and verified sign-up | User (identity) | `ExportedUserService.grantCustomerRole` → `BetterAuthUserAccountGateway` |
 | Project view without costs | Project | `ProjectPortalService` |
@@ -58,6 +61,26 @@ characters (`register`, `resetPassword`, `changePassword`). Every route
 publishes a `summary` and the zod schema it parses as the OpenAPI
 `requestBody` (`src/http/openapi.ts`).
 
+**Two-step sign-in (ERP-0106).** With `customer.customers.portal_two_step` on,
+a correct password yields no session: the password session is signed out at
+once, `login` answers `200 { ok: false, twoStep: true, challenge, email }`
+(masked email, no cookie) and a 6-digit code is emailed in the login's
+`portal_language` (Redis `portal:login-code:<challenge>`, sha256 of
+`challenge:code`, 10 minutes, 5 wrong codes drop the challenge; a resend
+replaces the code). `verifyLoginCode` with the right code creates the session
+and answers exactly like `login` (`Set-Cookie`, no token). The failed-password
+lockout is unchanged. The portal passes the visitor's `User-Agent` /
+`X-Forwarded-For` on `login`, `verifyLoginCode` and `verifyEmail` so the
+session names its device.
+
+**Devices and deleting the login (ERP-0106).** Devices are Better Auth
+sessions of the login (`listSessions`), addressed by session **id**; tokens
+never leave the ERP. Deleting one's own login needs the password and revokes
+the login like a staff revoke (`portal_status = revoked`, `user_id` freed,
+settings reset, every session ended); the person, company, documents and
+history stay. The only active owner of a company account is refused (409); an
+individual customer (no company) is their own account and may.
+
 | `PortalSource` operation | Method and ERP path | Notes |
 | --- | --- | --- |
 | `login` | `POST /customers/portal/v1/auth/login` | `{ email, password, accountType? }` → `Set-Cookie` + `{ ok: true, user, session: { expiresAt } }`; 401 wrong credentials or no `customer` role, 423 locked (5 failures, 15 min) |
@@ -80,7 +103,14 @@ publishes a `summary` and the zod schema it parses as the OpenAPI
 | — (new) | `POST /customers/portal/v1/tickets/:id/confirm` | the customer confirms a resolved ticket → closed |
 | `listProducts` | `GET /customers/portal/v1/products` | one device per warranty-certificate line, id `<certificate>:<line>` |
 | `getWarranty` | `GET /customers/portal/v1/products/:id/warranty` | `WarrantyDetail` |
-| `getAccount` | `GET /customers/portal/v1/account` | `AccountSettings` with the members; sites/notifications/security are defaults (not stored yet) |
+| `verifyLoginCode` | `POST /customers/portal/v1/auth/login/verify` | `{ challenge, code }` → `Set-Cookie` + `{ ok: true, user, session }`; 400 wrong/expired/used up |
+| `resendLoginCode` | `POST /customers/portal/v1/auth/login/resend` | `{ challenge }`; always 200 |
+| `getAccount` | `GET /customers/portal/v1/account` | `AccountSettings` with the members, the login's `notifications.push`, `security.twoStep`, `security.activeDevices` and `preferences.language`; sites are empty (P2); email/WhatsApp channels fixed on/off |
+| `updateSettings` | `PATCH /customers/portal/v1/account/settings` | `{ notifications?: { push }, security?: { twoStep }, preferences?: { language: en\|id } }`; only the given settings change |
+| `listDevices` | `GET /customers/portal/v1/account/devices` | `[{ id, userAgent, ipAddress, createdAt, updatedAt, current }]`, current first; no tokens |
+| `revokeDevice` | `DELETE /customers/portal/v1/account/devices/:id` | session id; 404 gone or another login's |
+| `signOutOtherDevices` | `POST /customers/portal/v1/account/devices/sign-out-others` | every session except this one |
+| `closeAccount` | `POST /customers/portal/v1/account/close` | `{ password }`; clearing `Set-Cookie`; 400 wrong password, 409 only owner of a company |
 | `inviteMember` | `POST /customers/portal/v1/account/members` | owner only: `{ email, name?, role: approver\|finance\|viewer }` → `CompanyMember`; 403 other roles |
 | `removeMember` | `DELETE /customers/portal/v1/account/members/:id` | owner only; 422 for oneself |
 
@@ -88,7 +118,7 @@ Not built yet (stage 2, routes left unset so the adapter throws
 `PortalNotConfiguredError`): `refreshSession` (sessions are Better Auth's 7-day sessions, refreshed on use),
 `completeOnboarding`, notifications, orders, quotations, invoices, payments,
 device registration and lookup, service booking, profile, documents,
-`updatePersonal`/`updateCompany`/`updateSettings`, sites, wishlist, public
+`updatePersonal`/`updateCompany`, sites, wishlist, public
 order lookup, RFQs.
 
 ## Staff side
@@ -106,7 +136,15 @@ order lookup, RFQs.
 `test/unit/portal-account.test.ts` (invitations and refusals, the `customer`
 role granted on invitation and sign-up, sign-in and lockout, the session cookie
 on sign-in / cleared on logout, bearer refused, a login without `customer`
-refused, password length, the guard on a real route) and
+refused, password length, the guard on a real route; ERP-0106: settings and
+their reset on revoke, two-step sign-in incl. attempts, expiry, resend,
+lockout and language, devices without tokens, deleting one's own login incl.
+the only-owner refusal, and the HTTP routes) and
 `test/unit/portal-data.test.ts` (cross-customer denial for projects, tickets
 and devices, no internal notes or costs, confirmation). E2E against a
-disposable database: `progress.md` 2026-11-14 and 2026-11-21 (ERP-0094).
+disposable database: `progress.md` 2026-11-14 and 2026-11-21 (ERP-0094, ERP-0106).
+
+Left for P2 (ERP-0100): account pages (profile, company change request,
+sites, onboarding, members screens); push is stored but nothing sends push
+notices yet; `preferences.language` is stored and used for the sign-in code
+email only (the portal UI is English).

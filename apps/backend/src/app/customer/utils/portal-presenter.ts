@@ -9,7 +9,7 @@
  */
 import type { TPortalTicket, TPortalTicketDetail } from '@app/ticket/contracts/ticket.contract';
 import type { TPortalProject, TPortalProjectDetail } from '@app/project/services/project-portal.service';
-import type { TPortalAccountView } from '../contracts/portal-account.contract';
+import type { TPortalAccountView, TPortalLoginSettings } from '../contracts/portal-account.contract';
 import type { PortalContext } from '@authorization/portal-auth';
 import { PROJECT_STAGES, type ProjectStage } from '@drizzle/schemas/project.schema';
 import type { ApiKey } from '@providers/i18n/translator';
@@ -96,9 +96,23 @@ export function companyMember(p: TPresenter, account: TPortalAccountView) {
 	};
 }
 
-/** The portal's `AccountSettings`; sites, notification channels and security are not stored yet. */
-export function accountSettings(p: TPresenter, portal: PortalContext, subject: TPortalSubject | null, members: TPortalAccountView[]) {
+/** What `GET /account` adds beyond the person: the login's settings and devices (ERP-0106). */
+export type TAccountExtras = { settings: TPortalLoginSettings | null; deviceCount: number };
+
+/**
+ * The portal's `AccountSettings`. Sites are not stored yet (P2); push,
+ * two-step and language are the login's settings (ERP-0106, port plan D3);
+ * email and WhatsApp channels are not settings (fixed on / off).
+ */
+export function accountSettings(
+	p: TPresenter,
+	portal: PortalContext,
+	subject: TPortalSubject | null,
+	members: TPortalAccountView[],
+	extras: TAccountExtras = { settings: null, deviceCount: 1 },
+) {
 	const company = subject?.company ?? null;
+	const { settings, deviceCount } = extras;
 	return {
 		personal: { name: portal.user.name, email: portal.user.email, phone: subject?.person.phone ?? '' },
 		...(company
@@ -106,9 +120,30 @@ export function accountSettings(p: TPresenter, portal: PortalContext, subject: T
 			: {}),
 		members: members.map((member) => companyMember(p, member)),
 		sites: [],
-		notifications: { push: false, email: true, whatsapp: false },
-		security: { faceId: false, twoStep: false, passwordChangedLabel: '', activeDevices: 1 },
-		preferences: { language: p.language, currency: 'IDR' as const, appearance: 'system' as const },
+		notifications: { push: settings?.push ?? false, email: true, whatsapp: false },
+		security: { twoStep: settings?.twoStep ?? false, passwordChangedLabel: '', activeDevices: Math.max(1, deviceCount) },
+		preferences: { language: settings?.language ?? p.language, currency: 'IDR' as const },
+	};
+}
+
+/** The login's settings as the portal reads them (answer of `PATCH /account/settings`). */
+export function portalSettings(p: TPresenter, settings: TPortalLoginSettings) {
+	return {
+		notifications: { push: settings.push, email: true, whatsapp: false },
+		security: { twoStep: settings.twoStep },
+		preferences: { language: settings.language ?? p.language, currency: 'IDR' as const },
+	};
+}
+
+/** A signed-in device (session) of the login; never its token. */
+export function signedInDevice(device: { id: string; userAgent: string | null; ipAddress: string | null; createdAt: Date; updatedAt: Date; current: boolean }) {
+	return {
+		id: device.id,
+		userAgent: device.userAgent,
+		ipAddress: device.ipAddress,
+		createdAt: device.createdAt.toISOString(),
+		updatedAt: device.updatedAt.toISOString(),
+		current: device.current,
 	};
 }
 

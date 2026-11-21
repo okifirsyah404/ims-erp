@@ -104,6 +104,68 @@ describe("envelope", () => {
   });
 });
 
+describe("security settings (ERP-0106)", () => {
+  test("two-step login: the challenge comes back, no cookie is taken, the visitor's browser is forwarded", async () => {
+    const { calls, fetcher } = mockFetch(() => envelope({ ok: false, twoStep: true, challenge: "c".repeat(32), email: "h***@majulogistik.co.id" }));
+    const result = await sourceWith(fetcher).login({
+      email: "hendra@majulogistik.co.id",
+      password: "secret-password",
+      accountType: "business",
+      client: { userAgent: "Firefox/1", ip: "203.0.113.9" },
+    });
+    expect(result).toEqual({ ok: false, reason: "two_step", challenge: "c".repeat(32), email: "h***@majulogistik.co.id" });
+    expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/login`);
+    expect(header(calls[0]!, "user-agent")).toBe("Firefox/1");
+    expect(header(calls[0]!, "x-forwarded-for")).toBe("203.0.113.9");
+    expect(JSON.parse(String(calls[0]!.init.body))).not.toHaveProperty("client");
+  });
+
+  test("verifyLoginCode keeps the Set-Cookie session; a wrong code (400) is null; resend posts the challenge", async () => {
+    const { calls, fetcher } = mockFetch(({ url }) => {
+      if (url.pathname.endsWith("/login/resend")) return envelope(null);
+      return JSON.parse(String(calls[calls.length - 1]!.init.body)).code === "123456"
+        ? signedIn({ ok: true, user: backendUser, session: backendSession })
+        : errorEnvelope(400, "The code is wrong or has expired");
+    });
+    const source = withSessionExpiry(sourceWith(fetcher));
+    const verified = await source.verifyLoginCode({ challenge: "c".repeat(32), code: "123456" });
+    expect(verified?.tokens.sessionCookie).toBe(COOKIE);
+    expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/login/verify`);
+    expect(header(calls[0]!, "cookie")).toBeNull();
+    expect(await source.verifyLoginCode({ challenge: "c".repeat(32), code: "000000" })).toBeNull();
+    await source.resendLoginCode({ challenge: "c".repeat(32) });
+    expect(calls[2]!.url.pathname).toBe(`${PREFIX}/auth/login/resend`);
+  });
+
+  test("devices: list, sign one out by id, sign out the others; settings PATCH", async () => {
+    const devices = [{ id: "sid-1", userAgent: "Firefox/1", ipAddress: null, createdAt: "2026-11-21T01:00:00.000Z", updatedAt: "2026-11-21T01:00:00.000Z", current: true }];
+    const { calls, fetcher } = mockFetch(({ url }) => (url.pathname.endsWith("/account/devices") ? envelope(devices) : envelope(null)));
+    const source = sourceWith(fetcher);
+    expect(await source.listDevices(session)).toEqual(devices);
+    await source.revokeDevice(session, "sid/2");
+    await source.signOutOtherDevices(session);
+    await source.updateSettings(session, { security: { twoStep: true } });
+    expect(calls.map((call) => [call.init.method ?? "GET", call.url.pathname])).toEqual([
+      ["GET", `${PREFIX}/account/devices`],
+      ["DELETE", `${PREFIX}/account/devices/sid%2F2`],
+      ["POST", `${PREFIX}/account/devices/sign-out-others`],
+      ["PATCH", `${PREFIX}/account/settings`],
+    ]);
+    for (const call of calls) expect(header(call, "cookie")).toBe(COOKIE);
+  });
+
+  test("closeAccount: 400 is a wrong password, 409 the only owner with the ERP's message", async () => {
+    let status = 400;
+    const { fetcher } = mockFetch(() => (status === 200 ? envelope(null) : errorEnvelope(status, status === 409 ? "You are the only owner" : "The current password is wrong")));
+    const source = sourceWith(fetcher);
+    expect(await source.closeAccount(session, { password: "x" })).toEqual({ ok: false, reason: "wrong_password" });
+    status = 409;
+    expect(await source.closeAccount(session, { password: "x" })).toEqual({ ok: false, reason: "last_owner", message: "You are the only owner" });
+    status = 200;
+    expect(await source.closeAccount(session, { password: "x" })).toEqual({ ok: true });
+  });
+});
+
 describe("authentication", () => {
   test("login posts the credentials without a session and keeps the Set-Cookie session server-side", async () => {
     const { calls, fetcher } = mockFetch(() => signedIn({ ok: true, user: backendUser, session: backendSession }));
@@ -260,8 +322,8 @@ describe("authenticated reads", () => {
         ],
         sites: [],
         notifications: { push: false, email: true, whatsapp: false },
-        security: { faceId: false, twoStep: false, passwordChangedLabel: "", activeDevices: 1 },
-        preferences: { language: "en", currency: "IDR", appearance: "system" },
+        security: { twoStep: false, passwordChangedLabel: "", activeDevices: 1 },
+        preferences: { language: "en", currency: "IDR" },
       });
     });
     const source = sourceWith(fetcher);
@@ -497,7 +559,6 @@ describe("operations the backend has no route for", () => {
     ["updateCompany", (s) => s.updateCompany(session, { name: "Maju Logistik" })],
     ["saveSite", (s) => s.saveSite(session, { name: "HQ", address: "Jl. Sudirman 1", picName: "A", picPhone: "0812000011" })],
     ["deleteSite", (s) => s.deleteSite(session, "1")],
-    ["updateSettings", (s) => s.updateSettings(session, { notifications: { push: true } })],
     ["listWishlist", (s) => s.listWishlist(session)],
     ["removeWishlistItem", (s) => s.removeWishlistItem(session, "1")],
     ["lookupPublicOrder", (s) => s.lookupPublicOrder("SO-2026-0001")],

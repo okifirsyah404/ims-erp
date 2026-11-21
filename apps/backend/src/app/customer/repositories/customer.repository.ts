@@ -167,7 +167,15 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 		if (!before) return null;
 		const updated = await this.database
 			.update(customers)
-			.set({ portalStatus: 'revoked', userId: null, updatedAt: new Date() })
+			// The login's settings go with it (ERP-0106); a new invitation starts fresh.
+			.set({
+				portalStatus: 'revoked',
+				userId: null,
+				portalLanguage: null,
+				portalTwoStep: false,
+				portalPush: false,
+				updatedAt: new Date(),
+			})
 			.where(active)
 			.returning({ id: customers.id });
 		return updated.length > 0 ? before : null;

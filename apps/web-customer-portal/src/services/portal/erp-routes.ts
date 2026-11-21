@@ -10,6 +10,8 @@ import { type PortalRoutes } from "@/api/portal";
  * (see ./envelope.ts). Sign-in and sign-up verification answer `Set-Cookie` with the ERP's
  * session cookie; authenticated routes take it back as the `Cookie` header (ERP-0094,
  * ADR-0027). It lives only in the portal's server-side session, never in a browser.
+ * With two-step sign-in on (ERP-0106), `login` answers a challenge and no cookie;
+ * `verifyLoginCode` then answers the cookie like `login`.
  *
  * `:id` placeholders are URL-encoded at call time (a device id `<uuid>:<line>` keeps its
  * colon); absolute URLs, `//` and `..` are rejected at startup. Operations left out raise
@@ -20,7 +22,7 @@ import { type PortalRoutes } from "@/api/portal";
  * - no backend route yet (stage 2): `completeOnboarding`, notifications, orders,
  *   quotations (list/detail/accept/revision), invoices and payments (list/detail/pay,
  *   methods), device lookup/registration, service booking, profile summary, documents,
- *   `updatePersonal` / `updateCompany` / `updateSettings`, sites, wishlist, public order
+ *   `updatePersonal` / `updateCompany`, sites, wishlist, public order
  *   lookup and RFQs.
  */
 const PORTAL = "/customers/portal/v1";
@@ -36,6 +38,14 @@ export const erpRoutes: PortalRoutes = {
   logout: `${PORTAL}/auth/logout`,
   changePassword: `${PORTAL}/account/password`,
   getAccount: `${PORTAL}/account`,
+  updateSettings: `${PORTAL}/account/settings`,
+  // Two-step sign-in, devices and deleting the login (ERP-0106)
+  verifyLoginCode: `${PORTAL}/auth/login/verify`,
+  resendLoginCode: `${PORTAL}/auth/login/resend`,
+  listDevices: `${PORTAL}/account/devices`,
+  revokeDevice: `${PORTAL}/account/devices/:id`,
+  signOutOtherDevices: `${PORTAL}/account/devices/sign-out-others`,
+  closeAccount: `${PORTAL}/account/close`,
   inviteMember: `${PORTAL}/account/members`,
   removeMember: `${PORTAL}/account/members/:id`,
 

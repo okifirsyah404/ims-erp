@@ -34,11 +34,16 @@ export type PortalUser = {
  */
 export type AuthTokens = { sessionCookie: string; refreshToken?: string; expiresAt: ISODate };
 
+/** The visitor behind a sign-in, forwarded so the ERP can list the device (ERP-0106). */
+export type ClientInfo = { userAgent?: string; ip?: string };
+
 export type LoginResult =
   | { ok: true; user: PortalUser; tokens: AuthTokens }
   | { ok: false; reason: "invalid_credentials"; attemptsLeft?: number }
   | { ok: false; reason: "locked"; lockedUntil: ISODate }
-  | { ok: false; reason: "unverified"; email: string };
+  | { ok: false; reason: "unverified"; email: string }
+  /** Two-step sign-in (ERP-0106): the password was right, a code went to the (masked) email. */
+  | { ok: false; reason: "two_step"; challenge: string; email: string };
 
 export type RegisterInput = {
   accountType: AccountType;
@@ -348,15 +353,28 @@ export type AccountSettings = {
   members: CompanyMember[];
   sites: CompanySite[];
   notifications: NotificationPrefs;
-  security: { faceId: boolean; twoStep: boolean; passwordChangedLabel: string; activeDevices: number };
-  preferences: { language: "en" | "id"; currency: "IDR"; appearance: "light" | "system" };
+  security: { twoStep: boolean; passwordChangedLabel: string; activeDevices: number };
+  preferences: { language: "en" | "id"; currency: "IDR" };
 };
 
 export type SettingsPatch = Partial<{
   notifications: Partial<NotificationPrefs>;
-  security: Partial<Pick<AccountSettings["security"], "faceId" | "twoStep">>;
+  security: Partial<Pick<AccountSettings["security"], "twoStep">>;
   preferences: Partial<AccountSettings["preferences"]>;
 }>;
+
+/** A browser or app signed in to this login (ERP-0106). */
+export type SignedInDevice = {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  current: boolean;
+};
+
+/** Deleting one's own login: the password is checked; the only owner of a company cannot. */
+export type CloseAccountResult = { ok: true } | { ok: false; reason: "wrong_password" | "last_owner"; message?: string };
 
 // ── Wishlist ──────────────────────────────────────────────────────────────
 export type WishlistItem = {
@@ -422,9 +440,12 @@ export type RfqClaimChallenge = { reference: string; maskedEmail: string; expire
 // ── Source contract───────────────────────────────────────────────────────
 /** Everything the portal reads/writes. Implemented by the ERP adapter (and the app's demo source). */
 export interface PortalSource {
-  login(input: { email: string; password: string; accountType: AccountType }): Promise<LoginResult>;
+  login(input: { email: string; password: string; accountType: AccountType; client?: ClientInfo }): Promise<LoginResult>;
   register(input: RegisterInput): Promise<{ email: string }>;
   verifyEmail(input: { email: string; code: string }): Promise<{ user: PortalUser; tokens: AuthTokens } | null>;
+  /** Second step of a two-step sign-in; `null` for a wrong or expired code. */
+  verifyLoginCode(input: { challenge: string; code: string; client?: ClientInfo }): Promise<{ user: PortalUser; tokens: AuthTokens } | null>;
+  resendLoginCode(input: { challenge: string }): Promise<void>;
   resendVerification(input: { email: string }): Promise<void>;
   requestPasswordReset(input: { email?: string; phone?: string }): Promise<void>;
   resetPassword(input: { token: string; password: string }): Promise<boolean>;
@@ -473,6 +494,10 @@ export interface PortalSource {
   updateSettings(session: AuthTokens, patch: SettingsPatch): Promise<void>;
   /** `false` when the current password is wrong. */
   changePassword(session: AuthTokens, input: { current: string; next: string }): Promise<boolean>;
+  listDevices(session: AuthTokens): Promise<SignedInDevice[]>;
+  revokeDevice(session: AuthTokens, id: string): Promise<void>;
+  signOutOtherDevices(session: AuthTokens): Promise<void>;
+  closeAccount(session: AuthTokens, input: { password: string }): Promise<CloseAccountResult>;
   listWishlist(session: AuthTokens): Promise<WishlistItem[]>;
   removeWishlistItem(session: AuthTokens, id: string): Promise<void>;
   /** Sign-in-free lookup (07.05). Needs the order number only; returns a minimal status. */
@@ -494,6 +519,14 @@ export interface PortalSource {
  * `PortalNotConfiguredError` instead of guessing.
  */
 export type PortalRoutes = Partial<Record<keyof PortalSource, string>>;
+
+/** `User-Agent` / `X-Forwarded-For` of the visitor for the ERP's session record. */
+function clientHeaders(client?: ClientInfo): Record<string, string> {
+  return {
+    ...(client?.userAgent ? { "User-Agent": client.userAgent.slice(0, 512) } : {}),
+    ...(client?.ip ? { "X-Forwarded-For": client.ip } : {}),
+  };
+}
 
 export class PortalNotConfiguredError extends Error {
   constructor(operation: string) {
@@ -585,10 +618,17 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   };
 
   return {
-    async login(input) {
+    async login({ client, ...input }) {
       try {
         let cookie: string | null = null;
-        const body = await clientFor().post(path("login"), input, { onResponse: (response) => (cookie = sessionCookieFrom(response)) });
+        const body = await clientFor().post(path("login"), input, {
+          headers: clientHeaders(client),
+          onResponse: (response) => (cookie = sessionCookieFrom(response)),
+        });
+        const twoStep = body as { twoStep?: unknown; challenge?: unknown; email?: unknown } | null;
+        if (twoStep?.twoStep === true && typeof twoStep.challenge === "string") {
+          return { ok: false, reason: "two_step", challenge: twoStep.challenge, email: typeof twoStep.email === "string" ? twoStep.email : "" };
+        }
         const { user, session } = parseOrThrow("login", loginSuccessSchema, body);
         return { ok: true, user, tokens: tokensFrom("login", cookie, session.expiresAt) };
       } catch (error) {
@@ -632,6 +672,24 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     },
     async logout(session) {
       await post("logout", session, {});
+    },
+    async verifyLoginCode({ client, ...input }) {
+      // 400: wrong, expired or used-up code (ERP-0106).
+      try {
+        let cookie: string | null = null;
+        const body = await clientFor().post(path("verifyLoginCode"), input, {
+          headers: clientHeaders(client),
+          onResponse: (response) => (cookie = sessionCookieFrom(response)),
+        });
+        const { user, session } = parseOrThrow("verifyLoginCode", loginSuccessSchema, body);
+        return { user, tokens: tokensFrom("verifyLoginCode", cookie, session.expiresAt) };
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 400 || error.status === 401)) return null;
+        throw error;
+      }
+    },
+    async resendLoginCode(input) {
+      await post("resendLoginCode", undefined, input);
     },
     async refreshSession(refreshToken) {
       try {
@@ -705,6 +763,21 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
         // 400 = wrong current password. A 401 means the session ended: let it propagate so the
         // middleware signs the user out instead of reporting a wrong password.
         if (error instanceof ApiError && error.status === 400) return false;
+        throw error;
+      }
+    },
+    listDevices: (s) => get("listDevices", s),
+    revokeDevice: async (s, id) => clientFor(s).delete(path("revokeDevice", { id })),
+    async signOutOtherDevices(s) {
+      await post("signOutOtherDevices", s, {});
+    },
+    async closeAccount(s, input) {
+      try {
+        await post("closeAccount", s, input);
+        return { ok: true };
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 400) return { ok: false, reason: "wrong_password" };
+        if (error instanceof ApiError && error.status === 409) return { ok: false, reason: "last_owner", message: error.messages[0] };
         throw error;
       }
     },

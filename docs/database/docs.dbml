@@ -710,9 +710,12 @@ Table customer.customers {
   owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   user_id text [note: "Portal login of this person. Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. One live login per person (partial unique index in the Drizzle schema)."]
   portal_role text [note: "What the person may do for the company: owner (everything, manages members), approver (accepts quotations), finance (invoices, payments), viewer (read only)."]
-  portal_status text [note: "active | suspended | revoked. Revoking also sets deleted_at and a new invitation creates a new row."]
+  portal_status text [note: "active | suspended | revoked. Revoking frees user_id (the row, its history and documents stay) and resets the portal_language / portal_two_step / portal_push settings; a new invitation grants the login on the same row."]
   portal_invited_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null for an individual's own sign-up."]
   portal_last_login_at bigint
+  portal_language text [note: "Language the portal login chose (en | id); null = the browser's language until chosen. Portal settings column (port plan D3, ERP-0106)."]
+  portal_two_step boolean [not null, default: false, note: "Two-step sign-in: a correct password alone gives no session, a 6-digit code is emailed (10 minutes, 5 attempts). Port plan D3, ERP-0106."]
+  portal_push boolean [not null, default: false, note: "Push notices on/off for the portal login (stored only; nothing sends push yet). Port plan D3, ERP-0106."]
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
@@ -730,6 +733,7 @@ Table customer.customers {
     `status IN ('active', 'inactive')`
     `portal_role IS NULL OR portal_role IN ('owner', 'approver', 'finance', 'viewer')`
     `portal_status IS NULL OR portal_status IN ('active', 'suspended', 'revoked')`
+    `portal_language IS NULL OR portal_language IN ('en', 'id')`
     `company_id IS NOT NULL OR customer_type = 'individual'`
   }
 }

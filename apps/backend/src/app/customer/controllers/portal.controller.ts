@@ -4,17 +4,22 @@ import { requestBodyDoc } from '@http/openapi';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok } from '@http/response';
 import { resolveLanguage, translator } from '@providers/i18n/translator';
-import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
+import { PORTAL_ACCOUNT_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../constants/di';
 import { portalMemberInviteSchema, portalSignupSchema } from '../contracts/portal-account.contract';
 import {
 	portalChangePasswordSchema,
+	portalCloseAccountSchema,
+	portalDeviceParamSchema,
 	portalIdParamSchema,
+	portalLoginCodeSchema,
+	portalLoginResendSchema,
 	portalLoginSchema,
 	portalMessageSchema,
 	portalPasswordConfirmSchema,
 	portalPasswordResetSchema,
 	portalProductParamSchema,
 	portalResendSchema,
+	portalSettingsSchema,
 	portalTicketSchema,
 	portalVerifySchema,
 } from '../contracts/portal.contract';
@@ -22,9 +27,11 @@ import {
 	accountSettings,
 	companyMember,
 	deviceSummary,
+	portalSettings,
 	portalUser,
 	projectDetail,
 	projectSummary,
+	signedInDevice,
 	type TPresenter,
 	ticketDetail,
 	ticketSummary,
@@ -62,7 +69,10 @@ export class PortalAuthController {
 			.post(
 				'/login',
 				async (ctx) => {
-					const { context, session } = await auth.login(portalLoginSchema.parse(ctx.body), ctx.request.headers);
+					const result = await auth.login(portalLoginSchema.parse(ctx.body), ctx.request.headers);
+					// Two-step sign-in on: no session yet, the code went to the email (ERP-0106).
+					if ('twoStep' in result) return ok({ ok: false, twoStep: true, challenge: result.challenge, email: result.email });
+					const { context, session } = result;
 					const customer = await portal.customer(context);
 					ctx.set.headers['set-cookie'] = await auth.sessionCookie(session);
 					return ok({ ok: true, user: portalUser(context, customer), session: { expiresAt: session.expiresAt.toISOString() } });
@@ -70,8 +80,39 @@ export class PortalAuthController {
 				{
 					detail: {
 						summary: 'Sign in',
-						description: `Email + password sign-in for a login with the \`customer\` role; 401 wrong credentials or a staff login, 423 locked after 5 failures. ${SESSION_COOKIE_NOTE}`,
+						description: `Email + password sign-in for a login with the \`customer\` role; 401 wrong credentials or a staff login, 423 locked after 5 failures. With two-step sign-in on, answers \`{ ok: false, twoStep: true, challenge, email }\` (masked email), sets no cookie and emails a 6-digit code; \`/auth/login/verify\` finishes. ${SESSION_COOKIE_NOTE}`,
 						...requestBodyDoc(portalLoginSchema),
+					},
+				},
+			)
+			.post(
+				'/login/verify',
+				async (ctx) => {
+					const input = portalLoginCodeSchema.parse(ctx.body);
+					const { context, session } = await auth.verifyLoginCode(input.challenge, input.code, ctx.request.headers);
+					const customer = await portal.customer(context);
+					ctx.set.headers['set-cookie'] = await auth.sessionCookie(session);
+					return ok({ ok: true, user: portalUser(context, customer), session: { expiresAt: session.expiresAt.toISOString() } });
+				},
+				{
+					detail: {
+						summary: 'Finish a two-step sign-in',
+						description: `The emailed code of a two-step sign-in (ERP-0106); 400 wrong or expired (5 attempts, 10 minutes). ${SESSION_COOKIE_NOTE}`,
+						...requestBodyDoc(portalLoginCodeSchema),
+					},
+				},
+			)
+			.post(
+				'/login/resend',
+				async ({ body }) => {
+					await auth.resendLoginCode(portalLoginResendSchema.parse(body).challenge);
+					return noContent();
+				},
+				{
+					detail: {
+						summary: 'Resend the sign-in code',
+						description: 'A new code for a pending two-step sign-in (the old one stops working); same answer for an unknown challenge',
+						...requestBodyDoc(portalLoginResendSchema),
 					},
 				},
 			)
@@ -86,7 +127,7 @@ export class PortalAuthController {
 				'/verify-email',
 				async (ctx) => {
 					const input = portalVerifySchema.parse(ctx.body);
-					const { context, session } = await auth.verifySignup(input.email, input.code);
+					const { context, session } = await auth.verifySignup(input.email, input.code, ctx.request.headers);
 					const customer = await portal.customer(context);
 					ctx.set.headers['set-cookie'] = await auth.sessionCookie(session);
 					return ok({ user: portalUser(context, customer), session: { expiresAt: session.expiresAt.toISOString() } });
@@ -137,6 +178,7 @@ export class PortalController {
 	static plugin() {
 		const auth = container.resolve(PORTAL_AUTH_SERVICE_TOKEN);
 		const service = container.resolve(PORTAL_SERVICE_TOKEN);
+		const accounts = container.resolve(PORTAL_ACCOUNT_SERVICE_TOKEN);
 		// A malformed id is answered 404 like an unknown one: the portal reads 404 as "not found".
 		const id = (params: unknown) => {
 			const parsed = portalIdParamSchema.safeParse(params);
@@ -171,10 +213,80 @@ export class PortalController {
 			.get(
 				'/account',
 				async (ctx) => {
-					const [customer, members] = await Promise.all([service.customer(ctx.portal), service.members(ctx.portal)]);
-					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members));
+					const [customer, members, settings, devices] = await Promise.all([
+						service.customer(ctx.portal),
+						service.members(ctx.portal),
+						accounts.settings(ctx.portal),
+						auth.devices(ctx.portal),
+					]);
+					return ok(accountSettings(presenter(ctx), ctx.portal, customer, members, { settings, deviceCount: devices.length }));
 				},
-				{ portal: true, detail: { summary: 'Account', description: 'Account, company and the members (logins) of the customer' } },
+				{
+					portal: true,
+					detail: { summary: 'Account', description: 'Account, company, the members (logins) of the customer and the settings and device count of this login' },
+				},
+			)
+			.patch(
+				'/account/settings',
+				async (ctx) => {
+					const input = portalSettingsSchema.parse(ctx.body);
+					const settings = await accounts.updateSettings(ctx.portal, {
+						push: input.notifications?.push,
+						twoStep: input.security?.twoStep,
+						language: input.preferences?.language,
+					});
+					return ok(portalSettings(presenter(ctx), settings));
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Update settings',
+						description: 'Push notices, two-step sign-in by emailed code and language of this login (ERP-0106); only the given settings change',
+						...requestBodyDoc(portalSettingsSchema),
+					},
+				},
+			)
+			.get('/account/devices', async ({ portal }) => ok((await auth.devices(portal)).map(signedInDevice)), {
+				portal: true,
+				detail: {
+					summary: 'Signed-in devices',
+					description: 'Devices (sessions) of this login with browser, address and last use; `current` marks this one; session tokens are never returned (ERP-0106)',
+				},
+			})
+			.delete(
+				'/account/devices/:id',
+				async ({ portal, params }) => {
+					const parsed = portalDeviceParamSchema.safeParse(params);
+					if (!parsed.success) throw new PortalNotFoundError();
+					await auth.revokeDevice(portal, parsed.data.id);
+					return noContent();
+				},
+				{ portal: true, detail: { summary: 'Sign a device out', description: 'Ends one session of this login by its session id; 404 when it is gone or belongs to another login (ERP-0106)' } },
+			)
+			.post(
+				'/account/devices/sign-out-others',
+				async ({ portal }) => {
+					await auth.revokeOtherDevices(portal);
+					return noContent();
+				},
+				{ portal: true, detail: { summary: 'Sign out other devices', description: 'Ends every session of this login except this one (ERP-0106)' } },
+			)
+			.post(
+				'/account/close',
+				async ({ portal, body, set }) => {
+					await auth.closeAccount(portal, portalCloseAccountSchema.parse(body).password);
+					set.headers['set-cookie'] = await auth.clearedSessionCookie();
+					return noContent();
+				},
+				{
+					portal: true,
+					detail: {
+						summary: 'Delete my login',
+						description:
+							'Deletes this login after the password (ERP-0106): it is revoked, every session ends and the cookie is cleared; the customer, company, orders and documents stay. 400 wrong password; 409 the only owner of a company account.',
+						...requestBodyDoc(portalCloseAccountSchema),
+					},
+				},
 			)
 			.post(
 				'/account/members',

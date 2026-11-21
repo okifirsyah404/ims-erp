@@ -10,15 +10,37 @@ import {
 	PORTAL_CUSTOMER_ROLE,
 	PORTAL_LOCK_SECONDS,
 	PORTAL_MAX_FAILED_LOGINS,
+	type TPortalDeviceSession,
 	type TPortalLoginRequest,
 	type TPortalSession,
 } from '../contracts/portal.contract';
-import { PortalInvalidCredentialsError, PortalInvalidTokenError, PortalLockedError, PortalWrongPasswordError } from '../errors/portal.errors';
+import {
+	PortalDeviceNotFoundError,
+	PortalInvalidCredentialsError,
+	PortalInvalidTokenError,
+	PortalLockedError,
+	PortalWrongPasswordError,
+} from '../errors/portal.errors';
 
 type TFailedLogins = { count: number; lockedUntil: number | null };
 
 /** A signed-in portal caller and the Better Auth session to hand to the portal's server. */
 export type TPortalSignIn = { context: PortalContext; session: TPortalSession };
+
+/** Password accepted, an emailed code still needed (ERP-0106); no session exists yet. */
+export type TPortalTwoStep = { twoStep: true; challenge: string; email: string };
+
+/** A signed-in device of the login; `current` is the one making the request. The token is never exposed. */
+export type TPortalDevice = Omit<TPortalDeviceSession, 'token'> & { current: boolean };
+
+/** `dewi@example.com` → `d***@example.com`: enough to recognise, not to harvest. */
+export function maskEmail(email: string): string {
+	const [name = '', domain = ''] = email.split('@');
+	return `${name.slice(0, 1)}***@${domain}`;
+}
+
+/** The session token without the cookie signature (`<token>.<hmac>`), as Better Auth lists it. */
+const rawToken = (cookieToken: string) => cookieToken.split('.')[0]!;
 
 /**
  * Customer-portal sign-in, sessions and passwords (ERP-0022; ERP-0094).
@@ -33,6 +55,8 @@ export type TPortalSignIn = { context: PortalContext; session: TPortalSession };
  *   sign-ins are counted here per email (Redis): after
  *   {@link PORTAL_MAX_FAILED_LOGINS} the email is locked for
  *   {@link PORTAL_LOCK_SECONDS} (423).
+ * - Two-step sign-in (ERP-0106): with `portal_two_step` on, a correct
+ *   password yields no session; an emailed code finishes the sign-in.
  * - Implements the portal guard's {@link IPortalSessionResolver}.
  */
 @injectable()
@@ -42,12 +66,27 @@ export class PortalAuthService implements IPortalSessionResolver {
 		@inject(PORTAL_ACCOUNT_SERVICE_TOKEN)
 		private readonly accounts: Pick<
 			PortalAccountService,
-			'resolveCustomer' | 'recordLogin' | 'requestPasswordReset' | 'startSignup' | 'verifySignup' | 'resendSignupCode'
+			| 'resolveCustomer'
+			| 'recordLogin'
+			| 'requestPasswordReset'
+			| 'startSignup'
+			| 'verifySignup'
+			| 'resendSignupCode'
+			| 'settings'
+			| 'startLoginCode'
+			| 'resendLoginCode'
+			| 'verifyLoginCode'
+			| 'closeOwnLogin'
 		>,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
 	) {}
 
-	async login(body: TPortalLoginRequest, headers: Headers): Promise<TPortalSignIn> {
+	/**
+	 * Email + password. With two-step sign-in on (ERP-0106) the password
+	 * session is dropped at once and a code goes to the email;
+	 * {@link verifyLoginCode} then signs in.
+	 */
+	async login(body: TPortalLoginRequest, headers: Headers): Promise<TPortalSignIn | TPortalTwoStep> {
 		const key = `portal:login-failures:${body.email}`;
 		const failures = (await this.cache.get<TFailedLogins>(key)) ?? { count: 0, lockedUntil: null };
 		if (failures.lockedUntil && failures.lockedUntil > Date.now()) throw new PortalLockedError();
@@ -68,8 +107,66 @@ export class PortalAuthService implements IPortalSessionResolver {
 		}
 
 		await this.cache.del(key);
+		if ((await this.accounts.settings(identity)).twoStep) {
+			await this.sessions.signOut(session.token);
+			const challenge = await this.accounts.startLoginCode(identity);
+			return { twoStep: true, challenge, email: maskEmail(identity.user.email) };
+		}
 		await this.accounts.recordLogin(identity.customerId);
 		return { context: { ...identity, sessionToken: session.token }, session };
+	}
+
+	/**
+	 * The second step: the right code signs in on this device.
+	 * @throws {PortalInvalidCodeError} wrong, expired or used up
+	 */
+	async verifyLoginCode(challenge: string, code: string, headers: Headers): Promise<TPortalSignIn> {
+		const userId = await this.accounts.verifyLoginCode(challenge, code);
+		const identity = await this.accounts.resolveCustomer(userId);
+		if (!identity) throw new PortalInvalidCredentialsError();
+		const session = await this.sessions.createSession(userId, headers);
+		if (!session || !isCustomer(session)) {
+			if (session) await this.sessions.signOut(session.token);
+			throw new PortalInvalidCredentialsError();
+		}
+		await this.accounts.recordLogin(identity.customerId);
+		return { context: { ...identity, sessionToken: session.token }, session };
+	}
+
+	resendLoginCode(challenge: string): Promise<void> {
+		return this.accounts.resendLoginCode(challenge);
+	}
+
+	/* Devices and deleting the login (ERP-0106) ---------------------------- */
+
+	async devices(portal: PortalContext): Promise<TPortalDevice[]> {
+		const current = rawToken(portal.sessionToken);
+		const sessions = await this.sessions.listSessions(portal.sessionToken);
+		return sessions
+			.map(({ token, ...device }) => ({ ...device, current: token === current }))
+			.sort((a, b) => Number(b.current) - Number(a.current) || b.updatedAt.getTime() - a.updatedAt.getTime());
+	}
+
+	/** Signs one device out; the device is addressed by its session id, never its token. */
+	async revokeDevice(portal: PortalContext, id: string): Promise<void> {
+		const target = (await this.sessions.listSessions(portal.sessionToken)).find((session) => session.id === id);
+		if (!target) throw new PortalDeviceNotFoundError();
+		await this.sessions.revokeSession(portal.sessionToken, target.token);
+	}
+
+	revokeOtherDevices(portal: PortalContext): Promise<void> {
+		return this.sessions.revokeOtherSessions(portal.sessionToken);
+	}
+
+	/**
+	 * Deletes the caller's own login after the password: the login goes, the
+	 * customer's data stays.
+	 * @throws {PortalWrongPasswordError}
+	 * @throws {PortalLastOwnerError} the only owner of a company account
+	 */
+	async closeAccount(portal: PortalContext, password: string): Promise<void> {
+		if (!(await this.sessions.verifyPassword(portal.sessionToken, password))) throw new PortalWrongPasswordError();
+		await this.accounts.closeOwnLogin(portal);
 	}
 
 	/** Owner decision D1: an individual signs up; a code goes to the email. */
@@ -82,9 +179,10 @@ export class PortalAuthService implements IPortalSessionResolver {
 	}
 
 	/** The right code creates the customer and an owner login and signs the person in. */
-	async verifySignup(email: string, code: string): Promise<TPortalSignIn> {
+	async verifySignup(email: string, code: string, headers?: Headers): Promise<TPortalSignIn> {
 		const identity = await this.accounts.verifySignup(email, code);
-		const session = await this.sessions.createSession(identity.userId);
+		// The request headers name the device in the devices list (ERP-0106).
+		const session = await this.sessions.createSession(identity.userId, headers);
 		if (!session || !isCustomer(session)) throw new PortalInvalidTokenError();
 		await this.accounts.recordLogin(identity.customerId);
 		return { context: { ...identity, sessionToken: session.token }, session };

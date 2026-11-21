@@ -2,7 +2,6 @@
 import { actions, isInputError } from "astro:actions";
 import Mail from "@lucide/astro/icons/mail";
 import Lock from "@lucide/astro/icons/lock";
-import ScanFace from "@lucide/astro/icons/scan-face";
 import CircleAlert from "@lucide/astro/icons/circle-exclamation-point";
 import CircleHelp from "@lucide/astro/icons/circle-question-mark";
 import AuthLayout from "../layouts/AuthLayout.astro";
@@ -22,6 +21,11 @@ const next = safeNext(Astro.url.searchParams.get("next"));
 const result = Astro.getActionResult(actions.auth.login);
 // Keep `next` on the POST URL (the bare action URL `?_action=…` would drop it).
 const loginAction = next !== "/" ? `/login?next=${encodeURIComponent(next)}&${String(actions.auth.login).replace(/^\?/, "")}` : actions.auth.login;
+// Two-step sign-in (ERP-0106): the code page finishes it and returns to `next`.
+if (result?.data?.twoStep) {
+  if (next !== "/") Astro.session?.set("returnTo", next);
+  return Astro.redirect("/login/code", 303);
+}
 if (result && !result.error) return Astro.redirect(next, 303);
 
 const accountType = Astro.url.searchParams.get("type") === "individual" ? "individual" : "business";
@@ -35,7 +39,9 @@ const flash =
   storedFlash ??
   (Astro.url.searchParams.get("reason") === "expired" && !result
     ? { tone: "info" as const, title: "Your session has ended", description: "Please sign in again to continue." }
-    : undefined);
+    : Astro.url.searchParams.get("reason") === "closed" && !result
+      ? { tone: "success" as const, title: "Your login was deleted", description: "Your orders and documents stay with your company. Contact us to get access again." }
+      : undefined);
 ---
 
 <AuthLayout title="Sign in" brand={authBrands.login}>
@@ -134,15 +140,6 @@ const flash =
       <span class="h-px flex-1 bg-border"></span>
     </div>
     <div class="flex gap-3">
-      <button
-        type="button"
-        disabled
-        title="Face ID sign-in is coming soon"
-        class="flex h-[54px] flex-1 items-center justify-center gap-2 rounded-control bg-white text-[16px] font-semibold text-fg ring-1 ring-border ring-inset disabled:cursor-not-allowed"
-      >
-        <ScanFace size={18} aria-hidden="true" />
-        Face ID
-      </button>
       <button
         type="button"
         disabled

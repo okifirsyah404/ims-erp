@@ -1,5 +1,11 @@
 import { dispatchMail } from '@providers/mailer/mailer.queue';
-import { renderPortalInvitationEmail, renderPortalSignupCodeEmail, renderResetPasswordEmail } from '@providers/mailer/mailer.templates';
+import {
+	renderPortalInvitationEmail,
+	renderPortalLoginCodeEmail,
+	renderPortalSignupCodeEmail,
+	renderResetPasswordEmail,
+} from '@providers/mailer/mailer.templates';
+import type { LanguageCode } from '@ims-erp/locales';
 import type { IPortalMailer } from '../contracts/portal-account.contract';
 
 /**
@@ -19,5 +25,12 @@ export class QueuePortalMailer implements IPortalMailer {
 
 	async sendSignupCode(input: { to: string; name: string; code: string }): Promise<void> {
 		await dispatchMail({ to: input.to, ...(await renderPortalSignupCodeEmail({ name: input.name, code: input.code })) });
+	}
+
+	async sendLoginCode(input: { to: string; name: string; code: string; language?: LanguageCode }): Promise<void> {
+		await dispatchMail({
+			to: input.to,
+			...(await renderPortalLoginCodeEmail({ name: input.name, code: input.code, ...(input.language ? { language: input.language } : {}) })),
+		});
 	}
 }

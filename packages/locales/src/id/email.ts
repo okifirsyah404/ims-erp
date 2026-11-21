@@ -43,6 +43,13 @@ const email = {
 	'portalSignupCode.body': 'Gunakan kode ini untuk menyelesaikan pembuatan akun portal pelanggan {{app}} Anda.',
 	'portalSignupCode.expiry': 'Kode berlaku 10 menit. Jika Anda tidak mendaftar, abaikan email ini.',
 
+	// Kode masuk dua langkah portal pelanggan (ERP-0106): dikirim setelah
+	// kata sandi benar bila masuk dua langkah aktif.
+	'portalLoginCode.subject': '{{code}} adalah kode masuk {{app}} Anda',
+	'portalLoginCode.greeting': 'Hai {{name}},',
+	'portalLoginCode.body': 'Gunakan kode ini untuk menyelesaikan masuk ke akun portal pelanggan {{app}} Anda.',
+	'portalLoginCode.expiry': 'Kode berlaku 10 menit. Jika Anda tidak mencoba masuk, segera ganti kata sandi Anda.',
+
 	// Undangan organisasi (invitation.type = 'org'): undangan bergabung ke
 	// organisasi tertentu dengan peran.
 	'organizationInvitation.subject':

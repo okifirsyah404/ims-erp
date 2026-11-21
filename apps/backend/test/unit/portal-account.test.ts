@@ -15,6 +15,10 @@
  * role, the guard requires it, and the session travels as Better Auth's
  * session cookie (`Set-Cookie` on sign-in, cleared on logout; never a bearer
  * token). New passwords are 12-128 characters.
+ *
+ * ERP-0106 (port of branch ERP-0081): the login's settings on
+ * `customer.customers` (port plan D3), two-step sign-in by an emailed code,
+ * signed-in devices addressed by session id, and deleting one's own login.
  */
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
@@ -24,10 +28,11 @@ import {
 	type IPortalSessionGateway,
 	portalChangePasswordSchema,
 	portalPasswordConfirmSchema,
+	type TPortalDeviceSession,
 	type TPortalSession,
 } from '../../src/app/customer/contracts/portal.contract';
 import { portalSignupSchema, type TPortalCustomerIdentity } from '../../src/app/customer/contracts/portal-account.contract';
-import { PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
+import { PORTAL_ACCOUNT_SERVICE_TOKEN, PORTAL_AUTH_SERVICE_TOKEN, PORTAL_SERVICE_TOKEN } from '../../src/app/customer/constants/di';
 import type { ICompanyRepository, ICustomerPersonRepository } from '../../src/app/customer/contracts/customer.repository.interface';
 import {
 	PortalAccountExistsError,
@@ -37,14 +42,22 @@ import {
 	PortalCustomerUnavailableError,
 	PortalEmailTakenError,
 	PortalInvalidCodeError,
+	PortalLastOwnerError,
 	PortalNoCompanyError,
 	PortalNotConfiguredError,
 	PortalOwnerOnlyError,
 	PortalRemoveSelfError,
 } from '../../src/app/customer/errors/portal-account.errors';
-import { PortalAttachmentsUnsupportedError, PortalInvalidCredentialsError, PortalInvalidTokenError, PortalLockedError } from '../../src/app/customer/errors/portal.errors';
-import { PortalAccountService } from '../../src/app/customer/services/portal-account.service';
-import { PortalAuthService } from '../../src/app/customer/services/portal-auth.service';
+import {
+	PortalAttachmentsUnsupportedError,
+	PortalDeviceNotFoundError,
+	PortalInvalidCredentialsError,
+	PortalInvalidTokenError,
+	PortalLockedError,
+	PortalWrongPasswordError,
+} from '../../src/app/customer/errors/portal.errors';
+import { PORTAL_LOGIN_CODE_TTL_SECONDS, PortalAccountService } from '../../src/app/customer/services/portal-account.service';
+import { maskEmail, PortalAuthService, type TPortalSignIn, type TPortalTwoStep } from '../../src/app/customer/services/portal-auth.service';
 import { formPayload } from '../../src/app/customer/utils/form-payload';
 import { PORTAL_SESSION_RESOLVER_TOKEN, type PortalContext } from '../../src/authorization/portal-auth';
 
@@ -61,9 +74,10 @@ const INACTIVE_COMPANY = '0190a1b2-0000-7000-8000-0000000000c3';
 let people: TCustomerSelect[];
 let companies: TCustomerCompanySelect[];
 let users: { id: string; name: string; email: string; emailVerified: boolean; member: boolean; password: string | null; roles?: string[] }[];
-let mails: { kind: string; to: string; url?: string; code?: string }[];
+let mails: { kind: string; to: string; url?: string; code?: string; language?: string }[];
 let revokedSessions: string[];
 let cache: Map<string, unknown>;
+let cacheTtls: Map<string, number | undefined>;
 let accounts: PortalAccountService;
 
 const company = (id: string, name: string, status = 'active') => ({ id, name, status, taxId: null }) as TCustomerCompanySelect;
@@ -88,6 +102,9 @@ function personRow(data: Partial<TCustomerSelect>): TCustomerSelect {
 		portalStatus: null,
 		portalInvitedBy: null,
 		portalLastLoginAt: null,
+		portalLanguage: null,
+		portalTwoStep: false,
+		portalPush: false,
 		notes: null,
 		createdBy: null,
 		createdAt: now,
@@ -97,7 +114,10 @@ function personRow(data: Partial<TCustomerSelect>): TCustomerSelect {
 	} as TCustomerSelect;
 }
 
-type TPeopleFake = Pick<ICustomerPersonRepository, 'findById' | 'findByUserId' | 'create' | 'listPortalAccounts' | 'grantPortalAccess' | 'revokePortalAccess' | 'touchPortalLogin'>;
+type TPeopleFake = Pick<
+	ICustomerPersonRepository,
+	'findById' | 'findByUserId' | 'create' | 'update' | 'listPortalAccounts' | 'grantPortalAccess' | 'revokePortalAccess' | 'touchPortalLogin'
+>;
 
 function fakePeople(): ICustomerPersonRepository {
 	const live = (row: TCustomerSelect) => !row.deletedAt;
@@ -108,6 +128,10 @@ function fakePeople(): ICustomerPersonRepository {
 			const row = personRow(data as Partial<TCustomerSelect>);
 			people.push(row);
 			return row;
+		},
+		async update(id, patch) {
+			const row = people.find((item) => live(item) && item.id === id);
+			return row ? Object.assign(row, patch) : null;
 		},
 		async listPortalAccounts(scope) {
 			return people.filter(
@@ -127,7 +151,7 @@ function fakePeople(): ICustomerPersonRepository {
 			const row = people.find((item) => live(item) && item.id === id && item.userId && item.portalStatus !== 'revoked');
 			if (!row) return null;
 			const before = { ...row };
-			Object.assign(row, { portalStatus: 'revoked', userId: null });
+			Object.assign(row, { portalStatus: 'revoked', userId: null, portalLanguage: null, portalTwoStep: false, portalPush: false });
 			return before;
 		},
 		async touchPortalLogin(id) {
@@ -174,8 +198,9 @@ function fakeUsers() {
 
 const fakeCache = () => ({
 	get: async <T>(key: string) => cache.get(key) as T | undefined,
-	set: async (key: string, value: unknown) => {
+	set: async (key: string, value: unknown, ttl?: number) => {
 		cache.set(key, value);
+		cacheTtls.set(key, ttl);
 	},
 	del: async (...keys: string[]) => {
 		for (const key of keys) cache.delete(key);
@@ -189,6 +214,7 @@ beforeEach(() => {
 	mails = [];
 	revokedSessions = [];
 	cache = new Map();
+	cacheTtls = new Map();
 	accounts = new PortalAccountService(
 		fakePeople(),
 		fakeCompanies() as ICompanyRepository,
@@ -203,6 +229,9 @@ beforeEach(() => {
 			sendSignupCode: async (input) => {
 				mails.push({ kind: 'code', to: input.to, code: input.code });
 			},
+			sendLoginCode: async (input) => {
+				mails.push({ kind: 'login', to: input.to, code: input.code, ...(input.language ? { language: input.language } : {}) });
+			},
 		},
 		fakeCache(),
 	);
@@ -212,6 +241,11 @@ beforeEach(() => {
 const invite = (body: { companyId?: string; customerId?: string; name: string; email: string; role: 'owner' | 'approver' | 'finance' | 'viewer' }) =>
 	accounts.invite('staff-1', body);
 const asCaller = (identity: TPortalCustomerIdentity | null) => identity!;
+/** A sign-in that must have yielded a session (two-step off). */
+function signedIn(result: TPortalSignIn | TPortalTwoStep): TPortalSignIn {
+	if ('twoStep' in result) throw new Error('expected a session, got a two-step challenge');
+	return result;
+}
 
 describe('portal accounts (staff invitations, D2)', () => {
 	test('an invitation creates a contact person with an owner login and emails a link to the portal reset page', async () => {
@@ -347,6 +381,10 @@ describe('portal sign-up of individuals (D1)', () => {
 	});
 });
 
+/** Better Auth sessions of the fake gateway: what `listSessions` sees. */
+let liveSessions: (TPortalDeviceSession & { userId: string })[];
+let createdFrom: (Headers | undefined)[];
+
 describe('portal sign-in', () => {
 	let signedOut: string[];
 	let auth: PortalAuthService;
@@ -356,6 +394,23 @@ describe('portal sign-in', () => {
 		await invite({ companyId: COMPANY_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		users.find((user) => user.email === 'budi@alfa.co.id')!.password = FAKE_PASSWORD_2;
 		signedOut = [];
+		liveSessions = [];
+		createdFrom = [];
+		const track = (userId: string, from?: Headers) => {
+			const now = new Date();
+			if (!liveSessions.some((item) => item.token === `session-${userId}`)) {
+				liveSessions.push({
+					id: `sid-${liveSessions.length + 1}`,
+					token: `session-${userId}`,
+					userId,
+					userAgent: from?.get('user-agent') ?? null,
+					ipAddress: null,
+					createdAt: now,
+					updatedAt: now,
+				});
+			}
+		};
+		const userOf = (token: string) => token.split('.')[0]!.slice('session-'.length);
 		const session = (userId: string): TPortalSession => ({
 			token: `session-${userId}`,
 			userId,
@@ -366,24 +421,39 @@ describe('portal sign-in', () => {
 			async signIn(email, password) {
 				const user = users.find((item) => item.email === email);
 				if (!user || user.password !== password) return null;
+				track(user.id);
 				return session(user.id);
 			},
-			createSession: async (userId) => session(userId),
+			createSession: async (userId, from) => {
+				createdFrom.push(from);
+				track(userId, from);
+				return session(userId);
+			},
 			getSession: async (token) => (token.startsWith('session-') ? session(token.slice(8)) : null),
 			tokenFromHeaders: async (headers) => /(?:^|;\s*)sid=([^;]+)/.exec(headers.get('cookie') ?? '')?.[1] ?? null,
 			sessionCookie: async (value) => `sid=${value.token}; Path=/; HttpOnly`,
 			clearedSessionCookie: async () => 'sid=; Path=/; Max-Age=0',
 			signOut: async (token) => {
 				signedOut.push(token);
+				liveSessions = liveSessions.filter((item) => item.token !== token);
 			},
 			changePassword: async () => true,
 			resetPassword: async () => true,
+			verifyPassword: async (token, password) => users.find((user) => user.id === userOf(token))?.password === password,
+			listSessions: async (token) => liveSessions.filter((item) => item.userId === userOf(token)).map(({ userId: _userId, ...device }) => device),
+			revokeSession: async (token, sessionToken) => {
+				liveSessions = liveSessions.filter((item) => !(item.token === sessionToken && item.userId === userOf(token)));
+			},
+			revokeOtherSessions: async (token) => {
+				const raw = token.split('.')[0]!;
+				liveSessions = liveSessions.filter((item) => item.userId !== userOf(token) || item.token === raw);
+			},
 		};
 		auth = new PortalAuthService(sessions, accounts, fakeCache());
 	});
 
 	test('the person signs in and the session cookie resolves to their company and role', async () => {
-		const { context, session } = await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers());
+		const { context, session } = signedIn(await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers()));
 		expect(context.companyId).toBe(COMPANY_A);
 		expect(context.role).toBe('owner');
 		expect(session.roles).toContain('customer');
@@ -445,13 +515,14 @@ describe('portal sign-in', () => {
 	});
 
 	test('a revoked login no longer resolves', async () => {
-		const { context } = await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers());
+		const { context } = signedIn(await auth.login({ email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, new Headers()));
 		await accounts.revoke(context.customerId);
 		expect(await auth.resolve(new Headers({ cookie: `sid=${context.sessionToken}` }))).toBeNull();
 	});
 
 	test('HTTP: sign-in answers Set-Cookie and no token in the body; logout clears the cookie; bearer is refused', async () => {
 		container.register(PORTAL_AUTH_SERVICE_TOKEN, { useValue: auth });
+		container.register(PORTAL_ACCOUNT_SERVICE_TOKEN, { useValue: accounts });
 		container.register(PORTAL_SERVICE_TOKEN, { useValue: { customer: async () => null } as never });
 		container.register(PORTAL_SESSION_RESOLVER_TOKEN, { useValue: auth });
 		const { PortalAuthController, PortalController } = await import('../../src/app/customer/controllers/portal.controller');
@@ -482,6 +553,225 @@ describe('portal sign-in', () => {
 		expect(logout.headers.get('set-cookie')).toBe('sid=; Path=/; Max-Age=0');
 		expect(signedOut).toEqual([token]);
 		// The first import of the controller graph (Better Auth, mailer, i18n) is slow on a cold run.
+	}, 60_000);
+
+	/* ERP-0106: settings, two-step sign-in, devices, deleting one's own login */
+
+	const budiOf = () => people.find((row) => row.email === 'budi@alfa.co.id')!;
+	const budiUser = () => users.find((user) => user.email === 'budi@alfa.co.id')!;
+	const loginBudi = (password = FAKE_PASSWORD_2, headers = new Headers()) => auth.login({ email: 'budi@alfa.co.id', password }, headers);
+	const twoStepOn = async () => {
+		const caller = asCaller(await accounts.resolveCustomer(budiUser().id));
+		await accounts.updateSettings(caller, { twoStep: true });
+	};
+	const last = <T>(items: T[]) => items[items.length - 1];
+	const lastCode = () => last(mails.filter((mail) => mail.kind === 'login'))!.code!;
+
+	test('settings default off/null, change one at a time and are reset when the login is revoked', async () => {
+		const caller = asCaller(await accounts.resolveCustomer(budiUser().id));
+		expect(await accounts.settings(caller)).toEqual({ language: null, twoStep: false, push: false });
+		expect(await accounts.updateSettings(caller, { push: true })).toEqual({ language: null, twoStep: false, push: true });
+		expect(await accounts.updateSettings(caller, { language: 'id', twoStep: true })).toEqual({ language: 'id', twoStep: true, push: true });
+		expect(budiOf()).toMatchObject({ portalLanguage: 'id', portalTwoStep: true, portalPush: true });
+		await accounts.revoke(caller.customerId);
+		expect(budiOf()).toMatchObject({ portalLanguage: null, portalTwoStep: false, portalPush: false });
+	});
+
+	test('two-step on: the right password gives no session, the password session is dropped and a code is emailed', async () => {
+		await twoStepOn();
+		mails = [];
+		const result = await loginBudi();
+		expect(result).toEqual({ twoStep: true, challenge: expect.any(String), email: 'b***@alfa.co.id' });
+		expect('context' in result).toBe(false);
+		expect(signedOut).toEqual([`session-${budiUser().id}`]);
+		expect(liveSessions).toHaveLength(0);
+		expect(mails).toEqual([{ kind: 'login', to: 'budi@alfa.co.id', code: expect.stringMatching(/^\d{6}$/) }]);
+		expect(budiOf().portalLastLoginAt).toBeNull();
+		const key = [...cache.keys()].find((item) => item.startsWith('portal:login-code:'))!;
+		expect(cacheTtls.get(key)).toBe(PORTAL_LOGIN_CODE_TTL_SECONDS);
+		expect(JSON.stringify(cache.get(key))).not.toContain(lastCode());
+		expect(maskEmail('dewi@mail.id')).toBe('d***@mail.id');
+	});
+
+	test('two-step: the code goes out in the language the login chose', async () => {
+		const caller = asCaller(await accounts.resolveCustomer(budiUser().id));
+		await accounts.updateSettings(caller, { twoStep: true, language: 'id' });
+		await loginBudi();
+		expect(last(mails.filter((mail) => mail.kind === 'login'))!.language).toBe('id');
+	});
+
+	test('two-step: the right code signs in on this device, once', async () => {
+		await twoStepOn();
+		const { challenge } = (await loginBudi()) as TPortalTwoStep;
+		const device = new Headers({ 'user-agent': 'Firefox/1' });
+		const { context, session } = await auth.verifyLoginCode(challenge, lastCode(), device);
+		expect(context.customerId).toBe(budiOf().id);
+		expect(session.roles).toContain('customer');
+		expect(last(createdFrom)?.get('user-agent')).toBe('Firefox/1');
+		expect(budiOf().portalLastLoginAt).not.toBeNull();
+		expect((await auth.resolve(new Headers({ cookie: `sid=${session.token}` })))?.customerId).toBe(budiOf().id);
+		await expect(auth.verifyLoginCode(challenge, lastCode(), device)).rejects.toBeInstanceOf(PortalInvalidCodeError);
+	});
+
+	test('two-step: wrong codes count; the fifth ends the challenge, even for the right code', async () => {
+		await twoStepOn();
+		const { challenge } = (await loginBudi()) as TPortalTwoStep;
+		const right = lastCode();
+		const wrong = right === '000000' ? '111111' : '000000';
+		for (let attempt = 1; attempt < 5; attempt += 1) {
+			await expect(auth.verifyLoginCode(challenge, wrong, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
+			expect((cache.get(`portal:login-code:${challenge}`) as { attempts: number }).attempts).toBe(attempt);
+		}
+		await expect(auth.verifyLoginCode(challenge, wrong, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
+		await expect(auth.verifyLoginCode(challenge, right, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
+		expect(liveSessions).toHaveLength(0);
+	});
+
+	test('two-step: an expired code (gone from Redis) fails; a resend gives a new working code', async () => {
+		await twoStepOn();
+		const { challenge } = (await loginBudi()) as TPortalTwoStep;
+		const first = lastCode();
+		await auth.resendLoginCode(challenge);
+		const second = lastCode();
+		if (first !== second) await expect(auth.verifyLoginCode(challenge, first, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
+		cache.delete(`portal:login-code:${challenge}`);
+		await expect(auth.verifyLoginCode(challenge, second, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
+		await auth.resendLoginCode(challenge);
+		expect(mails.filter((mail) => mail.kind === 'login')).toHaveLength(2);
+	});
+
+	test('two-step: wrong passwords still lock the email', async () => {
+		await twoStepOn();
+		for (let attempt = 1; attempt < 5; attempt += 1) {
+			await expect(loginBudi(FAKE_PASSWORD_3)).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
+		}
+		await expect(loginBudi(FAKE_PASSWORD_3)).rejects.toBeInstanceOf(PortalLockedError);
+		await expect(loginBudi()).rejects.toBeInstanceOf(PortalLockedError);
+		expect(mails.filter((mail) => mail.kind === 'login')).toHaveLength(0);
+	});
+
+	test('devices: listed without tokens, the current one first; sign out one by id or all others', async () => {
+		const { context } = signedIn(await loginBudi());
+		const userId = budiUser().id;
+		const old = new Date(Date.now() - 86_400_000);
+		liveSessions.push(
+			{ id: 'sid-phone', token: 'tok-phone', userId, userAgent: 'iPhone', ipAddress: '10.0.0.8', createdAt: old, updatedAt: old },
+			{ id: 'sid-tab', token: 'tok-tab', userId, userAgent: 'iPad', ipAddress: null, createdAt: old, updatedAt: new Date(Date.now() - 1000) },
+			{ id: 'sid-other', token: 'tok-other', userId: 'someone-else', userAgent: null, ipAddress: null, createdAt: old, updatedAt: old },
+		);
+		const signedCookie = { ...context, sessionToken: `${context.sessionToken}.signature` };
+		const devices = await auth.devices(signedCookie);
+		expect(devices.map((device) => [device.id, device.current])).toEqual([
+			['sid-1', true],
+			['sid-tab', false],
+			['sid-phone', false],
+		]);
+		expect(JSON.stringify(devices)).not.toContain('tok-');
+		expect(JSON.stringify(devices)).not.toContain('session-');
+		await expect(auth.revokeDevice(signedCookie, 'sid-other')).rejects.toBeInstanceOf(PortalDeviceNotFoundError);
+		await expect(auth.revokeDevice(signedCookie, 'nope')).rejects.toBeInstanceOf(PortalDeviceNotFoundError);
+		await auth.revokeDevice(signedCookie, 'sid-phone');
+		expect((await auth.devices(signedCookie)).map((device) => device.id)).toEqual(['sid-1', 'sid-tab']);
+		await auth.revokeOtherDevices(signedCookie);
+		expect((await auth.devices(signedCookie)).map((device) => device.id)).toEqual(['sid-1']);
+		expect(liveSessions.map((item) => item.id)).toContain('sid-other');
+	});
+
+	test('delete own login: the password is required; the login is revoked, sessions end, the person stays', async () => {
+		const sari = await invite({ companyId: COMPANY_A, name: 'Sari', email: 'sari@alfa.co.id', role: 'finance' });
+		users.find((user) => user.id === sari.user.id)!.password = FAKE_PASSWORD_1;
+		const { context } = signedIn(await auth.login({ email: 'sari@alfa.co.id', password: FAKE_PASSWORD_1 }, new Headers()));
+		await expect(auth.closeAccount(context, FAKE_PASSWORD_3)).rejects.toBeInstanceOf(PortalWrongPasswordError);
+		expect(revokedSessions).toEqual([]);
+		await auth.closeAccount(context, FAKE_PASSWORD_1);
+		expect(revokedSessions).toEqual([sari.user.id]);
+		const row = people.find((item) => item.id === sari.id)!;
+		expect(row).toMatchObject({ userId: null, portalStatus: 'revoked', deletedAt: null, name: 'Sari', companyId: COMPANY_A });
+		expect(await auth.resolve(new Headers({ cookie: `sid=${context.sessionToken}` }))).toBeNull();
+	});
+
+	test('delete own login: the only active owner of a company is refused; with a second owner it works', async () => {
+		const { context } = signedIn(await loginBudi());
+		await expect(auth.closeAccount(context, FAKE_PASSWORD_2)).rejects.toBeInstanceOf(PortalLastOwnerError);
+		expect(budiOf()).toMatchObject({ portalStatus: 'active' });
+		const suspended = await invite({ companyId: COMPANY_A, name: 'Wati', email: 'wati@alfa.co.id', role: 'owner' });
+		people.find((row) => row.id === suspended.id)!.portalStatus = 'suspended';
+		await expect(auth.closeAccount(context, FAKE_PASSWORD_2)).rejects.toBeInstanceOf(PortalLastOwnerError);
+		await invite({ companyId: COMPANY_A, name: 'Joko', email: 'joko@alfa.co.id', role: 'owner' });
+		await auth.closeAccount(context, FAKE_PASSWORD_2);
+		expect(budiOf()).toMatchObject({ portalStatus: 'revoked', userId: null });
+	});
+
+	test('delete own login: an individual customer (their own account) may', async () => {
+		await accounts.startSignup({ accountType: 'individual', name: 'Dewi', email: 'dewi@mail.id', phone: null, password: FAKE_PASSWORD_1 });
+		const { context } = await auth.verifySignup('dewi@mail.id', mails.find((mail) => mail.kind === 'code')!.code!);
+		await auth.closeAccount(context, FAKE_PASSWORD_1);
+		expect(people.find((row) => row.id === context.customerId)).toMatchObject({ portalStatus: 'revoked', userId: null, customerType: 'individual' });
+	});
+
+	test('HTTP: two-step login sets no cookie and returns no token; verify answers Set-Cookie; devices hide tokens; close clears the cookie', async () => {
+		await twoStepOn();
+		container.register(PORTAL_AUTH_SERVICE_TOKEN, { useValue: auth });
+		container.register(PORTAL_ACCOUNT_SERVICE_TOKEN, { useValue: accounts });
+		container.register(PORTAL_SERVICE_TOKEN, { useValue: { customer: async () => null, members: async () => [] } as never });
+		container.register(PORTAL_SESSION_RESOLVER_TOKEN, { useValue: auth });
+		const { PortalAuthController, PortalController } = await import('../../src/app/customer/controllers/portal.controller');
+		const authApp = PortalAuthController.plugin();
+		const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
+			new Request(`http://localhost/customers/portal/v1${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
+
+		const first = await authApp.handle(post('/auth/login', { email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }));
+		expect(first.status).toBe(200);
+		expect(first.headers.get('set-cookie')).toBeNull();
+		const step = ((await first.json()) as { data: { ok: boolean; twoStep: boolean; challenge: string; email: string } }).data;
+		expect(step).toEqual({ ok: false, twoStep: true, challenge: expect.any(String), email: 'b***@alfa.co.id' });
+
+		const wrong = await authApp.handle(post('/auth/login/verify', { challenge: step.challenge, code: lastCode() === '000000' ? '111111' : '000000' }));
+		expect(wrong.status).toBe(400);
+		const verified = await authApp.handle(post('/auth/login/verify', { challenge: step.challenge, code: lastCode() }, { 'user-agent': 'Firefox/1' }));
+		expect(verified.status).toBe(200);
+		const cookie = verified.headers.get('set-cookie')!.split(';')[0]!;
+		expect(cookie).toMatch(/^sid=session-/);
+		const verifiedBody = JSON.stringify(await verified.json());
+		expect(verifiedBody).not.toContain('session-u-');
+
+		const portal = PortalController.plugin();
+		liveSessions.push({ id: 'sid-phone', token: 'tok-phone', userId: budiUser().id, userAgent: 'iPhone', ipAddress: null, createdAt: new Date(), updatedAt: new Date() });
+		const devices = await portal.handle(new Request('http://localhost/customers/portal/v1/account/devices', { headers: { cookie } }));
+		expect(devices.status).toBe(200);
+		const deviceJson = (await devices.json()) as { data: { id: string; current: boolean; token?: string }[] };
+		expect(deviceJson.data.map((device) => [device.id, device.current])).toEqual([
+			['sid-1', true],
+			['sid-phone', false],
+		]);
+		expect(JSON.stringify(deviceJson)).not.toMatch(/tok-phone|session-u-/);
+		const gone = await portal.handle(new Request('http://localhost/customers/portal/v1/account/devices/nope', { method: 'DELETE', headers: { cookie } }));
+		expect(gone.status).toBe(404);
+		const out = await portal.handle(new Request('http://localhost/customers/portal/v1/account/devices/sid-phone', { method: 'DELETE', headers: { cookie } }));
+		expect(out.status).toBe(200);
+
+		const account = await portal.handle(new Request('http://localhost/customers/portal/v1/account', { headers: { cookie } }));
+		const accountJson = (await account.json()) as { data: { security: unknown; preferences: unknown; notifications: unknown } };
+		expect(accountJson.data.security).toEqual({ twoStep: true, passwordChangedLabel: '', activeDevices: 1 });
+		const patch = await portal.handle(
+			new Request('http://localhost/customers/portal/v1/account/settings', {
+				method: 'PATCH',
+				headers: { cookie, 'content-type': 'application/json' },
+				body: JSON.stringify({ notifications: { push: true }, security: { twoStep: false }, preferences: { language: 'id' } }),
+			}),
+		);
+		expect(patch.status).toBe(200);
+		expect(budiOf()).toMatchObject({ portalPush: true, portalTwoStep: false, portalLanguage: 'id' });
+
+		const refused = await portal.handle(post('/account/close', { password: FAKE_PASSWORD_2 }, { cookie }));
+		expect(refused.status).toBe(409);
+		const wrongPassword = await portal.handle(post('/account/close', { password: FAKE_PASSWORD_3 }, { cookie }));
+		expect(wrongPassword.status).toBe(400);
+		await invite({ companyId: COMPANY_A, name: 'Joko', email: 'joko@alfa.co.id', role: 'owner' });
+		const closed = await portal.handle(post('/account/close', { password: FAKE_PASSWORD_2 }, { cookie }));
+		expect(closed.status).toBe(200);
+		expect(closed.headers.get('set-cookie')).toBe('sid=; Path=/; Max-Age=0');
+		expect((await portal.handle(new Request('http://localhost/customers/portal/v1/me', { headers: { cookie } }))).status).toBe(401);
 	}, 60_000);
 });
 

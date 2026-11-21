@@ -160,6 +160,12 @@ export const customers = customerSchema.table(
 		/** Logical reference to auth.users.id — null for a self sign-up. */
 		portalInvitedBy: text('portal_invited_by'),
 		portalLastLoginAt: unixTimestampNullable('portal_last_login_at'),
+		/** Portal settings of the login (port plan D3, ERP-0106): `en | id`; null = browser language. */
+		portalLanguage: text('portal_language'),
+		/** Two-step sign-in by an emailed code (ERP-0106). */
+		portalTwoStep: boolean('portal_two_step').notNull().default(false),
+		/** Push notices on/off (stored only; nothing sends push yet). */
+		portalPush: boolean('portal_push').notNull().default(false),
 		notes: text('notes'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		createdBy: text('created_by'),
@@ -193,6 +199,10 @@ export const customers = customerSchema.table(
 		check(
 			'customers_portal_status_check',
 			sql`${table.portalStatus} IS NULL OR ${table.portalStatus} IN ('active', 'suspended', 'revoked')`,
+		),
+		check(
+			'customers_portal_language_check',
+			sql`${table.portalLanguage} IS NULL OR ${table.portalLanguage} IN ('en', 'id')`,
 		),
 		check(
 			'customers_company_required_check',

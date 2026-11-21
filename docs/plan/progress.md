@@ -12,6 +12,167 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - ERP-0106: portal security settings - two-step sign-in, active devices, delete own login (port of branch ERP-0081)
+
+Port step P1 (second half) of `docs/plan/port-portal-onto-main.md`, decision
+D3, owner go 2026-11-21. Source: commit `11c78a00` on
+`feat/erp-0069-portal-session` (ERP-0081, old `portal`/`user` modules,
+`auth.user_preferences`), re-applied on `feat/erp-0094-portal-session-cookie`
+on top of ERP-0094 (`8bcae993`). ERP-0106 was verified free before use.
+
+**Gates.** Gate 1: read `docs/database/docs.dbml` (`// MODULE:` index, Customer
+block: `customer.companies`, `customer.customers` portal columns and checks),
+`module-ownership.md` (Customer owns the people incl. the portal login;
+Identity: profile/preferences are no longer separate tables) and
+`data-dictionary.md` 1.11 (boolean flags) and 6 (checks). The booleans keep
+the names port plan D3 fixed (`portal_two_step`, `portal_push`, grouped with
+the other `portal_*` login columns) instead of the `is_*` pattern; the closed
+`portal_language` vocabulary gets a check as section 6 asks. Skipped
+`integrity-and-consistency.md` (no FK, uniqueness or concurrency rule
+changes), `logical-references.md` (no new cross-module id column) and
+`implementation-phases.md` (nothing depends on an unlanded step). Gate 2: the design was settled by port plan D3 (columns on
+`customer.customers`, not `auth.user_preferences`) and the branch's owner
+decisions of 2026-11-20 (2-step opt-in, delete login keeps data, only owner
+refused); answers recorded: module ownership - settings, 2-step, devices and
+delete login stay in `customer` (sessions through the customer's own Better
+Auth session gateway, session revoke-all through `ExportedUserService`, no
+`auth.*` query from `customer`); tenant scoping - none (company-wide,
+ADR-0011); soft delete - deleting one's login is the existing revoke
+(`portal_status = revoked`, `user_id` freed, row kept, `deleted_at` stays
+null); column types - `portal_language text NULL` with check `en | id`,
+`portal_two_step boolean NOT NULL DEFAULT false`, `portal_push boolean NOT
+NULL DEFAULT false` (the branch's default for push was off); no datetimes or
+money; status vocabulary unchanged. "Only owner" on main = an `owner` login
+with a `company_id` and no other `active` owner among the company's live
+logins; an individual customer (no company) is their own account and may
+delete their login.
+
+**docs/database.** `docs.dbml`: the three columns with notes and the
+`portal_language` check; the `portal_status` note corrected (it claimed
+revoking also sets `deleted_at`; main's `revokePortalAccess` frees `user_id`
+and keeps the row, noted as observed in the ERP-0094 entry) and now says the
+settings are reset on revoke. Then `bun docs/database/gen-logical-references.ts`
+(190 refs, unchanged) and `bun docs/database/validate-dbml.ts` → OK (0
+cross-module refs, 0 timestamp gaps, parity drift 0).
+
+**Backend (`apps/backend`).**
+- `drizzle/schemas/customer.schema.ts`: `portalLanguage`, `portalTwoStep`,
+  `portalPush` + `customers_portal_language_check`. Migration
+  `database/migrations/20261121070035_erp0106_portal_login_settings`
+  (`bunx --bun drizzle-kit generate --name erp0106_portal_login_settings`),
+  inspected: three `ALTER TABLE customer.customers ADD COLUMN` (`text`;
+  `boolean DEFAULT false NOT NULL` x2) and `ADD CONSTRAINT
+  customers_portal_language_check CHECK (portal_language IS NULL OR
+  portal_language IN ('en','id'))`. Additive only; existing rows get false.
+- `customer/repositories/customer.repository.ts` `revokePortalAccess` also
+  resets the three settings (a new invitation starts fresh).
+- `customer/adapters/better-auth-portal-session.ts`: `createSession(userId,
+  from?)` (device headers), `verifyPassword`, `listSessions`,
+  `revokeSession`, `revokeOtherSessions` (Better Auth 1.7.25 API).
+- `customer/services/portal-account.service.ts`: `settings`,
+  `updateSettings` (through the existing repository `update`),
+  `startLoginCode` / `resendLoginCode` / `verifyLoginCode` (Redis
+  `portal:login-code:<challenge>`, sha256 of `challenge:code`, 10 minutes, 5
+  attempts), `closeOwnLogin` (only-owner rule, then `revoke`).
+- `customer/services/portal-auth.service.ts`: `login` returns a two-step
+  challenge (password session signed out at once, masked email) when
+  `portal_two_step` is on, after the unchanged lockout; `verifyLoginCode`,
+  `resendLoginCode`, `devices` (current first; tokens stripped),
+  `revokeDevice` (by session id among the caller's own sessions, else 404),
+  `revokeOtherDevices`, `closeAccount` (password first, then
+  `closeOwnLogin`). `verifySignup` now passes the request headers so the
+  sign-up session names its device (found in the live check: the device had
+  no user agent).
+- `customer/controllers/portal.controller.ts`: `POST /auth/login/verify`,
+  `POST /auth/login/resend`, `PATCH /account/settings`,
+  `GET /account/devices`, `DELETE /account/devices/:id`,
+  `POST /account/devices/sign-out-others`, `POST /account/close` (clearing
+  cookie); `GET /account` carries the login's settings and device count.
+  `utils/portal-presenter.ts`: `faceId` and `appearance` dropped from
+  `AccountSettings` (as on the branch), `portalSettings`, `signedInDevice`.
+- Errors `PortalDeviceNotFoundError` (404 `portal.deviceNotFound`),
+  `PortalLastOwnerError` (409 `portal.lastOwner`); mail port
+  `sendLoginCode` + `renderPortalLoginCodeEmail` (in the login's
+  `portal_language` when set); locale keys `api` `portal.lastOwner`,
+  `portal.deviceNotFound`, `email` `portalLoginCode.*` in en and id.
+- Differences from the branch: settings live on the person row, not in
+  `auth.user_preferences`; email/WhatsApp channels are not stored (fixed
+  on/off in the response, only `push` is a setting, per D3); "only owner"
+  uses `company_id` instead of the old customer type; the login code email
+  follows the chosen language.
+
+**Portal (`apps/web-customer-portal`).** Branch diff applied with a 3-way
+merge, then adapted: `pages/login/code.astro`, `pages/settings/devices.astro`,
+`pages/settings/delete-account.astro`, `lib/device-label.ts`; settings page
+keeps push, password, 2-step, devices, language, currency and delete account
+(Face ID, email/WhatsApp updates, data download and appearance existed on main
+and were removed as on the branch); login page drops the Face ID button and
+shows the "login deleted" notice; `actions/index.ts` (`verifyLoginCode`,
+`resendLoginCode`, `revokeDevice`, `signOutOtherDevices`, `closeAccount`, the
+visitor's browser and address forwarded on sign-in), `api/portal.ts` (types,
+adapter methods; `revokeDevice` async so an unmapped route rejects),
+`erp-routes.ts` (new routes incl. `updateSettings`), `session-expiry.ts`
+(`verifyLoginCode`, `resendLoginCode` are session-less), demo source,
+`ProfileDesktop.astro`, `SettingToggle`, `ConfirmAction`, `env.d.ts`
+(`pendingSignIn`). User-facing copy stays English as in the rest of the app.
+
+**Verified (worktree `ims-erp-p1`).**
+- `apps/backend`: `bun run typecheck` clean; `bun test` 1333 pass, 0 fail
+  (101 files; `test/unit/portal-account.test.ts` 36 pass, 12 new: settings
+  and their reset on revoke; two-step: no session and a code, code language,
+  right code once, wrong codes counted and the fifth ends it, expired code
+  and resend, lockout still applies; devices without tokens and current
+  first, sign out one / others, other login's session 404; delete login
+  needs the password and keeps the person, only company owner refused, an
+  individual may; HTTP routes incl. no cookie on the two-step answer). The
+  known `Bun.Image` failures did not appear. `bun run lint` exit 0, 23
+  warnings (none in touched files). `bunx --bun drizzle-kit check` →
+  "Everything's fine"; a second `generate` → "No schema changes".
+- `packages/locales`: `bun test` 106 pass.
+- `apps/web-customer-portal`: `bun test` 64 pass (4 new adapter cases;
+  `updateSettings` left the not-configured list); `bun run check` 0 errors,
+  0 warnings, 11 hints. `apps/web-landing`: `bun test` 25 pass; `bun run
+  check` 0 errors, 0 warnings, 5 hints.
+- Root: `bun run lint` 5/5 tasks (also `--force`), 0 errors; `bun run
+  typecheck` 6/6 tasks.
+- Live, disposable database `ims_erp_p1b` (containers `ims-erp-postgres-1`,
+  `ims-erp-redis-1`): `database/migrate-reset.ts` applied 22 migrations and
+  seeded; columns and check present (`portal_language='fr'` refused by the
+  check). Backend on `APP_PORT=3010 SCHEDULER_ENABLED=false`. Mail is not
+  configured in the local `.env`, so `dispatchMail` logs and drops each email
+  (subject carries the code) through a buffered logger; the check script
+  therefore recovered each code from Redis (test only, enumerating the
+  sha256) and, after the backend stopped, the 5 emailed subjects were
+  compared: codes identical, sign-in codes in Indonesian after the login
+  chose `id`. Results: sign-up verify sets the cookie; `GET /account`
+  defaults; `PATCH /account/settings` 200, bad language 400; two-step login
+  200 with masked email, no cookie, no token; wrong code 400; resend 200,
+  old code 400; right code 200 + `Set-Cookie`, no token in body; used code
+  400; after 5 wrong codes the right one 400; devices 2 listed, current
+  first, no tokens; `activeDevices` 2; unknown device 404; sign out device A
+  200 and A's cookie 401; sign out others 200, D's cookie 401, B's 200;
+  delete login: wrong password 400, only owner of a company (set via SQL)
+  409 with the login still active, individual 200 with a `Max-Age=0`
+  cookie, cookie then 401, sign-in 401; row kept (`portal_status=revoked`,
+  `user_id` null, `deleted_at` null, settings reset), 0 Better Auth
+  sessions left. Re-run after the `verifySignup` header fix: 22/22, device
+  A now named. The backend processes started for the check were stopped
+  and `ims_erp_p1b` dropped.
+
+**Not done / open.**
+- No browser walk-through of `/login/code`, `/settings/devices`,
+  `/settings/delete-account` (portal pages type-check and the adapter is
+  unit-tested only).
+- Left for P2 (ERP-0100): account pages (profile, company change request,
+  sites, onboarding, members screens). `portal_push` is stored but nothing
+  sends push notices; `portal_language` drives the sign-in code email only.
+- The only-owner check and the revoke are two statements; two owners
+  deleting their logins at the same moment could both pass. Not guarded.
+
+Next executable task: P1 review and PR (`feat/erp-0094-portal-session-cookie`,
+ERP-0094 + ERP-0106) after the owner's go; then P2 (ERP-0100, ERP-0101) on a
+fresh branch from `origin/main`.
+
 ## 2026-11-21 - ERP-0094: server-held portal session cookie and customer-only portal (port of branch ERP-0069)
 
 Port step P1 (first half) of `docs/plan/port-portal-onto-main.md`, decision
@@ -130,8 +291,8 @@ from `Set-Cookie` on login / verify-email (no cookie → `ErpContractError`),
   uses ERP-0092 (code number settings), which the port plan keeps for the
   ticket-thread-gaps slice; that renumbering needs a decision before P6.
 
-Next executable task: ERP-0106 (rest of P1) on a fresh branch from
-`origin/main` after this branch is reviewed.
+Next executable task: superseded by the ERP-0106 entry above (ERP-0106 was
+built on this same branch).
 
 ## 2026-11-21 - ERP-0092: code number settings page restored (Settings -> Code Number)
 

@@ -4,7 +4,9 @@
 P1 given 2026-11-21: **P1 / ERP-0094 (session cookie + `customer` role,
 ADR-0027) is in progress on branch `feat/erp-0094-portal-session-cookie`**
 (from `origin/main` `638ab9fa`; implemented and verified locally, not pushed,
-no PR). ERP-0106 (rest of P1) not started. Other steps not approved yet. Written on `feat/erp-0069-portal-session` (Dafrin's local branch,
+no PR). ERP-0106 (rest of P1: 2-step sign-in, devices, delete login, D3
+columns) implemented on the same branch 2026-11-21 (not pushed, no PR).
+Other steps not approved yet. Written on `feat/erp-0069-portal-session` (Dafrin's local branch,
 **not pushed yet**; commit ids below refer to it) after comparing it with
 `origin/main` at `1c10c3e1`.
 
@@ -130,7 +132,7 @@ M 1-2 days, L 3+ days.
 
 | Step | Slices | What moves | Depends on | Size |
 | --- | --- | --- | --- | --- |
-| P1 | ERP-0094, ERP-0106 | Session cookie + `customer` role on main's `customer` portal auth (ERP-0094: in progress on `feat/erp-0094-portal-session-cookie`, implemented 2026-11-21); 2-step, devices, delete login; D3 columns (ERP-0106: not started) | — | M |
+| P1 | ERP-0094, ERP-0106 | Session cookie + `customer` role on main's `customer` portal auth (ERP-0094); 2-step, devices, delete login; D3 columns (ERP-0106). **Both implemented 2026-11-21 on `feat/erp-0094-portal-session-cookie`**, not pushed, not reviewed | — | M |
 | P2 | ERP-0100, ERP-0101 | Account pages (profile, company request, sites, settings, onboarding, members); D5, D6 | P1 | M |
 | P3 | ERP-0095, ERP-0103 | Ordering, SPH, orders, invoices, payment; one checkout | P1 | L |
 | P4 | ERP-0098, ERP-0105 | Public + portal tracking, courier/waybill (D8) | P3 | M |

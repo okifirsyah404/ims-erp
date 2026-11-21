@@ -7,6 +7,8 @@ export const SESSIONLESS: ReadonlySet<keyof PortalSource> = new Set([
   "login",
   "register",
   "verifyEmail",
+  "verifyLoginCode",
+  "resendLoginCode",
   "resendVerification",
   "requestPasswordReset",
   "resetPassword",
