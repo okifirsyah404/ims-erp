@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -189,15 +190,11 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 						{mode === 'amount' && (
 							<Field>
 								<FieldLabel htmlFor='invoice-amount'>{t('finance:billing.amount')}</FieldLabel>
-								<Input
+								<MoneyInput
 									id='invoice-amount'
-									type='number'
 									required
-									min='0.01'
-									step='0.01'
-									inputMode='decimal'
 									value={amount}
-									onChange={(e) => setAmount(e.target.value)}
+									onValueChange={setAmount}
 								/>
 								<FieldDescription>{t('finance:billing.amountHint')}</FieldDescription>
 							</Field>

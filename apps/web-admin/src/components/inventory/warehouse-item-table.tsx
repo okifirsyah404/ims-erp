@@ -9,6 +9,7 @@ import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { itemDetailLink } from '@/lib/item-routes';
 import { PackageOpen } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
@@ -130,10 +131,7 @@ export function WarehouseItemTable({
 						variant='ghost'
 						size='sm'
 						render={
-							<Link
-								to='/inventory/items/$itemId'
-								params={{ itemId: row.original.id }}
-							/>
+							<Link {...itemDetailLink(row.original.productKind, row.original.id)} />
 						}
 					>
 						{t('common:action.edit')}

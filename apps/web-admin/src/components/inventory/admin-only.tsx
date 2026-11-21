@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { hasRole } from '@ims-erp/common';
 import { useSession } from '@/lib/auth-client';
 import { EmptyState } from '@/components/empty-state';
+import { ShieldAlert } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 
 /**
@@ -25,7 +26,7 @@ export function AdminOnly({ children }: { children: ReactNode }) {
 	if (isPending) return <PageSkeleton />;
 	if (!hasRole(session?.user?.role, 'admin')) {
 		return (
-			<EmptyState title={t('inventory:adminOnly')} bordered />
+			<EmptyState icon={ShieldAlert} title={t('inventory:adminOnly')} bordered />
 		);
 	}
 	return <>{children}</>;

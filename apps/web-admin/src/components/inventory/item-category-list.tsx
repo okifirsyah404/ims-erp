@@ -39,6 +39,7 @@ import {
 } from '@/lib/item-category-api';
 import { usePermission } from '@/lib/use-permission';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { Tags } from 'lucide-react';
 
 /**
  * Item categories (ADR-0011): one level, company-wide. Lists every live
@@ -157,7 +158,7 @@ export function ItemCategoryList() {
 			{isError ? (
 				<ErrorState error={error} bordered />
 			) : !isPending && categories.length === 0 ? (
-				<EmptyState title={t('product:categories.empty')} bordered />
+				<EmptyState icon={Tags} title={t('product:categories.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}

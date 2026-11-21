@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -402,27 +403,19 @@ export function QuotationForm({
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor={`line-price-${line.key}`}>{t('sales:line.unitPrice')}</FieldLabel>
-								<Input
+								<MoneyInput
 									id={`line-price-${line.key}`}
-									type='number'
 									required
-									min='0'
-									step='0.01'
-									inputMode='decimal'
 									value={line.unitPrice}
-									onChange={(e) => patchLine(line.key, { unitPrice: e.target.value })}
+									onValueChange={(value) => patchLine(line.key, { unitPrice: value })}
 								/>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor={`line-discount-${line.key}`}>{t('sales:line.discount')}</FieldLabel>
-								<Input
+								<MoneyInput
 									id={`line-discount-${line.key}`}
-									type='number'
-									min='0'
-									step='0.01'
-									inputMode='decimal'
 									value={line.discount}
-									onChange={(e) => patchLine(line.key, { discount: e.target.value })}
+									onValueChange={(value) => patchLine(line.key, { discount: value })}
 								/>
 							</Field>
 							<div className='flex flex-col justify-end text-right text-sm'>

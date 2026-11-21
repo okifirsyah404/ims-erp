@@ -6,6 +6,18 @@
  */
 const common = {
 	'action.cancel': 'Cancel',
+	'cardMenu.label': 'Actions',
+	'cardMenu.stockAdjustment': 'Stock adjustment',
+	'cardMenu.archive': 'Archive',
+	'cardMenu.activate': 'Activate',
+	'cardMenu.delete': 'Delete',
+	'cardMenu.archiveTitle': 'Archive "{{name}}"?',
+	'cardMenu.archiveBody':
+		'It is marked inactive: it stays in the list with an inactive badge and is no longer offered for new documents. You can activate it again at any time.',
+	'cardMenu.deleteTitle': 'Delete "{{name}}"?',
+	'cardMenu.deleteBody':
+		'It is removed from the list. Records that already use it keep their history. This cannot be undone from this screen.',
+	'cardMenu.reasonPlaceholder': 'Reason (required)',
 	'action.confirm': 'Confirm',
 	'action.save': 'Save',
 	'action.saving': 'Saving…',

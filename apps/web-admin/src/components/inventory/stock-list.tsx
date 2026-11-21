@@ -12,6 +12,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PackageOpen } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { ItemThumb } from '@/components/item-thumb';
 import { balancesQueryOptions, recomputeBalances, type TStockBalance } from '@/lib/stock-api';
@@ -80,8 +81,8 @@ export function StockList({
 							name={row.original.itemName ?? row.original.productId}
 						/>
 						<Link
-							to='/inventory/items/$itemId'
-							params={{ itemId: row.original.productId }}
+							to='/products/$productId'
+							params={{ productId: row.original.productId }}
 							className='hover:underline'
 						>
 							{row.original.itemName ?? (
@@ -252,6 +253,7 @@ export function StockList({
 				<ErrorState error={error} bordered />
 			) : !isPending && rows.length === 0 ? (
 				<EmptyState
+					icon={PackageOpen}
 					title={t('inventory:stock.empty')}
 					bordered
 				/>

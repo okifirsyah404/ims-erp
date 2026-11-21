@@ -11,7 +11,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { UserMinus } from 'lucide-react';
+import { UserMinus, Users } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -179,7 +179,7 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 				{managers.isError ? (
 					<ErrorState error={managers.error} size='sm' />
 				) : !managers.isPending && (managers.data ?? []).length === 0 ? (
-					<EmptyState title={t('warehouse:warehouses.noManagers')} size='sm' />
+					<EmptyState icon={Users} title={t('warehouse:warehouses.noManagers')} size='sm' />
 				) : (
 					<DataTable
 						columns={columns}

@@ -43,7 +43,6 @@ const LABELS: Record<string, NavKey> = {
 	'/hr/payroll': 'item.payroll',
 	'/hr/tasks': 'item.hrTasks',
 	'/organizations/': 'breadcrumb.organizations',
-	'/organizations/new': 'breadcrumb.organizationNew',
 	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',
 	'/organizations/$organizationId/members/$memberId/edit':
 		'breadcrumb.memberEdit',
@@ -59,9 +58,16 @@ const LABELS: Record<string, NavKey> = {
 	'/documents/signatures/mine': 'item.mySignature',
 	'/documents/templates': 'item.templates',
 	'/products': 'item.products',
-	'/products/categories': 'item.itemCategories',
+	'/product-categories': 'item.itemCategories',
+	'/products/$productId/edit': 'breadcrumb.quotationEdit',
+	'/inventory/components': 'item.components',
+	'/inventory/components/$productId/edit': 'breadcrumb.quotationEdit',
+	'/inventory/materials': 'item.materials',
+	'/inventory/materials/$productId/edit': 'breadcrumb.quotationEdit',
+	'/inventory/stock': 'item.stock',
+	'/inventory/stock/adjustments': 'item.stockAdjustments',
+	'/inventory/stock/movements': 'item.itemMovements',
 	'/warehouses': 'item.warehouses',
-	'/warehouses/new': 'item.warehouses',
 	'/warehouses/$warehouseId': 'item.warehouses',
 	'/warehouses/$warehouseId/edit': 'item.warehouses',
 	'/crm/customers': 'item.customers',
@@ -163,6 +169,12 @@ export function buildCrumbs(
 	matches: readonly CrumbMatch[],
 	translate: CrumbTranslator,
 	enrich?: CrumbEnricher,
+	/**
+	 * Whether a URL template is a real route. A path segment that is only a
+	 * grouping prefix (`/inventory` has no page) would render a link to a 404,
+	 * so such crumbs are dropped. Omitted = keep every crumb.
+	 */
+	routeExists?: (template: string) => boolean,
 ): Crumb[] {
 	const visible = matches.filter((match) => !HIDDEN_ROUTE_IDS.has(match.routeId));
 	if (visible.length === 0) return [];
@@ -193,6 +205,7 @@ export function buildCrumbs(
 		{ key: 'home', label: translate(LABELS['/']!), href: '/', params: {} },
 	];
 	for (const template of templates) {
+		if (routeExists && template !== leafFullPath && !routeExists(template)) continue;
 		// Route-level `staticData.crumb` is a key; derive display text from it.
 		const staticCrumb = visible.find(
 			(match) => match.fullPath === template,

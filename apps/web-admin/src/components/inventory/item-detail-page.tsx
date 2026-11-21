@@ -1,11 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link, useNavigate, useParams } from '@tanstack/react-router';
+import { Link, Navigate, useNavigate } from '@tanstack/react-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SearchX, PackageOpen } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
@@ -40,28 +41,26 @@ import {
 	registerSerial,
 	replaceProvisionalSerial,
 	type TProduct,
+	type TProductKind,
 	type TProductSerial,
 } from '@/lib/inventory-api';
 import { DocumentImageField } from '@/components/documents/document-image-field';
 import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
+import { formatIdr } from '@/lib/format';
+import { itemDetailLink, itemEditLink, itemListLink } from '@/lib/item-routes';
 import { usePermission } from '@/lib/use-permission';
 
 /**
- * `/inventory/items/$itemId` — product detail plus its serialized units.
+ * Product detail plus its serialized units, shared by the three kind routes.
  *
  * @remarks
- * The path keeps its historical `items` segment; `$itemId` is a **product** id
- * (`/products/:id` on the backend). Physical assets live under
- * `/assets`.
+ * `kind` is the kind of the route the page is mounted on. An item opened under
+ * the wrong kind (a component through `/products/:id`) is redirected to its
+ * own route, so a link may point at any kind and still land correctly.
  */
-export const Route = createFileRoute('/_authed/inventory/items/$itemId')({
-	component: ItemDetailPage,
-});
-
-function ItemDetailPage() {
+export function ItemDetailPage({ kind, itemId }: { kind: TProductKind; itemId: string }) {
 	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const categoryNames = useItemCategoryNames();
-	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
@@ -79,9 +78,13 @@ function ItemDetailPage() {
 	if (!item) {
 		return (
 			<AdminOnly>
-				<EmptyState title={t('product:detail.notFound')} bordered />
+				<EmptyState icon={SearchX} title={t('product:detail.notFound')} bordered />
 			</AdminOnly>
 		);
+	}
+
+	if (item.productKind !== kind) {
+		return <Navigate {...itemDetailLink(item.productKind, itemId)} replace />;
 	}
 
 	async function handleArchive() {
@@ -90,7 +93,7 @@ function ItemDetailPage() {
 			await archiveProduct(itemId);
 			toast.success(t('product:form.archived'));
 			await queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] });
-			void navigate({ to: '/products' });
+			void navigate(itemListLink(kind));
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : t('common:error.failed'),
@@ -118,8 +121,7 @@ function ItemDetailPage() {
 							variant='outline'
 							render={
 								<Link
-									to='/inventory/items/$itemId/edit'
-									params={{ itemId }}
+									{...itemEditLink(kind, itemId)}
 								/>
 							}
 						>
@@ -177,11 +179,11 @@ function ItemDetailPage() {
 						/>
 						<Detail
 							label={t('product:items.sellingPrice')}
-							value={String(item.sellingPrice)}
+							value={formatIdr(item.sellingPrice)}
 						/>
 						<Detail
 							label={t('product:items.purchasePrice')}
-							value={String(item.purchasePrice)}
+							value={formatIdr(item.purchasePrice)}
 						/>
 						<Detail
 							label={t('product:items.tracking')}
@@ -392,9 +394,7 @@ function UnitsPanel({ itemId, units }: { itemId: string; units: TProductSerial[]
 				</form>
 
 				{units.length === 0 ? (
-					<p className='text-sm text-muted-foreground'>
-						{t('product:detail.unitsEmpty')}
-					</p>
+					<EmptyState icon={PackageOpen} title={t('product:detail.unitsEmpty')} size='sm' bordered />
 				) : (
 					<DataTable
 						columns={columns}

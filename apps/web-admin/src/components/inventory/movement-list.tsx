@@ -19,6 +19,7 @@ import {
 } from '@/lib/stock-api';
 import { useClampPage } from '@/lib/use-clamp-page';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ArrowLeftRight } from 'lucide-react';
 import { useConfirm } from '@/components/confirm-dialog';
 
 /** Rows per page: 24 keeps a full-height page without endless scrolling. */
@@ -99,8 +100,8 @@ export function MovementList({
 							name={row.original.itemName ?? row.original.productId}
 						/>
 						<Link
-							to='/inventory/items/$itemId'
-							params={{ itemId: row.original.productId }}
+							to='/products/$productId'
+							params={{ productId: row.original.productId }}
 							className='hover:underline'
 						>
 							{row.original.itemName ?? (
@@ -224,7 +225,7 @@ export function MovementList({
 			{isError ? (
 				<ErrorState error={error} bordered />
 			) : !isPending && rows.length === 0 ? (
-				<EmptyState title={t('inventory:movements.empty')} bordered />
+				<EmptyState icon={ArrowLeftRight} title={t('inventory:movements.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}

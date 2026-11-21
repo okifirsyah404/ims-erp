@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -266,15 +267,11 @@ function SalaryRowDialog({
 							{AMOUNT_FIELDS.map((field) => (
 								<Field key={field}>
 									<FieldLabel htmlFor={`salary-${field}`}>{t(`hr:${AMOUNT_LABEL[field]}`)}</FieldLabel>
-									<Input
+									<MoneyInput
 										id={`salary-${field}`}
-										type='number'
-										min='0'
-										step='0.01'
-										inputMode='decimal'
 										required={field === 'baseSalary'}
 										value={amounts[field]}
-										onChange={(event) => setAmounts({ ...amounts, [field]: event.target.value })}
+										onValueChange={(value) => setAmounts({ ...amounts, [field]: value })}
 									/>
 								</Field>
 							))}

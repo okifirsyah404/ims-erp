@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import {
 	useMutation,
 	useQuery,
@@ -157,11 +158,11 @@ export function TaxCorrections() {
 				<>
 					{canUpdate ? (
 						<div className='flex flex-wrap items-center gap-2'>
-							<Input
+							<MoneyInput
 								className='w-40'
 								placeholder={t('tax:corrections.amount')}
 								value={amount}
-								onChange={(event) => setAmount(event.target.value)}
+								onValueChange={setAmount}
 							/>
 							<Input
 								className='w-64'
