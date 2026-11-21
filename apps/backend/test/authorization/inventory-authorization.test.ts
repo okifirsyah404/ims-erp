@@ -66,6 +66,7 @@ beforeAll(async () => {
 	);
 	const {
 		ITEM_SERVICE_TOKEN,
+		ITEM_IMAGE_SERVICE_TOKEN,
 		ITEM_REPOSITORY_TOKEN,
 		ITEM_CUSTODY_SERVICE_TOKEN,
 		MAINTENANCE_SERVICE_TOKEN,
@@ -89,6 +90,14 @@ beforeAll(async () => {
 		},
 	} as never);
 	container.registerInstance(ITEM_REPOSITORY_TOKEN, {} as never);
+	// The photo service needs object storage; the wall under test is authorization.
+	container.registerInstance(ITEM_IMAGE_SERVICE_TOKEN, {
+		withImageUrl: (row: object) => ({ ...row, imageUrl: null }),
+		urlFor: () => null,
+		async setImage() {
+			return { imageUrl: null };
+		},
+	} as never);
 	container.registerInstance(ITEM_CUSTODY_SERVICE_TOKEN, {} as never);
 	container.registerInstance(MAINTENANCE_SERVICE_TOKEN, {} as never);
 	container.registerInstance(DISPOSAL_SERVICE_TOKEN, {} as never);

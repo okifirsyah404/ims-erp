@@ -83,6 +83,7 @@ function warehouse(
 		name: `Warehouse ${id.slice(-2)}`,
 		responsibleEmployeeId: null,
 		imageUrl: null,
+		imageObjectKey: null,
 		isDefault: false,
 		isActive: true,
 		createdAt: new Date(0),
@@ -196,6 +197,7 @@ function fakeMovements(): IMovementRepository & { rows: TProductMovementSelect[]
 /** In-memory balance repository, mirroring the real upsert semantics. */
 function fakeBalances(store: BalanceStore): IStockRepository {
 	return {
+	availableTotals: async () => [],
 		async paginate(request: TStockPaginationRequest) {
 			return {
 				meta: {

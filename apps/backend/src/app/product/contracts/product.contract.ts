@@ -25,6 +25,19 @@ export const productListQuerySchema = inventoryPaginationSchema.extend({
 		.union([z.boolean(), z.enum(['true', 'false'])])
 		.transform((value) => value === true || value === 'true')
 		.optional(),
+	/** Lifecycle filter; `activeOnly` is the older shorthand for `active`. */
+	status: z.enum(['all', 'active', 'inactive']).optional(),
+	/** Selling price range, integer IDR minor units, both ends inclusive. */
+	minPrice: z.coerce.number().int().min(0).optional(),
+	maxPrice: z.coerce.number().int().min(0).optional(),
+	/**
+	 * On-hand range: the available quantity summed over every warehouse bin.
+	 * A product with no stock row counts as 0.
+	 */
+	minStock: z.coerce.number().min(0).optional(),
+	maxStock: z.coerce.number().min(0).optional(),
+	sortBy: z.enum(['name', 'code', 'price']).optional(),
+	sortDir: z.enum(['asc', 'desc']).optional(),
 	/**
 	 * Scope the list to products with at least one live unit in this warehouse.
 	 * Used by the warehouse detail page's kind tabs.
@@ -34,6 +47,11 @@ export const productListQuerySchema = inventoryPaginationSchema.extend({
 		.union([z.boolean(), z.enum(['true', 'false'])])
 		.transform((value) => value === true || value === 'true')
 		.optional(),
+});
+
+/** Query for the slider bounds of the list filters. */
+export const productRangesQuerySchema = z.object({
+	productKind: z.enum(PRODUCT_KINDS).optional(),
 });
 
 /**

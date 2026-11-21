@@ -10,6 +10,7 @@ import {
 	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
 	WAREHOUSE_CODE_NUMBERING_REPOSITORY_TOKEN,
+	WAREHOUSE_IMAGE_SERVICE_TOKEN,
 	WAREHOUSE_MANAGER_REPOSITORY_TOKEN,
 	WAREHOUSE_MANAGER_SERVICE_TOKEN,
 	WAREHOUSE_NUMBERING_SERVICE_TOKEN,
@@ -23,6 +24,7 @@ import { WarehouseManagerRepository } from './repositories/warehouse-manager.rep
 import { WarehouseRepository } from './repositories/warehouse.repository';
 import { WarehouseStorageRepository } from './repositories/warehouse-storage.repository';
 import { ExportedWarehouseService } from './services/exported-warehouse.service';
+import { WarehouseImageService } from './services/warehouse-image.service';
 import { WarehouseManagerService } from './services/warehouse-manager.service';
 import { WarehouseNumberingService } from './services/warehouse-numbering.service';
 import { WarehouseService } from './services/warehouse.service';
@@ -62,6 +64,9 @@ export function registerWarehouse(container: DependencyContainer): void {
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
+	});
+	container.register(WAREHOUSE_IMAGE_SERVICE_TOKEN, {
+		useClass: WarehouseImageService,
 	});
 	// ADR-0017: person-in-charge assignments. The repository doubles as the
 	// `warehouseGuard` port (it implements `IWarehousePicResolver`), so the

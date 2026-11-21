@@ -8,6 +8,7 @@ import {
 	DISPOSAL_SERVICE_TOKEN,
 	ITEM_CUSTODY_SERVICE_TOKEN,
 	ITEM_DOCUMENT_SERVICE_TOKEN,
+	ITEM_IMAGE_SERVICE_TOKEN,
 	ITEM_REPOSITORY_TOKEN,
 	MAINTENANCE_SERVICE_TOKEN,
 	TOOL_SET_SERVICE_TOKEN,
@@ -61,6 +62,7 @@ export class ItemOperationsController {
 		const documents = container.resolve(ITEM_DOCUMENT_SERVICE_TOKEN);
 		const toolSets = container.resolve(TOOL_SET_SERVICE_TOKEN);
 		const items = container.resolve(ITEM_REPOSITORY_TOKEN);
+		const itemImages = container.resolve(ITEM_IMAGE_SERVICE_TOKEN);
 		const id = (params: unknown) => idParamSchema.parse(params).id;
 
 		return (
@@ -290,7 +292,7 @@ export class ItemOperationsController {
 							documents.list(itemId, erp.organizationId),
 						]);
 						return ok({
-							item,
+							item: itemImages.withImageUrl(item),
 							history: {
 								movements: movements.data,
 								conditionChecks: checks.data,

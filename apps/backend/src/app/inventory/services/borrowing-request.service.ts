@@ -113,10 +113,10 @@ export class BorrowingRequestService {
 	): Promise<TPaginationResult<TBorrowingRequestListItem>> {
 		const result = await this.requests.paginate(request);
 		const images = await this.requests.listFirstItemImages(result.data.map((row) => row.id));
-		const byRequest = new Map(images.map((row) => [row.requestId, row.imageUrl]));
+		const byRequest = new Map(images.map((row) => [row.requestId, row.imageObjectKey]));
 		return {
 			...result,
-			data: result.data.map((row) => ({ ...row, imageUrl: byRequest.get(row.id) ?? null })),
+			data: result.data.map((row) => ({ ...row, imageObjectKey: byRequest.get(row.id) ?? null })),
 		};
 	}
 

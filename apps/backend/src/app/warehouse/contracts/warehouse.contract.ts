@@ -98,8 +98,6 @@ export const createWarehouseSchema = z
 		responsibleEmployeeId: z.uuid().nullable().optional(),
 		isDefault: z.boolean().default(false),
 		isActive: z.boolean().default(true),
-		/** Optional display image URL for the warehouse card. */
-		imageUrl: z.url().max(2048).nullable().optional(),
 		address: warehouseAddressSchema.optional(),
 	})
 	.strict();
@@ -118,8 +116,6 @@ export const updateWarehouseSchema = z
 		responsibleEmployeeId: z.uuid().nullable().optional(),
 		isDefault: z.boolean().optional(),
 		isActive: z.boolean().optional(),
-		/** Optional display image URL for the warehouse card. */
-		imageUrl: z.url().max(2048).nullable().optional(),
 	})
 	.strict();
 
