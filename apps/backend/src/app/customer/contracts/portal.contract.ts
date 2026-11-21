@@ -46,27 +46,12 @@ export const portalMessageSchema = z.object({ text: z.string().trim().min(1).max
 export const portalVerifySchema = z.object({ email: z.string().trim().toLowerCase().email().max(254), code: z.string().trim().regex(/^\d{6}$/) });
 export const portalResendSchema = z.object({ email: z.string().trim().toLowerCase().email().max(254) });
 
-/** Two-step sign-in (ERP-0106): the challenge from `/auth/login` and the emailed code. */
-export const portalLoginCodeSchema = z.object({ challenge: z.string().min(16).max(128), code: z.string().trim().regex(/^\d{6}$/) });
-export const portalLoginResendSchema = z.object({ challenge: z.string().min(16).max(128) });
 
 /** Deleting one's own login asks for the password again (ERP-0106). */
 export const portalCloseAccountSchema = z.object({ password: z.string().min(1).max(128) });
 
 /** A signed-in device is a Better Auth session id (not a uuid). */
 export const portalDeviceParamSchema = z.object({ id: z.string().min(1).max(128) });
-
-/**
- * The login's portal settings (ERP-0106, port plan D3: columns on
- * `customer.customers`). Only push, two-step and language are stored; other
- * channels are not settings on main.
- */
-export const portalSettingsSchema = z.object({
-	notifications: z.object({ push: z.boolean() }).partial().optional(),
-	security: z.object({ twoStep: z.boolean() }).partial().optional(),
-	preferences: z.object({ language: z.enum(['en', 'id']) }).partial().optional(),
-});
-export type TPortalSettingsPatch = z.output<typeof portalSettingsSchema>;
 
 export const portalIdParamSchema = z.object({ id: z.string().uuid() });
 /** Devices are certificate lines: `<certificate uuid>:<line index>`. */
@@ -88,7 +73,7 @@ export type TPortalDeviceSession = { id: string; token: string; userAgent: strin
 export interface IPortalSessionGateway {
 	/** Email + password sign-in; `null` on wrong credentials. */
 	signIn(email: string, password: string, headers: Headers): Promise<TPortalSession | null>;
-	/** A session for a user who just verified a code; `from` (request headers) names the device. */
+	/** A session for a user who just verified a sign-up code; `from` (request headers) names the device. */
 	createSession(userId: string, from?: Headers): Promise<TPortalSession | null>;
 	/** The live session behind a session token, or `null`. */
 	getSession(token: string): Promise<TPortalSession | null>;

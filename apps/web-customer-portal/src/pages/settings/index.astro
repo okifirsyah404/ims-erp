@@ -1,7 +1,5 @@
 ---
-import Bell from "@lucide/astro/icons/bell";
 import KeyRound from "@lucide/astro/icons/key-round";
-import ShieldCheck from "@lucide/astro/icons/shield-check";
 import Smartphone from "@lucide/astro/icons/smartphone";
 import Languages from "@lucide/astro/icons/languages";
 import Coins from "@lucide/astro/icons/coins";
@@ -10,16 +8,19 @@ import ChevronRight from "@lucide/astro/icons/chevron-right";
 import CustomerLayout from "../../layouts/CustomerLayout.astro";
 import TopBar from "../../components/customer/TopBar.astro";
 import IconTile from "../../components/customer/IconTile.astro";
-import SettingToggle from "../../features/account/SettingToggle";
 import { customerService } from "../../services";
 
 /**
- * 05.10 Settings — notifications, security, preferences and the account. Kept to what works
- * (user decision 2026-11-20): WhatsApp / email updates, Face ID, data download and appearance
- * were removed; 2-step verification, devices and deleting the login are real (ERP-0106).
+ * 05.10 Settings — security, preferences and the account. Kept to what works (user decision
+ * 2026-11-20): WhatsApp / email updates, Face ID, data download and appearance were removed;
+ * devices and deleting the login are real (ERP-0106). Push notices come over the ERP's
+ * websocket and a second sign-in factor will be Better Auth's, so neither is a toggle here
+ * (owner decision 2026-11-21). The language is the portal's own cookie (`setLanguage`), sent
+ * to the ERP as Accept-Language.
  */
 const account = await customerService.account(Astro.locals.tokens!);
-const { notifications, security, preferences } = account;
+const { security, preferences } = account;
+const language = Astro.locals.language;
 const languages = { en: "English", id: "Bahasa Indonesia" };
 const flash = await Astro.session?.get("flash");
 if (flash) Astro.session?.delete("flash");
@@ -33,20 +34,6 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
 
   <div class="flex flex-col gap-5 px-5 pt-1 pb-8">
     {flash && <p role="status" class="rounded-md bg-success-bg p-3.5 text-[13.5px] font-semibold text-success ring-1 ring-success-border ring-inset">{flash.title}</p>}
-    <section class="flex flex-col gap-2.5" aria-labelledby="s-notifications">
-      <h2 id="s-notifications" class={heading}>Notifications</h2>
-      <ul class={card}>
-        <li class={row}>
-          <IconTile tone="neutral" size={38}><Bell size={18} /></IconTile>
-          <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span class="text-[15px] font-semibold text-fg">Push notifications</span>
-            <span class="text-[12.5px] text-fg-muted">Orders, projects & tickets</span>
-          </span>
-          <SettingToggle client:visible setting="push" label="Push notifications" defaultChecked={notifications.push} />
-        </li>
-      </ul>
-    </section>
-
     <section class="flex flex-col gap-2.5" aria-labelledby="s-security">
       <h2 id="s-security" class={heading}>Security</h2>
       <ul class={card}>
@@ -59,14 +46,6 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
             </span>
             <ChevronRight size={18} class="text-fg-muted" aria-hidden="true" />
           </a>
-        </li>
-        <li class={row}>
-          <IconTile tone="neutral" size={38}><ShieldCheck size={18} /></IconTile>
-          <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span class="text-[15px] font-semibold text-fg">2-step verification</span>
-            <span class="text-[12.5px] text-fg-muted">A code by email every time you sign in</span>
-          </span>
-          <SettingToggle client:visible setting="twoStep" label="2-step verification" defaultChecked={security.twoStep} />
         </li>
         <li>
           <a href="/settings/devices" class:list={[row, "hover:bg-surface"]}>
@@ -88,8 +67,8 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
         <li class={row}>
           <IconTile tone="neutral" size={38}><Languages size={18} /></IconTile>
           <label for="pref-language" class="flex-1 text-[15px] font-semibold text-fg">Language</label>
-          <select id="pref-language" data-setting="language" class="rounded-md bg-surface py-2 pr-2 pl-3 text-[14px] font-medium text-fg-secondary outline-none focus-visible:ring-[1.5px] focus-visible:ring-blue-600">
-            {Object.entries(languages).map(([value, label]) => <option value={value} selected={preferences.language === value}>{label}</option>)}
+          <select id="pref-language" data-language class="rounded-md bg-surface py-2 pr-2 pl-3 text-[14px] font-medium text-fg-secondary outline-none focus-visible:ring-[1.5px] focus-visible:ring-blue-600">
+            {Object.entries(languages).map(([value, label]) => <option value={value} selected={language === value}>{label}</option>)}
           </select>
         </li>
         <li class={row}>
@@ -123,14 +102,13 @@ const heading = "px-1 text-[11.5px] font-bold tracking-[1px] text-fg-muted upper
   import { actions } from "astro:actions";
 
   const status = document.querySelector<HTMLElement>("[data-pref-status]");
-  document.querySelectorAll<HTMLSelectElement>("select[data-setting]").forEach((select) => {
+  document.querySelectorAll<HTMLSelectElement>("select[data-language]").forEach((select) => {
     let previous = select.value;
     select.addEventListener("change", async () => {
       const form = new FormData();
-      form.set("key", select.dataset.setting!);
-      form.set("value", select.value);
+      form.set("language", select.value);
       select.disabled = true;
-      const { error } = await actions.account.updateSetting(form);
+      const { error } = await actions.account.setLanguage(form);
       select.disabled = false;
       if (error) {
         select.value = previous;

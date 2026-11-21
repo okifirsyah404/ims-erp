@@ -46,9 +46,7 @@ export type LoginResult =
   | { ok: true; user: PortalUser; tokens: AuthTokens }
   | { ok: false; reason: "invalid_credentials"; attemptsLeft?: number }
   | { ok: false; reason: "locked"; lockedUntil: ISODate }
-  | { ok: false; reason: "unverified"; email: string }
-  /** Two-step sign-in (ERP-0106): the password was right, a code went to the (masked) email. */
-  | { ok: false; reason: "two_step"; challenge: string; email: string };
+  | { ok: false; reason: "unverified"; email: string };
 
 export type RegisterInput = {
   accountType: AccountType;
@@ -350,23 +348,19 @@ export type CompanyMember = {
 
 export type CompanySite = { id: string; name: string; address: string; picName: string; picPhone: string; primary?: boolean };
 
-export type NotificationPrefs = { push: boolean; email: boolean; whatsapp: boolean };
-
 export type AccountSettings = {
   personal: { name: string; email: string; phone: string; jobTitle?: string };
   company?: { name: string; shortName: string; npwp?: string; industry?: string; verified: boolean; approvalRule?: string };
   members: CompanyMember[];
   sites: CompanySite[];
-  notifications: NotificationPrefs;
-  security: { twoStep: boolean; passwordChangedLabel: string; activeDevices: number };
+  security: { passwordChangedLabel: string; activeDevices: number };
+  /**
+   * `language` is the one this portal sent as `Accept-Language` (its own cookie, not an ERP
+   * setting). Push notices arrive over the ERP's websocket and a second sign-in factor is
+   * Better Auth's job, so neither is a setting here (owner decision 2026-11-21).
+   */
   preferences: { language: "en" | "id"; currency: "IDR" };
 };
-
-export type SettingsPatch = Partial<{
-  notifications: Partial<NotificationPrefs>;
-  security: Partial<Pick<AccountSettings["security"], "twoStep">>;
-  preferences: Partial<AccountSettings["preferences"]>;
-}>;
 
 /** A browser or app signed in to this login (ERP-0106). */
 export type SignedInDevice = {
@@ -448,9 +442,6 @@ export interface PortalSource {
   login(input: { email: string; password: string; accountType: AccountType; client?: ClientInfo }): Promise<LoginResult>;
   register(input: RegisterInput): Promise<{ email: string }>;
   verifyEmail(input: { email: string; code: string }): Promise<{ user: PortalUser; tokens: AuthTokens } | null>;
-  /** Second step of a two-step sign-in; `null` for a wrong or expired code. */
-  verifyLoginCode(input: { challenge: string; code: string; client?: ClientInfo }): Promise<{ user: PortalUser; tokens: AuthTokens } | null>;
-  resendLoginCode(input: { challenge: string }): Promise<void>;
   resendVerification(input: { email: string }): Promise<void>;
   requestPasswordReset(input: { email?: string; phone?: string }): Promise<void>;
   resetPassword(input: { token: string; password: string }): Promise<boolean>;
@@ -496,7 +487,6 @@ export interface PortalSource {
   removeMember(session: AuthTokens, id: string): Promise<void>;
   saveSite(session: AuthTokens, site: Omit<CompanySite, "id"> & { id?: string }): Promise<CompanySite>;
   deleteSite(session: AuthTokens, id: string): Promise<void>;
-  updateSettings(session: AuthTokens, patch: SettingsPatch): Promise<void>;
   /** `false` when the current password is wrong. */
   changePassword(session: AuthTokens, input: { current: string; next: string }): Promise<boolean>;
   listDevices(session: AuthTokens): Promise<SignedInDevice[]>;
@@ -545,6 +535,11 @@ export type ErpPortalConfig = {
   baseUrl: string;
   routes: PortalRoutes;
   fetcher?: typeof fetch;
+  /**
+   * The visitor's language, sent as `Accept-Language` on every call so the ERP answers labels,
+   * dates and error messages in it (the same header web-admin sends from `currentLanguage()`).
+   */
+  language?: () => string | undefined;
 } & Pick<ApiClientOptions, "timeoutMs" | "retries" | "unwrap" | "defaultHeaders">;
 
 /** Fails fast on misconfiguration that could leak tokens (plain http, absolute route paths). */
@@ -586,6 +581,11 @@ function tokensFrom(operation: string, cookie: string | null, expiresAt: string)
   return { sessionCookie: cookie, expiresAt };
 }
 
+/** Default headers with the visitor's `Accept-Language` on top, when one is known. */
+function withLanguage(headers: Record<string, string> | undefined, language: string | undefined): Record<string, string> | undefined {
+  return language ? { ...headers, "Accept-Language": language } : headers;
+}
+
 export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
   assertSafeConfig(config);
   const clientFor = (session?: AuthTokens): ApiClient =>
@@ -596,7 +596,7 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
       timeoutMs: config.timeoutMs,
       retries: config.retries,
       unwrap: config.unwrap,
-      defaultHeaders: config.defaultHeaders,
+      defaultHeaders: withLanguage(config.defaultHeaders, config.language?.()),
     });
 
   const path = (op: keyof PortalSource, params: Record<string, string> = {}) => {
@@ -630,10 +630,6 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
           headers: clientHeaders(client),
           onResponse: (response) => (cookie = sessionCookieFrom(response)),
         });
-        const twoStep = body as { twoStep?: unknown; challenge?: unknown; email?: unknown } | null;
-        if (twoStep?.twoStep === true && typeof twoStep.challenge === "string") {
-          return { ok: false, reason: "two_step", challenge: twoStep.challenge, email: typeof twoStep.email === "string" ? twoStep.email : "" };
-        }
         const { user, session } = parseOrThrow("login", loginSuccessSchema, body);
         return { ok: true, user, tokens: tokensFrom("login", cookie, session.expiresAt) };
       } catch (error) {
@@ -677,24 +673,6 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     },
     async logout(session) {
       await post("logout", session, {});
-    },
-    async verifyLoginCode({ client, ...input }) {
-      // 400: wrong, expired or used-up code (ERP-0106).
-      try {
-        let cookie: string | null = null;
-        const body = await clientFor().post(path("verifyLoginCode"), input, {
-          headers: clientHeaders(client),
-          onResponse: (response) => (cookie = sessionCookieFrom(response)),
-        });
-        const { user, session } = parseOrThrow("verifyLoginCode", loginSuccessSchema, body);
-        return { user, tokens: tokensFrom("verifyLoginCode", cookie, session.expiresAt) };
-      } catch (error) {
-        if (error instanceof ApiError && (error.status === 400 || error.status === 401)) return null;
-        throw error;
-      }
-    },
-    async resendLoginCode(input) {
-      await post("resendLoginCode", undefined, input);
     },
     async refreshSession(refreshToken) {
       try {
@@ -759,7 +737,6 @@ export function createErpPortalSource(config: ErpPortalConfig): PortalSource {
     removeMember: async (s, id) => clientFor(s).delete(path("removeMember", { id })),
     saveSite: async (s, site) => (site.id ? clientFor(s).patch(path("saveSite", { id: site.id }), site) : post("saveSite", s, site)),
     deleteSite: async (s, id) => clientFor(s).delete(path("deleteSite", { id })),
-    updateSettings: async (s, patch) => clientFor(s).patch(path("updateSettings"), patch),
     async changePassword(s, input) {
       try {
         await post("changePassword", s, input);

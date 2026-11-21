@@ -21,11 +21,6 @@ const next = safeNext(Astro.url.searchParams.get("next"));
 const result = Astro.getActionResult(actions.auth.login);
 // Keep `next` on the POST URL (the bare action URL `?_action=…` would drop it).
 const loginAction = next !== "/" ? `/login?next=${encodeURIComponent(next)}&${String(actions.auth.login).replace(/^\?/, "")}` : actions.auth.login;
-// Two-step sign-in (ERP-0106): the code page finishes it and returns to `next`.
-if (result?.data?.twoStep) {
-  if (next !== "/") Astro.session?.set("returnTo", next);
-  return Astro.redirect("/login/code", 303);
-}
 if (result && !result.error) return Astro.redirect(next, 303);
 
 const accountType = Astro.url.searchParams.get("type") === "individual" ? "individual" : "business";

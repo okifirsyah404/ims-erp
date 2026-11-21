@@ -26,17 +26,8 @@ type TFailedLogins = { count: number; lockedUntil: number | null };
 /** A signed-in portal caller and the Better Auth session to hand to the portal's server. */
 export type TPortalSignIn = { context: PortalContext; session: TPortalSession };
 
-/** Password accepted, an emailed code still needed (ERP-0106); no session exists yet. */
-export type TPortalTwoStep = { twoStep: true; challenge: string; email: string };
-
 /** A signed-in device of the login; `current` is the one making the request. The token is never exposed. */
 export type TPortalDevice = Omit<TPortalDeviceSession, 'token'> & { current: boolean };
-
-/** `dewi@example.com` → `d***@example.com`: enough to recognise, not to harvest. */
-export function maskEmail(email: string): string {
-	const [name = '', domain = ''] = email.split('@');
-	return `${name.slice(0, 1)}***@${domain}`;
-}
 
 /** The session token without the cookie signature (`<token>.<hmac>`), as Better Auth lists it. */
 const rawToken = (cookieToken: string) => cookieToken.split('.')[0]!;
@@ -56,8 +47,8 @@ const rawToken = (cookieToken: string) => cookieToken.split('.')[0]!;
  *   sign-ins are counted here per email (Redis): after
  *   {@link PORTAL_MAX_FAILED_LOGINS} the email is locked for
  *   {@link PORTAL_LOCK_SECONDS} (423).
- * - Two-step sign-in (ERP-0106): with `portal_two_step` on, a correct
- *   password yields no session; an emailed code finishes the sign-in.
+ * - No two-step sign-in of its own: a second factor is Better Auth's job
+ *   (owner decision 2026-11-21, not built yet).
  * - Implements the portal guard's {@link IPortalSessionResolver}.
  */
 @injectable()
@@ -73,21 +64,13 @@ export class PortalAuthService implements IPortalSessionResolver {
 			| 'startSignup'
 			| 'verifySignup'
 			| 'resendSignupCode'
-			| 'settings'
-			| 'startLoginCode'
-			| 'resendLoginCode'
-			| 'verifyLoginCode'
 			| 'closeOwnLogin'
 		>,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
 	) {}
 
-	/**
-	 * Email + password. With two-step sign-in on (ERP-0106) the password
-	 * session is dropped at once and a code goes to the email;
-	 * {@link verifyLoginCode} then signs in.
-	 */
-	async login(body: TPortalLoginRequest, headers: Headers): Promise<TPortalSignIn | TPortalTwoStep> {
+	/** Email + password. */
+	async login(body: TPortalLoginRequest, headers: Headers): Promise<TPortalSignIn> {
 		const key = `portal:login-failures:${body.email}`;
 		const failures = (await this.cache.get<TFailedLogins>(key)) ?? { count: 0, lockedUntil: null };
 		if (failures.lockedUntil && failures.lockedUntil > Date.now()) throw new PortalLockedError();
@@ -108,31 +91,8 @@ export class PortalAuthService implements IPortalSessionResolver {
 		}
 
 		await this.cache.del(key);
-		if ((await this.accounts.settings(identity)).twoStep) {
-			await this.sessions.signOut(session.token);
-			const challenge = await this.accounts.startLoginCode(identity);
-			return { twoStep: true, challenge, email: maskEmail(identity.user.email) };
-		}
 		await this.accounts.recordLogin(identity.customerId);
 		return { context: { ...identity, roles: session.roles, sessionToken: session.token }, session };
-	}
-
-	/**
-	 * The second step: the right code signs in on this device.
-	 * @throws {PortalInvalidCodeError} wrong, expired or used up
-	 */
-	async verifyLoginCode(challenge: string, code: string, headers: Headers): Promise<TPortalSignIn> {
-		const userId = await this.accounts.verifyLoginCode(challenge, code);
-		const identity = await this.accounts.resolveCustomer(userId);
-		if (!identity) throw new PortalInvalidCredentialsError();
-		const session = await this.sessions.createSession(userId, headers);
-		if (!session) throw new PortalInvalidCredentialsError();
-		await this.accounts.recordLogin(identity.customerId);
-		return { context: { ...identity, roles: session.roles, sessionToken: session.token }, session };
-	}
-
-	resendLoginCode(challenge: string): Promise<void> {
-		return this.accounts.resendLoginCode(challenge);
 	}
 
 	/* Devices and deleting the login (ERP-0106) ---------------------------- */

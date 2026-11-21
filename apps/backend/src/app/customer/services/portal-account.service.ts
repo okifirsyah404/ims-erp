@@ -13,7 +13,6 @@ import type {
 	TInviteCustomerPortalRequest,
 	TPortalAccountView,
 	TPortalCustomerIdentity,
-	TPortalLoginSettings,
 	TPortalMemberInvite,
 	TPortalSignup,
 } from '../contracts/portal-account.contract';
@@ -40,12 +39,7 @@ export const PORTAL_RESET_TTL_SECONDS = 60 * 60;
 export const PORTAL_SIGNUP_CODE_TTL_SECONDS = 10 * 60;
 export const PORTAL_SIGNUP_MAX_ATTEMPTS = 5;
 
-/** A two-step sign-in code lives 10 minutes and allows 5 attempts (ERP-0106). */
-export const PORTAL_LOGIN_CODE_TTL_SECONDS = 10 * 60;
-export const PORTAL_LOGIN_CODE_MAX_ATTEMPTS = 5;
-
 type TPendingSignup = { userId: string; name: string; phone: string | null; codeHash: string; attempts: number };
-type TPendingLogin = { userId: string; name: string; email: string; language: 'en' | 'id' | null; codeHash: string; attempts: number };
 
 const hashCode = (email: string, code: string) => createHash('sha256').update(`${email}:${code}`).digest('hex');
 
@@ -250,68 +244,8 @@ export class PortalAccountService {
 	}
 
 	/* -------------------------------------------------------------------- *
-	 * Login settings, two-step sign-in and deleting one's own login (ERP-0106)
+	 * Deleting one's own login (ERP-0106)
 	 * -------------------------------------------------------------------- */
-
-	/** The login's settings (port plan D3: columns on the person's row). */
-	async settings(caller: Pick<TPortalCustomerIdentity, 'customerId'>): Promise<TPortalLoginSettings> {
-		const person = await this.people.findById(caller.customerId);
-		return settingsOf(person);
-	}
-
-	/** Saves the given settings only; the others keep their value. */
-	async updateSettings(
-		caller: Pick<TPortalCustomerIdentity, 'customerId'>,
-		patch: Partial<TPortalLoginSettings>,
-	): Promise<TPortalLoginSettings> {
-		const update: Partial<Pick<TCustomerSelect, 'portalLanguage' | 'portalTwoStep' | 'portalPush'>> = {};
-		if (patch.language) update.portalLanguage = patch.language;
-		if (patch.twoStep !== undefined) update.portalTwoStep = patch.twoStep;
-		if (patch.push !== undefined) update.portalPush = patch.push;
-		if (Object.keys(update).length === 0) return this.settings(caller);
-		const person = await this.people.update(caller.customerId, update);
-		if (!person) throw new PortalAccountNotFoundError();
-		return settingsOf(person);
-	}
-
-	/**
-	 * Emails a 6-digit sign-in code and answers an opaque challenge the portal
-	 * sends back with the code. The password was already checked; no session
-	 * exists yet.
-	 */
-	async startLoginCode(caller: TPortalCustomerIdentity): Promise<string> {
-		const challenge = randomBytes(24).toString('base64url');
-		const { language } = await this.settings(caller);
-		await this.sendLoginCode(challenge, { userId: caller.userId, name: caller.user.name, email: caller.user.email, language });
-		return challenge;
-	}
-
-	/** A new code for a pending sign-in; silent when the challenge is gone. */
-	async resendLoginCode(challenge: string): Promise<void> {
-		const pending = await this.cache.get<TPendingLogin>(this.loginKey(challenge));
-		if (pending) await this.sendLoginCode(challenge, pending);
-	}
-
-	/**
-	 * The user behind a right code; the challenge is used up. Each wrong code
-	 * counts; the fifth drops the challenge.
-	 * @throws {PortalInvalidCodeError} wrong, expired or used up
-	 */
-	async verifyLoginCode(challenge: string, code: string): Promise<string> {
-		const key = this.loginKey(challenge);
-		const pending = await this.cache.get<TPendingLogin>(key);
-		if (!pending) throw new PortalInvalidCodeError();
-		const expected = Buffer.from(pending.codeHash);
-		const given = Buffer.from(hashCode(challenge, code.trim()));
-		if (expected.length !== given.length || !timingSafeEqual(expected, given)) {
-			const attempts = pending.attempts + 1;
-			if (attempts >= PORTAL_LOGIN_CODE_MAX_ATTEMPTS) await this.cache.del(key);
-			else await this.cache.set<TPendingLogin>(key, { ...pending, attempts }, PORTAL_LOGIN_CODE_TTL_SECONDS);
-			throw new PortalInvalidCodeError();
-		}
-		await this.cache.del(key);
-		return pending.userId;
-	}
 
 	/**
 	 * The person deletes their own login (branch owner decision 2026-11-20):
@@ -442,20 +376,6 @@ export class PortalAccountService {
 		await this.mailer.sendSignupCode({ to: email, name: pending.name, code });
 	}
 
-	private loginKey(challenge: string): string {
-		return `portal:login-code:${challenge}`;
-	}
-
-	private async sendLoginCode(challenge: string, pending: Pick<TPendingLogin, 'userId' | 'name' | 'email' | 'language'>): Promise<void> {
-		const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-		await this.cache.set<TPendingLogin>(
-			this.loginKey(challenge),
-			{ userId: pending.userId, name: pending.name, email: pending.email, language: pending.language, codeHash: hashCode(challenge, code), attempts: 0 },
-			PORTAL_LOGIN_CODE_TTL_SECONDS,
-		);
-		await this.mailer.sendLoginCode({ to: pending.email, name: pending.name, code, ...(pending.language ? { language: pending.language } : {}) });
-	}
-
 	private async sendInvitation(user: Pick<TAuthUser, 'id' | 'name' | 'email'>, link: string): Promise<void> {
 		const token = await this.users.issuePasswordToken(user.id, PORTAL_INVITE_TTL_SECONDS);
 		await this.mailer.sendInvitation({ to: user.email, name: user.name, url: `${link}?token=${encodeURIComponent(token)}` });
@@ -477,14 +397,4 @@ export class PortalAccountService {
 			createdAt: person.createdAt,
 		};
 	}
-}
-
-/** A person's portal settings; a missing person reads as the defaults. */
-function settingsOf(person: TCustomerSelect | null): TPortalLoginSettings {
-	const language = person?.portalLanguage;
-	return {
-		language: language === 'en' || language === 'id' ? language : null,
-		twoStep: person?.portalTwoStep ?? false,
-		push: person?.portalPush ?? false,
-	};
 }

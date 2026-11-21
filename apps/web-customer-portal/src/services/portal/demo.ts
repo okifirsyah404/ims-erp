@@ -117,10 +117,6 @@ export const demoSource: PortalSource = {
     return code === DEMO_OTP ? { user: data.demoUser, tokens: tokens() } : null;
   },
   async resendVerification() {},
-  async verifyLoginCode({ code }) {
-    return code === DEMO_OTP ? { user: data.demoUser, tokens: tokens() } : null;
-  },
-  async resendLoginCode() {},
   async requestPasswordReset() {},
   async resetPassword({ password }) {
     return password.length >= 12;
@@ -376,11 +372,6 @@ export const demoSource: PortalSource = {
   },
   async deleteSite(_s, id) {
     state.account.sites = state.account.sites.filter((s) => s.id !== id || s.primary);
-  },
-  async updateSettings(_s, patch) {
-    Object.assign(state.account.notifications, patch.notifications);
-    Object.assign(state.account.security, patch.security);
-    Object.assign(state.account.preferences, patch.preferences);
   },
   async changePassword(_s, input) {
     if (input.current !== DEMO_CREDENTIALS.password) return false;

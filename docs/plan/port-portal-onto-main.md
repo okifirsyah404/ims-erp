@@ -44,7 +44,7 @@ the UI, logic and tests and rewriting the schema/repository/route layer.
 | --- | --- | --- | --- |
 | D1 | Home of the dynamic website (`web_sites`, `web_pages`, `web_menus`, `web_menu_items`, `web_assets`) — main removed `commerce` as "target-only, returns through a new ADR if built" | a) new `website` schema/module · b) inside `company` | **a)** `website` module + ADR; it is built and used by web-landing. It would be the 21st schema (main has 20 since ADR-0026), so the schema counts in `AGENTS.md` and `docs/database/` change with it |
 | D2 | Account cart and wishlist (`cart_items`, `wishlist_items`) | a) `customer` schema · b) `website` schema | **a)** `customer` (they belong to the portal account) |
-| D3 | Portal login settings (push on/off, language, two-step) — main dropped `auth.user_preferences` | a) columns on `customer.customers` · b) bring back `auth.user_preferences` | **a)** `portal_language`, `portal_two_step`, `portal_push` on the person's row |
+| D3 | Portal login settings (push on/off, language, two-step) — main dropped `auth.user_preferences` | a) columns on `customer.customers` · b) bring back `auth.user_preferences` | **a)** `portal_language`, `portal_two_step`, `portal_push` on the person's row. **Superseded 2026-11-21 (owner):** no stored settings - language = `Accept-Language`, push over the backend websocket, two-step via Better Auth (not built); columns and migration removed before merge |
 | D4 | The portal "account" | main splits `customer.companies` (B2B) and `customer.customers` (people) | account = `company_id` for a company contact, else the individual `customers.id`; every portal read scopes by it |
 | D5 | Installation sites with a PIC (ERP-0075) | main: `customer.addresses` (people) + `customer.company_addresses` | add kind `site` + `contact_name`, `contact_phone` to both, or sites only on `company_addresses` (individuals use `addresses`) |
 | D6 | Company change requests (ERP-0076) + `industry` | — | `customer.company_change_requests`; `industry` column on `customer.companies` |
@@ -88,7 +88,7 @@ from the first draft, ADR-0026/0027, because ADR-0026 landed on main):
 | Branch (old layout) | Main target | Change on main |
 | --- | --- | --- |
 | `auth.portal_identities` | `customer.customers.user_id`, `portal_role`, `portal_status`, `portal_invited_by`, `portal_last_login_at` | none (exists) |
-| `auth.user_preferences` keys `portal.notify.*`, `portal.language`, `portal.security.two_step` | `customer.customers` columns (D3) | add columns |
+| `auth.user_preferences` keys `portal.notify.*`, `portal.language`, `portal.security.two_step` | none (D3 superseded 2026-11-21) | dropped |
 | `crm.customers` / `crm.customer_contacts` | `customer.companies` + `customer.customers` | none |
 | `crm.customers.industry` | `customer.companies.industry` | add column |
 | `crm.customer_addresses` (sites with PIC) | `customer.addresses` / `customer.company_addresses` (D5) | add kind + contact columns |

@@ -9,8 +9,6 @@ declare namespace App {
     auth: { user: PortalUser; tokens: AuthTokens; remember: boolean; signedInAt: string };
     /** Email awaiting OTP verification after registration. */
     pendingVerification: { email: string; accountType: "individual" | "business" };
-    /** A two-step sign-in waiting for the emailed code (ERP-0106); never the password. */
-    pendingSignIn: { challenge: string; email: string; remember: boolean };
     /** Guest-RFQ claim waiting for the emailed code. */
     rfqClaim: { reference: string; maskedEmail: string };
     /** Registration step-1 choice, kept server-side between steps. */
@@ -26,5 +24,7 @@ declare namespace App {
   interface Locals {
     user?: PortalUser;
     tokens?: AuthTokens;
+    /** The visitor's language (portal cookie), sent to the ERP as Accept-Language. */
+    language: import("@/lib/language").PortalLanguage;
   }
 }

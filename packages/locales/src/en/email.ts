@@ -43,13 +43,6 @@ const email = {
 	'portalSignupCode.body': 'Use this code to finish creating your {{app}} customer portal account.',
 	'portalSignupCode.expiry': 'The code expires in 10 minutes. If you did not sign up, ignore this email.',
 
-	// Customer portal two-step sign-in code (ERP-0106): sent after a correct
-	// password when the login has two-step sign-in on.
-	'portalLoginCode.subject': '{{code}} is your {{app}} sign-in code',
-	'portalLoginCode.greeting': 'Hi {{name}},',
-	'portalLoginCode.body': 'Use this code to finish signing in to your {{app}} customer portal account.',
-	'portalLoginCode.expiry': 'The code expires in 10 minutes. If you did not try to sign in, change your password now.',
-
 	// Organization invitation (invitation.type = 'org'): invite to join a
 	// specific organization with a role.
 	'organizationInvitation.subject': 'You are invited to join {{organization}}',

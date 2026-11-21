@@ -92,8 +92,7 @@ export interface ICustomerPersonRepository {
 
 	/**
 	 * Conditional revoke: only a live, not yet revoked login. Sets
-	 * `portal_status = revoked`, frees `user_id` and resets the login settings
-	 * (`portal_language`, `portal_two_step`, `portal_push`); returns the row as it was
+	 * `portal_status = revoked` and frees `user_id`; returns the row as it was
 	 * (so the caller can end the user's sessions) or `null` when nothing changed.
 	 */
 	revokePortalAccess(id: string): Promise<TCustomerSelect | null>;

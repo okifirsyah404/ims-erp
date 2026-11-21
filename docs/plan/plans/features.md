@@ -710,17 +710,17 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   `progress.md` 2026-11-21 (live check on a disposable DB). Open: browser
   walk-through; ERP-0106 (2-step, devices, delete login) follows in P1.
 - ERP-0106 portal security settings (2026-11-21, port of branch ERP-0081,
-  P1 + D3): two-step sign-in by an emailed 6-digit code (opt-in per login,
-  `customer.customers.portal_two_step`), signed-in devices (Better Auth
-  sessions by id, no tokens; sign out one or all others), delete own login
-  after the password (customer data kept, only company owner refused),
-  `PATCH /customers/portal/v1/account/settings` for push / two-step /
-  language (`portal_push`, `portal_language`). Portal: `/login/code`,
-  `/settings/devices`, `/settings/delete-account`, settings page trimmed to
-  working controls. Evidence: `src/app/customer`,
-  `test/unit/portal-account.test.ts`, `erp-source.test.ts`, migration
-  `20261121070035_erp0106_portal_login_settings`, `progress.md` 2026-11-21
-  (live check). Open: browser walk-through; account pages are P2 (ERP-0100).
+  P1): signed-in devices (Better Auth sessions by id, no tokens; sign out one
+  or all others) and delete own login after the password (customer data
+  kept, only company owner refused). Portal: `/settings/devices`,
+  `/settings/delete-account`, settings page trimmed to working controls. The
+  emailed two-step code and the stored settings (push, two-step, language;
+  D3 columns + migration) were removed the same day by owner decision: the
+  language is the portal's cookie sent as `Accept-Language`, push comes over
+  the backend websocket, a second factor will be Better Auth's (not built).
+  Evidence: `src/app/customer`, `test/unit/portal-account.test.ts`,
+  `erp-source.test.ts`, `progress.md` 2026-11-21. Open: browser walk-through;
+  Better Auth 2FA; account pages are P2 (ERP-0100).
 - Customer portal stage 1 — T26 + the account part of T25, ERP-0022
   (ADR-0022): one login per customer contact with a role, staff invitations,
   owners manage colleagues, individuals sign up with an emailed code, the web

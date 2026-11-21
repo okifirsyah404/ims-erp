@@ -55,8 +55,8 @@ import {
 	PortalLockedError,
 	PortalWrongPasswordError,
 } from '../../src/app/customer/errors/portal.errors';
-import { PORTAL_LOGIN_CODE_TTL_SECONDS, PortalAccountService } from '../../src/app/customer/services/portal-account.service';
-import { maskEmail, PortalAuthService, type TPortalSignIn, type TPortalTwoStep } from '../../src/app/customer/services/portal-auth.service';
+import { PortalAccountService } from '../../src/app/customer/services/portal-account.service';
+import { PortalAuthService, type TPortalSignIn } from '../../src/app/customer/services/portal-auth.service';
 import { formPayload } from '../../src/app/customer/utils/form-payload';
 import { PORTAL_SESSION_RESOLVER_TOKEN, type PortalContext } from '../../src/authorization/portal-auth';
 
@@ -73,7 +73,7 @@ const INACTIVE_COMPANY = '0190a1b2-0000-7000-8000-0000000000c3';
 let people: TCustomerSelect[];
 let companies: TCustomerCompanySelect[];
 let users: { id: string; name: string; email: string; emailVerified: boolean; member: boolean; password: string | null; roles?: string[] }[];
-let mails: { kind: string; to: string; url?: string; code?: string; language?: string }[];
+let mails: { kind: string; to: string; url?: string; code?: string }[];
 let revokedSessions: string[];
 let cache: Map<string, unknown>;
 let cacheTtls: Map<string, number | undefined>;
@@ -101,9 +101,6 @@ function personRow(data: Partial<TCustomerSelect>): TCustomerSelect {
 		portalStatus: null,
 		portalInvitedBy: null,
 		portalLastLoginAt: null,
-		portalLanguage: null,
-		portalTwoStep: false,
-		portalPush: false,
 		notes: null,
 		createdBy: null,
 		createdAt: now,
@@ -150,7 +147,7 @@ function fakePeople(): ICustomerPersonRepository {
 			const row = people.find((item) => live(item) && item.id === id && item.userId && item.portalStatus !== 'revoked');
 			if (!row) return null;
 			const before = { ...row };
-			Object.assign(row, { portalStatus: 'revoked', userId: null, portalLanguage: null, portalTwoStep: false, portalPush: false });
+			Object.assign(row, { portalStatus: 'revoked', userId: null });
 			return before;
 		},
 		async touchPortalLogin(id) {
@@ -228,9 +225,6 @@ beforeEach(() => {
 			sendSignupCode: async (input) => {
 				mails.push({ kind: 'code', to: input.to, code: input.code });
 			},
-			sendLoginCode: async (input) => {
-				mails.push({ kind: 'login', to: input.to, code: input.code, ...(input.language ? { language: input.language } : {}) });
-			},
 		},
 		fakeCache(),
 	);
@@ -240,11 +234,8 @@ beforeEach(() => {
 const invite = (body: { companyId?: string; customerId?: string; name: string; email: string; role: 'owner' | 'approver' | 'finance' | 'viewer' }) =>
 	accounts.invite('staff-1', body);
 const asCaller = (identity: TPortalCustomerIdentity | null) => identity!;
-/** A sign-in that must have yielded a session (two-step off). */
-function signedIn(result: TPortalSignIn | TPortalTwoStep): TPortalSignIn {
-	if ('twoStep' in result) throw new Error('expected a session, got a two-step challenge');
-	return result;
-}
+/** A sign-in that yielded a session. */
+const signedIn = (result: TPortalSignIn): TPortalSignIn => result;
 
 describe('portal accounts (staff invitations, D2)', () => {
 	test('an invitation creates a contact person with an owner login and emails a link to the portal reset page', async () => {
@@ -557,100 +548,11 @@ describe('portal sign-in', () => {
 		// The first import of the controller graph (Better Auth, mailer, i18n) is slow on a cold run.
 	}, 60_000);
 
-	/* ERP-0106: settings, two-step sign-in, devices, deleting one's own login */
+	/* ERP-0106: devices, deleting one's own login */
 
 	const budiOf = () => people.find((row) => row.email === 'budi@alfa.co.id')!;
 	const budiUser = () => users.find((user) => user.email === 'budi@alfa.co.id')!;
 	const loginBudi = (password = FAKE_PASSWORD_2, headers = new Headers()) => auth.login({ email: 'budi@alfa.co.id', password }, headers);
-	const twoStepOn = async () => {
-		const caller = asCaller(await accounts.resolveCustomer(budiUser().id));
-		await accounts.updateSettings(caller, { twoStep: true });
-	};
-	const last = <T>(items: T[]) => items[items.length - 1];
-	const lastCode = () => last(mails.filter((mail) => mail.kind === 'login'))!.code!;
-
-	test('settings default off/null, change one at a time and are reset when the login is revoked', async () => {
-		const caller = asCaller(await accounts.resolveCustomer(budiUser().id));
-		expect(await accounts.settings(caller)).toEqual({ language: null, twoStep: false, push: false });
-		expect(await accounts.updateSettings(caller, { push: true })).toEqual({ language: null, twoStep: false, push: true });
-		expect(await accounts.updateSettings(caller, { language: 'id', twoStep: true })).toEqual({ language: 'id', twoStep: true, push: true });
-		expect(budiOf()).toMatchObject({ portalLanguage: 'id', portalTwoStep: true, portalPush: true });
-		await accounts.revoke(caller.customerId);
-		expect(budiOf()).toMatchObject({ portalLanguage: null, portalTwoStep: false, portalPush: false });
-	});
-
-	test('two-step on: the right password gives no session, the password session is dropped and a code is emailed', async () => {
-		await twoStepOn();
-		mails = [];
-		const result = await loginBudi();
-		expect(result).toEqual({ twoStep: true, challenge: expect.any(String), email: 'b***@alfa.co.id' });
-		expect('context' in result).toBe(false);
-		expect(signedOut).toEqual([`session-${budiUser().id}`]);
-		expect(liveSessions).toHaveLength(0);
-		expect(mails).toEqual([{ kind: 'login', to: 'budi@alfa.co.id', code: expect.stringMatching(/^\d{6}$/) }]);
-		expect(budiOf().portalLastLoginAt).toBeNull();
-		const key = [...cache.keys()].find((item) => item.startsWith('portal:login-code:'))!;
-		expect(cacheTtls.get(key)).toBe(PORTAL_LOGIN_CODE_TTL_SECONDS);
-		expect(JSON.stringify(cache.get(key))).not.toContain(lastCode());
-		expect(maskEmail('dewi@mail.id')).toBe('d***@mail.id');
-	});
-
-	test('two-step: the code goes out in the language the login chose', async () => {
-		const caller = asCaller(await accounts.resolveCustomer(budiUser().id));
-		await accounts.updateSettings(caller, { twoStep: true, language: 'id' });
-		await loginBudi();
-		expect(last(mails.filter((mail) => mail.kind === 'login'))!.language).toBe('id');
-	});
-
-	test('two-step: the right code signs in on this device, once', async () => {
-		await twoStepOn();
-		const { challenge } = (await loginBudi()) as TPortalTwoStep;
-		const device = new Headers({ 'user-agent': 'Firefox/1' });
-		const { context, session } = await auth.verifyLoginCode(challenge, lastCode(), device);
-		expect(context.customerId).toBe(budiOf().id);
-		expect(session.roles).toContain('customer');
-		expect(last(createdFrom)?.get('user-agent')).toBe('Firefox/1');
-		expect(budiOf().portalLastLoginAt).not.toBeNull();
-		expect((await auth.resolve(new Headers({ cookie: `sid=${session.token}` })))?.customerId).toBe(budiOf().id);
-		await expect(auth.verifyLoginCode(challenge, lastCode(), device)).rejects.toBeInstanceOf(PortalInvalidCodeError);
-	});
-
-	test('two-step: wrong codes count; the fifth ends the challenge, even for the right code', async () => {
-		await twoStepOn();
-		const { challenge } = (await loginBudi()) as TPortalTwoStep;
-		const right = lastCode();
-		const wrong = right === '000000' ? '111111' : '000000';
-		for (let attempt = 1; attempt < 5; attempt += 1) {
-			await expect(auth.verifyLoginCode(challenge, wrong, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
-			expect((cache.get(`portal:login-code:${challenge}`) as { attempts: number }).attempts).toBe(attempt);
-		}
-		await expect(auth.verifyLoginCode(challenge, wrong, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
-		await expect(auth.verifyLoginCode(challenge, right, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
-		expect(liveSessions).toHaveLength(0);
-	});
-
-	test('two-step: an expired code (gone from Redis) fails; a resend gives a new working code', async () => {
-		await twoStepOn();
-		const { challenge } = (await loginBudi()) as TPortalTwoStep;
-		const first = lastCode();
-		await auth.resendLoginCode(challenge);
-		const second = lastCode();
-		if (first !== second) await expect(auth.verifyLoginCode(challenge, first, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
-		cache.delete(`portal:login-code:${challenge}`);
-		await expect(auth.verifyLoginCode(challenge, second, new Headers())).rejects.toBeInstanceOf(PortalInvalidCodeError);
-		await auth.resendLoginCode(challenge);
-		expect(mails.filter((mail) => mail.kind === 'login')).toHaveLength(2);
-	});
-
-	test('two-step: wrong passwords still lock the email', async () => {
-		await twoStepOn();
-		for (let attempt = 1; attempt < 5; attempt += 1) {
-			await expect(loginBudi(FAKE_PASSWORD_3)).rejects.toBeInstanceOf(PortalInvalidCredentialsError);
-		}
-		await expect(loginBudi(FAKE_PASSWORD_3)).rejects.toBeInstanceOf(PortalLockedError);
-		await expect(loginBudi()).rejects.toBeInstanceOf(PortalLockedError);
-		expect(mails.filter((mail) => mail.kind === 'login')).toHaveLength(0);
-	});
 
 	test('devices: listed without tokens, the current one first; sign out one by id or all others', async () => {
 		const { context } = signedIn(await loginBudi());
@@ -711,8 +613,7 @@ describe('portal sign-in', () => {
 		expect(people.find((row) => row.id === context.customerId)).toMatchObject({ portalStatus: 'revoked', userId: null, customerType: 'individual' });
 	});
 
-	test('HTTP: two-step login sets no cookie and returns no token; verify answers Set-Cookie; devices hide tokens; close clears the cookie', async () => {
-		await twoStepOn();
+	test('HTTP: devices hide tokens; the account answers in the Accept-Language with no stored settings; close clears the cookie', async () => {
 		container.register(PORTAL_AUTH_SERVICE_TOKEN, { useValue: auth });
 		container.register(PORTAL_ACCOUNT_SERVICE_TOKEN, { useValue: accounts });
 		container.register(PORTAL_SERVICE_TOKEN, { useValue: { customer: async () => null, members: async () => [] } as never });
@@ -722,20 +623,12 @@ describe('portal sign-in', () => {
 		const post = (path: string, body: unknown, headers: Record<string, string> = {}) =>
 			new Request(`http://localhost/customers/portal/v1${path}`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
 
-		const first = await authApp.handle(post('/auth/login', { email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }));
-		expect(first.status).toBe(200);
-		expect(first.headers.get('set-cookie')).toBeNull();
-		const step = ((await first.json()) as { data: { ok: boolean; twoStep: boolean; challenge: string; email: string } }).data;
-		expect(step).toEqual({ ok: false, twoStep: true, challenge: expect.any(String), email: 'b***@alfa.co.id' });
-
-		const wrong = await authApp.handle(post('/auth/login/verify', { challenge: step.challenge, code: lastCode() === '000000' ? '111111' : '000000' }));
-		expect(wrong.status).toBe(400);
-		const verified = await authApp.handle(post('/auth/login/verify', { challenge: step.challenge, code: lastCode() }, { 'user-agent': 'Firefox/1' }));
-		expect(verified.status).toBe(200);
-		const cookie = verified.headers.get('set-cookie')!.split(';')[0]!;
+		const signIn = await authApp.handle(post('/auth/login', { email: 'budi@alfa.co.id', password: FAKE_PASSWORD_2 }, { 'user-agent': 'Firefox/1' }));
+		expect(signIn.status).toBe(200);
+		const cookie = signIn.headers.get('set-cookie')!.split(';')[0]!;
 		expect(cookie).toMatch(/^sid=session-/);
-		const verifiedBody = JSON.stringify(await verified.json());
-		expect(verifiedBody).not.toContain('session-u-');
+		// Two-step sign-in is gone (owner decision 2026-11-21): its routes no longer exist.
+		expect((await authApp.handle(post('/auth/login/verify', { challenge: 'c'.repeat(32), code: '000000' }))).status).toBe(404);
 
 		const portal = PortalController.plugin();
 		liveSessions.push({ id: 'sid-phone', token: 'tok-phone', userId: budiUser().id, userAgent: 'iPhone', ipAddress: null, createdAt: new Date(), updatedAt: new Date() });
@@ -752,18 +645,19 @@ describe('portal sign-in', () => {
 		const out = await portal.handle(new Request('http://localhost/customers/portal/v1/account/devices/sid-phone', { method: 'DELETE', headers: { cookie } }));
 		expect(out.status).toBe(200);
 
-		const account = await portal.handle(new Request('http://localhost/customers/portal/v1/account', { headers: { cookie } }));
-		const accountJson = (await account.json()) as { data: { security: unknown; preferences: unknown; notifications: unknown } };
-		expect(accountJson.data.security).toEqual({ twoStep: true, passwordChangedLabel: '', activeDevices: 1 });
+		const account = await portal.handle(new Request('http://localhost/customers/portal/v1/account', { headers: { cookie, 'accept-language': 'id' } }));
+		const accountJson = (await account.json()) as { data: { security: unknown; preferences: unknown; notifications?: unknown } };
+		expect(accountJson.data.security).toEqual({ passwordChangedLabel: '', activeDevices: 1 });
+		expect(accountJson.data.preferences).toEqual({ language: 'id', currency: 'IDR' });
+		expect(accountJson.data.notifications).toBeUndefined();
 		const patch = await portal.handle(
 			new Request('http://localhost/customers/portal/v1/account/settings', {
 				method: 'PATCH',
 				headers: { cookie, 'content-type': 'application/json' },
-				body: JSON.stringify({ notifications: { push: true }, security: { twoStep: false }, preferences: { language: 'id' } }),
+				body: JSON.stringify({ preferences: { language: 'id' } }),
 			}),
 		);
-		expect(patch.status).toBe(200);
-		expect(budiOf()).toMatchObject({ portalPush: true, portalTwoStep: false, portalLanguage: 'id' });
+		expect(patch.status).toBe(404);
 
 		const refused = await portal.handle(post('/account/close', { password: FAKE_PASSWORD_2 }, { cookie }));
 		expect(refused.status).toBe(409);

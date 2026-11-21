@@ -12,6 +12,73 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - ERP-0106 trimmed: no stored portal settings (language, push, two-step)
+
+Owner request on PR #139: drop `portal_language` (use the HTTP
+`Accept-Language` header, as web-admin does), drop `portal_push` (push is
+handled by the backend websocket) and drop the custom two-step sign-in
+(`portal_two_step`; a second factor is Better Auth's job). Owner choices
+(asked): remove the two-step code now and leave Better Auth `twoFactor` for a
+separate slice; delete the unmerged ERP-0106 migration instead of appending a
+DROP migration. Devices and deleting one's own login stay.
+
+**Gates.** Gate 1: re-read `docs/database/docs.dbml` (Customer block,
+`customer.customers` portal columns and checks); the change only removes
+columns this branch added, no cross-module reference or vocabulary is
+touched. Gate 2: the design questions were the two owner choices above; tenant
+scoping, soft delete, money and dates are unaffected.
+
+**Changed.**
+- Schema: `customer.customers` loses `portal_language`, `portal_two_step`,
+  `portal_push` and `customers_portal_language_check` (Drizzle file is back to
+  its ERP-0094 state). Migration folder
+  `20261121070035_erp0106_portal_login_settings` deleted: it never reached
+  `main` and was only applied to disposable databases. This departs from the
+  append-only rule on purpose (owner decision); the chain on this branch ends
+  at `20261121064831_erp0094_portal_customer_role` again.
+- `docs/database/docs.dbml`: the three columns and the check removed (the
+  corrected `portal_status` note kept); `gen-logical-references.ts` re-run.
+- Backend `customer`: two-step sign-in removed (`login` always answers a
+  session; `/auth/login/verify`, `/auth/login/resend`,
+  `PATCH /account/settings` gone; `settings`, `updateSettings`,
+  `startLoginCode`, `resendLoginCode`, `verifyLoginCode`, `TPortalTwoStep`,
+  `maskEmail`, the login-code mail port, template and `email:portalLoginCode.*`
+  locale keys removed). `GET /account` returns `security` without `twoStep`,
+  no `notifications`, and `preferences.language` from the request's
+  `Accept-Language`. Revoke no longer resets settings.
+- `apps/web-customer-portal`: the language lives in the portal's
+  `portal_lang` cookie (`src/lib/language.ts`), set by the new `setLanguage`
+  action from Settings; the middleware runs each request in an
+  `AsyncLocalStorage` (`src/services/language.ts`) and the ERP adapter sends it
+  as `Accept-Language` on every call (`ErpPortalConfig.language`). `/login/code`,
+  `SettingToggle`, `verifyLoginCode` / `resendLoginCode` / `updateSettings` /
+  `updateSetting`, the push and 2-step rows (Settings, desktop profile) and the
+  `pendingSignIn` session key removed.
+- Tests: `portal-account.test.ts` drops the settings and two-step cases (the
+  HTTP case now checks the `Accept-Language` account answer and 404 for the
+  removed routes); portal `erp-source.test.ts` checks the per-call
+  `Accept-Language`; new `src/lib/language.test.ts`.
+- Docs: `customer-portal.md`, port plan D3 marked superseded, `backlog.md`
+  ERP-0106, `features.md`, portal README.
+
+**Commands.**
+- `bun docs/database/gen-logical-references.ts` → 190 refs;
+  `bun docs/database/validate-dbml.ts` → OK (0 drift).
+- `cd apps/backend && bunx --bun drizzle-kit check` → "Everything's fine";
+  `bunx --bun drizzle-kit generate` → "No schema changes, nothing to migrate".
+- `cd apps/backend && bun test` → 1326 pass / 0 fail; `bunx tsc --noEmit` → 0
+  errors; `bun run lint` → no warning in touched files.
+- `cd packages/locales && bun test` → 106 pass.
+- `cd apps/web-customer-portal && bun test` → 68 pass; `bun run typecheck` →
+  0 errors, 0 warnings.
+
+**Not done.** Not re-checked live on a disposable database; no browser
+walk-through of Settings / language switch; Better Auth `twoFactor` not built
+(needs its own backlog item and auth schema change). Not reviewed.
+
+Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
+decision, once PR #139 is reviewed.
+
 ## 2026-11-21 - ERP-0094 amended: the `customer` role is checked by the customer portal, not the ERP
 
 Owner request on PR #139 (`feat/erp-0094-portal-session-cookie`): the ERP

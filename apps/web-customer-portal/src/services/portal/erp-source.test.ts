@@ -49,7 +49,7 @@ function mockFetch(respond: (call: Call) => Response | Promise<Response>) {
   return { calls, fetcher };
 }
 
-const sourceWith = (fetcher: typeof fetch, timeoutMs = 1000): PortalSource =>
+const sourceWith = (fetcher: typeof fetch, timeoutMs = 1000, language: () => string | undefined = () => "en"): PortalSource =>
   createErpPortalSource({
     baseUrl: BASE,
     routes: erpRoutes,
@@ -57,7 +57,8 @@ const sourceWith = (fetcher: typeof fetch, timeoutMs = 1000): PortalSource =>
     retries: 0,
     timeoutMs,
     unwrap: unwrapEnvelope,
-    defaultHeaders: { "X-Client": "entragate-customer-portal", "Accept-Language": "en" },
+    defaultHeaders: { "X-Client": "entragate-customer-portal" },
+    language,
   });
 
 const header = (call: Call, name: string) => new Headers(call.init.headers).get(name);
@@ -106,51 +107,49 @@ describe("envelope", () => {
 });
 
 describe("security settings (ERP-0106)", () => {
-  test("two-step login: the challenge comes back, no cookie is taken, the visitor's browser is forwarded", async () => {
-    const { calls, fetcher } = mockFetch(() => envelope({ ok: false, twoStep: true, challenge: "c".repeat(32), email: "h***@majulogistik.co.id" }));
+  test("login forwards the visitor's browser and address, never in the body", async () => {
+    const { calls, fetcher } = mockFetch(() => signedIn({ ok: true, user: backendUser, session: backendSession }));
     const result = await sourceWith(fetcher).login({
       email: "hendra@majulogistik.co.id",
       password: "secret-password",
       accountType: "business",
       client: { userAgent: "Firefox/1", ip: "203.0.113.9" },
     });
-    expect(result).toEqual({ ok: false, reason: "two_step", challenge: "c".repeat(32), email: "h***@majulogistik.co.id" });
+    expect(result.ok).toBe(true);
     expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/login`);
     expect(header(calls[0]!, "user-agent")).toBe("Firefox/1");
     expect(header(calls[0]!, "x-forwarded-for")).toBe("203.0.113.9");
     expect(JSON.parse(String(calls[0]!.init.body))).not.toHaveProperty("client");
   });
 
-  test("verifyLoginCode keeps the Set-Cookie session; a wrong code (400) is null; resend posts the challenge", async () => {
-    const { calls, fetcher } = mockFetch(({ url }) => {
-      if (url.pathname.endsWith("/login/resend")) return envelope(null);
-      return JSON.parse(String(calls[calls.length - 1]!.init.body)).code === "123456"
-        ? signedIn({ ok: true, user: backendUser, session: backendSession })
-        : errorEnvelope(400, "The code is wrong or has expired");
-    });
-    const source = withSessionExpiry(sourceWith(fetcher));
-    const verified = await source.verifyLoginCode({ challenge: "c".repeat(32), code: "123456" });
-    expect(verified?.tokens.sessionCookie).toBe(COOKIE);
-    expect(calls[0]!.url.pathname).toBe(`${PREFIX}/auth/login/verify`);
-    expect(header(calls[0]!, "cookie")).toBeNull();
-    expect(await source.verifyLoginCode({ challenge: "c".repeat(32), code: "000000" })).toBeNull();
-    await source.resendLoginCode({ challenge: "c".repeat(32) });
-    expect(calls[2]!.url.pathname).toBe(`${PREFIX}/auth/login/resend`);
+  test("two-step sign-in and settings are gone: no route is mapped for them", () => {
+    expect(Object.keys(erpRoutes)).not.toContain("verifyLoginCode");
+    expect(Object.keys(erpRoutes)).not.toContain("resendLoginCode");
+    expect(Object.keys(erpRoutes)).not.toContain("updateSettings");
   });
 
-  test("devices: list, sign one out by id, sign out the others; settings PATCH", async () => {
+  test("every call carries the visitor's current language as Accept-Language", async () => {
+    let language = "id";
+    const { calls, fetcher } = mockFetch(() => envelope([]));
+    const source = sourceWith(fetcher, 1000, () => language);
+    await source.listDevices(session);
+    language = "en";
+    await source.listDevices(session);
+    expect(calls.map((call) => header(call, "accept-language"))).toEqual(["id", "en"]);
+    expect(header(calls[0]!, "x-client")).toBe("entragate-customer-portal");
+  });
+
+  test("devices: list, sign one out by id, sign out the others", async () => {
     const devices = [{ id: "sid-1", userAgent: "Firefox/1", ipAddress: null, createdAt: "2026-11-21T01:00:00.000Z", updatedAt: "2026-11-21T01:00:00.000Z", current: true }];
     const { calls, fetcher } = mockFetch(({ url }) => (url.pathname.endsWith("/account/devices") ? envelope(devices) : envelope(null)));
     const source = sourceWith(fetcher);
     expect(await source.listDevices(session)).toEqual(devices);
     await source.revokeDevice(session, "sid/2");
     await source.signOutOtherDevices(session);
-    await source.updateSettings(session, { security: { twoStep: true } });
     expect(calls.map((call) => [call.init.method ?? "GET", call.url.pathname])).toEqual([
       ["GET", `${PREFIX}/account/devices`],
       ["DELETE", `${PREFIX}/account/devices/sid%2F2`],
       ["POST", `${PREFIX}/account/devices/sign-out-others`],
-      ["PATCH", `${PREFIX}/account/settings`],
     ]);
     for (const call of calls) expect(header(call, "cookie")).toBe(COOKIE);
   });
@@ -324,8 +323,7 @@ describe("authenticated reads", () => {
           { id: "m-1", name: "Hendra Wijaya", email: "hendra@majulogistik.co.id", initials: "HW", role: "owner", admin: true, status: "active", lastActiveLabel: "1 hour ago" },
         ],
         sites: [],
-        notifications: { push: false, email: true, whatsapp: false },
-        security: { twoStep: false, passwordChangedLabel: "", activeDevices: 1 },
+        security: { passwordChangedLabel: "", activeDevices: 1 },
         preferences: { language: "en", currency: "IDR" },
       });
     });

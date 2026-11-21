@@ -1,7 +1,8 @@
 import { ActionError, defineAction, type ActionAPIContext } from "astro:actions";
 import { z } from "astro/zod";
 import { ApiError } from "@/api/client";
-import { PortalNotConfiguredError, type AuthTokens, type PortalUser, type SettingsPatch } from "@/api/portal";
+import { PortalNotConfiguredError, type AuthTokens, type PortalUser } from "@/api/portal";
+import { LANGUAGE_COOKIE, LANGUAGE_COOKIE_MAX_AGE, PORTAL_LANGUAGES } from "@/lib/language";
 import { portal } from "../services/portal";
 import { isPortalCustomer } from "@/lib/portal-role";
 import { signIn, signOut } from "../services/auth";
@@ -88,10 +89,6 @@ export const server = {
             const minutes = Math.max(1, Math.ceil((Date.parse(result.lockedUntil) - Date.now()) / 60_000));
             throw new ActionError({ code: "TOO_MANY_REQUESTS", message: `Account locked. Try again in ${minutes} minutes or reset your password.` });
           }
-          if (result.reason === "two_step") {
-            context.session?.set("pendingSignIn", { challenge: result.challenge, email: result.email, remember: input.remember });
-            return { ok: true, twoStep: true };
-          }
           if (result.reason === "unverified") {
             context.session?.set("pendingVerification", { email: result.email, accountType: input.account_type });
             throw new ActionError({ code: "FORBIDDEN", message: "Please verify your email first." });
@@ -107,32 +104,6 @@ export const server = {
         }
         await admitCustomer(result, "Incorrect email or password");
         await signIn(context.session!, result.user, result.tokens, input.remember);
-        return { ok: true, twoStep: false };
-      },
-    }),
-
-    /** Second step of a two-step sign-in (ERP-0106): the code from the email. */
-    verifyLoginCode: defineAction({
-      accept: "form",
-      input: z.object({ code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code") }),
-      handler: async (input, context) => {
-        const pending = await context.session?.get("pendingSignIn");
-        if (!pending) throw new ActionError({ code: "UNAUTHORIZED", message: "Your sign-in has expired. Please sign in again." });
-        const result = await call(() => portal.verifyLoginCode({ challenge: pending.challenge, code: input.code, client: clientOf(context) }));
-        if (!result) throw new ActionError({ code: "BAD_REQUEST", message: "That code is wrong or has expired." });
-        context.session?.delete("pendingSignIn");
-        await admitCustomer(result, "Incorrect email or password");
-        await signIn(context.session!, result.user, result.tokens, pending.remember);
-        return { ok: true };
-      },
-    }),
-
-    resendLoginCode: defineAction({
-      accept: "form",
-      handler: async (_input, context) => {
-        const pending = await context.session?.get("pendingSignIn");
-        if (!pending) throw new ActionError({ code: "UNAUTHORIZED", message: "Your sign-in has expired. Please sign in again." });
-        await call(() => portal.resendLoginCode({ challenge: pending.challenge }));
         return { ok: true };
       },
     }),
@@ -552,22 +523,22 @@ export const server = {
       },
     }),
 
-    /** Single preference toggle/select; sent immediately from the settings screens. */
-    updateSetting: defineAction({
+    /**
+     * The visitor's language. Kept in the portal's own cookie (not an ERP setting) and sent
+     * to the ERP as Accept-Language on every call; it also applies before sign-in.
+     */
+    setLanguage: defineAction({
       accept: "form",
-      input: z.object({
-        key: z.enum(["push", "twoStep", "language"]),
-        value: z.string().max(20),
-      }),
+      input: z.object({ language: z.enum(PORTAL_LANGUAGES) }),
       handler: async (input, context) => {
-        const tokens = requireAuth(context);
-        const on = input.value === "true";
-        let patch: SettingsPatch;
-        if (input.key === "push") patch = { notifications: { push: on } };
-        else if (input.key === "twoStep") patch = { security: { twoStep: on } };
-        else patch = { preferences: { language: input.value === "id" ? "id" : "en" } };
-        await call(() => portal.updateSettings(tokens, patch));
-        return { ok: true };
+        context.cookies.set(LANGUAGE_COOKIE, input.language, {
+          path: "/",
+          maxAge: LANGUAGE_COOKIE_MAX_AGE,
+          httpOnly: true,
+          sameSite: "lax",
+          secure: import.meta.env.PROD,
+        });
+        return { language: input.language };
       },
     }),
 

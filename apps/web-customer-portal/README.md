@@ -71,10 +71,14 @@ no refresh token) lives in the server-side session; the cookie only carries an o
   auth, orders, projects, quotations, invoices, payments, tickets and warranty, the account
   area uses `getBadges`, `getAccount`, `updatePersonal` (PATCH), `updateCompany` (PATCH),
   `inviteMember`, `removeMember` (DELETE `:id`), `saveSite` (POST, or PATCH `:id`),
-  `deleteSite` (DELETE `:id`), `updateSettings` (PATCH), `changePassword` (400/401/403 =
+  `deleteSite` (DELETE `:id`), `changePassword` (400/401/403 =
   wrong current password), `listWishlist`, `removeWishlistItem` (DELETE `:id`),
   `getInvoice` (`:id`, 404 = not found) and `postTicketMessage` (JSON, or multipart with
   `payload` + up to 3 `attachments` when files are sent).
+- **Language.** The visitor's language (`en` | `id`) is the portal's own `portal_lang`
+  cookie, set by the `setLanguage` action from Settings, and every ERP call sends it as
+  `Accept-Language` (`src/services/language.ts`, like web-admin's `currentLanguage()`). The
+  ERP stores no language, push or two-step setting for a portal login (2026-11-21).
 - **Public lookup.** `/track` (07.05) calls `lookupPublicOrder` without a session and shows
   status only (no prices, addresses or contacts). It is rate limited per client address
   (20 lookups / 10 min, in memory). The ERP endpoint should also require something the
