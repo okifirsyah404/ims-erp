@@ -12,6 +12,32 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-21 - Docs: Indonesian guide to the whole `docs/` folder (docs only)
+
+**Owner request.** "baca keseluruhan yang ada pada folder docs … buatkan juga file
+yang berbahasa indonesia".
+
+**Change.** Added `docs/PANDUAN-DOKUMENTASI.id.md`. It is an Indonesian
+walk-through of every folder in `docs/`:
+- the system and its architecture rules;
+- the 20 schemas and the database conventions;
+- each business module;
+- security, API and URL rules;
+- n8n and WhatsApp;
+- status (backlog counts, phases, UAT, portal port plan);
+- the ADR list;
+- the working process.
+
+It also lists **stale and contradictory docs** in section 12. It was found by
+reading every file in `docs/` at `origin/main` `638ab9fa`. None of those docs were
+corrected in this change.
+
+**Check.** `bun docs/database/validate-dbml.ts` → `parsed: 192 tables, 147 refs`,
+all drift 0, `OK`.
+
+**No code change.** `docs/database/` was reviewed and is unchanged. No backlog
+status moved.
+
 ## 2026-11-21 - ERP-0092: code number settings page restored (Settings -> Code Number)
 
 User request: bring back the code number settings page under Settings ->
