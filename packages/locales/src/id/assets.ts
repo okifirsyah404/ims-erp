@@ -100,6 +100,11 @@ const assets = {
 	'service.description': 'Riwayat pemeliharaan per aset.',
 	'service.empty': 'Belum ada catatan servis.',
 	'service.emptyTitle': 'Belum ada apa pun di sini',
+	'service.code': 'Kode',
+	'service.type': 'Jenis',
+	'service.date': 'Tanggal',
+	'service.cost': 'Biaya',
+	'service.status': 'Status',
 
 	// Depreciation page.
 	'depreciation.title': 'Penyusutan',

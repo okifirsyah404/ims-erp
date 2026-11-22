@@ -13,7 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Archive, Pencil, RotateCcw } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
@@ -109,35 +112,42 @@ function ApplicationsPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
-				cell: ({ row }) =>
-					canManage ? (
-						<>
-							<Button size='sm' variant='ghost' onClick={() => open(row.original)}>
-								{t('licensing:action.edit')}
-							</Button>
-							{row.original.status === 'active' ? (
-								<Button
-									size='sm'
-									variant='ghost'
-									disabled={busy}
-									onClick={() => void run(() => retireApplication(row.original.id))}
-								>
-									{t('licensing:applications.retire')}
-								</Button>
-							) : (
-								<Button
-									size='sm'
-									variant='ghost'
-									disabled={busy}
-									onClick={() => void run(() => restoreApplication(row.original.id))}
-								>
-									{t('licensing:applications.restore')}
-								</Button>
-							)}
-						</>
-					) : null,
+				cell: ({ row }) => {
+					const active = row.original.status === 'active';
+					return (
+						<RowActions
+							label={t('common:action.actions')}
+							actions={[
+								{
+									key: 'edit',
+									label: t('licensing:action.edit'),
+									icon: Pencil,
+									hidden: !canManage,
+									onSelect: () => open(row.original),
+								},
+								{
+									key: 'retire',
+									label: t('licensing:applications.retire'),
+									icon: Archive,
+									destructive: true,
+									disabled: busy,
+									hidden: !canManage || !active,
+									onSelect: () => void run(() => retireApplication(row.original.id)),
+								},
+								{
+									key: 'restore',
+									label: t('licensing:applications.restore'),
+									icon: RotateCcw,
+									disabled: busy,
+									hidden: !canManage || active,
+									onSelect: () => void run(() => restoreApplication(row.original.id)),
+								},
+							]}
+						/>
+					);
+				},
 			},
 		],
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- open/run only close over state setters
@@ -157,13 +167,15 @@ function ApplicationsPage() {
 				<Checkbox id='applications-show-retired' checked={showRetired} onCheckedChange={(checked) => setShowRetired(checked === true)} />
 				<FieldLabel htmlFor='applications-show-retired'>{t('licensing:applications.showRetired')}</FieldLabel>
 			</Field>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.length === 0 ? (
-				<EmptyState title={t('licensing:applications.empty')} bordered />
-			) : (
-				<DataTable columns={columns} data={data ?? []} loading={isPending} getRowId={(row) => row.id} bordered />
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.length === 0 ? (
+					<EmptyState title={t('licensing:applications.empty')} />
+				) : (
+					<DataTable columns={columns} data={data ?? []} loading={isPending} getRowId={(row) => row.id} sortable />
+				)}
+			</DataTableCard>
 
 			<Dialog open={editing !== null} onOpenChange={(next) => !next && setEditing(null)}>
 				<DialogContent>

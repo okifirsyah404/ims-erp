@@ -11,6 +11,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Dialog,
@@ -20,7 +21,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { TrendingDown } from 'lucide-react';
+import { Plus, TrendingDown } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { getRouteApi } from '@tanstack/react-router';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -72,18 +74,22 @@ export function AssetDepreciationList() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					canUpdate && row.original.status !== 'disposed' ? (
-						<Button
-							size='sm'
-							variant='outline'
-							onClick={() => setTarget(row.original.id)}
-						>
-							{t('assets:depreciation.record')}
-						</Button>
-					) : null,
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'record',
+								label: t('assets:depreciation.record'),
+								icon: Plus,
+								hidden: !(canUpdate && row.original.status !== 'disposed'),
+								onSelect: () => setTarget(row.original.id),
+							},
+						]}
+					/>
+				),
 			},
 		],
 		[canUpdate, t],
@@ -104,30 +110,30 @@ export function AssetDepreciationList() {
 				</p>
 			</div>
 
-			{!isPending && (!data || data.rows.length === 0) ? (
-				<EmptyState
-					icon={TrendingDown}
-					title={t('assets:depreciation.emptyTitle')}
-					description={t('assets:depreciation.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={data?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{!isPending && (!data || data.rows.length === 0) ? (
+					<EmptyState
+						icon={TrendingDown}
+						title={t('assets:depreciation.emptyTitle')}
+						description={t('assets:depreciation.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+				)}
 
-			<PaginationControls
-				page={page}
-				totalPages={data?.pagination.totalPages ?? 1}
-				onPageChange={(next) =>
-					void navigate({ search: (prev) => ({ ...prev, page: next }) })
-				}
-			/>
+				<PaginationControls
+					page={page}
+					totalPages={data?.pagination.totalPages ?? 1}
+					onPageChange={(next) =>
+						void navigate({ search: (prev) => ({ ...prev, page: next }) })
+					}
+				/>
+			</DataTableCard>
 
 			{target ? (
 				<RecordDepreciationDialog assetId={target} onClose={() => setTarget(null)} />

@@ -17,6 +17,7 @@ import {
 } from '@ims-erp/ui/components/table';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { type DataTableFeatures, features } from './data-table-features';
+import { DataTableColumnHeader } from './data-table-column-header';
 
 const ALIGN_CLASS = {
 	left: 'text-left',
@@ -61,6 +62,7 @@ export function DataTable<TData extends RowData>({
 	loading,
 	skeletonRows = 5,
 	bordered = false,
+	sortable = false,
 	rowClassName,
 }: {
 	/** Column definitions; build with `useMemo` so headers can use `t()`. */
@@ -77,6 +79,15 @@ export function DataTable<TData extends RowData>({
 	skeletonRows?: number;
 	/** Draw the shadcn guide's `rounded-md border` frame around the table. */
 	bordered?: boolean;
+	/**
+	 * Makes every plain-string `header` a client-side sort button.
+	 *
+	 * @remarks
+	 * Only for tables whose query holds the whole collection in memory. A
+	 * server-paginated table must keep plain headers (or wire the sort to the
+	 * URL), otherwise sorting reorders just the current page.
+	 */
+	sortable?: boolean;
 	/** Extra classes for a row, e.g. highlighting the selected record. */
 	rowClassName?: (row: TData) => string | undefined;
 }) {
@@ -92,13 +103,18 @@ export function DataTable<TData extends RowData>({
 					<TableRow>
 						{headers.map((header) => {
 							const meta = header.column.columnDef.meta;
+							const plainHeader = header.column.columnDef.header;
 							return (
 								<TableHead
 									key={header.id}
 									colSpan={header.colSpan}
 									className={headClasses(meta)}
 								>
-									{header.isPlaceholder ? null : (
+									{header.isPlaceholder ? null : sortable &&
+									  typeof plainHeader === 'string' &&
+									  plainHeader.length > 0 ? (
+										<DataTableColumnHeader column={header.column} title={plainHeader} />
+									) : (
 										<table.FlexRender header={header} />
 									)}
 								</TableHead>

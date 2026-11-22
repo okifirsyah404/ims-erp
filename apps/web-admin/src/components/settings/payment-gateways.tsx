@@ -18,9 +18,12 @@ import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import { ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Pencil, Star } from 'lucide-react';
 import { toast } from '@/components/toast';
 import {
 	createGateway,
@@ -127,19 +130,27 @@ export function PaymentGatewaysPanel({ canEdit }: { canEdit: boolean }) {
 			...base,
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<div className='flex justify-end gap-2'>
-						{!row.original.isDefault && row.original.isActive && (
-							<Button variant='outline' size='sm' onClick={() => void makeDefault(row.original)}>
-								{t('settings:paymentGateways.makeDefault')}
-							</Button>
-						)}
-						<Button variant='outline' size='sm' onClick={() => setDialog({ gateway: row.original })}>
-							{t('common:action.edit')}
-						</Button>
-					</div>
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'default',
+								label: t('settings:paymentGateways.makeDefault'),
+								icon: Star,
+								hidden: row.original.isDefault || !row.original.isActive,
+								onSelect: () => void makeDefault(row.original),
+							},
+							{
+								key: 'edit',
+								label: t('common:action.edit'),
+								icon: Pencil,
+								onSelect: () => setDialog({ gateway: row.original }),
+							},
+						]}
+					/>
 				),
 			},
 		];
@@ -157,11 +168,13 @@ export function PaymentGatewaysPanel({ canEdit }: { canEdit: boolean }) {
 					<Button onClick={() => setDialog({ gateway: null })}>{t('settings:paymentGateways.add')}</Button>
 				</div>
 			)}
-			{data.length === 0 ? (
-				<p className='text-sm text-muted-foreground'>{t('settings:paymentGateways.empty')}</p>
-			) : (
-				<DataTable columns={columns} data={data} getRowId={(row) => row.id} bordered />
-			)}
+			<DataTableCard title={t('settings:paymentGateways.title')}>
+				{data.length === 0 ? (
+					<p className='text-sm text-muted-foreground'>{t('settings:paymentGateways.empty')}</p>
+				) : (
+					<DataTable columns={columns} data={data} getRowId={(row) => row.id} sortable />
+				)}
+			</DataTableCard>
 			{dialog && (
 				<GatewayDialog
 					gateway={dialog.gateway}

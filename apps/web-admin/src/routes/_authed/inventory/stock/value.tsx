@@ -19,6 +19,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatIdr } from '@/lib/format';
@@ -167,19 +168,20 @@ function InventoryValuePage() {
 							/>
 						</InputGroup>
 					</div>
-					{data.data.length === 0 ? (
-						<EmptyState icon={PackageOpen} title={t('inventory:value.empty')} bordered />
-					) : (
-						<DataTable
-							columns={columns}
-							data={data.data}
-							getRowId={(row) => `${row.productId}-${row.warehouseId}-${row.binCode ?? ''}`}
-							bordered
-						/>
-					)}
-					{data.meta.totalPages > 1 && (
-						<PaginationControls page={data.meta.page} totalPages={data.meta.totalPages} onPageChange={setPage} />
-					)}
+					<DataTableCard>
+						{data.data.length === 0 ? (
+							<EmptyState icon={PackageOpen} title={t('inventory:value.empty')} />
+						) : (
+							<DataTable
+								columns={columns}
+								data={data.data}
+								getRowId={(row) => `${row.productId}-${row.warehouseId}-${row.binCode ?? ''}`}
+							/>
+						)}
+						{data.meta.totalPages > 1 && (
+							<PaginationControls page={data.meta.page} totalPages={data.meta.totalPages} onPageChange={setPage} />
+						)}
+					</DataTableCard>
 				</>
 			)}
 		</div>

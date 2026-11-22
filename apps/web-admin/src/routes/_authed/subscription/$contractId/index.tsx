@@ -247,7 +247,6 @@ function ContractDetailPage() {
 					{data.keys.length === 0 ? (
 						<EmptyState title={t('licensing:keys.empty')} size='sm' />
 					) : (
-						<div className='overflow-hidden rounded-md border'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -330,7 +329,6 @@ function ContractDetailPage() {
 								})}
 							</TableBody>
 						</Table>
-						</div>
 					)}
 					{anyMasked && <p className='px-6 py-3 text-xs text-muted-foreground'>{t('licensing:keys.masked')}</p>}
 				</CardContent>

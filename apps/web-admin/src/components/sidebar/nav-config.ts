@@ -2,27 +2,27 @@ import {
 	Bell,
 	Boxes,
 	Building2,
+	Calculator,
 	Contact,
+	CreditCard,
 	FileCheck2,
 	FileSpreadsheet,
 	FileText,
 	Globe,
 	GraduationCap,
-	CreditCard,
 	HandCoins,
 	Hash,
 	KeyRound,
-	Calculator,
 	LayoutDashboard,
 	LayoutTemplate,
 	MessageSquare,
 	Package,
 	PenLine,
 	ReceiptText,
-	Repeat,
 	Scale,
 	ScrollText,
 	Settings,
+	Toolbox,
 	Truck,
 	Users,
 	Wallet,
@@ -46,11 +46,21 @@ import type { SidebarItem } from './sidebar-item';
  * - none of the above: hidden. Used for modules whose permission is not in
  *   the catalog yet (`erpStatements`), so the item cannot be gated honestly.
  */
-export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarItem[] }[] = [
+export const navSections: {
+	labelKey: SidebarItem['titleKey'];
+	items: SidebarItem[];
+}[] = [
 	// M01 - Dashboard.
 	{
 		labelKey: 'section.dashboard',
-		items: [{ titleKey: 'item.dashboard', url: '/', icon: LayoutDashboard, internalRole: true }],
+		items: [
+			{
+				titleKey: 'item.dashboard',
+				url: '/',
+				icon: LayoutDashboard,
+				internalRole: true,
+			},
+		],
 	},
 
 	// M02 — CRM & Sales.
@@ -62,8 +72,16 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/crm',
 				icon: Contact,
 				items: [
-					{ titleKey: 'item.leads', url: '/crm/leads', permission: 'lead.read' },
-					{ titleKey: 'item.customers', url: '/crm/customers', permission: 'customer.read' },
+					{
+						titleKey: 'item.leads',
+						url: '/crm/leads',
+						permission: 'lead.read',
+					},
+					{
+						titleKey: 'item.customers',
+						url: '/crm/customers',
+						permission: 'customer.read',
+					},
 				],
 			},
 			{
@@ -71,16 +89,40 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/sales',
 				icon: ReceiptText,
 				items: [
-					{ titleKey: 'item.quotes', url: '/sales/quotes', permission: 'quotation.read' },
-					{ titleKey: 'item.salesOrders', url: '/sales/orders', permission: 'sales_order.read' },
+					{
+						titleKey: 'item.quotes',
+						url: '/sales/quotes',
+						permission: 'quotation.read',
+					},
+					{
+						titleKey: 'item.salesOrders',
+						url: '/sales/orders',
+						permission: 'sales_order.read',
+					},
 					// Same either-or as `GET /delivery-notes` (the leaf had no permission,
 					// so the route guard refused the pages to everyone).
-					{ titleKey: 'item.deliveryNotes', url: '/sales/deliveries', anyPermission: ['stock.read', 'sales_order.read'] },
-					{ titleKey: 'item.salesReturns', url: '/sales/returns', permission: 'sales_return.read' },
-					{ titleKey: 'item.invoices', url: '/sales/invoices', permission: 'invoice.read' },
+					{
+						titleKey: 'item.deliveryNotes',
+						url: '/sales/deliveries',
+						anyPermission: ['stock.read', 'sales_order.read'],
+					},
+					{
+						titleKey: 'item.salesReturns',
+						url: '/sales/returns',
+						permission: 'sales_return.read',
+					},
+					{
+						titleKey: 'item.invoices',
+						url: '/sales/invoices',
+						permission: 'invoice.read',
+					},
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
-					{ titleKey: 'item.receipts', url: '/sales/receipts', permission: 'receipt.read' },
+					{
+						titleKey: 'item.receipts',
+						url: '/sales/receipts',
+						permission: 'receipt.read',
+					},
 				],
 			},
 		],
@@ -92,17 +134,38 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.documents',
 		items: [
-			{ titleKey: 'item.files', url: '/documents/files', icon: FileText, permission: 'document.read' },
+			{
+				titleKey: 'item.files',
+				url: '/documents/files',
+				icon: FileText,
+				permission: 'document.read',
+			},
 			{
 				titleKey: 'item.signatures',
 				icon: PenLine,
 				items: [
-					{ titleKey: 'item.documentSignatures', url: '/documents/signatures/documents', permission: 'document.signature_read' },
-					{ titleKey: 'item.requestSignature', url: '/documents/signatures/request', permission: 'document.signature_request' },
-					{ titleKey: 'item.mySignature', url: '/documents/signatures/mine', permission: 'document.signature_sign' },
+					{
+						titleKey: 'item.documentSignatures',
+						url: '/documents/signatures/documents',
+						permission: 'document.signature_read',
+					},
+					{
+						titleKey: 'item.requestSignature',
+						url: '/documents/signatures/request',
+						permission: 'document.signature_request',
+					},
+					{
+						titleKey: 'item.mySignature',
+						url: '/documents/signatures/mine',
+						permission: 'document.signature_sign',
+					},
 				],
 			},
-			{ titleKey: 'item.templates', url: '/documents/templates', icon: LayoutTemplate },
+			{
+				titleKey: 'item.templates',
+				url: '/documents/templates',
+				icon: LayoutTemplate,
+			},
 		],
 	},
 
@@ -115,9 +178,21 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/subscription',
 				icon: KeyRound,
 				items: [
-					{ titleKey: 'item.licenseApplications', url: '/subscription/applications', permission: 'license.read' },
-					{ titleKey: 'item.apiKeys', url: '/subscription/api-keys', permission: 'license.manage_api' },
-					{ titleKey: 'item.activations', url: '/subscription/activations', permission: 'license.activate' },
+					{
+						titleKey: 'item.licenseApplications',
+						url: '/subscription/applications',
+						permission: 'license.read',
+					},
+					{
+						titleKey: 'item.apiKeys',
+						url: '/subscription/api-keys',
+						permission: 'license.manage_api',
+					},
+					{
+						titleKey: 'item.activations',
+						url: '/subscription/activations',
+						permission: 'license.activate',
+					},
 				],
 			},
 		],
@@ -127,10 +202,30 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.integrations',
 		items: [
-			{ titleKey: 'item.websiteCatalog', url: '/integrations/website-catalog', icon: Globe, permission: 'catalog.read' },
-			{ titleKey: 'item.whatsappAi', url: '/integrations/whatsapp-ai', icon: MessageSquare, permission: 'automation.read' },
-			{ titleKey: 'item.notifications', url: '/integrations/notifications', icon: Bell, open: true },
-			{ titleKey: 'item.webhooks', url: '/integrations/webhooks', icon: Webhook, permission: 'integration.read' },
+			{
+				titleKey: 'item.websiteCatalog',
+				url: '/integrations/website-catalog',
+				icon: Globe,
+				permission: 'catalog.read',
+			},
+			{
+				titleKey: 'item.whatsappAi',
+				url: '/integrations/whatsapp-ai',
+				icon: MessageSquare,
+				permission: 'automation.read',
+			},
+			{
+				titleKey: 'item.notifications',
+				url: '/integrations/notifications',
+				icon: Bell,
+				open: true,
+			},
+			{
+				titleKey: 'item.webhooks',
+				url: '/integrations/webhooks',
+				icon: Webhook,
+				permission: 'integration.read',
+			},
 		],
 	},
 
@@ -142,22 +237,85 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		items: [
 			// App admins see every warehouse; a person in charge sees the ones
 			// granted to them (ADR-0017, resolved from `/warehouses/mine`).
-			{ titleKey: 'item.warehouses', url: '/warehouses', icon: Warehouse, warehousePic: true },
-			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator, permission: 'stock.read' },
+			{
+				titleKey: 'item.warehouses',
+				url: '/warehouses',
+				icon: Warehouse,
+				warehousePic: true,
+			},
+			{
+				titleKey: 'item.inventoryValue',
+				url: '/inventory/stock/value',
+				icon: Calculator,
+				permission: 'stock.read',
+			},
 			// Products are the main master, so they sit beside the group instead of
 			// inside it. Detail and edit live under `/products/$productId`.
-			{ titleKey: 'item.products', url: '/products', icon: Package, permission: 'product.read' },
+			{
+				titleKey: 'item.products',
+				url: '/products',
+				icon: Package,
+				permission: 'product.read',
+			},
 			{
 				titleKey: 'item.items',
 				icon: Boxes,
 				items: [
-					{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
-					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
-					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
-					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
+					{
+						titleKey: 'item.components',
+						url: '/inventory/components',
+						permission: 'product.read',
+					},
+					{
+						titleKey: 'item.materials',
+						url: '/inventory/materials',
+						permission: 'product.read',
+					},
+					{
+						titleKey: 'item.stock',
+						url: '/inventory/stock',
+						permission: 'stock.read',
+					},
+					{
+						titleKey: 'item.stockAdjustments',
+						url: '/inventory/stock/adjustments',
+						permission: 'stock_adjustment.read',
+					},
 					// The backend gates categories with `product:*`, so `product.read` shows them.
-					{ titleKey: 'item.itemCategories', url: '/product-categories', permission: 'product.read' },
-					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },
+					{
+						titleKey: 'item.itemCategories',
+						url: '/product-categories',
+						permission: 'product.read',
+					},
+					{
+						titleKey: 'item.itemMovements',
+						url: '/inventory/stock/movements',
+						permission: 'stock.read',
+					},
+				],
+			},
+			{
+				titleKey: 'item.assets',
+				url: '/assets',
+				icon: Toolbox,
+				items: [
+					{
+						titleKey: 'item.assetRegister',
+						url: '/assets/register',
+						permission: 'asset.read',
+					},
+					{
+						titleKey: 'item.borrowings',
+						url: '/assets/borrowings',
+						permission: 'asset_borrowing.read',
+					},
+					{
+						titleKey: 'item.serviceRecords',
+						url: '/assets/service-records',
+						permission: 'asset.read',
+					},
+					// No catalog resource yet: hidden.
+					{ titleKey: 'item.depreciation', url: '/assets/depreciation' },
 				],
 			},
 			{
@@ -165,25 +323,33 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/procurement',
 				icon: Truck,
 				items: [
-					{ titleKey: 'item.suppliers', url: '/procurement/suppliers', permission: 'supplier.read' },
-					{ titleKey: 'item.purchaseRequests', url: '/procurement/purchase-requests', permission: 'purchase_request.read' },
-					{ titleKey: 'item.purchaseOrders', url: '/procurement/purchase-orders', permission: 'purchase_order.read' },
+					{
+						titleKey: 'item.suppliers',
+						url: '/procurement/suppliers',
+						permission: 'supplier.read',
+					},
+					{
+						titleKey: 'item.purchaseRequests',
+						url: '/procurement/purchase-requests',
+						permission: 'purchase_request.read',
+					},
+					{
+						titleKey: 'item.purchaseOrders',
+						url: '/procurement/purchase-orders',
+						permission: 'purchase_order.read',
+					},
 					// Same grant as `GET /goods-receipts` (ERP-0068: the leaf had none, so
 					// the route guard refused the BPB pages to everyone).
-					{ titleKey: 'item.goodsReceipts', url: '/procurement/receipts', permission: 'stock.read' },
-					{ titleKey: 'item.purchaseReturns', url: '/procurement/purchase-returns', permission: 'purchase_return.read' },
-				],
-			},
-			{
-				titleKey: 'item.assets',
-				url: '/assets',
-				icon: Repeat,
-				items: [
-					{ titleKey: 'item.borrowings', url: '/assets/borrowings', permission: 'asset_borrowing.read' },
-					{ titleKey: 'item.assetRegister', url: '/assets/register', permission: 'asset.read' },
-					{ titleKey: 'item.serviceRecords', url: '/assets/service-records', permission: 'asset.read' },
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.depreciation', url: '/assets/depreciation' },
+					{
+						titleKey: 'item.goodsReceipts',
+						url: '/procurement/receipts',
+						permission: 'stock.read',
+					},
+					{
+						titleKey: 'item.purchaseReturns',
+						url: '/procurement/purchase-returns',
+						permission: 'purchase_return.read',
+					},
 				],
 			},
 		],
@@ -200,7 +366,11 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				items: [
 					// No catalog resource yet: hidden.
 					{ titleKey: 'item.bast', url: '/projects/bast' },
-					{ titleKey: 'item.tickets', url: '/projects/tickets', permission: 'service_ticket.read' },
+					{
+						titleKey: 'item.tickets',
+						url: '/projects/tickets',
+						permission: 'service_ticket.read',
+					},
 				],
 			},
 		],
@@ -215,12 +385,36 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/hr',
 				icon: GraduationCap,
 				items: [
-					{ titleKey: 'item.employees', url: '/hr/employees', permission: 'employee.read' },
-					{ titleKey: 'item.attendance', url: '/hr/attendance', permission: 'attendance.read' },
-					{ titleKey: 'item.leave', url: '/hr/leave', permission: 'leave.read' },
-					{ titleKey: 'item.overtime', url: '/hr/overtime', permission: 'overtime.read' },
-					{ titleKey: 'item.payroll', url: '/hr/payroll', permission: 'payroll.read' },
-					{ titleKey: 'item.hrTasks', url: '/hr/tasks', permission: 'task.read' },
+					{
+						titleKey: 'item.employees',
+						url: '/hr/employees',
+						permission: 'employee.read',
+					},
+					{
+						titleKey: 'item.attendance',
+						url: '/hr/attendance',
+						permission: 'attendance.read',
+					},
+					{
+						titleKey: 'item.leave',
+						url: '/hr/leave',
+						permission: 'leave.read',
+					},
+					{
+						titleKey: 'item.overtime',
+						url: '/hr/overtime',
+						permission: 'overtime.read',
+					},
+					{
+						titleKey: 'item.payroll',
+						url: '/hr/payroll',
+						permission: 'payroll.read',
+					},
+					{
+						titleKey: 'item.hrTasks',
+						url: '/hr/tasks',
+						permission: 'task.read',
+					},
 				],
 			},
 		],
@@ -236,16 +430,55 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				icon: Wallet,
 				items: [
 					// No catalog resource yet: hidden.
-					{ titleKey: 'item.openingBalances', url: '/finance/opening-balances' },
-					{ titleKey: 'item.accounts', url: '/finance/accounts', permission: 'chart_of_account.read' },
-					{ titleKey: 'item.journal', url: '/finance/journal', permission: 'journal.read' },
-					{ titleKey: 'item.cashBank', url: '/finance/cash-bank', permission: 'cash_bank.read' },
-					{ titleKey: 'item.reconciliation', url: '/finance/reconciliation', permission: 'cash_bank.reconcile' },
-					{ titleKey: 'item.receivables', url: '/finance/receivables', permission: 'invoice.read' },
-					{ titleKey: 'item.payables', url: '/finance/payables', permission: 'bill.read' },
-					{ titleKey: 'item.expenses', url: '/finance/expenses', permission: 'bill.read' },
-					{ titleKey: 'item.financialReports', url: '/finance/reports', permission: 'financial_report.read' },
-					{ titleKey: 'item.periodClosing', url: '/finance/closing', permission: 'accounting_period.close' },
+					{
+						titleKey: 'item.cashBank',
+						url: '/finance/cash-bank',
+						permission: 'cash_bank.read',
+					},
+					{
+						titleKey: 'item.openingBalances',
+						url: '/finance/opening-balances',
+					},
+					{
+						titleKey: 'item.accounts',
+						url: '/finance/accounts',
+						permission: 'chart_of_account.read',
+					},
+					{
+						titleKey: 'item.journal',
+						url: '/finance/journal',
+						permission: 'journal.read',
+					},
+					{
+						titleKey: 'item.reconciliation',
+						url: '/finance/reconciliation',
+						permission: 'cash_bank.reconcile',
+					},
+					{
+						titleKey: 'item.receivables',
+						url: '/finance/receivables',
+						permission: 'invoice.read',
+					},
+					{
+						titleKey: 'item.payables',
+						url: '/finance/payables',
+						permission: 'bill.read',
+					},
+					{
+						titleKey: 'item.expenses',
+						url: '/finance/expenses',
+						permission: 'bill.read',
+					},
+					{
+						titleKey: 'item.financialReports',
+						url: '/finance/reports',
+						permission: 'financial_report.read',
+					},
+					{
+						titleKey: 'item.periodClosing',
+						url: '/finance/closing',
+						permission: 'accounting_period.close',
+					},
 				],
 			},
 			{
@@ -253,11 +486,31 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/finance/tax',
 				icon: Scale,
 				items: [
-					{ titleKey: 'item.taxTypes', url: '/finance/tax/types', permission: 'tax.read' },
-					{ titleKey: 'item.taxRecords', url: '/finance/tax/records', permission: 'tax.read' },
-					{ titleKey: 'item.taxRecap', url: '/finance/tax/recap', permission: 'tax.read' },
-					{ titleKey: 'item.taxWithholding', url: '/finance/tax/withholding', permission: 'tax.read' },
-					{ titleKey: 'item.taxCorrections', url: '/finance/tax/corrections', permission: 'tax.read' },
+					{
+						titleKey: 'item.taxTypes',
+						url: '/finance/tax/types',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxRecords',
+						url: '/finance/tax/records',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxRecap',
+						url: '/finance/tax/recap',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxWithholding',
+						url: '/finance/tax/withholding',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxCorrections',
+						url: '/finance/tax/corrections',
+						permission: 'tax.read',
+					},
 				],
 			},
 			{
@@ -266,8 +519,16 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				url: '/finance/investors',
 				icon: HandCoins,
 				items: [
-					{ titleKey: 'item.investorList', url: '/finance/investors/registry', permission: 'investor.read' },
-					{ titleKey: 'item.profitSharing', url: '/finance/investors/profit-sharing', permission: 'profit_distribution.read' },
+					{
+						titleKey: 'item.investorList',
+						url: '/finance/investors/registry',
+						permission: 'investor.read',
+					},
+					{
+						titleKey: 'item.profitSharing',
+						url: '/finance/investors/profit-sharing',
+						permission: 'profit_distribution.read',
+					},
 				],
 			},
 		],
@@ -281,7 +542,13 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 				titleKey: 'item.reports',
 				url: '/reports',
 				icon: FileSpreadsheet,
-				items: [{ titleKey: 'item.monthlyArchives', url: '/reports/monthly-archives', permission: 'financial_report.read' }],
+				items: [
+					{
+						titleKey: 'item.monthlyArchives',
+						url: '/reports/monthly-archives',
+						permission: 'financial_report.read',
+					},
+				],
 			},
 		],
 	},
@@ -290,9 +557,24 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.administration',
 		items: [
-			{ titleKey: 'item.organizations', url: '/organizations', icon: Building2, permission: 'organization.read' },
-			{ titleKey: 'item.users', url: '/admin/users', icon: Users, appAdminOnly: true },
-			{ titleKey: 'item.auditLog', url: '/admin/audit', icon: ScrollText, appAdminOnly: true },
+			{
+				titleKey: 'item.organizations',
+				url: '/organizations',
+				icon: Building2,
+				permission: 'organization.read',
+			},
+			{
+				titleKey: 'item.users',
+				url: '/admin/users',
+				icon: Users,
+				appAdminOnly: true,
+			},
+			{
+				titleKey: 'item.auditLog',
+				url: '/admin/audit',
+				icon: ScrollText,
+				appAdminOnly: true,
+			},
 		],
 	},
 
@@ -300,7 +582,12 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 	{
 		labelKey: 'section.settings',
 		items: [
-			{ titleKey: 'item.companyProfile', url: '/settings/company', icon: Settings, permission: 'company.read' },
+			{
+				titleKey: 'item.companyProfile',
+				url: '/settings/company',
+				icon: Settings,
+				permission: 'company.read',
+			},
 			// Every `<schema>.code_numberings` on one page. The backend opens it to
 			// application admins too (`adminOrErpGuard`), hence `orAppAdmin`.
 			{
@@ -319,7 +606,12 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 			// No catalog resource yet: hidden. The document settings page carries
 			// no permission of its own (its values are edited per group), so it
 			// stays open like the settings section itself.
-			{ titleKey: 'item.documentSettings', url: '/settings/documents', icon: FileText, open: true },
+			{
+				titleKey: 'item.documentSettings',
+				url: '/settings/documents',
+				icon: FileText,
+				open: true,
+			},
 		],
 	},
 ];

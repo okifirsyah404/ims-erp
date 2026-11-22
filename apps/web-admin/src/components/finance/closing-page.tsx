@@ -13,7 +13,8 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { CalendarCheck, CircleCheck, CircleX } from 'lucide-react';
+import { CalendarCheck, CircleCheck, CircleX, Lock, LockOpen } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -146,25 +147,32 @@ export function ClosingPage() {
 			...base,
 			{
 				id: 'actions',
-				header: t('finance:common.actions'),
+				header: () => <span className='sr-only'>{t('finance:common.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => {
 					const action = nextAction(row.original.status);
-					return action ? (
-						<Button
-							size='sm'
-							variant='outline'
+					return (
+						<RowActions
+							label={t('finance:common.actions')}
 							disabled={transition.isPending}
-							onClick={() =>
-								void transition.mutateAsync({
-									id: row.original.id,
-									to: action.to,
-								})
+							actions={
+								action
+									? [
+											{
+												key: action.to,
+												label: t(action.labelKey as never),
+												icon: action.to === 'open' ? LockOpen : Lock,
+												onSelect: () =>
+													void transition.mutateAsync({
+														id: row.original.id,
+														to: action.to,
+													}),
+											},
+										]
+									: []
 							}
-						>
-							{t(action.labelKey as never)}
-						</Button>
-					) : null;
+						/>
+					);
 				},
 			},
 		];

@@ -134,6 +134,7 @@ const hr_ = {
 	'request.done.reject': 'Ditolak',
 	'request.done.cancel': 'Dibatalkan',
 	'request.recordedByYou': 'Anda yang mencatat: orang lain yang memutuskan',
+	'request.actions': 'Tindakan',
 
 	'overtime.title': 'Lembur',
 	'overtime.description': 'Jam lembur dicatat HR dan disetujui orang lain. Jam yang disetujui tampil di ringkasan gaji.',
@@ -153,6 +154,7 @@ const hr_ = {
 	'tasks.markDone': 'Selesai',
 	'tasks.reopen': 'Buka lagi',
 	'tasks.cancel': 'Batalkan',
+	'tasks.actions': 'Tindakan',
 	'tasks.allStatuses': 'Semua status',
 	'taskStatus.open': 'Terbuka',
 	'taskStatus.done': 'Selesai',

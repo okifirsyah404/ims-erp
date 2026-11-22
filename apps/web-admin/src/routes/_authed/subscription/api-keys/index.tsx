@@ -12,6 +12,8 @@ import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Ban } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
@@ -151,14 +153,24 @@ function ApplicationKeys({ application }: { application: TLicensableApplication 
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					row.original.status === 'active' ? (
-						<Button size='sm' variant='ghost' disabled={busy} onClick={() => void revoke(row.original.id)}>
-							{t('licensing:action.revoke')}
-						</Button>
-					) : null,
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.actions')}
+						disabled={busy}
+						actions={[
+							{
+								key: 'revoke',
+								label: t('licensing:action.revoke'),
+								icon: Ban,
+								destructive: true,
+								hidden: row.original.status !== 'active',
+								onSelect: () => void revoke(row.original.id),
+							},
+						]}
+					/>
+				),
 			},
 		],
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- revoke only closes over application/setters
@@ -181,7 +193,7 @@ function ApplicationKeys({ application }: { application: TLicensableApplication 
 				{!data || data.length === 0 ? (
 					<p className='px-6 pb-6 text-sm text-muted-foreground'>{t('licensing:apiKeys.empty')}</p>
 				) : (
-					<DataTable columns={columns} data={data} getRowId={(row) => row.id} />
+					<DataTable columns={columns} data={data} getRowId={(row) => row.id} sortable />
 				)}
 			</CardContent>
 

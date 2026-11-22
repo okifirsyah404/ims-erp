@@ -12,8 +12,11 @@ import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { Ban, Check, RotateCcw } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -109,40 +112,40 @@ function TasksPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('hr:tasks.actions')}</span>,
 				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
 				cell: ({ row }) => (
-					<>
-						{canUpdate && row.original.status === 'open' && (
-							<>
-								<Button
-									size='sm'
-									disabled={busy}
-									onClick={() => void run(() => setTaskStatus(row.original.id, 'done'), t('hr:taskStatus.done'))}
-								>
-									{t('hr:tasks.markDone')}
-								</Button>
-								<Button
-									size='sm'
-									variant='ghost'
-									disabled={busy}
-									onClick={() => void run(() => setTaskStatus(row.original.id, 'cancelled'), t('hr:taskStatus.cancelled'))}
-								>
-									{t('hr:tasks.cancel')}
-								</Button>
-							</>
-						)}
-						{canUpdate && row.original.status !== 'open' && (
-							<Button
-								size='sm'
-								variant='ghost'
-								disabled={busy}
-								onClick={() => void run(() => setTaskStatus(row.original.id, 'open'), t('hr:taskStatus.open'))}
-							>
-								{t('hr:tasks.reopen')}
-							</Button>
-						)}
-					</>
+					<RowActions
+						label={t('hr:tasks.actions')}
+						disabled={busy}
+						actions={[
+							{
+								key: 'done',
+								label: t('hr:tasks.markDone'),
+								icon: Check,
+								hidden: !(canUpdate && row.original.status === 'open'),
+								onSelect: () =>
+									void run(() => setTaskStatus(row.original.id, 'done'), t('hr:taskStatus.done')),
+							},
+							{
+								key: 'cancel',
+								label: t('hr:tasks.cancel'),
+								icon: Ban,
+								destructive: true,
+								hidden: !(canUpdate && row.original.status === 'open'),
+								onSelect: () =>
+									void run(() => setTaskStatus(row.original.id, 'cancelled'), t('hr:taskStatus.cancelled')),
+							},
+							{
+								key: 'reopen',
+								label: t('hr:tasks.reopen'),
+								icon: RotateCcw,
+								hidden: !(canUpdate && row.original.status !== 'open'),
+								onSelect: () =>
+									void run(() => setTaskStatus(row.original.id, 'open'), t('hr:taskStatus.open')),
+							},
+						]}
+					/>
 				),
 			},
 		],
@@ -188,18 +191,20 @@ function TasksPage() {
 					}}
 				/>
 			</div>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('hr:tasks.empty')} bordered />
-			) : (
-				<>
-					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(task) => task.id} loading={isPending} bordered />
-					{data && data.pagination.totalPages > 1 && (
-						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
-					)}
-				</>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.rows.length === 0 ? (
+					<EmptyState title={t('hr:tasks.empty')} />
+				) : (
+					<>
+						<DataTable columns={columns} data={data?.rows ?? []} getRowId={(task) => task.id} loading={isPending} />
+						{data && data.pagination.totalPages > 1 && (
+							<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
+						)}
+					</>
+				)}
+			</DataTableCard>
 			<Dialog open={creating} onOpenChange={setCreating}>
 				<DialogContent>
 					<form

@@ -12,6 +12,7 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
@@ -147,67 +148,67 @@ export function TaxCorrections() {
 				</Select>
 			</div>
 
-			{recordId === '' ? (
-				<EmptyState
-					icon={PenLine}
-					title={t('tax:corrections.title')}
-					description={t('tax:records.empty')}
-					bordered
-				/>
-			) : (
-				<>
-					{canUpdate ? (
-						<div className='flex flex-wrap items-center gap-2'>
-							<MoneyInput
-								className='w-40'
-								placeholder={t('tax:corrections.amount')}
-								value={amount}
-								onValueChange={setAmount}
-							/>
-							<Input
-								className='w-64'
-								placeholder={t('tax:corrections.reason')}
-								value={reason}
-								onChange={(event) => setReason(event.target.value)}
-							/>
-							<Input
-								className='w-64'
-								placeholder={t('tax:corrections.evidence')}
-								value={evidence}
-								onChange={(event) => setEvidence(event.target.value)}
-							/>
-							<Button
-								disabled={
-									!amount || !reason || Number(amount) === 0 || add.isPending
-								}
-								onClick={() => void add.mutateAsync()}
-							>
-								{add.isPending
-									? t('tax:corrections.adding')
-									: t('tax:corrections.add')}
-							</Button>
-						</div>
-					) : null}
+			<DataTableCard>
+				{recordId === '' ? (
+					<EmptyState
+						icon={PenLine}
+						title={t('tax:corrections.title')}
+						description={t('tax:records.empty')}
+					/>
+				) : (
+					<>
+						{canUpdate ? (
+							<div className='flex flex-wrap items-center gap-2'>
+								<MoneyInput
+									className='w-40'
+									placeholder={t('tax:corrections.amount')}
+									value={amount}
+									onValueChange={setAmount}
+								/>
+								<Input
+									className='w-64'
+									placeholder={t('tax:corrections.reason')}
+									value={reason}
+									onChange={(event) => setReason(event.target.value)}
+								/>
+								<Input
+									className='w-64'
+									placeholder={t('tax:corrections.evidence')}
+									value={evidence}
+									onChange={(event) => setEvidence(event.target.value)}
+								/>
+								<Button
+									disabled={
+										!amount || !reason || Number(amount) === 0 || add.isPending
+									}
+									onClick={() => void add.mutateAsync()}
+								>
+									{add.isPending
+										? t('tax:corrections.adding')
+										: t('tax:corrections.add')}
+								</Button>
+							</div>
+						) : null}
 
-					{!corrections.isPending &&
-					(!corrections.data || corrections.data.length === 0) ? (
-						<EmptyState
-							icon={PenLine}
-							title={t('tax:corrections.title')}
-							description={t('tax:corrections.empty')}
-							bordered
-						/>
-					) : (
-						<DataTable
-							columns={columns}
-							data={corrections.data ?? []}
-							loading={corrections.isPending}
-							getRowId={(row) => row.id}
-							bordered
-						/>
-					)}
-				</>
-			)}
+						{!corrections.isPending &&
+						(!corrections.data || corrections.data.length === 0) ? (
+							<EmptyState
+								icon={PenLine}
+								title={t('tax:corrections.title')}
+								description={t('tax:corrections.empty')}
+							/>
+						) : (
+							<DataTable
+								columns={columns}
+								data={corrections.data ?? []}
+								loading={corrections.isPending}
+								getRowId={(row) => row.id}
+								sortable
+							/>
+						)}
+					</>
+				)}
+			</DataTableCard>
 		</div>
 	);
 }

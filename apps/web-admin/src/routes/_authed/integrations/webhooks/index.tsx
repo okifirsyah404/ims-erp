@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription } from '@ims-erp/ui/components/alert';
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Button } from '@ims-erp/ui/components/button';
 import {
 	Select,
 	SelectContent,
@@ -14,8 +13,11 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { Send } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -120,19 +122,23 @@ function WebhooksPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					canSend && row.original.status !== 'published' ? (
-						<Button
-							size='sm'
-							variant='outline'
-							disabled={busy === row.original.id}
-							onClick={() => void send(row.original.id)}
-						>
-							{t('integrations:outbox.send')}
-						</Button>
-					) : null,
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.actions')}
+						disabled={busy === row.original.id}
+						actions={[
+							{
+								key: 'send',
+								label: t('integrations:outbox.send'),
+								icon: Send,
+								hidden: !canSend || row.original.status === 'published',
+								onSelect: () => void send(row.original.id),
+							},
+						]}
+					/>
+				),
 			},
 		],
 		[t, i18n.language, canSend, busy, send],
@@ -192,18 +198,20 @@ function WebhooksPage() {
 					</SelectContent>
 				</Select>
 			</div>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('integrations:outbox.empty')} bordered />
-			) : (
-				<>
-					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
-					{data && data.pagination.totalPages > 1 && (
-						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
-					)}
-				</>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.rows.length === 0 ? (
+					<EmptyState title={t('integrations:outbox.empty')} />
+				) : (
+					<>
+						<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} />
+						{data && data.pagination.totalPages > 1 && (
+							<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
+						)}
+					</>
+				)}
+			</DataTableCard>
 		</div>
 	);
 }
