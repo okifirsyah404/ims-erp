@@ -27,7 +27,10 @@ import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/com
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { toast } from '@/components/toast';
 import {
 	archiveItemCategory,
@@ -39,7 +42,7 @@ import {
 } from '@/lib/item-category-api';
 import { usePermission } from '@/lib/use-permission';
 import { EmptyState, ErrorState } from '@/components/empty-state';
-import { Tags } from 'lucide-react';
+import { Archive, Pencil, Tags } from 'lucide-react';
 
 /**
  * Item categories (ADR-0011): one level, company-wide. Lists every live
@@ -94,12 +97,16 @@ export function ItemCategoryList() {
 		() => [
 			{
 				accessorKey: 'sortOrder',
-				header: t('product:categories.sortOrder'),
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('product:categories.sortOrder')} />
+				),
 				meta: { headClassName: 'w-16' },
 			},
 			{
-				id: 'name',
-				header: t('product:categories.name'),
+				accessorKey: 'name',
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('product:categories.name')} />
+				),
 				cell: ({ row }) => (
 					<>
 						{row.original.name}
@@ -113,32 +120,44 @@ export function ItemCategoryList() {
 			},
 			{
 				accessorKey: 'slug',
-				header: t('product:categories.slug'),
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('product:categories.slug')} />
+				),
 				meta: { cellClassName: 'font-mono text-xs' },
 			},
 			{
-				id: 'shortName',
-				header: t('product:categories.shortName'),
+				accessorKey: 'shortName',
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('product:categories.shortName')} />
+				),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => row.original.shortName ?? '—',
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<div className='flex justify-end gap-2'>
-						{canUpdate && (
-							<Button variant='outline' size='sm' onClick={() => setEditing(row.original)}>
-								{t('common:action.edit')}
-							</Button>
-						)}
-						{canArchive && (
-							<Button variant='outline' size='sm' onClick={() => setArchiving(row.original)}>
-								{t('product:categories.archive')}
-							</Button>
-						)}
-					</div>
+					<RowActions
+						label={t('common:action.edit')}
+						actions={[
+							{
+								key: 'edit',
+								label: t('common:action.edit'),
+								icon: Pencil,
+								hidden: !canUpdate,
+								onSelect: () => setEditing(row.original),
+							},
+							{
+								key: 'archive',
+								label: t('product:categories.archive'),
+								icon: Archive,
+								hidden: !canArchive,
+								destructive: true,
+								onSelect: () => setArchiving(row.original),
+							},
+						]}
+					/>
 				),
 			},
 		],
@@ -155,19 +174,20 @@ export function ItemCategoryList() {
 				{canCreate && <Button onClick={() => setEditing('new')}>{t('product:categories.new')}</Button>}
 			</div>
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && categories.length === 0 ? (
-				<EmptyState icon={Tags} title={t('product:categories.empty')} bordered />
-			) : (
-				<DataTable
-					columns={columns}
-					data={categories ?? []}
-					getRowId={(category) => category.id}
-					loading={isPending}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && categories.length === 0 ? (
+					<EmptyState icon={Tags} title={t('product:categories.empty')} />
+				) : (
+					<DataTable
+						columns={columns}
+						data={categories ?? []}
+						getRowId={(category) => category.id}
+						loading={isPending}
+					/>
+				)}
+			</DataTableCard>
 
 			{editing && (
 				<CategoryDialog

@@ -15,7 +15,9 @@ import {
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Scale, Trash2 } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -159,29 +161,33 @@ export function OpeningBalancePage() {
 			...base,
 			{
 				id: 'actions',
-				header: t('finance:common.actions'),
+				header: () => <span className='sr-only'>{t('finance:common.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					row.original.postedAt == null ? (
-						<Button
-							variant='ghost'
-							size='sm'
-							className='mr-1'
-							disabled={removeRow.isPending}
-							onClick={async () => {
-								if (
-									await confirm({
-										title: t('finance:opening.removeConfirm'),
-										destructive: true,
-									})
-								) {
-									void removeRow.mutateAsync(row.original.id);
-								}
-							}}
-						>
-							<Trash2 className='size-4' />
-						</Button>
-					) : null,
+				cell: ({ row }) => (
+					<RowActions
+						label={t('finance:common.actions')}
+						disabled={removeRow.isPending}
+						actions={[
+							{
+								key: 'remove',
+								label: t('common:action.delete'),
+								icon: Trash2,
+								destructive: true,
+								hidden: row.original.postedAt != null,
+								onSelect: async () => {
+									if (
+										await confirm({
+											title: t('finance:opening.removeConfirm'),
+											destructive: true,
+										})
+									) {
+										void removeRow.mutateAsync(row.original.id);
+									}
+								},
+							},
+						]}
+					/>
+				),
 			},
 		];
 	}, [accountRows, confirm, removeRow, showActions, t]);
@@ -256,23 +262,23 @@ export function OpeningBalancePage() {
 				</div>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (rows?.length ?? 0) === 0 ? (
-				<EmptyState
-					icon={Scale}
-					title={t('finance:opening.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (rows?.length ?? 0) === 0 ? (
+					<EmptyState
+						icon={Scale}
+						title={t('finance:opening.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+				)}
+			</DataTableCard>
 
 			{draftRows.length > 0 && canPost && !hasPosted ? (
 				<div className='flex flex-wrap items-center gap-3 text-sm'>

@@ -13,6 +13,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
@@ -21,7 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { FileText, Plus } from 'lucide-react';
+import { Check, FileText, Pencil, Plus, Send } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -183,52 +185,45 @@ export function TaxRecordList() {
 			...base,
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<>
-						{canUpdate && row.original.filingStatus === 'draft' ? (
-							<Button
-								variant='outline'
-								size='sm'
-								className='mr-1'
-								onClick={() => setEditing(row.original)}
-							>
-								{t('common:action.edit')}
-							</Button>
-						) : null}
-						{canVerify && row.original.filingStatus === 'draft' ? (
-							<Button
-								variant='outline'
-								size='sm'
-								className='mr-1'
-								disabled={transition.isPending}
-								onClick={() =>
+					<RowActions
+						label={t('common:action.edit')}
+						actions={[
+							{
+								key: 'edit',
+								label: t('common:action.edit'),
+								icon: Pencil,
+								hidden: !(canUpdate && row.original.filingStatus === 'draft'),
+								onSelect: () => setEditing(row.original),
+							},
+							{
+								key: 'verify',
+								label: t('tax:records.verify'),
+								icon: Check,
+								hidden: !(canVerify && row.original.filingStatus === 'draft'),
+								disabled: transition.isPending,
+								onSelect: () =>
 									void transition.mutateAsync({
 										id: row.original.id,
 										to: 'verified',
-									})
-								}
-							>
-								{t('tax:records.verify')}
-							</Button>
-						) : null}
-						{canVerify && row.original.filingStatus === 'verified' ? (
-							<Button
-								variant='outline'
-								size='sm'
-								disabled={transition.isPending}
-								onClick={() =>
+									}),
+							},
+							{
+								key: 'file',
+								label: t('tax:records.file'),
+								icon: Send,
+								hidden: !(canVerify && row.original.filingStatus === 'verified'),
+								disabled: transition.isPending,
+								onSelect: () =>
 									void transition.mutateAsync({
 										id: row.original.id,
 										to: 'filed',
-									})
-								}
-							>
-								{t('tax:records.file')}
-							</Button>
-						) : null}
-					</>
+									}),
+							},
+						]}
+					/>
 				),
 			},
 		];
@@ -323,33 +318,33 @@ export function TaxRecordList() {
 				</div>
 			) : null}
 
-			{!isPending && (!data || data.rows.length === 0) ? (
-				<EmptyState
-					icon={FileText}
-					title={t('tax:records.title')}
-					description={t('tax:records.empty')}
-					bordered
-				/>
-			) : (
-				<>
-					<DataTable
-						columns={columns}
-						data={data?.rows ?? []}
-						loading={isPending}
-						getRowId={(row) => row.id}
-						bordered
+			<DataTableCard>
+				{!isPending && (!data || data.rows.length === 0) ? (
+					<EmptyState
+						icon={FileText}
+						title={t('tax:records.title')}
+						description={t('tax:records.empty')}
 					/>
-					{data ? (
-						<PaginationControls
-							page={page}
-							totalPages={data.pagination.totalPages}
-							onPageChange={(next) =>
-								void navigate({ search: (prev) => ({ ...prev, page: next }) })
-							}
+				) : (
+					<>
+						<DataTable
+							columns={columns}
+							data={data?.rows ?? []}
+							loading={isPending}
+							getRowId={(row) => row.id}
 						/>
-					) : null}
-				</>
-			)}
+						{data ? (
+							<PaginationControls
+								page={page}
+								totalPages={data.pagination.totalPages}
+								onPageChange={(next) =>
+									void navigate({ search: (prev) => ({ ...prev, page: next }) })
+								}
+							/>
+						) : null}
+					</>
+				)}
+			</DataTableCard>
 
 			{editing ? (
 				<TaxRecordEditDialog

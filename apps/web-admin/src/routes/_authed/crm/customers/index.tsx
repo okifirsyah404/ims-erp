@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
@@ -221,38 +222,38 @@ function CustomerListPage() {
 				</Select>
 			</div>
 
-			{active.isError ? (
-				<ErrorState error={active.error} bordered />
-			) : !active.isPending && (active.data?.rows.length ?? 0) === 0 ? (
-				<EmptyState title={filtered ? t('crm:customers.noResults') : t('crm:customers.empty')} bordered />
-			) : (
-				<>
-					{tab === 'companies' ? (
-						<DataTable
-							columns={companyColumns}
-							data={companies.data?.rows ?? []}
-							getRowId={(row) => row.id}
-							loading={companies.isPending}
-							bordered
-						/>
-					) : (
-						<DataTable
-							columns={personColumns}
-							data={people.data?.rows ?? []}
-							getRowId={(row) => row.id}
-							loading={people.isPending}
-							bordered
-						/>
-					)}
-					{active.data && active.data.pagination.totalPages > 1 && (
-						<PaginationControls
-							page={active.data.pagination.page}
-							totalPages={active.data.pagination.totalPages}
-							onPageChange={setPage}
-						/>
-					)}
-				</>
-			)}
+			<DataTableCard>
+				{active.isError ? (
+					<ErrorState error={active.error} />
+				) : !active.isPending && (active.data?.rows.length ?? 0) === 0 ? (
+					<EmptyState title={filtered ? t('crm:customers.noResults') : t('crm:customers.empty')} />
+				) : (
+					<>
+						{tab === 'companies' ? (
+							<DataTable
+								columns={companyColumns}
+								data={companies.data?.rows ?? []}
+								getRowId={(row) => row.id}
+								loading={companies.isPending}
+							/>
+						) : (
+							<DataTable
+								columns={personColumns}
+								data={people.data?.rows ?? []}
+								getRowId={(row) => row.id}
+								loading={people.isPending}
+							/>
+						)}
+						{active.data && active.data.pagination.totalPages > 1 && (
+							<PaginationControls
+								page={active.data.pagination.page}
+								totalPages={active.data.pagination.totalPages}
+								onPageChange={setPage}
+							/>
+						)}
+					</>
+				)}
+			</DataTableCard>
 
 			{creating && tab === 'companies' && (
 				<CompanyFormDialog

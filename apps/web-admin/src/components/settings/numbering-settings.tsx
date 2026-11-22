@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -16,7 +16,12 @@ import {
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect, NativeSelectOption } from '@ims-erp/ui/components/native-select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { Pencil } from 'lucide-react';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
@@ -109,40 +114,75 @@ export function NumberingTable({
 	onEdit: (setting: TCodeNumberSetting) => void;
 }) {
 	const { t } = useTranslation(['settings', 'common']);
+	const columns = useMemo<ColumnDef<DataTableFeatures, TCodeNumberSetting, CellData>[]>(
+		() => [
+			{
+				id: 'codeType',
+				accessorFn: (setting) => setting.codeType,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('settings:numbering.codeType')} />
+				),
+				cell: ({ row }) => (
+					<div className='flex items-center gap-2'>
+						<span className='font-medium'>{t(`settings:numbering.type.${row.original.codeType}`)}</span>
+						<Badge variant={row.original.isDefault ? 'outline' : 'secondary'}>
+							{row.original.isDefault
+								? t('settings:numbering.default')
+								: t('settings:numbering.custom')}
+						</Badge>
+					</div>
+				),
+			},
+			{
+				accessorKey: 'pattern',
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('settings:numbering.pattern')} />
+				),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'resetPolicy',
+				accessorFn: (setting) => setting.resetPolicy,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('settings:numbering.resetPolicy')} />
+				),
+				cell: ({ row }) => t(`settings:numbering.reset.${row.original.resetPolicy}`),
+			},
+			{
+				accessorKey: 'nextNumber',
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('settings:numbering.nextNumber')} />
+				),
+				meta: { cellClassName: 'font-mono' },
+			},
+			...(canEdit
+				? [
+						{
+							id: 'actions',
+							header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
+							meta: { align: 'right' as const },
+							cell: ({ row }: { row: { original: TCodeNumberSetting } }) => (
+								<RowActions
+									label={t('common:action.actions')}
+									actions={[
+										{
+											key: 'edit',
+											label: t('settings:numbering.edit'),
+											icon: Pencil,
+											onSelect: () => onEdit(row.original),
+										},
+									]}
+								/>
+							),
+						},
+					]
+				: []),
+		],
+		[canEdit, onEdit, t],
+	);
+
 	return (
-		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>{t('settings:numbering.codeType')}</TableHead>
-					<TableHead>{t('settings:numbering.pattern')}</TableHead>
-					<TableHead>{t('settings:numbering.resetPolicy')}</TableHead>
-					<TableHead>{t('settings:numbering.nextNumber')}</TableHead>
-					{canEdit && <TableHead />}
-				</TableRow>
-			</TableHeader>
-			<TableBody>
-				{settings.map((setting) => (
-					<TableRow key={setting.codeType}>
-						<TableCell>
-							<div className='font-medium'>{t(`settings:numbering.type.${setting.codeType}`)}</div>
-							<Badge variant={setting.isDefault ? 'outline' : 'secondary'}>
-								{setting.isDefault ? t('settings:numbering.default') : t('settings:numbering.custom')}
-							</Badge>
-						</TableCell>
-						<TableCell className='font-mono text-xs'>{setting.pattern}</TableCell>
-						<TableCell>{t(`settings:numbering.reset.${setting.resetPolicy}`)}</TableCell>
-						<TableCell className='font-mono'>{setting.nextNumber}</TableCell>
-						{canEdit && (
-							<TableCell className='text-right'>
-								<Button variant='outline' size='sm' onClick={() => onEdit(setting)}>
-									{t('settings:numbering.edit')}
-								</Button>
-							</TableCell>
-						)}
-					</TableRow>
-				))}
-			</TableBody>
-		</Table>
+		<DataTable columns={columns} data={settings} getRowId={(setting) => setting.codeType} />
 	);
 }
 

@@ -19,6 +19,8 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Pencil } from 'lucide-react';
 import { toast } from '@/components/toast';
 import {
 	COMPANY_SETTING_VALUE_TYPES,
@@ -90,12 +92,20 @@ export function CompanySettingsCard({
 			...base,
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<Button variant='outline' size='sm' onClick={() => setEditing(row.original)}>
-						{t('settings:settings.edit')}
-					</Button>
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'edit',
+								label: t('settings:settings.edit'),
+								icon: Pencil,
+								onSelect: () => setEditing(row.original),
+							},
+						]}
+					/>
 				),
 			},
 		];
@@ -118,6 +128,7 @@ export function CompanySettingsCard({
 						data={settings}
 						loading={isPending}
 						getRowId={(row) => `${row.settingGroup}.${row.settingKey}`}
+						sortable
 					/>
 				)}
 			</CardContent>

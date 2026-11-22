@@ -103,6 +103,11 @@ const assets = {
 	'service.description': 'Maintenance history per asset.',
 	'service.empty': 'No service records yet.',
 	'service.emptyTitle': 'Nothing here yet',
+	'service.code': 'Code',
+	'service.type': 'Type',
+	'service.date': 'Date',
+	'service.cost': 'Cost',
+	'service.status': 'Status',
 
 	// Depreciation page.
 	'depreciation.title': 'Depreciation',

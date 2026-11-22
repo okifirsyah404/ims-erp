@@ -12,8 +12,10 @@ import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Plus, Scale } from 'lucide-react';
+import { Pause, Play, Plus, Scale, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -138,37 +140,38 @@ export function TaxTypeList() {
 			...base,
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.delete')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<>
-						<Button
-							variant='outline'
-							size='sm'
-							className='mr-1'
-							onClick={() => void toggleActive.mutateAsync(row.original)}
-						>
-							{row.original.isActive
-								? t('tax:types.inactive')
-								: t('tax:types.active')}
-						</Button>
-						<Button
-							variant='ghost'
-							size='sm'
-							onClick={async () => {
-								if (
-									await confirm({
-										title: t('tax:types.deleteConfirm'),
-										destructive: true,
-									})
-								) {
-									void remove.mutateAsync(row.original.id);
-								}
-							}}
-						>
-							{t('common:action.delete')}
-						</Button>
-					</>
+					<RowActions
+						label={t('common:action.delete')}
+						actions={[
+							{
+								key: 'toggleActive',
+								label: row.original.isActive
+									? t('tax:types.inactive')
+									: t('tax:types.active'),
+								icon: row.original.isActive ? Pause : Play,
+								onSelect: () => void toggleActive.mutateAsync(row.original),
+							},
+							{
+								key: 'delete',
+								label: t('common:action.delete'),
+								icon: Trash2,
+								destructive: true,
+								onSelect: async () => {
+									if (
+										await confirm({
+											title: t('tax:types.deleteConfirm'),
+											destructive: true,
+										})
+									) {
+										void remove.mutateAsync(row.original.id);
+									}
+								},
+							},
+						]}
+					/>
 				),
 			},
 		];
@@ -227,30 +230,30 @@ export function TaxTypeList() {
 				</div>
 			) : null}
 
-			{!isPending && (!data || data.rows.length === 0) ? (
-				<EmptyState
-					icon={Scale}
-					title={t('tax:types.title')}
-					description={t('tax:types.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={data?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{!isPending && (!data || data.rows.length === 0) ? (
+					<EmptyState
+						icon={Scale}
+						title={t('tax:types.title')}
+						description={t('tax:types.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+				)}
 
-			<PaginationControls
-				page={page}
-				totalPages={data?.pagination.totalPages ?? 1}
-				onPageChange={(next) =>
-					void navigate({ search: (prev) => ({ ...prev, page: next }) })
-				}
-			/>
+				<PaginationControls
+					page={page}
+					totalPages={data?.pagination.totalPages ?? 1}
+					onPageChange={(next) =>
+						void navigate({ search: (prev) => ({ ...prev, page: next }) })
+					}
+				/>
+			</DataTableCard>
 		</div>
 	);
 }

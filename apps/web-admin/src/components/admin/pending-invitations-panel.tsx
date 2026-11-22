@@ -1,12 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Mail } from 'lucide-react';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { Ban, Mail, Send, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardContent,
@@ -14,14 +19,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 import { ADMIN_PERMISSIONS, type TInvitation } from '@/lib/admin-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -107,6 +104,108 @@ export function PendingInvitationsPanel({
 	const rows = data?.rows ?? [];
 	const busy = resend.isPending || cancel.isPending || remove.isPending;
 
+	// `Date.now()` is impure during render (React Compiler rejects it), so
+	// "now" is read once inside the query fn and cached for the query's
+	// freshness window. The value only affects the badge/label; the backend
+	// re-checks the real token on claim, so a stale minute is harmless.
+	const now =
+		useQuery({
+			queryKey: ['admin-invitations-now'],
+			queryFn: () => Date.now(),
+			staleTime: 60 * 1000,
+		}).data ?? 0;
+
+	const columns = useMemo<ColumnDef<DataTableFeatures, TInvitation, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'email',
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('invitations.email')} />
+				),
+				cell: ({ row }) => (
+					<div className='flex flex-col'>
+						<span className='font-medium'>{row.original.email}</span>
+						{row.original.name && (
+							<span className='text-xs text-muted-foreground'>{row.original.name}</span>
+						)}
+					</div>
+				),
+			},
+			{
+				id: 'status',
+				accessorFn: (row) => new Date(row.expiresAt).getTime() <= now,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('invitations.status')} />
+				),
+				cell: ({ row }) => {
+					const expired = new Date(row.original.expiresAt).getTime() <= now;
+					return (
+						<Badge variant={expired ? 'destructive' : 'secondary'}>
+							{expired ? t('invitations.expired') : t('invitations.pending')}
+						</Badge>
+					);
+				},
+			},
+			{
+				id: 'expiresAt',
+				accessorFn: (row) => new Date(row.expiresAt).getTime(),
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('invitations.expires')} />
+				),
+				meta: { cellClassName: 'text-xs text-muted-foreground' },
+				cell: ({ row }) => {
+					const expiresAt = new Date(row.original.expiresAt);
+					const daysLeft = Math.ceil((expiresAt.getTime() - now) / (24 * 60 * 60 * 1000));
+					return (
+						<>
+							{expiresAt.toLocaleString()}
+							{expiresAt.getTime() > now && daysLeft > 0 && (
+								<span className='ml-1'>{t('invitations.daysLeft', { count: daysLeft })}</span>
+							)}
+						</>
+					);
+				},
+			},
+			{
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('invitations.actions')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<RowActions
+						label={t('invitations.actions')}
+						disabled={busy}
+						actions={[
+							{
+								key: 'resend',
+								label: t('invitations.resend'),
+								icon: Send,
+								hidden: !canCreate,
+								onSelect: () => resend.mutate(row.original.id),
+							},
+							{
+								key: 'cancel',
+								label: t('common:action.cancel'),
+								icon: Ban,
+								destructive: true,
+								hidden: !canDelete,
+								onSelect: () => cancel.mutate(row.original.id),
+							},
+							{
+								key: 'delete',
+								label: t('common:action.delete'),
+								icon: Trash2,
+								destructive: true,
+								hidden: !canDelete,
+								onSelect: () => remove.mutate(row.original.id),
+							},
+						]}
+					/>
+				),
+			},
+		],
+		[busy, canCreate, canDelete, cancel, now, remove, resend, t],
+	);
+
 	return (
 		<Card>
 			<CardHeader>
@@ -123,116 +222,9 @@ export function PendingInvitationsPanel({
 					<EmptyState title={t('invitations.empty')} size='sm' />
 				)}
 				{rows.length > 0 && (
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('invitations.email')}</TableHead>
-								<TableHead>{t('invitations.status')}</TableHead>
-								<TableHead>{t('invitations.expires')}</TableHead>
-								<TableHead className='text-right'>
-									{t('invitations.actions')}
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{rows.map((invitation) => (
-								<InvitationRow
-									key={invitation.id}
-									invitation={invitation}
-									busy={busy}
-									canCreate={canCreate}
-									canDelete={canDelete}
-									onResend={() => resend.mutate(invitation.id)}
-									onCancel={() => cancel.mutate(invitation.id)}
-									onDelete={() => remove.mutate(invitation.id)}
-								/>
-							))}
-						</TableBody>
-					</Table>
+					<DataTable columns={columns} data={rows} getRowId={(row) => row.id} />
 				)}
 			</CardContent>
 		</Card>
-	);
-}
-
-function InvitationRow({
-	invitation,
-	busy,
-	canCreate,
-	canDelete,
-	onResend,
-	onCancel,
-	onDelete,
-}: {
-	invitation: TInvitation;
-	busy: boolean;
-	canCreate: boolean;
-	canDelete: boolean;
-	onResend: () => void;
-	onCancel: () => void;
-	onDelete: () => void;
-}) {
-	// `Date.now()` is impure during render (React Compiler rejects it), so
-	// "now" is read once inside the query fn and cached for the query's
-	// freshness window. The value only affects the badge/label; the backend
-	// re-checks the real token on claim, so a stale minute is harmless.
-	const now =
-		useQuery({
-			queryKey: ['admin-invitations-now'],
-			queryFn: () => Date.now(),
-			staleTime: 60 * 1000,
-		}).data ?? 0;
-	const expiresAt = new Date(invitation.expiresAt);
-	const expired = expiresAt.getTime() <= now;
-	const daysLeft = Math.ceil(
-		(expiresAt.getTime() - now) / (24 * 60 * 60 * 1000),
-	);
-	const { t } = useTranslation(['admin', 'common']);
-
-	return (
-		<TableRow>
-			<TableCell>
-				<div className='flex flex-col'>
-					<span className='font-medium'>{invitation.email}</span>
-					{invitation.name && (
-						<span className='text-xs text-muted-foreground'>
-							{invitation.name}
-						</span>
-					)}
-				</div>
-			</TableCell>
-			<TableCell>
-				<Badge variant={expired ? 'destructive' : 'secondary'}>
-					{expired ? t('invitations.expired') : t('invitations.pending')}
-				</Badge>
-			</TableCell>
-			<TableCell className='text-xs text-muted-foreground'>
-				{expiresAt.toLocaleString()}
-				{!expired && daysLeft > 0 && (
-					<span className='ml-1'>
-						{t('invitations.daysLeft', { count: daysLeft })}
-					</span>
-				)}
-			</TableCell>
-			<TableCell className='text-right'>
-				<div className='flex justify-end gap-2'>
-					{canCreate && (
-						<Button variant='outline' size='sm' disabled={busy} onClick={onResend}>
-							{t('invitations.resend')}
-						</Button>
-					)}
-					{canDelete && (
-						<Button variant='ghost' size='sm' disabled={busy} onClick={onCancel}>
-							{t('common:action.cancel')}
-						</Button>
-					)}
-					{canDelete && (
-						<Button variant='ghost' size='sm' disabled={busy} onClick={onDelete}>
-							{t('common:action.delete')}
-						</Button>
-					)}
-				</div>
-			</TableCell>
-		</TableRow>
 	);
 }

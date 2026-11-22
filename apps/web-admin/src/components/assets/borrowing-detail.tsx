@@ -26,6 +26,8 @@ import {
 } from '@/lib/borrowing-api';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { CircleAlert, Undo2 } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
@@ -540,7 +542,7 @@ function ItemsTable({
 			},
 			{
 				id: 'actions',
-				header: t('assets:borrowings.actions'),
+				header: () => <span className='sr-only'>{t('assets:borrowings.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => {
 					const item = row.original;
@@ -549,21 +551,29 @@ function ItemsTable({
 						item.issuedAt !== null &&
 						item.returnedAt === null &&
 						item.markedLostAt === null;
-					return open && canAct ? (
-						<>
-							<Button size='sm' disabled={busy} onClick={() => onReturn(item)}>
-								{t('assets:borrowingActions.return')}
-							</Button>
-							<Button
-								size='sm'
-								variant='ghost'
-								disabled={busy}
-								onClick={() => onMarkLost(item)}
-							>
-								{t('assets:borrowingActions.markLost')}
-							</Button>
-						</>
-					) : null;
+					return (
+						<RowActions
+							label={t('assets:borrowings.actions')}
+							disabled={busy}
+							actions={[
+								{
+									key: 'return',
+									label: t('assets:borrowingActions.return'),
+									icon: Undo2,
+									hidden: !(open && canAct),
+									onSelect: () => onReturn(item),
+								},
+								{
+									key: 'lost',
+									label: t('assets:borrowingActions.markLost'),
+									icon: CircleAlert,
+									destructive: true,
+									hidden: !(open && canAct),
+									onSelect: () => onMarkLost(item),
+								},
+							]}
+						/>
+					);
 				},
 			},
 		],

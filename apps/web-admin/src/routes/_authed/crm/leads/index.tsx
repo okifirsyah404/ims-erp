@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Search } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { LeadFormDialog } from '@/components/crm/lead-form-dialog';
@@ -216,22 +217,24 @@ function LeadListPage() {
 				</Field>
 			</div>
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={filtered ? t('crm:leads.noResults') : t('crm:leads.empty')} bordered />
-			) : (
-				<>
-					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
-					{data && data.pagination.totalPages > 1 && (
-						<PaginationControls
-							page={data.pagination.page}
-							totalPages={data.pagination.totalPages}
-							onPageChange={setPage}
-						/>
-					)}
-				</>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.rows.length === 0 ? (
+					<EmptyState title={filtered ? t('crm:leads.noResults') : t('crm:leads.empty')} />
+				) : (
+					<>
+						<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} />
+						{data && data.pagination.totalPages > 1 && (
+							<PaginationControls
+								page={data.pagination.page}
+								totalPages={data.pagination.totalPages}
+								onPageChange={setPage}
+							/>
+						)}
+					</>
+				)}
+			</DataTableCard>
 
 			{creating && (
 				<LeadFormDialog

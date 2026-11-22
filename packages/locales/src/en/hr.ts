@@ -134,6 +134,7 @@ const hr = {
 	'request.done.reject': 'Rejected',
 	'request.done.cancel': 'Cancelled',
 	'request.recordedByYou': 'Recorded by you: someone else decides',
+	'request.actions': 'Actions',
 
 	'overtime.title': 'Overtime',
 	'overtime.description': 'Overtime hours recorded by HR and approved by someone else. Approved hours show in the salary summary.',
@@ -153,6 +154,7 @@ const hr = {
 	'tasks.markDone': 'Done',
 	'tasks.reopen': 'Reopen',
 	'tasks.cancel': 'Cancel',
+	'tasks.actions': 'Actions',
 	'tasks.allStatuses': 'All statuses',
 	'taskStatus.open': 'Open',
 	'taskStatus.done': 'Done',

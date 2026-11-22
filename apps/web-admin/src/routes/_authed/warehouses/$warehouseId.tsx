@@ -23,7 +23,8 @@ import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
-import { MapPin, PackageOpen, SearchX } from 'lucide-react';
+import { Archive, MapPin, PackageOpen, Pencil, SearchX } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
 import { StorageDialog, useArchiveStorage } from '@/components/inventory/storage-dialog';
 import { WarehouseItemTable } from '@/components/inventory/warehouse-item-table';
@@ -357,38 +358,40 @@ function StorageTab({
 			},
 			{
 				id: 'actions',
-				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<div className='flex justify-end gap-1'>
-						<Button
-							variant='ghost'
-							size='sm'
-							onClick={() => {
-								setEditing(row.original.id);
-								setDialogOpen(true);
-							}}
-						>
-							{t('common:action.edit')}
-						</Button>
-						<Button
-							variant='ghost'
-							size='sm'
-							disabled={archiveStorage.isPending}
-							onClick={async () => {
-								if (
-									await confirm({
-										title: t('warehouse:warehouses.archiveConfirmTitle'),
-										destructive: true,
-									})
-								) {
-									archiveStorage.mutate(row.original.id);
-								}
-							}}
-						>
-							{t('product:detail.archive')}
-						</Button>
-					</div>
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'edit',
+								label: t('common:action.edit'),
+								icon: Pencil,
+								onSelect: () => {
+									setEditing(row.original.id);
+									setDialogOpen(true);
+								},
+							},
+							{
+								key: 'archive',
+								label: t('product:detail.archive'),
+								icon: Archive,
+								destructive: true,
+								disabled: archiveStorage.isPending,
+								onSelect: async () => {
+									if (
+										await confirm({
+											title: t('warehouse:warehouses.archiveConfirmTitle'),
+											destructive: true,
+										})
+									) {
+										archiveStorage.mutate(row.original.id);
+									}
+								},
+							},
+						]}
+					/>
 				),
 			},
 		],
@@ -425,6 +428,7 @@ function StorageTab({
 						columns={columns}
 						data={storages}
 						getRowId={(storage) => storage.id}
+						sortable
 					/>
 				)}
 			</CardContent>

@@ -15,18 +15,28 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { Ban, ExternalLink } from 'lucide-react';
+import { useMemo } from 'react';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
-import { formatBusinessDate, formatIdr, todayBusinessDate } from '@/lib/format';
-import { addCost, COST_CATEGORIES, type TCostCategory, type TProjectDetail, voidCost } from '@/lib/project-api';
+import {
+	formatBusinessDate,
+	formatIdr,
+	todayBusinessDate,
+} from '@/lib/format';
+import {
+	addCost,
+	COST_CATEGORIES,
+	type TCostCategory,
+	type TProjectCost,
+	type TProjectDetail,
+	voidCost,
+} from '@/lib/project-api';
 import { usePermission } from '@/lib/use-permission';
 
 /**
@@ -62,6 +72,89 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 	};
 	const margin = costs.contractValue - costs.total;
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TProjectCost, CellData>[]>(
+		() => [
+			{
+				id: 'date',
+				accessorFn: (cost) => cost.costDate,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('projects:costs.date')} />
+				),
+				cell: ({ row }) => formatBusinessDate(row.original.costDate, i18n.language),
+			},
+			{
+				id: 'category',
+				accessorFn: (cost) => t(`projects:costCategory.${cost.category}`),
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('projects:costs.category')} />
+				),
+				cell: ({ row }) => t(`projects:costCategory.${row.original.category}`),
+			},
+			{
+				id: 'description',
+				accessorFn: (cost) => cost.description,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('projects:costs.description')} />
+				),
+				cell: ({ row }) => (
+					<>
+						{row.original.description}
+						{row.original.voidReason && (
+							<div className='text-xs no-underline'>{row.original.voidReason}</div>
+						)}
+					</>
+				),
+			},
+			{
+				id: 'amount',
+				accessorFn: (cost) => cost.amount,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('projects:costs.amount')} />
+				),
+				meta: { align: 'right' },
+				cell: ({ row }) => formatIdr(row.original.amount),
+			},
+			{
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.actions')}
+						disabled={busy}
+						actions={[
+							{
+								key: 'view',
+								label: t('projects:costs.view'),
+								icon: ExternalLink,
+								hidden: !row.original.receiptUrl,
+								onSelect: () =>
+									window.open(row.original.receiptUrl!, '_blank', 'noopener,noreferrer'),
+							},
+							{
+								key: 'void',
+								label: t('projects:costs.void'),
+								icon: Ban,
+								destructive: true,
+								hidden: !(active && canRecord && !row.original.voidedAt),
+								onSelect: () => {
+									const reason = window.prompt(t('projects:costs.voidReason'));
+									if (reason?.trim()) {
+										void run(
+											() => voidCost(project.id, row.original.id, reason.trim()),
+											t('projects:costs.voided'),
+										);
+									}
+								},
+							},
+						]}
+					/>
+				),
+			},
+		],
+		[active, busy, canRecord, i18n.language, project.id, run, t],
+	);
+
 	return (
 		<Card>
 			<CardHeader>
@@ -90,52 +183,15 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 				{costs.entries.length === 0 ? (
 					<EmptyState title={t('projects:costs.empty')} size='sm' />
 				) : (
-					<div className='overflow-hidden rounded-md border'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('projects:costs.date')}</TableHead>
-								<TableHead>{t('projects:costs.category')}</TableHead>
-								<TableHead>{t('projects:costs.description')}</TableHead>
-								<TableHead className='text-right'>{t('projects:costs.amount')}</TableHead>
-								<TableHead />
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{costs.entries.map((cost) => (
-								<TableRow key={cost.id} className={cost.voidedAt ? 'text-muted-foreground line-through' : undefined}>
-									<TableCell>{formatBusinessDate(cost.costDate, i18n.language)}</TableCell>
-									<TableCell>{t(`projects:costCategory.${cost.category}`)}</TableCell>
-									<TableCell>
-										{cost.description}
-										{cost.voidReason && <div className='text-xs no-underline'>{cost.voidReason}</div>}
-									</TableCell>
-									<TableCell className='text-right'>{formatIdr(cost.amount)}</TableCell>
-									<TableCell className='flex justify-end gap-2'>
-										{cost.receiptUrl && (
-											<a href={cost.receiptUrl} target='_blank' rel='noreferrer' className='text-sm hover:underline'>
-												{t('projects:costs.view')}
-											</a>
-										)}
-										{active && canRecord && !cost.voidedAt && (
-											<Button
-												variant='ghost'
-												size='sm'
-												disabled={busy}
-												onClick={() => {
-													const reason = window.prompt(t('projects:costs.voidReason'));
-													if (reason?.trim()) void run(() => voidCost(project.id, cost.id, reason.trim()), t('projects:costs.voided'));
-												}}
-											>
-												{t('projects:costs.void')}
-											</Button>
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
-					</div>
+					<DataTable
+						columns={columns}
+						data={costs.entries}
+						getRowId={(cost) => cost.id}
+						bordered
+						rowClassName={(cost) =>
+							cost.voidedAt ? 'text-muted-foreground line-through' : undefined
+						}
+					/>
 				)}
 				{active && canRecord && (
 					<form

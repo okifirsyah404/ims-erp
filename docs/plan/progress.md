@@ -104,6 +104,84 @@ Root `bun run test` / `lint` not re-run (no TS source changed).
 
 Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
 decision, once PR #139 is reviewed.
+## 2026-11-22 - web-admin: table markup and frames aligned with `@ims-erp/ui` Table (shadcn)
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- All app tables now render through `packages/ui/src/components/table.tsx` primitives (`Table`/`TableHeader`/… with
+  `data-slot` attributes), either via `DataTable` or directly. The print documents (`quotation`, `invoice`, PO, BAST,
+  warranty, delivery note) keep raw `<table>` markup on purpose — print CSS (`border-collapse`, `colgroup`,
+  `[display:table-row-group]`) does not survive the wrapper div.
+- Double frames removed: `bordered` on a `DataTable` inside a `DataTableCard` (43 files, scripted sweep) and the
+  `overflow-hidden rounded-md border` wrappers around raw tables (`aging`, tax recap, attendance day sheet, invoice
+  receipts, contract license keys) — the Card, or `Table`'s own `overflow-x-auto` container, is now the frame.
+- `asset-service-record-list.tsx` trails converted from a header-less `<Table>` to `DataTable` inside `DataTableCard`
+  (title = asset name, description = asset code); new locale keys `assets:service.{code,type,date,cost,status}` (en + id).
+  `/subscription/activations` frames its event table with `DataTableCard` instead of a bare Card.
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` exit 0 (pre-existing warnings
+  only); `bun test` web-admin 172 pass, locales 106 pass. **Not verified:** a signed-in browser pass.
+
+## 2026-11-22 - web-admin: every list table sits in a card
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- New `apps/web-admin/src/components/data-table/data-table-card.tsx` (`DataTableCard`): the `/admin/users` frame —
+  `Card` > `CardHeader` (optional title/description) > `CardContent`. `title` is optional, and the header is skipped
+  entirely when neither is passed, so a page whose `<h1>` already names the list does not repeat the heading twice.
+- 50 call sites across 46 files now wrap their `DataTable` (plus `ErrorState`, `EmptyState` and `PaginationControls`,
+  in that order) in it. The two `<h2>` sub-headings that duplicated a card title (`bills-table`, `cash-bank`
+  movements) are gone; the cash-bank "GL account required" hint stayed above the card.
+- Raw `<Table>` pages that `DataTable` cannot host (footers/editors) are still framed: `aging-table` (AR/AP),
+  `tax-recap`, `hr/payroll` got `DataTableCard`; invoice receipts and contract license keys were already inside a
+  `Card`.
+- `bills-table` replaced its hand-rolled `‹ 1 / N ›` pager with `PaginationControls`.
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` exit 0 (pre-existing warnings
+  only); `bun test` web-admin 172 pass, locales 106 pass. Verified through the dev server that Vite serves the wrapped
+  markup (`GET /src/routes/_authed/crm/customers/index.tsx?tsr-split=component` contains the `DataTableCard` element).
+  **Not verified:** a signed-in browser pass (the in-app browser has no session, `/admin/users` redirects to `/login`).
+
+## 2026-11-22 - web-admin: table row actions and headers made consistent
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- New `apps/web-admin/src/components/data-table/row-actions.tsx` (`RowActions`): up to 3 visible actions render as
+  ghost icon buttons with `aria-label`/`title`, more than 3 collapse into an `EllipsisVertical` dropdown. Every
+  `DataTable` actions column now uses it, with an `sr-only` header instead of `''`. `hr/request-actions.tsx` (leave,
+  overtime) is built on it. `/admin/users` and borrowing requests (4 actions) use the dropdown.
+- `DataTable` gained `sortable`: every plain-string `header` becomes a client-side sort button
+  (`DataTableColumnHeader`), so a table opts in with one prop instead of hand-wiring each column. Set only where the
+  query holds the whole collection; server-paginated tables keep plain headers (their sort must go through the URL, as
+  `/admin/users` already does).
+- Converted from raw `<Table>` to `DataTable`: `PendingInvitationsPanel`, `SessionsTable`, `NumberingTable`
+  (settings), `ProjectCostsCard`. `asset-service-record-list.tsx` trail got a header row; `/projects/bast` status
+  column got its header.
+- Locale keys added (en + id): `common:action.actions`, `common:action.download`, `hr:request.actions`, `hr:tasks.actions`.
+- Left as raw `<Table>` on purpose: tables with a `TableFooter` (aging, tax recap, payroll, invoice detail), inline
+  editors (attendance day sheet) and expandable seat rows (subscription contract detail) — `DataTable` has no footer,
+  editor or sub-row support.
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` exit 0 (pre-existing warnings
+  only); `bun test` web-admin 172 pass, locales 106 pass. **Not verified:** the pages in a browser (the in-app browser
+  has no session, `/admin/users` redirects to `/login`, and the login page rendered with no console errors).
+
+## 2026-11-22 - web-admin: `/product-categories` row actions are icon buttons
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- `apps/web-admin/src/components/inventory/item-category-list.tsx`: edit/archive row actions are now
+  `Button variant='ghost' size='icon'` with `Pencil` / `Archive` (`className='size-4'`) plus an
+  `aria-label`, matching `documents/files/$documentId.tsx`; actions column header is `sr-only`.
+  Keys unchanged, so locale parity/dead-key guards are unaffected.
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` in
+  `apps/web-admin` passed with pre-existing warnings only (none in the changed file).
+
+## 2026-11-22 - web-admin: procurement empty states use `EmptyState` with an icon
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- Every procurement list that had a text-only `EmptyState` now passes an icon, matching
+  `/inventory/materials` (`item-kind-list.tsx` → `EmptyState icon={PackageSearch}`):
+  suppliers `Truck`, purchase requests `FileText`, purchase orders `ClipboardList`,
+  goods receipts `PackageCheck`, purchase returns `Undo2`.
+- Supplier detail contact list gets `UserRound`; `/procurement/receipts/new` replaces the
+  bare `FieldDescription` "no sent PO waiting" line with `EmptyState` (`PackageCheck`, `size='sm'`).
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` in
+  `apps/web-admin` passed with pre-existing warnings only (none in the changed files).
+
 ## 2026-11-22 - PR #141: inventory cards, photo uploads, filters, Rupiah input, per-kind item routes
 
 - Branch `feat/inventory-cards-photos-filters` (3 commits: backend, web-admin + packages, docs) opened as

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { UserRound } from 'lucide-react';
 
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageSkeleton } from '@/components/page-skeleton';
@@ -220,7 +221,7 @@ function SupplierDetailPage() {
 					)}
 				</CardHeader>
 				<CardContent className='flex flex-col gap-3 text-sm'>
-					{data.people.length === 0 && <EmptyState title={t('procurement:suppliers.noPeople')} size='sm' />}
+					{data.people.length === 0 && <EmptyState icon={UserRound} title={t('procurement:suppliers.noPeople')} size='sm' />}
 					{data.people.map((person) => (
 						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
 							<div>

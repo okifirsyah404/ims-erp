@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -249,29 +250,29 @@ export function StockList({
 				) : null}
 			</div>
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && rows.length === 0 ? (
-				<EmptyState
-					icon={PackageOpen}
-					title={t('inventory:stock.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={rows}
-					getRowId={(row) => row.id}
-					loading={isPending}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && rows.length === 0 ? (
+					<EmptyState
+						icon={PackageOpen}
+						title={t('inventory:stock.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={rows}
+						getRowId={(row) => row.id}
+						loading={isPending}
+					/>
+				)}
 
-			<PaginationControls
-				page={effectivePage}
-				totalPages={pagination?.totalPages ?? 1}
-				onPageChange={onPageChange}
-			/>
+				<PaginationControls
+					page={effectivePage}
+					totalPages={pagination?.totalPages ?? 1}
+					onPageChange={onPageChange}
+				/>
+			</DataTableCard>
 		</div>
 	);
 }

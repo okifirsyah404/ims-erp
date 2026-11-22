@@ -17,6 +17,7 @@ import {
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Landmark, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -283,22 +284,23 @@ export function ReconciliationPage() {
 				</div>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (page?.rows.length ?? 0) === 0 ? (
-				<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} bordered />
-			) : (
-				<DataTable
-					columns={columns}
-					data={page?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					rowClassName={(row) =>
-						selectedId === row.id ? 'bg-muted/50' : undefined
-					}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (page?.rows.length ?? 0) === 0 ? (
+					<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} />
+				) : (
+					<DataTable
+						columns={columns}
+						data={page?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+						rowClassName={(row) =>
+							selectedId === row.id ? 'bg-muted/50' : undefined
+						}
+					/>
+				)}
+			</DataTableCard>
 
 			{selectedId != null && reconciliation ? (
 				<div className='space-y-3 rounded-md border p-4'>

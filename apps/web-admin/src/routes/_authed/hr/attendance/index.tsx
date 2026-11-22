@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { TimePicker } from '@ims-erp/ui/components/time-picker';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { ImportDialog } from '@/components/hr/import-dialog';
 import { toast } from '@/components/toast';
@@ -132,9 +133,7 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 
 	return (
 		<>
-			<div className='overflow-hidden rounded-md border'>
-				<div>
-					<Table>
+			<Table>
 						<TableHeader>
 							<TableRow>
 								<TableHead>{t('hr:field.employee')}</TableHead>
@@ -216,8 +215,6 @@ function DaySheet({ date, rows, canRecord }: { date: string; rows: TAttendanceDa
 							})}
 						</TableBody>
 					</Table>
-				</div>
-			</div>
 			{canRecord && (
 				<div className='flex flex-wrap justify-end gap-2'>
 					<Button
@@ -278,6 +275,13 @@ function MonthView({ period }: { period: string }) {
 		],
 		[t],
 	);
-	if (isError) return <ErrorState error={error} bordered />;
-	return <DataTable columns={columns} data={data ?? []} getRowId={(row) => row.employee.id} loading={isPending} bordered />;
+	return (
+		<DataTableCard title={t('hr:attendance.month')}>
+			{isError ? (
+				<ErrorState error={error} />
+			) : (
+				<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.employee.id} loading={isPending} sortable />
+			)}
+		</DataTableCard>
+	);
 }

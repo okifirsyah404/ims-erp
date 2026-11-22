@@ -15,6 +15,7 @@ import {
 } from '@ims-erp/ui/components/table';
 import { CalendarClock } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	AGING_BUCKETS,
@@ -98,7 +99,7 @@ export function AgingTable({
 					bordered
 				/>
 			) : (
-				<div className='overflow-x-auto rounded-md border'>
+				<DataTableCard>
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -146,7 +147,7 @@ export function AgingTable({
 							</TableRow>
 						</TableFooter>
 					</Table>
-				</div>
+				</DataTableCard>
 			)}
 		</div>
 	);
