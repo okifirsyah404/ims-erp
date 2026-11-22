@@ -1,0 +1,18 @@
+diff --git a/dist/resolve-inspector-dist.mjs b/dist/resolve-inspector-dist.mjs
+index a3c9636b3c858b9d31d08abfa3954b22deb02892..39752cd63499b579217c566fe2de1adfebc909c4 100644
+--- a/dist/resolve-inspector-dist.mjs
++++ b/dist/resolve-inspector-dist.mjs
+@@ -5,8 +5,12 @@
+ 
+   https://github.com/userquin/quini-pwa-monorepo/blob/main/LICENSE.
+ */
+-import { createRequire, findPackageJSON } from "node:module";
++import { createRequire } from "node:module";
+ import { dirname, resolve } from "node:path";
++// Bun has no module.findPackageJSON and a static import of it is a link
++// error; look it up at runtime (a missing function throws into the
++// createRequire fallback below).
++const findPackageJSON = process.getBuiltinModule("node:module").findPackageJSON;
+ // src/resolve-inspector-dist.ts
+ /**
+ * Locate the built-in inspector folder.

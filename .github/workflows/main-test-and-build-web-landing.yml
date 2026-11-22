@@ -1,0 +1,107 @@
+name: Main Test and Build Web Landing
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/web-landing/**"
+      - "packages/common/**"
+      - "packages/design-tokens/**"
+      - "patches/**"
+      - "package.json"
+      - "bun.lock"
+      - "bunfig.toml"
+      - "turbo.json"
+      - ".github/workflows/main-test-and-build-web-landing.yml"
+  pull_request:
+    branches: ["main"]
+
+env:
+  HUSKY: 0
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      web-landing: ${{ steps.filter.outputs.web-landing }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check for web-landing-related changes
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            web-landing:
+              - "apps/web-landing/**"
+              - "packages/common/**"
+              - "packages/design-tokens/**"
+              - "patches/**"
+              - "package.json"
+              - "bun.lock"
+              - "bunfig.toml"
+              - "turbo.json"
+              - ".github/workflows/main-test-and-build-web-landing.yml"
+
+  check:
+    name: Typecheck and Test Web Landing
+    needs: changes
+    if: needs.changes.outputs.web-landing == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Type-only imports of @ims-erp/common resolve against its dist/ types.
+      - name: Build @ims-erp/common
+        run: bun run --cwd packages/common build
+
+      # --bun: the astro CLI runs on Bun, not the runner's preinstalled Node.
+      - name: Typecheck (astro check)
+        run: bun --bun run --cwd apps/web-landing typecheck
+
+      - name: Unit tests
+        run: bun run --cwd apps/web-landing test
+
+  docker:
+    name: Docker Build Web Landing
+    needs: check
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build ims-erp-landing image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./apps/web-landing/Dockerfile
+          push: false
+          tags: ims-erp-landing:ci
+          cache-from: type=gha,scope=web-landing
+          cache-to: type=gha,scope=web-landing,mode=max,ignore-error=true

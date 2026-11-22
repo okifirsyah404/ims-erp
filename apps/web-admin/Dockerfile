@@ -10,6 +10,8 @@
 FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
+# patchedDependencies (package.json): bun install needs the patch files.
+COPY patches/ patches/
 COPY packages/ui/package.json packages/ui/
 # web-admin imports @ims-erp/common (browser-safe permission catalog); bun
 # requires the workspace manifest at install time.

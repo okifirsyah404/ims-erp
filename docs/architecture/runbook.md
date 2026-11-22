@@ -192,6 +192,19 @@ Docker build args, not runtime env; server-context values (`ERP_API_BASE_URL`,
 `WEB_HANDOFF_SECRET`, …) are runtime env. The portal keeps server-side sessions
 on disk (`/app/.astro/session`), mounted as the `portal-sessions` volume.
 
+Published images (ERP-0107): `okifirsyah404/ims-erp-landing` and
+`okifirsyah404/ims-erp-customer-portal`, pushed by
+`main-deploy-web-landing.yml` / `main-deploy-web-customer-portal.yml` when a
+PR touching the app merges into `main` (tags `sha-<sha>` and `dev`). The
+build args come from GitHub repository variables `PUBLIC_WEB_URL`,
+`PUBLIC_CUSTOMER_URL`, `PUBLIC_WHATSAPP_NUMBER` (landing) and
+`PUBLIC_WEB_URL`, `PUBLIC_SUPPORT_WHATSAPP`, `PUBLIC_SUPPORT_PHONE` (portal);
+unset = the app's production defaults. The `main-test-and-build-*` workflows
+run `astro check` (with `bun --bun`), `bun test` and an unpushed Docker build
+on PRs. Both images run on Bun only (build and `bun dist/server/entry.mjs`);
+the portal build relies on the PWA patches in `patches/`, so every Dockerfile
+that runs `bun install --frozen-lockfile` copies `patches/` first.
+
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.local.yml up postgres redis    # infra for local backend dev
 docker compose -f docker-compose.yml -f docker-compose.local.yml up --build web-landing web-customer-portal

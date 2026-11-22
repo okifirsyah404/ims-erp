@@ -145,7 +145,7 @@ services:
   # Public website (apps/web-landing). Node standalone server on 4321 inside
   # the container. Reaches the ERP server-to-server over the internal network.
   web-landing:
-    image: docker.io/okifirsyah404/ims-erp-web-landing:${IMAGE_TAG:-dev}
+    image: docker.io/okifirsyah404/ims-erp-landing:${IMAGE_TAG:-dev}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -172,7 +172,7 @@ services:
   # Customer portal (apps/web-customer-portal). Node standalone server on 4322.
   # Sessions live in the server; the cookie holds only an opaque id.
   web-customer-portal:
-    image: docker.io/okifirsyah404/ims-erp-web-customer-portal:${IMAGE_TAG:-dev}
+    image: docker.io/okifirsyah404/ims-erp-customer-portal:${IMAGE_TAG:-dev}
     restart: unless-stopped
     environment:
       NODE_ENV: production

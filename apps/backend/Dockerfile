@@ -16,6 +16,8 @@
 FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
+# patchedDependencies (package.json): bun install needs the patch files.
+COPY patches/ patches/
 COPY packages/common/package.json packages/common/
 # @ims-erp/locales is a source-only workspace package (exports resolve to
 # src/*.ts); bun requires its manifest at install time.

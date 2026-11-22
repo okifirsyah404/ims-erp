@@ -1,0 +1,37 @@
+diff --git a/dist/detector-DhMhccq1.mjs b/dist/detector-DhMhccq1.mjs
+index bcd23ebd993b6a5e72def403896cb865710a6800..eaf9201f3c2bfbf27bee7e41a3313daff3417453 100644
+--- a/dist/detector-DhMhccq1.mjs
++++ b/dist/detector-DhMhccq1.mjs
+@@ -7,14 +7,30 @@
+ */
+ import { n as __exportAll } from "./rolldown-runtime-C1vCxjx1.mjs";
+ import { t as BundlerNames } from "./utils-CoKZCXdC.mjs";
+-import { findPackageJSON } from "node:module";
+-import { readFileSync } from "node:fs";
++import { existsSync, readFileSync } from "node:fs";
++import { dirname, join } from "node:path";
++import { fileURLToPath } from "node:url";
+ import { getMajor, isGreaterThanOrEqual } from "verkit";
+ // src/build/builder/detector.ts
+ var detector_exports = __exportAll({ detect: () => detect });
+ const base = import.meta.url;
+ const VITE_PLUS_CORE_PKG_NAME = "@voidzero-dev/vite-plus-core";
++// Bun has no module.findPackageJSON (Node >= 22.14), and it turns a static or
++// namespace import of it into a link error; look it up at runtime and fall
++// back to walking up node_modules from the caller, which is all this needs.
++const findPackageJSON = process.getBuiltinModule("node:module").findPackageJSON;
++function findPackageJSONFallback(specifier, basePath) {
++	let dir = dirname(fileURLToPath(basePath));
++	for (;;) {
++		const candidate = join(dir, "node_modules", specifier, "package.json");
++		if (existsSync(candidate)) return candidate;
++		const parent = dirname(dir);
++		if (parent === dir) return;
++		dir = parent;
++	}
++}
+ function findPackageJSONSafe(specifier, basePath) {
++	if (typeof findPackageJSON !== "function") return findPackageJSONFallback(specifier, basePath);
+ 	try {
+ 		return findPackageJSON(specifier, basePath);
+ 	} catch (error) {

@@ -28,7 +28,7 @@ services:
         PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-}
         PUBLIC_CUSTOMER_URL: ${PUBLIC_CUSTOMER_URL:-}
         PUBLIC_WHATSAPP_NUMBER: ${PUBLIC_WHATSAPP_NUMBER:-6281280002020}
-    image: ims-erp-web-landing:local
+    image: ims-erp-landing:local
 
   web-customer-portal:
     build:
@@ -38,4 +38,4 @@ services:
         PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-}
         PUBLIC_SUPPORT_WHATSAPP: ${PUBLIC_SUPPORT_WHATSAPP:-}
         PUBLIC_SUPPORT_PHONE: ${PUBLIC_SUPPORT_PHONE:-}
-    image: ims-erp-web-customer-portal:local
+    image: ims-erp-customer-portal:local
