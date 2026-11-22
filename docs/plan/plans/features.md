@@ -558,6 +558,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   value view exists, see implemented).
 
 ### implemented
+- ERP-0109 Multi-image galleries (2026-11-23) for products/components/materials (M05), assets (M06) and warehouses: backend implemented (3 gallery tables + backfill migration, `/images` CRUD, cover mirrored into `image_object_key`); web-admin gallery UI and migration apply on a disposable DB still open.
 - Payables from goods receipts: finance bills a purchase order for what was
   received and not billed yet (order price and VAT, supplier invoice number),
   recording debits Persediaan for stock lines — T07, ERP-0012 / ERP-0035.

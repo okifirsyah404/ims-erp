@@ -93,6 +93,8 @@ beforeAll(async () => {
 	// The photo service needs object storage; the wall under test is authorization.
 	container.registerInstance(ITEM_IMAGE_SERVICE_TOKEN, {
 		withImageUrl: (row: object) => ({ ...row, imageUrl: null }),
+		withImages: async (row: object) => ({ ...row, imageUrl: null, images: [] }),
+		list: async () => [],
 		urlFor: () => null,
 		async setImage() {
 			return { imageUrl: null };

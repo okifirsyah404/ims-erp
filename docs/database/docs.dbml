@@ -51,6 +51,7 @@ TableGroup "Supplier" {
 
 TableGroup "Product" {
   product.products
+  product.product_images
   product.product_categories
   product.settings
   product.code_numberings
@@ -59,6 +60,7 @@ TableGroup "Product" {
 TableGroup "Warehouse" {
   warehouse.warehouses
   warehouse.warehouse_addresses
+  warehouse.warehouse_images
   warehouse.warehouse_storages
   warehouse.warehouse_managers
   warehouse.warehouse_organizations
@@ -70,6 +72,7 @@ TableGroup "Warehouse" {
 TableGroup "Inventory" {
   inventory.item_serials
   inventory.items
+  inventory.item_images
   inventory.item_categories
   inventory.documents
   inventory.movements
@@ -994,7 +997,7 @@ Table product.products {
   product_category_id uuid
   brand varchar(100)
   specification text [note: "Technical specification printed on quotations."]
-  image_object_key text [note: "Object-storage key of the one photo printed on documents."]
+  image_object_key text [note: "Cover photo: mirrored from the first live row of product_images by ProductImageService (printed on documents)."]
   unit_label varchar(32) [not null, default: 'pcs', note: "Fixed unit list (ADR-0011), guarded by a CHECK."]
   is_active boolean [not null, default: true, note: "Inactive products stay listed but are not offered for new documents."]
   is_serialized boolean [not null, default: false]
@@ -1037,6 +1040,21 @@ Table product.products {
     `price_mode IN ('list', 'rfq')`
     `out_of_stock_mode IN ('out', 'preorder', 'request')`
     `popularity >= 0`
+  }
+}
+
+Table product.product_images {
+  id uuid [pk, default: `uuidv7()`]
+  product_id uuid [not null]
+  object_key text [not null, note: "Object-storage key of the WebP image; never a public URL. Every upload gets a fresh key."]
+  caption varchar(200)
+  sort_order integer [not null, default: 0, note: "Gallery order, ascending. The first live row is the cover; its key is mirrored into products.image_object_key by the service."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Image gallery of a product, component or material (at most 10 live images). Soft-deleted rows keep their object so documents that snapshotted the key still print."
+  Indexes {
+    (product_id, sort_order) [name: 'product_images_product_id_sort_idx']
   }
 }
 
@@ -1093,6 +1111,7 @@ Table product.code_numberings {
 }
 
 Ref: product.products.product_category_id > product.product_categories.id [delete: restrict]
+Ref: product.product_images.product_id > product.products.id [delete: cascade]
 
 // ---------------------------------------------------------------------------
 // MODULE: Warehouse  (schema: warehouse; split out of inventory by ADR-0026).
@@ -1112,7 +1131,7 @@ Table warehouse.warehouses {
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
   image_url text [note: "Legacy plain URL, no longer written or read; superseded by image_object_key. Column kept because migrations are append-only."]
-  image_object_key text [note: "Object-storage key of the warehouse photo (WebP); never a public URL."]
+  image_object_key text [note: "Cover photo: mirrored from the first live row of warehouse_images; never a public URL."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -1122,6 +1141,21 @@ Table warehouse.warehouses {
     (code) [unique, name: 'warehouses_global_code_uq', note: 'WHERE organization_id IS NULL']
     is_default [name: 'warehouses_is_default_idx']
     is_active [name: 'warehouses_is_active_idx']
+  }
+}
+
+Table warehouse.warehouse_images {
+  id uuid [pk, default: `uuidv7()`]
+  warehouse_id uuid [not null]
+  object_key text [not null, note: "Object-storage key of the WebP image; never a public URL. Every upload gets a fresh key."]
+  caption varchar(200)
+  sort_order integer [not null, default: 0, note: "Gallery order, ascending. The first live row is the cover; its key is mirrored into warehouses.image_object_key by the service."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Image gallery of a warehouse (at most 10 live images). Soft-deleted rows keep their object so documents that snapshotted the key still print."
+  Indexes {
+    (warehouse_id, sort_order) [name: 'warehouse_images_warehouse_id_sort_idx']
   }
 }
 
@@ -1252,6 +1286,7 @@ Table warehouse.code_numberings {
 }
 
 Ref: warehouse.warehouse_addresses.warehouse_id > warehouse.warehouses.id [delete: cascade]
+Ref: warehouse.warehouse_images.warehouse_id > warehouse.warehouses.id [delete: cascade]
 Ref: warehouse.warehouse_storages.warehouse_id > warehouse.warehouses.id [delete: cascade]
 Ref: warehouse.warehouse_managers.warehouse_id > warehouse.warehouses.id [delete: cascade]
 Ref: warehouse.warehouse_organizations.warehouse_id > warehouse.warehouses.id [delete: cascade]
@@ -1336,7 +1371,7 @@ Table inventory.items {
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Document module contract."]
   image_url text [note: "Legacy plain URL, no longer written or read; superseded by image_object_key. Column kept because migrations are append-only."]
-  image_object_key text [note: "Object-storage key of the asset photo (WebP); never a public URL."]
+  image_object_key text [note: "Cover photo: mirrored from the first live row of item_images; never a public URL."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -1365,6 +1400,23 @@ Table inventory.items {
     `useful_life_months IS NULL OR useful_life_months > 0`
   }
 }
+
+Table inventory.item_images {
+  id uuid [pk, default: `uuidv7()`]
+  item_id uuid [not null]
+  object_key text [not null, note: "Object-storage key of the WebP image; never a public URL. Every upload gets a fresh key."]
+  caption varchar(200)
+  sort_order integer [not null, default: 0, note: "Gallery order, ascending. The first live row is the cover; its key is mirrored into items.image_object_key by the service."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Image gallery of a physical asset (at most 10 live images). Soft-deleted rows keep their object."
+  Indexes {
+    (item_id, sort_order) [name: 'item_images_item_id_sort_idx']
+  }
+}
+
+Ref: inventory.item_images.item_id > inventory.items.id [delete: cascade]
 
 Table inventory.item_categories {
   id uuid [pk, default: `uuidv7()`]

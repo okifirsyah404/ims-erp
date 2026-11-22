@@ -204,6 +204,25 @@ export const products = productSchema.table(
 	],
 );
 
+/** Image gallery of a product, component or material; the first live row is the cover. */
+export const productImages = productSchema.table(
+	'product_images',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		productId: uuid('product_id')
+			.notNull()
+			.references(() => products.id, { onDelete: 'cascade' }),
+		/** Object-storage key of the WebP image; never a public URL. */
+		objectKey: text('object_key').notNull(),
+		caption: varchar('caption', { length: 200 }),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...softDeleteTimestamps,
+	},
+	(table) => [index('product_images_product_id_sort_idx').on(table.productId, table.sortOrder)],
+);
+
 /* ------------------------------------------------------------------------ *
  * product.product_categories
  * ------------------------------------------------------------------------ */
@@ -272,6 +291,7 @@ export const productCodeNumberings = createCodeNumberingTable(productSchema);
  * ------------------------------------------------------------------------ */
 
 export type TProductSelect = typeof products.$inferSelect;
+export type TProductImageSelect = typeof productImages.$inferSelect;
 export type TProductInsert = typeof products.$inferInsert;
 export type TProductCategorySelect = typeof productCategories.$inferSelect;
 export type TProductCategoryInsert = typeof productCategories.$inferInsert;

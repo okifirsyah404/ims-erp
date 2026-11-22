@@ -10,6 +10,7 @@ import {
 	EXPORTED_WAREHOUSE_SERVICE_TOKEN,
 	WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
 	WAREHOUSE_CODE_NUMBERING_REPOSITORY_TOKEN,
+	WAREHOUSE_IMAGE_REPOSITORY_TOKEN,
 	WAREHOUSE_IMAGE_SERVICE_TOKEN,
 	WAREHOUSE_MANAGER_REPOSITORY_TOKEN,
 	WAREHOUSE_MANAGER_SERVICE_TOKEN,
@@ -21,6 +22,7 @@ import {
 import { WarehouseAddressRepository } from './repositories/warehouse-address.repository';
 import { WarehouseCodeNumberingRepository } from './repositories/code-numbering.repository';
 import { WarehouseManagerRepository } from './repositories/warehouse-manager.repository';
+import { WarehouseImageRepository } from './repositories/warehouse-image.repository';
 import { WarehouseRepository } from './repositories/warehouse.repository';
 import { WarehouseStorageRepository } from './repositories/warehouse-storage.repository';
 import { ExportedWarehouseService } from './services/exported-warehouse.service';
@@ -64,6 +66,9 @@ export function registerWarehouse(container: DependencyContainer): void {
 	});
 	container.register(WAREHOUSE_SERVICE_TOKEN, {
 		useClass: WarehouseService,
+	});
+	container.register(WAREHOUSE_IMAGE_REPOSITORY_TOKEN, {
+		useClass: WarehouseImageRepository,
 	});
 	container.register(WAREHOUSE_IMAGE_SERVICE_TOKEN, {
 		useClass: WarehouseImageService,

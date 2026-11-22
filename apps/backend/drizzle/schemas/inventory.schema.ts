@@ -446,6 +446,29 @@ export const items = inventorySchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * inventory.item_images
+ * ------------------------------------------------------------------------ */
+
+/** Image gallery of a physical asset; the first live row is the cover. */
+export const itemImages = inventorySchema.table(
+	'item_images',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		itemId: uuid('item_id')
+			.notNull()
+			.references(() => items.id, { onDelete: 'cascade' }),
+		/** Object-storage key of the WebP image; never a public URL. */
+		objectKey: text('object_key').notNull(),
+		caption: varchar('caption', { length: 200 }),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...softDeleteTimestamps,
+	},
+	(table) => [index('item_images_item_id_sort_idx').on(table.itemId, table.sortOrder)],
+);
+
+/* ------------------------------------------------------------------------ *
  * inventory.item_serials
  * ------------------------------------------------------------------------ */
 
@@ -1278,6 +1301,7 @@ export const inventoryCodeNumberings =
 export type TItemSerialSelect = typeof itemSerials.$inferSelect;
 export type TItemSerialInsert = typeof itemSerials.$inferInsert;
 export type TItemSelect = typeof items.$inferSelect;
+export type TItemImageSelect = typeof itemImages.$inferSelect;
 export type TItemInsert = typeof items.$inferInsert;
 export type TItemCategorySelect = typeof itemCategories.$inferSelect;
 export type TItemCategoryInsert = typeof itemCategories.$inferInsert;

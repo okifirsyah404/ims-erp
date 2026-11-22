@@ -274,6 +274,8 @@ beforeAll(async () => {
 	// Photos are not part of the authorization suite.
 	container.registerInstance(PRODUCT_IMAGE_SERVICE_TOKEN, {
 		withImageUrl: (row: object) => ({ ...row, imageUrl: null }),
+		withImages: async (row: object) => ({ ...row, imageUrl: null, images: [] }),
+		list: async () => [],
 		urlFor: () => null,
 	} as never);
 	container.registerInstance(

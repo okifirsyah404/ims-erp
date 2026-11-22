@@ -67,7 +67,7 @@ Table customer.customers {
 | Logical reference columns | 190 |
 | Distinct targets | 25 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 147 |
+| Intra-module `Ref:` declarations | 150 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module

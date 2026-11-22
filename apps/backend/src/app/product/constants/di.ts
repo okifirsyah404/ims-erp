@@ -6,6 +6,7 @@
  * leaves `container.resolve()` returning `unknown`, which forces casts at
  * every call site.
  */
+import type { IGalleryImageRepository } from '@shared/media';
 import type { InjectionToken } from 'tsyringe';
 import type { IProductRepository } from '../contracts/product.repository.interface';
 import type { IProductCategoryRepository } from '../contracts/product-category.repository.interface';
@@ -26,6 +27,9 @@ export const PRODUCT_SERVICE_TOKEN: InjectionToken<ProductService> =
 	Symbol('PRODUCT_SERVICE');
 export const PRODUCT_CATEGORY_SERVICE_TOKEN: InjectionToken<ProductCategoryService> =
 	Symbol('PRODUCT_CATEGORY_SERVICE');
+/** Gallery rows of `product.product_images`. */
+export const PRODUCT_IMAGE_REPOSITORY_TOKEN: InjectionToken<IGalleryImageRepository> =
+	Symbol('PRODUCT_IMAGE_REPOSITORY');
 /** Token resolving to the {@link ProductImageService} (document photo of a product). */
 export const PRODUCT_IMAGE_SERVICE_TOKEN: InjectionToken<ProductImageService> =
 	Symbol('PRODUCT_IMAGE_SERVICE_TOKEN');

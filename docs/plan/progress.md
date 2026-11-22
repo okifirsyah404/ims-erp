@@ -12,6 +12,46 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0109: multi-image galleries for products, components, materials, assets and warehouses (backend)
+
+**Owner request:** "product, component, material, asset equipment, dan warehouse
+support multiple image" in `apps/backend`, CRUD updated.
+
+**Design (grilled manually, `grilling` skill not installed).** One gallery table
+per owning module (no cross-schema link): `product.product_images` (serves
+product, component and material - one `products` table),
+`inventory.item_images` (assets/equipment), `warehouse.warehouse_images`.
+Columns: `id`, owner FK (intra-module, cascade), `object_key`, `caption`,
+`sort_order`, soft-delete timestamps. The first live row is the **cover**; its
+key is mirrored into the existing `image_object_key` column, so quotation
+snapshots, stock rows and the public catalog image are unchanged. Max 10
+images per owner. Removal is a soft delete (object kept, because issued
+documents snapshot keys). Shared rules live in `src/shared/media/image-gallery.ts`
+(+ `GalleryRepositoryBase`); each module has its own repository and image
+service.
+
+**API (per module; same permissions as the old photo routes).**
+`GET|POST /:id/images`, `PUT /:id/images/order`, `PATCH|DELETE /:id/images/:imageId`
+under `/products`, `/inventory/items`, `/warehouses`. The old `PUT|DELETE
+/:id/image` stay as single-photo shortcuts (replace / remove the cover).
+`GET /products/:id` and `GET /warehouses/:id` now also return `images`.
+
+**Migration.** `20261122174431_add_gallery_images`: three tables + indexes + FKs,
+and a backfill turning every existing `image_object_key` into gallery row 0.
+Not applied to a database in this session (no disposable DB credentials).
+
+**Checks.** `bun install --frozen-lockfile` (worktree) ok; `bunx tsc --noEmit`
+in `apps/backend` clean; `bun test` in `apps/backend` (dummy env for config
+parsing) 1342 pass / 0 fail (new `test/unit/image-gallery.test.ts`, 8 tests;
+authorization doubles extended); `bun run lint` 5/5; locales tests pass;
+`bun docs/database/gen-logical-references.ts` then `bun docs/database/validate-dbml.ts`
+-> OK (0 cross-module refs, 0 timestamp gaps, 0 drizzle/column parity drift).
+`docs.dbml` updated (3 tables, cover-column notes).
+
+**Open.** web-admin still shows one photo (`imageUrl` = cover) - gallery UI is a
+follow-up; migration not yet applied/checked on a disposable database;
+seeders untouched (no images seeded).
+
 ## 2026-11-22 - ERP-0107 amended: deployment moved from Docker Hub to GHCR (all four images)
 
 **Owner request** on PR #142: "Pindahkan deployment dari dockerhub ke ghcr";
