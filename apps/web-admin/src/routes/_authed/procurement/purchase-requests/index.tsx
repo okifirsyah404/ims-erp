@@ -3,6 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { FileText } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -150,7 +151,7 @@ function PurchaseRequestListPage() {
 			{isError ? (
 				<ErrorState error={error} bordered />
 			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('procurement:prs.empty')} bordered />
+				<EmptyState icon={FileText} title={t('procurement:prs.empty')} bordered />
 			) : (
 				<>
 					<DataTable

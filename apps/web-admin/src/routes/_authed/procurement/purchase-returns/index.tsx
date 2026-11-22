@@ -3,7 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
+import { Search, Undo2 } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -146,7 +146,7 @@ function PurchaseReturnListPage() {
 			{isError ? (
 				<ErrorState error={error} bordered />
 			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('procurement:returns.empty')} bordered />
+				<EmptyState icon={Undo2} title={t('procurement:returns.empty')} bordered />
 			) : (
 				<>
 					<DataTable

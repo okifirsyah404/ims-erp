@@ -39,7 +39,7 @@ import {
 } from '@/lib/item-category-api';
 import { usePermission } from '@/lib/use-permission';
 import { EmptyState, ErrorState } from '@/components/empty-state';
-import { Tags } from 'lucide-react';
+import { Archive, Pencil, Tags } from 'lucide-react';
 
 /**
  * Item categories (ADR-0011): one level, company-wide. Lists every live
@@ -124,18 +124,28 @@ export function ItemCategoryList() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<div className='flex justify-end gap-2'>
+					<div className='flex justify-end gap-1'>
 						{canUpdate && (
-							<Button variant='outline' size='sm' onClick={() => setEditing(row.original)}>
-								{t('common:action.edit')}
+							<Button
+								variant='ghost'
+								size='icon'
+								aria-label={t('common:action.edit')}
+								onClick={() => setEditing(row.original)}
+							>
+								<Pencil className='size-4' />
 							</Button>
 						)}
 						{canArchive && (
-							<Button variant='outline' size='sm' onClick={() => setArchiving(row.original)}>
-								{t('product:categories.archive')}
+							<Button
+								variant='ghost'
+								size='icon'
+								aria-label={t('product:categories.archive')}
+								onClick={() => setArchiving(row.original)}
+							>
+								<Archive className='size-4' />
 							</Button>
 						)}
 					</div>

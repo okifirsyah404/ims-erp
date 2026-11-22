@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
+import { Search, Truck } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -156,7 +156,7 @@ function SupplierListPage() {
 			{isError ? (
 				<ErrorState error={error} bordered />
 			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('procurement:suppliers.empty')} bordered />
+				<EmptyState icon={Truck} title={t('procurement:suppliers.empty')} bordered />
 			) : (
 				<>
 					<DataTable

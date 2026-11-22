@@ -12,6 +12,28 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-22 - web-admin: `/product-categories` row actions are icon buttons
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- `apps/web-admin/src/components/inventory/item-category-list.tsx`: edit/archive row actions are now
+  `Button variant='ghost' size='icon'` with `Pencil` / `Archive` (`className='size-4'`) plus an
+  `aria-label`, matching `documents/files/$documentId.tsx`; actions column header is `sr-only`.
+  Keys unchanged, so locale parity/dead-key guards are unaffected.
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` in
+  `apps/web-admin` passed with pre-existing warnings only (none in the changed file).
+
+## 2026-11-22 - web-admin: procurement empty states use `EmptyState` with an icon
+
+- No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
+- Every procurement list that had a text-only `EmptyState` now passes an icon, matching
+  `/inventory/materials` (`item-kind-list.tsx` → `EmptyState icon={PackageSearch}`):
+  suppliers `Truck`, purchase requests `FileText`, purchase orders `ClipboardList`,
+  goods receipts `PackageCheck`, purchase returns `Undo2`.
+- Supplier detail contact list gets `UserRound`; `/procurement/receipts/new` replaces the
+  bare `FieldDescription` "no sent PO waiting" line with `EmptyState` (`PackageCheck`, `size='sm'`).
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` passed; `bun run lint` in
+  `apps/web-admin` passed with pre-existing warnings only (none in the changed files).
+
 ## 2026-11-22 - PR #141: inventory cards, photo uploads, filters, Rupiah input, per-kind item routes
 
 - Branch `feat/inventory-cards-photos-filters` (3 commits: backend, web-admin + packages, docs) opened as
