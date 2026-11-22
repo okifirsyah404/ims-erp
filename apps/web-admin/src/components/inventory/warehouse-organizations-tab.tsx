@@ -19,6 +19,8 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -107,7 +109,16 @@ export function WarehouseOrganizationsTab({
 		return [
 			{
 				id: 'organization',
-				header: t('warehouse:warehouses.organization'),
+				accessorFn: (row) =>
+					(row.organizationId ? byId.get(row.organizationId)?.name : undefined) ??
+					row.organizationId ??
+					'-',
+				header: ({ column }) => (
+					<DataTableColumnHeader
+						column={column}
+						title={t('warehouse:warehouses.organization')}
+					/>
+				),
 				meta: { cellClassName: 'font-medium' },
 				cell: ({ row }) =>
 					(row.original.organizationId
@@ -118,35 +129,47 @@ export function WarehouseOrganizationsTab({
 			},
 			{
 				id: 'linkedSince',
-				header: t('warehouse:warehouses.linkedSince'),
+				accessorFn: (row) => row.createdAt,
+				header: ({ column }) => (
+					<DataTableColumnHeader
+						column={column}
+						title={t('warehouse:warehouses.linkedSince')}
+					/>
+				),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => (
+					<span className='sr-only'>{t('warehouse:warehouses.unlinkAction')}</span>
+				),
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<Button
-						variant='ghost'
-						size='sm'
-						disabled={unlink.isPending || !row.original.organizationId}
-						onClick={async () => {
-							const organizationId = row.original.organizationId;
-							if (
-								organizationId &&
-								(await confirm({
-									title: t('warehouse:warehouses.unlinkConfirm'),
-									destructive: true,
-								}))
-							) {
-								unlink.mutate(organizationId);
-							}
-						}}
-					>
-						<Unlink className='mr-2 size-4' />
-						{t('warehouse:warehouses.unlinkAction')}
-					</Button>
+					<RowActions
+						label={t('warehouse:warehouses.unlinkAction')}
+						actions={[
+							{
+								key: 'unlink',
+								label: t('warehouse:warehouses.unlinkAction'),
+								icon: Unlink,
+								disabled: unlink.isPending || !row.original.organizationId,
+								destructive: true,
+								onSelect: async () => {
+									const organizationId = row.original.organizationId;
+									if (
+										organizationId &&
+										(await confirm({
+											title: t('warehouse:warehouses.unlinkConfirm'),
+											destructive: true,
+										}))
+									) {
+										unlink.mutate(organizationId);
+									}
+								},
+							},
+						]}
+					/>
 				),
 			},
 		];
@@ -205,6 +228,7 @@ export function WarehouseOrganizationsTab({
 						data={links.data ?? []}
 						getRowId={(row) => row.organizationId ?? ''}
 						loading={links.isPending}
+						sortable
 					/>
 				)}
 			</CardContent>

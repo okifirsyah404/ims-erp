@@ -12,7 +12,10 @@ import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Pencil, Trash2 } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
@@ -74,28 +77,35 @@ function FaqPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					canManage ? (
-						<div className='flex justify-end gap-2'>
-							<Button size='sm' variant='outline' onClick={() => setEditing({ entry: row.original })}>
-								{t('integrations:faq.edit')}
-							</Button>
-							<Button
-								size='sm'
-								variant='outline'
-								disabled={busy}
-								onClick={async () => {
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'edit',
+								label: t('integrations:faq.edit'),
+								icon: Pencil,
+								hidden: !canManage,
+								onSelect: () => setEditing({ entry: row.original }),
+							},
+							{
+								key: 'remove',
+								label: t('integrations:faq.remove'),
+								icon: Trash2,
+								destructive: true,
+								disabled: busy,
+								hidden: !canManage,
+								onSelect: async () => {
 									if (await confirm({ title: t('integrations:faq.confirmRemove'), destructive: true })) {
 										void run(() => removeFaq(row.original.id), t('integrations:faq.removed'));
 									}
-								}}
-							>
-								{t('integrations:faq.remove')}
-							</Button>
-						</div>
-					) : null,
+								},
+							},
+						]}
+					/>
+				),
 			},
 		],
 		[t, busy, canManage, confirm, run],
@@ -113,13 +123,15 @@ function FaqPage() {
 				</div>
 				{canManage && <Button onClick={() => setEditing({ entry: null })}>{t('integrations:faq.new')}</Button>}
 			</div>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.length === 0 ? (
-				<EmptyState title={t('integrations:faq.empty')} bordered />
-			) : (
-				<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.length === 0 ? (
+					<EmptyState title={t('integrations:faq.empty')} />
+				) : (
+					<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.id} loading={isPending} sortable />
+				)}
+			</DataTableCard>
 			{editing && (
 				<FaqDialog
 					entry={editing.entry}

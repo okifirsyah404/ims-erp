@@ -16,8 +16,10 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { Ban } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
@@ -114,19 +116,24 @@ function DocumentsPage() {
 			...base,
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					row.original.status !== 'void' ? (
-						<Button
-							variant='outline'
-							size='sm'
-							disabled={voidMutation.isPending}
-							onClick={() => voidMutation.mutate(row.original.id)}
-						>
-							{t('documents:void')}
-						</Button>
-					) : null,
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.actions')}
+						disabled={voidMutation.isPending}
+						actions={[
+							{
+								key: 'void',
+								label: t('documents:void'),
+								icon: Ban,
+								destructive: true,
+								hidden: row.original.status === 'void',
+								onSelect: () => voidMutation.mutate(row.original.id),
+							},
+						]}
+					/>
+				),
 			},
 		];
 	}, [t, canUpdate, voidMutation]);

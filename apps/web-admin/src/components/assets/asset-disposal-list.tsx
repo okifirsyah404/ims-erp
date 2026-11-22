@@ -20,6 +20,7 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
@@ -28,7 +29,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Trash2 } from 'lucide-react';
+import { Ban, Check, Trash2 } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -131,44 +133,48 @@ export function AssetDisposalList() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => {
 					const disposal = row.original;
-					return canDispose ? (
-						<div className='flex justify-end gap-2'>
-							{disposal.status === 'draft' || disposal.status === 'submitted' ? (
-								<Button
-									size='sm'
-									variant='outline'
-									disabled={approve.isPending}
-									onClick={() => void approve.mutateAsync(disposal.id)}
-								>
-									{t('assets:disposals.approve')}
-								</Button>
-							) : null}
-							{disposal.status === 'approved' ? (
-								<Button
-									size='sm'
-									disabled={execute.isPending}
-									onClick={() => void execute.mutateAsync(disposal.id)}
-								>
-									{t('assets:disposals.execute')}
-								</Button>
-							) : null}
-							{disposal.status !== 'executed' &&
-							disposal.status !== 'cancelled' ? (
-								<Button
-									size='sm'
-									variant='ghost'
-									disabled={cancel.isPending}
-									onClick={() => void cancel.mutateAsync(disposal.id)}
-								>
-									{t('assets:disposals.cancel')}
-								</Button>
-							) : null}
-						</div>
-					) : null;
+					return (
+						<RowActions
+							label={t('common:action.actions')}
+							actions={[
+								{
+									key: 'approve',
+									label: t('assets:disposals.approve'),
+									icon: Check,
+									disabled: approve.isPending,
+									hidden:
+										!canDispose ||
+										!(disposal.status === 'draft' || disposal.status === 'submitted'),
+									onSelect: () => void approve.mutateAsync(disposal.id),
+								},
+								{
+									key: 'execute',
+									label: t('assets:disposals.execute'),
+									icon: Trash2,
+									destructive: true,
+									disabled: execute.isPending,
+									hidden: !canDispose || disposal.status !== 'approved',
+									onSelect: () => void execute.mutateAsync(disposal.id),
+								},
+								{
+									key: 'cancel',
+									label: t('assets:disposals.cancel'),
+									icon: Ban,
+									destructive: true,
+									disabled: cancel.isPending,
+									hidden:
+										!canDispose ||
+										disposal.status === 'executed' ||
+										disposal.status === 'cancelled',
+									onSelect: () => void cancel.mutateAsync(disposal.id),
+								},
+							]}
+						/>
+					);
 				},
 			},
 		],
@@ -195,30 +201,30 @@ export function AssetDisposalList() {
 				) : null}
 			</div>
 
-			{!isPending && (!data || data.rows.length === 0) ? (
-				<EmptyState
-					icon={Trash2}
-					title={t('assets:disposals.emptyTitle')}
-					description={t('assets:disposals.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={data?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{!isPending && (!data || data.rows.length === 0) ? (
+					<EmptyState
+						icon={Trash2}
+						title={t('assets:disposals.emptyTitle')}
+						description={t('assets:disposals.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+				)}
 
-			<PaginationControls
-				page={page}
-				totalPages={data?.pagination.totalPages ?? 1}
-				onPageChange={(next) =>
-					void navigate({ search: (prev) => ({ ...prev, page: next }) })
-				}
-			/>
+				<PaginationControls
+					page={page}
+					totalPages={data?.pagination.totalPages ?? 1}
+					onPageChange={(next) =>
+						void navigate({ search: (prev) => ({ ...prev, page: next }) })
+					}
+				/>
+			</DataTableCard>
 
 			{requestOpen ? (
 				<RequestDisposalDialog onClose={() => setRequestOpen(false)} />

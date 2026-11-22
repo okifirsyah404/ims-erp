@@ -222,7 +222,6 @@ function InvoiceDetailPage() {
 					{data.receipts.length === 0 ? (
 						<EmptyState title={t('finance:receipt.empty')} size='sm' />
 					) : (
-						<div className='overflow-hidden rounded-md border'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -252,8 +251,7 @@ function InvoiceDetailPage() {
 									</TableRow>
 								))}
 							</TableBody>
-						</Table>
-						</div>
+					</Table>
 					)}
 				</CardContent>
 			</Card>

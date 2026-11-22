@@ -27,6 +27,8 @@ const common = {
 	'action.restore': 'Restore',
 	'action.previous': 'Previous',
 	'action.next': 'Next',
+	'action.actions': 'Actions',
+	'action.download': 'Download',
 
 	'state.loading': 'Loading…',
 	'state.noResults': 'No results',

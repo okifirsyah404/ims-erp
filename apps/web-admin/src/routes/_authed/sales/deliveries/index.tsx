@@ -8,6 +8,7 @@ import { Search } from 'lucide-react';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import {
@@ -116,24 +117,25 @@ function DeliveryNoteListPage() {
 					}}
 				/>
 			</InputGroup>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('sales:deliveries.empty')} bordered />
-			) : (
-				<>
-					<DataTable
-						columns={columns}
-						data={data?.rows ?? []}
-						getRowId={(row) => row.id}
-						loading={isPending}
-						bordered
-					/>
-					{data && data.pagination.totalPages > 1 && (
-						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
-					)}
-				</>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.rows.length === 0 ? (
+					<EmptyState title={t('sales:deliveries.empty')} />
+				) : (
+					<>
+						<DataTable
+							columns={columns}
+							data={data?.rows ?? []}
+							getRowId={(row) => row.id}
+							loading={isPending}
+						/>
+						{data && data.pagination.totalPages > 1 && (
+							<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
+						)}
+					</>
+				)}
+			</DataTableCard>
 		</div>
 	);
 }

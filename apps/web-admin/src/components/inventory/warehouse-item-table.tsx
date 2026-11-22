@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 
-import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Input } from '@ims-erp/ui/components/input';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { itemDetailLink } from '@/lib/item-routes';
-import { PackageOpen } from 'lucide-react';
+import { PackageOpen, Pencil } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	productsQueryOptions,
@@ -54,6 +54,7 @@ export function WarehouseItemTable({
 	itemKind: TProductKind;
 }) {
 	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
+	const navigate = useNavigate();
 	const [page, setPage] = useState(1);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [submittedSearch, setSubmittedSearch] = useState('');
@@ -127,19 +128,24 @@ export function WarehouseItemTable({
 				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<Button
-						variant='ghost'
-						size='sm'
-						render={
-							<Link {...itemDetailLink(row.original.productKind, row.original.id)} />
-						}
-					>
-						{t('common:action.edit')}
-					</Button>
+					<RowActions
+						label={t('common:action.edit')}
+						actions={[
+							{
+								key: 'edit',
+								label: t('common:action.edit'),
+								icon: Pencil,
+								onSelect: () =>
+									void navigate(
+										itemDetailLink(row.original.productKind, row.original.id),
+									),
+							},
+						]}
+					/>
 				),
 			},
 		],
-		[t],
+		[navigate, t],
 	);
 
 	if (isError) {

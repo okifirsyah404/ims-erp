@@ -11,6 +11,7 @@ import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { ImportDialog } from '@/components/hr/import-dialog';
 import { toast } from '@/components/toast';
@@ -117,9 +118,8 @@ function SalaryPage() {
 			) : data.rows.length === 0 ? (
 				<EmptyState title={t('hr:salary.empty')} bordered />
 			) : (
-				<div className='overflow-hidden rounded-md border'>
-					<div>
-						<Table>
+				<DataTableCard>
+					<Table>
 							<TableHeader>
 								<TableRow>
 									<TableHead>{t('hr:field.employee')}</TableHead>
@@ -173,8 +173,7 @@ function SalaryPage() {
 								</TableRow>
 							</TableFooter>
 						</Table>
-					</div>
-				</div>
+				</DataTableCard>
 			)}
 
 			{editing && (

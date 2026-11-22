@@ -5,8 +5,10 @@ import {
 	ArrowUp,
 	ArrowUpDown,
 	Funnel,
-	MoreHorizontal,
+	RotateCcw,
+	Trash2,
 	UserPlus,
+	UserX,
 	Users as UsersIcon,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -34,13 +36,6 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from '@ims-erp/ui/components/alert-dialog';
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from '@ims-erp/ui/components/dropdown-menu';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Popover,
@@ -76,6 +71,7 @@ import {
 import { organizationsQueryOptions } from '@/lib/organization-api';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { InviteDialog } from '@/components/invite/invite-dialog';
@@ -564,64 +560,52 @@ function UserActions({
 		return <span className='text-xs text-muted-foreground'>—</span>;
 	}
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger
-				render={
-					<Button
-						variant='ghost'
-						size='sm'
-						disabled={busy}
-						aria-label={t('users.openActions')}
-					>
-						<MoreHorizontal className='size-4' />
-					</Button>
-				}
+		<>
+			<RowActions
+				label={t('users.openActions')}
+				disabled={busy}
+				actions={[
+					{
+						key: 'deactivate',
+						label: t('users.deactivate'),
+						icon: UserX,
+						hidden: !(canUpdate && isActive),
+						onSelect: onDeactivate,
+					},
+					{
+						key: 'restore',
+						label: t('common:action.restore'),
+						icon: RotateCcw,
+						hidden: !(canUpdate && canRestore),
+						onSelect: onRestore,
+					},
+					{
+						key: 'delete',
+						label: t('common:action.delete'),
+						icon: Trash2,
+						destructive: true,
+						hidden: !(canDelete && !user.deletedAt),
+						onSelect: () => setDeleteOpen(true),
+					},
+				]}
 			/>
-			<DropdownMenuContent align='end' className='w-44'>
-				{canUpdate && isActive && (
-					<DropdownMenuItem onSelect={onDeactivate}>
-						{t('users.deactivate')}
-					</DropdownMenuItem>
-				)}
-				{canUpdate && canRestore && (
-					<DropdownMenuItem onSelect={onRestore}>
-						{t('common:action.restore')}
-					</DropdownMenuItem>
-				)}
-				{canDelete && !user.deletedAt && (
-					<>
-						{canUpdate && (isActive || canRestore) && <DropdownMenuSeparator />}
-						{/* Controlled dialog: opening it from the menu item avoids
-						    nesting an AlertDialog inside the menu portal (the trigger
-						    must live outside the popup). */}
-						<DropdownMenuItem
-							variant='destructive'
-							onSelect={() => setDeleteOpen(true)}
-						>
+			<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{t('users.deleteTitle')}</AlertDialogTitle>
+						<AlertDialogDescription>
+							{t('users.deleteDescription', { email: user.email })}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>{t('common:action.cancel')}</AlertDialogCancel>
+						<AlertDialogAction onClick={onDelete}>
 							{t('common:action.delete')}
-						</DropdownMenuItem>
-						<AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-							<AlertDialogContent>
-								<AlertDialogHeader>
-									<AlertDialogTitle>{t('users.deleteTitle')}</AlertDialogTitle>
-									<AlertDialogDescription>
-										{t('users.deleteDescription', { email: user.email })}
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter>
-									<AlertDialogCancel>
-										{t('common:action.cancel')}
-									</AlertDialogCancel>
-									<AlertDialogAction onClick={onDelete}>
-										{t('common:action.delete')}
-									</AlertDialogAction>
-								</AlertDialogFooter>
-							</AlertDialogContent>
-						</AlertDialog>
-					</>
-				)}
-			</DropdownMenuContent>
-		</DropdownMenu>
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	);
 }
 

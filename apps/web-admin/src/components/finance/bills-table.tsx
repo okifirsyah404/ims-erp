@@ -15,9 +15,12 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Plus } from 'lucide-react';
+import { Ban, Check, Plus } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
@@ -163,38 +166,44 @@ export function BillsTable() {
 			},
 			{
 				id: 'actions',
-				header: t('finance:common.actions'),
+				header: () => <span className='sr-only'>{t('finance:common.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					row.original.status === 'draft' && canRecord ? (
-						<>
-							<Button
-								size='sm'
-								className='mr-1'
-								disabled={record.isPending}
-								onClick={() => void record.mutateAsync(row.original.id)}
-							>
-								{t('finance:bills.record')}
-							</Button>
-							<Button
-								size='sm'
-								variant='ghost'
-								disabled={cancel.isPending}
-								onClick={async () => {
-									if (
-										await confirm({
-											title: t('finance:bills.cancelConfirm'),
-											destructive: true,
-										})
-									) {
-										void cancel.mutateAsync(row.original.id);
-									}
-								}}
-							>
-								{t('finance:bills.cancel')}
-							</Button>
-						</>
-					) : null,
+				cell: ({ row }) => {
+					const editable = row.original.status === 'draft' && canRecord;
+					return (
+						<RowActions
+							label={t('finance:common.actions')}
+							actions={[
+								{
+									key: 'record',
+									label: t('finance:bills.record'),
+									icon: Check,
+									disabled: record.isPending,
+									hidden: !editable,
+									onSelect: () => void record.mutateAsync(row.original.id),
+								},
+								{
+									key: 'cancel',
+									label: t('finance:bills.cancel'),
+									icon: Ban,
+									destructive: true,
+									disabled: cancel.isPending,
+									hidden: !editable,
+									onSelect: async () => {
+										if (
+											await confirm({
+												title: t('finance:bills.cancelConfirm'),
+												destructive: true,
+											})
+										) {
+											void cancel.mutateAsync(row.original.id);
+										}
+									},
+								},
+							]}
+						/>
+					);
+				},
 			},
 		],
 		[
@@ -210,25 +219,22 @@ export function BillsTable() {
 
 	return (
 		<div className='space-y-3'>
-			<div className='flex items-center justify-between pt-2'>
-				<h2 className='font-semibold'>{t('finance:bills.title')}</h2>
-				{canCreate ? (
-					<div className='flex gap-2'>
-						<Button size='sm' onClick={() => setShowFromOrder((v) => !v)}>
-							<Plus className='size-4' data-icon='inline-start' />
-							{t('finance:bills.fromOrder.open')}
-						</Button>
-						<Button
-							size='sm'
-							variant='outline'
-							onClick={() => setShowForm((v) => !v)}
-						>
-							<Plus className='size-4' data-icon='inline-start' />
-							{t('finance:bills.create')}
-						</Button>
-					</div>
-				) : null}
-			</div>
+			{canCreate ? (
+				<div className='flex justify-end gap-2 pt-2'>
+					<Button size='sm' onClick={() => setShowFromOrder((v) => !v)}>
+						<Plus className='size-4' data-icon='inline-start' />
+						{t('finance:bills.fromOrder.open')}
+					</Button>
+					<Button
+						size='sm'
+						variant='outline'
+						onClick={() => setShowForm((v) => !v)}
+					>
+						<Plus className='size-4' data-icon='inline-start' />
+						{t('finance:bills.create')}
+					</Button>
+				</div>
+			) : null}
 
 			{canCreate && showFromOrder ? (
 				<BillFromOrderForm onDone={() => setShowFromOrder(false)} />
@@ -293,36 +299,19 @@ export function BillsTable() {
 			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
 				<EmptyState title={t('finance:bills.empty')} bordered />
 			) : (
-				<>
+				<DataTableCard title={t('finance:bills.title')}>
 					<DataTable
 						columns={columns}
 						data={data?.rows ?? []}
 						loading={isPending}
 						getRowId={(row) => row.id}
-						bordered
 					/>
-					<div className='flex items-center gap-2 text-sm'>
-						<Button
-							size='sm'
-							variant='outline'
-							disabled={page <= 1}
-							onClick={() => setPage((value) => Math.max(1, value - 1))}
-						>
-							‹
-						</Button>
-						<span>
-							{page} / {data?.pagination.totalPages ?? 1}
-						</span>
-						<Button
-							size='sm'
-							variant='outline'
-							disabled={page >= (data?.pagination.totalPages ?? 1)}
-							onClick={() => setPage((value) => value + 1)}
-						>
-							›
-						</Button>
-					</div>
-				</>
+					<PaginationControls
+						page={page}
+						totalPages={data?.pagination.totalPages ?? 1}
+						onPageChange={setPage}
+					/>
+				</DataTableCard>
 			)}
 		</div>
 	);

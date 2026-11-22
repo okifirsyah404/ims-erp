@@ -28,6 +28,8 @@ const common_: Record<keyof typeof common, string> = {
 	'action.restore': 'Pulihkan',
 	'action.previous': 'Sebelumnya',
 	'action.next': 'Berikutnya',
+	'action.actions': 'Tindakan',
+	'action.download': 'Unduh',
 
 	'state.loading': 'Memuat…',
 	'state.noResults': 'Tidak ada hasil',

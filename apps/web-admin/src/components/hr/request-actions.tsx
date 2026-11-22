@@ -1,10 +1,11 @@
+import { Ban, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { Button } from '@ims-erp/ui/components/button';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { TRequestStatus } from '@/lib/hr-records-api';
 
 /**
- * Approve / reject / cancel buttons of a leave or overtime row. Whoever
+ * Approve / reject / cancel actions of a leave or overtime row. Whoever
  * recorded the request cannot approve or reject it (the server refuses too).
  */
 export function RequestActions({
@@ -26,26 +27,44 @@ export function RequestActions({
 }) {
 	const { t } = useTranslation('hr');
 	const open = status === 'submitted';
+
+	if (open && recordedByMe && (canApprove || canReject)) {
+		return (
+			<span className='text-xs text-muted-foreground'>
+				{t('request.recordedByYou')}
+			</span>
+		);
+	}
+
 	return (
-		<span className='inline-flex flex-wrap items-center justify-end gap-1'>
-			{open && recordedByMe && (canApprove || canReject) && (
-				<span className='text-xs text-muted-foreground'>{t('request.recordedByYou')}</span>
-			)}
-			{open && !recordedByMe && canApprove && (
-				<Button size='sm' disabled={busy} onClick={() => onAction('approve')}>
-					{t('request.approve')}
-				</Button>
-			)}
-			{open && !recordedByMe && canReject && (
-				<Button size='sm' variant='outline' disabled={busy} onClick={() => onAction('reject')}>
-					{t('request.reject')}
-				</Button>
-			)}
-			{(open || status === 'approved') && canCancel && (
-				<Button size='sm' variant='ghost' disabled={busy} onClick={() => onAction('cancel')}>
-					{t('request.cancel')}
-				</Button>
-			)}
-		</span>
+		<RowActions
+			label={t('request.actions')}
+			disabled={busy}
+			actions={[
+				{
+					key: 'approve',
+					label: t('request.approve'),
+					icon: Check,
+					hidden: !(open && !recordedByMe && canApprove),
+					onSelect: () => onAction('approve'),
+				},
+				{
+					key: 'reject',
+					label: t('request.reject'),
+					icon: X,
+					hidden: !(open && !recordedByMe && canReject),
+					destructive: true,
+					onSelect: () => onAction('reject'),
+				},
+				{
+					key: 'cancel',
+					label: t('request.cancel'),
+					icon: Ban,
+					hidden: !((open || status === 'approved') && canCancel),
+					destructive: true,
+					onSelect: () => onAction('cancel'),
+				},
+			]}
+		/>
 	);
 }
