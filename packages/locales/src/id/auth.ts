@@ -16,6 +16,7 @@ const auth_: Record<keyof typeof auth, string> = {
 	'login.invalidCredentials': 'Email/username atau kata sandi salah',
 	'login.orContinueWith': 'Atau lanjutkan dengan',
 	'login.googleSignIn': 'Masuk dengan Google',
+	'login.lastUsed': 'Terakhir dipakai',
 	'login.googleNotRegistered':
 		'Akun Google ini belum terdaftar. Akses hanya melalui undangan: minta administrator untuk mengundang Anda.',
 	'login.accountNotActive':

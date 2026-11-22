@@ -5,14 +5,53 @@ import { PasswordInput } from '@/components/password-input';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { authClient } from '@/lib/auth-client';
 import { loginErrorCallbackUrl, sameOriginUrl } from '@/lib/login-error';
+import { readLastLoginMethod } from '@/lib/last-login';
 import { companyBrandingQueryOptions } from '@/lib/company-api';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@ims-erp/ui/components/button';
+import { Badge } from '@ims-erp/ui/components/badge';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+/**
+ * Marks the button of the previous sign-in method (ERP-0110) with a small
+ * pill on its top-right border.
+ *
+ * @remarks
+ * Overlaid, not laid out beside the button: both buttons keep the full field
+ * width and stay the same size whether or not one is marked. The ring uses the
+ * card colour so the pill reads as cut out of the border. The pill is
+ * `pointer-events-none` (clicks go to the button) and referenced by the
+ * button's `aria-describedby`, so assistive tech announces it too.
+ */
+function LastUsedMark({
+	id,
+	active,
+	label,
+	children,
+}: {
+	id: string;
+	active: boolean;
+	label: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<div className='relative'>
+			{children}
+			{active ? (
+				<Badge
+					id={id}
+					className='pointer-events-none absolute -top-2 right-3 h-4 px-1.5 text-[10px] leading-none ring-2 ring-card'
+				>
+					{label}
+				</Badge>
+			) : null}
+		</div>
+	);
+}
 
 /**
  * Login wired to Better Auth. Credentials go through `signIn.email` when the
@@ -36,6 +75,9 @@ export function LoginForm({
 	const [identifier, setIdentifier] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState<string | null>(initialError ?? null);
+	// Read once: the cookie only changes after a successful sign-in (which
+	// navigates away), so there is nothing to re-read while this form is open.
+	const [lastMethod] = useState(() => readLastLoginMethod());
 	const [pending, setPending] = useState(false);
 	const [googlePending, setGooglePending] = useState(false);
 	const { t } = useTranslation(['auth', 'common']);
@@ -153,9 +195,24 @@ export function LoginForm({
 								</p>
 							)}
 							<Field>
-							<Button type='submit' className='w-full' disabled={pending}>
-								{pending ? t('login.submitting') : t('login.submit')}
-							</Button>
+							<LastUsedMark
+								id='last-used-credentials'
+								active={lastMethod === 'email' || lastMethod === 'username'}
+								label={t('login.lastUsed')}
+							>
+								<Button
+									type='submit'
+									className='w-full'
+									disabled={pending}
+									aria-describedby={
+										lastMethod === 'email' || lastMethod === 'username'
+											? 'last-used-credentials'
+											: undefined
+									}
+								>
+									{pending ? t('login.submitting') : t('login.submit')}
+								</Button>
+							</LastUsedMark>
 						</Field>
 						<div className='flex items-center gap-3 text-xs text-muted-foreground'>
 							<div className='h-px flex-1 bg-border' />
@@ -163,16 +220,28 @@ export function LoginForm({
 							<div className='h-px flex-1 bg-border' />
 						</div>
 						<Field>
-							<Button
-								type='button'
-								variant='outline'
-								className='w-full'
-								disabled={googlePending}
-								onClick={handleGoogleSignIn}
+							<LastUsedMark
+								id='last-used-google'
+								active={lastMethod === 'google'}
+								label={t('login.lastUsed')}
 							>
-								<GoogleIcon className='size-4' />
-								{t('login.googleSignIn')}
-							</Button>
+								<Button
+									type='button'
+									variant='outline'
+									className={cn(
+										'w-full',
+										lastMethod === 'google' && 'border-primary/60',
+									)}
+									disabled={googlePending}
+									onClick={handleGoogleSignIn}
+									aria-describedby={
+										lastMethod === 'google' ? 'last-used-google' : undefined
+									}
+								>
+									<GoogleIcon className='size-4' />
+									{t('login.googleSignIn')}
+								</Button>
+							</LastUsedMark>
 						</Field>
 					</FieldGroup>
 					</form>

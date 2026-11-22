@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/react'
-import { adminClient, organizationClient, usernameClient } from 'better-auth/client/plugins'
+import { adminClient, lastLoginMethodClient, organizationClient, usernameClient } from 'better-auth/client/plugins'
 import { currentLanguage } from '@/i18n'
 import { adminAccessControl, adminPluginRoles, erpAccessControl, erpRoles } from './erp-ac'
 
@@ -31,6 +31,9 @@ export const authClient = createAuthClient({
       ac: erpAccessControl,
       roles: erpRoles,
     }),
+    // Mirrors the server's lastLoginMethod(): reads the
+    // `better-auth.last_used_login_method` cookie for the /login badge.
+    lastLoginMethodClient(),
   ],
 });
 

@@ -12,6 +12,56 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0110: last used login method badge on /login
+
+User request: apply Better Auth's `lastLoginMethod` in the web admin.
+Decisions (plan-mode round): **cookie only** (`storeInDatabase` off — no
+`auth.users` column, no migration, `docs/database/` unchanged); production
+cookie scope is an open decision (dev ports and one origin work; separate
+subdomains need `advanced.crossSubDomainCookies`), recorded below.
+
+**Backend.** `plugins/last-login-method.auth.ts`:
+`lastLoginMethod({ customResolveMethod })` with the pure
+`resolveLoginMethodOverride` mapping `/sign-in/username` to `username`
+(the library default does not know that endpoint, and the login form uses it
+for non-email identifiers); every other path returns `null` so Better Auth's
+own mapping applies (`email`, the OAuth callback's provider id, `passkey`,
+`magic-link`, `email-otp`). Registered in `plugin.auth.ts`. Cookie:
+`better-auth.last_used_login_method`, `httpOnly: false`, 30 days, written
+only when a session cookie is set.
+
+**Web-admin.** `lib/auth-client.ts` adds `lastLoginMethodClient()`;
+`lib/last-login.ts` validates the client-writable cookie against
+`LAST_LOGIN_METHODS` (`parseLastLoginMethod`, `readLastLoginMethod`,
+`clearLastLoginMethodIf`); `login-form.tsx` badges "Last used" next to the
+Login button (`email`/`username`) or on the Google button, which is also
+promoted to the default variant when it was the last method;
+`connected-accounts-card.tsx` clears the cookie when Google is disconnected so
+the badge never points at a removed method. Locale key
+`auth:login.lastUsed` in en + id.
+
+**Tests.** Backend `test/unit/last-login-method.auth.test.ts` (2),
+web-admin `test/unit/last-login.test.ts` (2, incl. unknown/injected values).
+
+**Commands (2026-11-23, repo root unless noted):**
+- `bun run lint` -> 5/5 tasks, 0 errors (warning counts unchanged)
+- `bun run test` -> 7/7; backend 1357, web-admin 191, locales 106,
+  web-customer-portal 68, web-landing 25, react-email 6, 0 fail
+- `bun run typecheck` -> 6/6; `apps/web-admin: bunx tsc -p tsconfig.app.json
+  --noEmit` -> 0 errors
+- Live against the running dev backend (script outside the repo, HTTP only):
+  3/3 — `/sign-in/email` sets the cookie to `email`, `/sign-in/username`
+  sets `username`, a wrong password (401) sets nothing. Sessions signed out
+  afterwards.
+
+Not run: the badge in a browser (cookie is read on the web origin; the dev
+ports share `localhost`, so it applies) and a Google round trip.
+
+Next executable task: browser check of the badge on `/login` for email,
+username and Google; decide the production cookie scope at deploy time
+(`advanced.crossSubDomainCookies` if web and API live on different
+subdomains), then the ERP-0109 Google walk-through below.
+
 ## 2026-11-21 - ERP-0109: account settings on one page, profile editor, email verification, Google linking
 
 User request: improve `/profiles`, `/profiles/edit` and `/account`. Decisions

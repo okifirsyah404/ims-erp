@@ -14,6 +14,7 @@ const auth = {
 	'login.invalidCredentials': 'Invalid email/username or password',
 	'login.orContinueWith': 'Or continue with',
 	'login.googleSignIn': 'Sign in with Google',
+	'login.lastUsed': 'Last used',
 	'login.googleNotRegistered':
 		'This Google account is not registered. Sign-in is by invitation only: ask an administrator to invite you.',
 	'login.accountNotActive':

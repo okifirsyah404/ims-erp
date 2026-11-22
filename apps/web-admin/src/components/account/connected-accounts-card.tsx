@@ -10,6 +10,7 @@ import {
 	type TSocialProvider,
 } from '@/lib/account-api';
 import { accountsCallbackUrl, type TLinkOutcome } from '@/lib/account-search';
+import { clearLastLoginMethodIf } from '@/lib/last-login';
 import { ErrorState } from '@/components/empty-state';
 import { GoogleIcon } from '@/components/icons/google-icon';
 import { toast } from '@/components/toast';
@@ -103,6 +104,8 @@ export function ConnectedAccountsCard({
 				return;
 			}
 			await invalidateLinkedAccounts();
+			// The remembered method must not point at a disconnected provider.
+			clearLastLoginMethodIf(provider);
 			toast.success(t('connected.unlinked'));
 		} catch {
 			toast.error(t('common:error.network'));

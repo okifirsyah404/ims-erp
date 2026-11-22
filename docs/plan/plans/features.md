@@ -1073,6 +1073,13 @@ Status wording from `progress.md`; none is `accepted`.
   mapped Google errors. Evidence: `login-gate.test.ts`,
   `google-login-hardening.auth.test.ts`, web-admin `login-error.test.ts`,
   in-process E2E 14/14.
+- ERP-0110 last used login method (2026-11-23, **implemented**): Better
+  Auth's `lastLoginMethod` plugin (cookie only, no schema) records the
+  previous sign-in method; `/login` badges it on the Login button
+  (`email`/`username`) or the Google button, `/sign-in/username` is mapped
+  explicitly, and disconnecting Google clears it. Evidence: backend
+  `last-login-method.auth.test.ts`, web-admin `last-login.test.ts`, live HTTP
+  3/3 in `progress.md` 2026-11-23. Badge not checked in a browser.
 - Forgot/reset password — `apps/web-admin/src/routes/{forgot,reset}-password`.
   No progress entry.
 - Avatar pipeline (DiceBear → WebP → S3 via BullMQ) — user module queues;
