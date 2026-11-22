@@ -6,6 +6,7 @@
  * leaves `container.resolve()` returning `unknown`, which forces casts at
  * every call site.
  */
+import type { IGalleryImageRepository } from '@shared/media';
 import type { InjectionToken } from 'tsyringe';
 import type { IWarehouseRepository } from '../contracts/warehouse.repository.interface';
 import type { IWarehouseAddressRepository } from '../contracts/warehouse-address.repository.interface';
@@ -26,6 +27,9 @@ export const WAREHOUSE_STORAGE_REPOSITORY_TOKEN: InjectionToken<IWarehouseStorag
 	Symbol('WAREHOUSE_STORAGE_REPOSITORY');
 export const WAREHOUSE_SERVICE_TOKEN: InjectionToken<WarehouseService> =
 	Symbol('WAREHOUSE_SERVICE');
+/** Gallery rows of `warehouse.warehouse_images`. */
+export const WAREHOUSE_IMAGE_REPOSITORY_TOKEN: InjectionToken<IGalleryImageRepository> =
+	Symbol('WAREHOUSE_IMAGE_REPOSITORY');
 /** The warehouse photo (object-storage key <-> signed URL). */
 export const WAREHOUSE_IMAGE_SERVICE_TOKEN: InjectionToken<WarehouseImageService> =
 	Symbol('WAREHOUSE_IMAGE_SERVICE');

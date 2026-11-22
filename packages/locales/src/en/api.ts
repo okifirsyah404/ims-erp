@@ -14,6 +14,9 @@ const api = {
 	'common.conflict': 'Conflict',
 	'common.unsupportedMediaType': 'Unsupported media type',
 	'common.imageInvalid': 'Upload a PNG, JPG, WebP or HEIC image of at most {{max}} MB',
+	'common.imageNotFound': 'Image not found',
+	'common.imageLimit': 'Upload at most {{max}} images',
+	'common.imageOrderInvalid': 'Send every current image id exactly once',
 	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
@@ -205,6 +208,8 @@ const api = {
 	'product.hasUnits':
 		'Cannot archive a product that still has {{count}} live unit(s)',
 	'product.ruleViolation': 'This product rule does not allow it: {{rule}}',
+	'product.compositionParentKind': 'Only a product can have components and materials',
+	'product.componentNotUsable': 'Every line must be a live component or material visible to the organization of this product',
 
 	'warehouse.notFound': 'Warehouse not found',
 	'warehouse.codeTaken':

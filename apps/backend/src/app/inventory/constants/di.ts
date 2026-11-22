@@ -12,6 +12,7 @@
  * {@link EXPORTED_PRODUCT_SERVICE_TOKEN} / {@link EXPORTED_WAREHOUSE_SERVICE_TOKEN}
  * from `@app/product` and `@app/warehouse` instead of owning repositories.
  */
+import type { IGalleryImageRepository } from '@shared/media';
 import type { InjectionToken } from 'tsyringe';
 import type { IItemSerialRepository } from '../contracts/item-serial.repository.interface';
 import type { IMovementRepository } from '../contracts/movement.repository.interface';
@@ -66,6 +67,9 @@ export const ITEM_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IItemCategoryReposit
 	Symbol('ITEM_CATEGORY_REPOSITORY');
 export const ITEM_SERVICE_TOKEN: InjectionToken<ItemService> = Symbol('ITEM_SERVICE');
 /** The asset photo (object-storage key <-> signed URL). */
+/** Gallery rows of `inventory.item_images`. */
+export const ITEM_IMAGE_REPOSITORY_TOKEN: InjectionToken<IGalleryImageRepository> =
+	Symbol('ITEM_IMAGE_REPOSITORY');
 export const ITEM_IMAGE_SERVICE_TOKEN: InjectionToken<ItemImageService> = Symbol('ITEM_IMAGE_SERVICE');
 export const ITEM_CATEGORY_SERVICE_TOKEN: InjectionToken<ItemCategoryService> =
 	Symbol('ITEM_CATEGORY_SERVICE');

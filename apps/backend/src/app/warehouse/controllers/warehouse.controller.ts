@@ -2,7 +2,7 @@ import { container } from 'tsyringe';
 import { isGlobalAdmin, requireGlobalAdmin } from '@authorization/require-global-admin';
 import type { TWarehouseAction } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
-import { created, ok, okPaginated } from '@http/response';
+import { created, noContent, ok, okPaginated } from '@http/response';
 import {
 	assignManagerSchema,
 	createStorageSchema,
@@ -25,6 +25,12 @@ import {
 	WAREHOUSE_SERVICE_TOKEN,
 } from '../constants/di';
 import { documentImageFrom } from '@providers/s3/document-image';
+import {
+	galleryCaptionFrom,
+	galleryCaptionSchema,
+	galleryImageParamSchema,
+	galleryOrderSchema,
+} from '@shared/media';
 import type { WarehouseService } from '../services/warehouse.service';
 import type { WarehouseManagerService } from '../services/warehouse-manager.service';
 import type { TAuditActor } from '@shared/audit';
@@ -152,11 +158,11 @@ export class WarehouseController {
 				'/:id',
 				async ({ params }) =>
 					ok(
-						warehouseImages.withImageUrl(
+						await warehouseImages.withImages(
 							await warehouseService.getWarehouse(idParamSchema.parse(params).id),
 						),
 					),
-				picRoute('read', 'One warehouse with its address and storages'),
+				picRoute('read', 'One warehouse with its address, storages and image gallery'),
 			)
 			.post(
 				'',
@@ -201,7 +207,56 @@ export class WarehouseController {
 				'/:id/image',
 				async ({ params }) =>
 					ok(await warehouseImages.setImage(idParamSchema.parse(params).id, null)),
-				picRoute('update', 'Removes the warehouse photo'),
+				picRoute('update', 'Removes the warehouse cover photo'),
+			)
+			.get(
+				'/:id/images',
+				async ({ params }) => ok(await warehouseImages.list(idParamSchema.parse(params).id)),
+				picRoute('read', 'Image gallery, cover first'),
+			)
+			.post(
+				'/:id/images',
+				async ({ params, body, status }) =>
+					status(
+						201,
+						created(
+							await warehouseImages.addImage(
+								idParamSchema.parse(params).id,
+								documentImageFrom(body),
+								galleryCaptionFrom(body),
+							),
+						),
+					),
+				picRoute('update', 'Adds a gallery image (multipart `file`, optional `caption`; max 10)'),
+			)
+			// Static before `/:imageId`.
+			.put(
+				'/:id/images/order',
+				async ({ params, body }) =>
+					ok(
+						await warehouseImages.reorder(
+							idParamSchema.parse(params).id,
+							galleryOrderSchema.parse(body).imageIds,
+						),
+					),
+				picRoute('update', 'Reorders the gallery; the first id becomes the cover'),
+			)
+			.patch(
+				'/:id/images/:imageId',
+				async ({ params, body }) => {
+					const { id, imageId } = galleryImageParamSchema.parse(params);
+					return ok(await warehouseImages.updateCaption(id, imageId, galleryCaptionSchema.parse(body).caption));
+				},
+				picRoute('update', 'Edits the caption of a gallery image'),
+			)
+			.delete(
+				'/:id/images/:imageId',
+				async ({ params }) => {
+					const { id, imageId } = galleryImageParamSchema.parse(params);
+					await warehouseImages.removeImage(id, imageId);
+					return noContent();
+				},
+				picRoute('update', 'Removes a gallery image'),
 			)
 			.delete(
 				'/:id',

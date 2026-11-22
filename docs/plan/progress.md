@@ -12,6 +12,122 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - Product create/edit form split into sections
+
+`ItemForm` is now organised in sections instead of one long field list: Identity
+(kind, name, SKU, serial number, category, brand, description), Images, Pricing,
+Stock & tracking (unit, minimum stock, barcode, serialized / quantity-tracked /
+active options), Specification and, for products, Components & materials. On the
+page the sections are cards (two columns on large screens, a sticky action bar);
+inside the create dialog they are plain headed blocks above the sticky footer.
+Locale keys `product:form.section.*` (en + id). `bunx tsc` clean, `bun run lint`
+0 errors, web-admin tests 178 pass, locales tests 106 pass. Not looked at in a
+browser (needs a login session).
+
+## 2026-11-23 - ERP-0110: components and materials of a product (composition / BOM)
+
+**Owner request** (via grill-me, all 13 questions answered "yes"): on the product
+CRUD, show the components or materials a product is made of.
+
+**Decisions.** Informational only (no stock movement, no costing, not in the
+public catalog or quotation PDFs). New `product.product_components`
+(`product_id` cascade, `component_id` restrict, `quantity numeric(18,3) > 0`,
+`sort_order`, soft delete, partial unique per live pair, `product_id <>
+component_id`); no `organization_id` (tenant comes from the parent). Parent must
+be `product_kind = 'product'`; lines must be live `component`/`material`,
+visible to the parent's organization (global parent -> global items only);
+max 50 lines, no duplicates. Archiving a used component is allowed; its line
+shows "Archived" and must be dropped on the next save.
+
+**Backend.** `GET|PUT /products/:id/components` (`product:read` / `product:update`;
+PUT replaces the whole list in one transaction), `GET /products/:id` also returns
+`components`. `ProductComponentRepository` / `ProductComponentService`, errors
+`product.compositionParentKind` and `product.componentNotUsable` (en + id).
+Migration `20261122200931_add_product_components`; `docs.dbml` edited first.
+Seeder: `CTRL-DOOR-01` gets 1x `CMP-PSU-12V` + 3 m `MAT-CABLE-CAT6`.
+
+**Web-admin.** Detail page: "Components & materials" table (links to each item,
+archived badge). Create dialog and edit page: `ProductCompositionEditor`
+(server-side search over components + materials, quantity per row), saved with
+`PUT` after the product; a failed save toasts and keeps the product. Locale keys
+`product:composition.*` (en + id).
+
+**Checks.** `drizzle:generate` + `drizzle:migrate` on the local dev database ok;
+`validate-dbml.ts` OK (152 intra-module refs, 0 drift); backend `bunx tsc` clean,
+`bun test` 1348 pass / 0 fail (new `product-component.service.test.ts`, 6 tests;
+authorization doubles extended); web-admin `tsc` clean, `bun test` 174 pass;
+locales `bun test` 106 pass; `bun run lint` 0 errors. Product seeder run twice via
+`seedProduct()`: 2 live lines after run 1, still 2 after run 2 (the full
+`drizzle:seed` stops earlier on an already-existing admin username, unrelated).
+New routes answer 401 without a session on a fresh backend instance.
+
+**Open.** Not exercised in a browser (needs a login session); PUT/GET with a real
+session untested end to end. `docs/database/` updated (table, refs, regenerated
+logical-references).
+
+## 2026-11-23 - ERP-0109 web-admin: multi-image upload on create/edit forms
+
+**Owner request:** the product edit page had no upload; create and update of
+product, component, material, asset equipment and warehouse must accept
+multiple images.
+
+**Changed (`apps/web-admin`).** New `ImageGalleryField` + `lib/image-gallery-api.ts`:
+saved images reorder (cover = first), caption and remove immediately; newly
+picked files are queued and uploaded after the record is created or saved
+(`uploadGalleryImages`, sequential, a failed file never loses the saved record).
+Wired into `ItemForm` (product/component/material create dialog + edit page),
+`AssetForm` (create + edit dialog), `WarehouseForm` (create dialog + edit page);
+the product detail page uses the same field with upload-on-pick. The old
+single-photo dropzones on those forms were removed. Locale keys `common:gallery.*`
+added (en + id); `product:items.documentPhotoHint` removed (dead).
+
+**Checks.** `bunx tsc -p tsconfig.app.json --noEmit` clean; `bun run lint` 5/5, 0
+errors; web-admin `bun test` 174 pass; locales `bun test` 106 pass. **Follow-up (same day).** The four create/edit dialogs (product kinds, asset, warehouse) scrolled with the native browser scrollbar; they now use `ScrollDialogContent` (`components/scroll-dialog-content.tsx`, built on `@ims-erp/ui` `ScrollArea`). `bunx tsc` clean, lint 0 errors, web-admin tests 174 pass; not browser-verified.
+
+**Not verified
+in a browser:** the in-app browser had no login session, so upload, reorder and
+removal were not exercised end to end. `docs/database/` unchanged by this slice.
+
+## 2026-11-23 - ERP-0109: multi-image galleries for products, components, materials, assets and warehouses (backend)
+
+**Owner request:** "product, component, material, asset equipment, dan warehouse
+support multiple image" in `apps/backend`, CRUD updated.
+
+**Design (grilled manually, `grilling` skill not installed).** One gallery table
+per owning module (no cross-schema link): `product.product_images` (serves
+product, component and material - one `products` table),
+`inventory.item_images` (assets/equipment), `warehouse.warehouse_images`.
+Columns: `id`, owner FK (intra-module, cascade), `object_key`, `caption`,
+`sort_order`, soft-delete timestamps. The first live row is the **cover**; its
+key is mirrored into the existing `image_object_key` column, so quotation
+snapshots, stock rows and the public catalog image are unchanged. Max 10
+images per owner. Removal is a soft delete (object kept, because issued
+documents snapshot keys). Shared rules live in `src/shared/media/image-gallery.ts`
+(+ `GalleryRepositoryBase`); each module has its own repository and image
+service.
+
+**API (per module; same permissions as the old photo routes).**
+`GET|POST /:id/images`, `PUT /:id/images/order`, `PATCH|DELETE /:id/images/:imageId`
+under `/products`, `/inventory/items`, `/warehouses`. The old `PUT|DELETE
+/:id/image` stay as single-photo shortcuts (replace / remove the cover).
+`GET /products/:id` and `GET /warehouses/:id` now also return `images`.
+
+**Migration.** `20261122174431_add_gallery_images`: three tables + indexes + FKs,
+and a backfill turning every existing `image_object_key` into gallery row 0.
+Not applied to a database in this session (no disposable DB credentials).
+
+**Checks.** `bun install --frozen-lockfile` (worktree) ok; `bunx tsc --noEmit`
+in `apps/backend` clean; `bun test` in `apps/backend` (dummy env for config
+parsing) 1342 pass / 0 fail (new `test/unit/image-gallery.test.ts`, 8 tests;
+authorization doubles extended); `bun run lint` 5/5; locales tests pass;
+`bun docs/database/gen-logical-references.ts` then `bun docs/database/validate-dbml.ts`
+-> OK (0 cross-module refs, 0 timestamp gaps, 0 drizzle/column parity drift).
+`docs.dbml` updated (3 tables, cover-column notes).
+
+**Open.** web-admin still shows one photo (`imageUrl` = cover) - gallery UI is a
+follow-up; migration not yet applied/checked on a disposable database;
+seeders untouched (no images seeded).
+
 ## 2026-11-22 - ERP-0107 amended: deployment moved from Docker Hub to GHCR (all four images)
 
 **Owner request** on PR #142: "Pindahkan deployment dari dockerhub ke ghcr";

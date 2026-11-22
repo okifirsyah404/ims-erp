@@ -50,6 +50,24 @@ export class ProductRuleViolationError extends AppError {
 	}
 }
 
+/** Only a `product` has a composition; components and materials do not. */
+export class ProductCompositionParentError extends AppError {
+	constructor() {
+		super(422, 'product.compositionParentKind', 'Only a product can have components and materials');
+	}
+}
+
+/** A composition line points at something that cannot be used. */
+export class ProductComponentInvalidError extends AppError {
+	constructor() {
+		super(
+			422,
+			'product.componentNotUsable',
+			"Every line must be a live component or material visible to this product's organization",
+		);
+	}
+}
+
 /** The requested product category does not exist (or is archived). */
 export class ProductCategoryNotFoundError extends AppError {
 	constructor() {

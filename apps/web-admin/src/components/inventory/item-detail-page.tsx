@@ -40,12 +40,11 @@ import {
 	productSerialsQueryOptions,
 	registerSerial,
 	replaceProvisionalSerial,
-	type TProduct,
 	type TProductKind,
 	type TProductSerial,
 } from '@/lib/inventory-api';
-import { DocumentImageField } from '@/components/documents/document-image-field';
-import { removeDocumentImage, uploadDocumentImage } from '@/lib/document-image-api';
+import { ImageGalleryField } from '@/components/image-gallery-field';
+import { ProductCompositionPanel } from '@/components/inventory/product-composition';
 import { formatIdr } from '@/lib/format';
 import { itemDetailLink, itemEditLink, itemListLink } from '@/lib/item-routes';
 import { usePermission } from '@/lib/use-permission';
@@ -69,7 +68,6 @@ export function ItemDetailPage({ kind, itemId }: { kind: TProductKind; itemId: s
 
 	const [archiving, setArchiving] = useState(false);
 	const canUpdate = usePermission('product.update');
-	const setItem = (saved: TProduct) => queryClient.setQueryData(productQueryOptions(itemId).queryKey, saved);
 
 	if (isPending) return <PageSkeleton />;
 
@@ -200,6 +198,17 @@ export function ItemDetailPage({ kind, itemId }: { kind: TProductKind; itemId: s
 					</CardContent>
 				</Card>
 
+				{item.productKind === 'product' && (
+					<Card>
+						<CardHeader>
+							<CardTitle>{t('product:composition.title')}</CardTitle>
+						</CardHeader>
+						<CardContent className='p-4'>
+							<ProductCompositionPanel components={item.components ?? []} />
+						</CardContent>
+					</Card>
+				)}
+
 				{item.specification && (
 					<Card>
 						<CardHeader>
@@ -213,17 +222,13 @@ export function ItemDetailPage({ kind, itemId }: { kind: TProductKind; itemId: s
 
 				<Card>
 					<CardContent className='p-4'>
-						<DocumentImageField
+						<ImageGalleryField
 							label={t('product:items.documentPhoto')}
-							hint={t('product:items.documentPhotoHint')}
-							imageUrl={item.imageUrl}
+							entityPath={`/products/${itemId}`}
+							queue={[]}
+							onQueueChange={() => {}}
+							immediate
 							disabled={!canUpdate}
-							onUpload={async (file) => {
-								setItem(await uploadDocumentImage<TProduct>(`/products/${itemId}/image`, file));
-							}}
-							onRemove={async () => {
-								setItem(await removeDocumentImage<TProduct>(`/products/${itemId}/image`));
-							}}
 						/>
 					</CardContent>
 				</Card>

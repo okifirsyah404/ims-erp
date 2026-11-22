@@ -12,7 +12,7 @@ import pino from 'pino';
 import { isProductionEnv } from '../../../config/providers/env';
 import { drizzleDB } from '../../../drizzle/db';
 import { itemSerials } from '../../../drizzle/schemas/inventory.schema';
-import { productCategories, products } from '../../../drizzle/schemas/product.schema';
+import { productCategories, productComponents, products } from '../../../drizzle/schemas/product.schema';
 
 const logger = pino({
 	timestamp: false,
@@ -161,13 +161,54 @@ async function ensureProducts(
 	const categoryIds = new Map(categoryRows.map((row) => [row.slug, row.id]));
 
 	let index = 0;
+	const idsBySku = new Map<string, string>();
 	for (const seed of SEED_PRODUCTS) {
 		index += 1;
 		const productId = await ensureProduct(seed, organizationId, categoryIds, index);
+		idsBySku.set(seed.sku, productId);
 		for (const serialNumber of seed.serials ?? []) {
 			await ensureUnit({ organizationId, productId, serialNumber, warehouseId });
 		}
 	}
+	for (const composition of SEED_COMPOSITIONS) {
+		await ensureComposition(composition, idsBySku);
+	}
+}
+
+/**
+ * Composition (bill of materials) of seeded products: parent SKU, then its
+ * component/material SKUs with the quantity per unit.
+ */
+const SEED_COMPOSITIONS = [
+	{
+		parentSku: 'CTRL-DOOR-01',
+		lines: [
+			{ sku: 'CMP-PSU-12V', quantity: '1.000' },
+			{ sku: 'MAT-CABLE-CAT6', quantity: '3.000' },
+		],
+	},
+] as const;
+
+/** Writes a composition once; a product that already has live lines is left alone. */
+async function ensureComposition(
+	composition: (typeof SEED_COMPOSITIONS)[number],
+	idsBySku: ReadonlyMap<string, string>,
+): Promise<void> {
+	const productId = idsBySku.get(composition.parentSku);
+	if (!productId) return;
+	const [existing] = await drizzleDB
+		.select({ id: productComponents.id })
+		.from(productComponents)
+		.where(and(eq(productComponents.productId, productId), isNull(productComponents.deletedAt)))
+		.limit(1);
+	if (existing) return;
+
+	const now = new Date();
+	const rows = composition.lines.flatMap((line, sortOrder) => {
+		const componentId = idsBySku.get(line.sku);
+		return componentId ? [{ productId, componentId, quantity: line.quantity, sortOrder, createdAt: now }] : [];
+	});
+	if (rows.length) await drizzleDB.insert(productComponents).values(rows);
 }
 
 /** Creates one product when absent, keyed on `(organization_id, sku)`. */

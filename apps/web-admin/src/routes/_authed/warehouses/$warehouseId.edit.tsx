@@ -9,6 +9,7 @@ import { toast } from '@/components/toast';
 
 import { WarehouseAccessGate } from '@/components/inventory/warehouse-access-gate';
 import { WarehouseForm } from '@/components/inventory/warehouse-form';
+import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import {
 	updateWarehouse,
 	type TWarehouseCreateInput,
@@ -36,13 +37,20 @@ function EditWarehousePage() {
 
 	async function handleSubmit(
 		input: TWarehouseCreateInput | TWarehouseUpdateInput,
+		imageFiles: File[],
 	) {
 		setSubmitting(true);
 		try {
 			await updateWarehouse(warehouseId, input as TWarehouseUpdateInput);
+			// A failed upload must not lose the saved edit: report it and carry on.
+			if (imageFiles.length) {
+				const errors = await uploadGalleryImages(`/warehouses/${warehouseId}`, imageFiles);
+				if (errors.length) toast.error(errors.join(' '));
+			}
 			toast.success(t('warehouse:warehouseForm.updated'));
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['warehouses'] }),
+				queryClient.invalidateQueries({ queryKey: ['image-gallery'] }),
 				queryClient.invalidateQueries({
 					queryKey: warehouseQueryOptions(warehouseId).queryKey,
 				}),
@@ -77,7 +85,7 @@ function EditWarehousePage() {
 			<WarehouseForm
 				warehouse={warehouse}
 				submitting={submitting}
-				onSubmit={(input) => void handleSubmit(input)}
+				onSubmit={(input, imageFiles) => void handleSubmit(input, imageFiles)}
 				onCancel={() =>
 					void navigate({
 						to: '/warehouses/$warehouseId',

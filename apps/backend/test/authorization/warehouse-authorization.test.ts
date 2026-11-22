@@ -419,6 +419,18 @@ beforeAll(async () => {
 	container.register(WAREHOUSE_IMAGE_SERVICE_TOKEN, {
 		useValue: {
 			withImageUrl: (row: object) => ({ ...row, imageUrl: null }),
+			withImages: async (row: object) => ({ ...row, imageUrl: null, images: [] }),
+			list: async () => [],
+			async addImage() {
+				return { id: seed.id, url: null, caption: null, sortOrder: 0 };
+			},
+			async reorder() {
+				return [];
+			},
+			async updateCaption() {
+				return { id: seed.id, url: null, caption: null, sortOrder: 0 };
+			},
+			async removeImage() {},
 			async setImage() {
 				return { ...seed, imageUrl: null };
 			},
