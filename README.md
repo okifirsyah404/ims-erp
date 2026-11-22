@@ -183,10 +183,12 @@ Use [`--filter`](https://turborepo.dev/docs/crafting-your-repository/running-tas
 
 On merges to `main`, path-filtered GitHub Actions workflows:
 
-- Run tests and builds for the backend and web-admin.
-- Build Docker images and push them to Docker Hub:
-  - `okifirsyah404/ims-erp-backend`
-  - `okifirsyah404/ims-erp-web-admin`
+- Run tests and builds for the backend, web-admin, web-landing and web-customer-portal.
+- Build Docker images and push them to GitHub Container Registry (login with the workflow's `GITHUB_TOKEN`, no extra secrets):
+  - `ghcr.io/okifirsyah404/ims-erp-backend`
+  - `ghcr.io/okifirsyah404/ims-erp-web-admin`
+  - `ghcr.io/okifirsyah404/ims-erp-landing`
+  - `ghcr.io/okifirsyah404/ims-erp-customer-portal`
 
 Each image is tagged with both the short commit SHA (`sha-<sha>`) and a moving `dev` tag.
 
@@ -195,6 +197,8 @@ Each image is tagged with both the short commit SHA (`sha-<sha>`) and a moving `
 `docker-compose.yml` pulls the published images and starts the full stack: **backend**, **web-admin**, **postgres**, **redis**. Compose substitution needs a deployment `.env` next to `docker-compose.yml` (or pass `--env-file`), separate from the dev workspace env files — configure `APP_NAME`, `APP_ID`, `APP_SECRET`, `POSTGRES_PASSWORD`, optional `S3_*` / `SMTP_*`, then:
 
 ```sh
+# Only while the GHCR packages are private: a classic PAT with read:packages.
+echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
 docker compose up -d
 ```
 
@@ -207,7 +211,7 @@ Useful knobs:
 | `WEB_ADMIN_PORT` | `8080`         | Host port mapped to the web admin (container port 80) |
 | `TZ`             | `Asia/Jakarta` | Timezone for services                                 |
 
-To build and run the application images from source instead of pulling from Docker Hub (e.g. for a local end-to-end check):
+To build and run the application images from source instead of pulling from GHCR (e.g. for a local end-to-end check):
 
 ```sh
 docker compose -f docker-compose.yml -f docker-compose.local.yml up --build

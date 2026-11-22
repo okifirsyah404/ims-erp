@@ -1,4 +1,6 @@
-# Deployment compose file: pulls published images from Docker Hub.
+# Deployment compose file: pulls published images from GitHub Container
+# Registry (ghcr.io/okifirsyah404/*). Pulling needs `docker login ghcr.io`
+# with a token that has read:packages while the packages are private.
 # For building from source (local development), use:
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml up
 #
@@ -74,7 +76,7 @@ services:
       retries: 5
 
   backend:
-    image: docker.io/okifirsyah404/ims-erp-backend:${IMAGE_TAG:-dev}
+    image: ghcr.io/okifirsyah404/ims-erp-backend:${IMAGE_TAG:-dev}
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -135,7 +137,7 @@ services:
         condition: service_healthy
 
   web-admin:
-    image: docker.io/okifirsyah404/ims-erp-web-admin:${IMAGE_TAG:-dev}
+    image: ghcr.io/okifirsyah404/ims-erp-web-admin:${IMAGE_TAG:-dev}
     restart: unless-stopped
     ports:
       # Host 8080 by default: host port 80 is commonly taken by a local
@@ -145,7 +147,7 @@ services:
   # Public website (apps/web-landing). Node standalone server on 4321 inside
   # the container. Reaches the ERP server-to-server over the internal network.
   web-landing:
-    image: docker.io/okifirsyah404/ims-erp-landing:${IMAGE_TAG:-dev}
+    image: ghcr.io/okifirsyah404/ims-erp-landing:${IMAGE_TAG:-dev}
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -172,7 +174,7 @@ services:
   # Customer portal (apps/web-customer-portal). Node standalone server on 4322.
   # Sessions live in the server; the cookie holds only an opaque id.
   web-customer-portal:
-    image: docker.io/okifirsyah404/ims-erp-customer-portal:${IMAGE_TAG:-dev}
+    image: ghcr.io/okifirsyah404/ims-erp-customer-portal:${IMAGE_TAG:-dev}
     restart: unless-stopped
     environment:
       NODE_ENV: production

@@ -486,8 +486,9 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## Cross-cutting: container images for the Astro apps (ERP-0107)
 
 ### implemented
-- Docker Hub images `okifirsyah404/ims-erp-landing` and
-  `okifirsyah404/ims-erp-customer-portal`: test-and-build + deploy workflows
+- GHCR images `ghcr.io/okifirsyah404/ims-erp-landing` and
+  `ghcr.io/okifirsyah404/ims-erp-customer-portal` (backend and web-admin
+  moved to GHCR too): test-and-build + deploy workflows
   per app, root compose pulls them; build and server run on Bun only
   (PWA packages patched via `bun patch`). Evidence: `progress.md` 2026-11-22
   (local image builds + HTTP smoke). Not yet run on GitHub Actions.

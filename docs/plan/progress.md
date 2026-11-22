@@ -12,6 +12,35 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-22 - ERP-0107 amended: deployment moved from Docker Hub to GHCR (all four images)
+
+**Owner request** on PR #142: "Pindahkan deployment dari dockerhub ke ghcr";
+scope confirmed as all four images.
+
+**Changed.**
+- `main-deploy-{backend,web-admin,web-landing,web-customer-portal}.yml`: log in
+  to `ghcr.io` with `github.actor` + `GITHUB_TOKEN`, job permission
+  `packages: write`; images `ghcr.io/okifirsyah404/ims-erp-{backend,web-admin,landing,customer-portal}`
+  (tags unchanged: `sha-<sha>`, `dev`). `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`
+  are no longer used.
+- `docker-compose.yml`: every app image pulls from `ghcr.io/okifirsyah404/*`;
+  header notes the `docker login ghcr.io` need while packages are private.
+- `README.md` (CI/CD + server run), `runbook.md`, `docker-compose.local.yml`
+  comment, `backlog.md`, `features.md`.
+
+**Checks.** `docker compose -f docker-compose.yml config --images` lists the
+four `ghcr.io/okifirsyah404/*` images; `bunx yaml-lint` on all deploy
+workflows → successful; no `DOCKERHUB` / `docker.io` reference left outside
+dated history. Not run on GitHub Actions (first run on merge).
+
+**Open.** GHCR packages are created private on first push: the server needs
+`docker login ghcr.io` with a PAT that has `read:packages`, or the packages
+are made public. The old Docker Hub images and secrets are left in place.
+`docs/database/` reviewed and unchanged.
+
+Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
+decision, once PR #139 is reviewed.
+
 ## 2026-11-22 - ERP-0107: Docker Hub images + CI for web-landing and web-customer-portal (Bun only)
 
 **Owner request.** Dockerfile and GitHub workflow for both Astro apps, published

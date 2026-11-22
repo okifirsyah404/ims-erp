@@ -1,5 +1,5 @@
 # Local development compose overrides: builds application images from source
-# instead of pulling from Docker Hub. Infra (postgres, redis) comes from the
+# instead of pulling from GHCR. Infra (postgres, redis) comes from the
 # base file.
 #
 # Usage:
