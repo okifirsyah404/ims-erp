@@ -483,6 +483,16 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Live WhatsApp/n8n go-live: WAHA instance and sandbox number, n8n flows
   for the events, AI provider choice — owner/infra, outside the code.
 
+## Cross-cutting: container images for the Astro apps (ERP-0107)
+
+### implemented
+- GHCR images `ghcr.io/okifirsyah404/ims-erp-landing` and
+  `ghcr.io/okifirsyah404/ims-erp-customer-portal` (backend and web-admin
+  moved to GHCR too): test-and-build + deploy workflows
+  per app, root compose pulls them; build and server run on Bun only
+  (PWA packages patched via `bun patch`). Evidence: `progress.md` 2026-11-22
+  (local image builds + HTTP smoke). Not yet run on GitHub Actions.
+
 ## Notification + realtime (ERP-0047)
 
 ### verified

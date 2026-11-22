@@ -181,7 +181,7 @@ Rules:
 
 Compose provides `postgres` + `redis` (local infra) plus `backend`, `web-admin`,
 `web-landing` (:4321) and `web-customer-portal` (:4322) services pulling
-published Docker Hub images (`docker-compose.yml`); build images from source
+published GHCR images (`ghcr.io/okifirsyah404/*`, `docker-compose.yml`); build images from source
 with `docker-compose.local.yml`. A source-build backend Dockerfile for local dev
 iteration is open backlog work.
 
@@ -191,6 +191,22 @@ The two Astro services are Node standalone servers (`apps/<app>/Dockerfile`:
 Docker build args, not runtime env; server-context values (`ERP_API_BASE_URL`,
 `WEB_HANDOFF_SECRET`, …) are runtime env. The portal keeps server-side sessions
 on disk (`/app/.astro/session`), mounted as the `portal-sessions` volume.
+
+Published images (ERP-0107): all four apps are pushed to GitHub Container
+Registry as `ghcr.io/okifirsyah404/ims-erp-{backend,web-admin,landing,customer-portal}`
+by the `main-deploy-*.yml` workflows when a PR touching the app merges into
+`main` (tags `sha-<sha>` and `dev`). They log in with the workflow's
+`GITHUB_TOKEN` (`packages: write`); no registry secrets. New packages are
+private: a server pulls after `docker login ghcr.io` with a PAT that has
+`read:packages`, or the packages are made public in their GitHub settings. The
+build args come from GitHub repository variables `PUBLIC_WEB_URL`,
+`PUBLIC_CUSTOMER_URL`, `PUBLIC_WHATSAPP_NUMBER` (landing) and
+`PUBLIC_WEB_URL`, `PUBLIC_SUPPORT_WHATSAPP`, `PUBLIC_SUPPORT_PHONE` (portal);
+unset = the app's production defaults. The `main-test-and-build-*` workflows
+run `astro check` (with `bun --bun`), `bun test` and an unpushed Docker build
+on PRs. Both images run on Bun only (build and `bun dist/server/entry.mjs`);
+the portal build relies on the PWA patches in `patches/`, so every Dockerfile
+that runs `bun install --frozen-lockfile` copies `patches/` first.
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.local.yml up postgres redis    # infra for local backend dev

@@ -3,14 +3,18 @@
 #   docker build -f apps/web-customer-portal/Dockerfile .
 #   docker compose -f docker-compose.yml -f docker-compose.local.yml build web-customer-portal
 #
-# `astro build` emits a Node standalone server (dist/server/entry.mjs) that imports
-# npm packages at runtime (astro, @astrojs/node, react, zod, send, ...), so the
-# runtime stage carries a production node_modules next to dist/.
+# `astro build` emits a standalone server (@astrojs/node, dist/server/entry.mjs)
+# that imports npm packages at runtime (astro, @astrojs/node, react, zod, send,
+# ...), so the runtime stage carries a production node_modules next to dist/.
+# Every stage runs on Bun, the server included (`bun dist/server/entry.mjs`).
 
 # ---- deps: install workspace deps (the build needs devDeps) ----
 FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
+# patchedDependencies (package.json): bun install applies these. The PWA
+# packages are patched so astro builds under Bun (no module.findPackageJSON).
+COPY patches/ patches/
 # @ims-erp/design-tokens is this app's only workspace dependency (CSS @import);
 # bun requires its manifest at install time. Other workspaces are skipped with
 # a note by bun.
@@ -32,38 +36,40 @@ ARG PUBLIC_SUPPORT_WHATSAPP=
 ARG PUBLIC_SUPPORT_PHONE=
 ENV PUBLIC_WEB_URL=$PUBLIC_WEB_URL \
 	PUBLIC_SUPPORT_WHATSAPP=$PUBLIC_SUPPORT_WHATSAPP \
-	PUBLIC_SUPPORT_PHONE=$PUBLIC_SUPPORT_PHONE
-RUN bun run --cwd apps/web-customer-portal build
+	PUBLIC_SUPPORT_PHONE=$PUBLIC_SUPPORT_PHONE \
+	ASTRO_TELEMETRY_DISABLED=1
+# --bun: run the astro CLI on Bun even where a Node is on PATH.
+RUN bun --bun run --cwd apps/web-customer-portal build
 
 # ---- prod-deps: production node_modules only (what entry.mjs imports at runtime) ----
 FROM oven/bun:1.4-alpine AS prod-deps
 WORKDIR /app
 COPY package.json bun.lock bunfig.toml ./
+COPY patches/ patches/
 COPY packages/design-tokens/package.json packages/design-tokens/
 COPY packages/common/package.json packages/common/
 COPY apps/web-customer-portal/package.json apps/web-customer-portal/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
 	bun install --frozen-lockfile --production --ignore-scripts
 
-# ---- runtime: node standalone server ----
-FROM node:22-alpine AS runtime
+# ---- runtime: standalone server on Bun ----
+FROM oven/bun:1.4-alpine AS runtime
 # tzdata: the app renders dates and honours TZ. Sessions are server-side: Astro's
 # default `fsLite` driver writes under `.astro/session` relative to cwd, so that
-# directory must be writable by the runtime user. Compose mounts a named volume
-# there so sessions survive a restart.
+# directory must be writable by the runtime user (the image's `bun` user).
+# Compose mounts a named volume there so sessions survive a restart.
 RUN apk add --no-cache tzdata \
-	&& addgroup -S app && adduser -S -G app app \
 	&& mkdir -p /app/.astro/session \
-	&& chown -R app:app /app
+	&& chown -R bun:bun /app
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/apps/web-customer-portal/dist ./dist
 COPY --from=build /app/apps/web-customer-portal/package.json ./package.json
-USER app
+USER bun
 ENV NODE_ENV=production \
 	HOST=0.0.0.0 \
 	PORT=4322
 EXPOSE 4322
 # Absolute path: the relative form would resolve against the image's own
 # WORKDIR at start, not the WORKDIR above.
-CMD ["node", "/app/dist/server/entry.mjs"]
+CMD ["bun", "/app/dist/server/entry.mjs"]

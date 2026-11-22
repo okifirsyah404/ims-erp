@@ -12,6 +12,98 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-22 - ERP-0107 amended: deployment moved from Docker Hub to GHCR (all four images)
+
+**Owner request** on PR #142: "Pindahkan deployment dari dockerhub ke ghcr";
+scope confirmed as all four images.
+
+**Changed.**
+- `main-deploy-{backend,web-admin,web-landing,web-customer-portal}.yml`: log in
+  to `ghcr.io` with `github.actor` + `GITHUB_TOKEN`, job permission
+  `packages: write`; images `ghcr.io/okifirsyah404/ims-erp-{backend,web-admin,landing,customer-portal}`
+  (tags unchanged: `sha-<sha>`, `dev`). `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`
+  are no longer used.
+- `docker-compose.yml`: every app image pulls from `ghcr.io/okifirsyah404/*`;
+  header notes the `docker login ghcr.io` need while packages are private.
+- `README.md` (CI/CD + server run), `runbook.md`, `docker-compose.local.yml`
+  comment, `backlog.md`, `features.md`.
+
+**Checks.** `docker compose -f docker-compose.yml config --images` lists the
+four `ghcr.io/okifirsyah404/*` images; `bunx yaml-lint` on all deploy
+workflows → successful; no `DOCKERHUB` / `docker.io` reference left outside
+dated history. Not run on GitHub Actions (first run on merge).
+
+**Open.** GHCR packages are created private on first push: the server needs
+`docker login ghcr.io` with a PAT that has `read:packages`, or the packages
+are made public. The old Docker Hub images and secrets are left in place.
+`docs/database/` reviewed and unchanged.
+
+Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
+decision, once PR #139 is reviewed.
+
+## 2026-11-22 - ERP-0107: Docker Hub images + CI for web-landing and web-customer-portal (Bun only)
+
+**Owner request.** Dockerfile and GitHub workflow for both Astro apps, published
+to Docker Hub as `ims-erp-landing` and `ims-erp-customer-portal`, added to the
+root compose; follow-up the same day: "Gunakan bun" (no Node anywhere) and a
+new branch from `main` (`ci/erp-0107-astro-docker-images`).
+
+**Found.** Both Dockerfiles and compose services already existed (`4fbe20f0`)
+under the image names `ims-erp-web-landing` / `ims-erp-web-customer-portal`,
+ran the server on `node:22-alpine`, and had no workflow. The portal image did
+**not** build: `astro build` ran on Bun and two PWA dependencies,
+`@vite-pwa/workbox-build@8.0.15` and `@unplugin-pwa/core@0.0.7`, statically
+import `findPackageJSON` from `node:module`, which Bun 1.4.5 does not have
+(`Export named 'findPackageJSON' not found in module 'node:module'`). Bun also
+rewrites `ns.findPackageJSON` on a namespace import back into a named import,
+so only a runtime lookup avoids the link error.
+
+**Changed.**
+- `patches/` + root `patchedDependencies` (via `bun patch` / `bun patch --commit`):
+  both files look the function up with
+  `process.getBuiltinModule("node:module").findPackageJSON`; when it is missing
+  (Bun) `workbox-build` walks up `node_modules`, `unplugin-pwa` uses its
+  existing `createRequire` fallback. Node behaviour is unchanged.
+- `apps/web-{landing,customer-portal}/Dockerfile`: every stage on
+  `oven/bun:1.4-alpine`; copy `patches/` before `bun install`; build with
+  `bun --bun run`; runtime `CMD ["bun", "/app/dist/server/entry.mjs"]` as the
+  image's `bun` user; telemetry off.
+- `apps/{backend,web-admin}/Dockerfile`: copy `patches/` too (a frozen install
+  needs the patch files once `patchedDependencies` exists).
+- New workflows `main-test-and-build-web-{landing,customer-portal}.yml`
+  (paths filter, `bun --bun run … typecheck`, `bun test`, Docker build without
+  push) and `main-deploy-web-{landing,customer-portal}.yml` (merged PR to
+  `main` → push `okifirsyah404/ims-erp-landing` /
+  `okifirsyah404/ims-erp-customer-portal`, tags `sha-<sha>` + `dev`, `PUBLIC_*`
+  build args from repository variables), modelled on the web-admin pair.
+- `docker-compose.yml` / `docker-compose.local.yml`: image names switched to
+  the new repositories. Runbook and `stack-compatibility.md` updated.
+
+**Checks (local, Docker 27.2.0, Bun 1.4.4 host / 1.4.5 image).**
+- `docker build -f apps/<app>/Dockerfile .` for web-landing,
+  web-customer-portal, web-admin and backend → all exit 0.
+- Containers: PID 1 is `bun /app/dist/server/entry.mjs`, user `bun`, no log
+  errors. Landing (`WEB_DATA_SOURCE=demo`) `/` 200, `/products` 200; portal
+  (`PORTAL_DATA_SOURCE=demo`) `/` 303, `/login` 200, `/sw.js` 200,
+  `/manifest.webmanifest` 200; `/app/.astro/session` writable.
+- `bun --bun run build` in the portal → Complete (also with Node: Complete).
+- `bun run --cwd packages/common build`, then `bun --bun run --cwd apps/<app> typecheck`
+  → 0 errors for both (one earlier exit 9 without output happened while four
+  Docker builds ran in parallel; re-run clean); `bun test` landing 25 pass,
+  portal 68 pass.
+- `bun install --frozen-lockfile` → no changes;
+  `docker compose -f docker-compose.yml -f docker-compose.local.yml config --images`
+  lists `ims-erp-landing:local` / `ims-erp-customer-portal:local`;
+  `bunx yaml-lint` on the four workflows → successful.
+
+**Not done.** Workflows not run on GitHub Actions; the Docker Hub
+repositories and the `main-deploy` environment secrets
+(`DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`) must exist before the first push.
+Root `bun run test` / `lint` not re-run (no TS source changed).
+`docs/database/` reviewed and unchanged (no schema change).
+
+Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
+decision, once PR #139 is reviewed.
 ## 2026-11-22 - web-admin: table markup and frames aligned with `@ims-erp/ui` Table (shadcn)
 
 - No backlog item; UI only, `docs/database/` reviewed and unchanged (no schema change).
