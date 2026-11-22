@@ -16,7 +16,7 @@ import {
 	type TProductKind,
 	type TProductUpdateInput,
 } from '@/lib/inventory-api';
-import { toCompositionLines, type TCompositionDraft } from '@/components/inventory/product-composition';
+import { toCompositionLines, type TCompositionDraft } from '@/lib/product-composition';
 import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { itemDetailLink, itemEditLink } from '@/lib/item-routes';
 

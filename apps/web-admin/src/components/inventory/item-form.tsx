@@ -31,12 +31,8 @@ import {
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { minorToRupiah, rupiahToMinor } from '@/lib/format';
 import { ImageGalleryField } from '@/components/image-gallery-field';
-import {
-	ProductCompositionEditor,
-	toCompositionDrafts,
-	toCompositionLines,
-	type TCompositionDraft,
-} from '@/components/inventory/product-composition';
+import { ProductCompositionEditor } from '@/components/inventory/product-composition';
+import { toCompositionDrafts, toCompositionLines, type TCompositionDraft } from '@/lib/product-composition';
 import { toast } from '@/components/toast';
 import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {

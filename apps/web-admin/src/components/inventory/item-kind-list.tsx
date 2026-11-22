@@ -50,7 +50,7 @@ import {
 	type TProductCreateInput,
 	type TProductKind,
 } from '@/lib/inventory-api';
-import { toCompositionLines, type TCompositionDraft } from '@/components/inventory/product-composition';
+import { toCompositionLines, type TCompositionDraft } from '@/lib/product-composition';
 import { saveProductComponents } from '@/lib/inventory-api';
 import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { formatIdr, rupiahToMinor } from '@/lib/format';
