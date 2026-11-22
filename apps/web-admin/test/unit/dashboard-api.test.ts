@@ -2,6 +2,10 @@ import { describe, expect, test } from 'bun:test';
 
 import {
 	addMonths,
+	bucketLabel,
+	deltaPercent,
+	cashFlowSummaryQueryOptions,
+	monthToDateWindows,
 	DASHBOARD_QUERY_ROOT,
 	DASHBOARD_REFRESH_MS,
 	dashboardCashQueryOptions,
@@ -183,6 +187,100 @@ describe('dashboard query keys', () => {
 			expect(entry.refetchInterval).toBe(DASHBOARD_REFRESH_MS);
 			// Same value as the stale time, so a remount never double-fetches.
 			expect(entry.staleTime).toBe(DASHBOARD_REFRESH_MS);
+		}
+		expect(DASHBOARD_REFRESH_MS).toBe(60_000);
+	});
+});
+
+describe('monthToDateWindows', () => {
+	test('compares the same span of the previous month', () => {
+		expect(monthToDateWindows('2026-11-23')).toEqual({
+			current: { from: '2026-11-01', to: '2026-11-23' },
+			previous: { from: '2026-10-01', to: '2026-10-23' },
+		});
+	});
+
+	test('clamps to the end of a shorter previous month', () => {
+		expect(monthToDateWindows('2026-03-31').previous).toEqual({
+			from: '2026-02-01',
+			to: '2026-02-28',
+		});
+	});
+
+	test('crosses the year boundary', () => {
+		expect(monthToDateWindows('2026-01-15').previous).toEqual({
+			from: '2025-12-01',
+			to: '2025-12-15',
+		});
+	});
+});
+
+describe('cashFlowSummaryQueryOptions', () => {
+	const window = { from: '2026-11-01', to: '2026-11-23', groupBy: 'day' as const };
+
+	test('keys by organization and window under the dashboard root', () => {
+		const options = cashFlowSummaryQueryOptions('org-1', window, true);
+		expect(options.queryKey).toEqual([
+			'dashboard',
+			'cash-flow',
+			'org-1',
+			'2026-11-01',
+			'2026-11-23',
+			'day',
+		]);
+		expect(options.enabled).toBe(true);
+	});
+
+	test('is disabled without permission or organization', () => {
+		expect(cashFlowSummaryQueryOptions('org-1', window, false).enabled).toBe(false);
+		expect(cashFlowSummaryQueryOptions(null, window, true).enabled).toBe(false);
+	});
+});
+
+describe('deltaPercent', () => {
+	test('is null without a base', () => {
+		expect(deltaPercent(500, 0)).toBeNull();
+	});
+
+	test('rounds the change against the base', () => {
+		expect(deltaPercent(150, 100)).toBe(50);
+		expect(deltaPercent(50, 100)).toBe(-50);
+	});
+
+	test('reads an improving negative figure as up', () => {
+		// Net cash flow from -100 to -50 is better, so the change is positive.
+		expect(deltaPercent(-50, -100)).toBe(50);
+	});
+});
+
+describe('bucketLabel', () => {
+	test('month buckets are a short month name', () => {
+		expect(bucketLabel('2026-11', 'en')).toBe('Nov');
+	});
+
+	test('day buckets carry the day', () => {
+		expect(bucketLabel('2026-11-05', 'en')).toBe('5 Nov');
+	});
+});
+
+describe('dashboard background refresh', () => {
+	test('every dashboard query refetches each minute, also in a background tab', () => {
+		const window = { from: '2026-11-01', to: '2026-11-23', groupBy: 'day' as const };
+		const all = [
+			salesSummaryQueryOptions('org-1', window),
+			cashFlowSummaryQueryOptions('org-1', window, true),
+			dashboardCashQueryOptions('org-1', true),
+			dashboardProfitQueryOptions('org-1', { from: window.from, to: window.to }, true),
+			dashboardItemCountQueryOptions('org-1', true),
+			dashboardStockValueQueryOptions('org-1', true),
+			dashboardProjectsQueryOptions('org-1', true),
+			dashboardSubscriptionsQueryOptions('org-1', true),
+			dashboardRecentInvoicesQueryOptions('org-1', true),
+			dashboardRecentReceiptsQueryOptions('org-1', true),
+		];
+		for (const options of all) {
+			expect(options.refetchInterval).toBe(DASHBOARD_REFRESH_MS);
+			expect(options.refetchIntervalInBackground).toBe(true);
 		}
 		expect(DASHBOARD_REFRESH_MS).toBe(60_000);
 	});

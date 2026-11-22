@@ -1,14 +1,10 @@
 import { Link } from '@tanstack/react-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { RotateCw } from 'lucide-react';
-import { useState } from 'react';
-import type { TranslationKey } from '@ims-erp/locales';
-import type { ReactNode } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
+import { LayoutDashboard } from 'lucide-react';
+import { CartesianGrid, Line, LineChart, XAxis } from 'recharts';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardAction,
@@ -23,20 +19,18 @@ import {
 	ChartTooltipContent,
 	type ChartConfig,
 } from '@ims-erp/ui/components/chart';
-import { EmptyState, ErrorState } from '@/components/empty-state';
-import { SectionSkeleton } from '@/components/page-skeleton';
-import { DateRangePicker, type TDateRangeValue } from '@ims-erp/ui/components/date-range-picker';
-import { ToggleGroup, ToggleGroupItem } from '@ims-erp/ui/components/toggle-group';
+import { EmptyState } from '@/components/empty-state';
+import { PageSkeleton } from '@/components/page-skeleton';
 import {
 	Empty,
 	EmptyContent,
 	EmptyDescription,
 	EmptyHeader,
+	EmptyMedia,
 	EmptyTitle,
 } from '@ims-erp/ui/components/empty';
 
 import {
-	DASHBOARD_QUERY_ROOT,
 	dashboardCashQueryOptions,
 	dashboardItemCountQueryOptions,
 	dashboardProfitQueryOptions,
@@ -47,19 +41,26 @@ import {
 	dashboardSubscriptionsQueryOptions,
 	formatIdr,
 	monthKey,
-	SALES_RANGES,
-	type TSalesRange,
-	salesChartWindow,
 	salesSummaryQueryOptions,
 	salesWindow,
+	bucketLabel,
+	deltaPercent,
 } from '@/lib/dashboard-api';
-import { formatDateTime, todayBusinessDate } from '@/lib/format';
+import { useChartRange } from '@/lib/use-chart-range';
+import { todayBusinessDate } from '@/lib/format';
 import type { TProjectStage } from '@/lib/project-api';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
-import { usePermission } from '@/lib/use-permission';
+import { usePermission, usePermissionState } from '@/lib/use-permission';
 
-/** A `nav`-qualified key (`nav:item.invoices`), reusable in any scope. */
-type QualifiedNavKey = Extract<TranslationKey, `nav:${string}`>;
+import { CashFlowChartCard, CashFlowKpis } from './cash-flow-summary';
+import {
+	DashboardSection,
+	Figure,
+	QueryBody,
+	RangeControls,
+	Widget,
+	type QualifiedNavKey,
+} from './dashboard-shared';
 
 /** Project stage labels live in the `projects` namespace, in pipeline order. */
 const STAGE_KEYS: Record<TProjectStage, `projects:stage.${TProjectStage}`> = {
@@ -73,16 +74,40 @@ const STAGE_KEYS: Record<TProjectStage, `projects:stage.${TProjectStage}`> = {
 };
 
 /**
- * The M01 dashboard — one read-only overview across modules, on real data
- * (`docs/plan/erp-module-plans/m01-dashboard.md`).
+ * Which dashboard cards the caller's organization roles may read.
  *
  * @remarks
- * **Client composition, no backend dashboard module.** Each widget reads the
+ * One permission check per source module, answered by Better Auth against the
+ * same `erpRoleGrants` the backend guard uses, so a multi-role member gets the
+ * union. UX only: every endpoint re-checks server-side (ERP-0111, Q3).
+ */
+function useDashboardAccess() {
+	const checks = {
+		cash: usePermissionState('cash_bank.read'),
+		profit: usePermissionState('financial_report.read'),
+		invoice: usePermissionState('invoice.read'),
+		product: usePermissionState('product.read'),
+		project: usePermissionState('project.read'),
+		license: usePermissionState('license.read'),
+	};
+	const isPending = Object.values(checks).some((check) => check.isPending);
+	const can = Object.fromEntries(
+		Object.entries(checks).map(([key, check]) => [key, check.allowed]),
+	) as Record<keyof typeof checks, boolean>;
+	return { can, isPending };
+}
+
+/**
+ * The M01 dashboard: one read-only overview across modules, on real data
+ * (`docs/plan/erp-module-plans/m01-dashboard.md`, ERP-0060, ERP-0111).
+ *
+ * @remarks
+ * **Client composition, no backend dashboard module.** Each card reads the
  * endpoint of the module that owns the number (see `lib/dashboard-api.ts`).
- * Consequences worth knowing:
- * - every widget is gated on its **source module's** permission, and the server
- *   remains the enforcer — a hidden widget is a convenience, not a boundary;
- * - each widget owns its loading / empty / error state, so one failing module
+ * - **Role-aware:** a card renders only when the caller's roles grant its
+ *   source module's read permission; a section with no visible card is
+ *   omitted. The server remains the enforcer.
+ * - each card owns its loading / empty / error state, so one failing module
  *   degrades one card instead of blanking the page;
  * - all keys carry the active organization id, so switching organization
  *   re-renders every figure instead of showing the previous one's numbers.
@@ -90,12 +115,9 @@ const STAGE_KEYS: Record<TProjectStage, `projects:stage.${TProjectStage}`> = {
 export function DashboardPage() {
 	const { t } = useTranslation(['dashboard', 'nav']);
 	const organizationId = useActiveOrganizationId();
-	const queryClient = useQueryClient();
+	const { can, isPending } = useDashboardAccess();
 	const today = todayBusinessDate();
 	const window = salesWindow(today);
-	const [salesRange, setSalesRange] = useState<TSalesRange>('6m');
-	const [customRange, setCustomRange] = useState<TDateRangeValue>({});
-	const chartWindow = salesChartWindow(today, salesRange, customRange);
 
 	// No active organization (Q6): say so and point at the organizations page.
 	// Rendering zeros here would look like real figures.
@@ -118,147 +140,83 @@ export function DashboardPage() {
 		);
 	}
 
+	const showFinance = can.cash || can.profit;
+	const showOperations = can.invoice || can.product || can.project || can.license;
+	const quickLinks = QUICK_LINKS.filter((link) => can[link.access]);
+	const showActivity = can.invoice || quickLinks.length > 0;
+
 	return (
-		<div className='flex flex-1 flex-col gap-4'>
-			<div className='flex items-start justify-between gap-4'>
-				<div>
-					<h1 className='text-2xl font-bold'>{t('title')}</h1>
-					<p className='text-sm text-muted-foreground'>
-						{t('subtitle', { date: formatDateTime(`${today}T00:00:00+07:00`) })}
-					</p>
-				</div>
-				<Button
-					variant='outline'
-					size='sm'
-					className='shrink-0'
-					onClick={() =>
-						void queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_ROOT })
-					}
-				>
-					<RotateCw />
-					{t('action.refresh')}
-				</Button>
-			</div>
+		// `@container/dashboard`: the grids follow the width the content actually
+		// gets, not the viewport. On a tablet the open sidebar leaves ~500 px, so
+		// viewport breakpoints would squeeze three columns into it.
+		<div className='@container/dashboard flex min-w-0 flex-1 flex-col gap-6'>
+			{/* The breadcrumb is the visual title; figures refresh silently every minute. */}
+			<h1 className='sr-only'>{t('title')}</h1>
 
-			<SalesChartCard
-				organizationId={organizationId}
-				window={chartWindow}
-				range={salesRange}
-				onRangeChange={setSalesRange}
-				custom={customRange}
-				onCustomChange={setCustomRange}
-				today={today}
-			/>
+			{isPending ? (
+				<PageSkeleton />
+			) : !showFinance && !showOperations && !showActivity ? (
+				<Empty className='flex-1'>
+					<EmptyHeader>
+						<EmptyMedia variant='icon'>
+							<LayoutDashboard />
+						</EmptyMedia>
+						<EmptyTitle>{t('empty.noWidgets.title')}</EmptyTitle>
+						<EmptyDescription>{t('empty.noWidgets.description')}</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
+			) : (
+				<>
+					{showFinance && (
+						<DashboardSection
+							title={t('section.finance.title')}
+							description={can.cash ? t('section.finance.description') : undefined}
+						>
+							{can.cash && <CashFlowKpis organizationId={organizationId} today={today} />}
+							{can.cash && <CashFlowChartCard organizationId={organizationId} today={today} />}
+							<div className='grid gap-4 @md/dashboard:grid-cols-2'>
+								{can.cash && <CashWidget organizationId={organizationId} />}
+								{can.profit && (
+									<ProfitWidget
+										organizationId={organizationId}
+										range={{ from: window.currentFrom, to: today }}
+									/>
+								)}
+							</div>
+						</DashboardSection>
+					)}
 
-			<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-				<SalesWidget organizationId={organizationId} window={window} />
-				<CashWidget organizationId={organizationId} />
-				<ProfitWidget organizationId={organizationId} range={{ from: window.currentFrom, to: today }} />
-				<InventoryWidget organizationId={organizationId} />
-				<ProjectsWidget organizationId={organizationId} />
-				<SubscriptionsWidget organizationId={organizationId} />
-			</div>
+					{showOperations && (
+						<DashboardSection
+							title={t('section.operations.title')}
+							description={t('section.operations.description')}
+						>
+							{can.invoice && <SalesChartCard organizationId={organizationId} today={today} />}
+							<div className='grid gap-4 @md/dashboard:grid-cols-2 @5xl/dashboard:grid-cols-4'>
+								{can.invoice && <SalesWidget organizationId={organizationId} window={window} />}
+								{can.product && <InventoryWidget organizationId={organizationId} />}
+								{can.project && <ProjectsWidget organizationId={organizationId} />}
+								{can.license && <SubscriptionsWidget organizationId={organizationId} />}
+							</div>
+						</DashboardSection>
+					)}
 
-			<div className='grid gap-4 lg:grid-cols-3'>
-				<ActivityCard organizationId={organizationId} />
-				<QuickLinksCard />
-			</div>
+					{showActivity && (
+						<DashboardSection title={t('section.activity.title')}>
+							<div className='grid gap-4 @4xl/dashboard:grid-cols-3'>
+								{can.invoice && (
+									<div className='@4xl/dashboard:col-span-2'>
+										<ActivityCard organizationId={organizationId} />
+									</div>
+								)}
+								{quickLinks.length > 0 && <QuickLinksCard links={quickLinks} />}
+							</div>
+						</DashboardSection>
+					)}
+				</>
+			)}
 		</div>
 	);
-}
-
-/** One figure line inside a widget: label, value, optional trailing node. */
-function Figure({
-	label,
-	value,
-	trailing,
-}: {
-	label: string;
-	value: string;
-	trailing?: ReactNode;
-}) {
-	return (
-		<div className='flex items-baseline justify-between gap-2'>
-			<span className='text-sm text-muted-foreground'>{label}</span>
-			<span className='flex items-baseline gap-2 text-right'>
-				<span className='text-sm font-medium tabular-nums'>{value}</span>
-				{trailing}
-			</span>
-		</div>
-	);
-}
-
-/** Widget shell: title, optional description, and a link to the source list. */
-function Widget({
-	title,
-	description,
-	to,
-	titleKeyLink,
-	children,
-}: {
-	title: string;
-	description?: string;
-	to: string;
-	/** `nav:item.*` key for the "View all" link title. */
-	titleKeyLink: QualifiedNavKey;
-	children: ReactNode;
-}) {
-	const { t } = useTranslation(['dashboard', 'nav']);
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{title}</CardTitle>
-				{description && <CardDescription>{description}</CardDescription>}
-				<CardAction>
-					<Link
-						to={to}
-						className='text-xs font-normal text-muted-foreground hover:text-foreground'
-					>
-						{t('action.viewAll')} · {t(titleKeyLink)}
-					</Link>
-				</CardAction>
-			</CardHeader>
-			<CardContent className='flex flex-col gap-2'>{children}</CardContent>
-		</Card>
-	);
-}
-
-/**
- * Body of a widget that reads a query: skeleton while loading, an inline retry
- * when the request fails (403 for a missing permission, 5xx, offline), and the
- * caller's rows otherwise.
- */
-function QueryBody({
-	isPending,
-	isError,
-	onRetry,
-	children,
-}: {
-	isPending: boolean;
-	isError: boolean;
-	onRetry: () => void;
-	children: ReactNode;
-}) {
-	const { t } = useTranslation('dashboard');
-	if (isPending) return <SectionSkeleton />;
-	if (isError) {
-		return (
-			<div className='flex flex-col items-start gap-2'>
-				<ErrorState error={t('error.unavailable')} size='sm' className='w-full' />
-				<Button variant='outline' size='sm' onClick={onRetry}>
-					<RotateCw />
-					{t('action.retry')}
-				</Button>
-			</div>
-		);
-	}
-	return <>{children}</>;
-}
-
-/** Percentage change between two money figures, or `null` when there is no base. */
-function deltaPercent(current: number, previous: number): number | null {
-	if (previous === 0) return null;
-	return Math.round(((current - previous) / previous) * 100);
 }
 
 function SalesWidget({
@@ -481,7 +439,7 @@ function ProjectsWidget({ organizationId }: { organizationId: string | null }) {
 						const max = Math.max(...(stats?.byStage ?? [{ count: 1 }]).map((entry) => entry.count), 1);
 						return (
 							<div key={row.stage} className='flex items-center gap-2'>
-								<span className='w-28 shrink-0 truncate text-xs text-muted-foreground'>
+								<span className='w-24 shrink-0 truncate @5xl/dashboard:w-28 text-xs text-muted-foreground'>
 									{t(STAGE_KEYS[row.stage])}
 								</span>
 								<div className='h-1.5 flex-1 rounded-full bg-muted'>
@@ -532,65 +490,21 @@ function SubscriptionsWidget({ organizationId }: { organizationId: string | null
 	);
 }
 
-/** A bucket label: short month for `YYYY-MM`, day + month for `YYYY-MM-DD`. */
-function bucketLabel(period: string, language: string): string {
-	const locale = language === 'en' ? 'en-GB' : 'id-ID';
-	if (period.length === 7) {
-		const [year, monthIndex] = period.split('-').map(Number) as [number, number];
-		return new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }).format(
-			new Date(Date.UTC(year, monthIndex - 1, 1)),
-		);
-	}
-	const [year, monthIndex, day] = period.split('-').map(Number) as [number, number, number];
-	return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
-		new Date(Date.UTC(year, monthIndex - 1, day)),
-	);
-}
-
-/** Range preset labels, in the order the toggle renders them. */
-const RANGE_KEYS: Record<TSalesRange, `chart.range.${TSalesRange}`> = {
-	'14d': 'chart.range.14d',
-	'1m': 'chart.range.1m',
-	'3m': 'chart.range.3m',
-	'6m': 'chart.range.6m',
-	'1y': 'chart.range.1y',
-	'5y': 'chart.range.5y',
-	custom: 'chart.range.custom',
-};
-
 /**
- * Invoiced sales over a chosen window — the dashboard's headline chart.
+ * Invoiced sales over a chosen window.
  *
  * @remarks
- * Full width and first on the page: this is the figure a manager opens the
- * dashboard for. The window is local state (presets plus a custom date range);
- * each choice is its own query key, so switching back to a previous window is
- * served from cache instead of refetching.
+ * Full width at the top of the operations section. The window is local state
+ * (presets plus a custom date range, `useChartRange`); each choice is its own
+ * query key, so switching back to a previous window is served from cache.
  */
-function SalesChartCard({
-	organizationId,
-	window,
-	range,
-	onRangeChange,
-	custom,
-	onCustomChange,
-	today,
-}: {
-	organizationId: string | null;
-	window: ReturnType<typeof salesChartWindow>;
-	range: TSalesRange;
-	onRangeChange: (range: TSalesRange) => void;
-	custom: TDateRangeValue;
-	onCustomChange: (range: TDateRangeValue) => void;
-	today: string;
-}) {
+function SalesChartCard({ organizationId, today }: { organizationId: string; today: string }) {
 	const { t, i18n } = useTranslation('dashboard');
 	const canRead = usePermission('invoice.read');
-	const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-	const [customOpen, setCustomOpen] = useState(false);
+	const range = useChartRange(today);
 	const query = useQuery({
-		...salesSummaryQueryOptions(organizationId, window),
-		enabled: canRead && organizationId !== null,
+		...salesSummaryQueryOptions(organizationId, range.window),
+		enabled: canRead,
 	});
 	// Minor units → whole rupiah for the axis; the tooltip formats from minor.
 	const data = (query.data?.buckets ?? []).map((row) => ({
@@ -601,61 +515,20 @@ function SalesChartCard({
 
 	return (
 		<Card>
-			<CardHeader>
+			{/* Narrow content area: one column, so the range controls drop below the title. */}
+			<CardHeader className='@max-3xl/dashboard:has-data-[slot=card-action]:grid-cols-1'>
 				<CardTitle>{t('chart.title')}</CardTitle>
 				<CardDescription>
-					{range === 'custom' && !(custom.from && custom.to)
+					{range.incomplete
 						? t('chart.customPlaceholder')
 						: t('chart.rangeLabel', {
-								from: window.from,
-								to: window.to,
+								from: range.window.from,
+								to: range.window.to,
 								total: formatIdr(total),
 							})}
 				</CardDescription>
-				<CardAction className='flex flex-wrap items-center justify-end gap-2'>
-					<div ref={setAnchor}>
-						<ToggleGroup
-							value={[range]}
-							onValueChange={(values) => {
-								const next = values[0];
-								if (next) {
-									onRangeChange(next as TSalesRange);
-									// "Custom" has no input: clicking it opens the calendar.
-									if (next === 'custom') setCustomOpen(true);
-									return;
-								}
-								// Clicking the active preset again: for Custom that means
-								// "show the calendar", for the others it changes nothing.
-								if (range === 'custom') setCustomOpen(true);
-							}}
-							variant='outline'
-							size='sm'
-							className='flex-wrap'
-						>
-							{SALES_RANGES.map((preset) => (
-								<ToggleGroupItem key={preset} value={preset}>
-									{t(RANGE_KEYS[preset])}
-								</ToggleGroupItem>
-							))}
-						</ToggleGroup>
-					</div>
-					{range === 'custom' && (
-						<DateRangePicker
-							value={custom}
-							onChange={(next) => {
-								onCustomChange(next);
-								// Parent owns `open`: close as soon as both ends exist.
-								if (next.from && next.to) setCustomOpen(false);
-							}}
-							max={today}
-							showTrigger={false}
-							anchor={anchor}
-							open={customOpen}
-							onOpenChange={setCustomOpen}
-							placeholder={t('chart.customPlaceholder')}
-							aria-label={t('chart.customPlaceholder')}
-						/>
-					)}
+				<CardAction className='col-start-1 row-span-1 row-start-3 flex flex-wrap items-center justify-start gap-2 justify-self-start @3xl/dashboard:col-start-2 @3xl/dashboard:row-span-2 @3xl/dashboard:row-start-1 @3xl/dashboard:justify-end @3xl/dashboard:justify-self-end'>
+					<RangeControls state={range} today={today} />
 				</CardAction>
 			</CardHeader>
 			<CardContent>
@@ -670,9 +543,9 @@ function SalesChartCard({
 								invoiced: { label: t('chart.invoiced'), color: 'var(--chart-1)' },
 							} satisfies ChartConfig
 						}
-						className='h-72 w-full'
+						className='h-56 w-full @2xl/dashboard:h-72'
 					>
-						<BarChart data={data}>
+						<LineChart data={data} margin={{ left: 12, right: 12 }}>
 							<CartesianGrid vertical={false} />
 							<XAxis
 								dataKey='label'
@@ -689,8 +562,16 @@ function SalesChartCard({
 									/>
 								}
 							/>
-							<Bar dataKey='invoiced' fill='var(--color-invoiced)' radius={4} />
-						</BarChart>
+							<Line
+								dataKey='invoiced'
+								type='monotone'
+								stroke='var(--color-invoiced)'
+								strokeWidth={2}
+								// A one-bucket window has no line to draw: show the point.
+								dot={data.length <= 1}
+								activeDot={{ r: 4 }}
+							/>
+						</LineChart>
 					</ChartContainer>
 				</QueryBody>
 			</CardContent>
@@ -725,7 +606,7 @@ function ActivityCard({ organizationId }: { organizationId: string | null }) {
 		.slice(0, 5);
 
 	return (
-		<Card>
+		<Card className='h-full'>
 			<CardHeader>
 				<CardTitle>{t('activity.title')}</CardTitle>
 				<CardAction>
@@ -755,7 +636,7 @@ function ActivityCard({ organizationId }: { organizationId: string | null }) {
 								className='flex flex-col gap-0.5 border-b pb-2 last:border-b-0 last:pb-0'
 							>
 								<span className='flex items-baseline justify-between gap-2 text-sm'>
-									<span>
+									<span className='min-w-0 break-words'>
 										{t(
 											entry.kind === 'invoice'
 												? 'activity.invoiceIssued'
@@ -779,29 +660,35 @@ function ActivityCard({ organizationId }: { organizationId: string | null }) {
 	);
 }
 
-/** Static shortcuts; no data, so no query and no permission gate. */
-const QUICK_LINKS: Array<{ to: string; titleKey: QualifiedNavKey }> = [
-	{ to: '/sales/invoices', titleKey: 'nav:item.invoices' },
-	{ to: '/finance/cash-bank', titleKey: 'nav:item.cashBank' },
-	{ to: '/inventory/stock', titleKey: 'nav:item.stock' },
-	{ to: '/projects', titleKey: 'nav:item.projects' },
-	{ to: '/subscription', titleKey: 'nav:item.subscription' },
-	{ to: '/reports', titleKey: 'nav:item.financialReports' },
+/** Dashboard permission a quick link depends on (see `useDashboardAccess`). */
+type TAccessKey = keyof ReturnType<typeof useDashboardAccess>['can'];
+
+/**
+ * Static shortcuts, each shown only when the caller can read its target
+ * module, so a role never sees a link that leads to a 403 page.
+ */
+const QUICK_LINKS: Array<{ to: string; titleKey: QualifiedNavKey; access: TAccessKey }> = [
+	{ to: '/sales/invoices', titleKey: 'nav:item.invoices', access: 'invoice' },
+	{ to: '/finance/cash-bank', titleKey: 'nav:item.cashBank', access: 'cash' },
+	{ to: '/inventory/stock', titleKey: 'nav:item.stock', access: 'product' },
+	{ to: '/projects', titleKey: 'nav:item.projects', access: 'project' },
+	{ to: '/subscription', titleKey: 'nav:item.subscription', access: 'license' },
+	{ to: '/reports', titleKey: 'nav:item.financialReports', access: 'profit' },
 ];
 
-function QuickLinksCard() {
+function QuickLinksCard({ links }: { links: typeof QUICK_LINKS }) {
 	const { t } = useTranslation(['dashboard', 'nav']);
 	return (
-		<Card>
+		<Card className='h-full'>
 			<CardHeader>
 				<CardTitle>{t('quickLinks.title')}</CardTitle>
 			</CardHeader>
 			<CardContent className='grid grid-cols-2 gap-2'>
-				{QUICK_LINKS.map((link) => (
+				{links.map((link) => (
 					<Link
 						key={link.to}
 						to={link.to}
-						className='rounded-lg border bg-muted/30 px-3 py-2 text-sm hover:bg-muted/60'
+						className='flex min-h-10 items-center rounded-lg border bg-muted/30 px-3 py-2 text-sm hover:bg-muted/60'
 					>
 						{t(link.titleKey)}
 					</Link>

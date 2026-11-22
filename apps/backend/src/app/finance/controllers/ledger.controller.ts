@@ -9,6 +9,7 @@ import {
 	cashBankAccountCreateSchema,
 	cashBankAccountUpdateSchema,
 	cashBankMovementListQuerySchema,
+	cashBankSummaryQuerySchema,
 	cashBankMovementSchema,
 	journalEntryCreateSchema,
 	journalEntryListQuerySchema,
@@ -420,6 +421,23 @@ export class LedgerController {
 					detail: {
 						description:
 							'Posts a manual cash movement with its auto-journal (GL link required)',
+					},
+				},
+			)
+			.get(
+				'/cash-bank-transactions/summary',
+				async ({ query, erp }) =>
+					ok(
+						await cashBank.summary(
+							erp.organizationId,
+							cashBankSummaryQuerySchema.parse(query),
+						),
+					),
+				{
+					erp: { permission: ['cash_bank:read'] },
+					detail: {
+						description:
+							'Posted cash in/out per period for a window, opening balances excluded (M01 dashboard)',
 					},
 				},
 			)

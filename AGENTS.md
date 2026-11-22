@@ -376,6 +376,10 @@ duplicates. Keep documents short and synchronized with verified code. Meaningful
 architectural choices get a short ADR in `docs/architecture/decisions/`. When a doc
 and the code disagree, fix whichever is wrong and note it in `progress.md`.
 
+`docs/role-permission.md` lists roles, grants and every backend route with
+its guard; its second half is generated. Re-run `bun docs/gen-role-permission.ts`
+in the same change as any route, guard option or role-grant change.
+
 `docs/database/` is the persistence contract and is updated in the **same**
 change as any structural change to a module — never in a follow-up commit.
 Edit `docs.dbml` before the Drizzle schemas, because it is canonical, then run

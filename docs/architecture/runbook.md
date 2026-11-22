@@ -37,6 +37,7 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
 | `bun run test` | repo root | ✅ verified 2026-11-20 — 7/7 turbo tasks (backend 1232, web-landing 24, web-customer-portal 60 pass); earlier 2026-11-02: backend 131, web-admin 21 |
 | `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-admin` | ✅ verified 2026-11-20 — 0 errors. The root `typecheck` does not cover web-admin (no `typecheck` script); this is the real check (also part of `build`) |
+| `bun docs/gen-role-permission.ts` | repo root | ✅ verified 2026-11-23 — rewrites the generated block of `docs/role-permission.md` (628 routes, 0 unresolved). Run after any route, guard option or role-grant change |
 
 ### Live smoke tests (need a running backend on :3001)
 

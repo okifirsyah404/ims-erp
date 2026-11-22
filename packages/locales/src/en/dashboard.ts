@@ -13,9 +13,32 @@
  */
 const dashboard = {
 	'title': 'Dashboard',
-	'subtitle': 'Figures as of {{date}}',
 
-	'action.refresh': 'Refresh',
+
+	'section.finance.title': 'Financial summary',
+	'section.finance.description': 'Cash basis: posted cash and bank movements, opening balances excluded.',
+	'section.operations.title': 'Operations',
+	'section.operations.description': 'Sales, stock, projects and subscriptions.',
+	'section.activity.title': 'Activity',
+
+	'kpi.income': 'Income',
+	'kpi.outcome': 'Outcome',
+	'kpi.net': 'Net cash flow',
+	'kpi.period': 'Month to date: {{from}} to {{to}}',
+	'kpi.delta': '{{percent}}% vs same days last month',
+	'kpi.noBase': 'No figure for the same days last month',
+	'kpi.previous': 'Last month: {{amount}}',
+
+	'cashFlowChart.title': 'Income vs outcome',
+	'cashFlowChart.rangeLabel': '{{from}} to {{to}} · net {{net}}',
+
+	'empty.noWidgets.title': 'Nothing to show for your role',
+	'empty.noWidgets.description': 'Your roles in this organization include no dashboard figure. Use the menu to open the pages you can access.',
+
+	'gate.title': 'No dashboard access',
+	'gate.noRole': 'The dashboard needs an internal role in an organization. Ask an organization owner or admin to invite you.',
+	'gate.appAdmin': 'You are a platform admin but not a member of any organization. Create an organization (you become its owner) or ask to be added to one.',
+
 	'action.retry': 'Try again',
 	'action.viewAll': 'View all',
 
