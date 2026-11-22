@@ -1,5 +1,5 @@
 /**
- * Guard wiring for the two dashboard aggregates (ERP-0055).
+ * Guard wiring for the dashboard aggregates (ERP-0055; ERP-0113 cash summary).
  *
  * Exercises the REAL Elysia pipeline (`erpGuard` + controller) over stubbed
  * services, so the permission strings on `GET /invoices/summary` and
@@ -34,7 +34,30 @@ beforeAll(async () => {
 		'../../src/app/project/constants/di'
 	);
 	const { ProjectController } = await import('../../src/app/project/controllers/project.controller');
+	const finance = await import('../../src/app/finance/constants/di');
+	const { LedgerController } = await import('../../src/app/finance/controllers/ledger.controller');
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
+
+	// The ledger controller resolves five services at plugin build time; only
+	// the cash/bank summary is exercised, so the rest are empty stubs.
+	container.register(finance.ACCOUNT_SERVICE_TOKEN, { useValue: {} as never });
+	container.register(finance.PERIOD_SERVICE_TOKEN, { useValue: {} as never });
+	container.register(finance.POSTING_SERVICE_TOKEN, { useValue: {} as never });
+	container.register(finance.OPENING_BALANCE_SERVICE_TOKEN, { useValue: {} as never });
+	container.register(finance.CASH_BANK_SERVICE_TOKEN, {
+		useValue: {
+			summary: async (organizationId: string, range: { groupBy: string }) => ({
+				from: '2026-11-01',
+				to: '2026-11-23',
+				groupBy: range.groupBy,
+				totalIn: 0,
+				totalOut: 0,
+				net: 0,
+				buckets: [],
+				organizationId,
+			}),
+		} as never,
+	});
 
 	container.register(INVOICE_SERVICE_TOKEN, {
 		useValue: {
@@ -69,7 +92,8 @@ beforeAll(async () => {
 	app = new Elysia()
 		.use(erpGuard())
 		.use(InvoiceController.plugin())
-		.use(ProjectController.plugin());
+		.use(ProjectController.plugin())
+		.use(LedgerController.plugin());
 });
 
 beforeEach(() => resetFixture());
@@ -113,5 +137,43 @@ describe('dashboard aggregates authorization', () => {
 	test('projects stats: 200 for a technician (project:read, narrow visibility)', async () => {
 		const response = await app.handle(jsonRequest('/projects/stats', 'technician'));
 		expect(response.status).toBe(200);
+	});
+
+	const cashSummary = '/finance/cash-bank-transactions/summary?from=2026-11-01&to=2026-11-23';
+
+	test('cash summary: 401 without a session', async () => {
+		const response = await app.handle(jsonRequest(cashSummary));
+		expect(response.status).toBe(401);
+	});
+
+	test('cash summary: 403 for roles without cash_bank:read', async () => {
+		for (const role of ['sales', 'technician', 'warehouse', 'member']) {
+			const response = await app.handle(jsonRequest(cashSummary, role));
+			expect(response.status).toBe(403);
+		}
+	});
+
+	test('cash summary: 200 for finance and owner, scoped to the guard organization', async () => {
+		for (const role of ['finance', 'owner']) {
+			const response = await app.handle(jsonRequest(`${cashSummary}&groupBy=day`, role));
+			expect(response.status).toBe(200);
+			const body = (await response.json()) as {
+				data: { organizationId: string; groupBy: string };
+			};
+			expect(body.data.organizationId).toBe(ORG);
+			expect(body.data.groupBy).toBe('day');
+		}
+	});
+
+	test('cash summary: a global admin without membership is refused', async () => {
+		const response = await app.handle(jsonRequest(cashSummary, 'globalAdmin'));
+		expect(response.status).toBe(403);
+	});
+
+	test('cash summary: an inverted window is rejected', async () => {
+		const response = await app.handle(
+			jsonRequest('/finance/cash-bank-transactions/summary?from=2026-11-23&to=2026-11-01', 'finance'),
+		);
+		expect(response.status).toBe(400);
 	});
 });

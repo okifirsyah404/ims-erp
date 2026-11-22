@@ -34,7 +34,7 @@ import type { TInvoice, TReceipt } from './invoice-api';
 /** Months shown by the invoiced-sales chart. */
 export const SALES_CHART_MONTHS = 6;
 
-/** Query-key root: one prefix invalidates the whole dashboard (Refresh). */
+/** Query-key root shared by every dashboard query (one prefix to invalidate them all). */
 export const DASHBOARD_QUERY_ROOT = ['dashboard'] as const;
 
 /**
@@ -42,9 +42,10 @@ export const DASHBOARD_QUERY_ROOT = ['dashboard'] as const;
  *
  * @remarks
  * Also the `staleTime`, so a remount inside the same minute does not refetch.
- * TanStack Query keeps `refetchIntervalInBackground` false by default, so a
- * hidden tab stops polling and resumes on focus — no point refreshing a screen
- * nobody is looking at.
+ * Refresh is silent (no button, no skeleton: a refetch keeps the previous
+ * figures until the new ones arrive) and keeps running while the tab is in
+ * the background (`refetchIntervalInBackground`, owner decision 2026-11-23,
+ * ERP-0113), so the page is current the moment it is looked at again.
  */
 export const DASHBOARD_REFRESH_MS = 60 * 1000;
 
@@ -127,6 +128,33 @@ export function salesWindow(today: string): TSalesWindow {
 	};
 }
 
+/**
+ * Percentage change between two figures, or `null` when there is no base.
+ *
+ * @remarks
+ * Divides by the absolute base so a figure that can be negative (net cash
+ * flow) still reads "up" when it improves.
+ */
+export function deltaPercent(current: number, previous: number): number | null {
+	if (previous === 0) return null;
+	return Math.round(((current - previous) / Math.abs(previous)) * 100);
+}
+
+/** A bucket label: short month for `YYYY-MM`, day + month for `YYYY-MM-DD`. */
+export function bucketLabel(period: string, language: string): string {
+	const locale = language === 'en' ? 'en-GB' : 'id-ID';
+	if (period.length === 7) {
+		const [year, monthIndex] = period.split('-').map(Number) as [number, number];
+		return new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }).format(
+			new Date(Date.UTC(year, monthIndex - 1, 1)),
+		);
+	}
+	const [year, monthIndex, day] = period.split('-').map(Number) as [number, number, number];
+	return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+		new Date(Date.UTC(year, monthIndex - 1, day)),
+	);
+}
+
 /** Preset spans offered by the invoiced-sales chart. `custom` uses the picker. */
 export const SALES_RANGES = ['14d', '1m', '3m', '6m', '1y', '5y', 'custom'] as const;
 export type TSalesRange = (typeof SALES_RANGES)[number];
@@ -189,6 +217,46 @@ export type TInvoiceSummary = {
 	buckets: Array<{ period: string; invoiced: number; count: number }>;
 };
 
+/**
+ * Cash in/out per period,
+ * `GET /finance/cash-bank-transactions/summary` (zero-filled, ERP-0113).
+ *
+ * @remarks
+ * Cash basis: posted movements of every cash/bank account, opening balances
+ * excluded. Amounts are IDR minor units; `totalOut` is positive.
+ */
+export type TCashFlowSummary = {
+	from: string;
+	to: string;
+	groupBy: 'month' | 'day';
+	totalIn: number;
+	totalOut: number;
+	net: number;
+	buckets: Array<{ period: string; totalIn: number; totalOut: number }>;
+};
+
+/** A plain business-date window, both ends inclusive. */
+export type TDateWindow = { from: string; to: string };
+
+/**
+ * Month to date and the same span of the previous month.
+ *
+ * @remarks
+ * The comparison must be fair: on the 23rd, 1-23 November is compared with
+ * 1-23 October, not with the whole of October. `shiftMonths` clamps the day,
+ * so on 31 March the previous window is the whole of February.
+ */
+export function monthToDateWindows(today: string): {
+	current: TDateWindow;
+	previous: TDateWindow;
+} {
+	const previousTo = shiftMonths(today, -1);
+	return {
+		current: { from: startOfMonth(today), to: today },
+		previous: { from: startOfMonth(previousTo), to: previousTo },
+	};
+}
+
 /** One page of rows plus pagination, the shape every list endpoint returns. */
 type TPage<T> = { rows: T[]; total: number };
 
@@ -248,6 +316,41 @@ export function salesSummaryQueryOptions(organizationId: string | null, window: 
 		enabled: organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
+	});
+}
+
+/**
+ * Cash in/out for a window (`GET /finance/cash-bank-transactions/summary`).
+ *
+ * @remarks
+ * Feeds both the KPI cards (month-to-date windows, monthly buckets) and the
+ * income-vs-outcome chart (the chart's window). Gated on `cash_bank:read`.
+ */
+export function cashFlowSummaryQueryOptions(
+	organizationId: string | null,
+	window: TSalesChartWindow,
+	enabled: boolean,
+) {
+	return queryOptions({
+		queryKey: [
+			'dashboard',
+			'cash-flow',
+			organizationId,
+			window.from,
+			window.to,
+			window.groupBy,
+		] as const,
+		queryFn: () =>
+			getJson<TCashFlowSummary>('/finance/cash-bank-transactions/summary', {
+				from: window.from,
+				to: window.to,
+				groupBy: window.groupBy,
+			}),
+		enabled: enabled && organizationId !== null,
+		staleTime: DASHBOARD_REFRESH_MS,
+		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -259,6 +362,7 @@ export function dashboardCashQueryOptions(organizationId: string | null, enabled
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -278,6 +382,7 @@ export function dashboardProfitQueryOptions(
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -289,6 +394,7 @@ export function dashboardItemCountQueryOptions(organizationId: string | null, en
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -301,6 +407,7 @@ export function dashboardStockValueQueryOptions(organizationId: string | null, e
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -312,6 +419,7 @@ export function dashboardProjectsQueryOptions(organizationId: string | null, ena
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -323,6 +431,7 @@ export function dashboardSubscriptionsQueryOptions(organizationId: string | null
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -334,6 +443,7 @@ export function dashboardRecentInvoicesQueryOptions(organizationId: string | nul
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }
 
@@ -349,5 +459,6 @@ export function dashboardRecentReceiptsQueryOptions(organizationId: string | nul
 		enabled: enabled && organizationId !== null,
 		staleTime: DASHBOARD_REFRESH_MS,
 		refetchInterval: DASHBOARD_REFRESH_MS,
+		refetchIntervalInBackground: true,
 	});
 }

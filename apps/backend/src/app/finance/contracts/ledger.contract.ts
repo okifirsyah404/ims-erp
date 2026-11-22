@@ -170,6 +170,25 @@ export const cashBankMovementSchema = z.object({
 	counterpartAccountId: z.string().uuid(),
 });
 
+/**
+ * Window for the dashboard's cash in/out aggregate (M01, ERP-0113).
+ *
+ * @remarks
+ * Business dates (Asia/Jakarta `YYYY-MM-DD`), inclusive, keyed on
+ * `transaction_date`. Only `posted` movements count; opening balances never do.
+ */
+export const cashBankSummaryQuerySchema = z
+	.object({
+		from: isoDate,
+		to: isoDate,
+		groupBy: z.enum(['month', 'day']).default('month'),
+	})
+	.refine((query) => query.from <= query.to, {
+		message: 'from must not be after to',
+	});
+
+export type TCashBankSummaryQuery = z.output<typeof cashBankSummaryQuerySchema>;
+
 export const cashBankMovementListQuerySchema = z.object({
 	page: z.coerce.number().int().positive().default(1),
 	limit: z.coerce.number().int().positive().max(100).default(20),

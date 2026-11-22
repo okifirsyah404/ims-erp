@@ -8,12 +8,13 @@ import {
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type {
 	ICashBankRepository,
 	TCashBankTransactionPaginationRequest,
+	TCashFlowSummaryBucket,
 } from '../contracts/cash-bank.repository.interface';
 
 /**
@@ -188,6 +189,50 @@ export class CashBankRepository implements ICashBankRepository {
 			.limit(limit)
 			.offset((page - 1) * limit);
 		return paginationResult(request, total, data);
+	}
+
+	/**
+	 * Posted cash in/out per period, one aggregate query.
+	 *
+	 * @remarks
+	 * Bucket key straight from `transaction_date::text` (no `to_char` format
+	 * parameter, which PostgreSQL would not match between select and group by).
+	 * `source_type = 'opening_balance'` rows are excluded because a balance
+	 * brought forward is not income; `IS DISTINCT FROM` keeps the NULL sources.
+	 */
+	async summarizeTransactions(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TCashFlowSummaryBucket[]> {
+		const period =
+			range.groupBy === 'month'
+				? sql<string>`left(${cashBankTransactions.transactionDate}::text, 7)`
+				: sql<string>`${cashBankTransactions.transactionDate}::text`;
+		const rows = await this.database
+			.select({
+				period,
+				totalIn: sql<string>`coalesce(sum(${cashBankTransactions.amount}) filter (where ${cashBankTransactions.direction} = 'in'), 0)::bigint`,
+				totalOut: sql<string>`coalesce(sum(${cashBankTransactions.amount}) filter (where ${cashBankTransactions.direction} = 'out'), 0)::bigint`,
+			})
+			.from(cashBankTransactions)
+			.where(
+				and(
+					eq(cashBankTransactions.organizationId, organizationId),
+					isNull(cashBankTransactions.deletedAt),
+					eq(cashBankTransactions.status, 'posted'),
+					gte(cashBankTransactions.transactionDate, range.from),
+					lte(cashBankTransactions.transactionDate, range.to),
+					sql`${cashBankTransactions.sourceType} is distinct from 'opening_balance'`,
+				),
+			)
+			.groupBy(period)
+			.orderBy(period);
+		// bun-sql returns bigint aggregates as strings; money stays exact.
+		return rows.map((row) => ({
+			period: row.period,
+			totalIn: Number(row.totalIn),
+			totalOut: Number(row.totalOut),
+		}));
 	}
 
 	async cashBankAccountBalance(organizationId: string, id: string): Promise<number> {

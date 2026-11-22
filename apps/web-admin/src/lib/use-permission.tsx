@@ -21,10 +21,13 @@ export const splitPermission = (permission: Permission) => {
  * Elysia guard. The query key includes the active organization id so
  * switching organizations refreshes permissions immediately.
  */
-export function usePermission(permission: Permission | Permission[]): boolean {
+export function usePermissionState(permission: Permission | Permission[]): {
+  allowed: boolean
+  isPending: boolean
+} {
   const { data: session, isPending } = useSession()
   const activeOrgId = session?.session?.activeOrganizationId
-  const { data } = useQuery({
+  const query = useQuery({
     queryKey: ['erp-has-permission', session?.user?.id, activeOrgId, permission],
     enabled: !isPending && !!session?.user?.id,
     staleTime: 60 * 1000,
@@ -44,7 +47,16 @@ export function usePermission(permission: Permission | Permission[]): boolean {
       return result.data?.success === true
     },
   })
-  return data === true
+  return {
+    allowed: query.data === true,
+    // Pending until the session resolves and the check has answered once.
+    isPending: isPending || (!!session?.user?.id && query.isPending),
+  }
+}
+
+/** Boolean form of {@link usePermissionState}: `false` while still loading. */
+export function usePermission(permission: Permission | Permission[]): boolean {
+  return usePermissionState(permission).allowed
 }
 
 /**

@@ -6,9 +6,32 @@ import type en from '../en/dashboard';
 
 const dashboard: Record<keyof typeof en, string> = {
 	'title': 'Dasbor',
-	'subtitle': 'Angka per {{date}}',
 
-	'action.refresh': 'Muat ulang',
+
+	'section.finance.title': 'Ringkasan keuangan',
+	'section.finance.description': 'Basis kas: mutasi kas dan bank yang sudah diposting, tanpa saldo awal.',
+	'section.operations.title': 'Operasional',
+	'section.operations.description': 'Penjualan, stok, proyek, dan langganan.',
+	'section.activity.title': 'Aktivitas',
+
+	'kpi.income': 'Pemasukan',
+	'kpi.outcome': 'Pengeluaran',
+	'kpi.net': 'Arus kas bersih',
+	'kpi.period': 'Bulan berjalan: {{from}} s.d. {{to}}',
+	'kpi.delta': '{{percent}}% dibanding hari yang sama bulan lalu',
+	'kpi.noBase': 'Belum ada angka untuk hari yang sama bulan lalu',
+	'kpi.previous': 'Bulan lalu: {{amount}}',
+
+	'cashFlowChart.title': 'Pemasukan vs pengeluaran',
+	'cashFlowChart.rangeLabel': '{{from}} s.d. {{to}} · bersih {{net}}',
+
+	'empty.noWidgets.title': 'Tidak ada yang bisa ditampilkan untuk peran Anda',
+	'empty.noWidgets.description': 'Peran Anda di organisasi ini tidak mencakup angka dasbor apa pun. Gunakan menu untuk membuka halaman yang bisa Anda akses.',
+
+	'gate.title': 'Tidak ada akses dasbor',
+	'gate.noRole': 'Dasbor membutuhkan peran internal di sebuah organisasi. Minta pemilik atau admin organisasi untuk mengundang Anda.',
+	'gate.appAdmin': 'Anda admin platform tetapi belum menjadi anggota organisasi mana pun. Buat organisasi (Anda otomatis menjadi pemiliknya) atau minta ditambahkan ke salah satunya.',
+
 	'action.retry': 'Coba lagi',
 	'action.viewAll': 'Lihat semua',
 

@@ -7,6 +7,7 @@ import type { TTx } from '@drizzle/types';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
+import { fillCashFlowSummary } from '../utils/cash-flow-summary';
 import { FINANCE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { FinanceNumberingService } from './finance-numbering.service';
 import {
@@ -25,6 +26,7 @@ import {
 import type {
 	ICashBankRepository,
 	TCashBankTransactionPaginationRequest,
+	TCashFlowSummary,
 } from '../contracts/cash-bank.repository.interface';
 import type { IBankAccountLinkRepository } from '../contracts/bank-account-link.repository.interface';
 
@@ -268,6 +270,18 @@ export class CashBankService {
 			return movement;
 		};
 		return outerTx ? run(outerTx) : this.database.transaction(run);
+	}
+
+	/**
+	 * Cash in/out over a window for the dashboard (M01, ERP-0113): posted
+	 * movements of every cash/bank account of the tenant, zero-filled per period.
+	 */
+	async summary(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TCashFlowSummary> {
+		const rows = await this.cashAccounts.summarizeTransactions(organizationId, range);
+		return fillCashFlowSummary(range, rows);
 	}
 
 	/** Fetches one page of cash/bank movements, optionally of one account. */

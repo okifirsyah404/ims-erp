@@ -9,6 +9,28 @@ export type TCashBankTransactionPaginationRequest = TPaginationRequest & {
 	cashBankAccountId?: string;
 };
 
+/** One period of the cash in/out aggregate (M01 dashboard, ERP-0113). */
+export type TCashFlowSummaryBucket = {
+	/** `YYYY-MM` for month buckets, `YYYY-MM-DD` for day buckets. */
+	period: string;
+	/** Posted inflows, IDR minor units. */
+	totalIn: number;
+	/** Posted outflows, IDR minor units (positive). */
+	totalOut: number;
+};
+
+/** Cash in/out over a window: zero-filled buckets plus their totals. */
+export type TCashFlowSummary = {
+	from: string;
+	to: string;
+	groupBy: 'month' | 'day';
+	totalIn: number;
+	totalOut: number;
+	/** `totalIn - totalOut`. */
+	net: number;
+	buckets: TCashFlowSummaryBucket[];
+};
+
 export interface ICashBankRepository {
 	findCashBankAccountByCode(
 		organizationId: string,
@@ -69,6 +91,14 @@ export interface ICashBankRepository {
 	paginateTransactions(
 		request: TCashBankTransactionPaginationRequest,
 	): Promise<TPaginationResult<TCashBankTransactionSelect>>;
+	/**
+	 * Posted cash in/out per period for a window (business dates, inclusive),
+	 * excluding opening balances. Returns only the periods that have rows.
+	 */
+	summarizeTransactions(
+		organizationId: string,
+		range: { from: string; to: string; groupBy: 'month' | 'day' },
+	): Promise<TCashFlowSummaryBucket[]>;
 	/** Balance recomputed from the posted movements (tests and ops). */
 	cashBankAccountBalance(organizationId: string, id: string): Promise<number>;
 }

@@ -12,6 +12,113 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0113: dashboard income/outcome summary, role-aware sections, role-permission doc
+
+**Owner request** (grill-me, 12 decisions, all accepted; Q4/Q7 settled as "the
+creator of an organization is its owner, nothing new"): improve the `/`
+dashboard, add an income and outcome summary, fit it to app and organization
+roles, and document roles, permissions and reachable endpoints in
+`docs/role-permission.md` (path moved from `docs/plan/` by the owner).
+
+Design gate (Gate 2, manual `grilling` pass): ownership = `finance` (cash/bank
+ledger); tenant scope = `organization_id` from the guard; soft delete =
+`deleted_at IS NULL`; money = integer IDR minor units, returned exact; dates =
+Jakarta business dates on `transaction_date`; no cross-module reference; status
+vocabulary unchanged (`posted` only counts). Gate 1: read
+`docs.dbml` (`finance.cash_bank_transactions`), `module-ownership.md`; skipped
+`logical-references.md` and `implementation-phases.md` (no new cross-module
+link, no schema change).
+
+Delivered:
+- Backend `finance`: `GET /finance/cash-bank-transactions/summary?from&to&groupBy=day|month`
+  behind `cash_bank:read` -> `{ totalIn, totalOut, net, buckets[] }`. Cash basis:
+  posted movements of every cash/bank account, opening balances
+  (`source_type = 'opening_balance'`) excluded, zero-filled buckets
+  (`CashBankRepository.summarizeTransactions`, `CashBankService.summary`,
+  `utils/cash-flow-summary.ts`). The period-key helper moved from
+  `sale/utils/invoice-summary.ts` to `src/utils/period-keys.util.ts` (re-exported
+  by sale, no behaviour change) so finance does not import sale internals.
+- Web admin `/`: no page header (owner follow-up the same day removed the
+  greeting, role badges, "figures as of" line and the Refresh button; an
+  `sr-only` h1 stays for screen readers). Every dashboard query refetches
+  silently each minute, also while the tab is in the background
+  (`refetchIntervalInBackground: true`, test in `dashboard-api.test.ts`).
+  Both charts (invoiced sales, income vs outcome) are line charts (second
+  follow-up the same day; browser: three line series, no bars, no console
+  errors).
+  Mobile and tablet (third follow-up): the dashboard grids use container
+  queries on `@container/dashboard` instead of viewport breakpoints, because on
+  a 768 px tablet the open sidebar leaves ~500 px and the page used to widen to
+  848 px. Small cards go two per row from 448 px of content, KPIs three per row
+  from 672 px, operations four per row from 1024 px; chart range controls sit
+  under the title below 768 px of content; charts are 224 px tall when narrow;
+  widget links read "View all" (target in `aria-label`); figure rows wrap;
+  quick links are 40 px touch targets. `SidebarInset` in
+  `components/layout/main-layout.tsx` got `min-w-0` (app-wide: content can no
+  longer widen the page past the viewport). Browser: 375 px page width 375 with
+  0 elements past the edge; 768 px page width 753 (was 848), height 2 540 (was
+  3 085); 1440 px KPIs 3, operations 4 columns.
+  Sections: Financial summary (Income / Outcome / Net KPI cards, month to date vs
+  the same days last month, coloured change; income-vs-outcome bar chart with
+  its own 14 d...5 y / custom range; Cash & Bank; Profit), Operations (sales
+  chart, sales, inventory, projects, subscriptions) and Activity (recent
+  activity, quick links). A card renders only when the caller's roles grant its
+  source permission (`usePermissionState`, new) and an empty section is
+  omitted; quick links are filtered the same way. A user without an internal
+  role gets an explanation instead of a blank page (an app admin without
+  membership is pointed at `/organizations`). Chart range controls stack under
+  the title on phones. New: `components/dashboard/{dashboard-shared,cash-flow-summary}.tsx`,
+  `lib/use-chart-range.ts`; `deltaPercent` / `bucketLabel` moved to
+  `lib/dashboard-api.ts` with tests. Locale keys `dashboard:{section.*,kpi.*,cashFlowChart.*,empty.noWidgets.*,gate.*}` added; `subtitle`, `action.refresh` removed (en + id).
+- `docs/role-permission.md`: hand-written app vs organization roles, sign-in
+  surfaces, guard options, routes with no guard macro; generated role list,
+  grants per role, app-role grants and all 628 controller routes with guard,
+  requirement and the roles that pass. Generator `docs/gen-role-permission.ts`
+  (TypeScript AST over the controllers + `erp-permissions.ts`; 0 unresolved
+  routes).
+
+Finding: the organization `admin` role holds no `cash_bank` or
+`financial_report` grant (by design in `erpRoleGrants`: "no payment execution,
+accounting"), so the financial section shows for `owner`, `finance`,
+`accountant` and `auditor`, not for an org admin. The grill answer Q10 assumed
+admin was included; grants were left unchanged. `security-and-access.md` still
+says "19 `erpRoleNames`" while the catalog has 17 (not changed here).
+
+Commands (worktree `dashboard-role-permissions-18d37b`; `bun install` was needed
+first because the worktree had no `node_modules` and resolved `@ims-erp/*` from
+the main checkout - lockfile unchanged):
+- `bun run lint` -> 5/5 tasks, 0 errors (warnings pre-existing).
+- `bun run test` -> 7/7 tasks: backend 1357 pass, web-admin 188 (189 after the
+  follow-up), locales 106,
+  web-customer-portal 68, web-landing 25, react-email 6; 0 fail.
+- `apps/backend: bun run typecheck` -> 0 errors;
+  `apps/web-admin: bunx tsc -p tsconfig.app.json --noEmit` -> 0 errors.
+- `bun docs/database/validate-dbml.ts` -> OK. `docs/database/` reviewed and
+  unchanged (no table, column, index, link or vocabulary change).
+- `bun docs/gen-role-permission.ts` -> 628 routes written, 0 unresolved.
+- Summary SQL on the local PostgreSQL inside a rolled-back transaction (probe
+  rows: posted in/out, draft, reversed, opening balance, previous month, after
+  the window, another organization): month buckets 2026-10 in 400 000,
+  2026-11 in 1 000 000 / out 250 000, net 1 150 000; draft, reversed, opening
+  balance, out-of-window and other-organization rows excluded; 0 rows left.
+- Browser (worktree backend :3011 + web admin :5184, seed accounts): finance
+  sees all three sections, the three summary requests 200; technician sees only
+  Projects + its quick link and no finance request is made; desktop and
+  375 px checked, no horizontal scroll. The local database has no cash
+  movements, so every figure displayed Rp 0.
+
+Not done: no screenshot with non-zero cash data; org `admin` / `owner` paths
+not walked in the browser (the owner seed account does not exist); not reviewed.
+
+Renumbered from ERP-0111 to ERP-0113 when merging `main` (ERP-0111 and
+ERP-0112 were taken there by the account pages and the last-login badge).
+After the merge: `bun run lint` 0 errors; `bun run test` 7/7 (backend 1380,
+web-admin 209, locales 106, portal 68, landing 25, react-email 6); backend and
+web-admin `tsc` 0 errors; `validate-dbml` OK; `gen-role-permission.ts`
+regenerated (628 routes, 0 unresolved).
+
+Next executable task: unchanged - the ERP-0112 browser check below, then the
+ERP-0111 Google walk-through.
 ## 2026-11-23 - ERP-0112: last used login method badge on /login
 
 User request: apply Better Auth's `lastLoginMethod` in the web admin.
