@@ -705,6 +705,14 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M07 Projects and After-Sales
 
 ### implemented
+- ERP-0108 M07 sidebar restructure (2026-11-22): section renamed to Projects;
+  Tickets (/tickets) and Warranty (/warranties) are top-level items with the
+  warranty certificate list behind GET /warranties (pagination + project
+  visibility); /projects/tickets/* routes moved to /_authed/tickets/*; the
+  standalone BAST list page is removed (BAST lives in the project detail).
+  Evidence: components/sidebar/nav-config.ts, outes/_authed/tickets/,
+  outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
+  progress.md 2026-11-22.
 - ERP-0094 portal session cookie + customer-only portal (2026-11-21, port of
   branch ERP-0069, ADR-0027): `/customers/portal/v1` sign-in and sign-up
   verification answer `Set-Cookie` with Better Auth's session cookie (no

@@ -16,10 +16,16 @@ import type { SalesFulfilmentService } from '@app/sale/services/sales-fulfilment
 import { isUniqueViolation } from '@drizzle/errors';
 import type { TWarrantySelect } from '@drizzle/schemas/project.schema';
 import type { TDocumentItem } from '@drizzle/schemas/project.schema';
+import type { TPaginationResult } from '@ims-erp/common';
 import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
 import { WARRANTY_REPOSITORY_TOKEN } from '../constants/di';
-import type { IWarrantyRepository, TWarrantyBodyRequest } from '../contracts/warranty.contract';
+import type {
+	IWarrantyRepository,
+	TWarrantyBodyRequest,
+	TWarrantyListQuery,
+	TWarrantyRow,
+} from '../contracts/warranty.contract';
 import { WarrantyBastRequiredError, WarrantyExistsError, WarrantyProjectCancelledError } from '../errors/warranty.errors';
 import {
 	DEFAULT_WARRANTY_COVERAGE,
@@ -75,6 +81,11 @@ export class WarrantyService {
 	async get(ctx: TProjectContext, projectId: string): Promise<TWarrantySelect | null> {
 		await this.projects.requireProject(ctx, projectId);
 		return this.certificates.findByProject(projectId);
+	}
+
+	/** Certificates across the projects visible to the caller. */
+	list(ctx: TProjectContext, query: TWarrantyListQuery): Promise<TPaginationResult<TWarrantyRow>> {
+		return this.certificates.paginate({ ...query, involvedUserId: ctx.canViewAll ? undefined : ctx.actorUserId });
 	}
 
 	/** Prefilled fields: shipped devices with their serials, the profile's texts. */

@@ -4,7 +4,7 @@ import { currentLanguage } from '@/i18n';
 
 /**
  * API client for BAST documents (`/projects/:id/basts`) and warranty
- * certificates (`/projects/warranties/projects/:projectId`), ADR-0011
+ * certificates (`/warranties/projects/:projectId`), ADR-0011
  * step 6b.
  */
 
@@ -121,16 +121,32 @@ export const cancelBast = (projectId: string, bastId: string) => send<TBast>(`/p
 export function warrantyQueryOptions(projectId: string) {
 	return queryOptions({
 		queryKey: ['projects', 'detail', projectId, 'warranty'] as const,
-		queryFn: async () => ((await request<TWarranty | null>(`/projects/warranties/projects/${projectId}`)).data ?? null) as TWarranty | null,
+		queryFn: async () => ((await request<TWarranty | null>(`/warranties/projects/${projectId}`)).data ?? null) as TWarranty | null,
 	});
 }
 
 export function warrantyDraftQueryOptions(projectId: string) {
 	return queryOptions({
 		queryKey: ['projects', 'detail', projectId, 'warranty-draft'] as const,
-		queryFn: async () => (await request<TWarrantyDraft>(`/projects/warranties/projects/${projectId}/draft`)).data as TWarrantyDraft,
+		queryFn: async () => (await request<TWarrantyDraft>(`/warranties/projects/${projectId}/draft`)).data as TWarrantyDraft,
 		staleTime: 0,
 	});
 }
 
-export const saveWarranty = (projectId: string, input: TWarrantyInput) => send<TWarranty>(`/projects/warranties/projects/${projectId}`, 'PUT', input);
+export const saveWarranty = (projectId: string, input: TWarrantyInput) => send<TWarranty>(`/warranties/projects/${projectId}`, 'PUT', input);
+
+/** A certificate as listed across projects (`GET /warranties`). */
+export type TWarrantyRow = TWarranty & { projectCode: string; customerName: string; issueDate: string; months: number };
+
+export function warrantiesQueryOptions(params: { page?: number; search?: string }) {
+	return queryOptions({
+		queryKey: ['warranties', 'list', params] as const,
+		queryFn: async () => {
+			const search = new URLSearchParams();
+			if (params.page) search.set('page', String(params.page));
+			if (params.search) search.set('search', params.search);
+			const envelope = (await request<TWarrantyRow[]>(`/warranties${search.size ? `?${search}` : ''}`)) as TApiPaginatedResponse<TWarrantyRow>;
+			return { rows: envelope.data, pagination: envelope.pagination };
+		},
+	});
+}

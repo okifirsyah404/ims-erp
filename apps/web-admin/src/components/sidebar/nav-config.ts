@@ -22,6 +22,8 @@ import {
 	Scale,
 	ScrollText,
 	Settings,
+	ShieldCheck,
+	Ticket,
 	Toolbox,
 	Truck,
 	Users,
@@ -355,7 +357,7 @@ export const navSections: {
 		],
 	},
 
-	// M07 — Projects & After-sales.
+	// M07 — Projects.
 	{
 		labelKey: 'section.projects',
 		items: [
@@ -363,15 +365,19 @@ export const navSections: {
 				titleKey: 'item.projects',
 				url: '/projects',
 				icon: FileCheck2,
-				items: [
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.bast', url: '/projects/bast' },
-					{
-						titleKey: 'item.tickets',
-						url: '/projects/tickets',
-						permission: 'service_ticket.read',
-					},
-				],
+				permission: 'project.read',
+			},
+			{
+				titleKey: 'item.tickets',
+				url: '/tickets',
+				icon: Ticket,
+				permission: 'service_ticket.read',
+			},
+			{
+				titleKey: 'item.warranty',
+				url: '/warranties',
+				icon: ShieldCheck,
+				permission: 'project.read',
 			},
 		],
 	},
