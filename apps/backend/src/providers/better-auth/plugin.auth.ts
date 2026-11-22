@@ -11,6 +11,7 @@ import { betterAuthOrganizationPlugin } from './plugins/organization.auth.js';
 import { betterAuthPasskeyPlugin } from './plugins/passkey.auth.js';
 import { betterAuthUsernamePlugin } from './plugins/username.auth.js';
 import { betterAuthEmailIdentifierPlugin } from './plugins/identifier.auth.js';
+import { betterAuthLastLoginMethodPlugin } from './plugins/last-login-method.auth.js';
 
 export const betterAuthPlugins = [
   betterAuthOpenAPIPlugin,
@@ -23,5 +24,6 @@ export const betterAuthPlugins = [
   betterAuthPasskeyPlugin,
   betterAuthMagicLinkPlugin,
   betterAuthApiKeyPlugin,
+  betterAuthLastLoginMethodPlugin,
   betterAuthI18nPlugin,
 ] as const satisfies BetterAuthPlugin[];

@@ -8,7 +8,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from '@ims-erp/ui/components/empty';
-import { CircleAlert, type LucideIcon } from 'lucide-react';
+import { CircleAlert, Inbox, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -25,10 +25,12 @@ import { useTranslation } from 'react-i18next';
  * - `bordered` adds the doc's outline variant. Standalone section states pass
  *   it; a state already sitting inside a `Card` or a data-table frame does not.
  *
- * `icon` is optional: a plain sentence ("No invoices yet") does not need one.
+ * `icon` defaults to {@link Inbox}: an empty state always shows a mark, never
+ * bare text. Pass a more specific icon (`SearchX` for "not found",
+ * `MonitorOff` for "no sessions") when it reads better.
  */
 export function EmptyState({
-	icon: Icon,
+	icon: Icon = Inbox,
 	title,
 	description,
 	action,
@@ -37,7 +39,7 @@ export function EmptyState({
 	bordered = false,
 	className,
 }: {
-	/** Icon shown in a muted square tile. Omit for text-only states. */
+	/** Icon shown in a muted square tile; defaults to `Inbox`. */
 	icon?: LucideIcon;
 	/** Primary one-liner, e.g. "No warehouses yet". */
 	title: ReactNode;

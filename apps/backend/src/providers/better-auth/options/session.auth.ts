@@ -4,7 +4,13 @@ import { drizzleDB } from '../../../../drizzle/db';
 import { members, users } from '../../../../drizzle/schemas/auth.schema';
 import { customers } from '../../../../drizzle/schemas/customer.schema';
 import { and, asc, eq, isNull } from 'drizzle-orm';
-import { hasInternalOrgRole, isWebAdminAllowed } from '../ac/login-gate';
+import {
+	ACCOUNT_NOT_ACTIVE,
+	WEB_ADMIN_ACCESS_DENIED,
+	hasInternalOrgRole,
+	webAdminDenial,
+} from '../ac/login-gate';
+import { translateForRequest } from '@providers/i18n/translator';
 import { PORTAL_SIGNIN_HEADER, PORTAL_SIGNIN_NONCE } from '../portal-signin';
 
 type SessionCreateBefore = NonNullable<
@@ -36,28 +42,49 @@ export async function loadMembershipsForGate(userId: string) {
 		.orderBy(asc(members.createdAt));
 }
 
+/** Translation key per gate denial code (`api` namespace). */
+const DENIAL_MESSAGE_KEY = {
+	[ACCOUNT_NOT_ACTIVE]: 'auth.accountNotActive',
+	[WEB_ADMIN_ACCESS_DENIED]: 'auth.webAdminAccessDenied',
+} as const;
+
 /**
- * Rejects a session for a user who is neither an application admin nor a
- * holder of an internal organization role.
+ * Rejects a session for an inactive account (pending invitation,
+ * deactivated, soft-deleted — ERP-0111) or for a user who is neither an
+ * application admin nor a holder of an internal organization role.
+ *
+ * @remarks
+ * The error carries a `code`: Better Auth's OAuth callback turns a coded
+ * `APIError` into `?error=<code>` on the error callback URL (otherwise the
+ * browser lands on a raw JSON error at the API origin), and the password
+ * form receives it as `error.code`.
  *
  * @param userId - The user to check
- * @throws {APIError} FORBIDDEN when the gate is closed
+ * @param headers - Request headers, for the message language
+ * @throws {APIError} FORBIDDEN with `ACCOUNT_NOT_ACTIVE` or
+ * `WEB_ADMIN_ACCESS_DENIED`
  */
-export async function assertWebAdminAllowed(userId: string): Promise<void> {
+export async function assertWebAdminAllowed(
+	userId: string,
+	headers?: Headers,
+): Promise<void> {
 	const [user] = await drizzleDB
-		.select({ role: users.role })
+		.select({ role: users.role, status: users.status, deletedAt: users.deletedAt })
 		.from(users)
 		.where(eq(users.id, userId))
 		.limit(1);
 	const memberships = await loadMembershipsForGate(userId);
-	if (
-		!isWebAdminAllowed({
-			userRole: user?.role,
-			memberRoles: memberships.map((m) => m.role),
-		})
-	) {
+	const denial = webAdminDenial({
+		userRole: user?.role,
+		memberRoles: memberships.map((m) => m.role),
+		// A missing row is never a valid account.
+		status: user ? user.status : 'missing',
+		deletedAt: user?.deletedAt,
+	});
+	if (denial) {
 		throw new APIError('FORBIDDEN', {
-			message: 'Web-admin access requires an internal organization role',
+			code: denial,
+			message: translateForRequest(DENIAL_MESSAGE_KEY[denial], headers),
 		});
 	}
 }
@@ -85,9 +112,14 @@ export async function isWebAdminSessionAllowed(userId: string): Promise<boolean>
  * only; it never gets an organization, and `sessionGuard` / `erpGuard` keep
  * refusing it on every web-admin route through the login gate.
  */
-async function isPortalSignIn(userId: string, context: unknown): Promise<boolean> {
+/** Headers of the Better Auth endpoint context, when there is a request. */
+function requestHeaders(context: unknown): Headers | undefined {
 	const request = context as { headers?: Headers; request?: Request } | null | undefined;
-	const headers = request?.headers ?? request?.request?.headers;
+	return request?.headers ?? request?.request?.headers;
+}
+
+async function isPortalSignIn(userId: string, context: unknown): Promise<boolean> {
+	const headers = requestHeaders(context);
 	if (headers?.get(PORTAL_SIGNIN_HEADER) !== PORTAL_SIGNIN_NONCE) return false;
 	const [identity] = await drizzleDB
 		.select({ id: customers.id })
@@ -122,7 +154,7 @@ export const sessionAutoActivateOrganizationHook: SessionCreateBefore = async (
 ) => {
 	// The customer portal's sign-in passes the gate, without an organization.
 	if (await isPortalSignIn(session.userId, context)) return;
-	await assertWebAdminAllowed(session.userId);
+	await assertWebAdminAllowed(session.userId, requestHeaders(context));
 	if (session.activeOrganizationId) return;
 	const memberships = await loadMembershipsForGate(session.userId);
 	const internal = memberships.find((m) => hasInternalOrgRole(m.role));

@@ -12,6 +12,231 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0112: last used login method badge on /login
+
+User request: apply Better Auth's `lastLoginMethod` in the web admin.
+Decisions (plan-mode round): **cookie only** (`storeInDatabase` off — no
+`auth.users` column, no migration, `docs/database/` unchanged); production
+cookie scope is an open decision (dev ports and one origin work; separate
+subdomains need `advanced.crossSubDomainCookies`), recorded below.
+
+**Backend.** `plugins/last-login-method.auth.ts`:
+`lastLoginMethod({ customResolveMethod })` with the pure
+`resolveLoginMethodOverride` mapping `/sign-in/username` to `username`
+(the library default does not know that endpoint, and the login form uses it
+for non-email identifiers); every other path returns `null` so Better Auth's
+own mapping applies (`email`, the OAuth callback's provider id, `passkey`,
+`magic-link`, `email-otp`). Registered in `plugin.auth.ts`. Cookie:
+`better-auth.last_used_login_method`, `httpOnly: false`, 30 days, written
+only when a session cookie is set.
+
+**Web-admin.** `lib/auth-client.ts` adds `lastLoginMethodClient()`;
+`lib/last-login.ts` validates the client-writable cookie against
+`LAST_LOGIN_METHODS` (`parseLastLoginMethod`, `readLastLoginMethod`,
+`clearLastLoginMethodIf`); `login-form.tsx` badges "Last used" next to the
+Login button (`email`/`username`) or on the Google button, which is also
+promoted to the default variant when it was the last method;
+`connected-accounts-card.tsx` clears the cookie when Google is disconnected so
+the badge never points at a removed method. Locale key
+`auth:login.lastUsed` in en + id.
+
+**Tests.** Backend `test/unit/last-login-method.auth.test.ts` (2),
+web-admin `test/unit/last-login.test.ts` (2, incl. unknown/injected values).
+
+**Commands (2026-11-23, repo root unless noted):**
+- `bun run lint` -> 5/5 tasks, 0 errors (warning counts unchanged)
+- `bun run test` -> 7/7; backend 1357, web-admin 191, locales 106,
+  web-customer-portal 68, web-landing 25, react-email 6, 0 fail
+- `bun run typecheck` -> 6/6; `apps/web-admin: bunx tsc -p tsconfig.app.json
+  --noEmit` -> 0 errors
+- Live against the running dev backend (script outside the repo, HTTP only):
+  3/3 — `/sign-in/email` sets the cookie to `email`, `/sign-in/username`
+  sets `username`, a wrong password (401) sets nothing. Sessions signed out
+  afterwards.
+
+Not run: the badge in a browser (cookie is read on the web origin; the dev
+ports share `localhost`, so it applies) and a Google round trip.
+
+Next executable task: browser check of the badge on `/login` for email,
+username and Google; decide the production cookie scope at deploy time
+(`advanced.crossSubDomainCookies` if web and API live on different
+subdomains), then the ERP-0111 Google walk-through below.
+
+## 2026-11-21 - ERP-0111: account settings on one page, profile editor, email verification, Google linking
+
+User request: improve `/profiles`, `/profiles/edit` and `/account`. Decisions
+taken in the plan-mode session: one `/accounts` page of cards instead of the
+`/account`, `/account/email`, `/account/sessions` tabs; `/profiles` opens the
+editor directly (detail view removed); username moves to account settings;
+the photo uses the `/organizations/new` dropzone and uploads on Save; bio is a
+textarea; Google can be linked only with the same email (Better Auth default);
+change-email mails the new address only (no old-address confirmation);
+verification is not required to sign in; spacing tightened at page level,
+`packages/ui` defaults untouched. No redirects from the removed routes
+(nothing deployed).
+
+**Gates.** No table, column or cross-module reference changes, so
+`docs/database/` was reviewed and is unchanged (only `auth.users` /
+`auth.accounts` rows owned by Better Auth are read and written through its
+API). The design was settled in the plan-mode question rounds instead of the
+`grill-me` skill; the answers above are the record.
+
+**Backend (`providers/better-auth`, options only).**
+- `options/change-email.auth.ts`: `user.changeEmail.enabled: true`. Before
+  this, Better Auth answered every `/change-email` with
+  `CHANGE_EMAIL_DISABLED`, so the web email form had never worked.
+- `options/email-verification-policy.auth.ts`: `expiresIn: 3600`,
+  `autoSignInAfterVerification: false`, spread into the verification options.
+- `options/user-cache.auth.ts` + `databaseHooks.user.update.after`: evicts
+  `user:id:<id>` and `user:all`. Better Auth writes `auth.users` itself
+  (update-user, admin API, verify-email, change-email), bypassing
+  `UserRepository`'s cache, so `GET /users/me` served the old bio / username
+  / email / verification state for up to `USER_CACHE_TTL_SECONDS` (300 s).
+  Found during the browser check: a saved bio was not shown back.
+- Test: `test/unit/email-change-verification.auth.test.ts` (7, no module
+  mocks: Bun's `mock.module` would leak into `mailer.test.ts`).
+
+**Frontend (web-admin).**
+- Routes: `_authed.accounts.tsx` (validated search
+  `section/verified/linked/error`, reads the Better Auth return once, clears
+  it with `resetScroll: false`, scrolls to the card) and `_authed.profiles.tsx`;
+  removed `_authed.account*.tsx`, `_authed.profiles.{index,edit}.tsx`,
+  `profile-view.tsx`, unused `profile/sessions-table.tsx`.
+  `routeTree.gen.ts` regenerated by `vite build`. Nav user menu -> `/accounts`.
+- Cards: `username-card.tsx` (live `/username-availability`, derived state),
+  `email-card.tsx` (status badge, send verification with 60 s cooldown, link
+  outcome alert, change-email with pending note and same-address guard),
+  `connected-accounts-card.tsx` (`listAccounts` / `linkSocial` /
+  `unlinkAccount` by account row id; last sign-in method cannot be
+  unlinked), `password-card.tsx` (change form, or a password-setup link via
+  `requestPasswordReset` for provider-only users — Better Auth's reset creates
+  the missing credential account), `sessions-table.tsx` (compact, bulk revoke
+  in the header, truncated user agent).
+- `profile-edit-form.tsx`: dropzone photo, name, bio textarea with counter
+  (empty bio is now sent, so it can be cleared), read-only username/email
+  with a link to `/accounts`, Discard + Save.
+- Shared: `components/image-dropzone.tsx` (moved from `organization/`),
+  `components/icons/google-icon.tsx` (from the login form),
+  `lib/account-search.ts` (callback URLs, outcome parsing; absolute and
+  hash-free because Better Auth appends `error` to the callback string),
+  `lib/account-api.ts`. Test: `test/unit/account-search.test.ts` (9).
+
+**Locales.** `account` namespace rewritten in en + id (`page.*`,
+`username.*`, `connected.*`, new `email.*` / `password.*` / `profile.*`
+keys; `tab.*` and the old profile view/edit keys removed);
+`account:connected.google` allowed identical (brand).
+
+**Commands (all run 2026-11-21, repo root unless noted):**
+- `bun run lint` -> 5/5 tasks, 0 errors (web-admin 16 warnings, backend 23,
+  ui 19; none in touched files)
+- `bun run test` -> 7/7 tasks; backend 1322 pass, web-admin 153, locales 106,
+  web-customer-portal 60, web-landing 24, react-email 6, 0 fail
+- `bun run typecheck` -> 6/6; `apps/web-admin: bunx tsc -p tsconfig.app.json
+  --noEmit` -> 0 errors; `apps/web-admin: bunx --bun vite build` -> built
+- In-process Better Auth E2E against the dev DB (script outside the repo,
+  `auth.handler` called directly, mail transport disabled in `appConfig` so
+  nothing was enqueued for the running dev server's SMTP worker): 11/11 —
+  credential account listed; send-verification 200; invalid link -> 302
+  `…/accounts?section=email&verified=1&error=INVALID_TOKEN`; expired ->
+  `&error=TOKEN_EXPIRED`; valid -> 302 to the callback and `emailVerified`
+  true; change-email 200 without touching the stored email; new-address link
+  swaps the email and verifies it; same email -> 400; `admin.seed` restored.
+- Browser (separate Firefox profile, `admin.seed`): `/profiles` renders the
+  editor; `/accounts?section=email&verified=1&error=TOKEN_EXPIRED` shows the
+  expired alert and the URL becomes `/accounts`; `?section=connected&error=
+  email_does_not_match` shows the mismatch alert and scrolls to the card;
+  username shows taken / available / invalid / own correctly; bio cleared and
+  restored through `PATCH /users/me` and read back fresh after the cache fix.
+
+Not done: Google link/unlink round trip (needs a real Google account on the
+configured OAuth client); no real verification email sent (the dev SMTP is
+external); username save not exercised in the browser (unchanged
+`PATCH /users/me` path). `docs/database/` reviewed, unchanged.
+
+### Follow-up: `/login` hardening, invitation-only Google sign-in (ADR-0029)
+
+User request: a Google sign-in for someone who was not invited must not get
+in. Findings before the change: an unknown Google email **created** an
+`auth.users` row (Better Auth social sign-up default); a pending invitee
+(pre-created with `emailVerified: true`) was implicitly linked and, if
+invited as application admin, passed the role-only gate without claiming;
+no sign-in path read `status`/`deletedAt`, so a deactivated user could sign
+in again; the web Google callback was relative (landed on the API origin)
+and gate refusals showed as raw JSON there.
+
+- Backend: `options/social-providers.auth.ts` `buildSocialProviders` with
+  `disableSignUp: true`; `ac/login-gate.ts` `isAccountActive` +
+  `webAdminDenial` (codes `ACCOUNT_NOT_ACTIVE`, `WEB_ADMIN_ACCESS_DENIED`);
+  `session.auth.ts` gate reads `status`/`deletedAt`, throws coded errors
+  translated from the request language (`api` keys `auth.accountNotActive`,
+  `auth.webAdminAccessDenied`); `options/account-link.auth.ts`
+  `databaseHooks.account.create.before` refuses a social account for an
+  inactive or missing owner (`credential` exempt for the claim).
+- Web: `lib/login-error.ts` (`loginErrorKey`, `sameOriginUrl`,
+  `loginErrorCallbackUrl`); `login-form.tsx` sends absolute same-origin
+  `callbackURL` + `errorCallbackURL`; `/login` validates `error`, shows the
+  mapped `auth` message once and clears it (`redirect` kept).
+- Docs: ADR-0029 (amends the ADR-0017/0018 login gate),
+  `security-and-access.md` "Sign-in" section and cache note.
+
+**Commands (2026-11-21):**
+- `apps/backend: bun test test/unit/login-gate.test.ts
+  test/unit/google-login-hardening.auth.test.ts
+  test/authorization/login-gate.guard.test.ts` -> 28 pass (then 8 for the new
+  file after a type fix)
+- `bun run lint` -> 5/5, 0 errors (warning counts unchanged: web-admin 16,
+  backend 23, ui 19); `bun run test` -> 7/7; backend 1336, web-admin 158,
+  locales 106, web-customer-portal 60, web-landing 24, react-email 6, 0 fail;
+  `bun run typecheck` 6/6; web-admin `tsc` 0 errors; `vite build` ok
+- In-process E2E against the dev DB (script outside the repo, Better Auth's
+  exported `handleOAuthUserInfo` = the callback step after Google's token
+  exchange, with the configured provider's `disableSignUp`; mail disabled):
+  14/14 — provider has sign-up disabled; unknown email -> `signup disabled`
+  and no row; active + unverified local email -> `account not linked`, no
+  link; pending and deactivated -> `ACCOUNT_NOT_ACTIVE`, no Google row, and
+  password sign-in 403 `ACCOUNT_NOT_ACTIVE` with the Indonesian message;
+  active invited account -> session + link; password sign-in still 200;
+  `admin.seed` status/emailVerified restored, the test Google row and the
+  two test sessions removed.
+
+Not run: a real Google round trip (consent screen) and the `/login` error
+rendering in a browser (the browser tools were withdrawn from the session
+mid-task); both are covered only by unit tests and the in-process run.
+
+### Merge of `main` (2026-11-22)
+
+`git merge main` (main was 27 commits ahead) conflicted in 5 paths, all
+resolved:
+
+- `components/account/sessions-table.tsx`: took main's `DataTable`/`RowActions`
+  refactor and kept this branch's `id` prop, the revoke-all button in
+  `CardAction`, and the truncated user agent (with `title`).
+- `routeTree.gen.ts`: regenerated by `vite build`.
+- `routes/_authed/organizations/new.tsx`: deleted in `main` (creation is a
+  dialog now); this branch only changed an import there, so the deletion
+  stands.
+- `docs/plan/backlog.md`, `docs/plan/progress.md`: both sides kept.
+- `components/image-dropzone.tsx`: this branch's rename merged with main's
+  hardening; the four main-side importers (`asset-form`, `item-form`,
+  `warehouse-form`, `create-organization-dialog`) were re-pointed to
+  `@/components/image-dropzone`.
+- IDs renumbered because `main` took them: ERP-0107 -> **ERP-0111**,
+  ADR-0027 -> **ADR-0029** (ADR-0028 is reserved for the website module).
+- `EmptyState` now defaults to the `Inbox` icon so no empty state is text-only
+  (the sessions card passes `MonitorOff`); `states.test.tsx` updated to match.
+
+Commands after the merge: `bun run lint` -> 5/5 tasks, 0 errors;
+`bun run test` -> 7/7 (backend 1355, web-admin 189, locales 106,
+web-customer-portal 68, web-landing 25, react-email 6, 0 fail);
+`bun run typecheck` -> 6/6; web-admin `tsc` -> 0 errors; `vite build` ok;
+`bun docs/database/validate-dbml.ts` -> OK (no schema change).
+
+Next executable task: owner walk-through with a real Google account: an
+uninvited Google address on `/login` (expect "not registered"), a pending
+invitee (expect "not active"), an active user linking Google on `/accounts`
+then signing in with it; then a real verification email on a mailbox the team
+controls; after that, the ERP-0092 browser walk-through below.
+
 ## 2026-11-23 - Product create/edit form split into sections
 
 `ItemForm` is now organised in sections instead of one long field list: Identity

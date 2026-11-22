@@ -11,16 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
-import { Route as AuthedAccountRouteImport } from './routes/_authed.account'
+import { Route as AuthedAccountsRouteImport } from './routes/_authed.accounts'
 import { Route as AuthedAdminRouteImport } from './routes/_authed/admin'
 import { Route as AuthedProfilesRouteImport } from './routes/_authed.profiles'
 import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as ResetPasswordIndexRouteImport } from './routes/reset-password/index'
-import { Route as AuthedAccountIndexRouteImport } from './routes/_authed.account.index'
-import { Route as AuthedAccountEmailRouteImport } from './routes/_authed.account.email'
-import { Route as AuthedAccountSessionsRouteImport } from './routes/_authed.account.sessions'
 import { Route as AuthedAssetsIndexRouteImport } from './routes/_authed/assets/index'
 import { Route as AuthedCrmIndexRouteImport } from './routes/_authed/crm/index'
 import { Route as AuthedDocumentsIndexRouteImport } from './routes/_authed/documents/index'
@@ -32,8 +29,6 @@ import { Route as AuthedOrganizationsOrganizationIdRouteImport } from './routes/
 import { Route as AuthedProcurementIndexRouteImport } from './routes/_authed/procurement/index'
 import { Route as AuthedProductCategoriesIndexRouteImport } from './routes/_authed/product-categories/index'
 import { Route as AuthedProductsIndexRouteImport } from './routes/_authed/products/index'
-import { Route as AuthedProfilesIndexRouteImport } from './routes/_authed.profiles.index'
-import { Route as AuthedProfilesEditRouteImport } from './routes/_authed.profiles.edit'
 import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed/projects/index'
 import { Route as AuthedProjectsNewRouteImport } from './routes/_authed/projects/new'
 import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports/index'
@@ -183,9 +178,9 @@ const AuthedIndexRoute = AuthedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedAccountRoute = AuthedAccountRouteImport.update({
-  id: '/account',
-  path: '/account',
+const AuthedAccountsRoute = AuthedAccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedAdminRoute = AuthedAdminRouteImport.update({
@@ -217,21 +212,6 @@ const ResetPasswordIndexRoute = ResetPasswordIndexRouteImport.update({
   id: '/reset-password/',
   path: '/reset-password/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthedAccountIndexRoute = AuthedAccountIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedAccountRoute,
-} as any)
-const AuthedAccountEmailRoute = AuthedAccountEmailRouteImport.update({
-  id: '/email',
-  path: '/email',
-  getParentRoute: () => AuthedAccountRoute,
-} as any)
-const AuthedAccountSessionsRoute = AuthedAccountSessionsRouteImport.update({
-  id: '/sessions',
-  path: '/sessions',
-  getParentRoute: () => AuthedAccountRoute,
 } as any)
 const AuthedAssetsIndexRoute = AuthedAssetsIndexRouteImport.update({
   id: '/assets/',
@@ -291,16 +271,6 @@ const AuthedProductsIndexRoute = AuthedProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
   getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedProfilesIndexRoute = AuthedProfilesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedProfilesRoute,
-} as any)
-const AuthedProfilesEditRoute = AuthedProfilesEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => AuthedProfilesRoute,
 } as any)
 const AuthedProjectsIndexRoute = AuthedProjectsIndexRouteImport.update({
   id: '/projects/',
@@ -1109,25 +1079,21 @@ const AuthedProjectsProjectIdBastBastIdPrintRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
-  '/account': typeof AuthedAccountRouteWithChildren
+  '/accounts': typeof AuthedAccountsRoute
   '/admin': typeof AuthedAdminRouteWithChildren
-  '/profiles': typeof AuthedProfilesRouteWithChildren
+  '/profiles': typeof AuthedProfilesRoute
   '/invite/$token': typeof InviteTokenRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
   '/reset-password/': typeof ResetPasswordIndexRoute
-  '/account/email': typeof AuthedAccountEmailRoute
-  '/account/sessions': typeof AuthedAccountSessionsRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
-  '/account/': typeof AuthedAccountIndexRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
   '/documents/': typeof AuthedDocumentsIndexRoute
@@ -1137,7 +1103,6 @@ export interface FileRoutesByFullPath {
   '/procurement/': typeof AuthedProcurementIndexRoute
   '/product-categories/': typeof AuthedProductCategoriesIndexRoute
   '/products/': typeof AuthedProductsIndexRoute
-  '/profiles/': typeof AuthedProfilesIndexRoute
   '/projects/': typeof AuthedProjectsIndexRoute
   '/reports/': typeof AuthedReportsIndexRoute
   '/sales/': typeof AuthedSalesIndexRoute
@@ -1273,24 +1238,22 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId/bast/$bastId/': typeof AuthedProjectsProjectIdBastBastIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/accounts': typeof AuthedAccountsRoute
   '/admin': typeof AuthedAdminRouteWithChildren
+  '/profiles': typeof AuthedProfilesRoute
   '/invite/$token': typeof InviteTokenRoute
   '/': typeof AuthedIndexRoute
   '/forgot-password': typeof ForgotPasswordIndexRoute
   '/login': typeof LoginIndexRoute
   '/reset-password': typeof ResetPasswordIndexRoute
-  '/account/email': typeof AuthedAccountEmailRoute
-  '/account/sessions': typeof AuthedAccountSessionsRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
-  '/account': typeof AuthedAccountIndexRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
   '/documents': typeof AuthedDocumentsIndexRoute
@@ -1300,7 +1263,6 @@ export interface FileRoutesByTo {
   '/procurement': typeof AuthedProcurementIndexRoute
   '/product-categories': typeof AuthedProductCategoriesIndexRoute
   '/products': typeof AuthedProductsIndexRoute
-  '/profiles': typeof AuthedProfilesIndexRoute
   '/projects': typeof AuthedProjectsIndexRoute
   '/reports': typeof AuthedReportsIndexRoute
   '/sales': typeof AuthedSalesIndexRoute
@@ -1438,26 +1400,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
-  '/_authed/account': typeof AuthedAccountRouteWithChildren
+  '/_authed/accounts': typeof AuthedAccountsRoute
   '/_authed/admin': typeof AuthedAdminRouteWithChildren
-  '/_authed/profiles': typeof AuthedProfilesRouteWithChildren
+  '/_authed/profiles': typeof AuthedProfilesRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authed/': typeof AuthedIndexRoute
   '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/login/': typeof LoginIndexRoute
   '/reset-password/': typeof ResetPasswordIndexRoute
-  '/_authed/account/email': typeof AuthedAccountEmailRoute
-  '/_authed/account/sessions': typeof AuthedAccountSessionsRoute
   '/_authed/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
   '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
   '/_authed/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/_authed/tickets/new': typeof AuthedTicketsNewRoute
   '/_authed/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
-  '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
   '/_authed/documents/': typeof AuthedDocumentsIndexRoute
@@ -1467,7 +1425,6 @@ export interface FileRoutesById {
   '/_authed/procurement/': typeof AuthedProcurementIndexRoute
   '/_authed/product-categories/': typeof AuthedProductCategoriesIndexRoute
   '/_authed/products/': typeof AuthedProductsIndexRoute
-  '/_authed/profiles/': typeof AuthedProfilesIndexRoute
   '/_authed/projects/': typeof AuthedProjectsIndexRoute
   '/_authed/reports/': typeof AuthedReportsIndexRoute
   '/_authed/sales/': typeof AuthedSalesIndexRoute
@@ -1606,25 +1563,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/account'
+    | '/accounts'
     | '/admin'
     | '/profiles'
     | '/invite/$token'
     | '/forgot-password/'
     | '/login/'
     | '/reset-password/'
-    | '/account/email'
-    | '/account/sessions'
     | '/documents/templates'
     | '/organizations/$organizationId'
-    | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
     | '/tickets/$ticketId'
     | '/tickets/new'
     | '/warehouses/$warehouseId'
     | '/print/quotations/$quotationId'
-    | '/account/'
     | '/assets/'
     | '/crm/'
     | '/documents/'
@@ -1634,7 +1587,6 @@ export interface FileRouteTypes {
     | '/procurement/'
     | '/product-categories/'
     | '/products/'
-    | '/profiles/'
     | '/projects/'
     | '/reports/'
     | '/sales/'
@@ -1770,24 +1722,22 @@ export interface FileRouteTypes {
     | '/projects/$projectId/bast/$bastId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/accounts'
     | '/admin'
+    | '/profiles'
     | '/invite/$token'
     | '/'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
-    | '/account/email'
-    | '/account/sessions'
     | '/documents/templates'
     | '/organizations/$organizationId'
-    | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
     | '/tickets/$ticketId'
     | '/tickets/new'
     | '/warehouses/$warehouseId'
     | '/print/quotations/$quotationId'
-    | '/account'
     | '/assets'
     | '/crm'
     | '/documents'
@@ -1797,7 +1747,6 @@ export interface FileRouteTypes {
     | '/procurement'
     | '/product-categories'
     | '/products'
-    | '/profiles'
     | '/projects'
     | '/reports'
     | '/sales'
@@ -1934,7 +1883,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authed'
-    | '/_authed/account'
+    | '/_authed/accounts'
     | '/_authed/admin'
     | '/_authed/profiles'
     | '/invite/$token'
@@ -1942,18 +1891,14 @@ export interface FileRouteTypes {
     | '/forgot-password/'
     | '/login/'
     | '/reset-password/'
-    | '/_authed/account/email'
-    | '/_authed/account/sessions'
     | '/_authed/documents/templates'
     | '/_authed/organizations/$organizationId'
-    | '/_authed/profiles/edit'
     | '/_authed/projects/new'
     | '/_authed/subscription/new'
     | '/_authed/tickets/$ticketId'
     | '/_authed/tickets/new'
     | '/_authed/warehouses/$warehouseId'
     | '/print/quotations/$quotationId'
-    | '/_authed/account/'
     | '/_authed/assets/'
     | '/_authed/crm/'
     | '/_authed/documents/'
@@ -1963,7 +1908,6 @@ export interface FileRouteTypes {
     | '/_authed/procurement/'
     | '/_authed/product-categories/'
     | '/_authed/products/'
-    | '/_authed/profiles/'
     | '/_authed/projects/'
     | '/_authed/reports/'
     | '/_authed/sales/'
@@ -2124,11 +2068,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/account': {
-      id: '/_authed/account'
-      path: '/account'
-      fullPath: '/account'
-      preLoaderRoute: typeof AuthedAccountRouteImport
+    '/_authed/accounts': {
+      id: '/_authed/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AuthedAccountsRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/admin': {
@@ -2172,27 +2116,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/reset-password/'
       preLoaderRoute: typeof ResetPasswordIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authed/account/': {
-      id: '/_authed/account/'
-      path: '/'
-      fullPath: '/account/'
-      preLoaderRoute: typeof AuthedAccountIndexRouteImport
-      parentRoute: typeof AuthedAccountRoute
-    }
-    '/_authed/account/email': {
-      id: '/_authed/account/email'
-      path: '/email'
-      fullPath: '/account/email'
-      preLoaderRoute: typeof AuthedAccountEmailRouteImport
-      parentRoute: typeof AuthedAccountRoute
-    }
-    '/_authed/account/sessions': {
-      id: '/_authed/account/sessions'
-      path: '/sessions'
-      fullPath: '/account/sessions'
-      preLoaderRoute: typeof AuthedAccountSessionsRouteImport
-      parentRoute: typeof AuthedAccountRoute
     }
     '/_authed/assets/': {
       id: '/_authed/assets/'
@@ -2270,20 +2193,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/products/'
       preLoaderRoute: typeof AuthedProductsIndexRouteImport
       parentRoute: typeof AuthedRoute
-    }
-    '/_authed/profiles/': {
-      id: '/_authed/profiles/'
-      path: '/'
-      fullPath: '/profiles/'
-      preLoaderRoute: typeof AuthedProfilesIndexRouteImport
-      parentRoute: typeof AuthedProfilesRoute
-    }
-    '/_authed/profiles/edit': {
-      id: '/_authed/profiles/edit'
-      path: '/edit'
-      fullPath: '/profiles/edit'
-      preLoaderRoute: typeof AuthedProfilesEditRouteImport
-      parentRoute: typeof AuthedProfilesRoute
     }
     '/_authed/projects/': {
       id: '/_authed/projects/'
@@ -3261,22 +3170,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthedAccountRouteChildren {
-  AuthedAccountEmailRoute: typeof AuthedAccountEmailRoute
-  AuthedAccountSessionsRoute: typeof AuthedAccountSessionsRoute
-  AuthedAccountIndexRoute: typeof AuthedAccountIndexRoute
-}
-
-const AuthedAccountRouteChildren: AuthedAccountRouteChildren = {
-  AuthedAccountEmailRoute: AuthedAccountEmailRoute,
-  AuthedAccountSessionsRoute: AuthedAccountSessionsRoute,
-  AuthedAccountIndexRoute: AuthedAccountIndexRoute,
-}
-
-const AuthedAccountRouteWithChildren = AuthedAccountRoute._addFileChildren(
-  AuthedAccountRouteChildren,
-)
-
 interface AuthedAdminRouteChildren {
   AuthedAdminAuditIndexRoute: typeof AuthedAdminAuditIndexRoute
   AuthedAdminCompanyIndexRoute: typeof AuthedAdminCompanyIndexRoute
@@ -3291,20 +3184,6 @@ const AuthedAdminRouteChildren: AuthedAdminRouteChildren = {
 
 const AuthedAdminRouteWithChildren = AuthedAdminRoute._addFileChildren(
   AuthedAdminRouteChildren,
-)
-
-interface AuthedProfilesRouteChildren {
-  AuthedProfilesEditRoute: typeof AuthedProfilesEditRoute
-  AuthedProfilesIndexRoute: typeof AuthedProfilesIndexRoute
-}
-
-const AuthedProfilesRouteChildren: AuthedProfilesRouteChildren = {
-  AuthedProfilesEditRoute: AuthedProfilesEditRoute,
-  AuthedProfilesIndexRoute: AuthedProfilesIndexRoute,
-}
-
-const AuthedProfilesRouteWithChildren = AuthedProfilesRoute._addFileChildren(
-  AuthedProfilesRouteChildren,
 )
 
 interface AuthedOrganizationsOrganizationIdRouteChildren {
@@ -3340,9 +3219,9 @@ const AuthedWarehousesWarehouseIdRouteWithChildren =
   )
 
 interface AuthedRouteChildren {
-  AuthedAccountRoute: typeof AuthedAccountRouteWithChildren
+  AuthedAccountsRoute: typeof AuthedAccountsRoute
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
-  AuthedProfilesRoute: typeof AuthedProfilesRouteWithChildren
+  AuthedProfilesRoute: typeof AuthedProfilesRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDocumentsTemplatesRoute: typeof AuthedDocumentsTemplatesRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
@@ -3490,9 +3369,9 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedAccountRoute: AuthedAccountRouteWithChildren,
+  AuthedAccountsRoute: AuthedAccountsRoute,
   AuthedAdminRoute: AuthedAdminRouteWithChildren,
-  AuthedProfilesRoute: AuthedProfilesRouteWithChildren,
+  AuthedProfilesRoute: AuthedProfilesRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDocumentsTemplatesRoute: AuthedDocumentsTemplatesRoute,
   AuthedOrganizationsOrganizationIdRoute:

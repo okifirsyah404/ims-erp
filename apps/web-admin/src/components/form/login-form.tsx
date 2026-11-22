@@ -2,37 +2,54 @@ import { cn } from 'cn';
 
 import LanguageSwitcher from '@/components/language-switcher';
 import { PasswordInput } from '@/components/password-input';
+import { GoogleIcon } from '@/components/icons/google-icon';
 import { authClient } from '@/lib/auth-client';
+import { loginErrorCallbackUrl, sameOriginUrl } from '@/lib/login-error';
+import { readLastLoginMethod } from '@/lib/last-login';
 import { companyBrandingQueryOptions } from '@/lib/company-api';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@ims-erp/ui/components/button';
+import { Badge } from '@ims-erp/ui/components/badge';
 import { Card, CardContent } from '@ims-erp/ui/components/card';
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/** Official multicolor "G" mark for the Google sign-in button. */
-function GoogleIcon(props: React.ComponentProps<'svg'>) {
+/**
+ * Marks the button of the previous sign-in method (ERP-0112) with a small
+ * pill on its top-right border.
+ *
+ * @remarks
+ * Overlaid, not laid out beside the button: both buttons keep the full field
+ * width and stay the same size whether or not one is marked. The ring uses the
+ * card colour so the pill reads as cut out of the border. The pill is
+ * `pointer-events-none` (clicks go to the button) and referenced by the
+ * button's `aria-describedby`, so assistive tech announces it too.
+ */
+function LastUsedMark({
+	id,
+	active,
+	label,
+	children,
+}: {
+	id: string;
+	active: boolean;
+	label: string;
+	children: React.ReactNode;
+}) {
 	return (
-		<svg viewBox='0 0 24 24' aria-hidden='true' {...props}>
-			<path
-				fill='#4285F4'
-				d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z'
-			/>
-			<path
-				fill='#34A853'
-				d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z'
-			/>
-			<path
-				fill='#FBBC05'
-				d='M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z'
-			/>
-			<path
-				fill='#EA4335'
-				d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A11 11 0 0 0 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52Z'
-			/>
-		</svg>
+		<div className='relative'>
+			{children}
+			{active ? (
+				<Badge
+					id={id}
+					className='pointer-events-none absolute -top-2 right-3 h-4 px-1.5 text-[10px] leading-none ring-2 ring-card'
+				>
+					{label}
+				</Badge>
+			) : null}
+		</div>
 	);
 }
 
@@ -46,15 +63,21 @@ export function LoginForm({
 	className,
 	onSuccess,
 	redirect,
+	initialError,
 	...props
 }: React.ComponentProps<'div'> & {
 	onSuccess?: () => void;
 	/** Post-login destination, also used as the Google OAuth callback URL. */
 	redirect?: string;
+	/** Message for a failed Google round trip (`/login?error=…`). */
+	initialError?: string | null;
 }) {
 	const [identifier, setIdentifier] = useState('');
 	const [password, setPassword] = useState('');
-	const [error, setError] = useState<string | null>(null);
+	const [error, setError] = useState<string | null>(initialError ?? null);
+	// Read once: the cookie only changes after a successful sign-in (which
+	// navigates away), so there is nothing to re-read while this form is open.
+	const [lastMethod] = useState(() => readLastLoginMethod());
 	const [pending, setPending] = useState(false);
 	const [googlePending, setGooglePending] = useState(false);
 	const { t } = useTranslation(['auth', 'common']);
@@ -67,10 +90,19 @@ export function LoginForm({
 		setError(null);
 		setGooglePending(true);
 		try {
-			await authClient.signIn.social({
+			// Absolute URLs: the auth server runs on another origin, so a relative
+			// callback would land on the API host. Failures (unknown Google email,
+			// pending invitation, deactivated account, no ERP role) come back to
+			// `/login?error=<code>`; `redirect` is kept for the next attempt.
+			const origin = window.location.origin;
+			const { error: socialError } = await authClient.signIn.social({
 				provider: 'google',
-				callbackURL: redirect ?? '/',
+				callbackURL: sameOriginUrl(redirect, origin),
+				errorCallbackURL: loginErrorCallbackUrl(origin, redirect),
 			});
+			if (socialError) setError(socialError.message ?? t('login.googleFailed'));
+		} catch {
+			setError(t('common:error.network'));
 		} finally {
 			// Either a redirect has started (page unloads) or an error is
 			// shown; either way the button must be usable again.
@@ -163,9 +195,24 @@ export function LoginForm({
 								</p>
 							)}
 							<Field>
-							<Button type='submit' className='w-full' disabled={pending}>
-								{pending ? t('login.submitting') : t('login.submit')}
-							</Button>
+							<LastUsedMark
+								id='last-used-credentials'
+								active={lastMethod === 'email' || lastMethod === 'username'}
+								label={t('login.lastUsed')}
+							>
+								<Button
+									type='submit'
+									className='w-full'
+									disabled={pending}
+									aria-describedby={
+										lastMethod === 'email' || lastMethod === 'username'
+											? 'last-used-credentials'
+											: undefined
+									}
+								>
+									{pending ? t('login.submitting') : t('login.submit')}
+								</Button>
+							</LastUsedMark>
 						</Field>
 						<div className='flex items-center gap-3 text-xs text-muted-foreground'>
 							<div className='h-px flex-1 bg-border' />
@@ -173,16 +220,28 @@ export function LoginForm({
 							<div className='h-px flex-1 bg-border' />
 						</div>
 						<Field>
-							<Button
-								type='button'
-								variant='outline'
-								className='w-full'
-								disabled={googlePending}
-								onClick={handleGoogleSignIn}
+							<LastUsedMark
+								id='last-used-google'
+								active={lastMethod === 'google'}
+								label={t('login.lastUsed')}
 							>
-								<GoogleIcon className='size-4' />
-								{t('login.googleSignIn')}
-							</Button>
+								<Button
+									type='button'
+									variant='outline'
+									className={cn(
+										'w-full',
+										lastMethod === 'google' && 'border-primary/60',
+									)}
+									disabled={googlePending}
+									onClick={handleGoogleSignIn}
+									aria-describedby={
+										lastMethod === 'google' ? 'last-used-google' : undefined
+									}
+								>
+									<GoogleIcon className='size-4' />
+									{t('login.googleSignIn')}
+								</Button>
+							</LastUsedMark>
 						</Field>
 					</FieldGroup>
 					</form>
