@@ -12,6 +12,18 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - Product create/edit form split into sections
+
+`ItemForm` is now organised in sections instead of one long field list: Identity
+(kind, name, SKU, serial number, category, brand, description), Images, Pricing,
+Stock & tracking (unit, minimum stock, barcode, serialized / quantity-tracked /
+active options), Specification and, for products, Components & materials. On the
+page the sections are cards (two columns on large screens, a sticky action bar);
+inside the create dialog they are plain headed blocks above the sticky footer.
+Locale keys `product:form.section.*` (en + id). `bunx tsc` clean, `bun run lint`
+0 errors, web-admin tests 178 pass, locales tests 106 pass. Not looked at in a
+browser (needs a login session).
+
 ## 2026-11-23 - ERP-0110: components and materials of a product (composition / BOM)
 
 **Owner request** (via grill-me, all 13 questions answered "yes"): on the product

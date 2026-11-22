@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@ims-erp/ui/components/empty';
 import {
@@ -135,7 +135,6 @@ export function ProductCompositionEditor({
 
 	return (
 		<Field>
-			<FieldLabel>{t('product:composition.title')}</FieldLabel>
 			<div className='flex flex-col gap-2'>
 				{value.map((line, index) => (
 					<div key={line.componentId} className='flex items-center gap-2'>
