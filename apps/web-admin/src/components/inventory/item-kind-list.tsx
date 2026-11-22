@@ -50,6 +50,8 @@ import {
 	type TProductCreateInput,
 	type TProductKind,
 } from '@/lib/inventory-api';
+import { toCompositionLines, type TCompositionDraft } from '@/components/inventory/product-composition';
+import { saveProductComponents } from '@/lib/inventory-api';
 import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { formatIdr, rupiahToMinor } from '@/lib/format';
 import { itemDetailLink, itemEditLink } from '@/lib/item-routes';
@@ -424,6 +426,7 @@ function CreateItemDialog({
 	async function handleSubmit(
 		input: TProductCreateInput | Record<string, unknown>,
 		imageFiles: File[] = [],
+		composition: TCompositionDraft[] | null = null,
 	) {
 		setSubmitting(true);
 		try {
@@ -434,6 +437,17 @@ function CreateItemDialog({
 			if (imageFiles.length) {
 				const errors = await uploadGalleryImages(`/products/${created.id}`, imageFiles);
 				if (errors.length) toast.error(errors.join(' '));
+			}
+			if (composition?.length) {
+				try {
+					await saveProductComponents(created.id, toCompositionLines(composition) ?? []);
+				} catch (error) {
+					toast.error(
+						t('product:composition.saveFailed', {
+							message: error instanceof Error ? error.message : t('common:error.failed'),
+						}),
+					);
+				}
 			}
 			toast.success(t('product:form.created'));
 			onCreated();
@@ -456,7 +470,7 @@ function CreateItemDialog({
 					compact
 					defaultItemKind={kind}
 					submitting={submitting}
-					onSubmit={(input, imageFiles) => void handleSubmit(input, imageFiles)}
+					onSubmit={(input, imageFiles, composition) => void handleSubmit(input, imageFiles, composition)}
 					onCancel={onClose}
 				/>
 			</ScrollDialogContent>

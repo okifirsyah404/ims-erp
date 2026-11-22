@@ -6,6 +6,7 @@ import { created, noContent, ok, okPaginated } from '@http/response';
 import {
 	createProductSchema,
 	idParamSchema,
+	productComponentsSchema,
 	productListQuerySchema,
 	productRangesQuerySchema,
 	updateProductSchema,
@@ -17,7 +18,7 @@ import {
 	galleryImageParamSchema,
 	galleryOrderSchema,
 } from '@shared/media';
-import { PRODUCT_IMAGE_SERVICE_TOKEN, PRODUCT_SERVICE_TOKEN } from '../constants/di';
+import { PRODUCT_COMPONENT_SERVICE_TOKEN, PRODUCT_IMAGE_SERVICE_TOKEN, PRODUCT_SERVICE_TOKEN } from '../constants/di';
 import type { ProductService } from '../services/product.service';
 import type { TAuditActor } from '@shared/audit';
 
@@ -57,6 +58,7 @@ export class ProductController {
 	static plugin() {
 		const productService = container.resolve<ProductService>(PRODUCT_SERVICE_TOKEN);
 		const productImages = container.resolve(PRODUCT_IMAGE_SERVICE_TOKEN);
+		const productComponents = container.resolve(PRODUCT_COMPONENT_SERVICE_TOKEN);
 
 		return domainPlugin({
 			name: 'products',
@@ -90,7 +92,10 @@ export class ProductController {
 			.get(
 				'/:id',
 				async ({ params }) =>
-					ok(await productImages.withImages(await productService.getProduct(idParamSchema.parse(params).id))),
+					ok({
+						...(await productImages.withImages(await productService.getProduct(idParamSchema.parse(params).id))),
+						components: await productComponents.list(idParamSchema.parse(params).id),
+					}),
 				{
 					erp: { permission: ['product:read'] },
 					detail: { description: 'One item by id' },
@@ -160,6 +165,28 @@ export class ProductController {
 				{
 					erp: { permission: ['product:update'] },
 					detail: { description: 'Removes the cover photo' },
+				},
+			)
+			.get(
+				'/:id/components',
+				async ({ params }) => ok(await productComponents.list(idParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['product:read'] },
+					detail: { description: 'Components and materials a product is made of' },
+				},
+			)
+			.put(
+				'/:id/components',
+				async ({ params, body }) =>
+					ok(
+						await productComponents.replace(
+							idParamSchema.parse(params).id,
+							productComponentsSchema.parse(body).lines,
+						),
+					),
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Replaces the whole composition (components and materials, with quantities)' },
 				},
 			)
 			.get(

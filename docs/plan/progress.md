@@ -12,6 +12,47 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0110: components and materials of a product (composition / BOM)
+
+**Owner request** (via grill-me, all 13 questions answered "yes"): on the product
+CRUD, show the components or materials a product is made of.
+
+**Decisions.** Informational only (no stock movement, no costing, not in the
+public catalog or quotation PDFs). New `product.product_components`
+(`product_id` cascade, `component_id` restrict, `quantity numeric(18,3) > 0`,
+`sort_order`, soft delete, partial unique per live pair, `product_id <>
+component_id`); no `organization_id` (tenant comes from the parent). Parent must
+be `product_kind = 'product'`; lines must be live `component`/`material`,
+visible to the parent's organization (global parent -> global items only);
+max 50 lines, no duplicates. Archiving a used component is allowed; its line
+shows "Archived" and must be dropped on the next save.
+
+**Backend.** `GET|PUT /products/:id/components` (`product:read` / `product:update`;
+PUT replaces the whole list in one transaction), `GET /products/:id` also returns
+`components`. `ProductComponentRepository` / `ProductComponentService`, errors
+`product.compositionParentKind` and `product.componentNotUsable` (en + id).
+Migration `20261122200931_add_product_components`; `docs.dbml` edited first.
+Seeder: `CTRL-DOOR-01` gets 1x `CMP-PSU-12V` + 3 m `MAT-CABLE-CAT6`.
+
+**Web-admin.** Detail page: "Components & materials" table (links to each item,
+archived badge). Create dialog and edit page: `ProductCompositionEditor`
+(server-side search over components + materials, quantity per row), saved with
+`PUT` after the product; a failed save toasts and keeps the product. Locale keys
+`product:composition.*` (en + id).
+
+**Checks.** `drizzle:generate` + `drizzle:migrate` on the local dev database ok;
+`validate-dbml.ts` OK (152 intra-module refs, 0 drift); backend `bunx tsc` clean,
+`bun test` 1348 pass / 0 fail (new `product-component.service.test.ts`, 6 tests;
+authorization doubles extended); web-admin `tsc` clean, `bun test` 174 pass;
+locales `bun test` 106 pass; `bun run lint` 0 errors. Product seeder run twice via
+`seedProduct()`: 2 live lines after run 1, still 2 after run 2 (the full
+`drizzle:seed` stops earlier on an already-existing admin username, unrelated).
+New routes answer 401 without a session on a fresh backend instance.
+
+**Open.** Not exercised in a browser (needs a login session); PUT/GET with a real
+session untested end to end. `docs/database/` updated (table, refs, regenerated
+logical-references).
+
 ## 2026-11-23 - ERP-0109 web-admin: multi-image upload on create/edit forms
 
 **Owner request:** the product edit page had no upload; create and update of

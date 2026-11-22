@@ -52,6 +52,7 @@ TableGroup "Supplier" {
 TableGroup "Product" {
   product.products
   product.product_images
+  product.product_components
   product.product_categories
   product.settings
   product.code_numberings
@@ -1058,6 +1059,26 @@ Table product.product_images {
   }
 }
 
+Table product.product_components {
+  id uuid [pk, default: `uuidv7()`]
+  product_id uuid [not null, note: "The assembled product. Its product_kind must be 'product' (checked by the service)."]
+  component_id uuid [not null, note: "The component or material it is made of. product_kind must be 'component' or 'material' and visible to the product's organization (checked by the service). Tenant scope comes from the parent product, so this table has no organization_id."]
+  quantity numeric(18,3) [not null, note: "Quantity needed per one unit of the product, in the component's unit_label."]
+  sort_order integer [not null, default: 0, note: "Position in the list the client sent."]
+  created_at bigint [not null]
+  updated_at bigint
+  deleted_at bigint
+  Note: "Composition (bill of materials) of a product: informational only, no stock movement and no costing is derived from it. The list is replaced as a whole; replaced rows are soft-deleted."
+  Indexes {
+    (product_id, component_id) [unique, name: 'product_components_product_component_uq', note: 'WHERE deleted_at IS NULL']
+    component_id [name: 'product_components_component_id_idx']
+  }
+  Checks {
+    `quantity > 0`
+    `product_id <> component_id`
+  }
+}
+
 Table product.product_categories {
   id uuid [pk, default: `uuidv7()`]
   slug varchar(64) [not null, note: "Matches the public website's category slug."]
@@ -1112,6 +1133,8 @@ Table product.code_numberings {
 
 Ref: product.products.product_category_id > product.product_categories.id [delete: restrict]
 Ref: product.product_images.product_id > product.products.id [delete: cascade]
+Ref: product.product_components.product_id > product.products.id [delete: cascade]
+Ref: product.product_components.component_id > product.products.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Warehouse  (schema: warehouse; split out of inventory by ADR-0026).

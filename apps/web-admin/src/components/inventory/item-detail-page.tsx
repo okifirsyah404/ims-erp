@@ -44,6 +44,7 @@ import {
 	type TProductSerial,
 } from '@/lib/inventory-api';
 import { ImageGalleryField } from '@/components/image-gallery-field';
+import { ProductCompositionPanel } from '@/components/inventory/product-composition';
 import { formatIdr } from '@/lib/format';
 import { itemDetailLink, itemEditLink, itemListLink } from '@/lib/item-routes';
 import { usePermission } from '@/lib/use-permission';
@@ -196,6 +197,17 @@ export function ItemDetailPage({ kind, itemId }: { kind: TProductKind; itemId: s
 						/>
 					</CardContent>
 				</Card>
+
+				{item.productKind === 'product' && (
+					<Card>
+						<CardHeader>
+							<CardTitle>{t('product:composition.title')}</CardTitle>
+						</CardHeader>
+						<CardContent className='p-4'>
+							<ProductCompositionPanel components={item.components ?? []} />
+						</CardContent>
+					</Card>
+				)}
 
 				{item.specification && (
 					<Card>

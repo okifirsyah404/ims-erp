@@ -208,6 +208,8 @@ const api = {
 	'product.hasUnits':
 		'Cannot archive a product that still has {{count}} live unit(s)',
 	'product.ruleViolation': 'This product rule does not allow it: {{rule}}',
+	'product.compositionParentKind': 'Only a product can have components and materials',
+	'product.componentNotUsable': 'Every line must be a live component or material visible to the organization of this product',
 
 	'warehouse.notFound': 'Warehouse not found',
 	'warehouse.codeTaken':

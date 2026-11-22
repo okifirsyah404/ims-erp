@@ -223,6 +223,42 @@ export const productImages = productSchema.table(
 	(table) => [index('product_images_product_id_sort_idx').on(table.productId, table.sortOrder)],
 );
 
+/**
+ * Composition of a product: which components and materials it is made of.
+ *
+ * @remarks
+ * Informational only (no stock movement, no costing). Both ids point at
+ * `products`, so the foreign keys are real; the service checks the kinds
+ * (`product` parent, `component`/`material` child) and tenant visibility.
+ * The list is replaced as a whole and replaced rows are soft-deleted.
+ */
+export const productComponents = productSchema.table(
+	'product_components',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		productId: uuid('product_id')
+			.notNull()
+			.references(() => products.id, { onDelete: 'cascade' }),
+		componentId: uuid('component_id')
+			.notNull()
+			.references(() => products.id, { onDelete: 'restrict' }),
+		/** Needed per one unit of the product, in the component's unit. */
+		quantity: numeric('quantity', { precision: 18, scale: 3 }).notNull(),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...softDeleteTimestamps,
+	},
+	(table) => [
+		uniqueIndex('product_components_product_component_uq')
+			.on(table.productId, table.componentId)
+			.where(sql`deleted_at IS NULL`),
+		index('product_components_component_id_idx').on(table.componentId),
+		check('product_components_quantity_check', sql`quantity > 0`),
+		check('product_components_distinct_check', sql`product_id <> component_id`),
+	],
+);
+
 /* ------------------------------------------------------------------------ *
  * product.product_categories
  * ------------------------------------------------------------------------ */
@@ -292,6 +328,7 @@ export const productCodeNumberings = createCodeNumberingTable(productSchema);
 
 export type TProductSelect = typeof products.$inferSelect;
 export type TProductImageSelect = typeof productImages.$inferSelect;
+export type TProductComponentSelect = typeof productComponents.$inferSelect;
 export type TProductInsert = typeof products.$inferInsert;
 export type TProductCategorySelect = typeof productCategories.$inferSelect;
 export type TProductCategoryInsert = typeof productCategories.$inferInsert;

@@ -31,6 +31,13 @@ import {
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { minorToRupiah, rupiahToMinor } from '@/lib/format';
 import { ImageGalleryField } from '@/components/image-gallery-field';
+import {
+	ProductCompositionEditor,
+	toCompositionDrafts,
+	toCompositionLines,
+	type TCompositionDraft,
+} from '@/components/inventory/product-composition';
+import { toast } from '@/components/toast';
 import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {
 	ITEM_UNIT_LABELS,
@@ -78,6 +85,8 @@ export function ItemForm({
 	onSubmit: (
 		input: TProductCreateInput | TProductUpdateInput,
 		imageFiles: File[],
+		/** The edited composition, or `null` when it does not apply or did not change. */
+		composition: TCompositionDraft[] | null,
 	) => void;
 	onCancel: () => void;
 }) {
@@ -85,6 +94,8 @@ export function ItemForm({
 	const isEdit = item != null;
 
 	const [imageFiles, setImageFiles] = useState<File[]>([]);
+	const initialComposition = toCompositionDrafts(item?.components);
+	const [composition, setComposition] = useState<TCompositionDraft[]>(initialComposition);
 
 	const [sku, setSku] = useState(item?.sku ?? '');
 	const [serialNumber, setSerialNumber] = useState(item?.serialNumber ?? '');
@@ -116,6 +127,11 @@ export function ItemForm({
 
 	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		const compositionApplies = productKind === 'product';
+		if (compositionApplies && toCompositionLines(composition) === null) {
+			toast.error(t('product:composition.invalidQuantity'));
+			return;
+		}
 		const shared = {
 			name,
 			serialNumber: serialNumber.trim() || null,
@@ -138,6 +154,9 @@ export function ItemForm({
 				? shared
 				: { ...shared, sku, productKind, currencyCode: 'IDR' },
 			imageFiles,
+			compositionApplies && JSON.stringify(composition) !== JSON.stringify(initialComposition)
+				? composition
+				: null,
 		);
 	}
 
@@ -183,6 +202,12 @@ export function ItemForm({
 								disabled={submitting}
 							/>
 						</div>
+
+						{productKind === 'product' && (
+							<div className='mb-6'>
+								<ProductCompositionEditor value={composition} onChange={setComposition} disabled={submitting} />
+							</div>
+						)}
 
 						<FieldGroup>
 							{isEdit && (

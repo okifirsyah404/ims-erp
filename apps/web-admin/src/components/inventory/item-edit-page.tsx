@@ -11,10 +11,12 @@ import { AdminOnly } from '@/components/inventory/admin-only';
 import { ItemForm } from '@/components/inventory/item-form';
 import {
 	productQueryOptions,
+	saveProductComponents,
 	updateProduct,
 	type TProductKind,
 	type TProductUpdateInput,
 } from '@/lib/inventory-api';
+import { toCompositionLines, type TCompositionDraft } from '@/components/inventory/product-composition';
 import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { itemDetailLink, itemEditLink } from '@/lib/item-routes';
 
@@ -36,10 +38,23 @@ export function ItemEditPage({ kind, itemId }: { kind: TProductKind; itemId: str
 	async function handleSubmit(
 		input: TProductUpdateInput | Record<string, unknown>,
 		imageFiles: File[],
+		composition: TCompositionDraft[] | null,
 	) {
 		setSubmitting(true);
 		try {
 			await updateProduct(itemId, input as TProductUpdateInput);
+			// A failed composition save must not lose the saved edit either.
+			if (composition) {
+				try {
+					await saveProductComponents(itemId, toCompositionLines(composition) ?? []);
+				} catch (cause) {
+					toast.error(
+						t('product:composition.saveFailed', {
+							message: cause instanceof Error ? cause.message : t('common:error.failed'),
+						}),
+					);
+				}
+			}
 			// A failed upload must not lose the saved edit: report it and carry on.
 			if (imageFiles.length) {
 				const errors = await uploadGalleryImages(`/products/${itemId}`, imageFiles);
@@ -84,7 +99,7 @@ export function ItemEditPage({ kind, itemId }: { kind: TProductKind; itemId: str
 			<ItemForm
 				item={item}
 				submitting={submitting}
-				onSubmit={(input, imageFiles) => void handleSubmit(input, imageFiles)}
+				onSubmit={(input, imageFiles, composition) => void handleSubmit(input, imageFiles, composition)}
 				onCancel={() => void navigate(itemDetailLink(kind, itemId))}
 			/>
 		</AdminOnly>

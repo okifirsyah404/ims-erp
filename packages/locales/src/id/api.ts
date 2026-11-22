@@ -204,6 +204,8 @@ const api: Record<keyof typeof en, string> = {
 	'product.hasUnits':
 		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
 	'product.ruleViolation': 'Aturan produk tidak mengizinkan: {{rule}}',
+	'product.compositionParentKind': 'Hanya produk yang dapat memiliki komponen dan material',
+	'product.componentNotUsable': 'Setiap baris harus komponen atau material yang aktif dan terlihat oleh organisasi produk ini',
 
 	'warehouse.notFound': 'Gudang tidak ditemukan',
 	'warehouse.codeTaken':

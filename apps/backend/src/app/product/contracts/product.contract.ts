@@ -116,4 +116,21 @@ export const updateProductSchema = z
 	.strict();
 
 /** Path params carrying a single resource id. */
+/** `PUT /products/:id/components` body: the whole composition, in order. */
+export const productComponentsSchema = z.object({
+	lines: z
+		.array(
+			z.object({
+				componentId: z.uuid(),
+				/** `numeric(18,3)`: positive, at most three decimals. */
+				quantity: z.coerce
+					.number()
+					.positive()
+					.refine((value) => Math.abs(value * 1000 - Math.round(value * 1000)) < 1e-6),
+			}),
+		)
+		.max(50)
+		.refine((lines) => new Set(lines.map((line) => line.componentId)).size === lines.length),
+});
+
 export { idParamSchema } from './../../inventory/contracts/pagination.contract';

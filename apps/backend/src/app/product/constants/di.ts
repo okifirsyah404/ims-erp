@@ -10,6 +10,8 @@ import type { IGalleryImageRepository } from '@shared/media';
 import type { InjectionToken } from 'tsyringe';
 import type { IProductRepository } from '../contracts/product.repository.interface';
 import type { IProductCategoryRepository } from '../contracts/product-category.repository.interface';
+import type { ProductComponentService } from '../services/product-component.service';
+import type { IProductComponentRepository } from '../contracts/product-component.repository.interface';
 import type { ProductService } from '../services/product.service';
 import type { ProductCategoryService } from '../services/product-category.service';
 import type { ProductImageService } from '../services/product-image.service';
@@ -27,6 +29,11 @@ export const PRODUCT_SERVICE_TOKEN: InjectionToken<ProductService> =
 	Symbol('PRODUCT_SERVICE');
 export const PRODUCT_CATEGORY_SERVICE_TOKEN: InjectionToken<ProductCategoryService> =
 	Symbol('PRODUCT_CATEGORY_SERVICE');
+/** Composition lines of `product.product_components`. */
+export const PRODUCT_COMPONENT_REPOSITORY_TOKEN: InjectionToken<IProductComponentRepository> =
+	Symbol('PRODUCT_COMPONENT_REPOSITORY');
+export const PRODUCT_COMPONENT_SERVICE_TOKEN: InjectionToken<ProductComponentService> =
+	Symbol('PRODUCT_COMPONENT_SERVICE');
 /** Gallery rows of `product.product_images`. */
 export const PRODUCT_IMAGE_REPOSITORY_TOKEN: InjectionToken<IGalleryImageRepository> =
 	Symbol('PRODUCT_IMAGE_REPOSITORY');
