@@ -1,6 +1,6 @@
 import { MoneyInput } from '@/components/money-input';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -30,8 +30,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { minorToRupiah, rupiahToMinor } from '@/lib/format';
-import { ImageDropzone } from '@/components/organization/image-dropzone';
-import { toast } from '@/components/toast';
+import { ImageGalleryField } from '@/components/image-gallery-field';
 import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {
 	ITEM_UNIT_LABELS,
@@ -71,29 +70,21 @@ export function ItemForm({
 	compact?: boolean;
 	submitting: boolean;
 	/**
-	 * `imageFile` is the photo picked on create (the edit screen has its own
-	 * uploader). The photo endpoint is id-scoped, so the caller uploads it
-	 * right after the item exists.
+	 * `imageFiles` are the pictures picked but not uploaded yet (create and
+	 * edit). The gallery endpoints are id-scoped, so the caller uploads them
+	 * once the item exists. Pictures already saved are managed in the form
+	 * itself, immediately.
 	 */
 	onSubmit: (
 		input: TProductCreateInput | TProductUpdateInput,
-		imageFile?: File | null,
+		imageFiles: File[],
 	) => void;
 	onCancel: () => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const isEdit = item != null;
 
-	const [imageFile, setImageFile] = useState<File | null>(null);
-	// Object URL preview for the picked photo; revoked when it is replaced.
-	const imagePreviewUrl = useMemo(
-		() => (imageFile ? URL.createObjectURL(imageFile) : null),
-		[imageFile],
-	);
-	useEffect(() => {
-		if (!imagePreviewUrl) return;
-		return () => URL.revokeObjectURL(imagePreviewUrl);
-	}, [imagePreviewUrl]);
+	const [imageFiles, setImageFiles] = useState<File[]>([]);
 
 	const [sku, setSku] = useState(item?.sku ?? '');
 	const [serialNumber, setSerialNumber] = useState(item?.serialNumber ?? '');
@@ -146,7 +137,7 @@ export function ItemForm({
 			isEdit
 				? shared
 				: { ...shared, sku, productKind, currencyCode: 'IDR' },
-			isEdit ? null : imageFile,
+			imageFiles,
 		);
 	}
 
@@ -183,43 +174,15 @@ export function ItemForm({
 					</CardHeader>
 				)}
 				<CardContent className={compact ? 'px-0' : undefined}>
-						{/* Create only: on edit the detail page owns the photo. */}
-						{!isEdit && (
-							<div className='mb-6 flex flex-col items-center gap-2'>
-								<ImageDropzone
-									previewUrl={imagePreviewUrl}
-									disabled={submitting}
-									label={t('product:items.documentPhoto')}
-									hint={t('common:image.drop')}
-									onSelect={setImageFile}
-									onReject={(reason) =>
-										toast.error(
-											t(
-												reason === 'size'
-													? 'common:image.sourceTooLarge'
-													: 'common:image.wrongType',
-											),
-										)
-									}
-								/>
-								{imageFile && (
-									<>
-										<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
-											{imageFile.name}
-										</p>
-										<Button
-											type='button'
-											variant='ghost'
-											size='sm'
-											disabled={submitting}
-											onClick={() => setImageFile(null)}
-										>
-											{t('common:image.remove')}
-										</Button>
-									</>
-								)}
-							</div>
-						)}
+						<div className='mb-6'>
+							<ImageGalleryField
+								label={t('product:items.documentPhoto')}
+								entityPath={item ? `/products/${item.id}` : undefined}
+								queue={imageFiles}
+								onQueueChange={setImageFiles}
+								disabled={submitting}
+							/>
+						</div>
 
 						<FieldGroup>
 							{isEdit && (

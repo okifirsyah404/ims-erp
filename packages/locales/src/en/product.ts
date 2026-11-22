@@ -128,7 +128,6 @@ const product = {
 		'A provisional serial can be replaced exactly once.',
 	'unit.replaced': 'Serial number replaced',
 	'items.documentPhoto': 'Photo on documents',
-	'items.documentPhotoHint': 'Printed in the Gambar column of quotations. PNG, JPG or WebP, at most 2 MB. Quotations already issued keep their photo.',
 } as const;
 
 export default product;

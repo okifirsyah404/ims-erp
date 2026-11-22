@@ -15,6 +15,7 @@ import {
 	type TProductKind,
 	type TProductUpdateInput,
 } from '@/lib/inventory-api';
+import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { itemDetailLink, itemEditLink } from '@/lib/item-routes';
 
 /**
@@ -32,13 +33,22 @@ export function ItemEditPage({ kind, itemId }: { kind: TProductKind; itemId: str
 
 	const { data: item, isPending, isError, error: loadError } = useQuery(productQueryOptions(itemId));
 
-	async function handleSubmit(input: TProductUpdateInput | Record<string, unknown>) {
+	async function handleSubmit(
+		input: TProductUpdateInput | Record<string, unknown>,
+		imageFiles: File[],
+	) {
 		setSubmitting(true);
 		try {
 			await updateProduct(itemId, input as TProductUpdateInput);
+			// A failed upload must not lose the saved edit: report it and carry on.
+			if (imageFiles.length) {
+				const errors = await uploadGalleryImages(`/products/${itemId}`, imageFiles);
+				if (errors.length) toast.error(errors.join(' '));
+			}
 			toast.success(t('product:form.updated'));
 			await Promise.all([
 				queryClient.invalidateQueries({ queryKey: ['inventory', 'products'] }),
+				queryClient.invalidateQueries({ queryKey: ['image-gallery'] }),
 				queryClient.invalidateQueries({
 					queryKey: productQueryOptions(itemId).queryKey,
 				}),
@@ -74,7 +84,7 @@ export function ItemEditPage({ kind, itemId }: { kind: TProductKind; itemId: str
 			<ItemForm
 				item={item}
 				submitting={submitting}
-				onSubmit={(input) => void handleSubmit(input)}
+				onSubmit={(input, imageFiles) => void handleSubmit(input, imageFiles)}
 				onCancel={() => void navigate(itemDetailLink(kind, itemId))}
 			/>
 		</AdminOnly>

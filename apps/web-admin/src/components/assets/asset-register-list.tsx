@@ -1,3 +1,4 @@
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -22,7 +23,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Archive, ArchiveRestore, Boxes, PackageSearch, Pencil, Plus, Trash2, Wrench } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
+import { Dialog, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { AssetForm } from '@/components/assets/asset-form';
 import { CardActionsMenu, type TCardAction } from '@/components/card-actions-menu';
 import { ItemThumb } from '@/components/item-thumb';
@@ -403,7 +404,7 @@ export function AssetRegisterList() {
 
 			{creating ? (
 				<Dialog open onOpenChange={(open) => !open && setCreating(false)}>
-					<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-xl'>
+					<ScrollDialogContent className='sm:max-w-xl'>
 						<DialogHeader>
 							<DialogTitle>{t('assets:form.newAsset')}</DialogTitle>
 						</DialogHeader>
@@ -412,13 +413,13 @@ export function AssetRegisterList() {
 							onCancel={() => setCreating(false)}
 							onSuccess={() => setCreating(false)}
 						/>
-					</DialogContent>
+					</ScrollDialogContent>
 				</Dialog>
 			) : null}
 
 			{editing ? (
 				<Dialog open onOpenChange={(open) => !open && setEditing(null)}>
-					<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-xl'>
+					<ScrollDialogContent className='sm:max-w-xl'>
 						<DialogHeader>
 							<DialogTitle>{t('assets:form.editAsset')}</DialogTitle>
 						</DialogHeader>
@@ -428,7 +429,7 @@ export function AssetRegisterList() {
 							onCancel={() => setEditing(null)}
 							onSuccess={() => setEditing(null)}
 						/>
-					</DialogContent>
+					</ScrollDialogContent>
 				</Dialog>
 			) : null}
 		</div>

@@ -12,6 +12,29 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0109 web-admin: multi-image upload on create/edit forms
+
+**Owner request:** the product edit page had no upload; create and update of
+product, component, material, asset equipment and warehouse must accept
+multiple images.
+
+**Changed (`apps/web-admin`).** New `ImageGalleryField` + `lib/image-gallery-api.ts`:
+saved images reorder (cover = first), caption and remove immediately; newly
+picked files are queued and uploaded after the record is created or saved
+(`uploadGalleryImages`, sequential, a failed file never loses the saved record).
+Wired into `ItemForm` (product/component/material create dialog + edit page),
+`AssetForm` (create + edit dialog), `WarehouseForm` (create dialog + edit page);
+the product detail page uses the same field with upload-on-pick. The old
+single-photo dropzones on those forms were removed. Locale keys `common:gallery.*`
+added (en + id); `product:items.documentPhotoHint` removed (dead).
+
+**Checks.** `bunx tsc -p tsconfig.app.json --noEmit` clean; `bun run lint` 5/5, 0
+errors; web-admin `bun test` 174 pass; locales `bun test` 106 pass. **Follow-up (same day).** The four create/edit dialogs (product kinds, asset, warehouse) scrolled with the native browser scrollbar; they now use `ScrollDialogContent` (`components/scroll-dialog-content.tsx`, built on `@ims-erp/ui` `ScrollArea`). `bunx tsc` clean, lint 0 errors, web-admin tests 174 pass; not browser-verified.
+
+**Not verified
+in a browser:** the in-app browser had no login session, so upload, reorder and
+removal were not exercised end to end. `docs/database/` unchanged by this slice.
+
 ## 2026-11-23 - ERP-0109: multi-image galleries for products, components, materials, assets and warehouses (backend)
 
 **Owner request:** "product, component, material, asset equipment, dan warehouse

@@ -1,3 +1,4 @@
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -5,13 +6,12 @@ import { useTranslation } from 'react-i18next';
 
 import {
 	Dialog,
-	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { toast } from '@/components/toast';
-import { uploadDocumentImage } from '@/lib/document-image-api';
+import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import {
 	createWarehouse,
 	type TWarehouseCreateInput,
@@ -54,19 +54,14 @@ function CreateWarehouseDialogBody({
 
 	async function handleSubmit(
 		input: TWarehouseCreateInput | TWarehouseUpdateInput,
-		imageFile?: File | null,
+		imageFiles: File[] = [],
 	) {
 		setSubmitting(true);
 		try {
 			const created = await createWarehouse(input as TWarehouseCreateInput);
-			if (created && imageFile) {
-				try {
-					await uploadDocumentImage(`/warehouses/${created.id}/image`, imageFile);
-				} catch (error) {
-					toast.error(
-						error instanceof Error ? error.message : t('common:error.failed'),
-					);
-				}
+			if (created && imageFiles.length) {
+				const errors = await uploadGalleryImages(`/warehouses/${created.id}`, imageFiles);
+				if (errors.length) toast.error(errors.join(' '));
 			}
 			toast.success(t('warehouse:warehouseForm.created'));
 			await queryClient.invalidateQueries({ queryKey: ['warehouses'] });
@@ -87,7 +82,7 @@ function CreateWarehouseDialogBody({
 	}
 
 	return (
-		<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
+		<ScrollDialogContent className='sm:max-w-2xl'>
 			<DialogHeader>
 				<DialogTitle>{t('warehouse:warehouseForm.new')}</DialogTitle>
 				<DialogDescription>
@@ -97,9 +92,9 @@ function CreateWarehouseDialogBody({
 			<WarehouseForm
 				compact
 				submitting={submitting}
-				onSubmit={(input, imageFile) => void handleSubmit(input, imageFile)}
+				onSubmit={(input, imageFiles) => void handleSubmit(input, imageFiles)}
 				onCancel={() => onOpenChange(false)}
 			/>
-		</DialogContent>
+		</ScrollDialogContent>
 	);
 }

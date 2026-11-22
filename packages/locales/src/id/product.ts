@@ -129,7 +129,6 @@ const product = {
 		'Nomor seri sementara hanya dapat diganti satu kali.',
 	'unit.replaced': 'Nomor seri diganti',
 	'items.documentPhoto': 'Foto di dokumen',
-	'items.documentPhotoHint': 'Dicetak di kolom Gambar pada penawaran. PNG, JPG, atau WebP, maksimal 2 MB. Penawaran yang sudah terbit tetap memakai fotonya.',
 } as const;
 
 export default product;
