@@ -7,7 +7,8 @@ import { EyeOff, Globe, Pencil, Trash2 } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
+import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -235,7 +236,7 @@ function ListingDialog({
 
 	return (
 		<Dialog open onOpenChange={(next) => !next && onClose()}>
-			<DialogContent className='sm:max-w-xl'>
+			<ScrollDialogContent className='sm:max-w-xl'>
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -389,7 +390,7 @@ function ListingDialog({
 						</Button>
 					</DialogFooter>
 				</form>
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }

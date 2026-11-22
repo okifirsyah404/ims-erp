@@ -6,7 +6,6 @@ import { Button } from '@ims-erp/ui/components/button';
 import { DateTimePicker } from '@ims-erp/ui/components/datetime-picker';
 import {
 	Dialog,
-	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -21,6 +20,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { fromDateTimeInput, toDateTimeInput } from '@/lib/format';
 import { LEAD_SOURCES, type TLead, type TLeadInput, type TLeadSource } from '@/lib/lead-api';
 
@@ -53,7 +53,7 @@ export function LeadFormDialog({
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
+			<ScrollDialogContent className='sm:max-w-2xl'>
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -160,7 +160,7 @@ export function LeadFormDialog({
 						</Button>
 					</DialogFooter>
 				</form>
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }

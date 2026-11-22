@@ -14,7 +14,6 @@ import {
 } from '@ims-erp/ui/components/combobox';
 import {
 	Dialog,
-	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
@@ -36,6 +35,7 @@ import {
 import { Switch } from '@ims-erp/ui/components/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import {
 	employmentTypeLabels,
 	erpRoleLabel,
@@ -378,7 +378,7 @@ export function InviteDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='sm:max-w-2xl'>
+			<ScrollDialogContent className='sm:max-w-2xl'>
 				<DialogHeader>
 					<DialogTitle>{t('invite.title')}</DialogTitle>
 					<DialogDescription>{t('invite.description')}</DialogDescription>
@@ -571,7 +571,7 @@ export function InviteDialog({
 						))}
 					</div>
 				)}
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }

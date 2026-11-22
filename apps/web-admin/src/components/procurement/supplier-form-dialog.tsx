@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Dialog,
-	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -19,6 +18,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import {
 	SUPPLIER_TYPES,
 	type TSupplierCompany,
@@ -86,7 +86,7 @@ export function SupplierFormDialog({
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-3xl'>
+			<ScrollDialogContent className='sm:max-w-3xl'>
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -180,7 +180,7 @@ export function SupplierFormDialog({
 						</Button>
 					</DialogFooter>
 				</form>
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }

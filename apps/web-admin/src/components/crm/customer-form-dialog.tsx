@@ -6,7 +6,6 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
-	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -21,6 +20,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { companiesQueryOptions, type TCustomer, type TCustomerInput } from '@/lib/customer-api';
 
 /**
@@ -57,7 +57,7 @@ export function CustomerFormDialog({
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
+			<ScrollDialogContent className='sm:max-w-2xl'>
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -195,7 +195,7 @@ export function CustomerFormDialog({
 						</Button>
 					</DialogFooter>
 				</form>
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }
