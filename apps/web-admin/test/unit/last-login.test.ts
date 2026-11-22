@@ -5,7 +5,7 @@ import {
 } from '../../src/lib/last-login';
 
 /**
- * ERP-0110: the badge value comes from a client-writable cookie, so only the
+ * ERP-0112: the badge value comes from a client-writable cookie, so only the
  * known methods may pass.
  */
 describe('parseLastLoginMethod', () => {

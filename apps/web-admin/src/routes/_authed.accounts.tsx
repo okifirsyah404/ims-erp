@@ -15,7 +15,7 @@ import {
 import { invalidateSelfUser } from '@/lib/user-api';
 
 /**
- * Account settings (`/accounts`, ERP-0109): one page of stacked cards in
+ * Account settings (`/accounts`, ERP-0111): one page of stacked cards in
  * place of the former `/account`, `/account/email` and `/account/sessions`
  * tabs. Each card's DOM id is its `section` value, so `?section=email`
  * scrolls to it.

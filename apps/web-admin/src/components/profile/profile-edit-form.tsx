@@ -35,7 +35,7 @@ const BIO_MAX = 1000;
 const NAME_MAX = 120;
 
 /**
- * Self profile editor — the whole `/profiles` page (ERP-0109; the read-only
+ * Self profile editor — the whole `/profiles` page (ERP-0111; the read-only
  * detail view is gone).
  *
  * @remarks

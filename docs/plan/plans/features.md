@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15 (ERP-0109 account pages added 2026-11-21). Full inventory of what has no code yet:
+Last synced: 2026-11-15 (ERP-0111 account pages added 2026-11-21). Full inventory of what has no code yet:
 `plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
 "missing feature" claims that actually ship, e.g. the report API and the
 assets operations surface). §7 item 3 (statement exports + monthly archive +
@@ -558,6 +558,8 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   value view exists, see implemented).
 
 ### implemented
+- ERP-0109 Multi-image galleries (2026-11-23) for products/components/materials (M05), assets (M06) and warehouses: backend implemented (3 gallery tables + backfill migration, `/images` CRUD, cover mirrored into `image_object_key`); web-admin gallery UI and migration apply on a disposable DB still open.
+- ERP-0110 Components and materials of a product (2026-11-23): informational composition per product (`product.product_components`, `GET|PUT /products/:id/components`), table on the detail page and editor in the create/edit form; not browser-verified.
 - Payables from goods receipts: finance bills a purchase order for what was
   received and not billed yet (order price and VAT, supplier invoice number),
   recording debits Persediaan for stock lines — T07, ERP-0012 / ERP-0035.
@@ -1055,7 +1057,7 @@ Status wording from `progress.md`; none is `accepted`.
 - Username login + `/username-availability` —
   `providers/better-auth/plugins/username.auth.ts`; probe 200 in progress.
   Username login tab (phase 5) has no closing entry.
-- Account pages — since ERP-0109 (2026-11-21, **implemented**) one
+- Account pages — since ERP-0111 (2026-11-21, **implemented**) one
   `/accounts` page of cards (username with live availability, email with
   verification + change-email, connected Google account, password or
   password-setup link, sessions) and `/profiles` as the profile editor
@@ -1065,7 +1067,7 @@ Status wording from `progress.md`; none is `accepted`.
   `user.update.after` hook evicting the `GET /users/me` cache. Evidence:
   backend `test/unit/email-change-verification.auth.test.ts`, web-admin
   `test/unit/account-search.test.ts`, in-process E2E 11/11 and browser check
-  in `progress.md` 2026-11-21 "ERP-0109". Google link round trip not run
+  in `progress.md` 2026-11-21 "ERP-0111". Google link round trip not run
   (needs a real Google account). Same day, ADR-0029: invitation-only sign-in
   — Google never signs up (`disableSignUp`), only `active` accounts get a
   session on any method (pending invitees and deactivated users refused with
@@ -1073,11 +1075,11 @@ Status wording from `progress.md`; none is `accepted`.
   mapped Google errors. Evidence: `login-gate.test.ts`,
   `google-login-hardening.auth.test.ts`, web-admin `login-error.test.ts`,
   in-process E2E 14/14.
-- ERP-0110 last used login method (2026-11-23, **implemented**): Better
+- ERP-0112 last used login method (2026-11-23, **implemented**): Better
   Auth's `lastLoginMethod` plugin (cookie only, no schema) records the
-  previous sign-in method; `/login` badges it on the Login button
-  (`email`/`username`) or the Google button, `/sign-in/username` is mapped
-  explicitly, and disconnecting Google clears it. Evidence: backend
+  previous sign-in method; `/login` badges it with a pill overlaid on the
+  Login button (`email`/`username`) or the Google button, `/sign-in/username`
+  is mapped explicitly, and disconnecting Google clears it. Evidence: backend
   `last-login-method.auth.test.ts`, web-admin `last-login.test.ts`, live HTTP
   3/3 in `progress.md` 2026-11-23. Badge not checked in a browser.
 - Forgot/reset password — `apps/web-admin/src/routes/{forgot,reset}-password`.

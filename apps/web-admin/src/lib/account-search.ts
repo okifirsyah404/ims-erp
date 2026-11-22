@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /**
  * Search-param contract of the single account settings page (`/accounts`,
- * ERP-0109).
+ * ERP-0111).
  *
  * @remarks
  * Better Auth returns to this page from two flows that leave the app:

@@ -19,6 +19,7 @@ import {
 	boolean,
 	check,
 	index,
+	integer,
 	numeric,
 	pgSchema,
 	text,
@@ -119,6 +120,25 @@ export const warehouses = warehouseSchema.table(
 			)
 			.where(sql`organization_id IS NULL AND is_default AND deleted_at IS NULL`),
 	],
+);
+
+/** Image gallery of a warehouse; the first live row is the cover. */
+export const warehouseImages = warehouseSchema.table(
+	'warehouse_images',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		warehouseId: uuid('warehouse_id')
+			.notNull()
+			.references(() => warehouses.id, { onDelete: 'cascade' }),
+		/** Object-storage key of the WebP image; never a public URL. */
+		objectKey: text('object_key').notNull(),
+		caption: varchar('caption', { length: 200 }),
+		sortOrder: integer('sort_order').notNull().default(0),
+		...softDeleteTimestamps,
+	},
+	(table) => [index('warehouse_images_warehouse_id_sort_idx').on(table.warehouseId, table.sortOrder)],
 );
 
 /** Warehouse address, strictly 1:1. Only `village_id` is stored (Q10). */
@@ -290,6 +310,7 @@ export const warehouseCodeNumberings =
  * ------------------------------------------------------------------------ */
 
 export type TWarehouseSelect = typeof warehouses.$inferSelect;
+export type TWarehouseImageSelect = typeof warehouseImages.$inferSelect;
 export type TWarehouseInsert = typeof warehouses.$inferInsert;
 export type TWarehouseAddressSelect = typeof warehouseAddresses.$inferSelect;
 export type TWarehouseAddressInsert = typeof warehouseAddresses.$inferInsert;

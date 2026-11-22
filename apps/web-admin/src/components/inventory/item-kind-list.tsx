@@ -1,3 +1,4 @@
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import {
@@ -28,7 +29,6 @@ import {
 } from '@ims-erp/ui/components/card';
 import {
 	Dialog,
-	DialogContent,
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
@@ -50,7 +50,9 @@ import {
 	type TProductCreateInput,
 	type TProductKind,
 } from '@/lib/inventory-api';
-import { uploadDocumentImage } from '@/lib/document-image-api';
+import { toCompositionLines, type TCompositionDraft } from '@/lib/product-composition';
+import { saveProductComponents } from '@/lib/inventory-api';
+import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { formatIdr, rupiahToMinor } from '@/lib/format';
 import { itemDetailLink, itemEditLink } from '@/lib/item-routes';
 import { useItemCategoryNames } from '@/lib/item-category-api';
@@ -423,7 +425,8 @@ function CreateItemDialog({
 
 	async function handleSubmit(
 		input: TProductCreateInput | Record<string, unknown>,
-		imageFile?: File | null,
+		imageFiles: File[] = [],
+		composition: TCompositionDraft[] | null = null,
 	) {
 		setSubmitting(true);
 		try {
@@ -431,12 +434,18 @@ function CreateItemDialog({
 			if (!created) throw new Error(t('common:error.failed'));
 			// A failed photo upload must not lose the item that was just created:
 			// report it and carry on (the detail page can retry).
-			if (imageFile) {
+			if (imageFiles.length) {
+				const errors = await uploadGalleryImages(`/products/${created.id}`, imageFiles);
+				if (errors.length) toast.error(errors.join(' '));
+			}
+			if (composition?.length) {
 				try {
-					await uploadDocumentImage<TProduct>(`/products/${created.id}/image`, imageFile);
+					await saveProductComponents(created.id, toCompositionLines(composition) ?? []);
 				} catch (error) {
 					toast.error(
-						error instanceof Error ? error.message : t('common:error.failed'),
+						t('product:composition.saveFailed', {
+							message: error instanceof Error ? error.message : t('common:error.failed'),
+						}),
 					);
 				}
 			}
@@ -453,7 +462,7 @@ function CreateItemDialog({
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-2xl'>
+			<ScrollDialogContent className='sm:max-w-2xl'>
 				<DialogHeader>
 					<DialogTitle>{t('product:form.newItem')}</DialogTitle>
 				</DialogHeader>
@@ -461,10 +470,10 @@ function CreateItemDialog({
 					compact
 					defaultItemKind={kind}
 					submitting={submitting}
-					onSubmit={(input, imageFile) => void handleSubmit(input, imageFile)}
+					onSubmit={(input, imageFiles, composition) => void handleSubmit(input, imageFiles, composition)}
 					onCancel={onClose}
 				/>
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }

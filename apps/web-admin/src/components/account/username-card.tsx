@@ -34,7 +34,7 @@ import {
 type TAvailability = 'checking' | 'available' | 'taken' | null;
 
 /**
- * Username card on `/accounts` (ERP-0109; moved off the profile form). Live
+ * Username card on `/accounts` (ERP-0111; moved off the profile form). Live
  * availability uses the public `/username-availability` check the claim form
  * already relies on; saving goes through `PATCH /users/me`, where Better
  * Auth's username plugin stays the authority (normalisation, uniqueness).

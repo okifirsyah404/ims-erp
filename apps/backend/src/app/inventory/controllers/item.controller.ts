@@ -10,6 +10,12 @@ import {
 	updateItemSchema,
 } from '../contracts/item.contract';
 import { documentImageFrom } from '@providers/s3/document-image';
+import {
+	galleryCaptionFrom,
+	galleryCaptionSchema,
+	galleryImageParamSchema,
+	galleryOrderSchema,
+} from '@shared/media';
 import { ITEM_IMAGE_SERVICE_TOKEN, ITEM_SERVICE_TOKEN } from '../constants/di';
 import type { ItemService, TItemActor } from '../services/item.service';
 
@@ -125,7 +131,76 @@ export class ItemController {
 					ok(await itemImages.setImage(itemIdParamSchema.parse(params).id, erp.organizationId, null)),
 				{
 					erp: { permission: ['asset:update'] },
-					detail: { description: 'Removes the asset photo' },
+					detail: { description: 'Removes the asset cover photo' },
+				},
+			)
+			.get(
+				'/:id/images',
+				async ({ params, erp }) =>
+					ok(await itemImages.list(itemIdParamSchema.parse(params).id, erp.organizationId)),
+				{
+					erp: { permission: ['asset:read'] },
+					detail: { description: 'Asset image gallery, cover first' },
+				},
+			)
+			.post(
+				'/:id/images',
+				async ({ params, body, erp, status }) =>
+					status(
+						201,
+						created(
+							await itemImages.addImage(
+								itemIdParamSchema.parse(params).id,
+								erp.organizationId,
+								documentImageFrom(body),
+								galleryCaptionFrom(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['asset:update'] },
+					detail: { description: 'Adds a gallery image (multipart `file`, optional `caption`; max 10)' },
+				},
+			)
+			// Static before `/:imageId`.
+			.put(
+				'/:id/images/order',
+				async ({ params, body, erp }) =>
+					ok(
+						await itemImages.reorder(
+							itemIdParamSchema.parse(params).id,
+							erp.organizationId,
+							galleryOrderSchema.parse(body).imageIds,
+						),
+					),
+				{
+					erp: { permission: ['asset:update'] },
+					detail: { description: 'Reorders the gallery; the first id becomes the cover' },
+				},
+			)
+			.patch(
+				'/:id/images/:imageId',
+				async ({ params, body, erp }) => {
+					const { id, imageId } = galleryImageParamSchema.parse(params);
+					return ok(
+						await itemImages.updateCaption(id, erp.organizationId, imageId, galleryCaptionSchema.parse(body).caption),
+					);
+				},
+				{
+					erp: { permission: ['asset:update'] },
+					detail: { description: 'Edits the caption of a gallery image' },
+				},
+			)
+			.delete(
+				'/:id/images/:imageId',
+				async ({ params, erp }) => {
+					const { id, imageId } = galleryImageParamSchema.parse(params);
+					await itemImages.removeImage(id, erp.organizationId, imageId);
+					return noContent();
+				},
+				{
+					erp: { permission: ['asset:update'] },
+					detail: { description: 'Removes a gallery image' },
 				},
 			)
 			.post(

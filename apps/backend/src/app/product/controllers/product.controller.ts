@@ -6,12 +6,19 @@ import { created, noContent, ok, okPaginated } from '@http/response';
 import {
 	createProductSchema,
 	idParamSchema,
+	productComponentsSchema,
 	productListQuerySchema,
 	productRangesQuerySchema,
 	updateProductSchema,
 } from '../contracts/product.contract';
 import { documentImageFrom } from '@providers/s3/document-image';
-import { PRODUCT_IMAGE_SERVICE_TOKEN, PRODUCT_SERVICE_TOKEN } from '../constants/di';
+import {
+	galleryCaptionFrom,
+	galleryCaptionSchema,
+	galleryImageParamSchema,
+	galleryOrderSchema,
+} from '@shared/media';
+import { PRODUCT_COMPONENT_SERVICE_TOKEN, PRODUCT_IMAGE_SERVICE_TOKEN, PRODUCT_SERVICE_TOKEN } from '../constants/di';
 import type { ProductService } from '../services/product.service';
 import type { TAuditActor } from '@shared/audit';
 
@@ -51,6 +58,7 @@ export class ProductController {
 	static plugin() {
 		const productService = container.resolve<ProductService>(PRODUCT_SERVICE_TOKEN);
 		const productImages = container.resolve(PRODUCT_IMAGE_SERVICE_TOKEN);
+		const productComponents = container.resolve(PRODUCT_COMPONENT_SERVICE_TOKEN);
 
 		return domainPlugin({
 			name: 'products',
@@ -84,7 +92,10 @@ export class ProductController {
 			.get(
 				'/:id',
 				async ({ params }) =>
-					ok(productImages.withImageUrl(await productService.getProduct(idParamSchema.parse(params).id))),
+					ok({
+						...(await productImages.withImages(await productService.getProduct(idParamSchema.parse(params).id))),
+						components: await productComponents.list(idParamSchema.parse(params).id),
+					}),
 				{
 					erp: { permission: ['product:read'] },
 					detail: { description: 'One item by id' },
@@ -145,7 +156,7 @@ export class ProductController {
 					ok(await productImages.setImage(idParamSchema.parse(params).id, documentImageFrom(body))),
 				{
 					erp: { permission: ['product:update'] },
-					detail: { description: 'Uploads the photo printed on documents (multipart `file`)' },
+					detail: { description: 'Replaces the cover photo printed on documents (multipart `file`)' },
 				},
 			)
 			.delete(
@@ -153,7 +164,93 @@ export class ProductController {
 				async ({ params }) => ok(await productImages.setImage(idParamSchema.parse(params).id, null)),
 				{
 					erp: { permission: ['product:update'] },
-					detail: { description: 'Removes the document photo' },
+					detail: { description: 'Removes the cover photo' },
+				},
+			)
+			.get(
+				'/:id/components',
+				async ({ params }) => ok(await productComponents.list(idParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['product:read'] },
+					detail: { description: 'Components and materials a product is made of' },
+				},
+			)
+			.put(
+				'/:id/components',
+				async ({ params, body }) =>
+					ok(
+						await productComponents.replace(
+							idParamSchema.parse(params).id,
+							productComponentsSchema.parse(body).lines,
+						),
+					),
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Replaces the whole composition (components and materials, with quantities)' },
+				},
+			)
+			.get(
+				'/:id/images',
+				async ({ params }) => ok(await productImages.list(idParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['product:read'] },
+					detail: { description: 'Image gallery, cover first' },
+				},
+			)
+			.post(
+				'/:id/images',
+				async ({ params, body, status }) =>
+					status(
+						201,
+						created(
+							await productImages.addImage(
+								idParamSchema.parse(params).id,
+								documentImageFrom(body),
+								galleryCaptionFrom(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Adds a gallery image (multipart `file`, optional `caption`; max 10)' },
+				},
+			)
+			// Static before `/:imageId`.
+			.put(
+				'/:id/images/order',
+				async ({ params, body }) =>
+					ok(
+						await productImages.reorder(
+							idParamSchema.parse(params).id,
+							galleryOrderSchema.parse(body).imageIds,
+						),
+					),
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Reorders the gallery; the first id becomes the cover' },
+				},
+			)
+			.patch(
+				'/:id/images/:imageId',
+				async ({ params, body }) => {
+					const { id, imageId } = galleryImageParamSchema.parse(params);
+					return ok(await productImages.updateCaption(id, imageId, galleryCaptionSchema.parse(body).caption));
+				},
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Edits the caption of a gallery image' },
+				},
+			)
+			.delete(
+				'/:id/images/:imageId',
+				async ({ params }) => {
+					const { id, imageId } = galleryImageParamSchema.parse(params);
+					await productImages.removeImage(id, imageId);
+					return noContent();
+				},
+				{
+					erp: { permission: ['product:update'] },
+					detail: { description: 'Removes a gallery image' },
 				},
 			);
 	}

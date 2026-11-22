@@ -1,9 +1,9 @@
 import { MoneyInput } from '@/components/money-input';
-import { ImageDropzone } from '@/components/image-dropzone';
-import { uploadDocumentImage } from '@/lib/document-image-api';
+import { ImageGalleryField } from '@/components/image-gallery-field';
+import { uploadGalleryImages } from '@/lib/image-gallery-api';
 import { minorToRupiah, rupiahToMinor } from '@/lib/format';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -70,17 +70,9 @@ export function AssetForm({
 	const [acquisitionCost, setAcquisitionCost] = useState(
 		minorToRupiah(asset?.acquisitionCost ?? 0),
 	);
-	// Create only: the photo endpoint is id-scoped, so the picked file is
-	// uploaded right after the asset exists.
-	const [imageFile, setImageFile] = useState<File | null>(null);
-	const imagePreviewUrl = useMemo(
-		() => (imageFile ? URL.createObjectURL(imageFile) : null),
-		[imageFile],
-	);
-	useEffect(() => {
-		if (!imagePreviewUrl) return;
-		return () => URL.revokeObjectURL(imagePreviewUrl);
-	}, [imagePreviewUrl]);
+	// The gallery endpoints are id-scoped, so pictures picked here are
+	// uploaded right after the asset is created or saved.
+	const [imageFiles, setImageFiles] = useState<File[]>([]);
 	const [acquisitionDate, setAcquisitionDate] = useState(
 		asset?.acquisitionDate ?? '',
 	);
@@ -96,21 +88,20 @@ export function AssetForm({
 				locationDescription: location || null,
 			};
 			// The kind is fixed at registration; the update contract has no field for it.
-			if (asset) return updateAsset(asset.id, payload);
-			const created = await createAsset({ ...payload, itemKind });
-			// A failed photo upload must not lose the asset that was just created.
-			if (imageFile) {
-				try {
-					await uploadDocumentImage(`/inventory/items/${created.id}/image`, imageFile);
-				} catch (error) {
-					toast.error(error instanceof Error ? error.message : t('common:error.failed'));
-				}
+			const saved = asset
+				? await updateAsset(asset.id, payload)
+				: await createAsset({ ...payload, itemKind });
+			// A failed upload must not lose the asset that was just saved.
+			if (imageFiles.length) {
+				const errors = await uploadGalleryImages(`/inventory/items/${asset?.id ?? saved.id}`, imageFiles);
+				if (errors.length) toast.error(errors.join(' '));
 			}
-			return created;
+			return saved;
 		},
 		onSuccess: async () => {
 			toast.success(asset ? t('updated') : t('created'));
 			await queryClient.invalidateQueries({ queryKey: ['assets'] });
+			await queryClient.invalidateQueries({ queryKey: ['image-gallery'] });
 			if (onSuccess) onSuccess();
 			else void navigate({ to: '/assets/register' });
 		},
@@ -163,6 +154,16 @@ export function AssetForm({
 		</>
 	);
 
+	const gallery = (
+		<ImageGalleryField
+			label={t('register.photo')}
+			entityPath={asset ? `/inventory/items/${asset.id}` : undefined}
+			queue={imageFiles}
+			onQueueChange={setImageFiles}
+			disabled={save.isPending}
+		/>
+	);
+
 	const actions = (
 		<>
 			<Button
@@ -188,38 +189,7 @@ export function AssetForm({
 	if (compact) {
 		return (
 			<div className='flex flex-col gap-4'>
-				{!asset && (
-					<div className='flex flex-col items-center gap-2'>
-						<ImageDropzone
-							previewUrl={imagePreviewUrl}
-							disabled={save.isPending}
-							label={t('register.photo')}
-							hint={t('common:image.drop')}
-							onSelect={setImageFile}
-							onReject={(reason) =>
-								toast.error(
-									t(reason === 'size' ? 'common:image.sourceTooLarge' : 'common:image.wrongType'),
-								)
-							}
-						/>
-						{imageFile && (
-							<>
-								<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
-									{imageFile.name}
-								</p>
-								<Button
-									type='button'
-									variant='ghost'
-									size='sm'
-									disabled={save.isPending}
-									onClick={() => setImageFile(null)}
-								>
-									{t('common:image.remove')}
-								</Button>
-							</>
-						)}
-					</div>
-				)}
+				{gallery}
 				<div className='flex flex-col gap-3'>{fields}</div>
 				<DialogFooter>{actions}</DialogFooter>
 			</div>
@@ -240,7 +210,10 @@ export function AssetForm({
 				<CardHeader>
 					<CardTitle className='text-sm'>{t('register.name')}</CardTitle>
 				</CardHeader>
-				<CardContent className='space-y-3'>{fields}</CardContent>
+				<CardContent className='space-y-3'>
+					{gallery}
+					{fields}
+				</CardContent>
 				<CardFooter className='justify-end gap-2'>{actions}</CardFooter>
 			</Card>
 		</div>

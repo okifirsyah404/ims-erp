@@ -27,7 +27,7 @@ type TSession = NonNullable<
 >[number];
 
 /**
- * Session management card on `/accounts` (ERP-0109). Lists the signed-in
+ * Session management card on `/accounts` (ERP-0111). Lists the signed-in
  * user's active sessions via Better Auth's `listSessions`, with per-row
  * revoke and a bulk "revoke all other sessions" action in the card header.
  */

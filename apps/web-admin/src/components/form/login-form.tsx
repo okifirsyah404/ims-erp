@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /**
- * Marks the button of the previous sign-in method (ERP-0110) with a small
+ * Marks the button of the previous sign-in method (ERP-0112) with a small
  * pill on its top-right border.
  *
  * @remarks

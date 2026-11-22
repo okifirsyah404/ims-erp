@@ -2,7 +2,7 @@ import { lastLoginMethod } from 'better-auth/plugins';
 
 /**
  * Which sign-in method the resolver adds on top of the library mapping
- * (ERP-0110).
+ * (ERP-0112).
  *
  * @returns `'username'` for `/sign-in/username`, otherwise `null` so Better
  * Auth's own mapping applies (email, the OAuth callback's provider id,

@@ -50,7 +50,7 @@ const DENIAL_MESSAGE_KEY = {
 
 /**
  * Rejects a session for an inactive account (pending invitation,
- * deactivated, soft-deleted — ERP-0109) or for a user who is neither an
+ * deactivated, soft-deleted — ERP-0111) or for a user who is neither an
  * application admin nor a holder of an internal organization role.
  *
  * @remarks

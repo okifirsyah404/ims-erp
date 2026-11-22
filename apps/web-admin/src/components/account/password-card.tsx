@@ -32,7 +32,7 @@ import { Skeleton } from '@ims-erp/ui/components/skeleton';
  * A user who only ever signed in with Google has no `credential` account, so
  * `changePassword` cannot succeed. That user gets a password-setup link
  * instead: Better Auth's reset flow creates the credential account when it
- * is missing (`resetCredentialPassword`, ERP-0109).
+ * is missing (`resetCredentialPassword`, ERP-0111).
  */
 export function PasswordCard({ id }: { id: string }) {
 	const { t } = useTranslation(['account', 'common']);

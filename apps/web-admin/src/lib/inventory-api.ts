@@ -78,6 +78,8 @@ export type TProduct = {
 	specification: string | null;
 	/** Short-lived URL of the document photo (single/detail endpoints). */
 	imageUrl?: string | null;
+	/** Components and materials it is made of (single endpoint only). */
+	components?: TProductComponent[];
 	unitLabel: TItemUnitLabel;
 	/** Inactive products are not offered for new documents. */
 	isActive: boolean;
@@ -98,6 +100,21 @@ export type TProduct = {
 	 * `warehouseId` (decimal string, like the numeric column).
 	 */
 	quantityOnHand?: string | null;
+};
+
+/** One line of a product's composition (`GET /products/:id/components`). */
+export type TProductComponent = {
+	id: string;
+	componentId: string;
+	code: string;
+	name: string;
+	productKind: TProductKind;
+	unitLabel: string;
+	/** `numeric(18,3)` as a decimal string. */
+	quantity: string;
+	sortOrder: number;
+	/** The component was archived after it was listed. */
+	isArchived: boolean;
 };
 
 /** One serialized unit of a product (`inventory.item_serials`). */
@@ -242,6 +259,18 @@ export async function updateProduct(
 			body: JSON.stringify(input),
 		},
 	);
+	return envelope.data;
+}
+
+/** Replaces the whole composition of a product (components and materials). */
+export async function saveProductComponents(
+	productId: string,
+	lines: { componentId: string; quantity: number }[],
+) {
+	const envelope = await request<TProductComponent[]>(`/products/${productId}/components`, {
+		method: 'PUT',
+		body: JSON.stringify({ lines }),
+	});
 	return envelope.data;
 }
 

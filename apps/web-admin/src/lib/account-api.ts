@@ -4,7 +4,7 @@ import { queryClient } from './query-client';
 
 /**
  * Sign-in methods linked to the current user (Better Auth `listAccounts`,
- * ERP-0109). `providerId` is `credential` for the email/password login and
+ * ERP-0111). `providerId` is `credential` for the email/password login and
  * the provider id (`google`) for social logins.
  */
 export type TLinkedAccount = {

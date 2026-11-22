@@ -8,7 +8,7 @@ import { userCacheEvictHook } from '../../src/providers/better-auth/options/user
 
 /**
  * Unit tests for the Better Auth change-email and email-verification policy
- * (ERP-0109). Both modules are side-effect free, so no module mocks are
+ * (ERP-0111). Both modules are side-effect free, so no module mocks are
  * needed (Bun's `mock.module` would leak into `mailer.test.ts`).
  */
 

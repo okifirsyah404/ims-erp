@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -19,8 +19,7 @@ import { DialogFooter } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { Separator } from '@ims-erp/ui/components/separator';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { ImageDropzone } from '@/components/image-dropzone';
-import { toast } from '@/components/toast';
+import { ImageGalleryField } from '@/components/image-gallery-field';
 import type {
 	TWarehouseDetail,
 	TWarehouseCreateInput,
@@ -96,26 +95,17 @@ export function WarehouseForm({
 	/** Inside a dialog: no page heading or card chrome, the dialog supplies both. */
 	compact?: boolean;
 	submitting: boolean;
-	/** `imageFile` is the photo picked on create (uploaded by the caller). */
+	/** `imageFiles` are the pictures picked but not uploaded yet (the caller uploads them). */
 	onSubmit: (
 		input: TWarehouseCreateInput | TWarehouseUpdateInput,
-		imageFile?: File | null,
+		imageFiles: File[],
 	) => void;
 	onCancel: () => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common', 'warehouse']);
 	const isEdit = warehouse != null;
 
-	const [imageFile, setImageFile] = useState<File | null>(null);
-	// Object URL preview for the picked photo; revoked when it is replaced.
-	const imagePreviewUrl = useMemo(
-		() => (imageFile ? URL.createObjectURL(imageFile) : null),
-		[imageFile],
-	);
-	useEffect(() => {
-		if (!imagePreviewUrl) return;
-		return () => URL.revokeObjectURL(imagePreviewUrl);
-	}, [imagePreviewUrl]);
+	const [imageFiles, setImageFiles] = useState<File[]>([]);
 
 	const [code, setCode] = useState(warehouse?.code ?? '');
 	const [name, setName] = useState(warehouse?.name ?? '');
@@ -159,7 +149,7 @@ export function WarehouseForm({
 						// Omitted organizationId means global.
 						address,
 					},
-			isEdit ? null : imageFile,
+			imageFiles,
 		);
 	}
 
@@ -183,44 +173,15 @@ export function WarehouseForm({
 				title={t('warehouse:warehouseForm.details')}
 				description={t('warehouse:warehouseForm.detailsDescription')}
 			>
-				{/* Create only: the photo endpoint is id-scoped, so the caller
-				    uploads the picked file right after the warehouse exists. */}
-				{!isEdit && (
-					<div className='mb-4 flex flex-col items-center gap-2'>
-						<ImageDropzone
-							previewUrl={imagePreviewUrl}
-							disabled={submitting}
-							label={t('warehouse:warehouseForm.photo')}
-							hint={t('common:image.drop')}
-							onSelect={setImageFile}
-							onReject={(reason) =>
-								toast.error(
-									t(
-										reason === 'size'
-											? 'common:image.sourceTooLarge'
-											: 'common:image.wrongType',
-									),
-								)
-							}
-						/>
-						{imageFile && (
-							<>
-								<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
-									{imageFile.name}
-								</p>
-								<Button
-									type='button'
-									variant='ghost'
-									size='sm'
-									disabled={submitting}
-									onClick={() => setImageFile(null)}
-								>
-									{t('common:image.remove')}
-								</Button>
-							</>
-						)}
-					</div>
-				)}
+				<div className='mb-4'>
+					<ImageGalleryField
+						label={t('warehouse:warehouseForm.photo')}
+						entityPath={warehouse ? `/warehouses/${warehouse.id}` : undefined}
+						queue={imageFiles}
+						onQueueChange={setImageFiles}
+						disabled={submitting}
+					/>
+				</div>
 					<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 						<Field>
 							<FieldLabel htmlFor='warehouse-code'>

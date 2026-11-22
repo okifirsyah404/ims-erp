@@ -5,7 +5,7 @@ type BetterAuthChangeEmailOptions = NonNullable<
 >;
 
 /**
- * Self-service email change (`POST /api/auth/change-email`, ERP-0109).
+ * Self-service email change (`POST /api/auth/change-email`, ERP-0111).
  *
  * @remarks
  * Better Auth refuses every change-email call unless `enabled` is set, which

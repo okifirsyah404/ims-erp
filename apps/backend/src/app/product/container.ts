@@ -7,6 +7,9 @@ import {
 	PRODUCT_CATEGORY_REPOSITORY_TOKEN,
 	PRODUCT_CATEGORY_SERVICE_TOKEN,
 	PRODUCT_CODE_NUMBERING_REPOSITORY_TOKEN,
+	PRODUCT_COMPONENT_REPOSITORY_TOKEN,
+	PRODUCT_COMPONENT_SERVICE_TOKEN,
+	PRODUCT_IMAGE_REPOSITORY_TOKEN,
 	PRODUCT_IMAGE_SERVICE_TOKEN,
 	PRODUCT_KINDS_SERVICE_TOKEN,
 	PRODUCT_LISTING_SERVICE_TOKEN,
@@ -18,6 +21,9 @@ import {
 import { UNWIRED_PRODUCT_COUNTS } from './contracts/product-counts.port';
 import { ProductCategoryRepository } from './repositories/product-category.repository';
 import { ProductCodeNumberingRepository } from './repositories/code-numbering.repository';
+import { ProductComponentRepository } from './repositories/product-component.repository';
+import { ProductComponentService } from './services/product-component.service';
+import { ProductImageRepository } from './repositories/product-image.repository';
 import { ProductRepository } from './repositories/product.repository';
 import { ExportedProductService } from './services/exported-product.service';
 import { ProductCategoryService } from './services/product-category.service';
@@ -62,6 +68,9 @@ export function registerProduct(container: DependencyContainer): void {
 		useClass: ProductCategoryRepository,
 	});
 	container.register(PRODUCT_SERVICE_TOKEN, { useClass: ProductService });
+	container.register(PRODUCT_COMPONENT_REPOSITORY_TOKEN, { useClass: ProductComponentRepository });
+	container.register(PRODUCT_COMPONENT_SERVICE_TOKEN, { useClass: ProductComponentService });
+	container.register(PRODUCT_IMAGE_REPOSITORY_TOKEN, { useClass: ProductImageRepository });
 	container.register(PRODUCT_IMAGE_SERVICE_TOKEN, { useClass: ProductImageService });
 	container.register(PRODUCT_CATEGORY_SERVICE_TOKEN, {
 		useClass: ProductCategoryService,

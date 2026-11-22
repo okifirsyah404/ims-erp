@@ -1,6 +1,6 @@
 # ADR-0029 - Invitation-only sign-in: Google never signs up, only active accounts get a session
 
-- **Status:** proposed (2026-11-21, ERP-0109).
+- **Status:** proposed (2026-11-21, ERP-0111).
 - **Amends:** ADR-0017 §8 and ADR-0018 §5 (login gate): the gate now also
   requires an active account.
 - **Numbering note:** ADR-0027 (portal session cookie) and ADR-0028 (website
@@ -72,7 +72,7 @@ default true — an active account with an unverified local email gets
   again (existing restore behaviour).
 - Existing sessions of a user who becomes inactive are refused on their next
   request by the per-request gate.
-- Verified 2026-11-21 (see `docs/plan/progress.md`, ERP-0109): unit tests
+- Verified 2026-11-21 (see `docs/plan/progress.md`, ERP-0111): unit tests
   (`login-gate.test.ts`, `google-login-hardening.auth.test.ts`,
   web-admin `login-error.test.ts`) and an in-process run of Better Auth's
   OAuth user-info step with the configured Google provider against the dev

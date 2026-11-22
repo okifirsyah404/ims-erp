@@ -10,6 +10,9 @@ const api: Record<keyof typeof en, string> = {
 	'common.conflict': 'Konflik',
 	'common.unsupportedMediaType': 'Tipe media tidak didukung',
 	'common.imageInvalid': 'Unggah gambar PNG, JPG, WebP, atau HEIC maksimal {{max}} MB',
+	'common.imageNotFound': 'Gambar tidak ditemukan',
+	'common.imageLimit': 'Unggah maksimal {{max}} gambar',
+	'common.imageOrderInvalid': 'Kirim setiap id gambar saat ini tepat satu kali',
 	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
@@ -201,6 +204,8 @@ const api: Record<keyof typeof en, string> = {
 	'product.hasUnits':
 		'Barang tidak dapat diarsipkan karena masih memiliki {{count}} unit aktif',
 	'product.ruleViolation': 'Aturan produk tidak mengizinkan: {{rule}}',
+	'product.compositionParentKind': 'Hanya produk yang dapat memiliki komponen dan material',
+	'product.componentNotUsable': 'Setiap baris harus komponen atau material yang aktif dan terlihat oleh organisasi produk ini',
 
 	'warehouse.notFound': 'Gudang tidak ditemukan',
 	'warehouse.codeTaken':

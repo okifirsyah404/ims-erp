@@ -2,7 +2,7 @@ import { authClient } from './auth-client';
 
 /**
  * Sign-in methods Better Auth's `lastLoginMethod` plugin can record
- * (ERP-0110). `google` comes from the OAuth callback, `email`/`username`
+ * (ERP-0112). `google` comes from the OAuth callback, `email`/`username`
  * from the two credential endpoints the login form uses.
  */
 export const LAST_LOGIN_METHODS = [

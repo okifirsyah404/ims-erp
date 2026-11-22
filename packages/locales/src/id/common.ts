@@ -70,6 +70,14 @@ const common_: Record<keyof typeof common, string> = {
 	'image.sourceTooLarge': 'Gambar lebih dari 20 MB.',
 	'image.hint': 'PNG, JPG, atau WebP, maksimal 2 MB. Dikonversi ke WebP sebelum diunggah.',
 	'image.tooLarge': 'Gambar lebih dari 2 MB.',
+	'gallery.cover': 'Sampul',
+	'gallery.pending': 'Belum disimpan',
+	'gallery.add': 'Tambah gambar',
+	'gallery.caption': 'Keterangan',
+	'gallery.moveEarlier': 'Geser maju',
+	'gallery.moveLater': 'Geser mundur',
+	'gallery.limit': 'Maksimal {{max}} gambar.',
+	'gallery.hint': 'Maksimal {{max}} gambar, PNG, JPG, atau WebP. Gambar pertama menjadi sampul. Gambar baru diunggah saat disimpan.',
 };
 
 export default common_;

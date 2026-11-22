@@ -4,7 +4,7 @@ import { socialAccountLinkGuard } from '../../src/providers/better-auth/options/
 import { buildSocialProviders } from '../../src/providers/better-auth/options/social-providers.auth';
 
 /**
- * ERP-0109 hardening of Google sign-in: invitation-only, active accounts only.
+ * ERP-0111 hardening of Google sign-in: invitation-only, active accounts only.
  * No module mocks; the account owner lookup is injected.
  */
 

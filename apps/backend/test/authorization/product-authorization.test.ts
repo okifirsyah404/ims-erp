@@ -191,6 +191,7 @@ beforeAll(async () => {
 		PRODUCT_CATEGORY_REPOSITORY_TOKEN,
 		PRODUCT_SERVICE_TOKEN,
 		PRODUCT_IMAGE_SERVICE_TOKEN,
+		PRODUCT_COMPONENT_SERVICE_TOKEN,
 		PRODUCT_LISTING_SERVICE_TOKEN,
 		PRODUCT_CATEGORY_SERVICE_TOKEN,
 		PRODUCT_NUMBERING_SERVICE_TOKEN,
@@ -274,7 +275,14 @@ beforeAll(async () => {
 	// Photos are not part of the authorization suite.
 	container.registerInstance(PRODUCT_IMAGE_SERVICE_TOKEN, {
 		withImageUrl: (row: object) => ({ ...row, imageUrl: null }),
+		withImages: async (row: object) => ({ ...row, imageUrl: null, images: [] }),
+		list: async () => [],
 		urlFor: () => null,
+	} as never);
+	// The composition is covered by its own unit test.
+	container.registerInstance(PRODUCT_COMPONENT_SERVICE_TOKEN, {
+		list: async () => [],
+		replace: async () => [],
 	} as never);
 	container.registerInstance(
 		PRODUCT_SERVICE_TOKEN,

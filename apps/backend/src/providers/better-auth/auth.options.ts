@@ -142,7 +142,7 @@ export const betterAuthOptions = {
 		},
 		account: {
 			// Invitation-only: a social login is never attached to a pending,
-			// deactivated or deleted account (ERP-0109).
+			// deactivated or deleted account (ERP-0111).
 			create: {
 				before: socialAccountLinkGuard(async (userId) => {
 					const [owner] = await drizzleDB

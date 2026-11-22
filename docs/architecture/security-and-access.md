@@ -345,7 +345,7 @@ table as they land; the catalog resources (`audit_log:read`,
   live by `apps/backend/scripts/smoke-cache-invalidation.ts`. Better Auth's
   own writes (update-user, admin API, email verification, change-email) evict
   the same keys through `databaseHooks.user.update.after`
-  (`options/user-cache.auth.ts`, ERP-0109).
+  (`options/user-cache.auth.ts`, ERP-0111).
 
 ## Bootstrap / seeding
 

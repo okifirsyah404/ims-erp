@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { resolveLoginMethodOverride } from '../../src/providers/better-auth/plugins/last-login-method.auth';
 
 /**
- * ERP-0110: only `/sign-in/username` is added to the library's mapping.
+ * ERP-0112: only `/sign-in/username` is added to the library's mapping.
  * Everything else returns `null` so Better Auth's default resolver runs.
  */
 describe('resolveLoginMethodOverride', () => {

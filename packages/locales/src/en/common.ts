@@ -73,6 +73,14 @@ const common = {
 	'image.sourceTooLarge': 'The image is larger than 20 MB.',
 	'image.hint': 'PNG, JPG or WebP, at most 2 MB. Converted to WebP before upload.',
 	'image.tooLarge': 'The image is larger than 2 MB.',
+	'gallery.cover': 'Cover',
+	'gallery.pending': 'Not saved yet',
+	'gallery.add': 'Add images',
+	'gallery.caption': 'Caption',
+	'gallery.moveEarlier': 'Move earlier',
+	'gallery.moveLater': 'Move later',
+	'gallery.limit': 'You can add at most {{max}} images.',
+	'gallery.hint': 'Up to {{max}} images, PNG, JPG or WebP. The first image is the cover. New images upload when you save.',
 } as const;
 
 export default common;
