@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { Layers, X } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,6 +8,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@ims-erp/ui/components/empty';
 import {
 	Table,
 	TableBody,
@@ -70,7 +71,15 @@ export function ProductCompositionPanel({
 	return (
 		<div className='flex flex-col gap-3'>
 			{components.length === 0 ? (
-				<p className='text-sm text-muted-foreground'>{t('product:composition.empty')}</p>
+				<Empty className='border'>
+					<EmptyHeader>
+						<EmptyMedia variant='icon'>
+							<Layers />
+						</EmptyMedia>
+						<EmptyTitle>{t('product:composition.empty')}</EmptyTitle>
+						<EmptyDescription>{t('product:composition.emptyHint')}</EmptyDescription>
+					</EmptyHeader>
+				</Empty>
 			) : (
 				<Table>
 					<TableHeader>
