@@ -24,8 +24,8 @@ import {
 } from '@/lib/service-ticket-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/projects/tickets` — service tickets (M07, ADR-0011 step 6c). */
-export const Route = createFileRoute('/_authed/projects/tickets/')({
+/** `/tickets` — service tickets (M07, ADR-0011 step 6c). */
+export const Route = createFileRoute('/_authed/tickets/')({
 	component: TicketListPage,
 });
 
@@ -46,7 +46,7 @@ function TicketListPage() {
 				cell: ({ row }) => (
 					<>
 						<Link
-							to='/projects/tickets/$ticketId'
+							to='/tickets/$ticketId'
 							params={{ ticketId: row.original.id }}
 							className='font-medium hover:underline'
 						>
@@ -101,7 +101,7 @@ function TicketListPage() {
 					<p className='text-sm text-muted-foreground'>{t('projects:tickets.description')}</p>
 				</div>
 				{canCreate && (
-					<Button render={<Link to='/projects/tickets/new' />} nativeButton={false}>
+					<Button render={<Link to='/tickets/new' />} nativeButton={false}>
 						{t('projects:tickets.new')}
 					</Button>
 				)}

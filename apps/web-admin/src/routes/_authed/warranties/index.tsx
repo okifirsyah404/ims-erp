@@ -13,29 +13,31 @@ import type { DataTableFeatures } from '@/components/data-table/data-table-featu
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { formatBusinessDate } from '@/lib/format';
-import { allBastsQueryOptions, type TBastRow } from '@/lib/handover-api';
+import { warrantiesQueryOptions, type TWarrantyRow } from '@/lib/handover-api';
 
-/** `/projects/bast` — BASTs of the projects visible to the caller. */
-export const Route = createFileRoute('/_authed/projects/bast/')({
-	component: BastListPage,
+/** `/warranties` — warranty certificates of the visible projects (M07). */
+export const Route = createFileRoute('/_authed/warranties/')({
+	component: WarrantyListPage,
 });
 
-function BastListPage() {
-	const { t, i18n } = useTranslation(['projects', 'common']);
+function WarrantyListPage() {
+	const { t, i18n } = useTranslation(['projects', 'common', 'nav']);
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState('');
 	const deferredSearch = useDeferredValue(search.trim());
-	const { data, isPending, isError, error } = useQuery(allBastsQueryOptions({ page, search: deferredSearch || undefined }));
+	const { data, isPending, isError, error } = useQuery(
+		warrantiesQueryOptions({ page, search: deferredSearch || undefined }),
+	);
 
-	const columns = useMemo<ColumnDef<DataTableFeatures, TBastRow, CellData>[]>(
+	const columns = useMemo<ColumnDef<DataTableFeatures, TWarrantyRow, CellData>[]>(
 		() => [
 			{
-				id: 'number',
-				header: t('projects:bast.number'),
+				id: 'code',
+				header: t('projects:field.code'),
 				cell: ({ row }) => (
 					<Link
-						to='/projects/$projectId/bast/$bastId/print'
-						params={{ projectId: row.original.projectId, bastId: row.original.id }}
+						to='/projects/$projectId'
+						params={{ projectId: row.original.projectId }}
 						className='font-medium hover:underline'
 					>
 						{row.original.code}
@@ -44,40 +46,42 @@ function BastListPage() {
 			},
 			{
 				id: 'project',
-				header: t('projects:field.code'),
-				cell: ({ row }) => (
-					<Link
-						to='/projects/$projectId'
-						params={{ projectId: row.original.projectId }}
-						className='hover:underline'
-					>
-						{row.original.projectCode}
-					</Link>
-				),
-			},
-			{
-				id: 'firstParty',
-				header: t('projects:bast.firstParty'),
+				header: t('projects:field.title'),
 				cell: ({ row }) => (
 					<>
-						<div>{row.original.firstPartyCompany}</div>
-						<div className='text-xs text-muted-foreground'>{row.original.workTitle}</div>
+						<div>{row.original.projectName}</div>
+						<div className='text-xs text-muted-foreground'>{row.original.customerName}</div>
 					</>
 				),
 			},
 			{
-				id: 'date',
-				header: t('projects:bast.date'),
-				meta: { cellClassName: 'text-muted-foreground' },
-				cell: ({ row }) => formatBusinessDate(row.original.bastDate, i18n.language),
+				id: 'issueDate',
+				header: t('projects:warranty.issueDate'),
+				cell: ({ row }) => formatBusinessDate(row.original.issueDate, i18n.language),
 			},
 			{
-				id: 'status',
+				id: 'period',
+				header: t('projects:warranty.months'),
+				cell: ({ row }) => (
+					<>
+						{formatBusinessDate(row.original.startDate, i18n.language)}
+						{' – '}
+						{formatBusinessDate(row.original.endDate, i18n.language)}
+					</>
+				),
+			},
+			{
+				id: 'active',
 				header: t('projects:field.status'),
-				cell: ({ row }) =>
-					row.original.status === 'cancelled' ? (
-						<Badge variant='outline'>{t('projects:bast.cancelled')}</Badge>
-					) : null,
+				cell: ({ row }) => {
+					const today = new Date().toISOString().slice(0, 10);
+					const active = today <= row.original.endDate;
+					return (
+						<Badge variant={active ? 'default' : 'outline'}>
+							{active ? t('projects:ticket.inWarranty') : t('projects:ticket.outOfWarranty')}
+						</Badge>
+					);
+				},
 			},
 		],
 		[t, i18n.language],
@@ -86,8 +90,7 @@ function BastListPage() {
 	return (
 		<div className='flex flex-col gap-6'>
 			<div>
-				<h1 className='text-2xl font-bold'>{t('projects:bastList.title')}</h1>
-				<p className='text-sm text-muted-foreground'>{t('projects:bastList.description')}</p>
+				<h1 className='text-2xl font-bold'>{t('nav:item.warranty')}</h1>
 			</div>
 			<InputGroup className='max-w-sm'>
 				<InputGroupAddon align='inline-start'>
@@ -95,8 +98,8 @@ function BastListPage() {
 				</InputGroupAddon>
 				<InputGroupInput
 					type='search'
-					aria-label={t('projects:bastList.search')}
-					placeholder={t('projects:bastList.search')}
+					aria-label={t('projects:field.code')}
+					placeholder={t('projects:list.search')}
 					value={search}
 					onChange={(event) => {
 						setSearch(event.target.value);
@@ -108,7 +111,7 @@ function BastListPage() {
 				{isError ? (
 					<ErrorState error={error} />
 				) : !isPending && data.rows.length === 0 ? (
-					<EmptyState title={t('projects:bast.none')} />
+					<EmptyState title={t('projects:warranty.none')} />
 				) : (
 					<>
 						<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} />

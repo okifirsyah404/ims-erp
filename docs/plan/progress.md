@@ -14914,3 +14914,62 @@ Status: implemented (design docs; no live DB touched).
   docs/database/docs.dbml path.
 - Not verified: nothing applied to any database; the DBML remains a design
   reference for hand-written Drizzle schemas.
+
+## 2026-11-22 - ERP-0108: M07 sidebar restructure (Projects / Tickets / Warranty)
+
+**Request.** Sidebar section "Projects & After-sales" renamed to "Projects";
+Tickets and Warranty become top-level items; the Projects item links straight
+to `/projects` (children removed); BAST moves conceptually into the project
+detail (its standalone list page is removed); Tickets and Warranty get their
+own URLs (`/tickets`, `/warranties`).
+
+**Backend.**
+- `warranty.controller.ts`: prefix `/projects/warranties` -> `/warranties`
+  (per-project paths unchanged in full: `GET/PUT /warranties/projects/:projectId`,
+  `GET /warranties/projects/:projectId/draft`).
+- New list endpoint `GET /warranties` (`warrantyListQuerySchema`: page/limit/
+  search, `okPaginated`, `project:read`, same visibility rule as the BAST
+  list: `canViewAll` else involved-projects only).
+- `WarrantyRepository.paginate` (join projects for `projectCode`/
+  `customerName`, soft-delete filters, search over code/projectName/
+  projectOwner/project code); `WarrantyService.list`; contract types
+  `TWarrantyRow` / `TWarrantyPaginationRequest`. Test double in
+  `test/unit/handover-warranty.test.ts` gained a `paginate` stub.
+
+**Frontend.**
+- `routes/_authed/projects/tickets/` -> `routes/_authed/tickets/` (git mv;
+  index/new/`$ticketId`; all `Link`/`navigate`/comments updated). The ticket
+  API client already called `/tickets` (own backend module) - unchanged.
+- `routes/_authed/projects/bast/index.tsx` deleted; BAST list lives in the
+  project detail (`ProjectDocumentsCard`). Removed `bast.number` and
+  `bastList.*` locale keys (orphaned).
+- New `routes/_authed/warranties/index.tsx`: paginated certificate list
+  (code, project, issue date, period, active/out-of-warranty badge) linking
+  to the project detail. `warrantiesQueryOptions` + `TWarrantyRow` in
+  `handover-api.ts`; warranty client paths updated to `/warranties/*`.
+- `nav-config.ts` M07 flattened: Projects (`FileCheck2`, `project.read`),
+  Tickets (`Ticket`, `service_ticket.read`), Warranty (`ShieldCheck`,
+  `project.read`). The Projects leaf needs its own permission: `leafVisible`
+  is deny-by-default, so an item with no permission is hidden (first pass
+  shipped without it and the item never rendered). Guarded by two assertions
+  added to `test/unit/filter-nav.test.ts`: every M07 leaf has a gate, and the
+  three URLs are `/projects`, `/tickets`, `/warranties`.
+- `build-crumbs.ts`: `/tickets`, `/tickets/new`, `/warranties` added;
+  `/projects/bast`, `/projects/tickets*` removed.
+- Locales en/id: `section.projects` "Projects"/"Proyek"; `item.tickets`
+  "Tickets"/"Tiket"; new `item.warranty` "Warranty"/"Garansi"; `item.bast`
+  removed (dead-key guard).
+- `routeTree.gen.ts` regenerated.
+
+**Checks.**
+- `bunx tsc --noEmit -p tsconfig.json` (backend): clean.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun run test` (root): 7/7 tasks (backend 1232 incl. handover-warranty 5,
+  web-admin 172, locales 106 incl. parity + dead keys).
+- `bun run lint`: 0 errors (web-admin 17 pre-existing warnings).
+- Live bring-up `bun run dev`: backend on :3001; `GET /warranties` and
+  `GET /tickets` both return the 401 auth envelope (guards work; no session).
+
+**Docs.** `backlog.md` ERP-0108 added (implemented). `docs/database/` reviewed:
+no table/column/index/constraint change (controller prefix move + list query
+only), `docs.dbml` unchanged.

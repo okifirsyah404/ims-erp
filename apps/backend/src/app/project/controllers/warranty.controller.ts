@@ -2,13 +2,13 @@ import { projectContextFor } from '@app/project/utils/project-context';
 import { type IPermissionResolver, PERMISSION_RESOLVER_TOKEN } from '@authorization/permission-resolver';
 import { container } from 'tsyringe';
 import { domainPlugin } from '@http/plugin';
-import { ok } from '@http/response';
+import { ok, okPaginated } from '@http/response';
 import { WARRANTY_SERVICE_TOKEN } from '../constants/di';
-import { warrantyBodySchema, warrantyProjectParamSchema } from '../contracts/warranty.contract';
+import { warrantyBodySchema, warrantyListQuerySchema, warrantyProjectParamSchema } from '../contracts/warranty.contract';
 
 /**
  * REST controller for warranty certificates
- * (`/warranty-certificates/projects/:projectId`, ADR-0011 step 6b).
+ * (`/warranties`, ADR-0011 step 6b).
  * Reading follows the project (`project:read` + project visibility);
  * saving needs `project:update`.
  */
@@ -18,7 +18,11 @@ export class WarrantyController {
 		const permissions = container.resolve<IPermissionResolver>(PERMISSION_RESOLVER_TOKEN);
 		const projectId = (params: unknown) => warrantyProjectParamSchema.parse(params).projectId;
 
-		return domainPlugin({ name: 'project-warranties', prefix: '/projects/warranties', tags: ['Project'], guards: 'erp' })
+		return domainPlugin({ name: 'project-warranties', prefix: '/warranties', tags: ['Project'], guards: 'erp' })
+			.get('', async ({ query, erp }) => okPaginated(await service.list(await projectContextFor(permissions, erp), warrantyListQuerySchema.parse(query))), {
+				erp: { permission: ['project:read'] },
+				detail: { description: 'Certificates of the projects visible to the caller' },
+			})
 			.get(
 				'/projects/:projectId',
 				async ({ params, erp }) => ok(await service.get(await projectContextFor(permissions, erp), projectId(params))),

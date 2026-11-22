@@ -38,8 +38,8 @@ import {
 } from '@/lib/service-ticket-api';
 import { usePermission } from '@/lib/use-permission';
 
-/** `/projects/tickets/$ticketId` — one service ticket and its actions. */
-export const Route = createFileRoute('/_authed/projects/tickets/$ticketId')({
+/** `/tickets/$ticketId` — one service ticket and its actions. */
+export const Route = createFileRoute('/_authed/tickets/$ticketId')({
 	component: TicketDetailPage,
 });
 
@@ -77,7 +77,7 @@ function TicketDetailPage() {
 		return (
 			<div className='flex flex-col gap-6'>
 				<ErrorState error={error} bordered />
-				<Link to='/projects/tickets' className='text-sm hover:underline'>
+				<Link to='/tickets' className='text-sm hover:underline'>
 					{t('projects:tickets.back')}
 				</Link>
 			</div>
@@ -102,7 +102,7 @@ function TicketDetailPage() {
 
 	return (
 		<div className='flex flex-col gap-6'>
-			<Link to='/projects/tickets' className='text-sm text-muted-foreground hover:underline'>
+			<Link to='/tickets' className='text-sm text-muted-foreground hover:underline'>
 				{t('projects:tickets.back')}
 			</Link>
 			<div className='flex flex-wrap items-start justify-between gap-4'>

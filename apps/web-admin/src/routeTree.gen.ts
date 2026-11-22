@@ -40,8 +40,12 @@ import { Route as AuthedReportsIndexRouteImport } from './routes/_authed/reports
 import { Route as AuthedSalesIndexRouteImport } from './routes/_authed/sales/index'
 import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/subscription/index'
 import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
+import { Route as AuthedTicketsIndexRouteImport } from './routes/_authed/tickets/index'
+import { Route as AuthedTicketsTicketIdRouteImport } from './routes/_authed/tickets/$ticketId'
+import { Route as AuthedTicketsNewRouteImport } from './routes/_authed/tickets/new'
 import { Route as AuthedWarehousesIndexRouteImport } from './routes/_authed/warehouses/index'
 import { Route as AuthedWarehousesWarehouseIdRouteImport } from './routes/_authed/warehouses/$warehouseId'
+import { Route as AuthedWarrantiesIndexRouteImport } from './routes/_authed/warranties/index'
 import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -110,10 +114,6 @@ import { Route as AuthedProcurementSuppliersSupplierIdRouteImport } from './rout
 import { Route as AuthedProductsProductIdIndexRouteImport } from './routes/_authed/products/$productId/index'
 import { Route as AuthedProductsProductIdEditRouteImport } from './routes/_authed/products/$productId/edit'
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
-import { Route as AuthedProjectsBastIndexRouteImport } from './routes/_authed/projects/bast/index'
-import { Route as AuthedProjectsTicketsIndexRouteImport } from './routes/_authed/projects/tickets/index'
-import { Route as AuthedProjectsTicketsTicketIdRouteImport } from './routes/_authed/projects/tickets/$ticketId'
-import { Route as AuthedProjectsTicketsNewRouteImport } from './routes/_authed/projects/tickets/new'
 import { Route as AuthedReportsMonthlyArchivesIndexRouteImport } from './routes/_authed/reports/monthly-archives/index'
 import { Route as AuthedSalesDeliveriesIndexRouteImport } from './routes/_authed/sales/deliveries/index'
 import { Route as AuthedSalesDeliveriesNewRouteImport } from './routes/_authed/sales/deliveries/new'
@@ -332,6 +332,21 @@ const AuthedSubscriptionNewRoute = AuthedSubscriptionNewRouteImport.update({
   path: '/subscription/new',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedTicketsIndexRoute = AuthedTicketsIndexRouteImport.update({
+  id: '/tickets/',
+  path: '/tickets/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTicketsTicketIdRoute = AuthedTicketsTicketIdRouteImport.update({
+  id: '/tickets/$ticketId',
+  path: '/tickets/$ticketId',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedTicketsNewRoute = AuthedTicketsNewRouteImport.update({
+  id: '/tickets/new',
+  path: '/tickets/new',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedWarehousesIndexRoute = AuthedWarehousesIndexRouteImport.update({
   id: '/warehouses/',
   path: '/warehouses/',
@@ -343,6 +358,11 @@ const AuthedWarehousesWarehouseIdRoute =
     path: '/warehouses/$warehouseId',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedWarrantiesIndexRoute = AuthedWarrantiesIndexRouteImport.update({
+  id: '/warranties/',
+  path: '/warranties/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const PrintQuotationsQuotationIdRoute =
   PrintQuotationsQuotationIdRouteImport.update({
     id: '/print/quotations/$quotationId',
@@ -737,29 +757,6 @@ const AuthedProjectsProjectIdIndexRoute =
     path: '/projects/$projectId/',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedProjectsBastIndexRoute = AuthedProjectsBastIndexRouteImport.update({
-  id: '/projects/bast/',
-  path: '/projects/bast/',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedProjectsTicketsIndexRoute =
-  AuthedProjectsTicketsIndexRouteImport.update({
-    id: '/projects/tickets/',
-    path: '/projects/tickets/',
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedProjectsTicketsTicketIdRoute =
-  AuthedProjectsTicketsTicketIdRouteImport.update({
-    id: '/projects/tickets/$ticketId',
-    path: '/projects/tickets/$ticketId',
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedProjectsTicketsNewRoute =
-  AuthedProjectsTicketsNewRouteImport.update({
-    id: '/projects/tickets/new',
-    path: '/projects/tickets/new',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedReportsMonthlyArchivesIndexRoute =
   AuthedReportsMonthlyArchivesIndexRouteImport.update({
     id: '/reports/monthly-archives/',
@@ -1126,6 +1123,8 @@ export interface FileRoutesByFullPath {
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
+  '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/account/': typeof AuthedAccountIndexRoute
@@ -1143,7 +1142,9 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthedReportsIndexRoute
   '/sales/': typeof AuthedSalesIndexRoute
   '/subscription/': typeof AuthedSubscriptionIndexRoute
+  '/tickets/': typeof AuthedTicketsIndexRoute
   '/warehouses/': typeof AuthedWarehousesIndexRoute
+  '/warranties/': typeof AuthedWarrantiesIndexRoute
   '/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
@@ -1167,8 +1168,6 @@ export interface FileRoutesByFullPath {
   '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
-  '/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
-  '/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -1219,8 +1218,6 @@ export interface FileRoutesByFullPath {
   '/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
   '/products/$productId/': typeof AuthedProductsProductIdIndexRoute
   '/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
-  '/projects/bast/': typeof AuthedProjectsBastIndexRoute
-  '/projects/tickets/': typeof AuthedProjectsTicketsIndexRoute
   '/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
   '/sales/deliveries/': typeof AuthedSalesDeliveriesIndexRoute
   '/sales/down-payments/': typeof AuthedSalesDownPaymentsIndexRoute
@@ -1289,6 +1286,8 @@ export interface FileRoutesByTo {
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
+  '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/account': typeof AuthedAccountIndexRoute
@@ -1306,7 +1305,9 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthedReportsIndexRoute
   '/sales': typeof AuthedSalesIndexRoute
   '/subscription': typeof AuthedSubscriptionIndexRoute
+  '/tickets': typeof AuthedTicketsIndexRoute
   '/warehouses': typeof AuthedWarehousesIndexRoute
+  '/warranties': typeof AuthedWarrantiesIndexRoute
   '/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
@@ -1330,8 +1331,6 @@ export interface FileRoutesByTo {
   '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
-  '/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
-  '/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -1382,8 +1381,6 @@ export interface FileRoutesByTo {
   '/procurement/suppliers': typeof AuthedProcurementSuppliersIndexRoute
   '/products/$productId': typeof AuthedProductsProductIdIndexRoute
   '/projects/$projectId': typeof AuthedProjectsProjectIdIndexRoute
-  '/projects/bast': typeof AuthedProjectsBastIndexRoute
-  '/projects/tickets': typeof AuthedProjectsTicketsIndexRoute
   '/reports/monthly-archives': typeof AuthedReportsMonthlyArchivesIndexRoute
   '/sales/deliveries': typeof AuthedSalesDeliveriesIndexRoute
   '/sales/down-payments': typeof AuthedSalesDownPaymentsIndexRoute
@@ -1456,6 +1453,8 @@ export interface FileRoutesById {
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
   '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
+  '/_authed/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
+  '/_authed/tickets/new': typeof AuthedTicketsNewRoute
   '/_authed/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
@@ -1473,7 +1472,9 @@ export interface FileRoutesById {
   '/_authed/reports/': typeof AuthedReportsIndexRoute
   '/_authed/sales/': typeof AuthedSalesIndexRoute
   '/_authed/subscription/': typeof AuthedSubscriptionIndexRoute
+  '/_authed/tickets/': typeof AuthedTicketsIndexRoute
   '/_authed/warehouses/': typeof AuthedWarehousesIndexRoute
+  '/_authed/warranties/': typeof AuthedWarrantiesIndexRoute
   '/_authed/assets/borrowings/$borrowingId': typeof AuthedAssetsBorrowingsBorrowingIdRoute
   '/_authed/assets/borrowings/new': typeof AuthedAssetsBorrowingsNewRoute
   '/_authed/assets/register/$assetId': typeof AuthedAssetsRegisterAssetIdRoute
@@ -1497,8 +1498,6 @@ export interface FileRoutesById {
   '/_authed/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/_authed/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
   '/_authed/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
-  '/_authed/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
-  '/_authed/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/_authed/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
   '/_authed/sales/orders/$orderId': typeof AuthedSalesOrdersOrderIdRoute
   '/_authed/sales/quotes/new': typeof AuthedSalesQuotesNewRoute
@@ -1549,8 +1548,6 @@ export interface FileRoutesById {
   '/_authed/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
   '/_authed/products/$productId/': typeof AuthedProductsProductIdIndexRoute
   '/_authed/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
-  '/_authed/projects/bast/': typeof AuthedProjectsBastIndexRoute
-  '/_authed/projects/tickets/': typeof AuthedProjectsTicketsIndexRoute
   '/_authed/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
   '/_authed/sales/deliveries/': typeof AuthedSalesDeliveriesIndexRoute
   '/_authed/sales/down-payments/': typeof AuthedSalesDownPaymentsIndexRoute
@@ -1623,6 +1620,8 @@ export interface FileRouteTypes {
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
+    | '/tickets/$ticketId'
+    | '/tickets/new'
     | '/warehouses/$warehouseId'
     | '/print/quotations/$quotationId'
     | '/account/'
@@ -1640,7 +1639,9 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/sales/'
     | '/subscription/'
+    | '/tickets/'
     | '/warehouses/'
+    | '/warranties/'
     | '/assets/borrowings/$borrowingId'
     | '/assets/borrowings/new'
     | '/assets/register/$assetId'
@@ -1664,8 +1665,6 @@ export interface FileRouteTypes {
     | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
     | '/products/$productId/edit'
-    | '/projects/tickets/$ticketId'
-    | '/projects/tickets/new'
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
@@ -1716,8 +1715,6 @@ export interface FileRouteTypes {
     | '/procurement/suppliers/'
     | '/products/$productId/'
     | '/projects/$projectId/'
-    | '/projects/bast/'
-    | '/projects/tickets/'
     | '/reports/monthly-archives/'
     | '/sales/deliveries/'
     | '/sales/down-payments/'
@@ -1786,6 +1783,8 @@ export interface FileRouteTypes {
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
+    | '/tickets/$ticketId'
+    | '/tickets/new'
     | '/warehouses/$warehouseId'
     | '/print/quotations/$quotationId'
     | '/account'
@@ -1803,7 +1802,9 @@ export interface FileRouteTypes {
     | '/reports'
     | '/sales'
     | '/subscription'
+    | '/tickets'
     | '/warehouses'
+    | '/warranties'
     | '/assets/borrowings/$borrowingId'
     | '/assets/borrowings/new'
     | '/assets/register/$assetId'
@@ -1827,8 +1828,6 @@ export interface FileRouteTypes {
     | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
     | '/products/$productId/edit'
-    | '/projects/tickets/$ticketId'
-    | '/projects/tickets/new'
     | '/sales/deliveries/new'
     | '/sales/orders/$orderId'
     | '/sales/quotes/new'
@@ -1879,8 +1878,6 @@ export interface FileRouteTypes {
     | '/procurement/suppliers'
     | '/products/$productId'
     | '/projects/$projectId'
-    | '/projects/bast'
-    | '/projects/tickets'
     | '/reports/monthly-archives'
     | '/sales/deliveries'
     | '/sales/down-payments'
@@ -1952,6 +1949,8 @@ export interface FileRouteTypes {
     | '/_authed/profiles/edit'
     | '/_authed/projects/new'
     | '/_authed/subscription/new'
+    | '/_authed/tickets/$ticketId'
+    | '/_authed/tickets/new'
     | '/_authed/warehouses/$warehouseId'
     | '/print/quotations/$quotationId'
     | '/_authed/account/'
@@ -1969,7 +1968,9 @@ export interface FileRouteTypes {
     | '/_authed/reports/'
     | '/_authed/sales/'
     | '/_authed/subscription/'
+    | '/_authed/tickets/'
     | '/_authed/warehouses/'
+    | '/_authed/warranties/'
     | '/_authed/assets/borrowings/$borrowingId'
     | '/_authed/assets/borrowings/new'
     | '/_authed/assets/register/$assetId'
@@ -1993,8 +1994,6 @@ export interface FileRouteTypes {
     | '/_authed/procurement/receipts/new'
     | '/_authed/procurement/suppliers/$supplierId'
     | '/_authed/products/$productId/edit'
-    | '/_authed/projects/tickets/$ticketId'
-    | '/_authed/projects/tickets/new'
     | '/_authed/sales/deliveries/new'
     | '/_authed/sales/orders/$orderId'
     | '/_authed/sales/quotes/new'
@@ -2045,8 +2044,6 @@ export interface FileRouteTypes {
     | '/_authed/procurement/suppliers/'
     | '/_authed/products/$productId/'
     | '/_authed/projects/$projectId/'
-    | '/_authed/projects/bast/'
-    | '/_authed/projects/tickets/'
     | '/_authed/reports/monthly-archives/'
     | '/_authed/sales/deliveries/'
     | '/_authed/sales/down-payments/'
@@ -2330,6 +2327,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSubscriptionNewRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/tickets/': {
+      id: '/_authed/tickets/'
+      path: '/tickets'
+      fullPath: '/tickets/'
+      preLoaderRoute: typeof AuthedTicketsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/tickets/$ticketId': {
+      id: '/_authed/tickets/$ticketId'
+      path: '/tickets/$ticketId'
+      fullPath: '/tickets/$ticketId'
+      preLoaderRoute: typeof AuthedTicketsTicketIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/tickets/new': {
+      id: '/_authed/tickets/new'
+      path: '/tickets/new'
+      fullPath: '/tickets/new'
+      preLoaderRoute: typeof AuthedTicketsNewRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/warehouses/': {
       id: '/_authed/warehouses/'
       path: '/warehouses'
@@ -2342,6 +2360,13 @@ declare module '@tanstack/react-router' {
       path: '/warehouses/$warehouseId'
       fullPath: '/warehouses/$warehouseId'
       preLoaderRoute: typeof AuthedWarehousesWarehouseIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/warranties/': {
+      id: '/_authed/warranties/'
+      path: '/warranties'
+      fullPath: '/warranties/'
+      preLoaderRoute: typeof AuthedWarrantiesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/print/quotations/$quotationId': {
@@ -2818,34 +2843,6 @@ declare module '@tanstack/react-router' {
       path: '/projects/$projectId'
       fullPath: '/projects/$projectId/'
       preLoaderRoute: typeof AuthedProjectsProjectIdIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/projects/bast/': {
-      id: '/_authed/projects/bast/'
-      path: '/projects/bast'
-      fullPath: '/projects/bast/'
-      preLoaderRoute: typeof AuthedProjectsBastIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/projects/tickets/': {
-      id: '/_authed/projects/tickets/'
-      path: '/projects/tickets'
-      fullPath: '/projects/tickets/'
-      preLoaderRoute: typeof AuthedProjectsTicketsIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/projects/tickets/$ticketId': {
-      id: '/_authed/projects/tickets/$ticketId'
-      path: '/projects/tickets/$ticketId'
-      fullPath: '/projects/tickets/$ticketId'
-      preLoaderRoute: typeof AuthedProjectsTicketsTicketIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/projects/tickets/new': {
-      id: '/_authed/projects/tickets/new'
-      path: '/projects/tickets/new'
-      fullPath: '/projects/tickets/new'
-      preLoaderRoute: typeof AuthedProjectsTicketsNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/reports/monthly-archives/': {
@@ -3351,6 +3348,8 @@ interface AuthedRouteChildren {
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
   AuthedProjectsNewRoute: typeof AuthedProjectsNewRoute
   AuthedSubscriptionNewRoute: typeof AuthedSubscriptionNewRoute
+  AuthedTicketsTicketIdRoute: typeof AuthedTicketsTicketIdRoute
+  AuthedTicketsNewRoute: typeof AuthedTicketsNewRoute
   AuthedWarehousesWarehouseIdRoute: typeof AuthedWarehousesWarehouseIdRouteWithChildren
   AuthedAssetsIndexRoute: typeof AuthedAssetsIndexRoute
   AuthedCrmIndexRoute: typeof AuthedCrmIndexRoute
@@ -3365,7 +3364,9 @@ interface AuthedRouteChildren {
   AuthedReportsIndexRoute: typeof AuthedReportsIndexRoute
   AuthedSalesIndexRoute: typeof AuthedSalesIndexRoute
   AuthedSubscriptionIndexRoute: typeof AuthedSubscriptionIndexRoute
+  AuthedTicketsIndexRoute: typeof AuthedTicketsIndexRoute
   AuthedWarehousesIndexRoute: typeof AuthedWarehousesIndexRoute
+  AuthedWarrantiesIndexRoute: typeof AuthedWarrantiesIndexRoute
   AuthedAssetsBorrowingsBorrowingIdRoute: typeof AuthedAssetsBorrowingsBorrowingIdRoute
   AuthedAssetsBorrowingsNewRoute: typeof AuthedAssetsBorrowingsNewRoute
   AuthedAssetsRegisterAssetIdRoute: typeof AuthedAssetsRegisterAssetIdRoute
@@ -3388,8 +3389,6 @@ interface AuthedRouteChildren {
   AuthedProcurementReceiptsNewRoute: typeof AuthedProcurementReceiptsNewRoute
   AuthedProcurementSuppliersSupplierIdRoute: typeof AuthedProcurementSuppliersSupplierIdRoute
   AuthedProductsProductIdEditRoute: typeof AuthedProductsProductIdEditRoute
-  AuthedProjectsTicketsTicketIdRoute: typeof AuthedProjectsTicketsTicketIdRoute
-  AuthedProjectsTicketsNewRoute: typeof AuthedProjectsTicketsNewRoute
   AuthedSalesDeliveriesNewRoute: typeof AuthedSalesDeliveriesNewRoute
   AuthedSalesOrdersOrderIdRoute: typeof AuthedSalesOrdersOrderIdRoute
   AuthedSalesQuotesNewRoute: typeof AuthedSalesQuotesNewRoute
@@ -3436,8 +3435,6 @@ interface AuthedRouteChildren {
   AuthedProcurementSuppliersIndexRoute: typeof AuthedProcurementSuppliersIndexRoute
   AuthedProductsProductIdIndexRoute: typeof AuthedProductsProductIdIndexRoute
   AuthedProjectsProjectIdIndexRoute: typeof AuthedProjectsProjectIdIndexRoute
-  AuthedProjectsBastIndexRoute: typeof AuthedProjectsBastIndexRoute
-  AuthedProjectsTicketsIndexRoute: typeof AuthedProjectsTicketsIndexRoute
   AuthedReportsMonthlyArchivesIndexRoute: typeof AuthedReportsMonthlyArchivesIndexRoute
   AuthedSalesDeliveriesIndexRoute: typeof AuthedSalesDeliveriesIndexRoute
   AuthedSalesDownPaymentsIndexRoute: typeof AuthedSalesDownPaymentsIndexRoute
@@ -3502,6 +3499,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedOrganizationsOrganizationIdRouteWithChildren,
   AuthedProjectsNewRoute: AuthedProjectsNewRoute,
   AuthedSubscriptionNewRoute: AuthedSubscriptionNewRoute,
+  AuthedTicketsTicketIdRoute: AuthedTicketsTicketIdRoute,
+  AuthedTicketsNewRoute: AuthedTicketsNewRoute,
   AuthedWarehousesWarehouseIdRoute:
     AuthedWarehousesWarehouseIdRouteWithChildren,
   AuthedAssetsIndexRoute: AuthedAssetsIndexRoute,
@@ -3517,7 +3516,9 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedReportsIndexRoute: AuthedReportsIndexRoute,
   AuthedSalesIndexRoute: AuthedSalesIndexRoute,
   AuthedSubscriptionIndexRoute: AuthedSubscriptionIndexRoute,
+  AuthedTicketsIndexRoute: AuthedTicketsIndexRoute,
   AuthedWarehousesIndexRoute: AuthedWarehousesIndexRoute,
+  AuthedWarrantiesIndexRoute: AuthedWarrantiesIndexRoute,
   AuthedAssetsBorrowingsBorrowingIdRoute:
     AuthedAssetsBorrowingsBorrowingIdRoute,
   AuthedAssetsBorrowingsNewRoute: AuthedAssetsBorrowingsNewRoute,
@@ -3548,8 +3549,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProcurementSuppliersSupplierIdRoute:
     AuthedProcurementSuppliersSupplierIdRoute,
   AuthedProductsProductIdEditRoute: AuthedProductsProductIdEditRoute,
-  AuthedProjectsTicketsTicketIdRoute: AuthedProjectsTicketsTicketIdRoute,
-  AuthedProjectsTicketsNewRoute: AuthedProjectsTicketsNewRoute,
   AuthedSalesDeliveriesNewRoute: AuthedSalesDeliveriesNewRoute,
   AuthedSalesOrdersOrderIdRoute: AuthedSalesOrdersOrderIdRoute,
   AuthedSalesQuotesNewRoute: AuthedSalesQuotesNewRoute,
@@ -3602,8 +3601,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProcurementSuppliersIndexRoute: AuthedProcurementSuppliersIndexRoute,
   AuthedProductsProductIdIndexRoute: AuthedProductsProductIdIndexRoute,
   AuthedProjectsProjectIdIndexRoute: AuthedProjectsProjectIdIndexRoute,
-  AuthedProjectsBastIndexRoute: AuthedProjectsBastIndexRoute,
-  AuthedProjectsTicketsIndexRoute: AuthedProjectsTicketsIndexRoute,
   AuthedReportsMonthlyArchivesIndexRoute:
     AuthedReportsMonthlyArchivesIndexRoute,
   AuthedSalesDeliveriesIndexRoute: AuthedSalesDeliveriesIndexRoute,

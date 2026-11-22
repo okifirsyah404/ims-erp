@@ -110,6 +110,9 @@ beforeEach(() => {
 			async update(id, data) {
 				return Object.assign(certificates.find((row) => row.id === id)!, data);
 			},
+			paginate: async () => {
+				throw new Error('not used in this suite');
+			},
 		},
 		handover,
 		{

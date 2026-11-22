@@ -16,8 +16,8 @@ import { formatBusinessDate } from '@/lib/format';
 import { projectsQueryOptions } from '@/lib/project-api';
 import { checkWarranty, createTicket, STAFF_TICKET_CHANNELS, type TTicketChannel, type TWarrantyCheck } from '@/lib/service-ticket-api';
 
-/** `/projects/tickets/new` — open a service ticket with the warranty check. */
-export const Route = createFileRoute('/_authed/projects/tickets/new')({
+/** `/tickets/new` — open a service ticket with the warranty check. */
+export const Route = createFileRoute('/_authed/tickets/new')({
 	component: NewTicketPage,
 });
 
@@ -79,7 +79,7 @@ function NewTicketPage() {
 						});
 						await queryClient.invalidateQueries({ queryKey: ['tickets'] });
 						toast.success(t('projects:tickets.created'));
-						void navigate({ to: '/projects/tickets/$ticketId', params: { ticketId: created.id } });
+						void navigate({ to: '/tickets/$ticketId', params: { ticketId: created.id } });
 					} catch (cause) {
 						toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
 					} finally {
@@ -195,7 +195,7 @@ function NewTicketPage() {
 						</FieldGroup>
 					</CardContent>
 					<CardFooter className='justify-end gap-2'>
-						<Button type='button' variant='outline' onClick={() => void navigate({ to: '/projects/tickets' })}>
+						<Button type='button' variant='outline' onClick={() => void navigate({ to: '/tickets' })}>
 							{t('common:action.cancel')}
 						</Button>
 						<Button type='submit' disabled={busy || !customerId || !reporterName.trim() || !complaint.trim()}>
