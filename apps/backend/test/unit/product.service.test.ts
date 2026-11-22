@@ -118,6 +118,7 @@ function makeService(seed?: {
 	const unitCounts = new Map(Object.entries(seed?.unitCounts ?? {}));
 
 	const productRepository: IProductRepository = {
+		ranges: async () => ({ maxSellingPrice: 0, maxStock: 0 }),
 		paginate: async (request) => ({
 			meta: {
 				page: request.page,
@@ -308,6 +309,30 @@ describe('ProductService — reads', () => {
 		const { service } = makeService({ items: [active, inactive] });
 		const rows = await service.getActiveProducts([active.id, active.id, inactive.id]);
 		expect(rows.map((row) => row.id)).toEqual([active.id]);
+	});
+});
+
+describe('ProductService — serialization flag', () => {
+	test('refuses to flip isSerialized while the product has live units', async () => {
+		const seeded = makeItem({ isSerialized: true });
+		const { service } = makeService({ items: [seeded], unitCounts: { [seeded.id]: 3 } });
+		await expect(
+			service.updateProduct(seeded.id, { isSerialized: false }),
+		).rejects.toBeInstanceOf(ProductRuleViolationError);
+	});
+
+	test('allows flipping isSerialized when there are no units', async () => {
+		const seeded = makeItem({ isSerialized: true });
+		const { service } = makeService({ items: [seeded] });
+		const updated = await service.updateProduct(seeded.id, { isSerialized: false });
+		expect(updated.isSerialized).toBe(false);
+	});
+
+	test('re-sending the same isSerialized with units present is not a change', async () => {
+		const seeded = makeItem({ isSerialized: true });
+		const { service } = makeService({ items: [seeded], unitCounts: { [seeded.id]: 3 } });
+		const updated = await service.updateProduct(seeded.id, { isSerialized: true, name: 'Renamed' });
+		expect(updated.name).toBe('Renamed');
 	});
 });
 

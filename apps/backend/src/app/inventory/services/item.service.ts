@@ -216,7 +216,6 @@ export class ItemService {
 						description: current.description,
 						itemCategoryId: current.itemCategoryId,
 						locationDescription: current.locationDescription,
-						imageUrl: current.imageUrl,
 						acquisitionCost: current.acquisitionCost,
 					},
 					{
@@ -224,7 +223,6 @@ export class ItemService {
 						description: updated.description,
 						itemCategoryId: updated.itemCategoryId,
 						locationDescription: updated.locationDescription,
-						imageUrl: updated.imageUrl,
 						acquisitionCost: updated.acquisitionCost,
 					},
 				),

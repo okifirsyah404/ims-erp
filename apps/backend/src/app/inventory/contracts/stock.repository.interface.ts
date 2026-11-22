@@ -116,6 +116,13 @@ export interface IStockRepository {
 
 	/** Available quantity per item over every warehouse (website catalog, M04). */
 	availableByProducts(productIds: string[]): Promise<{ productId: string; available: number }[]>;
+
+	/**
+	 * Available quantity summed over every bin, for every product that has a
+	 * stock row. A product absent from the result holds 0. Backs the stock range
+	 * filter of the product list (ADR-0026: the product module cannot read `stocks`).
+	 */
+	availableTotals(): Promise<{ productId: string; available: number }[]>;
 	/**
 	 * Products with a physical presence in one warehouse (ADR-0026).
 	 *

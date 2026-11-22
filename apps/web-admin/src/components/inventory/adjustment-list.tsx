@@ -16,6 +16,7 @@ import {
 	type TStockAdjustment,
 } from '@/lib/adjustment-api';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ClipboardList } from 'lucide-react';
 import { toast } from '@/components/toast';
 
 /** Badge emphasis per status: only `posted` actually moved stock. */
@@ -184,7 +185,7 @@ export function AdjustmentList() {
 			{isError ? (
 				<ErrorState error={error} bordered />
 			) : !isPending && rows.length === 0 ? (
-				<EmptyState title={t('inventory:adjustments.empty')} bordered />
+				<EmptyState icon={ClipboardList} title={t('inventory:adjustments.empty')} bordered />
 			) : (
 				<DataTable
 					columns={columns}

@@ -294,7 +294,7 @@ export function AccountList() {
 						disabled={create.isPending || !code || !name}
 						onClick={() => void create.mutateAsync()}
 					>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{create.isPending
 							? t('finance:common.creating')
 							: t('finance:accounts.create')}

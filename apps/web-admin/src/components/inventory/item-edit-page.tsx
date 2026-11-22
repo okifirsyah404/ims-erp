@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router';
+import { Navigate, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SearchX } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
@@ -11,17 +12,20 @@ import { ItemForm } from '@/components/inventory/item-form';
 import {
 	productQueryOptions,
 	updateProduct,
+	type TProductKind,
 	type TProductUpdateInput,
 } from '@/lib/inventory-api';
+import { itemDetailLink, itemEditLink } from '@/lib/item-routes';
 
-/** `/inventory/items/$itemId/edit` — edits a product's mutable fields. */
-export const Route = createFileRoute('/_authed/inventory/items/$itemId/edit')({
-	component: EditItemPage,
-});
-
-function EditItemPage() {
+/**
+ * Edits a product's mutable fields, shared by the three kind routes.
+ *
+ * @remarks
+ * Like the detail page, an item opened under the wrong kind is redirected to
+ * the edit route of its own kind.
+ */
+export function ItemEditPage({ kind, itemId }: { kind: TProductKind; itemId: string }) {
 	const { t } = useTranslation(['inventory', 'common', 'product']);
-	const { itemId } = useParams({ from: Route.id });
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [submitting, setSubmitting] = useState(false);
@@ -39,10 +43,7 @@ function EditItemPage() {
 					queryKey: productQueryOptions(itemId).queryKey,
 				}),
 			]);
-			void navigate({
-				to: '/inventory/items/$itemId',
-				params: { itemId },
-			});
+			void navigate(itemDetailLink(kind, itemId));
 		} catch (error) {
 			toast.error(
 				error instanceof Error ? error.message : t('common:error.failed'),
@@ -59,9 +60,13 @@ function EditItemPage() {
 	if (!item) {
 		return (
 			<AdminOnly>
-				<EmptyState title={t('product:detail.notFound')} bordered />
+				<EmptyState icon={SearchX} title={t('product:detail.notFound')} bordered />
 			</AdminOnly>
 		);
+	}
+
+	if (item.productKind !== kind) {
+		return <Navigate {...itemEditLink(item.productKind, itemId)} replace />;
 	}
 
 	return (
@@ -70,9 +75,7 @@ function EditItemPage() {
 				item={item}
 				submitting={submitting}
 				onSubmit={(input) => void handleSubmit(input)}
-				onCancel={() =>
-					void navigate({ to: '/inventory/items/$itemId', params: { itemId } })
-				}
+				onCancel={() => void navigate(itemDetailLink(kind, itemId))}
 			/>
 		</AdminOnly>
 	);

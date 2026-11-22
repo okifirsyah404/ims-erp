@@ -99,6 +99,7 @@ beforeAll(async () => {
 	const rows = [seedRow(fixture.orgA)];
 
 	const productRepository: IProductRepository = {
+		ranges: async () => ({ maxSellingPrice: 0, maxStock: 0 }),
 		async paginate(request) {
 			return {
 				meta: {

@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -5,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
 	SelectContent,
@@ -234,17 +234,17 @@ export function OpeningBalancePage() {
 						value={asOfDate}
 						onChange={setAsOfDate}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('finance:opening.debit')}
 						value={debit}
-						onChange={(event) => setDebit(event.target.value)}
+						onValueChange={setDebit}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('finance:opening.credit')}
 						value={credit}
-						onChange={(event) => setCredit(event.target.value)}
+						onValueChange={setCredit}
 					/>
 					<Button
 						size='sm'

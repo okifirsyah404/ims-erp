@@ -104,6 +104,202 @@ Root `bun run test` / `lint` not re-run (no TS source changed).
 
 Next executable task: unchanged - P2 (ERP-0100, ERP-0101) after the D5
 decision, once PR #139 is reviewed.
+## 2026-11-22 - PR #141: inventory cards, photo uploads, filters, Rupiah input, per-kind item routes
+
+- Branch `feat/inventory-cards-photos-filters` (3 commits: backend, web-admin + packages, docs) opened as
+  https://github.com/okifirsyah404/ims-erp/pull/141 against `main`. The entries below describe its contents. The two new migrations
+  must be applied (`bun run drizzle:migrate`) on any database that runs it; browser verification is still outstanding (see each entry).
+
+## 2026-11-22 - Item list filters like the warehouse list, plus price and stock sliders
+
+- No backlog item; `docs/database/` unchanged (no schema change). `GET /products` gains `status` (`all|active|inactive`), `minPrice`/`maxPrice`
+  (selling price, IDR minor units), `minStock`/`maxStock` (available quantity summed over every bin; no stock row counts as 0) and
+  `sortBy` (`name|code|price`) / `sortDir`. New `GET /products/ranges?productKind=` returns `{ maxSellingPrice, maxStock }` for the slider
+  bounds (`product:read`, static route before `/:id`).
+- Stock is an `inventory` fact (ADR-0026): `IStockRepository.availableTotals()` -> `ExportedInventoryService.availableTotals()`; the product
+  repository turns it into an id predicate with the pure `stockRangePredicate` (`NOT IN` rows outside the range when the range includes 0, so
+  products without a stock row still match; `IN` otherwise). 5 unit tests for it; test doubles got `ranges`/`availableTotals`.
+- Web: `ItemFiltersPopover` (Funnel button with an active-count, Reset/Apply, drafts re-seeded on open) on the three list pages with category,
+  status, price (`Slider` + two `MoneyInput`), stock (`Slider` + two numeric `Input`) and sort. A thumb parked on a bound means "no limit", so
+  the URL only holds what narrows the list; prices live in rupiah in the URL and the list converts to minor units. The old inline category
+  select and "active only" checkbox are gone (`?activeOnly=true` links still read as `status=active`). Pure helpers in
+  `lib/item-filter-draft.ts` and `lib/item-list-search.ts` (tested).
+- Verified: backend `bun test` 1334 pass, `tsc` clean; live API probe against the running backend (ranges, price/status/sort/stock params all
+  200 with the expected rows); web-admin `tsc` clean, `bun test` 172 pass; locales 106 pass. **Not verified:** the popover in a browser, and the
+  stock filter against real stock rows (the dev database has none, so `maxStock` is 0 and the stock slider shows its disabled state).
+- Scope note: assets keep their existing select filters (price/stock do not apply to them); warehouses already had this popover.
+
+## 2026-11-22 - Card action menus (top-right "..." dropdown) with alert-dialog confirmation
+
+- No backlog item; `docs/database/` unchanged; no backend change. New `components/card-actions-menu.tsx` (`CardActionsMenu`,
+  `TCardAction`): a `DropdownMenu` in the top-right corner of the card, rendered as a **sibling** of the card's `<Link>` inside a
+  `relative` wrapper (portal clicks bubble through the React tree and would otherwise navigate). Actions with `confirm` open the
+  `AlertDialog`; an optional `reasonPlaceholder` adds a required reason input.
+- Meaning (decided with the user): **Archive = deactivate** (reversible; products/warehouses `isActive=false`, assets `inactive`
+  with the mandatory reason, D18; the entry becomes **Activate** when already inactive), **Delete = the existing soft delete**
+  (`DELETE`, which the backend refuses while live units/history exist - surfaced as a toast, not pre-checked).
+- Menus: product/component/material (`ItemKindList`): Stock adjustment (only `isStockTracked` and `stock_adjustment.create`),
+  Edit (`product.update`), Archive/Activate (`product.update`), Delete (`product.archive`). Assets: Edit (opens `AssetForm` in a dialog,
+  new), Archive/Activate, Delete (`asset.update`; hidden on archived rows). Warehouses (admin and person-in-charge lists): Stock
+  adjustment (admin list, only when the warehouse holds product/component/material units), Edit, Archive/Activate, Delete.
+- The old footer buttons on the cards and the `useConfirm` dialog on the warehouse list are gone; the locale key
+  `warehouses.archiveConfirmBody` became dead and was removed. New `common:cardMenu.*` keys (en + id).
+- `/inventory/stock/adjust` accepts `?productId=&warehouseId=` (validated UUIDs) and prefills the first line / the warehouse.
+- Verified: web-admin `tsc` clean, `bun test` 165 pass, locales green. **Not checked in a browser** (menu placement over the cover
+  image, the confirm dialogs, that menu clicks do not open the detail). Known gaps: asset edit has no photo uploader; no pre-check of
+  whether Delete is possible, so a blocked delete shows the backend message.
+
+## 2026-11-22 - Cards: 4-column grids with a little more detail; icon fallback; "images do not load" investigated
+
+- No backlog item; `docs/database/` unchanged. Product/component/material lists (`ItemKindList`) and the asset register are now
+  `lg:grid-cols-4` (24 and 12 per page, both divisible by 4). Each card gets the warehouse-style stats row: items show selling price,
+  unit and tracking plus `category · brand`; assets show type, condition and book value.
+- `ItemThumb` now falls back to an icon (never initials) when there is no photo **or the photo fails to load** (`onError`, remembered
+  per `src`, so a refreshed URL retries). Icons: product `Package`, component `Cpu`, material `Layers`, asset `Wrench`, warehouse
+  `Warehouse` (the warehouse card now uses `ItemThumb` too).
+- **Images not loading - what was found.** The presigned URLs are valid (server `fetch` 200 `image/webp`; the same URL renders in Firefox,
+  512x362). `GET /products`, `/warehouses`, `/inventory/items` all return `imageUrl` for rows that have a key, and a real
+  `PUT`/list/`DELETE` round trip for a warehouse and for an asset succeeded. The database had **0** photo keys for warehouses and assets
+  before those round trips because the `image_object_key` migrations had not been applied until the 2026-11-21 fixes, so any earlier
+  upload could not have persisted; only product "Test" had a key. Re-upload to verify. Remaining risk, not reproduced: a signed URL expires
+  after one hour, so a list left open longer shows the icon until it refetches.
+- The probes created and removed a 1x1 image on "Main warehouse" and on the first asset (keys nulled again); the two uploaded objects
+  remain in the bucket (the service never deletes old objects, by design for issued documents).
+- Verified: web-admin `tsc` clean, `bun test` 165 pass, locales 106 pass. Not checked visually in the app.
+- Follow-up: on the product/component/material lists and the asset register the **whole card** is the link to the detail (like the
+  warehouse cards); the title is plain text. The Edit and Archive buttons call `preventDefault` so they do not trigger the card link
+  (Edit navigates programmatically). `tsc` clean, `bun test` 165 pass; not checked in a browser.
+
+## 2026-11-21 - Assets: create dialog without the inner card, with a photo upload (`PUT/DELETE /inventory/items/:id/image`)
+
+- No `ERP-*` item claimed. `docs/database/` **updated**: `inventory.items.image_object_key text` added; `image_url` kept as a legacy,
+  unread column (same precedent as `warehouse.warehouses`). Migration `20261121164748_add_item_image_object_key` (one `ADD COLUMN`).
+- Backend: `ItemImageService` (object storage, WebP, fresh key, tenant-checked) + `PUT|DELETE /inventory/items/:id/image`
+  (`asset:update`). `imageUrl` in the register list, create/update responses, `GET /inventory/items/:id/history` and the borrowing-request
+  card photo is now the signed URL derived from the key (`imageUrl` removed from the create/update body schemas;
+  `listFirstItemImages` returns the key and the borrowing controller signs it).
+- Web: `AssetForm` in compact (dialog) mode no longer renders a `Card`; it uses the large `ImageDropzone` and the sticky `DialogFooter`;
+  the page mode keeps its card. The photo uploads right after `createAsset`; a failed upload keeps the asset. `acquisitionCost` now
+  goes through `rupiahToMinor`/`minorToRupiah` (it was sent as rupiah-as-sen, like the item form bug).
+- Verified: `drizzle-kit check` clean; migration applied to the local dev database (lesson from the warehouse 500); `validate-dbml.ts` OK;
+  backend `bun test` 1329 pass, `tsc` clean; web-admin `tsc` clean, tests and locales green. Not verified in a browser; the asset detail/edit
+  page has no photo uploader yet.
+
+## 2026-11-21 - Fix: `GET /warehouses` returned 500 (migration not applied to the local dev database)
+
+- Cause: `20261121131623_add_warehouse_image_object_key` was generated and inspected but never applied, so `warehouse.warehouses` on
+  `ims_erp_local` had no `image_object_key` column while the Drizzle schema selects it. Confirmed with `information_schema`
+  (only `image_url` present, 20 journal rows).
+- Fix: `cd apps/backend && bun run drizzle:migrate` against the local database (`NODE_ENV=local`, `localhost`): applied successfully;
+  the column now exists. `drizzle:migrate` also applied the already-committed `20261121064831_erp0094_portal_customer_role` (from the
+  merged ERP-0094 work), which was likewise pending on this database (journal 20 -> 22). No code change. This closes the "migration not applied" caveat of the 2026-11-21 warehouse entry for the
+  local database only; a replay on a fresh database is still not exercised. Backend restart is not needed for a schema change.
+
+## 2026-11-21 - Product / Component / Material CRUD fixes, Rupiah `MoneyInput`, Products as its own nav item
+
+- No `ERP-*` item claimed (follow-up to ERP-0043/0063/0076); `docs/database/` reviewed and unchanged (no schema change).
+- **Navigation bugs fixed.** (1) `/inventory/items/:id/edit` never rendered: `$itemId.edit.tsx` nested under `$itemId.tsx`, which had no
+  `<Outlet/>`, so the detail page showed instead of the form. (2) Breadcrumbs linked to routes that do not exist (`/inventory`,
+  `/inventory/items`) and showed English/UUID labels. (3) Archive always returned to `/products`. (4) The "Item categories" menu was
+  permanently hidden (no permission) and sat under the `/products` prefix. (5) Detail/edit highlighted no menu.
+- **Routes per kind** (decision with the user): `/products/$productId[/edit]`, `/inventory/components/$productId[/edit]`,
+  `/inventory/materials/$productId[/edit]` (folder layout, no dot-nesting); `/inventory/items/*` removed (nothing is deployed).
+  Shared `ItemDetailPage`/`ItemEditPage` take `kind` and redirect an item opened under the wrong kind; links go through
+  `lib/item-routes.ts`. Categories moved to `/product-categories` (matches the API and the menu url) and are gated by `product.read`.
+- **Nav:** Products is a top-level item of the Inventory section; the "Items" group (icon `Boxes`) keeps components, materials, stock,
+  adjustments, categories, movements. Breadcrumbs: labels for components/materials/stock pages, item name on detail, crumbs for
+  grouping prefixes without a route are dropped (`buildCrumbs(..., routeExists)` fed by `router.routesByPath`).
+- **Money unit bug:** `ItemForm` sent the typed rupiah as minor units (no x100) and the detail page printed the raw number, while
+  quotations read `sellingPrice` as sen (`minorToRupiah`). The form now uses `rupiahToMinor`/`minorToRupiah` and the detail uses
+  `formatIdr`. Rows saved earlier hold rupiah-as-sen: reseed or correct (no production database).
+- **`MoneyInput`** (`components/money-input.tsx`, `lib/money-input.ts`): `InputGroup` + "Rp" prefix, `type='text'`, `id-ID` grouping,
+  canonical value `"1500000.5"` so `rupiahToMinor` is unchanged; tested. Applied to 33 money fields: item prices, adjustment unit cost,
+  quotation unit price/discount, PO unit price, PR estimate, lead value, contract value, asset cost/depreciation/proceeds, billing
+  amount, project cost, ticket cost, receipt amount, payroll amounts, and the finance/tax inline forms (cash-bank, bills, opening
+  balances, journal debit/credit, reconciliation, tax base/amount, withholding, corrections). Quantities, percentages, days and
+  years stay numeric. Not migrated: any money field that was not an `Input` bound to the names above - the audit was by search
+  (`type='number'`, `toMinor`, `* 100`), not exhaustive reading of every form.
+- **List search/filter:** product, component and material lists have search (name/SKU/brand), category and "active only" in the URL
+  (`lib/item-list-search.ts`, `validateItemListSearch`); archived items are intentionally not listed (no restore endpoint, and the
+  detail endpoint rejects archived rows).
+- **Backend:** `ProductService.updateProduct` refuses to flip `isSerialized` while the product has live units (3 new tests).
+  Materials are unchanged (user decision: serialized stays allowed).
+- Verified: backend `bun test` 1329 pass, `tsc` clean; web-admin `tsc` clean, `bun test` 165 pass; locales 106 pass;
+  `validate-dbml.ts` OK. **Not verified in a browser** (no login in this session): the new routes, active menu, breadcrumbs,
+  the caret behaviour of `MoneyInput` while editing mid-number, and the redirect between kinds.
+
+## 2026-11-21 - ui/web-admin: sticky `DialogFooter` (shadcn "sticky footer")
+
+- No backlog item; `docs/database/` unchanged. `packages/ui/src/components/dialog.tsx`: the popup is now
+  `max-h-[calc(100dvh-2rem)] overflow-y-auto` and drops its bottom padding when it holds a footer
+  (`has-data-[slot=dialog-footer]:pb-0`); `DialogFooter` is `sticky bottom-0` with an opaque tint (replaces `-mb-4` and
+  `bg-muted/50`). Every dialog using `DialogFooter` gets it; a dialog that does not scroll looks unchanged.
+- `ItemForm` and `WarehouseForm` (compact/dialog mode) now render a real `DialogFooter` instead of hand-made footer bands.
+- Verified the sticky geometry in Firefox on a replica (padded scroll popup + form + sticky footer): footer flush with the popup
+  bottom at start, mid and end of scroll. web-admin `tsc` clean, `bun test` 142 pass, locales 106 pass.
+- Not checked: the real app dialogs in a browser, Chrome/Safari, and dialogs whose footer is not the last element of the popup.
+
+## 2026-11-21 - web-admin: one create-upload size and one "add" icon pattern
+
+- No backlog item; `docs/database/` unchanged. The create dialogs for item and warehouse now use the large `ImageDropzone`
+  (like the organization dialog) with the short `common:image.drop` hint instead of the quotation-specific sentence.
+- Every "add" button uses `<Plus className='size-4' data-icon='inline-start' />`: replaced `mr-1`/`mr-2` variants in
+  finance (account list, journal, cash-bank, reconciliation, bills) and the warehouse list; added the icon to both
+  "New organization" buttons. The sidebar switcher item is unchanged (icon sits in a menu-item tile).
+- Verified: web-admin `tsc` clean, `bun test` 142 pass, locales 106 pass. Not checked in a browser.
+
+## 2026-11-21 - web-admin: remaining plain-text empty states in inventory/warehouses use `EmptyState` (`Empty`)
+
+- No backlog item; `docs/database/` unchanged. Replaced bare text with `EmptyState` in `adjustment-detail.tsx` (no lines),
+  `inventory/items/$itemId.tsx` (no serial units) and added `bordered` to the `ItemKindList` empty state. Every other
+  inventory/warehouses list already used `EmptyState`. Verified: web-admin `tsc` clean, locales 106 pass. Not checked in a browser.
+- Follow-up: every `EmptyState` under `components/inventory`, `routes/_authed/inventory` and `routes/_authed/warehouses` now
+  passes an `icon` (not-found: `SearchX`; stock/units/value: `PackageOpen`; movements: `ArrowLeftRight`; adjustments: `ClipboardList`;
+  categories: `Tags`; managers: `Users`; admin-only: `ShieldAlert`; no access: `Lock`). web-admin `tsc` clean, `bun test` pass.
+
+## 2026-11-21 - Warehouse: create is a dialog with a photo; `/warehouses/new` removed; `PUT/DELETE /warehouses/:id/image`
+
+- Backlog: no `ERP-*` item claimed. `docs/database/` **updated**: `warehouse.warehouses.image_object_key text` added;
+  `image_url` kept as a legacy, unread column (migrations are append-only, same precedent as `organization_id`).
+- Backend: `WarehouseImageService` (object storage, WebP, fresh key per upload) + `PUT|DELETE /warehouses/:id/image`
+  (`warehouse: update` guard, so a person in charge may also set the photo). The controller replaces `imageUrl` in
+  list/detail/create/update responses with the signed URL, so the web contract is unchanged. `imageUrl` removed from the
+  create/update body schemas (strict). Migration `20261121131623_add_warehouse_image_object_key` (one `ADD COLUMN`).
+- Web: route `warehouses/new.tsx` deleted (+ guard case, breadcrumb, its unit test); `CreateWarehouseDialog` opened from the
+  admin warehouse list (header + empty state); `WarehouseForm` gets `compact` (no heading/cards in a dialog) and a create-only photo picker.
+- Verified: `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts` print OK; `drizzle-kit check` "Everything's fine";
+  backend `bunx tsc --noEmit` clean, `bun test warehouse stock` 267 pass; web-admin `tsc` clean, `bun test` 142 pass; locales 106 pass.
+- **Not done:** the migration was generated and inspected but **not applied** to a disposable database; no browser check; no real
+  object-storage upload exercised; the warehouse edit page has no photo uploader yet.
+
+## 2026-11-21 - web-admin: photo on item create (products/components/materials); Product + Warehouse back under Inventory in the sidebar
+
+- Backlog: no `ERP-*` item claimed (UI change); `docs/database/` reviewed and unchanged (`PUT /products/:id/image` already existed).
+- `ItemForm` (create mode only) gets an image picker (`ImageDropzone`); `CreateItemDialog` in
+  `item-kind-list.tsx` uploads it via `uploadDocumentImage` right after `createProduct`. A failed
+  upload toasts and keeps the created item. Covers `/products`, `/inventory/components`, `/inventory/materials`
+  (all use `ItemKindList`). The edit screen is unchanged (it has its own uploader).
+- `nav-config.ts`: the separate Product and Warehouse sections are merged back into one Inventory
+  section (Warehouses, Inventory value, Items > products/components/materials/stock/...). URLs are
+  unchanged; `section.product` / `section.warehouse` locale keys removed (dead-key guard).
+- Verified: web-admin `tsc` clean, `bun test` 143 pass; locales test re-run after removing the keys (see below).
+- Not verified in a browser.
+
+## 2026-11-21 - web-admin: create organization is a dialog, `/organizations/new` removed
+
+- Backlog: no `ERP-*` item claimed (UI refactor); `docs/database/` reviewed and unchanged (no schema change).
+- The route `routes/_authed/organizations/new.tsx` is deleted. The form moved to
+  `components/organization/create-organization-dialog.tsx`, opened from the
+  organizations list (header + empty state) and the sidebar switcher
+  ("New organization"), both still gated to application admins. After creating
+  it also invalidates `myOrganizationsQueryOptions` so the switcher refreshes.
+- Removed with the route: the `canOpenPath` special case, the breadcrumb entry,
+  the `breadcrumb.organizationNew` and `orgs.details` locale keys (en + id), and
+  its `route-guard` unit test; `routeTree.gen.ts` regenerated.
+- Verified: `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` clean;
+  `bun test` in `packages/locales` 106 pass. web-admin `bun test` was re-run only
+  after deleting the obsolete guard test (the earlier run's single failure was that test).
+- Not verified in a browser.
 
 ## 2026-11-21 - Docs: Indonesian guide to the whole `docs/` folder (docs only)
 

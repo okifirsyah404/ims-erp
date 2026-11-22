@@ -1111,7 +1111,8 @@ Table warehouse.warehouses {
   responsible_employee_id uuid [note: "Display-only person in charge (ADR-0010); grants no access. Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract."]
   is_default boolean [not null, default: false]
   is_active boolean [not null, default: true]
-  image_url text
+  image_url text [note: "Legacy plain URL, no longer written or read; superseded by image_object_key. Column kept because migrations are append-only."]
+  image_object_key text [note: "Object-storage key of the warehouse photo (WebP); never a public URL."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint
@@ -1334,7 +1335,8 @@ Table inventory.items {
   supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
   purchase_order_id uuid [note: "Logical reference to procurement.purchase_orders.id. Cross-module FK intentionally omitted. Validated through the Procurement module contract."]
   document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted. Validated through the Document module contract."]
-  image_url text [note: "Optional display image URL for the asset card. Not an object-storage key."]
+  image_url text [note: "Legacy plain URL, no longer written or read; superseded by image_object_key. Column kept because migrations are append-only."]
+  image_object_key text [note: "Object-storage key of the asset photo (WebP); never a public URL."]
   created_at bigint [not null]
   updated_at bigint
   deleted_at bigint

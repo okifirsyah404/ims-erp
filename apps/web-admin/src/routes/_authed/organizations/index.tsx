@@ -1,6 +1,7 @@
 import { toast } from '@/components/toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { CreateOrganizationDialog } from '@/components/organization/create-organization-dialog';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -20,7 +21,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { Building2 } from 'lucide-react';
+import { Building2, Plus } from 'lucide-react';
 
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -74,8 +75,8 @@ function OrganizationLogo({ organization }: { organization: TOrganization }) {
 }
 
 function OrganizationsPage() {
-	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const [createOpen, setCreateOpen] = useState(false);
 	const { data: session } = useSession();
 	const canCreate = hasRole(session?.user?.role, 'admin');
 	const { data, isPending, isError, error } = useQuery({ ...organizationsQueryOptions });
@@ -109,8 +110,9 @@ function OrganizationsPage() {
 				{!isPending && canCreate && (
 					<Button
 						className='shrink-0 self-start sm:self-auto'
-						onClick={() => navigate({ to: '/organizations/new' })}
+						onClick={() => setCreateOpen(true)}
 					>
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('orgs.new')}
 					</Button>
 				)}
@@ -233,11 +235,18 @@ function OrganizationsPage() {
 					bordered
 					action={
 						canCreate ? (
-							<Button onClick={() => navigate({ to: '/organizations/new' })}>
+							<Button onClick={() => setCreateOpen(true)}>
+								<Plus className='size-4' data-icon='inline-start' />
 								{t('orgs.new')}
 							</Button>
 						) : undefined
 					}
+				/>
+			)}
+			{canCreate && (
+				<CreateOrganizationDialog
+					open={createOpen}
+					onOpenChange={setCreateOpen}
 				/>
 			)}
 		</div>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
 import { EmptyState } from '@/components/empty-state';
+import { Lock } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 
 /**
@@ -23,7 +24,7 @@ export function WarehouseAccessGate({ children }: { children: ReactNode }) {
 	if (isPending) return <PageSkeleton />;
 	if (!canAccess) {
 		return (
-			<EmptyState title={t('warehouse:warehouses.noAccess')} bordered />
+			<EmptyState icon={Lock} title={t('warehouse:warehouses.noAccess')} bordered />
 		);
 	}
 	return <>{children}</>;

@@ -92,7 +92,6 @@ export type TWarehouseUpdateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault?: boolean;
 	isActive?: boolean;
-	imageUrl?: string | null;
 };
 
 /**
@@ -363,14 +362,12 @@ export class WarehouseService {
 					responsibleEmployeeId: current.responsibleEmployeeId,
 					isDefault: current.isDefault,
 					isActive: current.isActive,
-					imageUrl: current.imageUrl,
 				},
 				{
 					name: updated.name,
 					responsibleEmployeeId: updated.responsibleEmployeeId,
 					isDefault: updated.isDefault,
 					isActive: updated.isActive,
-					imageUrl: updated.imageUrl,
 				},
 			),
 		});

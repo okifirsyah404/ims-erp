@@ -2,8 +2,6 @@ import type nav from '../en/nav';
 
 /** Indonesian — mirrors `en/nav` keys exactly (values are free-form). */
 const nav_: Record<keyof typeof nav, string> = {
-	'section.product': 'Produk',
-	'section.warehouse': 'Gudang',
 	'section.inventory': 'Inventaris',
 	'section.administration': 'Administrasi',
 
@@ -135,7 +133,6 @@ const nav_: Record<keyof typeof nav, string> = {
 
 	'breadcrumb.home': 'Beranda',
 	'breadcrumb.organizations': 'Organisasi',
-	'breadcrumb.organizationNew': 'Organisasi baru',
 	'breadcrumb.organizationEdit': 'Ubah',
 	'breadcrumb.memberEdit': 'Ubah anggota',
 	'breadcrumb.quotationNew': 'Penawaran baru',

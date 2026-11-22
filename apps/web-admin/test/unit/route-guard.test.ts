@@ -68,14 +68,6 @@ describe('canOpenPath', () => {
 		expect(await canOpenPath('/admin/users', investorOnly, client)).toBe(false);
 	});
 
-	test('/organizations/new is app admin only, even with organization.read', async () => {
-		// The nav leaf for `/organizations` carries organization.read, which a
-		// non-admin org owner holds; creating an org is still platform-only.
-		const client = fakeClient([{ role: 'owner' }], { 'organization.read': true });
-		expect(await canOpenPath('/organizations/new', admin, client)).toBe(true);
-		expect(await canOpenPath('/organizations/new', investorOnly, client)).toBe(false);
-	});
-
 	test('path with no nav leaf is allowed here (backend still enforces)', async () => {
 		expect(await canOpenPath('/account', investorOnly, fakeClient([]))).toBe(true);
 	});
@@ -94,14 +86,6 @@ describe('canOpenPath', () => {
 		// No grant and no admin role: the sidebar hides it, so the route denies.
 		expect(
 			await canOpenPath('/warehouses', investorOnly, fakeClient([])),
-		).toBe(false);
-	});
-
-	test('creating a warehouse stays app-admin only, even for a person in charge', async () => {
-		const picClient = fakeClient([], {}, [{ id: 'wh-1' }]);
-		expect(await canOpenPath('/warehouses/new', admin, picClient)).toBe(true);
-		expect(
-			await canOpenPath('/warehouses/new', investorOnly, picClient),
 		).toBe(false);
 	});
 

@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -130,14 +131,10 @@ export function LeadFormDialog({
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='lead-value'>{t('crm:lead.estimatedValue')}</FieldLabel>
-								<Input
+								<MoneyInput
 									id='lead-value'
-									type='number'
-									min={0}
-									step={1}
-									inputMode='numeric'
 									value={estimatedValue}
-									onChange={(e) => setEstimatedValue(e.target.value)}
+									onValueChange={setEstimatedValue}
 								/>
 							</Field>
 							<Field>

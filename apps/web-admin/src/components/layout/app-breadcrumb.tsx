@@ -1,4 +1,4 @@
-import { Link, useMatches } from '@tanstack/react-router';
+import { Link, useMatches, useRouter } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@ims-erp/ui/components/dropdown-menu';
+import { productQueryOptions } from '@/lib/inventory-api';
 import { organizationMembersQueryOptions, organizationQueryOptions } from '@/lib/organization-api';
 import { buildCrumbs, collapseCrumbs } from './build-crumbs';
 
@@ -30,6 +31,7 @@ const MAX_VISIBLE = 4;
  */
 export function AppBreadcrumb() {
 	const matches = useMatches();
+	const router = useRouter();
 	const queryClient = useQueryClient();
 	const { t } = useTranslation('nav');
 
@@ -53,10 +55,18 @@ export function AppBreadcrumb() {
 			const member = members?.rows.find((row) => row.id === memberId);
 			if (member?.user?.name) return member.user.name;
 		}
+		// Item detail (`/products|components|materials/$productId`): show the name.
+		const productId = params.productId;
+		if (productId && fullPath.endsWith('/$productId')) {
+			const product = queryClient.getQueryData(productQueryOptions(productId).queryKey);
+			if (product?.name) return product.name;
+		}
 		return undefined;
 	};
 
-	const crumbs = collapseCrumbs(buildCrumbs(matches, t, enrich), MAX_VISIBLE);
+	const routeExists = (template: string) => Object.hasOwn(router.routesByPath, template);
+
+	const crumbs = collapseCrumbs(buildCrumbs(matches, t, enrich, routeExists), MAX_VISIBLE);
 
 	return (
 		<Breadcrumb>

@@ -77,10 +77,10 @@ export interface IBorrowingRequestRepository {
 		tx?: TTx,
 	): Promise<TBorrowingRequestSelect | null>;
 
-	/** Display photo per request: the first item's `image_url`, batched for a page. */
+	/** Display photo per request: the first item's `image_object_key`, batched for a page. */
 	listFirstItemImages(
 		requestIds: string[],
-	): Promise<Array<{ requestId: string; imageUrl: string | null }>>;
+	): Promise<Array<{ requestId: string; imageObjectKey: string | null }>>;
 
 	/**
 	 * Counts unreturned borrowed items that left one warehouse for one

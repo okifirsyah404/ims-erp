@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Search } from 'lucide-react';
+import { Search, PackageOpen } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import {
@@ -168,7 +168,7 @@ function InventoryValuePage() {
 						</InputGroup>
 					</div>
 					{data.data.length === 0 ? (
-						<EmptyState title={t('inventory:value.empty')} bordered />
+						<EmptyState icon={PackageOpen} title={t('inventory:value.empty')} bordered />
 					) : (
 						<DataTable
 							columns={columns}

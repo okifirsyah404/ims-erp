@@ -8,7 +8,6 @@ import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
 	CardContent,
-	CardFooter,
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
@@ -22,9 +21,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Boxes, PackageSearch, Plus } from 'lucide-react';
+import { Archive, ArchiveRestore, Boxes, PackageSearch, Pencil, Plus, Trash2, Wrench } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { AssetForm } from '@/components/assets/asset-form';
+import { CardActionsMenu, type TCardAction } from '@/components/card-actions-menu';
 import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -33,6 +33,9 @@ import { toast } from '@/components/toast';
 import { useClampPage } from '@/lib/use-clamp-page';
 import {
 	archiveAsset,
+deactivateAsset,
+reactivateAsset,
+type TAsset,
 	assetsQueryOptions,
 	ASSET_STATUSES,
 	formatMoney,
@@ -80,6 +83,69 @@ export function AssetRegisterList() {
 	});
 
 	const archive = useMutationSafe(archiveAsset, queryClient);
+	const [editing, setEditing] = useState<TAsset | null>(null);
+
+	/** "Archive" parks the asset as inactive (reason required, D18); "Activate" reverses it. */
+	const park = useMutation({
+		mutationFn: (input: { id: string; reason: string }) => deactivateAsset(input.id, input.reason),
+		onSuccess: async () => {
+			toast.success(t('assets:deactivated'));
+			await queryClient.invalidateQueries({ queryKey: ['assets'] });
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+	const unpark = useMutation({
+		mutationFn: (id: string) => reactivateAsset(id),
+		onSuccess: async () => {
+			toast.success(t('assets:reactivated'));
+			await queryClient.invalidateQueries({ queryKey: ['assets'] });
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+
+	/** The card menu: edit, archive (inactive) / activate, delete (soft delete). */
+	function rowActions(asset: TAsset): TCardAction[] {
+		if (!canUpdate || asset.deletedAt !== null) return [];
+		return [
+			{
+				key: 'edit',
+				label: t('common:action.edit'),
+				icon: Pencil,
+				onSelect: () => setEditing(asset),
+			},
+			asset.status === 'inactive'
+				? {
+						key: 'activate',
+						label: t('common:cardMenu.activate'),
+						icon: ArchiveRestore,
+						onSelect: () => unpark.mutateAsync(asset.id),
+					}
+				: {
+						key: 'archive',
+						label: t('common:cardMenu.archive'),
+						icon: Archive,
+						onSelect: (reason) => park.mutateAsync({ id: asset.id, reason: reason ?? '' }),
+						confirm: {
+							title: t('common:cardMenu.archiveTitle', { name: asset.name }),
+							description: t('common:cardMenu.archiveBody'),
+							confirmLabel: t('common:cardMenu.archive'),
+							reasonPlaceholder: t('common:cardMenu.reasonPlaceholder'),
+						},
+					},
+			{
+				key: 'delete',
+				label: t('common:cardMenu.delete'),
+				icon: Trash2,
+				destructive: true,
+				onSelect: () => archive.mutateAsync(asset.id),
+				confirm: {
+					title: t('common:cardMenu.deleteTitle', { name: asset.name }),
+					description: t('common:cardMenu.deleteBody'),
+					confirmLabel: t('common:cardMenu.delete'),
+				},
+			},
+		];
+	}
 
 	const meta = data?.pagination;
 	// A filter or a shrinking result set must not leave the list on a page that
@@ -205,7 +271,7 @@ export function AssetRegisterList() {
 
 			{/* Grid --------------------------------------------------------- */}
 			{isPending ? (
-				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 					{Array.from({ length: 6 }, (_, index) => (
 						<Card key={index}>
 							<CardHeader>
@@ -226,21 +292,21 @@ export function AssetRegisterList() {
 					bordered
 				/>
 			) : (
-				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+				<div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 					{data.rows.map((asset) => (
-						<Card key={asset.id} className='flex flex-col overflow-hidden'>
-							<ItemThumb variant='cover' src={asset.imageUrl} name={asset.name} />
+						// The whole card opens the detail. The actions menu is a sibling
+						// of the link (not inside it) so its clicks never navigate.
+						<div key={asset.id} className='relative h-full'>
+						<Link
+							to='/assets/register/$assetId'
+							params={{ assetId: asset.id }}
+							className='group block h-full'
+						>
+						<Card className='flex h-full flex-col overflow-hidden transition-shadow group-hover:shadow-md'>
+							<ItemThumb variant='cover' src={asset.imageUrl} name={asset.name} icon={Wrench} />
 							<CardHeader>
 								<div className='flex items-start justify-between gap-2'>
-									<CardTitle>
-										<Link
-											to='/assets/register/$assetId'
-											params={{ assetId: asset.id }}
-											className='hover:underline'
-										>
-											{asset.name}
-										</Link>
-									</CardTitle>
+									<CardTitle>{asset.name}</CardTitle>
 									<Badge variant='secondary'>
 										{t(`assets:status.${asset.status}`)}
 									</Badge>
@@ -250,24 +316,33 @@ export function AssetRegisterList() {
 								</p>
 							</CardHeader>
 							<CardContent className='flex-1 space-y-1 text-sm'>
-								<p>
-									<span className='text-muted-foreground'>
-										{t('assets:register.type')}:{' '}
-									</span>
-									{t(`assets:itemKind.${asset.itemKind}`)}
-								</p>
-								<p>
-									<span className='text-muted-foreground'>
-										{t('assets:register.condition')}:{' '}
-									</span>
-									{t(`assets:condition.${asset.condition}`)}
-								</p>
-								<p>
-									<span className='text-muted-foreground'>
-										{t('assets:register.bookValue')}:{' '}
-									</span>
-									{formatMoney(asset.bookValue, asset.currencyCode)}
-								</p>
+								{/* Same "label under value" stats row as the warehouse cards. */}
+								<div className='mb-2 grid grid-cols-3 gap-2 text-center'>
+									<div className='flex min-w-0 flex-col'>
+										<span className='truncate font-semibold text-foreground'>
+											{t(`assets:itemKind.${asset.itemKind}`)}
+										</span>
+										<span className='text-xs text-muted-foreground'>
+											{t('assets:register.type')}
+										</span>
+									</div>
+									<div className='flex min-w-0 flex-col'>
+										<span className='truncate font-semibold text-foreground'>
+											{t(`assets:condition.${asset.condition}`)}
+										</span>
+										<span className='text-xs text-muted-foreground'>
+											{t('assets:register.condition')}
+										</span>
+									</div>
+									<div className='flex min-w-0 flex-col'>
+										<span className='truncate font-semibold text-foreground tabular-nums'>
+											{formatMoney(asset.bookValue, asset.currencyCode)}
+										</span>
+										<span className='text-xs text-muted-foreground'>
+											{t('assets:register.bookValue')}
+										</span>
+									</div>
+								</div>
 								{asset.status === 'borrowed' ? (
 									<>
 										{asset.borrowedSince ? (
@@ -309,18 +384,10 @@ export function AssetRegisterList() {
 									</p>
 								) : null}
 							</CardContent>
-							<CardFooter className='justify-end gap-2'>
-								{canUpdate && asset.deletedAt === null ? (
-									<Button
-										variant='ghost'
-										size='sm'
-										onClick={() => void archive.mutateAsync(asset.id)}
-									>
-										{t('assets:detail.archive')}
-									</Button>
-								) : null}
-							</CardFooter>
 						</Card>
+						</Link>
+						<CardActionsMenu actions={rowActions(asset)} />
+						</div>
 					))}
 				</div>
 			)}
@@ -344,6 +411,22 @@ export function AssetRegisterList() {
 							compact
 							onCancel={() => setCreating(false)}
 							onSuccess={() => setCreating(false)}
+						/>
+					</DialogContent>
+				</Dialog>
+			) : null}
+
+			{editing ? (
+				<Dialog open onOpenChange={(open) => !open && setEditing(null)}>
+					<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-xl'>
+						<DialogHeader>
+							<DialogTitle>{t('assets:form.editAsset')}</DialogTitle>
+						</DialogHeader>
+						<AssetForm
+							compact
+							asset={editing}
+							onCancel={() => setEditing(null)}
+							onSuccess={() => setEditing(null)}
 						/>
 					</DialogContent>
 				</Dialog>

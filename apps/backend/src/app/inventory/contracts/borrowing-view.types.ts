@@ -37,8 +37,8 @@ export type TBorrowingCreateInput = {
 
 /** One row of a request list: the request plus the card's display photo. */
 export type TBorrowingRequestListItem = TBorrowingRequestSelect & {
-	/** First requested item's image URL; `null` when nothing to show. */
-	imageUrl: string | null;
+	/** First requested item's photo object key; the controller turns it into `imageUrl`. */
+	imageObjectKey: string | null;
 };
 
 /** One timeline entry, from either half of the lifecycle. */

@@ -29,8 +29,8 @@ import { Route as AuthedFinanceIndexRouteImport } from './routes/_authed/finance
 import { Route as AuthedHrIndexRouteImport } from './routes/_authed/hr/index'
 import { Route as AuthedOrganizationsIndexRouteImport } from './routes/_authed/organizations/index'
 import { Route as AuthedOrganizationsOrganizationIdRouteImport } from './routes/_authed/organizations/$organizationId'
-import { Route as AuthedOrganizationsNewRouteImport } from './routes/_authed/organizations/new'
 import { Route as AuthedProcurementIndexRouteImport } from './routes/_authed/procurement/index'
+import { Route as AuthedProductCategoriesIndexRouteImport } from './routes/_authed/product-categories/index'
 import { Route as AuthedProductsIndexRouteImport } from './routes/_authed/products/index'
 import { Route as AuthedProfilesIndexRouteImport } from './routes/_authed.profiles.index'
 import { Route as AuthedProfilesEditRouteImport } from './routes/_authed.profiles.edit'
@@ -42,7 +42,6 @@ import { Route as AuthedSubscriptionIndexRouteImport } from './routes/_authed/su
 import { Route as AuthedSubscriptionNewRouteImport } from './routes/_authed/subscription/new'
 import { Route as AuthedWarehousesIndexRouteImport } from './routes/_authed/warehouses/index'
 import { Route as AuthedWarehousesWarehouseIdRouteImport } from './routes/_authed/warehouses/$warehouseId'
-import { Route as AuthedWarehousesNewRouteImport } from './routes/_authed/warehouses/new'
 import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -91,7 +90,6 @@ import { Route as AuthedIntegrationsWhatsappAiIndexRouteImport } from './routes/
 import { Route as AuthedIntegrationsWhatsappAiConversationIdRouteImport } from './routes/_authed/integrations/whatsapp-ai/$conversationId'
 import { Route as AuthedIntegrationsWhatsappAiFaqRouteImport } from './routes/_authed/integrations/whatsapp-ai/faq'
 import { Route as AuthedInventoryComponentsIndexRouteImport } from './routes/_authed/inventory/components/index'
-import { Route as AuthedInventoryItemsItemIdRouteImport } from './routes/_authed/inventory/items/$itemId'
 import { Route as AuthedInventoryMaterialsIndexRouteImport } from './routes/_authed/inventory/materials/index'
 import { Route as AuthedInventoryStockIndexRouteImport } from './routes/_authed/inventory/stock/index'
 import { Route as AuthedInventoryStockAdjustRouteImport } from './routes/_authed/inventory/stock/adjust'
@@ -109,7 +107,8 @@ import { Route as AuthedProcurementReceiptsReceiptIdRouteImport } from './routes
 import { Route as AuthedProcurementReceiptsNewRouteImport } from './routes/_authed/procurement/receipts/new'
 import { Route as AuthedProcurementSuppliersIndexRouteImport } from './routes/_authed/procurement/suppliers/index'
 import { Route as AuthedProcurementSuppliersSupplierIdRouteImport } from './routes/_authed/procurement/suppliers/$supplierId'
-import { Route as AuthedProductsCategoriesIndexRouteImport } from './routes/_authed/products/categories/index'
+import { Route as AuthedProductsProductIdIndexRouteImport } from './routes/_authed/products/$productId/index'
+import { Route as AuthedProductsProductIdEditRouteImport } from './routes/_authed/products/$productId/edit'
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
 import { Route as AuthedProjectsBastIndexRouteImport } from './routes/_authed/projects/bast/index'
 import { Route as AuthedProjectsTicketsIndexRouteImport } from './routes/_authed/projects/tickets/index'
@@ -145,7 +144,10 @@ import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed
 import { Route as AuthedFinanceTaxRecordsIndexRouteImport } from './routes/_authed/finance/tax/records/index'
 import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
 import { Route as AuthedFinanceTaxWithholdingIndexRouteImport } from './routes/_authed/finance/tax/withholding/index'
-import { Route as AuthedInventoryItemsItemIdEditRouteImport } from './routes/_authed/inventory/items/$itemId.edit'
+import { Route as AuthedInventoryComponentsProductIdIndexRouteImport } from './routes/_authed/inventory/components/$productId/index'
+import { Route as AuthedInventoryComponentsProductIdEditRouteImport } from './routes/_authed/inventory/components/$productId/edit'
+import { Route as AuthedInventoryMaterialsProductIdIndexRouteImport } from './routes/_authed/inventory/materials/$productId/index'
+import { Route as AuthedInventoryMaterialsProductIdEditRouteImport } from './routes/_authed/inventory/materials/$productId/edit'
 import { Route as AuthedInventoryStockAdjustmentsIndexRouteImport } from './routes/_authed/inventory/stock/adjustments/index'
 import { Route as AuthedInventoryStockAdjustmentsAdjustmentIdRouteImport } from './routes/_authed/inventory/stock/adjustments/$adjustmentId'
 import { Route as AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRouteImport } from './routes/_authed/procurement/purchase-orders/$purchaseOrderId/index'
@@ -274,16 +276,17 @@ const AuthedOrganizationsOrganizationIdRoute =
     path: '/organizations/$organizationId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedOrganizationsNewRoute = AuthedOrganizationsNewRouteImport.update({
-  id: '/organizations/new',
-  path: '/organizations/new',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedProcurementIndexRoute = AuthedProcurementIndexRouteImport.update({
   id: '/procurement/',
   path: '/procurement/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProductCategoriesIndexRoute =
+  AuthedProductCategoriesIndexRouteImport.update({
+    id: '/product-categories/',
+    path: '/product-categories/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProductsIndexRoute = AuthedProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
@@ -340,11 +343,6 @@ const AuthedWarehousesWarehouseIdRoute =
     path: '/warehouses/$warehouseId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedWarehousesNewRoute = AuthedWarehousesNewRouteImport.update({
-  id: '/warehouses/new',
-  path: '/warehouses/new',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const PrintQuotationsQuotationIdRoute =
   PrintQuotationsQuotationIdRouteImport.update({
     id: '/print/quotations/$quotationId',
@@ -619,12 +617,6 @@ const AuthedInventoryComponentsIndexRoute =
     path: '/inventory/components/',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedInventoryItemsItemIdRoute =
-  AuthedInventoryItemsItemIdRouteImport.update({
-    id: '/inventory/items/$itemId',
-    path: '/inventory/items/$itemId',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedInventoryMaterialsIndexRoute =
   AuthedInventoryMaterialsIndexRouteImport.update({
     id: '/inventory/materials/',
@@ -727,10 +719,16 @@ const AuthedProcurementSuppliersSupplierIdRoute =
     path: '/procurement/suppliers/$supplierId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedProductsCategoriesIndexRoute =
-  AuthedProductsCategoriesIndexRouteImport.update({
-    id: '/products/categories/',
-    path: '/products/categories/',
+const AuthedProductsProductIdIndexRoute =
+  AuthedProductsProductIdIndexRouteImport.update({
+    id: '/products/$productId/',
+    path: '/products/$productId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProductsProductIdEditRoute =
+  AuthedProductsProductIdEditRouteImport.update({
+    id: '/products/$productId/edit',
+    path: '/products/$productId/edit',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedProjectsProjectIdIndexRoute =
@@ -937,11 +935,29 @@ const AuthedFinanceTaxWithholdingIndexRoute =
     path: '/finance/tax/withholding/',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedInventoryItemsItemIdEditRoute =
-  AuthedInventoryItemsItemIdEditRouteImport.update({
-    id: '/edit',
-    path: '/edit',
-    getParentRoute: () => AuthedInventoryItemsItemIdRoute,
+const AuthedInventoryComponentsProductIdIndexRoute =
+  AuthedInventoryComponentsProductIdIndexRouteImport.update({
+    id: '/inventory/components/$productId/',
+    path: '/inventory/components/$productId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryComponentsProductIdEditRoute =
+  AuthedInventoryComponentsProductIdEditRouteImport.update({
+    id: '/inventory/components/$productId/edit',
+    path: '/inventory/components/$productId/edit',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryMaterialsProductIdIndexRoute =
+  AuthedInventoryMaterialsProductIdIndexRouteImport.update({
+    id: '/inventory/materials/$productId/',
+    path: '/inventory/materials/$productId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedInventoryMaterialsProductIdEditRoute =
+  AuthedInventoryMaterialsProductIdEditRouteImport.update({
+    id: '/inventory/materials/$productId/edit',
+    path: '/inventory/materials/$productId/edit',
+    getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedInventoryStockAdjustmentsIndexRoute =
   AuthedInventoryStockAdjustmentsIndexRouteImport.update({
@@ -1107,12 +1123,10 @@ export interface FileRoutesByFullPath {
   '/account/sessions': typeof AuthedAccountSessionsRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
-  '/warehouses/new': typeof AuthedWarehousesNewRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/account/': typeof AuthedAccountIndexRoute
   '/assets/': typeof AuthedAssetsIndexRoute
@@ -1122,6 +1136,7 @@ export interface FileRoutesByFullPath {
   '/hr/': typeof AuthedHrIndexRoute
   '/organizations/': typeof AuthedOrganizationsIndexRoute
   '/procurement/': typeof AuthedProcurementIndexRoute
+  '/product-categories/': typeof AuthedProductCategoriesIndexRoute
   '/products/': typeof AuthedProductsIndexRoute
   '/profiles/': typeof AuthedProfilesIndexRoute
   '/projects/': typeof AuthedProjectsIndexRoute
@@ -1141,7 +1156,6 @@ export interface FileRoutesByFullPath {
   '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
-  '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
@@ -1152,6 +1166,7 @@ export interface FileRoutesByFullPath {
   '/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
   '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
+  '/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
   '/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
   '/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
@@ -1202,7 +1217,7 @@ export interface FileRoutesByFullPath {
   '/procurement/purchase-returns/': typeof AuthedProcurementPurchaseReturnsIndexRoute
   '/procurement/receipts/': typeof AuthedProcurementReceiptsIndexRoute
   '/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
-  '/products/categories/': typeof AuthedProductsCategoriesIndexRoute
+  '/products/$productId/': typeof AuthedProductsProductIdIndexRoute
   '/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
   '/projects/bast/': typeof AuthedProjectsBastIndexRoute
   '/projects/tickets/': typeof AuthedProjectsTicketsIndexRoute
@@ -1222,7 +1237,8 @@ export interface FileRoutesByFullPath {
   '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
-  '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
+  '/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
+  '/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/procurement/purchase-orders/$purchaseOrderId/edit': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
   '/procurement/purchase-orders/$purchaseOrderId/print': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
@@ -1243,6 +1259,8 @@ export interface FileRoutesByFullPath {
   '/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
+  '/inventory/components/$productId/': typeof AuthedInventoryComponentsProductIdIndexRoute
+  '/inventory/materials/$productId/': typeof AuthedInventoryMaterialsProductIdIndexRoute
   '/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/procurement/purchase-orders/$purchaseOrderId/': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   '/procurement/purchase-requests/$purchaseRequestId/': typeof AuthedProcurementPurchaseRequestsPurchaseRequestIdIndexRoute
@@ -1268,12 +1286,10 @@ export interface FileRoutesByTo {
   '/account/sessions': typeof AuthedAccountSessionsRoute
   '/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  '/organizations/new': typeof AuthedOrganizationsNewRoute
   '/profiles/edit': typeof AuthedProfilesEditRoute
   '/projects/new': typeof AuthedProjectsNewRoute
   '/subscription/new': typeof AuthedSubscriptionNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
-  '/warehouses/new': typeof AuthedWarehousesNewRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/account': typeof AuthedAccountIndexRoute
   '/assets': typeof AuthedAssetsIndexRoute
@@ -1283,6 +1299,7 @@ export interface FileRoutesByTo {
   '/hr': typeof AuthedHrIndexRoute
   '/organizations': typeof AuthedOrganizationsIndexRoute
   '/procurement': typeof AuthedProcurementIndexRoute
+  '/product-categories': typeof AuthedProductCategoriesIndexRoute
   '/products': typeof AuthedProductsIndexRoute
   '/profiles': typeof AuthedProfilesIndexRoute
   '/projects': typeof AuthedProjectsIndexRoute
@@ -1302,7 +1319,6 @@ export interface FileRoutesByTo {
   '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
-  '/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/inventory/stock/value': typeof AuthedInventoryStockValueRoute
@@ -1313,6 +1329,7 @@ export interface FileRoutesByTo {
   '/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
   '/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
+  '/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
   '/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
   '/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
@@ -1363,7 +1380,7 @@ export interface FileRoutesByTo {
   '/procurement/purchase-returns': typeof AuthedProcurementPurchaseReturnsIndexRoute
   '/procurement/receipts': typeof AuthedProcurementReceiptsIndexRoute
   '/procurement/suppliers': typeof AuthedProcurementSuppliersIndexRoute
-  '/products/categories': typeof AuthedProductsCategoriesIndexRoute
+  '/products/$productId': typeof AuthedProductsProductIdIndexRoute
   '/projects/$projectId': typeof AuthedProjectsProjectIdIndexRoute
   '/projects/bast': typeof AuthedProjectsBastIndexRoute
   '/projects/tickets': typeof AuthedProjectsTicketsIndexRoute
@@ -1383,7 +1400,8 @@ export interface FileRoutesByTo {
   '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys': typeof AuthedSubscriptionApiKeysIndexRoute
   '/subscription/applications': typeof AuthedSubscriptionApplicationsIndexRoute
-  '/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
+  '/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
+  '/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/procurement/purchase-orders/$purchaseOrderId/edit': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
   '/procurement/purchase-orders/$purchaseOrderId/print': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
@@ -1404,6 +1422,8 @@ export interface FileRoutesByTo {
   '/finance/tax/records': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
   '/finance/tax/withholding': typeof AuthedFinanceTaxWithholdingIndexRoute
+  '/inventory/components/$productId': typeof AuthedInventoryComponentsProductIdIndexRoute
+  '/inventory/materials/$productId': typeof AuthedInventoryMaterialsProductIdIndexRoute
   '/inventory/stock/adjustments': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/procurement/purchase-orders/$purchaseOrderId': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   '/procurement/purchase-requests/$purchaseRequestId': typeof AuthedProcurementPurchaseRequestsPurchaseRequestIdIndexRoute
@@ -1433,12 +1453,10 @@ export interface FileRoutesById {
   '/_authed/account/sessions': typeof AuthedAccountSessionsRoute
   '/_authed/documents/templates': typeof AuthedDocumentsTemplatesRoute
   '/_authed/organizations/$organizationId': typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  '/_authed/organizations/new': typeof AuthedOrganizationsNewRoute
   '/_authed/profiles/edit': typeof AuthedProfilesEditRoute
   '/_authed/projects/new': typeof AuthedProjectsNewRoute
   '/_authed/subscription/new': typeof AuthedSubscriptionNewRoute
   '/_authed/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
-  '/_authed/warehouses/new': typeof AuthedWarehousesNewRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/_authed/account/': typeof AuthedAccountIndexRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
@@ -1448,6 +1466,7 @@ export interface FileRoutesById {
   '/_authed/hr/': typeof AuthedHrIndexRoute
   '/_authed/organizations/': typeof AuthedOrganizationsIndexRoute
   '/_authed/procurement/': typeof AuthedProcurementIndexRoute
+  '/_authed/product-categories/': typeof AuthedProductCategoriesIndexRoute
   '/_authed/products/': typeof AuthedProductsIndexRoute
   '/_authed/profiles/': typeof AuthedProfilesIndexRoute
   '/_authed/projects/': typeof AuthedProjectsIndexRoute
@@ -1467,7 +1486,6 @@ export interface FileRoutesById {
   '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/_authed/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/_authed/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
-  '/_authed/inventory/items/$itemId': typeof AuthedInventoryItemsItemIdRouteWithChildren
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
   '/_authed/inventory/stock/movements': typeof AuthedInventoryStockMovementsRoute
   '/_authed/inventory/stock/value': typeof AuthedInventoryStockValueRoute
@@ -1478,6 +1496,7 @@ export interface FileRoutesById {
   '/_authed/procurement/receipts/$receiptId': typeof AuthedProcurementReceiptsReceiptIdRoute
   '/_authed/procurement/receipts/new': typeof AuthedProcurementReceiptsNewRoute
   '/_authed/procurement/suppliers/$supplierId': typeof AuthedProcurementSuppliersSupplierIdRoute
+  '/_authed/products/$productId/edit': typeof AuthedProductsProductIdEditRoute
   '/_authed/projects/tickets/$ticketId': typeof AuthedProjectsTicketsTicketIdRoute
   '/_authed/projects/tickets/new': typeof AuthedProjectsTicketsNewRoute
   '/_authed/sales/deliveries/new': typeof AuthedSalesDeliveriesNewRoute
@@ -1528,7 +1547,7 @@ export interface FileRoutesById {
   '/_authed/procurement/purchase-returns/': typeof AuthedProcurementPurchaseReturnsIndexRoute
   '/_authed/procurement/receipts/': typeof AuthedProcurementReceiptsIndexRoute
   '/_authed/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
-  '/_authed/products/categories/': typeof AuthedProductsCategoriesIndexRoute
+  '/_authed/products/$productId/': typeof AuthedProductsProductIdIndexRoute
   '/_authed/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
   '/_authed/projects/bast/': typeof AuthedProjectsBastIndexRoute
   '/_authed/projects/tickets/': typeof AuthedProjectsTicketsIndexRoute
@@ -1548,7 +1567,8 @@ export interface FileRoutesById {
   '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/_authed/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/_authed/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
-  '/_authed/inventory/items/$itemId/edit': typeof AuthedInventoryItemsItemIdEditRoute
+  '/_authed/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
+  '/_authed/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   '/_authed/procurement/purchase-orders/$purchaseOrderId/edit': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
   '/_authed/procurement/purchase-orders/$purchaseOrderId/print': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
@@ -1569,6 +1589,8 @@ export interface FileRoutesById {
   '/_authed/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
   '/_authed/finance/tax/withholding/': typeof AuthedFinanceTaxWithholdingIndexRoute
+  '/_authed/inventory/components/$productId/': typeof AuthedInventoryComponentsProductIdIndexRoute
+  '/_authed/inventory/materials/$productId/': typeof AuthedInventoryMaterialsProductIdIndexRoute
   '/_authed/inventory/stock/adjustments/': typeof AuthedInventoryStockAdjustmentsIndexRoute
   '/_authed/procurement/purchase-orders/$purchaseOrderId/': typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   '/_authed/procurement/purchase-requests/$purchaseRequestId/': typeof AuthedProcurementPurchaseRequestsPurchaseRequestIdIndexRoute
@@ -1598,12 +1620,10 @@ export interface FileRouteTypes {
     | '/account/sessions'
     | '/documents/templates'
     | '/organizations/$organizationId'
-    | '/organizations/new'
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
     | '/warehouses/$warehouseId'
-    | '/warehouses/new'
     | '/print/quotations/$quotationId'
     | '/account/'
     | '/assets/'
@@ -1613,6 +1633,7 @@ export interface FileRouteTypes {
     | '/hr/'
     | '/organizations/'
     | '/procurement/'
+    | '/product-categories/'
     | '/products/'
     | '/profiles/'
     | '/projects/'
@@ -1632,7 +1653,6 @@ export interface FileRouteTypes {
     | '/hr/employees/new'
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
-    | '/inventory/items/$itemId'
     | '/inventory/stock/adjust'
     | '/inventory/stock/movements'
     | '/inventory/stock/value'
@@ -1643,6 +1663,7 @@ export interface FileRouteTypes {
     | '/procurement/receipts/$receiptId'
     | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
+    | '/products/$productId/edit'
     | '/projects/tickets/$ticketId'
     | '/projects/tickets/new'
     | '/sales/deliveries/new'
@@ -1693,7 +1714,7 @@ export interface FileRouteTypes {
     | '/procurement/purchase-returns/'
     | '/procurement/receipts/'
     | '/procurement/suppliers/'
-    | '/products/categories/'
+    | '/products/$productId/'
     | '/projects/$projectId/'
     | '/projects/bast/'
     | '/projects/tickets/'
@@ -1713,7 +1734,8 @@ export interface FileRouteTypes {
     | '/subscription/activations/'
     | '/subscription/api-keys/'
     | '/subscription/applications/'
-    | '/inventory/items/$itemId/edit'
+    | '/inventory/components/$productId/edit'
+    | '/inventory/materials/$productId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/procurement/purchase-orders/$purchaseOrderId/edit'
     | '/procurement/purchase-orders/$purchaseOrderId/print'
@@ -1734,6 +1756,8 @@ export interface FileRouteTypes {
     | '/finance/tax/records/'
     | '/finance/tax/types/'
     | '/finance/tax/withholding/'
+    | '/inventory/components/$productId/'
+    | '/inventory/materials/$productId/'
     | '/inventory/stock/adjustments/'
     | '/procurement/purchase-orders/$purchaseOrderId/'
     | '/procurement/purchase-requests/$purchaseRequestId/'
@@ -1759,12 +1783,10 @@ export interface FileRouteTypes {
     | '/account/sessions'
     | '/documents/templates'
     | '/organizations/$organizationId'
-    | '/organizations/new'
     | '/profiles/edit'
     | '/projects/new'
     | '/subscription/new'
     | '/warehouses/$warehouseId'
-    | '/warehouses/new'
     | '/print/quotations/$quotationId'
     | '/account'
     | '/assets'
@@ -1774,6 +1796,7 @@ export interface FileRouteTypes {
     | '/hr'
     | '/organizations'
     | '/procurement'
+    | '/product-categories'
     | '/products'
     | '/profiles'
     | '/projects'
@@ -1793,7 +1816,6 @@ export interface FileRouteTypes {
     | '/hr/employees/new'
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
-    | '/inventory/items/$itemId'
     | '/inventory/stock/adjust'
     | '/inventory/stock/movements'
     | '/inventory/stock/value'
@@ -1804,6 +1826,7 @@ export interface FileRouteTypes {
     | '/procurement/receipts/$receiptId'
     | '/procurement/receipts/new'
     | '/procurement/suppliers/$supplierId'
+    | '/products/$productId/edit'
     | '/projects/tickets/$ticketId'
     | '/projects/tickets/new'
     | '/sales/deliveries/new'
@@ -1854,7 +1877,7 @@ export interface FileRouteTypes {
     | '/procurement/purchase-returns'
     | '/procurement/receipts'
     | '/procurement/suppliers'
-    | '/products/categories'
+    | '/products/$productId'
     | '/projects/$projectId'
     | '/projects/bast'
     | '/projects/tickets'
@@ -1874,7 +1897,8 @@ export interface FileRouteTypes {
     | '/subscription/activations'
     | '/subscription/api-keys'
     | '/subscription/applications'
-    | '/inventory/items/$itemId/edit'
+    | '/inventory/components/$productId/edit'
+    | '/inventory/materials/$productId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
     | '/procurement/purchase-orders/$purchaseOrderId/edit'
     | '/procurement/purchase-orders/$purchaseOrderId/print'
@@ -1895,6 +1919,8 @@ export interface FileRouteTypes {
     | '/finance/tax/records'
     | '/finance/tax/types'
     | '/finance/tax/withholding'
+    | '/inventory/components/$productId'
+    | '/inventory/materials/$productId'
     | '/inventory/stock/adjustments'
     | '/procurement/purchase-orders/$purchaseOrderId'
     | '/procurement/purchase-requests/$purchaseRequestId'
@@ -1923,12 +1949,10 @@ export interface FileRouteTypes {
     | '/_authed/account/sessions'
     | '/_authed/documents/templates'
     | '/_authed/organizations/$organizationId'
-    | '/_authed/organizations/new'
     | '/_authed/profiles/edit'
     | '/_authed/projects/new'
     | '/_authed/subscription/new'
     | '/_authed/warehouses/$warehouseId'
-    | '/_authed/warehouses/new'
     | '/print/quotations/$quotationId'
     | '/_authed/account/'
     | '/_authed/assets/'
@@ -1938,6 +1962,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/'
     | '/_authed/organizations/'
     | '/_authed/procurement/'
+    | '/_authed/product-categories/'
     | '/_authed/products/'
     | '/_authed/profiles/'
     | '/_authed/projects/'
@@ -1957,7 +1982,6 @@ export interface FileRouteTypes {
     | '/_authed/hr/employees/new'
     | '/_authed/integrations/whatsapp-ai/$conversationId'
     | '/_authed/integrations/whatsapp-ai/faq'
-    | '/_authed/inventory/items/$itemId'
     | '/_authed/inventory/stock/adjust'
     | '/_authed/inventory/stock/movements'
     | '/_authed/inventory/stock/value'
@@ -1968,6 +1992,7 @@ export interface FileRouteTypes {
     | '/_authed/procurement/receipts/$receiptId'
     | '/_authed/procurement/receipts/new'
     | '/_authed/procurement/suppliers/$supplierId'
+    | '/_authed/products/$productId/edit'
     | '/_authed/projects/tickets/$ticketId'
     | '/_authed/projects/tickets/new'
     | '/_authed/sales/deliveries/new'
@@ -2018,7 +2043,7 @@ export interface FileRouteTypes {
     | '/_authed/procurement/purchase-returns/'
     | '/_authed/procurement/receipts/'
     | '/_authed/procurement/suppliers/'
-    | '/_authed/products/categories/'
+    | '/_authed/products/$productId/'
     | '/_authed/projects/$projectId/'
     | '/_authed/projects/bast/'
     | '/_authed/projects/tickets/'
@@ -2038,7 +2063,8 @@ export interface FileRouteTypes {
     | '/_authed/subscription/activations/'
     | '/_authed/subscription/api-keys/'
     | '/_authed/subscription/applications/'
-    | '/_authed/inventory/items/$itemId/edit'
+    | '/_authed/inventory/components/$productId/edit'
+    | '/_authed/inventory/materials/$productId/edit'
     | '/_authed/inventory/stock/adjustments/$adjustmentId'
     | '/_authed/procurement/purchase-orders/$purchaseOrderId/edit'
     | '/_authed/procurement/purchase-orders/$purchaseOrderId/print'
@@ -2059,6 +2085,8 @@ export interface FileRouteTypes {
     | '/_authed/finance/tax/records/'
     | '/_authed/finance/tax/types/'
     | '/_authed/finance/tax/withholding/'
+    | '/_authed/inventory/components/$productId/'
+    | '/_authed/inventory/materials/$productId/'
     | '/_authed/inventory/stock/adjustments/'
     | '/_authed/procurement/purchase-orders/$purchaseOrderId/'
     | '/_authed/procurement/purchase-requests/$purchaseRequestId/'
@@ -2225,18 +2253,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedOrganizationsOrganizationIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/organizations/new': {
-      id: '/_authed/organizations/new'
-      path: '/organizations/new'
-      fullPath: '/organizations/new'
-      preLoaderRoute: typeof AuthedOrganizationsNewRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/procurement/': {
       id: '/_authed/procurement/'
       path: '/procurement'
       fullPath: '/procurement/'
       preLoaderRoute: typeof AuthedProcurementIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/product-categories/': {
+      id: '/_authed/product-categories/'
+      path: '/product-categories'
+      fullPath: '/product-categories/'
+      preLoaderRoute: typeof AuthedProductCategoriesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/products/': {
@@ -2314,13 +2342,6 @@ declare module '@tanstack/react-router' {
       path: '/warehouses/$warehouseId'
       fullPath: '/warehouses/$warehouseId'
       preLoaderRoute: typeof AuthedWarehousesWarehouseIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/warehouses/new': {
-      id: '/_authed/warehouses/new'
-      path: '/warehouses/new'
-      fullPath: '/warehouses/new'
-      preLoaderRoute: typeof AuthedWarehousesNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/print/quotations/$quotationId': {
@@ -2659,13 +2680,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedInventoryComponentsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/inventory/items/$itemId': {
-      id: '/_authed/inventory/items/$itemId'
-      path: '/inventory/items/$itemId'
-      fullPath: '/inventory/items/$itemId'
-      preLoaderRoute: typeof AuthedInventoryItemsItemIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/inventory/materials/': {
       id: '/_authed/inventory/materials/'
       path: '/inventory/materials'
@@ -2785,11 +2799,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProcurementSuppliersSupplierIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/products/categories/': {
-      id: '/_authed/products/categories/'
-      path: '/products/categories'
-      fullPath: '/products/categories/'
-      preLoaderRoute: typeof AuthedProductsCategoriesIndexRouteImport
+    '/_authed/products/$productId/': {
+      id: '/_authed/products/$productId/'
+      path: '/products/$productId'
+      fullPath: '/products/$productId/'
+      preLoaderRoute: typeof AuthedProductsProductIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/products/$productId/edit': {
+      id: '/_authed/products/$productId/edit'
+      path: '/products/$productId/edit'
+      fullPath: '/products/$productId/edit'
+      preLoaderRoute: typeof AuthedProductsProductIdEditRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/projects/$projectId/': {
@@ -3037,12 +3058,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceTaxWithholdingIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/inventory/items/$itemId/edit': {
-      id: '/_authed/inventory/items/$itemId/edit'
-      path: '/edit'
-      fullPath: '/inventory/items/$itemId/edit'
-      preLoaderRoute: typeof AuthedInventoryItemsItemIdEditRouteImport
-      parentRoute: typeof AuthedInventoryItemsItemIdRoute
+    '/_authed/inventory/components/$productId/': {
+      id: '/_authed/inventory/components/$productId/'
+      path: '/inventory/components/$productId'
+      fullPath: '/inventory/components/$productId/'
+      preLoaderRoute: typeof AuthedInventoryComponentsProductIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/components/$productId/edit': {
+      id: '/_authed/inventory/components/$productId/edit'
+      path: '/inventory/components/$productId/edit'
+      fullPath: '/inventory/components/$productId/edit'
+      preLoaderRoute: typeof AuthedInventoryComponentsProductIdEditRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/materials/$productId/': {
+      id: '/_authed/inventory/materials/$productId/'
+      path: '/inventory/materials/$productId'
+      fullPath: '/inventory/materials/$productId/'
+      preLoaderRoute: typeof AuthedInventoryMaterialsProductIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/inventory/materials/$productId/edit': {
+      id: '/_authed/inventory/materials/$productId/edit'
+      path: '/inventory/materials/$productId/edit'
+      fullPath: '/inventory/materials/$productId/edit'
+      preLoaderRoute: typeof AuthedInventoryMaterialsProductIdEditRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/stock/adjustments/': {
       id: '/_authed/inventory/stock/adjustments/'
@@ -3300,20 +3342,6 @@ const AuthedWarehousesWarehouseIdRouteWithChildren =
     AuthedWarehousesWarehouseIdRouteChildren,
   )
 
-interface AuthedInventoryItemsItemIdRouteChildren {
-  AuthedInventoryItemsItemIdEditRoute: typeof AuthedInventoryItemsItemIdEditRoute
-}
-
-const AuthedInventoryItemsItemIdRouteChildren: AuthedInventoryItemsItemIdRouteChildren =
-  {
-    AuthedInventoryItemsItemIdEditRoute: AuthedInventoryItemsItemIdEditRoute,
-  }
-
-const AuthedInventoryItemsItemIdRouteWithChildren =
-  AuthedInventoryItemsItemIdRoute._addFileChildren(
-    AuthedInventoryItemsItemIdRouteChildren,
-  )
-
 interface AuthedRouteChildren {
   AuthedAccountRoute: typeof AuthedAccountRouteWithChildren
   AuthedAdminRoute: typeof AuthedAdminRouteWithChildren
@@ -3321,11 +3349,9 @@ interface AuthedRouteChildren {
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDocumentsTemplatesRoute: typeof AuthedDocumentsTemplatesRoute
   AuthedOrganizationsOrganizationIdRoute: typeof AuthedOrganizationsOrganizationIdRouteWithChildren
-  AuthedOrganizationsNewRoute: typeof AuthedOrganizationsNewRoute
   AuthedProjectsNewRoute: typeof AuthedProjectsNewRoute
   AuthedSubscriptionNewRoute: typeof AuthedSubscriptionNewRoute
   AuthedWarehousesWarehouseIdRoute: typeof AuthedWarehousesWarehouseIdRouteWithChildren
-  AuthedWarehousesNewRoute: typeof AuthedWarehousesNewRoute
   AuthedAssetsIndexRoute: typeof AuthedAssetsIndexRoute
   AuthedCrmIndexRoute: typeof AuthedCrmIndexRoute
   AuthedDocumentsIndexRoute: typeof AuthedDocumentsIndexRoute
@@ -3333,6 +3359,7 @@ interface AuthedRouteChildren {
   AuthedHrIndexRoute: typeof AuthedHrIndexRoute
   AuthedOrganizationsIndexRoute: typeof AuthedOrganizationsIndexRoute
   AuthedProcurementIndexRoute: typeof AuthedProcurementIndexRoute
+  AuthedProductCategoriesIndexRoute: typeof AuthedProductCategoriesIndexRoute
   AuthedProductsIndexRoute: typeof AuthedProductsIndexRoute
   AuthedProjectsIndexRoute: typeof AuthedProjectsIndexRoute
   AuthedReportsIndexRoute: typeof AuthedReportsIndexRoute
@@ -3351,7 +3378,6 @@ interface AuthedRouteChildren {
   AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
   AuthedIntegrationsWhatsappAiConversationIdRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   AuthedIntegrationsWhatsappAiFaqRoute: typeof AuthedIntegrationsWhatsappAiFaqRoute
-  AuthedInventoryItemsItemIdRoute: typeof AuthedInventoryItemsItemIdRouteWithChildren
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
   AuthedInventoryStockMovementsRoute: typeof AuthedInventoryStockMovementsRoute
   AuthedInventoryStockValueRoute: typeof AuthedInventoryStockValueRoute
@@ -3361,6 +3387,7 @@ interface AuthedRouteChildren {
   AuthedProcurementReceiptsReceiptIdRoute: typeof AuthedProcurementReceiptsReceiptIdRoute
   AuthedProcurementReceiptsNewRoute: typeof AuthedProcurementReceiptsNewRoute
   AuthedProcurementSuppliersSupplierIdRoute: typeof AuthedProcurementSuppliersSupplierIdRoute
+  AuthedProductsProductIdEditRoute: typeof AuthedProductsProductIdEditRoute
   AuthedProjectsTicketsTicketIdRoute: typeof AuthedProjectsTicketsTicketIdRoute
   AuthedProjectsTicketsNewRoute: typeof AuthedProjectsTicketsNewRoute
   AuthedSalesDeliveriesNewRoute: typeof AuthedSalesDeliveriesNewRoute
@@ -3407,7 +3434,7 @@ interface AuthedRouteChildren {
   AuthedProcurementPurchaseReturnsIndexRoute: typeof AuthedProcurementPurchaseReturnsIndexRoute
   AuthedProcurementReceiptsIndexRoute: typeof AuthedProcurementReceiptsIndexRoute
   AuthedProcurementSuppliersIndexRoute: typeof AuthedProcurementSuppliersIndexRoute
-  AuthedProductsCategoriesIndexRoute: typeof AuthedProductsCategoriesIndexRoute
+  AuthedProductsProductIdIndexRoute: typeof AuthedProductsProductIdIndexRoute
   AuthedProjectsProjectIdIndexRoute: typeof AuthedProjectsProjectIdIndexRoute
   AuthedProjectsBastIndexRoute: typeof AuthedProjectsBastIndexRoute
   AuthedProjectsTicketsIndexRoute: typeof AuthedProjectsTicketsIndexRoute
@@ -3427,6 +3454,8 @@ interface AuthedRouteChildren {
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
   AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
   AuthedSubscriptionApplicationsIndexRoute: typeof AuthedSubscriptionApplicationsIndexRoute
+  AuthedInventoryComponentsProductIdEditRoute: typeof AuthedInventoryComponentsProductIdEditRoute
+  AuthedInventoryMaterialsProductIdEditRoute: typeof AuthedInventoryMaterialsProductIdEditRoute
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
   AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute
   AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdPrintRoute
@@ -3447,6 +3476,8 @@ interface AuthedRouteChildren {
   AuthedFinanceTaxRecordsIndexRoute: typeof AuthedFinanceTaxRecordsIndexRoute
   AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
   AuthedFinanceTaxWithholdingIndexRoute: typeof AuthedFinanceTaxWithholdingIndexRoute
+  AuthedInventoryComponentsProductIdIndexRoute: typeof AuthedInventoryComponentsProductIdIndexRoute
+  AuthedInventoryMaterialsProductIdIndexRoute: typeof AuthedInventoryMaterialsProductIdIndexRoute
   AuthedInventoryStockAdjustmentsIndexRoute: typeof AuthedInventoryStockAdjustmentsIndexRoute
   AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute: typeof AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute
   AuthedProcurementPurchaseRequestsPurchaseRequestIdIndexRoute: typeof AuthedProcurementPurchaseRequestsPurchaseRequestIdIndexRoute
@@ -3469,12 +3500,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDocumentsTemplatesRoute: AuthedDocumentsTemplatesRoute,
   AuthedOrganizationsOrganizationIdRoute:
     AuthedOrganizationsOrganizationIdRouteWithChildren,
-  AuthedOrganizationsNewRoute: AuthedOrganizationsNewRoute,
   AuthedProjectsNewRoute: AuthedProjectsNewRoute,
   AuthedSubscriptionNewRoute: AuthedSubscriptionNewRoute,
   AuthedWarehousesWarehouseIdRoute:
     AuthedWarehousesWarehouseIdRouteWithChildren,
-  AuthedWarehousesNewRoute: AuthedWarehousesNewRoute,
   AuthedAssetsIndexRoute: AuthedAssetsIndexRoute,
   AuthedCrmIndexRoute: AuthedCrmIndexRoute,
   AuthedDocumentsIndexRoute: AuthedDocumentsIndexRoute,
@@ -3482,6 +3511,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrIndexRoute: AuthedHrIndexRoute,
   AuthedOrganizationsIndexRoute: AuthedOrganizationsIndexRoute,
   AuthedProcurementIndexRoute: AuthedProcurementIndexRoute,
+  AuthedProductCategoriesIndexRoute: AuthedProductCategoriesIndexRoute,
   AuthedProductsIndexRoute: AuthedProductsIndexRoute,
   AuthedProjectsIndexRoute: AuthedProjectsIndexRoute,
   AuthedReportsIndexRoute: AuthedReportsIndexRoute,
@@ -3503,7 +3533,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedIntegrationsWhatsappAiConversationIdRoute:
     AuthedIntegrationsWhatsappAiConversationIdRoute,
   AuthedIntegrationsWhatsappAiFaqRoute: AuthedIntegrationsWhatsappAiFaqRoute,
-  AuthedInventoryItemsItemIdRoute: AuthedInventoryItemsItemIdRouteWithChildren,
   AuthedInventoryStockAdjustRoute: AuthedInventoryStockAdjustRoute,
   AuthedInventoryStockMovementsRoute: AuthedInventoryStockMovementsRoute,
   AuthedInventoryStockValueRoute: AuthedInventoryStockValueRoute,
@@ -3518,6 +3547,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProcurementReceiptsNewRoute: AuthedProcurementReceiptsNewRoute,
   AuthedProcurementSuppliersSupplierIdRoute:
     AuthedProcurementSuppliersSupplierIdRoute,
+  AuthedProductsProductIdEditRoute: AuthedProductsProductIdEditRoute,
   AuthedProjectsTicketsTicketIdRoute: AuthedProjectsTicketsTicketIdRoute,
   AuthedProjectsTicketsNewRoute: AuthedProjectsTicketsNewRoute,
   AuthedSalesDeliveriesNewRoute: AuthedSalesDeliveriesNewRoute,
@@ -3570,7 +3600,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedProcurementPurchaseReturnsIndexRoute,
   AuthedProcurementReceiptsIndexRoute: AuthedProcurementReceiptsIndexRoute,
   AuthedProcurementSuppliersIndexRoute: AuthedProcurementSuppliersIndexRoute,
-  AuthedProductsCategoriesIndexRoute: AuthedProductsCategoriesIndexRoute,
+  AuthedProductsProductIdIndexRoute: AuthedProductsProductIdIndexRoute,
   AuthedProjectsProjectIdIndexRoute: AuthedProjectsProjectIdIndexRoute,
   AuthedProjectsBastIndexRoute: AuthedProjectsBastIndexRoute,
   AuthedProjectsTicketsIndexRoute: AuthedProjectsTicketsIndexRoute,
@@ -3595,6 +3625,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSubscriptionApiKeysIndexRoute: AuthedSubscriptionApiKeysIndexRoute,
   AuthedSubscriptionApplicationsIndexRoute:
     AuthedSubscriptionApplicationsIndexRoute,
+  AuthedInventoryComponentsProductIdEditRoute:
+    AuthedInventoryComponentsProductIdEditRoute,
+  AuthedInventoryMaterialsProductIdEditRoute:
+    AuthedInventoryMaterialsProductIdEditRoute,
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute:
     AuthedInventoryStockAdjustmentsAdjustmentIdRoute,
   AuthedProcurementPurchaseOrdersPurchaseOrderIdEditRoute:
@@ -3628,6 +3662,10 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFinanceTaxRecordsIndexRoute: AuthedFinanceTaxRecordsIndexRoute,
   AuthedFinanceTaxTypesIndexRoute: AuthedFinanceTaxTypesIndexRoute,
   AuthedFinanceTaxWithholdingIndexRoute: AuthedFinanceTaxWithholdingIndexRoute,
+  AuthedInventoryComponentsProductIdIndexRoute:
+    AuthedInventoryComponentsProductIdIndexRoute,
+  AuthedInventoryMaterialsProductIdIndexRoute:
+    AuthedInventoryMaterialsProductIdIndexRoute,
   AuthedInventoryStockAdjustmentsIndexRoute:
     AuthedInventoryStockAdjustmentsIndexRoute,
   AuthedProcurementPurchaseOrdersPurchaseOrderIdIndexRoute:

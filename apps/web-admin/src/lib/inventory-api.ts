@@ -178,6 +178,16 @@ export async function listProducts(params?: {
 	/** Only products with a live serial or stock balance in this warehouse. */
 	warehouseId?: string;
 	includeArchived?: boolean;
+	/** Lifecycle on `is_active`; wins over `activeOnly`. */
+	status?: 'all' | 'active' | 'inactive';
+	/** Selling price range in IDR **minor units**, inclusive. */
+	minPrice?: number;
+	maxPrice?: number;
+	/** On-hand quantity range (summed over every bin), inclusive. */
+	minStock?: number;
+	maxStock?: number;
+	sortBy?: 'name' | 'code' | 'price';
+	sortDir?: 'asc' | 'desc';
 }) {
 	const search = new URLSearchParams();
 	if (params?.page) search.set('page', String(params.page));
@@ -190,6 +200,13 @@ export async function listProducts(params?: {
 	if (params?.activeOnly) search.set('activeOnly', 'true');
 	if (params?.warehouseId) search.set('warehouseId', params.warehouseId);
 	if (params?.includeArchived) search.set('includeArchived', 'true');
+	if (params?.status) search.set('status', params.status);
+	if (params?.minPrice !== undefined) search.set('minPrice', String(params.minPrice));
+	if (params?.maxPrice !== undefined) search.set('maxPrice', String(params.maxPrice));
+	if (params?.minStock !== undefined) search.set('minStock', String(params.minStock));
+	if (params?.maxStock !== undefined) search.set('maxStock', String(params.maxStock));
+	if (params?.sortBy) search.set('sortBy', params.sortBy);
+	if (params?.sortDir) search.set('sortDir', params.sortDir);
 	const query = search.toString();
 
 	const envelope = (await request<TProduct[]>(
@@ -292,6 +309,16 @@ export const productsQueryOptions = (params: {
 	productKind?: TProductKind;
 	search?: string;
 	warehouseId?: string;
+	productCategoryId?: string;
+	/** Only products offered for new documents. */
+	activeOnly?: boolean;
+	status?: 'all' | 'active' | 'inactive';
+	minPrice?: number;
+	maxPrice?: number;
+	minStock?: number;
+	maxStock?: number;
+	sortBy?: 'name' | 'code' | 'price';
+	sortDir?: 'asc' | 'desc';
 	page?: number;
 	limit?: number;
 }) =>
@@ -315,3 +342,16 @@ export function productSerialsQueryOptions(productId: string) {
 		queryFn: () => listProductSerials(productId),
 	});
 }
+
+/** Slider bounds of the list filters: highest selling price (minor units) and highest summed stock. */
+export type TProductRanges = { maxSellingPrice: number; maxStock: number };
+
+/** Fetches the filter slider bounds for one kind (or every kind). */
+export const productRangesQueryOptions = (productKind?: TProductKind) =>
+	queryOptions({
+		queryKey: ['inventory', 'products', 'ranges', productKind ?? 'all'] as const,
+		queryFn: async () => {
+			const search = productKind ? `?productKind=${productKind}` : '';
+			return (await request<TProductRanges>(`/products/ranges${search}`)).data;
+		},
+	});

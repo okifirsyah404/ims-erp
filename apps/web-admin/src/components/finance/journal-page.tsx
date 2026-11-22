@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
@@ -208,7 +209,7 @@ export function JournalPage() {
 				</div>
 				{canPost ? (
 					<Button size='sm' onClick={() => setShowForm((value) => !value)}>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:journal.newEntry')}
 					</Button>
 				) : null}
@@ -266,29 +267,29 @@ export function JournalPage() {
 											))}
 									</SelectContent>
 								</Select>
-								<Input
+								<MoneyInput
 									className='w-36'
 									placeholder={t('finance:journal.debit')}
 									value={line.debit}
-									onChange={(event) =>
+									onValueChange={(value) =>
 										setLines((previous) =>
 											previous.map((row, rowIndex) =>
 												rowIndex === index
-													? { ...row, debit: event.target.value, credit: '' }
+													? { ...row, debit: value, credit: '' }
 													: row,
 											),
 										)
 									}
 								/>
-								<Input
+								<MoneyInput
 									className='w-36'
 									placeholder={t('finance:journal.credit')}
 									value={line.credit}
-									onChange={(event) =>
+									onValueChange={(value) =>
 										setLines((previous) =>
 											previous.map((row, rowIndex) =>
 												rowIndex === index
-													? { ...row, credit: event.target.value, debit: '' }
+													? { ...row, credit: value, debit: '' }
 													: row,
 											),
 										)
@@ -320,7 +321,7 @@ export function JournalPage() {
 								])
 							}
 						>
-							<Plus className='mr-1 size-4' />
+							<Plus className='size-4' data-icon='inline-start' />
 							{t('finance:journal.line.add')}
 						</Button>
 						<span>

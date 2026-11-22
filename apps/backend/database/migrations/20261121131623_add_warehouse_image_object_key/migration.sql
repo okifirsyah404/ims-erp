@@ -1,0 +1,1 @@
+ALTER TABLE "warehouse"."warehouses" ADD COLUMN "image_object_key" text;

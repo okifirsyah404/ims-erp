@@ -22,6 +22,7 @@ const assets = {
 	'register.condition': 'Kondisi',
 	'register.bookValue': 'Nilai buku',
 	'register.serialNumber': 'Nomor seri',
+	'register.photo': 'Foto aset',
 	'register.location': 'Lokasi',
 	'register.storedIn': 'Disimpan di',
 	'register.custodian': 'Penanggung jawab',

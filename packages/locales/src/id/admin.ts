@@ -150,7 +150,6 @@ const admin_: Record<keyof typeof admin, string> = {
 	'orgs.slug': 'Slug',
 	'orgs.create': 'Buat',
 	'orgs.creating': 'Membuat…',
-	'orgs.details': 'Detail organisasi',
 	'orgs.slugDescription':
 		'Slug bersifat permanen dan dipakai di URL serta konteks API.',
 	'orgs.slugInvalid': 'Gunakan huruf kecil, angka, dan satu tanda hubung.',

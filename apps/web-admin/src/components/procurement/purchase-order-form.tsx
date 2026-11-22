@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -404,15 +405,11 @@ export function PurchaseOrderForm({
 							</Field>
 							<Field className='sm:col-span-2'>
 								<FieldLabel htmlFor={`po-price-${line.key}`}>{t('procurement:po.unitPrice')}</FieldLabel>
-								<Input
+								<MoneyInput
 									id={`po-price-${line.key}`}
-									type='number'
 									required
-									min='0'
-									step='0.01'
-									inputMode='decimal'
 									value={line.unitPrice}
-									onChange={(event) => patch(line.key, { unitPrice: event.target.value })}
+									onValueChange={(value) => patch(line.key, { unitPrice: value })}
 								/>
 							</Field>
 							<div className='flex flex-col justify-end text-right text-sm sm:col-span-2'>

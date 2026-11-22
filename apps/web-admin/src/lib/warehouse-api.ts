@@ -103,8 +103,6 @@ export type TWarehouseCreateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault: boolean;
 	isActive: boolean;
-	/** Optional display image URL for the warehouse card. */
-	imageUrl?: string | null;
 	address?: TWarehouseAddressInput;
 };
 
@@ -114,8 +112,6 @@ export type TWarehouseUpdateInput = {
 	responsibleEmployeeId?: string | null;
 	isDefault?: boolean;
 	isActive?: boolean;
-	/** Optional display image URL for the warehouse card. */
-	imageUrl?: string | null;
 };
 
 /**

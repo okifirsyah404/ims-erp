@@ -7,6 +7,7 @@ import {
 	createProductSchema,
 	idParamSchema,
 	productListQuerySchema,
+	productRangesQuerySchema,
 	updateProductSchema,
 } from '../contracts/product.contract';
 import { documentImageFrom } from '@providers/s3/document-image';
@@ -69,6 +70,15 @@ export class ProductController {
 				{
 					erp: { permission: ['product:read'] },
 					detail: { description: 'Paginated item master' },
+				},
+			)
+			// Static before `/:id`: the list filters call this for their slider bounds.
+			.get(
+				'/ranges',
+				async ({ query }) => ok(await productService.ranges(productRangesQuerySchema.parse(query).productKind)),
+				{
+					erp: { permission: ['product:read'] },
+					detail: { description: 'Highest selling price and highest summed stock, for the list filter sliders' },
 				},
 			)
 			.get(

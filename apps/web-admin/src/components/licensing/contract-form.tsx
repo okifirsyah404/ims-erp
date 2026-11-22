@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -175,14 +176,10 @@ export function ContractForm({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='contract-value'>{t('licensing:field.valueRp')}</FieldLabel>
-							<Input
+							<MoneyInput
 								id='contract-value'
-								type='number'
-								min='0'
-								step='0.01'
-								inputMode='decimal'
 								value={value}
-								onChange={(event) => setValue(event.target.value)}
+								onValueChange={setValue}
 							/>
 						</Field>
 						<Field className='sm:col-span-2'>
