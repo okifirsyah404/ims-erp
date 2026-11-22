@@ -1,5 +1,5 @@
 /**
- * Regenerates the generated half of `docs/role-permission.md` (ERP-0111).
+ * Regenerates the generated half of `docs/role-permission.md` (ERP-0113).
  *
  * Usage (repo root): `bun docs/gen-role-permission.ts`
  *

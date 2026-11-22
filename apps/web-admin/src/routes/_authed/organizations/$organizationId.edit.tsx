@@ -34,7 +34,7 @@ import {
 	updateOrganization,
 } from '@/lib/organization-api';
 import { encodeImage } from '@/lib/image-file';
-import { ImageDropzone } from '@/components/organization/image-dropzone';
+import { ImageDropzone } from '@/components/image-dropzone';
 
 export const Route = createFileRoute('/_authed/organizations/$organizationId/edit')(
 	{

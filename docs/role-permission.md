@@ -4,7 +4,7 @@ Who may call which backend endpoint, and why. The first half of this page is
 written by hand. The second half (role list, grants per role, every endpoint
 with its guard and the roles that pass it) is **generated from code** by
 `bun docs/gen-role-permission.ts`. Re-run it whenever a route, a guard option
-or a role grant changes. Last regenerated for ERP-0111 (2026-11-23).
+or a role grant changes. Last regenerated for ERP-0113 (2026-11-23).
 
 Authoritative sources, in this order: the code
 (`packages/common/src/authorization/erp-permissions.ts`,

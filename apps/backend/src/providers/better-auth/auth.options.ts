@@ -14,11 +14,16 @@ import {
 	users,
 	verifications,
 } from '../../../drizzle/schemas/auth.schema';
+import { betterAuthChangeEmailOptions } from './options/change-email.auth.js';
 import { betterAuthEmailAndPasswordOptions } from './options/email-and-password.auth.js';
 import { betterAuthEmailVerificationOptions } from './options/email-verification.auth.js';
 import { betterAuthSecondaryStorage } from './options/secondary-storage.auth.js';
 import { betterAuthTrustedOrigins } from './options/social-providers.auth.js';
 import { sessionAutoActivateOrganizationHook } from './options/session.auth.js';
+import { userCacheEvictHook } from './options/user-cache.auth.js';
+import { socialAccountLinkGuard } from './options/account-link.auth.js';
+import { eq } from 'drizzle-orm';
+import { redisClient } from '../redis/redis';
 import { betterAuthPlugins } from './plugin.auth.js';
 
 export const betterAuthOptions = {
@@ -59,6 +64,7 @@ export const betterAuthOptions = {
 		},
 	}) as BetterAuthOptions['database'],
 	user: {
+		changeEmail: betterAuthChangeEmailOptions,
 		additionalFields: {
 			bio: {
 				type: 'string' as const,
@@ -78,7 +84,8 @@ export const betterAuthOptions = {
 			},
 			// User lifecycle status: pending (pre-created by invitation, no
 			// credentials yet) | active | deactivated (sessions revoked,
-			// login blocked; memberships kept). Owned by the user-management
+			// login blocked; memberships kept). Only `active` may sign in:
+			// enforced by the login gate and the account-link guard (ADR-0029). Owned by the user-management
 			// module's repository/service (set directly via Drizzle);
 			// `input: false` keeps it out of every Better Auth API surface.
 			status: {
@@ -128,6 +135,24 @@ export const betterAuthOptions = {
 			// Fire-and-forget avatar generation on every user creation
 			// (sign-up, OAuth, admin-created). Never fails user creation.
 			create: { after: avatarUserCreateHook() },
+			// Better Auth writes `auth.users` directly (update-user, admin API,
+			// email verification, change-email), bypassing the repository
+			// cache that serves `GET /users/me`; evict it on every update.
+			update: { after: userCacheEvictHook((...keys) => redisClient.del(...keys)) },
+		},
+		account: {
+			// Invitation-only: a social login is never attached to a pending,
+			// deactivated or deleted account (ERP-0111).
+			create: {
+				before: socialAccountLinkGuard(async (userId) => {
+					const [owner] = await drizzleDB
+						.select({ status: users.status, deletedAt: users.deletedAt })
+						.from(users)
+						.where(eq(users.id, userId))
+						.limit(1);
+					return owner ?? null;
+				}),
+			},
 		},
 		session: {
 			// Auto-activate the user's first organization membership on login

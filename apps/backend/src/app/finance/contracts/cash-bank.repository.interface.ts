@@ -9,7 +9,7 @@ export type TCashBankTransactionPaginationRequest = TPaginationRequest & {
 	cashBankAccountId?: string;
 };
 
-/** One period of the cash in/out aggregate (M01 dashboard, ERP-0111). */
+/** One period of the cash in/out aggregate (M01 dashboard, ERP-0113). */
 export type TCashFlowSummaryBucket = {
 	/** `YYYY-MM` for month buckets, `YYYY-MM-DD` for day buckets. */
 	period: string;

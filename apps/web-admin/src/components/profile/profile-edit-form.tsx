@@ -1,15 +1,16 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { toast } from '@/components/toast';
+import { ImageDropzone } from '@/components/image-dropzone';
 import {
 	invalidateSelfUser,
 	selfUserQueryOptions,
 	updateSelfUser,
 	uploadSelfAvatar,
 } from '@/lib/user-api';
-import { Avatar, AvatarFallback, AvatarImage } from '@ims-erp/ui/components/avatar';
+import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Card,
@@ -28,186 +29,210 @@ import {
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 
-/** Client-side pre-check mirroring the backend rules (UX only). */
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
-/**
- * Formats the backend can decode. Anything else is refused before the
- * upload so the user gets an instant message instead of a 415.
- */
-const AVATAR_TYPES = [
-	'image/png',
-	'image/jpeg',
-	'image/webp',
-	'image/gif',
-	'image/bmp',
-	'image/tiff',
-	'image/heic',
-	'image/heif',
-	'image/avif',
-];
+/** Backend `updateSelfUserSchema.bio` cap. */
+const BIO_MAX = 1000;
+/** Backend `updateSelfUserSchema.name` cap. */
+const NAME_MAX = 120;
 
 /**
- * Self profile editor (`/profiles/edit`). Avatar uploads go through
- * `POST /users/me/avatar` (compressed client-side first); fields save via
- * `PATCH /users/me`.
+ * Self profile editor — the whole `/profiles` page (ERP-0111; the read-only
+ * detail view is gone).
+ *
+ * @remarks
+ * The photo uses the same click-or-drop {@link ImageDropzone} as
+ * `/organizations/new`: picking only previews; the upload
+ * (`POST /users/me/avatar`) runs on Save together with the field update
+ * (`PATCH /users/me`). Username and email are account settings and live on
+ * `/accounts`; they are shown here read-only with a link.
  */
 export function ProfileEditForm() {
 	const { data: user } = useSuspenseQuery(selfUserQueryOptions);
-	const navigate = useNavigate();
-	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { t } = useTranslation(['account', 'common']);
 
 	const [name, setName] = useState(user.name);
-	const [username, setUsername] = useState(user.displayUsername ?? user.username ?? '');
 	const [bio, setBio] = useState(user.bio ?? '');
-	const [imageUrl, setImageUrl] = useState(user.image);
+	const [imageFile, setImageFile] = useState<File | null>(null);
+	const [pending, setPending] = useState(false);
 	const [formError, setFormError] = useState<string | null>(null);
 
-	const saveMutation = useMutation({
-		mutationFn: () => updateSelfUser({ name, username: username || undefined, bio: bio || undefined }),
-		onSuccess: async () => {
-			await invalidateSelfUser();
-			toast.success(t('profile.updated'));
-			navigate({ to: '/profiles' });
-		},
-		onError: (error: Error) => setFormError(error.message),
-	});
+	// Object URL preview for the picked image; revoked when it is replaced.
+	const pickedPreviewUrl = useMemo(
+		() => (imageFile ? URL.createObjectURL(imageFile) : null),
+		[imageFile],
+	);
+	useEffect(() => {
+		if (!pickedPreviewUrl) return;
+		return () => URL.revokeObjectURL(pickedPreviewUrl);
+	}, [pickedPreviewUrl]);
 
-	const avatarMutation = useMutation({
-		mutationFn: (file: File) => uploadSelfAvatar(file),
-		onSuccess: async (updated) => {
-			setImageUrl(updated.image);
-			await invalidateSelfUser();
-			toast.success(t('profile.avatarUpdated'));
-		},
-		onError: (error: Error) => toast.error(error.message),
-	});
+	const dirty =
+		name !== user.name || bio !== (user.bio ?? '') || imageFile !== null;
+	const canSubmit = dirty && Boolean(name.trim()) && !pending;
 
-	function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
-		const file = event.target.files?.[0];
-		event.target.value = '';
-		if (!file) return;
-		if (!AVATAR_TYPES.includes(file.type)) {
-			toast.error(t('profile.avatarInvalidType'));
-			return;
-		}
-		if (file.size > MAX_AVATAR_BYTES) {
-			// Larger files are still allowed through: compression happens
-			// before upload, and the 2 MiB cap applies to the compressed blob.
-			// Only absurdly large files are rejected outright.
-			if (file.size > 25 * MAX_AVATAR_BYTES) {
-				toast.error(t('profile.avatarTooLarge'));
-				return;
-			}
-		}
-		avatarMutation.mutate(file);
+	function discard() {
+		setName(user.name);
+		setBio(user.bio ?? '');
+		setImageFile(null);
+		setFormError(null);
 	}
 
+	async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+		event.preventDefault();
+		if (!canSubmit) return;
+		setFormError(null);
+		setPending(true);
+		try {
+			const fieldsChanged = name !== user.name || bio !== (user.bio ?? '');
+			// An empty bio is sent as '' so clearing it actually clears it.
+			if (fieldsChanged) await updateSelfUser({ name: name.trim(), bio });
+			if (imageFile) {
+				await uploadSelfAvatar(imageFile);
+				setImageFile(null);
+			}
+			await invalidateSelfUser();
+			toast.success(t('profile.updated'));
+		} catch (error) {
+			setFormError(
+				error instanceof Error ? error.message : t('common:error.failed'),
+			);
+		} finally {
+			setPending(false);
+		}
+	}
+
+	const username = user.displayUsername ?? user.username;
+
 	return (
-		<form
-			onSubmit={(event) => {
-				event.preventDefault();
-				setFormError(null);
-				saveMutation.mutate();
-			}}
-		>
-		<Card>
-			<CardHeader>
-				<CardTitle>{t('profile.editTitle')}</CardTitle>
-				<CardDescription>{t('profile.editDescription')}</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<FieldGroup>
-					<div className='flex items-center gap-4'>
-						<Avatar className='size-16'>
-							{imageUrl && <AvatarImage src={imageUrl} alt={name} />}
-							<AvatarFallback>
-								{name
-									.split(' ')
-									.map((part) => part[0])
-									.slice(0, 2)
-									.join('')
-									.toUpperCase()}
-							</AvatarFallback>
-						</Avatar>
-						<div className='flex flex-col gap-1'>
-							<input
-								ref={fileInputRef}
-								type='file'
-								accept='image/png,image/jpeg,image/webp,image/gif,image/bmp,image/tiff,image/heic,image/heif,image/avif'
-								className='hidden'
-								onChange={handleAvatarChange}
+		<form onSubmit={handleSubmit}>
+			<Card size='sm'>
+				<CardHeader>
+					<CardTitle>{t('profile.title')}</CardTitle>
+					<CardDescription>{t('profile.description')}</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className='flex flex-col gap-5 sm:flex-row sm:items-start'>
+						{/* Photo leads, like the organization form; on wide screens it
+						    sits beside the fields instead of above them. */}
+						<div className='flex flex-col items-center gap-1.5 sm:w-36'>
+							<ImageDropzone
+								previewUrl={pickedPreviewUrl ?? user.image}
+								busy={pending && imageFile !== null}
+								disabled={pending}
+								label={t('profile.photo')}
+								hint={t('profile.photoHint')}
+								onSelect={setImageFile}
+								onReject={(reason) =>
+									toast.error(
+										t(
+											reason === 'size'
+												? 'profile.avatarTooLarge'
+												: 'profile.avatarInvalidType',
+										),
+									)
+								}
 							/>
-							<Button
-								type='button'
-								variant='outline'
-								onClick={() => fileInputRef.current?.click()}
-								disabled={avatarMutation.isPending}
-							>
-								{avatarMutation.isPending
-									? t('profile.uploading')
-									: t('profile.changeAvatar')}
-							</Button>
-							<FieldDescription>{t('profile.avatarHint')}</FieldDescription>
+							{imageFile && (
+								<>
+									<p className='max-w-full truncate text-xs text-muted-foreground'>
+										{imageFile.name}
+									</p>
+									<Button
+										type='button'
+										variant='ghost'
+										size='xs'
+										disabled={pending}
+										onClick={() => setImageFile(null)}
+									>
+										{t('profile.removeSelection')}
+									</Button>
+								</>
+							)}
 						</div>
+
+						<FieldGroup className='flex-1 gap-4'>
+							<Field>
+								<FieldLabel htmlFor='profile-name'>{t('profile.name')}</FieldLabel>
+								<Input
+									id='profile-name'
+									required
+									maxLength={NAME_MAX}
+									value={name}
+									disabled={pending}
+									autoComplete='name'
+									onChange={(event) => setName(event.target.value)}
+								/>
+							</Field>
+							<Field>
+								<div className='flex items-baseline justify-between gap-2'>
+									<FieldLabel htmlFor='profile-bio'>{t('profile.bio')}</FieldLabel>
+									<span
+										className='text-xs tabular-nums text-muted-foreground'
+										aria-live='polite'
+									>
+										{t('profile.bioCount', { count: bio.length, max: BIO_MAX })}
+									</span>
+								</div>
+								<Textarea
+									id='profile-bio'
+									rows={4}
+									maxLength={BIO_MAX}
+									value={bio}
+									disabled={pending}
+									placeholder={t('profile.bioPlaceholder')}
+									onChange={(event) => setBio(event.target.value)}
+								/>
+							</Field>
+							<div className='grid gap-x-6 gap-y-3 rounded-lg border bg-muted/30 p-3 text-sm sm:grid-cols-[auto_minmax(0,1fr)]'>
+								<div className='min-w-0'>
+									<p className='text-xs text-muted-foreground'>
+										{t('profile.username')}
+									</p>
+									<p className='truncate font-medium'>
+										{username ? `@${username}` : '—'}
+									</p>
+								</div>
+								<div className='min-w-0'>
+									<p className='text-xs text-muted-foreground'>
+										{t('profile.email')}
+									</p>
+									<div className='flex min-w-0 items-center gap-1.5'>
+										<span className='truncate font-medium'>{user.email}</span>
+										<Badge
+											variant={user.emailVerified ? 'secondary' : 'outline'}
+											className='shrink-0'
+										>
+											{user.emailVerified
+												? t('email.verified')
+												: t('email.unverified')}
+										</Badge>
+									</div>
+								</div>
+								<FieldDescription className='sm:col-span-2'>
+									<Link to='/accounts'>{t('profile.manageInAccount')}</Link>
+								</FieldDescription>
+							</div>
+							{formError && (
+								<p className='text-sm text-destructive' role='alert'>
+									{formError}
+								</p>
+							)}
+						</FieldGroup>
 					</div>
-					<Field>
-						<FieldLabel htmlFor='edit-name'>{t('profile.name')}</FieldLabel>
-						<Input
-							id='edit-name'
-							required
-							minLength={1}
-							maxLength={120}
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-						/>
-					</Field>
-					<Field>
-						<FieldLabel htmlFor='edit-username'>
-							{t('profile.username')}
-						</FieldLabel>
-						<Input
-							id='edit-username'
-							minLength={3}
-							maxLength={30}
-							value={username}
-							onChange={(e) => setUsername(e.target.value)}
-						/>
-						<FieldDescription>{t('profile.bioHint')}</FieldDescription>
-					</Field>
-					<Field>
-						<FieldLabel htmlFor='edit-bio'>{t('profile.bio')}</FieldLabel>
-						<Textarea
-							id='edit-bio'
-							maxLength={1000}
-							rows={3}
-							value={bio}
-							onChange={(e) => setBio(e.target.value)}
-						/>
-						<FieldDescription>{t('profile.bioHint')}</FieldDescription>
-					</Field>
-					{formError && (
-						<p className='text-destructive text-sm' role='alert'>
-							{formError}
-						</p>
-					)}
-				</FieldGroup>
-			</CardContent>
-			<CardFooter className='justify-end gap-2'>
-				<Button type='submit' disabled={saveMutation.isPending}>
-					{saveMutation.isPending
-						? t('form.saving')
-						: t('profile.saveChanges')}
-				</Button>
-				<Button
-					type='button'
-					variant='ghost'
-					render={<a href='/profiles' />}
-				>
-					{t('common:action.cancel')}
-				</Button>
-			</CardFooter>
-		</Card>
+				</CardContent>
+				<CardFooter className='justify-end gap-2'>
+					<Button
+						type='button'
+						variant='ghost'
+						disabled={!dirty || pending}
+						onClick={discard}
+					>
+						{t('profile.discard')}
+					</Button>
+					<Button type='submit' disabled={!canSubmit}>
+						{pending ? t('form.saving') : t('profile.saveChanges')}
+					</Button>
+				</CardFooter>
+			</Card>
 		</form>
 	);
 }

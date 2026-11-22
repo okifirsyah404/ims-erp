@@ -45,7 +45,7 @@ export const DASHBOARD_QUERY_ROOT = ['dashboard'] as const;
  * Refresh is silent (no button, no skeleton: a refetch keeps the previous
  * figures until the new ones arrive) and keeps running while the tab is in
  * the background (`refetchIntervalInBackground`, owner decision 2026-11-23,
- * ERP-0111), so the page is current the moment it is looked at again.
+ * ERP-0113), so the page is current the moment it is looked at again.
  */
 export const DASHBOARD_REFRESH_MS = 60 * 1000;
 
@@ -219,7 +219,7 @@ export type TInvoiceSummary = {
 
 /**
  * Cash in/out per period,
- * `GET /finance/cash-bank-transactions/summary` (zero-filled, ERP-0111).
+ * `GET /finance/cash-bank-transactions/summary` (zero-filled, ERP-0113).
  *
  * @remarks
  * Cash basis: posted movements of every cash/bank account, opening balances

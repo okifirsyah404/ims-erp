@@ -79,7 +79,7 @@ const STAGE_KEYS: Record<TProjectStage, `projects:stage.${TProjectStage}`> = {
  * @remarks
  * One permission check per source module, answered by Better Auth against the
  * same `erpRoleGrants` the backend guard uses, so a multi-role member gets the
- * union. UX only: every endpoint re-checks server-side (ERP-0111, Q3).
+ * union. UX only: every endpoint re-checks server-side (ERP-0113, Q3).
  */
 function useDashboardAccess() {
 	const checks = {
@@ -99,7 +99,7 @@ function useDashboardAccess() {
 
 /**
  * The M01 dashboard: one read-only overview across modules, on real data
- * (`docs/plan/erp-module-plans/m01-dashboard.md`, ERP-0060, ERP-0111).
+ * (`docs/plan/erp-module-plans/m01-dashboard.md`, ERP-0060, ERP-0113).
  *
  * @remarks
  * **Client composition, no backend dashboard module.** Each card reads the

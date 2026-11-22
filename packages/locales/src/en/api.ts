@@ -378,6 +378,10 @@ const api = {
 
 	'auth.ownerGrantRequired': 'Only organization owners can grant the owner role',
 	'auth.roleNotGrantable': 'Role not grantable: {{roles}}',
+	'auth.accountNotActive':
+		'This account is not active. Accept your invitation first, or contact an administrator.',
+	'auth.webAdminAccessDenied':
+		'This account has no access to the ERP. Contact an administrator.',
 
 	// Borrowing (S4)
 	'assets.borrowingNotFound': 'Borrowing not found',

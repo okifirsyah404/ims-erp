@@ -15,7 +15,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { ImageDropzone } from '@/components/organization/image-dropzone';
+import { ImageDropzone } from '@/components/image-dropzone';
 import { encodeImage } from '@/lib/image-file';
 import {
 	createOrganization,

@@ -14,6 +14,16 @@ const auth = {
 	'login.invalidCredentials': 'Invalid email/username or password',
 	'login.orContinueWith': 'Or continue with',
 	'login.googleSignIn': 'Sign in with Google',
+	'login.lastUsed': 'Last used',
+	'login.googleNotRegistered':
+		'This Google account is not registered. Sign-in is by invitation only: ask an administrator to invite you.',
+	'login.accountNotActive':
+		'Your account is not active yet. Accept the invitation sent to your email first, or contact an administrator.',
+	'login.noAccess': 'This account has no access to the ERP. Contact an administrator.',
+	'login.googleNotLinked':
+		'An account with this email exists but Google is not connected to it. Sign in with your password, then connect Google in Account settings.',
+	'login.banned': 'This account has been blocked. Contact an administrator.',
+	'login.googleFailed': 'Google sign-in failed. Please try again.',
 
 	'forgot.title': 'Forgot your password?',
 	'forgot.subtitle': "Enter your email and we'll send you a reset link",

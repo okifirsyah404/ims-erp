@@ -171,7 +171,7 @@ export const cashBankMovementSchema = z.object({
 });
 
 /**
- * Window for the dashboard's cash in/out aggregate (M01, ERP-0111).
+ * Window for the dashboard's cash in/out aggregate (M01, ERP-0113).
  *
  * @remarks
  * Business dates (Asia/Jakarta `YYYY-MM-DD`), inclusive, keyed on

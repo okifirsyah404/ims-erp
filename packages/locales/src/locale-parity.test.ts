@@ -77,8 +77,9 @@ describe('locale values', () => {
 			'nav:item.crm',
 			'auth:login.email',
 			'auth:login.emailPlaceholder',
-			'account:tab.email',
 			'account:email.title',
+			// Brand name of the social login provider (ERP-0109).
+			'account:connected.google',
 			'account:profile.email',
 			'account:profile.bio',
 			'admin:users.email',

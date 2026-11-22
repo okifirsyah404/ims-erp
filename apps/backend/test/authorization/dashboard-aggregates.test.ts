@@ -1,5 +1,5 @@
 /**
- * Guard wiring for the dashboard aggregates (ERP-0055; ERP-0111 cash summary).
+ * Guard wiring for the dashboard aggregates (ERP-0055; ERP-0113 cash summary).
  *
  * Exercises the REAL Elysia pipeline (`erpGuard` + controller) over stubbed
  * services, so the permission strings on `GET /invoices/summary` and

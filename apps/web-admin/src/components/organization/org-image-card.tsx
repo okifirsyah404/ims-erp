@@ -17,7 +17,7 @@ import {
 	uploadOrganizationImage,
 } from '@/lib/organization-api';
 import { encodeImage } from '@/lib/image-file';
-import { ImageDropzone } from './image-dropzone';
+import { ImageDropzone } from '@/components/image-dropzone';
 
 /**
  * Organization profile image card (ERP-0041): upload (the client downscales,

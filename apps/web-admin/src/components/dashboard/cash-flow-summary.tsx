@@ -107,7 +107,7 @@ function KpiCard({
 }
 
 /**
- * Income, outcome and net cash flow, month to date (ERP-0111).
+ * Income, outcome and net cash flow, month to date (ERP-0113).
  *
  * @remarks
  * Cash basis: posted cash/bank movements, opening balances excluded. Two
@@ -181,7 +181,7 @@ export function CashFlowKpis({
 }
 
 /**
- * Income vs outcome per period over a chosen window (ERP-0111).
+ * Income vs outcome per period over a chosen window (ERP-0113).
  *
  * @remarks
  * Same presets and custom range as the sales chart, but its own window state.

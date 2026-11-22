@@ -1,6 +1,6 @@
 /**
  * Cash in/out aggregate for the M01 dashboard
- * (`GET /finance/cash-bank-transactions/summary`, ERP-0111).
+ * (`GET /finance/cash-bank-transactions/summary`, ERP-0113).
  *
  * Pinned without a database (bun-test skill rule 1.1):
  * - {@link fillCashFlowSummary}: zero-filling, totals and `net`;

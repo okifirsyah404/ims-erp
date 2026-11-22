@@ -170,7 +170,7 @@ export function NavUser() {
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem
-						onClick={() => router.navigate({ to: '/account' })}
+						onClick={() => router.navigate({ to: '/accounts' })}
 					>
 						<User />
 						{t('user.account')}

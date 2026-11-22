@@ -273,7 +273,7 @@ export class CashBankService {
 	}
 
 	/**
-	 * Cash in/out over a window for the dashboard (M01, ERP-0111): posted
+	 * Cash in/out over a window for the dashboard (M01, ERP-0113): posted
 	 * movements of every cash/bank account of the tenant, zero-filled per period.
 	 */
 	async summary(
