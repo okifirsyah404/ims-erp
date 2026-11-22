@@ -117,10 +117,10 @@ export class BorrowingRequestRepository implements IBorrowingRequestRepository {
 	/** One query for the whole page; "first" is stable (`created_at`, then id). */
 	async listFirstItemImages(
 		requestIds: string[],
-	): Promise<Array<{ requestId: string; imageUrl: string | null }>> {
+	): Promise<Array<{ requestId: string; imageObjectKey: string | null }>> {
 		if (requestIds.length === 0) return [];
 		const rows = await this.database
-			.select({ requestId: borrowingItems.borrowingRequestId, imageUrl: items.imageUrl })
+			.select({ requestId: borrowingItems.borrowingRequestId, imageObjectKey: items.imageObjectKey })
 			.from(borrowingItems)
 			.innerJoin(items, eq(items.id, borrowingItems.itemId))
 			.where(
@@ -132,9 +132,9 @@ export class BorrowingRequestRepository implements IBorrowingRequestRepository {
 			.orderBy(asc(borrowingItems.createdAt), asc(borrowingItems.id));
 		const first = new Map<string, string | null>();
 		for (const row of rows) {
-			if (!first.has(row.requestId)) first.set(row.requestId, row.imageUrl);
+			if (!first.has(row.requestId)) first.set(row.requestId, row.imageObjectKey);
 		}
-		return [...first].map(([requestId, imageUrl]) => ({ requestId, imageUrl }));
+		return [...first].map(([requestId, imageObjectKey]) => ({ requestId, imageObjectKey }));
 	}
 
 	/**

@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +13,6 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
-import { Input } from '@ims-erp/ui/components/input';
 import { toast } from '@/components/toast';
 import { updateWithholding, type TWithholdingRecord } from '@/lib/tax-api';
 
@@ -82,13 +82,10 @@ export function WithholdingEditDialog({
 				>
 					<Field>
 						<FieldLabel>{t('tax:withholding.taxAmount')}</FieldLabel>
-						<Input
-							type='number'
-							min='0'
-							step='0.01'
+						<MoneyInput
 							value={taxAmount}
-							onChange={(event) => setTaxAmount(event.target.value)}
 							required
+							onValueChange={setTaxAmount}
 						/>
 					</Field>
 					<DialogFooter>

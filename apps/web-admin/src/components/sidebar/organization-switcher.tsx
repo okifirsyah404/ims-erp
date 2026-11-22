@@ -45,6 +45,7 @@ import { hasInternalRole } from '@/lib/internal-role';
 import { useOrganizationStore } from '@/lib/organization-store';
 import { humanizeIdentifier } from '@/lib/format';
 import { OrgLogo } from './org-logo';
+import { CreateOrganizationDialog } from '@/components/organization/create-organization-dialog';
 import { switchOrganization } from '@/lib/use-permission';
 
 /**
@@ -78,6 +79,7 @@ export function OrganizationSwitcher() {
 	);
 	const setActiveOrganization = useOrganizationStore((state) => state.setActive);
 	const [switchingTo, setSwitchingTo] = useState<string | null>(null);
+	const [createOpen, setCreateOpen] = useState(false);
 
 	// Membership rows with role + logo. App admins get the same list, filtered
 	// to internal roles like everyone else (ADR-0017 §8).
@@ -246,7 +248,7 @@ export function OrganizationSwitcher() {
 						{isAppAdmin && (
 							<DropdownMenuItem
 								className='gap-2 p-2'
-								onClick={() => navigate({ to: '/organizations/new' })}
+								onClick={() => setCreateOpen(true)}
 							>
 								<div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
 									<Plus className='size-4' />
@@ -258,6 +260,12 @@ export function OrganizationSwitcher() {
 						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
+				{isAppAdmin && (
+					<CreateOrganizationDialog
+						open={createOpen}
+						onOpenChange={setCreateOpen}
+					/>
+				)}
 			</SidebarMenuItem>
 		</SidebarMenu>
 	);

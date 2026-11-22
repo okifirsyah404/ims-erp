@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -245,7 +246,10 @@ function TicketDetailPage() {
 									</Field>
 									<Field>
 										<FieldLabel htmlFor='ticket-cost'>{t('projects:ticket.serviceCostRp')}</FieldLabel>
-										<Input id='ticket-cost' type='number' min='0' step='0.01' inputMode='decimal' value={cost} onChange={(event) => setCost(event.target.value)} />
+										<MoneyInput id='ticket-cost'
+value={cost}
+onValueChange={setCost}
+/>
 									</Field>
 								</>
 							) : (

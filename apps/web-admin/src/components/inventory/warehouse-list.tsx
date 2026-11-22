@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi, Link } from '@tanstack/react-router';
+import { getRouteApi, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -33,10 +33,21 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Funnel, PackageOpen, Plus, Search, Warehouse } from 'lucide-react';
+import {
+	Archive,
+	ArchiveRestore,
+	Funnel,
+	Pencil,
+	Plus,
+	Search,
+	SlidersHorizontal,
+	Trash2,
+	Warehouse,
+} from 'lucide-react';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { CardActionsMenu, type TCardAction } from '@/components/card-actions-menu';
+import { ItemThumb } from '@/components/item-thumb';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
@@ -48,7 +59,9 @@ import {
 	type TWarehouseManaged,
 	type TWarehouseWithCounts,
 } from '@/lib/warehouse-api';
+import { usePermission } from '@/lib/use-permission';
 import { useWarehouseAccess } from '@/lib/use-warehouse-access';
+import { CreateWarehouseDialog } from './create-warehouse-dialog';
 
 /** The route API for `/warehouses` (validated search params). */
 const routeApi = getRouteApi('/_authed/warehouses/');
@@ -137,8 +150,8 @@ function AdminWarehouseList() {
 	});
 
 	const { archive, toggleActive } = useWarehouseLifecycle();
-	const confirm = useConfirm();
 
+	const [createOpen, setCreateOpen] = useState(false);
 	const rows = data?.rows ?? [];
 	const pagination = data?.pagination;
 
@@ -153,11 +166,8 @@ function AdminWarehouseList() {
 						{t('warehouse:warehouses.description')}
 					</p>
 				</div>
-				<Button
-					render={<Link to='/warehouses/new' />}
-					className='shrink-0'
-				>
-					<Plus className='mr-2 size-4' aria-hidden='true' />
+				<Button className='shrink-0' onClick={() => setCreateOpen(true)}>
+					<Plus className='size-4' data-icon='inline-start' />
 					{t('warehouse:warehouses.new')}
 				</Button>
 			</div>
@@ -220,7 +230,7 @@ function AdminWarehouseList() {
 					title={t('warehouse:warehouses.emptyTitle')}
 					description={t('warehouse:warehouses.empty')}
 					action={
-						<Button render={<Link to='/warehouses/new' />}>
+						<Button onClick={() => setCreateOpen(true)}>
 							{t('warehouse:warehouses.new')}
 						</Button>
 					}
@@ -229,30 +239,19 @@ function AdminWarehouseList() {
 				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 					{isPending
 						? Array.from({ length: 6 }, (_, index) => (
-								<WarehouseCard key={index} busy={false} />
+								<WarehouseCard key={index} />
 							))
 						: rows.map((warehouse) => (
 								<WarehouseCard
 									key={warehouse.id}
 									warehouse={warehouse}
-									busy={toggleActive.isPending || archive.isPending}
 									onToggleActive={() =>
-										toggleActive.mutate({
+										toggleActive.mutateAsync({
 											warehouseId: warehouse.id,
 											isActive: !warehouse.isActive,
 										})
 									}
-									onArchive={async () => {
-										if (
-											await confirm({
-												title: t('warehouse:warehouses.archiveConfirmTitle'),
-												description: t('warehouse:warehouses.archiveConfirmBody'),
-												destructive: true,
-											})
-										) {
-											archive.mutate(warehouse.id);
-										}
-									}}
+									onDelete={() => archive.mutateAsync(warehouse.id)}
 								/>
 							))}
 				</div>
@@ -267,6 +266,8 @@ function AdminWarehouseList() {
 					}
 				/>
 			)}
+
+			<CreateWarehouseDialog open={createOpen} onOpenChange={setCreateOpen} />
 		</div>
 	);
 }
@@ -286,7 +287,6 @@ function PicWarehouseList() {
 	const [term, setTerm] = useState('');
 	const { data, isPending, isError, error } = useQuery(myWarehousesQueryOptions());
 	const { archive, toggleActive } = useWarehouseLifecycle();
-	const confirm = useConfirm();
 
 	const needle = term.trim().toLowerCase();
 	const rows = (data ?? []).filter(
@@ -331,30 +331,19 @@ function PicWarehouseList() {
 				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4'>
 					{isPending
 						? Array.from({ length: 3 }, (_, index) => (
-								<WarehouseCard key={index} busy={false} />
+								<WarehouseCard key={index} />
 							))
 						: rows.map((warehouse) => (
 								<WarehouseCard
 									key={warehouse.id}
 									warehouse={warehouse}
-									busy={toggleActive.isPending || archive.isPending}
 									onToggleActive={() =>
-										toggleActive.mutate({
+										toggleActive.mutateAsync({
 											warehouseId: warehouse.id,
 											isActive: !warehouse.isActive,
 										})
 									}
-									onArchive={async () => {
-										if (
-											await confirm({
-												title: t('warehouse:warehouses.archiveConfirmTitle'),
-												description: t('warehouse:warehouses.archiveConfirmBody'),
-												destructive: true,
-											})
-										) {
-											archive.mutate(warehouse.id);
-										}
-									}}
+									onDelete={() => archive.mutateAsync(warehouse.id)}
 								/>
 							))}
 				</div>
@@ -534,16 +523,18 @@ function WarehouseFiltersPopover({
  */
 function WarehouseCard({
 	warehouse,
-	busy,
 	onToggleActive,
-	onArchive,
+	onDelete,
 }: {
 	warehouse?: TWarehouseWithCounts | TWarehouseManaged;
-	busy: boolean;
-	onToggleActive?: () => void;
-	onArchive?: () => void;
+	/** Archive (deactivate) or activate, depending on the current state. */
+	onToggleActive?: () => unknown;
+	/** The existing soft delete; the backend refuses while live units remain. */
+	onDelete?: () => unknown;
 }) {
 	const { t } = useTranslation(['inventory', 'common', 'warehouse', 'product']);
+	const navigate = useNavigate();
+	const canAdjust = usePermission('stock_adjustment.create');
 
 	if (!warehouse) {
 		return (
@@ -580,28 +571,76 @@ function WarehouseCard({
 				]
 			: [[t('warehouse:warehouses.storages'), warehouse.storages.length]];
 
+	// Stock only exists once something is stored, which the admin listing counts.
+	const hasStock =
+		'productsCount' in warehouse &&
+		warehouse.productsCount + warehouse.componentsCount + warehouse.materialsCount > 0;
+
+	/** Card menu: stock adjustment (when stocked), edit, archive (inactive) / activate, delete. */
+	const actions: TCardAction[] = [];
+	if (canAdjust && hasStock) {
+		actions.push({
+			key: 'adjust',
+			label: t('common:cardMenu.stockAdjustment'),
+			icon: SlidersHorizontal,
+			onSelect: () => navigate({ to: '/inventory/stock/adjust', search: { warehouseId: warehouse.id } }),
+		});
+	}
+	actions.push({
+		key: 'edit',
+		label: t('common:action.edit'),
+		icon: Pencil,
+		onSelect: () => navigate({ to: '/warehouses/$warehouseId/edit', params: { warehouseId: warehouse.id } }),
+	});
+	actions.push(
+		warehouse.isActive
+			? {
+					key: 'archive',
+					label: t('common:cardMenu.archive'),
+					icon: Archive,
+					onSelect: () => onToggleActive?.(),
+					confirm: {
+						title: t('common:cardMenu.archiveTitle', { name: warehouse.name }),
+						description: t('common:cardMenu.archiveBody'),
+						confirmLabel: t('common:cardMenu.archive'),
+					},
+				}
+			: {
+					key: 'activate',
+					label: t('common:cardMenu.activate'),
+					icon: ArchiveRestore,
+					onSelect: () => onToggleActive?.(),
+				},
+		{
+			key: 'delete',
+			label: t('common:cardMenu.delete'),
+			icon: Trash2,
+			destructive: true,
+			onSelect: () => onDelete?.(),
+			confirm: {
+				title: t('common:cardMenu.deleteTitle', { name: warehouse.name }),
+				description: t('common:cardMenu.deleteBody'),
+				confirmLabel: t('common:cardMenu.delete'),
+			},
+		},
+	);
+
 	return (
+		// The whole card opens the detail. The actions menu is a sibling of the
+		// link (not inside it) so its clicks never navigate.
+		<div className='relative h-full'>
 		<Link
 			to='/warehouses/$warehouseId'
 			params={{ warehouseId: warehouse.id }}
-			className='group'
+			className='group block h-full'
 		>
 			<Card className='h-full transition-shadow group-hover:shadow-md'>
-				{warehouse.imageUrl ? (
-					<img
-						src={warehouse.imageUrl}
-						alt={warehouse.name}
-						className='h-40 w-full object-cover'
-						loading='lazy'
-					/>
-				) : (
-					<div
-						aria-hidden='true'
-						className='flex h-40 w-full items-center justify-center bg-muted text-muted-foreground'
-					>
-						<PackageOpen className='size-10' />
-					</div>
-				)}
+				<ItemThumb
+					variant='cover'
+					src={warehouse.imageUrl}
+					name={warehouse.name}
+					icon={Warehouse}
+				/>
 				<CardHeader>
 					<CardTitle className='truncate'>{warehouse.name}</CardTitle>
 					<CardDescription className='truncate font-mono text-xs'>
@@ -642,33 +681,9 @@ function WarehouseCard({
 						))}
 					</div>
 				</CardContent>
-				<CardFooter className='justify-between gap-2'>
-					<Button
-						variant='outline'
-						size='sm'
-						disabled={busy}
-						onClick={(event) => {
-							event.preventDefault();
-							onToggleActive?.();
-						}}
-					>
-						{warehouse.isActive
-							? t('warehouse:warehouses.deactivate')
-							: t('warehouse:warehouses.activate')}
-					</Button>
-					<Button
-						variant='ghost'
-						size='sm'
-						disabled={busy}
-						onClick={(event) => {
-							event.preventDefault();
-							onArchive?.();
-						}}
-					>
-						{t('product:detail.archive')}
-					</Button>
-				</CardFooter>
 			</Card>
 		</Link>
+		<CardActionsMenu actions={actions} />
+		</div>
 	);
 }

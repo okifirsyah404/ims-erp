@@ -1,5 +1,6 @@
 import {
 	Bell,
+	Boxes,
 	Building2,
 	Contact,
 	FileCheck2,
@@ -133,40 +134,29 @@ export const navSections: { labelKey: SidebarItem['titleKey']; items: SidebarIte
 		],
 	},
 
-	// M05 — Product master (ADR-0026: its own module, next to the stock module),
-	// with Assets & Equipment (M06) folded into Inventory below.
+	// M05 — Inventory & Purchasing, with Assets & Equipment (M06) folded in.
+	// Warehouses and the product master are their own modules (ADR-0026) but
+	// share this one sidebar group.
 	{
-		labelKey: 'section.product',
-		items: [
-			{ titleKey: 'item.products', url: '/products', icon: Package, permission: 'product.read' },
-			{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
-			{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
-			// No catalog resource yet: hidden.
-			{ titleKey: 'item.itemCategories', url: '/product-categories' },
-		],
-	},
-
-	// Warehouses (ADR-0026: the physical estate is its own module).
-	{
-		labelKey: 'section.warehouse',
+		labelKey: 'section.inventory',
 		items: [
 			// App admins see every warehouse; a person in charge sees the ones
 			// granted to them (ADR-0017, resolved from `/warehouses/mine`).
 			{ titleKey: 'item.warehouses', url: '/warehouses', icon: Warehouse, warehousePic: true },
-		],
-	},
-
-	// M05 — Stock, purchasing and assets.
-	{
-		labelKey: 'section.inventory',
-		items: [
 			{ titleKey: 'item.inventoryValue', url: '/inventory/stock/value', icon: Calculator, permission: 'stock.read' },
+			// Products are the main master, so they sit beside the group instead of
+			// inside it. Detail and edit live under `/products/$productId`.
+			{ titleKey: 'item.products', url: '/products', icon: Package, permission: 'product.read' },
 			{
 				titleKey: 'item.items',
-				icon: Package,
+				icon: Boxes,
 				items: [
+					{ titleKey: 'item.components', url: '/inventory/components', permission: 'product.read' },
+					{ titleKey: 'item.materials', url: '/inventory/materials', permission: 'product.read' },
 					{ titleKey: 'item.stock', url: '/inventory/stock', permission: 'stock.read' },
 					{ titleKey: 'item.stockAdjustments', url: '/inventory/stock/adjustments', permission: 'stock_adjustment.read' },
+					// The backend gates categories with `product:*`, so `product.read` shows them.
+					{ titleKey: 'item.itemCategories', url: '/product-categories', permission: 'product.read' },
 					{ titleKey: 'item.itemMovements', url: '/inventory/stock/movements', permission: 'stock.read' },
 				],
 			},

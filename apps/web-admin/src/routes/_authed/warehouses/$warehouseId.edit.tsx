@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate, useParams } from '@tanstack/react-router'
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SearchX } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 
@@ -66,7 +67,7 @@ function EditWarehousePage() {
 	if (!warehouse) {
 		return (
 			<WarehouseAccessGate>
-				<EmptyState title={t('warehouse:warehouses.notFound')} bordered />
+				<EmptyState icon={SearchX} title={t('warehouse:warehouses.notFound')} bordered />
 			</WarehouseAccessGate>
 		);
 	}

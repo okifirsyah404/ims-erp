@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import {
 	useMutation,
 	useQuery,
@@ -17,7 +18,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
@@ -289,11 +289,10 @@ function RequestDisposalDialog({ onClose }: { onClose: () => void }) {
 							))}
 						</SelectContent>
 					</Select>
-					<Input
-						type='number'
+					<MoneyInput
 						placeholder={t('form.proceedsAmount')}
 						value={proceeds}
-						onChange={(event) => setProceeds(event.target.value)}
+						onValueChange={setProceeds}
 					/>
 				</div>
 				<DialogFooter>

@@ -68,6 +68,8 @@ describe('locale values', () => {
 			'settings:companyProfile.image.logo',
 			// `Material` is the same word in both languages.
 			'settings:numbering.type.item_material',
+			// `Status` is the same word in Indonesian (the item filter popover label).
+			'product:items.filterStatus',
 			'common:language.switchToEnglish',
 			'common:language.switchToIndonesian',
 			'nav:section.platform',

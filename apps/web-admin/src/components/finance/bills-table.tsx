@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +14,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
@@ -215,7 +215,7 @@ export function BillsTable() {
 				{canCreate ? (
 					<div className='flex gap-2'>
 						<Button size='sm' onClick={() => setShowFromOrder((v) => !v)}>
-							<Plus className='mr-1 size-4' />
+							<Plus className='size-4' data-icon='inline-start' />
 							{t('finance:bills.fromOrder.open')}
 						</Button>
 						<Button
@@ -223,7 +223,7 @@ export function BillsTable() {
 							variant='outline'
 							onClick={() => setShowForm((v) => !v)}
 						>
-							<Plus className='mr-1 size-4' />
+							<Plus className='size-4' data-icon='inline-start' />
 							{t('finance:bills.create')}
 						</Button>
 					</div>
@@ -264,17 +264,17 @@ export function BillsTable() {
 						onChange={setBillDate}
 					/>
 					<DatePicker className='w-40' value={dueDate} onChange={setDueDate} />
-					<Input
+					<MoneyInput
 						className='w-36'
 						placeholder={t('finance:bills.subtotal')}
 						value={subtotal}
-						onChange={(event) => setSubtotal(event.target.value)}
+						onValueChange={setSubtotal}
 					/>
-					<Input
+					<MoneyInput
 						className='w-36'
 						placeholder={t('finance:bills.tax')}
 						value={taxTotal}
-						onChange={(event) => setTaxTotal(event.target.value)}
+						onValueChange={setTaxTotal}
 					/>
 					<Button
 						size='sm'

@@ -65,8 +65,6 @@ export const createItemSchema = z.object({
 		.nullish(),
 	condition: z.enum(['new', 'good', 'fair', 'poor', 'damaged']).default('good'),
 	locationDescription: z.string().nullish(),
-	/** Optional display image URL for the asset card. */
-	imageUrl: z.url().max(2048).nullish(),
 	custodianEmployeeId: z.string().uuid().nullish(),
 	supplierCompanyId: z.string().uuid().nullish(),
 	purchaseOrderId: z.string().uuid().nullish(),
@@ -96,8 +94,6 @@ export const updateItemSchema = z
 			.nullable()
 			.optional(),
 		locationDescription: z.string().nullable().optional(),
-		/** Optional display image URL for the asset card. */
-		imageUrl: z.url().max(2048).nullable().optional(),
 		custodianEmployeeId: z.string().uuid().nullable().optional(),
 		supplierCompanyId: z.string().uuid().nullable().optional(),
 		purchaseOrderId: z.string().uuid().nullable().optional(),

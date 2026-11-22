@@ -3,35 +3,25 @@ import { useTranslation } from 'react-i18next';
 
 import { AdminOnly } from '@/components/inventory/admin-only';
 import { ItemKindList } from '@/components/inventory/item-kind-list';
-
-/** Search params for the item lists (URL-backed pagination). */
-type TItemListSearch = {
-	page?: number;
-};
+import { EMPTY_ITEM_FILTERS as EMPTY_FILTERS, validateItemListSearch } from '@/lib/item-list-search';
 
 /**
- * `/products` — the product slice of the item master.
+ * `/products` - the product slice of the item master.
  *
  * @remarks
- * One route per kind mirrors the sidebar vocabulary (`item.products`,
- * `item.components`, …) instead of a single list with filter chips: each kind
- * has its own domain rules (tools may only be borrowed; only products may be
- * sold or applied to warranty), and the route name states which rule set is
- * in play.
- *
- * Only `page` lives in the URL; the page size is a frontend constant, so a
- * shared link never pins a stale limit.
+ * One route per kind mirrors the sidebar, and each kind has its own detail and
+ * edit routes below it. page, q, categoryId and ctiveOnly live in the
+ * URL; the page size is a frontend constant, so a shared link never pins a
+ * stale limit.
  */
 export const Route = createFileRoute('/_authed/products/')({
-	validateSearch: (search: Record<string, unknown>): TItemListSearch => ({
-		page: search.page ? Number(search.page) || 1 : undefined,
-	}),
+	validateSearch: validateItemListSearch,
 	component: ProductsPage,
 });
 
 function ProductsPage() {
 	const { t } = useTranslation(['inventory', 'product']);
-	const { page } = Route.useSearch();
+	const { page, ...filters } = Route.useSearch();
 	const navigate = Route.useNavigate();
 	return (
 		<AdminOnly>
@@ -39,8 +29,14 @@ function ProductsPage() {
 				kind='product'
 				title={t('product:products.title')}
 				page={page ?? 1}
+				filters={filters}
 				onPageChange={(next) =>
 					void navigate({ search: (prev) => ({ ...prev, page: next }) })
+				}
+				onFiltersChange={(next) =>
+					void navigate({
+						search: (prev) => ({ ...prev, ...EMPTY_FILTERS, ...next, page: undefined }),
+					})
 				}
 			/>
 		</AdminOnly>

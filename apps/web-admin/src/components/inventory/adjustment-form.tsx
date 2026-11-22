@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,18 +77,25 @@ type TOption = { value: string; label: string; searchText: string };
  * so the form has no "post" action. Posting happens from the list, after
  * approval, by someone holding the post permission.
  */
-export function AdjustmentForm() {
+export function AdjustmentForm({
+	initial,
+}: {
+	/** Prefill from the card menus: the first line's product and/or the warehouse. */
+	initial?: { productId?: string; warehouseId?: string };
+} = {}) {
 	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const queryClient = useQueryClient();
 	// Line costs (opening stock) are for `product:read_cost` holders only.
 	const canSeeCost = usePermission('product.read_cost');
 
-	const [warehouseId, setWarehouseId] = useState('');
+	const [warehouseId, setWarehouseId] = useState(initial?.warehouseId ?? '');
 	const [adjustmentType, setAdjustmentType] =
 		useState<TAdjustmentType>('recount');
 	const [reasonCode, setReasonCode] = useState('');
 	const [notes, setNotes] = useState('');
-	const [lines, setLines] = useState<TLineDraft[]>([blankLine()]);
+	const [lines, setLines] = useState<TLineDraft[]>(() => [
+		{ ...blankLine(), itemId: initial?.productId ?? '' },
+	]);
 
 	const warehouses = useQuery(linkedWarehousesQueryOptions());
 	const items = useQuery(productsQueryOptions({}));
@@ -413,16 +421,12 @@ export function AdjustmentForm() {
 									<FieldLabel htmlFor={`line-cost-${line.key}`}>
 										{t('inventory:adjustmentForm.unitCost')}
 									</FieldLabel>
-									<Input
+									<MoneyInput
 										id={`line-cost-${line.key}`}
-										type='number'
-										min={0}
-										step='0.01'
-										inputMode='decimal'
 										placeholder={t('inventory:adjustmentForm.unitCostPlaceholder')}
 										value={line.unitCost}
-										onChange={(event) =>
-											updateLine(line.key, { unitCost: event.target.value })
+										onValueChange={(value) =>
+											updateLine(line.key, { unitCost: value })
 										}
 									/>
 								</Field>

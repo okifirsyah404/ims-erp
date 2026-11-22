@@ -71,7 +71,7 @@ export class ExportedInventoryService {
 		@inject(STOCK_REPOSITORY_TOKEN)
 		private readonly stocks: Pick<
 			IStockRepository,
-			'availableByProducts' | 'productIdsInWarehouse' | 'countMaterialStocks'
+			'availableByProducts' | 'availableTotals' | 'productIdsInWarehouse' | 'countMaterialStocks'
 		>,
 		@inject(BORROWING_REQUEST_REPOSITORY_TOKEN)
 		private readonly borrowings: Pick<IBorrowingRequestRepository, 'countOpenByOriginWarehouse'>,
@@ -114,6 +114,14 @@ export class ExportedInventoryService {
 	): Promise<Array<{ productId: string; available: number }>> {
 		if (ids.length === 0) return [];
 		return this.stocks.availableByProducts(ids);
+	}
+
+	/**
+	 * Available quantity per product over every bin, for products that have a
+	 * stock row (absent = 0). `product` turns it into its stock range filter.
+	 */
+	async availableTotals(): Promise<Array<{ productId: string; available: number }>> {
+		return this.stocks.availableTotals();
 	}
 
 	/**

@@ -25,6 +25,7 @@ const assets = {
 	'register.condition': 'Condition',
 	'register.bookValue': 'Book value',
 	'register.serialNumber': 'Serial number',
+	'register.photo': 'Asset photo',
 	'register.location': 'Location',
 	'register.storedIn': 'Stored in',
 	'register.custodian': 'Custodian',

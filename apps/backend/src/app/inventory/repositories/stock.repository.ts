@@ -318,6 +318,17 @@ export class StockRepository implements IStockRepository {
 		);
 	}
 
+	/** Available quantity summed over every bin, for each product that has a stock row. */
+	async availableTotals(): Promise<{ productId: string; available: number }[]> {
+		const rows = await this.database
+			.select({ productId: stocks.productId, available: sql<string>`coalesce(sum(${stocks.quantityAvailable}), 0)` })
+			.from(stocks)
+			.groupBy(stocks.productId);
+		return rows.flatMap((row) =>
+			row.productId ? [{ productId: row.productId, available: Number(row.available) }] : [],
+		);
+	}
+
 	/**
 	 * Products with a physical presence in one warehouse (ADR-0026).
 	 *

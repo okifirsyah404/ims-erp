@@ -91,7 +91,14 @@ export const warehouses = warehouseSchema.table(
 		responsibleEmployeeId: uuid('responsible_employee_id'),
 		isDefault: boolean('is_default').notNull().default(false),
 		isActive: boolean('is_active').notNull().default(true),
+		/**
+		 * Legacy plain URL, no longer written or read: superseded by
+		 * `imageObjectKey`. The column is kept because migrations are
+		 * append-only.
+		 */
 		imageUrl: text('image_url'),
+		/** Object-storage key of the warehouse photo (WebP); never a public URL. */
+		imageObjectKey: text('image_object_key'),
 		...softDeleteTimestamps,
 	},
 	(table) => [

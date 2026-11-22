@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -178,15 +179,11 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='cost-amount'>{t('projects:costs.amountRp')}</FieldLabel>
-							<Input
+							<MoneyInput
 								id='cost-amount'
-								type='number'
 								required
-								min='0.01'
-								step='0.01'
-								inputMode='decimal'
 								value={amount}
-								onChange={(event) => setAmount(event.target.value)}
+								onValueChange={setAmount}
 							/>
 						</Field>
 						<Field className='sm:col-span-2'>

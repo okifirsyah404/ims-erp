@@ -15,6 +15,7 @@ import type { TranslationKey } from '@ims-erp/locales';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { SearchX, ClipboardList } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { formatIdr } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
@@ -117,7 +118,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 	// otherwise blow up on destructuring. Surface it instead of crashing.
 	if (data === null) {
 		return (
-			<EmptyState title={t('inventory:adjustments.notFound')} bordered />
+			<EmptyState icon={SearchX} title={t('inventory:adjustments.notFound')} bordered />
 		);
 	}
 
@@ -265,9 +266,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 				</CardHeader>
 				<CardContent className='p-0'>
 					{lines.length === 0 ? (
-						<CardContent className='py-8 text-center text-sm text-muted-foreground'>
-							{t('inventory:adjustments.noLines')}
-						</CardContent>
+						<EmptyState icon={ClipboardList} title={t('inventory:adjustments.noLines')} size='sm' />
 					) : (
 						<DataTable
 							columns={columns}

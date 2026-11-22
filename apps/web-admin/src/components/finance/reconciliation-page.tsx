@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -265,18 +266,18 @@ export function ReconciliationPage() {
 						value={reconciliationDate}
 						onChange={setReconciliationDate}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('finance:reconciliation.statementBalance')}
 						value={statementBalance}
-						onChange={(event) => setStatementBalance(event.target.value)}
+						onValueChange={setStatementBalance}
 					/>
 					<Button
 						size='sm'
 						disabled={create.isPending || accountId === 'none' || !statementBalance}
 						onClick={() => void create.mutateAsync()}
 					>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:reconciliation.create')}
 					</Button>
 				</div>
@@ -313,11 +314,11 @@ export function ReconciliationPage() {
 								value={statementReference}
 								onChange={(event) => setStatementReference(event.target.value)}
 							/>
-							<Input
+							<MoneyInput
 								className='w-40'
 								placeholder={t('finance:reconciliation.statementAmount')}
 								value={statementAmount}
-								onChange={(event) => setStatementAmount(event.target.value)}
+								onValueChange={setStatementAmount}
 							/>
 							<Button
 								size='sm'
