@@ -5,10 +5,10 @@ import { BottomSheet } from "@/components/customer/BottomSheet";
 import { outlineButton } from "@/components/customer/formStyles";
 
 /**
- * Destructive confirmation (remove member, delete site, remove saved product). Opens a
+ * Destructive confirmation (remove member, delete site, remove saved product, sign a device out). Opens a
  * sheet, runs the account action, then reloads (or navigates to `redirectTo`).
  */
-type Operation = "removeMember" | "deleteSite" | "removeWishlistItem";
+type Operation = "removeMember" | "deleteSite" | "removeWishlistItem" | "revokeDevice";
 type Props = {
   operation: Operation;
   id: string;

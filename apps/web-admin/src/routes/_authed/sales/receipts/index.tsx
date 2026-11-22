@@ -7,6 +7,7 @@ import { Search } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import {
@@ -110,31 +111,31 @@ function ReceiptsPage() {
 					}}
 				/>
 			</InputGroup>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState
-					title={deferredSearch ? t('finance:receipts.noResults') : t('finance:receipt.empty')}
-					bordered
-				/>
-			) : (
-				<>
-					<DataTable
-						columns={columns}
-						data={data?.rows ?? []}
-						getRowId={(row) => row.id}
-						loading={isPending}
-						bordered
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.rows.length === 0 ? (
+					<EmptyState
+						title={deferredSearch ? t('finance:receipts.noResults') : t('finance:receipt.empty')}
 					/>
-					{data && data.pagination.totalPages > 1 && (
-						<PaginationControls
-							page={data.pagination.page}
-							totalPages={data.pagination.totalPages}
-							onPageChange={setPage}
+				) : (
+					<>
+						<DataTable
+							columns={columns}
+							data={data?.rows ?? []}
+							getRowId={(row) => row.id}
+							loading={isPending}
 						/>
-					)}
-				</>
-			)}
+						{data && data.pagination.totalPages > 1 && (
+							<PaginationControls
+								page={data.pagination.page}
+								totalPages={data.pagination.totalPages}
+								onPageChange={setPage}
+							/>
+						)}
+					</>
+				)}
+			</DataTableCard>
 		</div>
 	);
 }

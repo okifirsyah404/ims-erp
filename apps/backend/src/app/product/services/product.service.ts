@@ -8,6 +8,7 @@ import type {
 	TProductCreateData,
 	TProductListRow,
 	TProductPaginationRequest,
+	TProductRanges,
 	TProductUpdateData,
 } from '../contracts/product.repository.interface';
 import {
@@ -78,6 +79,11 @@ export class ProductService {
 		request: TProductPaginationRequest,
 	): Promise<TPaginationResult<TProductListRow>> {
 		return this.products.paginate(request);
+	}
+
+	/** Slider bounds (highest price, highest stock) for the list filters of a kind. */
+	ranges(productKind?: ProductKind): Promise<TProductRanges> {
+		return this.products.ranges(productKind);
 	}
 
 	/**
@@ -169,6 +175,17 @@ export class ProductService {
 
 		if (Object.keys(data).length > 0) {
 			this.assertProductShape({ ...current, ...data } as TProductCreateData);
+		}
+
+		// Units only exist for a serialized product; flipping the flag while any
+		// are live would leave them orphaned (or leave stock with no units).
+		if (data.isSerialized !== undefined && data.isSerialized !== current.isSerialized) {
+			const units = await this.exported.countUnits(id);
+			if (units > 0) {
+				throw new ProductRuleViolationError(
+					'Serialization cannot be changed while the product still has units',
+				);
+			}
 		}
 
 		const updated = await this.products.update(id, data);

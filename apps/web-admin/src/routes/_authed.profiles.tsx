@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { ProfileEditForm } from '@/components/profile/profile-edit-form';
 
 /**
- * Self profile (`/profiles`, ERP-0107): the page is the editor itself — the
+ * Self profile (`/profiles`, ERP-0109): the page is the editor itself — the
  * read-only detail view and the `/profiles/edit` tab were removed. Account
  * settings (username, email, password, connected accounts, sessions) live on
  * `/accounts`.

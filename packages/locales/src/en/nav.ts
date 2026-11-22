@@ -3,8 +3,6 @@
  * too, because `build-crumbs.ts` resolves them from the same vocabulary.
  */
 const nav = {
-	'section.product': 'Products',
-	'section.warehouse': 'Warehouses',
 	'section.inventory': 'Inventory',
 	'section.administration': 'Administration',
 
@@ -13,7 +11,7 @@ const nav = {
 	'section.documents': 'Documents',
 	'section.subscription': 'Subscription & Licensing',
 	'section.integrations': 'Integrations',
-	'section.projects': 'Projects & After-sales',
+	'section.projects': 'Projects',
 	'section.hr': 'HR & Attendance',
 	'section.finance': 'Finance',
 	'section.reports': 'Reports & Access',
@@ -58,8 +56,8 @@ const nav = {
 	'item.serviceRecords': 'Service Records',
 	'item.depreciation': 'Depreciation',
 	'item.projects': 'Projects',
-	'item.bast': 'BAST (Handover)',
-	'item.tickets': 'Tickets & Warranty',
+	'item.tickets': 'Tickets',
+	'item.warranty': 'Warranty',
 	'item.hr': 'HR & Attendance',
 	'item.hrTasks': 'Tasks',
 	'item.employees': 'Employees',
@@ -136,7 +134,6 @@ const nav = {
 
 	'breadcrumb.home': 'Home',
 	'breadcrumb.organizations': 'Organizations',
-	'breadcrumb.organizationNew': 'New organization',
 	'breadcrumb.organizationEdit': 'Edit',
 	'breadcrumb.memberEdit': 'Edit member',
 	'breadcrumb.quotationNew': 'New quotation',

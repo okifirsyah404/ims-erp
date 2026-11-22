@@ -85,7 +85,7 @@ export const betterAuthOptions = {
 			// User lifecycle status: pending (pre-created by invitation, no
 			// credentials yet) | active | deactivated (sessions revoked,
 			// login blocked; memberships kept). Only `active` may sign in:
-			// enforced by the login gate and the account-link guard (ADR-0027). Owned by the user-management
+			// enforced by the login gate and the account-link guard (ADR-0029). Owned by the user-management
 			// module's repository/service (set directly via Drizzle);
 			// `input: false` keeps it out of every Better Auth API surface.
 			status: {
@@ -142,7 +142,7 @@ export const betterAuthOptions = {
 		},
 		account: {
 			// Invitation-only: a social login is never attached to a pending,
-			// deactivated or deleted account (ERP-0107).
+			// deactivated or deleted account (ERP-0109).
 			create: {
 				before: socialAccountLinkGuard(async (userId) => {
 					const [owner] = await drizzleDB

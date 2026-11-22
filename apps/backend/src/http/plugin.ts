@@ -32,7 +32,7 @@ export type TGuardSet =
 	| 'erp+session'
 	/** Session guard plus the warehouse person-in-charge guard (ADR-0017). */
 	| 'session+warehouse'
-	/** The customer-portal bearer session (ERP-0022), never combined with the ERP guards. */
+	/** The customer-portal session cookie (ERP-0022, ERP-0094), never combined with the ERP guards. */
 	| 'portal'
 	/** Application admin, or an organization member holding the permission (code numbering). */
 	| 'admin-or-erp';

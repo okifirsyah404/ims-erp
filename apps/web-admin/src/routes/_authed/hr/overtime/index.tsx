@@ -14,6 +14,7 @@ import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmployeeSelect } from '@/components/hr/employee-select';
 import { RequestActions } from '@/components/hr/request-actions';
@@ -117,7 +118,7 @@ function OvertimePage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('hr:request.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
 					<RequestActions
@@ -176,18 +177,20 @@ function OvertimePage() {
 					}}
 				/>
 			</div>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.rows.length === 0 ? (
-				<EmptyState title={t('hr:overtime.empty')} bordered />
-			) : (
-				<>
-					<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
-					{data && data.pagination.totalPages > 1 && (
-						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
-					)}
-				</>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.rows.length === 0 ? (
+					<EmptyState title={t('hr:overtime.empty')} />
+				) : (
+					<>
+						<DataTable columns={columns} data={data?.rows ?? []} getRowId={(row) => row.id} loading={isPending} />
+						{data && data.pagination.totalPages > 1 && (
+							<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
+						)}
+					</>
+				)}
+			</DataTableCard>
 			<Dialog open={recording} onOpenChange={setRecording}>
 				<DialogContent>
 					<form

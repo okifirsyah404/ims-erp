@@ -1,6 +1,6 @@
 /**
  * Official multicolor "G" mark, shared by the Google sign-in button and the
- * connected-accounts card (ERP-0107).
+ * connected-accounts card (ERP-0109).
  */
 export function GoogleIcon(props: React.ComponentProps<'svg'>) {
 	return (

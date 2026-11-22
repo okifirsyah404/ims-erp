@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
@@ -17,6 +18,7 @@ import {
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Landmark, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -281,7 +283,7 @@ export function CashBankPage() {
 						variant='outline'
 						onClick={() => setShowAccountForm((value) => !value)}
 					>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:cashBank.create')}
 					</Button>
 				) : null}
@@ -319,11 +321,11 @@ export function CashBankPage() {
 						value={bankName}
 						onChange={(event) => setBankName(event.target.value)}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('finance:cashBank.openingBalance')}
 						value={openingBalance}
-						onChange={(event) => setOpeningBalance(event.target.value)}
+						onValueChange={setOpeningBalance}
 					/>
 					<Select value={glAccountId} onValueChange={(value: string | null) => setGlAccountId(value ?? 'none')}>
 						<SelectTrigger className='w-64'>
@@ -361,16 +363,15 @@ export function CashBankPage() {
 					bordered
 				/>
 			) : (
-				<DataTable
-					columns={accountColumns}
-					data={accounts ?? []}
-					loading={accountsPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
+				<DataTableCard>
+					<DataTable
+						columns={accountColumns}
+						data={accounts ?? []}
+						loading={accountsPending}
+						getRowId={(row) => row.id}
+					/>
+				</DataTableCard>
 			)}
-
-			<h2 className='pt-2 font-semibold'>{t('finance:cashBank.movements')}</h2>
 
 			{canCreate ? (
 				<p className='text-muted-foreground text-xs'>{t('finance:cashBank.glLinkRequired')}</p>
@@ -414,11 +415,11 @@ export function CashBankPage() {
 							</SelectItem>
 						</SelectContent>
 					</Select>
-					<Input
+					<MoneyInput
 						className='w-36'
 						placeholder={t('finance:common.amount')}
 						value={movementAmount}
-						onChange={(event) => setMovementAmount(event.target.value)}
+						onValueChange={setMovementAmount}
 					/>
 					<Select value={counterpartAccountId} onValueChange={(value: string | null) => setCounterpartAccountId(value ?? 'none')}>
 						<SelectTrigger className='w-64'>
@@ -470,22 +471,22 @@ export function CashBankPage() {
 					bordered
 				/>
 			) : (
-				<DataTable
-					columns={movementColumns}
-					data={movements?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
+				<DataTableCard title={t('finance:cashBank.movements')}>
+					<DataTable
+						columns={movementColumns}
+						data={movements?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+					<PaginationControls
+						page={page}
+						totalPages={movements?.pagination.totalPages ?? 1}
+						onPageChange={(next) =>
+							void navigate({ search: (prev) => ({ ...prev, page: next }) })
+						}
+					/>
+				</DataTableCard>
 			)}
-
-			<PaginationControls
-				page={page}
-				totalPages={movements?.pagination.totalPages ?? 1}
-				onPageChange={(next) =>
-					void navigate({ search: (prev) => ({ ...prev, page: next }) })
-				}
-			/>
 		</div>
 	);
 }

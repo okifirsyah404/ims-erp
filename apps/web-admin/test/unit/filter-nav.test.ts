@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { filterNav } from '../../src/components/sidebar/filter-nav';
+import { navSections } from '../../src/components/sidebar/nav-config';
 import type { SidebarItem } from '../../src/components/sidebar/sidebar-item';
 
 const ctx = (
@@ -74,5 +75,19 @@ describe('filterNav', () => {
 		} as never);
 		const out = filterNav([sec([parent])], ctx([]));
 		expect(out[0].items[0].items?.map((i) => i.titleKey)).toEqual(['c1']);
+	});
+});
+
+describe('nav-config M07 (ERP-0108)', () => {
+	test('every M07 leaf carries a gate (deny-by-default would hide it)', () => {
+		const m07 = navSections.find((section) => section.labelKey === 'section.projects')!;
+		expect(m07.items.length).toBeGreaterThan(0);
+		for (const item of m07.items) {
+			expect(item.permission ?? item.anyPermission ?? item.open ?? item.internalRole).toBeTruthy();
+		}
+	});
+	test('Projects, Tickets and Warranty point at their own top-level URLs', () => {
+		const m07 = navSections.find((section) => section.labelKey === 'section.projects')!;
+		expect(m07.items.map((item) => item.url)).toEqual(['/projects', '/tickets', '/warranties']);
 	});
 });

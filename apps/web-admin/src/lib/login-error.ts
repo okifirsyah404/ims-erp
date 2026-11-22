@@ -38,7 +38,7 @@ export function loginErrorCallbackUrl(origin: string, redirect: string | undefin
 
 /**
  * Maps the `error` Better Auth appends to the Google sign-in error callback
- * (`/login?error=…`, ERP-0107) to an `auth` namespace message key.
+ * (`/login?error=…`, ERP-0109) to an `auth` namespace message key.
  *
  * @remarks
  * Codes come from three places:

@@ -11,8 +11,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { UserMinus } from 'lucide-react';
+import { UserMinus, Users } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -81,7 +83,13 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 		() => [
 			{
 				id: 'account',
-				header: t('warehouse:warehouses.managerAccount'),
+				accessorFn: (row) => row.name ?? row.email ?? '',
+				header: ({ column }) => (
+					<DataTableColumnHeader
+						column={column}
+						title={t('warehouse:warehouses.managerAccount')}
+					/>
+				),
 				meta: { cellClassName: 'font-medium' },
 				cell: ({ row }) =>
 					row.original.name ?? row.original.email ?? (
@@ -92,33 +100,47 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 			},
 			{
 				id: 'assignedAt',
-				header: t('warehouse:warehouses.managerAssignedAt'),
+				accessorFn: (row) => row.assignedAt,
+				header: ({ column }) => (
+					<DataTableColumnHeader
+						column={column}
+						title={t('warehouse:warehouses.managerAssignedAt')}
+					/>
+				),
 				meta: { cellClassName: 'text-muted-foreground' },
 				cell: ({ row }) => new Date(row.original.assignedAt).toLocaleDateString(),
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => (
+					<span className='sr-only'>
+						{t('warehouse:warehouses.unassignManagerAction')}
+					</span>
+				),
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<Button
-						variant='ghost'
-						size='sm'
-						disabled={unassign.isPending}
-						onClick={async () => {
-							if (
-								await confirm({
-									title: t('warehouse:warehouses.unassignManagerConfirm'),
-									destructive: true,
-								})
-							) {
-								unassign.mutate(row.original.userId);
-							}
-						}}
-					>
-						<UserMinus className='mr-2 size-4' />
-						{t('warehouse:warehouses.unassignManagerAction')}
-					</Button>
+					<RowActions
+						label={t('warehouse:warehouses.unassignManagerAction')}
+						actions={[
+							{
+								key: 'unassign',
+								label: t('warehouse:warehouses.unassignManagerAction'),
+								icon: UserMinus,
+								disabled: unassign.isPending,
+								destructive: true,
+								onSelect: async () => {
+									if (
+										await confirm({
+											title: t('warehouse:warehouses.unassignManagerConfirm'),
+											destructive: true,
+										})
+									) {
+										unassign.mutate(row.original.userId);
+									}
+								},
+							},
+						]}
+					/>
 				),
 			},
 		],
@@ -179,13 +201,14 @@ export function WarehouseManagersTab({ warehouseId }: { warehouseId: string }) {
 				{managers.isError ? (
 					<ErrorState error={managers.error} size='sm' />
 				) : !managers.isPending && (managers.data ?? []).length === 0 ? (
-					<EmptyState title={t('warehouse:warehouses.noManagers')} size='sm' />
+					<EmptyState icon={Users} title={t('warehouse:warehouses.noManagers')} size='sm' />
 				) : (
 					<DataTable
 						columns={columns}
 						data={managers.data ?? []}
 						getRowId={(row) => row.userId}
 						loading={managers.isPending}
+						sortable
 					/>
 				)}
 			</CardContent>

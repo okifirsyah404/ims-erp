@@ -22,6 +22,7 @@ const assets = {
 	'register.condition': 'Kondisi',
 	'register.bookValue': 'Nilai buku',
 	'register.serialNumber': 'Nomor seri',
+	'register.photo': 'Foto aset',
 	'register.location': 'Lokasi',
 	'register.storedIn': 'Disimpan di',
 	'register.custodian': 'Penanggung jawab',
@@ -99,6 +100,11 @@ const assets = {
 	'service.description': 'Riwayat pemeliharaan per aset.',
 	'service.empty': 'Belum ada catatan servis.',
 	'service.emptyTitle': 'Belum ada apa pun di sini',
+	'service.code': 'Kode',
+	'service.type': 'Jenis',
+	'service.date': 'Tanggal',
+	'service.cost': 'Biaya',
+	'service.status': 'Status',
 
 	// Depreciation page.
 	'depreciation.title': 'Penyusutan',

@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
+import { EyeOff, Globe, Pencil, Trash2 } from 'lucide-react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
@@ -23,7 +24,9 @@ import {
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
@@ -123,49 +126,48 @@ function WebsiteCatalogPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right', cellClassName: 'whitespace-nowrap' },
 				cell: ({ row }) => {
 					const listing = row.original;
 					return (
-						<>
-							{canPublish && (
-								<Button
-									size='sm'
-									variant={listing.isPublished ? 'outline' : 'default'}
-									disabled={busy}
-									onClick={() =>
+						<RowActions
+							label={t('common:action.actions')}
+							disabled={busy}
+							actions={[
+								{
+									key: 'publish',
+									label: listing.isPublished
+										? t('integrations:catalog.hide')
+										: t('integrations:catalog.publish'),
+									icon: listing.isPublished ? EyeOff : Globe,
+									hidden: !canPublish,
+									onSelect: () =>
 										void run(
 											() => publishListing(listing.id, !listing.isPublished),
 											listing.isPublished
 												? t('integrations:catalog.hiddenDone')
 												: t('integrations:catalog.publishedDone'),
-										)
-									}
-								>
-									{listing.isPublished
-										? t('integrations:catalog.hide')
-										: t('integrations:catalog.publish')}
-								</Button>
-							)}
-							{canUpdate && (
-								<Button size='sm' variant='ghost' onClick={() => setEditing({ listing })}>
-									{t('integrations:catalog.edit')}
-								</Button>
-							)}
-							{canRemove && (
-								<Button
-									size='sm'
-									variant='ghost'
-									disabled={busy}
-									onClick={() =>
-										void run(() => removeListing(listing.id), t('integrations:catalog.removed'))
-									}
-								>
-									{t('integrations:catalog.remove')}
-								</Button>
-							)}
-						</>
+										),
+								},
+								{
+									key: 'edit',
+									label: t('integrations:catalog.edit'),
+									icon: Pencil,
+									hidden: !canUpdate,
+									onSelect: () => setEditing({ listing }),
+								},
+								{
+									key: 'remove',
+									label: t('integrations:catalog.remove'),
+									icon: Trash2,
+									destructive: true,
+									hidden: !canRemove,
+									onSelect: () =>
+										void run(() => removeListing(listing.id), t('integrations:catalog.removed')),
+								},
+							]}
+						/>
 					);
 				},
 			},
@@ -182,13 +184,15 @@ function WebsiteCatalogPage() {
 				</div>
 				{canCreate && <Button onClick={() => setEditing({ listing: null })}>{t('integrations:catalog.new')}</Button>}
 			</div>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && data.length === 0 ? (
-				<EmptyState title={t('integrations:catalog.empty')} bordered />
-			) : (
-				<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.id} loading={isPending} bordered />
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && data.length === 0 ? (
+					<EmptyState title={t('integrations:catalog.empty')} />
+				) : (
+					<DataTable columns={columns} data={data ?? []} getRowId={(row) => row.id} loading={isPending} sortable />
+				)}
+			</DataTableCard>
 			{editing && (
 				<ListingDialog
 					listing={editing.listing}

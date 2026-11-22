@@ -49,7 +49,7 @@ const OUTCOME_KEY = {
 } as const;
 
 /**
- * Connected accounts card on `/accounts` (ERP-0107): link or unlink a social
+ * Connected accounts card on `/accounts` (ERP-0109): link or unlink a social
  * login (Google) through Better Auth's `linkSocial` / `unlinkAccount`.
  *
  * @remarks

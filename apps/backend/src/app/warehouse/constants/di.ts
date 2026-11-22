@@ -13,6 +13,7 @@ import type { IWarehouseStorageRepository } from '../contracts/warehouse-storage
 import type { IWarehouseManagerRepository } from '../contracts/warehouse-manager.repository.interface';
 import type { WarehouseService } from '../services/warehouse.service';
 import type { WarehouseManagerService } from '../services/warehouse-manager.service';
+import type { WarehouseImageService } from '../services/warehouse-image.service';
 import type { WarehouseCodeNumberingRepository } from '../repositories/code-numbering.repository';
 import type { WarehouseNumberingService } from '../services/warehouse-numbering.service';
 import type { ExportedWarehouseService } from '../services/exported-warehouse.service';
@@ -25,6 +26,9 @@ export const WAREHOUSE_STORAGE_REPOSITORY_TOKEN: InjectionToken<IWarehouseStorag
 	Symbol('WAREHOUSE_STORAGE_REPOSITORY');
 export const WAREHOUSE_SERVICE_TOKEN: InjectionToken<WarehouseService> =
 	Symbol('WAREHOUSE_SERVICE');
+/** The warehouse photo (object-storage key <-> signed URL). */
+export const WAREHOUSE_IMAGE_SERVICE_TOKEN: InjectionToken<WarehouseImageService> =
+	Symbol('WAREHOUSE_IMAGE_SERVICE');
 /** Person-in-charge assignments (ADR-0017). */
 export const WAREHOUSE_MANAGER_REPOSITORY_TOKEN: InjectionToken<IWarehouseManagerRepository> =
 	Symbol('WAREHOUSE_MANAGER_REPOSITORY');

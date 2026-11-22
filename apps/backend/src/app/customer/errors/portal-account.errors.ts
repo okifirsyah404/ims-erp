@@ -74,3 +74,14 @@ export class PortalContactUnavailableError extends AppError {
 		super(422, 'portal.contactUnavailable', 'The contact is missing or belongs to another customer');
 	}
 }
+
+/**
+ * The only active owner of a company account cannot delete their own login:
+ * the company would be left without an owner (ERP-0106). An individual
+ * customer is their own account and may.
+ */
+export class PortalLastOwnerError extends AppError {
+	constructor() {
+		super(409, 'portal.lastOwner', 'You are the only owner of this company account. Make a colleague an owner first, or ask us to close the account.');
+	}
+}

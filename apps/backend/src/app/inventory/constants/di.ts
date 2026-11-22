@@ -48,6 +48,7 @@ import type { InventoryCodeNumberingRepository } from '../repositories/code-numb
 import type { IItemRepository } from '../contracts/item.repository.interface';
 import type { IItemCategoryRepository } from '../contracts/item-category.repository.interface';
 import type { ItemService } from '../services/item.service';
+import type { ItemImageService } from '../services/item-image.service';
 import type { ItemCategoryService } from '../services/item-category.service';
 import type { InventoryNumberingService } from '../services/inventory-numbering.service';
 import type { IStockValuationRepository } from '../contracts/stock-valuation.contract';
@@ -64,6 +65,8 @@ export const ITEM_REPOSITORY_TOKEN: InjectionToken<IItemRepository> = Symbol('IT
 export const ITEM_CATEGORY_REPOSITORY_TOKEN: InjectionToken<IItemCategoryRepository> =
 	Symbol('ITEM_CATEGORY_REPOSITORY');
 export const ITEM_SERVICE_TOKEN: InjectionToken<ItemService> = Symbol('ITEM_SERVICE');
+/** The asset photo (object-storage key <-> signed URL). */
+export const ITEM_IMAGE_SERVICE_TOKEN: InjectionToken<ItemImageService> = Symbol('ITEM_IMAGE_SERVICE');
 export const ITEM_CATEGORY_SERVICE_TOKEN: InjectionToken<ItemCategoryService> =
 	Symbol('ITEM_CATEGORY_SERVICE');
 /** `inventory.code_numberings` (ADR-0024 Q6). */

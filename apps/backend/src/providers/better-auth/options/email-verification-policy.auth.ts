@@ -2,7 +2,7 @@
 export const EMAIL_VERIFICATION_EXPIRES_IN_SECONDS = 3600;
 
 /**
- * Side-effect-free part of the email-verification options (ERP-0107), kept
+ * Side-effect-free part of the email-verification options (ERP-0109), kept
  * apart from the sender so it can be unit-tested without the mail queue.
  *
  * @remarks

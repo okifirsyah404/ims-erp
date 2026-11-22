@@ -9,9 +9,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Field, FieldLabel } from '@ims-erp/ui/components/field';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { useConfirm } from '@/components/confirm-dialog';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { PackageOpen } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { ItemThumb } from '@/components/item-thumb';
 import { balancesQueryOptions, recomputeBalances, type TStockBalance } from '@/lib/stock-api';
@@ -80,8 +82,8 @@ export function StockList({
 							name={row.original.itemName ?? row.original.productId}
 						/>
 						<Link
-							to='/inventory/items/$itemId'
-							params={{ itemId: row.original.productId }}
+							to='/products/$productId'
+							params={{ productId: row.original.productId }}
 							className='hover:underline'
 						>
 							{row.original.itemName ?? (
@@ -248,28 +250,29 @@ export function StockList({
 				) : null}
 			</div>
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && rows.length === 0 ? (
-				<EmptyState
-					title={t('inventory:stock.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={rows}
-					getRowId={(row) => row.id}
-					loading={isPending}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && rows.length === 0 ? (
+					<EmptyState
+						icon={PackageOpen}
+						title={t('inventory:stock.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={rows}
+						getRowId={(row) => row.id}
+						loading={isPending}
+					/>
+				)}
 
-			<PaginationControls
-				page={effectivePage}
-				totalPages={pagination?.totalPages ?? 1}
-				onPageChange={onPageChange}
-			/>
+				<PaginationControls
+					page={effectivePage}
+					totalPages={pagination?.totalPages ?? 1}
+					onPageChange={onPageChange}
+				/>
+			</DataTableCard>
 		</div>
 	);
 }

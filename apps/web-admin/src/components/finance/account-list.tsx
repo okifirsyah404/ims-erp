@@ -14,9 +14,11 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Archive, Plus } from 'lucide-react';
+import { Archive, Pause, Play, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -164,29 +166,30 @@ export function AccountList() {
 			...base,
 			{
 				id: 'actions',
-				header: t('finance:common.actions'),
+				header: () => <span className='sr-only'>{t('finance:common.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<>
-						{canUpdate ? (
-							<Button
-								variant='outline'
-								size='sm'
-								className='mr-1'
-								disabled={toggleActive.isPending}
-								onClick={() => void toggleActive.mutateAsync(row.original)}
-							>
-								{row.original.isActive
+					<RowActions
+						label={t('finance:common.actions')}
+						actions={[
+							{
+								key: 'toggle-active',
+								label: row.original.isActive
 									? t('finance:accounts.archived')
-									: t('finance:accounts.isActive')}
-							</Button>
-						) : null}
-						{canArchive && row.original.isActive ? (
-							<Button
-								variant='ghost'
-								size='sm'
-								disabled={archive.isPending}
-								onClick={async () => {
+									: t('finance:accounts.isActive'),
+								icon: row.original.isActive ? Pause : Play,
+								hidden: !canUpdate,
+								disabled: toggleActive.isPending,
+								onSelect: () => void toggleActive.mutateAsync(row.original),
+							},
+							{
+								key: 'archive',
+								label: t('finance:accounts.archiveConfirm'),
+								icon: Archive,
+								hidden: !canArchive || !row.original.isActive,
+								disabled: archive.isPending,
+								destructive: true,
+								onSelect: async () => {
 									if (
 										await confirm({
 											title: t('finance:accounts.archiveConfirm'),
@@ -195,12 +198,10 @@ export function AccountList() {
 									) {
 										void archive.mutateAsync(row.original.id);
 									}
-								}}
-							>
-								<Archive className='size-4' />
-							</Button>
-						) : null}
-					</>
+								},
+							},
+						]}
+					/>
 				),
 			},
 		];
@@ -294,7 +295,7 @@ export function AccountList() {
 						disabled={create.isPending || !code || !name}
 						onClick={() => void create.mutateAsync()}
 					>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{create.isPending
 							? t('finance:common.creating')
 							: t('finance:accounts.create')}
@@ -302,31 +303,31 @@ export function AccountList() {
 				</div>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
-				<EmptyState
-					icon={Archive}
-					title={t('finance:accounts.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={data?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (data?.rows.length ?? 0) === 0 ? (
+					<EmptyState
+						icon={Archive}
+						title={t('finance:accounts.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+				)}
 
-			<PaginationControls
-				page={page}
-				totalPages={data?.pagination.totalPages ?? 1}
-				onPageChange={(next) =>
-					void navigate({ search: (prev) => ({ ...prev, page: next }) })
-				}
-			/>
+				<PaginationControls
+					page={page}
+					totalPages={data?.pagination.totalPages ?? 1}
+					onPageChange={(next) =>
+						void navigate({ search: (prev) => ({ ...prev, page: next }) })
+					}
+				/>
+			</DataTableCard>
 		</div>
 	);
 }

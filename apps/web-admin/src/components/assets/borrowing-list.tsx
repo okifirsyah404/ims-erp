@@ -25,6 +25,8 @@ import {
 } from '@/lib/borrowing-api';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Ban, Check, CircleCheck, PackageCheck, X } from 'lucide-react';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import { ItemThumb } from '@/components/item-thumb';
@@ -311,45 +313,49 @@ function RequestTable({
 			},
 			{
 				id: 'actions',
-				header: t('assets:borrowings.actions'),
+				header: () => <span className='sr-only'>{t('assets:borrowings.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => {
-					const pending = pendingId === row.original.id;
-					return row.original.status === 'requested' ? (
-						<>
-							<Button
-								size='sm'
-								disabled={pending}
-								onClick={() => onAction(row.original.id, 'approve')}
-							>
-								{t('assets:borrowingActions.approve')}
-							</Button>
-							<Button
-								size='sm'
-								variant='secondary'
-								disabled={pending}
-								onClick={() => onAction(row.original.id, 'issue')}
-							>
-								{t('assets:borrowingActions.issue')}
-							</Button>
-							<Button
-								size='sm'
-								variant='ghost'
-								disabled={pending}
-								onClick={() => onAction(row.original.id, 'reject')}
-							>
-								{t('assets:borrowingActions.reject')}
-							</Button>
-							<Button
-								size='sm'
-								variant='ghost'
-								disabled={pending}
-								onClick={() => onAction(row.original.id, 'cancel')}
-							>
-								{t('assets:borrowingActions.cancel')}
-							</Button>
-						</>
-					) : null;
+					const id = row.original.id;
+					const hidden = row.original.status !== 'requested';
+					return (
+						<RowActions
+							label={t('assets:borrowings.actions')}
+							disabled={pendingId === id}
+							actions={[
+								{
+									key: 'approve',
+									label: t('assets:borrowingActions.approve'),
+									icon: Check,
+									hidden,
+									onSelect: () => onAction(id, 'approve'),
+								},
+								{
+									key: 'issue',
+									label: t('assets:borrowingActions.issue'),
+									icon: PackageCheck,
+									hidden,
+									onSelect: () => onAction(id, 'issue'),
+								},
+								{
+									key: 'reject',
+									label: t('assets:borrowingActions.reject'),
+									icon: X,
+									destructive: true,
+									hidden,
+									onSelect: () => onAction(id, 'reject'),
+								},
+								{
+									key: 'cancel',
+									label: t('assets:borrowingActions.cancel'),
+									icon: Ban,
+									destructive: true,
+									hidden,
+									onSelect: () => onAction(id, 'cancel'),
+								},
+							]}
+						/>
+					);
 				},
 			},
 		],
@@ -360,7 +366,7 @@ function RequestTable({
 		return <EmptyState size='sm' title={t('assets:borrowings.empty')} />;
 	}
 
-	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} />;
+	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} sortable />;
 }
 
 /** The issued half: issue documents, linked to their request's detail page. */
@@ -420,18 +426,23 @@ function IssuedTable({
 			},
 			{
 				id: 'actions',
-				header: t('assets:borrowings.actions'),
+				header: () => <span className='sr-only'>{t('assets:borrowings.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) =>
-					row.original.status === 'returned' ? (
-						<Button
-							size='sm'
-							disabled={pendingId === row.original.id}
-							onClick={() => onClose(row.original.id)}
-						>
-							{t('assets:borrowingActions.close')}
-						</Button>
-					) : null,
+				cell: ({ row }) => (
+					<RowActions
+						label={t('assets:borrowings.actions')}
+						disabled={pendingId === row.original.id}
+						actions={[
+							{
+								key: 'close',
+								label: t('assets:borrowingActions.close'),
+								icon: CircleCheck,
+								hidden: row.original.status !== 'returned',
+								onSelect: () => onClose(row.original.id),
+							},
+						]}
+					/>
+				),
 			},
 		],
 		[onClose, pendingId, t],
@@ -441,6 +452,6 @@ function IssuedTable({
 		return <EmptyState size='sm' title={t('assets:borrowings.emptyIssued')} />;
 	}
 
-	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} />;
+	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} sortable />;
 }
 

@@ -3,8 +3,8 @@ import { redeemCode, secretMatches } from "../../../services/handoff";
 
 /**
  * `POST /api/connect/token` — server-to-server exchange for the website hand-off. Requires
- * the shared secret; returns the customer profile and the ERP access token (not the
- * refresh token) for the website's server-side session. Never called from a browser.
+ * the shared secret; returns the customer profile and the ERP session cookie (`name=value`,
+ * ADR-0027) for the website's server-side session. Never called from a browser.
  */
 export const prerender = false;
 
@@ -32,7 +32,7 @@ export const POST: APIRoute = async ({ request }) => {
     email: user.email,
     phone: user.phone,
     company: user.company?.name,
-    accessToken: tokens.accessToken,
+    sessionCookie: tokens.sessionCookie,
     expiresAt: tokens.expiresAt,
   });
 };

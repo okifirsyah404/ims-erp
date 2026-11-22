@@ -14,7 +14,7 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15 (ERP-0107 account pages added 2026-11-21). Full inventory of what has no code yet:
+Last synced: 2026-11-15 (ERP-0109 account pages added 2026-11-21). Full inventory of what has no code yet:
 `plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
 "missing feature" claims that actually ship, e.g. the report API and the
 assets operations surface). §7 item 3 (statement exports + monthly archive +
@@ -483,6 +483,16 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Live WhatsApp/n8n go-live: WAHA instance and sandbox number, n8n flows
   for the events, AI provider choice — owner/infra, outside the code.
 
+## Cross-cutting: container images for the Astro apps (ERP-0107)
+
+### implemented
+- GHCR images `ghcr.io/okifirsyah404/ims-erp-landing` and
+  `ghcr.io/okifirsyah404/ims-erp-customer-portal` (backend and web-admin
+  moved to GHCR too): test-and-build + deploy workflows
+  per app, root compose pulls them; build and server run on Bun only
+  (PWA packages patched via `bun patch`). Evidence: `progress.md` 2026-11-22
+  (local image builds + HTTP smoke). Not yet run on GitHub Actions.
+
 ## Notification + realtime (ERP-0047)
 
 ### verified
@@ -695,6 +705,40 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M07 Projects and After-Sales
 
 ### implemented
+- ERP-0108 M07 sidebar restructure (2026-11-22): section renamed to Projects;
+  Tickets (/tickets) and Warranty (/warranties) are top-level items with the
+  warranty certificate list behind GET /warranties (pagination + project
+  visibility); /projects/tickets/* routes moved to /_authed/tickets/*; the
+  standalone BAST list page is removed (BAST lives in the project detail).
+  Evidence: components/sidebar/nav-config.ts, outes/_authed/tickets/,
+  outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
+  progress.md 2026-11-22.
+- ERP-0094 portal session cookie + customer-only portal (2026-11-21, port of
+  branch ERP-0069, ADR-0027): `/customers/portal/v1` sign-in and sign-up
+  verification answer `Set-Cookie` with Better Auth's session cookie (no
+  token in the body), logout clears it, the guard reads only `Cookie` (bearer
+  401) and requires an active portal login, returning the global roles; the
+  portal app admits only the `customer` role (moved from the ERP 2026-11-21);
+  the role is granted on invitation and verified sign-up and backfilled by
+  migration `20261121064831_erp0094_portal_customer_role`; new passwords
+  12-128; OpenAPI summaries + request bodies. web-customer-portal and
+  web-landing keep the cookie server-side. Evidence: `src/app/customer`,
+  `src/authorization/portal-auth.ts`, `test/unit/portal-account.test.ts`,
+  `apps/web-customer-portal/src/services/portal/erp-source.test.ts`,
+  `progress.md` 2026-11-21 (live check on a disposable DB). Open: browser
+  walk-through; ERP-0106 (2-step, devices, delete login) follows in P1.
+- ERP-0106 portal security settings (2026-11-21, port of branch ERP-0081,
+  P1): signed-in devices (Better Auth sessions by id, no tokens; sign out one
+  or all others) and delete own login after the password (customer data
+  kept, only company owner refused). Portal: `/settings/devices`,
+  `/settings/delete-account`, settings page trimmed to working controls. The
+  emailed two-step code and the stored settings (push, two-step, language;
+  D3 columns + migration) were removed the same day by owner decision: the
+  language is the portal's cookie sent as `Accept-Language`, push comes over
+  the backend websocket, a second factor will be Better Auth's (not built).
+  Evidence: `src/app/customer`, `test/unit/portal-account.test.ts`,
+  `erp-source.test.ts`, `progress.md` 2026-11-21. Open: browser walk-through;
+  Better Auth 2FA; account pages are P2 (ERP-0100).
 - Customer portal stage 1 — T26 + the account part of T25, ERP-0022
   (ADR-0022): one login per customer contact with a role, staff invitations,
   owners manage colleagues, individuals sign up with an emailed code, the web
@@ -1011,7 +1055,7 @@ Status wording from `progress.md`; none is `accepted`.
 - Username login + `/username-availability` —
   `providers/better-auth/plugins/username.auth.ts`; probe 200 in progress.
   Username login tab (phase 5) has no closing entry.
-- Account pages — since ERP-0107 (2026-11-21, **implemented**) one
+- Account pages — since ERP-0109 (2026-11-21, **implemented**) one
   `/accounts` page of cards (username with live availability, email with
   verification + change-email, connected Google account, password or
   password-setup link, sessions) and `/profiles` as the profile editor
@@ -1021,8 +1065,8 @@ Status wording from `progress.md`; none is `accepted`.
   `user.update.after` hook evicting the `GET /users/me` cache. Evidence:
   backend `test/unit/email-change-verification.auth.test.ts`, web-admin
   `test/unit/account-search.test.ts`, in-process E2E 11/11 and browser check
-  in `progress.md` 2026-11-21 "ERP-0107". Google link round trip not run
-  (needs a real Google account). Same day, ADR-0027: invitation-only sign-in
+  in `progress.md` 2026-11-21 "ERP-0109". Google link round trip not run
+  (needs a real Google account). Same day, ADR-0029: invitation-only sign-in
   — Google never signs up (`disableSignUp`), only `active` accounts get a
   session on any method (pending invitees and deactivated users refused with
   `ACCOUNT_NOT_ACTIVE`), no social link on inactive owners, `/login` shows

@@ -214,7 +214,7 @@ Rules:
 - Exports, counts, search, and dashboard aggregations go through the same
   scoping.
 
-## Sign-in (invitation-only, ADR-0027)
+## Sign-in (invitation-only, ADR-0029)
 
 - Accounts come from invitations only. Google sign-in has
   `disableSignUp: true`: an unknown email ends at `/login?error=signup_disabled`
@@ -345,7 +345,7 @@ table as they land; the catalog resources (`audit_log:read`,
   live by `apps/backend/scripts/smoke-cache-invalidation.ts`. Better Auth's
   own writes (update-user, admin API, email verification, change-email) evict
   the same keys through `databaseHooks.user.update.after`
-  (`options/user-cache.auth.ts`, ERP-0107).
+  (`options/user-cache.auth.ts`, ERP-0109).
 
 ## Bootstrap / seeding
 

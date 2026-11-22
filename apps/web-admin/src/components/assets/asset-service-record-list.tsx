@@ -1,16 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo } from 'react';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Wrench } from 'lucide-react';
 import { getRouteApi } from '@tanstack/react-router';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableRow,
-} from '@ims-erp/ui/components/table';
 
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
@@ -18,6 +17,7 @@ import {
 	assetsQueryOptions,
 	assetDetailQueryOptions,
 	formatMoney,
+	type TAssetMaintenance,
 } from '@/lib/asset-api';
 
 /** The route API for `/assets/service-records` (validated search params). */
@@ -103,47 +103,58 @@ function ServiceTrail({
 
 	const rows = data?.history.maintenances ?? [];
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TAssetMaintenance, CellData>[]>(
+		() => [
+			{
+				accessorKey: 'code',
+				header: t('assets:service.code'),
+				meta: { cellClassName: 'font-mono text-xs' },
+			},
+			{
+				id: 'maintenanceType',
+				accessorFn: (row) => t(`maintenanceType.${row.maintenanceType}`),
+				header: t('assets:service.type'),
+				cell: ({ row }) => t(`maintenanceType.${row.original.maintenanceType}`),
+			},
+			{
+				id: 'date',
+				accessorFn: (row) => row.performedDate ?? row.scheduledDate ?? '',
+				header: t('assets:service.date'),
+				cell: ({ row }) =>
+					row.original.performedDate ?? row.original.scheduledDate ?? '—',
+			},
+			{
+				id: 'cost',
+				accessorFn: (row) => row.cost,
+				header: t('assets:service.cost'),
+				meta: { align: 'right' },
+				cell: ({ row }) =>
+					formatMoney(row.original.cost, row.original.currencyCode),
+			},
+			{
+				id: 'status',
+				accessorFn: (row) => row.status,
+				header: t('assets:service.status'),
+				cell: ({ row }) => (
+					<Badge variant='secondary'>
+						{t(
+							`assets:maintenanceStatus.${row.original.status}` as 'assets:maintenanceStatus.scheduled',
+						)}
+					</Badge>
+				),
+			},
+		],
+		[t],
+	);
+
 	return (
-		<div className='overflow-hidden rounded-lg border'>
-			<div className='flex items-center justify-between bg-muted/50 px-3 py-2'>
-				<span className='font-medium'>{assetName}</span>
-				<span className='font-mono text-xs text-muted-foreground'>
-					{assetCode}
-				</span>
-			</div>
-			{rows.length === 0 ? (
-				<p className='px-3 py-2 text-sm text-muted-foreground'>
-					{t('detail.noHistory')}
-				</p>
-			) : (
-				<Table>
-					<TableBody>
-						{rows.map((maintenance) => (
-							<TableRow key={maintenance.id}>
-								<TableCell className='font-mono text-xs'>
-									{maintenance.code}
-								</TableCell>
-								<TableCell>
-									{t(`maintenanceType.${maintenance.maintenanceType}`)}
-								</TableCell>
-								<TableCell>
-									{maintenance.performedDate ?? maintenance.scheduledDate ?? '—'}
-								</TableCell>
-								<TableCell>
-									{formatMoney(maintenance.cost, maintenance.currencyCode)}
-								</TableCell>
-								<TableCell>
-									<Badge variant='secondary'>
-										{t(
-											`assets:maintenanceStatus.${maintenance.status}` as 'assets:maintenanceStatus.scheduled',
-										)}
-									</Badge>
-								</TableCell>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			)}
-		</div>
+		<DataTableCard title={assetName} description={assetCode}>
+			<DataTable
+				columns={columns}
+				data={rows}
+				getRowId={(row) => row.id}
+				empty={<span className='text-sm text-muted-foreground'>{t('detail.noHistory')}</span>}
+			/>
+		</DataTableCard>
 	);
 }

@@ -16,7 +16,7 @@ type TAccountOwner = {
 
 /**
  * Refuses to attach a social login (Google) to an account that is not active
- * (ERP-0107 hardening).
+ * (ERP-0109 hardening).
  *
  * @remarks
  * An invitation pre-creates the user with `emailVerified: true` and

@@ -46,6 +46,25 @@ export type TProductPaginationRequest = {
 	warehouseId?: string;
 	/** Include archived (soft-deleted) rows. */
 	includeArchived?: boolean;
+	/** Lifecycle filter on `is_active`; wins over `activeOnly` when both are sent. */
+	status?: 'all' | 'active' | 'inactive';
+	/** Selling price range in IDR minor units, inclusive. */
+	minPrice?: number;
+	maxPrice?: number;
+	/** Available quantity range summed over every bin, inclusive; no stock row = 0. */
+	minStock?: number;
+	maxStock?: number;
+	/** Sort column; defaults to `name`. */
+	sortBy?: 'name' | 'code' | 'price';
+	sortDir?: 'asc' | 'desc';
+};
+
+/** Slider bounds for the list filters. */
+export type TProductRanges = {
+	/** Highest selling price among the live products, IDR minor units. */
+	maxSellingPrice: number;
+	/** Highest summed available quantity among the live products. */
+	maxStock: number;
 };
 
 /**
@@ -88,6 +107,9 @@ export interface IProductRepository {
 	paginate(
 		request: TProductPaginationRequest,
 	): Promise<TPaginationResult<TProductListRow>>;
+
+	/** Slider bounds (max price, max stock) for the live products of a kind. */
+	ranges(productKind?: ProductKind): Promise<TProductRanges>;
 
 	/** Fetches one alive item by id. */
 	findById(id: string): Promise<TProductSelect | null>;

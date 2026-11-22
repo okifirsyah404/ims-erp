@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, test } from 'bun:test';
 import i18n from 'i18next';
 import { renderToString } from 'react-dom/server';
 import { initReactI18next } from 'react-i18next';
+import { SearchX } from 'lucide-react';
 
 import { EmptyState, ErrorState, errorMessage } from '@/components/empty-state';
 import { PageSkeleton, SectionSkeleton } from '@/components/page-skeleton';
@@ -54,8 +55,15 @@ describe('EmptyState', () => {
 		expect(error).toContain('text-destructive');
 	});
 
-	test('omits the icon tile when no icon is given', () => {
-		expect(renderToString(<EmptyState title='x' />)).not.toContain('empty-icon');
+	test('always shows an icon tile: text-only empty states are not allowed', () => {
+		// Default icon (Inbox): a caller that omits `icon` still gets a mark.
+		expect(renderToString(<EmptyState title='x' />)).toContain('empty-icon');
+	});
+
+	test('a caller-supplied icon replaces the default', () => {
+		const html = renderToString(<EmptyState title='x' icon={SearchX} />);
+		expect(html).toContain('empty-icon');
+		expect(html).toContain('lucide-search-x');
 	});
 });
 

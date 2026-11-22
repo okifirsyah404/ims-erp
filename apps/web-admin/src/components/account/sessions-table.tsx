@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CellData, ColumnDef } from '@tanstack/react-table';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authClient } from '@/lib/auth-client';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -13,32 +19,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import { Skeleton } from '@ims-erp/ui/components/skeleton';
-import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
-} from '@ims-erp/ui/components/table';
+import { Ban, MonitorOff } from 'lucide-react';
 
-/** Placeholder rows shown while sessions load. */
-const SESSION_SKELETON_ROW_COUNT = 4;
-
-/** Per-column placeholder widths, matching the sessions table's shape. */
-const SESSION_SKELETON_CELLS = [
-	{ key: 'device', className: 'h-4 w-48' },
-	{ key: 'created', className: 'h-4 w-32' },
-	{ key: 'expires', className: 'h-4 w-32' },
-	{ key: 'status', className: 'h-5 w-16 rounded-full' },
-	{ key: 'actions', className: 'ml-auto h-8 w-16' },
-] as const;
+/** One row of Better Auth's `listSessions`. */
+type TSession = NonNullable<
+	Awaited<ReturnType<typeof authClient.listSessions>>['data']
+>[number];
 
 /**
- * Session management card on `/accounts`. Lists the signed-in user's
- * active sessions via Better Auth's `listSessions`, with per-row revoke
- * and a bulk "revoke all other sessions" action in the card header.
+ * Session management card on `/accounts` (ERP-0109). Lists the signed-in
+ * user's active sessions via Better Auth's `listSessions`, with per-row
+ * revoke and a bulk "revoke all other sessions" action in the card header.
  */
 export function SessionsTable({ id }: { id?: string }) {
 	const queryClient = useQueryClient();
@@ -87,6 +78,77 @@ export function SessionsTable({ id }: { id?: string }) {
 		(session) => session.token !== currentToken,
 	).length;
 
+	const columns = useMemo<ColumnDef<DataTableFeatures, TSession, CellData>[]>(
+		() => [
+			{
+				id: 'device',
+				accessorFn: (session) => session.userAgent ?? '',
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('sessions.device')} />
+				),
+				cell: ({ row }) => (
+					<span
+						className='block max-w-56 truncate'
+						title={row.original.userAgent ?? undefined}
+					>
+						{row.original.userAgent ?? t('sessions.unknownDevice')}
+					</span>
+				),
+			},
+			{
+				id: 'createdAt',
+				accessorFn: (session) => new Date(session.createdAt).getTime(),
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('sessions.created')} />
+				),
+				cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(),
+			},
+			{
+				id: 'expiresAt',
+				accessorFn: (session) => new Date(session.expiresAt).getTime(),
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('sessions.expires')} />
+				),
+				cell: ({ row }) => new Date(row.original.expiresAt).toLocaleString(),
+			},
+			{
+				id: 'status',
+				accessorFn: (session) => session.token === currentToken,
+				header: ({ column }) => (
+					<DataTableColumnHeader column={column} title={t('sessions.status')} />
+				),
+				cell: ({ row }) =>
+					row.original.token === currentToken ? (
+						<Badge>{t('sessions.current')}</Badge>
+					) : (
+						<Badge variant='outline'>{t('sessions.other')}</Badge>
+					),
+			},
+			{
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('sessions.actions')}</span>,
+				meta: { align: 'right' },
+				cell: ({ row }) => (
+					<RowActions
+						label={t('sessions.actions')}
+						disabled={revokeMutation.isPending}
+						actions={[
+							{
+								key: 'revoke',
+								label: t('sessions.revoke'),
+								icon: Ban,
+								destructive: true,
+								hidden: row.original.token === currentToken,
+								onSelect: () => revokeMutation.mutate(row.original.token),
+							},
+						]}
+					/>
+				),
+			},
+		],
+		[currentToken, revokeMutation, t],
+	);
+
 	return (
 		<Card id={id} size='sm' className='scroll-mt-4'>
 			<CardHeader>
@@ -106,86 +168,22 @@ export function SessionsTable({ id }: { id?: string }) {
 				)}
 			</CardHeader>
 			<CardContent>
-				<div className='overflow-x-auto'>
-					<Table>
-						<TableHeader>
-							<TableRow>
-								<TableHead>{t('sessions.device')}</TableHead>
-								<TableHead>{t('sessions.created')}</TableHead>
-								<TableHead>{t('sessions.expires')}</TableHead>
-								<TableHead>{t('sessions.status')}</TableHead>
-								<TableHead className='text-right'>
-									{t('sessions.actions')}
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{sessionsQuery.isPending &&
-								Array.from({ length: SESSION_SKELETON_ROW_COUNT }, (_, index) => (
-									<TableRow key={index} aria-hidden='true'>
-										{SESSION_SKELETON_CELLS.map((cell) => (
-											<TableCell key={cell.key}>
-												<Skeleton
-													className={`${cell.className} motion-reduce:animate-none`}
-												/>
-											</TableCell>
-										))}
-									</TableRow>
-								))}
-							{sessionsQuery.isError && (
-								<TableRow>
-									<TableCell colSpan={5}>
-										<ErrorState error={sessionsQuery.error} size='sm' />
-									</TableCell>
-								</TableRow>
-							)}
-							{sessions.map((session) => (
-								<TableRow key={session.token}>
-									<TableCell
-										className='max-w-56 truncate'
-										title={session.userAgent ?? undefined}
-									>
-										{session.userAgent ?? t('sessions.unknownDevice')}
-									</TableCell>
-									<TableCell>
-										{new Date(session.createdAt).toLocaleString()}
-									</TableCell>
-									<TableCell>
-										{new Date(session.expiresAt).toLocaleString()}
-									</TableCell>
-									<TableCell>
-										{session.token === currentToken ? (
-											<Badge>{t('sessions.current')}</Badge>
-										) : (
-											<Badge variant='outline'>{t('sessions.other')}</Badge>
-										)}
-									</TableCell>
-									<TableCell className='text-right'>
-										{session.token !== currentToken && (
-											<Button
-												variant='ghost'
-												size='sm'
-												disabled={revokeMutation.isPending}
-												onClick={() => revokeMutation.mutate(session.token)}
-											>
-												{t('sessions.revoke')}
-											</Button>
-										)}
-									</TableCell>
-								</TableRow>
-							))}
-							{!sessionsQuery.isPending &&
-								!sessionsQuery.isError &&
-								sessions.length === 0 && (
-									<TableRow>
-										<TableCell colSpan={5}>
-											<EmptyState title={t('sessions.empty')} size='sm' />
-										</TableCell>
-									</TableRow>
-								)}
-						</TableBody>
-					</Table>
-				</div>
+				{sessionsQuery.isError ? (
+					<ErrorState error={sessionsQuery.error} size='sm' />
+				) : !sessionsQuery.isPending && sessions.length === 0 ? (
+					<EmptyState
+						icon={MonitorOff}
+						title={t('sessions.empty')}
+						size='sm'
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={sessions}
+						getRowId={(session) => session.token}
+						loading={sessionsQuery.isPending}
+					/>
+				)}
 			</CardContent>
 		</Card>
 	);

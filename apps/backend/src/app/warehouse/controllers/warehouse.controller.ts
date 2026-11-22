@@ -20,9 +20,11 @@ import {
 	warehouseListQuerySchema,
 } from '../contracts/warehouse.contract';
 import {
+	WAREHOUSE_IMAGE_SERVICE_TOKEN,
 	WAREHOUSE_MANAGER_SERVICE_TOKEN,
 	WAREHOUSE_SERVICE_TOKEN,
 } from '../constants/di';
+import { documentImageFrom } from '@providers/s3/document-image';
 import type { WarehouseService } from '../services/warehouse.service';
 import type { WarehouseManagerService } from '../services/warehouse-manager.service';
 import type { TAuditActor } from '@shared/audit';
@@ -78,6 +80,7 @@ export class WarehouseController {
 		const managerService = container.resolve<WarehouseManagerService>(
 			WAREHOUSE_MANAGER_SERVICE_TOKEN,
 		);
+		const warehouseImages = container.resolve(WAREHOUSE_IMAGE_SERVICE_TOKEN);
 
 		/** Shared route options: session only, admin policy, no org context. */
 		const adminRoute = (description: string) => ({
@@ -108,10 +111,13 @@ export class WarehouseController {
 		})
 			.get(
 				'',
-				async ({ query }) =>
-					okPaginated(
-						await warehouseService.paginate(warehouseListQuerySchema.parse(query)),
-					),
+				async ({ query }) => {
+					const page = await warehouseService.paginate(warehouseListQuerySchema.parse(query));
+					return okPaginated({
+						...page,
+						data: page.data.map((row) => warehouseImages.withImageUrl(row)),
+					});
+				},
 				adminRoute('Paginated warehouse list across every scope'),
 			)
 			// Static before `/:id`: the sidebar and pickers call this.
@@ -145,7 +151,11 @@ export class WarehouseController {
 			.get(
 				'/:id',
 				async ({ params }) =>
-					ok(await warehouseService.getWarehouse(idParamSchema.parse(params).id)),
+					ok(
+						warehouseImages.withImageUrl(
+							await warehouseService.getWarehouse(idParamSchema.parse(params).id),
+						),
+					),
 				picRoute('read', 'One warehouse with its address and storages'),
 			)
 			.post(
@@ -156,7 +166,7 @@ export class WarehouseController {
 						address ? { ...rest, address } : rest,
 						auditActor(erp.session, request),
 					);
-					return status(201, created(row));
+					return status(201, created(warehouseImages.withImageUrl(row)));
 				},
 				{
 					...adminRoute(
@@ -168,16 +178,30 @@ export class WarehouseController {
 				'/:id',
 				async ({ params, body, erp, request }) =>
 					ok(
-						await warehouseService.updateWarehouse(
-							idParamSchema.parse(params).id,
-							updateWarehouseSchema.parse(body),
-							auditActor(erp.session, request),
+						warehouseImages.withImageUrl(
+							await warehouseService.updateWarehouse(
+								idParamSchema.parse(params).id,
+								updateWarehouseSchema.parse(body),
+								auditActor(erp.session, request),
+							),
 						),
 					),
 				picRoute(
 					'update',
 					'Updates a warehouse. Code and scope are immutable after creation',
 				),
+			)
+			.put(
+				'/:id/image',
+				async ({ params, body }) =>
+					ok(await warehouseImages.setImage(idParamSchema.parse(params).id, documentImageFrom(body))),
+				picRoute('update', 'Uploads the warehouse photo (multipart `file`)'),
+			)
+			.delete(
+				'/:id/image',
+				async ({ params }) =>
+					ok(await warehouseImages.setImage(idParamSchema.parse(params).id, null)),
+				picRoute('update', 'Removes the warehouse photo'),
 			)
 			.delete(
 				'/:id',

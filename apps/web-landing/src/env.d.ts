@@ -13,8 +13,9 @@ declare namespace App {
       email: string;
       phone?: string;
       company?: string;
-      accessToken: string;
-      /** ISO time the ERP access token expires; the session is dropped after it. */
+      /** ERP session cookie (`name=value`, ADR-0027); sent as `Cookie` on customer calls. */
+      sessionCookie: string;
+      /** ISO time the ERP session expires; the website session is dropped after it. */
       expiresAt: string;
     };
     /** Pending sign-in round trip (CSRF `state` + where to return). */

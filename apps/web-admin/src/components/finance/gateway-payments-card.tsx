@@ -9,6 +9,8 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { EmptyState } from '@/components/empty-state';
 import { DataTable } from '@/components/data-table/data-table';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
+import { Copy, ExternalLink } from 'lucide-react';
 import { toast } from '@/components/toast';
 import { formatDateTime, formatIdr } from '@/lib/format';
 import {
@@ -145,30 +147,37 @@ function GatewayPaymentsTable({
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => {
 					const url = row.original.paymentUrl;
-					return row.original.status === 'pending' && url ? (
-						<div className='flex justify-end gap-1'>
-							<Button variant='ghost' size='sm' onClick={() => onCopy(url)}>
-								{t('finance:gateway.copy')}
-							</Button>
-							<Button
-								variant='ghost'
-								size='sm'
-								render={<a href={url} target='_blank' rel='noreferrer' />}
-								nativeButton={false}
-							>
-								{t('finance:gateway.visit')}
-							</Button>
-						</div>
-					) : null;
+					const open = row.original.status === 'pending' && !!url;
+					return (
+						<RowActions
+							label={t('common:action.actions')}
+							actions={[
+								{
+									key: 'copy',
+									label: t('finance:gateway.copy'),
+									icon: Copy,
+									hidden: !open,
+									onSelect: () => url && onCopy(url),
+								},
+								{
+									key: 'visit',
+									label: t('finance:gateway.visit'),
+									icon: ExternalLink,
+									hidden: !open,
+									onSelect: () => url && window.open(url, '_blank', 'noopener,noreferrer'),
+								},
+							]}
+						/>
+					);
 				},
 			},
 		],
 		[i18n.language, note, onCopy, t],
 	);
 
-	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} />;
+	return <DataTable columns={columns} data={rows} getRowId={(row) => row.id} sortable />;
 }

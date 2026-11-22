@@ -7,6 +7,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import type { TranslationKey } from '@ims-erp/locales';
 import {
@@ -16,6 +17,8 @@ import {
 	type TStockAdjustment,
 } from '@/lib/adjustment-api';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { Ban, Check, ClipboardList, Play, Send, X } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { toast } from '@/components/toast';
 
 /** Badge emphasis per status: only `posted` actually moved stock. */
@@ -140,15 +143,58 @@ export function AdjustmentList() {
 			},
 			{
 				id: 'actions',
-				header: t('common:action.edit'),
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<AdjustmentActions
-						row={row.original}
-						pending={transition.isPending}
-						onAction={(action) =>
-							transition.mutate({ id: row.original.id, action })
-						}
+					<RowActions
+						label={t('common:action.edit')}
+						actions={[
+							{
+								key: 'submit',
+								label: t('inventory:adjustmentActions.submit'),
+								icon: Send,
+								hidden: row.original.status !== 'draft',
+								disabled: transition.isPending,
+								onSelect: () =>
+									transition.mutate({ id: row.original.id, action: 'submit' }),
+							},
+							{
+								key: 'cancel',
+								label: t('inventory:adjustmentActions.cancel'),
+								icon: Ban,
+								hidden: row.original.status !== 'draft',
+								disabled: transition.isPending,
+								onSelect: () =>
+									transition.mutate({ id: row.original.id, action: 'cancel' }),
+							},
+							{
+								key: 'approve',
+								label: t('inventory:adjustmentActions.approve'),
+								icon: Check,
+								hidden: row.original.status !== 'submitted',
+								disabled: transition.isPending,
+								onSelect: () =>
+									transition.mutate({ id: row.original.id, action: 'approve' }),
+							},
+							{
+								key: 'reject',
+								label: t('inventory:adjustmentActions.reject'),
+								icon: X,
+								hidden: row.original.status !== 'submitted',
+								disabled: transition.isPending,
+								onSelect: () =>
+									transition.mutate({ id: row.original.id, action: 'reject' }),
+							},
+							{
+								key: 'post',
+								label: t('inventory:adjustmentActions.post'),
+								icon: Play,
+								hidden: row.original.status !== 'approved',
+								disabled: transition.isPending,
+								onSelect: () =>
+									transition.mutate({ id: row.original.id, action: 'post' }),
+							},
+						]}
 					/>
 				),
 			},
@@ -181,87 +227,23 @@ export function AdjustmentList() {
 				<p className='text-sm text-destructive'>{transition.error.message}</p>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && rows.length === 0 ? (
-				<EmptyState title={t('inventory:adjustments.empty')} bordered />
-			) : (
-				<DataTable
-					columns={columns}
-					data={rows}
-					getRowId={(row) => row.id}
-					loading={isPending}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && rows.length === 0 ? (
+					<EmptyState icon={ClipboardList} title={t('inventory:adjustments.empty')} />
+				) : (
+					<DataTable
+						columns={columns}
+						data={rows}
+						getRowId={(row) => row.id}
+						loading={isPending}
+						sortable
+					/>
+				)}
+			</DataTableCard>
 		</div>
 	);
 }
 
-/** The actions a document's status allows. */
-function AdjustmentActions({
-	row,
-	pending,
-	onAction,
-}: {
-	row: TStockAdjustment;
-	pending: boolean;
-	onAction: (
-		action: 'submit' | 'approve' | 'reject' | 'cancel' | 'post',
-	) => void;
-}) {
-	const { t } = useTranslation(['inventory', 'common']);
 
-	return (
-		<div className='space-x-1'>
-				{row.status === 'draft' ? (
-					<>
-						<Button
-							size='sm'
-							variant='ghost'
-							disabled={pending}
-							onClick={() => onAction('submit')}
-						>
-							{t('inventory:adjustmentActions.submit')}
-						</Button>
-						<Button
-							size='sm'
-							variant='ghost'
-							disabled={pending}
-							onClick={() => onAction('cancel')}
-						>
-							{t('inventory:adjustmentActions.cancel')}
-						</Button>
-					</>
-				) : null}
-				{row.status === 'submitted' ? (
-					<>
-						<Button
-							size='sm'
-							disabled={pending}
-							onClick={() => onAction('approve')}
-						>
-							{t('inventory:adjustmentActions.approve')}
-						</Button>
-						<Button
-							size='sm'
-							variant='ghost'
-							disabled={pending}
-							onClick={() => onAction('reject')}
-						>
-							{t('inventory:adjustmentActions.reject')}
-						</Button>
-					</>
-				) : null}
-				{row.status === 'approved' ? (
-					<Button
-						size='sm'
-						disabled={pending}
-						onClick={() => onAction('post')}
-					>
-						{t('inventory:adjustmentActions.post')}
-					</Button>
-				) : null}
-		</div>
-	);
-}

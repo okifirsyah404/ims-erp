@@ -321,6 +321,8 @@ const api: Record<keyof typeof en, string> = {
 	'portal.ownerOnly': 'Hanya pemilik akun yang bisa mengelola anggota',
 	'portal.removeSelf': 'Anda tidak bisa mencabut akses Anda sendiri',
 	'portal.noCompany': 'Akun ini tidak memiliki perusahaan untuk mengundang anggota',
+	'portal.lastOwner': 'Anda satu-satunya pemilik akun perusahaan ini. Jadikan rekan Anda pemilik terlebih dahulu, atau minta kami menutup akunnya.',
+	'portal.deviceNotFound': 'Perangkat itu sudah tidak masuk lagi',
 	'portal.contactUnavailable': 'Kontak tidak ada atau milik pelanggan lain',
 	'portal.role.owner': 'Pemilik',
 	'portal.role.approver': 'Penyetuju',

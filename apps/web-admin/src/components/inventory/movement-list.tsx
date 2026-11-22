@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@ims-erp/ui/components/badge';
-import { Button } from '@ims-erp/ui/components/button';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import type { TranslationKey } from '@ims-erp/locales';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
@@ -19,6 +19,8 @@ import {
 } from '@/lib/stock-api';
 import { useClampPage } from '@/lib/use-clamp-page';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { ArrowLeftRight, Undo2 } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { useConfirm } from '@/components/confirm-dialog';
 
 /** Rows per page: 24 keeps a full-height page without endless scrolling. */
@@ -99,8 +101,8 @@ export function MovementList({
 							name={row.original.itemName ?? row.original.productId}
 						/>
 						<Link
-							to='/inventory/items/$itemId'
-							params={{ itemId: row.original.productId }}
+							to='/products/$productId'
+							params={{ productId: row.original.productId }}
 							className='hover:underline'
 						>
 							{row.original.itemName ?? (
@@ -169,33 +171,38 @@ export function MovementList({
 			},
 			{
 				id: 'actions',
-				header: t('common:action.edit'),
+				header: () => <span className='sr-only'>{t('common:action.edit')}</span>,
 				meta: { align: 'right' },
 				// Only a posted row can be reversed: the backend refuses a second
 				// reversal, so offering the button would be a guaranteed error.
-				cell: ({ row }) =>
-					row.original.status === 'posted' ? (
-						<Button
-							variant='ghost'
-							size='sm'
-							disabled={reversal.isPending}
-							onClick={async () => {
+				cell: ({ row }) => (
+					<RowActions
+						label={t('common:action.edit')}
+						actions={[
+							{
+								key: 'reverse',
+								label: t('inventory:movements.reverse'),
+								icon: Undo2,
+								hidden: row.original.status !== 'posted',
+								disabled: reversal.isPending,
 								// Irreversible and refused if it would go negative, so the
 								// consequence is stated before the request, not after.
-								if (
-									await confirm({
-										title: t('inventory:movements.reverseConfirm'),
-										description: t('inventory:movements.reverseConfirmBody'),
-										destructive: true,
-									})
-								) {
-									reversal.mutate(row.original.id);
-								}
-							}}
-						>
-							{t('inventory:movements.reverse')}
-						</Button>
-					) : null,
+								destructive: true,
+								onSelect: async () => {
+									if (
+										await confirm({
+											title: t('inventory:movements.reverseConfirm'),
+											description: t('inventory:movements.reverseConfirmBody'),
+											destructive: true,
+										})
+									) {
+										reversal.mutate(row.original.id);
+									}
+								},
+							},
+						]}
+					/>
+				),
 			},
 		],
 		[confirm, reversal, t],
@@ -221,25 +228,26 @@ export function MovementList({
 				</p>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && rows.length === 0 ? (
-				<EmptyState title={t('inventory:movements.empty')} bordered />
-			) : (
-				<DataTable
-					columns={columns}
-					data={rows}
-					getRowId={(row) => row.id}
-					loading={isPending}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && rows.length === 0 ? (
+					<EmptyState icon={ArrowLeftRight} title={t('inventory:movements.empty')} />
+				) : (
+					<DataTable
+						columns={columns}
+						data={rows}
+						getRowId={(row) => row.id}
+						loading={isPending}
+					/>
+				)}
 
-			<PaginationControls
-				page={effectivePage}
-				totalPages={pagination?.totalPages ?? 1}
-				onPageChange={onPageChange}
-			/>
+				<PaginationControls
+					page={effectivePage}
+					totalPages={pagination?.totalPages ?? 1}
+					onPageChange={onPageChange}
+				/>
+			</DataTableCard>
 		</div>
 	);
 }

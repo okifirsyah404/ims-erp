@@ -101,5 +101,5 @@ export function EventTable({ events, showContract }: { events: TLicenseEvent[]; 
 		];
 	}, [i18n.language, showContract, t]);
 
-	return <DataTable columns={columns} data={events} getRowId={(row) => row.id} />;
+	return <DataTable columns={columns} data={events} getRowId={(row) => row.id} sortable />;
 }

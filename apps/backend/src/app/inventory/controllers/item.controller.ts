@@ -9,7 +9,8 @@ import {
 	itemListQuerySchema,
 	updateItemSchema,
 } from '../contracts/item.contract';
-import { ITEM_SERVICE_TOKEN } from '../constants/di';
+import { documentImageFrom } from '@providers/s3/document-image';
+import { ITEM_IMAGE_SERVICE_TOKEN, ITEM_SERVICE_TOKEN } from '../constants/di';
 import type { ItemService, TItemActor } from '../services/item.service';
 
 /**
@@ -37,6 +38,7 @@ export class ItemController {
 	/** Builds the Elysia plugin mounting `/inventory/items`. */
 	static plugin() {
 		const itemService = container.resolve<ItemService>(ITEM_SERVICE_TOKEN);
+		const itemImages = container.resolve(ITEM_IMAGE_SERVICE_TOKEN);
 
 		return domainPlugin({
 			name: 'inventory-items',
@@ -46,13 +48,13 @@ export class ItemController {
 		})
 			.get(
 				'',
-				async ({ query, erp }) =>
-					okPaginated(
-						await itemService.paginate({
-							...itemListQuerySchema.parse(query),
-							organizationId: erp.organizationId,
-						}),
-					),
+				async ({ query, erp }) => {
+					const page = await itemService.paginate({
+						...itemListQuerySchema.parse(query),
+						organizationId: erp.organizationId,
+					});
+					return okPaginated({ ...page, data: page.data.map((row) => itemImages.withImageUrl(row)) });
+				},
 				{
 					erp: { permission: ['asset:read'] },
 					detail: { description: 'Paginated asset register' },
@@ -72,12 +74,14 @@ export class ItemController {
 					status(
 						201,
 						created(
-							await itemService.registerItem(
-								{
-									...createItemSchema.parse(body),
-									organizationId: erp.organizationId,
-								},
-								auditActor(erp, request),
+							itemImages.withImageUrl(
+								await itemService.registerItem(
+									{
+										...createItemSchema.parse(body),
+										organizationId: erp.organizationId,
+									},
+									auditActor(erp, request),
+								),
 							),
 						),
 					),
@@ -93,15 +97,35 @@ export class ItemController {
 				'/:id',
 				async ({ params, body, erp, request }) =>
 					ok(
-						await itemService.updateItem(
-							itemIdParamSchema.parse(params).id,
-							updateItemSchema.parse(body),
-							auditActor(erp, request),
+						itemImages.withImageUrl(
+							await itemService.updateItem(
+								itemIdParamSchema.parse(params).id,
+								updateItemSchema.parse(body),
+								auditActor(erp, request),
+							),
 						),
 					),
 				{
 					erp: { permission: ['asset:update'] },
 					detail: { description: 'Updates asset master data' },
+				},
+			)
+			.put(
+				'/:id/image',
+				async ({ params, body, erp }) =>
+					ok(await itemImages.setImage(itemIdParamSchema.parse(params).id, erp.organizationId, documentImageFrom(body))),
+				{
+					erp: { permission: ['asset:update'] },
+					detail: { description: 'Uploads the asset photo (multipart `file`)' },
+				},
+			)
+			.delete(
+				'/:id/image',
+				async ({ params, erp }) =>
+					ok(await itemImages.setImage(itemIdParamSchema.parse(params).id, erp.organizationId, null)),
+				{
+					erp: { permission: ['asset:update'] },
+					detail: { description: 'Removes the asset photo' },
 				},
 			)
 			.post(

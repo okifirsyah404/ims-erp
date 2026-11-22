@@ -9,7 +9,7 @@ type UserUpdateAfter = NonNullable<
 
 /**
  * Evicts the cached `auth.users` row after every Better Auth user update
- * (ERP-0107).
+ * (ERP-0109).
  *
  * @remarks
  * `UserRepository.findById` serves `GET /users/me` from a Redis cache-aside

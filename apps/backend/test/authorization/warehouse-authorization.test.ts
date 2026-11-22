@@ -84,6 +84,7 @@ function seedWarehouse(organizationId: string | null): TWarehouseSelect {
 		name: 'Main warehouse',
 		responsibleEmployeeId: null,
 		imageUrl: null,
+		imageObjectKey: null,
 		isDefault: true,
 		isActive: true,
 		createdAt: new Date(0),
@@ -320,6 +321,7 @@ beforeAll(async () => {
 		WAREHOUSE_ADDRESS_REPOSITORY_TOKEN,
 		WAREHOUSE_STORAGE_REPOSITORY_TOKEN,
 		WAREHOUSE_SERVICE_TOKEN,
+		WAREHOUSE_IMAGE_SERVICE_TOKEN,
 		WAREHOUSE_MANAGER_SERVICE_TOKEN,
 		WAREHOUSE_NUMBERING_SERVICE_TOKEN,
 	} = await import('../../src/app/warehouse/constants/di');
@@ -413,6 +415,15 @@ beforeAll(async () => {
 		): Promise<string> => 'WH-00001',
 	} as never);
 	container.register(WAREHOUSE_SERVICE_TOKEN, { useClass: WarehouseService });
+	// The photo service needs object storage; the wall under test is authorization.
+	container.register(WAREHOUSE_IMAGE_SERVICE_TOKEN, {
+		useValue: {
+			withImageUrl: (row: object) => ({ ...row, imageUrl: null }),
+			async setImage() {
+				return { ...seed, imageUrl: null };
+			},
+		} as never,
+	});
 
 	// ADR-0017: the guard reads this port (never Drizzle). Live grants come
 	// from `picGrants`; an empty/absent entry is "no live assignment".

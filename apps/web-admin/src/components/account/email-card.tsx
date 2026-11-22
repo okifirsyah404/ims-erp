@@ -47,7 +47,7 @@ function useCountdown(until: number | null): number {
 }
 
 /**
- * Email card on `/accounts` (ERP-0107): current address and verification
+ * Email card on `/accounts` (ERP-0109): current address and verification
  * state, "send verification email" for an unverified address, the result of
  * an opened verification link, and the change-email form.
  *

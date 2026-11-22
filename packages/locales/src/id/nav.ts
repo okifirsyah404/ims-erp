@@ -2,8 +2,6 @@ import type nav from '../en/nav';
 
 /** Indonesian — mirrors `en/nav` keys exactly (values are free-form). */
 const nav_: Record<keyof typeof nav, string> = {
-	'section.product': 'Produk',
-	'section.warehouse': 'Gudang',
 	'section.inventory': 'Inventaris',
 	'section.administration': 'Administrasi',
 
@@ -12,7 +10,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'section.documents': 'Dokumen',
 	'section.subscription': 'Langganan & Lisensi',
 	'section.integrations': 'Integrasi',
-	'section.projects': 'Proyek & Purnajual',
+	'section.projects': 'Proyek',
 	'section.hr': 'Karyawan & Kehadiran',
 	'section.finance': 'Keuangan',
 	'section.reports': 'Laporan & Hak Akses',
@@ -57,8 +55,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.serviceRecords': 'Catatan Servis',
 	'item.depreciation': 'Penyusutan',
 	'item.projects': 'Proyek',
-	'item.bast': 'BAST',
-	'item.tickets': 'Tiket & Garansi',
+	'item.tickets': 'Tiket',
+	'item.warranty': 'Garansi',
 	'item.hr': 'Karyawan & Kehadiran',
 	'item.hrTasks': 'Tugas',
 	'item.employees': 'Karyawan',
@@ -135,7 +133,6 @@ const nav_: Record<keyof typeof nav, string> = {
 
 	'breadcrumb.home': 'Beranda',
 	'breadcrumb.organizations': 'Organisasi',
-	'breadcrumb.organizationNew': 'Organisasi baru',
 	'breadcrumb.organizationEdit': 'Ubah',
 	'breadcrumb.memberEdit': 'Ubah anggota',
 	'breadcrumb.quotationNew': 'Penawaran baru',

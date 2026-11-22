@@ -57,8 +57,6 @@ const warehouse = {
 	'warehouses.activated': 'Warehouse activated',
 	'warehouses.deactivated': 'Warehouse deactivated',
 	'warehouses.archiveConfirmTitle': 'Archive this warehouse?',
-	'warehouses.archiveConfirmBody':
-		'Archiving hides the warehouse from the list. Warehouses that still hold units cannot be archived.',
 	'warehouses.archived': 'Warehouse archived',
 	'warehouses.addStorage': 'Add storage',
 	'warehouses.editStorage': 'Edit storage',
@@ -108,6 +106,7 @@ const warehouse = {
 	'warehouseForm.edit': 'Edit warehouse',
 	'warehouseForm.editDescription':
 		'Code and scope cannot be changed after creation.',
+	'warehouseForm.photo': 'Warehouse photo',
 	'warehouseForm.details': 'Details',
 	'warehouseForm.detailsDescription':
 		'Only one warehouse can be the default within a scope.',

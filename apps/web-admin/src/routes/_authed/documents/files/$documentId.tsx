@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Download, Trash2 } from 'lucide-react';
+import { Ban, Copy, Download, Trash2 } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -134,34 +135,34 @@ function DocumentDetailPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<div className='flex justify-end gap-1'>
-						{canDownload && (
-							<Button
-								variant='ghost'
-								size='icon'
-								onClick={() => {
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'download',
+								label: t('common:action.download'),
+								icon: Download,
+								hidden: !canDownload,
+								onSelect: () => {
 									void downloadDocumentFile(documentId, row.original.id)
 										.then((url) => window.open(url, '_blank', 'noopener'))
 										.catch(fail);
-								}}
-							>
-								<Download className='size-4' />
-							</Button>
-						)}
-						{editable && (
-							<Button
-								variant='ghost'
-								size='icon'
-								disabled={deleteMutation.isPending}
-								onClick={() => deleteMutation.mutate(row.original.id)}
-							>
-								<Trash2 className='size-4' />
-							</Button>
-						)}
-					</div>
+								},
+							},
+							{
+								key: 'delete',
+								label: t('common:action.delete'),
+								icon: Trash2,
+								destructive: true,
+								disabled: deleteMutation.isPending,
+								hidden: !editable,
+								onSelect: () => deleteMutation.mutate(row.original.id),
+							},
+						]}
+					/>
 				),
 			},
 		],
@@ -185,32 +186,33 @@ function DocumentDetailPage() {
 			},
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<div className='flex justify-end gap-1'>
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => {
-								void navigator.clipboard
-									.writeText(publicShareUrl(row.original.token))
-									.then(() => toast.success(t('documents:linkCopied')));
-							}}
-						>
-							{t('documents:copyLink')}
-						</Button>
-						{editable && (
-							<Button
-								variant='ghost'
-								size='sm'
-								disabled={revokeMutation.isPending}
-								onClick={() => revokeMutation.mutate(row.original.id)}
-							>
-								{t('documents:revoke')}
-							</Button>
-						)}
-					</div>
+					<RowActions
+						label={t('common:action.actions')}
+						actions={[
+							{
+								key: 'copy',
+								label: t('documents:copyLink'),
+								icon: Copy,
+								onSelect: () => {
+									void navigator.clipboard
+										.writeText(publicShareUrl(row.original.token))
+										.then(() => toast.success(t('documents:linkCopied')));
+								},
+							},
+							{
+								key: 'revoke',
+								label: t('documents:revoke'),
+								icon: Ban,
+								destructive: true,
+								disabled: revokeMutation.isPending,
+								hidden: !editable,
+								onSelect: () => revokeMutation.mutate(row.original.id),
+							},
+						]}
+					/>
 				),
 			},
 		],
@@ -280,7 +282,7 @@ function DocumentDetailPage() {
 					{data.files.length === 0 ? (
 						<EmptyState title={t('documents:noFiles')} size='sm' />
 					) : (
-						<DataTable columns={fileColumns} data={data.files} getRowId={(row) => row.id} />
+						<DataTable columns={fileColumns} data={data.files} getRowId={(row) => row.id} sortable />
 					)}
 				</CardContent>
 			</Card>
@@ -320,7 +322,7 @@ function DocumentDetailPage() {
 					{data.shares.length === 0 ? (
 						<EmptyState title={t('documents:noShares')} size='sm' />
 					) : (
-						<DataTable columns={shareColumns} data={data.shares} getRowId={(row) => row.id} />
+						<DataTable columns={shareColumns} data={data.shares} getRowId={(row) => row.id} sortable />
 					)}
 				</CardContent>
 			</Card>

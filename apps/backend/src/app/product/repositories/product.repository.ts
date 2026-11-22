@@ -1,5 +1,5 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
-import { type TProductSelect, products } from '@drizzle/schemas/product.schema';
+import { type ProductKind, type TProductSelect, products } from '@drizzle/schemas/product.schema';
 import { EXPORTED_INVENTORY_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { ExportedInventoryService } from '@app/inventory/services/exported-inventory.service';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -11,11 +11,16 @@ import {
 	count,
 	desc,
 	eq,
+	gte,
 	ilike,
 	inArray,
 	isNotNull,
 	isNull,
+	lte,
+	max,
+	notInArray,
 	or,
+	sql,
 } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import type {
@@ -23,8 +28,10 @@ import type {
 	TProductCreateData,
 	TProductListRow,
 	TProductPaginationRequest,
+	TProductRanges,
 	TProductUpdateData,
 } from '../contracts/product.repository.interface';
+import { stockRangePredicate } from '../utils/stock-range';
 import { withWarehouseQuantity } from '../utils/warehouse-quantity';
 
 /**
@@ -50,7 +57,7 @@ export class ProductRepository implements IProductRepository {
 		@inject(EXPORTED_INVENTORY_SERVICE_TOKEN)
 		private readonly inventory: Pick<
 			ExportedInventoryService,
-			'productIdsInWarehouse' | 'availableByProducts' | 'countSerials'
+			'productIdsInWarehouse' | 'availableByProducts' | 'availableTotals' | 'countSerials'
 		>,
 	) {}
 
@@ -71,7 +78,33 @@ export class ProductRepository implements IProductRepository {
 			activeOnly,
 			warehouseId,
 			includeArchived,
+			status,
+			minPrice,
+			maxPrice,
+			minStock,
+			maxStock,
+			sortBy,
+			sortDir,
 		} = request;
+
+		// Stock range: the totals are an `inventory` fact (ADR-0026), applied as an id set.
+		const stockPredicate = stockRangePredicate(
+			minStock === undefined && maxStock === undefined ? [] : await this.inventory.availableTotals(),
+			minStock,
+			maxStock,
+		);
+		const stockFilter = !stockPredicate
+			? undefined
+			: stockPredicate.mode === 'notIn'
+				? stockPredicate.ids.length > 0
+					? notInArray(products.id, stockPredicate.ids)
+					: undefined
+				: stockPredicate.ids.length > 0
+					? inArray(products.id, stockPredicate.ids)
+					: sql`false`;
+		const sortColumn =
+			sortBy === 'code' ? products.code : sortBy === 'price' ? products.sellingPrice : products.name;
+		const direction = sortDir === 'desc' ? desc : asc;
 
 		// "Has a physical presence in this warehouse": either a live serialized
 		// unit or a stock balance. The units and balances live in `inventory`,
@@ -87,7 +120,15 @@ export class ProductRepository implements IProductRepository {
 			includeArchived ? undefined : isNull(products.deletedAt),
 			productKind ? eq(products.productKind, productKind) : undefined,
 			productCategoryId ? eq(products.productCategoryId, productCategoryId) : undefined,
-			activeOnly ? eq(products.isActive, true) : undefined,
+			// `status` wins over the older `activeOnly` shorthand.
+			status === 'inactive'
+				? eq(products.isActive, false)
+				: status === 'active' || (status === undefined && activeOnly)
+					? eq(products.isActive, true)
+					: undefined,
+			minPrice === undefined ? undefined : gte(products.sellingPrice, minPrice),
+			maxPrice === undefined ? undefined : lte(products.sellingPrice, maxPrice),
+			stockFilter,
 			warehouseProductIds ? inArray(products.id, warehouseProductIds) : undefined,
 			search
 				? or(
@@ -109,7 +150,7 @@ export class ProductRepository implements IProductRepository {
 			.select()
 			.from(products)
 			.where(where)
-			.orderBy(asc(products.name))
+			.orderBy(direction(sortColumn), asc(products.name))
 			.limit(limit)
 			.offset((page - 1) * limit);
 
@@ -129,6 +170,28 @@ export class ProductRepository implements IProductRepository {
 		);
 
 		return paginationResult({ page, limit }, total, data);
+	}
+
+	/** Slider bounds for the list filters: highest price and highest summed stock of a kind. */
+	async ranges(productKind?: ProductKind): Promise<TProductRanges> {
+		const where = and(isNull(products.deletedAt), productKind ? eq(products.productKind, productKind) : undefined);
+		const [{ maxPrice }] = await this.database
+			.select({ maxPrice: max(products.sellingPrice) })
+			.from(products)
+			.where(where);
+
+		const totals = await this.inventory.availableTotals();
+		let maxStock = 0;
+		if (totals.length > 0) {
+			// Only products of this kind count toward the stock slider.
+			const live = await this.database
+				.select({ id: products.id })
+				.from(products)
+				.where(and(where, inArray(products.id, totals.map((row) => row.productId))));
+			const liveIds = new Set(live.map((row) => row.id));
+			maxStock = Math.max(0, ...totals.filter((row) => liveIds.has(row.productId)).map((row) => row.available));
+		}
+		return { maxSellingPrice: Number(maxPrice ?? 0), maxStock };
 	}
 
 	/** Fetches one alive product by id. */

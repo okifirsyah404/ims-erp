@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PackageCheck } from 'lucide-react';
 import { z } from 'zod';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -17,6 +18,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { EmptyState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import { todayBusinessDate } from '@/lib/format';
 import { createGoodsReceipt, receivableOrdersQueryOptions, receivingWarehousesQueryOptions } from '@/lib/goods-receipt-api';
@@ -122,7 +124,13 @@ function NewGoodsReceiptPage() {
 										))}
 									</SelectContent>
 								</Select>
-								{orders.data?.length === 0 && <FieldDescription>{t('procurement:receipts.noOrders')}</FieldDescription>}
+								{orders.data?.length === 0 && (
+									<EmptyState
+										icon={PackageCheck}
+										title={t('procurement:receipts.noOrders')}
+										size='sm'
+									/>
+								)}
 							</Field>
 							<Field>
 								<FieldLabel htmlFor='gr-warehouse'>{t('procurement:receipt.warehouse')}</FieldLabel>

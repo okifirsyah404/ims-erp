@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
@@ -15,8 +16,10 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { BookText, Plus, Trash2 } from 'lucide-react';
+import { BookText, Plus, Trash2, Undo2 } from 'lucide-react';
+import { RowActions } from '@/components/data-table/row-actions';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -157,28 +160,33 @@ export function JournalPage() {
 				...base,
 				{
 					id: 'actions',
-					header: t('finance:common.actions'),
+					header: () => <span className='sr-only'>{t('finance:common.actions')}</span>,
 					meta: { align: 'right' },
-					cell: ({ row }) =>
-						row.original.status === 'posted' && !row.original.reversedByEntryId ? (
-							<Button
-								variant='ghost'
-								size='sm'
-								disabled={reverse.isPending}
-								onClick={async () => {
-									if (
-										await confirm({
-											title: t('finance:journal.reverseConfirm'),
-											destructive: true,
-										})
-									) {
-										void reverse.mutateAsync(row.original.id);
-									}
-								}}
-							>
-								{t('finance:journal.reverse')}
-							</Button>
-						) : null,
+					cell: ({ row }) => (
+						<RowActions
+							label={t('finance:common.actions')}
+							disabled={reverse.isPending}
+							actions={[
+								{
+									key: 'reverse',
+									label: t('finance:journal.reverse'),
+									icon: Undo2,
+									destructive: true,
+									hidden: !(row.original.status === 'posted' && !row.original.reversedByEntryId),
+									onSelect: async () => {
+										if (
+											await confirm({
+												title: t('finance:journal.reverseConfirm'),
+												destructive: true,
+											})
+										) {
+											void reverse.mutateAsync(row.original.id);
+										}
+									},
+								},
+							]}
+						/>
+					),
 				},
 			];
 		},
@@ -208,7 +216,7 @@ export function JournalPage() {
 				</div>
 				{canPost ? (
 					<Button size='sm' onClick={() => setShowForm((value) => !value)}>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:journal.newEntry')}
 					</Button>
 				) : null}
@@ -266,29 +274,29 @@ export function JournalPage() {
 											))}
 									</SelectContent>
 								</Select>
-								<Input
+								<MoneyInput
 									className='w-36'
 									placeholder={t('finance:journal.debit')}
 									value={line.debit}
-									onChange={(event) =>
+									onValueChange={(value) =>
 										setLines((previous) =>
 											previous.map((row, rowIndex) =>
 												rowIndex === index
-													? { ...row, debit: event.target.value, credit: '' }
+													? { ...row, debit: value, credit: '' }
 													: row,
 											),
 										)
 									}
 								/>
-								<Input
+								<MoneyInput
 									className='w-36'
 									placeholder={t('finance:journal.credit')}
 									value={line.credit}
-									onChange={(event) =>
+									onValueChange={(value) =>
 										setLines((previous) =>
 											previous.map((row, rowIndex) =>
 												rowIndex === index
-													? { ...row, credit: event.target.value, debit: '' }
+													? { ...row, credit: value, debit: '' }
 													: row,
 											),
 										)
@@ -320,7 +328,7 @@ export function JournalPage() {
 								])
 							}
 						>
-							<Plus className='mr-1 size-4' />
+							<Plus className='size-4' data-icon='inline-start' />
 							{t('finance:journal.line.add')}
 						</Button>
 						<span>
@@ -350,31 +358,31 @@ export function JournalPage() {
 				</div>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
-				<EmptyState
-					icon={BookText}
-					title={t('finance:journal.empty')}
-					bordered
-				/>
-			) : (
-				<DataTable
-					columns={columns}
-					data={data?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (data?.rows.length ?? 0) === 0 ? (
+					<EmptyState
+						icon={BookText}
+						title={t('finance:journal.empty')}
+					/>
+				) : (
+					<DataTable
+						columns={columns}
+						data={data?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+					/>
+				)}
 
-			<PaginationControls
-				page={page}
-				totalPages={data?.pagination.totalPages ?? 1}
-				onPageChange={(next) =>
-					void navigate({ search: (prev) => ({ ...prev, page: next }) })
-				}
-			/>
+				<PaginationControls
+					page={page}
+					totalPages={data?.pagination.totalPages ?? 1}
+					onPageChange={(next) =>
+						void navigate({ search: (prev) => ({ ...prev, page: next }) })
+					}
+				/>
+			</DataTableCard>
 		</div>
 	);
 }

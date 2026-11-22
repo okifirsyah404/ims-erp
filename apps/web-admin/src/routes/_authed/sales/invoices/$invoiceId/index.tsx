@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -221,7 +222,6 @@ function InvoiceDetailPage() {
 					{data.receipts.length === 0 ? (
 						<EmptyState title={t('finance:receipt.empty')} size='sm' />
 					) : (
-						<div className='overflow-hidden rounded-md border'>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -251,8 +251,7 @@ function InvoiceDetailPage() {
 									</TableRow>
 								))}
 							</TableBody>
-						</Table>
-						</div>
+					</Table>
 					)}
 				</CardContent>
 			</Card>
@@ -322,16 +321,11 @@ function InvoiceDetailPage() {
 									<div className='grid gap-4 sm:grid-cols-2'>
 										<Field>
 											<FieldLabel htmlFor='receipt-amount'>{t('finance:receipt.amountRp')}</FieldLabel>
-											<Input
+											<MoneyInput
 												id='receipt-amount'
-												type='number'
 												required
-												min='0.01'
-												max={data.outstandingTotal / 100}
-												step='0.01'
-												inputMode='decimal'
 												value={amount}
-												onChange={(e) => setAmount(e.target.value)}
+												onValueChange={setAmount}
 											/>
 										</Field>
 										<Field>

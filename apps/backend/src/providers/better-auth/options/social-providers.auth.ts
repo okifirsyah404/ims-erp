@@ -2,7 +2,7 @@ import type { SocialProviders } from 'better-auth';
 import { appConfig } from '@config/providers/config';
 
 /**
- * Builds the social provider block (ERP-0107 hardening).
+ * Builds the social provider block (ERP-0109 hardening).
  *
  * @remarks
  * Enabled only when credentials are configured; unset env vars leave Google

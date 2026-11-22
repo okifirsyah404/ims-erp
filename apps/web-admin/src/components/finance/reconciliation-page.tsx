@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,7 @@ import {
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Landmark, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -265,39 +267,40 @@ export function ReconciliationPage() {
 						value={reconciliationDate}
 						onChange={setReconciliationDate}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('finance:reconciliation.statementBalance')}
 						value={statementBalance}
-						onChange={(event) => setStatementBalance(event.target.value)}
+						onValueChange={setStatementBalance}
 					/>
 					<Button
 						size='sm'
 						disabled={create.isPending || accountId === 'none' || !statementBalance}
 						onClick={() => void create.mutateAsync()}
 					>
-						<Plus className='mr-1 size-4' />
+						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:reconciliation.create')}
 					</Button>
 				</div>
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (page?.rows.length ?? 0) === 0 ? (
-				<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} bordered />
-			) : (
-				<DataTable
-					columns={columns}
-					data={page?.rows ?? []}
-					loading={isPending}
-					getRowId={(row) => row.id}
-					rowClassName={(row) =>
-						selectedId === row.id ? 'bg-muted/50' : undefined
-					}
-					bordered
-				/>
-			)}
+			<DataTableCard>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (page?.rows.length ?? 0) === 0 ? (
+					<EmptyState icon={Landmark} title={t('finance:reconciliation.empty')} />
+				) : (
+					<DataTable
+						columns={columns}
+						data={page?.rows ?? []}
+						loading={isPending}
+						getRowId={(row) => row.id}
+						rowClassName={(row) =>
+							selectedId === row.id ? 'bg-muted/50' : undefined
+						}
+					/>
+				)}
+			</DataTableCard>
 
 			{selectedId != null && reconciliation ? (
 				<div className='space-y-3 rounded-md border p-4'>
@@ -313,11 +316,11 @@ export function ReconciliationPage() {
 								value={statementReference}
 								onChange={(event) => setStatementReference(event.target.value)}
 							/>
-							<Input
+							<MoneyInput
 								className='w-40'
 								placeholder={t('finance:reconciliation.statementAmount')}
 								value={statementAmount}
-								onChange={(event) => setStatementAmount(event.target.value)}
+								onValueChange={setStatementAmount}
 							/>
 							<Button
 								size='sm'

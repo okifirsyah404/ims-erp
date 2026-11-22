@@ -16,7 +16,7 @@ import { getSession } from '@/lib/auth-client';
  * `redirect` carries the path the user originally requested (set by the
  * `_authed` guard); after sign-in they are sent straight back to it.
  * `error` is appended by Better Auth when a Google sign-in is refused
- * (ERP-0107: unknown email, pending invitation, deactivated account, no ERP
+ * (ERP-0109: unknown email, pending invitation, deactivated account, no ERP
  * role).
  */
 const loginSearchSchema = z.object({

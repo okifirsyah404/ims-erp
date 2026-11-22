@@ -25,6 +25,7 @@ import {
 	PortalCustomerUnavailableError,
 	PortalEmailTakenError,
 	PortalInvalidCodeError,
+	PortalLastOwnerError,
 	PortalNoCompanyError,
 	PortalNotConfiguredError,
 	PortalOwnerOnlyError,
@@ -81,6 +82,7 @@ export class PortalAccountService {
 			| 'hasPassword'
 			| 'issuePasswordToken'
 			| 'revokeSessions'
+			| 'grantCustomerRole'
 		>,
 		@inject(PORTAL_MAILER_TOKEN) private readonly mailer: IPortalMailer,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
@@ -234,10 +236,34 @@ export class PortalAccountService {
 			portalInvitedBy: null,
 			createdBy: pending.userId,
 		});
+		await this.users.grantCustomerRole(pending.userId);
 		await this.cache.del(key);
 		const resolved = await this.resolveCustomer(person.userId ?? pending.userId);
 		if (!resolved) throw new PortalInvalidCodeError();
 		return resolved;
+	}
+
+	/* -------------------------------------------------------------------- *
+	 * Deleting one's own login (ERP-0106)
+	 * -------------------------------------------------------------------- */
+
+	/**
+	 * The person deletes their own login (branch owner decision 2026-11-20):
+	 * the login is revoked like a staff revoke (`user_id` freed, sessions
+	 * ended); the person, the company, documents and history stay. The only
+	 * active owner of a company account cannot leave it ownerless; an
+	 * individual customer is their own account and may.
+	 * @throws {PortalLastOwnerError}
+	 */
+	async closeOwnLogin(caller: TPortalCustomerIdentity): Promise<void> {
+		if (caller.role === 'owner' && caller.companyId) {
+			const logins = await this.people.listPortalAccounts({ customerId: caller.customerId, companyId: caller.companyId });
+			const otherOwners = logins.filter(
+				(person) => person.id !== caller.customerId && person.portalRole === 'owner' && person.portalStatus === 'active',
+			);
+			if (otherOwners.length === 0) throw new PortalLastOwnerError();
+		}
+		await this.revoke(caller.customerId);
 	}
 
 	/* -------------------------------------------------------------------- *
@@ -325,6 +351,7 @@ export class PortalAccountService {
 						createdBy: actorUserId,
 					});
 			if (!granted) throw new PortalAccountNotFoundError();
+			await this.users.grantCustomerRole(user.id);
 			await this.sendInvitation(user, link);
 			return this.view(granted);
 		} catch (error) {

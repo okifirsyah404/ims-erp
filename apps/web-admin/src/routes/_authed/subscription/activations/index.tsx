@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Card, CardContent } from '@ims-erp/ui/components/card';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import { EventTable } from '@/components/licensing/event-table';
@@ -34,11 +34,9 @@ function ActivationLogPage() {
 				<EmptyState title={t('licensing:events.empty')} bordered />
 			) : (
 				<>
-					<Card className='gap-0 py-0'>
-						<CardContent className='p-0'>
-							<EventTable events={data.rows} showContract />
-						</CardContent>
-					</Card>
+					<DataTableCard>
+						<EventTable events={data.rows} showContract />
+					</DataTableCard>
 					{data.pagination.totalPages > 1 && (
 						<PaginationControls page={data.pagination.page} totalPages={data.pagination.totalPages} onPageChange={setPage} />
 					)}

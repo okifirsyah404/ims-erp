@@ -2,7 +2,7 @@
  * Web-admin login gate (ADR-0017 §8, amended by ADR-0018).
  *
  * A session is allowed into web-admin only when the account is active
- * (ERP-0107: not a pending invitation, not deactivated, not soft-deleted) and
+ * (ERP-0109: not a pending invitation, not deactivated, not soft-deleted) and
  * the user is an application administrator, or holds at least one
  * organization membership with an internal organization role. Portal-only
  * users (`investor`/`customer` app roles, or no membership at all) are
@@ -52,7 +52,7 @@ export const WEB_ADMIN_ACCESS_DENIED = 'WEB_ADMIN_ACCESS_DENIED';
 export type TWebAdminDenial = typeof ACCOUNT_NOT_ACTIVE | typeof WEB_ADMIN_ACCESS_DENIED;
 
 /**
- * Whether an `auth.users` row may sign in at all (ERP-0107 hardening).
+ * Whether an `auth.users` row may sign in at all (ERP-0109 hardening).
  *
  * @remarks
  * `pending` = pre-created by an invitation that was not claimed yet (the

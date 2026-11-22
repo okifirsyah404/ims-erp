@@ -107,6 +107,7 @@ const WAREHOUSE: TWarehouseSelect = {
 	name: 'Main warehouse',
 	responsibleEmployeeId: null,
 	imageUrl: null,
+	imageObjectKey: null,
 	isDefault: true,
 	isActive: true,
 	createdAt: new Date(0),
@@ -171,6 +172,7 @@ export function installStockDoubles(): void {
 	};
 
 	const balances: IStockRepository = {
+	availableTotals: async () => [],
 		async paginate(request: TStockPaginationRequest) {
 			capture.balanceScope = request.scopeOrganizationId;
 			return emptyPage(request.page, request.limit);
@@ -324,6 +326,7 @@ export function installStockDoubles(): void {
 	};
 
 	const products: IProductRepository = {
+	ranges: async () => ({ maxSellingPrice: 0, maxStock: 0 }),
 		async paginate(request) {
 			return emptyPage(request.page, request.limit);
 		},

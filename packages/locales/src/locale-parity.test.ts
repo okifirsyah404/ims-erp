@@ -68,6 +68,8 @@ describe('locale values', () => {
 			'settings:companyProfile.image.logo',
 			// `Material` is the same word in both languages.
 			'settings:numbering.type.item_material',
+			// `Status` is the same word in Indonesian (the item filter popover label).
+			'product:items.filterStatus',
 			'common:language.switchToEnglish',
 			'common:language.switchToIndonesian',
 			'nav:section.platform',
@@ -76,7 +78,7 @@ describe('locale values', () => {
 			'auth:login.email',
 			'auth:login.emailPlaceholder',
 			'account:email.title',
-			// Brand name of the social login provider (ERP-0107).
+			// Brand name of the social login provider (ERP-0109).
 			'account:connected.google',
 			'account:profile.email',
 			'account:profile.bio',

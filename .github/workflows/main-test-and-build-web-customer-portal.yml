@@ -1,0 +1,107 @@
+name: Main Test and Build Web Customer Portal
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/web-customer-portal/**"
+      - "packages/common/**"
+      - "packages/design-tokens/**"
+      - "patches/**"
+      - "package.json"
+      - "bun.lock"
+      - "bunfig.toml"
+      - "turbo.json"
+      - ".github/workflows/main-test-and-build-web-customer-portal.yml"
+  pull_request:
+    branches: ["main"]
+
+env:
+  HUSKY: 0
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      web-customer-portal: ${{ steps.filter.outputs.web-customer-portal }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Check for web-customer-portal-related changes
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            web-customer-portal:
+              - "apps/web-customer-portal/**"
+              - "packages/common/**"
+              - "packages/design-tokens/**"
+              - "patches/**"
+              - "package.json"
+              - "bun.lock"
+              - "bunfig.toml"
+              - "turbo.json"
+              - ".github/workflows/main-test-and-build-web-customer-portal.yml"
+
+  check:
+    name: Typecheck and Test Web Customer Portal
+    needs: changes
+    if: needs.changes.outputs.web-customer-portal == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Bun 1.4.4
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Type-only imports of @ims-erp/common resolve against its dist/ types.
+      - name: Build @ims-erp/common
+        run: bun run --cwd packages/common build
+
+      # --bun: the astro CLI runs on Bun, not the runner's preinstalled Node.
+      - name: Typecheck (astro check)
+        run: bun --bun run --cwd apps/web-customer-portal typecheck
+
+      - name: Unit tests
+        run: bun run --cwd apps/web-customer-portal test
+
+  docker:
+    name: Docker Build Web Customer Portal
+    needs: check
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build ims-erp-customer-portal image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./apps/web-customer-portal/Dockerfile
+          push: false
+          tags: ims-erp-customer-portal:ci
+          cache-from: type=gha,scope=web-customer-portal
+          cache-to: type=gha,scope=web-customer-portal,mode=max,ignore-error=true

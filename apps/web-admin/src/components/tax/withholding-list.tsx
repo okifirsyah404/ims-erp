@@ -1,3 +1,4 @@
+import { MoneyInput } from '@/components/money-input';
 import {
 	useMutation,
 	useQuery,
@@ -12,6 +13,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
+import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
@@ -20,7 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { ReceiptText, Plus } from 'lucide-react';
+import { Ban, Check, CircleCheck, Pencil, ReceiptText, Plus } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -158,69 +161,51 @@ export function WithholdingList() {
 			...base,
 			{
 				id: 'actions',
-				header: '',
+				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
 				meta: { align: 'right' },
-				cell: ({ row }) => (
-					<>
-						{canUpdate && row.original.status === 'recorded' ? (
-							<Button
-								variant='outline'
-								size='sm'
-								className='mr-1'
-								onClick={() => setEditing(row.original)}
-							>
-								{t('common:action.edit')}
-							</Button>
-						) : null}
-						{canVerify && row.original.status === 'recorded' ? (
-							<Button
-								variant='outline'
-								size='sm'
-								className='mr-1'
-								disabled={transition.isPending}
-								onClick={() =>
-									void transition.mutateAsync({
-										id: row.original.id,
-										to: 'verified',
-									})
-								}
-							>
-								{t('tax:withholding.verify')}
-							</Button>
-						) : null}
-						{canVerify && row.original.status === 'verified' ? (
-							<>
-								<Button
-									variant='outline'
-									size='sm'
-									className='mr-1'
-									disabled={transition.isPending}
-									onClick={() =>
-										void transition.mutateAsync({
-											id: row.original.id,
-											to: 'paid',
-										})
-									}
-								>
-									{t('tax:withholding.pay')}
-								</Button>
-								<Button
-									variant='ghost'
-									size='sm'
-									disabled={transition.isPending}
-									onClick={() =>
-										void transition.mutateAsync({
-											id: row.original.id,
-											to: 'reversed',
-										})
-									}
-								>
-									{t('tax:withholding.reverse')}
-								</Button>
-							</>
-						) : null}
-					</>
-				),
+				cell: ({ row }) => {
+					const { id, status } = row.original;
+					const move = (to: string) => void transition.mutateAsync({ id, to });
+					return (
+						<RowActions
+							label={t('common:action.actions')}
+							actions={[
+								{
+									key: 'edit',
+									label: t('common:action.edit'),
+									icon: Pencil,
+									hidden: !(canUpdate && status === 'recorded'),
+									onSelect: () => setEditing(row.original),
+								},
+								{
+									key: 'verify',
+									label: t('tax:withholding.verify'),
+									icon: Check,
+									disabled: transition.isPending,
+									hidden: !(canVerify && status === 'recorded'),
+									onSelect: () => move('verified'),
+								},
+								{
+									key: 'pay',
+									label: t('tax:withholding.pay'),
+									icon: CircleCheck,
+									disabled: transition.isPending,
+									hidden: !(canVerify && status === 'verified'),
+									onSelect: () => move('paid'),
+								},
+								{
+									key: 'reverse',
+									label: t('tax:withholding.reverse'),
+									icon: Ban,
+									destructive: true,
+									disabled: transition.isPending,
+									hidden: !(canVerify && status === 'verified'),
+									onSelect: () => move('reversed'),
+								},
+							]}
+						/>
+					);
+				},
 			},
 		];
 	}, [canUpdate, canVerify, t, transition, typeRows]);
@@ -270,17 +255,17 @@ export function WithholdingList() {
 						value={counterparty}
 						onChange={(event) => setCounterparty(event.target.value)}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('tax:withholding.baseAmount')}
 						value={baseAmount}
-						onChange={(event) => setBaseAmount(event.target.value)}
+						onValueChange={setBaseAmount}
 					/>
-					<Input
+					<MoneyInput
 						className='w-40'
 						placeholder={t('tax:withholding.taxAmount')}
 						value={taxAmount}
-						onChange={(event) => setTaxAmount(event.target.value)}
+						onValueChange={setTaxAmount}
 					/>
 					<Button
 						disabled={
@@ -300,33 +285,33 @@ export function WithholdingList() {
 				</div>
 			) : null}
 
-			{!isPending && (!data || data.rows.length === 0) ? (
-				<EmptyState
-					icon={ReceiptText}
-					title={t('tax:withholding.title')}
-					description={t('tax:withholding.empty')}
-					bordered
-				/>
-			) : (
-				<>
-					<DataTable
-						columns={columns}
-						data={data?.rows ?? []}
-						loading={isPending}
-						getRowId={(row) => row.id}
-						bordered
+			<DataTableCard>
+				{!isPending && (!data || data.rows.length === 0) ? (
+					<EmptyState
+						icon={ReceiptText}
+						title={t('tax:withholding.title')}
+						description={t('tax:withholding.empty')}
 					/>
-					{data ? (
-						<PaginationControls
-							page={page}
-							totalPages={data.pagination.totalPages}
-							onPageChange={(next) =>
-								void navigate({ search: (prev) => ({ ...prev, page: next }) })
-							}
+				) : (
+					<>
+						<DataTable
+							columns={columns}
+							data={data?.rows ?? []}
+							loading={isPending}
+							getRowId={(row) => row.id}
 						/>
-					) : null}
-				</>
-			)}
+						{data ? (
+							<PaginationControls
+								page={page}
+								totalPages={data.pagination.totalPages}
+								onPageChange={(next) =>
+									void navigate({ search: (prev) => ({ ...prev, page: next }) })
+								}
+							/>
+						) : null}
+					</>
+				)}
+			</DataTableCard>
 
 			{editing ? (
 				<WithholdingEditDialog

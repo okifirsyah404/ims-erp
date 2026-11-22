@@ -388,8 +388,13 @@ export const items = inventorySchema.table(
 		purchaseOrderId: uuid('purchase_order_id'),
 		/** Logical reference to document.documents.id — FK omitted. */
 		documentId: uuid('document_id'),
-		/** Optional display image URL (not an object-storage key). */
+		/**
+		 * Legacy plain URL, no longer written or read: superseded by
+		 * `imageObjectKey`. The column is kept because migrations are append-only.
+		 */
 		imageUrl: text('image_url'),
+		/** Object-storage key of the asset photo (WebP); never a public URL. */
+		imageObjectKey: text('image_object_key'),
 		...softDeleteTimestamps,
 	},
 	(table) => [

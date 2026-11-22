@@ -25,6 +25,7 @@ import {
 } from '@ims-erp/ui/components/table';
 
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import { SectionSkeleton } from '@/components/page-skeleton';
 import {
 	recapCsvUrl,
@@ -151,7 +152,7 @@ export function TaxRecap() {
 				/>
 			) : (
 				<>
-					<div className='overflow-hidden rounded-md border'>
+					<DataTableCard>
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -208,7 +209,7 @@ export function TaxRecap() {
 								</TableRow>
 							</TableFooter>
 						</Table>
-					</div>
+					</DataTableCard>
 				</>
 			)}
 		</div>

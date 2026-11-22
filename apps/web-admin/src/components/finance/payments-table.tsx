@@ -7,6 +7,7 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
+import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { useConfirm } from '@/components/confirm-dialog';
@@ -212,27 +213,27 @@ export function PaymentsTable({
 
 	return (
 		<div className='space-y-3'>
-			<h2 className='pt-2 font-semibold'>{title}</h2>
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
-				<EmptyState title={t('finance:payments.empty')} bordered />
-			) : (
-				<>
-					<DataTable
-						columns={columns}
-						data={data?.rows ?? []}
-						loading={isPending}
-						getRowId={(row) => row.id}
-						bordered
-					/>
-					<PaginationControls
-						page={page}
-						totalPages={data?.pagination.totalPages ?? 1}
-						onPageChange={setPage}
-					/>
-				</>
-			)}
+			<DataTableCard title={title}>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (data?.rows.length ?? 0) === 0 ? (
+					<EmptyState title={t('finance:payments.empty')} />
+				) : (
+					<>
+						<DataTable
+							columns={columns}
+							data={data?.rows ?? []}
+							loading={isPending}
+							getRowId={(row) => row.id}
+						/>
+						<PaginationControls
+							page={page}
+							totalPages={data?.pagination.totalPages ?? 1}
+							onPageChange={setPage}
+						/>
+					</>
+				)}
+			</DataTableCard>
 		</div>
 	);
 }

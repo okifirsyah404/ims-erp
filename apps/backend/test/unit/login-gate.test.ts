@@ -60,7 +60,7 @@ describe('isWebAdminAllowed (ADR-0017 §8, amended by ADR-0018)', () => {
 	});
 });
 
-describe('isAccountActive (ERP-0107)', () => {
+describe('isAccountActive (ERP-0109)', () => {
 	test('only an active, not deleted row may sign in', () => {
 		expect(isAccountActive({ status: 'active', deletedAt: null })).toBe(true);
 		expect(isAccountActive({ status: 'pending', deletedAt: null })).toBe(false);
@@ -73,7 +73,7 @@ describe('isAccountActive (ERP-0107)', () => {
 	});
 });
 
-describe('webAdminDenial (ERP-0107)', () => {
+describe('webAdminDenial (ERP-0109)', () => {
 	const admin = { userRole: 'admin', memberRoles: [] as string[] };
 
 	test('allowed: active admin or active internal member', () => {

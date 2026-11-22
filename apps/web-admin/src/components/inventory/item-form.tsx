@@ -1,5 +1,6 @@
+import { MoneyInput } from '@/components/money-input';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
@@ -17,6 +18,7 @@ import {
 	FieldGroup,
 	FieldLabel,
 } from '@ims-erp/ui/components/field';
+import { DialogFooter } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
@@ -27,6 +29,9 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { minorToRupiah, rupiahToMinor } from '@/lib/format';
+import { ImageDropzone } from '@/components/image-dropzone';
+import { toast } from '@/components/toast';
 import { itemCategoriesQueryOptions } from '@/lib/item-category-api';
 import {
 	ITEM_UNIT_LABELS,
@@ -65,11 +70,30 @@ export function ItemForm({
 	/** Hides the page heading — the dialog wrapper supplies its own. */
 	compact?: boolean;
 	submitting: boolean;
-	onSubmit: (input: TProductCreateInput | TProductUpdateInput) => void;
+	/**
+	 * `imageFile` is the photo picked on create (the edit screen has its own
+	 * uploader). The photo endpoint is id-scoped, so the caller uploads it
+	 * right after the item exists.
+	 */
+	onSubmit: (
+		input: TProductCreateInput | TProductUpdateInput,
+		imageFile?: File | null,
+	) => void;
 	onCancel: () => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common', 'product']);
 	const isEdit = item != null;
+
+	const [imageFile, setImageFile] = useState<File | null>(null);
+	// Object URL preview for the picked photo; revoked when it is replaced.
+	const imagePreviewUrl = useMemo(
+		() => (imageFile ? URL.createObjectURL(imageFile) : null),
+		[imageFile],
+	);
+	useEffect(() => {
+		if (!imagePreviewUrl) return;
+		return () => URL.revokeObjectURL(imagePreviewUrl);
+	}, [imagePreviewUrl]);
 
 	const [sku, setSku] = useState(item?.sku ?? '');
 	const [serialNumber, setSerialNumber] = useState(item?.serialNumber ?? '');
@@ -92,10 +116,8 @@ export function ItemForm({
 	const [isSerialized, setIsSerialized] = useState(item?.isSerialized ?? false);
 	const [isStockTracked, setIsStockTracked] = useState(item?.isStockTracked ?? true);
 	const [minStockQty, setMinStockQty] = useState(item?.minStockQty ?? '0');
-	const [sellingPrice, setSellingPrice] = useState(String(item?.sellingPrice ?? 0));
-	const [purchasePrice, setPurchasePrice] = useState(
-		String(item?.purchasePrice ?? 0),
-	);
+	const [sellingPrice, setSellingPrice] = useState(minorToRupiah(item?.sellingPrice ?? 0));
+	const [purchasePrice, setPurchasePrice] = useState(minorToRupiah(item?.purchasePrice ?? 0));
 
 	function handleKindChange(next: TProductKind) {
 		setProductKind(next);
@@ -116,14 +138,15 @@ export function ItemForm({
 			isStockTracked,
 			minStockQty: Number(minStockQty) || 0,
 			barcode: barcode || null,
-			sellingPrice: Number(sellingPrice) || 0,
-			purchasePrice: Number(purchasePrice) || 0,
+			sellingPrice: rupiahToMinor(sellingPrice),
+			purchasePrice: rupiahToMinor(purchasePrice),
 		};
 
 		onSubmit(
 			isEdit
 				? shared
 				: { ...shared, sku, productKind, currencyCode: 'IDR' },
+			isEdit ? null : imageFile,
 		);
 	}
 
@@ -143,12 +166,61 @@ export function ItemForm({
 			)}
 
 			<form onSubmit={handleSubmit}>
-			<Card>
-				<CardHeader>
-					<CardTitle>{t('product:items.name')}</CardTitle>
-					<CardDescription>{t('product:items.description')}</CardDescription>
-				</CardHeader>
-				<CardContent>
+			{/* Inside a dialog (`compact`) the card chrome is stripped: the dialog
+			    already provides the surface, padding, title and footer band, so a
+			    second bordered card only adds dead space. */}
+			<Card
+				className={
+					compact
+						? 'gap-0 overflow-visible rounded-none bg-transparent py-0 ring-0 has-data-[slot=card-footer]:pb-0'
+						: undefined
+				}
+			>
+				{compact ? null : (
+					<CardHeader>
+						<CardTitle>{t('product:items.name')}</CardTitle>
+						<CardDescription>{t('product:items.description')}</CardDescription>
+					</CardHeader>
+				)}
+				<CardContent className={compact ? 'px-0' : undefined}>
+						{/* Create only: on edit the detail page owns the photo. */}
+						{!isEdit && (
+							<div className='mb-6 flex flex-col items-center gap-2'>
+								<ImageDropzone
+									previewUrl={imagePreviewUrl}
+									disabled={submitting}
+									label={t('product:items.documentPhoto')}
+									hint={t('common:image.drop')}
+									onSelect={setImageFile}
+									onReject={(reason) =>
+										toast.error(
+											t(
+												reason === 'size'
+													? 'common:image.sourceTooLarge'
+													: 'common:image.wrongType',
+											),
+										)
+									}
+								/>
+								{imageFile && (
+									<>
+										<p className='max-w-full truncate text-xs leading-snug text-muted-foreground'>
+											{imageFile.name}
+										</p>
+										<Button
+											type='button'
+											variant='ghost'
+											size='sm'
+											disabled={submitting}
+											onClick={() => setImageFile(null)}
+										>
+											{t('common:image.remove')}
+										</Button>
+									</>
+								)}
+							</div>
+						)}
+
 						<FieldGroup>
 							{isEdit && (
 								<Field>
@@ -328,28 +400,20 @@ export function ItemForm({
 								<FieldLabel htmlFor='sellingPrice'>
 									{t('product:items.sellingPrice')}
 								</FieldLabel>
-								<Input
-									id='sellingPrice'
-									type='number'
-									min={0}
-									step={1}
-									value={sellingPrice}
-									onChange={(event) => setSellingPrice(event.target.value)}
-								/>
+								<MoneyInput id='sellingPrice'
+value={sellingPrice}
+onValueChange={setSellingPrice}
+/>
 							</Field>
 
 							<Field>
 								<FieldLabel htmlFor='purchasePrice'>
 									{t('product:items.purchasePrice')}
 								</FieldLabel>
-								<Input
-									id='purchasePrice'
-									type='number'
-									min={0}
-									step={1}
-									value={purchasePrice}
-									onChange={(event) => setPurchasePrice(event.target.value)}
-								/>
+								<MoneyInput id='purchasePrice'
+value={purchasePrice}
+onValueChange={setPurchasePrice}
+/>
 							</Field>
 
 							<Field orientation='horizontal'>
@@ -396,20 +460,31 @@ export function ItemForm({
 
 						</FieldGroup>
 				</CardContent>
-				<CardFooter className='justify-end gap-2'>
-					<Button type='submit' disabled={submitting || !name || !sku}>
-						{submitting
-							? isEdit
-								? t('product:form.saving')
-								: t('product:form.creating')
-							: isEdit
-								? t('product:form.save')
-								: t('product:form.create')}
-					</Button>
-					<Button type='button' variant='outline' onClick={onCancel}>
-						{t('common:action.cancel')}
-					</Button>
-				</CardFooter>
+				{/* In a dialog the shared sticky `DialogFooter` keeps the actions
+				    visible while the form scrolls. */}
+				{(() => {
+					const actions = (
+						<>
+							<Button type='submit' disabled={submitting || !name || !sku}>
+								{submitting
+									? isEdit
+										? t('product:form.saving')
+										: t('product:form.creating')
+									: isEdit
+										? t('product:form.save')
+										: t('product:form.create')}
+							</Button>
+							<Button type='button' variant='outline' onClick={onCancel}>
+								{t('common:action.cancel')}
+							</Button>
+						</>
+					);
+					return compact ? (
+						<DialogFooter className='mt-4'>{actions}</DialogFooter>
+					) : (
+						<CardFooter className='justify-end gap-2'>{actions}</CardFooter>
+					);
+				})()}
 			</Card>
 			</form>
 		</div>
