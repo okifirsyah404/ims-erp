@@ -14,6 +14,59 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 
 
+## 2026-11-24 - migrations squashed back to one folder per Postgres schema
+
+User request: squash `apps/backend/database/migrations` against
+`apps/backend/drizzle/schemas`, one migration per DB schema, and delete the old
+folders (no disposable database available, so the proof is SQL-level).
+
+**Before.** 33 folders: the 20 per-schema baseline folders
+(`20261120214111_create_auth_schema` … `20261120214130_create_warehouse_schema`)
+plus 13 incremental ones added 2026-11-21 → 2026-11-24. Two of those 13 were
+the same migration twice (`20261123015149_erp0114_drop_supplier_whatsapp_payment_terms`
+and `..._erp0116_...`, identical `migration.sql` and identical snapshot id
+`df124139-cab1-4dc0-8012-773aab12fe1c`), one was data-only
+(`20261121064831_erp0094_portal_customer_role`, an `UPDATE` on `auth.users.role`),
+and `20261122174431_add_gallery_images` mixed DDL with an `INSERT … SELECT`
+backfill.
+
+**After.** 20 folders, `20261123204301_create_auth_schema` …
+`20261123204332_create_warehouse_schema`, `auth` first then alphabetical, same
+cumulative `--schema` order as the 2026-11-21 split. Generated, not hand-written:
+one `bunx --bun drizzle-kit generate --dialect postgresql --out ./database/migrations --name create_<schema>_schema --schema '{…cumulative list…}'`
+run per schema (CLI mode, so no `POSTGRES_URL` needed), producing 1 `base` + 19
+chained `diff` snapshots.
+
+**Verification (no database — user instruction).**
+
+- The 20 folders concatenate to **758 statements**, identical as a multiset to a
+  single `generate` from `drizzle/schemas/*.schema.ts` (0 missing, 0 extra).
+- Both produce **176 `CREATE TABLE`**; every `CREATE SCHEMA` / `ALTER TABLE` /
+  `CREATE INDEX` / `REFERENCES` in a folder targets that folder's own schema —
+  0 foreign objects, so still 0 cross-schema FKs (ADR-0014 / `elysia-module` 3.2).
+- `bunx --bun drizzle-kit check` → `Everything's fine 🐶🔥`.
+- `bunx --bun drizzle-kit generate --explain --output json` → `{"status":"no_changes","dialect":"postgresql"}`,
+  i.e. the chain still agrees with `drizzle/schemas` by construction.
+- `bun docs/database/validate-dbml.ts` → `OK` (196 tables, 153 refs, 0
+  cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity
+  drift). `docs/database/` needed **no change**: no table, column, index,
+  constraint, logical reference or status vocabulary moved — only the packaging
+  of the same DDL.
+- Not verified this session: `drizzle:migrate` + `drizzle:seed` on a real
+  database (the last such proof is the 2026-11-21 run; the DDL it proved is
+  unchanged, only regrouped). Rebuild any existing database with
+  `bun run drizzle:migrate-reset` — the first folder starts with `CREATE SCHEMA`.
+
+**Dropped, deliberately.** The two data-only migrations (ERP-0094 role backfill,
+gallery-image backfill) were not carried into the baseline: they run against an
+empty database and would be no-ops. Both remain in git history.
+
+**Docs.** `runbook.md` (baseline section), `data-model.md`, `project-audit.md`,
+`implementation-phases.md` (new P8c) and `AGENTS.md` (command-status row) now
+name the 2026-11-24 folders; `backlog.md` gained a "Re-squash, 2026-11-24" note
+under the existing migration-name note. No `ERP-*` row changed status (the
+squash is packaging, not scope), so `features.md` does not move.
+
 ## 2026-11-24 - merge `origin/main` into `feat/erp0013-expense-claims`
 
 Merged main (PR #152 suppliers, PR #153 HR/ERP-0117..0122 incl. employee payee

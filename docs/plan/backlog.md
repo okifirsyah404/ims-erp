@@ -26,6 +26,14 @@ module).
 > Data-only migrations (the ERP-0048 membership cleanup, the ERP-0041 role
 > backfills, the item-code backfill) have no equivalent: a fresh database never
 > holds the rows they rewrote.
+>
+> **Re-squash, 2026-11-24.** The chain was squashed a second time (33 folders →
+> 20 per-schema folders, `20261123204301_create_auth_schema` …
+> `20261123204332_create_warehouse_schema`), so the 13 incremental folders added
+> between 2026-11-21 and 2026-11-24 also have no folder of their own any more:
+> their DDL lives in the per-schema migration for the schema they touched, and
+> the two data-only ones (ERP-0094 portal role, gallery-image backfill) are git
+> history only.
 
 | ID | Title | Source | Module | Acceptance criteria | Depends on | Owner | Effort (d) | Status |
 |---|---|---|---|---|---|---|---|---|

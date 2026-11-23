@@ -1,0 +1,1974 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "181a446b-41fb-4ae6-9e74-5c3001a5b454",
+  "prevIds": [
+    "bab86a7e-96f1-4842-acb5-ed1625711751"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "ticket"
+      ],
+      "writes": [
+        "s|sch|ticket",
+        "n|sch|ticket",
+        "e|sch|ticket"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ticket",
+        "code_numberings"
+      ],
+      "writes": [
+        "s|tbl|ticket.code_numberings",
+        "n|tbl|ticket.code_numberings",
+        "e|tbl|ticket.code_numberings",
+        "n|rel|ticket.code_numberings",
+        "n|type|ticket.code_numberings",
+        "n|rel|ticket.code_numberings_pkey"
+      ],
+      "reads": [
+        "n|sch|ticket"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ticket",
+        "ticket_messages"
+      ],
+      "writes": [
+        "s|tbl|ticket.ticket_messages",
+        "n|tbl|ticket.ticket_messages",
+        "e|tbl|ticket.ticket_messages",
+        "n|rel|ticket.ticket_messages",
+        "n|type|ticket.ticket_messages",
+        "n|rel|ticket.ticket_messages_pkey"
+      ],
+      "reads": [
+        "n|sch|ticket"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ticket",
+        "settings"
+      ],
+      "writes": [
+        "s|tbl|ticket.settings",
+        "n|tbl|ticket.settings",
+        "e|tbl|ticket.settings",
+        "n|rel|ticket.settings",
+        "n|type|ticket.settings",
+        "n|rel|ticket.settings_pkey"
+      ],
+      "reads": [
+        "n|sch|ticket"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "ticket",
+        "tickets"
+      ],
+      "writes": [
+        "s|tbl|ticket.tickets",
+        "n|tbl|ticket.tickets",
+        "e|tbl|ticket.tickets",
+        "n|rel|ticket.tickets",
+        "n|type|ticket.tickets",
+        "n|rel|ticket.tickets_pkey"
+      ],
+      "reads": [
+        "n|sch|ticket"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "code_numberings",
+        "ticket_code_numberings_type_uq"
+      ],
+      "writes": [
+        "s|idx|ticket.ticket_code_numberings_type_uq",
+        "n|idx|ticket.ticket_code_numberings_type_uq",
+        "e|idx|ticket.ticket_code_numberings_type_uq",
+        "n|rel|ticket.ticket_code_numberings_type_uq"
+      ],
+      "reads": [
+        "n|tbl|ticket.code_numberings",
+        "n|sch|ticket",
+        "n|col|ticket.code_numberings.code_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "ticket_messages",
+        "ticket_messages_ticket_created_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.ticket_messages_ticket_created_idx",
+        "n|idx|ticket.ticket_messages_ticket_created_idx",
+        "e|idx|ticket.ticket_messages_ticket_created_idx",
+        "n|rel|ticket.ticket_messages_ticket_created_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.ticket_messages",
+        "n|sch|ticket",
+        "n|col|ticket.ticket_messages.ticket_id",
+        "n|col|ticket.ticket_messages.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "settings",
+        "ticket_settings_scope_uq"
+      ],
+      "writes": [
+        "s|idx|ticket.ticket_settings_scope_uq",
+        "n|idx|ticket.ticket_settings_scope_uq",
+        "e|idx|ticket.ticket_settings_scope_uq",
+        "n|rel|ticket.ticket_settings_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|ticket.settings",
+        "n|sch|ticket",
+        "n|col|ticket.settings.setting_group",
+        "n|col|ticket.settings.setting_key"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_code_uq"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_code_uq",
+        "n|idx|ticket.tickets_code_uq",
+        "e|idx|ticket.tickets_code_uq",
+        "n|rel|ticket.tickets_code_uq"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_customer_id_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_customer_id_idx",
+        "n|idx|ticket.tickets_customer_id_idx",
+        "e|idx|ticket.tickets_customer_id_idx",
+        "n|rel|ticket.tickets_customer_id_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.customer_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_company_id_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_company_id_idx",
+        "n|idx|ticket.tickets_company_id_idx",
+        "e|idx|ticket.tickets_company_id_idx",
+        "n|rel|ticket.tickets_company_id_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_project_id_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_project_id_idx",
+        "n|idx|ticket.tickets_project_id_idx",
+        "e|idx|ticket.tickets_project_id_idx",
+        "n|rel|ticket.tickets_project_id_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.project_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_parent_ticket_id_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_parent_ticket_id_idx",
+        "n|idx|ticket.tickets_parent_ticket_id_idx",
+        "e|idx|ticket.tickets_parent_ticket_id_idx",
+        "n|rel|ticket.tickets_parent_ticket_id_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.parent_ticket_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_assignee_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_assignee_user_id_idx",
+        "n|idx|ticket.tickets_assignee_user_id_idx",
+        "e|idx|ticket.tickets_assignee_user_id_idx",
+        "n|rel|ticket.tickets_assignee_user_id_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.assignee_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_status_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_status_idx",
+        "n|idx|ticket.tickets_status_idx",
+        "e|idx|ticket.tickets_status_idx",
+        "n|rel|ticket.tickets_status_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "ticket",
+        "tickets",
+        "tickets_serial_number_idx"
+      ],
+      "writes": [
+        "s|idx|ticket.tickets_serial_number_idx",
+        "n|idx|ticket.tickets_serial_number_idx",
+        "e|idx|ticket.tickets_serial_number_idx",
+        "n|rel|ticket.tickets_serial_number_idx"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.serial_number"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ticket",
+        "ticket_messages"
+      ],
+      "writes": [
+        "s|fk|ticket.ticket_messages.ticket_messages_ticket_id_tickets_id_fkey",
+        "n|fk|ticket.ticket_messages.ticket_messages_ticket_id_tickets_id_fkey",
+        "e|fk|ticket.ticket_messages.ticket_messages_ticket_id_tickets_id_fkey",
+        "n|con|ticket.ticket_messages.ticket_messages_ticket_id_tickets_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ticket.ticket_messages",
+        "n|sch|ticket",
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.ticket_messages.ticket_id",
+        "n|col|ticket.tickets.id",
+        "e|uniqueness|ticket.tickets.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "ticket",
+        "tickets"
+      ],
+      "writes": [
+        "s|fk|ticket.tickets.tickets_parent_ticket_id_tickets_id_fkey",
+        "n|fk|ticket.tickets.tickets_parent_ticket_id_tickets_id_fkey",
+        "e|fk|ticket.tickets.tickets_parent_ticket_id_tickets_id_fkey",
+        "n|con|ticket.tickets.tickets_parent_ticket_id_tickets_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|tbl|ticket.tickets",
+        "n|sch|ticket",
+        "n|col|ticket.tickets.parent_ticket_id",
+        "n|col|ticket.tickets.id",
+        "e|uniqueness|ticket.tickets.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "ticket",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "name": "code_numberings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "name": "ticket_messages",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "name": "settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "name": "tickets",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "code_type",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "pattern",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "reset_policy",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "period_key",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "next_number",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "author_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'staff'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "author_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "author_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "body",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "visibility",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'internal'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "setting_group",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "setting_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "setting_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "value_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'string'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "ticket_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'other'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "parent_ticket_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "ticket_template_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "customer_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "warranty_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "item_serial_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "serial_number",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "device_description",
+        "type": "varchar(300)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "channel",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'phone'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "reporter_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "reporter_contact",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "complaint",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "priority",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'normal'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "reported_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "in_warranty",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "warranty_ends_on",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "warranty_code",
+        "type": "varchar(80)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'new'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "assignee_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "resolution",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "service_cost",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "resolved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "resolved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "confirmed_by_name",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "confirmation_channel",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "confirmed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "closed_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "closed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "ticket_code_numberings_type_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_messages_ticket_created_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "ticket_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "ticket_settings_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "setting_group",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "setting_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_customer_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "customer_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_company_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_project_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_parent_ticket_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "parent_ticket_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_assignee_user_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "assignee_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_serial_number_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "serial_number",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_messages_ticket_id_tickets_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "ticket_id"
+        ],
+        "schemaTo": "ticket",
+        "tableTo": "tickets",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_parent_ticket_id_tickets_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "parent_ticket_id"
+        ],
+        "schemaTo": "ticket",
+        "tableTo": "tickets",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "code_numberings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_messages_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "settings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "ticket_code_numberings_reset_check",
+        "value": "reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "code_numberings",
+        "name": "ticket_code_numberings_next_check",
+        "value": "next_number > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_messages_visibility_check",
+        "value": "visibility IN ('internal', 'customer')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_messages_author_type_check",
+        "value": "author_type IN ('staff', 'customer')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "ticket_messages",
+        "name": "ticket_messages_customer_visible_check",
+        "value": "author_type = 'staff' OR visibility = 'customer'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "settings",
+        "name": "ticket_settings_value_type_check",
+        "value": "value_type IN ('string', 'number', 'boolean', 'json', 'date')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_type_check",
+        "value": "ticket_type IN ('installation', 'repair', 'maintenance', 'warranty_service', 'inspection', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_status_check",
+        "value": "status IN ('new', 'in_progress', 'resolved', 'closed')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_priority_check",
+        "value": "priority IN ('low', 'normal', 'high', 'urgent')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_channel_check",
+        "value": "channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_confirmation_channel_check",
+        "value": "confirmation_channel IS NULL OR confirmation_channel IN ('phone', 'whatsapp', 'email', 'web', 'onsite', 'portal', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "ticket",
+        "table": "tickets",
+        "name": "tickets_service_cost_check",
+        "value": "service_cost >= 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

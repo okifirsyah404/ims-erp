@@ -1,4 +1,0 @@
-ALTER TABLE "finance"."cash_bank_accounts" ADD COLUMN "employee_id" uuid;--> statement-breakpoint
-CREATE INDEX "cash_bank_accounts_employee_id_idx" ON "finance"."cash_bank_accounts" ("employee_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "cash_bank_accounts_employee_primary_uq" ON "finance"."cash_bank_accounts" ("employee_id") WHERE is_primary AND employee_id IS NOT NULL AND deleted_at IS NULL;--> statement-breakpoint
-ALTER TABLE "finance"."cash_bank_accounts" ADD CONSTRAINT "cash_bank_accounts_employee_check" CHECK (employee_id IS NULL OR (account_type IN ('bank', 'ewallet') AND opening_balance = 0 AND current_balance = 0 AND invoice_usage IS NULL));

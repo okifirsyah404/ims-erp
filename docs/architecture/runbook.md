@@ -110,8 +110,8 @@ bun run drizzle:seed       # seed runners (database/seeders) — verified idempo
 generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
 stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 
-**Migration baseline (ADR-0024 + ADR-0019, per-schema since 2026-11-21).**
-History, kept honest:
+**Migration baseline (ADR-0024 + ADR-0019, per-schema since 2026-11-21,
+re-squashed 2026-11-24).** History, kept honest:
 
 - 2026-11-12 → 2026-11-19: `generate` / `migrate` were **blocked on main**
   ("Conflicting migrations detected", a branching snapshot chain), and
@@ -145,6 +145,25 @@ History, kept honest:
   `docs/database/docs.dbml` first, then the Drizzle schema, run
   `bun run drizzle:generate`, inspect the SQL, and apply it to a **disposable**
   database only.
+- 2026-11-24: the 33-folder chain (20 per-schema baseline folders + 13
+  incremental ones added between 2026-11-21 and 2026-11-24) was **squashed back
+  to 20 per-schema folders** — `20261123204301_create_auth_schema` through
+  `20261123204332_create_warehouse_schema` — so `database/migrations` again
+  matches `drizzle/schemas` one folder per Postgres schema. The 33 old folders
+  are gone from the tree and remain in git history only (no
+  `migrations-archive/v4`: the archive folders `v2`/`v3` were already dropped
+  from the tree on 2026-11-21 for the same reason). Regenerated, not
+  hand-assembled: same cumulative `--schema` order (`auth` first, then
+  alphabetical), 1 `base` + 19 chained `diff` snapshots. Equivalence checked
+  without a database: the 20 folders concatenate to the **same 758 statements**
+  as a single `generate` from `drizzle/schemas/*.schema.ts` (0 missing, 0 extra),
+  both create **176 tables**, every statement touches only its own schema, and
+  `check` → "Everything's fine" plus `generate --explain` → `no_changes`. Two
+  things were intentionally **not** carried over because a baseline starts from
+  an empty database: the ERP-0094 portal-role `UPDATE` backfill and the
+  `add_gallery_images` `INSERT … SELECT` backfill (both were data-only, both
+  remain in git history). A database migrated by the 33-folder chain cannot be
+  upgraded in place; rebuild it with `bun run drizzle:migrate-reset`.
 
 Disposable-database recipe (also used for the reset tooling):
 

@@ -1,0 +1,477 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "096a81c2-5378-4288-a91f-1b4349d4bd91",
+  "prevIds": [
+    "b3494e39-7a98-4f34-b3dd-e4ad0c4ebcb7"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "audit"
+      ],
+      "writes": [
+        "s|sch|audit",
+        "n|sch|audit",
+        "e|sch|audit"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "audit",
+        "audit_logs"
+      ],
+      "writes": [
+        "s|tbl|audit.audit_logs",
+        "n|tbl|audit.audit_logs",
+        "e|tbl|audit.audit_logs",
+        "n|rel|audit.audit_logs",
+        "n|type|audit.audit_logs",
+        "n|rel|audit.audit_logs_pkey"
+      ],
+      "reads": [
+        "n|sch|audit"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "audit",
+        "audit_logs",
+        "audit_logs_created_at_idx"
+      ],
+      "writes": [
+        "s|idx|audit.audit_logs_created_at_idx",
+        "n|idx|audit.audit_logs_created_at_idx",
+        "e|idx|audit.audit_logs_created_at_idx",
+        "n|rel|audit.audit_logs_created_at_idx"
+      ],
+      "reads": [
+        "n|tbl|audit.audit_logs",
+        "n|sch|audit",
+        "n|col|audit.audit_logs.created_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "audit",
+        "audit_logs",
+        "audit_logs_organization_id_idx"
+      ],
+      "writes": [
+        "s|idx|audit.audit_logs_organization_id_idx",
+        "n|idx|audit.audit_logs_organization_id_idx",
+        "e|idx|audit.audit_logs_organization_id_idx",
+        "n|rel|audit.audit_logs_organization_id_idx"
+      ],
+      "reads": [
+        "n|tbl|audit.audit_logs",
+        "n|sch|audit",
+        "n|col|audit.audit_logs.organization_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "audit",
+        "audit_logs",
+        "audit_logs_actor_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|audit.audit_logs_actor_user_id_idx",
+        "n|idx|audit.audit_logs_actor_user_id_idx",
+        "e|idx|audit.audit_logs_actor_user_id_idx",
+        "n|rel|audit.audit_logs_actor_user_id_idx"
+      ],
+      "reads": [
+        "n|tbl|audit.audit_logs",
+        "n|sch|audit",
+        "n|col|audit.audit_logs.actor_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "audit",
+        "audit_logs",
+        "audit_logs_action_idx"
+      ],
+      "writes": [
+        "s|idx|audit.audit_logs_action_idx",
+        "n|idx|audit.audit_logs_action_idx",
+        "e|idx|audit.audit_logs_action_idx",
+        "n|rel|audit.audit_logs_action_idx"
+      ],
+      "reads": [
+        "n|tbl|audit.audit_logs",
+        "n|sch|audit",
+        "n|col|audit.audit_logs.action"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "audit",
+        "audit_logs",
+        "audit_logs_target_idx"
+      ],
+      "writes": [
+        "s|idx|audit.audit_logs_target_idx",
+        "n|idx|audit.audit_logs_target_idx",
+        "e|idx|audit.audit_logs_target_idx",
+        "n|rel|audit.audit_logs_target_idx"
+      ],
+      "reads": [
+        "n|tbl|audit.audit_logs",
+        "n|sch|audit",
+        "n|col|audit.audit_logs.target_type",
+        "n|col|audit.audit_logs.target_id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "audit",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "name": "audit_logs",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "actor_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "actor_email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "action",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "target_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "target_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "meta",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "ip_address",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "user_agent",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "audit_logs_created_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "audit_logs_organization_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "audit_logs_actor_user_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "actor_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "audit_logs_action_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "action",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "audit_logs_target_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "target_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "target_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "audit",
+        "table": "audit_logs",
+        "name": "audit_logs_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

@@ -136,17 +136,22 @@ never ships in a frontend bundle.
   `drizzle:generate`, SQL inspected by a human, then applied to a **disposable**
   database for testing. `drizzle-kit push` is for disposable DBs only.
 - Auth schema changes: hand-written, append-only edits to `auth.schema.ts`; never run `auth:generate` (AGENTS.md hard rule).
-- Baseline (ADR-0024, per-schema since 2026-11-21): the schema is **one
-  migration per Postgres schema**, `database/migrations/20261120214111_create_auth_schema`
-  through `20261120214130_create_warehouse_schema` (20 folders; 1 `base` + 19
-  chained `diff` snapshots, 20 schemas, 164 `CREATE TABLE` statements, no
-  cross-schema `REFERENCES`). The previous single baseline
+- Baseline (ADR-0024, per-schema since 2026-11-21, re-squashed 2026-11-24): the
+  schema is **one migration per Postgres schema**,
+  `database/migrations/20261123204301_create_auth_schema` through
+  `20261123204332_create_warehouse_schema` (20 folders; 1 `base` + 19 chained
+  `diff` snapshots, 20 schemas, 176 `CREATE TABLE` statements, no cross-schema
+  `REFERENCES`). The 33-folder chain that preceded the 2026-11-24 re-squash is in
+  git history only; the earlier single baseline
   (`20261120061847_last_daredevil`) and the 31-step v1 chain are kept for
   history in `database/migrations-archive/` (`v1`, `v3-per-schema-20261121`;
-  not applied). Verified on a disposable database on 2026-11-21:
-  `drizzle:migrate`, then `drizzle:seed` twice (second run inserted nothing), a
-  second `drizzle-kit generate` reported no schema changes, `drizzle-kit check`
-  reported "Everything's fine", and `pg_dump --schema-only` of the resulting
-  database is identical to one built from the archived single baseline. The
-  earlier "blocked on main" branching-snapshot problem (2026-11-12) is resolved
-  (`runbook.md`).
+  not applied). Verified on a disposable database on 2026-11-21 (before the
+  re-squash): `drizzle:migrate`, then `drizzle:seed` twice (second run inserted
+  nothing), a second `drizzle-kit generate` reported no schema changes,
+  `drizzle-kit check` reported "Everything's fine", and `pg_dump --schema-only`
+  of the resulting database is identical to one built from the archived single
+  baseline. The 2026-11-24 chain was verified without a database: it
+  concatenates to the same 758 statements as a single `generate` from
+  `drizzle/schemas`, `check` is clean and `generate --explain` reports
+  `no_changes`. The earlier "blocked on main" branching-snapshot problem
+  (2026-11-12) is resolved (`runbook.md`).
