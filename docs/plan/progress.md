@@ -12,6 +12,36 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+
+
+## 2026-11-24 - merge `origin/main` into `feat/erp0013-expense-claims`
+
+Merged main (PR #152 suppliers, PR #153 HR/ERP-0117..0122 incl. employee payee
+accounts in finance) into the expense-claim branch. Four conflicts, all
+mechanical:
+
+- `finance/index.ts` — both sides mounted a controller; kept
+  `EmployeeBankAccountController` (main) and `ExpenseController` (ours).
+- `build-crumbs.ts` — kept `/settings/payroll` (main) plus the three
+  `/finance*` entries (ours).
+- `docs/plan/progress.md` — both sides prepended session entries; kept both,
+  newest first (main's 2026-11-24 entries, then ERP-0013).
+- `docs/role-permission.md` — generated file; took main's copy and re-ran
+  `bun docs/gen-role-permission.ts` (677 routes, both slices included).
+
+Auto-merged files checked by hand for duplicate declarations: `finance.schema.ts`,
+`constants/di.ts`, `container.ts`, `numbering/domain.ts`, `erp-permissions.ts`.
+`packages/common` was rebuilt (its `dist` was stale for main's `schedule`
+resource, which broke the web-admin typecheck until `bun run build`).
+
+Checks after the merge: backend `tsc` clean, web-admin `tsc -p tsconfig.app.json`
+clean, `bun run test` 7/7 (backend 1453 pass), `bun run lint` 0 errors,
+`validate-dbml.ts` OK, `drizzle-kit generate` "No schema changes",
+`drizzle-kit check` "Everything's fine".
+
+Still open from ERP-0013: migration `20261123150453_erp0013_expense_claims` not
+applied to a database (Docker down) and no browser walk-through.
+
 ## 2026-11-24 - CI fix for PR #153: payslip tests depended on the local .env
 
 **Failed check:** "Unit Test Backend" (and the JUnit report) on PR #153: three
@@ -628,6 +658,101 @@ migration on a disposable database, `schedule` permission, weekly grid), then
 ERP-0119..ERP-0122 in order. A browser walk-through of the slice 1 pages
 (`/hr/employees/:id/edit`, Tasks edit/delete, Leave/Overtime edit, Attendance
 list) is still open.
+
+## 2026-11-23 - ERP-0013: employee expense claims (`/finance/expenses`)
+
+**Owner request** (grill-me, Q1-Q18, all settled in session): implement
+`/finance/expenses` per `docs` - the stub page becomes a real expense-claim
+feature.
+
+**Answers recorded.** (1) Claims only (`expense_claims` +
+`expense_claim_items`); settlements/advances untouched. (2) Approval is the
+ledger event (accrual), not cash. (3) Paying a claim (`paid`, `payment_id`) is
+deferred. (4) New `expense_claim` permission resource. (5) `category_code` is a
+`chart_of_accounts.code`; no COA seeder added. (6) Dialog line editor + table.
+(7) Provisional `claimPayable: '2-1200'`. (8) `employee_id` required, picker +
+`ExportedEmployeeService` check, no self-service. (9) `rejected` reopens as
+`draft`; `cancelled` only from `draft`/`submitted`; an approved claim is
+corrected through the existing journal reversal. (10) Receipts deferred. (11)
+VAT per line, total derived server-side. (12) Two tables per DBML. (13) DBML
+CHECK kept verbatim; unit tests. (14) Server filters + whitelisted sort. (15)
+Detail page `$claimId`. (16) `accountant: read|approve|reject`. (17) Detail
+carries lines, workflow actions and the posted entry. (18) Editing lives on the
+detail page only.
+
+**Design gate.** `docs/database/` read first (`docs.dbml` finance module,
+`module-ownership.md`, `logical-references.md`, `data-dictionary.md`). The two
+tables already existed in the contract as `status: target` with the exact
+column set, so no table was invented; the only DBML edits are dropping
+`status: target` from both notes and marking `updated_at` `[not null]` to match
+the universal convention (the validator's nullability parity is strict).
+
+**Contract changes.**
+- `src/shared/numbering/domain.ts`: `expense_claim` code type + `EC` code.
+- `constants/ar-posting.ts`: `claimPayable: '2-1200'` (provisional).
+- `packages/common/src/authorization/erp-permissions.ts`: new
+  `expense_claim: [read, create, update, submit, approve, reject, cancel]`;
+  full grant to `finance`, `read|approve|reject` to `accountant`.
+
+**Backend.**
+- `finance.schema.ts`: `expense_claims` + `expense_claim_items` (tenant column,
+  unix-ms timestamps, bigint minor units, status CHECK, intra-schema FK
+  cascade), `EXPENSE_CLAIM_STATUSES`.
+- `contracts/expense.contract.ts` (zod), `contracts/expense-claim.repository.interface.ts`,
+  `repositories/expense-claim.repository.ts` (tenant scoped, soft delete,
+  whitelisted sort), `services/expense-claim.service.ts`,
+  `controllers/expense.controller.ts`, `errors/expense.errors.ts`.
+- Routes under `/finance/expenses`: `GET` list, `GET /:id`, `POST` (201),
+  `PATCH /:id`, `POST /:id/{submit,approve,reject,cancel}`, each behind its own
+  `expense_claim:*` permission.
+- `approve` is one transaction: DR each expense account (merged per
+  `category_code`), DR input tax `1-1800`, CR claims payable `2-1200`, posted
+  through `PostingService.post` with idempotency key `expense_claim:<id>`.
+  `detail` also returns the posted entry (looked up via
+  `journal.findEntryBySource`).
+- 6 new api locale keys (en + id).
+
+**Schema/migration.** Migration
+`database/migrations/20261123150453_erp0013_expense_claims` generated (2
+`CREATE TABLE`, 4 indexes, 1 intra-schema FK, 4 CHECKs), inspected by hand.
+**Not applied to a database in this session**: Docker was not running, so no
+disposable database was available (see Open).
+
+**web-admin.** `lib/finance-api.ts` gained the claim types, list/detail query
+options and the five mutations; `components/finance/expense-list.tsx` (URL-backed
+page/status/from/to/search, status filter, date range, `DataTable` +
+`PaginationControls`, `RowActions` for submit/approve/reject/cancel),
+`expense-form-dialog.tsx` (employee picker, claim date, notes, line editor with
+`DatePicker`/`MoneyInput`, live total) and `expense-detail.tsx` (header, lines,
+workflow actions, posted-entry link, edit dialog). The stub route was replaced
+and `/finance/expenses/$claimId` added; `routeTree.gen.ts` regenerated by the
+vite plugin. Nav item `/finance/expenses` now gates on `expense_claim.read`
+(was `bill.read`); `build-crumbs.ts` gained `/finance`, `/finance/expenses` and
+`/finance/expenses/$claimId`. New `finance` locale keys (en + id) for the page,
+statuses and the six api error keys.
+
+**Checks.**
+- `bunx tsc --noEmit` (backend): clean.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun test` (backend): 1411 pass / 0 fail, incl. the 9 new
+  `test/finance/expense-flows.test.ts` cases.
+- `bun run test` (root): 7/7 tasks.
+- `bun run lint` (root): 0 errors (26 pre-existing backend warnings).
+- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts`: OK
+  (196 tables, 0 cross-module refs, 0 timestamp gaps, 0 parity drift).
+- `bun docs/gen-role-permission.ts`: 644 routes.
+- `drizzle-kit generate` second run: "No schema changes"; `check`:
+  "Everything's fine".
+
+**Open.** Migration not applied to a disposable database (Docker down) and no
+browser walk-through of the list, form and detail page. Paying a claim, receipt
+upload and `expense_settlements`/`employee_advances` remain unbuilt.
+
+Next executable task: start Docker, apply
+`20261123150453_erp0013_expense_claims` and the still-unapplied
+`20261123015149_erp0116_…` migration on a disposable database, then click
+through `/finance/expenses` (create → submit → approve, check the journal).
+
 
 ## 2026-11-23 - ERP-0116: robust supplier master CRUD
 

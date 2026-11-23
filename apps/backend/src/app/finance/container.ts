@@ -10,6 +10,8 @@ import {
 	ACCOUNT_SERVICE_TOKEN,
 	DEPRECIATION_REPOSITORY_TOKEN,
 	DEPRECIATION_SERVICE_TOKEN,
+	EXPENSE_CLAIM_REPOSITORY_TOKEN,
+	EXPENSE_CLAIM_SERVICE_TOKEN,
 	FINANCE_CODE_NUMBERING_REPOSITORY_TOKEN,
 	FINANCE_NUMBERING_SERVICE_TOKEN,
 	AP_OPEN_ITEM_REPOSITORY_TOKEN,
@@ -46,7 +48,9 @@ import { AccountBalanceRepository } from './repositories/account-balance.reposit
 import { CloseChecklistRepository } from './repositories/close-checklist.repository';
 import { FinanceCodeNumberingRepository } from './repositories/code-numbering.repository';
 import { DepreciationRepository } from './repositories/depreciation.repository';
+import { ExpenseClaimRepository } from './repositories/expense-claim.repository';
 import { DepreciationService } from './services/depreciation.service';
+import { ExpenseClaimService } from './services/expense-claim.service';
 import { FinanceNumberingService } from './services/finance-numbering.service';
 import { AccountService } from './services/account.service';
 import { PeriodService } from './services/period.service';
@@ -100,6 +104,8 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(FINANCE_NUMBERING_SERVICE_TOKEN, { useClass: FinanceNumberingService });
 	container.register(DEPRECIATION_REPOSITORY_TOKEN, { useClass: DepreciationRepository });
 	container.register(DEPRECIATION_SERVICE_TOKEN, { useClass: DepreciationService });
+	container.register(EXPENSE_CLAIM_REPOSITORY_TOKEN, { useClass: ExpenseClaimRepository });
+	container.register(EXPENSE_CLAIM_SERVICE_TOKEN, { useClass: ExpenseClaimService });
 	container.register(CHART_OF_ACCOUNT_REPOSITORY_TOKEN, { useClass: ChartOfAccountRepository });
 	container.register(ACCOUNTING_PERIOD_REPOSITORY_TOKEN, {
 		useClass: AccountingPeriodRepository,

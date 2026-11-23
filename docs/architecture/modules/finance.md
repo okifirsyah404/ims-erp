@@ -62,10 +62,29 @@ are complete; decisions D1–D12 are pinned in the same plan.
 
 ## Deferred (Stage 2)
 
-Expense entry + journal posting (ERP-0013), payroll postings (T20), gateway
-payment reconciliation (T22). The final COA seed list awaits finance/owner
-sign-off (provisional codes in use: `1-1300`, `1-1100`, `4-1000`, `2-1000`,
-`2-1100`, `5-1000`, `1-1800`).
+Paying expense claims (`paid`, `payment_id` — ERP-0013 ships the claim
+lifecycle up to `approved` plus posting, no disbursement), receipt upload
+(`receipt_document_id` stays null), expense settlements and employee advances
+(tables are DBML-only), payroll postings (T20), gateway payment reconciliation
+(T22). The final COA seed list awaits finance/owner sign-off (provisional codes
+in use: `1-1300`, `1-1100`, `4-1000`, `2-1000`, `2-1100`, `5-1000`, `1-1800`,
+`1-1400`, `2-1200`).
+
+## Expense claims (ERP-0013, built)
+
+`finance.expense_claims` + `expense_claim_items` (single Postgres schema,
+intra-schema FK cascade). Workflow `draft → submitted → approved | rejected`,
+`cancelled` only before approval; a rejected claim reopens as `draft` on edit.
+Approving is the ledger event: one transaction posts DR each expense account
+(lines merged per `category_code`, which must name an active postable expense
+account), DR input tax (`1-1800` provisional), CR expense-claims payable
+(`2-1200` provisional) through the posting service, idempotent on
+`expense_claim:<id>`. `total_amount` is derived server-side from the lines.
+Routes live under `/finance/expenses*` with the `expense_claim:*` permission
+(`finance` role full, `accountant` read/approve/reject). Corrections to an
+approved claim go through the existing append-only journal reversal, not a
+claim-specific cancel. Not built yet: paying the claim (payment module
+allocation), receipt attachment, settlements, advances.
 
 ## Tests
 

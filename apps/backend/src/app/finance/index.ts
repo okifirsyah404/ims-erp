@@ -12,6 +12,7 @@ import Elysia from 'elysia';
 
 import { FinanceCodeNumberingController } from './controllers/code-numbering.controller';
 import { DepreciationController } from './controllers/depreciation.controller';
+import { ExpenseController } from './controllers/expense.controller';
 import { LedgerController } from './controllers/ledger.controller';
 import { FinanceOperationsController } from './controllers/finance-operations.controller';
 import { EmployeeBankAccountController } from './controllers/employee-bank-account.controller';
@@ -33,5 +34,6 @@ export function financeModule() {
 		.use(LedgerController.plugin())
 		.use(DepreciationController.plugin())
 		.use(FinanceOperationsController.plugin())
-		.use(EmployeeBankAccountController.plugin());
+		.use(EmployeeBankAccountController.plugin())
+		.use(ExpenseController.plugin());
 }

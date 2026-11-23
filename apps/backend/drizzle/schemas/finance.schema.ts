@@ -10,8 +10,9 @@
  * out to the `tax` schema.
  *
  * The single payment ledger lives in `payment`. Target-only tables
- * (`journal_templates`, `credit_memos`, `expense_claims`, `employee_advances`,
+ * (`journal_templates`, `credit_memos`, `employee_advances`,
  * `expense_settlements`) are defined in `docs.dbml` only (Q22).
+ * `expense_claims` + `expense_claim_items` are built (ERP-0013).
  */
 import {
 	unixTimestamp,
@@ -115,6 +116,16 @@ export const SUPPLIER_BILL_STATUSES = [
 	'void',
 ] as const;
 export type SupplierBillStatus = (typeof SUPPLIER_BILL_STATUSES)[number];
+
+export const EXPENSE_CLAIM_STATUSES = [
+	'draft',
+	'submitted',
+	'approved',
+	'rejected',
+	'paid',
+	'cancelled',
+] as const;
+export type ExpenseClaimStatus = (typeof EXPENSE_CLAIM_STATUSES)[number];
 
 export const OPEN_ITEM_STATUSES = [
 	'open',
@@ -731,6 +742,68 @@ export const supplierBillItems = financeSchema.table(
 	],
 );
 
+export const expenseClaims = financeSchema.table(
+	'expense_claims',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Logical reference to human_resource.employees.id — cross-module FK omitted. */
+		employeeId: uuid('employee_id'),
+		claimDate: date('claim_date'),
+		totalAmount: moneyAmount('total_amount'),
+		currencyCode: currencyCode(),
+		status: text('status').notNull().default('draft'),
+		submittedBy: text('submitted_by'),
+		submittedAt: unixTimestampNullable('submitted_at'),
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		/** Logical reference to payment.payments.id — FK omitted (ERP-0013 defers paying). */
+		paymentId: uuid('payment_id'),
+		notes: text('notes'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('expense_claims_org_code_uq').on(
+			table.organizationId,
+			table.code,
+		),
+		index('expense_claims_employee_id_idx').on(table.employeeId),
+		index('expense_claims_status_idx').on(table.status),
+		check(
+			'expense_claims_status_check',
+			sql`status IN ('draft', 'submitted', 'approved', 'rejected', 'paid', 'cancelled')`,
+		),
+		check('expense_claims_total_amount_check', sql`total_amount >= 0`),
+	],
+);
+
+export const expenseClaimItems = financeSchema.table(
+	'expense_claim_items',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		expenseClaimId: uuid('expense_claim_id')
+			.notNull()
+			.references(() => expenseClaims.id, { onDelete: 'cascade' }),
+		expenseDate: date('expense_date'),
+		/** `chart_of_accounts.code` of an active expense account (ERP-0013 Q5). */
+		categoryCode: text('category_code'),
+		description: text('description'),
+		amount: moneyAmount('amount'),
+		taxAmount: moneyAmount('tax_amount'),
+		currencyCode: currencyCode(),
+		/** Logical reference to document.documents.id — FK omitted (receipts deferred). */
+		receiptDocumentId: uuid('receipt_document_id'),
+		...timestamps,
+	},
+	(table) => [
+		index('expense_claim_items_claim_id_idx').on(table.expenseClaimId),
+		check('expense_claim_items_amount_check', sql`amount >= 0`),
+		check('expense_claim_items_tax_amount_check', sql`tax_amount >= 0`),
+	],
+);
+
 export const arOpenItems = financeSchema.table(
 	'ar_open_items',
 	{
@@ -936,6 +1009,10 @@ export type TBankAccountLinkInsert = typeof bankAccountLinks.$inferInsert;
 export type TSupplierBillSelect = typeof supplierBills.$inferSelect;
 export type TSupplierBillInsert = typeof supplierBills.$inferInsert;
 export type TSupplierBillItemSelect = typeof supplierBillItems.$inferSelect;
+
+export type TExpenseClaimSelect = typeof expenseClaims.$inferSelect;
+
+export type TExpenseClaimItemSelect = typeof expenseClaimItems.$inferSelect;
 export type TSupplierBillItemInsert = typeof supplierBillItems.$inferInsert;
 export type TArOpenItemSelect = typeof arOpenItems.$inferSelect;
 export type TArOpenItemInsert = typeof arOpenItems.$inferInsert;

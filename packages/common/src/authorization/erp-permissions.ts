@@ -108,6 +108,12 @@ export const erpStatements = {
 	receipt: ['read', 'create', 'verify', 'post', 'reverse', 'export'],
 	payment: ['read', 'create', 'submit', 'approve', 'execute', 'reverse', 'export'],
 	bill: ['read', 'create', 'record'],
+	/**
+	 * ERP-0013 employee expense claim: `submit` files it, `approve` posts the
+	 * accrual journal. Kept apart from `bill` so approving a supplier bill and
+	 * approving a claim stay separate grants.
+	 */
+	expense_claim: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'cancel'],
 	cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 	chart_of_account: ['read', 'create', 'update', 'archive'],
 	journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
@@ -744,6 +750,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// Project direct costs, read only (decision 2026-11-04).
 		project: ['read', 'read_cost'],
 		bill: ['read', 'create', 'record'],
+		expense_claim: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'cancel'],
 		cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 		payroll_payment: ['read', 'execute'],
 		// Enters the monthly salary summaries with HR; the owner approves
@@ -777,6 +784,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		receipt: ['read', 'export'],
 		payment: ['read', 'export'],
 		bill: ['read', 'create', 'record'],
+		// Files nothing and submits nothing: the accountant checks and signs
+		// off claims someone else filed (ERP-0013).
+		expense_claim: ['read', 'approve', 'reject'],
 		cash_bank: ['read', 'reconcile', 'export'],
 		investor: ['read'],
 		investor_report: ['read', 'create', 'publish', 'export'],

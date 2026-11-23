@@ -3495,9 +3495,9 @@ Table finance.expense_claims {
   payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted."]
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Operational expense claim of an employee, settled by a payment.payments disbursement."
+  Note: "Operational expense claim of an employee, settled by a payment.payments disbursement."
   Indexes {
     (organization_id, code) [unique, name: 'expense_claims_org_code_uq']
     employee_id [name: 'expense_claims_employee_id_idx']
@@ -3521,9 +3521,9 @@ Table finance.expense_claim_items {
   currency_code varchar(3) [not null, default: 'IDR']
   receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Line of an expense claim."
+  Note: "Line of an expense claim."
   Indexes {
     expense_claim_id [name: 'expense_claim_items_claim_id_idx']
   }

@@ -564,6 +564,17 @@ const api = {
 	'accounting.billNotFound': 'Supplier bill not found',
 	'accounting.billNotDraft':
 		'Only draft supplier bills can be modified or recorded',
+	'accounting.expenseClaimNotFound': 'Expense claim not found',
+	'accounting.expenseClaimNotDraft':
+		'Only a draft or rejected expense claim can be modified',
+	'accounting.expenseClaimEmpty':
+		'An expense claim needs at least one line to be submitted',
+	'accounting.expenseClaimInvalidTransition':
+		'That status change is not allowed for this expense claim',
+	'accounting.expenseClaimAccountInvalid':
+		'{{code}} is not an active, postable expense account',
+	'accounting.expenseClaimEmployeeInvalid':
+		'The employee is missing or no longer active',
 	'accounting.bankReconciliationNotFound': 'Bank reconciliation not found',
 	'accounting.bankReconciliationState':
 		'That reconciliation action is not allowed for this document',
