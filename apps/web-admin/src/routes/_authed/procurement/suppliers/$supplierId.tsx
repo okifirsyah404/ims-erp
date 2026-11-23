@@ -18,7 +18,8 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -125,15 +126,15 @@ function CompanyAddressDialog({
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='supplier-address-label'>{t('procurement:supplier.addressLabel')}</FieldLabel>
+								<FieldLabel htmlFor='supplier-address-label' optional>{t('procurement:supplier.addressLabel')}</FieldLabel>
 								<Input id='supplier-address-label' maxLength={100} value={label} onChange={(event) => setLabel(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='supplier-address-contact'>{t('procurement:supplier.addressContactName')}</FieldLabel>
+								<FieldLabel htmlFor='supplier-address-contact' optional>{t('procurement:supplier.addressContactName')}</FieldLabel>
 								<Input id='supplier-address-contact' maxLength={200} value={contactName} onChange={(event) => setContactName(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='supplier-address-phone'>{t('procurement:supplier.addressContactPhone')}</FieldLabel>
+								<FieldLabel htmlFor='supplier-address-phone' optional>{t('procurement:supplier.addressContactPhone')}</FieldLabel>
 								<Input id='supplier-address-phone' type='tel' maxLength={30} value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} />
 							</Field>
 						</div>
@@ -150,7 +151,7 @@ function CompanyAddressDialog({
 						</Field>
 						<LocationCascade value={location} initialVillageId={null} onChange={setLocation} />
 						<Field className='sm:max-w-48'>
-							<FieldLabel htmlFor='supplier-address-postal'>{t('procurement:supplier.postalCode')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-address-postal' optional>{t('procurement:supplier.postalCode')}</FieldLabel>
 							<Input
 								id='supplier-address-postal'
 								inputMode='numeric'
@@ -218,20 +219,15 @@ function PersonDialog({
 							<Input id='person-name' required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='person-title'>{t('procurement:supplier.picTitle')}</FieldLabel>
+							<FieldLabel htmlFor='person-title' optional>{t('procurement:supplier.picTitle')}</FieldLabel>
 							<Input id='person-title' maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} />
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='person-phone'>{t('procurement:supplier.picPhone')}</FieldLabel>
-							<CountryPhoneField
-								id='person-phone'
-								required={false}
-								disabled={submitting}
-								onChange={setPhone}
-							/>
+							<FieldLabel htmlFor='person-phone' optional>{t('procurement:supplier.picPhone')}</FieldLabel>
+							<CountryPhoneField id='person-phone' required={false} onChange={setPhone} />
 						</Field>
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='person-email'>{t('procurement:supplier.picEmail')}</FieldLabel>
+							<FieldLabel htmlFor='person-email' optional>{t('procurement:supplier.picEmail')}</FieldLabel>
 							<Input id='person-email' type='email' value={email} onChange={(event) => setEmail(event.target.value)} />
 						</Field>
 						<Field orientation='horizontal' className='sm:col-span-2'>

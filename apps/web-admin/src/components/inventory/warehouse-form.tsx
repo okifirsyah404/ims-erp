@@ -10,11 +10,8 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
-import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { DialogFooter } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { Separator } from '@ims-erp/ui/components/separator';
@@ -244,7 +241,7 @@ export function WarehouseForm({
 			>
 					<FieldGroup>
 						<Field>
-							<FieldLabel htmlFor='warehouse-address-label'>
+							<FieldLabel htmlFor='warehouse-address-label' optional>
 								{t('warehouse:address.label')}
 							</FieldLabel>
 							<Input
@@ -257,7 +254,7 @@ export function WarehouseForm({
 					<Separator />
 					<FieldGroup className='grid gap-4 sm:grid-cols-3'>
 						<Field className='sm:col-span-3'>
-							<FieldLabel htmlFor='warehouse-address-street'>
+							<FieldLabel htmlFor='warehouse-address-street' optional>
 								{t('warehouse:address.street')}
 							</FieldLabel>
 							<Textarea
@@ -268,7 +265,7 @@ export function WarehouseForm({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='warehouse-address-rt'>
+							<FieldLabel htmlFor='warehouse-address-rt' optional>
 								{t('warehouse:address.rt')}
 							</FieldLabel>
 							<Input
@@ -279,7 +276,7 @@ export function WarehouseForm({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='warehouse-address-rw'>
+							<FieldLabel htmlFor='warehouse-address-rw' optional>
 								{t('warehouse:address.rw')}
 							</FieldLabel>
 							<Input
@@ -290,7 +287,7 @@ export function WarehouseForm({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='warehouse-address-postal'>
+							<FieldLabel htmlFor='warehouse-address-postal' optional>
 								{t('warehouse:address.postalCode')}
 							</FieldLabel>
 							<Input

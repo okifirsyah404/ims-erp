@@ -325,6 +325,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ## M02 CRM and Sales
 
 ### implemented (follow-ups)
+- ERP-0114 `/crm/customers` robustness (2026-11-23, **implemented**): one Better Auth account per customer person (username `{name}_{6 ms digits}`, default password `{username}12345678`, credentials shown once + emailed, verified email locked), one owner per customer company (`owner_customer_id`) + N staff, sectioned create/edit forms (identity, company incl. inline new company, contact, management) with photo upload, TanStack tables with server sort, filters and page size; global "(Optional)" labels, E.164 phone field, hidden number spinners. Evidence: `test/unit/customer.service.test.ts`, `test/unit/portal-account.test.ts`; `progress.md` 2026-11-23. Portal side is ERP-0115 (planned).
 - Before-sales follow-up reminders to WhatsApp through n8n: a lead whose
   follow-up date arrived goes to its owner (overdue > 3 days also to the
   sales manager); a sent quotation without an answer after 3 and 7 days, and
@@ -347,6 +348,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   Chromium in the Docker image.
 
 ### planned
+- ERP-0115 customer portal follow-up of ERP-0114: forced password change at first sign-in, username sign-in, owner/staff member UI. Plan: `docs/plan/plans/customer-portal-owner-and-first-login.md`.
 - One template per document — T05. Evidence: dbml `documents` only.
 - Checkout / online orders — T21, ERP-0020. Evidence: dbml `commerce` only.
 - Gateway reconciliation (fees, gross / net settlement) — T22, ERP-0020.
@@ -569,7 +571,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ### implemented
 - ERP-0109 Multi-image galleries (2026-11-23) for products/components/materials (M05), assets (M06) and warehouses: backend implemented (3 gallery tables + backfill migration, `/images` CRUD, cover mirrored into `image_object_key`); web-admin gallery UI and migration apply on a disposable DB still open.
 - ERP-0110 Components and materials of a product (2026-11-23): informational composition per product (`product.product_components`, `GET|PUT /products/:id/components`), table on the detail page and editor in the create/edit form; not browser-verified.
-- ERP-0114 Robust supplier master (2026-11-23): server-side sort + URL-backed filters on `/procurement/suppliers` (admin/users pattern), grouped form with an inline location cascade (create posts the address right after the company, edit PATCHes the primary one), company/PIC phone through the shared `CountryPhoneField` (E.164), company/person address CRUD behind `ExportedLocationService.assertVillage`, and the `whatsapp` / `payment_terms_days` / `payment_term_note` columns dropped (payment terms are written per purchase order). Migration generated, not applied; no browser walk-through.
+- ERP-0116 Robust supplier master (2026-11-23): server-side sort + URL-backed filters on `/procurement/suppliers` (admin/users pattern), grouped form with an inline location cascade (create posts the address right after the company, edit PATCHes the primary one), company/PIC phone through the shared `CountryPhoneField` (E.164), company/person address CRUD behind `ExportedLocationService.assertVillage`, and the `whatsapp` / `payment_terms_days` / `payment_term_note` columns dropped (payment terms are written per purchase order). Migration generated, not applied; no browser walk-through.
 - Payables from goods receipts: finance bills a purchase order for what was
   received and not billed yet (order price and VAT, supplier invoice number),
   recording debits Persediaan for stock lines — T07, ERP-0012 / ERP-0035.
@@ -722,8 +724,10 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   warranty certificate list behind GET /warranties (pagination + project
   visibility); /projects/tickets/* routes moved to /_authed/tickets/*; the
   standalone BAST list page is removed (BAST lives in the project detail).
-  Evidence: components/sidebar/nav-config.ts, outes/_authed/tickets/,
-  outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
+  Evidence: components/sidebar/nav-config.ts, 
+outes/_authed/tickets/,
+  
+outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   progress.md 2026-11-22.
 - ERP-0094 portal session cookie + customer-only portal (2026-11-21, port of
   branch ERP-0069, ADR-0027): `/customers/portal/v1` sign-in and sign-up

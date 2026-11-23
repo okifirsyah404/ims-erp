@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
 	getCountries,
@@ -24,14 +24,30 @@ const DEFAULT_COUNTRY: CountryCode = 'ID';
 type TCountryOption = { value: CountryCode; label: string; callingCode: string };
 
 /**
+ * Splits a stored number into country + national part. E.164 parses
+ * exactly; an older local value (`0812…`) is read with the default country;
+ * anything unparseable is kept as typed under the default country.
+ */
+function splitPhone(value: string | null | undefined): { country: CountryCode; national: string } {
+	if (!value) return { country: DEFAULT_COUNTRY, national: '' };
+	const parsed = parsePhoneNumberFromString(value, DEFAULT_COUNTRY);
+	if (parsed?.country) return { country: parsed.country, national: parsed.nationalNumber };
+	return { country: DEFAULT_COUNTRY, national: value };
+}
+
+/**
  * Country-code + phone-number input that emits an E.164 value.
  *
  * @remarks
  * The backend stores and validates E.164 (`+6281234567890`), so the field
- * owns the assembly: the caller receives `''` until the pair forms a valid
- * number and the canonical E.164 string once it does. Validation uses
+ * owns the assembly: the caller receives `''` while the field is empty or
+ * incomplete and the canonical E.164 string once it is valid. Validation uses
  * `libphonenumber-js/min` — the same library and metadata the backend
  * re-parses with, so a number accepted here is not rejected there.
+ *
+ * A typed but invalid number marks the input invalid (`setCustomValidity`),
+ * so the surrounding form cannot submit it silently as "empty" — also when
+ * the field is optional (ERP-0114). `defaultValue` pre-fills an edit form.
  *
  * The country list is derived from the library's metadata (not a hardcoded
  * array) and labelled with `Intl.DisplayNames`, so it follows the active UI
@@ -40,30 +56,28 @@ type TCountryOption = { value: CountryCode; label: string; callingCode: string }
 export function CountryPhoneField({
 	id,
 	onChange,
-	defaultValue,
+	defaultValue = null,
 	required = true,
 	disabled = false,
 }: {
 	/** Id applied to the number input; the label's `htmlFor` targets it. */
 	id: string;
-	/** Emitted E.164 value, or `''` while incomplete. */
+	/** Emitted E.164 value, or `''` while empty or incomplete. */
 	onChange: (e164: string) => void;
-	/** Stored E.164 value to prefill (edit forms); split into country + number. */
+	/** Stored number (E.164 or an older local format) to start from. */
 	defaultValue?: string | null;
-	/** Blocks submit on an empty number; false for optional fields. */
+	/** Whether the number must be filled in (default `true`). */
 	required?: boolean;
 	disabled?: boolean;
 }) {
 	const { t, i18n } = useTranslation(['claim']);
-	const parsed = useMemo(
-		() => (defaultValue ? parsePhoneNumberFromString(defaultValue) : undefined),
-		[defaultValue],
-	);
+	const initial = useMemo(() => splitPhone(defaultValue), [defaultValue]);
 	const [country, setCountry] = useState<TCountryOption>(() =>
-		countryOption(parsed?.country ?? DEFAULT_COUNTRY, i18n.language),
+		countryOption(initial.country, i18n.language),
 	);
-	const [national, setNational] = useState(parsed?.nationalNumber ?? '');
+	const [national, setNational] = useState(initial.national);
 	const [query, setQuery] = useState('');
+	const numberInput = useRef<HTMLInputElement>(null);
 
 	const countries = useMemo(
 		() =>
@@ -84,8 +98,14 @@ export function CountryPhoneField({
 		);
 	}, [countries, query]);
 
+	const invalid = national.trim() !== '' && toE164(country.callingCode, national) === '';
+
 	function emit(nextCountry: TCountryOption, nextNational: string) {
-		onChange(toE164(nextCountry.callingCode, nextNational));
+		const e164 = toE164(nextCountry.callingCode, nextNational);
+		numberInput.current?.setCustomValidity(
+			nextNational.trim() !== '' && e164 === '' ? t('form.phoneInvalid') : '',
+		);
+		onChange(e164);
 	}
 
 	return (
@@ -123,6 +143,7 @@ export function CountryPhoneField({
 				</ComboboxContent>
 			</Combobox>
 			<Input
+				ref={numberInput}
 				id={id}
 				type='tel'
 				inputMode='tel'
@@ -131,6 +152,7 @@ export function CountryPhoneField({
 				value={national}
 				disabled={disabled}
 				required={required}
+				aria-invalid={invalid || undefined}
 				placeholder={t('form.phonePlaceholder')}
 				onChange={(event) => {
 					setNational(event.target.value);

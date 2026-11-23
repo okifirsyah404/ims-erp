@@ -9,7 +9,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -92,7 +93,8 @@ function FormSection({
  * blanked. The address section edits the primary (else first) company address
  * inline, like the warehouse form: the caller persists it through the address
  * endpoints after the company write, because addresses are a collection.
- * WhatsApp and payment terms are gone (ERP-0114).
+ * Phone is E.164 through the shared `CountryPhoneField`. WhatsApp and payment
+ * terms are gone (ERP-0116).
  */
 export function SupplierFormDialog({
 	supplier,
@@ -131,13 +133,26 @@ export function SupplierFormDialog({
 
 	const field = (key: TTextField, props: React.ComponentProps<typeof Input> = {}, hint?: string) => (
 		<Field>
-			<FieldLabel htmlFor={`supplier-${key}`}>{t(`procurement:supplier.${key}`)}</FieldLabel>
-			<Input
-				id={`supplier-${key}`}
-				value={values[key]}
-				onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))}
-				{...props}
-			/>
+			<FieldLabel htmlFor={`supplier-${key}`} optional={!props.required}>
+				{t(`procurement:supplier.${key}`)}
+			</FieldLabel>
+			{key === 'phone' ? (
+				// E.164 like every phone of the ERP (ERP-0116).
+				<CountryPhoneField
+					id={`supplier-${key}`}
+					defaultValue={supplier?.[key]}
+					required={false}
+					disabled={submitting}
+					onChange={(value) => setValues((current) => ({ ...current, [key]: value }))}
+				/>
+			) : (
+				<Input
+					id={`supplier-${key}`}
+					value={values[key]}
+					onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))}
+					{...props}
+				/>
+			)}
 			{hint && <FieldDescription>{hint}</FieldDescription>}
 		</Field>
 	);
@@ -221,16 +236,7 @@ export function SupplierFormDialog({
 						description={t('procurement:suppliers.contactDescription')}
 					>
 						{field('email', { type: 'email', maxLength: 254 })}
-						<Field>
-							<FieldLabel htmlFor='supplier-phone'>{t('procurement:supplier.phone')}</FieldLabel>
-							<CountryPhoneField
-								id='supplier-phone'
-								defaultValue={values.phone}
-								required={false}
-								disabled={submitting}
-								onChange={(e164) => setValues((current) => ({ ...current, phone: e164 }))}
-							/>
-						</Field>
+						{field('phone')}
 						{canSeeBank && (
 							<>
 								{field('bankName', { maxLength: 200 })}
@@ -239,7 +245,9 @@ export function SupplierFormDialog({
 							</>
 						)}
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='supplier-notes'>{t('procurement:supplier.notes')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-notes' optional>
+								{t('procurement:supplier.notes')}
+							</FieldLabel>
 							<Textarea
 								id='supplier-notes'
 								rows={2}
@@ -275,7 +283,9 @@ export function SupplierFormDialog({
 							</Select>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='supplier-address-label'>{t('procurement:supplier.addressLabel')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-address-label' optional>
+								{t('procurement:supplier.addressLabel')}
+							</FieldLabel>
 							<Input
 								id='supplier-address-label'
 								maxLength={100}
@@ -284,7 +294,9 @@ export function SupplierFormDialog({
 							/>
 						</Field>
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='supplier-address-line'>{t('procurement:supplier.addressLine')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-address-line' optional>
+								{t('procurement:supplier.addressLine')}
+							</FieldLabel>
 							<Textarea
 								id='supplier-address-line'
 								rows={2}
@@ -301,7 +313,9 @@ export function SupplierFormDialog({
 							/>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='supplier-address-postal'>{t('procurement:supplier.postalCode')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-address-postal' optional>
+								{t('procurement:supplier.postalCode')}
+							</FieldLabel>
 							<Input
 								id='supplier-address-postal'
 								inputMode='numeric'

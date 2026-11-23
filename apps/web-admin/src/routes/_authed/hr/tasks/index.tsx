@@ -8,7 +8,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -235,11 +236,11 @@ function TasksPage() {
 								<Input id='task-title' required maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='task-detail'>{t('hr:tasks.detail')}</FieldLabel>
+								<FieldLabel htmlFor='task-detail' optional>{t('hr:tasks.detail')}</FieldLabel>
 								<Textarea id='task-detail' rows={3} maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='task-due'>{t('hr:tasks.due')}</FieldLabel>
+								<FieldLabel htmlFor='task-due' optional>{t('hr:tasks.due')}</FieldLabel>
 								<DatePicker id='task-due' value={dueDate} onChange={setDueDate} />
 							</Field>
 						</FieldGroup>

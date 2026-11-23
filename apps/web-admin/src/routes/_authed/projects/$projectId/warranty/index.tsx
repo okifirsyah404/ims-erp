@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -113,7 +114,7 @@ function WarrantyForm({ projectId, initial }: { projectId: string; initial: TWar
 							<Input id='warranty-project' required maxLength={300} value={value.projectName} onChange={(event) => set({ projectName: event.target.value })} />
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='warranty-location'>{t('projects:warranty.projectLocation')}</FieldLabel>
+							<FieldLabel htmlFor='warranty-location' optional>{t('projects:warranty.projectLocation')}</FieldLabel>
 							<Input
 								id='warranty-location'
 								maxLength={200}

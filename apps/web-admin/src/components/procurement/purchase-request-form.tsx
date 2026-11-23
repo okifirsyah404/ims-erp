@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
@@ -143,7 +144,7 @@ export function PurchaseRequestForm({
 							<Input id='pr-subject' required maxLength={200} value={subject} onChange={(event) => setSubject(event.target.value)} />
 						</Field>
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='pr-justification'>{t('procurement:pr.justification')}</FieldLabel>
+							<FieldLabel htmlFor='pr-justification' optional>{t('procurement:pr.justification')}</FieldLabel>
 							<Textarea
 								id='pr-justification'
 								rows={3}
@@ -153,7 +154,7 @@ export function PurchaseRequestForm({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='pr-project'>{t('procurement:po.projectName')}</FieldLabel>
+							<FieldLabel htmlFor='pr-project' optional>{t('procurement:po.projectName')}</FieldLabel>
 							<Input id='pr-project' maxLength={200} value={projectName} onChange={(event) => setProjectName(event.target.value)} />
 						</Field>
 						<Field>
@@ -161,7 +162,7 @@ export function PurchaseRequestForm({
 							<DatePicker id='pr-date' required value={requestDate} onChange={setRequestDate} />
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='pr-needed-by'>{t('procurement:pr.neededBy')}</FieldLabel>
+							<FieldLabel htmlFor='pr-needed-by' optional>{t('procurement:pr.neededBy')}</FieldLabel>
 							<DatePicker id='pr-needed-by' min={requestDate} value={neededBy} onChange={setNeededBy} />
 						</Field>
 					</FieldGroup>
@@ -214,7 +215,7 @@ export function PurchaseRequestForm({
 								</>
 							)}
 							<Field className='sm:col-span-6'>
-								<FieldLabel htmlFor={`pr-spec-${line.key}`}>{t('procurement:po.specification')}</FieldLabel>
+								<FieldLabel htmlFor={`pr-spec-${line.key}`} optional>{t('procurement:po.specification')}</FieldLabel>
 								<Textarea
 									id={`pr-spec-${line.key}`}
 									rows={2}
@@ -240,7 +241,7 @@ export function PurchaseRequestForm({
 								/>
 							</Field>
 							<Field className='sm:col-span-2'>
-								<FieldLabel htmlFor={`pr-price-${line.key}`}>{t('procurement:pr.estimatedUnitPrice')}</FieldLabel>
+								<FieldLabel htmlFor={`pr-price-${line.key}`} optional>{t('procurement:pr.estimatedUnitPrice')}</FieldLabel>
 								<MoneyInput
 									id={`pr-price-${line.key}`}
 									value={line.price}
@@ -252,7 +253,7 @@ export function PurchaseRequestForm({
 								<span className='font-medium'>{formatIdr(lineTotals[index] ?? 0)}</span>
 							</div>
 							<Field className='sm:col-span-6'>
-								<FieldLabel htmlFor={`pr-notes-${line.key}`}>{t('procurement:po.notes')}</FieldLabel>
+								<FieldLabel htmlFor={`pr-notes-${line.key}`} optional>{t('procurement:po.notes')}</FieldLabel>
 								<Input
 									id={`pr-notes-${line.key}`}
 									maxLength={1000}

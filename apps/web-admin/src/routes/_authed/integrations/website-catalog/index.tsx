@@ -9,7 +9,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
 import { ScrollDialogContent } from '@/components/scroll-dialog-content';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	InputGroup,
@@ -319,7 +320,7 @@ function ListingDialog({
 							<FieldDescription>{t('integrations:catalog.slugHint')}</FieldDescription>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='listing-specs'>{t('integrations:catalog.specs')}</FieldLabel>
+							<FieldLabel htmlFor='listing-specs' optional>{t('integrations:catalog.specs')}</FieldLabel>
 							<Input id='listing-specs' maxLength={400} value={specs} onChange={(event) => setSpecs(event.target.value)} />
 							<FieldDescription>{t('integrations:catalog.specsHint')}</FieldDescription>
 						</Field>
@@ -340,7 +341,7 @@ function ListingDialog({
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='listing-caption'>{t('integrations:catalog.priceCaption')}</FieldLabel>
+								<FieldLabel htmlFor='listing-caption' optional>{t('integrations:catalog.priceCaption')}</FieldLabel>
 								<Input id='listing-caption' maxLength={120} value={priceCaption} onChange={(event) => setPriceCaption(event.target.value)} />
 							</Field>
 							<Field>
@@ -359,17 +360,17 @@ function ListingDialog({
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='listing-lead'>{t('integrations:catalog.leadTime')}</FieldLabel>
+								<FieldLabel htmlFor='listing-lead' optional>{t('integrations:catalog.leadTime')}</FieldLabel>
 								<Input id='listing-lead' maxLength={60} value={leadTimeLabel} onChange={(event) => setLeadTimeLabel(event.target.value)} />
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='listing-apps'>{t('integrations:catalog.applications')}</FieldLabel>
+							<FieldLabel htmlFor='listing-apps' optional>{t('integrations:catalog.applications')}</FieldLabel>
 							<Input id='listing-apps' value={applications} onChange={(event) => setApplications(event.target.value)} />
 							<FieldDescription>{t('integrations:catalog.applicationsHint')}</FieldDescription>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='listing-popularity'>{t('integrations:catalog.popularity')}</FieldLabel>
+							<FieldLabel htmlFor='listing-popularity' optional>{t('integrations:catalog.popularity')}</FieldLabel>
 							<Input
 								id='listing-popularity'
 								type='number'

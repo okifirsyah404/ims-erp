@@ -27,7 +27,8 @@ import {
 	ComboboxItem,
 	ComboboxList,
 } from '@ims-erp/ui/components/combobox';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -289,7 +290,7 @@ export function AdjustmentForm({
 							</Select>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='adjustment-reason'>
+							<FieldLabel htmlFor='adjustment-reason' optional>
 								{t('inventory:adjustmentForm.reasonCode')}
 							</FieldLabel>
 							<Input
@@ -304,7 +305,7 @@ export function AdjustmentForm({
 							</datalist>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='adjustment-notes'>
+							<FieldLabel htmlFor='adjustment-notes' optional>
 								{t('inventory:adjustmentForm.notes')}
 							</FieldLabel>
 							<Input
@@ -372,7 +373,7 @@ export function AdjustmentForm({
 								</Combobox>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor={`line-bin-${line.key}`}>
+								<FieldLabel htmlFor={`line-bin-${line.key}`} optional>
 									{t('inventory:adjustmentForm.bin')}
 								</FieldLabel>
 								<Input
@@ -418,7 +419,7 @@ export function AdjustmentForm({
 							</Field>
 							{canSeeCost && (
 								<Field>
-									<FieldLabel htmlFor={`line-cost-${line.key}`}>
+									<FieldLabel htmlFor={`line-cost-${line.key}`} optional>
 										{t('inventory:adjustmentForm.unitCost')}
 									</FieldLabel>
 									<MoneyInput
@@ -448,7 +449,7 @@ export function AdjustmentForm({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor={`line-note-${line.key}`}>
+								<FieldLabel htmlFor={`line-note-${line.key}`} optional>
 									{t('inventory:adjustmentForm.lineNote')}
 								</FieldLabel>
 								<Input

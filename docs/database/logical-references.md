@@ -64,10 +64,10 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 190 |
+| Logical reference columns | 188 |
 | Distinct targets | 25 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 152 |
+| Intra-module `Ref:` declarations | 153 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -78,7 +78,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | Target | Owner | Referring columns |
 |---|---|---|
 | `auth.organizations.id` | Identity | 53 |
-| `auth.users.id` | Identity | 34 |
+| `auth.users.id` | Identity | 32 |
 | `product.products.id` | Product | 15 |
 | `customer.customers.id` | Customer | 12 |
 | `human_resource.employees.id` | Human Resource | 8 |
@@ -161,16 +161,14 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `ticket.ticket_templates`  ->  `organization_id`
 - `warehouse.warehouse_organizations`  ->  `organization_id`
 
-### `auth.users.id` - owner Identity, 34 referring columns
+### `auth.users.id` - owner Identity, 32 referring columns
 
 - `audit.audit_logs`  ->  `actor_user_id`
 - `company.profiles`  ->  `updated_by`
 - `company.settings`  ->  `updated_by`
 - `customer.code_numberings`  ->  `updated_by`
 - `customer.companies`  ->  `created_by`
-- `customer.companies`  ->  `owner_user_id`
 - `customer.customers`  ->  `created_by`
-- `customer.customers`  ->  `owner_user_id`
 - `customer.customers`  ->  `portal_invited_by`
 - `customer.settings`  ->  `updated_by`
 - `inventory.borrowing_requests`  ->  `borrower_user_id`

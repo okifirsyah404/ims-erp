@@ -29,6 +29,7 @@ import {
 	WORK_TYPES,
 } from '@/lib/hr-api';
 import { useActiveOrganizationId } from '@/lib/use-active-organization';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 /**
  * Invite-first employee creation form (ERP-0034).
@@ -118,11 +119,7 @@ export function EmployeeForm() {
 					<div className='grid gap-4 sm:grid-cols-2'>
 						<div className='space-y-2'>
 							<Label htmlFor='phone'>{t('form.phone')}</Label>
-							<Input
-								id='phone'
-								value={phone}
-								onChange={(event) => setPhone(event.target.value)}
-							/>
+							<CountryPhoneField id='phone' required={false} onChange={setPhone} />
 						</div>
 						<div className='space-y-2'>
 							<Label htmlFor='nationalId'>{t('form.nationalId')}</Label>

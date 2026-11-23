@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { toast } from '@/components/toast';
@@ -91,7 +92,7 @@ export function BillFromOrderForm({ onDone }: { onDone: () => void }) {
 					<DatePicker id='bill-date' required value={billDate} onChange={setBillDate} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor='bill-due'>{t('finance:bills.dueDate')}</FieldLabel>
+					<FieldLabel htmlFor='bill-due' optional>{t('finance:bills.dueDate')}</FieldLabel>
 					<DatePicker id='bill-due' min={billDate} value={dueDate} onChange={setDueDate} />
 				</Field>
 			</FieldGroup>

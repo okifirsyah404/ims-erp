@@ -8,7 +8,8 @@ import { z } from 'zod';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -181,7 +182,7 @@ function NewGoodsReceiptPage() {
 								<DatePicker id='gr-date' required value={receiptDate} onChange={setReceiptDate} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='gr-ref'>{t('procurement:receipt.supplierDeliveryRef')}</FieldLabel>
+								<FieldLabel htmlFor='gr-ref' optional>{t('procurement:receipt.supplierDeliveryRef')}</FieldLabel>
 								<Input id='gr-ref' maxLength={100} value={supplierDeliveryRef} onChange={(event) => setSupplierDeliveryRef(event.target.value)} />
 							</Field>
 						</FieldGroup>
@@ -219,7 +220,7 @@ function NewGoodsReceiptPage() {
 									</Field>
 									{item.isSerialized && (
 										<Field className='sm:col-span-2'>
-											<FieldLabel htmlFor={`gr-serials-${item.id}`}>{t('procurement:receipt.serialNumbers')}</FieldLabel>
+											<FieldLabel htmlFor={`gr-serials-${item.id}`} optional>{t('procurement:receipt.serialNumbers')}</FieldLabel>
 											<Textarea
 												id={`gr-serials-${item.id}`}
 												rows={2}
@@ -232,7 +233,7 @@ function NewGoodsReceiptPage() {
 								</div>
 							))}
 							<Field>
-								<FieldLabel htmlFor='gr-notes'>{t('procurement:receipt.notes')}</FieldLabel>
+								<FieldLabel htmlFor='gr-notes' optional>{t('procurement:receipt.notes')}</FieldLabel>
 								<Textarea id='gr-notes' rows={2} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 							</Field>
 						</CardContent>

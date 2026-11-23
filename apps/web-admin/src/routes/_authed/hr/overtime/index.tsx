@@ -8,7 +8,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
@@ -235,7 +236,7 @@ function OvertimePage() {
 								</Field>
 							</div>
 							<Field>
-								<FieldLabel htmlFor='overtime-reason'>{t('hr:field.reason')}</FieldLabel>
+								<FieldLabel htmlFor='overtime-reason' optional>{t('hr:field.reason')}</FieldLabel>
 								<Textarea id='overtime-reason' rows={2} maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} />
 							</Field>
 						</FieldGroup>

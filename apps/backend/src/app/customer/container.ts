@@ -6,6 +6,7 @@ import { QueuePortalMailer } from './adapters/queue-portal-mailer';
 import {
 	COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	COMPANY_REPOSITORY_TOKEN,
+	CUSTOMER_ACCOUNT_SERVICE_TOKEN,
 	CUSTOMER_ADDRESS_REPOSITORY_TOKEN,
 	CUSTOMER_CODE_NUMBERING_REPOSITORY_TOKEN,
 	CUSTOMER_NUMBERING_SERVICE_TOKEN,
@@ -27,6 +28,7 @@ import { CustomerCodeNumberingRepository } from './repositories/code-numbering.r
 import { CustomerNumberingService } from './services/customer-numbering.service';
 import { CustomerPersonRepository } from './repositories/customer.repository';
 import { CustomerService } from './services/customer.service';
+import { CustomerAccountService } from './services/customer-account.service';
 import { ExportedCustomerService } from './services/exported-customer.service';
 import { PortalAccountService } from './services/portal-account.service';
 import { PortalAuthService } from './services/portal-auth.service';
@@ -57,6 +59,9 @@ export function registerCustomer(container: DependencyContainer): void {
 	});
 	container.register(CUSTOMER_ADDRESS_REPOSITORY_TOKEN, {
 		useClass: CustomerAddressRepository,
+	});
+	container.register(CUSTOMER_ACCOUNT_SERVICE_TOKEN, {
+		useClass: CustomerAccountService,
 	});
 	container.register(CUSTOMER_SERVICE_TOKEN, {
 		useClass: CustomerService,

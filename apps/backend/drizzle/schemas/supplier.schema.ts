@@ -52,7 +52,7 @@ const timestamps = {
  * @remarks
  * Was `procurement.suppliers` for company/government rows. `code` is the
  * `{SUPPLIER}` token of PO numbers. The bank columns are restricted and never
- * returned without `supplier:read_bank`. ERP-0114 dropped `whatsapp`,
+ * returned without `supplier:read_bank`. ERP-0116 dropped `whatsapp`,
  * `payment_terms_days` and `payment_term_note` (payment terms belong to the
  * purchase order).
  */

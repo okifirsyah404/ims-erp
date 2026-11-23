@@ -1,3 +1,4 @@
+import { parsePhoneNumberFromString } from 'libphonenumber-js/min';
 import { z } from 'zod';
 
 /* ------------------------------------------------------------------------ *
@@ -20,18 +21,38 @@ const optionalText = (max: number) =>
 		.nullish()
 		.transform((value) => (value ? value : null));
 
+/**
+ * Phone number, normalised to E.164 (`+6281234567890`) with
+ * `libphonenumber-js/min` (default region ID, so `0812…` parses). A value the
+ * library cannot parse is kept as typed when it only holds phone characters,
+ * so rows written before ERP-0114 still save unchanged.
+ */
 const phoneSchema = z
 	.string()
 	.trim()
 	.max(30)
 	.regex(/^[0-9+()\-\s]*$/)
 	.nullish()
-	.transform((value) => (value ? value : null));
+	.transform((value) => {
+		if (!value) return null;
+		const parsed = parsePhoneNumberFromString(value, 'ID');
+		return parsed?.isValid() ? parsed.number : value;
+	});
 
 const emailSchema = z
 	.union([z.literal(''), z.email().max(254)])
 	.nullish()
 	.transform((value) => (value ? value.toLowerCase() : null));
+
+/** Required email of a person: it is the email of their Better Auth account. */
+const accountEmailSchema = z
+	.email()
+	.max(254)
+	.transform((value) => value.trim().toLowerCase());
+
+/** Server-side sort of the list endpoints (whitelisted columns). */
+const sortSchema = z.enum(['code', 'name', 'status', 'createdAt']).default('name');
+const orderSchema = z.enum(['asc', 'desc']).default('asc');
 
 /** NPWP: formatting characters are stripped; 15 (legacy) or 16 digits. */
 const taxIdSchema = z
@@ -74,7 +95,6 @@ export const createCompanySchema = z
 		taxId: taxIdSchema,
 		email: emailSchema,
 		phone: phoneSchema,
-		whatsapp: phoneSchema,
 		website: optionalText(200),
 		status: z.enum(['active', 'inactive']).default('active'),
 		notes: optionalText(2000),
@@ -85,9 +105,14 @@ export const createCompanySchema = z
 export type TCreateCompanyInput = z.output<typeof createCompanySchema>;
 
 // Update keeps the code strict: an existing code is changed, never regenerated.
+// The owner (one contact of this company, ERP-0114) is set on update only:
+// a new company has no contacts yet.
 export const updateCompanySchema = createCompanySchema
 	.partial()
-	.extend({ code: codeSchema.optional() })
+	.extend({
+		code: codeSchema.optional(),
+		ownerCustomerId: z.uuid().nullish(),
+	})
 	.strict();
 
 /** Parsed update input for a customer company. */
@@ -99,6 +124,8 @@ export const companyListQuerySchema = z.object({
 	search: z.string().trim().max(100).optional(),
 	status: z.enum(['active', 'inactive']).optional(),
 	companyType: z.enum(['company', 'government', 'partner']).optional(),
+	sort: sortSchema,
+	order: orderSchema,
 });
 
 /** Parsed list query for customer companies. */
@@ -108,27 +135,58 @@ export type TCompanyListQuery = z.output<typeof companyListQuerySchema>;
  * People (customers)
  * ------------------------------------------------------------------------ */
 
+/**
+ * A company created together with its first contact (ERP-0114): the person
+ * being created becomes its owner.
+ */
+const inlineCompanySchema = z
+	.object({
+		code: createCodeSchema,
+		name: z.string().trim().min(1).max(200),
+		companyType: z.enum(['company', 'government', 'partner']).default('company'),
+	})
+	.strict();
+
+/**
+ * Create input of a person. Every person gets a Better Auth account
+ * (ERP-0114), so `email` is required and lives on that account. A person
+ * with `companyId` (or `newCompany`) is a contact, otherwise an individual.
+ */
 export const createCustomerSchema = z
 	.object({
 		code: createCodeSchema,
 		companyId: z.uuid().nullish().transform((value) => value ?? null),
-		customerType: z.enum(['individual', 'contact']).default('individual'),
+		newCompany: inlineCompanySchema.nullish().transform((value) => value ?? null),
+		/** Make this contact the owner of its company (moves ownership). */
+		isOwner: z.boolean().default(false),
 		name: z.string().trim().min(1).max(200),
 		position: optionalText(100),
-		email: emailSchema,
+		email: accountEmailSchema,
 		phone: phoneSchema,
-		whatsapp: phoneSchema,
-		isPrimary: z.boolean().default(false),
 		notes: optionalText(2000),
 	})
-	.strict();
+	.strict()
+	.refine((value) => !(value.companyId && value.newCompany), {
+		path: ['newCompany'],
+		message: 'companyId and newCompany are mutually exclusive',
+	});
 
 /** Parsed create input for a customer person. */
 export type TCreateCustomerInput = z.output<typeof createCustomerSchema>;
 
-export const updateCustomerSchema = createCustomerSchema
-	.partial()
-	.extend({ code: codeSchema.optional() })
+export const updateCustomerSchema = z
+	.object({
+		code: codeSchema.optional(),
+		companyId: z.uuid().nullish(),
+		isOwner: z.boolean().optional(),
+		name: z.string().trim().min(1).max(200).optional(),
+		position: optionalText(100).optional(),
+		/** Refused once the account email is verified (ERP-0114). */
+		email: accountEmailSchema.optional(),
+		phone: phoneSchema.optional(),
+		status: z.enum(['active', 'inactive']).optional(),
+		notes: optionalText(2000).optional(),
+	})
 	.strict();
 
 /** Parsed update input for a customer person. */
@@ -141,6 +199,8 @@ export const customerListQuerySchema = z.object({
 	status: z.enum(['active', 'inactive']).optional(),
 	customerType: z.enum(['individual', 'contact']).optional(),
 	companyId: z.uuid().optional(),
+	sort: sortSchema,
+	order: orderSchema,
 });
 
 /** Parsed list query for customer people. */

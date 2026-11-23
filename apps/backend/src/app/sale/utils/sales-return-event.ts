@@ -34,7 +34,7 @@ export function salesReturnUpdatedEvent(
 			name: customer?.name ?? row.customerName,
 			email: customer?.email ?? null,
 			phone: customer?.phone ?? null,
-			whatsapp: customer?.whatsapp ?? null,
+			whatsapp: customer?.phone ?? null,
 		},
 		lines: items.map((item) => ({
 			sku: item.sku,

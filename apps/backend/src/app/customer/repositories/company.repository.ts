@@ -6,7 +6,7 @@ import {
 } from '@drizzle/schemas/customer.schema';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, eq, ilike, isNull, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
@@ -59,7 +59,18 @@ export class CompanyRepository implements ICompanyRepository {
 		);
 	}
 
-	/** Fetches one filtered page of customer companies, ordered by name. */
+	private ordering(query: TCompanyPaginationRequest) {
+		const column = {
+			code: customerCompanies.code,
+			name: customerCompanies.name,
+			status: customerCompanies.status,
+			createdAt: customerCompanies.createdAt,
+		}[query.sort ?? 'name'];
+		const direction = query.order === 'desc' ? desc : asc;
+		return [direction(column), direction(customerCompanies.id)];
+	}
+
+	/** Fetches one filtered page of customer companies in the requested order. */
 	async paginate(
 		request: TCompanyPaginationRequest,
 	): Promise<TPaginationResult<TCustomerCompanySelect>> {
@@ -68,7 +79,7 @@ export class CompanyRepository implements ICompanyRepository {
 			.select()
 			.from(customerCompanies)
 			.where(where)
-			.orderBy(asc(customerCompanies.name), asc(customerCompanies.id))
+			.orderBy(...this.ordering(request))
 			.limit(request.limit)
 			.offset((request.page - 1) * request.limit);
 		const [{ value: total }] = await this.database
@@ -132,6 +143,15 @@ export class CompanyRepository implements ICompanyRepository {
 			.returning();
 		if (row) await this.invalidate(row);
 		return row ?? null;
+	}
+
+	async softDelete(id: string): Promise<void> {
+		const [row] = await this.database
+			.update(customerCompanies)
+			.set({ deletedAt: new Date(), updatedAt: new Date() })
+			.where(this.live(id))
+			.returning();
+		if (row) await this.invalidate(row);
 	}
 
 	async transitionStatus(

@@ -7,7 +7,14 @@ import { appConfig } from '@config/providers/config';
 import { CACHE_CLIENT_TOKEN } from '@di/tokens';
 import type { PortalRole, TCustomerSelect } from '@drizzle/schemas/customer.schema';
 import { inject, injectable } from 'tsyringe';
-import { COMPANY_REPOSITORY_TOKEN, CUSTOMER_PERSON_REPOSITORY_TOKEN, PORTAL_MAILER_TOKEN } from '../constants/di';
+import {
+	COMPANY_REPOSITORY_TOKEN,
+	CUSTOMER_PERSON_REPOSITORY_TOKEN,
+	CUSTOMER_SERVICE_TOKEN,
+	PORTAL_MAILER_TOKEN,
+} from '../constants/di';
+import type { CustomerService } from './customer.service';
+import { effectiveRole } from '../utils/ownership';
 import type {
 	IPortalMailer,
 	TInviteCustomerPortalRequest,
@@ -59,6 +66,11 @@ const isUniqueViolation = (error: unknown) => (error as { code?: string } | null
  *   `owner | approver | finance | viewer`; an owner invites and removes
  *   colleagues of the same company from the portal.
  *
+ * ERP-0114: one Better Auth account is exactly one person, created with the
+ * person (username + default password, emailed); revoking keeps the account
+ * on the row. A company has one owner (`companies.owner_customer_id`) and N
+ * staff; the role a login really has is derived from that column.
+ *
  * The login state lives on the person (`user_id`, `portal_role`,
  * `portal_status`); users and credentials are created through
  * `ExportedUserService`. A portal user is never an organization member, so it
@@ -85,6 +97,8 @@ export class PortalAccountService {
 			| 'grantCustomerRole'
 		>,
 		@inject(PORTAL_MAILER_TOKEN) private readonly mailer: IPortalMailer,
+		@inject(CUSTOMER_SERVICE_TOKEN)
+		private readonly customers: Pick<CustomerService, 'createCustomer' | 'transferOwnership'>,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
 	) {}
 
@@ -113,7 +127,7 @@ export class PortalAccountService {
 			person = await this.people.findById(body.customerId);
 			if (!person || person.status !== 'active') throw new PortalCustomerUnavailableError();
 			if (body.companyId && person.companyId !== body.companyId) throw new PortalContactUnavailableError();
-			if (person.userId) throw new PortalAccountExistsError();
+			if (person.userId && person.portalStatus === 'active') throw new PortalAccountExistsError();
 		} else {
 			await this.assertActiveCompany(body.companyId);
 		}
@@ -136,7 +150,7 @@ export class PortalAccountService {
 		return this.view(person);
 	}
 
-	/** Revokes the login: status revoked, `user_id` freed, sessions ended. The Better Auth user stays (history). */
+	/** Revokes the login: status revoked, sessions ended. The account stays on the person (ERP-0114). */
 	async revoke(id: string): Promise<void> {
 		const person = await this.people.revokePortalAccess(id);
 		if (!person?.userId) throw new PortalAccountNotFoundError();
@@ -226,7 +240,6 @@ export class PortalAccountService {
 		const person = await this.people.create({
 			code: portalPersonCode(),
 			name: pending.name,
-			email,
 			phone: pending.phone,
 			customerType: 'individual',
 			status: 'active',
@@ -256,13 +269,8 @@ export class PortalAccountService {
 	 * @throws {PortalLastOwnerError}
 	 */
 	async closeOwnLogin(caller: TPortalCustomerIdentity): Promise<void> {
-		if (caller.role === 'owner' && caller.companyId) {
-			const logins = await this.people.listPortalAccounts({ customerId: caller.customerId, companyId: caller.companyId });
-			const otherOwners = logins.filter(
-				(person) => person.id !== caller.customerId && person.portalRole === 'owner' && person.portalStatus === 'active',
-			);
-			if (otherOwners.length === 0) throw new PortalLastOwnerError();
-		}
+		// One owner per company (ERP-0114): staff must move ownership first.
+		if (caller.role === 'owner' && caller.companyId) throw new PortalLastOwnerError();
 		await this.revoke(caller.customerId);
 	}
 
@@ -276,17 +284,32 @@ export class PortalAccountService {
 		if (!person || person.portalStatus !== 'active' || !person.portalRole) return null;
 		const user = await this.users.findById(userId);
 		if (!user) return null;
+		const company = person.companyId ? await this.companies.findById(person.companyId) : null;
 		return {
 			userId,
 			customerId: person.id,
 			companyId: person.companyId,
-			role: person.portalRole as PortalRole,
+			role: effectiveRole(person, company),
 			user: { id: user.id, name: user.name, email: user.email },
 		};
 	}
 
+	/**
+	 * Stamps the sign-in. The first sign-in also verifies the email: the
+	 * customer received the credentials there (ERP-0114), and a verified email
+	 * can no longer be changed by staff.
+	 */
 	async recordLogin(customerId: string): Promise<void> {
 		await this.people.touchPortalLogin(customerId);
+		const person = await this.people.findById(customerId);
+		if (!person?.userId) return;
+		const user = await this.users.findById(person.userId);
+		if (user && !user.emailVerified) await this.users.markEmailVerified(user.id);
+	}
+
+	/** A password change ends the default-password state (ERP-0114). */
+	async passwordChanged(customerId: string): Promise<void> {
+		await this.people.clearPasswordChangeRequired(customerId);
 	}
 
 	/**
@@ -311,46 +334,64 @@ export class PortalAccountService {
 	}
 
 	/**
-	 * Gives a person a login: reuses `person` or creates a contact under
-	 * `companyId`, finds or creates the user, then emails the password link.
+	 * Gives a person a login. An existing person keeps their own account
+	 * (one account, one customer): it is reactivated and a password link is
+	 * emailed. Without a person, a new contact is created through the same
+	 * path as a staff create: a new account with a username and the default
+	 * password, emailed as credentials (ERP-0114). Role `owner` moves the
+	 * company's ownership to the person.
 	 */
 	private async grantLogin(
 		input: { person: TCustomerSelect | null; companyId: string | null; name: string; email: string; role: PortalRole },
 		actorUserId: string,
 		link: string,
 	): Promise<TPortalAccountView> {
-		// An existing user may be reused only when it is nobody else's: never a
-		// staff account and never a live portal login.
-		let user = await this.users.findByEmail(input.email);
-		if (user) {
-			if (await this.users.isStaff(user.id)) throw new PortalEmailTakenError();
-			if (await this.people.findByUserId(user.id)) throw new PortalEmailTakenError();
-		}
-
-		user ??= await this.users.createPortalLogin({ name: input.name, email: input.email, emailVerified: true });
+		const owner = input.role === 'owner';
 		try {
-			// A new contact is inserted with its login in one statement, so a
-			// failed grant never leaves a login-less orphan behind.
-			const granted = input.person
-				? await this.people.grantPortalAccess(input.person.id, {
-						userId: user.id,
-						portalRole: input.role,
-						portalInvitedBy: actorUserId,
-					})
-				: await this.people.create({
-						code: portalPersonCode(),
+			if (!input.person) {
+				const existing = await this.users.findByEmail(input.email);
+				if (existing) throw new PortalEmailTakenError();
+				const created = await this.customers.createCustomer(
+					{
+						code: undefined,
 						companyId: input.companyId,
+						newCompany: null,
+						isOwner: owner,
 						name: input.name,
+						position: null,
 						email: input.email,
-						customerType: 'contact',
-						status: 'active',
-						userId: user.id,
-						portalRole: input.role,
-						portalStatus: 'active',
-						portalInvitedBy: actorUserId,
-						createdBy: actorUserId,
-					});
+						phone: null,
+						notes: null,
+					},
+					actorUserId,
+				);
+				const granted = owner
+					? created
+					: await this.people.grantPortalAccess(created.id, {
+							userId: created.userId!,
+							portalRole: input.role,
+							portalInvitedBy: actorUserId,
+						});
+				if (!granted) throw new PortalAccountNotFoundError();
+				return this.view(granted);
+			}
+
+			const person = input.person;
+			let user = person.userId ? await this.users.findById(person.userId) : null;
+			if (!user) {
+				// A person written before ERP-0114 without an account.
+				const taken = await this.users.findByEmail(input.email);
+				if (taken) throw new PortalEmailTakenError();
+				user = await this.users.createPortalLogin({ name: input.name, email: input.email, emailVerified: true });
+			}
+			if (await this.users.isStaff(user.id)) throw new PortalEmailTakenError();
+			const granted = await this.people.grantPortalAccess(person.id, {
+				userId: user.id,
+				portalRole: owner || !person.companyId ? 'owner' : input.role,
+				portalInvitedBy: actorUserId,
+			});
 			if (!granted) throw new PortalAccountNotFoundError();
+			if (owner && person.companyId) await this.customers.transferOwnership(person.companyId, person.id);
 			await this.users.grantCustomerRole(user.id);
 			await this.sendInvitation(user, link);
 			return this.view(granted);
@@ -387,7 +428,7 @@ export class PortalAccountService {
 			id: person.id,
 			customerId: person.id,
 			companyId: person.companyId,
-			role: (person.portalRole ?? 'viewer') as PortalRole,
+			role: effectiveRole(person, person.companyId ? await this.companies.findById(person.companyId) : null),
 			status: (person.portalStatus ?? 'revoked') as TPortalAccountView['status'],
 			user: user
 				? { id: user.id, name: user.name, email: user.email }

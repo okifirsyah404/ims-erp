@@ -7,7 +7,7 @@ import {
 } from '@drizzle/schemas/customer.schema';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, eq, ilike, isNotNull, isNull, ne, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, isNull, ne, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
@@ -22,8 +22,8 @@ import type {
  *
  * @remarks
  * Reads are never cached: people are listed through their company and the
- * set is small. "Primary" is kept single per company by clearing the previous
- * primary before the write.
+ * set is small. Company ownership lives on `companies.owner_customer_id`
+ * (ERP-0114), not on this table.
  */
 @injectable()
 export class CustomerPersonRepository implements ICustomerPersonRepository {
@@ -43,12 +43,25 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 				? or(
 						ilike(customers.name, likePattern(query.search)),
 						ilike(customers.code, likePattern(query.search)),
+						ilike(customers.phone, likePattern(query.search)),
+						query.searchUserIds?.length ? inArray(customers.userId, query.searchUserIds) : undefined,
 					)
 				: undefined,
 		);
 	}
 
-	/** Fetches one filtered page of customer people, ordered by name. */
+	private ordering(query: TCustomerPaginationRequest) {
+		const column = {
+			code: customers.code,
+			name: customers.name,
+			status: customers.status,
+			createdAt: customers.createdAt,
+		}[query.sort ?? 'name'];
+		const direction = query.order === 'desc' ? desc : asc;
+		return [direction(column), direction(customers.id)];
+	}
+
+	/** Fetches one filtered page of customer people in the requested order. */
 	async paginate(
 		request: TCustomerPaginationRequest,
 	): Promise<TPaginationResult<TCustomerSelect>> {
@@ -57,7 +70,7 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 			.select()
 			.from(customers)
 			.where(where)
-			.orderBy(asc(customers.name), asc(customers.id))
+			.orderBy(...this.ordering(request))
 			.limit(request.limit)
 			.offset((request.page - 1) * request.limit);
 		const [{ value: total }] = await this.database
@@ -92,9 +105,6 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 
 	async create(data: TNewCustomer): Promise<TCustomerSelect> {
 		const now = new Date();
-		if (data.isPrimary && data.companyId) {
-			await this.clearPrimary(data.companyId);
-		}
 		const [row] = await this.database
 			.insert(customers)
 			.values({ ...data, createdAt: now, updatedAt: now })
@@ -103,14 +113,6 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 	}
 
 	async update(id: string, patch: Partial<TCustomerInsert>): Promise<TCustomerSelect | null> {
-		if (patch.isPrimary) {
-			const [current] = await this.database
-				.select({ companyId: customers.companyId })
-				.from(customers)
-				.where(this.live(id))
-				.limit(1);
-			if (current?.companyId) await this.clearPrimary(current.companyId);
-		}
 		const [row] = await this.database
 			.update(customers)
 			.set({ ...patch, updatedAt: new Date() })
@@ -167,7 +169,7 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 		if (!before) return null;
 		const updated = await this.database
 			.update(customers)
-			.set({ portalStatus: 'revoked', userId: null, updatedAt: new Date() })
+			.set({ portalStatus: 'revoked', updatedAt: new Date() })
 			.where(active)
 			.returning({ id: customers.id });
 		return updated.length > 0 ? before : null;
@@ -180,17 +182,11 @@ export class CustomerPersonRepository implements ICustomerPersonRepository {
 			.where(eq(customers.id, id));
 	}
 
-	async clearPrimary(companyId: string): Promise<void> {
+	async clearPasswordChangeRequired(id: string): Promise<void> {
 		await this.database
 			.update(customers)
-			.set({ isPrimary: false, updatedAt: new Date() })
-			.where(
-				and(
-					eq(customers.companyId, companyId),
-					eq(customers.isPrimary, true),
-					isNull(customers.deletedAt),
-				),
-			);
+			.set({ portalPasswordChangeRequired: false, updatedAt: new Date() })
+			.where(and(eq(customers.id, id), eq(customers.portalPasswordChangeRequired, true)));
 	}
 
 	async transitionStatus(

@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -124,7 +125,7 @@ export function ContractForm({
 							</Select>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='contract-package'>{t('licensing:field.package')}</FieldLabel>
+							<FieldLabel htmlFor='contract-package' optional>{t('licensing:field.package')}</FieldLabel>
 							<Input id='contract-package' maxLength={200} value={packageName} onChange={(event) => setPackageName(event.target.value)} />
 						</Field>
 						<Field>
@@ -175,7 +176,7 @@ export function ContractForm({
 							</Select>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='contract-value'>{t('licensing:field.valueRp')}</FieldLabel>
+							<FieldLabel htmlFor='contract-value' optional>{t('licensing:field.valueRp')}</FieldLabel>
 							<MoneyInput
 								id='contract-value'
 								value={value}
@@ -183,7 +184,7 @@ export function ContractForm({
 							/>
 						</Field>
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='contract-notes'>{t('licensing:field.notes')}</FieldLabel>
+							<FieldLabel htmlFor='contract-notes' optional>{t('licensing:field.notes')}</FieldLabel>
 							<Textarea id='contract-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 						</Field>
 					</FieldGroup>

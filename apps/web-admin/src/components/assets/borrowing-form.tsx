@@ -13,11 +13,8 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { NativeSelect } from '@ims-erp/ui/components/native-select';
 import {
@@ -31,6 +28,7 @@ import {
 } from '@/lib/borrowing-api';
 import { assetsQueryOptions } from '@/lib/asset-api';
 import { toast } from '@/components/toast';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 /** One unit the user has added to the request. */
 type TUnitDraft = {
@@ -238,11 +236,7 @@ export function BorrowingForm() {
 									<FieldLabel htmlFor='guestPhone'>
 										{t('assets:borrowingForm.guestPhone')}
 									</FieldLabel>
-									<Input
-										id='guestPhone'
-										value={guestPhone}
-										onChange={(event) => setGuestPhone(event.target.value)}
-									/>
+									<CountryPhoneField id='guestPhone' onChange={setGuestPhone} />
 								</Field>
 								<Field>
 									<FieldLabel htmlFor='guestIdType'>
@@ -336,7 +330,7 @@ export function BorrowingForm() {
 						</Field>
 
 						<Field>
-							<FieldLabel htmlFor='notes'>
+							<FieldLabel htmlFor='notes' optional>
 								{t('assets:borrowingForm.notes')}
 							</FieldLabel>
 							<Input

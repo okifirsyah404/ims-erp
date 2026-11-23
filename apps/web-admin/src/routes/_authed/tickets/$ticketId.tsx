@@ -14,7 +14,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -245,7 +246,7 @@ function TicketDetailPage() {
 										<Textarea id='ticket-resolution' required maxLength={4000} value={resolution} onChange={(event) => setResolution(event.target.value)} />
 									</Field>
 									<Field>
-										<FieldLabel htmlFor='ticket-cost'>{t('projects:ticket.serviceCostRp')}</FieldLabel>
+										<FieldLabel htmlFor='ticket-cost' optional>{t('projects:ticket.serviceCostRp')}</FieldLabel>
 										<MoneyInput id='ticket-cost'
 value={cost}
 onValueChange={setCost}

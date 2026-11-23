@@ -19,11 +19,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -408,7 +405,7 @@ export function InviteDialog({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='invite-name'>{t('invite.name')}</FieldLabel>
+								<FieldLabel htmlFor='invite-name' optional>{t('invite.name')}</FieldLabel>
 								<Input
 									id='invite-name'
 									placeholder={t('invite.namePlaceholder')}

@@ -10,7 +10,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -23,6 +24,7 @@ import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { fromDateTimeInput, toDateTimeInput } from '@/lib/format';
 import { LEAD_SOURCES, type TLead, type TLeadInput, type TLeadSource } from '@/lib/lead-api';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 /** Create/edit dialog for a lead. Money is typed in rupiah, sent in minor units. */
 export function LeadFormDialog({
@@ -80,7 +82,7 @@ export function LeadFormDialog({
 								<Input id='lead-name' required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='lead-company'>{t('crm:lead.companyName')}</FieldLabel>
+								<FieldLabel htmlFor='lead-company' optional>{t('crm:lead.companyName')}</FieldLabel>
 								<Input
 									id='lead-company'
 									maxLength={200}
@@ -91,21 +93,20 @@ export function LeadFormDialog({
 						</div>
 						<div className='grid gap-4 sm:grid-cols-3'>
 							<Field>
-								<FieldLabel htmlFor='lead-phone'>{t('crm:lead.phone')}</FieldLabel>
-								<Input id='lead-phone' type='tel' maxLength={30} value={phone} onChange={(e) => setPhone(e.target.value)} />
+								<FieldLabel htmlFor='lead-phone' optional>{t('crm:lead.phone')}</FieldLabel>
+								<CountryPhoneField id='lead-phone' defaultValue={lead?.phone} required={false} onChange={setPhone} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='lead-whatsapp'>{t('crm:lead.whatsapp')}</FieldLabel>
-								<Input
+								<FieldLabel htmlFor='lead-whatsapp' optional>{t('crm:lead.whatsapp')}</FieldLabel>
+								<CountryPhoneField
 									id='lead-whatsapp'
-									type='tel'
-									maxLength={30}
-									value={whatsapp}
-									onChange={(e) => setWhatsapp(e.target.value)}
+									defaultValue={lead?.whatsapp}
+									required={false}
+									onChange={setWhatsapp}
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='lead-email'>{t('crm:lead.email')}</FieldLabel>
+								<FieldLabel htmlFor='lead-email' optional>{t('crm:lead.email')}</FieldLabel>
 								<Input id='lead-email' type='email' maxLength={254} value={email} onChange={(e) => setEmail(e.target.value)} />
 							</Field>
 						</div>
@@ -130,7 +131,7 @@ export function LeadFormDialog({
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='lead-value'>{t('crm:lead.estimatedValue')}</FieldLabel>
+								<FieldLabel htmlFor='lead-value' optional>{t('crm:lead.estimatedValue')}</FieldLabel>
 								<MoneyInput
 									id='lead-value'
 									value={estimatedValue}
@@ -138,7 +139,7 @@ export function LeadFormDialog({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='lead-follow-up'>{t('crm:lead.nextFollowUpAt')}</FieldLabel>
+								<FieldLabel htmlFor='lead-follow-up' optional>{t('crm:lead.nextFollowUpAt')}</FieldLabel>
 								<DateTimePicker
 									id='lead-follow-up'
 									value={nextFollowUpAt}
@@ -147,7 +148,7 @@ export function LeadFormDialog({
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='lead-needs'>{t('crm:lead.needs')}</FieldLabel>
+							<FieldLabel htmlFor='lead-needs' optional>{t('crm:lead.needs')}</FieldLabel>
 							<Textarea id='lead-needs' rows={3} maxLength={2000} value={needs} onChange={(e) => setNeeds(e.target.value)} />
 						</Field>
 					</FieldGroup>

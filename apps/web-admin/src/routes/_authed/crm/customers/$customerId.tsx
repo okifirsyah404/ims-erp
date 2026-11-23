@@ -18,7 +18,9 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { AddressFormDialog, type TAddressFormValues } from '@/components/crm/address-form-dialog';
 import { CompanyFormDialog } from '@/components/crm/company-form-dialog';
-import { CustomerFormDialog } from '@/components/crm/customer-form-dialog';
+import { CustomerCredentialsDialog } from '@/components/crm/customer-credentials-dialog';
+import { CustomerAvatar, CustomerFormDialog } from '@/components/crm/customer-form-dialog';
+import { useCustomerSave } from '@/components/crm/use-customer-save';
 import { PortalAccountCard } from '@/components/crm/portal-account-card';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageSkeleton, SectionSkeleton } from '@/components/page-skeleton';
@@ -29,7 +31,6 @@ import {
 	COMPANY_ADDRESS_KINDS,
 	companyQueryOptions,
 	CUSTOMER_ADDRESS_KINDS,
-	createCustomer,
 	customerQueryOptions,
 	customersQueryOptions,
 	removeCompanyAddress,
@@ -39,9 +40,7 @@ import {
 	type TCompanyAddress,
 	type TCompanyInput,
 	type TCustomerAddress,
-	type TCustomerInput,
 	updateCompany,
-	updateCustomer,
 } from '@/lib/customer-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -178,8 +177,8 @@ function PersonDetail() {
 	const canUpdate = usePermission('customer.update');
 	const canArchive = usePermission('customer.archive');
 	const { data: customer, isPending, isError, error } = useQuery(customerQueryOptions(customerId));
-	const company = useQuery({ ...companyQueryOptions(customer?.companyId ?? '', !!customer?.companyId) });
 	const [editing, setEditing] = useState(false);
+	const person = useCustomerSave();
 	const [adding, setAdding] = useState(false);
 	const [removing, setRemoving] = useState<TAddress | null>(null);
 	const { run, submitting } = useRunner();
@@ -196,12 +195,15 @@ function PersonDetail() {
 				{t('crm:customers.back')}
 			</Link>
 			<div className='flex flex-wrap items-start justify-between gap-2'>
-				<div>
-					<div className='flex items-center gap-2'>
-						<h1 className='text-2xl font-bold'>{customer.name}</h1>
-						<Badge variant={active ? 'secondary' : 'outline'}>{t(`crm:customerStatus.${customer.status}`)}</Badge>
+				<div className='flex items-center gap-3'>
+					<CustomerAvatar name={customer.name} image={customer.account?.image} className='size-12' />
+					<div>
+						<div className='flex items-center gap-2'>
+							<h1 className='text-2xl font-bold'>{customer.name}</h1>
+							<Badge variant={active ? 'secondary' : 'outline'}>{t(`crm:customerStatus.${customer.status}`)}</Badge>
+						</div>
+						<p className='font-mono text-xs text-muted-foreground'>{customer.code}</p>
 					</div>
-					<p className='font-mono text-xs text-muted-foreground'>{customer.code}</p>
 				</div>
 				<div className='flex gap-2'>
 					{canUpdate && (
@@ -235,24 +237,27 @@ function PersonDetail() {
 					<div>
 						<div className='text-muted-foreground'>{t('crm:customer.company')}</div>
 						<div>
-							{customer.companyId ? (
-								<Link
-									to='/crm/customers/$customerId'
-									params={{ customerId: customer.companyId }}
-									search={{ kind: 'company' }}
-									className='hover:underline'
-								>
-									{company.data?.name ?? '-'}
-								</Link>
+							{customer.company ? (
+								<span className='flex flex-wrap items-center gap-1.5'>
+									<Link
+										to='/crm/customers/$customerId'
+										params={{ customerId: customer.company.id }}
+										search={{ kind: 'company' }}
+										className='hover:underline'
+									>
+										{customer.company.name}
+									</Link>
+									{customer.isOwner && <Badge variant='outline'>{t('crm:customer.ownerBadge')}</Badge>}
+								</span>
 							) : (
 								'-'
 							)}
 						</div>
 					</div>
 					<Detail label={t('crm:customer.position')} value={customer.position} />
-					<Detail label={t('crm:customer.email')} value={customer.email} />
+					<Detail label={t('crm:customer.email')} value={customer.account?.email ?? null} />
 					<Detail label={t('crm:customer.phone')} value={customer.phone} />
-					<Detail label={t('crm:customer.whatsapp')} value={customer.whatsapp} />
+					<Detail label={t('crm:customer.username')} value={customer.account?.username ?? null} />
 					<div className='col-span-2 sm:col-span-4'>
 						<Detail label={t('crm:customer.notes')} value={customer.notes} />
 					</div>
@@ -268,16 +273,22 @@ function PersonDetail() {
 
 			{/* Contacts of a company get their login through the company's card. */}
 			{!customer.companyId && (
-				<PortalAccountCard scope={{ customerId: customer.id }} defaultName={customer.name} defaultEmail={customer.email} />
+				<PortalAccountCard
+					scope={{ customerId: customer.id }}
+					defaultName={customer.name}
+					defaultEmail={customer.account?.email ?? null}
+				/>
 			)}
 
 			{editing && (
 				<CustomerFormDialog
 					customer={customer}
-					submitting={submitting}
+					submitting={person.submitting}
 					onClose={() => setEditing(false)}
-					onSave={(input: TCustomerInput) =>
-						void run(() => updateCustomer(customer.id, input), t('crm:customers.saved'), () => setEditing(false))
+					onSave={(input, photo) =>
+						void person.save(customer, input, photo).then((saved) => {
+							if (saved) setEditing(false);
+						})
 					}
 				/>
 			)}
@@ -318,13 +329,14 @@ function CompanyDetail() {
 	const [adding, setAdding] = useState(false);
 	const [removing, setRemoving] = useState<TAddress | null>(null);
 	const { run, submitting } = useRunner();
+	const contact = useCustomerSave();
 
 	if (isPending) return <PageSkeleton />;
 	if (isError) return <ErrorState error={error} bordered />;
 	if (!company) return <EmptyState title={t('crm:customers.notFound')} bordered />;
 
 	const active = company.status === 'active';
-	const primary = people.data?.rows.find((person) => person.isPrimary);
+	const owner = people.data?.rows.find((person) => person.id === company.ownerCustomerId);
 
 	return (
 		<div className='flex flex-col gap-6'>
@@ -373,7 +385,7 @@ function CompanyDetail() {
 					<Detail label={t('crm:customer.website')} value={company.website} />
 					<Detail label={t('crm:customer.email')} value={company.email} />
 					<Detail label={t('crm:customer.phone')} value={company.phone} />
-					<Detail label={t('crm:customer.whatsapp')} value={company.whatsapp} />
+					<Detail label={t('crm:customer.owner')} value={company.owner?.name ?? null} />
 					<div className='col-span-2 sm:col-span-4'>
 						<Detail label={t('crm:customer.notes')} value={company.notes} />
 					</div>
@@ -406,21 +418,24 @@ function CompanyDetail() {
 					)}
 					{people.data?.rows.map((person) => (
 						<div key={person.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
-							<div>
-								<Link
-									to='/crm/customers/$customerId'
-									params={{ customerId: person.id }}
-									className='font-medium hover:underline'
-								>
-									{person.name}
-								</Link>
-								{person.isPrimary && (
-									<Badge variant='secondary' className='ml-2'>
-										{t('crm:contacts.primary')}
-									</Badge>
-								)}
-								<div className='text-muted-foreground'>
-									{[person.position, person.phone, person.whatsapp, person.email].filter(Boolean).join(' · ') || '-'}
+							<div className='flex items-center gap-3'>
+								<CustomerAvatar name={person.name} image={person.account?.image} className='size-8' />
+								<div>
+									<Link
+										to='/crm/customers/$customerId'
+										params={{ customerId: person.id }}
+										className='font-medium hover:underline'
+									>
+										{person.name}
+									</Link>
+									{person.isOwner && (
+										<Badge variant='secondary' className='ml-2'>
+											{t('crm:customer.ownerBadge')}
+										</Badge>
+									)}
+									<div className='text-muted-foreground'>
+										{[person.position, person.phone, person.account?.email].filter(Boolean).join(' · ') || '-'}
+									</div>
 								</div>
 							</div>
 						</div>
@@ -430,8 +445,8 @@ function CompanyDetail() {
 
 			<PortalAccountCard
 				scope={{ companyId: company.id }}
-				defaultName={primary?.name ?? company.name}
-				defaultEmail={primary?.email ?? company.email}
+				defaultName={owner?.name ?? company.name}
+				defaultEmail={owner?.account?.email ?? company.email}
 			/>
 
 			{editing && (
@@ -447,12 +462,22 @@ function CompanyDetail() {
 			{addingPerson && (
 				<CustomerFormDialog
 					customer={null}
-					defaultCompanyId={company.id}
-					submitting={submitting}
+					defaultCompany={{ id: company.id, code: company.code, name: company.name }}
+					submitting={contact.submitting}
 					onClose={() => setAddingPerson(false)}
-					onSave={(input: TCustomerInput) =>
-						void run(() => createCustomer(input), t('crm:contacts.saved'), () => setAddingPerson(false))
+					onSave={(input, photo) =>
+						void contact.save(null, input, photo).then((saved) => {
+							if (saved) setAddingPerson(false);
+						})
 					}
+				/>
+			)}
+			{contact.created && (
+				<CustomerCredentialsDialog
+					name={contact.created.name}
+					email={contact.created.email}
+					credentials={contact.created.credentials}
+					onClose={contact.clearCreated}
 				/>
 			)}
 			{adding && (

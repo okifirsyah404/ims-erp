@@ -23,7 +23,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { DataTable } from '@/components/data-table/data-table';
@@ -286,7 +287,7 @@ function CategoryDialog({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='category-order'>{t('product:categories.sortOrder')}</FieldLabel>
+								<FieldLabel htmlFor='category-order' optional>{t('product:categories.sortOrder')}</FieldLabel>
 								<Input
 									id='category-order'
 									type='number'
@@ -299,7 +300,7 @@ function CategoryDialog({
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='category-short'>{t('product:categories.shortName')}</FieldLabel>
+							<FieldLabel htmlFor='category-short' optional>{t('product:categories.shortName')}</FieldLabel>
 							<Input
 								id='category-short'
 								maxLength={60}
@@ -308,7 +309,7 @@ function CategoryDialog({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='category-description'>
+							<FieldLabel htmlFor='category-description' optional>
 								{t('product:categories.descriptionLabel')}
 							</FieldLabel>
 							<Textarea

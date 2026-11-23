@@ -11,7 +11,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	InputGroup,
@@ -34,6 +35,11 @@ type TConvertInput = { customerId: string } | { customer: TCustomerInput };
 /**
  * "Make customer": create a customer from the lead's data, or link an
  * existing active customer. The server marks the lead won atomically.
+ *
+ * @remarks
+ * A new customer gets a Better Auth account (ERP-0114), so the email is
+ * required; the login details are emailed to it. A lead with a company name
+ * creates that company too, with the person as its owner.
  */
 export function ConvertLeadDialog({
 	lead,
@@ -49,7 +55,8 @@ export function ConvertLeadDialog({
 	const { t } = useTranslation(['crm', 'common']);
 	const [mode, setMode] = useState<'new' | 'existing'>('new');
 	const [code, setCode] = useState('');
-	const [name, setName] = useState(lead.companyName ?? lead.name);
+	const [name, setName] = useState(lead.name);
+	const [email, setEmail] = useState(lead.email ?? '');
 	const [search, setSearch] = useState('');
 	const [customerId, setCustomerId] = useState('');
 	const deferredSearch = useDeferredValue(search.trim());
@@ -72,13 +79,15 @@ export function ConvertLeadDialog({
 											// Empty: the server generates the code.
 											code: code.trim() || undefined,
 											companyId: null,
-											customerType: 'individual',
+											newCompany: lead.companyName
+												? { name: lead.companyName, companyType: 'company' }
+												: null,
+											isOwner: Boolean(lead.companyName),
 											name: name.trim(),
 											position: null,
-											email: lead.email,
-											phone: lead.phone,
-											whatsapp: lead.whatsapp,
-											isPrimary: false,
+											email: email.trim(),
+											// One number since ERP-0114: the phone, else the WhatsApp number.
+											phone: lead.phone ?? lead.whatsapp,
 											notes: lead.needs,
 										},
 									},
@@ -109,7 +118,9 @@ export function ConvertLeadDialog({
 							<>
 								<div className='grid gap-4 sm:grid-cols-2'>
 									<Field>
-										<FieldLabel htmlFor='convert-code'>{t('crm:customer.code')}</FieldLabel>
+										<FieldLabel htmlFor='convert-code' optional>
+											{t('crm:customer.code')}
+										</FieldLabel>
 										<Input
 											id='convert-code'
 											maxLength={32}
@@ -125,6 +136,18 @@ export function ConvertLeadDialog({
 									<FieldLabel htmlFor='convert-name'>{t('crm:customer.name')}</FieldLabel>
 									<Input id='convert-name' required maxLength={200} value={name} onChange={(e) => setName(e.target.value)} />
 									<FieldDescription>{t('crm:convert.copied')}</FieldDescription>
+								</Field>
+								<Field>
+									<FieldLabel htmlFor='convert-email'>{t('crm:customer.email')}</FieldLabel>
+									<Input
+										id='convert-email'
+										type='email'
+										required
+										maxLength={254}
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+									/>
+									<FieldDescription>{t('crm:customer.emailAccountHint')}</FieldDescription>
 								</Field>
 							</>
 						) : (

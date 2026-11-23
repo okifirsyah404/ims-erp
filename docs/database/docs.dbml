@@ -677,21 +677,19 @@ Table customer.companies {
   company_type text [not null, default: 'company']
   tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
-  phone varchar(30)
-  whatsapp varchar(30)
+  phone varchar(30) [note: "E.164 (+6281234567890), normalised by the service."]
   website varchar(200)
   status text [not null, default: 'active']
-  owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  owner_customer_id uuid [note: "The one owner of the company account: a contact person of this company (customers.company_id = companies.id, checked by the service). Intra-schema FK; unique among live rows (partial index in the Drizzle schema). Null while the company has no owner. Every other contact is staff (portal_role approver | finance | viewer) (ERP-0114)."]
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Customer company (the B2B entity), company-wide. Was crm.customers rows of type company/government/partner (ADR-0024 Q16). Inactive companies cannot be used on new documents."
+  Note: "Customer company (the B2B entity), company-wide, a data record without a login of its own. Was crm.customers rows of type company/government/partner (ADR-0024 Q16). Inactive companies cannot be used on new documents. One owner (owner_customer_id) and N staff contacts (ERP-0114)."
   Indexes {
     name [name: 'customer_companies_name_idx']
     tax_id [name: 'customer_companies_tax_id_idx']
-    owner_user_id [name: 'customer_companies_owner_user_id_idx']
   }
   Checks {
     `company_type IN ('company', 'government', 'partner')`
@@ -705,16 +703,13 @@ Table customer.customers {
   company_id uuid [note: "The company this person belongs to; null for an individual buyer. Intra-schema FK."]
   name text [not null]
   position text [note: "Job title of the person inside the company."]
-  email text
-  phone varchar(30)
-  whatsapp varchar(30)
-  is_primary boolean [not null, default: false, note: "The primary contact of its company; at most one live row per company."]
+  phone varchar(30) [note: "E.164 (+6281234567890), normalised by the service. The email lives on the Better Auth user (auth.users.email), never here (ERP-0114)."]
   customer_type text [not null, default: 'individual']
   status text [not null, default: 'active']
-  owner_user_id text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  user_id text [note: "Portal login of this person. Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. One live login per person (partial unique index in the Drizzle schema)."]
-  portal_role text [note: "What the person may do for the company: owner (everything, manages members), approver (accepts quotations), finance (invoices, payments), viewer (read only)."]
-  portal_status text [note: "active | suspended | revoked. Revoking frees user_id (the row, its history and documents stay); a new invitation grants the login on the same row."]
+  user_id text [note: "The Better Auth account of this person: one account is exactly one customer (ERP-0114). Created with the person; kept on revoke. Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Unique among live rows (partial unique index in the Drizzle schema)."]
+  portal_role text [note: "Staff role of a company contact: approver (accepts quotations), finance (invoices, payments), viewer (read only). owner is stored for an individual (their own account) and for the contact named by companies.owner_customer_id, which is the source of truth for company ownership (ERP-0114)."]
+  portal_status text [note: "active | suspended | revoked. Revoking ends every session and keeps user_id (one account, one customer, ERP-0114); re-inviting reactivates the same account."]
+  portal_password_change_required boolean [not null, default: false, note: "Set when the account was created with the default password; cleared by a password change or reset (enforcement in the portal is ERP-0115)."]
   portal_invited_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. Null for an individual's own sign-up."]
   portal_last_login_at bigint
   notes text
@@ -722,12 +717,10 @@ Table customer.customers {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "A person: an individual customer, or the contact/PIC of a customer company. Was crm.customer_contacts merged with crm.customers of type individual, plus the portal identity columns of auth.portal_identities (ADR-0024 Q5/Q16). A portal login is never an organization member, so every ERP route refuses it; only the portal routes accept an active login."
+  Note: "A person: an individual customer, or a contact of a customer company (its one owner or a staff member). Every person has exactly one Better Auth account (ERP-0114). Was crm.customer_contacts merged with crm.customers of type individual, plus the portal identity columns of auth.portal_identities (ADR-0024 Q5/Q16). A portal login is never an organization member, so every ERP route refuses it; only the portal routes accept an active login."
   Indexes {
     company_id [name: 'customers_company_id_idx']
     name [name: 'customers_name_idx']
-    owner_user_id [name: 'customers_owner_user_id_idx']
-    (company_id, is_primary) [name: 'customers_primary_idx']
   }
   Checks {
     `customer_type IN ('individual', 'contact')`
@@ -822,6 +815,7 @@ Table customer.code_numberings {
 }
 
 Ref: customer.customers.company_id > customer.companies.id [delete: restrict]
+Ref: customer.companies.owner_customer_id - customer.customers.id [delete: set null]
 Ref: customer.addresses.customer_id > customer.customers.id [delete: cascade]
 Ref: customer.company_addresses.company_id > customer.companies.id [delete: cascade]
 
@@ -850,7 +844,7 @@ Table supplier.companies {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). ERP-0114 dropped whatsapp (contacts live on the PIC and the purchase order) and payment_terms_days/payment_term_note (payment terms belong to the purchase order, ERP-0114). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
+  Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). ERP-0116 dropped whatsapp (contacts live on the PIC and the purchase order) and payment_terms_days/payment_term_note (payment terms belong to the purchase order, ERP-0116). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
   Indexes {
     name [name: 'supplier_companies_name_idx']
     status [name: 'supplier_companies_status_idx']
@@ -876,7 +870,7 @@ Table supplier.suppliers {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17). ERP-0114 dropped whatsapp (the PIC address block carries the phone)."
+  Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17). ERP-0116 dropped whatsapp (the PIC address block carries the phone)."
   Indexes {
     company_id [name: 'suppliers_company_id_idx']
     status [name: 'suppliers_status_idx']

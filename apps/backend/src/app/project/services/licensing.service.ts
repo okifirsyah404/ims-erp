@@ -391,7 +391,7 @@ export class LicensingService {
 							name: contract.customerName,
 							email: customer?.email ?? null,
 							phone: customer?.phone ?? null,
-							whatsapp: customer?.whatsapp ?? null,
+							whatsapp: customer?.phone ?? null,
 						},
 					},
 					{ dedupeKey: `license.due:${contract.id}:${contract.endDate}:${threshold}` },
