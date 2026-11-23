@@ -99,7 +99,8 @@ export class SalaryService {
 	 * month's summary (ERP-0034 employees carry no salary; the salary
 	 * components of `docs.dbml` are not built yet), otherwise 0.
 	 */
-	async generate(scope: THrScope, actorUserId: string, period: string): Promise<TSalaryPeriod> {
+	/** `actorUserId` is `null` for the daily payday run (ERP-0120). */
+	async generate(scope: THrScope, actorUserId: string | null, period: string): Promise<TSalaryPeriod> {
 		const { start, end } = periodRange(period);
 		const [current, previous, people, agreed] = await Promise.all([
 			this.repository.listPeriod(period, scope),

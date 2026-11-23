@@ -32,6 +32,8 @@ const notifications = {
 		'Tanda tangan ditolak: {{documentName}}',
 	'template.document.signatureDeclined.body':
 		'{{signerName}} menolak menandatangani {{documentName}}.',
+	'template.hr.payrollDraftReady.title': 'Penggajian {{period}} siap disetujui',
+	'template.hr.payrollDraftReady.body': 'Proses hari gajian membuat {{records}} draf gaji untuk {{period}}.',
 } as const;
 
 export default notifications;

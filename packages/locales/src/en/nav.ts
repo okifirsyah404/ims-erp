@@ -111,6 +111,7 @@ const nav = {
 	'item.companyProfile': 'Company',
 	'item.codeNumbers': 'Code Number',
 	'item.documentSettings': 'Document',
+	'item.payrollSettings': 'Payroll',
 	'item.paymentGateways': 'Payment gateways',
 
 	'theme.label': 'Theme',

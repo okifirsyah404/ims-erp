@@ -810,6 +810,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   payee accounts in `finance.cash_bank_accounts` (`/finance/employee-bank-accounts`),
   payroll drafts from the period in force. Evidence: `progress.md` 2026-11-23
   (backend 1419 pass). No browser walk-through yet.
+- ERP-0120 payday run (2026-11-23): `/settings/payroll` (application admins
+  only), daily `payroll-pay-day` job creating draft payroll on payday and
+  notifying `payroll:approve` holders. Evidence: `progress.md` 2026-11-23
+  (backend 1425 pass). Scheduler not run against a live Redis yet.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -822,7 +826,6 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Payday cron + `/settings/payroll` (app admin only) — ERP-0120.
 - Invite employment-agreement document, claim personal data, agreement PDF,
   employee Documents tab — ERP-0121.
 - Payslip PDF on payroll approval — ERP-0122 (supersedes the payslip part of

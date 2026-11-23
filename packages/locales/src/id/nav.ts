@@ -110,6 +110,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.companyProfile': 'Perusahaan',
 	'item.codeNumbers': 'Nomor Kode',
 	'item.documentSettings': 'Dokumen',
+	'item.payrollSettings': 'Penggajian',
 	'item.paymentGateways': 'Gateway pembayaran',
 
 	'theme.label': 'Tema',

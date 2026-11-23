@@ -12,6 +12,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0120: payday setting and the daily payroll draft run (slice 4)
+
+**Scope** (grill-me Q17/Q18/Q28/Q31, recorded in the ERP-0117 entry below):
+an application admin sets the company-wide payday (1-31, a shorter month uses
+its last day) on `/settings/payroll` in the Settings section; a daily job
+creates the month's draft payroll on payday and notifies in-app whoever holds
+`payroll:approve`; approval stays manual; overtime pay stays 0.
+
+**Design gate.** No table, column, index or status change: the value lives in
+the existing `human_resource.settings` (`setting_group = 'payroll'`,
+`setting_key = 'pay_day'`, `value_type = 'number'`). `docs/database/` was
+reviewed and is unchanged; `validate-dbml.ts` printed `OK`. Cross-module reads
+go through repository-only facades: `ExportedOrganizationService.listMemberRoles`
+(new, organization -> member roles of live organizations) and the existing
+`ExportedNotificationService.notify`; the permission check uses the shared
+permission resolver.
+
+**Backend.**
+- `GET|PUT /human-resources/payroll-settings` - `admin-or-erp` guard with
+  `appAdminOnly` (application admins only, read and write; `role-permission.md`
+  shows "app admin"). Returns `{ payDay, nextRunDate }`; `payDay: null` turns
+  the run off.
+- `PayrollScheduleService.runDaily`: off or not payday -> nothing; on payday ->
+  `SalaryService.generate` with the company scope (`all`) and no actor
+  (`generate` now accepts `actorUserId: null`), counts the new drafts, and only
+  when it created some notifies the approvers (`sourceId` = the period, so a
+  rerun never doubles the notice). Helpers `payDayOf` / `nextPayDay` in
+  `utils/hr.ts`.
+- Queue `payroll-pay-day` + worker (`startPayrollPayDayWorker`,
+  `registerPayrollPayDaySchedule`), config `scheduler.payrollCron`
+  (`SCHEDULER_PAYROLL_CRON`, default `0 1 * * *`, Asia/Jakarta), started from
+  `src/index.ts` behind `SCHEDULER_ENABLED` like the other daily jobs;
+  `.env.example` and `docs/architecture/modules/automation.md` updated.
+- Notification template `hr.payroll_draft_ready` (variables `period`,
+  `records` - not `count`, which i18next reserves for plurals): code list,
+  seeder row, en/id `notifications` keys, web `notification-text.ts`.
+
+**Web-admin.** `/settings/payroll` ("Payroll" / "Penggajian" under Settings,
+`appAdminOnly` nav item; the page also refuses non-admins): switch on/off, day
+1-31, next run date, explanation of the 01:00 WIB check. en/id keys.
+
+**Commands and outcomes.**
+- `cd apps/backend && bunx tsc --noEmit -p tsconfig.json` - clean.
+- Throwaway PostgreSQL (`ims_scratch`): `HrSettingsRepository.upsert` twice
+  for (`payroll`, `pay_day`) - one row, value `31` (the partial unique index is
+  the conflict target); seeder: "Notification templates seeded" inserted 1
+  (`hr.payroll_draft_ready`).
+- `bun run test` (root) - 7/7: backend **1425 pass** (new
+  `hr-payroll-schedule.service.test.ts` 6), web-admin 209, locales 106,
+  customer-portal 68, landing 25, react-email 6; 0 fail.
+- `bun run lint` - 0 errors; web-admin `tsc` clean, `vite build` built.
+- `bun docs/gen-role-permission.ts` - 656 routes; `validate-dbml.ts` - `OK`.
+- Not verified: the BullMQ job against a live Redis (no `SCHEDULER_ENABLED`
+  run), no live HTTP run, no browser walk-through.
+
+Next executable task: ERP-0121 (invite employment-agreement document, claim
+personal data, agreement PDF, employee Documents tab). Still open: the owner
+decision on the duplicate supplier migration folder; browser walk-throughs of
+slices 1-4; a live scheduler run.
+
 ## 2026-11-23 - ERP-0119: salary periods + employee payee accounts in finance (slice 3)
 
 **Scope** (grill-me Q7/Q8/Q16/Q23-Q26/Q29, recorded in the ERP-0117 entry

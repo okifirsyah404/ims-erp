@@ -85,6 +85,14 @@ export function notificationText(
 					documentName: variables.documentName ?? '',
 				}),
 			};
+		case 'hr.payroll_draft_ready':
+			return {
+				title: t('template.hr.payrollDraftReady.title', { period: variables.period ?? '' }),
+				body: t('template.hr.payrollDraftReady.body', {
+					period: variables.period ?? '',
+					records: variables.records ?? '',
+				}),
+			};
 		default:
 			return fallback;
 	}

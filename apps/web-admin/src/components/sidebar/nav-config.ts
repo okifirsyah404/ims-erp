@@ -594,6 +594,14 @@ export const navSections: {
 				icon: FileText,
 				open: true,
 			},
+			// ERP-0120: the payday of the daily payroll draft run; application
+			// admins only (the backend uses `appAdminOnly`).
+			{
+				titleKey: 'item.payrollSettings',
+				url: '/settings/payroll',
+				icon: Wallet,
+				appAdminOnly: true,
+			},
 		],
 	},
 ];

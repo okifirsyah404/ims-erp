@@ -163,6 +163,19 @@ const settings = {
 	'numbering.type.ticket': 'Service ticket',
 	'numbering.type.employee': 'Employee',
 	'numbering.type.document': 'Document',
+
+	// Payroll settings (ERP-0120).
+	'payroll.title': 'Payroll',
+	'payroll.description': 'When the daily payroll run creates the draft salary records of the month.',
+	'payroll.appAdminOnly': 'Only application administrators can open the payroll settings.',
+	'payroll.payDayTitle': 'Payday',
+	'payroll.enabled': 'Create draft payroll automatically on payday',
+	'payroll.payDay': 'Day of the month',
+	'payroll.payDayHint': '1-31. If a month is shorter, its last day is used.',
+	'payroll.runHint': 'The run checks every day at 01:00 WIB, creates the drafts of employees without one and notifies whoever approves payroll. Approval stays manual.',
+	'payroll.nextRun': 'Next run: {{date}}',
+	'payroll.off': 'The automatic run is off.',
+	'payroll.saved': 'Payroll settings saved',
 } as const;
 
 export default settings;

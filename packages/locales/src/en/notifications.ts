@@ -30,6 +30,8 @@ const notifications = {
 		'Signature declined: {{documentName}}',
 	'template.document.signatureDeclined.body':
 		'{{signerName}} declined to sign {{documentName}}.',
+	'template.hr.payrollDraftReady.title': 'Payroll {{period}} is ready for approval',
+	'template.hr.payrollDraftReady.body': 'The payday run created {{records}} draft salary record(s) for {{period}}.',
 } as const;
 
 export default notifications;

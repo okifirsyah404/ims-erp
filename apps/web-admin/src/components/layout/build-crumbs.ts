@@ -52,6 +52,7 @@ const LABELS: Record<string, NavKey> = {
 	'/settings/code-numbers': 'item.codeNumbers',
 	'/settings/payment-gateways': 'item.paymentGateways',
 	'/settings/documents': 'item.documentSettings',
+	'/settings/payroll': 'item.payrollSettings',
 	'/documents/files': 'item.files',
 	'/documents/files/$documentId': 'breadcrumb.documentDetail',
 	'/documents/signatures/documents': 'item.documentSignatures',

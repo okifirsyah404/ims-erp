@@ -14,6 +14,7 @@ import { SalaryController } from './controllers/salary.controller';
 import { TaskController } from './controllers/task.controller';
 import { ScheduleController } from './controllers/schedule.controller';
 import { SalaryPeriodController } from './controllers/salary-period.controller';
+import { PayrollSettingsController } from './controllers/payroll-settings.controller';
 
 /**
  * Public entry point of the human-resource module.
@@ -24,6 +25,8 @@ import { SalaryPeriodController } from './controllers/salary-period.controller';
  */
 export * from './container';
 export * from './controllers/employee.controller';
+export { registerPayrollPayDaySchedule } from './queues/payroll-pay-day.queue';
+export { startPayrollPayDayWorker } from './queues/payroll-pay-day.worker';
 export type { ExportedEmployeeService } from './services/exported-employee.service';
 
 /**
@@ -42,5 +45,6 @@ export function humanResourceModule() {
 		.use(TaskController.plugin())
 		.use(ScheduleController.plugin())
 		.use(SalaryController.plugin())
-		.use(SalaryPeriodController.plugin());
+		.use(SalaryPeriodController.plugin())
+		.use(PayrollSettingsController.plugin());
 }

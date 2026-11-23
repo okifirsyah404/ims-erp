@@ -79,6 +79,13 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		bodyTemplate: '{{signerName}} declined to sign {{documentName}}.',
 		variables: ['signerName', 'documentName'],
 	},
+	{
+		code: 'hr.payroll_draft_ready',
+		name: 'Payroll draft ready',
+		subjectTemplate: 'Payroll {{period}} is ready for approval',
+		bodyTemplate: 'The payday run created {{records}} draft salary record(s) for {{period}}.',
+		variables: ['period', 'records'],
+	},
 ];
 
 /**

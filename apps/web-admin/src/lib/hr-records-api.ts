@@ -287,6 +287,12 @@ export const updateEmployeeBankAccount = (id: string, input: TEmployeeBankAccoun
 	send<TEmployeeBankAccount>(`/finance/employee-bank-accounts/${id}`, 'PUT', input);
 export const removeEmployeeBankAccount = (id: string) => send<{ removed: true }>(`/finance/employee-bank-accounts/${id}`, 'DELETE');
 
+// Payroll settings (ERP-0120): application admins only
+export type TPayrollSettings = { payDay: number | null; nextRunDate: string | null };
+export const payrollSettingsQueryOptions = () => single<TPayrollSettings>(['hr', 'payroll-settings'], '/human-resources/payroll-settings');
+export const savePayrollSettings = (input: { payDay: number | null }) =>
+	send<TPayrollSettings>('/human-resources/payroll-settings', 'PUT', input);
+
 // Salary summaries
 export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/human-resources/salary-records?period=${period}`);
 export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/human-resources/salary-records', 'PUT', input);
