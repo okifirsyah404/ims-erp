@@ -1,7 +1,7 @@
 import type { TEmployeeSelect, TEmployeeSalaryRecordSelect } from '@drizzle/schemas/human-resource.schema';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { HR_PEOPLE_SERVICE_TOKEN, LEAVE_SERVICE_TOKEN, SALARY_REPOSITORY_TOKEN } from '../constants/di';
+import { HR_PEOPLE_SERVICE_TOKEN, LEAVE_SERVICE_TOKEN, SALARY_PERIOD_SERVICE_TOKEN, SALARY_REPOSITORY_TOKEN } from '../constants/di';
 import type { THrScope, TSalaryBody } from '../contracts/hr-records.contract';
 import type { ISalaryRepository } from '../contracts/hr-records.repository.interface';
 import { HrNotFoundError, ImportFileError, SalaryStateError } from '../errors/hr.errors';
@@ -10,6 +10,7 @@ import { assertImportFile, type TImportResult, type TRowError } from '../utils/i
 import { MAX_IMPORT_ROWS, readRows, templateWorkbook } from '../utils/spreadsheet';
 import { type HrPeopleService, worksOn } from './people.service';
 import type { LeaveService } from './leave.service';
+import type { SalaryPeriodService } from './salary-period.service';
 
 export type TSalaryPeriod = {
 	period: string;
@@ -56,6 +57,7 @@ export class SalaryService {
 		@inject(HR_PEOPLE_SERVICE_TOKEN) private readonly employees: Pick<HrPeopleService, 'require' | 'listVisible' | 'findByCodes'>,
 		@inject(LEAVE_SERVICE_TOKEN) private readonly leave: Pick<LeaveService, 'approvedHours'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
+		@inject(SALARY_PERIOD_SERVICE_TOKEN) private readonly periods: Pick<SalaryPeriodService, 'amountsFor'>,
 	) {}
 
 	async period(scope: THrScope, period: string): Promise<TSalaryPeriod> {
@@ -98,18 +100,20 @@ export class SalaryService {
 	 * components of `docs.dbml` are not built yet), otherwise 0.
 	 */
 	async generate(scope: THrScope, actorUserId: string, period: string): Promise<TSalaryPeriod> {
-		const [current, previous, people] = await Promise.all([
+		const { start, end } = periodRange(period);
+		const [current, previous, people, agreed] = await Promise.all([
 			this.repository.listPeriod(period, scope),
 			this.repository.listPeriod(previousPeriod(period), scope),
 			this.employees.listVisible(scope),
+			this.periods.amountsFor(start, end),
 		]);
 		const existing = new Set(current.map((row) => row.employeeId));
 		const last = new Map(previous.map((row) => [row.employeeId, row]));
-		const { start, end } = periodRange(period);
 		const working = (employee: TEmployeeSelect) => worksOn(employee, start) || worksOn(employee, end);
 		for (const employee of people.filter(working)) {
 			if (existing.has(employee.id)) continue;
-			const before = last.get(employee.id);
+			// The salary period in force (ERP-0119); without one, last month's summary.
+			const before = agreed.get(employee.id) ?? last.get(employee.id);
 			const amounts = { baseSalary: before?.baseSalary ?? 0, allowances: before?.allowances ?? 0, overtimePay: 0, bonus: 0, deductions: 0 };
 			await this.repository.upsertDraft({
 				...amounts,

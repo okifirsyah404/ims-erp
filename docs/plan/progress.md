@@ -12,6 +12,103 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0119: salary periods + employee payee accounts in finance (slice 3)
+
+**Scope** (grill-me Q7/Q8/Q16/Q23-Q26/Q29, recorded in the ERP-0117 entry
+below): no Salary pages; the effective-dated `employee_salaries` periods are
+edited on the employee page; the salary bank account leaves HR and becomes
+`finance.cash_bank_accounts` rows with `employee_id`.
+
+**One deviation from the grilled answer (Q29).** The answer said the code
+comes from "the existing `cash_bank_account` series"; no such series exists
+(company account codes are typed by hand). A new finance code type
+`employee_bank_account` (prefix `REK`) was added to `CODE_TYPES_BY_SCHEMA`, so
+it also shows on Settings -> Code Number (en/id labels added). The
+`ExportedFinanceService.findPrimaryEmployeeBankAccount` facade from Q25 is
+**not** built yet: nothing in HR reads the account until the payslip
+(ERP-0122), so it lands there instead of as dead code.
+
+**Design gate.** `docs.dbml` Human Resource (`employee_salaries`) and Finance
+(`cash_bank_accounts`), `module-ownership.md`, `logical-references.md`,
+`integrity-and-consistency.md` read first. Manual grill items: ownership
+(finance owns payee rows, HR owns periods), tenant scoping (payee rows copy the
+employee's `organization_id`; visibility follows the ERP-0034 rule), soft delete
+(both), types (bigint IDR minor units, `date` business dates), cross-module
+contract (`ExportedEmployeeService.findEmployeeById`, finance -> HR; repository
+-only facade, no cycle), status vocabulary (none; `is_active`/`is_primary`).
+
+**docs.dbml (edited first).** `employee_salaries`: bank columns removed, note
+rewritten, `employee_salaries_period_uq` documented as partial (it already was
+in Drizzle). `cash_bank_accounts`: `employee_id` (standard logical-reference
+note), `cash_bank_accounts_employee_id_idx`, partial unique
+`cash_bank_accounts_employee_primary_uq` (one live primary per employee), CHECK
+`employee_id IS NULL OR (bank|ewallet AND both balances 0 AND invoice_usage
+IS NULL)`. `gen-logical-references.ts` regenerated (189 refs; human_resource
+.employees now 9 referring columns); `module-ownership.md` notes the finance
+consumer of `findEmployeeById`.
+
+**Migrations (one per schema, Q26), SQL inspected.**
+- `20261123122308_erp0119_finance_employee_bank_accounts`: `ADD COLUMN
+  employee_id`, the two indexes, the CHECK.
+- `20261123122309_erp0119_drop_salary_bank_columns`: drops `bank_name`,
+  `bank_account_number`, `bank_account_holder` (nothing deployed; Q26 "no data
+  migration").
+
+**Backend.**
+- HR: `GET|POST /human-resources/employees/:id/salaries` (`payroll:read` /
+  `payroll:create`), `PUT|DELETE /human-resources/salaries/:id`
+  (`payroll:update`). A new period must start after the latest (422
+  `hr.salaryPeriod.overlap`) and closes it the day before; only the active
+  period's amounts are edited (`notActive`); only the latest is deleted
+  (`notLatest`), reopening the previous one; two-row writes in one transaction.
+  `SalaryService.generate` takes base/allowances from the period in force at
+  the month's end (`SalaryPeriodService.amountsFor`), falling back to last
+  month's summary. Removed: `GET|PUT /human-resources/employees/:id/bank-account`,
+  `HrPeopleService.bank/saveBank`, the repository methods and the
+  `employeeSalarySchema`.
+- Finance: `GET|POST /finance/employee-bank-accounts`, `PUT|DELETE
+  /finance/employee-bank-accounts/:id` (`payroll:read` / `payroll:update`),
+  number masked without `employee:read_private`, employee visibility per
+  ERP-0034 (app admin sees all; otherwise 404). First account is primary; a new
+  primary clears the old one in the same transaction; deleting the primary
+  promotes the newest remaining account. The four company-account queries of
+  `CashBankRepository` (by code, by id, list, update) now require
+  `employee_id IS NULL`.
+- Seeder `hr-salaries.seeder.ts`: one period (from 2026-01-01) and one primary
+  BCA payee account per active employee, amounts and numbers fixed by position;
+  skips when rows exist.
+
+**Web-admin.** The employee page shows a "Gaji" card (periods table, new
+period / edit amounts / delete latest, rupiah `MoneyInput`) and a "Rekening
+penerima gaji" card (add, edit, make primary, delete) with `payroll.read`;
+the old single bank-account card and its API wrappers are gone. en/id keys;
+`hr:bank.type.` declared as a dynamic prefix.
+
+**Commands and outcomes.**
+- `bunx --bun drizzle-kit generate --name …` twice (HR schema change held back
+  for the first run) - the two migrations above; `drizzle-kit check` -
+  "Everything's fine".
+- Throwaway PostgreSQL 18.6 (`ims_scratch`, port 55432): full chain migrated
+  (stale duplicate supplier folder set aside for the run only, restored
+  unchanged) - "migrations applied successfully"; seeder run 1: 29 salary
+  periods + 29 payee accounts (codes like `0001/REK/DEV/XI/26`), the finance
+  seeder's 3 company accounts untouched; run 2: both skipped, counts unchanged
+  (29 / 29 / 3).
+- `bun run test` (root) - 7/7: backend **1419 pass** (new
+  `hr-salary-period.service.test.ts` 4, `employee-bank-account.service.test.ts`
+  4, payroll draft-from-period case; the old HR bank-masking test removed with
+  the feature), web-admin 209, locales 106, customer-portal 68, landing 25,
+  react-email 6; 0 fail.
+- `bun run lint` - 0 errors; web-admin `tsc -p tsconfig.app.json` clean,
+  `vite build` built; backend `tsc` clean.
+- `bun docs/gen-role-permission.ts` - 654 routes; `validate-dbml.ts` - `OK`.
+- Not verified: no live HTTP run, no browser walk-through.
+
+Next executable task: ERP-0120 (payday cron, `payroll.pay_day` setting,
+`/settings/payroll` for application admins only). Still open: the owner
+decision on the duplicate supplier migration folder, and browser walk-throughs
+of slices 1-3.
+
 ## 2026-11-23 - ERP-0118: HR work schedule (slice 2)
 
 **Scope** (grill-me Q9/Q10, recorded in the ERP-0117 entry below): a weekly

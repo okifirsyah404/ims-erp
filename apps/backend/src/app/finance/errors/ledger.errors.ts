@@ -354,3 +354,17 @@ export class ReportArchivePeriodOpenError extends AppError {
 		);
 	}
 }
+
+/** The employee payee account does not exist or belongs to an employee the caller does not see (ERP-0119). */
+export class EmployeeBankAccountNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.employeeBankAccountNotFound', 'Employee bank account not found');
+	}
+}
+
+/** The employee does not exist or is outside the caller's scope (ERP-0119). */
+export class EmployeeNotVisibleError extends AppError {
+	constructor() {
+		super(404, 'accounting.employeeNotFound', 'Employee not found');
+	}
+}

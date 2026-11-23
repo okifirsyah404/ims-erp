@@ -452,6 +452,7 @@ const api: Record<keyof typeof en, string> = {
 	'hr.notFound.salary': 'Ringkasan gaji tidak ditemukan',
 	'hr.notFound.attendance': 'Data absensi tidak ditemukan',
 	'hr.notFound.schedule': 'Jadwal tidak ditemukan',
+	'hr.notFound.salaryPeriod': 'Periode gaji tidak ditemukan',
 	'hr.employeeState.inactive': 'Karyawan tidak aktif',
 	'hr.leave.dates': 'Tanggal selesai sebelum tanggal mulai',
 	'hr.leave.noWorkingDays': 'Rentang tanggal tidak berisi hari kerja (Minggu tidak dihitung)',
@@ -474,6 +475,9 @@ const api: Record<keyof typeof en, string> = {
 	'hr.attendance.duplicate': 'Karyawan sudah memiliki data absensi pada tanggal ini',
 	'hr.schedule.duplicate': 'Karyawan sudah memiliki jadwal pada tanggal ini',
 	'hr.schedule.rangeTooLong': 'Pengisian jadwal paling banyak {{max}} hari',
+	'hr.salaryPeriod.overlap': 'Periode baru harus dimulai setelah {{after}}',
+	'hr.salaryPeriod.notActive': 'Hanya periode gaji yang aktif yang dapat diubah',
+	'hr.salaryPeriod.notLatest': 'Hanya periode gaji terakhir yang dapat dihapus',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',
@@ -528,6 +532,8 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.cashBankAccountCodeTaken':
 		'Kode akun kas/bank sudah digunakan',
 	'accounting.cashBankAccountInactive': 'Akun kas/bank tidak aktif',
+	'accounting.employeeBankAccountNotFound': 'Rekening karyawan tidak ditemukan',
+	'accounting.employeeNotFound': 'Karyawan tidak ditemukan',
 	'accounting.cashBankLinkRequired':
 		'Akun kas/bank belum ditautkan ke akun buku besar; tambahkan tautan sebelum mencatat pergerakan',
 	'accounting.cashBankTransactionNotFound':

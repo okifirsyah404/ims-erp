@@ -183,6 +183,7 @@ const DYNAMIC_PREFIXES = [
 	'hr.import.',
 	'hr.attendance.',
 	'hr.schedule.',
+	'hr.salaryPeriod.',
 	'licensing.notFound.',
 	'licensing.contract.',
 	'licensing.state.',
@@ -248,6 +249,8 @@ const DYNAMIC_PREFIXES = [
 	'template.document.signatureDeclined.',
 	// Supplier address kinds are server enum values labelled at render.
 	'procurement:addressKind.',
+	// Employee payee account types (ERP-0119) are server enum values.
+	'hr:bank.type.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

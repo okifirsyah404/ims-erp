@@ -18,6 +18,8 @@ import { SalaryService } from './services/salary.service';
 import { TaskService } from './services/task.service';
 import { ScheduleRepository } from './repositories/schedule.repository';
 import { ScheduleService } from './services/schedule.service';
+import { SalaryPeriodRepository } from './repositories/salary-period.repository';
+import { SalaryPeriodService } from './services/salary-period.service';
 import {
 	ATTENDANCE_REPOSITORY_TOKEN,
 	ATTENDANCE_SERVICE_TOKEN,
@@ -34,6 +36,8 @@ import {
 	SALARY_REPOSITORY_TOKEN,
 	SALARY_SERVICE_TOKEN,
 	SCHEDULE_REPOSITORY_TOKEN,
+	SALARY_PERIOD_REPOSITORY_TOKEN,
+	SALARY_PERIOD_SERVICE_TOKEN,
 	SCHEDULE_SERVICE_TOKEN,
 	TASK_REPOSITORY_TOKEN,
 	TASK_SERVICE_TOKEN,
@@ -88,4 +92,8 @@ export function registerHumanResource(container: DependencyContainer): void {
 	// Employee work schedule (ERP-0118).
 	container.register(SCHEDULE_REPOSITORY_TOKEN, { useClass: ScheduleRepository });
 	container.register(SCHEDULE_SERVICE_TOKEN, { useClass: ScheduleService });
+
+	// Salary periods (ERP-0119).
+	container.register(SALARY_PERIOD_REPOSITORY_TOKEN, { useClass: SalaryPeriodRepository });
+	container.register(SALARY_PERIOD_SERVICE_TOKEN, { useClass: SalaryPeriodService });
 }

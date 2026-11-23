@@ -9,6 +9,8 @@
  * injects the repositories it actually queries instead of one god repository.
  */
 import type { InjectionToken } from 'tsyringe';
+import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
+import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
 import type { IDepreciationRepository } from '../contracts/depreciation.repository.interface';
 import type { DepreciationService } from '../services/depreciation.service';
 import type { FinanceCodeNumberingRepository } from '../repositories/code-numbering.repository';
@@ -92,3 +94,11 @@ export const DEPRECIATION_REPOSITORY_TOKEN: InjectionToken<IDepreciationReposito
 
 /** Token resolving to the {@link DepreciationService}. */
 export const DEPRECIATION_SERVICE_TOKEN: InjectionToken<DepreciationService> = Symbol('DEPRECIATION_SERVICE');
+
+/** Employees' salary payee accounts in cash_bank_accounts (ERP-0119). */
+export const EMPLOYEE_BANK_ACCOUNT_REPOSITORY_TOKEN: InjectionToken<IEmployeeBankAccountRepository> = Symbol(
+	'EMPLOYEE_BANK_ACCOUNT_REPOSITORY',
+);
+export const EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN: InjectionToken<EmployeeBankAccountService> = Symbol(
+	'EMPLOYEE_BANK_ACCOUNT_SERVICE',
+);

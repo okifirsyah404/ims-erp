@@ -148,6 +148,7 @@ const settings = {
 	'numbering.type.cash_bank_transaction': 'Cash / bank transaction',
 	'numbering.type.bank_reconciliation': 'Bank reconciliation',
 	'numbering.type.asset_depreciation': 'Asset depreciation',
+	'numbering.type.employee_bank_account': 'Employee bank account',
 	'numbering.type.tax_record': 'Tax record',
 	'numbering.type.withholding_tax_record': 'Withholding tax record',
 	'numbering.type.payment': 'Payment',

@@ -451,6 +451,7 @@ const api = {
 	'hr.notFound.salary': 'Salary summary not found',
 	'hr.notFound.attendance': 'Attendance record not found',
 	'hr.notFound.schedule': 'Schedule not found',
+	'hr.notFound.salaryPeriod': 'Salary period not found',
 	'hr.employeeState.inactive': 'The employee is inactive',
 	'hr.leave.dates': 'The end date is before the start date',
 	'hr.leave.noWorkingDays': 'The range has no working day (Sundays are not counted)',
@@ -473,6 +474,9 @@ const api = {
 	'hr.attendance.duplicate': 'The employee already has an attendance record on this date',
 	'hr.schedule.duplicate': 'The employee already has a schedule on this date',
 	'hr.schedule.rangeTooLong': 'A fill covers at most {{max}} days',
+	'hr.salaryPeriod.overlap': 'A new period must start after {{after}}',
+	'hr.salaryPeriod.notActive': 'Only the active salary period can be edited',
+	'hr.salaryPeriod.notLatest': 'Only the latest salary period can be deleted',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',
@@ -527,6 +531,8 @@ const api = {
 	'accounting.cashBankAccountCodeTaken':
 		'Cash/bank account code already exists',
 	'accounting.cashBankAccountInactive': 'Cash/bank account is inactive',
+	'accounting.employeeBankAccountNotFound': 'Employee bank account not found',
+	'accounting.employeeNotFound': 'Employee not found',
 	'accounting.cashBankLinkRequired':
 		'Cash/bank account has no general-ledger account link; add one before posting movements',
 	'accounting.cashBankTransactionNotFound':

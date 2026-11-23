@@ -383,17 +383,17 @@ export const schedules = humanResourceSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * human_resource.employee_salaries (new, absorbs hr.bank_accounts)
+ * human_resource.employee_salaries
  * ------------------------------------------------------------------------ */
 
 /**
  * Effective dated salary agreement of an employee (ADR-0024 Q39).
  *
  * @remarks
- * Base salary, fixed allowances and the salary bank account, which absorbs
- * `hr.bank_accounts`. Finance and payment read it through
- * `ExportedEmployeeService`. `bank_account_number` is masked for callers without
- * `employee:read_private`.
+ * Base salary and fixed allowances per period. A new period closes the
+ * previous one; only the active period is edited and only the latest is
+ * deleted. The salary bank account moved to `finance.cash_bank_accounts`
+ * (`employee_id`, ERP-0119).
  */
 export const employeeSalaries = humanResourceSchema.table(
 	'employee_salaries',
@@ -409,9 +409,6 @@ export const employeeSalaries = humanResourceSchema.table(
 		currencyCode: varchar('currency_code', { length: 3 })
 			.notNull()
 			.default('IDR'),
-		bankName: varchar('bank_name', { length: 100 }),
-		bankAccountNumber: varchar('bank_account_number', { length: 50 }),
-		bankAccountHolder: varchar('bank_account_holder', { length: 200 }),
 		effectiveFrom: date('effective_from').notNull(),
 		effectiveTo: date('effective_to'),
 		isActive: boolean('is_active').notNull().default(true),

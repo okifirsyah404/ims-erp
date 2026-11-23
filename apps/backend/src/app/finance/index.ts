@@ -14,6 +14,7 @@ import { FinanceCodeNumberingController } from './controllers/code-numbering.con
 import { DepreciationController } from './controllers/depreciation.controller';
 import { LedgerController } from './controllers/ledger.controller';
 import { FinanceOperationsController } from './controllers/finance-operations.controller';
+import { EmployeeBankAccountController } from './controllers/employee-bank-account.controller';
 
 export { registerFinance } from './container';
 export { registerSupplierBillDueSchedule } from './queues/supplier-bill-due.queue';
@@ -31,5 +32,6 @@ export function financeModule() {
 		.use(FinanceCodeNumberingController.plugin())
 		.use(LedgerController.plugin())
 		.use(DepreciationController.plugin())
-		.use(FinanceOperationsController.plugin());
+		.use(FinanceOperationsController.plugin())
+		.use(EmployeeBankAccountController.plugin());
 }

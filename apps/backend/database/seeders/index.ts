@@ -21,6 +21,7 @@ import { seedCompany } from './seed/company.seeder';
 import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { seedHrSchedules } from './seed/hr-schedules.seeder';
+import { seedHrSalaries } from './seed/hr-salaries.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
@@ -75,6 +76,8 @@ export async function runSeeders(): Promise<void> {
 	await seedHrEmployees();
 	// Needs the employees above (ERP-0118).
 	await seedHrSchedules();
+	// Salary periods + payee accounts of the employees above (ERP-0119).
+	await seedHrSalaries();
 	// M08 leave types are reference rows the attendance/leave records depend on.
 	await seedLeaveTypes();
 	// Notification templates are reference rows (every environment); the demo

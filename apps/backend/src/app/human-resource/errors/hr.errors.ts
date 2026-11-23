@@ -40,8 +40,9 @@ export class EmployeeInviteError extends AppError {
 
 /** The record does not exist. */
 export class HrNotFoundError extends AppError {
-	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance' | 'schedule') {
+	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance' | 'schedule' | 'salaryPeriod') {
 		const messages = {
+			salaryPeriod: 'Salary period not found',
 			schedule: 'Schedule not found',
 			attendance: 'Attendance record not found',
 			employee: 'Employee not found',
@@ -147,5 +148,17 @@ export class ScheduleError extends AppError {
 			rangeTooLong: 'A fill covers at most {{max}} days',
 		};
 		super(kind === 'duplicate' ? 409 : 422, `hr.schedule.${kind}` as const, messages[kind], params);
+	}
+}
+
+/** A salary period cannot be written as asked (ERP-0119). */
+export class SalaryPeriodError extends AppError {
+	constructor(kind: 'overlap' | 'notActive' | 'notLatest', params?: Record<string, string | number>) {
+		const messages = {
+			overlap: 'A new period must start after {{after}}',
+			notActive: 'Only the active salary period can be edited',
+			notLatest: 'Only the latest salary period can be deleted',
+		};
+		super(422, `hr.salaryPeriod.${kind}` as const, messages[kind], params);
 	}
 }

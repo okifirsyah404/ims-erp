@@ -1,16 +1,16 @@
 /**
  * M08 employee records on top of ERP-0034 employees: pure rules; the
- * employee scope (company-level + the caller's organization); bank account
- * masked without employee:read_private; leave with working days, quota
+ * employee scope (company-level + the caller's organization); leave with
+ * working days, quota
  * (pending counted), overlap, no self-decision, attendance written on
  * approval and removed on cancel; overtime; the attendance import (all rows
  * or none, errors per row, ambiguous codes); salary summaries (net computed,
- * generated from last month, locked once approved, import in rupiah).
+ * generated from the salary period or last month, locked once approved,
+ * import in rupiah).
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
 	TAttendanceSelect,
-	TEmployeeSalarySelect,
 	TEmployeeSelect,
 	TLeaveRequestSelect,
 	TLeaveTypeSelect,
@@ -39,12 +39,13 @@ const OTHER_ORG = 'org-other';
 const scope: THrScope = { organizationId: ORG, all: false };
 
 let staff: TEmployeeSelect[];
-let banks: Map<string, TEmployeeSalarySelect>;
 let types: TLeaveTypeSelect[];
 let leaves: TLeaveRequestSelect[];
 let overtime: TOvertimeRequestSelect[];
 let attendance: TAttendanceSelect[];
 let salaries: TEmployeeSalaryRecordSelect[];
+/** Salary periods in force per employee (ERP-0119), as `SalaryPeriodService.amountsFor` returns them. */
+let agreed: Map<string, { baseSalary: number; allowances: number }>;
 
 /** Jakarta midnight of a business date, as ERP-0034 stores dates. */
 const day = (value: string) => new Date(`${value}T00:00:00+07:00`);
@@ -71,12 +72,6 @@ const peopleRepository: IHrPeopleRepository = {
 	findVisible: async (id, scoped) => staff.find((row) => row.id === id && visible(row, scoped)) ?? null,
 	listVisible: async (scoped) => staff.filter((row) => visible(row, scoped)),
 	findByCodes: async (codes, scoped) => staff.filter((row) => codes.includes(row.employeeCode.toUpperCase()) && visible(row, scoped)),
-	findBank: async (employeeId) => banks.get(employeeId) ?? null,
-	saveBank: async (employeeId, data) => {
-		const row = { ...data, employeeId, id: crypto.randomUUID() } as TEmployeeSalarySelect;
-		banks.set(employeeId, row);
-		return row;
-	},
 };
 
 const people = () => new HrPeopleService(peopleRepository);
@@ -223,6 +218,7 @@ function salaryService() {
 		people(),
 		leaveService(),
 		{ run: (work) => work({} as never) },
+		{ amountsFor: async () => agreed },
 	);
 }
 
@@ -230,7 +226,6 @@ const csv = (name: string, text: string) => new File([text], name, { type: 'text
 
 beforeEach(() => {
 	staff = [person(E1, 'EMP-0001'), person(E2, 'EMP-0002', { organizationId: null }), person(E3, 'EMP-0003', { organizationId: OTHER_ORG })];
-	banks = new Map();
 	types = [
 		{ id: ANNUAL, code: 'ANNUAL', name: 'Cuti tahunan', attendanceStatus: 'leave', usesQuota: true, annualQuotaDays: 12, isActive: true } as TLeaveTypeSelect,
 		{ id: SICK, code: 'SICK', name: 'Sakit', attendanceStatus: 'sick', usesQuota: false, annualQuotaDays: 0, isActive: true } as TLeaveTypeSelect,
@@ -239,6 +234,7 @@ beforeEach(() => {
 	overtime = [];
 	attendance = [];
 	salaries = [];
+	agreed = new Map();
 });
 
 describe('HR rules', () => {
@@ -260,7 +256,7 @@ describe('HR rules', () => {
 	});
 });
 
-describe('employee scope and bank account', () => {
+describe('employee scope', () => {
 	test('records reach company-level and own-organization employees only; an admin sees all', async () => {
 		expect((await people().listActive(scope)).map((row) => row.employeeCode)).toEqual(['EMP-0001', 'EMP-0002']);
 		await expect(people().require(scope, E3)).rejects.toBeInstanceOf(HrNotFoundError);
@@ -268,13 +264,6 @@ describe('employee scope and bank account', () => {
 		await expect(
 			leaveService().createLeave(scope, 'hr', leaveBodySchema.parse({ employeeId: E3, leaveTypeId: SICK, startDate: '2026-11-09', endDate: '2026-11-09' })),
 		).rejects.toBeInstanceOf(HrNotFoundError);
-	});
-
-	test('the bank account number is masked without employee:read_private', async () => {
-		const ctx = { actorUserId: 'hr', scope, canReadPrivate: true };
-		await people().saveBank(ctx, E1, { bankName: 'BCA', bankAccountNumber: '1234567890', bankAccountHolder: 'Person' });
-		expect(await people().bank({ ...ctx, canReadPrivate: false }, E1)).toMatchObject({ bankAccountNumber: '••••••7890', masked: true });
-		expect((await people().bank(ctx, E1))?.bankAccountNumber).toBe('1234567890');
 	});
 
 	test('ERP-0034 employee reads mask the NIK without employee:read_private and never write it back', async () => {
@@ -506,6 +495,10 @@ describe('salary summaries', () => {
 		// E3 is outside the scope; E2 gets last month's base and allowances.
 		expect(generated.rows.map((row) => row.employeeId).sort()).toEqual([E1, E2].sort());
 		expect(generated.rows.find((row) => row.employeeId === E2)).toMatchObject({ baseSalary: 4_000_000_00, allowances: 300_000_00, netPay: 4_300_000_00 });
+		// A salary period in force wins over last month's summary (ERP-0119).
+		salaries = salaries.filter((row) => !(row.period === '2026-11' && row.employeeId === E2));
+		agreed.set(E2, { baseSalary: 4_500_000_00, allowances: 0 });
+		expect((await service.generate(scope, 'hr', '2026-11')).rows.find((row) => row.employeeId === E2)).toMatchObject({ baseSalary: 4_500_000_00, allowances: 0 });
 		expect((await service.approve(scope, 'owner', '2026-11')).state).toBe('approved');
 		await expect(service.approve(scope, 'owner', '2026-11')).rejects.toBeInstanceOf(SalaryStateError);
 		await expect(service.save(scope, 'hr', salaryBodySchema.parse({ period: '2026-11', employeeId: E1, baseSalary: 1 }))).rejects.toMatchObject({ key: 'hr.salary.locked' });

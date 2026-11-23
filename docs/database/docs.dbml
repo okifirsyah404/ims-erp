@@ -3140,20 +3140,24 @@ Table finance.cash_bank_accounts {
   opening_balance bigint [not null, default: 0]
   current_balance bigint [not null, default: 0, note: "Denormalized running balance, maintained transactionally by the service."]
   invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts. Came from company.bank_accounts."]
+  employee_id uuid [note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract (ExportedEmployeeService.findEmployeeById). Set on an employee's salary payee account (ERP-0119); NULL on every company cash or bank account, and every treasury query filters employee_id IS NULL."]
   is_primary boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Operational cash and bank account used by the payment ledger, by reconciliation and by document printing. Merged from finance.cash_bank_accounts and company.bank_accounts (ADR-0024 Q19): the company master columns (bank_code, branch_name, invoice_usage, is_primary) live here now. Partial unique indexes in the Drizzle schema keep code and invoice_usage unique among live rows."
+  Note: "Operational cash and bank account used by the payment ledger, by reconciliation and by document printing. Merged from finance.cash_bank_accounts and company.bank_accounts (ADR-0024 Q19): the company master columns (bank_code, branch_name, invoice_usage, is_primary) live here now. A row with employee_id is an employee's salary payee account (ERP-0119): bank or ewallet, never a balance, never printed on invoices, one primary per employee."
   Indexes {
     (organization_id, code) [unique, name: 'cash_bank_accounts_org_code_uq']
     account_number [name: 'cash_bank_accounts_account_number_idx']
+    employee_id [name: 'cash_bank_accounts_employee_id_idx']
+    employee_id [unique, name: 'cash_bank_accounts_employee_primary_uq', note: 'WHERE is_primary AND employee_id IS NOT NULL AND deleted_at IS NULL']
   }
   Checks {
     `account_type IN ('cash', 'bank', 'ewallet', 'clearing')`
     `opening_balance >= 0`
     `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
+    `employee_id IS NULL OR (account_type IN ('bank', 'ewallet') AND opening_balance = 0 AND current_balance = 0 AND invoice_usage IS NULL)`
   }
 }
 
@@ -5085,9 +5089,6 @@ Table human_resource.employee_salaries {
   base_salary bigint [not null, default: 0, note: "IDR minor units."]
   fixed_allowances bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
-  bank_name varchar(100) [note: "Salary bank account (absorbed from hr.bank_accounts, ADR-0024 Q19/Q39)."]
-  bank_account_number varchar(50) [note: "Masked for callers without employee:read_private."]
-  bank_account_holder varchar(200)
   effective_from date [not null]
   effective_to date
   is_active boolean [not null, default: true]
@@ -5095,9 +5096,9 @@ Table human_resource.employee_salaries {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Effective dated salary agreement of an employee (ADR-0024 Q39): base salary, fixed allowances and the salary bank account (which absorbs hr.bank_accounts). Finance and payment read it through ExportedEmployeeService."
+  Note: "Effective dated salary agreement of an employee (ADR-0024 Q39): base salary and fixed allowances. A new period closes the previous one (effective_to = start - 1 day, is_active false); only the active period is edited, only the latest is deleted (reopening the previous). The salary bank account lives in finance.cash_bank_accounts (employee_id) since ERP-0119."
   Indexes {
-    (employee_id, effective_from) [unique, name: 'employee_salaries_period_uq']
+    (employee_id, effective_from) [unique, name: 'employee_salaries_period_uq', note: 'WHERE deleted_at IS NULL']
     employee_id [name: 'employee_salaries_employee_id_idx']
   }
   Checks {

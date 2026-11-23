@@ -44,6 +44,8 @@ export class CashBankRepository implements ICashBankRepository {
 					eq(cashBankAccounts.code, code),
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.limit(1);
@@ -64,6 +66,8 @@ export class CashBankRepository implements ICashBankRepository {
 					eq(cashBankAccounts.id, id),
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.limit(1);
@@ -78,6 +82,8 @@ export class CashBankRepository implements ICashBankRepository {
 				and(
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.orderBy(asc(cashBankAccounts.code));
@@ -128,6 +134,8 @@ export class CashBankRepository implements ICashBankRepository {
 					eq(cashBankAccounts.id, id),
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.returning();

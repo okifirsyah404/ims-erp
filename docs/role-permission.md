@@ -620,7 +620,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-648 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+654 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -777,6 +777,10 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/code-numberings/:codeType/preview` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
 | GET | `/finance/depreciations` | org member + permission | `asset:read` | `owner`, `admin`, `operations_manager`, `project_manager`, `auditor` |
 | POST | `/finance/depreciations` | org member + permission | `asset:update` | `owner`, `operations_manager` |
+| GET | `/finance/employee-bank-accounts` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
+| POST | `/finance/employee-bank-accounts` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
+| DELETE | `/finance/employee-bank-accounts/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
+| PUT | `/finance/employee-bank-accounts/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | GET | `/finance/ledger/accounts` | org member + permission | `chart_of_account:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/ledger/accounts` | org member + permission | `chart_of_account:create` | `owner`, `accountant` |
 | DELETE | `/finance/ledger/accounts/:id` | org member + permission | `chart_of_account:archive` | `owner`, `accountant` |
@@ -845,8 +849,8 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | DELETE | `/human-resources/employees/:id` | org member + permission | `employee:archive` | `owner`, `hr` |
 | GET | `/human-resources/employees/:id` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
 | PATCH | `/human-resources/employees/:id` | org member + permission | `employee:update` | `owner`, `hr` |
-| GET | `/human-resources/employees/:id/bank-account` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
-| PUT | `/human-resources/employees/:id/bank-account` | org member + permission | `employee:update` | `owner`, `hr` |
+| GET | `/human-resources/employees/:id/salaries` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
+| POST | `/human-resources/employees/:id/salaries` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/employees/picker` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
 | GET | `/human-resources/leave` | org member + permission | `leave:read` | `owner`, `hr` |
 | POST | `/human-resources/leave` | org member + permission | `leave:create` | `owner`, `hr` |
@@ -862,6 +866,8 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/human-resources/overtime/:id/approve` | org member + permission | `overtime:approve` | `owner`, `hr` |
 | POST | `/human-resources/overtime/:id/cancel` | org member + permission | `overtime:cancel` | `owner`, `hr` |
 | POST | `/human-resources/overtime/:id/reject` | org member + permission | `overtime:reject` | `owner`, `hr` |
+| DELETE | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
+| PUT | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/salary-records` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | PUT | `/human-resources/salary-records` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | DELETE | `/human-resources/salary-records/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |

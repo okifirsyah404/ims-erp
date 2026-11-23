@@ -18,6 +18,8 @@ import type { HrPeopleService } from '../services/people.service';
 import type { SalaryService } from '../services/salary.service';
 import type { TaskService } from '../services/task.service';
 import type { ScheduleService } from '../services/schedule.service';
+import type { SalaryPeriodService } from '../services/salary-period.service';
+import type { ISalaryPeriodRepository } from '../contracts/salary-period.contract';
 import type { IScheduleRepository } from '../contracts/schedule.repository.interface';
 import type { EmployeeService } from '../services/employee.service';
 import type { EmployeeInviteService } from '../services/employee-invite.service';
@@ -55,6 +57,10 @@ export const SALARY_SERVICE_TOKEN: InjectionToken<SalaryService> = Symbol('SALAR
 /** Employee work schedule (ERP-0118). */
 export const SCHEDULE_REPOSITORY_TOKEN: InjectionToken<IScheduleRepository> = Symbol('SCHEDULE_REPOSITORY');
 export const SCHEDULE_SERVICE_TOKEN: InjectionToken<ScheduleService> = Symbol('SCHEDULE_SERVICE');
+
+/** Effective-dated salary periods of an employee (ERP-0119). */
+export const SALARY_PERIOD_REPOSITORY_TOKEN: InjectionToken<ISalaryPeriodRepository> = Symbol('SALARY_PERIOD_REPOSITORY');
+export const SALARY_PERIOD_SERVICE_TOKEN: InjectionToken<SalaryPeriodService> = Symbol('SALARY_PERIOD_SERVICE');
 
 /** Token resolving to the repository of `human_resource.code_numberings`. */
 export const HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<HumanResourceCodeNumberingRepository> =

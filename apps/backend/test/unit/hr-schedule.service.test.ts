@@ -47,10 +47,6 @@ const peopleRepository: IHrPeopleRepository = {
 	findVisible: async (id, scoped) => staff.find((row) => row.id === id && visible(row, scoped)) ?? null,
 	listVisible: async (scoped) => staff.filter((row) => visible(row, scoped)),
 	findByCodes: async () => [],
-	findBank: async () => null,
-	saveBank: async () => {
-		throw new Error('unused');
-	},
 };
 
 const repository: IScheduleRepository = {

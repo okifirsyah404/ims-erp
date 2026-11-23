@@ -4,7 +4,8 @@ import { currentLanguage } from '@/i18n';
 
 /**
  * API client for the M08 employee records (`/human-resources/*`): attendance, leave,
- * overtime, tasks, monthly salary summaries and the salary bank account.
+ * overtime, tasks, schedules, monthly salary summaries, salary periods, plus the
+ * employee payee accounts that finance owns (`/finance/employee-bank-accounts`).
  * Employees themselves are ERP-0034 (`@/lib/hr-api`). Money is IDR minor
  * units; business dates `YYYY-MM-DD`; times `HH:MM`.
  */
@@ -27,8 +28,6 @@ export const REQUEST_STATUS_VARIANT: Record<TRequestStatus, 'default' | 'seconda
 
 export type TPersonRef = { id: string; employeeCode: string; fullName: string };
 
-/** The salary bank account; the number is masked without `employee:read_private`. */
-export type TBankAccount = { bankName: string | null; bankAccountNumber: string | null; bankAccountHolder: string | null; masked: boolean };
 
 export type TAttendanceRecord = {
 	status: TAttendanceStatus;
@@ -172,10 +171,6 @@ export async function downloadTemplate(path: string, filename: string): Promise<
 
 // Employees (M08 additions to ERP-0034)
 export const activeEmployeesQueryOptions = () => single<TPersonRef[]>(['hr', 'employees', 'active'], '/human-resources/active-employees');
-export const bankAccountQueryOptions = (employeeId: string) =>
-	single<TBankAccount | null>(['hr', 'bank-account', employeeId], `/human-resources/employees/${employeeId}/bank-account`);
-export const saveBankAccount = (id: string, input: { bankName: string; bankAccountNumber: string; bankAccountHolder: string }) =>
-	send<TBankAccount | null>(`/human-resources/employees/${id}/bank-account`, 'PUT', input);
 
 // Attendance
 export const attendanceDayQueryOptions = (date: string) => single<TAttendanceDayRow[]>(['hr', 'attendance', 'day', date], `/human-resources/attendances/day?date=${date}`);
@@ -240,6 +235,57 @@ export const removeSchedule = (id: string) => send<{ removed: true }>(`/human-re
 /** Fills `from`..`to` from a Monday-first weekly pattern; taken cells are skipped. */
 export const fillSchedule = (input: { from: string; to: string; employeeIds?: string[]; pattern: TShift[] }) =>
 	send<{ created: number; skipped: number }>('/human-resources/schedules/fill', 'POST', input);
+
+// Salary periods (ERP-0119): money in IDR minor units
+export type TSalaryPeriodRow = {
+	id: string;
+	employeeId: string;
+	baseSalary: number;
+	fixedAllowances: number;
+	currencyCode: string;
+	effectiveFrom: string;
+	effectiveTo: string | null;
+	isActive: boolean;
+};
+export const salaryPeriodsQueryOptions = (employeeId: string) =>
+	single<TSalaryPeriodRow[]>(['hr', 'salary-periods', employeeId], `/human-resources/employees/${employeeId}/salaries`);
+export const createSalaryPeriod = (employeeId: string, input: { effectiveFrom: string; baseSalary: number; fixedAllowances: number }) =>
+	send<TSalaryPeriodRow>(`/human-resources/employees/${employeeId}/salaries`, 'POST', input);
+export const updateSalaryPeriod = (id: string, input: { baseSalary: number; fixedAllowances: number }) =>
+	send<TSalaryPeriodRow>(`/human-resources/salaries/${id}`, 'PUT', input);
+export const removeSalaryPeriod = (id: string) => send<{ removed: true }>(`/human-resources/salaries/${id}`, 'DELETE');
+
+// Employee payee accounts (ERP-0119): owned by finance; the number is masked without `employee:read_private`
+export const EMPLOYEE_ACCOUNT_TYPES = ['bank', 'ewallet'] as const;
+export type TEmployeeBankAccount = {
+	id: string;
+	code: string;
+	employeeId: string;
+	accountType: (typeof EMPLOYEE_ACCOUNT_TYPES)[number];
+	bankName: string | null;
+	bankCode: string | null;
+	accountNumber: string | null;
+	accountHolder: string | null;
+	isPrimary: boolean;
+	isActive: boolean;
+	masked: boolean;
+};
+export type TEmployeeBankAccountInput = {
+	accountType: (typeof EMPLOYEE_ACCOUNT_TYPES)[number];
+	bankName: string;
+	bankCode: string | null;
+	accountNumber: string;
+	accountHolder: string;
+	isPrimary: boolean;
+	isActive: boolean;
+};
+export const employeeBankAccountsQueryOptions = (employeeId: string) =>
+	single<TEmployeeBankAccount[]>(['hr', 'bank-accounts', employeeId], `/finance/employee-bank-accounts?employeeId=${employeeId}`);
+export const createEmployeeBankAccount = (employeeId: string, input: TEmployeeBankAccountInput) =>
+	send<TEmployeeBankAccount>('/finance/employee-bank-accounts', 'POST', { ...input, employeeId });
+export const updateEmployeeBankAccount = (id: string, input: TEmployeeBankAccountInput) =>
+	send<TEmployeeBankAccount>(`/finance/employee-bank-accounts/${id}`, 'PUT', input);
+export const removeEmployeeBankAccount = (id: string) => send<{ removed: true }>(`/finance/employee-bank-accounts/${id}`, 'DELETE');
 
 // Salary summaries
 export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/human-resources/salary-records?period=${period}`);

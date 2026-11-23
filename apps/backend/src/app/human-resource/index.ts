@@ -13,6 +13,7 @@ import { HrPeopleController } from './controllers/people.controller';
 import { SalaryController } from './controllers/salary.controller';
 import { TaskController } from './controllers/task.controller';
 import { ScheduleController } from './controllers/schedule.controller';
+import { SalaryPeriodController } from './controllers/salary-period.controller';
 
 /**
  * Public entry point of the human-resource module.
@@ -40,5 +41,6 @@ export function humanResourceModule() {
 		.use(LeaveController.plugin())
 		.use(TaskController.plugin())
 		.use(ScheduleController.plugin())
-		.use(SalaryController.plugin());
+		.use(SalaryController.plugin())
+		.use(SalaryPeriodController.plugin());
 }

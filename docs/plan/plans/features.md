@@ -806,6 +806,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   CRUD and a weekly-pattern fill, `schedule` permission, seeder. Evidence:
   `progress.md` 2026-11-23 (migration on a throwaway database, backend 1412
   pass). No browser walk-through yet.
+- ERP-0119 salary (2026-11-23): salary periods on the employee page, salary
+  payee accounts in `finance.cash_bank_accounts` (`/finance/employee-bank-accounts`),
+  payroll drafts from the period in force. Evidence: `progress.md` 2026-11-23
+  (backend 1419 pass). No browser walk-through yet.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -818,8 +822,6 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Salary periods in the employee detail + employee bank accounts in finance —
-  ERP-0119.
 - Payday cron + `/settings/payroll` (app admin only) — ERP-0120.
 - Invite employment-agreement document, claim personal data, agreement PDF,
   employee Documents tab — ERP-0121.

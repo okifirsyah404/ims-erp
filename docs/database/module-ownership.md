@@ -200,7 +200,9 @@ no central code-number module.
   supplier bills, AR/AP open items, credit memos, expense claims, advances and
   settlements, asset depreciation, report archives, payment terms, settings.
 - Journal `source_module` vocabulary: `finance|sale|payment|tax|...`.
-- Salary stays in `human_resource` (Q39).
+- Salary stays in `human_resource` (Q39); the employees' salary payee accounts
+  are `cash_bank_accounts` rows with `employee_id` (ERP-0119), served at
+  `/finance/employee-bank-accounts` and invisible to every treasury query.
 - **Contract**: finance services for posting; `ExportedFinanceService` and
   `ExportedJournalService` (tax recap) are not built yet.
 
@@ -237,7 +239,8 @@ no central code-number module.
 - **Owns** employees and addresses, attendance, leave types/requests,
   overtime, tasks, salaries and salary records, schedules, settings.
 - **Contract**: `ExportedEmployeeService` (`findEmployeeById`,
-  `findEmployeeByUserId`).
+  `findEmployeeByUserId`). Finance calls `findEmployeeById` before writing an
+  employee payee account (`finance.cash_bank_accounts.employee_id`, ERP-0119).
 
 ### 17. Document - `document`
 

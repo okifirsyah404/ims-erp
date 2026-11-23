@@ -1,3 +1,5 @@
+import { EmployeeBankAccountRepository } from './repositories/employee-bank-account.repository';
+import { EmployeeBankAccountService } from './services/employee-bank-account.service';
 import type { DependencyContainer } from 'tsyringe';
 import { LedgerSettlementPortService } from './services/ledger-settlement.port.service';
 import { ArLedgerPortService } from './services/ar-ledger.port.service';
@@ -24,6 +26,8 @@ import {
 	POSTING_SERVICE_TOKEN,
 	SUPPLIER_BILL_ITEM_REPOSITORY_TOKEN,
 	SUPPLIER_BILL_REPOSITORY_TOKEN,
+	EMPLOYEE_BANK_ACCOUNT_REPOSITORY_TOKEN,
+	EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -80,6 +84,10 @@ import {
  * actually use.
  */
 export function registerFinance(container: DependencyContainer): void {
+	// Employees' salary payee accounts (ERP-0119).
+	container.register(EMPLOYEE_BANK_ACCOUNT_REPOSITORY_TOKEN, { useClass: EmployeeBankAccountRepository });
+	container.register(EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN, { useClass: EmployeeBankAccountService });
+
 	// ADR-0024: the payment module settles AR/AP and cash through this port.
 	container.register(LEDGER_SETTLEMENT_PORT_TOKEN, { useClass: LedgerSettlementPortService });
 	// Published to Sales so it never imports an accounting repository (rule 3.4).

@@ -1,7 +1,6 @@
 import type {
 	TAttendanceInsert,
 	TAttendanceSelect,
-	TEmployeeSalarySelect,
 	TEmployeeSelect,
 	TEmployeeTaskInsert,
 	TEmployeeTaskSelect,
@@ -15,21 +14,19 @@ import type {
 } from '@drizzle/schemas/human-resource.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TAttendanceListQuery, TEmployeeSalaryBody, THrScope, TRequestListQuery, TTaskListQuery } from './hr-records.contract';
+import type { TAttendanceListQuery, THrScope, TRequestListQuery, TTaskListQuery } from './hr-records.contract';
 
 type TNew<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
 
 /**
- * Read port over ERP-0034 `hr.employees` for the M08 records, plus
- * `hr.employee_salaries`. Every read is limited to the caller's scope.
+ * Read port over ERP-0034 `hr.employees` for the M08 records. Every read is
+ * limited to the caller's scope.
  */
 export interface IHrPeopleRepository {
 	findVisible(id: string, scope: THrScope): Promise<TEmployeeSelect | null>;
 	/** Employees that can still have records: active, inactive or terminated (not archived). */
 	listVisible(scope: THrScope): Promise<TEmployeeSelect[]>;
 	findByCodes(codes: string[], scope: THrScope): Promise<TEmployeeSelect[]>;
-	findBank(employeeId: string): Promise<TEmployeeSalarySelect | null>;
-	saveBank(employeeId: string, data: TEmployeeSalaryBody): Promise<TEmployeeSalarySelect>;
 }
 
 export type TAttendanceUpsert = Omit<TNew<TAttendanceInsert>, 'recordedBy'> & { recordedBy: string | null };

@@ -152,6 +152,7 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.cash_bank_transaction': 'Transaksi kas / bank',
 	'numbering.type.bank_reconciliation': 'Rekonsiliasi bank',
 	'numbering.type.asset_depreciation': 'Penyusutan aset',
+	'numbering.type.employee_bank_account': 'Rekening karyawan',
 	'numbering.type.tax_record': 'Catatan pajak',
 	'numbering.type.withholding_tax_record': 'Catatan pajak potong pungut',
 	'numbering.type.payment': 'Pembayaran',
