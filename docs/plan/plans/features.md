@@ -833,13 +833,20 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   draft→in_progress→reconciled→closed with exact statement=book gate.
 - Month-end close: advisory pre-close checklist; period transitions.
 - Web-admin UI: 9 finance routes + finance-api typed client (F8).
-- Backlog mismatch: ERP-0010 (accounting foundations) and ERP-0011..0013 are
+- Expense claims (ERP-0013, 2026-11-23, branch
+  `feat/erp0013-expense-claims`): `finance.expense_claims(+items)` built,
+  `/finance/expenses*` backend + web-admin (list, create/edit dialog, detail
+  page), approval posts the accrual journal (idempotent `expense_claim:<id>`,
+  DR expense per `category_code` / DR input tax / CR claims payable `2-1200`),
+  new `expense_claim:*` permission. Evidence: 9 unit tests, migration
+  `20261123150453_erp0013_expense_claims`, `validate-dbml.ts` OK, `progress.md`
+  2026-11-23. Open: disposable-DB apply (Docker down) + browser check.
+- Backlog mismatch: ERP-0010 (accounting foundations) and ERP-0011..0012 are
   still `planned` in `backlog.md`, so this section stays `in-progress` here
   until the backlog is decided. Code evidence is in `main` (accounting schema,
   migrations, tests).
 
 ### planned (Stage 2)
-- Expense entry + journal posting - ERP-0013. Evidence: none.
 - Payroll + gateway postings (Stage 2) - T20, T22. Evidence: none.
 - Final COA seed list from finance/owner (provisional codes
   `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/`5-1000`/`1-1800` in use).

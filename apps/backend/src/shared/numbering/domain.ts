@@ -60,6 +60,7 @@ export const CODE_TYPES_BY_SCHEMA = {
 	finance: [
 		'journal_entry',
 		'supplier_bill',
+		'expense_claim',
 		'cash_bank_transaction',
 		'bank_reconciliation',
 		'asset_depreciation',
@@ -121,6 +122,7 @@ export const CODE_TYPE_CODES: Record<CodeType, string> = {
 	purchase_return: 'RTB',
 	journal_entry: 'JE',
 	supplier_bill: 'SB',
+	expense_claim: 'EC',
 	cash_bank_transaction: 'CB',
 	bank_reconciliation: 'REC',
 	asset_depreciation: 'DEP',

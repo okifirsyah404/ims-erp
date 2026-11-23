@@ -132,6 +132,7 @@ import { Route as AuthedSubscriptionApiKeysIndexRouteImport } from './routes/_au
 import { Route as AuthedSubscriptionApplicationsIndexRouteImport } from './routes/_authed/subscription/applications/index'
 import { Route as AuthedWarehousesWarehouseIdEditRouteImport } from './routes/_authed/warehouses/$warehouseId.edit'
 import { Route as AuthedDocumentsSignaturesMineIndexRouteImport } from './routes/_authed/documents/signatures/mine/index'
+import { Route as AuthedFinanceExpensesClaimIdIndexRouteImport } from './routes/_authed/finance/expenses/$claimId/index'
 import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './routes/_authed/finance/investors/profit-sharing/index'
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
@@ -860,6 +861,12 @@ const AuthedDocumentsSignaturesMineIndexRoute =
     path: '/documents/signatures/mine/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceExpensesClaimIdIndexRoute =
+  AuthedFinanceExpensesClaimIdIndexRouteImport.update({
+    id: '/finance/expenses/$claimId/',
+    path: '/finance/expenses/$claimId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceInvestorsProfitSharingIndexRoute =
   AuthedFinanceInvestorsProfitSharingIndexRouteImport.update({
     id: '/finance/investors/profit-sharing/',
@@ -1214,6 +1221,7 @@ export interface FileRoutesByFullPath {
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
   '/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/documents/signatures/mine/': typeof AuthedDocumentsSignaturesMineIndexRoute
+  '/finance/expenses/$claimId/': typeof AuthedFinanceExpensesClaimIdIndexRoute
   '/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1374,6 +1382,7 @@ export interface FileRoutesByTo {
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
   '/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineIndexRoute
+  '/finance/expenses/$claimId': typeof AuthedFinanceExpensesClaimIdIndexRoute
   '/finance/investors/profit-sharing': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1536,6 +1545,7 @@ export interface FileRoutesById {
   '/_authed/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
   '/_authed/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/_authed/documents/signatures/mine/': typeof AuthedDocumentsSignaturesMineIndexRoute
+  '/_authed/finance/expenses/$claimId/': typeof AuthedFinanceExpensesClaimIdIndexRoute
   '/_authed/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -1698,6 +1708,7 @@ export interface FileRouteTypes {
     | '/sales/quotes/$quotationId/print'
     | '/sales/returns/$salesReturnId/edit'
     | '/documents/signatures/mine/'
+    | '/finance/expenses/$claimId/'
     | '/finance/investors/profit-sharing/'
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
@@ -1858,6 +1869,7 @@ export interface FileRouteTypes {
     | '/sales/quotes/$quotationId/print'
     | '/sales/returns/$salesReturnId/edit'
     | '/documents/signatures/mine'
+    | '/finance/expenses/$claimId'
     | '/finance/investors/profit-sharing'
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
@@ -2019,6 +2031,7 @@ export interface FileRouteTypes {
     | '/_authed/sales/quotes/$quotationId/print'
     | '/_authed/sales/returns/$salesReturnId/edit'
     | '/_authed/documents/signatures/mine/'
+    | '/_authed/finance/expenses/$claimId/'
     | '/_authed/finance/investors/profit-sharing/'
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
@@ -2915,6 +2928,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDocumentsSignaturesMineIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/expenses/$claimId/': {
+      id: '/_authed/finance/expenses/$claimId/'
+      path: '/finance/expenses/$claimId'
+      fullPath: '/finance/expenses/$claimId/'
+      preLoaderRoute: typeof AuthedFinanceExpensesClaimIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/investors/profit-sharing/': {
       id: '/_authed/finance/investors/profit-sharing/'
       path: '/finance/investors/profit-sharing'
@@ -3345,6 +3365,7 @@ interface AuthedRouteChildren {
   AuthedSalesQuotesQuotationIdPrintRoute: typeof AuthedSalesQuotesQuotationIdPrintRoute
   AuthedSalesReturnsSalesReturnIdEditRoute: typeof AuthedSalesReturnsSalesReturnIdEditRoute
   AuthedDocumentsSignaturesMineIndexRoute: typeof AuthedDocumentsSignaturesMineIndexRoute
+  AuthedFinanceExpensesClaimIdIndexRoute: typeof AuthedFinanceExpensesClaimIdIndexRoute
   AuthedFinanceInvestorsProfitSharingIndexRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
@@ -3529,6 +3550,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedSalesReturnsSalesReturnIdEditRoute,
   AuthedDocumentsSignaturesMineIndexRoute:
     AuthedDocumentsSignaturesMineIndexRoute,
+  AuthedFinanceExpensesClaimIdIndexRoute:
+    AuthedFinanceExpensesClaimIdIndexRoute,
   AuthedFinanceInvestorsProfitSharingIndexRoute:
     AuthedFinanceInvestorsProfitSharingIndexRoute,
   AuthedFinanceInvestorsRegistryIndexRoute:

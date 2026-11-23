@@ -10,7 +10,8 @@ import { organizationHeaders } from './organization-store';
  * API client for the finance module (ADR-0024: accounting was absorbed into
  * finance). Routes: `/finance/ledger/{accounts,journal,opening-balances}`,
  * `/finance/periods`, `/finance/cash-bank-{accounts,transactions}`,
- * `/finance/supplier-bills*`, `/finance/{ar,ap}/aging`, `/finance/reports/*`,
+ * `/finance/supplier-bills*`, `/finance/expenses*`, `/finance/{ar,ap}/aging`,
+ * `/finance/reports/*`,
  * `/finance/close/*`, `/finance/reconciliations*` (depreciation entries live in
  * `asset-api`).
  * The payment functions below still point at the payment module's routes and
@@ -935,3 +936,120 @@ export const reconcileReconciliation = (id: string) =>
 	sendData<TBankReconciliation>(`/finance/reconciliations/${id}/reconcile`, 'POST');
 export const closeReconciliation = (id: string) =>
 	sendData<TBankReconciliation>(`/finance/reconciliations/${id}/close`, 'POST');
+
+/* ------------------------- expense claims (ERP-0013) ------------------------- */
+
+export const EXPENSE_CLAIM_STATUSES = [
+	'draft',
+	'submitted',
+	'approved',
+	'rejected',
+	'paid',
+	'cancelled',
+] as const;
+export type TExpenseClaimStatus = (typeof EXPENSE_CLAIM_STATUSES)[number];
+
+export type TExpenseClaimItem = {
+	id: string;
+	organizationId: string | null;
+	expenseClaimId: string;
+	expenseDate: string | null;
+	categoryCode: string | null;
+	description: string | null;
+	amount: number;
+	taxAmount: number;
+	currencyCode: string;
+	receiptDocumentId: string | null;
+};
+
+export type TExpenseClaim = {
+	id: string;
+	organizationId: string | null;
+	code: string;
+	employeeId: string | null;
+	claimDate: string | null;
+	totalAmount: number;
+	currencyCode: string;
+	status: TExpenseClaimStatus;
+	submittedBy: string | null;
+	submittedAt: string | number | null;
+	approvedBy: string | null;
+	approvedAt: string | number | null;
+	paymentId: string | null;
+	notes: string | null;
+};
+
+export type TExpenseClaimDetail = TExpenseClaim & {
+	items: TExpenseClaimItem[];
+	journalEntry: { id: string; code: string; entryDate: string | null } | null;
+};
+
+export type TExpenseClaimItemInput = {
+	expenseDate?: string | null;
+	categoryCode: string;
+	description?: string | null;
+	amount: number;
+	taxAmount?: number;
+};
+
+export function expenseClaimsQueryOptions(params: {
+	page: number;
+	limit: number;
+	status?: TExpenseClaimStatus;
+	employeeId?: string;
+	from?: string;
+	to?: string;
+	search?: string;
+	sortBy?: 'code' | 'claimDate' | 'totalAmount' | 'createdAt';
+	sortDir?: 'asc' | 'desc';
+}) {
+	const search = new URLSearchParams({
+		page: String(params.page),
+		limit: String(params.limit),
+	});
+	for (const key of ['status', 'employeeId', 'from', 'to', 'search', 'sortBy', 'sortDir'] as const) {
+		const value = params[key];
+		if (value !== undefined && value !== '') search.set(key, String(value));
+	}
+	return queryOptions({
+		queryKey: ['expense-claims', params],
+		queryFn: () => getDataPaginated<TExpenseClaim>(`/finance/expenses?${search}`),
+	});
+}
+
+export function expenseClaimQueryOptions(id: string) {
+	return queryOptions({
+		queryKey: ['expense-claims', 'detail', id],
+		queryFn: () => getData<TExpenseClaimDetail>(`/finance/expenses/${id}`),
+	});
+}
+
+export function createExpenseClaim(input: {
+	employeeId: string;
+	claimDate: string;
+	notes?: string | null;
+	items: TExpenseClaimItemInput[];
+}) {
+	return sendData<TExpenseClaimDetail>('/finance/expenses', 'POST', input);
+}
+
+export function updateExpenseClaim(
+	id: string,
+	input: {
+		employeeId?: string;
+		claimDate?: string;
+		notes?: string | null;
+		items?: TExpenseClaimItemInput[];
+	},
+) {
+	return sendData<TExpenseClaimDetail>(`/finance/expenses/${id}`, 'PATCH', input);
+}
+
+export const submitExpenseClaim = (id: string) =>
+	sendData<TExpenseClaim>(`/finance/expenses/${id}/submit`, 'POST');
+export const approveExpenseClaim = (id: string) =>
+	sendData<TExpenseClaim>(`/finance/expenses/${id}/approve`, 'POST');
+export const rejectExpenseClaim = (id: string) =>
+	sendData<TExpenseClaim>(`/finance/expenses/${id}/reject`, 'POST');
+export const cancelExpenseClaim = (id: string) =>
+	sendData<TExpenseClaim>(`/finance/expenses/${id}/cancel`, 'POST');

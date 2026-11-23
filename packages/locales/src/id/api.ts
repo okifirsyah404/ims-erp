@@ -548,6 +548,17 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.billNotFound': 'Tagihan pemasok tidak ditemukan',
 	'accounting.billNotDraft':
 		'Hanya tagihan pemasok berstatus draf yang dapat diubah atau dicatat',
+	'accounting.expenseClaimNotFound': 'Klaim biaya tidak ditemukan',
+	'accounting.expenseClaimNotDraft':
+		'Hanya klaim biaya berstatus draf atau ditolak yang dapat diubah',
+	'accounting.expenseClaimEmpty':
+		'Klaim biaya perlu minimal satu baris untuk diajukan',
+	'accounting.expenseClaimInvalidTransition':
+		'Perubahan status tersebut tidak diizinkan untuk klaim biaya ini',
+	'accounting.expenseClaimAccountInvalid':
+		'{{code}} bukan akun beban yang aktif dan dapat diposting',
+	'accounting.expenseClaimEmployeeInvalid':
+		'Karyawan tidak ditemukan atau sudah tidak aktif',
 	'accounting.bankReconciliationNotFound':
 		'Rekonsiliasi bank tidak ditemukan',
 	'accounting.bankReconciliationState':

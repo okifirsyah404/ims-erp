@@ -27,6 +27,11 @@ export const AR_POSTING_DEFAULT_CODES = {
 	 * confirms the code with the final COA.
 	 */
 	inventory: '1-1400',
+	/**
+	 * Expense-claims payable (utang klaim biaya, liability, credit) — ERP-0013.
+	 * Provisional like the others.
+	 */
+	claimPayable: '2-1200',
 } as const;
 
 export type TArPostingRole = keyof typeof AR_POSTING_DEFAULT_CODES;

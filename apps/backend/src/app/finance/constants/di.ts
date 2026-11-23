@@ -26,6 +26,8 @@ import type { IJournalRepository } from '../contracts/journal.repository.interfa
 import type { IOpeningBalanceRepository } from '../contracts/opening-balance.repository.interface';
 import type { ISupplierBillRepository } from '../contracts/supplier-bill.repository.interface';
 import type { ISupplierBillItemRepository } from '../contracts/supplier-bill-item.repository.interface';
+import type { IExpenseClaimRepository } from '../contracts/expense-claim.repository.interface';
+import type { ExpenseClaimService } from '../services/expense-claim.service';
 import type { PostingService } from '../services/posting.service';
 import type { AccountService } from '../services/account.service';
 import type { PeriodService } from '../services/period.service';
@@ -70,6 +72,9 @@ export const ACCOUNT_BALANCE_REPOSITORY_TOKEN: InjectionToken<IAccountBalanceRep
 export const CLOSE_CHECKLIST_REPOSITORY_TOKEN: InjectionToken<ICloseChecklistRepository> = Symbol(
 	'CLOSE_CHECKLIST_REPOSITORY',
 );
+/** Token resolving to the repository of `finance.expense_claims(._items)`. */
+export const EXPENSE_CLAIM_REPOSITORY_TOKEN: InjectionToken<IExpenseClaimRepository> =
+	Symbol('EXPENSE_CLAIM_REPOSITORY');
 
 /* --------------------------------- services --------------------------------- */
 
@@ -80,6 +85,11 @@ export const OPENING_BALANCE_SERVICE_TOKEN: InjectionToken<OpeningBalanceService
 	'OPENING_BALANCE_SERVICE',
 );
 export const CASH_BANK_SERVICE_TOKEN: InjectionToken<CashBankService> = Symbol('CASH_BANK_SERVICE');
+
+/** Token resolving to the {@link ExpenseClaimService} (ERP-0013). */
+export const EXPENSE_CLAIM_SERVICE_TOKEN: InjectionToken<ExpenseClaimService> = Symbol(
+	'EXPENSE_CLAIM_SERVICE',
+);
 
 /** Token resolving to the repository of `finance.code_numberings`. */
 export const FINANCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<FinanceCodeNumberingRepository> = Symbol('FINANCE_CODE_NUMBERING_REPOSITORY');

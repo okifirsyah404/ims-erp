@@ -111,7 +111,7 @@ elsewhere and are not in the table:
 
 | Role | English | Indonesian | Resources granted |
 | --- | --- | --- | --- |
-| `owner` | Owner | Pemilik | 74 |
+| `owner` | Owner | Pemilik | 75 |
 | `admin` | Admin | Admin | 25 |
 | `member` | Member | Anggota | 4 |
 | `operations_manager` | Operations Manager | Manajer Operasional | 21 |
@@ -122,8 +122,8 @@ elsewhere and are not in the table:
 | `freelancer` | Freelancer | Pekerja Lepas | 5 |
 | `purchasing` | Purchasing | Pembelian | 12 |
 | `warehouse` | Warehouse | Gudang | 9 |
-| `finance` | Finance | Keuangan | 25 |
-| `accountant` | Accountant | Akuntan | 17 |
+| `finance` | Finance | Keuangan | 26 |
+| `accountant` | Accountant | Akuntan | 18 |
 | `hr` | Human Resource | Sumber Daya Manusia | 16 |
 | `customer_service` | Customer Service | Layanan Pelanggan | 12 |
 | `marketing` | Marketing | Pemasaran | 12 |
@@ -179,6 +179,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `receipt` | read, create, verify, post, reverse, export |
 | `payment` | read, create, submit, approve, execute, reverse, export |
 | `bill` | read, create, record |
+| `expense_claim` | read, create, update, submit, approve, reject, cancel |
 | `cash_bank` | read, create, update, reconcile, export |
 | `chart_of_account` | read, create, update, archive |
 | `journal` | read, create, update, submit, approve, post, reverse, export |
@@ -445,6 +446,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `sales_return` | read |
 | `project` | read, read_cost |
 | `bill` | read, create, record |
+| `expense_claim` | read, create, update, submit, approve, reject, cancel |
 | `cash_bank` | read, create, update, reconcile, export |
 | `payroll_payment` | read, execute |
 | `employee` | read, read_private |
@@ -479,6 +481,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `receipt` | read, export |
 | `payment` | read, export |
 | `bill` | read, create, record |
+| `expense_claim` | read, approve, reject |
 | `cash_bank` | read, reconcile, export |
 | `investor` | read |
 | `investor_report` | read, create, publish, export |
@@ -616,7 +619,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-636 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+644 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -773,6 +776,14 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/code-numberings/:codeType/preview` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
 | GET | `/finance/depreciations` | org member + permission | `asset:read` | `owner`, `admin`, `operations_manager`, `project_manager`, `auditor` |
 | POST | `/finance/depreciations` | org member + permission | `asset:update` | `owner`, `operations_manager` |
+| GET | `/finance/expenses` | org member + permission | `expense_claim:read` | `owner`, `finance`, `accountant` |
+| POST | `/finance/expenses` | org member + permission | `expense_claim:create` | `owner`, `finance` |
+| GET | `/finance/expenses/:id` | org member + permission | `expense_claim:read` | `owner`, `finance`, `accountant` |
+| PATCH | `/finance/expenses/:id` | org member + permission | `expense_claim:update` | `owner`, `finance` |
+| POST | `/finance/expenses/:id/approve` | org member + permission | `expense_claim:approve` | `owner`, `finance`, `accountant` |
+| POST | `/finance/expenses/:id/cancel` | org member + permission | `expense_claim:cancel` | `owner`, `finance` |
+| POST | `/finance/expenses/:id/reject` | org member + permission | `expense_claim:reject` | `owner`, `finance`, `accountant` |
+| POST | `/finance/expenses/:id/submit` | org member + permission | `expense_claim:submit` | `owner`, `finance` |
 | GET | `/finance/ledger/accounts` | org member + permission | `chart_of_account:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/ledger/accounts` | org member + permission | `chart_of_account:create` | `owner`, `accountant` |
 | DELETE | `/finance/ledger/accounts/:id` | org member + permission | `chart_of_account:archive` | `owner`, `accountant` |

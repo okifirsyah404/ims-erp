@@ -473,7 +473,7 @@ export const navSections: {
 					{
 						titleKey: 'item.expenses',
 						url: '/finance/expenses',
-						permission: 'bill.read',
+						permission: 'expense_claim.read',
 					},
 					{
 						titleKey: 'item.financialReports',
