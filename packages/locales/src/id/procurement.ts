@@ -180,7 +180,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'po.subtotal': 'Subtotal',
 	'po.grandTotal': 'Total',
 	'po.paymentTerms': 'Pembayaran',
-	'po.paymentTermsHint': 'Dicetak sebagai syarat pertama. Kosong mengambil bawaan pemasok.',
+	'po.paymentTermsHint': 'Dicetak sebagai syarat pertama. Kosongkan bila tidak ingin dicetak.',
 	'po.terms': 'Syarat pembelian lainnya',
 	'po.termsHint': 'Satu per baris, mis. "Penyerahan: gudang pemasok".',
 	'po.notes': 'Catatan (dicetak di bawah syarat)',
