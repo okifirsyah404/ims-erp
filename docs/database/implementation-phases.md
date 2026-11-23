@@ -121,6 +121,35 @@ ADR-0024 decision 6 said "per-schema baseline" but P8 shipped a single folder.
   (second run 0 inserts), `generate` "No schema changes", `check`
   "Everything's fine", `validate-dbml.ts` OK (192 tables, 147 refs, 0 drift).
 
+### P8c - the chain squashed back to one folder per schema (2026-11-24)
+
+Between 2026-11-21 and 2026-11-24 the baseline gained 13 incremental folders
+(image object keys, gallery images, product components, customer account owner,
+supplier columns, HR schedules, finance employee bank accounts, employee
+addresses, expense claims, plus a duplicated `20261123015149_erp0114/erp0116`
+pair and the data-only ERP-0094 role backfill), so `database/migrations` no
+longer read as "one folder per schema". 2026-11-24 squashed it back:
+
+- **33 folders → 20**, `20261123204301_create_auth_schema` …
+  `20261123204332_create_warehouse_schema`, same cumulative `--schema` order
+  (`auth` first, then alphabetical) and the same 1 `base` + 19 `diff` shape.
+  Regenerated from `drizzle/schemas`, never hand-assembled.
+- The 33 old folders are **not** archived in the tree (git history only) —
+  `v2`/`v3` were already dropped from `migrations-archive/` on 2026-11-21, and
+  dead SQL in the tree is what `check` would have to be told to ignore.
+- Equivalence checked **without** a database: the 20 folders concatenate to the
+  same **758 statements** as a single `generate` from
+  `drizzle/schemas/*.schema.ts` (0 missing, 0 extra), both create **176 tables**,
+  every statement touches only its own schema (0 foreign objects), `check` →
+  "Everything's fine", `generate --explain` → `no_changes`.
+- Two data-only migrations were dropped, not merged: the ERP-0094 portal-role
+  `UPDATE` and the `add_gallery_images` `INSERT … SELECT` backfill. A baseline
+  runs against an empty database, so a backfill there is a no-op; both stay in
+  git history.
+- Consequence, unchanged from ADR-0019: a database migrated by the 33-folder
+  chain cannot be upgraded in place — rebuild with
+  `bun run drizzle:migrate-reset`. No production server exists yet.
+
 ## Decisions worth knowing (full list: `docs/plan/database-refactor/00-overview.md`)
 
 - Q2: squashed per-schema baseline instead of an append chain (ADR-0019 naming).

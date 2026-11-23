@@ -1,1 +1,0 @@
-ALTER TABLE "inventory"."items" ADD COLUMN "image_object_key" text;
