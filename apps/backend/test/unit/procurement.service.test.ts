@@ -66,6 +66,21 @@ class FakeSuppliers {
 	async findPerson(id: string) {
 		return this.people.find((person) => person.id === id) ?? null;
 	}
+	async getPurchaseSnapshot(companyId: string) {
+		const company = await this.assertActiveCompany(companyId);
+		return {
+			code: company.code,
+			name: company.name,
+			address: null,
+			taxId: company.taxId,
+			phone: company.phone,
+			email: company.email,
+			picName: null,
+			picTitle: null,
+			picPhone: null,
+			picEmail: null,
+		};
+	}
 }
 
 class FakeOrders implements IPurchaseOrderRepository {
@@ -179,15 +194,21 @@ describe('purchase orders', () => {
 			...extra,
 		});
 
-	test('snapshots supplier and item, prices default to the purchase price, payment line from the supplier', async () => {
+	test('snapshots supplier and item, prices default to the purchase price, payment line only from the PO body', async () => {
 		const supplier = suppliers.addCompany();
 		const pic = suppliers.addPerson(supplier.id);
-		const order = await orders.create('purchasing', body(supplier.id, { supplierPicId: pic.id }));
+		const order = await orders.create('purchasing', body(supplier.id, { supplierPicId: pic.id, paymentTerms: 'DP 50%, pelunasan sebelum kirim' }));
 		expect(order).toMatchObject({ status: 'draft', code: null, subtotal: 6_270_000_000, grandTotal: 6_270_000_000, vatRateBps: 1100 });
 		expect(order.supplierSnapshot).toMatchObject({ code: 'HIT', picName: 'Ria Nainggolan', picTitle: 'Marketing' });
 		expect(order.paymentTerms).toBe('DP 50%, pelunasan sebelum kirim');
 		const [line] = await orderRepo.findItems(order.id);
 		expect(line).toMatchObject({ sku: 'QR50', unitPrice: 190_000_000, lineTotal: 6_270_000_000 });
+	});
+
+	test('without a body payment line the PO prints none even though the old supplier column had one', async () => {
+		const supplier = suppliers.addCompany();
+		const order = await orders.create('purchasing', body(supplier.id));
+		expect(order.paymentTerms).toBeNull();
 	});
 
 	test('an inactive supplier or an unknown item is refused', async () => {

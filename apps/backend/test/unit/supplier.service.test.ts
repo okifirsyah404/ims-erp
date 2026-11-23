@@ -528,7 +528,13 @@ describe('ExportedSupplierService', () => {
 	beforeEach(() => {
 		companies = new FakeCompanies();
 		people = new FakePeople();
-		exported = new ExportedSupplierService(companies, people);
+		exported = new ExportedSupplierService(
+			companies,
+			people,
+			new FakeCompanyAddresses(),
+			people,
+			new FakePersonAddresses(),
+		);
 	});
 
 	test('assertActiveCompany rejects unknown ids', () => {

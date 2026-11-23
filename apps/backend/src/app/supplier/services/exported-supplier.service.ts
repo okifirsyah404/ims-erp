@@ -5,10 +5,16 @@ import type {
 import { inject, injectable } from 'tsyringe';
 
 import {
+	SUPPLIER_ADDRESS_REPOSITORY_TOKEN,
+	SUPPLIER_COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	SUPPLIER_COMPANY_REPOSITORY_TOKEN,
 	SUPPLIER_PERSON_REPOSITORY_TOKEN,
 } from '../constants/di';
-import type { ISupplierCompanyRepository } from '../contracts/supplier.repository.interface';
+import type {
+	ISupplierAddressRepository,
+	ISupplierCompanyAddressRepository,
+	ISupplierCompanyRepository,
+} from '../contracts/supplier.repository.interface';
 import type { ISupplierRepository } from '../contracts/supplier.repository.interface';
 import { SupplierCompanyNotFoundError } from '../errors/supplier.errors';
 
@@ -42,6 +48,12 @@ export class ExportedSupplierService {
 		private readonly companies: ISupplierCompanyRepository,
 		@inject(SUPPLIER_PERSON_REPOSITORY_TOKEN)
 		private readonly people: ISupplierRepository,
+		@inject(SUPPLIER_COMPANY_ADDRESS_REPOSITORY_TOKEN)
+		private readonly companyAddresses: ISupplierCompanyAddressRepository,
+		@inject(SUPPLIER_PERSON_REPOSITORY_TOKEN)
+		private readonly personRepository: ISupplierRepository,
+		@inject(SUPPLIER_ADDRESS_REPOSITORY_TOKEN)
+		private readonly addresses: ISupplierAddressRepository,
 	) {}
 
 	/** The live company, or an error. */
@@ -65,23 +77,29 @@ export class ExportedSupplierService {
 	 * Builds the printed purchase-order block for a company.
 	 *
 	 * @remarks
-	 * Address names the primary `supplier.company_addresses` row through the
-	 * supplier module's own repository once addresses are served; until then it
-	 * is the concatenated company contact fields.
+	 * Address is the primary live `supplier.company_addresses` row; the PIC
+	 * block comes from the primary live person. Both fall back to `null`.
 	 */
 	async getPurchaseSnapshot(companyId: string): Promise<TPurchaseSnapshot> {
 		const company = await this.assertActiveCompany(companyId);
+		const [addresses, people] = await Promise.all([
+			this.companyAddresses.listByCompany(companyId),
+			this.people.paginate({ page: 1, limit: 100, companyId }),
+		]);
+		const address =
+			addresses.find((row) => row.isPrimary) ?? addresses[0] ?? null;
+		const pic = people.data.find((row) => row.isPrimary) ?? null;
 		return {
 			code: company.code,
 			name: company.name,
-			address: null,
+			address: address ? address.addressLine : null,
 			taxId: company.taxId,
 			phone: company.phone,
 			email: company.email,
-			picName: null,
-			picTitle: null,
-			picPhone: null,
-			picEmail: null,
+			picName: pic?.name ?? null,
+			picTitle: pic?.title ?? null,
+			picPhone: pic?.phone ?? null,
+			picEmail: pic?.email ?? null,
 		};
 	}
 
