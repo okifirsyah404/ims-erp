@@ -48,6 +48,8 @@ export const NOTIFICATION_TEMPLATE_CODES = [
 	'document.signature_requested',
 	'document.signature_signed',
 	'document.signature_declined',
+	'hr.payroll_draft_ready',
+	'hr.payslip_ready',
 ] as const;
 
 /** CamelCase aliases the notification producer uses (i18next-safe keys). */
@@ -58,6 +60,8 @@ export const NOTIFICATION_TEMPLATE_KEYS = {
 	'document.signature_requested': 'document.signatureRequested',
 	'document.signature_signed': 'document.signatureSigned',
 	'document.signature_declined': 'document.signatureDeclined',
+	'hr.payroll_draft_ready': 'hr.payrollDraftReady',
+	'hr.payslip_ready': 'hr.payslipReady',
 } as const;
 export type PushNotificationTemplateCode = (typeof NOTIFICATION_TEMPLATE_CODES)[number];
 

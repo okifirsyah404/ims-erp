@@ -13,6 +13,7 @@ import { registerHumanResource } from '@app/human-resource';
 import { registerWebhook } from '@app/webhook';
 import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
 import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
+import { registerPayrollPayDaySchedule, startAgreementPdfWorker, startPayrollPayDayWorker, startPayslipPdfWorker } from '@app/human-resource';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerFinance } from '@app/finance';
 import { registerTax } from '@app/tax';
@@ -173,6 +174,8 @@ const leadFollowUpWorker = startLeadFollowUpWorker();
 const quotationFollowUpWorker = startQuotationFollowUpWorker();
 // ERP-0012: `supplier_bill.due` reminders, same switch.
 const billDueWorker = startSupplierBillDueWorker();
+// ERP-0120: the daily payroll draft tick, same switch.
+const payrollPayDayWorker = startPayrollPayDayWorker();
 startWorkers(
 	[
 		startAvatarWorker(),
@@ -182,11 +185,16 @@ startWorkers(
 		startWhatsappWorker(),
 		// ERP-0067: SPH PDF + `quotation.sent` after a quotation is sent.
 		startQuotationSentWorker(),
+		// ERP-0121: the employment agreement PDF after an invite is claimed.
+		startAgreementPdfWorker(),
+		// ERP-0122: payslip PDFs after a payroll period is approved.
+		startPayslipPdfWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
 		...(leadFollowUpWorker ? [leadFollowUpWorker] : []),
 		...(quotationFollowUpWorker ? [quotationFollowUpWorker] : []),
 		...(billDueWorker ? [billDueWorker] : []),
+		...(payrollPayDayWorker ? [payrollPayDayWorker] : []),
 	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
@@ -206,6 +214,12 @@ if (billDueWorker) {
 	await registerSupplierBillDueSchedule().then(
 		() => pinoLogger.info('supplier_bill.due reminder schedule registered'),
 		(error: unknown) => pinoLogger.error({ err: error }, 'supplier_bill.due schedule not registered'),
+	);
+}
+if (payrollPayDayWorker) {
+	await registerPayrollPayDaySchedule().then(
+		() => pinoLogger.info('payroll payday schedule registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'payroll payday schedule not registered'),
 	);
 }
 if (mailWorker) {

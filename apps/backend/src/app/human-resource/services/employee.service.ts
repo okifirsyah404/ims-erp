@@ -1,6 +1,8 @@
 import type { TEmployeeInsert, TEmployeeSelect } from '@drizzle/schemas/human-resource.schema';
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
+import { EXPORTED_USER_SERVICE_TOKEN } from '@app/user/constants/di';
+import type { ExportedUserService } from '@app/user/services/exported-user.service';
 import { HUMAN_RESOURCE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { HumanResourceNumberingService } from './human-resource-numbering.service';
 import { USER_PERSONAL_FIELDS_PORT_TOKEN } from '@app/user/constants/di';
@@ -83,6 +85,9 @@ export class EmployeeService {
 		private readonly personalFields: IUserPersonalFieldsPort,
 		@inject(EMPLOYEE_INVITE_SERVICE_TOKEN)
 		private readonly inviteService: EmployeeInviteService,
+		/** The linked login on the detail screen; optional for tests that never read it. */
+		@inject(EXPORTED_USER_SERVICE_TOKEN)
+		private readonly users?: Pick<ExportedUserService, 'accountDetail'> & Partial<Pick<ExportedUserService, 'summaries'>>,
 	) {}
 
 	/**
@@ -91,13 +96,31 @@ export class EmployeeService {
 	 */
 	async list(ctx: TEmployeeContext, query: TEmployeeListQuery): Promise<TEmployeePage> {
 		const organizationIds = ctx.organizationId ? [ctx.organizationId] : [];
+		// Gender and marital status live on auth.users: the user module turns them into user ids.
+		const personalFilter = query.gender || query.maritalStatus;
+		const userIds =
+			personalFilter && this.personalFields.findUserIds
+				? await this.personalFields.findUserIds({ gender: query.gender, maritalStatus: query.maritalStatus })
+				: null;
 		const page = await this.repository.paginate({
 			...query,
+			// "Organization level" without an explicit organization means the caller's own.
+			organizationId: query.organizationId ?? (query.scope === 'organization' ? (ctx.organizationId ?? undefined) : undefined),
 			organizationIds,
 			includeCompany: true,
+			userIds,
 		});
-		const data = await Promise.all(page.data.map((row) => this.withPersonal(row)));
-		return { meta: page.meta, data: data.map((dto) => masked(ctx, dto)) };
+		const [data, logins] = await Promise.all([
+			Promise.all(page.data.map((row) => this.withPersonal(row))),
+			this.users?.summaries ? this.users.summaries(page.data.flatMap((row) => (row.userId ? [row.userId] : []))) : Promise.resolve(new Map()),
+		]);
+		return {
+			meta: page.meta,
+			data: data.map((dto) => {
+				const login = dto.userId ? logins.get(dto.userId) : undefined;
+				return { ...masked(ctx, dto), login: login ? { username: login.username, image: login.image } : null };
+			}),
+		};
 	}
 
 	/** One employee; a non-admin only sees own-org or company-level rows. */
@@ -111,7 +134,11 @@ export class EmployeeService {
 		) {
 			throw new EmployeeNotFoundError();
 		}
-		return this.withPersonal(row).then((dto) => masked(ctx, dto));
+		const [dto, account] = await Promise.all([
+			this.withPersonal(row).then((value) => masked(ctx, value)),
+			row.userId && this.users ? this.users.accountDetail(row.userId) : Promise.resolve(null),
+		]);
+		return { ...dto, account };
 	}
 
 	/** Joins personal fields from `auth.users` onto an employee row. */

@@ -37,6 +37,10 @@ export class TaskController {
 				'/:id/status',
 				async ({ params, body, erp }) => ok(await service.setStatus((await context(erp)).scope, id(params), taskStatusSchema.parse(body).status)),
 				{ erp: { permission: ['task:update'] }, detail: { description: 'Marks a task done, cancelled or open again' } },
-			);
+			)
+			.delete('/:id', async ({ params, erp }) => ok(await service.remove((await context(erp)).scope, id(params))), {
+				erp: { permission: ['task:update'] },
+				detail: { description: 'Soft deletes a task' },
+			});
 	}
 }

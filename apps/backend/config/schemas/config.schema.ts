@@ -135,6 +135,8 @@ export const SchedulerConfigSchema = z.object({
 	salesFollowUpCron: z.string().min(1),
 	/** ERP-0012: daily `supplier_bill.due` reminders (Asia/Jakarta). */
 	billDueCron: z.string().min(1),
+	/** ERP-0120: daily payroll draft tick (Asia/Jakarta); the tick checks the configured payday. */
+	payrollCron: z.string().min(1),
 	/** Guest PII is nulled this many months after `closed_at`. */
 	guestPiiRetentionMonths: z.number().int().min(1),
 	/** Cron for the read-notification prune; daily by default. */

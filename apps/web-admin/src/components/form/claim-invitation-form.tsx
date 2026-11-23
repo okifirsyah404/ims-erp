@@ -19,13 +19,16 @@ import {
 import { Input } from '@ims-erp/ui/components/input';
 import { PasswordInput } from '@/components/password-input';
 import { CountryPhoneField } from '@/components/form/country-phone-field';
+import { ClaimPersonalFields } from '@/components/form/claim-personal-fields';
+import { EMPTY_CLAIM_PERSONAL, toClaimPersonal } from '@/lib/claim-personal';
 
 const USERNAME_RE = /^[a-zA-Z0-9_]+$/;
 
 /**
  * Claim-invitation form: shows the read-only invitee context resolved from
- * the token, then collects username + password + phone (the backend's form
- * 1). A successful claim signs the user in via the response's set-cookie.
+ * the token, then collects username + password + phone and the personal data
+ * the HR module needs (ERP-0121). A successful claim signs the user in via the
+ * response's set-cookie.
  */
 export function ClaimInvitationForm({
 	className,
@@ -43,6 +46,7 @@ export function ClaimInvitationForm({
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [phone, setPhone] = useState('');
+	const [personal, setPersonal] = useState(EMPTY_CLAIM_PERSONAL);
 	const [error, setError] = useState<string | null>(null);
 	const [pending, setPending] = useState(false);
 	const { t } = useTranslation(['claim', 'common']);
@@ -84,12 +88,18 @@ export function ClaimInvitationForm({
 			setError(t('form.phoneInvalid'));
 			return;
 		}
+		const checked = toClaimPersonal(personal);
+		if ('error' in checked) {
+			setError(t(`personal.invalid.${checked.error}`));
+			return;
+		}
 		setPending(true);
 		try {
 			const result = await claimInvitation(token, {
 				username,
 				password,
 				phone,
+				personal: checked.data,
 			});
 			onSuccess?.(result?.organizationName ?? null);
 		} catch (claimError) {
@@ -161,6 +171,7 @@ export function ClaimInvitationForm({
 									</FieldLabel>
 									<CountryPhoneField id='claim-phone' onChange={setPhone} />
 								</Field>
+								<ClaimPersonalFields value={personal} onChange={setPersonal} />
 								{error && <p className='text-sm text-destructive'>{error}</p>}
 								<Button type='submit' className='w-full' disabled={pending}>
 									{pending ? t('form.claiming') : t('form.submit')}

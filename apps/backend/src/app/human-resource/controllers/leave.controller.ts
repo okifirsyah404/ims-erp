@@ -51,6 +51,11 @@ export class LeaveController {
 				},
 				{ erp: { permission: ['leave:create'] }, detail: { description: 'Records a leave request for an employee' } },
 			)
+			.put(
+				'/leave/:id',
+				async ({ params, body, erp }) => ok(await service.updateLeave((await context(erp)).scope, id(params), leaveBodySchema.parse(body))),
+				{ erp: { permission: ['leave:create'] }, detail: { description: 'Edits a leave request while it is submitted' } },
+			)
 			.post(
 				'/leave/:id/approve',
 				async ({ params, body, erp }) => {
@@ -86,6 +91,11 @@ export class LeaveController {
 					return status(201, created(await service.createOvertime(ctx.scope, ctx.actorUserId, overtimeBodySchema.parse(body))));
 				},
 				{ erp: { permission: ['overtime:create'] }, detail: { description: 'Records overtime for an employee' } },
+			)
+			.put(
+				'/overtime/:id',
+				async ({ params, body, erp }) => ok(await service.updateOvertime((await context(erp)).scope, id(params), overtimeBodySchema.parse(body))),
+				{ erp: { permission: ['overtime:create'] }, detail: { description: 'Edits an overtime record while it is submitted' } },
 			)
 			.post(
 				'/overtime/:id/approve',

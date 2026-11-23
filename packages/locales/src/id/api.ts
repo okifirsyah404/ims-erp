@@ -450,6 +450,10 @@ const api: Record<keyof typeof en, string> = {
 	'hr.notFound.overtime': 'Catatan lembur tidak ditemukan',
 	'hr.notFound.task': 'Tugas tidak ditemukan',
 	'hr.notFound.salary': 'Ringkasan gaji tidak ditemukan',
+	'hr.notFound.attendance': 'Data absensi tidak ditemukan',
+	'hr.notFound.schedule': 'Jadwal tidak ditemukan',
+	'hr.notFound.salaryPeriod': 'Periode gaji tidak ditemukan',
+	'hr.notFound.document': 'Dokumen karyawan tidak ditemukan',
 	'hr.employeeState.inactive': 'Karyawan tidak aktif',
 	'hr.leave.dates': 'Tanggal selesai sebelum tanggal mulai',
 	'hr.leave.noWorkingDays': 'Rentang tanggal tidak berisi hari kerja (Minggu tidak dihitung)',
@@ -458,6 +462,7 @@ const api: Record<keyof typeof en, string> = {
 	'hr.leave.quota': 'Sisa cuti tahun ini tidak cukup: sisa {{remaining}} hari, diajukan {{requested}}',
 	'hr.requestState.decide': 'Hanya pengajuan yang menunggu yang bisa disetujui atau ditolak',
 	'hr.requestState.cancel': 'Pengajuan ini sudah ditolak atau dibatalkan',
+	'hr.requestState.edit': 'Hanya pengajuan berstatus diajukan yang dapat diubah',
 	'hr.selfDecision': 'Persetujuan harus oleh orang lain, bukan yang mencatat pengajuan',
 	'hr.salary.locked': 'Ringkasan gaji ini sudah disetujui dan terkunci',
 	'hr.salary.nothingToApprove': 'Tidak ada draf ringkasan gaji di periode ini',
@@ -467,6 +472,16 @@ const api: Record<keyof typeof en, string> = {
 	'hr.import.empty': 'File tidak berisi baris data',
 	'hr.import.tooMany': 'File berisi lebih dari 2000 baris',
 	'hr.attendanceTimes': 'Jam pulang lebih awal dari jam masuk',
+	'hr.attendance.leaveOwned': 'Hari ini dicatat oleh cuti yang disetujui; batalkan cutinya',
+	'hr.attendance.duplicate': 'Karyawan sudah memiliki data absensi pada tanggal ini',
+	'hr.schedule.duplicate': 'Karyawan sudah memiliki jadwal pada tanggal ini',
+	'hr.schedule.rangeTooLong': 'Pengisian jadwal paling banyak {{max}} hari',
+	'hr.salaryPeriod.overlap': 'Periode baru harus dimulai setelah {{after}}',
+	'hr.salaryPeriod.notActive': 'Hanya periode gaji yang aktif yang dapat diubah',
+	'hr.salaryPeriod.notLatest': 'Hanya periode gaji terakhir yang dapat dihapus',
+	'hr.employeeDocument.notAgreement': 'Hanya Perjanjian Kerja yang aktif yang memiliki PDF otomatis',
+	'hr.payslip.notReady': 'PDF slip gaji belum siap',
+	'hr.payslip.notApproved': 'Hanya data gaji yang sudah disetujui yang memiliki slip',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',
@@ -521,6 +536,8 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.cashBankAccountCodeTaken':
 		'Kode akun kas/bank sudah digunakan',
 	'accounting.cashBankAccountInactive': 'Akun kas/bank tidak aktif',
+	'accounting.employeeBankAccountNotFound': 'Rekening karyawan tidak ditemukan',
+	'accounting.employeeNotFound': 'Karyawan tidak ditemukan',
 	'accounting.cashBankLinkRequired':
 		'Akun kas/bank belum ditautkan ke akun buku besar; tambahkan tautan sebelum mencatat pergerakan',
 	'accounting.cashBankTransactionNotFound':

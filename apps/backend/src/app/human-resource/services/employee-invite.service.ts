@@ -14,7 +14,8 @@ import { HUMAN_RESOURCE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { HumanResourceNumberingService } from './human-resource-numbering.service';
 import { USER_PERSONAL_FIELDS_PORT_TOKEN } from '@app/user/constants/di';
 import type { IUserPersonalFieldsPort } from '@app/user/contracts/user-personal-fields.port';
-import { EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
+import { EMPLOYEE_DOCUMENT_SERVICE_TOKEN, EMPLOYEE_REPOSITORY_TOKEN } from '../constants/di';
+import type { EmployeeDocumentService } from './employee-document.service';
 import type { TCreateEmployee } from '../contracts/hr.contract';
 import { toRow, personalPatchFrom, withPersonalFields } from './employee.mappers';
 import type { IEmployeeRepository } from '../contracts/employee.repository.interface';
@@ -72,8 +73,9 @@ export type TInviteEmployeeResult =
  * service cycle. Controllers stay HTTP-only and call this service.
  *
  * Sequence per row: (1) reject an email that already belongs to a live
- * employee, (2) run the invitation pipeline, (3) insert the employee. If (3)
- * fails after (2) succeeded, the invitation is cancelled and the pending user
+ * employee, (2) run the invitation pipeline, (3) insert the employee, (4)
+ * open the draft employment agreement (ERP-0121). If (3) or (4) fails after
+ * (2) succeeded, the invitation is cancelled and the pending user
  * soft-deleted, so no orphan pending account remains.
  */
 @injectable()
@@ -87,6 +89,9 @@ export class EmployeeInviteService {
 		private readonly numbering: HumanResourceNumberingService,
 		@inject(USER_PERSONAL_FIELDS_PORT_TOKEN)
 		private readonly personalFields: IUserPersonalFieldsPort,
+		/** ERP-0121: the draft employment agreement opened with every employee. */
+		@inject(EMPLOYEE_DOCUMENT_SERVICE_TOKEN)
+		private readonly documents: Pick<EmployeeDocumentService, 'ensureAgreement'>,
 	) {}
 
 	/** Single invite: errors propagate to the caller (HTTP status mapping). */
@@ -150,6 +155,14 @@ export class EmployeeInviteService {
 		// `hr_employees_user_uq`; the invitation above was still (re)sent.
 		const existing = await this.employees.findByUserId(invited.userId);
 		if (existing && existing.organizationId === (row.organizationId ?? null)) {
+			// The earlier attempt may have failed on the agreement itself.
+			try {
+				await this.documents.ensureAgreement(existing);
+			} catch (error) {
+				await this.invitations.rollbackPending(invited.invitation.id, invited.userId, actor);
+				if (error instanceof AppError) throw new EmployeeInviteError(error.message);
+				throw error;
+			}
 			return {
 				ok: true,
 				email: row.email,
@@ -176,6 +189,9 @@ export class EmployeeInviteService {
 				createdAt: new Date(),
 			});
 			await this.personalFields.update(invited.userId, personalPatchFrom(body));
+			// ERP-0121 (grill-me Q11/Q12): the draft agreement belongs to the invite;
+			// a failure here rolls the whole row back like the employee insert.
+			await this.documents.ensureAgreement(inserted);
 			const employee = await withPersonalFields(this.personalFields, inserted);
 			return { ok: true, email: row.email, invitation: invited, employee };
 		} catch (error) {

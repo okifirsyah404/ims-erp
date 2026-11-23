@@ -200,9 +200,12 @@ no central code-number module.
   supplier bills, AR/AP open items, credit memos, expense claims, advances and
   settlements, asset depreciation, report archives, payment terms, settings.
 - Journal `source_module` vocabulary: `finance|sale|payment|tax|...`.
-- Salary stays in `human_resource` (Q39).
-- **Contract**: finance services for posting; `ExportedFinanceService` and
-  `ExportedJournalService` (tax recap) are not built yet.
+- Salary stays in `human_resource` (Q39); the employees' salary payee accounts
+  are `cash_bank_accounts` rows with `employee_id` (ERP-0119), served at
+  `/finance/employee-bank-accounts` and invisible to every treasury query.
+- **Contract**: finance services for posting; `ExportedFinanceService`
+  (repository-only, ERP-0122: `findPrimaryEmployeeBankAccount` for the
+  payslip); `ExportedJournalService` (tax recap) is not built yet.
 
 ### 12. Tax - `tax` (new, split from accounting)
 
@@ -237,7 +240,8 @@ no central code-number module.
 - **Owns** employees and addresses, attendance, leave types/requests,
   overtime, tasks, salaries and salary records, schedules, settings.
 - **Contract**: `ExportedEmployeeService` (`findEmployeeById`,
-  `findEmployeeByUserId`).
+  `findEmployeeByUserId`). Finance calls `findEmployeeById` before writing an
+  employee payee account (`finance.cash_bank_accounts.employee_id`, ERP-0119).
 
 ### 17. Document - `document`
 
@@ -245,6 +249,14 @@ no central code-number module.
   user signatures, access logs, shares, tags and links, settings.
   `organization_id` is nullable (NULL = company-wide).
 - `document.issue` takes the owning module's `code`.
+- `DocumentService.createDraft` (ERP-0121) is the exception: it codes the draft
+  from this module's own `document` series, for an owning module that has no
+  code of its own (the employee documents of `human_resource`: `module =
+  human_resource`, `source_type = employee`, `source_id = employees.id`).
+  `listBySource` and `attachGeneratedFileTo` serve the same callers;
+  `issueForSource` registers an already-final row the same way (the payslip,
+  `source_type = employee_salary_record`, ERP-0122) and `readFile` returns a
+  file's bytes for a ZIP bundle.
 
 ### 18. Notification - `notification`
 

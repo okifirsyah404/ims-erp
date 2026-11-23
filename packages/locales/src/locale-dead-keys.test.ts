@@ -181,6 +181,11 @@ const DYNAMIC_PREFIXES = [
 	'hr.requestState.',
 	'hr.salary.',
 	'hr.import.',
+	'hr.attendance.',
+	'hr.schedule.',
+	'hr.salaryPeriod.',
+	'hr.employeeDocument.',
+	'hr.payslip.',
 	'licensing.notFound.',
 	'licensing.contract.',
 	'licensing.state.',
@@ -246,6 +251,19 @@ const DYNAMIC_PREFIXES = [
 	'template.document.signatureDeclined.',
 	// Supplier address kinds are server enum values labelled at render.
 	'procurement:addressKind.',
+	// Employee payee account types (ERP-0119) are server enum values.
+	'hr:bank.type.',
+	// Claim personal-data options and checks (ERP-0121) are composed from enum values.
+	'personal.genderOption.',
+	'personal.maritalOption.',
+	'personal.invalid.',
+	// Employee document types and registry statuses (ERP-0121) are server values.
+	'hr:documents.type.',
+	'hr:documents.status.',
+	// The employee's login account (auth.users enum values).
+	'hr:account.status.',
+	'hr:account.genderOption.',
+	'hr:account.maritalOption.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

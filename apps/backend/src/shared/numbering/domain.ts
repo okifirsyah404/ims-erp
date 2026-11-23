@@ -64,6 +64,8 @@ export const CODE_TYPES_BY_SCHEMA = {
 		'cash_bank_transaction',
 		'bank_reconciliation',
 		'asset_depreciation',
+		// Employees' salary payee accounts in cash_bank_accounts (ERP-0119).
+		'employee_bank_account',
 	],
 	tax: ['tax_record', 'withholding_tax_record'],
 	payment: ['payment'],
@@ -126,6 +128,7 @@ export const CODE_TYPE_CODES: Record<CodeType, string> = {
 	cash_bank_transaction: 'CB',
 	bank_reconciliation: 'REC',
 	asset_depreciation: 'DEP',
+	employee_bank_account: 'REK',
 	tax_record: 'TAX',
 	withholding_tax_record: 'WHT',
 	payment: 'PAY',

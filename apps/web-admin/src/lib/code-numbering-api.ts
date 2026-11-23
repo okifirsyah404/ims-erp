@@ -54,6 +54,7 @@ export type TCodeType =
 	| 'cash_bank_transaction'
 	| 'bank_reconciliation'
 	| 'asset_depreciation'
+	| 'employee_bank_account'
 	| 'tax_record'
 	| 'withholding_tax_record'
 	| 'payment'

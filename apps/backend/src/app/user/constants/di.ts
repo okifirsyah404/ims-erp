@@ -1,4 +1,5 @@
 import { InjectionToken } from 'tsyringe';
+import type { IInvitationClaimPort } from '../contracts/invitation-claim.port';
 import type { IInvitationRepository } from '../contracts/invitation.repository.interface';
 import type { IInvitationMailer } from '../contracts/invitation-mailer.gateway.interface';
 import type {
@@ -24,6 +25,9 @@ export const EXPORTED_USER_SERVICE_TOKEN: InjectionToken<ExportedUserService> = 
 /** Cross-module port: slug → id for bulk invite files. */
 export const ORGANIZATION_SLUG_RESOLVER_TOKEN: InjectionToken<IOrganizationSlugResolverPort> =
 	Symbol('ORGANIZATION_SLUG_RESOLVER');
+
+/** Cross-module port: the claim's personal data and post-claim work, implemented by HR (ERP-0121). */
+export const INVITATION_CLAIM_PORT_TOKEN: InjectionToken<IInvitationClaimPort> = Symbol('INVITATION_CLAIM_PORT');
 
 /** Cross-module port: invite plus employee creation, implemented by HR (ERP-0034). */
 export const INVITATION_EMPLOYEE_PORT_TOKEN: InjectionToken<

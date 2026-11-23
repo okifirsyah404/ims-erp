@@ -15,6 +15,7 @@ import { DepreciationController } from './controllers/depreciation.controller';
 import { ExpenseController } from './controllers/expense.controller';
 import { LedgerController } from './controllers/ledger.controller';
 import { FinanceOperationsController } from './controllers/finance-operations.controller';
+import { EmployeeBankAccountController } from './controllers/employee-bank-account.controller';
 
 export { registerFinance } from './container';
 export { registerSupplierBillDueSchedule } from './queues/supplier-bill-due.queue';
@@ -33,5 +34,6 @@ export function financeModule() {
 		.use(LedgerController.plugin())
 		.use(DepreciationController.plugin())
 		.use(FinanceOperationsController.plugin())
+		.use(EmployeeBankAccountController.plugin())
 		.use(ExpenseController.plugin());
 }
