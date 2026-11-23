@@ -8,8 +8,8 @@
  * `organization` schema (Q4). Money is bigint IDR minor units; business dates are
  * Jakarta `date` strings.
  *
- * Target-only tables (`employee_addresses`, `schedules`) are defined in
- * `docs.dbml` only (Q22).
+ * `schedules` is built since ERP-0118 and `employee_addresses` since ERP-0121;
+ * both were target-only before (Q22).
  */
 import {
 	unixTimestamp,
@@ -343,17 +343,93 @@ export const employeeTasks = humanResourceSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * human_resource.employee_salaries (new, absorbs hr.bank_accounts)
+ * human_resource.employee_addresses (ERP-0121)
+ * ------------------------------------------------------------------------ */
+
+export const EMPLOYEE_ADDRESS_KINDS = ['residence', 'current', 'birth', 'other'] as const;
+export type EmployeeAddressKind = (typeof EMPLOYEE_ADDRESS_KINDS)[number];
+
+/**
+ * Address of an employee (ADR-0024 Q10 address contract: only `village_id`
+ * is stored; district, regency and province come from the location module).
+ * The residence address is entered on the invitation claim form.
+ */
+export const employeeAddresses = humanResourceSchema.table(
+	'employee_addresses',
+	{
+		id: id(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'restrict' }),
+		kind: text('kind').$type<EmployeeAddressKind>().notNull().default('residence'),
+		addressLine: text('address_line').notNull(),
+		/** Logical reference to location.villages.id — cross-module FK omitted. */
+		villageId: uuid('village_id'),
+		postalCode: varchar('postal_code', { length: 10 }),
+		isPrimary: boolean('is_primary').notNull().default(false),
+		...timestamps,
+	},
+	(table) => [
+		index('employee_addresses_employee_id_idx').on(table.employeeId),
+		uniqueIndex('employee_addresses_primary_uq')
+			.on(table.employeeId)
+			.where(sql`is_primary AND deleted_at IS NULL`),
+		check('employee_addresses_kind_check', sql`kind IN ('residence', 'current', 'birth', 'other')`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * human_resource.schedules (ERP-0118)
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Work shift of one employee on one date (ADR-0024 Q20).
+ *
+ * @remarks
+ * Entered per cell or filled from a weekly pattern by HR. A day off has no
+ * times; a working day has both, and an end earlier than the start is an
+ * overnight shift. One live row per employee and date.
+ */
+export const schedules = humanResourceSchema.table(
+	'schedules',
+	{
+		id: id(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'restrict' }),
+		workDate: date('work_date').notNull(),
+		shiftStart: varchar('shift_start', { length: 5 }),
+		shiftEnd: varchar('shift_end', { length: 5 }),
+		shiftLabel: text('shift_label'),
+		isDayOff: boolean('is_day_off').notNull().default(false),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('schedules_employee_date_uq')
+			.on(table.employeeId, table.workDate)
+			.where(sql`deleted_at IS NULL`),
+		index('schedules_work_date_idx').on(table.workDate),
+		check(
+			'schedules_shift_check',
+			sql`(is_day_off AND shift_start IS NULL AND shift_end IS NULL) OR (NOT is_day_off AND shift_start IS NOT NULL AND shift_end IS NOT NULL)`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * human_resource.employee_salaries
  * ------------------------------------------------------------------------ */
 
 /**
  * Effective dated salary agreement of an employee (ADR-0024 Q39).
  *
  * @remarks
- * Base salary, fixed allowances and the salary bank account, which absorbs
- * `hr.bank_accounts`. Finance and payment read it through
- * `ExportedEmployeeService`. `bank_account_number` is masked for callers without
- * `employee:read_private`.
+ * Base salary and fixed allowances per period. A new period closes the
+ * previous one; only the active period is edited and only the latest is
+ * deleted. The salary bank account moved to `finance.cash_bank_accounts`
+ * (`employee_id`, ERP-0119).
  */
 export const employeeSalaries = humanResourceSchema.table(
 	'employee_salaries',
@@ -369,9 +445,6 @@ export const employeeSalaries = humanResourceSchema.table(
 		currencyCode: varchar('currency_code', { length: 3 })
 			.notNull()
 			.default('IDR'),
-		bankName: varchar('bank_name', { length: 100 }),
-		bankAccountNumber: varchar('bank_account_number', { length: 50 }),
-		bankAccountHolder: varchar('bank_account_holder', { length: 200 }),
 		effectiveFrom: date('effective_from').notNull(),
 		effectiveTo: date('effective_to'),
 		isActive: boolean('is_active').notNull().default(true),
@@ -486,6 +559,10 @@ export type TLeaveRequestInsert = typeof leaveRequests.$inferInsert;
 export type TOvertimeRequestSelect = typeof overtimeRequests.$inferSelect;
 export type TOvertimeRequestInsert = typeof overtimeRequests.$inferInsert;
 export type TEmployeeTaskSelect = typeof employeeTasks.$inferSelect;
+export type TScheduleSelect = typeof schedules.$inferSelect;
+export type TEmployeeAddressSelect = typeof employeeAddresses.$inferSelect;
+export type TEmployeeAddressInsert = typeof employeeAddresses.$inferInsert;
+export type TScheduleInsert = typeof schedules.$inferInsert;
 export type TEmployeeTaskInsert = typeof employeeTasks.$inferInsert;
 export type TEmployeeSalarySelect = typeof employeeSalaries.$inferSelect;
 export type TEmployeeSalaryInsert = typeof employeeSalaries.$inferInsert;

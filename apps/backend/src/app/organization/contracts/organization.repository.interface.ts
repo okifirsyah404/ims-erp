@@ -43,6 +43,12 @@ export type TOrganizationWithCounts = TOrganizationSelect & {
  */
 export interface IOrganizationRepository {
 	/**
+	 * Every membership of every live organization: who holds which
+	 * comma-joined `role` where. Used to find the holders of a permission.
+	 */
+	listMemberRoles(): Promise<{ organizationId: string; userId: string; role: string }[]>;
+
+	/**
 	 * Live organizations where `userId` holds a membership, with that
 	 * membership's comma-joined `role`. Soft-deleted organizations excluded.
 	 */

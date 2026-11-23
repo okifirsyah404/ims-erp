@@ -21,6 +21,9 @@ import {
 	approveSalary,
 	generateSalary,
 	importSalary,
+	downloadPayslipZip,
+	payslipDownloadUrl,
+	regeneratePayslip,
 	removeSalary,
 	salaryQueryOptions,
 	saveSalary,
@@ -96,6 +99,21 @@ function SalaryPage() {
 						</>
 					)}
 					{canEdit && !locked && <Button onClick={() => setEditing({ row: null })}>{t('hr:salary.add')}</Button>}
+					{locked && (
+						<Button
+							variant='outline'
+							disabled={busy}
+							onClick={async () => {
+								try {
+									await downloadPayslipZip(period);
+								} catch (cause) {
+									toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+								}
+							}}
+						>
+							{t('hr:payslip.downloadAll')}
+						</Button>
+					)}
 					{canApprove && data?.state === 'draft' && (
 						<Button variant='secondary' onClick={() => setApproving(true)}>
 							{t('hr:salary.approve')}
@@ -148,6 +166,29 @@ function SalaryPage() {
 											</TableCell>
 										))}
 										<TableCell className='text-right whitespace-nowrap'>
+											{row.status === 'approved' && (
+												<>
+													<Button
+														size='sm'
+														variant='ghost'
+														onClick={async () => {
+															try {
+																const { url } = await payslipDownloadUrl(row.id);
+																window.open(url, '_blank', 'noopener');
+															} catch (cause) {
+																toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+															}
+														}}
+													>
+														{t('hr:payslip.download')}
+													</Button>
+													{canEdit && (
+														<Button size='sm' variant='ghost' disabled={busy} onClick={() => void run(() => regeneratePayslip(row.id), t('hr:payslip.queued'))}>
+															{t('hr:payslip.regenerate')}
+														</Button>
+													)}
+												</>
+											)}
 											{canEdit && row.status === 'draft' && (
 												<>
 													<Button size='sm' variant='ghost' onClick={() => setEditing({ row })}>

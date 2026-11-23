@@ -64,6 +64,25 @@ export const createDocumentTemplateSchema = z.object({
 export type TCreateDocumentTemplateInput = z.output<typeof createDocumentTemplateSchema>;
 
 /**
+ * A draft document another module opens for one of its rows (ERP-0121): the
+ * code comes from the document module's own `document` series, the status is
+ * `draft` until it is signed or issued.
+ */
+export type TDraftDocumentInput = {
+	/** Free document type of the owning module, e.g. `employment_agreement`. */
+	documentType: string;
+	title: string;
+	module: string;
+	sourceType: string;
+	sourceId: string;
+	/** `null` = company-wide. */
+	organizationId: string | null;
+};
+
+/** A registry row with its live files, for an owning module's screens. */
+export type TSourceDocument = TDocumentSelect & { files: TDocumentFileView[] };
+
+/**
  * One already-issued business document to record in the registry (ERP-0044).
  *
  * @remarks

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { claimPersonalDataSchema } from './invitation-claim.port';
 import {
 	employmentTypeSchema,
 	erpRoleNames,
@@ -104,6 +105,8 @@ export const claimInvitationSchema = z.object({
 		),
 	password: z.string().min(8).max(72),
 	phone: e164PhoneSchema,
+	/** ERP-0121: the invitee's personal data, stored by the HR module. */
+	personal: claimPersonalDataSchema,
 });
 export type TClaimInvitation = z.infer<typeof claimInvitationSchema>;
 

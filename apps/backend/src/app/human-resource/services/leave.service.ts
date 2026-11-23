@@ -110,6 +110,29 @@ export class LeaveService {
 		return this.leaveView(scope, created);
 	}
 
+	/**
+	 * Edits a request that is still `submitted`: the same checks as creation,
+	 * with this request left out of the overlap and quota counts.
+	 */
+	async updateLeave(scope: THrScope, id: string, body: TLeaveBody): Promise<TLeaveView> {
+		const current = await this.requireLeave(scope, id);
+		if (current.status !== 'submitted') throw new RequestStateError('edit');
+		if (body.employeeId !== current.employeeId) await this.employees.requireActive(scope, body.employeeId);
+		const type = await this.repository.findType(body.leaveTypeId);
+		if (!type) throw new HrNotFoundError('leaveType');
+		if (!type.isActive && type.id !== current.leaveTypeId) throw new LeaveInvalidError('typeInactive');
+		if (body.endDate < body.startDate) throw new LeaveInvalidError('dates');
+		const days = leaveDates(body.startDate, body.endDate).length;
+		if (days === 0) throw new LeaveInvalidError('noWorkingDays');
+		if ((await this.repository.overlapping(body.employeeId, body.startDate, body.endDate, id)).length > 0) {
+			throw new LeaveInvalidError('overlap');
+		}
+		await this.assertQuota(type, body.employeeId, body.startDate, days, id);
+		const updated = await this.repository.transitionLeave(id, ['submitted'], { ...body, days });
+		if (!updated) throw new RequestStateError('edit');
+		return this.leaveView(scope, updated);
+	}
+
 	/** The request, if its employee is visible to the caller. */
 	private async requireLeave(scope: THrScope, id: string): Promise<TLeaveRequestSelect> {
 		const row = await this.repository.findLeave(id);
@@ -212,6 +235,16 @@ export class LeaveService {
 			recordedBy: actorUserId,
 		});
 		return this.overtimeView(scope, created);
+	}
+
+	/** Edits an overtime record that is still `submitted`. */
+	async updateOvertime(scope: THrScope, id: string, body: TOvertimeBody): Promise<TOvertimeView> {
+		const current = await this.requireOvertime(scope, id);
+		if (current.status !== 'submitted') throw new RequestStateError('edit');
+		if (body.employeeId !== current.employeeId) await this.employees.requireActive(scope, body.employeeId);
+		const updated = await this.repository.transitionOvertime(id, ['submitted'], { ...body, hours: body.hours.toFixed(2) });
+		if (!updated) throw new RequestStateError('edit');
+		return this.overtimeView(scope, updated);
 	}
 
 	private async decideOvertime(scope: THrScope, actorUserId: string, id: string, status: 'approved' | 'rejected', note: string | null) {

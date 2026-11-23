@@ -16,4 +16,10 @@ export interface IUserPersonalFieldsPort {
 
 	/** Writes only the given keys; a missing user is a no-op. */
 	update(userId: string, patch: TUserPersonalFieldsPatch): Promise<void>;
+
+	/**
+	 * Live users matching every given personal field (the employee list
+	 * filters, ERP-0117 follow-up). Absent keys do not filter.
+	 */
+	findUserIds?(filter: Pick<TUserPersonalFieldsPatch, 'gender' | 'maritalStatus'>): Promise<string[]>;
 }

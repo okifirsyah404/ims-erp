@@ -12,6 +12,11 @@ import { LeaveController } from './controllers/leave.controller';
 import { HrPeopleController } from './controllers/people.controller';
 import { SalaryController } from './controllers/salary.controller';
 import { TaskController } from './controllers/task.controller';
+import { ScheduleController } from './controllers/schedule.controller';
+import { SalaryPeriodController } from './controllers/salary-period.controller';
+import { PayrollSettingsController } from './controllers/payroll-settings.controller';
+import { AgreementRenderController, EmployeeDocumentController } from './controllers/employee-document.controller';
+import { MyPayslipController, PayslipController, PayslipRenderController } from './controllers/payslip.controller';
 
 /**
  * Public entry point of the human-resource module.
@@ -22,6 +27,10 @@ import { TaskController } from './controllers/task.controller';
  */
 export * from './container';
 export * from './controllers/employee.controller';
+export { registerPayrollPayDaySchedule } from './queues/payroll-pay-day.queue';
+export { startPayrollPayDayWorker } from './queues/payroll-pay-day.worker';
+export { startAgreementPdfWorker } from './queues/agreement-pdf.worker';
+export { startPayslipPdfWorker } from './queues/payslip-pdf.worker';
 export type { ExportedEmployeeService } from './services/exported-employee.service';
 
 /**
@@ -38,5 +47,16 @@ export function humanResourceModule() {
 		.use(AttendanceController.plugin())
 		.use(LeaveController.plugin())
 		.use(TaskController.plugin())
-		.use(SalaryController.plugin());
+		.use(ScheduleController.plugin())
+		.use(SalaryController.plugin())
+		.use(SalaryPeriodController.plugin())
+		.use(PayrollSettingsController.plugin())
+		.use(EmployeeDocumentController.plugin())
+		// Public: the render token is the only credential (ERP-0121).
+		.use(AgreementRenderController.plugin())
+		// Static `/payslips.zip` before the salary routes' `/:id` siblings resolve (ERP-0122).
+		.use(PayslipController.plugin())
+		// Self-service, session only: the employee comes from the session (ERP-0122).
+		.use(MyPayslipController.plugin())
+		.use(PayslipRenderController.plugin());
 }

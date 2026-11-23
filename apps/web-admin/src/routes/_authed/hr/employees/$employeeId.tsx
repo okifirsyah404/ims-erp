@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -11,6 +11,8 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { useConfirm } from '@/components/confirm-dialog';
+import { EmployeeAccountCard } from '@/components/hr/employee-account-card';
 import { EmployeeRecordCards } from '@/components/hr/employee-records';
 import { toast } from '@/components/toast';
 import { archiveEmployee, employeeDetailQueryOptions } from '@/lib/hr-api';
@@ -27,6 +29,8 @@ function EmployeeDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const canArchive = usePermission('employee.archive');
+	const canUpdate = usePermission('employee.update');
+	const confirm = useConfirm();
 
 	const { data: employee, isPending } = useQuery({
 		...employeeDetailQueryOptions(employeeId),
@@ -45,7 +49,7 @@ function EmployeeDetailPage() {
 
 	if (isPending) {
 		return (
-			<div className='mx-auto max-w-2xl space-y-4 p-4'>
+			<div className='space-y-4 p-6'>
 				<Skeleton className='h-8 w-48' />
 				<Skeleton className='h-64' />
 			</div>
@@ -78,7 +82,7 @@ function EmployeeDetailPage() {
 	];
 
 	return (
-		<div className='mx-auto max-w-4xl space-y-4 p-4'>
+		<div className='space-y-4 p-6'>
 			<div className='flex items-start justify-between gap-3'>
 				<div>
 					<h1 className='text-xl font-semibold'>{employee.fullName}</h1>
@@ -86,6 +90,16 @@ function EmployeeDetailPage() {
 						{employee.employeeCode}
 					</p>
 				</div>
+				<div className='flex items-center gap-2'>
+				{canUpdate && (
+					<Button
+						variant='outline'
+						size='sm'
+						render={<Link to='/hr/employees/$employeeId/edit' params={{ employeeId: employee.id }} />}
+					>
+						{t('hr:detail.edit')}
+					</Button>
+				)}
 				<Badge
 					variant={
 						employee.employmentStatus === 'active'
@@ -97,28 +111,44 @@ function EmployeeDetailPage() {
 				>
 					{t(`hr:status.${employee.employmentStatus}`)}
 				</Badge>
+				</div>
 			</div>
-			<Card>
-				<CardHeader>
-					<CardTitle>{t('hr:detail.details')}</CardTitle>
-				</CardHeader>
-				<CardContent className='grid gap-2 text-sm'>
-					<div className='grid grid-cols-[160px_1fr] gap-2'>
-						{rows.map(([label, value]) => (
-							<div key={label} className='contents'>
-								<span className='text-muted-foreground'>{label}</span>
-								<span>{value || '—'}</span>
-							</div>
-						))}
-					</div>
-				</CardContent>
-			</Card>
+			<div className='grid gap-4 lg:grid-cols-2'>
+				<Card>
+					<CardHeader>
+						<CardTitle>{t('hr:detail.details')}</CardTitle>
+					</CardHeader>
+					<CardContent className='grid gap-2 text-sm'>
+						<div className='grid grid-cols-[160px_1fr] gap-2'>
+							{rows.map(([label, value]) => (
+								<div key={label} className='contents'>
+									<span className='text-muted-foreground'>{label}</span>
+									<span>{value || '—'}</span>
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+				{/* The linked auth.users account and the personal fields stored on it. */}
+				<EmployeeAccountCard employee={employee} />
+			</div>
 			<EmployeeRecordCards employeeId={employee.id} fullName={employee.fullName} />
 			{canArchive && (
 				<Button
 					variant='destructive'
 					disabled={archive.isPending}
-					onClick={() => archive.mutate()}
+					onClick={async () => {
+						if (
+							await confirm({
+								title: t('hr:list.archiveConfirm', { name: employee.fullName }),
+								description: t('hr:list.archiveConfirmDescription'),
+								confirmLabel: t('hr:list.archive'),
+								destructive: true,
+							})
+						) {
+							archive.mutate();
+						}
+					}}
 				>
 					{t('hr:list.archive')}
 				</Button>

@@ -109,7 +109,7 @@ export class LeaveRepository implements ILeaveRepository {
 		};
 	}
 
-	overlapping(employeeId: string, start: string, end: string) {
+	overlapping(employeeId: string, start: string, end: string, excludeId?: string) {
 		return this.database
 			.select()
 			.from(leaveRequests)
@@ -120,6 +120,7 @@ export class LeaveRepository implements ILeaveRepository {
 					inArray(leaveRequests.status, ['submitted', 'approved']),
 					lte(leaveRequests.startDate, end),
 					gte(leaveRequests.endDate, start),
+					excludeId ? ne(leaveRequests.id, excludeId) : undefined,
 				),
 			);
 	}

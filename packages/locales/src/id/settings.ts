@@ -152,6 +152,7 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.cash_bank_transaction': 'Transaksi kas / bank',
 	'numbering.type.bank_reconciliation': 'Rekonsiliasi bank',
 	'numbering.type.asset_depreciation': 'Penyusutan aset',
+	'numbering.type.employee_bank_account': 'Rekening karyawan',
 	'numbering.type.tax_record': 'Catatan pajak',
 	'numbering.type.withholding_tax_record': 'Catatan pajak potong pungut',
 	'numbering.type.payment': 'Pembayaran',
@@ -166,6 +167,19 @@ const settings: Record<keyof typeof en, string> = {
 	'numbering.type.ticket': 'Tiket servis',
 	'numbering.type.employee': 'Karyawan',
 	'numbering.type.document': 'Dokumen',
+
+	// Payroll settings (ERP-0120).
+	'payroll.title': 'Penggajian',
+	'payroll.description': 'Kapan proses harian membuat draf gaji bulan berjalan.',
+	'payroll.appAdminOnly': 'Hanya administrator aplikasi yang dapat membuka pengaturan penggajian.',
+	'payroll.payDayTitle': 'Tanggal gajian',
+	'payroll.enabled': 'Buat draf gaji otomatis pada tanggal gajian',
+	'payroll.payDay': 'Tanggal setiap bulan',
+	'payroll.payDayHint': '1-31. Jika bulan lebih pendek, dipakai tanggal terakhir bulan itu.',
+	'payroll.runHint': 'Pemeriksaan berjalan setiap hari pukul 01:00 WIB, membuat draf untuk karyawan yang belum punya, lalu memberi tahu penyetuju penggajian. Persetujuan tetap manual.',
+	'payroll.nextRun': 'Eksekusi berikutnya: {{date}}',
+	'payroll.off': 'Proses otomatis nonaktif.',
+	'payroll.saved': 'Pengaturan penggajian disimpan',
 };
 
 export default settings;

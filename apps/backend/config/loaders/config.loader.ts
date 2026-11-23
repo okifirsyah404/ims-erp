@@ -273,6 +273,8 @@ export function loadEnvConfig(
 			licenseDueCron: process.env.SCHEDULER_LICENSE_DUE_CRON ?? '0 8 * * *',
 			salesFollowUpCron: process.env.SCHEDULER_SALES_FOLLOW_UP_CRON ?? '0 8 * * 1-5',
 			billDueCron: process.env.SCHEDULER_BILL_DUE_CRON ?? '0 8 * * *',
+			// ERP-0120: daily payroll draft tick (Asia/Jakarta, 01:00 WIB); the tick checks the payday.
+			payrollCron: process.env.SCHEDULER_PAYROLL_CRON ?? '0 1 * * *',
 			guestPiiRetentionMonths:
 				process.env.GUEST_PII_RETENTION_MONTHS == null
 					? 24

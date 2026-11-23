@@ -794,7 +794,34 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `progress.md` 2026-11-06 (step 6c). Gaps: real-PG integration tests; SLA
   and escalation not decided.
 
-## M08 Employees and Attendance
+## M08 Employees and Attendance (sidenav: Human Resource)
+
+### implemented
+- ERP-0117 robust HR slice 1 (2026-11-23): flat "Human Resource" sidenav,
+  employee edit page + archive confirmation, task edit/soft delete,
+  leave/overtime edit while submitted, attendance list with single-row CRUD.
+  Evidence: `progress.md` 2026-11-23 (backend 1406 pass). No browser
+  walk-through yet.
+- ERP-0118 work schedule (2026-11-23): `/hr/schedule` week grid with cell
+  CRUD and a weekly-pattern fill, `schedule` permission, seeder. Evidence:
+  `progress.md` 2026-11-23 (migration on a throwaway database, backend 1412
+  pass). No browser walk-through yet.
+- ERP-0119 salary (2026-11-23): salary periods on the employee page, salary
+  payee accounts in `finance.cash_bank_accounts` (`/finance/employee-bank-accounts`),
+  payroll drafts from the period in force. Evidence: `progress.md` 2026-11-23
+  (backend 1419 pass). No browser walk-through yet.
+- ERP-0120 payday run (2026-11-23): `/settings/payroll` (application admins
+  only), daily `payroll-pay-day` job creating draft payroll on payday and
+  notifying `payroll:approve` holders. Evidence: `progress.md` 2026-11-23
+  (backend 1425 pass). Scheduler not run against a live Redis yet.
+- ERP-0121 invite documents (2026-11-23): draft employment agreement on every
+  invite, personal data on the claim form, agreement PDF after the claim,
+  employee Documents card. Evidence: `progress.md` 2026-11-23 (backend 1434
+  pass). PDF render and browser walk-through not verified.
+- ERP-0122 payslips (2026-11-23): payslip PDF per approved salary record,
+  downloads one / all (ZIP) on the Payroll page, "Slip gaji saya" on
+  `/accounts`. Evidence: `progress.md` 2026-11-23 (backend 1440 pass).
+  Chromium render and browser walk-through not verified.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -807,7 +834,7 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
+- Payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked
 - Automated payroll calculation — T19, ERP-0018. Needs component rules from

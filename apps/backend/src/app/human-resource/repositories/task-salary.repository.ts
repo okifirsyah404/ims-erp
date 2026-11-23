@@ -59,6 +59,16 @@ export class TaskRepository implements ITaskRepository {
 			.returning();
 		return row ?? null;
 	}
+
+	async softDelete(id: string) {
+		const now = new Date();
+		const removed = await this.database
+			.update(employeeTasks)
+			.set({ deletedAt: now, updatedAt: now })
+			.where(and(eq(employeeTasks.id, id), isNull(employeeTasks.deletedAt)))
+			.returning({ id: employeeTasks.id });
+		return removed.length > 0;
+	}
 }
 
 /** Drizzle implementation of {@link ISalaryRepository}. */
@@ -133,6 +143,20 @@ export class SalaryRepository implements ISalaryRepository {
 				),
 			)
 			.returning({ id: employeeSalaryRecords.id });
-		return approved.length;
+		return approved.map((row) => row.id);
+	}
+
+	listApprovedForEmployee(employeeId: string) {
+		return this.database
+			.select()
+			.from(employeeSalaryRecords)
+			.where(
+				and(
+					eq(employeeSalaryRecords.employeeId, employeeId),
+					eq(employeeSalaryRecords.status, 'approved'),
+					isNull(employeeSalaryRecords.deletedAt),
+				),
+			)
+			.orderBy(desc(employeeSalaryRecords.period));
 	}
 }

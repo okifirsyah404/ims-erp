@@ -64,7 +64,7 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 188 |
+| Logical reference columns | 189 |
 | Distinct targets | 25 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 153 |
@@ -81,7 +81,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `auth.users.id` | Identity | 32 |
 | `product.products.id` | Product | 15 |
 | `customer.customers.id` | Customer | 12 |
-| `human_resource.employees.id` | Human Resource | 8 |
+| `human_resource.employees.id` | Human Resource | 9 |
 | `location.villages.id` | Location | 8 |
 | `warehouse.warehouse_storages.id` | Warehouse | 8 |
 | `warehouse.warehouses.id` | Warehouse | 8 |
@@ -229,8 +229,9 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sale.returns`  ->  `customer_id`
 - `ticket.tickets`  ->  `customer_id`
 
-### `human_resource.employees.id` - owner Human Resource, 8 referring columns
+### `human_resource.employees.id` - owner Human Resource, 9 referring columns
 
+- `finance.cash_bank_accounts`  ->  `employee_id`
 - `finance.employee_advances`  ->  `employee_id`
 - `finance.expense_claims`  ->  `employee_id`
 - `finance.expense_settlements`  ->  `employee_id`

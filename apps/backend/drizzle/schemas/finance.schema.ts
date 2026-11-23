@@ -482,6 +482,12 @@ export const cashBankAccounts = financeSchema.table(
 		invoiceUsage: text('invoice_usage'),
 		isPrimary: boolean('is_primary').notNull().default(false),
 		isActive: boolean('is_active').notNull().default(true),
+		/**
+		 * An employee's salary payee account (ERP-0119); NULL on every company
+		 * cash or bank account. Logical reference to human_resource.employees.id
+		 * — cross-module FK omitted.
+		 */
+		employeeId: uuid('employee_id'),
 		...timestamps,
 	},
 	(table) => [
@@ -490,6 +496,14 @@ export const cashBankAccounts = financeSchema.table(
 			table.code,
 		),
 		index('cash_bank_accounts_account_number_idx').on(table.accountNumber),
+		index('cash_bank_accounts_employee_id_idx').on(table.employeeId),
+		uniqueIndex('cash_bank_accounts_employee_primary_uq')
+			.on(table.employeeId)
+			.where(sql`is_primary AND employee_id IS NOT NULL AND deleted_at IS NULL`),
+		check(
+			'cash_bank_accounts_employee_check',
+			sql`employee_id IS NULL OR (account_type IN ('bank', 'ewallet') AND opening_balance = 0 AND current_balance = 0 AND invoice_usage IS NULL)`,
+		),
 		check(
 			'cash_bank_accounts_type_check',
 			sql`account_type IN ('cash', 'bank', 'ewallet', 'clearing')`,

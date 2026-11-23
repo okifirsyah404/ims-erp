@@ -1,8 +1,10 @@
+import type { IInvitationClaimPort, TClaimPersonalData } from '../contracts/invitation-claim.port';
 import { inject, injectable } from 'tsyringe';
 import { runWithEndpointContext } from '@better-auth/core/context';
 import type { TUserInvitationSelect } from '@drizzle/schemas/auth.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import {
+	INVITATION_CLAIM_PORT_TOKEN,
 	INVITATION_MAILER_TOKEN,
 	INVITATION_REPOSITORY_TOKEN,
 	ORGANIZATION_SLUG_RESOLVER_TOKEN,
@@ -118,6 +120,12 @@ export class InvitationService {
 		 */
 		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN)
 		private readonly notifications: ExportedNotificationService,
+		/**
+		 * ERP-0121: the HR side of the claim (personal data, agreement PDF).
+		 * Optional so unit tests that do not exercise it can omit it.
+		 */
+		@inject(INVITATION_CLAIM_PORT_TOKEN)
+		private readonly claimPort?: IInvitationClaimPort,
 	) {}
 
 	/**
@@ -481,7 +489,7 @@ export class InvitationService {
 	 */
 	async claim(
 		rawToken: string,
-		input: { username: string; password: string; phone: string },
+		input: { username: string; password: string; phone: string; personal?: TClaimPersonalData },
 		headers: Headers,
 	): Promise<TClaimResult> {
 		const target = await this.resolveClaimToken(rawToken);
@@ -492,6 +500,12 @@ export class InvitationService {
 		}
 		if (!(await this.users.isPhoneAvailable(input.phone))) {
 			throw ClaimConflictError.phoneInUse();
+		}
+
+		// ERP-0121: personal data first, so invalid data (an unknown village)
+		// fails the claim before any credential exists.
+		if (input.personal && this.claimPort) {
+			await this.claimPort.recordPersonalData(user.id, input.personal);
 		}
 
 		await this.authGateway.claimCredentials({
@@ -533,6 +547,9 @@ export class InvitationService {
 		const { setCookie } = await this.authGateway.createSession(user.id, {
 			password: input.password,
 		}, headers);
+
+		// ERP-0121: the agreement PDF; the port never throws into the claim.
+		await this.claimPort?.afterClaim(user.id);
 
 		return { userId: user.id, setCookie, organizationName };
 	}

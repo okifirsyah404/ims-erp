@@ -42,28 +42,56 @@ function resolveStatus(set: { status?: unknown }): number {
 	return 200;
 }
 
+/**
+ * The path of a request URL, never throwing.
+ *
+ * @remarks
+ * `new URL()` throws `TypeError: Invalid URL` for a malformed request target.
+ * Inside the `onError` microtask that throw had no handler, so one bad request
+ * took the whole process down (seen 2026-11-24 during the ERP-0117 review).
+ * A URL that does not parse is logged as its raw text up to the query string.
+ */
+export function pathOf(url: string): string {
+	try {
+		return new URL(url).pathname;
+	} catch {
+		return String(url).split('?')[0] || '(invalid url)';
+	}
+}
+
+/** An access-log write never fails the request or, in a microtask, the process. */
+function safely(write: () => void): void {
+	try {
+		write();
+	} catch (error) {
+		console.error('request-logger: could not write the access log', error);
+	}
+}
+
 export const requestLogger = new Elysia({ name: 'request-logger' })
 	.onRequest(({ request }) => {
 		(request as TimedRequest)[START_TIME] = performance.now();
 	})
 	.onAfterResponse(({ request, route, set }) => {
-		pinoLogger.info(record(request, route, set), 'request completed');
+		safely(() => pinoLogger.info(record(request, route, set), 'request completed'));
 	})
 	.onError(({ request, route, set, error }) => {
 		// Let every other `onError` arm map the error first; `set.status` is
 		// final by the time the microtask runs.
-		queueMicrotask(() => {
-			pinoLogger.error(
-				{
-					...record(request, route, set),
-					err: {
-						type: (error as Error)?.constructor?.name ?? typeof error,
-						message: (error as Error)?.message ?? String(error),
+		queueMicrotask(() =>
+			safely(() =>
+				pinoLogger.error(
+					{
+						...record(request, route, set),
+						err: {
+							type: (error as Error)?.constructor?.name ?? typeof error,
+							message: (error as Error)?.message ?? String(error),
+						},
 					},
-				},
-				'request failed',
-			);
-		});
+					'request failed',
+				),
+			),
+		);
 	})
 	.as('global');
 
@@ -77,7 +105,7 @@ function record(
 
 	return {
 		method: request.method,
-		path: new URL(request.url).pathname,
+		path: pathOf(request.url),
 		route,
 		status: resolveStatus(set),
 		...(startTime === undefined

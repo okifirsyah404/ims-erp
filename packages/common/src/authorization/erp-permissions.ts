@@ -70,6 +70,8 @@ export const erpStatements = {
 	leave: ['read', 'create', 'cancel', 'approve', 'reject'],
 	/** Overtime recorded by HR and approved by someone else (M08). */
 	overtime: ['read', 'create', 'cancel', 'approve', 'reject'],
+	/** Employee work schedule: one shift per employee per date (ERP-0118). */
+	schedule: ['read', 'create', 'update', 'delete'],
 	disciplinary_record: ['read', 'create', 'update', 'approve'],
 	payroll: ['read', 'create', 'calculate', 'update', 'submit', 'approve', 'export'],
 	payroll_payment: ['read', 'execute'],
@@ -520,6 +522,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		whatsapp: ['read', 'reply', 'manage_faq'],
 		// Records attendance with HR (M08, decision 2026-11-07).
 		attendance: ['read', 'record'],
+		// Plans the work schedule with HR, like attendance (ERP-0118).
+		schedule: ['read', 'create', 'update', 'delete'],
 		product: ['read'],
 		asset_borrowing: [
 			'read',
@@ -791,6 +795,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		attendance: ['read', 'check_in', 'check_out', 'request_correction', 'approve_correction', 'export', 'record'],
 		leave: ['read', 'create', 'cancel', 'approve', 'reject'],
 		overtime: ['read', 'create', 'cancel', 'approve', 'reject'],
+		schedule: ['read', 'create', 'update', 'delete'],
 		// Tasks given to employees outside projects (M08).
 		task: ['read', 'create', 'update'],
 		disciplinary_record: ['read', 'create', 'update', 'approve'],
@@ -865,6 +870,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		daily_report: ['read', 'export'],
 		employee: ['read', 'export'],
 		attendance: ['read', 'export'],
+		schedule: ['read'],
 		product: ['read', 'export'],
 		stock: ['read', 'export'],
 		asset_borrowing: ['read', 'export'],

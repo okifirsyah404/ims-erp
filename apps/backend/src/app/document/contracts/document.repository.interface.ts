@@ -48,6 +48,9 @@ export interface IDocumentRepository {
 	/** The live (not void) current registry row of one source document, if any. */
 	findLiveBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect | null>;
 
+	/** Every registry row of one source (void ones included), newest first (ERP-0121). */
+	listBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect[]>;
+
 	/** Appends one access-trail row (never updated, never skipped). */
 	logAccess(entry: {
 		documentId: string;

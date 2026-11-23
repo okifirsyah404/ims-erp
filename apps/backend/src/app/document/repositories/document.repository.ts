@@ -120,6 +120,21 @@ export class DocumentRepository implements IDocumentRepository {
 		return rows.length;
 	}
 
+	listBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect[]> {
+		return this.database
+			.select()
+			.from(documents)
+			.where(
+				and(
+					eq(documents.module, module),
+					eq(documents.sourceType, sourceType),
+					eq(documents.sourceId, sourceId),
+					isNull(documents.deletedAt),
+				),
+			)
+			.orderBy(desc(documents.createdAt), desc(documents.id));
+	}
+
 	async findLiveBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect | null> {
 		const [row] = await this.database
 			.select()

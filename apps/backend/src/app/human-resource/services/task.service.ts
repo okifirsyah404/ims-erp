@@ -53,4 +53,11 @@ export class TaskService {
 		if (!updated) throw new HrNotFoundError('task');
 		return this.view(scope, updated);
 	}
+
+	/** Soft deletes a task (any status). */
+	async remove(scope: THrScope, id: string): Promise<{ removed: true }> {
+		await this.requireTask(scope, id);
+		if (!(await this.repository.softDelete(id))) throw new HrNotFoundError('task');
+		return { removed: true };
+	}
 }
