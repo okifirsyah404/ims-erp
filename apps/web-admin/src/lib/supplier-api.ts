@@ -4,15 +4,18 @@ import { currentLanguage } from '@/i18n';
 
 /**
  * API client for the supplier master (`/suppliers`, ADR-0024 `supplier`
- * module): companies (the B2B entity a purchase order is issued to) and
- * people (the supplier-side PIC). Company-wide. The backend has no address
- * endpoints yet, so addresses are neither shown nor edited here.
+ * module): companies (the B2B entity a purchase order is issued to), people
+ * (the supplier-side PIC) and their addresses. Company-wide.
  */
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export const SUPPLIER_TYPES = ['company', 'government'] as const;
 export type TSupplierType = (typeof SUPPLIER_TYPES)[number];
+
+export const SUPPLIER_SORT_FIELDS = ['name', 'code', 'createdAt'] as const;
+export type TSupplierSortField = (typeof SUPPLIER_SORT_FIELDS)[number];
+export type TSupplierSortDir = 'asc' | 'desc';
 
 /** `supplier.companies` row. Bank fields are restricted (`supplier:read_bank`). */
 export type TSupplierCompany = {
@@ -24,10 +27,7 @@ export type TSupplierCompany = {
 	taxId: string | null;
 	email: string | null;
 	phone: string | null;
-	whatsapp: string | null;
 	website: string | null;
-	paymentTermsDays: number;
-	paymentTermNote: string | null;
 	bankName: string | null;
 	bankAccountNumber: string | null;
 	bankAccountHolder: string | null;
@@ -43,12 +43,40 @@ export type TSupplierPerson = {
 	title: string | null;
 	phone: string | null;
 	email: string | null;
-	whatsapp: string | null;
 	isPrimary: boolean;
 	status: 'active' | 'inactive';
 };
 
-export type TSupplierCompanyDetail = TSupplierCompany & { people: TSupplierPerson[] };
+/** `supplier.company_addresses` row. */
+export type TSupplierCompanyAddress = {
+	id: string;
+	companyId: string;
+	kind: 'office' | 'factory' | 'warehouse' | 'billing' | 'other';
+	label: string | null;
+	contactName: string | null;
+	contactPhone: string | null;
+	addressLine: string;
+	villageId: string | null;
+	postalCode: string | null;
+	isPrimary: boolean;
+};
+
+/** `supplier.addresses` row of a person. */
+export type TSupplierPersonAddress = {
+	id: string;
+	supplierId: string;
+	kind: 'office' | 'other';
+	label: string | null;
+	addressLine: string;
+	villageId: string | null;
+	postalCode: string | null;
+	isPrimary: boolean;
+};
+
+export type TSupplierCompanyDetail = TSupplierCompany & {
+	people: TSupplierPerson[];
+	addresses: TSupplierCompanyAddress[];
+};
 
 export type TSupplierCompanyInput = Omit<TSupplierCompany, 'id' | 'status'>;
 
@@ -58,8 +86,36 @@ export type TSupplierPersonInput = {
 	title: string | null;
 	phone: string | null;
 	email: string | null;
-	whatsapp: string | null;
 	isPrimary: boolean;
+};
+
+export type TSupplierCompanyAddressInput = {
+	kind: TSupplierCompanyAddress['kind'];
+	label: string | null;
+	contactName: string | null;
+	contactPhone: string | null;
+	addressLine: string;
+	villageId: string | null;
+	postalCode: string | null;
+	isPrimary: boolean;
+};
+
+export type TSupplierPersonAddressInput = {
+	kind: TSupplierPersonAddress['kind'];
+	label: string | null;
+	addressLine: string;
+	villageId: string | null;
+	postalCode: string | null;
+	isPrimary: boolean;
+};
+
+export type TSupplierCompanyListParams = {
+	page?: number;
+	limit?: number;
+	search?: string;
+	status?: 'active' | 'inactive';
+	sortBy?: TSupplierSortField;
+	sortDir?: TSupplierSortDir;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {
@@ -90,12 +146,7 @@ function query(params: Record<string, unknown>) {
 	return search.size ? `?${search}` : '';
 }
 
-export function supplierCompaniesQueryOptions(params: {
-	page?: number;
-	limit?: number;
-	search?: string;
-	status?: 'active' | 'inactive';
-}) {
+export function supplierCompaniesQueryOptions(params: TSupplierCompanyListParams) {
 	return queryOptions({
 		queryKey: ['procurement', 'suppliers', 'companies', params] as const,
 		queryFn: async () => {
@@ -138,4 +189,26 @@ export const setSupplierCompanyActive = (id: string, active: boolean) =>
 export const createSupplierPerson = (input: TSupplierPersonInput) => send<TSupplierPerson>('/suppliers/people', 'POST', input);
 export const removeSupplierPerson = async (id: string) => {
 	await request(`/suppliers/people/${id}`, { method: 'DELETE' });
+};
+
+export const createSupplierCompanyAddress = (companyId: string, input: TSupplierCompanyAddressInput) =>
+	send<TSupplierCompanyAddress>(`/suppliers/companies/${companyId}/addresses`, 'POST', input);
+export const updateSupplierCompanyAddress = (
+	companyId: string,
+	addressId: string,
+	input: Partial<TSupplierCompanyAddressInput>,
+) => send<TSupplierCompanyAddress>(`/suppliers/companies/${companyId}/addresses/${addressId}`, 'PATCH', input);
+export const removeSupplierCompanyAddress = async (companyId: string, addressId: string) => {
+	await request(`/suppliers/companies/${companyId}/addresses/${addressId}`, { method: 'DELETE' });
+};
+
+export const createSupplierPersonAddress = (supplierId: string, input: TSupplierPersonAddressInput) =>
+	send<TSupplierPersonAddress>(`/suppliers/people/${supplierId}/addresses`, 'POST', input);
+export const updateSupplierPersonAddress = (
+	supplierId: string,
+	addressId: string,
+	input: Partial<TSupplierPersonAddressInput>,
+) => send<TSupplierPersonAddress>(`/suppliers/people/${supplierId}/addresses/${addressId}`, 'PATCH', input);
+export const removeSupplierPersonAddress = async (supplierId: string, addressId: string) => {
+	await request(`/suppliers/people/${supplierId}/addresses/${addressId}`, { method: 'DELETE' });
 };
