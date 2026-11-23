@@ -12,6 +12,24 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-24 - CI fix for PR #153: payslip tests depended on the local .env
+
+**Failed check:** "Unit Test Backend" (and the JUnit report) on PR #153: three
+`hr-payslip.service.test.ts` cases expected `attached` and got `skipped`.
+`PayslipService.render` (and `AgreementPdfService.render`) skipped when
+`appConfig.pdf.renderBaseUrl` was empty, on top of `renderer.configured`. CI
+has no `PDF_RENDER_BASE_URL`/`APP_WEB_URL`; a developer `.env` sets
+`APP_WEB_URL`, so it passed locally (Bun loads `.env` even with the variables
+emptied in the shell, which is why it did not reproduce at first).
+
+**Fix:** both services gate on `renderer.configured` only -
+`ChromiumPdfRenderer.configured` already requires the render base URL in
+production, so behaviour there is unchanged. The payslip test now sets
+`appConfig.pdf.renderBaseUrl = null` for its run (restored afterwards), so it
+behaves like CI everywhere. Checked both ways: under that setting the old
+service code fails the same 3 cases CI reported, the fixed code passes 6/6.
+Backend `bun test` 1444 pass, backend lint 0 errors, `tsc` clean.
+
 ## 2026-11-24 - ERP-0117 follow-up: employee page full width + linked login account
 
 **Owner request (review):** make `/hr/employees/:id` full width and show the

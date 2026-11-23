@@ -119,11 +119,12 @@ export class AgreementPdfService {
 	 * the queue retries it.
 	 */
 	async render(documentId: string): Promise<'attached' | 'skipped' | 'missing'> {
-		if (!this.renderer.configured || !appConfig.pdf.renderBaseUrl) return 'skipped';
+		// `configured` already requires Chromium and a render base URL (ChromiumPdfRenderer).
+		if (!this.renderer.configured) return 'skipped';
 		const document = await this.documents.find(documentId);
 		if (!document || document.status === 'void' || document.documentType !== EMPLOYMENT_AGREEMENT) return 'missing';
 		const token = createRenderToken(AGREEMENT_RENDER_KIND, documentId);
-		const url = `${appConfig.pdf.renderBaseUrl.replace(/\/+$/, '')}/print/employment-agreements/${documentId}?token=${encodeURIComponent(token)}`;
+		const url = `${(appConfig.pdf.renderBaseUrl ?? '').replace(/\/+$/, '')}/print/employment-agreements/${documentId}?token=${encodeURIComponent(token)}`;
 		const bytes = await this.renderer.render(url);
 		const fileName = `${document.code.replace(/[^\w.-]+/g, '-')}.pdf`;
 		const attached = await this.documents.attachGeneratedFileTo(documentId, new File([new Uint8Array(bytes)], fileName, { type: 'application/pdf' }), null);

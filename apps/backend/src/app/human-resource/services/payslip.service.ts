@@ -41,6 +41,9 @@ export type TPayslipRenderData = {
 	profile: unknown;
 };
 
+/** The web-admin origin the print views are served from (no trailing slash). */
+const renderBase = () => (appConfig.pdf.renderBaseUrl ?? '').replace(/\/+$/, '');
+
 const isLive = (row: TSourceDocument) => row.documentType === PAYSLIP_DOCUMENT_TYPE && row.status !== 'void';
 const fileNameOf = (code: string) => `${code.replace(/[^\w.-]+/g, '-')}.pdf`;
 
@@ -100,9 +103,10 @@ export class PayslipService {
 			);
 			payslip = { ...issued, files: [] };
 		}
-		if (!this.renderer.configured || !appConfig.pdf.renderBaseUrl) return 'skipped';
+		// `configured` already requires Chromium and a render base URL (ChromiumPdfRenderer).
+		if (!this.renderer.configured) return 'skipped';
 		const token = createRenderToken(PAYSLIP_RENDER_KIND, payslip.id);
-		const url = `${appConfig.pdf.renderBaseUrl.replace(/\/+$/, '')}/print/payslips/${payslip.id}?token=${encodeURIComponent(token)}`;
+		const url = `${renderBase()}/print/payslips/${payslip.id}?token=${encodeURIComponent(token)}`;
 		const bytes = await this.renderer.render(url);
 		const attached = await this.documents.attachGeneratedFileTo(
 			payslip.id,

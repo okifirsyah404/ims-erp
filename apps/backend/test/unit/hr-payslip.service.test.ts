@@ -6,7 +6,8 @@
  * their own; the print data masks the account and needs a valid token; the
  * primary payee account comes from the finance facade.
  */
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, test } from 'bun:test';
+import { appConfig } from '@config/providers/config';
 import JSZip from 'jszip';
 import type { TSourceDocument } from '../../src/app/document/contracts/document.contract';
 import type { TDocumentSelect } from '@drizzle/schemas/document.schema';
@@ -97,6 +98,17 @@ const service = () =>
 		{ notify: async (input) => void notices.push(input) },
 		{ enqueue: async (id) => void queued.push(id) },
 	);
+
+// CI has no PDF_RENDER_BASE_URL / APP_WEB_URL while a developer's .env usually
+// does: run as CI does, so only the renderer's `configured` decides (it already
+// requires the base URL in production).
+const savedRenderBaseUrl = appConfig.pdf.renderBaseUrl;
+beforeAll(() => {
+	appConfig.pdf.renderBaseUrl = null;
+});
+afterAll(() => {
+	appConfig.pdf.renderBaseUrl = savedRenderBaseUrl;
+});
 
 beforeEach(() => {
 	staff = [
