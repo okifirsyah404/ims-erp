@@ -5142,17 +5142,22 @@ Table human_resource.employee_salary_records {
 Table human_resource.schedules {
   id uuid [pk, default: `uuidv7()`]
   employee_id uuid [not null]
-  work_date date [not null]
-  shift_start varchar(5) [note: "HH:MM in Asia/Jakarta."]
-  shift_end varchar(5)
+  work_date date [not null, note: "Business date (Asia/Jakarta)."]
+  shift_start varchar(5) [note: "HH:MM in Asia/Jakarta. NULL on a day off."]
+  shift_end varchar(5) [note: "HH:MM in Asia/Jakarta; earlier than shift_start means an overnight shift."]
   shift_label text
   is_day_off boolean [not null, default: false]
+  created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Work shift of one employee on one date (ADR-0024 Q20); attendance compares against it."
+  Note: "Work shift of one employee on one date (ADR-0024 Q20), entered per cell or filled from a weekly pattern by HR (ERP-0118). One live row per employee and date. Attendance does not compare against it yet."
   Indexes {
     (employee_id, work_date) [unique, name: 'schedules_employee_date_uq', note: 'WHERE deleted_at IS NULL']
+    work_date [name: 'schedules_work_date_idx']
+  }
+  Checks {
+    `(is_day_off AND shift_start IS NULL AND shift_end IS NULL) OR (NOT is_day_off AND shift_start IS NOT NULL AND shift_end IS NOT NULL)`
   }
 }
 
@@ -5204,7 +5209,7 @@ Ref: human_resource.overtime_requests.employee_id > human_resource.employees.id 
 Ref: human_resource.employee_tasks.employee_id > human_resource.employees.id [delete: restrict]
 Ref: human_resource.employee_salaries.employee_id > human_resource.employees.id [delete: cascade]
 Ref: human_resource.employee_salary_records.employee_id > human_resource.employees.id [delete: restrict]
-Ref: human_resource.schedules.employee_id > human_resource.employees.id [delete: cascade]
+Ref: human_resource.schedules.employee_id > human_resource.employees.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Document  (schema: document). Registry + issuance: business documents

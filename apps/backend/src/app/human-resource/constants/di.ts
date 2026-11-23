@@ -17,6 +17,8 @@ import type { LeaveService } from '../services/leave.service';
 import type { HrPeopleService } from '../services/people.service';
 import type { SalaryService } from '../services/salary.service';
 import type { TaskService } from '../services/task.service';
+import type { ScheduleService } from '../services/schedule.service';
+import type { IScheduleRepository } from '../contracts/schedule.repository.interface';
 import type { EmployeeService } from '../services/employee.service';
 import type { EmployeeInviteService } from '../services/employee-invite.service';
 import type { ExportedEmployeeService } from '../services/exported-employee.service';
@@ -49,6 +51,10 @@ export const ATTENDANCE_SERVICE_TOKEN: InjectionToken<AttendanceService> = Symbo
 export const LEAVE_SERVICE_TOKEN: InjectionToken<LeaveService> = Symbol('LEAVE_SERVICE');
 export const TASK_SERVICE_TOKEN: InjectionToken<TaskService> = Symbol('TASK_SERVICE');
 export const SALARY_SERVICE_TOKEN: InjectionToken<SalaryService> = Symbol('SALARY_SERVICE');
+
+/** Employee work schedule (ERP-0118). */
+export const SCHEDULE_REPOSITORY_TOKEN: InjectionToken<IScheduleRepository> = Symbol('SCHEDULE_REPOSITORY');
+export const SCHEDULE_SERVICE_TOKEN: InjectionToken<ScheduleService> = Symbol('SCHEDULE_SERVICE');
 
 /** Token resolving to the repository of `human_resource.code_numberings`. */
 export const HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<HumanResourceCodeNumberingRepository> =

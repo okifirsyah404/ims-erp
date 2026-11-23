@@ -40,8 +40,9 @@ export class EmployeeInviteError extends AppError {
 
 /** The record does not exist. */
 export class HrNotFoundError extends AppError {
-	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance') {
+	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance' | 'schedule') {
 		const messages = {
+			schedule: 'Schedule not found',
 			attendance: 'Attendance record not found',
 			employee: 'Employee not found',
 			leaveType: 'Leave type not found',
@@ -135,5 +136,16 @@ export class AttendanceStateError extends AppError {
 			duplicate: 'The employee already has an attendance record on this date',
 		};
 		super(kind === 'duplicate' ? 409 : 422, `hr.attendance.${kind}` as const, messages[kind]);
+	}
+}
+
+/** A schedule cell cannot be written as asked (ERP-0118). */
+export class ScheduleError extends AppError {
+	constructor(kind: 'duplicate' | 'rangeTooLong', params?: Record<string, string | number>) {
+		const messages = {
+			duplicate: 'The employee already has a schedule on this date',
+			rangeTooLong: 'A fill covers at most {{max}} days',
+		};
+		super(kind === 'duplicate' ? 409 : 422, `hr.schedule.${kind}` as const, messages[kind], params);
 	}
 }

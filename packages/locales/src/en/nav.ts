@@ -59,6 +59,7 @@ const nav = {
 	'item.tickets': 'Tickets',
 	'item.warranty': 'Warranty',
 	'item.hrTasks': 'Tasks',
+	'item.schedule': 'Schedule',
 	'item.employees': 'Employees',
 	'item.attendance': 'Attendance',
 	'item.leave': 'Leave',

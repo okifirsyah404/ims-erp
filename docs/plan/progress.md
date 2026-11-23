@@ -12,6 +12,97 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0118: HR work schedule (slice 2)
+
+**Scope** (grill-me Q9/Q10, recorded in the ERP-0117 entry below): a weekly
+grid of employees x 7 days with CRUD per cell, a fill from a Monday-first
+weekly pattern (default Mon-Sat 08:00-17:00, Sunday off) that never overwrites
+a taken cell, and the new `schedule` permission resource granted like
+`attendance`. Attendance is not compared against the schedule yet.
+
+**Design gate.** `docs/database/docs.dbml` (Human Resource `schedules`,
+target-only until now), `module-ownership.md` (human_resource owns schedules),
+`integrity-and-consistency.md` (soft delete, partial unique) read first. No
+cross-module reference: `created_by` is the standard logical reference to
+`auth.users.id`. Manual grill items: ownership (human_resource), tenant scoping
+(through the employee: the ERP-0034 scope, no own `organization_id`), soft
+delete (`deleted_at`, partial unique on live rows), types (`date` business
+date, `varchar(5)` HH:MM Jakarta, unix-ms timestamps), status vocabulary (none;
+`is_day_off` + a CHECK tying the times to it).
+
+**docs.dbml (edited before Drizzle).** `human_resource.schedules`: no longer
+`status: target`; `updated_at` now `not null` (shared timestamps convention),
+new `created_by`, new index `schedules_work_date_idx`, CHECK
+`schedules_shift_check` (a day off has no times, a working day both; an end
+before the start is an overnight shift), the intra-module ref to `employees`
+is `delete: restrict` (was `cascade`; employees are only soft-deleted).
+`gen-logical-references.ts` regenerated (188 refs), `validate-dbml.ts` `OK`.
+
+**Backend (`human-resource`).** Drizzle `schedules` table; migration
+`20261123121018_erp0118_create_schedules` (SQL inspected: one `CREATE TABLE`,
+the partial unique index, the date index, the restrict FK - nothing else).
+Its snapshot has two parents and so also merges the two migration branches
+`main` carried (`20261123010354_customer_account_owner` and the supplier
+drop); `drizzle-kit check` now prints "Everything's fine" (it warned about 3
+unmerged branches before) and a second `generate` reports no changes.
+`ScheduleRepository`, `ScheduleService`, `ScheduleController`:
+`GET /human-resources/schedules/week?start=` (`schedule:read`),
+`POST /human-resources/schedules` (`schedule:create`, 409 on a taken day),
+`PUT|DELETE /human-resources/schedules/:id` (`schedule:update` / `:delete`),
+`POST /human-resources/schedules/fill` (`schedule:create`, at most 62 days,
+422 beyond; returns `{created, skipped}`). Date helpers `addDays` /
+`weekdayIndex` in `utils/hr.ts`. `packages/common`: `schedule:
+['read','create','update','delete']` - owner (spread), `admin` and `hr` all
+four, `auditor` read. Seeder `hr-schedules.seeder.ts`: this and next week for
+every active employee with the default pattern; skips when any live row
+exists.
+
+**Web-admin.** Nav item "Schedule" / "Jadwal Kerja" under Human Resource
+(order Employee, Tasks, Schedule, Attendance, Leave, Overtime, Payroll);
+`/hr/schedule` week grid (previous/next/this week, date picker snapping to
+Monday), cell dialog (day off switch, start/end, shift name, delete with
+confirmation), "Fill from pattern" dialog (range, one or all employees, 7
+pattern rows); en + id keys.
+
+**Found on main, not fixed here.** `apps/backend/database/migrations` holds
+the supplier drop twice: `20261123015149_erp0114_drop_supplier_whatsapp_payment_terms`
+and `20261123015149_erp0116_drop_supplier_whatsapp_payment_terms` (same snapshot
+id `df124139-…`, identical SQL; left by the ERP-0116 rename during the main
+rebase). `drizzle-kit migrate` on an empty database fails on the second copy
+(`DROP CONSTRAINT "supplier_companies_payment_terms_check"` does not exist).
+Removing the stale `erp0114` folder is an owner decision (append-only rule),
+so it was left in place.
+
+**Commands and outcomes.**
+- Disposable database: a throwaway PostgreSQL 18.6 cluster (`initdb` in the
+  session scratchpad, port 55432, database `ims_scratch`; Docker was not
+  running). `drizzle-kit migrate` with the full chain: fails on the duplicate
+  supplier migration above. With the `erp0114` copy moved aside for the run
+  only (restored afterwards, unchanged in git): "migrations applied
+  successfully"; `\d human_resource.schedules` shows the columns, both indexes,
+  the CHECK and the restrict FK.
+- `bun run database/seeders/index.ts` on that database: "Seeded
+  human_resource.schedules" created 406 (29 employees x 14 days, 58 day-off
+  rows); second run "already seeded; skipping", count still 406.
+- `bunx --bun drizzle-kit check` - "Everything's fine"; `drizzle-kit generate`
+  - "No schema changes".
+- `cd packages/common && bun run build` (the backend and web-admin read
+  `@ims-erp/common` from `dist`).
+- `bun run test` (root) - 7/7 tasks: backend **1412 pass**
+  (`hr-schedule.service.test.ts` 6 new), web-admin 209, locales 106,
+  web-customer-portal 68, web-landing 25, react-email 6; 0 fail.
+- `bun run lint` - 0 errors. `cd apps/web-admin && bunx tsc -p
+  tsconfig.app.json --noEmit` clean; `bunx vite build` built (route tree
+  regenerated).
+- `bun docs/gen-role-permission.ts` - 648 routes; `bun
+  docs/database/validate-dbml.ts` - `OK`.
+- Not verified: no live HTTP run, no browser walk-through.
+
+Next executable task: ERP-0119 (salary periods in the employee "Gaji" tab +
+employee bank accounts in `finance.cash_bank_accounts`). The owner decision on
+the duplicate supplier migration folder is open, and the browser walk-through
+of `/hr/schedule` plus the slice 1 pages.
+
 ## 2026-11-23 - ERP-0117: robust Human Resource module, slice 1 (nav + CRUD gaps)
 
 **Owner request** (grill-me, Q1-Q37 settled in session): rename the

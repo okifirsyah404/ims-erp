@@ -20,6 +20,7 @@ import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
 import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
+import { seedHrSchedules } from './seed/hr-schedules.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
@@ -72,6 +73,8 @@ export async function runSeeders(): Promise<void> {
 	await seedFinance();
 	await seedTax();
 	await seedHrEmployees();
+	// Needs the employees above (ERP-0118).
+	await seedHrSchedules();
 	// M08 leave types are reference rows the attendance/leave records depend on.
 	await seedLeaveTypes();
 	// Notification templates are reference rows (every environment); the demo

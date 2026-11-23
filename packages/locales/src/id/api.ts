@@ -451,6 +451,7 @@ const api: Record<keyof typeof en, string> = {
 	'hr.notFound.task': 'Tugas tidak ditemukan',
 	'hr.notFound.salary': 'Ringkasan gaji tidak ditemukan',
 	'hr.notFound.attendance': 'Data absensi tidak ditemukan',
+	'hr.notFound.schedule': 'Jadwal tidak ditemukan',
 	'hr.employeeState.inactive': 'Karyawan tidak aktif',
 	'hr.leave.dates': 'Tanggal selesai sebelum tanggal mulai',
 	'hr.leave.noWorkingDays': 'Rentang tanggal tidak berisi hari kerja (Minggu tidak dihitung)',
@@ -471,6 +472,8 @@ const api: Record<keyof typeof en, string> = {
 	'hr.attendanceTimes': 'Jam pulang lebih awal dari jam masuk',
 	'hr.attendance.leaveOwned': 'Hari ini dicatat oleh cuti yang disetujui; batalkan cutinya',
 	'hr.attendance.duplicate': 'Karyawan sudah memiliki data absensi pada tanggal ini',
+	'hr.schedule.duplicate': 'Karyawan sudah memiliki jadwal pada tanggal ini',
+	'hr.schedule.rangeTooLong': 'Pengisian jadwal paling banyak {{max}} hari',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',

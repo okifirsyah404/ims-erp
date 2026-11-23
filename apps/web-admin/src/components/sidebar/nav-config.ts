@@ -3,6 +3,7 @@ import {
 	Boxes,
 	Building2,
 	CalendarCheck,
+	CalendarClock,
 	CalendarOff,
 	Calculator,
 	Contact,
@@ -393,6 +394,7 @@ export const navSections: {
 		items: [
 			{ titleKey: 'item.employees', url: '/hr/employees', icon: IdCard, permission: 'employee.read' },
 			{ titleKey: 'item.hrTasks', url: '/hr/tasks', icon: ListTodo, permission: 'task.read' },
+			{ titleKey: 'item.schedule', url: '/hr/schedule', icon: CalendarClock, permission: 'schedule.read' },
 			{ titleKey: 'item.attendance', url: '/hr/attendance', icon: CalendarCheck, permission: 'attendance.read' },
 			{ titleKey: 'item.leave', url: '/hr/leave', icon: CalendarOff, permission: 'leave.read' },
 			{ titleKey: 'item.overtime', url: '/hr/overtime', icon: Timer, permission: 'overtime.read' },

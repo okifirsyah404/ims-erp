@@ -222,6 +222,25 @@ export const updateTask = (id: string, input: { employeeId: string; title: strin
 export const removeTask = (id: string) => send<{ removed: true }>(`/human-resources/employee-tasks/${id}`, 'DELETE');
 export const setTaskStatus = (id: string, status: TTaskStatus) => send<TTask>(`/human-resources/employee-tasks/${id}/status`, 'POST', { status });
 
+// Work schedule (ERP-0118)
+/** One shift; a day off has no times, an end before the start is an overnight shift. */
+export type TShift = { isDayOff: boolean; shiftStart: string | null; shiftEnd: string | null; shiftLabel: string | null };
+export type TScheduleCell = TShift & { id: string; employeeId: string; workDate: string };
+export type TScheduleWeek = {
+	start: string;
+	dates: string[];
+	rows: { employee: TPersonRef; cells: Record<string, TScheduleCell | null> }[];
+};
+export type TScheduleInput = TShift & { employeeId: string; workDate: string };
+export const scheduleWeekQueryOptions = (start: string) =>
+	single<TScheduleWeek>(['hr', 'schedule', 'week', start], `/human-resources/schedules/week?start=${start}`);
+export const createSchedule = (input: TScheduleInput) => send<TScheduleCell>('/human-resources/schedules', 'POST', input);
+export const updateSchedule = (id: string, input: TScheduleInput) => send<TScheduleCell>(`/human-resources/schedules/${id}`, 'PUT', input);
+export const removeSchedule = (id: string) => send<{ removed: true }>(`/human-resources/schedules/${id}`, 'DELETE');
+/** Fills `from`..`to` from a Monday-first weekly pattern; taken cells are skipped. */
+export const fillSchedule = (input: { from: string; to: string; employeeIds?: string[]; pattern: TShift[] }) =>
+	send<{ created: number; skipped: number }>('/human-resources/schedules/fill', 'POST', input);
+
 // Salary summaries
 export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/human-resources/salary-records?period=${period}`);
 export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/human-resources/salary-records', 'PUT', input);

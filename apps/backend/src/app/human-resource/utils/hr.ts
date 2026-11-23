@@ -64,3 +64,15 @@ export function previousPeriod(period: string): string {
 	const [year, month] = period.split('-').map(Number) as [number, number];
 	return month === 1 ? `${year - 1}-12` : `${year}-${String(month - 1).padStart(2, '0')}`;
 }
+
+const DAY_MS = 86_400_000;
+
+/** `date` plus `days` calendar days (business dates carry no time zone shift). */
+export function addDays(date: string, days: number): string {
+	return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** Monday-first weekday index: 0 = Monday … 6 = Sunday. */
+export function weekdayIndex(date: string): number {
+	return (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
+}

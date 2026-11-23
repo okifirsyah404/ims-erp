@@ -42,6 +42,7 @@ const LABELS: Record<string, NavKey> = {
 	'/hr/overtime': 'item.overtime',
 	'/hr/payroll': 'item.payroll',
 	'/hr/tasks': 'item.hrTasks',
+	'/hr/schedule': 'item.schedule',
 	'/organizations/': 'breadcrumb.organizations',
 	'/organizations/$organizationId/edit': 'breadcrumb.organizationEdit',
 	'/organizations/$organizationId/members/$memberId/edit':

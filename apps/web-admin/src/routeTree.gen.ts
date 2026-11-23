@@ -82,6 +82,7 @@ import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/em
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
+import { Route as AuthedHrScheduleIndexRouteImport } from './routes/_authed/hr/schedule/index'
 import { Route as AuthedHrTasksIndexRouteImport } from './routes/_authed/hr/tasks/index'
 import { Route as AuthedIntegrationsWebhooksIndexRouteImport } from './routes/_authed/integrations/webhooks/index'
 import { Route as AuthedIntegrationsWebsiteCatalogIndexRouteImport } from './routes/_authed/integrations/website-catalog/index'
@@ -565,6 +566,11 @@ const AuthedHrOvertimeIndexRoute = AuthedHrOvertimeIndexRouteImport.update({
 const AuthedHrPayrollIndexRoute = AuthedHrPayrollIndexRouteImport.update({
   id: '/hr/payroll/',
   path: '/hr/payroll/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrScheduleIndexRoute = AuthedHrScheduleIndexRouteImport.update({
+  id: '/hr/schedule/',
+  path: '/hr/schedule/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHrTasksIndexRoute = AuthedHrTasksIndexRouteImport.update({
@@ -1176,6 +1182,7 @@ export interface FileRoutesByFullPath {
   '/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/hr/schedule/': typeof AuthedHrScheduleIndexRoute
   '/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -1337,6 +1344,7 @@ export interface FileRoutesByTo {
   '/hr/leave': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
+  '/hr/schedule': typeof AuthedHrScheduleIndexRoute
   '/hr/tasks': typeof AuthedHrTasksIndexRoute
   '/integrations/webhooks': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -1500,6 +1508,7 @@ export interface FileRoutesById {
   '/_authed/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/_authed/hr/schedule/': typeof AuthedHrScheduleIndexRoute
   '/_authed/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/_authed/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/_authed/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -1663,6 +1672,7 @@ export interface FileRouteTypes {
     | '/hr/leave/'
     | '/hr/overtime/'
     | '/hr/payroll/'
+    | '/hr/schedule/'
     | '/hr/tasks/'
     | '/integrations/webhooks/'
     | '/integrations/website-catalog/'
@@ -1824,6 +1834,7 @@ export interface FileRouteTypes {
     | '/hr/leave'
     | '/hr/overtime'
     | '/hr/payroll'
+    | '/hr/schedule'
     | '/hr/tasks'
     | '/integrations/webhooks'
     | '/integrations/website-catalog'
@@ -1986,6 +1997,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/leave/'
     | '/_authed/hr/overtime/'
     | '/_authed/hr/payroll/'
+    | '/_authed/hr/schedule/'
     | '/_authed/hr/tasks/'
     | '/_authed/integrations/webhooks/'
     | '/_authed/integrations/website-catalog/'
@@ -2576,6 +2588,13 @@ declare module '@tanstack/react-router' {
       path: '/hr/payroll'
       fullPath: '/hr/payroll/'
       preLoaderRoute: typeof AuthedHrPayrollIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/schedule/': {
+      id: '/_authed/hr/schedule/'
+      path: '/hr/schedule'
+      fullPath: '/hr/schedule/'
+      preLoaderRoute: typeof AuthedHrScheduleIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/hr/tasks/': {
@@ -3320,6 +3339,7 @@ interface AuthedRouteChildren {
   AuthedHrLeaveIndexRoute: typeof AuthedHrLeaveIndexRoute
   AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
+  AuthedHrScheduleIndexRoute: typeof AuthedHrScheduleIndexRoute
   AuthedHrTasksIndexRoute: typeof AuthedHrTasksIndexRoute
   AuthedIntegrationsWebhooksIndexRoute: typeof AuthedIntegrationsWebhooksIndexRoute
   AuthedIntegrationsWebsiteCatalogIndexRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -3482,6 +3502,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrLeaveIndexRoute: AuthedHrLeaveIndexRoute,
   AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
   AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
+  AuthedHrScheduleIndexRoute: AuthedHrScheduleIndexRoute,
   AuthedHrTasksIndexRoute: AuthedHrTasksIndexRoute,
   AuthedIntegrationsWebhooksIndexRoute: AuthedIntegrationsWebhooksIndexRoute,
   AuthedIntegrationsWebsiteCatalogIndexRoute:

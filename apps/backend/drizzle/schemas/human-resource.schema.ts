@@ -8,8 +8,8 @@
  * `organization` schema (Q4). Money is bigint IDR minor units; business dates are
  * Jakarta `date` strings.
  *
- * Target-only tables (`employee_addresses`, `schedules`) are defined in
- * `docs.dbml` only (Q22).
+ * The target-only table `employee_addresses` is defined in `docs.dbml` only
+ * (Q22); `schedules` is built since ERP-0118.
  */
 import {
 	unixTimestamp,
@@ -343,6 +343,46 @@ export const employeeTasks = humanResourceSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * human_resource.schedules (ERP-0118)
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Work shift of one employee on one date (ADR-0024 Q20).
+ *
+ * @remarks
+ * Entered per cell or filled from a weekly pattern by HR. A day off has no
+ * times; a working day has both, and an end earlier than the start is an
+ * overnight shift. One live row per employee and date.
+ */
+export const schedules = humanResourceSchema.table(
+	'schedules',
+	{
+		id: id(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'restrict' }),
+		workDate: date('work_date').notNull(),
+		shiftStart: varchar('shift_start', { length: 5 }),
+		shiftEnd: varchar('shift_end', { length: 5 }),
+		shiftLabel: text('shift_label'),
+		isDayOff: boolean('is_day_off').notNull().default(false),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('schedules_employee_date_uq')
+			.on(table.employeeId, table.workDate)
+			.where(sql`deleted_at IS NULL`),
+		index('schedules_work_date_idx').on(table.workDate),
+		check(
+			'schedules_shift_check',
+			sql`(is_day_off AND shift_start IS NULL AND shift_end IS NULL) OR (NOT is_day_off AND shift_start IS NOT NULL AND shift_end IS NOT NULL)`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * human_resource.employee_salaries (new, absorbs hr.bank_accounts)
  * ------------------------------------------------------------------------ */
 
@@ -486,6 +526,8 @@ export type TLeaveRequestInsert = typeof leaveRequests.$inferInsert;
 export type TOvertimeRequestSelect = typeof overtimeRequests.$inferSelect;
 export type TOvertimeRequestInsert = typeof overtimeRequests.$inferInsert;
 export type TEmployeeTaskSelect = typeof employeeTasks.$inferSelect;
+export type TScheduleSelect = typeof schedules.$inferSelect;
+export type TScheduleInsert = typeof schedules.$inferInsert;
 export type TEmployeeTaskInsert = typeof employeeTasks.$inferInsert;
 export type TEmployeeSalarySelect = typeof employeeSalaries.$inferSelect;
 export type TEmployeeSalaryInsert = typeof employeeSalaries.$inferInsert;

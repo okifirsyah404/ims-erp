@@ -111,8 +111,8 @@ elsewhere and are not in the table:
 
 | Role | English | Indonesian | Resources granted |
 | --- | --- | --- | --- |
-| `owner` | Owner | Pemilik | 74 |
-| `admin` | Admin | Admin | 25 |
+| `owner` | Owner | Pemilik | 75 |
+| `admin` | Admin | Admin | 26 |
 | `member` | Member | Anggota | 4 |
 | `operations_manager` | Operations Manager | Manajer Operasional | 21 |
 | `sales_manager` | Sales Manager | Manajer Penjualan | 18 |
@@ -124,10 +124,10 @@ elsewhere and are not in the table:
 | `warehouse` | Warehouse | Gudang | 9 |
 | `finance` | Finance | Keuangan | 25 |
 | `accountant` | Accountant | Akuntan | 17 |
-| `hr` | Human Resource | Sumber Daya Manusia | 16 |
+| `hr` | Human Resource | Sumber Daya Manusia | 17 |
 | `customer_service` | Customer Service | Layanan Pelanggan | 12 |
 | `marketing` | Marketing | Pemasaran | 12 |
-| `auditor` | Auditor | Auditor | 39 |
+| `auditor` | Auditor | Auditor | 40 |
 
 ## Permissions per organization role
 
@@ -166,6 +166,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `attendance` | read, check_in, check_out, request_correction, approve_correction, export, record |
 | `leave` | read, create, cancel, approve, reject |
 | `overtime` | read, create, cancel, approve, reject |
+| `schedule` | read, create, update, delete |
 | `disciplinary_record` | read, create, update, approve |
 | `payroll` | read, create, calculate, update, submit, approve, export |
 | `payroll_payment` | read, execute |
@@ -235,6 +236,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `automation` | read, read_log, execute |
 | `whatsapp` | read, reply, manage_faq |
 | `attendance` | read, record |
+| `schedule` | read, create, update, delete |
 | `product` | read |
 | `asset_borrowing` | read, create, update, approve, issue, return, extend, mark_late, mark_lost, export |
 | `document` | read, create, download, signature_read, signature_sign, signature_request |
@@ -500,6 +502,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `attendance` | read, check_in, check_out, request_correction, approve_correction, export, record |
 | `leave` | read, create, cancel, approve, reject |
 | `overtime` | read, create, cancel, approve, reject |
+| `schedule` | read, create, update, delete |
 | `task` | read, create, update |
 | `disciplinary_record` | read, create, update, approve |
 | `payroll` | read, create, calculate, update, submit, export |
@@ -578,6 +581,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `daily_report` | read, export |
 | `employee` | read, export |
 | `attendance` | read, export |
+| `schedule` | read |
 | `product` | read, export |
 | `stock` | read, export |
 | `asset_borrowing` | read, export |
@@ -616,7 +620,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-643 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+648 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -865,6 +869,11 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/human-resources/salary-records/generate` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/import` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/salary-records/template` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
+| POST | `/human-resources/schedules` | org member + permission | `schedule:create` | `owner`, `admin`, `hr` |
+| DELETE | `/human-resources/schedules/:id` | org member + permission | `schedule:delete` | `owner`, `admin`, `hr` |
+| PUT | `/human-resources/schedules/:id` | org member + permission | `schedule:update` | `owner`, `admin`, `hr` |
+| POST | `/human-resources/schedules/fill` | org member + permission | `schedule:create` | `owner`, `admin`, `hr` |
+| GET | `/human-resources/schedules/week` | org member + permission | `schedule:read` | `owner`, `admin`, `hr`, `auditor` |
 
 ### inventory
 

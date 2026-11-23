@@ -450,6 +450,7 @@ const api = {
 	'hr.notFound.task': 'Task not found',
 	'hr.notFound.salary': 'Salary summary not found',
 	'hr.notFound.attendance': 'Attendance record not found',
+	'hr.notFound.schedule': 'Schedule not found',
 	'hr.employeeState.inactive': 'The employee is inactive',
 	'hr.leave.dates': 'The end date is before the start date',
 	'hr.leave.noWorkingDays': 'The range has no working day (Sundays are not counted)',
@@ -470,6 +471,8 @@ const api = {
 	'hr.attendanceTimes': 'The check-out time is before the check-in time',
 	'hr.attendance.leaveOwned': 'This day was written by an approved leave request; cancel the leave instead',
 	'hr.attendance.duplicate': 'The employee already has an attendance record on this date',
+	'hr.schedule.duplicate': 'The employee already has a schedule on this date',
+	'hr.schedule.rangeTooLong': 'A fill covers at most {{max}} days',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',

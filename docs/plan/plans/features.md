@@ -802,6 +802,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   leave/overtime edit while submitted, attendance list with single-row CRUD.
   Evidence: `progress.md` 2026-11-23 (backend 1406 pass). No browser
   walk-through yet.
+- ERP-0118 work schedule (2026-11-23): `/hr/schedule` week grid with cell
+  CRUD and a weekly-pattern fill, `schedule` permission, seeder. Evidence:
+  `progress.md` 2026-11-23 (migration on a throwaway database, backend 1412
+  pass). No browser walk-through yet.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -814,7 +818,6 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Schedule (weekly grid) — ERP-0118.
 - Salary periods in the employee detail + employee bank accounts in finance —
   ERP-0119.
 - Payday cron + `/settings/payroll` (app admin only) — ERP-0120.

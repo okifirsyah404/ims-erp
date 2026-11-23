@@ -58,6 +58,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.tickets': 'Tiket',
 	'item.warranty': 'Garansi',
 	'item.hrTasks': 'Tugas',
+	'item.schedule': 'Jadwal Kerja',
 	'item.employees': 'Karyawan',
 	'item.attendance': 'Absensi',
 	'item.leave': 'Cuti',

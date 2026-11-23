@@ -182,6 +182,7 @@ const DYNAMIC_PREFIXES = [
 	'hr.salary.',
 	'hr.import.',
 	'hr.attendance.',
+	'hr.schedule.',
 	'licensing.notFound.',
 	'licensing.contract.',
 	'licensing.state.',

@@ -16,6 +16,8 @@ import { LeaveService } from './services/leave.service';
 import { HrPeopleService } from './services/people.service';
 import { SalaryService } from './services/salary.service';
 import { TaskService } from './services/task.service';
+import { ScheduleRepository } from './repositories/schedule.repository';
+import { ScheduleService } from './services/schedule.service';
 import {
 	ATTENDANCE_REPOSITORY_TOKEN,
 	ATTENDANCE_SERVICE_TOKEN,
@@ -31,6 +33,8 @@ import {
 	LEAVE_SERVICE_TOKEN,
 	SALARY_REPOSITORY_TOKEN,
 	SALARY_SERVICE_TOKEN,
+	SCHEDULE_REPOSITORY_TOKEN,
+	SCHEDULE_SERVICE_TOKEN,
 	TASK_REPOSITORY_TOKEN,
 	TASK_SERVICE_TOKEN,
 } from './constants/di';
@@ -80,4 +84,8 @@ export function registerHumanResource(container: DependencyContainer): void {
 	container.register(LEAVE_SERVICE_TOKEN, { useClass: LeaveService });
 	container.register(TASK_SERVICE_TOKEN, { useClass: TaskService });
 	container.register(SALARY_SERVICE_TOKEN, { useClass: SalaryService });
+
+	// Employee work schedule (ERP-0118).
+	container.register(SCHEDULE_REPOSITORY_TOKEN, { useClass: ScheduleRepository });
+	container.register(SCHEDULE_SERVICE_TOKEN, { useClass: ScheduleService });
 }
