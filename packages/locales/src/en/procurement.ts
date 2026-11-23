@@ -179,7 +179,7 @@ const procurement = {
 	'po.subtotal': 'Subtotal',
 	'po.grandTotal': 'Total',
 	'po.paymentTerms': 'Payment',
-	'po.paymentTermsHint': 'Printed as the first purchase term. Empty takes the supplier default.',
+	'po.paymentTermsHint': 'Printed as the first purchase term. Leave empty to print none.',
 	'po.terms': 'Other purchase terms',
 	'po.termsHint': 'One per line, e.g. "Delivery: supplier warehouse".',
 	'po.notes': 'Notes (printed below the terms)',
