@@ -19,6 +19,9 @@ export type TSupplierPaginationRequest = TPaginationRequest & {
 export type TSupplierCompanyPaginationRequest = TPaginationRequest & {
 	status?: string;
 	search?: string;
+	/** Sort field; the repository maps it onto whitelisted columns. */
+	sortBy?: 'name' | 'code' | 'createdAt';
+	sortDir?: 'asc' | 'desc';
 };
 
 /**

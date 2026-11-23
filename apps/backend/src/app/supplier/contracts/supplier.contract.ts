@@ -54,6 +54,8 @@ export const supplierCompanyListQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 	search: z.string().min(1).optional(),
 	status: z.enum(['active', 'inactive']).optional(),
+	sortBy: z.enum(['name', 'code', 'createdAt']).default('name'),
+	sortDir: z.enum(['asc', 'desc']).default('asc'),
 });
 
 /** Parsed list query for supplier companies. */
