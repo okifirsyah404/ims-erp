@@ -5,7 +5,7 @@ import {
 } from '@drizzle/schemas/supplier.schema';
 import { likePattern } from '@drizzle/search';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, eq, ilike, isNull, or } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNull, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { cacheIdKey } from '@utils/cache.util';
@@ -57,21 +57,35 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 							supplierCompanies.code,
 							likePattern(query.search),
 						),
+						ilike(
+							supplierCompanies.legalName,
+							likePattern(query.search),
+						),
 					)
 				: undefined,
 		);
 	}
 
-	/** Fetches one filtered page of supplier companies, ordered by name. */
+	/** Sort columns the list endpoint may order by; never user input directly. */
+	private static readonly SORT_COLUMNS = {
+		name: supplierCompanies.name,
+		code: supplierCompanies.code,
+		createdAt: supplierCompanies.createdAt,
+	} as const;
+
+	/** Fetches one filtered page of supplier companies. */
 	async paginate(
 		request: TSupplierCompanyPaginationRequest,
 	): Promise<TPaginationResult<TSupplierCompanySelect>> {
 		const where = this.filters(request);
+		const column =
+			SupplierCompanyRepository.SORT_COLUMNS[request.sortBy ?? 'name'];
+		const direction = request.sortDir === 'desc' ? desc : asc;
 		const rows = await this.database
 			.select()
 			.from(supplierCompanies)
 			.where(where)
-			.orderBy(asc(supplierCompanies.name), asc(supplierCompanies.id))
+			.orderBy(direction(column), asc(supplierCompanies.id))
 			.limit(request.limit)
 			.offset((request.page - 1) * request.limit);
 		const [{ value: total }] = await this.database
