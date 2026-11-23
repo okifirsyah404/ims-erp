@@ -110,7 +110,7 @@ export class QuotationDeliveryService {
 				validUntil: quotation.validUntil,
 				grandTotal: quotation.grandTotal,
 				currencyCode: quotation.currencyCode,
-				customer: { id: quotation.customerId, name: customer.name, email: customer.email, phone: customer.phone, whatsapp: customer.whatsapp },
+				customer: { id: quotation.customerId, name: customer.name, email: customer.email, phone: customer.phone, whatsapp: customer.whatsapp ?? customer.phone },
 				owner: quotation.createdBy ? { userId: quotation.createdBy, name: owner?.name ?? null, phone: owner?.phone ?? null, email: owner?.email ?? null } : null,
 				pdf,
 			},

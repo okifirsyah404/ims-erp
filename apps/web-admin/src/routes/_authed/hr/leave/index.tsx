@@ -8,7 +8,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -281,7 +282,7 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='leave-reason'>{t('hr:field.reason')}</FieldLabel>
+							<FieldLabel htmlFor='leave-reason' optional>{t('hr:field.reason')}</FieldLabel>
 							<Textarea id='leave-reason' rows={2} maxLength={1000} value={reason} onChange={(event) => setReason(event.target.value)} />
 						</Field>
 					</FieldGroup>

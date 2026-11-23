@@ -1,4 +1,7 @@
+import { presignObjectUrl, s3Client } from '@providers/s3/s3';
+import { toWebp } from '@utils/image.util';
 import { inject, injectable } from 'tsyringe';
+import { avatarCustomObjectKey } from '../constants/avatar-keys';
 import { USER_ACCOUNT_GATEWAY_TOKEN } from '../constants/di';
 import type { IUserAccountGateway, TAuthUser } from '../contracts/user-account.gateway.interface';
 
@@ -12,6 +15,19 @@ import type { IUserAccountGateway, TAuthUser } from '../contracts/user-account.g
  * gateway, so a consumer that itself depends on other modules cannot create a
  * cycle.
  */
+/** A user as a customer list shows it: `image` is a presigned URL, not the key. */
+export type TAccountSummary = {
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	username: string | null;
+	image: string | null;
+};
+
+/** Longest side of a stored avatar in pixels; same as the self-service upload. */
+const AVATAR_RENDER_SIZE = 144;
+
 @injectable()
 export class ExportedUserService {
 	constructor(
@@ -33,6 +49,94 @@ export class ExportedUserService {
 	 */
 	createPortalLogin(input: { name: string; email: string; emailVerified: boolean }): Promise<TAuthUser> {
 		return this.accounts.createUser(input);
+	}
+
+	/**
+	 * Creates a customer account (ERP-0114): a login that is not an
+	 * organization member, with a username and a password. The email is not
+	 * verified until the customer first signs in.
+	 */
+	async createCustomerAccount(input: {
+		name: string;
+		email: string;
+		username: string;
+		password: string;
+	}): Promise<TAuthUser> {
+		const user = await this.accounts.createUser({
+			name: input.name,
+			email: input.email,
+			emailVerified: false,
+			username: input.username,
+		});
+		try {
+			await this.accounts.setPassword(user.id, input.password);
+		} catch (error) {
+			await this.accounts.deleteUser(user.id);
+			throw error;
+		}
+		return user;
+	}
+
+	isUsernameTaken(username: string): Promise<boolean> {
+		return this.accounts.isUsernameTaken(username);
+	}
+
+	/** Summaries by id with presigned avatars, keyed by user id. */
+	async summaries(ids: string[]): Promise<Map<string, TAccountSummary>> {
+		const unique = [...new Set(ids.filter(Boolean))];
+		const users = await this.accounts.findUsersByIds(unique);
+		return new Map(users.map((user) => [user.id, this.toSummary(user)]));
+	}
+
+	/** One summary, or `null`. */
+	async summary(userId: string): Promise<TAccountSummary | null> {
+		const user = await this.accounts.findUserById(userId);
+		return user ? this.toSummary(user) : null;
+	}
+
+	private toSummary(user: TAuthUser): TAccountSummary {
+		return {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			emailVerified: user.emailVerified,
+			username: user.username ?? null,
+			image: user.image ? presignObjectUrl(user.image) : null,
+		};
+	}
+
+	/** Ids of users whose email contains `term`, for searches by email. */
+	findIdsByEmail(term: string, limit = 200): Promise<string[]> {
+		return this.accounts.findUserIdsByEmailLike(term, limit);
+	}
+
+	/** Updates the name and/or email Better Auth owns. */
+	updateProfile(userId: string, patch: { name?: string; email?: string }): Promise<void> {
+		return this.accounts.updateUser(userId, patch);
+	}
+
+	/**
+	 * Stores an avatar uploaded by staff for this user (same pipeline as the
+	 * self-service upload: re-encoded to WebP, custom-key namespace).
+	 *
+	 * @throws UnsupportedImageError When the bytes cannot be decoded
+	 */
+	async setAvatar(userId: string, bytes: Uint8Array): Promise<string> {
+		const webp = await toWebp(bytes, { maxSize: AVATAR_RENDER_SIZE });
+		const key = avatarCustomObjectKey(userId);
+		await s3Client.write(key, webp, { type: 'image/webp' });
+		await this.accounts.updateUser(userId, { image: key });
+		return presignObjectUrl(key);
+	}
+
+	/** Clears the avatar; the stored object stays (history). */
+	async clearAvatar(userId: string): Promise<void> {
+		await this.accounts.updateUser(userId, { image: null });
+	}
+
+	/** Compensation for a create that failed after the user was created. */
+	deleteUnusedUser(userId: string): Promise<void> {
+		return this.accounts.deleteUser(userId);
 	}
 
 	/** A staff login (organization member); such an email may never become a portal login. */

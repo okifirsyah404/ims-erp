@@ -18,7 +18,8 @@ import {
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
 import { toast } from '@/components/toast';
@@ -30,6 +31,7 @@ import {
 	updateSupplierCompany,
 } from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 /** `/procurement/suppliers/$supplierId` - one supplier company with its contact people. */
 export const Route = createFileRoute('/_authed/procurement/suppliers/$supplierId')({
@@ -84,15 +86,15 @@ function PersonDialog({
 							<Input id='person-name' required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='person-title'>{t('procurement:supplier.picTitle')}</FieldLabel>
+							<FieldLabel htmlFor='person-title' optional>{t('procurement:supplier.picTitle')}</FieldLabel>
 							<Input id='person-title' maxLength={100} value={title} onChange={(event) => setTitle(event.target.value)} />
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='person-phone'>{t('procurement:supplier.picPhone')}</FieldLabel>
-							<Input id='person-phone' type='tel' maxLength={30} value={phone} onChange={(event) => setPhone(event.target.value)} />
+							<FieldLabel htmlFor='person-phone' optional>{t('procurement:supplier.picPhone')}</FieldLabel>
+							<CountryPhoneField id='person-phone' required={false} onChange={setPhone} />
 						</Field>
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='person-email'>{t('procurement:supplier.picEmail')}</FieldLabel>
+							<FieldLabel htmlFor='person-email' optional>{t('procurement:supplier.picEmail')}</FieldLabel>
 							<Input id='person-email' type='email' value={email} onChange={(event) => setEmail(event.target.value)} />
 						</Field>
 						<Field orientation='horizontal' className='sm:col-span-2'>

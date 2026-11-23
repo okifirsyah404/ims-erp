@@ -9,7 +9,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -96,7 +97,7 @@ export function AddressFormDialog({
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='address-label'>{t('crm:address.label')}</FieldLabel>
+								<FieldLabel htmlFor='address-label' optional>{t('crm:address.label')}</FieldLabel>
 								<Input id='address-label' maxLength={100} value={label} onChange={(event) => setLabel(event.target.value)} />
 							</Field>
 						</div>
@@ -113,7 +114,7 @@ export function AddressFormDialog({
 						</Field>
 						<LocationCascade value={location} initialVillageId={null} onChange={setLocation} />
 						<Field className='sm:max-w-48'>
-							<FieldLabel htmlFor='address-postal'>{t('crm:customer.postalCode')}</FieldLabel>
+							<FieldLabel htmlFor='address-postal' optional>{t('crm:customer.postalCode')}</FieldLabel>
 							<Input
 								id='address-postal'
 								inputMode='numeric'

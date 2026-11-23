@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	InputGroup,
@@ -379,7 +380,7 @@ export function PurchaseOrderForm({
 								</div>
 							)}
 							<Field className='sm:col-span-6'>
-								<FieldLabel htmlFor={`po-spec-${line.key}`}>{t('procurement:po.specification')}</FieldLabel>
+								<FieldLabel htmlFor={`po-spec-${line.key}`} optional>{t('procurement:po.specification')}</FieldLabel>
 								<Textarea
 									id={`po-spec-${line.key}`}
 									rows={2}
@@ -535,7 +536,7 @@ export function PurchaseOrderForm({
 								inputMode: 'decimal',
 							})}
 						<Field>
-							<FieldLabel htmlFor='po-payment'>{t('procurement:po.paymentTerms')}</FieldLabel>
+							<FieldLabel htmlFor='po-payment' optional>{t('procurement:po.paymentTerms')}</FieldLabel>
 							<Input id='po-payment' maxLength={500} value={paymentTerms} onChange={(event) => setPaymentTerms(event.target.value)} />
 							<FieldDescription>{t('procurement:po.paymentTermsHint')}</FieldDescription>
 						</Field>
@@ -555,12 +556,12 @@ export function PurchaseOrderForm({
 						</div>
 					</dl>
 					<Field className='sm:col-span-2'>
-						<FieldLabel htmlFor='po-terms'>{t('procurement:po.terms')}</FieldLabel>
+						<FieldLabel htmlFor='po-terms' optional>{t('procurement:po.terms')}</FieldLabel>
 						<Textarea id='po-terms' rows={5} maxLength={8000} value={terms} onChange={(event) => setTerms(event.target.value)} />
 						<FieldDescription>{t('procurement:po.termsHint')}</FieldDescription>
 					</Field>
 					<Field className='sm:col-span-2'>
-						<FieldLabel htmlFor='po-notes'>{t('procurement:po.notes')}</FieldLabel>
+						<FieldLabel htmlFor='po-notes' optional>{t('procurement:po.notes')}</FieldLabel>
 						<Textarea id='po-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 					</Field>
 				</CardContent>

@@ -5,6 +5,8 @@
  * Keys are flat and dot-notated: `{feature}.{context}.{action|status}`.
  */
 const common = {
+	// Suffix of an optional form field label: "Phone (Optional)" (ERP-0114).
+	'form.optional': 'Optional',
 	'action.cancel': 'Cancel',
 	'cardMenu.label': 'Actions',
 	'cardMenu.stockAdjustment': 'Stock adjustment',

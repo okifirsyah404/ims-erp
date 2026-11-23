@@ -7,7 +7,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -213,7 +214,7 @@ function ApplicationsPage() {
 								<Input id='app-name' required maxLength={200} value={name} onChange={(event) => setName(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='app-vendor'>{t('licensing:field.vendor')}</FieldLabel>
+								<FieldLabel htmlFor='app-vendor' optional>{t('licensing:field.vendor')}</FieldLabel>
 								<Input id='app-vendor' maxLength={200} value={vendor} onChange={(event) => setVendor(event.target.value)} />
 							</Field>
 							<Field>
@@ -232,7 +233,7 @@ function ApplicationsPage() {
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='app-description'>{t('licensing:field.description')}</FieldLabel>
+								<FieldLabel htmlFor='app-description' optional>{t('licensing:field.description')}</FieldLabel>
 								<Textarea id='app-description' rows={3} maxLength={2000} value={description} onChange={(event) => setDescription(event.target.value)} />
 							</Field>
 						</FieldGroup>

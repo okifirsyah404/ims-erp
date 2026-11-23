@@ -8,7 +8,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -414,12 +415,12 @@ function ContractDetailPage() {
 										/>
 									</Field>
 									<Field>
-										<FieldLabel htmlFor='key-expires'>{t('licensing:keys.expiresOn')}</FieldLabel>
+										<FieldLabel htmlFor='key-expires' optional>{t('licensing:keys.expiresOn')}</FieldLabel>
 										<DatePicker id='key-expires' value={expiresOn} onChange={setExpiresOn} />
 										<FieldDescription>{t('licensing:keys.expiresHint')}</FieldDescription>
 									</Field>
 									<Field>
-										<FieldLabel htmlFor='key-notes'>{t('licensing:field.notes')}</FieldLabel>
+										<FieldLabel htmlFor='key-notes' optional>{t('licensing:field.notes')}</FieldLabel>
 										<Input id='key-notes' maxLength={1000} value={keyNotes} onChange={(event) => setKeyNotes(event.target.value)} />
 									</Field>
 								</>

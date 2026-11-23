@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
-import { Field, FieldDescription, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -144,7 +145,7 @@ export function ProjectEvidenceCard({ project, actorUserId }: { project: TProjec
 							<FieldDescription>{t('projects:evidence.hint')}</FieldDescription>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='evidence-note'>{t('projects:evidence.note')}</FieldLabel>
+							<FieldLabel htmlFor='evidence-note' optional>{t('projects:evidence.note')}</FieldLabel>
 							<Input id='evidence-note' maxLength={500} value={note} onChange={(event) => setNote(event.target.value)} />
 						</Field>
 						<Button type='submit' disabled={busy || !file}>

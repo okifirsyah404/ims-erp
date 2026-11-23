@@ -8,7 +8,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -327,7 +328,7 @@ function NewDeliveryNotePage() {
 											/>
 										</Field>
 										<Field className='sm:col-span-2'>
-											<FieldLabel htmlFor={`dn-remarks-${item.id}`}>{t('sales:delivery.remarks')}</FieldLabel>
+											<FieldLabel htmlFor={`dn-remarks-${item.id}`} optional>{t('sales:delivery.remarks')}</FieldLabel>
 											<Input
 												id={`dn-remarks-${item.id}`}
 												maxLength={500}
@@ -359,15 +360,15 @@ function NewDeliveryNotePage() {
 							<CardContent>
 								<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 									<Field>
-										<FieldLabel htmlFor='dn-driver'>{t('sales:delivery.driverName')}</FieldLabel>
+										<FieldLabel htmlFor='dn-driver' optional>{t('sales:delivery.driverName')}</FieldLabel>
 										<Input id='dn-driver' maxLength={200} value={driverName} onChange={(event) => setDriverName(event.target.value)} />
 									</Field>
 									<Field>
-										<FieldLabel htmlFor='dn-vehicle'>{t('sales:delivery.vehicleNumber')}</FieldLabel>
+										<FieldLabel htmlFor='dn-vehicle' optional>{t('sales:delivery.vehicleNumber')}</FieldLabel>
 										<Input id='dn-vehicle' maxLength={32} value={vehicleNumber} onChange={(event) => setVehicleNumber(event.target.value)} />
 									</Field>
 									<Field className='sm:col-span-2'>
-										<FieldLabel htmlFor='dn-notes'>{t('sales:delivery.notes')}</FieldLabel>
+										<FieldLabel htmlFor='dn-notes' optional>{t('sales:delivery.notes')}</FieldLabel>
 										<Textarea id='dn-notes' rows={3} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 									</Field>
 								</FieldGroup>

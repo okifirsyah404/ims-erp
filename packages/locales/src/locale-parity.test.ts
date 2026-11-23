@@ -60,6 +60,9 @@ describe('locale values', () => {
 		// Guards against copy-pasting the English bundle into `id`. Brand names
 		// and locale-neutral tokens are expected to match, so they're exempt.
 		const ALLOWED_IDENTICAL = new Set([
+			// "Owner" of a customer company is the same loanword in Indonesian (ERP-0114).
+			'crm:customer.owner',
+			'crm:customer.ownerBadge',
 			// "Target" is the Indonesian word too (customer portal, ERP-0022).
 			'api:portal.label.target',
 			// `JSON` is the format name in both languages.

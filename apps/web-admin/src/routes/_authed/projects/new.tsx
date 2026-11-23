@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@ims-erp/ui/components/input-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
@@ -130,15 +131,15 @@ function NewProjectPage() {
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='project-site'>{t('projects:field.site')}</FieldLabel>
+								<FieldLabel htmlFor='project-site' optional>{t('projects:field.site')}</FieldLabel>
 								<Input id='project-site' maxLength={200} value={siteName} onChange={(event) => setSiteName(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='project-start'>{t('projects:field.targetStart')}</FieldLabel>
+								<FieldLabel htmlFor='project-start' optional>{t('projects:field.targetStart')}</FieldLabel>
 								<DatePicker id='project-start' value={targetStartDate} onChange={setTargetStartDate} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='project-end'>{t('projects:field.targetEnd')}</FieldLabel>
+								<FieldLabel htmlFor='project-end' optional>{t('projects:field.targetEnd')}</FieldLabel>
 								<DatePicker
 									id='project-end'
 									min={targetStartDate || undefined}
@@ -147,7 +148,7 @@ function NewProjectPage() {
 								/>
 							</Field>
 							<Field className='sm:col-span-2'>
-								<FieldLabel htmlFor='project-notes'>{t('projects:field.notes')}</FieldLabel>
+								<FieldLabel htmlFor='project-notes' optional>{t('projects:field.notes')}</FieldLabel>
 								<Textarea id='project-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 							</Field>
 						</FieldGroup>

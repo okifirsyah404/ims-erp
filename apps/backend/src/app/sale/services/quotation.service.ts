@@ -252,7 +252,9 @@ export class QuotationService {
 			header: {
 				customerId: customer.id,
 				companyId: body.companyId ?? null,
-				customerSnapshot: snapshot,
+				// The frozen snapshot keeps its `whatsapp` key; the phone is that number
+				// since ERP-0114.
+				customerSnapshot: snapshot ? { ...snapshot, whatsapp: snapshot.phone } : snapshot,
 				leadId: body.leadId ?? null,
 				title: body.title,
 				heading: body.heading,

@@ -33,9 +33,13 @@ export type TNewCustomer = Omit<
 export type TCompanyPaginationRequest = TPaginationRequest &
 	Omit<TCompanyListQuery, 'page' | 'limit'>;
 
-/** Page settings plus the filters of the customer-person listing. */
+/**
+ * Page settings plus the filters of the customer-person listing.
+ * `searchUserIds` are accounts whose email matched `search` (resolved through
+ * the user module); they widen the name/code/phone match with an OR.
+ */
 export type TCustomerPaginationRequest = TPaginationRequest &
-	Omit<TCustomerListQuery, 'page' | 'limit'>;
+	Omit<TCustomerListQuery, 'page' | 'limit'> & { searchUserIds?: string[] };
 
 /** Persistence port for `customer.companies` (live rows only). */
 export interface ICompanyRepository {
@@ -51,6 +55,9 @@ export interface ICompanyRepository {
 	create(data: TNewCompany): Promise<TCustomerCompanySelect>;
 
 	update(id: string, patch: Partial<TCustomerCompanyInsert>): Promise<TCustomerCompanySelect | null>;
+
+	/** Soft-deletes a company (compensation of a failed inline create). */
+	softDelete(id: string): Promise<void>;
 
 	/** Moves `from` → `to`; `null` when the company is not in `from`. */
 	transitionStatus(
@@ -92,16 +99,17 @@ export interface ICustomerPersonRepository {
 
 	/**
 	 * Conditional revoke: only a live, not yet revoked login. Sets
-	 * `portal_status = revoked` and frees `user_id`; returns the row as it was
-	 * (so the caller can end the user's sessions) or `null` when nothing changed.
+	 * `portal_status = revoked` and keeps `user_id` (one account, one customer,
+	 * ERP-0114); returns the row as it was (so the caller can end the user's
+	 * sessions) or `null` when nothing changed.
 	 */
 	revokePortalAccess(id: string): Promise<TCustomerSelect | null>;
 
 	/** Stamps `portal_last_login_at`. */
 	touchPortalLogin(id: string): Promise<void>;
 
-	/** Clears `is_primary` on every live person of the company. */
-	clearPrimary(companyId: string): Promise<void>;
+	/** Clears `portal_password_change_required` (after a password change or reset). */
+	clearPasswordChangeRequired(id: string): Promise<void>;
 
 	/** Moves `from` → `to`; `null` when the person is not in `from`. */
 	transitionStatus(

@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter } from '@ims-erp/ui/components/card';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -91,7 +92,7 @@ function NewTicketPage() {
 					<CardContent>
 						<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 							<Field>
-								<FieldLabel htmlFor='ticket-serial'>{t('projects:ticket.serialNumber')}</FieldLabel>
+								<FieldLabel htmlFor='ticket-serial' optional>{t('projects:ticket.serialNumber')}</FieldLabel>
 								<Input
 									id='ticket-serial'
 									maxLength={100}
@@ -162,7 +163,7 @@ function NewTicketPage() {
 								</Select>
 							</Field>
 							<Field className='sm:col-span-2'>
-								<FieldLabel htmlFor='ticket-device'>{t('projects:ticket.device')}</FieldLabel>
+								<FieldLabel htmlFor='ticket-device' optional>{t('projects:ticket.device')}</FieldLabel>
 								<Input id='ticket-device' maxLength={300} value={deviceDescription} onChange={(event) => setDeviceDescription(event.target.value)} />
 							</Field>
 							<Field>
@@ -170,7 +171,7 @@ function NewTicketPage() {
 								<Input id='ticket-reporter' required maxLength={200} value={reporterName} onChange={(event) => setReporterName(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='ticket-contact'>{t('projects:ticket.contact')}</FieldLabel>
+								<FieldLabel htmlFor='ticket-contact' optional>{t('projects:ticket.contact')}</FieldLabel>
 								<Input id='ticket-contact' type='tel' maxLength={200} value={reporterContact} onChange={(event) => setReporterContact(event.target.value)} />
 							</Field>
 							<Field>

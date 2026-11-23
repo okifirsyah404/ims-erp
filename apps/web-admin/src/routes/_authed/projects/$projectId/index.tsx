@@ -14,7 +14,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
@@ -108,15 +109,15 @@ function EditFields({ project, onChange }: { project: TProjectDetail; onChange: 
 				</Select>
 			</Field>
 			<Field className='sm:col-span-2'>
-				<FieldLabel htmlFor='edit-site'>{t('projects:field.site')}</FieldLabel>
+				<FieldLabel htmlFor='edit-site' optional>{t('projects:field.site')}</FieldLabel>
 				<Input id='edit-site' maxLength={200} value={draft.siteName} onChange={(event) => set({ siteName: event.target.value })} />
 			</Field>
 			<Field>
-				<FieldLabel htmlFor='edit-start'>{t('projects:field.targetStart')}</FieldLabel>
+				<FieldLabel htmlFor='edit-start' optional>{t('projects:field.targetStart')}</FieldLabel>
 				<DatePicker id='edit-start' value={draft.targetStartDate} onChange={(targetStartDate) => set({ targetStartDate })} />
 			</Field>
 			<Field>
-				<FieldLabel htmlFor='edit-end'>{t('projects:field.targetEnd')}</FieldLabel>
+				<FieldLabel htmlFor='edit-end' optional>{t('projects:field.targetEnd')}</FieldLabel>
 				<DatePicker
 					id='edit-end'
 					min={draft.targetStartDate || undefined}
@@ -125,7 +126,7 @@ function EditFields({ project, onChange }: { project: TProjectDetail; onChange: 
 				/>
 			</Field>
 			<Field className='sm:col-span-2'>
-				<FieldLabel htmlFor='edit-notes'>{t('projects:field.notes')}</FieldLabel>
+				<FieldLabel htmlFor='edit-notes' optional>{t('projects:field.notes')}</FieldLabel>
 				<Textarea id='edit-notes' rows={3} maxLength={4000} value={draft.notes} onChange={(event) => set({ notes: event.target.value })} />
 			</Field>
 		</FieldGroup>

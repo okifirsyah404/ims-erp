@@ -12,7 +12,16 @@ function internalContext(): AuthEndpointContext {
 }
 
 const pick = (user: TAuthUser | null | undefined): TAuthUser | null =>
-	user ? { id: user.id, name: user.name, email: user.email, emailVerified: Boolean(user.emailVerified) } : null;
+	user
+		? {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				emailVerified: Boolean(user.emailVerified),
+				username: user.username ?? null,
+				image: user.image ?? null,
+			}
+		: null;
 
 /**
  * Better Auth implementation of {@link IUserAccountGateway} (ERP-0022).
@@ -37,14 +46,58 @@ export class BetterAuthUserAccountGateway implements IUserAccountGateway {
 		return this.run(async (ctx) => pick((await ctx.internalAdapter.findUserById(id)) as TAuthUser | null));
 	}
 
-	createUser(input: { name: string; email: string; emailVerified: boolean }) {
+	createUser(input: { name: string; email: string; emailVerified: boolean; username?: string }) {
 		return this.run(async (ctx) => {
+			const username = input.username
+				? { username: input.username.toLowerCase(), displayUsername: input.username }
+				: {};
 			const user = (await ctx.internalAdapter.createUser(
-				{ name: input.name, email: input.email, emailVerified: input.emailVerified, status: 'active' } as never,
+				{ name: input.name, email: input.email, emailVerified: input.emailVerified, status: 'active', ...username } as never,
 				{ method: input.emailVerified ? 'admin' : 'email-password' },
 			)) as TAuthUser;
 			return pick(user) as TAuthUser;
 		});
+	}
+
+	findUsersByIds(ids: string[]) {
+		if (ids.length === 0) return Promise.resolve([]);
+		return this.run(async (ctx) => {
+			const rows = (await ctx.adapter.findMany({
+				model: 'user',
+				where: [{ field: 'id', operator: 'in', value: ids }],
+				limit: ids.length,
+			})) as TAuthUser[];
+			return rows.map((row) => pick(row) as TAuthUser);
+		});
+	}
+
+	findUserIdsByEmailLike(term: string, limit: number) {
+		return this.run(async (ctx) => {
+			const rows = (await ctx.adapter.findMany({
+				model: 'user',
+				where: [{ field: 'email', operator: 'contains', value: term.trim().toLowerCase() }],
+				limit,
+			})) as { id: string }[];
+			return rows.map((row) => row.id);
+		});
+	}
+
+	isUsernameTaken(username: string) {
+		return this.run(async (ctx) =>
+			Boolean(
+				await ctx.adapter.findOne({ model: 'user', where: [{ field: 'username', value: username.toLowerCase() }] }),
+			),
+		);
+	}
+
+	async updateUser(userId: string, patch: { name?: string; email?: string; image?: string | null }): Promise<void> {
+		const data = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
+		if (Object.keys(data).length === 0) return;
+		await this.run(async (ctx) => ctx.internalAdapter.updateUser(userId, data as never));
+	}
+
+	async deleteUser(userId: string): Promise<void> {
+		await this.run(async (ctx) => ctx.internalAdapter.deleteUser(userId));
 	}
 
 	/** Mirrors Better Auth's own set-password path: hash, then upsert the credential account. */

@@ -6,7 +6,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -226,7 +227,7 @@ export function PurchaseReturnForm({
 							</div>
 						))}
 						<Field>
-							<FieldLabel htmlFor='rt-notes'>{t('procurement:return.notes')}</FieldLabel>
+							<FieldLabel htmlFor='rt-notes' optional>{t('procurement:return.notes')}</FieldLabel>
 							<Textarea id='rt-notes' rows={2} maxLength={2000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 						</Field>
 					</CardContent>

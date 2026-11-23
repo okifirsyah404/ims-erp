@@ -8,7 +8,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -25,6 +26,7 @@ import {
 	type TSupplierCompanyInput,
 	type TSupplierType,
 } from '@/lib/supplier-api';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 type TTextField =
 	| 'code'
@@ -73,13 +75,25 @@ export function SupplierFormDialog({
 
 	const field = (key: TTextField, props: React.ComponentProps<typeof Input> = {}, hint?: string) => (
 		<Field>
-			<FieldLabel htmlFor={`supplier-${key}`}>{t(`procurement:supplier.${key}`)}</FieldLabel>
-			<Input
-				id={`supplier-${key}`}
-				value={values[key]}
-				onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))}
-				{...props}
-			/>
+			<FieldLabel htmlFor={`supplier-${key}`} optional={!props.required}>
+				{t(`procurement:supplier.${key}`)}
+			</FieldLabel>
+			{key === 'phone' || key === 'whatsapp' ? (
+				// E.164 like every phone of the ERP (ERP-0114).
+				<CountryPhoneField
+					id={`supplier-${key}`}
+					defaultValue={supplier?.[key]}
+					required={false}
+					onChange={(value) => setValues((current) => ({ ...current, [key]: value }))}
+				/>
+			) : (
+				<Input
+					id={`supplier-${key}`}
+					value={values[key]}
+					onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))}
+					{...props}
+				/>
+			)}
 			{hint && <FieldDescription>{hint}</FieldDescription>}
 		</Field>
 	);
@@ -138,10 +152,10 @@ export function SupplierFormDialog({
 						{field('taxId', { inputMode: 'numeric', maxLength: 16 })}
 						{field('website', { type: 'url', maxLength: 200, placeholder: 'https://' })}
 						{field('email', { type: 'email', maxLength: 254 })}
-						{field('phone', { type: 'tel', maxLength: 30 })}
-						{field('whatsapp', { type: 'tel', maxLength: 30 })}
+						{field('phone')}
+						{field('whatsapp')}
 						<Field>
-							<FieldLabel htmlFor='supplier-days'>{t('procurement:supplier.paymentTermsDays')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-days' optional>{t('procurement:supplier.paymentTermsDays')}</FieldLabel>
 							<Input
 								id='supplier-days'
 								type='number'
@@ -161,7 +175,7 @@ export function SupplierFormDialog({
 							</>
 						)}
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='supplier-notes'>{t('procurement:supplier.notes')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-notes' optional>{t('procurement:supplier.notes')}</FieldLabel>
 							<Textarea
 								id='supplier-notes'
 								rows={2}

@@ -18,6 +18,7 @@ import {
 import { createCodeNumberingTable } from '@shared/numbering/table';
 import { sql } from 'drizzle-orm';
 import {
+	type AnyPgColumn,
 	boolean,
 	check,
 	index,
@@ -90,12 +91,18 @@ export const customerCompanies = customerSchema.table(
 		/** NPWP digits only (15 or 16). */
 		taxId: varchar('tax_id', { length: 16 }),
 		email: text('email'),
+		/** E.164, normalised by the service. */
 		phone: varchar('phone', { length: 30 }),
-		whatsapp: varchar('whatsapp', { length: 30 }),
 		website: varchar('website', { length: 200 }),
 		status: text('status').notNull().default('active'),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		ownerUserId: text('owner_user_id'),
+		/**
+		 * The one owner of the company account: a contact of this company.
+		 * Every other contact is staff (ERP-0114).
+		 */
+		ownerCustomerId: uuid('owner_customer_id').references(
+			(): AnyPgColumn => customers.id,
+			{ onDelete: 'set null' },
+		),
 		notes: text('notes'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		createdBy: text('created_by'),
@@ -107,7 +114,9 @@ export const customerCompanies = customerSchema.table(
 			.where(sql`deleted_at IS NULL`),
 		index('customer_companies_name_idx').on(table.name),
 		index('customer_companies_tax_id_idx').on(table.taxId),
-		index('customer_companies_owner_user_id_idx').on(table.ownerUserId),
+		uniqueIndex('customer_companies_owner_uq')
+			.on(table.ownerCustomerId)
+			.where(sql`owner_customer_id IS NOT NULL AND deleted_at IS NULL`),
 		check(
 			'customer_companies_type_check',
 			sql`${table.companyType} IN ('company', 'government', 'partner')`,
@@ -124,10 +133,11 @@ export const customerCompanies = customerSchema.table(
  * ------------------------------------------------------------------------ */
 
 /**
- * A person: an individual customer, or the contact/PIC of a company.
+ * A person: an individual customer, or a contact of a company (its one
+ * owner or a staff member).
  *
  * @remarks
- * `user_id` is the customer-portal login. A portal user is never an
+ * `user_id` is the person's Better Auth account (one account, one customer). A portal user is never an
  * organization member, so every ERP route (and the web admin's sign-in) refuses
  * it; only the portal routes accept an active login.
  */
@@ -144,22 +154,24 @@ export const customers = customerSchema.table(
 		}),
 		name: text('name').notNull(),
 		position: text('position'),
-		email: text('email'),
+		/** E.164, normalised by the service. The email lives on the auth user. */
 		phone: varchar('phone', { length: 30 }),
-		whatsapp: varchar('whatsapp', { length: 30 }),
-		/** The primary contact of its company; at most one live row per company. */
-		isPrimary: boolean('is_primary').notNull().default(false),
 		customerType: text('customer_type').notNull().default('individual'),
 		status: text('status').notNull().default('active'),
-		/** Logical reference to auth.users.id — cross-module FK omitted. */
-		ownerUserId: text('owner_user_id'),
-		/** Portal login of this person. Logical reference to auth.users.id. */
+		/**
+		 * The Better Auth account of this person — one account is exactly one
+		 * customer (ERP-0114). Logical reference to auth.users.id.
+		 */
 		userId: text('user_id'),
 		portalRole: text('portal_role'),
 		portalStatus: text('portal_status'),
 		/** Logical reference to auth.users.id — null for a self sign-up. */
 		portalInvitedBy: text('portal_invited_by'),
 		portalLastLoginAt: unixTimestampNullable('portal_last_login_at'),
+		/** Account created with the default password; cleared on change/reset. */
+		portalPasswordChangeRequired: boolean('portal_password_change_required')
+			.notNull()
+			.default(false),
 		notes: text('notes'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
 		createdBy: text('created_by'),
@@ -172,12 +184,8 @@ export const customers = customerSchema.table(
 		uniqueIndex('customers_user_uq')
 			.on(table.userId)
 			.where(sql`user_id IS NOT NULL AND deleted_at IS NULL`),
-		uniqueIndex('customers_primary_uq')
-			.on(table.companyId)
-			.where(sql`is_primary AND deleted_at IS NULL AND company_id IS NOT NULL`),
 		index('customers_company_id_idx').on(table.companyId),
 		index('customers_name_idx').on(table.name),
-		index('customers_owner_user_id_idx').on(table.ownerUserId),
 		check(
 			'customers_type_check',
 			sql`${table.customerType} IN ('individual', 'contact')`,

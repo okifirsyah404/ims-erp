@@ -95,4 +95,6 @@ export interface IPortalMailer {
 	sendInvitation(input: { to: string; name: string; url: string }): Promise<void>;
 	sendPasswordReset(input: { to: string; name: string; url: string }): Promise<void>;
 	sendSignupCode(input: { to: string; name: string; code: string }): Promise<void>;
+	/** Username + default password of an account staff created (ERP-0114); `url` is the portal sign-in page. */
+	sendCredentials(input: { to: string; name: string; username: string; password: string; url: string | null }): Promise<void>;
 }

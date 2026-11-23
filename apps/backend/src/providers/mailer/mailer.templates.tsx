@@ -7,6 +7,7 @@ import {
 import {
 	AppInvitationEmail,
 	CodeEmail,
+	CredentialsEmail,
 	OrganizationInvitationEmail,
 	ResetPasswordEmail,
 	renderEmail,
@@ -180,6 +181,39 @@ export async function renderPortalSignupCodeEmail({
 	};
 	const { html, text } = await renderEmail(<CodeEmail code={code} texts={texts} />);
 	return { subject: t(language, 'email:portalSignupCode.subject', { app, code }), html, text };
+}
+
+/**
+ * Customer account credentials (ERP-0114): the username and default password
+ * of an account staff created; `url` is the portal sign-in page when known.
+ */
+export async function renderCustomerCredentialsEmail({
+	name,
+	username,
+	password,
+	url,
+	language = DEFAULT_LANGUAGE,
+}: {
+	name: string;
+	username: string;
+	password: string;
+	url?: string | null;
+	language?: LanguageCode;
+}): Promise<Omit<MailPayload, 'to'>> {
+	const app = await appName();
+	const texts = {
+		greeting: t(language, 'email:customerCredentials.greeting', { name }),
+		body: t(language, 'email:customerCredentials.body', { app }),
+		usernameLabel: t(language, 'email:customerCredentials.username'),
+		passwordLabel: t(language, 'email:customerCredentials.password'),
+		changeNotice: t(language, 'email:customerCredentials.changeNotice'),
+		action: t(language, 'email:customerCredentials.action'),
+		footer: t(language, 'email:footer.noReply', { app }),
+	};
+	const { html, text } = await renderEmail(
+		<CredentialsEmail username={username} password={password} url={url ?? null} texts={texts} />,
+	);
+	return { subject: t(language, 'email:customerCredentials.subject', { app }), html, text };
 }
 
 /** Organization-invitation input; superset of the base template input. */

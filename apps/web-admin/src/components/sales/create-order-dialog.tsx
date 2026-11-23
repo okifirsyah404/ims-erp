@@ -10,7 +10,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { todayBusinessDate } from '@/lib/format';
@@ -55,7 +56,7 @@ export function CreateOrderDialog({
 					<p className='pt-2 text-sm text-muted-foreground'>{t('sales:orders.newHint')}</p>
 					<FieldGroup className='py-4'>
 						<Field>
-							<FieldLabel htmlFor='order-po'>{t('sales:order.customerPo')}</FieldLabel>
+							<FieldLabel htmlFor='order-po' optional>{t('sales:order.customerPo')}</FieldLabel>
 							<Input
 								id='order-po'
 								maxLength={100}
@@ -75,7 +76,7 @@ export function CreateOrderDialog({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='order-delivery'>{t('sales:order.deliveryDate')}</FieldLabel>
+								<FieldLabel htmlFor='order-delivery' optional>{t('sales:order.deliveryDate')}</FieldLabel>
 								<DatePicker
 									id='order-delivery'
 									min={orderDate}
@@ -85,7 +86,7 @@ export function CreateOrderDialog({
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='order-notes'>{t('sales:quotation.notes')}</FieldLabel>
+							<FieldLabel htmlFor='order-notes' optional>{t('sales:quotation.notes')}</FieldLabel>
 							<Textarea id='order-notes' maxLength={4000} value={notes} onChange={(e) => setNotes(e.target.value)} />
 						</Field>
 					</FieldGroup>

@@ -94,7 +94,8 @@ export class TicketService {
 		const view = await this.view(ticket);
 		// ADR-0014: a ticket may carry no customer; the event then has no contact.
 		const customer = ticket.customerId ? await this.customers.getActiveCustomer(ticket.customerId) : null;
-		const contact = customer ? { phone: customer.phone, whatsapp: customer.whatsapp, email: customer.email } : null;
+		// The phone is also the WhatsApp number since ERP-0114.
+		const contact = customer ? { phone: customer.phone, whatsapp: customer.phone, email: customer.email } : null;
 		await this.outbox.publish('service_ticket.updated', { type: 'ticket', id: ticket.id }, ticketUpdatedEvent(ticket, change, view.assignee, contact));
 		return view;
 	}

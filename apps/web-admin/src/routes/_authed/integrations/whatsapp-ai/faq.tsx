@@ -7,7 +7,8 @@ import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
@@ -187,13 +188,13 @@ function FaqDialog({ entry, busy, onClose, onSave }: { entry: TFaqEntry | null; 
 							<FieldDescription>{t('integrations:faq.answerHint')}</FieldDescription>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='faq-keywords'>{t('integrations:faq.keywords')}</FieldLabel>
+							<FieldLabel htmlFor='faq-keywords' optional>{t('integrations:faq.keywords')}</FieldLabel>
 							<Input id='faq-keywords' maxLength={500} value={keywords} onChange={(event) => setKeywords(event.target.value)} />
 							<FieldDescription>{t('integrations:faq.keywordsHint')}</FieldDescription>
 						</Field>
 						<div className='grid gap-4 sm:grid-cols-2'>
 							<Field>
-								<FieldLabel htmlFor='faq-order'>{t('integrations:faq.order')}</FieldLabel>
+								<FieldLabel htmlFor='faq-order' optional>{t('integrations:faq.order')}</FieldLabel>
 								<Input
 									id='faq-order'
 									type='number'

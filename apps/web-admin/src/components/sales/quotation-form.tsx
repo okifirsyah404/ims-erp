@@ -7,7 +7,8 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	InputGroup,
@@ -247,7 +248,7 @@ export function QuotationForm({
 							</Select>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='quotation-attention'>{t('sales:quotation.attention')}</FieldLabel>
+							<FieldLabel htmlFor='quotation-attention' optional>{t('sales:quotation.attention')}</FieldLabel>
 							<Input
 								id='quotation-attention'
 								maxLength={200}
@@ -276,7 +277,7 @@ export function QuotationForm({
 							/>
 						</Field>
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='quotation-heading'>{t('sales:quotation.heading')}</FieldLabel>
+							<FieldLabel htmlFor='quotation-heading' optional>{t('sales:quotation.heading')}</FieldLabel>
 							<Input
 								id='quotation-heading'
 								maxLength={120}
@@ -306,7 +307,7 @@ export function QuotationForm({
 							<FieldDescription>{t('sales:form.validUntilHint')}</FieldDescription>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='quotation-guarantee'>{t('sales:quotation.guarantee')}</FieldLabel>
+							<FieldLabel htmlFor='quotation-guarantee' optional>{t('sales:quotation.guarantee')}</FieldLabel>
 							<Input
 								id='quotation-guarantee'
 								maxLength={300}
@@ -315,7 +316,7 @@ export function QuotationForm({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='quotation-payment-terms'>{t('sales:quotation.paymentTerms')}</FieldLabel>
+							<FieldLabel htmlFor='quotation-payment-terms' optional>{t('sales:quotation.paymentTerms')}</FieldLabel>
 							<Input
 								id='quotation-payment-terms'
 								maxLength={300}
@@ -361,7 +362,7 @@ export function QuotationForm({
 								/>
 							</Field>
 							<Field className='sm:col-span-6'>
-								<FieldLabel htmlFor={`line-spec-${line.key}`}>{t('sales:line.specification')}</FieldLabel>
+								<FieldLabel htmlFor={`line-spec-${line.key}`} optional>{t('sales:line.specification')}</FieldLabel>
 								<Textarea
 									id={`line-spec-${line.key}`}
 									rows={2}
@@ -411,7 +412,7 @@ export function QuotationForm({
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor={`line-discount-${line.key}`}>{t('sales:line.discount')}</FieldLabel>
+								<FieldLabel htmlFor={`line-discount-${line.key}`} optional>{t('sales:line.discount')}</FieldLabel>
 								<MoneyInput
 									id={`line-discount-${line.key}`}
 									value={line.discount}
@@ -590,7 +591,7 @@ export function QuotationForm({
 				<CardContent>
 					<FieldGroup>
 						<Field>
-							<FieldLabel htmlFor='quotation-terms'>{t('sales:quotation.terms')}</FieldLabel>
+							<FieldLabel htmlFor='quotation-terms' optional>{t('sales:quotation.terms')}</FieldLabel>
 							<Textarea
 								id='quotation-terms'
 								rows={5}
@@ -600,7 +601,7 @@ export function QuotationForm({
 							/>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='quotation-notes'>{t('sales:quotation.notes')}</FieldLabel>
+							<FieldLabel htmlFor='quotation-notes' optional>{t('sales:quotation.notes')}</FieldLabel>
 							<Textarea
 								id='quotation-notes'
 								rows={3}
