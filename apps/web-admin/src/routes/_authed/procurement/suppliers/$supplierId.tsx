@@ -29,6 +29,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 import {
 	EMPTY_LOCATION_SELECTION,
 	LocationCascade,
@@ -49,7 +50,6 @@ import {
 	type TSupplierCompanyAddressInput,
 } from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
-import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 /** `/procurement/suppliers/$supplierId` - one supplier company with its people and addresses. */
 export const Route = createFileRoute('/_authed/procurement/suppliers/$supplierId')({
@@ -126,15 +126,15 @@ function CompanyAddressDialog({
 								</Select>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='supplier-address-label'>{t('procurement:supplier.addressLabel')}</FieldLabel>
+								<FieldLabel htmlFor='supplier-address-label' optional>{t('procurement:supplier.addressLabel')}</FieldLabel>
 								<Input id='supplier-address-label' maxLength={100} value={label} onChange={(event) => setLabel(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='supplier-address-contact'>{t('procurement:supplier.addressContactName')}</FieldLabel>
+								<FieldLabel htmlFor='supplier-address-contact' optional>{t('procurement:supplier.addressContactName')}</FieldLabel>
 								<Input id='supplier-address-contact' maxLength={200} value={contactName} onChange={(event) => setContactName(event.target.value)} />
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='supplier-address-phone'>{t('procurement:supplier.addressContactPhone')}</FieldLabel>
+								<FieldLabel htmlFor='supplier-address-phone' optional>{t('procurement:supplier.addressContactPhone')}</FieldLabel>
 								<Input id='supplier-address-phone' type='tel' maxLength={30} value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} />
 							</Field>
 						</div>
@@ -151,7 +151,7 @@ function CompanyAddressDialog({
 						</Field>
 						<LocationCascade value={location} initialVillageId={null} onChange={setLocation} />
 						<Field className='sm:max-w-48'>
-							<FieldLabel htmlFor='supplier-address-postal'>{t('procurement:supplier.postalCode')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-address-postal' optional>{t('procurement:supplier.postalCode')}</FieldLabel>
 							<Input
 								id='supplier-address-postal'
 								inputMode='numeric'

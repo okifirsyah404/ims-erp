@@ -12,6 +12,95 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0116: robust supplier master CRUD
+
+**Owner request** (grill-me, 4 decisions): make the supplier master robust —
+drop the WhatsApp, payment-term and default-payment-line fields (payment terms
+belong to the purchase order), add a location selector like `/warehouses`,
+group the form, keep only Company/Government as the type, use the
+`/admin/users` table pattern (shared `Table`, TanStack Table, `PaginationControls`,
+search, filter, sort), and keep repository-level caching.
+
+**Answers recorded.** (1) Drop the columns at the database level, not just from
+the form. (2) Keep `government` as a valid type (only `company`/`government`).
+(3) Full address CRUD (backend + UI), mirroring the `customer` module.
+(4) Server-side sort via `sortBy`/`sortDir` query params.
+
+**Design gate.** `docs/database/` read first (`docs.dbml` Supplier module,
+`module-ownership.md`, `logical-references.md`); the address tables
+(`supplier.addresses`, `supplier.company_addresses`) already existed in the
+contract with no endpoints, so no new tables were invented. Manual grilling
+pass covered ownership (supplier owns both address tables), tenant scoping
+(supplier is company-wide, ADR-0011 — no `organization_id`), soft delete
+(`deleted_at IS NULL` in every scoped query), column types (no money/datetime
+change), cross-module contract methods (`ExportedLocationService.assertVillage`
+for `villageId`, already declared in `logical-references.md`), and status
+vocabulary (`active`/`inactive` unchanged; `supplier_type` CHECK unchanged).
+
+**Backend.**
+- `supplierCompanyListQuerySchema` gained `sortBy` (`name`|`code`|`createdAt`,
+  default `name`) and `sortDir`; `SupplierCompanyRepository.paginate` orders by
+  a whitelisted column map (never raw user input) and the search now covers
+  `legal_name` too.
+- New `repositories/supplier-address.repository.ts`
+  (`SupplierCompanyAddressRepository`, `SupplierAddressRepository`),
+  owner-scoped CRUD, no cache (small sets read through their owner — same
+  reasoning as `customer/repositories/address.repository.ts`).
+- `SupplierService` gained address use cases that validate a supplied
+  `villageId` through `ExportedLocationService.assertVillage` and throw
+  `SupplierAddressNotFoundError`; `getCompany` now returns `addresses`.
+- Routes: `POST|PATCH|DELETE /suppliers/companies/:id/addresses[/:addressId]`
+  and `/suppliers/people/:id/addresses[/:addressId]` behind
+  `supplier:update`.
+- `ExportedSupplierService.getPurchaseSnapshot` now fills `address` from the
+  primary live company address and the PIC block from the primary live person
+  (previously hard-coded `null`).
+- `procurement` PO `paymentTerms` no longer falls back to the supplier default;
+  the PO body is the only source.
+
+**Schema/migration.** `docs.dbml` edited first (dropped `whatsapp` from
+`supplier.companies` and `supplier.suppliers`, dropped `payment_terms_days` /
+`payment_term_note` and the `payment_terms_days >= 0` check), then the Drizzle
+schema, then migration
+`database/migrations/20261123015149_erp0116_drop_supplier_whatsapp_payment_terms`
+(4 `DROP COLUMN` + 1 `DROP CONSTRAINT`, inspected by hand). Append-only;
+not applied to any database in this session.
+
+**web-admin.** `lib/supplier-api.ts` rewritten (sort params, address types and
+calls). `/procurement/suppliers` follows `/admin/users`: URL-backed
+`validateSearch` (page/search/status/sortBy/sortDir), server sort headers with
+arrow icons, a `FiltersPopover` for status, `PaginationControls`, `RowActions`
+for activate/deactivate, and a count in the card header. The form dialog is
+grouped with the warehouse `FormSection` pattern (Company / Contact / Address)
+and carries the location cascade inline, like the warehouse form: on create the
+address is posted right after the company, on edit the primary (else first)
+address is PATCHed, or created when the supplier had none. The detail page
+keeps its Addresses card for the extra rows. The WhatsApp/payment fields are
+gone. Company and PIC phone use the shared `CountryPhoneField`
+(`components/form/country-phone-field.tsx`), so the value stored is E.164;
+`defaultValue` and `required={false}` were added to that field for the edit
+form and for the optional supplier phone.
+
+**Checks.**
+- `bunx tsc --noEmit` (backend): clean.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun run test` (root): 7/7 tasks — backend 1385 pass, locales 106 pass.
+- `bun run lint` (root): 0 errors (26 pre-existing backend warnings).
+- `bun docs/database/validate-dbml.ts`: OK (0 cross-module refs, 0 timestamp
+  gaps, 0 drizzle parity drift, 0 column parity drift).
+- `bun docs/gen-role-permission.ts`: 634 routes written (the 6 new address
+  routes included).
+- Migration generated and read by hand; **not** applied to a database, so the
+  drop is unverified against real data. No seeder referenced the dropped
+  columns (grep over `database/seeders`).
+
+**Open.** Live/browser walk-through of the new list, form and address card;
+migration not run on a disposable database in this session.
+
+Next executable task: apply migration `20261123015149_erp0116_…` on a
+disposable database and click through `/procurement/suppliers`, then the
+ERP-0112 browser check below.
+
 ## 2026-11-23 - ERP-0114: `/crm/customers` robustness, one account per customer, one owner per company, global form conventions
 
 **Owner request** (grill-me, Q1-Q34, all settled in session): make
@@ -136,94 +225,6 @@ Next executable task: ERP-0115 (portal: forced password change at the first
 sign-in, username sign-in, owner/staff UI) - or, before it, a browser check of
 the ERP-0114 photo upload against a dev S3 bucket. The earlier ERP-0112 browser
 check and ERP-0111 Google walk-through remain open.
-## 2026-11-23 - ERP-0114: robust supplier master CRUD
-
-**Owner request** (grill-me, 4 decisions): make the supplier master robust —
-drop the WhatsApp, payment-term and default-payment-line fields (payment terms
-belong to the purchase order), add a location selector like `/warehouses`,
-group the form, keep only Company/Government as the type, use the
-`/admin/users` table pattern (shared `Table`, TanStack Table, `PaginationControls`,
-search, filter, sort), and keep repository-level caching.
-
-**Answers recorded.** (1) Drop the columns at the database level, not just from
-the form. (2) Keep `government` as a valid type (only `company`/`government`).
-(3) Full address CRUD (backend + UI), mirroring the `customer` module.
-(4) Server-side sort via `sortBy`/`sortDir` query params.
-
-**Design gate.** `docs/database/` read first (`docs.dbml` Supplier module,
-`module-ownership.md`, `logical-references.md`); the address tables
-(`supplier.addresses`, `supplier.company_addresses`) already existed in the
-contract with no endpoints, so no new tables were invented. Manual grilling
-pass covered ownership (supplier owns both address tables), tenant scoping
-(supplier is company-wide, ADR-0011 — no `organization_id`), soft delete
-(`deleted_at IS NULL` in every scoped query), column types (no money/datetime
-change), cross-module contract methods (`ExportedLocationService.assertVillage`
-for `villageId`, already declared in `logical-references.md`), and status
-vocabulary (`active`/`inactive` unchanged; `supplier_type` CHECK unchanged).
-
-**Backend.**
-- `supplierCompanyListQuerySchema` gained `sortBy` (`name`|`code`|`createdAt`,
-  default `name`) and `sortDir`; `SupplierCompanyRepository.paginate` orders by
-  a whitelisted column map (never raw user input) and the search now covers
-  `legal_name` too.
-- New `repositories/supplier-address.repository.ts`
-  (`SupplierCompanyAddressRepository`, `SupplierAddressRepository`),
-  owner-scoped CRUD, no cache (small sets read through their owner — same
-  reasoning as `customer/repositories/address.repository.ts`).
-- `SupplierService` gained address use cases that validate a supplied
-  `villageId` through `ExportedLocationService.assertVillage` and throw
-  `SupplierAddressNotFoundError`; `getCompany` now returns `addresses`.
-- Routes: `POST|PATCH|DELETE /suppliers/companies/:id/addresses[/:addressId]`
-  and `/suppliers/people/:id/addresses[/:addressId]` behind
-  `supplier:update`.
-- `ExportedSupplierService.getPurchaseSnapshot` now fills `address` from the
-  primary live company address and the PIC block from the primary live person
-  (previously hard-coded `null`).
-- `procurement` PO `paymentTerms` no longer falls back to the supplier default;
-  the PO body is the only source.
-
-**Schema/migration.** `docs.dbml` edited first (dropped `whatsapp` from
-`supplier.companies` and `supplier.suppliers`, dropped `payment_terms_days` /
-`payment_term_note` and the `payment_terms_days >= 0` check), then the Drizzle
-schema, then migration
-`database/migrations/20261123015149_erp0114_drop_supplier_whatsapp_payment_terms`
-(4 `DROP COLUMN` + 1 `DROP CONSTRAINT`, inspected by hand). Append-only;
-not applied to any database in this session.
-
-**web-admin.** `lib/supplier-api.ts` rewritten (sort params, address types and
-calls). `/procurement/suppliers` follows `/admin/users`: URL-backed
-`validateSearch` (page/search/status/sortBy/sortDir), server sort headers with
-arrow icons, a `FiltersPopover` for status, `PaginationControls`, `RowActions`
-for activate/deactivate, and a count in the card header. The form dialog is
-grouped with the warehouse `FormSection` pattern (Company / Contact / Address)
-and carries the location cascade inline, like the warehouse form: on create the
-address is posted right after the company, on edit the primary (else first)
-address is PATCHed, or created when the supplier had none. The detail page
-keeps its Addresses card for the extra rows. The WhatsApp/payment fields are
-gone. Company and PIC phone use the shared `CountryPhoneField`
-(`components/form/country-phone-field.tsx`), so the value stored is E.164;
-`defaultValue` and `required={false}` were added to that field for the edit
-form and for the optional supplier phone.
-
-**Checks.**
-- `bunx tsc --noEmit` (backend): clean.
-- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
-- `bun run test` (root): 7/7 tasks — backend 1385 pass, locales 106 pass.
-- `bun run lint` (root): 0 errors (26 pre-existing backend warnings).
-- `bun docs/database/validate-dbml.ts`: OK (0 cross-module refs, 0 timestamp
-  gaps, 0 drizzle parity drift, 0 column parity drift).
-- `bun docs/gen-role-permission.ts`: 634 routes written (the 6 new address
-  routes included).
-- Migration generated and read by hand; **not** applied to a database, so the
-  drop is unverified against real data. No seeder referenced the dropped
-  columns (grep over `database/seeders`).
-
-**Open.** Live/browser walk-through of the new list, form and address card;
-migration not run on a disposable database in this session.
-
-Next executable task: apply migration `20261123015149_erp0114_…` on a
-disposable database and click through `/procurement/suppliers`, then the
-ERP-0112 browser check below.
 
 ## 2026-11-23 - web-admin: tall form dialogs scroll inside `ScrollArea`
 
