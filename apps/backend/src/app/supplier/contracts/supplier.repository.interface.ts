@@ -1,4 +1,8 @@
 import type {
+	TSupplierAddressInsert,
+	TSupplierAddressSelect,
+	TSupplierCompanyAddressInsert,
+	TSupplierCompanyAddressSelect,
 	TSupplierCompanySelect,
 	TSupplierSelect,
 } from '@drizzle/schemas/supplier.schema';
@@ -76,4 +80,48 @@ export interface ISupplierRepository {
 	update(id: string, patch: TSupplierUpdateInput): Promise<TSupplierSelect | null>;
 
 	softDelete(id: string): Promise<boolean>;
+}
+
+/** Persistence port for `supplier.company_addresses` (owner-scoped, no cache). */
+export interface ISupplierCompanyAddressRepository {
+	listByCompany(companyId: string): Promise<TSupplierCompanyAddressSelect[]>;
+	findById(
+		companyId: string,
+		addressId: string,
+	): Promise<TSupplierCompanyAddressSelect | null>;
+	create(
+		companyId: string,
+		data: Omit<
+			TSupplierCompanyAddressInsert,
+			'id' | 'companyId' | 'createdAt' | 'updatedAt' | 'deletedAt'
+		>,
+	): Promise<TSupplierCompanyAddressSelect>;
+	update(
+		companyId: string,
+		addressId: string,
+		patch: Partial<TSupplierCompanyAddressInsert>,
+	): Promise<TSupplierCompanyAddressSelect | null>;
+	softDelete(companyId: string, addressId: string): Promise<boolean>;
+}
+
+/** Persistence port for `supplier.addresses` (owner-scoped, no cache). */
+export interface ISupplierAddressRepository {
+	listByPerson(supplierId: string): Promise<TSupplierAddressSelect[]>;
+	findById(
+		supplierId: string,
+		addressId: string,
+	): Promise<TSupplierAddressSelect | null>;
+	create(
+		supplierId: string,
+		data: Omit<
+			TSupplierAddressInsert,
+			'id' | 'supplierId' | 'createdAt' | 'updatedAt' | 'deletedAt'
+		>,
+	): Promise<TSupplierAddressSelect>;
+	update(
+		supplierId: string,
+		addressId: string,
+		patch: Partial<TSupplierAddressInsert>,
+	): Promise<TSupplierAddressSelect | null>;
+	softDelete(supplierId: string, addressId: string): Promise<boolean>;
 }

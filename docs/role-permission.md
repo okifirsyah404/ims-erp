@@ -616,7 +616,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-630 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+636 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -1235,11 +1235,17 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/suppliers/companies/:id` | org member + permission | `supplier:read` | `owner`, `purchasing`, `finance`, `auditor` |
 | PATCH | `/suppliers/companies/:id` | org member + permission | `supplier:update` | `owner`, `purchasing` |
 | POST | `/suppliers/companies/:id/activate` | org member + permission | `supplier:archive` | `owner`, `purchasing` |
+| POST | `/suppliers/companies/:id/addresses` | org member + permission | `supplier:update` | `owner`, `purchasing` |
+| DELETE | `/suppliers/companies/:id/addresses/:addressId` | org member + permission | `supplier:update` | `owner`, `purchasing` |
+| PATCH | `/suppliers/companies/:id/addresses/:addressId` | org member + permission | `supplier:update` | `owner`, `purchasing` |
 | POST | `/suppliers/companies/:id/deactivate` | org member + permission | `supplier:archive` | `owner`, `purchasing` |
 | GET | `/suppliers/people` | org member + permission | `supplier:read` | `owner`, `purchasing`, `finance`, `auditor` |
 | POST | `/suppliers/people` | org member + permission | `supplier:create` | `owner`, `purchasing` |
 | DELETE | `/suppliers/people/:id` | org member + permission | `supplier:update` | `owner`, `purchasing` |
 | PATCH | `/suppliers/people/:id` | org member + permission | `supplier:update` | `owner`, `purchasing` |
+| POST | `/suppliers/people/:id/addresses` | org member + permission | `supplier:update` | `owner`, `purchasing` |
+| DELETE | `/suppliers/people/:id/addresses/:addressId` | org member + permission | `supplier:update` | `owner`, `purchasing` |
+| PATCH | `/suppliers/people/:id/addresses/:addressId` | org member + permission | `supplier:update` | `owner`, `purchasing` |
 
 ### tax
 
