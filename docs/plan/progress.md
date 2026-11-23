@@ -62,7 +62,7 @@ vocabulary (`active`/`inactive` unchanged; `supplier_type` CHECK unchanged).
 `supplier.companies` and `supplier.suppliers`, dropped `payment_terms_days` /
 `payment_term_note` and the `payment_terms_days >= 0` check), then the Drizzle
 schema, then migration
-`database/migrations/20261123015149_erp0114_drop_supplier_whatsapp_payment_terms`
+`database/migrations/20261123015149_erp0116_drop_supplier_whatsapp_payment_terms`
 (4 `DROP COLUMN` + 1 `DROP CONSTRAINT`, inspected by hand). Append-only;
 not applied to any database in this session.
 
