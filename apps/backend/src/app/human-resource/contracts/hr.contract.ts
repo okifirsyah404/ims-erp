@@ -1,3 +1,4 @@
+import type { TAccountDetail } from '@app/user/services/exported-user.service';
 import { z } from 'zod';
 import { organizationRoleSchema } from '@ims-erp/common';
 import {
@@ -72,6 +73,9 @@ export const updateEmployeeSchema = employeeBaseSchema.partial().extend({
 		.transform((value) => (value ? value : null)),
 });
 
+/** Sort fields of the employee table (a whitelist; never raw input in SQL). */
+export const EMPLOYEE_SORT_FIELDS = ['fullName', 'employeeCode', 'hireDate', 'createdAt'] as const;
+
 export const employeeListQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
 	limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -80,6 +84,15 @@ export const employeeListQuerySchema = z.object({
 	organizationId: z.string().min(1).optional(),
 	/** `company` selects only company-level (`organization_id IS NULL`). */
 	scope: z.enum(['all', 'organization', 'company']).default('all'),
+	employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
+	workType: z.enum(WORK_TYPES).optional(),
+	/** On `auth.users` (ERP-0034): resolved to user ids through the user module. */
+	gender: z.enum(['male', 'female']).optional(),
+	maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed']).optional(),
+	/** `yes`: has a login; `no`: no login (`user_id IS NULL`). */
+	login: z.enum(['yes', 'no']).optional(),
+	sortBy: z.enum(EMPLOYEE_SORT_FIELDS).default('fullName'),
+	sortDir: z.enum(['asc', 'desc']).default('asc'),
 });
 
 export const idParamSchema = z.object({ id: z.uuid() });
@@ -115,6 +128,8 @@ export type TEmployeePaginationRequest = TEmployeeListQuery & {
 	organizationIds: string[] | null;
 	/** Include company-level rows (organization_id IS NULL). */
 	includeCompany: boolean;
+	/** Only these user ids (a personal-field filter matched them); `null` = no such filter. */
+	userIds?: string[] | null;
 };
 export type TEmployeePickerQuery = z.output<typeof employeePickerQuerySchema>;
 
@@ -134,6 +149,13 @@ export type TEmployeeDto = TEmployeeSelect & {
 	birthDate: string | null;
 	hireDate: string | null;
 	terminationDate: string | null;
+	/**
+	 * The linked login (`auth.users`), on the detail endpoint only: `null`
+	 * when the employee has no login, absent on lists.
+	 */
+	account?: TAccountDetail | null;
+	/** Avatar and handle of the login, on list rows (the table identity cell). */
+	login?: { username: string | null; image: string | null } | null;
 };
 
 export type TEmployeePage = TPaginationResult<TEmployeeDto>;

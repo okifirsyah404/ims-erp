@@ -86,6 +86,13 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		bodyTemplate: 'The payday run created {{records}} draft salary record(s) for {{period}}.',
 		variables: ['period', 'records'],
 	},
+	{
+		code: 'hr.payslip_ready',
+		name: 'Payslip ready',
+		subjectTemplate: 'Your payslip for {{period}} is ready',
+		bodyTemplate: 'Your payslip for {{period}} can be downloaded from your account page.',
+		variables: ['period'],
+	},
 ];
 
 /**

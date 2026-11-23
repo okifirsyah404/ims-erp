@@ -620,7 +620,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-663 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+669 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -875,20 +875,26 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/human-resources/payroll-settings` | app admin | - | app admin |
 | PUT | `/human-resources/payroll-settings` | app admin | - | app admin |
 | GET | `/human-resources/public/v1/render/employment-agreements/:id` | no guard macro | - | - |
+| GET | `/human-resources/public/v1/render/payslips/:id` | no guard macro | - | - |
 | DELETE | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | PUT | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/salary-records` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | PUT | `/human-resources/salary-records` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | DELETE | `/human-resources/salary-records/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
+| GET | `/human-resources/salary-records/:id/payslip` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
+| POST | `/human-resources/salary-records/:id/payslip/regenerate` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/approve` | org member + permission | `payroll:approve` | `owner` |
 | POST | `/human-resources/salary-records/generate` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/import` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
+| GET | `/human-resources/salary-records/payslips.zip` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/salary-records/template` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/schedules` | org member + permission | `schedule:create` | `owner`, `admin`, `hr` |
 | DELETE | `/human-resources/schedules/:id` | org member + permission | `schedule:delete` | `owner`, `admin`, `hr` |
 | PUT | `/human-resources/schedules/:id` | org member + permission | `schedule:update` | `owner`, `admin`, `hr` |
 | POST | `/human-resources/schedules/fill` | org member + permission | `schedule:create` | `owner`, `admin`, `hr` |
 | GET | `/human-resources/schedules/week` | org member + permission | `schedule:read` | `owner`, `admin`, `hr`, `auditor` |
+| GET | `/users/me/payslips` | session | - | any signed-in user |
+| GET | `/users/me/payslips/:id/download` | session | - | any signed-in user |
 
 ### inventory
 

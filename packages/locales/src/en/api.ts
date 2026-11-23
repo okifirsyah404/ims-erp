@@ -479,6 +479,8 @@ const api = {
 	'hr.salaryPeriod.notActive': 'Only the active salary period can be edited',
 	'hr.salaryPeriod.notLatest': 'Only the latest salary period can be deleted',
 	'hr.employeeDocument.notAgreement': 'Only a live employment agreement has a generated PDF',
+	'hr.payslip.notReady': 'The payslip PDF is not ready yet',
+	'hr.payslip.notApproved': 'Only an approved salary record has a payslip',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',

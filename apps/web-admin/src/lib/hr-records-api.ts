@@ -356,6 +356,42 @@ export const agreementRenderQueryOptions = (documentId: string, token: string) =
 		retry: false,
 	});
 
+// Payslips (ERP-0122)
+export const payslipDownloadUrl = (recordId: string) =>
+	send<{ url: string; fileName: string }>(`/human-resources/salary-records/${recordId}/payslip`, 'GET');
+export const regeneratePayslip = (recordId: string) => send<{ queued: true }>(`/human-resources/salary-records/${recordId}/payslip/regenerate`, 'POST');
+/** Saves every ready payslip of a period as one ZIP (session cookie). */
+export const downloadPayslipZip = (period: string) => downloadTemplate(`/human-resources/salary-records/payslips.zip?period=${period}`, `slip-gaji-${period}.zip`);
+export type TMyPayslip = { recordId: string; period: string; netPay: number; ready: boolean };
+export const myPayslipsQueryOptions = () => single<TMyPayslip[]>(['me', 'payslips'], '/users/me/payslips');
+export const myPayslipDownloadUrl = (recordId: string) => send<{ url: string; fileName: string }>(`/users/me/payslips/${recordId}/download`, 'GET');
+
+/** The payslip print view data (public, render token). */
+export type TPayslipRender = {
+	document: { id: string; code: string; title: string };
+	record: {
+		period: string;
+		baseSalary: number;
+		allowances: number;
+		overtimePay: number;
+		bonus: number;
+		deductions: number;
+		netPay: number;
+		notes: string | null;
+		approvedAt: string | null;
+		approvedByName: string | null;
+	};
+	employee: { employeeCode: string; fullName: string; employmentType: string };
+	payee: { bankName: string | null; accountNumber: string | null; accountHolder: string | null } | null;
+	profile: import('./company-api').TCompanyProfile | null;
+};
+export const payslipRenderQueryOptions = (documentId: string, token: string) =>
+	queryOptions({
+		queryKey: ['hr', 'payslip-render', documentId],
+		queryFn: async () => (await request<TPayslipRender>(`/human-resources/public/v1/render/payslips/${documentId}?token=${encodeURIComponent(token)}`)).data as TPayslipRender,
+		retry: false,
+	});
+
 // Salary summaries
 export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/human-resources/salary-records?period=${period}`);
 export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/human-resources/salary-records', 'PUT', input);

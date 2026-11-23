@@ -71,7 +71,20 @@ export class DocumentService {
 	 *
 	 * @param tx - The caller's transaction, so the draft rolls back with it
 	 */
-	async createDraft(input: TDraftDocumentInput, tx?: TTx): Promise<TDocumentSelect> {
+	createDraft(input: TDraftDocumentInput, tx?: TTx): Promise<TDocumentSelect> {
+		return this.openForSource(input, null, tx);
+	}
+
+	/**
+	 * Registers an already-final document of another module's row (ERP-0122:
+	 * the payslip of an approved salary record), coded from the `document`
+	 * series and `issued` today.
+	 */
+	issueForSource(input: TDraftDocumentInput, issuedByUserId: string | null, tx?: TTx): Promise<TDocumentSelect> {
+		return this.openForSource(input, { issuedByUserId }, tx);
+	}
+
+	private async openForSource(input: TDraftDocumentInput, issued: { issuedByUserId: string | null } | null, tx?: TTx): Promise<TDocumentSelect> {
 		if (!this.numbering) throw new Error('Document numbering is not wired');
 		const code = await this.numbering.next('document', tx, new Date(), input.organizationId);
 		const now = new Date();
@@ -85,9 +98,9 @@ export class DocumentService {
 				module: input.module,
 				sourceType: input.sourceType,
 				sourceId: input.sourceId,
-				status: 'draft',
-				issuedOn: null,
-				issuedByUserId: null,
+				status: issued ? 'issued' : 'draft',
+				issuedOn: issued ? todayJakarta() : null,
+				issuedByUserId: issued?.issuedByUserId ?? null,
 				version: 1,
 				isCurrent: true,
 				createdAt: now,
@@ -95,6 +108,27 @@ export class DocumentService {
 			},
 			tx,
 		);
+	}
+
+	/**
+	 * The bytes of one live file, with a `download` row on the trail
+	 * (ERP-0122: payslips bundled into one ZIP).
+	 *
+	 * @throws {DocumentFileNotFoundError} The file is absent or already deleted
+	 */
+	async readFile(documentId: string, fileId: string, actorUserId: string | null): Promise<{ fileName: string; bytes: Uint8Array }> {
+		const document = await this.repository.findById(documentId);
+		if (!document) throw new DocumentNotFoundError();
+		const file = await this.repository.findFile(document.id, fileId);
+		if (!file || !this.storage.get) throw new DocumentFileNotFoundError();
+		const bytes = await this.storage.get(file.storageKey);
+		await this.repository.logAccess({
+			documentId: document.id,
+			organizationId: document.organizationId,
+			accessedByUserId: actorUserId,
+			action: 'download',
+		});
+		return { fileName: file.fileName, bytes };
 	}
 
 	/** Every registry row of one source with its live files (no access-trail row). */

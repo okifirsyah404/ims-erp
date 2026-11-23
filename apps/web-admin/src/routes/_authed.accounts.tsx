@@ -6,6 +6,7 @@ import { EmailCard } from '@/components/account/email-card';
 import { PasswordCard } from '@/components/account/password-card';
 import { SessionsTable } from '@/components/account/sessions-table';
 import { UsernameCard } from '@/components/account/username-card';
+import { PayslipsCard } from '@/components/account/payslips-card';
 import { invalidateLinkedAccounts } from '@/lib/account-api';
 import {
 	accountsSearchSchema,
@@ -66,6 +67,7 @@ function AccountsPage() {
 			<ConnectedAccountsCard id='connected' outcome={returned.link} />
 			<PasswordCard id='password' />
 			<SessionsTable id='sessions' />
+			<PayslipsCard id='payslips' />
 		</div>
 	);
 }

@@ -90,7 +90,7 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 
 	return (
 		<form
-			className='mx-auto max-w-2xl space-y-4 p-4'
+			className='space-y-4 p-6'
 			onSubmit={(event) => {
 				event.preventDefault();
 				save.mutate();
@@ -100,6 +100,7 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 				<h1 className='text-xl font-semibold'>{t('hr:form.editEmployee')}</h1>
 				<p className='text-muted-foreground font-mono text-sm'>{employee.employeeCode}</p>
 			</div>
+			<div className='grid gap-4 lg:grid-cols-2'>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('hr:form.identity')}</CardTitle>
@@ -180,6 +181,7 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 					</div>
 				</CardContent>
 			</Card>
+			</div>
 			<div className='flex gap-2'>
 				<Button type='submit' disabled={save.isPending || !fullName.trim()}>
 					{t('hr:form.save')}

@@ -6,7 +6,7 @@ import {
 } from '@drizzle/schemas/human-resource.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, asc, count, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, isNotNull, isNull, ne, or, sql } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
@@ -59,6 +59,13 @@ export class EmployeeRepository implements IEmployeeRepository {
 		}
 
 		if (status) conditions.push(eq(employees.employmentStatus, status));
+		if (request.employmentType) conditions.push(eq(employees.employmentType, request.employmentType));
+		if (request.workType) conditions.push(eq(employees.workType, request.workType));
+		if (request.login === 'yes') conditions.push(isNotNull(employees.userId));
+		if (request.login === 'no') conditions.push(isNull(employees.userId));
+		if (request.userIds) {
+			conditions.push(request.userIds.length ? inArray(employees.userId, request.userIds) : sql`false`);
+		}
 		if (search) {
 			conditions.push(
 				or(
@@ -75,7 +82,7 @@ export class EmployeeRepository implements IEmployeeRepository {
 				.select()
 				.from(employees)
 				.where(where)
-				.orderBy(asc(employees.fullName), asc(employees.id))
+				.orderBy(...this.orderOf(request), asc(employees.id))
 				.limit(limit)
 				.offset((page - 1) * limit),
 			this.database
@@ -86,6 +93,17 @@ export class EmployeeRepository implements IEmployeeRepository {
 
 		const total = Number(totals?.value ?? 0);
 		return paginationResult(request, total, rows);
+	}
+
+	/** Whitelisted sort column; nulls (no hire date) always last. */
+	private orderOf(request: TEmployeePaginationRequest) {
+		const column = {
+			fullName: employees.fullName,
+			employeeCode: employees.employeeCode,
+			hireDate: employees.hireDate,
+			createdAt: employees.createdAt,
+		}[request.sortBy ?? 'fullName'];
+		return [request.sortDir === 'desc' ? sql`${column} desc nulls last` : sql`${column} asc nulls last`];
 	}
 
 	async findById(id: string, tx?: TTx): Promise<TEmployeeSelect | null> {

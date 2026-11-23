@@ -11,6 +11,7 @@
 import type { InjectionToken } from 'tsyringe';
 import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
 import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
+import type { ExportedFinanceService } from '../services/exported-finance.service';
 import type { IDepreciationRepository } from '../contracts/depreciation.repository.interface';
 import type { DepreciationService } from '../services/depreciation.service';
 import type { FinanceCodeNumberingRepository } from '../repositories/code-numbering.repository';
@@ -102,3 +103,6 @@ export const EMPLOYEE_BANK_ACCOUNT_REPOSITORY_TOKEN: InjectionToken<IEmployeeBan
 export const EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN: InjectionToken<EmployeeBankAccountService> = Symbol(
 	'EMPLOYEE_BANK_ACCOUNT_SERVICE',
 );
+
+/** Repository-only facade for other modules (ERP-0122: the payslip's payee account). */
+export const EXPORTED_FINANCE_SERVICE_TOKEN: InjectionToken<ExportedFinanceService> = Symbol('EXPORTED_FINANCE_SERVICE');

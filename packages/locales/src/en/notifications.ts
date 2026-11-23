@@ -32,6 +32,8 @@ const notifications = {
 		'{{signerName}} declined to sign {{documentName}}.',
 	'template.hr.payrollDraftReady.title': 'Payroll {{period}} is ready for approval',
 	'template.hr.payrollDraftReady.body': 'The payday run created {{records}} draft salary record(s) for {{period}}.',
+	'template.hr.payslipReady.title': 'Your payslip for {{period}} is ready',
+	'template.hr.payslipReady.body': 'Your payslip for {{period}} can be downloaded from your account page.',
 } as const;
 
 export default notifications;

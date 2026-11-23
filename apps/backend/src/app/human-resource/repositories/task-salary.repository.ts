@@ -143,6 +143,20 @@ export class SalaryRepository implements ISalaryRepository {
 				),
 			)
 			.returning({ id: employeeSalaryRecords.id });
-		return approved.length;
+		return approved.map((row) => row.id);
+	}
+
+	listApprovedForEmployee(employeeId: string) {
+		return this.database
+			.select()
+			.from(employeeSalaryRecords)
+			.where(
+				and(
+					eq(employeeSalaryRecords.employeeId, employeeId),
+					eq(employeeSalaryRecords.status, 'approved'),
+					isNull(employeeSalaryRecords.deletedAt),
+				),
+			)
+			.orderBy(desc(employeeSalaryRecords.period));
 	}
 }

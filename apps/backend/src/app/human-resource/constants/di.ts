@@ -23,6 +23,8 @@ import type { PayrollScheduleService } from '../services/payroll-schedule.servic
 import type { IAgreementPdfQueue, IEmployeeAddressRepository } from '../contracts/employee-document.contract';
 import type { EmployeeDocumentService } from '../services/employee-document.service';
 import type { AgreementPdfService } from '../services/agreement-pdf.service';
+import type { IPayslipQueue } from '../contracts/payslip.contract';
+import type { PayslipService } from '../services/payslip.service';
 import type { IHrSettingsRepository } from '../contracts/payroll-settings.contract';
 import type { ISalaryPeriodRepository } from '../contracts/salary-period.contract';
 import type { IScheduleRepository } from '../contracts/schedule.repository.interface';
@@ -76,6 +78,10 @@ export const EMPLOYEE_ADDRESS_REPOSITORY_TOKEN: InjectionToken<IEmployeeAddressR
 export const AGREEMENT_PDF_QUEUE_TOKEN: InjectionToken<IAgreementPdfQueue> = Symbol('AGREEMENT_PDF_QUEUE');
 export const EMPLOYEE_DOCUMENT_SERVICE_TOKEN: InjectionToken<EmployeeDocumentService> = Symbol('EMPLOYEE_DOCUMENT_SERVICE');
 export const AGREEMENT_PDF_SERVICE_TOKEN: InjectionToken<AgreementPdfService> = Symbol('AGREEMENT_PDF_SERVICE');
+
+/** Payslips (ERP-0122). */
+export const PAYSLIP_QUEUE_TOKEN: InjectionToken<IPayslipQueue> = Symbol('PAYSLIP_QUEUE');
+export const PAYSLIP_SERVICE_TOKEN: InjectionToken<PayslipService> = Symbol('PAYSLIP_SERVICE');
 
 /** Token resolving to the repository of `human_resource.code_numberings`. */
 export const HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<HumanResourceCodeNumberingRepository> =

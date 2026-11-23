@@ -85,6 +85,11 @@ export function notificationText(
 					documentName: variables.documentName ?? '',
 				}),
 			};
+		case 'hr.payslip_ready':
+			return {
+				title: t('template.hr.payslipReady.title', { period: variables.period ?? '' }),
+				body: t('template.hr.payslipReady.body', { period: variables.period ?? '' }),
+			};
 		case 'hr.payroll_draft_ready':
 			return {
 				title: t('template.hr.payrollDraftReady.title', { period: variables.period ?? '' }),

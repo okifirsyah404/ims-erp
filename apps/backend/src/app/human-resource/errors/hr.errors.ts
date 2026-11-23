@@ -171,3 +171,14 @@ export class EmployeeDocumentError extends AppError {
 		super(422, `hr.employeeDocument.${kind}` as const, messages[kind]);
 	}
 }
+
+/** The payslip cannot be served yet (ERP-0122). */
+export class PayslipError extends AppError {
+	constructor(kind: 'notReady' | 'notApproved') {
+		const messages = {
+			notReady: 'The payslip PDF is not ready yet',
+			notApproved: 'Only an approved salary record has a payslip',
+		};
+		super(kind === 'notReady' ? 409 : 422, `hr.payslip.${kind}` as const, messages[kind]);
+	}
+}

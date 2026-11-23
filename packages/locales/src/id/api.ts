@@ -480,6 +480,8 @@ const api: Record<keyof typeof en, string> = {
 	'hr.salaryPeriod.notActive': 'Hanya periode gaji yang aktif yang dapat diubah',
 	'hr.salaryPeriod.notLatest': 'Hanya periode gaji terakhir yang dapat dihapus',
 	'hr.employeeDocument.notAgreement': 'Hanya Perjanjian Kerja yang aktif yang memiliki PDF otomatis',
+	'hr.payslip.notReady': 'PDF slip gaji belum siap',
+	'hr.payslip.notApproved': 'Hanya data gaji yang sudah disetujui yang memiliki slip',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',

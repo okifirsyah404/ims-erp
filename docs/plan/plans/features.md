@@ -818,6 +818,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   invite, personal data on the claim form, agreement PDF after the claim,
   employee Documents card. Evidence: `progress.md` 2026-11-23 (backend 1434
   pass). PDF render and browser walk-through not verified.
+- ERP-0122 payslips (2026-11-23): payslip PDF per approved salary record,
+  downloads one / all (ZIP) on the Payroll page, "Slip gaji saya" on
+  `/accounts`. Evidence: `progress.md` 2026-11-23 (backend 1440 pass).
+  Chromium render and browser walk-through not verified.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -830,8 +834,6 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Payslip PDF on payroll approval — ERP-0122 (supersedes the payslip part of
-  ERP-0018).
 - Payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked

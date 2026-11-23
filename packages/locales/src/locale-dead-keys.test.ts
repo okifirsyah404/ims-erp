@@ -185,6 +185,7 @@ const DYNAMIC_PREFIXES = [
 	'hr.schedule.',
 	'hr.salaryPeriod.',
 	'hr.employeeDocument.',
+	'hr.payslip.',
 	'licensing.notFound.',
 	'licensing.contract.',
 	'licensing.state.',
@@ -259,6 +260,10 @@ const DYNAMIC_PREFIXES = [
 	// Employee document types and registry statuses (ERP-0121) are server values.
 	'hr:documents.type.',
 	'hr:documents.status.',
+	// The employee's login account (auth.users enum values).
+	'hr:account.status.',
+	'hr:account.genderOption.',
+	'hr:account.maritalOption.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

@@ -12,6 +12,133 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-24 - ERP-0117 follow-up: employee page full width + linked login account
+
+**Owner request (review):** make `/hr/employees/:id` full width and show the
+employee's `auth.users` details.
+
+- Backend: `ExportedUserService.accountDetail(userId)` (user module facade, now
+  also reads `USER_REPOSITORY_TOKEN`; no credential data - passwords live in
+  `auth.accounts`, never read) returns name, email + verified, username /
+  display username, avatar URL, phone, bio, application role, status
+  (`pending|active|deactivated`), ban fields, claimed/created/updated dates.
+  `EmployeeService.get` attaches it as `account` on the **detail** response
+  only (`null` without a login; list rows unchanged).
+- Web-admin: the detail page drops `max-w-4xl` (full width, `p-6`); Details
+  and a new "Login account" card (`employee-account-card.tsx`: account plus
+  the personal fields stored on the user) sit side by side on `lg`. en/id keys.
+- `docs/database/` reviewed and unchanged (no schema change).
+- Commands: backend `tsc` clean; `bun run test` 7/7 - backend **1441 pass**
+  (new detail/account case in `hr-records.service.test.ts`), web-admin 209,
+  locales 106; `bun run lint` 0 errors; web-admin `tsc` clean. Checked in the
+  browser against `ims_scratch`: `/hr/employees/01a20863-…` renders full width
+  with the login account card.
+- Same request for `/hr/employees/:id/edit`: the form drops `max-w-2xl`
+  (full width, `p-6`); Identity and Employment cards side by side on `lg`.
+  Checked in the browser.
+- Owner request: `/hr/employees/new` removed; the invite-first create form is
+  now `EmployeeCreateDialog` (`components/hr/employee-create-dialog.tsx`,
+  `ScrollDialogContent`) opened by "New employee" on the list; same fields,
+  same `POST /human-resources/employees`, still navigates to the new
+  employee's page. `employee-form.tsx` and `routes/_authed/hr/employees/new.tsx`
+  deleted, `routeTree.gen.ts` regenerated (`vite build`). Checked in the
+  browser (dialog opens from the list). `bun run test` 7/7 (web-admin 209,
+  backend 1441, locales 106), lint 0 errors, web-admin `tsc` clean.
+- Owner request: `/hr/employees` becomes a table like `/admin/users` (no
+  organization picker). `GET /human-resources/employees` gains
+  `employmentType`, `workType`, `gender`, `maritalStatus` (both on
+  `auth.users`: resolved to user ids through the new optional
+  `IUserPersonalFieldsPort.findUserIds`, so HR never reads `auth`), `login`
+  (`yes|no`), and `sortBy` (`fullName|employeeCode|hireDate|createdAt`,
+  whitelisted) + `sortDir`; `scope=organization` without an explicit
+  organization now means the caller's own (it matched nothing before). List
+  rows carry `login` (avatar + username via `ExportedUserService.summaries`).
+  Web: `employee-list.tsx` rewritten - search, Filters popover (status,
+  employment type, work type, gender, marital status, level, login account),
+  sort headers, server pagination, row actions (view, edit, archive with
+  confirmation); filters/sort live in the URL (validated in the route).
+  Old card-grid keys `list.empty`/`list.filterAllStatuses` removed.
+  Verified against `ims_scratch` through the signed-in page: every filter and
+  sort answered as expected (gender/marital checked after giving one seeded
+  user `female`/`married`: 1 match each, `male` 0). `bun run test` 7/7
+  (backend 1442), lint 0 errors, `gen-role-permission` 669 routes.
+- Fixed on owner request (predated this branch): `src/providers/logger/request-logger.ts`
+  called `new URL(request.url)` without a guard; an invalid request URL threw
+  `TypeError: Invalid URL` inside the `onError` microtask, which nothing
+  catches, and the review backend process exited (code 1). Now `pathOf()`
+  falls back to the raw URL text up to `?`, and every access-log write is
+  wrapped so logging can never fail a request or the process
+  (`test/unit/request-logger.test.ts`, 2 cases). End to end: six raw
+  malformed requests (`//[bad`, `/%%`, `/a b`, `http://[::1`, `*`, a bad
+  percent escape) against the review backend - each answered (404/400/505),
+  the raw paths appear in the access log, and the process kept serving.
+  `bun run test` 7/7 (backend 1444), backend lint 0 errors.
+
+## 2026-11-23 - ERP-0122: payslip PDF on payroll approval (slice 6)
+
+**Scope** (grill-me Q32-Q37, recorded in the ERP-0117 entry below).
+
+**Design gate.** No table, column, index or status change: payslips are
+`document.documents` rows (`document_type = payslip`, `status = issued`,
+`module = human_resource`, `source_type = employee_salary_record`,
+`source_id = employee_salary_records.id`) with their PDF in `document.files`;
+`docs/database/` reviewed and unchanged apart from `module-ownership.md`
+(the new facade and document contract methods). `validate-dbml` `OK`.
+Cross-module reads: `ExportedFinanceService` (new, repository-only, the
+facade deferred from ERP-0119), `ExportedUserService.summary` (approver name),
+`CompanyService.get`, `DocumentService`, `ExportedNotificationService`.
+
+**Backend.**
+- `SalaryService.approve` queues one `payslip-pdf` job per record that
+  approval locked (`approvePeriod` now returns the ids); the queue never
+  fails the approval.
+- `PayslipService.render` (worker): registers the `issued` payslip
+  (`DocumentService.issueForSource`), renders `/print/payslips/:id?token=`
+  in Chromium, attaches the PDF, notifies the employee in-app
+  (`hr.payslip_ready`, `sourceId` = the payslip, so a rerun never doubles it).
+  Idempotent (`exists` when the PDF is there); `skipped` without Chromium.
+- Public print data at `/human-resources/public/v1/render/payslips/:id?token=`:
+  pay lines, net pay, payee account masked to the last four digits, approver
+  and date, letterhead.
+- `GET /human-resources/salary-records/:id/payslip` and
+  `GET /human-resources/salary-records/payslips.zip?period=` (`payroll:read`,
+  ERP-0034 scope), `POST /human-resources/salary-records/:id/payslip/regenerate`
+  (`payroll:update`, approved records only).
+- Self-service `GET /users/me/payslips`, `GET /users/me/payslips/:id/download`
+  (session guard; the employee comes from the session user, anyone else's
+  record answers 404). The existing `self_service:read_payslip` statement is
+  not used: ownership, not a role grant, decides here.
+- `DocumentService.issueForSource` and `readFile` (download trail row), optional
+  `IObjectStorage.get` (S3 implementation), `ExportedFinanceService`.
+- Dependency: `jszip@3.10.2` added to `apps/backend` (already in `bun.lock` as a
+  transitive dependency of exceljs; `bun add` downloaded nothing new).
+
+**Web-admin.** Payroll page: "Unduh semua slip gaji (ZIP)" on an approved
+period, per-row "Slip gaji" download and "Generate ulang PDF"; print view
+`/print/payslips/$documentId` (`payslip-document.tsx`, Indonesian on purpose,
+"dibuat secara elektronik", no wet signature); "Slip gaji saya" card on
+`/accounts` (`?section=payslips`, the notification deep link), hidden for
+non-employees. en/id keys (`hr`, `account`, `notifications`, `api`).
+
+**Commands and outcomes.**
+- `cd apps/backend && bun add jszip@3.10.2` - done (no new download).
+- `bun run test` (root) - 7/7: backend **1440 pass** (new
+  `hr-payslip.service.test.ts` 6, the approve-queues-payslips assertion),
+  web-admin 209, locales 106, customer-portal 68, landing 25, react-email 6;
+  0 fail.
+- `bun run lint` - 0 errors; web-admin `tsc` clean, `vite build` built;
+  backend `tsc` clean.
+- `bun docs/gen-role-permission.ts` - 669 routes; `validate-dbml.ts` - `OK`.
+- Not verified: no Chromium render, no live approval over HTTP with Redis, no
+  ZIP download against real S3, no browser walk-through.
+
+Next executable task: the robust HR module (ERP-0117..ERP-0122) is complete in
+code on `claude/robust-hr-module-c97aa4`. Open: browser walk-through of all
+six slices; a real Chromium render of the agreement and the payslip; a live
+scheduler run; legal review of the agreement clauses; the owner decision on
+the duplicate supplier migration folder (`…erp0114…` vs `…erp0116…`), which
+breaks `drizzle:migrate` on an empty database.
+
 ## 2026-11-23 - ERP-0121: invite employment agreement, claim personal data, agreement PDF, employee documents (slice 5)
 
 **Scope** (grill-me Q6/Q11-Q14/Q19-Q21, recorded in the ERP-0117 entry below).

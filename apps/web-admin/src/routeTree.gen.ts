@@ -42,6 +42,7 @@ import { Route as AuthedWarehousesIndexRouteImport } from './routes/_authed/ware
 import { Route as AuthedWarehousesWarehouseIdRouteImport } from './routes/_authed/warehouses/$warehouseId'
 import { Route as AuthedWarrantiesIndexRouteImport } from './routes/_authed/warranties/index'
 import { Route as PrintEmploymentAgreementsDocumentIdRouteImport } from './routes/print/employment-agreements.$documentId'
+import { Route as PrintPayslipsDocumentIdRouteImport } from './routes/print/payslips.$documentId'
 import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -79,7 +80,6 @@ import { Route as AuthedFinanceTaxIndexRouteImport } from './routes/_authed/fina
 import { Route as AuthedHrAttendanceIndexRouteImport } from './routes/_authed/hr/attendance/index'
 import { Route as AuthedHrEmployeesIndexRouteImport } from './routes/_authed/hr/employees/index'
 import { Route as AuthedHrEmployeesEmployeeIdRouteImport } from './routes/_authed/hr/employees/$employeeId'
-import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/employees/new'
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
@@ -343,6 +343,11 @@ const PrintEmploymentAgreementsDocumentIdRoute =
     path: '/print/employment-agreements/$documentId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const PrintPayslipsDocumentIdRoute = PrintPayslipsDocumentIdRouteImport.update({
+  id: '/print/payslips/$documentId',
+  path: '/print/payslips/$documentId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrintQuotationsQuotationIdRoute =
   PrintQuotationsQuotationIdRouteImport.update({
     id: '/print/quotations/$quotationId',
@@ -556,11 +561,6 @@ const AuthedHrEmployeesEmployeeIdRoute =
     path: '/hr/employees/$employeeId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedHrEmployeesNewRoute = AuthedHrEmployeesNewRouteImport.update({
-  id: '/hr/employees/new',
-  path: '/hr/employees/new',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedHrLeaveIndexRoute = AuthedHrLeaveIndexRouteImport.update({
   id: '/hr/leave/',
   path: '/hr/leave/',
@@ -1121,6 +1121,7 @@ export interface FileRoutesByFullPath {
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
+  '/print/payslips/$documentId': typeof PrintPayslipsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
@@ -1147,7 +1148,6 @@ export interface FileRoutesByFullPath {
   '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
   '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
-  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1285,6 +1285,7 @@ export interface FileRoutesByTo {
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
+  '/print/payslips/$documentId': typeof PrintPayslipsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
@@ -1311,7 +1312,6 @@ export interface FileRoutesByTo {
   '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
   '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
-  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1451,6 +1451,7 @@ export interface FileRoutesById {
   '/_authed/tickets/new': typeof AuthedTicketsNewRoute
   '/_authed/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
   '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
+  '/print/payslips/$documentId': typeof PrintPayslipsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
@@ -1477,7 +1478,6 @@ export interface FileRoutesById {
   '/_authed/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
   '/_authed/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/_authed/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
-  '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/_authed/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/_authed/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1617,6 +1617,7 @@ export interface FileRouteTypes {
     | '/tickets/new'
     | '/warehouses/$warehouseId'
     | '/print/employment-agreements/$documentId'
+    | '/print/payslips/$documentId'
     | '/print/quotations/$quotationId'
     | '/assets/'
     | '/crm/'
@@ -1643,7 +1644,6 @@ export interface FileRouteTypes {
     | '/documents/signatures/documents'
     | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
-    | '/hr/employees/new'
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/stock/adjust'
@@ -1781,6 +1781,7 @@ export interface FileRouteTypes {
     | '/tickets/new'
     | '/warehouses/$warehouseId'
     | '/print/employment-agreements/$documentId'
+    | '/print/payslips/$documentId'
     | '/print/quotations/$quotationId'
     | '/assets'
     | '/crm'
@@ -1807,7 +1808,6 @@ export interface FileRouteTypes {
     | '/documents/signatures/documents'
     | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
-    | '/hr/employees/new'
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/stock/adjust'
@@ -1946,6 +1946,7 @@ export interface FileRouteTypes {
     | '/_authed/tickets/new'
     | '/_authed/warehouses/$warehouseId'
     | '/print/employment-agreements/$documentId'
+    | '/print/payslips/$documentId'
     | '/print/quotations/$quotationId'
     | '/_authed/assets/'
     | '/_authed/crm/'
@@ -1972,7 +1973,6 @@ export interface FileRouteTypes {
     | '/_authed/documents/signatures/documents'
     | '/_authed/documents/signatures/request'
     | '/_authed/hr/employees/$employeeId'
-    | '/_authed/hr/employees/new'
     | '/_authed/integrations/whatsapp-ai/$conversationId'
     | '/_authed/integrations/whatsapp-ai/faq'
     | '/_authed/inventory/stock/adjust'
@@ -2101,6 +2101,7 @@ export interface RootRouteChildren {
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
   PrintEmploymentAgreementsDocumentIdRoute: typeof PrintEmploymentAgreementsDocumentIdRoute
+  PrintPayslipsDocumentIdRoute: typeof PrintPayslipsDocumentIdRoute
   PrintQuotationsQuotationIdRoute: typeof PrintQuotationsQuotationIdRoute
 }
 
@@ -2335,6 +2336,13 @@ declare module '@tanstack/react-router' {
       path: '/print/employment-agreements/$documentId'
       fullPath: '/print/employment-agreements/$documentId'
       preLoaderRoute: typeof PrintEmploymentAgreementsDocumentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/print/payslips/$documentId': {
+      id: '/print/payslips/$documentId'
+      path: '/print/payslips/$documentId'
+      fullPath: '/print/payslips/$documentId'
+      preLoaderRoute: typeof PrintPayslipsDocumentIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/print/quotations/$quotationId': {
@@ -2594,13 +2602,6 @@ declare module '@tanstack/react-router' {
       path: '/hr/employees/$employeeId'
       fullPath: '/hr/employees/$employeeId'
       preLoaderRoute: typeof AuthedHrEmployeesEmployeeIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/hr/employees/new': {
-      id: '/_authed/hr/employees/new'
-      path: '/hr/employees/new'
-      fullPath: '/hr/employees/new'
-      preLoaderRoute: typeof AuthedHrEmployeesNewRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/hr/leave/': {
@@ -3335,7 +3336,6 @@ interface AuthedRouteChildren {
   AuthedDocumentsSignaturesDocumentsRoute: typeof AuthedDocumentsSignaturesDocumentsRoute
   AuthedDocumentsSignaturesRequestRoute: typeof AuthedDocumentsSignaturesRequestRoute
   AuthedHrEmployeesEmployeeIdRoute: typeof AuthedHrEmployeesEmployeeIdRoute
-  AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
   AuthedIntegrationsWhatsappAiConversationIdRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   AuthedIntegrationsWhatsappAiFaqRoute: typeof AuthedIntegrationsWhatsappAiFaqRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
@@ -3492,7 +3492,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedDocumentsSignaturesDocumentsRoute,
   AuthedDocumentsSignaturesRequestRoute: AuthedDocumentsSignaturesRequestRoute,
   AuthedHrEmployeesEmployeeIdRoute: AuthedHrEmployeesEmployeeIdRoute,
-  AuthedHrEmployeesNewRoute: AuthedHrEmployeesNewRoute,
   AuthedIntegrationsWhatsappAiConversationIdRoute:
     AuthedIntegrationsWhatsappAiConversationIdRoute,
   AuthedIntegrationsWhatsappAiFaqRoute: AuthedIntegrationsWhatsappAiFaqRoute,
@@ -3665,6 +3664,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,
   PrintEmploymentAgreementsDocumentIdRoute:
     PrintEmploymentAgreementsDocumentIdRoute,
+  PrintPayslipsDocumentIdRoute: PrintPayslipsDocumentIdRoute,
   PrintQuotationsQuotationIdRoute: PrintQuotationsQuotationIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -92,6 +92,8 @@ export interface ISalaryRepository {
 	/** Inserts or replaces the draft of (period, employee); `null` = it is approved. */
 	upsertDraft(data: TNew<TEmployeeSalaryRecordInsert>, tx?: TTx): Promise<TEmployeeSalaryRecordSelect | null>;
 	removeDraft(id: string): Promise<boolean>;
-	/** Approves every draft of a period; returns how many. */
-	approvePeriod(period: string, actorUserId: string, scope: THrScope): Promise<number>;
+	/** Approves every draft of a period; returns the ids it approved (ERP-0122: their payslips). */
+	approvePeriod(period: string, actorUserId: string, scope: THrScope): Promise<string[]>;
+	/** Approved records of one employee, newest period first (the self-service payslips). */
+	listApprovedForEmployee(employeeId: string): Promise<TEmployeeSalaryRecordSelect[]>;
 }

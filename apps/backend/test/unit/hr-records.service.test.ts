@@ -46,6 +46,8 @@ let attendance: TAttendanceSelect[];
 let salaries: TEmployeeSalaryRecordSelect[];
 /** Salary periods in force per employee (ERP-0119), as `SalaryPeriodService.amountsFor` returns them. */
 let agreed: Map<string, { baseSalary: number; allowances: number }>;
+/** Payslip PDF jobs queued on approval (ERP-0122). */
+let payslipJobs: string[];
 
 /** Jakarta midnight of a business date, as ERP-0034 stores dates. */
 const day = (value: string) => new Date(`${value}T00:00:00+07:00`);
@@ -212,13 +214,15 @@ function salaryService() {
 			approvePeriod: async (period, _actor, scoped) => {
 				const drafts = salaries.filter((row) => row.period === period && row.status === 'draft').filter(inScope(scoped));
 				for (const row of drafts) row.status = 'approved';
-				return drafts.length;
+				return drafts.map((row) => row.id);
 			},
+			listApprovedForEmployee: async (employeeId) => salaries.filter((row) => row.employeeId === employeeId && row.status === 'approved'),
 		},
 		people(),
 		leaveService(),
 		{ run: (work) => work({} as never) },
 		{ amountsFor: async () => agreed },
+		{ enqueue: async (recordId) => void payslipJobs.push(recordId) },
 	);
 }
 
@@ -235,6 +239,7 @@ beforeEach(() => {
 	attendance = [];
 	salaries = [];
 	agreed = new Map();
+	payslipJobs = [];
 });
 
 describe('HR rules', () => {
@@ -290,6 +295,67 @@ describe('employee scope', () => {
 		await service.update({ ...base, canReadPrivate: false }, E1, { fullName: 'Renamed', nationalId: '••••••••••••0123' } as never);
 		expect(updates[0]).toMatchObject({ fullName: 'Renamed' });
 		expect(updates[0]).not.toHaveProperty('nationalId');
+	});
+
+	test('the employee detail carries the linked auth.users account (lists do not); no login gives null', async () => {
+		staff[0] = { ...staff[0]!, userId: 'user-1' };
+		const asked: string[] = [];
+		const service = new EmployeeService(
+			{ findById: async (id: string) => staff.find((row) => row.id === id) ?? null, paginate: async () => ({ meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [staff[0]!] }) } as never,
+			{} as never,
+			{ get: async () => null } as never,
+			{} as never,
+			{
+				accountDetail: async (userId) => {
+					asked.push(userId);
+					return { id: userId, email: 'p@x', username: 'person_1', status: 'active' } as never;
+				},
+			},
+		);
+		const ctx = { actor: { userId: 'u', email: 'u@x' }, organizationId: ORG, isPlatformAdmin: false, canManage: true, canReadPrivate: true };
+		expect((await service.get(ctx, E1)).account).toMatchObject({ id: 'user-1', username: 'person_1', status: 'active' });
+		expect((await service.get(ctx, E2)).account).toBeNull();
+		expect((await service.list(ctx, { page: 1, limit: 20 } as never)).data[0]).not.toHaveProperty('account');
+		expect(asked).toEqual(['user-1']);
+	});
+
+	test('employee list: gender/marital filters become user ids, rows carry the login avatar and handle', async () => {
+		staff[0] = { ...staff[0]!, userId: 'user-1' };
+		const requests: Record<string, unknown>[] = [];
+		const asked: unknown[] = [];
+		const service = new EmployeeService(
+			{
+				paginate: async (request: Record<string, unknown>) => {
+					requests.push(request);
+					return { meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [staff[0]!] };
+				},
+			} as never,
+			{} as never,
+			{
+				get: async () => null,
+				findUserIds: async (filter: unknown) => {
+					asked.push(filter);
+					return ['user-1'];
+				},
+			} as never,
+			{} as never,
+			{
+				accountDetail: async () => null,
+				summaries: async () => new Map([['user-1', { id: 'user-1', name: 'P', email: 'p@x', emailVerified: true, username: 'person_1', image: 'https://img' }]]),
+			},
+		);
+		const ctx = { actor: { userId: 'u', email: 'u@x' }, organizationId: ORG, isPlatformAdmin: false, canManage: true, canReadPrivate: true };
+		const page = await service.list(ctx, { page: 1, limit: 20, gender: 'female', employmentType: 'contract', sortBy: 'hireDate', sortDir: 'desc' } as never);
+		expect(asked).toEqual([{ gender: 'female', maritalStatus: undefined }]);
+		expect(requests[0]).toMatchObject({ userIds: ['user-1'], employmentType: 'contract', sortBy: 'hireDate', sortDir: 'desc' });
+		expect(page.data[0]!.login).toEqual({ username: 'person_1', image: 'https://img' });
+		// Without a personal-field filter the user module is not asked.
+		await service.list(ctx, { page: 1, limit: 20 } as never);
+		expect(asked).toHaveLength(1);
+		expect(requests[1]).toMatchObject({ userIds: null });
+		// "Organization level" filters on the caller's own organization.
+		await service.list(ctx, { page: 1, limit: 20, scope: 'organization' } as never);
+		expect(requests[2]).toMatchObject({ scope: 'organization', organizationId: ORG });
 	});
 
 	test('an employee who is not active cannot get new records', async () => {
@@ -500,6 +566,8 @@ describe('salary summaries', () => {
 		agreed.set(E2, { baseSalary: 4_500_000_00, allowances: 0 });
 		expect((await service.generate(scope, 'hr', '2026-11')).rows.find((row) => row.employeeId === E2)).toMatchObject({ baseSalary: 4_500_000_00, allowances: 0 });
 		expect((await service.approve(scope, 'owner', '2026-11')).state).toBe('approved');
+		// ERP-0122: one payslip job per record this approval locked (not the earlier October one).
+		expect(payslipJobs.sort()).toEqual(salaries.filter((row) => row.period === '2026-11').map((row) => row.id).sort());
 		await expect(service.approve(scope, 'owner', '2026-11')).rejects.toBeInstanceOf(SalaryStateError);
 		await expect(service.save(scope, 'hr', salaryBodySchema.parse({ period: '2026-11', employeeId: E1, baseSalary: 1 }))).rejects.toMatchObject({ key: 'hr.salary.locked' });
 	});

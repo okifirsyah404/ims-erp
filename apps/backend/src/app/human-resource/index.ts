@@ -16,6 +16,7 @@ import { ScheduleController } from './controllers/schedule.controller';
 import { SalaryPeriodController } from './controllers/salary-period.controller';
 import { PayrollSettingsController } from './controllers/payroll-settings.controller';
 import { AgreementRenderController, EmployeeDocumentController } from './controllers/employee-document.controller';
+import { MyPayslipController, PayslipController, PayslipRenderController } from './controllers/payslip.controller';
 
 /**
  * Public entry point of the human-resource module.
@@ -29,6 +30,7 @@ export * from './controllers/employee.controller';
 export { registerPayrollPayDaySchedule } from './queues/payroll-pay-day.queue';
 export { startPayrollPayDayWorker } from './queues/payroll-pay-day.worker';
 export { startAgreementPdfWorker } from './queues/agreement-pdf.worker';
+export { startPayslipPdfWorker } from './queues/payslip-pdf.worker';
 export type { ExportedEmployeeService } from './services/exported-employee.service';
 
 /**
@@ -51,5 +53,10 @@ export function humanResourceModule() {
 		.use(PayrollSettingsController.plugin())
 		.use(EmployeeDocumentController.plugin())
 		// Public: the render token is the only credential (ERP-0121).
-		.use(AgreementRenderController.plugin());
+		.use(AgreementRenderController.plugin())
+		// Static `/payslips.zip` before the salary routes' `/:id` siblings resolve (ERP-0122).
+		.use(PayslipController.plugin())
+		// Self-service, session only: the employee comes from the session (ERP-0122).
+		.use(MyPayslipController.plugin())
+		.use(PayslipRenderController.plugin());
 }

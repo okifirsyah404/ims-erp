@@ -34,6 +34,8 @@ const notifications = {
 		'{{signerName}} menolak menandatangani {{documentName}}.',
 	'template.hr.payrollDraftReady.title': 'Penggajian {{period}} siap disetujui',
 	'template.hr.payrollDraftReady.body': 'Proses hari gajian membuat {{records}} draf gaji untuk {{period}}.',
+	'template.hr.payslipReady.title': 'Slip gaji {{period}} tersedia',
+	'template.hr.payslipReady.body': 'Slip gaji {{period}} dapat diunduh dari halaman akun Anda.',
 } as const;
 
 export default notifications;

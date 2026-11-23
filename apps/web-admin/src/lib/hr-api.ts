@@ -59,6 +59,31 @@ export type TEmployee = {
 	createdAt: string;
 	updatedAt: string;
 	deletedAt: string | null;
+	/** Avatar and handle of the login, on list rows; `null` without a login. */
+	login?: { username: string | null; image: string | null } | null;
+	/** The linked login (`auth.users`), detail endpoint only; `null` without a login. */
+	account?: TEmployeeAccount | null;
+};
+
+/** The login behind an employee, as the employee detail returns it (no credential data). */
+export type TEmployeeAccount = {
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	username: string | null;
+	displayUsername: string | null;
+	image: string | null;
+	phone: string | null;
+	bio: string | null;
+	role: string | null;
+	status: 'pending' | 'active' | 'deactivated';
+	banned: boolean;
+	banReason: string | null;
+	banExpires: string | null;
+	claimedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
 };
 
 type TPaginated<T> = { rows: T[]; pagination: TPaginationMeta };
@@ -112,16 +137,32 @@ export type TEmployeeListParams = {
 	search?: string;
 	status?: TEmploymentStatus;
 	scope?: 'all' | 'organization' | 'company';
+	employmentType?: TEmploymentType;
+	workType?: TWorkType;
+	gender?: TGender;
+	maritalStatus?: TMaritalStatus;
+	/** `yes`: has a login account; `no`: none. */
+	login?: 'yes' | 'no';
+	sortBy?: TEmployeeSortField;
+	sortDir?: 'asc' | 'desc';
 };
+
+export const GENDERS = ['male', 'female'] as const;
+export type TGender = (typeof GENDERS)[number];
+export const MARITAL_STATUSES = ['single', 'married', 'divorced', 'widowed'] as const;
+export type TMaritalStatus = (typeof MARITAL_STATUSES)[number];
+export const EMPLOYEE_SORT_FIELDS = ['fullName', 'employeeCode', 'hireDate', 'createdAt'] as const;
+export type TEmployeeSortField = (typeof EMPLOYEE_SORT_FIELDS)[number];
 
 export function employeesQueryOptions(params: TEmployeeListParams) {
 	const search = new URLSearchParams({
 		page: String(params.page),
 		limit: String(params.limit),
 	});
-	if (params.search) search.set('search', params.search);
-	if (params.status) search.set('status', params.status);
-	if (params.scope) search.set('scope', params.scope);
+	for (const key of ['search', 'status', 'scope', 'employmentType', 'workType', 'gender', 'maritalStatus', 'login', 'sortBy', 'sortDir'] as const) {
+		const value = params[key];
+		if (value) search.set(key, value);
+	}
 	return queryOptions({
 		queryKey: ['hr', 'employees', params],
 		queryFn: () => getDataPaginated<TEmployee>(`/human-resources/employees?${search.toString()}`),

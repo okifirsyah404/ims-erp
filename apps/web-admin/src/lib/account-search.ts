@@ -24,6 +24,8 @@ export const ACCOUNT_SECTIONS = [
 	'connected',
 	'password',
 	'sessions',
+	// ERP-0122: the signed-in employee's payslips.
+	'payslips',
 ] as const;
 
 export type TAccountSection = (typeof ACCOUNT_SECTIONS)[number];

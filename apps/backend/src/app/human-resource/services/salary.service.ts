@@ -1,7 +1,8 @@
 import type { TEmployeeSelect, TEmployeeSalaryRecordSelect } from '@drizzle/schemas/human-resource.schema';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { HR_PEOPLE_SERVICE_TOKEN, LEAVE_SERVICE_TOKEN, SALARY_PERIOD_SERVICE_TOKEN, SALARY_REPOSITORY_TOKEN } from '../constants/di';
+import { HR_PEOPLE_SERVICE_TOKEN, LEAVE_SERVICE_TOKEN, PAYSLIP_QUEUE_TOKEN, SALARY_PERIOD_SERVICE_TOKEN, SALARY_REPOSITORY_TOKEN } from '../constants/di';
+import type { IPayslipQueue } from '../contracts/payslip.contract';
 import type { THrScope, TSalaryBody } from '../contracts/hr-records.contract';
 import type { ISalaryRepository } from '../contracts/hr-records.repository.interface';
 import { HrNotFoundError, ImportFileError, SalaryStateError } from '../errors/hr.errors';
@@ -58,6 +59,8 @@ export class SalaryService {
 		@inject(LEAVE_SERVICE_TOKEN) private readonly leave: Pick<LeaveService, 'approvedHours'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
 		@inject(SALARY_PERIOD_SERVICE_TOKEN) private readonly periods: Pick<SalaryPeriodService, 'amountsFor'>,
+		/** ERP-0122: the payslip PDF queue; optional so tests that do not approve can omit it. */
+		@inject(PAYSLIP_QUEUE_TOKEN) private readonly payslips?: IPayslipQueue,
 	) {}
 
 	async period(scope: THrScope, period: string): Promise<TSalaryPeriod> {
@@ -132,7 +135,10 @@ export class SalaryService {
 
 	/** The owner locks the period (`payroll:approve`, checked by the controller). */
 	async approve(scope: THrScope, actorUserId: string, period: string): Promise<TSalaryPeriod> {
-		if ((await this.repository.approvePeriod(period, actorUserId, scope)) === 0) throw new SalaryStateError('nothingToApprove');
+		const approved = await this.repository.approvePeriod(period, actorUserId, scope);
+		if (approved.length === 0) throw new SalaryStateError('nothingToApprove');
+		// ERP-0122 (grill-me Q32): one payslip PDF per approved record; the queue never fails the approval.
+		for (const recordId of approved) await this.payslips?.enqueue(recordId);
 		return this.period(scope, period);
 	}
 

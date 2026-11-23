@@ -18,7 +18,7 @@ function EmployeeEditPage() {
 
 	if (isPending) {
 		return (
-			<div className='mx-auto max-w-2xl space-y-4 p-4'>
+			<div className='space-y-4 p-6'>
 				<Skeleton className='h-8 w-48' />
 				<Skeleton className='h-64' />
 			</div>
