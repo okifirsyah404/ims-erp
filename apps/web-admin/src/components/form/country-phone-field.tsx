@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
 	getCountries,
 	getCountryCallingCode,
+	parsePhoneNumberFromString,
 	type CountryCode,
 } from 'libphonenumber-js/min';
 import { toE164 } from '@/lib/phone';
@@ -39,19 +40,29 @@ type TCountryOption = { value: CountryCode; label: string; callingCode: string }
 export function CountryPhoneField({
 	id,
 	onChange,
+	defaultValue,
+	required = true,
 	disabled = false,
 }: {
 	/** Id applied to the number input; the label's `htmlFor` targets it. */
 	id: string;
 	/** Emitted E.164 value, or `''` while incomplete. */
 	onChange: (e164: string) => void;
+	/** Stored E.164 value to prefill (edit forms); split into country + number. */
+	defaultValue?: string | null;
+	/** Blocks submit on an empty number; false for optional fields. */
+	required?: boolean;
 	disabled?: boolean;
 }) {
 	const { t, i18n } = useTranslation(['claim']);
-	const [country, setCountry] = useState<TCountryOption>(() =>
-		countryOption(DEFAULT_COUNTRY, i18n.language),
+	const parsed = useMemo(
+		() => (defaultValue ? parsePhoneNumberFromString(defaultValue) : undefined),
+		[defaultValue],
 	);
-	const [national, setNational] = useState('');
+	const [country, setCountry] = useState<TCountryOption>(() =>
+		countryOption(parsed?.country ?? DEFAULT_COUNTRY, i18n.language),
+	);
+	const [national, setNational] = useState(parsed?.nationalNumber ?? '');
 	const [query, setQuery] = useState('');
 
 	const countries = useMemo(
@@ -119,7 +130,7 @@ export function CountryPhoneField({
 				className='flex-1'
 				value={national}
 				disabled={disabled}
-				required
+				required={required}
 				placeholder={t('form.phonePlaceholder')}
 				onChange={(event) => {
 					setNational(event.target.value);

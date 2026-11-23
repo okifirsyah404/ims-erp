@@ -76,7 +76,10 @@ and carries the location cascade inline, like the warehouse form: on create the
 address is posted right after the company, on edit the primary (else first)
 address is PATCHed, or created when the supplier had none. The detail page
 keeps its Addresses card for the extra rows. The WhatsApp/payment fields are
-gone.
+gone. Company and PIC phone use the shared `CountryPhoneField`
+(`components/form/country-phone-field.tsx`), so the value stored is E.164;
+`defaultValue` and `required={false}` were added to that field for the edit
+form and for the optional supplier phone.
 
 **Checks.**
 - `bunx tsc --noEmit` (backend): clean.

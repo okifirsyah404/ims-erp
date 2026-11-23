@@ -28,6 +28,7 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 import {
 	EMPTY_LOCATION_SELECTION,
 	LocationCascade,
@@ -222,7 +223,12 @@ function PersonDialog({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='person-phone'>{t('procurement:supplier.picPhone')}</FieldLabel>
-							<Input id='person-phone' type='tel' maxLength={30} value={phone} onChange={(event) => setPhone(event.target.value)} />
+							<CountryPhoneField
+								id='person-phone'
+								required={false}
+								disabled={submitting}
+								onChange={setPhone}
+							/>
 						</Field>
 						<Field className='sm:col-span-2'>
 							<FieldLabel htmlFor='person-email'>{t('procurement:supplier.picEmail')}</FieldLabel>

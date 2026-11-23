@@ -20,6 +20,7 @@ import {
 } from '@ims-erp/ui/components/select';
 import { Separator } from '@ims-erp/ui/components/separator';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 import {
 	EMPTY_LOCATION_SELECTION,
 	LocationCascade,
@@ -220,7 +221,16 @@ export function SupplierFormDialog({
 						description={t('procurement:suppliers.contactDescription')}
 					>
 						{field('email', { type: 'email', maxLength: 254 })}
-						{field('phone', { type: 'tel', maxLength: 30 })}
+						<Field>
+							<FieldLabel htmlFor='supplier-phone'>{t('procurement:supplier.phone')}</FieldLabel>
+							<CountryPhoneField
+								id='supplier-phone'
+								defaultValue={values.phone}
+								required={false}
+								disabled={submitting}
+								onChange={(e164) => setValues((current) => ({ ...current, phone: e164 }))}
+							/>
+						</Field>
 						{canSeeBank && (
 							<>
 								{field('bankName', { maxLength: 200 })}
