@@ -4,7 +4,8 @@ import type { TPaginationResult } from '@ims-erp/common';
 import { documentFileFrom, storeDocumentFile } from '@providers/s3/document-file';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
-import { DOCUMENT_REPOSITORY_TOKEN } from '../constants/di';
+import { DOCUMENT_NUMBERING_SERVICE_TOKEN, DOCUMENT_REPOSITORY_TOKEN } from '../constants/di';
+import type { DocumentNumberingService } from './document-numbering.service';
 import type {
 	TCreateDocumentTemplateInput,
 	TDocumentDetail,
@@ -13,7 +14,9 @@ import type {
 	TDocumentShareView,
 	TIssueDocumentInput,
 	TPublicDocumentView,
+	TDraftDocumentInput,
 	TRegisterDocumentInput,
+	TSourceDocument,
 } from '../contracts/document.contract';
 import type { IDocumentRepository } from '../contracts/document.repository.interface';
 import {
@@ -57,7 +60,82 @@ export class DocumentService {
 		private readonly repository: IDocumentRepository,
 		@inject(OBJECT_STORAGE_TOKEN)
 		private readonly storage: IObjectStorage,
+		/** Code series of the drafts other modules open (ERP-0121). */
+		@inject(DOCUMENT_NUMBERING_SERVICE_TOKEN)
+		private readonly numbering?: Pick<DocumentNumberingService, 'next'>,
 	) {}
+
+	/**
+	 * Opens a draft document for another module's row (ERP-0121), coded from
+	 * this module's `document` series.
+	 *
+	 * @param tx - The caller's transaction, so the draft rolls back with it
+	 */
+	async createDraft(input: TDraftDocumentInput, tx?: TTx): Promise<TDocumentSelect> {
+		if (!this.numbering) throw new Error('Document numbering is not wired');
+		const code = await this.numbering.next('document', tx, new Date(), input.organizationId);
+		const now = new Date();
+		return this.repository.insert(
+			{
+				organizationId: input.organizationId,
+				code,
+				documentType: input.documentType,
+				title: input.title,
+				templateId: null,
+				module: input.module,
+				sourceType: input.sourceType,
+				sourceId: input.sourceId,
+				status: 'draft',
+				issuedOn: null,
+				issuedByUserId: null,
+				version: 1,
+				isCurrent: true,
+				createdAt: now,
+				updatedAt: now,
+			},
+			tx,
+		);
+	}
+
+	/** Every registry row of one source with its live files (no access-trail row). */
+	async listBySource(module: string, sourceType: string, sourceId: string): Promise<TSourceDocument[]> {
+		const rows = await this.repository.listBySource(module, sourceType, sourceId);
+		return Promise.all(
+			rows.map(async (row) => ({ ...row, files: (await this.repository.listFiles(row.id)).map((file) => this.fileView(file)) })),
+		);
+	}
+
+	/** One registry row by id, without an access-trail row; `null` when absent. */
+	find(id: string): Promise<TDocumentSelect | null> {
+		return this.repository.findById(id);
+	}
+
+	/**
+	 * Attaches a system-generated file to one live document (ERP-0121: the
+	 * employment agreement PDF; an employee has several documents, so the
+	 * source alone does not identify it).
+	 *
+	 * @returns `false` when the document is absent or void
+	 */
+	async attachGeneratedFileTo(documentId: string, file: File, actorUserId: string | null): Promise<boolean> {
+		const document = await this.repository.findById(documentId);
+		if (!document || document.status === 'void') return false;
+		const key = await storeDocumentFile(this.storage, `documents/${document.id}`, file);
+		const now = new Date();
+		await this.repository.insertFile({
+			organizationId: document.organizationId,
+			documentId: document.id,
+			fileName: file.name,
+			storageKey: key,
+			mimeType: file.type,
+			sizeBytes: file.size,
+			uploadedByUserId: actorUserId,
+			uploadedAt: now,
+			createdAt: now,
+			updatedAt: now,
+		});
+		return true;
+	}
 
 	/** Fetches one page of the document registry. */
 	list(request: TDocumentPaginationRequest): Promise<TPaginationResult<TDocumentSelect>> {

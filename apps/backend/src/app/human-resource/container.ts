@@ -5,7 +5,7 @@ import { EmployeeRepository } from './repositories/employee.repository';
 import { EmployeeService } from './services/employee.service';
 import { EmployeeInviteService } from './services/employee-invite.service';
 import { InvitationEmployeeAdapter } from './adapters/invitation-employee';
-import { INVITATION_EMPLOYEE_PORT_TOKEN } from '@app/user/constants/di';
+import { INVITATION_CLAIM_PORT_TOKEN, INVITATION_EMPLOYEE_PORT_TOKEN } from '@app/user/constants/di';
 import { ExportedEmployeeService } from './services/exported-employee.service';
 import { AttendanceRepository } from './repositories/attendance.repository';
 import { LeaveRepository } from './repositories/leave.repository';
@@ -22,6 +22,11 @@ import { SalaryPeriodRepository } from './repositories/salary-period.repository'
 import { SalaryPeriodService } from './services/salary-period.service';
 import { HrSettingsRepository } from './repositories/hr-settings.repository';
 import { PayrollScheduleService } from './services/payroll-schedule.service';
+import { EmployeeAddressRepository } from './repositories/employee-address.repository';
+import { AgreementPdfQueue } from './queues/agreement-pdf.queue';
+import { EmployeeDocumentService } from './services/employee-document.service';
+import { AgreementPdfService } from './services/agreement-pdf.service';
+import { InvitationClaimAdapter } from './adapters/invitation-claim';
 import {
 	ATTENDANCE_REPOSITORY_TOKEN,
 	ATTENDANCE_SERVICE_TOKEN,
@@ -42,6 +47,10 @@ import {
 	SALARY_PERIOD_SERVICE_TOKEN,
 	HR_SETTINGS_REPOSITORY_TOKEN,
 	PAYROLL_SCHEDULE_SERVICE_TOKEN,
+	EMPLOYEE_ADDRESS_REPOSITORY_TOKEN,
+	AGREEMENT_PDF_QUEUE_TOKEN,
+	EMPLOYEE_DOCUMENT_SERVICE_TOKEN,
+	AGREEMENT_PDF_SERVICE_TOKEN,
 	SCHEDULE_SERVICE_TOKEN,
 	TASK_REPOSITORY_TOKEN,
 	TASK_SERVICE_TOKEN,
@@ -104,4 +113,11 @@ export function registerHumanResource(container: DependencyContainer): void {
 	// Payday setting and the daily draft run (ERP-0120).
 	container.register(HR_SETTINGS_REPOSITORY_TOKEN, { useClass: HrSettingsRepository });
 	container.register(PAYROLL_SCHEDULE_SERVICE_TOKEN, { useClass: PayrollScheduleService });
+
+	// Employee documents, the claim's personal data and the agreement PDF (ERP-0121).
+	container.register(EMPLOYEE_ADDRESS_REPOSITORY_TOKEN, { useClass: EmployeeAddressRepository });
+	container.register(AGREEMENT_PDF_QUEUE_TOKEN, { useClass: AgreementPdfQueue });
+	container.register(EMPLOYEE_DOCUMENT_SERVICE_TOKEN, { useClass: EmployeeDocumentService });
+	container.register(AGREEMENT_PDF_SERVICE_TOKEN, { useClass: AgreementPdfService });
+	container.register(INVITATION_CLAIM_PORT_TOKEN, { useClass: InvitationClaimAdapter });
 }

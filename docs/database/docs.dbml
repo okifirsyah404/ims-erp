@@ -4952,11 +4952,12 @@ Table human_resource.employee_addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Address of an employee, reshaped to the Q10 address contract (only village_id is stored)."
+  Note: "Address of an employee, reshaped to the Q10 address contract (only village_id is stored). The residence address is entered by the employee on the invitation claim form (ERP-0121); one live primary address per employee."
   Indexes {
     employee_id [name: 'employee_addresses_employee_id_idx']
+    employee_id [unique, name: 'employee_addresses_primary_uq', note: 'WHERE is_primary AND deleted_at IS NULL']
   }
   Checks {
     `kind IN ('residence', 'current', 'birth', 'other')`
@@ -5201,7 +5202,7 @@ Table human_resource.code_numberings {
 }
 
 Ref: human_resource.employees.manager_employee_id > human_resource.employees.id [delete: set null]
-Ref: human_resource.employee_addresses.employee_id > human_resource.employees.id [delete: cascade]
+Ref: human_resource.employee_addresses.employee_id > human_resource.employees.id [delete: restrict]
 Ref: human_resource.attendances.employee_id > human_resource.employees.id [delete: restrict]
 Ref: human_resource.attendances.leave_request_id > human_resource.leave_requests.id [delete: restrict]
 Ref: human_resource.leave_requests.leave_type_id > human_resource.leave_types.id [delete: restrict]

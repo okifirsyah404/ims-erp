@@ -7,12 +7,13 @@ import { SectionSkeleton } from '@/components/page-skeleton';
 import { todayBusinessDate } from '@/lib/format';
 import { leaveBalancesQueryOptions } from '@/lib/hr-records-api';
 import { BankAccountsCard, SalaryPeriodsCard } from './employee-salary-cards';
+import { EmployeeDocumentsCard } from './employee-documents-card';
 import { usePermission } from '@/lib/use-permission';
 
 /**
- * Record cards on the ERP-0034 employee page: this year's leave balance and,
- * with `payroll.read`, the "Gaji" cards (salary periods and the payee
- * accounts finance owns, ERP-0119).
+ * Record cards on the ERP-0034 employee page: this year's leave balance,
+ * with `payroll.read` the "Gaji" cards (salary periods and the payee
+ * accounts finance owns, ERP-0119), and the employee's documents (ERP-0121).
  */
 export function EmployeeRecordCards({ employeeId, fullName }: { employeeId: string; fullName: string }) {
 	const canReadLeave = usePermission('leave.read');
@@ -22,6 +23,8 @@ export function EmployeeRecordCards({ employeeId, fullName }: { employeeId: stri
 			{canReadLeave && <LeaveBalanceCard employeeId={employeeId} />}
 			{canReadPayroll && <SalaryPeriodsCard employeeId={employeeId} />}
 			{canReadPayroll && <BankAccountsCard employeeId={employeeId} fullName={fullName} />}
+			{/* ERP-0121: the employee's documents; the page itself already needs employee.read. */}
+			<EmployeeDocumentsCard employeeId={employeeId} />
 		</div>
 	);
 }

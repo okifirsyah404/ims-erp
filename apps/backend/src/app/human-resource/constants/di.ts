@@ -20,6 +20,9 @@ import type { TaskService } from '../services/task.service';
 import type { ScheduleService } from '../services/schedule.service';
 import type { SalaryPeriodService } from '../services/salary-period.service';
 import type { PayrollScheduleService } from '../services/payroll-schedule.service';
+import type { IAgreementPdfQueue, IEmployeeAddressRepository } from '../contracts/employee-document.contract';
+import type { EmployeeDocumentService } from '../services/employee-document.service';
+import type { AgreementPdfService } from '../services/agreement-pdf.service';
 import type { IHrSettingsRepository } from '../contracts/payroll-settings.contract';
 import type { ISalaryPeriodRepository } from '../contracts/salary-period.contract';
 import type { IScheduleRepository } from '../contracts/schedule.repository.interface';
@@ -67,6 +70,12 @@ export const SALARY_PERIOD_SERVICE_TOKEN: InjectionToken<SalaryPeriodService> = 
 /** Payroll payday setting and its daily draft run (ERP-0120). */
 export const HR_SETTINGS_REPOSITORY_TOKEN: InjectionToken<IHrSettingsRepository> = Symbol('HR_SETTINGS_REPOSITORY');
 export const PAYROLL_SCHEDULE_SERVICE_TOKEN: InjectionToken<PayrollScheduleService> = Symbol('PAYROLL_SCHEDULE_SERVICE');
+
+/** Employee documents, addresses and the employment agreement PDF (ERP-0121). */
+export const EMPLOYEE_ADDRESS_REPOSITORY_TOKEN: InjectionToken<IEmployeeAddressRepository> = Symbol('EMPLOYEE_ADDRESS_REPOSITORY');
+export const AGREEMENT_PDF_QUEUE_TOKEN: InjectionToken<IAgreementPdfQueue> = Symbol('AGREEMENT_PDF_QUEUE');
+export const EMPLOYEE_DOCUMENT_SERVICE_TOKEN: InjectionToken<EmployeeDocumentService> = Symbol('EMPLOYEE_DOCUMENT_SERVICE');
+export const AGREEMENT_PDF_SERVICE_TOKEN: InjectionToken<AgreementPdfService> = Symbol('AGREEMENT_PDF_SERVICE');
 
 /** Token resolving to the repository of `human_resource.code_numberings`. */
 export const HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<HumanResourceCodeNumberingRepository> =

@@ -25,6 +25,30 @@ const claim = {
 	'form.phoneInvalid': 'Enter a valid phone number.',
 	'form.submit': 'Create account',
 	'form.claiming': 'Creating account…',
+
+	// Personal data on the claim form (ERP-0121).
+	'personal.title': 'Your personal data',
+	'personal.description': 'Used for your employee record and your employment agreement.',
+	'personal.nationalId': 'National ID number (NIK)',
+	'personal.birthPlace': 'Place of birth',
+	'personal.birthDate': 'Date of birth',
+	'personal.gender': 'Gender',
+	'personal.genderOption.male': 'Male',
+	'personal.genderOption.female': 'Female',
+	'personal.maritalStatus': 'Marital status',
+	'personal.maritalOption.single': 'Single',
+	'personal.maritalOption.married': 'Married',
+	'personal.maritalOption.divorced': 'Divorced',
+	'personal.maritalOption.widowed': 'Widowed',
+	'personal.optional': 'optional',
+	'personal.choose': 'Choose',
+	'personal.address': 'Residence address',
+	'personal.postalCode': 'Postal code',
+	'personal.invalid.nationalId': 'The NIK has 16 digits.',
+	'personal.invalid.birth': 'Fill in your place and date of birth.',
+	'personal.invalid.gender': 'Choose your gender.',
+	'personal.invalid.address': 'Fill in the address and choose the village.',
+	'personal.invalid.postalCode': 'The postal code has 5 digits.',
 } as const;
 
 export default claim;

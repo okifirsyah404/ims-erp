@@ -620,7 +620,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-656 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+663 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -849,6 +849,12 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | DELETE | `/human-resources/employees/:id` | org member + permission | `employee:archive` | `owner`, `hr` |
 | GET | `/human-resources/employees/:id` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
 | PATCH | `/human-resources/employees/:id` | org member + permission | `employee:update` | `owner`, `hr` |
+| GET | `/human-resources/employees/:id/documents` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
+| POST | `/human-resources/employees/:id/documents` | org member + permission | `employee:update` | `owner`, `hr` |
+| POST | `/human-resources/employees/:id/documents/:documentId/files` | org member + permission | `employee:update` | `owner`, `hr` |
+| GET | `/human-resources/employees/:id/documents/:documentId/files/:fileId/download` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
+| POST | `/human-resources/employees/:id/documents/:documentId/regenerate-pdf` | org member + permission | `employee:update` | `owner`, `hr` |
+| POST | `/human-resources/employees/:id/documents/:documentId/void` | org member + permission | `employee:update` | `owner`, `hr` |
 | GET | `/human-resources/employees/:id/salaries` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/employees/:id/salaries` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/employees/picker` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
@@ -868,6 +874,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/human-resources/overtime/:id/reject` | org member + permission | `overtime:reject` | `owner`, `hr` |
 | GET | `/human-resources/payroll-settings` | app admin | - | app admin |
 | PUT | `/human-resources/payroll-settings` | app admin | - | app admin |
+| GET | `/human-resources/public/v1/render/employment-agreements/:id` | no guard macro | - | - |
 | DELETE | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | PUT | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/salary-records` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |

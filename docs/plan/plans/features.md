@@ -814,6 +814,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   only), daily `payroll-pay-day` job creating draft payroll on payday and
   notifying `payroll:approve` holders. Evidence: `progress.md` 2026-11-23
   (backend 1425 pass). Scheduler not run against a live Redis yet.
+- ERP-0121 invite documents (2026-11-23): draft employment agreement on every
+  invite, personal data on the claim form, agreement PDF after the claim,
+  employee Documents card. Evidence: `progress.md` 2026-11-23 (backend 1434
+  pass). PDF render and browser walk-through not verified.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -826,8 +830,6 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Invite employment-agreement document, claim personal data, agreement PDF,
-  employee Documents tab — ERP-0121.
 - Payslip PDF on payroll approval — ERP-0122 (supersedes the payslip part of
   ERP-0018).
 - Payroll journals — T20, ERP-0018. Evidence: none.

@@ -13,7 +13,7 @@ import { registerHumanResource } from '@app/human-resource';
 import { registerWebhook } from '@app/webhook';
 import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
 import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
-import { registerPayrollPayDaySchedule, startPayrollPayDayWorker } from '@app/human-resource';
+import { registerPayrollPayDaySchedule, startAgreementPdfWorker, startPayrollPayDayWorker } from '@app/human-resource';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerFinance } from '@app/finance';
 import { registerTax } from '@app/tax';
@@ -185,6 +185,8 @@ startWorkers(
 		startWhatsappWorker(),
 		// ERP-0067: SPH PDF + `quotation.sent` after a quotation is sent.
 		startQuotationSentWorker(),
+		// ERP-0121: the employment agreement PDF after an invite is claimed.
+		startAgreementPdfWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
 		...(leadFollowUpWorker ? [leadFollowUpWorker] : []),

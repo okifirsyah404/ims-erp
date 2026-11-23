@@ -296,7 +296,15 @@ describe('InvitationService — organization scope on id-targeted actions', () =
 });
 
 describe('claimInvitationSchema — phone is E.164', () => {
-	const base = { username: 'invitee_1', password: 'supersecret' };
+	// ERP-0121: the personal data is part of the claim body.
+	const personal = {
+		nationalId: '3201234567890123',
+		birthPlace: 'Bandung',
+		birthDate: '1995-04-12',
+		gender: 'female',
+		address: { addressLine: 'Jl. Merdeka 1', villageId: '0190a1b2-0000-7000-8000-0000000000aa', postalCode: '40111' },
+	};
+	const base = { username: 'invitee_1', password: 'supersecret', personal };
 
 	test('accepts and normalizes a valid international number', () => {
 		const parsed = claimInvitationSchema.parse({
@@ -304,6 +312,16 @@ describe('claimInvitationSchema — phone is E.164', () => {
 			phone: '+62 812-3456-7890',
 		});
 		expect(parsed.phone).toBe('+6281234567890');
+	});
+
+	test('ERP-0121: the personal data is required and checked (16-digit NIK, 5-digit postal code)', () => {
+		const phone = '+6281234567890';
+		expect(claimInvitationSchema.parse({ ...base, phone }).personal.maritalStatus).toBeNull();
+		expect(() => claimInvitationSchema.parse({ username: base.username, password: base.password, phone })).toThrow();
+		expect(() => claimInvitationSchema.parse({ ...base, phone, personal: { ...personal, nationalId: '123' } })).toThrow();
+		expect(() =>
+			claimInvitationSchema.parse({ ...base, phone, personal: { ...personal, address: { ...personal.address, postalCode: '4011' } } }),
+		).toThrow();
 	});
 
 	test('rejects a national number without a country prefix', () => {

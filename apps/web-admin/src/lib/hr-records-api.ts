@@ -293,6 +293,69 @@ export const payrollSettingsQueryOptions = () => single<TPayrollSettings>(['hr',
 export const savePayrollSettings = (input: { payDay: number | null }) =>
 	send<TPayrollSettings>('/human-resources/payroll-settings', 'PUT', input);
 
+// Employee documents (ERP-0121): registry rows of the document module kept on the employee
+export const EMPLOYEE_DOCUMENT_TYPES = ['employment_agreement', 'id_card', 'tax_id', 'cv', 'certificate', 'other'] as const;
+export type TEmployeeDocumentType = (typeof EMPLOYEE_DOCUMENT_TYPES)[number];
+export type TEmployeeDocumentFile = { id: string; fileName: string; mimeType: string | null; sizeBytes: number | null; uploadedAt: string };
+export type TEmployeeDocument = {
+	id: string;
+	code: string;
+	documentType: string;
+	title: string;
+	status: 'draft' | 'submitted' | 'approved' | 'issued' | 'void' | 'expired' | 'archived';
+	createdAt: string;
+	files: TEmployeeDocumentFile[];
+};
+export const employeeDocumentsQueryOptions = (employeeId: string) =>
+	single<TEmployeeDocument[]>(['hr', 'employee-documents', employeeId], `/human-resources/employees/${employeeId}/documents`);
+export const createEmployeeDocument = (employeeId: string, input: { documentType: TEmployeeDocumentType; title: string | null }) =>
+	send<TEmployeeDocument>(`/human-resources/employees/${employeeId}/documents`, 'POST', input);
+export const uploadEmployeeDocumentFile = async (employeeId: string, documentId: string, file: File) => {
+	const form = new FormData();
+	form.append('file', file);
+	return (await request<TEmployeeDocumentFile>(`/human-resources/employees/${employeeId}/documents/${documentId}/files`, { method: 'POST', body: form })).data;
+};
+export const employeeDocumentDownloadUrl = (employeeId: string, documentId: string, fileId: string) =>
+	send<{ url: string; fileName: string }>(`/human-resources/employees/${employeeId}/documents/${documentId}/files/${fileId}/download`, 'GET');
+export const voidEmployeeDocument = (employeeId: string, documentId: string) =>
+	send<TEmployeeDocument>(`/human-resources/employees/${employeeId}/documents/${documentId}/void`, 'POST');
+export const regenerateAgreementPdf = (employeeId: string, documentId: string) =>
+	send<{ queued: true }>(`/human-resources/employees/${employeeId}/documents/${documentId}/regenerate-pdf`, 'POST');
+
+/** The employment agreement print view data (public, render token). */
+export type TAgreementRender = {
+	document: { id: string; code: string; title: string; status: string };
+	employee: {
+		employeeCode: string;
+		fullName: string;
+		nationalId: string | null;
+		email: string | null;
+		phone: string | null;
+		employmentType: string;
+		workType: string;
+		hireDate: string | null;
+		gender: string | null;
+		birthPlace: string | null;
+		birthDate: string | null;
+		maritalStatus: string | null;
+	};
+	address: {
+		addressLine: string;
+		postalCode: string | null;
+		villageName: string | null;
+		districtName: string | null;
+		regencyName: string | null;
+		provinceName: string | null;
+	} | null;
+	profile: import('./company-api').TCompanyProfile | null;
+};
+export const agreementRenderQueryOptions = (documentId: string, token: string) =>
+	queryOptions({
+		queryKey: ['hr', 'agreement-render', documentId],
+		queryFn: async () => (await request<TAgreementRender>(`/human-resources/public/v1/render/employment-agreements/${documentId}?token=${encodeURIComponent(token)}`)).data as TAgreementRender,
+		retry: false,
+	});
+
 // Salary summaries
 export const salaryQueryOptions = (period: string) => single<TSalaryPeriod>(['hr', 'salary', period], `/human-resources/salary-records?period=${period}`);
 export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/human-resources/salary-records', 'PUT', input);

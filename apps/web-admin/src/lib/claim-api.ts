@@ -15,11 +15,25 @@ export type TClaimTarget = {
 	type: 'app' | 'org';
 };
 
-/** Body for `POST /invitations/claim/:token` (form 1: credentials). */
+export const CLAIM_GENDERS = ['male', 'female'] as const;
+export const CLAIM_MARITAL_STATUSES = ['single', 'married', 'divorced', 'widowed'] as const;
+
+/** The invitee's personal data (ERP-0121); the HR module stores it. */
+export type TClaimPersonalData = {
+	nationalId: string;
+	birthPlace: string;
+	birthDate: string;
+	gender: (typeof CLAIM_GENDERS)[number];
+	maritalStatus: (typeof CLAIM_MARITAL_STATUSES)[number] | null;
+	address: { addressLine: string; villageId: string; postalCode: string };
+};
+
+/** Body for `POST /invitations/claim/:token`: credentials plus personal data. */
 export type TClaimInput = {
 	username: string;
 	password: string;
 	phone: string;
+	personal: TClaimPersonalData;
 };
 
 async function parseJsonEnvelope<T>(response: Response): Promise<TApiResponse<T>> {

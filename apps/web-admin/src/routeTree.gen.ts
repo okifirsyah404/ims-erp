@@ -41,6 +41,7 @@ import { Route as AuthedTicketsNewRouteImport } from './routes/_authed/tickets/n
 import { Route as AuthedWarehousesIndexRouteImport } from './routes/_authed/warehouses/index'
 import { Route as AuthedWarehousesWarehouseIdRouteImport } from './routes/_authed/warehouses/$warehouseId'
 import { Route as AuthedWarrantiesIndexRouteImport } from './routes/_authed/warranties/index'
+import { Route as PrintEmploymentAgreementsDocumentIdRouteImport } from './routes/print/employment-agreements.$documentId'
 import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -336,6 +337,12 @@ const AuthedWarrantiesIndexRoute = AuthedWarrantiesIndexRouteImport.update({
   path: '/warranties/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const PrintEmploymentAgreementsDocumentIdRoute =
+  PrintEmploymentAgreementsDocumentIdRouteImport.update({
+    id: '/print/employment-agreements/$documentId',
+    path: '/print/employment-agreements/$documentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PrintQuotationsQuotationIdRoute =
   PrintQuotationsQuotationIdRouteImport.update({
     id: '/print/quotations/$quotationId',
@@ -1113,6 +1120,7 @@ export interface FileRoutesByFullPath {
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
+  '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
@@ -1276,6 +1284,7 @@ export interface FileRoutesByTo {
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
+  '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
@@ -1441,6 +1450,7 @@ export interface FileRoutesById {
   '/_authed/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/_authed/tickets/new': typeof AuthedTicketsNewRoute
   '/_authed/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
+  '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
@@ -1606,6 +1616,7 @@ export interface FileRouteTypes {
     | '/tickets/$ticketId'
     | '/tickets/new'
     | '/warehouses/$warehouseId'
+    | '/print/employment-agreements/$documentId'
     | '/print/quotations/$quotationId'
     | '/assets/'
     | '/crm/'
@@ -1769,6 +1780,7 @@ export interface FileRouteTypes {
     | '/tickets/$ticketId'
     | '/tickets/new'
     | '/warehouses/$warehouseId'
+    | '/print/employment-agreements/$documentId'
     | '/print/quotations/$quotationId'
     | '/assets'
     | '/crm'
@@ -1933,6 +1945,7 @@ export interface FileRouteTypes {
     | '/_authed/tickets/$ticketId'
     | '/_authed/tickets/new'
     | '/_authed/warehouses/$warehouseId'
+    | '/print/employment-agreements/$documentId'
     | '/print/quotations/$quotationId'
     | '/_authed/assets/'
     | '/_authed/crm/'
@@ -2087,6 +2100,7 @@ export interface RootRouteChildren {
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
+  PrintEmploymentAgreementsDocumentIdRoute: typeof PrintEmploymentAgreementsDocumentIdRoute
   PrintQuotationsQuotationIdRoute: typeof PrintQuotationsQuotationIdRoute
 }
 
@@ -2315,6 +2329,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/warranties/'
       preLoaderRoute: typeof AuthedWarrantiesIndexRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/print/employment-agreements/$documentId': {
+      id: '/print/employment-agreements/$documentId'
+      path: '/print/employment-agreements/$documentId'
+      fullPath: '/print/employment-agreements/$documentId'
+      preLoaderRoute: typeof PrintEmploymentAgreementsDocumentIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/print/quotations/$quotationId': {
       id: '/print/quotations/$quotationId'
@@ -3642,6 +3663,8 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,
+  PrintEmploymentAgreementsDocumentIdRoute:
+    PrintEmploymentAgreementsDocumentIdRoute,
   PrintQuotationsQuotationIdRoute: PrintQuotationsQuotationIdRoute,
 }
 export const routeTree = rootRouteImport

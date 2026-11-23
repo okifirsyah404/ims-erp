@@ -248,6 +248,11 @@ no central code-number module.
   user signatures, access logs, shares, tags and links, settings.
   `organization_id` is nullable (NULL = company-wide).
 - `document.issue` takes the owning module's `code`.
+- `DocumentService.createDraft` (ERP-0121) is the exception: it codes the draft
+  from this module's own `document` series, for an owning module that has no
+  code of its own (the employee documents of `human_resource`: `module =
+  human_resource`, `source_type = employee`, `source_id = employees.id`).
+  `listBySource` and `attachGeneratedFileTo` serve the same callers.
 
 ### 18. Notification - `notification`
 

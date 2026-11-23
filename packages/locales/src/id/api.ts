@@ -453,6 +453,7 @@ const api: Record<keyof typeof en, string> = {
 	'hr.notFound.attendance': 'Data absensi tidak ditemukan',
 	'hr.notFound.schedule': 'Jadwal tidak ditemukan',
 	'hr.notFound.salaryPeriod': 'Periode gaji tidak ditemukan',
+	'hr.notFound.document': 'Dokumen karyawan tidak ditemukan',
 	'hr.employeeState.inactive': 'Karyawan tidak aktif',
 	'hr.leave.dates': 'Tanggal selesai sebelum tanggal mulai',
 	'hr.leave.noWorkingDays': 'Rentang tanggal tidak berisi hari kerja (Minggu tidak dihitung)',
@@ -478,6 +479,7 @@ const api: Record<keyof typeof en, string> = {
 	'hr.salaryPeriod.overlap': 'Periode baru harus dimulai setelah {{after}}',
 	'hr.salaryPeriod.notActive': 'Hanya periode gaji yang aktif yang dapat diubah',
 	'hr.salaryPeriod.notLatest': 'Hanya periode gaji terakhir yang dapat dihapus',
+	'hr.employeeDocument.notAgreement': 'Hanya Perjanjian Kerja yang aktif yang memiliki PDF otomatis',
 
 	// Pajak (ERP-0016)
 	'accounting.taxTypeNotFound': 'Jenis pajak tidak ditemukan',

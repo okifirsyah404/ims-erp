@@ -452,6 +452,7 @@ const api = {
 	'hr.notFound.attendance': 'Attendance record not found',
 	'hr.notFound.schedule': 'Schedule not found',
 	'hr.notFound.salaryPeriod': 'Salary period not found',
+	'hr.notFound.document': 'Employee document not found',
 	'hr.employeeState.inactive': 'The employee is inactive',
 	'hr.leave.dates': 'The end date is before the start date',
 	'hr.leave.noWorkingDays': 'The range has no working day (Sundays are not counted)',
@@ -477,6 +478,7 @@ const api = {
 	'hr.salaryPeriod.overlap': 'A new period must start after {{after}}',
 	'hr.salaryPeriod.notActive': 'Only the active salary period can be edited',
 	'hr.salaryPeriod.notLatest': 'Only the latest salary period can be deleted',
+	'hr.employeeDocument.notAgreement': 'Only a live employment agreement has a generated PDF',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',

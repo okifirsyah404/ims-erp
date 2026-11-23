@@ -40,8 +40,9 @@ export class EmployeeInviteError extends AppError {
 
 /** The record does not exist. */
 export class HrNotFoundError extends AppError {
-	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance' | 'schedule' | 'salaryPeriod') {
+	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance' | 'schedule' | 'salaryPeriod' | 'document') {
 		const messages = {
+			document: 'Employee document not found',
 			salaryPeriod: 'Salary period not found',
 			schedule: 'Schedule not found',
 			attendance: 'Attendance record not found',
@@ -160,5 +161,13 @@ export class SalaryPeriodError extends AppError {
 			notLatest: 'Only the latest salary period can be deleted',
 		};
 		super(422, `hr.salaryPeriod.${kind}` as const, messages[kind], params);
+	}
+}
+
+/** The employee document cannot do what was asked (ERP-0121). */
+export class EmployeeDocumentError extends AppError {
+	constructor(kind: 'notAgreement') {
+		const messages = { notAgreement: 'Only a live employment agreement has a generated PDF' };
+		super(422, `hr.employeeDocument.${kind}` as const, messages[kind]);
 	}
 }

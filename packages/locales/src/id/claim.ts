@@ -25,6 +25,30 @@ const claim = {
 	'form.phoneInvalid': 'Masukkan nomor telepon yang valid.',
 	'form.submit': 'Buat akun',
 	'form.claiming': 'Membuat akun…',
+
+	// Personal data on the claim form (ERP-0121).
+	'personal.title': 'Data diri',
+	'personal.description': 'Dipakai untuk data karyawan dan Perjanjian Kerja Anda.',
+	'personal.nationalId': 'Nomor KTP (NIK)',
+	'personal.birthPlace': 'Tempat lahir',
+	'personal.birthDate': 'Tanggal lahir',
+	'personal.gender': 'Jenis kelamin',
+	'personal.genderOption.male': 'Laki-laki',
+	'personal.genderOption.female': 'Perempuan',
+	'personal.maritalStatus': 'Status pernikahan',
+	'personal.maritalOption.single': 'Belum menikah',
+	'personal.maritalOption.married': 'Menikah',
+	'personal.maritalOption.divorced': 'Cerai hidup',
+	'personal.maritalOption.widowed': 'Cerai mati',
+	'personal.optional': 'opsional',
+	'personal.choose': 'Pilih',
+	'personal.address': 'Alamat domisili',
+	'personal.postalCode': 'Kode pos',
+	'personal.invalid.nationalId': 'NIK terdiri dari 16 digit.',
+	'personal.invalid.birth': 'Isi tempat dan tanggal lahir.',
+	'personal.invalid.gender': 'Pilih jenis kelamin.',
+	'personal.invalid.address': 'Isi alamat dan pilih kelurahan/desa.',
+	'personal.invalid.postalCode': 'Kode pos terdiri dari 5 digit.',
 } as const;
 
 export default claim;

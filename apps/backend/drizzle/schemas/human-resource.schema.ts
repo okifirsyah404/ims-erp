@@ -8,8 +8,8 @@
  * `organization` schema (Q4). Money is bigint IDR minor units; business dates are
  * Jakarta `date` strings.
  *
- * The target-only table `employee_addresses` is defined in `docs.dbml` only
- * (Q22); `schedules` is built since ERP-0118.
+ * `schedules` is built since ERP-0118 and `employee_addresses` since ERP-0121;
+ * both were target-only before (Q22).
  */
 import {
 	unixTimestamp,
@@ -343,6 +343,42 @@ export const employeeTasks = humanResourceSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
+ * human_resource.employee_addresses (ERP-0121)
+ * ------------------------------------------------------------------------ */
+
+export const EMPLOYEE_ADDRESS_KINDS = ['residence', 'current', 'birth', 'other'] as const;
+export type EmployeeAddressKind = (typeof EMPLOYEE_ADDRESS_KINDS)[number];
+
+/**
+ * Address of an employee (ADR-0024 Q10 address contract: only `village_id`
+ * is stored; district, regency and province come from the location module).
+ * The residence address is entered on the invitation claim form.
+ */
+export const employeeAddresses = humanResourceSchema.table(
+	'employee_addresses',
+	{
+		id: id(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'restrict' }),
+		kind: text('kind').$type<EmployeeAddressKind>().notNull().default('residence'),
+		addressLine: text('address_line').notNull(),
+		/** Logical reference to location.villages.id — cross-module FK omitted. */
+		villageId: uuid('village_id'),
+		postalCode: varchar('postal_code', { length: 10 }),
+		isPrimary: boolean('is_primary').notNull().default(false),
+		...timestamps,
+	},
+	(table) => [
+		index('employee_addresses_employee_id_idx').on(table.employeeId),
+		uniqueIndex('employee_addresses_primary_uq')
+			.on(table.employeeId)
+			.where(sql`is_primary AND deleted_at IS NULL`),
+		check('employee_addresses_kind_check', sql`kind IN ('residence', 'current', 'birth', 'other')`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
  * human_resource.schedules (ERP-0118)
  * ------------------------------------------------------------------------ */
 
@@ -524,6 +560,8 @@ export type TOvertimeRequestSelect = typeof overtimeRequests.$inferSelect;
 export type TOvertimeRequestInsert = typeof overtimeRequests.$inferInsert;
 export type TEmployeeTaskSelect = typeof employeeTasks.$inferSelect;
 export type TScheduleSelect = typeof schedules.$inferSelect;
+export type TEmployeeAddressSelect = typeof employeeAddresses.$inferSelect;
+export type TEmployeeAddressInsert = typeof employeeAddresses.$inferInsert;
 export type TScheduleInsert = typeof schedules.$inferInsert;
 export type TEmployeeTaskInsert = typeof employeeTasks.$inferInsert;
 export type TEmployeeSalarySelect = typeof employeeSalaries.$inferSelect;

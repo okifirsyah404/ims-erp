@@ -12,6 +12,98 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0121: invite employment agreement, claim personal data, agreement PDF, employee documents (slice 5)
+
+**Scope** (grill-me Q6/Q11-Q14/Q19-Q21, recorded in the ERP-0117 entry below).
+
+**Facts found while building.** The claim flow has a single form; the "profile
+form after login" mentioned in `invitation.service.ts` comments never existed,
+so the personal data joined the one claim form. The location endpoints are
+public, so the village cascade works before the invitee has a session.
+
+**Design gate.** `docs.dbml` (Human Resource `employee_addresses`, target-only
+until now; Document `documents`/`files`), `module-ownership.md`,
+`logical-references.md` read first. Manual grill items: ownership (HR owns
+addresses; the document module owns registry rows and files and now opens
+drafts with `createDraft`), tenant scoping (documents copy the employee's
+`organization_id`; every HR document route checks the ERP-0034 scope and that
+the document belongs to that employee), soft delete (addresses; documents are
+voided, never deleted), types (`date` business dates; no money), cross-module
+contracts (`DocumentService` via `DOCUMENT_SERVICE_TOKEN`,
+`ExportedLocationService.assertVillage`/`resolveVillagePath`, the ERP-0034
+personal-fields port, `CompanyService.get` for the letterhead), status
+vocabulary (unchanged: agreement `draft` until signed).
+
+**docs.dbml + migration.** `employee_addresses`: no longer `status: target`,
+`updated_at` not null, partial unique `employee_addresses_primary_uq` (one live
+primary), ref to `employees` `delete: restrict`. Migration
+`20261123130505_erp0121_create_employee_addresses` (SQL inspected: one
+`CREATE TABLE`, two indexes, the restrict FK). `module-ownership.md` documents
+`createDraft`. `validate-dbml` `OK`.
+
+**Backend.**
+- Invite (`EmployeeInviteService`): after the employee insert, `ensureAgreement`
+  opens one draft `employment_agreement` ("Perjanjian Kerja - {name}",
+  `module = human_resource`, `source_type = employee`, the invite scope's
+  organization); a failure rolls the invite row back (Q12); a retried invite
+  re-checks it.
+- Claim: `claimInvitationSchema.personal` (16-digit NIK, birth place/date,
+  gender, residence address with village and 5-digit postal code required;
+  marital status optional). New user-module port `IInvitationClaimPort`
+  (`INVITATION_CLAIM_PORT_TOKEN`), implemented by HR `InvitationClaimAdapter`:
+  `recordPersonalData` runs before the credentials (village asserted first;
+  user personal fields, employee NIK, primary residence address) and
+  `afterClaim` queues the agreement PDF and never throws.
+- PDF: queue `employee-agreement-pdf` (3 attempts, exponential backoff, enqueue
+  never throws) + worker; `AgreementPdfService.render` opens
+  `/print/employment-agreements/:id?token=` in Chromium and attaches the PDF
+  with `DocumentService.attachGeneratedFileTo`; without Chromium or a render
+  base URL the job ends `skipped`. Public render data at
+  `/human-resources/public/v1/render/employment-agreements/:id?token=` (render
+  token only; no salary in it).
+- Documents tab: `GET|POST /human-resources/employees/:id/documents`, `POST
+  …/:documentId/files`, `GET …/files/:fileId/download`, `POST …/void`, `POST
+  …/regenerate-pdf` (`employee:read` / `employee:update`).
+- Document module: `createDraft` (code from the `document` series, status
+  `draft`), `listBySource`, `find`, `attachGeneratedFileTo`; repository
+  `listBySource`.
+- Seeder `hr-documents.seeder.ts`: a draft agreement for every seeded employee
+  (Q14, no backfill migration).
+
+**Web-admin.** Claim form gains the personal-data section
+(`claim-personal-fields.tsx`, helpers in `lib/claim-personal.ts`, the shared
+`LocationCascade`); print view `/print/employment-agreements/$documentId`
+(`employment-agreement-document.tsx`: letterhead, both parties, employment
+type, work location, start date, placeholder clauses for legal review, two
+signature blocks, no salary; Indonesian on purpose); Documents card on the
+employee page (add, create agreement when none, upload, download, void,
+regenerate PDF). en/id keys (`claim`, `hr`, `api`).
+
+**Commands and outcomes.**
+- `bunx --bun drizzle-kit generate --name erp0121_create_employee_addresses`;
+  `drizzle-kit check` - "Everything's fine".
+- Throwaway PostgreSQL (`ims_scratch`): migration applied (stale duplicate
+  supplier folder set aside for the run only, restored unchanged);
+  `\d human_resource.employee_addresses` shows both indexes, the CHECK and the
+  restrict FK; `EmployeeAddressRepository.savePrimaryResidence` twice - one
+  live primary (`Jl. B`), the first soft-deleted; seeder run 1: 29 draft
+  agreements (codes like `0001/DOC/DEV/XI/26`), run 2: 0.
+- `bun run test` (root) - 7/7: backend **1434 pass** (new
+  `hr-employee-document.service.test.ts` 6, two invite cases, claim-schema
+  case), web-admin 209, locales 106, customer-portal 68, landing 25,
+  react-email 6; 0 fail.
+- `bun run lint` - 0 errors (web-admin back to 18 warnings after moving the
+  claim helpers out of the component file).
+- `bun docs/gen-role-permission.ts` - 663 routes; `validate-dbml.ts` - `OK`.
+- Not verified: no Chromium render (no `PDF_CHROMIUM_PATH` here), no live claim
+  over HTTP, no browser walk-through.
+
+Next executable task: ERP-0122 (payslip PDF on payroll approval; also builds
+`ExportedFinanceService.findPrimaryEmployeeBankAccount`). Still open: the
+owner decision on the duplicate supplier migration folder; browser
+walk-throughs of slices 1-5; a real Chromium render of the agreement; legal
+review of the agreement clauses.
+
 ## 2026-11-23 - ERP-0120: payday setting and the daily payroll draft run (slice 4)
 
 **Scope** (grill-me Q17/Q18/Q28/Q31, recorded in the ERP-0117 entry below):
