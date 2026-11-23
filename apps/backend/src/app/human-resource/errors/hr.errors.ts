@@ -40,8 +40,9 @@ export class EmployeeInviteError extends AppError {
 
 /** The record does not exist. */
 export class HrNotFoundError extends AppError {
-	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary') {
+	constructor(kind: 'employee' | 'leaveType' | 'leave' | 'overtime' | 'task' | 'salary' | 'attendance') {
 		const messages = {
+			attendance: 'Attendance record not found',
 			employee: 'Employee not found',
 			leaveType: 'Leave type not found',
 			leave: 'Leave request not found',
@@ -77,9 +78,10 @@ export class LeaveInvalidError extends AppError {
 
 /** The request is not in the state the action needs. */
 export class RequestStateError extends AppError {
-	constructor(action: 'decide' | 'cancel') {
+	constructor(action: 'decide' | 'cancel' | 'edit') {
 		const messages = {
 			decide: 'Only a submitted request can be approved or rejected',
+			edit: 'Only a submitted request can be edited',
 			cancel: 'This request is already rejected or cancelled',
 		};
 		super(422, `hr.requestState.${action}` as const, messages[action]);
@@ -122,5 +124,16 @@ export class ImportFileError extends AppError {
 export class AttendanceTimeError extends AppError {
 	constructor() {
 		super(422, 'hr.attendanceTimes', 'The check-out time is before the check-in time');
+	}
+}
+
+/** A single attendance row cannot be written as asked. */
+export class AttendanceStateError extends AppError {
+	constructor(kind: 'leaveOwned' | 'duplicate') {
+		const messages = {
+			leaveOwned: 'This day was written by an approved leave request; cancel the leave instead',
+			duplicate: 'The employee already has an attendance record on this date',
+		};
+		super(kind === 'duplicate' ? 409 : 422, `hr.attendance.${kind}` as const, messages[kind]);
 	}
 }

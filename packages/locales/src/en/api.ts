@@ -449,6 +449,7 @@ const api = {
 	'hr.notFound.overtime': 'Overtime record not found',
 	'hr.notFound.task': 'Task not found',
 	'hr.notFound.salary': 'Salary summary not found',
+	'hr.notFound.attendance': 'Attendance record not found',
 	'hr.employeeState.inactive': 'The employee is inactive',
 	'hr.leave.dates': 'The end date is before the start date',
 	'hr.leave.noWorkingDays': 'The range has no working day (Sundays are not counted)',
@@ -457,6 +458,7 @@ const api = {
 	'hr.leave.quota': 'Not enough leave left this year: {{remaining}} day(s) left, {{requested}} requested',
 	'hr.requestState.decide': 'Only a submitted request can be approved or rejected',
 	'hr.requestState.cancel': 'This request is already rejected or cancelled',
+	'hr.requestState.edit': 'Only a submitted request can be edited',
 	'hr.selfDecision': 'Someone other than the person who recorded it must decide',
 	'hr.salary.locked': 'This salary summary is approved and locked',
 	'hr.salary.nothingToApprove': 'This period has no draft summary to approve',
@@ -466,6 +468,8 @@ const api = {
 	'hr.import.empty': 'The file has no data rows',
 	'hr.import.tooMany': 'The file has more than 2000 rows',
 	'hr.attendanceTimes': 'The check-out time is before the check-in time',
+	'hr.attendance.leaveOwned': 'This day was written by an approved leave request; cancel the leave instead',
+	'hr.attendance.duplicate': 'The employee already has an attendance record on this date',
 
 	// Tax (ERP-0016)
 	'accounting.taxTypeNotFound': 'Tax type not found',

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -11,6 +11,7 @@ import {
 	CardTitle,
 } from '@ims-erp/ui/components/card';
 import { Skeleton } from '@ims-erp/ui/components/skeleton';
+import { useConfirm } from '@/components/confirm-dialog';
 import { EmployeeRecordCards } from '@/components/hr/employee-records';
 import { toast } from '@/components/toast';
 import { archiveEmployee, employeeDetailQueryOptions } from '@/lib/hr-api';
@@ -27,6 +28,8 @@ function EmployeeDetailPage() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const canArchive = usePermission('employee.archive');
+	const canUpdate = usePermission('employee.update');
+	const confirm = useConfirm();
 
 	const { data: employee, isPending } = useQuery({
 		...employeeDetailQueryOptions(employeeId),
@@ -86,6 +89,16 @@ function EmployeeDetailPage() {
 						{employee.employeeCode}
 					</p>
 				</div>
+				<div className='flex items-center gap-2'>
+				{canUpdate && (
+					<Button
+						variant='outline'
+						size='sm'
+						render={<Link to='/hr/employees/$employeeId/edit' params={{ employeeId: employee.id }} />}
+					>
+						{t('hr:detail.edit')}
+					</Button>
+				)}
 				<Badge
 					variant={
 						employee.employmentStatus === 'active'
@@ -97,6 +110,7 @@ function EmployeeDetailPage() {
 				>
 					{t(`hr:status.${employee.employmentStatus}`)}
 				</Badge>
+				</div>
 			</div>
 			<Card>
 				<CardHeader>
@@ -118,7 +132,18 @@ function EmployeeDetailPage() {
 				<Button
 					variant='destructive'
 					disabled={archive.isPending}
-					onClick={() => archive.mutate()}
+					onClick={async () => {
+						if (
+							await confirm({
+								title: t('hr:list.archiveConfirm', { name: employee.fullName }),
+								description: t('hr:list.archiveConfirmDescription'),
+								confirmLabel: t('hr:list.archive'),
+								destructive: true,
+							})
+						) {
+							archive.mutate();
+						}
+					}}
 				>
 					{t('hr:list.archive')}
 				</Button>

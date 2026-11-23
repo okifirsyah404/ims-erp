@@ -12,6 +12,138 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0117: robust Human Resource module, slice 1 (nav + CRUD gaps)
+
+**Owner request** (grill-me, Q1-Q37 settled in session): rename the
+"HR & Attendance" sidenav to "Human Resource", give every HR page full CRUD,
+and attach an HR document to every invited user (organization and application
+scope). The design is split into six slices (ERP-0117..ERP-0122); this entry
+lands slice 1 and records every grilled answer for the later slices.
+
+**Grilled answers (recorded before coding, AGENTS.md gate 2).**
+- Nav (Q1/Q2/Q4/Q30): section `Human Resource` / `Sumber Daya Manusia`, flat
+  items (no collapsible parent; `/hr` redirects to `/hr/employees`), order
+  Employee, Tasks, Schedule, Attendance, Leave, Overtime, Payroll. Web URLs stay
+  `/hr/*`; backend stays `/human-resources/*`.
+- CRUD scope (Q5/Q15/Q30): Employee list/create/detail/edit/soft delete;
+  Tasks (`human_resource.employee_tasks`, kept for tasks outside projects -
+  project tasks stay in `project.tasks`, Q22 reversed by Q27/Q30) gets edit and
+  soft delete; Attendance gets a list view across dates with single-row CRUD
+  (day sheet and import kept); Leave/Overtime edit while `submitted`, "delete"
+  is `cancel`, no self-approval; Payroll page unchanged in this slice.
+- Schedule (Q9, ERP-0118): `schedules` table (target-only today) gets Drizzle +
+  migration; weekly grid employees x 7 days, CRUD per cell, bulk fill from a
+  pattern (default Mon-Sat 08:00-17:00, Sunday off) skipping filled cells; no
+  attendance comparison yet. New permission resource `schedule`
+  (read/create/update/delete) granted like `attendance` (Q10).
+- Salary (Q7/Q8/Q16, ERP-0119): no Salary/Salary History pages; the
+  effective-dated `employee_salaries` periods live in a "Gaji" tab of the
+  employee detail under `payroll.*`; a new period closes the previous one
+  (`effective_to` = start - 1 day), only the active period is editable, only the
+  latest can be deleted (reopening the previous), overlaps are 422; payroll
+  drafts read base/allowances from the active period. The bank columns leave
+  `employee_salaries`.
+- Employee bank accounts (Q23-Q26/Q29, ERP-0119): stored in the existing
+  `finance.cash_bank_accounts` with a new nullable `employee_id` (logical
+  reference, no FK); employee rows are `bank`/`ewallet`, zero balance, no
+  `invoice_usage`, code from the `cash_bank_account` series; several per
+  employee, one primary (partial unique; the company primary index is limited
+  to `employee_id IS NULL`); every existing treasury query filters
+  `employee_id IS NULL`. Endpoint `/finance/employee-bank-accounts` (finance
+  owns it, `payroll:read`/`payroll:update`, number masked without
+  `employee:read_private`); finance validates through
+  `ExportedEmployeeService.assertEmployee`, HR reads through
+  `ExportedFinanceService.findPrimaryEmployeeBankAccount`, both facades
+  repository-only. `/human-resources/employees/:id/bank-account` is removed; no
+  data migration (nothing deployed), the seeder moves; one migration per schema.
+- Payday cron (Q17/Q18/Q28/Q31, ERP-0120): `human_resource.settings`
+  `payroll.pay_day` (1-31, clamped to the month's last day), company-wide;
+  BullMQ job scheduler daily 01:00 Asia/Jakarta creates the month's draft
+  payroll on payday (idempotent, existing rows untouched) and notifies
+  `payroll.approve` holders in-app; approval stays manual; `overtime_pay` stays
+  0. Page `/settings/payroll` in the Settings sidenav, **application admins
+  only** (frontend and backend).
+- Invite document (Q6/Q11-Q14/Q19-Q21, ERP-0121): every invite (org + app
+  scope) also registers a draft `document.documents` row
+  (`employment_agreement`, "Perjanjian Kerja - {name}", `module =
+  human_resource`, `source_type = employee`, `organization_id` from the invite
+  scope, code from document numbering through a new contract method); a failure
+  rolls the whole invite row back. The claim form gains NIK, birth place/date,
+  gender, residence address (village + postal code; `employee_addresses` gets
+  Drizzle + migration) - required - and marital status (optional). After a
+  successful claim a port enqueues the HR queue `employee-agreement-pdf`; the
+  worker renders the agreement through `ChromiumPdfRenderer` (render-token
+  pattern) and attaches it with `attachGeneratedFile`; 3 retries, the claim never
+  fails because of the PDF, a "regenerate PDF" button covers a dead job. The PDF
+  has company and employee data, employment type, work type, start date and
+  signature blocks, no salary, placeholder clauses for owner review; the
+  document stays `draft` until signed. Employee detail gets a Documents tab
+  (upload, add `employment_agreement | id_card | tax_id | cv | certificate |
+  other`, void); no backfill - a "create agreement" button instead; the seeder
+  creates one for seeded employees.
+- Payslip (Q32-Q37, ERP-0122): on period approval, one PDF per employee via HR
+  queue `payslip-pdf` (3 retries, approval never fails on it), registered as an
+  `issued` `payslip` document (`source_type = employee_salary_record`) with the
+  file in `document.files`; content: letterhead, period, employee, the pay lines
+  and net pay in rupiah, masked target account, approval info, "generated
+  electronically" note. `payroll:read` downloads one or all (ZIP); an employee
+  with a login downloads only their own through `/users/me/payslips`
+  (ownership server-side); in-app notification only; no unlock flow
+  (corrections go to the next period).
+
+**Design gate.** `docs/database/docs.dbml` (Human Resource, Document, Finance
+`cash_bank_accounts`, Project `tasks`), `module-ownership.md` and
+`logical-references.md` were read for the design above. Slice 1 adds no table,
+column, index or status: `docs/database/` was reviewed and is unchanged;
+`bun docs/database/validate-dbml.ts` printed `OK` (0 drift).
+
+**Slice 1 - backend (`human-resource`).**
+- `DELETE /human-resources/employee-tasks/:id` (soft delete, `task:update`).
+- `PUT /human-resources/leave/:id` (`leave:create`) and
+  `PUT /human-resources/overtime/:id` (`overtime:create`): edit while
+  `submitted` (`hr.requestState.edit`, 422 otherwise); leave re-runs the
+  creation checks with the request itself left out of overlap and quota
+  (`ILeaveRepository.overlapping(..., excludeId)`).
+- `GET|POST /human-resources/attendances`, `PUT|DELETE
+  /human-resources/attendances/:id` (`attendance:read` / `attendance:record`):
+  paginated list (employee, date range, status), one row per employee per day
+  (`hr.attendance.duplicate`, 409), days written by an approved leave are
+  refused (`hr.attendance.leaveOwned`, 422), check-out before check-in 422.
+- `api` locale keys en + id; `locale-dead-keys.test.ts` declares the composed
+  `hr.attendance.` prefix.
+
+**Slice 1 - web-admin.** Flat Human Resource nav (`nav-config.ts`, crumbs,
+`/hr` redirect, `item.hr` key removed); employee edit page
+`/hr/employees/$employeeId/edit` (`employee-edit-form.tsx`) and an Edit button
+on the detail; archive asks for confirmation on the detail and the list;
+Tasks edit + delete; Leave/Overtime "Edit" action while submitted (shared
+`RequestActions` gains `canEdit`/`onEdit`); Attendance "List" view
+(`components/hr/attendance-list.tsx`) with add/edit/delete dialogs;
+`routeTree.gen.ts` regenerated by `vite build`.
+
+**Commands and outcomes (worktree `robust-hr-module-c97aa4`).**
+- `bun install` - 1249 packages installed (fresh worktree).
+- `cd apps/backend && bunx tsc --noEmit -p tsconfig.json` - clean.
+- `cd apps/backend && bun test` - first run 455 pass / 64 fail, all
+  `ZodError` on `app.name` because the worktree had no `apps/backend/.env`
+  (gitignored); after copying the local `.env`: **1406 pass, 0 fail**
+  (`hr-records.service.test.ts` 20: new leave/overtime edit, attendance row CRUD,
+  task delete cases).
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` - clean;
+  `bunx vite build` - built (route tree regenerated).
+- `bun run test` (root) - web-admin 209 pass, web-landing 25, web-customer-portal
+  68; `packages/locales` `bun test` **106 pass, 0 fail** after the prefix fix.
+- `bun run lint` - 0 errors (warnings only, pre-existing count range).
+- `bun docs/gen-role-permission.ts` - 643 routes written.
+- `bun docs/database/validate-dbml.ts` - `OK`.
+- Not verified: no live HTTP run against a database, no browser walk-through.
+
+Next executable task: ERP-0118 (Schedule: `docs.dbml` check, Drizzle schema +
+migration on a disposable database, `schedule` permission, weekly grid), then
+ERP-0119..ERP-0122 in order. A browser walk-through of the slice 1 pages
+(`/hr/employees/:id/edit`, Tasks edit/delete, Leave/Overtime edit, Attendance
+list) is still open.
+
 ## 2026-11-23 - ERP-0116: robust supplier master CRUD
 
 **Owner request** (grill-me, 4 decisions): make the supplier master robust —

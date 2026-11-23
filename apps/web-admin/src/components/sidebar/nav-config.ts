@@ -2,6 +2,8 @@ import {
 	Bell,
 	Boxes,
 	Building2,
+	CalendarCheck,
+	CalendarOff,
 	Calculator,
 	Contact,
 	CreditCard,
@@ -9,12 +11,13 @@ import {
 	FileSpreadsheet,
 	FileText,
 	Globe,
-	GraduationCap,
 	HandCoins,
 	Hash,
+	IdCard,
 	KeyRound,
 	LayoutDashboard,
 	LayoutTemplate,
+	ListTodo,
 	MessageSquare,
 	Package,
 	PenLine,
@@ -24,6 +27,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Ticket,
+	Timer,
 	Toolbox,
 	Truck,
 	Users,
@@ -382,47 +386,17 @@ export const navSections: {
 		],
 	},
 
-	// M08 — HR & Attendance.
+	// M08 — Human Resource: flat items (no collapsible parent, `/hr` redirects
+	// to the employee list).
 	{
 		labelKey: 'section.hr',
 		items: [
-			{
-				titleKey: 'item.hr',
-				url: '/hr',
-				icon: GraduationCap,
-				items: [
-					{
-						titleKey: 'item.employees',
-						url: '/hr/employees',
-						permission: 'employee.read',
-					},
-					{
-						titleKey: 'item.attendance',
-						url: '/hr/attendance',
-						permission: 'attendance.read',
-					},
-					{
-						titleKey: 'item.leave',
-						url: '/hr/leave',
-						permission: 'leave.read',
-					},
-					{
-						titleKey: 'item.overtime',
-						url: '/hr/overtime',
-						permission: 'overtime.read',
-					},
-					{
-						titleKey: 'item.payroll',
-						url: '/hr/payroll',
-						permission: 'payroll.read',
-					},
-					{
-						titleKey: 'item.hrTasks',
-						url: '/hr/tasks',
-						permission: 'task.read',
-					},
-				],
-			},
+			{ titleKey: 'item.employees', url: '/hr/employees', icon: IdCard, permission: 'employee.read' },
+			{ titleKey: 'item.hrTasks', url: '/hr/tasks', icon: ListTodo, permission: 'task.read' },
+			{ titleKey: 'item.attendance', url: '/hr/attendance', icon: CalendarCheck, permission: 'attendance.read' },
+			{ titleKey: 'item.leave', url: '/hr/leave', icon: CalendarOff, permission: 'leave.read' },
+			{ titleKey: 'item.overtime', url: '/hr/overtime', icon: Timer, permission: 'overtime.read' },
+			{ titleKey: 'item.payroll', url: '/hr/payroll', icon: Wallet, permission: 'payroll.read' },
 		],
 	},
 

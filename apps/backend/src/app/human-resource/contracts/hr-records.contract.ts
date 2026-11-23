@@ -52,6 +52,17 @@ export const attendanceDaySchema = z.object({
 });
 
 export const attendanceDayQuerySchema = z.object({ date: z.iso.date() });
+
+/** One attendance row entered on its own (the list view). */
+export const attendanceRecordSchema = attendanceEntrySchema.extend({ date: z.iso.date() });
+
+export const attendanceListQuerySchema = z.object({
+	...page,
+	employeeId: z.uuid().optional(),
+	from: z.iso.date().optional(),
+	to: z.iso.date().optional(),
+	status: z.enum(ATTENDANCE_STATUSES).optional(),
+});
 export const attendanceMonthQuerySchema = z.object({ period: periodSchema });
 
 // Leave and overtime -------------------------------------------------------
@@ -118,6 +129,8 @@ export const recordIdParamSchema = z.object({ id: z.uuid() });
 
 export type TEmployeeSalaryBody = z.output<typeof employeeSalarySchema>;
 export type TAttendanceEntry = z.output<typeof attendanceEntrySchema>;
+export type TAttendanceRecordBody = z.output<typeof attendanceRecordSchema>;
+export type TAttendanceListQuery = z.output<typeof attendanceListQuerySchema>;
 export type TLeaveBody = z.output<typeof leaveBodySchema>;
 export type TOvertimeBody = z.output<typeof overtimeBodySchema>;
 export type TRequestListQuery = z.output<typeof requestListQuerySchema>;

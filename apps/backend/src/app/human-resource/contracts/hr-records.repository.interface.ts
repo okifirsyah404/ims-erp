@@ -15,7 +15,7 @@ import type {
 } from '@drizzle/schemas/human-resource.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
-import type { TEmployeeSalaryBody, THrScope, TRequestListQuery, TTaskListQuery } from './hr-records.contract';
+import type { TAttendanceListQuery, TEmployeeSalaryBody, THrScope, TRequestListQuery, TTaskListQuery } from './hr-records.contract';
 
 type TNew<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>;
 
@@ -42,6 +42,14 @@ export interface IAttendanceRepository {
 	upsertMany(rows: TAttendanceUpsert[], tx?: TTx): Promise<number>;
 	/** Soft deletes the rows a leave request wrote. */
 	removeForLeave(leaveRequestId: string, tx: TTx): Promise<number>;
+	/** Live rows of the visible employees, newest date first. */
+	paginate(query: TAttendanceListQuery, scope: THrScope): Promise<TPaginationResult<TAttendanceSelect>>;
+	findById(id: string): Promise<TAttendanceSelect | null>;
+	/** The live row of an employee on a date, if any. */
+	findByDay(employeeId: string, date: string): Promise<TAttendanceSelect | null>;
+	insertOne(row: TAttendanceUpsert): Promise<TAttendanceSelect>;
+	updateOne(id: string, data: Partial<TAttendanceUpsert>): Promise<TAttendanceSelect | null>;
+	softDelete(id: string): Promise<boolean>;
 }
 
 /** Persistence port of leave types, leave requests and overtime. */
@@ -60,8 +68,8 @@ export interface ILeaveRepository {
 	): Promise<TLeaveRequestSelect | null>;
 	/** Days of submitted and approved requests of a type starting in a year. */
 	usedDays(employeeId: string, leaveTypeId: string, year: number, excludeId?: string): Promise<{ approved: number; pending: number }>;
-	/** Live submitted / approved requests of an employee overlapping a range. */
-	overlapping(employeeId: string, start: string, end: string): Promise<TLeaveRequestSelect[]>;
+	/** Live submitted / approved requests of an employee overlapping a range, other than `excludeId`. */
+	overlapping(employeeId: string, start: string, end: string, excludeId?: string): Promise<TLeaveRequestSelect[]>;
 
 	paginateOvertime(query: TRequestListQuery, scope: THrScope): Promise<TPaginationResult<TOvertimeRequestSelect>>;
 	findOvertime(id: string): Promise<TOvertimeRequestSelect | null>;
@@ -77,6 +85,7 @@ export interface ITaskRepository {
 	findById(id: string): Promise<TEmployeeTaskSelect | null>;
 	create(data: TNew<TEmployeeTaskInsert>): Promise<TEmployeeTaskSelect>;
 	update(id: string, data: Partial<TEmployeeTaskInsert>): Promise<TEmployeeTaskSelect | null>;
+	softDelete(id: string): Promise<boolean>;
 }
 
 /** Persistence port of `hr.salary_summaries`. */

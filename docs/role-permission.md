@@ -616,7 +616,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-636 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+643 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -819,6 +819,10 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | Method | Path | Guard | Requirement | Who |
 | --- | --- | --- | --- | --- |
 | GET | `/human-resources/active-employees` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
+| GET | `/human-resources/attendances` | org member + permission | `attendance:read` | `owner`, `admin`, `hr`, `auditor` |
+| POST | `/human-resources/attendances` | org member + permission | `attendance:record` | `owner`, `admin`, `hr` |
+| DELETE | `/human-resources/attendances/:id` | org member + permission | `attendance:record` | `owner`, `admin`, `hr` |
+| PUT | `/human-resources/attendances/:id` | org member + permission | `attendance:record` | `owner`, `admin`, `hr` |
 | GET | `/human-resources/attendances/day` | org member + permission | `attendance:read` | `owner`, `admin`, `hr`, `auditor` |
 | PUT | `/human-resources/attendances/day` | org member + permission | `attendance:record` | `owner`, `admin`, `hr` |
 | POST | `/human-resources/attendances/import` | org member + permission | `attendance:record` | `owner`, `admin`, `hr` |
@@ -829,6 +833,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/human-resources/code-numberings/:codeType/preview` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
 | GET | `/human-resources/employee-tasks` | org member + permission | `task:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer`, `hr`, `auditor` |
 | POST | `/human-resources/employee-tasks` | org member + permission | `task:create` | `owner`, `operations_manager`, `project_manager`, `hr` |
+| DELETE | `/human-resources/employee-tasks/:id` | org member + permission | `task:update` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer`, `hr` |
 | PUT | `/human-resources/employee-tasks/:id` | org member + permission | `task:update` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer`, `hr` |
 | POST | `/human-resources/employee-tasks/:id/status` | org member + permission | `task:update` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer`, `hr` |
 | GET | `/human-resources/employees` | org member + permission | `employee:read` | `owner`, `admin`, `operations_manager`, `finance`, `hr`, `auditor` |
@@ -842,12 +847,14 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/human-resources/leave` | org member + permission | `leave:read` | `owner`, `hr` |
 | POST | `/human-resources/leave` | org member + permission | `leave:create` | `owner`, `hr` |
 | GET | `/human-resources/leave-types` | org member + permission | `leave:read` | `owner`, `hr` |
+| PUT | `/human-resources/leave/:id` | org member + permission | `leave:create` | `owner`, `hr` |
 | POST | `/human-resources/leave/:id/approve` | org member + permission | `leave:approve` | `owner`, `hr` |
 | POST | `/human-resources/leave/:id/cancel` | org member + permission | `leave:cancel` | `owner`, `hr` |
 | POST | `/human-resources/leave/:id/reject` | org member + permission | `leave:reject` | `owner`, `hr` |
 | GET | `/human-resources/leave/balances` | org member + permission | `leave:read` | `owner`, `hr` |
 | GET | `/human-resources/overtime` | org member + permission | `overtime:read` | `owner`, `hr` |
 | POST | `/human-resources/overtime` | org member + permission | `overtime:create` | `owner`, `hr` |
+| PUT | `/human-resources/overtime/:id` | org member + permission | `overtime:create` | `owner`, `hr` |
 | POST | `/human-resources/overtime/:id/approve` | org member + permission | `overtime:approve` | `owner`, `hr` |
 | POST | `/human-resources/overtime/:id/cancel` | org member + permission | `overtime:cancel` | `owner`, `hr` |
 | POST | `/human-resources/overtime/:id/reject` | org member + permission | `overtime:reject` | `owner`, `hr` |

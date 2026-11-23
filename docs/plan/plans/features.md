@@ -794,7 +794,14 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `progress.md` 2026-11-06 (step 6c). Gaps: real-PG integration tests; SLA
   and escalation not decided.
 
-## M08 Employees and Attendance
+## M08 Employees and Attendance (sidenav: Human Resource)
+
+### implemented
+- ERP-0117 robust HR slice 1 (2026-11-23): flat "Human Resource" sidenav,
+  employee edit page + archive confirmation, task edit/soft delete,
+  leave/overtime edit while submitted, attendance list with single-row CRUD.
+  Evidence: `progress.md` 2026-11-23 (backend 1406 pass). No browser
+  walk-through yet.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -807,7 +814,15 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
+- Schedule (weekly grid) — ERP-0118.
+- Salary periods in the employee detail + employee bank accounts in finance —
+  ERP-0119.
+- Payday cron + `/settings/payroll` (app admin only) — ERP-0120.
+- Invite employment-agreement document, claim personal data, agreement PDF,
+  employee Documents tab — ERP-0121.
+- Payslip PDF on payroll approval — ERP-0122 (supersedes the payslip part of
+  ERP-0018).
+- Payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked
 - Automated payroll calculation — T19, ERP-0018. Needs component rules from

@@ -39,6 +39,9 @@ export type TAttendanceRecord = {
 	leaveRequestId: string | null;
 };
 export type TAttendanceDayRow = { employee: TPersonRef; record: TAttendanceRecord | null };
+/** One row of the attendance list view (across dates). */
+export type TAttendanceListRow = TAttendanceRecord & { id: string; employeeId: string; attendanceDate: string; employee: TPersonRef | null };
+export type TAttendanceRecordInput = TAttendanceEntry & { date: string };
 export type TAttendanceMonthRow = { employee: TPersonRef; counts: Record<TAttendanceStatus, number> };
 export type TAttendanceEntry = { employeeId: string; status: TAttendanceStatus; checkIn: string | null; checkOut: string | null; notes: string | null };
 
@@ -181,6 +184,12 @@ export const attendanceMonthQueryOptions = (period: string) =>
 export const saveAttendanceDay = (date: string, entries: TAttendanceEntry[]) =>
 	send<{ saved: number; skipped: number }>('/human-resources/attendances/day', 'PUT', { date, entries });
 export const importAttendance = (file: File) => upload('/human-resources/attendances/import', file);
+export const attendanceListQueryOptions = (params: { page?: number; employeeId?: string; from?: string; to?: string; status?: TAttendanceStatus }) =>
+	paginated<TAttendanceListRow>(['hr', 'attendance', 'list', params], `/human-resources/attendances${query(params)}`);
+export const createAttendance = (input: TAttendanceRecordInput) => send<TAttendanceListRow>('/human-resources/attendances', 'POST', input);
+export const updateAttendance = (id: string, input: TAttendanceRecordInput) =>
+	send<TAttendanceListRow>(`/human-resources/attendances/${id}`, 'PUT', input);
+export const removeAttendance = (id: string) => send<{ removed: true }>(`/human-resources/attendances/${id}`, 'DELETE');
 
 // Leave and overtime
 export const leaveTypesQueryOptions = () => single<TLeaveType[]>(['hr', 'leave-types'], '/human-resources/leave-types');
@@ -190,12 +199,16 @@ export const leaveBalancesQueryOptions = (employeeId: string, year: number) =>
 	single<TLeaveBalance[]>(['hr', 'leave', 'balances', employeeId, year], `/human-resources/leave/balances?employeeId=${employeeId}&year=${year}`, !!employeeId);
 export const createLeave = (input: { employeeId: string; leaveTypeId: string; startDate: string; endDate: string; reason: string | null }) =>
 	send<TLeaveRequest>('/human-resources/leave', 'POST', input);
+export const updateLeave = (id: string, input: { employeeId: string; leaveTypeId: string; startDate: string; endDate: string; reason: string | null }) =>
+	send<TLeaveRequest>(`/human-resources/leave/${id}`, 'PUT', input);
 export const decideLeave = (id: string, action: 'approve' | 'reject' | 'cancel', note: string | null) =>
 	send<TLeaveRequest>(`/human-resources/leave/${id}/${action}`, 'POST', { note });
 export const overtimeQueryOptions = (params: { page?: number; status?: TRequestStatus; period?: string }) =>
 	paginated<TOvertime>(['hr', 'overtime', params], `/human-resources/overtime${query(params)}`);
 export const createOvertime = (input: { employeeId: string; workDate: string; hours: number; reason: string | null }) =>
 	send<TOvertime>('/human-resources/overtime', 'POST', input);
+export const updateOvertime = (id: string, input: { employeeId: string; workDate: string; hours: number; reason: string | null }) =>
+	send<TOvertime>(`/human-resources/overtime/${id}`, 'PUT', input);
 export const decideOvertime = (id: string, action: 'approve' | 'reject' | 'cancel', note: string | null) =>
 	send<TOvertime>(`/human-resources/overtime/${id}/${action}`, 'POST', { note });
 
@@ -204,6 +217,9 @@ export const tasksQueryOptions = (params: { page?: number; status?: TTaskStatus;
 	paginated<TTask>(['hr', 'tasks', params], `/human-resources/employee-tasks${query(params)}`);
 export const createTask = (input: { employeeId: string; title: string; description: string | null; dueDate: string | null }) =>
 	send<TTask>('/human-resources/employee-tasks', 'POST', input);
+export const updateTask = (id: string, input: { employeeId: string; title: string; description: string | null; dueDate: string | null }) =>
+	send<TTask>(`/human-resources/employee-tasks/${id}`, 'PUT', input);
+export const removeTask = (id: string) => send<{ removed: true }>(`/human-resources/employee-tasks/${id}`, 'DELETE');
 export const setTaskStatus = (id: string, status: TTaskStatus) => send<TTask>(`/human-resources/employee-tasks/${id}/status`, 'POST', { status });
 
 // Salary summaries

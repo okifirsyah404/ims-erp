@@ -139,6 +139,7 @@ import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed
 import { Route as AuthedFinanceTaxRecordsIndexRouteImport } from './routes/_authed/finance/tax/records/index'
 import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
 import { Route as AuthedFinanceTaxWithholdingIndexRouteImport } from './routes/_authed/finance/tax/withholding/index'
+import { Route as AuthedHrEmployeesEmployeeIdEditRouteImport } from './routes/_authed/hr/employees/$employeeId_.edit'
 import { Route as AuthedInventoryComponentsProductIdIndexRouteImport } from './routes/_authed/inventory/components/$productId/index'
 import { Route as AuthedInventoryComponentsProductIdEditRouteImport } from './routes/_authed/inventory/components/$productId/edit'
 import { Route as AuthedInventoryMaterialsProductIdIndexRouteImport } from './routes/_authed/inventory/materials/$productId/index'
@@ -902,6 +903,12 @@ const AuthedFinanceTaxWithholdingIndexRoute =
     path: '/finance/tax/withholding/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedHrEmployeesEmployeeIdEditRoute =
+  AuthedHrEmployeesEmployeeIdEditRouteImport.update({
+    id: '/hr/employees/$employeeId_/edit',
+    path: '/hr/employees/$employeeId/edit',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedInventoryComponentsProductIdIndexRoute =
   AuthedInventoryComponentsProductIdIndexRouteImport.update({
     id: '/inventory/components/$productId/',
@@ -1199,6 +1206,7 @@ export interface FileRoutesByFullPath {
   '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
+  '/hr/employees/$employeeId/edit': typeof AuthedHrEmployeesEmployeeIdEditRoute
   '/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
   '/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -1359,6 +1367,7 @@ export interface FileRoutesByTo {
   '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys': typeof AuthedSubscriptionApiKeysIndexRoute
   '/subscription/applications': typeof AuthedSubscriptionApplicationsIndexRoute
+  '/hr/employees/$employeeId/edit': typeof AuthedHrEmployeesEmployeeIdEditRoute
   '/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
   '/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -1521,6 +1530,7 @@ export interface FileRoutesById {
   '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/_authed/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/_authed/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
+  '/_authed/hr/employees/$employeeId_/edit': typeof AuthedHrEmployeesEmployeeIdEditRoute
   '/_authed/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
   '/_authed/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -1683,6 +1693,7 @@ export interface FileRouteTypes {
     | '/subscription/activations/'
     | '/subscription/api-keys/'
     | '/subscription/applications/'
+    | '/hr/employees/$employeeId/edit'
     | '/inventory/components/$productId/edit'
     | '/inventory/materials/$productId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
@@ -1843,6 +1854,7 @@ export interface FileRouteTypes {
     | '/subscription/activations'
     | '/subscription/api-keys'
     | '/subscription/applications'
+    | '/hr/employees/$employeeId/edit'
     | '/inventory/components/$productId/edit'
     | '/inventory/materials/$productId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
@@ -2004,6 +2016,7 @@ export interface FileRouteTypes {
     | '/_authed/subscription/activations/'
     | '/_authed/subscription/api-keys/'
     | '/_authed/subscription/applications/'
+    | '/_authed/hr/employees/$employeeId_/edit'
     | '/_authed/inventory/components/$productId/edit'
     | '/_authed/inventory/materials/$productId/edit'
     | '/_authed/inventory/stock/adjustments/$adjustmentId'
@@ -2964,6 +2977,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceTaxWithholdingIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/hr/employees/$employeeId_/edit': {
+      id: '/_authed/hr/employees/$employeeId_/edit'
+      path: '/hr/employees/$employeeId/edit'
+      fullPath: '/hr/employees/$employeeId/edit'
+      preLoaderRoute: typeof AuthedHrEmployeesEmployeeIdEditRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/inventory/components/$productId/': {
       id: '/_authed/inventory/components/$productId/'
       path: '/inventory/components/$productId'
@@ -3330,6 +3350,7 @@ interface AuthedRouteChildren {
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
   AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
   AuthedSubscriptionApplicationsIndexRoute: typeof AuthedSubscriptionApplicationsIndexRoute
+  AuthedHrEmployeesEmployeeIdEditRoute: typeof AuthedHrEmployeesEmployeeIdEditRoute
   AuthedInventoryComponentsProductIdEditRoute: typeof AuthedInventoryComponentsProductIdEditRoute
   AuthedInventoryMaterialsProductIdEditRoute: typeof AuthedInventoryMaterialsProductIdEditRoute
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -3501,6 +3522,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSubscriptionApiKeysIndexRoute: AuthedSubscriptionApiKeysIndexRoute,
   AuthedSubscriptionApplicationsIndexRoute:
     AuthedSubscriptionApplicationsIndexRoute,
+  AuthedHrEmployeesEmployeeIdEditRoute: AuthedHrEmployeesEmployeeIdEditRoute,
   AuthedInventoryComponentsProductIdEditRoute:
     AuthedInventoryComponentsProductIdEditRoute,
   AuthedInventoryMaterialsProductIdEditRoute:

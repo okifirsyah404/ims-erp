@@ -17,14 +17,16 @@ import type {
 	TOvertimeRequestSelect,
 	TEmployeeSalaryRecordSelect,
 } from '@drizzle/schemas/human-resource.schema';
-import { leaveBodySchema, salaryBodySchema, type THrScope } from '../../src/app/human-resource/contracts/hr-records.contract';
+import { attendanceRecordSchema, leaveBodySchema, overtimeBodySchema, salaryBodySchema, type THrScope } from '../../src/app/human-resource/contracts/hr-records.contract';
 import type { IHrPeopleRepository, TAttendanceUpsert } from '../../src/app/human-resource/contracts/hr-records.repository.interface';
-import { EmployeeStateError, HrNotFoundError, LeaveInvalidError, SalaryStateError, SelfDecisionError } from '../../src/app/human-resource/errors/hr.errors';
+import { AttendanceStateError, AttendanceTimeError, EmployeeStateError, HrNotFoundError, LeaveInvalidError, RequestStateError, SalaryStateError, SelfDecisionError } from '../../src/app/human-resource/errors/hr.errors';
 import { AttendanceService } from '../../src/app/human-resource/services/attendance.service';
 import { EmployeeService } from '../../src/app/human-resource/services/employee.service';
 import { LeaveService } from '../../src/app/human-resource/services/leave.service';
 import { HrPeopleService, worksOn } from '../../src/app/human-resource/services/people.service';
 import { SalaryService } from '../../src/app/human-resource/services/salary.service';
+import { TaskService } from '../../src/app/human-resource/services/task.service';
+import type { TEmployeeTaskSelect } from '@drizzle/schemas/human-resource.schema';
 import { isBusinessDate, jakartaTime, leaveDates, maskTail, netPay, periodRange, previousPeriod, toJakartaTime } from '../../src/app/human-resource/utils/hr';
 
 const E1 = '0190a1b2-0000-7000-8000-0000000000e1';
@@ -119,9 +121,14 @@ function leaveService() {
 				const sum = (status: string) => rows.filter((row) => row.status === status).reduce((total, row) => total + row.days, 0);
 				return { approved: sum('approved'), pending: sum('submitted') };
 			},
-			overlapping: async (employeeId, start, end) =>
+			overlapping: async (employeeId, start, end, excludeId) =>
 				leaves.filter(
-					(row) => row.employeeId === employeeId && ['submitted', 'approved'].includes(row.status) && row.startDate <= end && row.endDate >= start,
+					(row) =>
+						row.employeeId === employeeId &&
+						row.id !== excludeId &&
+						['submitted', 'approved'].includes(row.status) &&
+						row.startDate <= end &&
+						row.endDate >= start,
 				),
 			paginateOvertime: async (_query, scoped) => {
 				const data = overtime.filter(inScope(scoped));
@@ -163,6 +170,26 @@ function attendanceService() {
 			listBetween: async (start, end) => attendance.filter((row) => row.attendanceDate >= start && row.attendanceDate <= end),
 			upsertMany: upsert,
 			removeForLeave: async () => 0,
+			paginate: async (_query, scoped) => {
+				const data = attendance.filter(inScope(scoped));
+				return { meta: { page: 1, limit: 20, total: data.length, totalPages: 1 }, data };
+			},
+			findById: async (id) => attendance.find((row) => row.id === id) ?? null,
+			findByDay: async (employeeId, date) => attendance.find((row) => row.employeeId === employeeId && row.attendanceDate === date) ?? null,
+			insertOne: async (row) => {
+				const created = { ...row, id: crypto.randomUUID() } as TAttendanceSelect;
+				attendance.push(created);
+				return created;
+			},
+			updateOne: async (id, data) => {
+				const row = attendance.find((item) => item.id === id);
+				return row ? Object.assign(row, data) : null;
+			},
+			softDelete: async (id) => {
+				const before = attendance.length;
+				attendance = attendance.filter((row) => row.id !== id);
+				return attendance.length < before;
+			},
 		},
 		people(),
 	);
@@ -380,6 +407,89 @@ describe('attendance', () => {
 		staff.push(person(crypto.randomUUID(), 'EMP-0001', { organizationId: null }));
 		const file = csv('absen.csv', 'kode;tanggal;status;masuk;pulang;catatan\nEMP-0001;2026-11-02;hadir;;;\n');
 		expect((await attendanceService().import(scope, 'hr', file)).errors).toEqual([{ row: 2, code: 'employeeAmbiguous', value: 'EMP-0001' }]);
+	});
+});
+
+describe('slice 1: editing records', () => {
+	test('a submitted leave can be edited (own row left out of overlap and quota); a decided one cannot', async () => {
+		const service = leaveService();
+		const created = await service.createLeave(
+			scope,
+			'hr',
+			leaveBodySchema.parse({ employeeId: E1, leaveTypeId: ANNUAL, startDate: '2026-11-09', endDate: '2026-11-20' }),
+		);
+		// 11 working days are used; widening its own range to the full 12-day quota must not trip overlap or quota on itself.
+		const edited = await service.updateLeave(
+			scope,
+			created.id,
+			leaveBodySchema.parse({ employeeId: E1, leaveTypeId: ANNUAL, startDate: '2026-11-09', endDate: '2026-11-21' }),
+		);
+		expect(edited.days).toBe(12);
+		await expect(
+			service.updateLeave(scope, created.id, leaveBodySchema.parse({ employeeId: E1, leaveTypeId: ANNUAL, startDate: '2026-11-09', endDate: '2026-11-25' })),
+		).rejects.toMatchObject({ key: 'hr.leave.quota' });
+		await service.approveLeave(scope, 'owner', created.id, null);
+		await expect(
+			service.updateLeave(scope, created.id, leaveBodySchema.parse({ employeeId: E1, leaveTypeId: SICK, startDate: '2026-11-09', endDate: '2026-11-09' })),
+		).rejects.toBeInstanceOf(RequestStateError);
+	});
+
+	test('a submitted overtime can be edited; an approved one cannot', async () => {
+		const service = leaveService();
+		const created = await service.createOvertime(scope, 'hr', overtimeBodySchema.parse({ employeeId: E1, workDate: '2026-11-09', hours: 2 }));
+		expect((await service.updateOvertime(scope, created.id, overtimeBodySchema.parse({ employeeId: E1, workDate: '2026-11-10', hours: 3.5 }))).hours).toBe('3.50');
+		await service.approveOvertime(scope, 'owner', created.id, null);
+		await expect(
+			service.updateOvertime(scope, created.id, overtimeBodySchema.parse({ employeeId: E1, workDate: '2026-11-10', hours: 1 })),
+		).rejects.toMatchObject({ key: 'hr.requestState.edit' });
+	});
+
+	test('attendance rows: create once per day, edit, delete; leave days stay with their leave', async () => {
+		const service = attendanceService();
+		const body = (extra: Record<string, unknown> = {}) =>
+			attendanceRecordSchema.parse({ employeeId: E1, date: '2026-11-09', status: 'present', checkIn: '08:00', checkOut: '17:00', ...extra });
+		const row = await service.create(scope, 'hr', body());
+		expect(row).toMatchObject({ attendanceDate: '2026-11-09', checkIn: '08:00', source: 'manual', employee: { employeeCode: 'EMP-0001' } });
+		await expect(service.create(scope, 'hr', body())).rejects.toBeInstanceOf(AttendanceStateError);
+		await expect(service.create(scope, 'hr', body({ date: '2026-11-10', checkIn: '18:00' }))).rejects.toBeInstanceOf(AttendanceTimeError);
+		await expect(service.create(scope, 'hr', body({ employeeId: E3 }))).rejects.toBeInstanceOf(HrNotFoundError);
+		expect((await service.update(scope, 'hr', row.id, body({ status: 'sick', checkIn: null, checkOut: null }))).status).toBe('sick');
+		expect((await service.list(scope, attendanceRecordSchema.partial().parse({}) as never)).data).toHaveLength(1);
+		expect(await service.remove(scope, row.id)).toEqual({ removed: true });
+		await expect(service.remove(scope, row.id)).rejects.toBeInstanceOf(HrNotFoundError);
+
+		attendance.push({ id: 'leave-day', employeeId: E1, attendanceDate: '2026-11-11', status: 'leave', source: 'leave', leaveRequestId: 'lv' } as TAttendanceSelect);
+		await expect(service.update(scope, 'hr', 'leave-day', body({ date: '2026-11-11' }))).rejects.toMatchObject({ key: 'hr.attendance.leaveOwned' });
+		await expect(service.remove(scope, 'leave-day')).rejects.toMatchObject({ key: 'hr.attendance.leaveOwned' });
+	});
+});
+
+describe('slice 1: tasks', () => {
+	test('a task is soft deleted once; tasks of employees outside the scope are not found', async () => {
+		let tasks: TEmployeeTaskSelect[] = [
+			{ id: 't1', employeeId: E1, title: 'A', status: 'open' } as TEmployeeTaskSelect,
+			{ id: 't3', employeeId: E3, title: 'B', status: 'open' } as TEmployeeTaskSelect,
+		];
+		const service = new TaskService(
+			{
+				paginate: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
+				findById: async (id) => tasks.find((row) => row.id === id) ?? null,
+				create: async () => {
+					throw new Error('unused');
+				},
+				update: async () => null,
+				softDelete: async (id) => {
+					const before = tasks.length;
+					tasks = tasks.filter((row) => row.id !== id);
+					return tasks.length < before;
+				},
+			},
+			people(),
+		);
+		expect(await service.remove(scope, 't1')).toEqual({ removed: true });
+		await expect(service.remove(scope, 't1')).rejects.toBeInstanceOf(HrNotFoundError);
+		await expect(service.remove(scope, 't3')).rejects.toBeInstanceOf(HrNotFoundError);
+		expect(tasks.map((row) => row.id)).toEqual(['t3']);
 	});
 });
 

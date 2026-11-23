@@ -24,6 +24,7 @@ import {
 import { Plus, Users } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	archiveEmployee,
@@ -77,6 +78,7 @@ export function EmployeeList() {
 		placeholderData: (previous) => previous,
 	});
 
+	const confirm = useConfirm();
 	const archive = useMutation({
 		mutationFn: (id: string) => archiveEmployee(id),
 		onSuccess: () => {
@@ -182,7 +184,18 @@ export function EmployeeList() {
 							key={employee.id}
 							employee={employee}
 							canArchive={canArchive}
-							onArchive={() => archive.mutate(employee.id)}
+							onArchive={async () => {
+								if (
+									await confirm({
+										title: t('hr:list.archiveConfirm', { name: employee.fullName }),
+										description: t('hr:list.archiveConfirmDescription'),
+										confirmLabel: t('hr:list.archive'),
+										destructive: true,
+									})
+								) {
+									archive.mutate(employee.id);
+								}
+							}}
 							archiving={archive.isPending && archive.variables === employee.id}
 						/>
 					))}

@@ -32,6 +32,7 @@ import {
 	REQUEST_STATUSES,
 	type TLeaveRequest,
 	type TRequestStatus,
+	updateLeave,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -57,6 +58,7 @@ function LeavePage() {
 		leaveRequestsQueryOptions({ page, status: status || undefined, period: period || undefined }),
 	);
 	const [recording, setRecording] = useState(false);
+	const [editing, setEditing] = useState<TLeaveRequest | null>(null);
 	const [busy, setBusy] = useState(false);
 
 	const act = useCallback(
@@ -136,13 +138,15 @@ function LeavePage() {
 						canApprove={canApprove}
 						canReject={canReject}
 						canCancel={canCancel}
+						canEdit={canCreate}
 						busy={busy}
 						onAction={(action) => void act(row.original.id, action)}
+						onEdit={() => setEditing(row.original)}
 					/>
 				),
 			},
 		],
-		[act, busy, canApprove, canCancel, canReject, i18n.language, t, userId],
+		[act, busy, canApprove, canCancel, canCreate, canReject, i18n.language, t, userId],
 	);
 
 	return (
@@ -199,19 +203,21 @@ function LeavePage() {
 				)}
 			</DataTableCard>
 			{recording && <RecordLeaveDialog onClose={() => setRecording(false)} />}
+			{editing && <RecordLeaveDialog key={editing.id} leave={editing} onClose={() => setEditing(null)} />}
 		</div>
 	);
 }
 
-function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
+/** Records a new leave request, or edits `leave` while it is submitted. */
+function RecordLeaveDialog({ leave, onClose }: { leave?: TLeaveRequest; onClose: () => void }) {
 	const { t } = useTranslation(['hr', 'common']);
 	const queryClient = useQueryClient();
 	const types = useQuery(leaveTypesQueryOptions());
-	const [employeeId, setEmployeeId] = useState('');
-	const [leaveTypeId, setLeaveTypeId] = useState('');
-	const [startDate, setStartDate] = useState(todayBusinessDate());
-	const [endDate, setEndDate] = useState(todayBusinessDate());
-	const [reason, setReason] = useState('');
+	const [employeeId, setEmployeeId] = useState(leave?.employeeId ?? '');
+	const [leaveTypeId, setLeaveTypeId] = useState(leave?.leaveType?.id ?? '');
+	const [startDate, setStartDate] = useState(leave?.startDate ?? todayBusinessDate());
+	const [endDate, setEndDate] = useState(leave?.endDate ?? todayBusinessDate());
+	const [reason, setReason] = useState(leave?.reason ?? '');
 	const [busy, setBusy] = useState(false);
 	const year = Number((startDate || todayBusinessDate()).slice(0, 4));
 	const balances = useQuery(leaveBalancesQueryOptions(employeeId, year));
@@ -226,9 +232,10 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 						event.preventDefault();
 						setBusy(true);
 						try {
-							await createLeave({ employeeId, leaveTypeId, startDate, endDate, reason: reason.trim() || null });
+							const input = { employeeId, leaveTypeId, startDate, endDate, reason: reason.trim() || null };
+							await (leave ? updateLeave(leave.id, input) : createLeave(input));
 							await queryClient.invalidateQueries({ queryKey: ['hr'] });
-							toast.success(t('hr:leave.created'));
+							toast.success(leave ? t('hr:request.updated') : t('hr:leave.created'));
 							onClose();
 						} catch (cause) {
 							toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
@@ -238,7 +245,7 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 					}}
 				>
 					<DialogHeader>
-						<DialogTitle>{t('hr:leave.new')}</DialogTitle>
+						<DialogTitle>{leave ? t('hr:leave.edit') : t('hr:leave.new')}</DialogTitle>
 					</DialogHeader>
 					<FieldGroup className='py-4'>
 						<Field>
@@ -291,7 +298,7 @@ function RecordLeaveDialog({ onClose }: { onClose: () => void }) {
 							{t('common:action.cancel')}
 						</Button>
 						<Button type='submit' disabled={busy || !employeeId || !leaveTypeId}>
-							{t('hr:leave.new')}
+							{leave ? t('common:action.save') : t('hr:leave.new')}
 						</Button>
 					</DialogFooter>
 				</form>
