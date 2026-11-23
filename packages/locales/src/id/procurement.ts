@@ -31,6 +31,8 @@ const procurement: Record<keyof typeof en, string> = {
 	'suppliers.deactivate': 'Nonaktifkan',
 	'suppliers.deactivated': 'Pemasok dinonaktifkan',
 	'suppliers.addresses': 'Alamat',
+	'suppliers.address': 'Alamat',
+	'suppliers.addressDescription': 'Lokasi pemasok; pemilih desa mengisi wilayahnya.',
 	'suppliers.addAddress': 'Tambah alamat',
 	'suppliers.noAddresses': 'Belum ada alamat.',
 	'suppliers.addressSaved': 'Alamat ditambahkan',

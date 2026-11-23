@@ -30,6 +30,8 @@ const procurement = {
 	'suppliers.deactivate': 'Deactivate',
 	'suppliers.deactivated': 'Supplier deactivated',
 	'suppliers.addresses': 'Addresses',
+	'suppliers.address': 'Address',
+	'suppliers.addressDescription': 'Where the supplier is; the village picker fills the region.',
 	'suppliers.addAddress': 'Add address',
 	'suppliers.noAddresses': 'No addresses yet.',
 	'suppliers.addressSaved': 'Address added',

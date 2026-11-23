@@ -71,9 +71,12 @@ calls). `/procurement/suppliers` follows `/admin/users`: URL-backed
 `validateSearch` (page/search/status/sortBy/sortDir), server sort headers with
 arrow icons, a `FiltersPopover` for status, `PaginationControls`, `RowActions`
 for activate/deactivate, and a count in the card header. The form dialog is
-grouped with the warehouse `FormSection` pattern (Company / Contact), the
-detail page has an Addresses card using the shared `LocationCascade`, and the
-WhatsApp/payment fields are gone.
+grouped with the warehouse `FormSection` pattern (Company / Contact / Address)
+and carries the location cascade inline, like the warehouse form: on create the
+address is posted right after the company, on edit the primary (else first)
+address is PATCHed, or created when the supplier had none. The detail page
+keeps its Addresses card for the extra rows. The WhatsApp/payment fields are
+gone.
 
 **Checks.**
 - `bunx tsc --noEmit` (backend): clean.
