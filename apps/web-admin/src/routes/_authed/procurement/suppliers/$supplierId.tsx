@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UserRound } from 'lucide-react';
+import { MapPin, UserRound } from 'lucide-react';
 
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PageSkeleton } from '@/components/page-skeleton';
@@ -21,22 +21,42 @@ import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import { Field, FieldGroup } from '@ims-erp/ui/components/field';
 import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@ims-erp/ui/components/select';
+import { Textarea } from '@ims-erp/ui/components/textarea';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
+import {
+	EMPTY_LOCATION_SELECTION,
+	LocationCascade,
+	type TLocationSelection,
+} from '@/components/inventory/location-cascade';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
 import { toast } from '@/components/toast';
 import {
+	createSupplierCompanyAddress,
 	createSupplierPerson,
+	removeSupplierCompanyAddress,
 	removeSupplierPerson,
 	setSupplierCompanyActive,
 	supplierCompanyQueryOptions,
 	updateSupplierCompany,
+	updateSupplierCompanyAddress,
+	type TSupplierCompanyAddress,
+	type TSupplierCompanyAddressInput,
 } from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
-import { CountryPhoneField } from '@/components/form/country-phone-field';
 
-/** `/procurement/suppliers/$supplierId` - one supplier company with its contact people. */
+/** `/procurement/suppliers/$supplierId` - one supplier company with its people and addresses. */
 export const Route = createFileRoute('/_authed/procurement/suppliers/$supplierId')({
 	component: SupplierDetailPage,
 });
+
+const COMPANY_ADDRESS_KINDS = ['office', 'factory', 'warehouse', 'billing', 'other'] as const;
 
 function Detail({ label, value }: { label: string; value: string | null | undefined }) {
 	return (
@@ -44,6 +64,119 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 			<div className='text-muted-foreground'>{label}</div>
 			<div className='whitespace-pre-line'>{value || '-'}</div>
 		</div>
+	);
+}
+
+/** Add-address dialog; only the village is stored, the server derives the rest. */
+function CompanyAddressDialog({
+	submitting,
+	onClose,
+	onSave,
+}: {
+	submitting: boolean;
+	onClose: () => void;
+	onSave: (values: TSupplierCompanyAddressInput) => void;
+}) {
+	const { t } = useTranslation(['procurement', 'common', 'warehouse']);
+	const [kind, setKind] = useState<TSupplierCompanyAddress['kind']>('office');
+	const [label, setLabel] = useState('');
+	const [contactName, setContactName] = useState('');
+	const [contactPhone, setContactPhone] = useState('');
+	const [addressLine, setAddressLine] = useState('');
+	const [postalCode, setPostalCode] = useState('');
+	const [isPrimary, setIsPrimary] = useState(false);
+	const [location, setLocation] = useState<TLocationSelection>(EMPTY_LOCATION_SELECTION);
+
+	return (
+		<Dialog open onOpenChange={(open) => !open && onClose()}>
+			<DialogContent className='sm:max-w-xl'>
+				<form
+					onSubmit={(event) => {
+						event.preventDefault();
+						onSave({
+							kind,
+							label: label.trim() || null,
+							contactName: contactName.trim() || null,
+							contactPhone: contactPhone.trim() || null,
+							addressLine: addressLine.trim(),
+							villageId: location.villageId,
+							postalCode: postalCode.trim() || null,
+							isPrimary,
+						});
+					}}
+				>
+					<DialogHeader>
+						<DialogTitle>{t('procurement:suppliers.addAddress')}</DialogTitle>
+					</DialogHeader>
+					<FieldGroup className='py-4'>
+						<div className='grid gap-4 sm:grid-cols-2'>
+							<Field>
+								<FieldLabel htmlFor='supplier-address-kind'>{t('procurement:supplier.addressKind')}</FieldLabel>
+								<Select value={kind} onValueChange={(value: string | null) => setKind((value ?? 'office') as TSupplierCompanyAddress['kind'])}>
+									<SelectTrigger id='supplier-address-kind' className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{COMPANY_ADDRESS_KINDS.map((value) => (
+											<SelectItem key={value} value={value}>
+												{t(`procurement:addressKind.${value}`)}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='supplier-address-label' optional>{t('procurement:supplier.addressLabel')}</FieldLabel>
+								<Input id='supplier-address-label' maxLength={100} value={label} onChange={(event) => setLabel(event.target.value)} />
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='supplier-address-contact' optional>{t('procurement:supplier.addressContactName')}</FieldLabel>
+								<Input id='supplier-address-contact' maxLength={200} value={contactName} onChange={(event) => setContactName(event.target.value)} />
+							</Field>
+							<Field>
+								<FieldLabel htmlFor='supplier-address-phone' optional>{t('procurement:supplier.addressContactPhone')}</FieldLabel>
+								<Input id='supplier-address-phone' type='tel' maxLength={30} value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} />
+							</Field>
+						</div>
+						<Field>
+							<FieldLabel htmlFor='supplier-address-line'>{t('procurement:supplier.addressLine')}</FieldLabel>
+							<Textarea
+								id='supplier-address-line'
+								required
+								rows={2}
+								maxLength={500}
+								value={addressLine}
+								onChange={(event) => setAddressLine(event.target.value)}
+							/>
+						</Field>
+						<LocationCascade value={location} initialVillageId={null} onChange={setLocation} />
+						<Field className='sm:max-w-48'>
+							<FieldLabel htmlFor='supplier-address-postal' optional>{t('procurement:supplier.postalCode')}</FieldLabel>
+							<Input
+								id='supplier-address-postal'
+								inputMode='numeric'
+								pattern='[0-9]*'
+								maxLength={10}
+								value={postalCode}
+								onChange={(event) => setPostalCode(event.target.value)}
+							/>
+						</Field>
+						<Field orientation='horizontal'>
+							<Checkbox id='supplier-address-primary' checked={isPrimary} onCheckedChange={(checked) => setIsPrimary(checked === true)} />
+							<FieldLabel htmlFor='supplier-address-primary'>{t('procurement:supplier.addressPrimary')}</FieldLabel>
+						</Field>
+					</FieldGroup>
+					<DialogFooter>
+						<Button type='button' variant='outline' onClick={onClose}>
+							{t('common:action.cancel')}
+						</Button>
+						<Button type='submit' disabled={submitting}>
+							{t('common:action.save')}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -125,6 +258,7 @@ function SupplierDetailPage() {
 	const canSeeBank = usePermission('supplier.read_bank');
 	const [editing, setEditing] = useState(false);
 	const [addingPerson, setAddingPerson] = useState(false);
+	const [addingAddress, setAddingAddress] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(supplierCompanyQueryOptions(supplierId));
 
@@ -136,6 +270,7 @@ function SupplierDetailPage() {
 			toast.success(message);
 			setEditing(false);
 			setAddingPerson(false);
+			setAddingAddress(false);
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
 		} finally {
@@ -191,26 +326,72 @@ function SupplierDetailPage() {
 						<Detail label={t('procurement:supplier.legalName')} value={data.legalName} />
 						<Detail label={t('procurement:supplier.taxId')} value={data.taxId} />
 						<Detail label={t('procurement:supplier.website')} value={data.website} />
-						<Detail label={t('procurement:supplier.email')} value={data.email} />
-						<Detail label={t('procurement:supplier.phone')} value={data.phone} />
 					</CardContent>
 				</Card>
 				<Card>
 					<CardHeader>
-						<CardTitle>{t('procurement:suppliers.purchasing')}</CardTitle>
+						<CardTitle>{t('procurement:suppliers.contact')}</CardTitle>
 					</CardHeader>
 					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
-						<Detail label={t('procurement:supplier.paymentTermsDays')} value={String(data.paymentTermsDays)} />
-						<Detail label={t('procurement:supplier.paymentTermNote')} value={data.paymentTermNote} />
+						<Detail label={t('procurement:supplier.email')} value={data.email} />
+						<Detail label={t('procurement:supplier.phone')} value={data.phone} />
 						{canSeeBank && (
 							<Detail
 								label={t('procurement:suppliers.bank')}
 								value={[data.bankName, data.bankAccountNumber, data.bankAccountHolder].filter(Boolean).join(' · ')}
 							/>
 						)}
+						<Detail label={t('procurement:supplier.notes')} value={data.notes} />
 					</CardContent>
 				</Card>
 			</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('procurement:suppliers.addresses')}</CardTitle>
+					{canUpdate && (
+						<CardAction>
+							<Button variant='outline' size='sm' onClick={() => setAddingAddress(true)}>
+								{t('procurement:suppliers.addAddress')}
+							</Button>
+						</CardAction>
+					)}
+				</CardHeader>
+				<CardContent className='flex flex-col gap-3 text-sm'>
+					{data.addresses.length === 0 && (
+						<EmptyState icon={MapPin} title={t('procurement:suppliers.noAddresses')} size='sm' />
+					)}
+					{data.addresses.map((address) => (
+						<div key={address.id} className='flex flex-wrap items-center justify-between gap-2 rounded-md border p-3'>
+							<div>
+								<div className='font-medium'>
+									{t(`procurement:addressKind.${address.kind}`)}
+									{address.label ? ` · ${address.label}` : ''}{' '}
+									{address.isPrimary && <Badge variant='secondary'>{t('procurement:suppliers.primary')}</Badge>}
+								</div>
+								<div className='text-muted-foreground'>{address.addressLine}</div>
+								<div className='text-xs text-muted-foreground'>
+									{[address.contactName, address.contactPhone, address.postalCode].filter(Boolean).join(' · ')}
+								</div>
+							</div>
+							{canUpdate && (
+								<Button
+									variant='ghost'
+									size='sm'
+									disabled={busy}
+									onClick={() =>
+										void run(
+											() => removeSupplierCompanyAddress(supplierId, address.id),
+											t('procurement:suppliers.addressRemoved'),
+										)
+									}
+								>
+									{t('common:action.delete')}
+								</Button>
+							)}
+						</div>
+					))}
+				</CardContent>
+			</Card>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('procurement:suppliers.people')}</CardTitle>
@@ -254,7 +435,26 @@ function SupplierDetailPage() {
 					canSeeBank={canSeeBank}
 					submitting={busy}
 					onClose={() => setEditing(false)}
-					onSave={(input) => void run(() => updateSupplierCompany(supplierId, input), t('procurement:suppliers.saved'))}
+					onSave={(input, address) =>
+						void run(async () => {
+							await updateSupplierCompany(supplierId, input);
+							if (!address) return;
+							if (address.id) {
+								await updateSupplierCompanyAddress(supplierId, address.id, address.values);
+							} else {
+								await createSupplierCompanyAddress(supplierId, address.values);
+							}
+						}, t('procurement:suppliers.saved'))
+					}
+				/>
+			)}
+			{addingAddress && (
+				<CompanyAddressDialog
+					submitting={busy}
+					onClose={() => setAddingAddress(false)}
+					onSave={(values) =>
+						void run(() => createSupplierCompanyAddress(supplierId, values), t('procurement:suppliers.addressSaved'))
+					}
 				/>
 			)}
 			{addingPerson && (
@@ -262,7 +462,7 @@ function SupplierDetailPage() {
 					submitting={busy}
 					onClose={() => setAddingPerson(false)}
 					onSave={(input) =>
-						void run(() => createSupplierPerson({ ...input, companyId: supplierId, whatsapp: null }), t('procurement:suppliers.personSaved'))
+						void run(() => createSupplierPerson({ ...input, companyId: supplierId }), t('procurement:suppliers.personSaved'))
 					}
 				/>
 			)}

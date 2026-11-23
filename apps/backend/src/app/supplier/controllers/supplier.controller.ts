@@ -8,12 +8,17 @@ import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
 import { SUPPLIER_SERVICE_TOKEN } from '../constants/di';
 import {
+	supplierAddressParamSchema,
+	supplierAddressSchema,
+	supplierCompanyAddressSchema,
 	supplierCompanyCreateSchema,
 	supplierCompanyListQuerySchema,
 	supplierCompanyUpdateSchema,
 	supplierCreateSchema,
 	supplierListQuerySchema,
 	supplierUpdateSchema,
+	updateSupplierAddressSchema,
+	updateSupplierCompanyAddressSchema,
 } from '../contracts/supplier.contract';
 import { uuidParamSchema } from '../contracts/params.schema';
 import { SupplierBankForbiddenError } from '../errors/supplier.errors';
@@ -176,6 +181,100 @@ export class SupplierController {
 				{
 					erp: { permission: ['supplier:update'] },
 					detail: { description: 'Removes a supplier person (soft delete)' },
+				},
+			)
+			// Company addresses -------------------------------------------------
+			.post(
+				'/companies/:id/addresses',
+				async ({ params, body, status }) =>
+					status(
+						201,
+						created(
+							await service.addCompanyAddress(
+								uuidParamSchema.parse(params).id,
+								supplierCompanyAddressSchema.parse(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Adds a supplier company address' },
+				},
+			)
+			.patch(
+				'/companies/:id/addresses/:addressId',
+				async ({ params, body }) => {
+					const { id, addressId } = supplierAddressParamSchema.parse(params);
+					return ok(
+						await service.updateCompanyAddress(
+							id,
+							addressId,
+							updateSupplierCompanyAddressSchema.parse(body),
+						),
+					);
+				},
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Updates a supplier company address' },
+				},
+			)
+			.delete(
+				'/companies/:id/addresses/:addressId',
+				async ({ params }) => {
+					const { id, addressId } = supplierAddressParamSchema.parse(params);
+					await service.removeCompanyAddress(id, addressId);
+					return noContent();
+				},
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Removes a supplier company address (soft delete)' },
+				},
+			)
+			// Person addresses ---------------------------------------------------
+			.post(
+				'/people/:id/addresses',
+				async ({ params, body, status }) =>
+					status(
+						201,
+						created(
+							await service.addPersonAddress(
+								uuidParamSchema.parse(params).id,
+								supplierAddressSchema.parse(body),
+							),
+						),
+					),
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Adds a supplier person address' },
+				},
+			)
+			.patch(
+				'/people/:id/addresses/:addressId',
+				async ({ params, body }) => {
+					const { id, addressId } = supplierAddressParamSchema.parse(params);
+					return ok(
+						await service.updatePersonAddress(
+							id,
+							addressId,
+							updateSupplierAddressSchema.parse(body),
+						),
+					);
+				},
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Updates a supplier person address' },
+				},
+			)
+			.delete(
+				'/people/:id/addresses/:addressId',
+				async ({ params }) => {
+					const { id, addressId } = supplierAddressParamSchema.parse(params);
+					await service.removePersonAddress(id, addressId);
+					return noContent();
+				},
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Removes a supplier person address (soft delete)' },
 				},
 			);
 	}

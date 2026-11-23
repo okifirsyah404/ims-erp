@@ -834,10 +834,7 @@ Table supplier.companies {
   tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
   phone varchar(30)
-  whatsapp varchar(30)
   website varchar(200)
-  payment_terms_days integer [not null, default: 0]
-  payment_term_note varchar(300) [note: "Default payment line of new purchase orders."]
   bank_name text
   bank_account_number text
   bank_account_holder text
@@ -847,7 +844,7 @@ Table supplier.companies {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
+  Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). ERP-0116 dropped whatsapp (contacts live on the PIC and the purchase order) and payment_terms_days/payment_term_note (payment terms belong to the purchase order, ERP-0116). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
   Indexes {
     name [name: 'supplier_companies_name_idx']
     status [name: 'supplier_companies_status_idx']
@@ -856,7 +853,6 @@ Table supplier.companies {
   Checks {
     `supplier_type IN ('company', 'government')`
     `status IN ('active', 'inactive')`
-    `payment_terms_days >= 0`
   }
 }
 
@@ -867,7 +863,6 @@ Table supplier.suppliers {
   title varchar(100) [note: "Job title, printed on purchase orders."]
   phone varchar(30)
   email text
-  whatsapp varchar(30)
   is_primary boolean [not null, default: false, note: "The supplier-side person in charge printed on purchase orders; at most one live row per company."]
   status text [not null, default: 'active']
   notes text
@@ -875,7 +870,7 @@ Table supplier.suppliers {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17)."
+  Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17). ERP-0116 dropped whatsapp (the PIC address block carries the phone)."
   Indexes {
     company_id [name: 'suppliers_company_id_idx']
     status [name: 'suppliers_status_idx']

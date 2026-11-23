@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@ims-erp/ui/components/button';
+import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription } from '@ims-erp/ui/components/field';
 import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
@@ -18,15 +19,23 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
+import { Separator } from '@ims-erp/ui/components/separator';
 import { Textarea } from '@ims-erp/ui/components/textarea';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
+import {
+	EMPTY_LOCATION_SELECTION,
+	LocationCascade,
+	type TLocationSelection,
+} from '@/components/inventory/location-cascade';
 import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import {
 	SUPPLIER_TYPES,
-	type TSupplierCompany,
+	type TSupplierCompanyAddress,
+	type TSupplierCompanyAddressInput,
+	type TSupplierCompanyDetail,
 	type TSupplierCompanyInput,
 	type TSupplierType,
 } from '@/lib/supplier-api';
-import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 type TTextField =
 	| 'code'
@@ -35,23 +44,57 @@ type TTextField =
 	| 'taxId'
 	| 'email'
 	| 'phone'
-	| 'whatsapp'
 	| 'website'
-	| 'paymentTermNote'
 	| 'bankName'
 	| 'bankAccountNumber'
 	| 'bankAccountHolder'
 	| 'notes';
 
 const TEXT_KEYS: TTextField[] = [
-	'code', 'name', 'legalName', 'taxId', 'email', 'phone', 'whatsapp', 'website', 'paymentTermNote',
+	'code', 'name', 'legalName', 'taxId', 'email', 'phone', 'website',
 	'bankName', 'bankAccountNumber', 'bankAccountHolder', 'notes',
 ];
 
+const COMPANY_ADDRESS_KINDS = ['office', 'factory', 'warehouse', 'billing', 'other'] as const;
+
+/** Address picked in the form: `id` is the existing row when editing. */
+export type TSupplierAddressDraft = {
+	id: string | null;
+	values: TSupplierCompanyAddressInput;
+};
+
+/** One titled form section (the warehouse form's `FormSection` pattern). */
+function FormSection({
+	title,
+	description,
+	children,
+}: {
+	title: string;
+	description: string;
+	children: React.ReactNode;
+}) {
+	return (
+		<section className='flex flex-col gap-3'>
+			<div>
+				<h3 className='text-sm font-medium'>{title}</h3>
+				<p className='text-xs text-muted-foreground'>{description}</p>
+			</div>
+			<div className='grid gap-4 sm:grid-cols-2'>{children}</div>
+		</section>
+	);
+}
+
 /**
- * Create/edit dialog for a supplier company. Bank fields are only shown to
- * callers holding `supplier:read_bank` (UX only; the server is authoritative),
- * and are not sent otherwise, so nothing is blanked.
+ * Create/edit dialog for a supplier company, grouped like the warehouse form.
+ *
+ * @remarks
+ * Bank fields are only shown to callers holding `supplier:read_bank` (UX only;
+ * the server is authoritative) and are not sent otherwise, so nothing is
+ * blanked. The address section edits the primary (else first) company address
+ * inline, like the warehouse form: the caller persists it through the address
+ * endpoints after the company write, because addresses are a collection.
+ * Phone is E.164 through the shared `CountryPhoneField`. WhatsApp and payment
+ * terms are gone (ERP-0116).
  */
 export function SupplierFormDialog({
 	supplier,
@@ -60,30 +103,46 @@ export function SupplierFormDialog({
 	onClose,
 	onSave,
 }: {
-	supplier: TSupplierCompany | null;
+	supplier: TSupplierCompanyDetail | null;
 	canSeeBank: boolean;
 	submitting: boolean;
 	onClose: () => void;
-	onSave: (input: Partial<TSupplierCompanyInput>) => void;
+	/** `address` is `null` when the section was left empty. */
+	onSave: (
+		input: Partial<TSupplierCompanyInput>,
+		address: TSupplierAddressDraft | null,
+	) => void;
 }) {
 	const { t } = useTranslation(['procurement', 'common']);
 	const [supplierType, setSupplierType] = useState<TSupplierType>(supplier?.supplierType ?? 'company');
-	const [days, setDays] = useState(String(supplier?.paymentTermsDays ?? 0));
 	const [values, setValues] = useState<Record<TTextField, string>>(
 		() => Object.fromEntries(TEXT_KEYS.map((key) => [key, supplier?.[key] ?? ''])) as Record<TTextField, string>,
 	);
+
+	// The address section edits one address: the primary, else the first.
+	const existingAddress: TSupplierCompanyAddress | null =
+		supplier?.addresses.find((row) => row.isPrimary) ?? supplier?.addresses[0] ?? null;
+	const [addressKind, setAddressKind] = useState<TSupplierCompanyAddress['kind']>(
+		existingAddress?.kind ?? 'office',
+	);
+	const [addressLabel, setAddressLabel] = useState(existingAddress?.label ?? '');
+	const [addressLine, setAddressLine] = useState(existingAddress?.addressLine ?? '');
+	const [postalCode, setPostalCode] = useState(existingAddress?.postalCode ?? '');
+	const [isPrimary, setIsPrimary] = useState(existingAddress?.isPrimary ?? true);
+	const [location, setLocation] = useState<TLocationSelection>(EMPTY_LOCATION_SELECTION);
 
 	const field = (key: TTextField, props: React.ComponentProps<typeof Input> = {}, hint?: string) => (
 		<Field>
 			<FieldLabel htmlFor={`supplier-${key}`} optional={!props.required}>
 				{t(`procurement:supplier.${key}`)}
 			</FieldLabel>
-			{key === 'phone' || key === 'whatsapp' ? (
-				// E.164 like every phone of the ERP (ERP-0114).
+			{key === 'phone' ? (
+				// E.164 like every phone of the ERP (ERP-0116).
 				<CountryPhoneField
 					id={`supplier-${key}`}
 					defaultValue={supplier?.[key]}
 					required={false}
+					disabled={submitting}
 					onChange={(value) => setValues((current) => ({ ...current, [key]: value }))}
 				/>
 			) : (
@@ -102,6 +161,7 @@ export function SupplierFormDialog({
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
 			<ScrollDialogContent className='sm:max-w-3xl'>
 				<form
+					className='flex flex-col gap-5'
 					onSubmit={(event) => {
 						event.preventDefault();
 						const text = (value: string) => value.trim() || null;
@@ -110,20 +170,38 @@ export function SupplierFormDialog({
 							code: values.code.trim() || undefined,
 							name: values.name.trim(),
 							supplierType,
-							paymentTermsDays: Number(days || '0'),
 						};
 						for (const key of TEXT_KEYS) {
 							if (key === 'code' || key === 'name') continue;
 							if (!canSeeBank && key.startsWith('bank')) continue;
 							(input as Record<string, unknown>)[key] = text(values[key]);
 						}
-						onSave(input);
+						// An empty street leaves the address alone (no write at all).
+						const address: TSupplierAddressDraft | null = addressLine.trim()
+							? {
+									id: existingAddress?.id ?? null,
+									values: {
+										kind: addressKind,
+										label: addressLabel.trim() || null,
+										contactName: existingAddress?.contactName ?? null,
+										contactPhone: existingAddress?.contactPhone ?? null,
+										addressLine: addressLine.trim(),
+										villageId: location.villageId ?? existingAddress?.villageId ?? null,
+										postalCode: postalCode.trim() || null,
+										isPrimary,
+									},
+								}
+							: null;
+						onSave(input, address);
 					}}
 				>
 					<DialogHeader>
 						<DialogTitle>{supplier ? t('procurement:suppliers.edit') : t('procurement:suppliers.new')}</DialogTitle>
 					</DialogHeader>
-					<FieldGroup className='grid gap-4 py-4 sm:grid-cols-2'>
+					<FormSection
+						title={t('procurement:suppliers.identity')}
+						description={t('procurement:suppliers.identityDescription')}
+					>
 						{field(
 							'code',
 							{ required: !!supplier, maxLength: 32, minLength: 2, pattern: '[A-Za-z0-9]+', className: 'uppercase' },
@@ -151,22 +229,14 @@ export function SupplierFormDialog({
 						{field('legalName', { maxLength: 200 })}
 						{field('taxId', { inputMode: 'numeric', maxLength: 16 })}
 						{field('website', { type: 'url', maxLength: 200, placeholder: 'https://' })}
+					</FormSection>
+					<Separator />
+					<FormSection
+						title={t('procurement:suppliers.contact')}
+						description={t('procurement:suppliers.contactDescription')}
+					>
 						{field('email', { type: 'email', maxLength: 254 })}
 						{field('phone')}
-						{field('whatsapp')}
-						<Field>
-							<FieldLabel htmlFor='supplier-days' optional>{t('procurement:supplier.paymentTermsDays')}</FieldLabel>
-							<Input
-								id='supplier-days'
-								type='number'
-								min='0'
-								max='365'
-								step='1'
-								value={days}
-								onChange={(event) => setDays(event.target.value)}
-							/>
-						</Field>
-						{field('paymentTermNote', { maxLength: 300 }, t('procurement:supplier.paymentTermNoteHint'))}
 						{canSeeBank && (
 							<>
 								{field('bankName', { maxLength: 200 })}
@@ -175,7 +245,9 @@ export function SupplierFormDialog({
 							</>
 						)}
 						<Field className='sm:col-span-2'>
-							<FieldLabel htmlFor='supplier-notes' optional>{t('procurement:supplier.notes')}</FieldLabel>
+							<FieldLabel htmlFor='supplier-notes' optional>
+								{t('procurement:supplier.notes')}
+							</FieldLabel>
 							<Textarea
 								id='supplier-notes'
 								rows={2}
@@ -184,7 +256,84 @@ export function SupplierFormDialog({
 								onChange={(event) => setValues((current) => ({ ...current, notes: event.target.value }))}
 							/>
 						</Field>
-					</FieldGroup>
+					</FormSection>
+					<Separator />
+					<FormSection
+						title={t('procurement:suppliers.address')}
+						description={t('procurement:suppliers.addressDescription')}
+					>
+						<Field>
+							<FieldLabel htmlFor='supplier-address-kind'>{t('procurement:supplier.addressKind')}</FieldLabel>
+							<Select
+								value={addressKind}
+								onValueChange={(value: string | null) =>
+									setAddressKind((value ?? 'office') as TSupplierCompanyAddress['kind'])
+								}
+							>
+								<SelectTrigger id='supplier-address-kind' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{COMPANY_ADDRESS_KINDS.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`procurement:addressKind.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='supplier-address-label' optional>
+								{t('procurement:supplier.addressLabel')}
+							</FieldLabel>
+							<Input
+								id='supplier-address-label'
+								maxLength={100}
+								value={addressLabel}
+								onChange={(event) => setAddressLabel(event.target.value)}
+							/>
+						</Field>
+						<Field className='sm:col-span-2'>
+							<FieldLabel htmlFor='supplier-address-line' optional>
+								{t('procurement:supplier.addressLine')}
+							</FieldLabel>
+							<Textarea
+								id='supplier-address-line'
+								rows={2}
+								maxLength={500}
+								value={addressLine}
+								onChange={(event) => setAddressLine(event.target.value)}
+							/>
+						</Field>
+						<div className='sm:col-span-2'>
+							<LocationCascade
+								value={location}
+								initialVillageId={existingAddress?.villageId}
+								onChange={setLocation}
+							/>
+						</div>
+						<Field>
+							<FieldLabel htmlFor='supplier-address-postal' optional>
+								{t('procurement:supplier.postalCode')}
+							</FieldLabel>
+							<Input
+								id='supplier-address-postal'
+								inputMode='numeric'
+								pattern='[0-9]*'
+								maxLength={10}
+								value={postalCode}
+								onChange={(event) => setPostalCode(event.target.value)}
+							/>
+						</Field>
+						<Field orientation='horizontal' className='sm:col-span-2'>
+							<Checkbox
+								id='supplier-address-primary'
+								checked={isPrimary}
+								onCheckedChange={(checked) => setIsPrimary(checked === true)}
+							/>
+							<FieldLabel htmlFor='supplier-address-primary'>{t('procurement:supplier.addressPrimary')}</FieldLabel>
+						</Field>
+					</FormSection>
 					<DialogFooter>
 						<Button type='button' variant='outline' onClick={onClose}>
 							{t('common:action.cancel')}

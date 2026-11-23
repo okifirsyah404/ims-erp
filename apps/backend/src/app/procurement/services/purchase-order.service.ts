@@ -46,11 +46,11 @@ export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
 	taxBase: number;
 };
 
-function snapshotOf(supplier: TSupplierCompanySelect, pic: TSupplierSelect | null): TPoSupplierSnapshot {
+function snapshotOf(supplier: TSupplierCompanySelect, pic: TSupplierSelect | null, address: string | null): TPoSupplierSnapshot {
 	return {
 		code: supplier.code,
 		name: supplier.legalName ?? supplier.name,
-		address: null,
+		address,
 		taxId: supplier.taxId,
 		phone: supplier.phone,
 		email: supplier.email,
@@ -81,7 +81,7 @@ export class PurchaseOrderService {
 		@inject(EXPORTED_SUPPLIER_SERVICE_TOKEN)
 		private readonly suppliers: Pick<
 			ExportedSupplierService,
-			'assertActiveCompany' | 'findPerson'
+			'assertActiveCompany' | 'findPerson' | 'getPurchaseSnapshot'
 		>,
 		@inject(PRODUCT_SERVICE_TOKEN)
 		private readonly items: Pick<ProductService, 'getActiveProducts'>,
@@ -126,7 +126,7 @@ export class PurchaseOrderService {
 			header: {
 				supplierCompanyId: supplier.id,
 				supplierPicId: pic?.id ?? null,
-				supplierSnapshot: snapshotOf(supplier, pic),
+				supplierSnapshot: snapshotOf(supplier, pic, await this.suppliers.getPurchaseSnapshot(supplier.id).then((s) => s.address)),
 				category: body.category,
 				subject: body.subject,
 				orderDate: body.orderDate ?? businessDateOf(),
@@ -140,8 +140,9 @@ export class PurchaseOrderService {
 				subtotal: totals.subtotal,
 				taxTotal: totals.taxTotal,
 				grandTotal: totals.grandTotal,
-				// The printed payment line defaults to the supplier's terms.
-				paymentTerms: body.paymentTerms ?? supplier.paymentTermNote,
+				// The printed payment line comes from the PO form only; the
+				// supplier master no longer holds default payment terms.
+				paymentTerms: body.paymentTerms,
 				terms: body.terms,
 				notes: body.notes,
 			},

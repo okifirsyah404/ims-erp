@@ -8,6 +8,8 @@
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
+	TSupplierAddressSelect,
+	TSupplierCompanyAddressSelect,
 	TSupplierCompanySelect,
 	TSupplierSelect,
 } from '@drizzle/schemas/supplier.schema';
@@ -22,10 +24,13 @@ import type {
 	TSupplierPaginationRequest,
 } from '../../src/app/supplier/contracts/supplier.repository.interface';
 import type {
+	ISupplierAddressRepository,
+	ISupplierCompanyAddressRepository,
 	ISupplierCompanyRepository,
 	ISupplierRepository,
 } from '../../src/app/supplier/contracts/supplier.repository.interface';
 import {
+	SupplierAddressNotFoundError,
 	SupplierCompanyCodeTakenError,
 	SupplierCompanyNotFoundError,
 } from '../../src/app/supplier/errors/supplier.errors';
@@ -49,10 +54,7 @@ class FakeCompanies implements ISupplierCompanyRepository {
 			taxId: null,
 			email: null,
 			phone: null,
-			whatsapp: null,
 			website: null,
-			paymentTermsDays: 0,
-			paymentTermNote: null,
 			bankName: 'BCA',
 			bankAccountNumber: '123',
 			bankAccountHolder: 'PT Sumber',
@@ -130,7 +132,6 @@ class FakePeople implements ISupplierRepository {
 			title: null,
 			phone: null,
 			email: null,
-			whatsapp: null,
 			isPrimary: false,
 			status: 'active',
 			notes: null,
@@ -208,17 +209,169 @@ class FakeSupplierNumbering {
 	}
 }
 
+/** Location double: accepts every village id. */
+class FakeLocation {
+	ids: string[] = [];
+	async assertVillage(villageId: string) {
+		this.ids.push(villageId);
+		return { id: villageId } as never;
+	}
+}
+
+class FakeCompanyAddresses
+	implements ISupplierCompanyAddressRepository
+{
+	rows: TSupplierCompanyAddressSelect[] = [];
+	private seq = 0;
+
+	private row(
+		companyId: string,
+		partial: Partial<TSupplierCompanyAddressSelect>,
+	): TSupplierCompanyAddressSelect {
+		this.seq += 1;
+		return {
+			id: `ca${this.seq}`,
+			companyId,
+			kind: 'office',
+			label: null,
+			contactName: null,
+			contactPhone: null,
+			addressLine: 'Jl. Mawar 1',
+			villageId: null,
+			postalCode: null,
+			isPrimary: false,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			deletedAt: null,
+			...partial,
+		};
+	}
+
+	async listByCompany(companyId: string) {
+		return this.rows.filter(
+			(row) => row.companyId === companyId && row.deletedAt === null,
+		);
+	}
+
+	async findById(companyId: string, addressId: string) {
+		return (
+			this.rows.find(
+				(row) =>
+					row.companyId === companyId &&
+					row.id === addressId &&
+					row.deletedAt === null,
+			) ?? null
+		);
+	}
+
+	async create(companyId: string, data: never) {
+		const row = this.row(companyId, data as never);
+		this.rows.push(row);
+		return row;
+	}
+
+	async update(companyId: string, addressId: string, patch: never) {
+		const row = await this.findById(companyId, addressId);
+		if (!row) return null;
+		Object.assign(row, patch);
+		return row;
+	}
+
+	async softDelete(companyId: string, addressId: string) {
+		const row = await this.findById(companyId, addressId);
+		if (!row) return false;
+		row.deletedAt = new Date();
+		return true;
+	}
+}
+
+class FakePersonAddresses implements ISupplierAddressRepository {
+	rows: TSupplierAddressSelect[] = [];
+	private seq = 0;
+
+	private row(
+		supplierId: string,
+		partial: Partial<TSupplierAddressSelect>,
+	): TSupplierAddressSelect {
+		this.seq += 1;
+		return {
+			id: `pa${this.seq}`,
+			supplierId,
+			kind: 'office',
+			label: null,
+			addressLine: 'Jl. Melati 2',
+			villageId: null,
+			postalCode: null,
+			isPrimary: false,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			deletedAt: null,
+			...partial,
+		};
+	}
+
+	async listByPerson(supplierId: string) {
+		return this.rows.filter(
+			(row) => row.supplierId === supplierId && row.deletedAt === null,
+		);
+	}
+
+	async findById(supplierId: string, addressId: string) {
+		return (
+			this.rows.find(
+				(row) =>
+					row.supplierId === supplierId &&
+					row.id === addressId &&
+					row.deletedAt === null,
+			) ?? null
+		);
+	}
+
+	async create(supplierId: string, data: never) {
+		const row = this.row(supplierId, data as never);
+		this.rows.push(row);
+		return row;
+	}
+
+	async update(supplierId: string, addressId: string, patch: never) {
+		const row = await this.findById(supplierId, addressId);
+		if (!row) return null;
+		Object.assign(row, patch);
+		return row;
+	}
+
+	async softDelete(supplierId: string, addressId: string) {
+		const row = await this.findById(supplierId, addressId);
+		if (!row) return false;
+		row.deletedAt = new Date();
+		return true;
+	}
+}
+
 describe('SupplierService', () => {
 	let companies: FakeCompanies;
 	let people: FakePeople;
 	let numbering: FakeSupplierNumbering;
+	let companyAddresses: FakeCompanyAddresses;
+	let personAddresses: FakePersonAddresses;
+	let location: FakeLocation;
 	let service: SupplierService;
 
 	beforeEach(() => {
 		companies = new FakeCompanies();
 		people = new FakePeople();
 		numbering = new FakeSupplierNumbering();
-		service = new SupplierService(companies, people, numbering as never);
+		companyAddresses = new FakeCompanyAddresses();
+		personAddresses = new FakePersonAddresses();
+		location = new FakeLocation();
+		service = new SupplierService(
+			companies,
+			people,
+			numbering as never,
+			companyAddresses,
+			personAddresses,
+			location as never,
+		);
 	});
 
 	test('an empty code is generated with the caller organization', async () => {
@@ -295,6 +448,72 @@ describe('SupplierService', () => {
 		await service.removePerson(person.id);
 		expect(await people.findById(person.id)).toBeNull();
 	});
+
+	test('a company address is created owner-scoped and the village is validated', async () => {
+		const company = await service.createCompany(
+			{ code: 'ACME', name: 'PT Acme', supplierType: 'company' } as TSupplierCompanyCreateInput,
+			'u1',
+		);
+		const address = await service.addCompanyAddress(company.id, {
+			kind: 'office',
+			addressLine: 'Jl. Mawar 1',
+			villageId: 'v1',
+			postalCode: null,
+			isPrimary: true,
+			label: null,
+			contactName: null,
+			contactPhone: null,
+		});
+		expect(address.companyId).toBe(company.id);
+		expect(location.ids).toEqual(['v1']);
+		expect(await service.getCompany(company.id)).toMatchObject({
+			addresses: [expect.objectContaining({ addressLine: 'Jl. Mawar 1' })],
+		});
+	});
+
+	test('an unknown company id is refused for address creation', () => {
+		expect(
+			service.addCompanyAddress('missing', {
+				addressLine: 'Jl. Mawar 1',
+				kind: 'office',
+				villageId: null,
+				postalCode: null,
+				isPrimary: false,
+				label: null,
+				contactName: null,
+				contactPhone: null,
+			}),
+		).rejects.toBeInstanceOf(SupplierCompanyNotFoundError);
+	});
+
+	test('updating or removing a missing address throws SupplierAddressNotFoundError', async () => {
+		const company = await service.createCompany(
+			{ code: 'ACME', name: 'PT Acme', supplierType: 'company' } as TSupplierCompanyCreateInput,
+			'u1',
+		);
+		expect(
+			service.updateCompanyAddress(company.id, 'missing', {}),
+		).rejects.toBeInstanceOf(SupplierAddressNotFoundError);
+		expect(
+			service.removeCompanyAddress(company.id, 'missing'),
+		).rejects.toBeInstanceOf(SupplierAddressNotFoundError);
+	});
+
+	test('a person address is created owner-scoped', async () => {
+		const person = await service.createPerson(
+			{ name: 'A' } as TSupplierCreateInput,
+			'u1',
+		);
+		const address = await service.addPersonAddress(person.id, {
+			kind: 'other',
+			addressLine: 'Jl. Melati 2',
+			villageId: null,
+			postalCode: null,
+			isPrimary: false,
+			label: null,
+		});
+		expect(address.supplierId).toBe(person.id);
+	});
 });
 
 describe('ExportedSupplierService', () => {
@@ -305,7 +524,13 @@ describe('ExportedSupplierService', () => {
 	beforeEach(() => {
 		companies = new FakeCompanies();
 		people = new FakePeople();
-		exported = new ExportedSupplierService(companies, people);
+		exported = new ExportedSupplierService(
+			companies,
+			people,
+			new FakeCompanyAddresses(),
+			people,
+			new FakePersonAddresses(),
+		);
 	});
 
 	test('assertActiveCompany rejects unknown ids', () => {

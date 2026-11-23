@@ -244,6 +244,8 @@ const DYNAMIC_PREFIXES = [
 	'template.document.signatureRequested.',
 	'template.document.signatureSigned.',
 	'template.document.signatureDeclined.',
+	// Supplier address kinds are server enum values labelled at render.
+	'procurement:addressKind.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {

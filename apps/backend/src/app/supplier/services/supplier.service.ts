@@ -3,25 +3,36 @@ import { inject, injectable } from 'tsyringe';
 import { AppError } from '@http/errors';
 
 import {
+	SUPPLIER_ADDRESS_REPOSITORY_TOKEN,
+	SUPPLIER_COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	SUPPLIER_COMPANY_REPOSITORY_TOKEN,
 	SUPPLIER_NUMBERING_SERVICE_TOKEN,
 	SUPPLIER_PERSON_REPOSITORY_TOKEN,
 } from '../constants/di';
+import { EXPORTED_LOCATION_SERVICE_TOKEN } from '@app/location/constants/di';
+import type { ExportedLocationService } from '@app/location/services/exported-location.service';
 import type { SupplierNumberingService } from './supplier-numbering.service';
 import type {
+	TSupplierAddressInput,
+	TSupplierCompanyAddressInput,
 	TSupplierCompanyCreateInput,
 	TSupplierCompanyUpdateInput,
 	TSupplierCreateInput,
 	TSupplierCompanyView,
 	TSupplierUpdateInput,
+	TUpdateSupplierAddressInput,
+	TUpdateSupplierCompanyAddressInput,
 } from '../contracts/supplier.contract';
 import type {
+	ISupplierAddressRepository,
+	ISupplierCompanyAddressRepository,
 	ISupplierCompanyRepository,
 	ISupplierRepository,
 	TSupplierCompanyPaginationRequest,
 	TSupplierPaginationRequest,
 } from '../contracts/supplier.repository.interface';
 import {
+	SupplierAddressNotFoundError,
 	SupplierCompanyCodeTakenError,
 	SupplierCompanyNotFoundError,
 	SupplierPersonNotFoundError,
@@ -44,6 +55,12 @@ export class SupplierService {
 		private readonly people: ISupplierRepository,
 		@inject(SUPPLIER_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: Pick<SupplierNumberingService, 'next'>,
+		@inject(SUPPLIER_COMPANY_ADDRESS_REPOSITORY_TOKEN)
+		private readonly companyAddresses: ISupplierCompanyAddressRepository,
+		@inject(SUPPLIER_ADDRESS_REPOSITORY_TOKEN)
+		private readonly addresses: ISupplierAddressRepository,
+		@inject(EXPORTED_LOCATION_SERVICE_TOKEN)
+		private readonly location: Pick<ExportedLocationService, 'assertVillage'>,
 	) {}
 
 	/** Fetches one filtered page of supplier companies. */
@@ -56,7 +73,11 @@ export class SupplierService {
 		if (!company) throw new SupplierCompanyNotFoundError();
 
 		const people = await this.people.paginate({ page: 1, limit: 100, companyId: id });
-		return { ...company, people: people.data };
+		return {
+			...company,
+			people: people.data,
+			addresses: await this.companyAddresses.listByCompany(id),
+		};
 	}
 
 	/**
@@ -126,5 +147,73 @@ export class SupplierService {
 	async removePerson(id: string): Promise<void> {
 		const removed = await this.people.softDelete(id);
 		if (!removed) throw new SupplierPersonNotFoundError();
+	}
+
+	/* ------------------------------ addresses ------------------------------ */
+
+	/**
+	 * Adds a company address; a supplied village is validated through the
+	 * location module contract.
+	 */
+	async addCompanyAddress(
+		companyId: string,
+		data: TSupplierCompanyAddressInput,
+	) {
+		await this.assertCompany(companyId);
+		if (data.villageId) await this.location.assertVillage(data.villageId);
+		return this.companyAddresses.create(companyId, data);
+	}
+
+	async updateCompanyAddress(
+		companyId: string,
+		addressId: string,
+		patch: TUpdateSupplierCompanyAddressInput,
+	) {
+		if (patch.villageId) await this.location.assertVillage(patch.villageId);
+		const row = await this.companyAddresses.update(companyId, addressId, patch);
+		if (!row) throw new SupplierAddressNotFoundError();
+		return row;
+	}
+
+	async removeCompanyAddress(companyId: string, addressId: string): Promise<void> {
+		if (!(await this.companyAddresses.softDelete(companyId, addressId))) {
+			throw new SupplierAddressNotFoundError();
+		}
+	}
+
+	/** Adds a person address; the village is validated like the company one. */
+	async addPersonAddress(supplierId: string, data: TSupplierAddressInput) {
+		await this.assertPerson(supplierId);
+		if (data.villageId) await this.location.assertVillage(data.villageId);
+		return this.addresses.create(supplierId, data);
+	}
+
+	async updatePersonAddress(
+		supplierId: string,
+		addressId: string,
+		patch: TUpdateSupplierAddressInput,
+	) {
+		if (patch.villageId) await this.location.assertVillage(patch.villageId);
+		const row = await this.addresses.update(supplierId, addressId, patch);
+		if (!row) throw new SupplierAddressNotFoundError();
+		return row;
+	}
+
+	async removePersonAddress(supplierId: string, addressId: string): Promise<void> {
+		if (!(await this.addresses.softDelete(supplierId, addressId))) {
+			throw new SupplierAddressNotFoundError();
+		}
+	}
+
+	private async assertCompany(companyId: string): Promise<void> {
+		if (!(await this.companies.findById(companyId))) {
+			throw new SupplierCompanyNotFoundError();
+		}
+	}
+
+	private async assertPerson(supplierId: string): Promise<void> {
+		if (!(await this.people.findById(supplierId))) {
+			throw new SupplierPersonNotFoundError();
+		}
 	}
 }
