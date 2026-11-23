@@ -28,10 +28,7 @@ export const supplierCompanyCreateSchema = z.object({
 	taxId: z.string().max(16).optional().nullable(),
 	email: z.string().email().optional().nullable(),
 	phone: z.string().max(30).optional().nullable(),
-	whatsapp: z.string().max(30).optional().nullable(),
 	website: z.string().max(200).optional().nullable(),
-	paymentTermsDays: z.coerce.number().int().min(0).default(0),
-	paymentTermNote: z.string().max(300).optional().nullable(),
 	bankName: z.string().max(200).optional().nullable(),
 	bankAccountNumber: z.string().max(100).optional().nullable(),
 	bankAccountHolder: z.string().max(200).optional().nullable(),
@@ -75,7 +72,6 @@ export const supplierCreateSchema = z.object({
 	title: z.string().max(100).optional().nullable(),
 	phone: z.string().max(30).optional().nullable(),
 	email: z.string().email().optional().nullable(),
-	whatsapp: z.string().max(30).optional().nullable(),
 	isPrimary: z.boolean().default(false),
 });
 

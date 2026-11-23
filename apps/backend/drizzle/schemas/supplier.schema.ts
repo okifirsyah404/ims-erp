@@ -52,7 +52,9 @@ const timestamps = {
  * @remarks
  * Was `procurement.suppliers` for company/government rows. `code` is the
  * `{SUPPLIER}` token of PO numbers. The bank columns are restricted and never
- * returned without `supplier:read_bank`.
+ * returned without `supplier:read_bank`. ERP-0114 dropped `whatsapp`,
+ * `payment_terms_days` and `payment_term_note` (payment terms belong to the
+ * purchase order).
  */
 export const supplierCompanies = supplierSchema.table(
 	'companies',
@@ -69,10 +71,7 @@ export const supplierCompanies = supplierSchema.table(
 		taxId: varchar('tax_id', { length: 16 }),
 		email: text('email'),
 		phone: varchar('phone', { length: 30 }),
-		whatsapp: varchar('whatsapp', { length: 30 }),
 		website: varchar('website', { length: 200 }),
-		paymentTermsDays: integer('payment_terms_days').notNull().default(0),
-		paymentTermNote: varchar('payment_term_note', { length: 300 }),
 		// Restricted (`supplier:read_bank`).
 		bankName: text('bank_name'),
 		bankAccountNumber: text('bank_account_number'),
@@ -98,10 +97,6 @@ export const supplierCompanies = supplierSchema.table(
 			'supplier_companies_status_check',
 			sql`${table.status} IN ('active', 'inactive')`,
 		),
-		check(
-			'supplier_companies_payment_terms_check',
-			sql`${table.paymentTermsDays} >= 0`,
-		),
 	],
 );
 
@@ -126,7 +121,6 @@ export const suppliers = supplierSchema.table(
 		title: varchar('title', { length: 100 }),
 		phone: varchar('phone', { length: 30 }),
 		email: text('email'),
-		whatsapp: varchar('whatsapp', { length: 30 }),
 		/** Printed on purchase orders; at most one live row per company. */
 		isPrimary: boolean('is_primary').notNull().default(false),
 		status: text('status').notNull().default('active'),
