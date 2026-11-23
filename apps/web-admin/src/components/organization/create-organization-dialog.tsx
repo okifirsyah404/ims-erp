@@ -6,7 +6,6 @@ import { toast } from '@/components/toast';
 import { Button } from '@ims-erp/ui/components/button';
 import {
 	Dialog,
-	DialogContent,
 	DialogDescription,
 	DialogFooter,
 	DialogHeader,
@@ -16,6 +15,7 @@ import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ImageDropzone } from '@/components/image-dropzone';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 import { encodeImage } from '@/lib/image-file';
 import {
 	createOrganization,
@@ -146,7 +146,7 @@ function CreateOrganizationDialogBody({
 	}
 
 	return (
-		<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-lg'>
+		<ScrollDialogContent className='sm:max-w-lg'>
 			<form onSubmit={handleSubmit} className='flex flex-col gap-4'>
 				<DialogHeader>
 					<DialogTitle>{t('orgs.newTitle')}</DialogTitle>
@@ -254,6 +254,6 @@ function CreateOrganizationDialogBody({
 					</Button>
 				</DialogFooter>
 			</form>
-		</DialogContent>
+		</ScrollDialogContent>
 	);
 }

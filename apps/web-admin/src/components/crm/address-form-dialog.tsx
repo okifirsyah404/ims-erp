@@ -5,7 +5,6 @@ import { Button } from '@ims-erp/ui/components/button';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
 	Dialog,
-	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -25,6 +24,7 @@ import {
 	LocationCascade,
 	type TLocationSelection,
 } from '@/components/inventory/location-cascade';
+import { ScrollDialogContent } from '@/components/scroll-dialog-content';
 
 export type TAddressFormValues = {
 	kind: string;
@@ -61,7 +61,7 @@ export function AddressFormDialog({
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
-			<DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-xl'>
+			<ScrollDialogContent className='sm:max-w-xl'>
 				<form
 					onSubmit={(event) => {
 						event.preventDefault();
@@ -137,7 +137,7 @@ export function AddressFormDialog({
 						</Button>
 					</DialogFooter>
 				</form>
-			</DialogContent>
+			</ScrollDialogContent>
 		</Dialog>
 	);
 }

@@ -12,6 +12,41 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - web-admin: tall form dialogs scroll inside `ScrollArea`
+
+Eight form dialogs still used the browser's native scrollbar
+(`max-h-[90vh] overflow-y-auto`) or an unbounded popup. They now render through
+the existing `ScrollDialogContent` wrapper
+(`apps/web-admin/src/components/scroll-dialog-content.tsx`), which is a
+`DialogContent` whose body is a `@ims-erp/ui/components/scroll-area`
+(`ScrollArea` + `ScrollBar` from `@base-ui/react/scroll-area`). The wrapper keeps
+`overflow-hidden p-0` on the popup and moves padding to the inner
+`p-4 pb-0` grid, so the sticky `DialogFooter` (`-mx-4 bottom-0`) stays flush with
+the dialog edge while the body scrolls beneath it. `packages/ui` untouched.
+
+Changed: `components/crm/{lead,customer,company,address}-form-dialog.tsx`,
+`components/procurement/supplier-form-dialog.tsx`,
+`components/organization/create-organization-dialog.tsx`,
+`components/invite/invite-dialog.tsx`,
+`routes/_authed/integrations/website-catalog/index.tsx`.
+
+**Checks.**
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun run lint` (root): 0 errors, 18 pre-existing warnings.
+- `bun run test` (apps/web-admin): 209 pass, 0 fail.
+- Manual `bun run dev` walk-through of the eight dialogs: not run in this
+  session (needs a seeded backend + session); the sticky-footer layout relies on
+  the same wrapper already shipped in `create-warehouse-dialog`,
+  `item-kind-list` and `asset-register-list`.
+
+**Docs.** No route, guard or role-grant change, so
+`bun docs/gen-role-permission.ts` was not needed. `docs/database/` reviewed:
+no table/column/index/constraint change, `docs.dbml` unchanged. No `ERP-*`
+item claimed (frontend-only polish, no backlog entry).
+
+Next executable task: unchanged - the ERP-0112 browser check below, then the
+ERP-0111 Google walk-through.
+
 ## 2026-11-23 - ERP-0113: dashboard income/outcome summary, role-aware sections, role-permission doc
 
 **Owner request** (grill-me, 12 decisions, all accepted; Q4/Q7 settled as "the
