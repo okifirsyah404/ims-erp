@@ -14,7 +14,8 @@ function customerOf(invoice: TInvoiceSelect) {
 		name: snapshot?.name ?? null,
 		email: snapshot?.email ?? null,
 		phone: snapshot?.phone ?? null,
-		whatsapp: snapshot?.whatsapp ?? null,
+		// Frozen snapshots may carry a separate number; newer ones copy the phone.
+		whatsapp: snapshot?.whatsapp ?? snapshot?.phone ?? null,
 	};
 }
 

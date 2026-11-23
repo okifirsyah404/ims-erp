@@ -19,6 +19,12 @@
  * ERP-0106 (port of branch ERP-0081): the login's settings on
  * `customer.customers` (port plan D3), two-step sign-in by an emailed code,
  * signed-in devices addressed by session id, and deleting one's own login.
+ *
+ * ERP-0114: one Better Auth account per person; a new contact invited by
+ * staff (or by an owner) is created through the customer create path and
+ * gets its credentials by email; revoking keeps the account on the person; a
+ * company has one owner (`companies.owner_customer_id`), so an invite with
+ * role owner moves ownership and the owner can never close their login.
  */
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
@@ -55,6 +61,8 @@ import {
 	PortalLockedError,
 	PortalWrongPasswordError,
 } from '../../src/app/customer/errors/portal.errors';
+import { CustomerAccountService } from '../../src/app/customer/services/customer-account.service';
+import { CustomerService } from '../../src/app/customer/services/customer.service';
 import { PortalAccountService } from '../../src/app/customer/services/portal-account.service';
 import { PortalAuthService, type TPortalSignIn } from '../../src/app/customer/services/portal-auth.service';
 import { formPayload } from '../../src/app/customer/utils/form-payload';
@@ -72,14 +80,24 @@ const INACTIVE_COMPANY = '0190a1b2-0000-7000-8000-0000000000c3';
 
 let people: TCustomerSelect[];
 let companies: TCustomerCompanySelect[];
-let users: { id: string; name: string; email: string; emailVerified: boolean; member: boolean; password: string | null; roles?: string[] }[];
+let users: {
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	member: boolean;
+	password: string | null;
+	roles?: string[];
+	username?: string | null;
+}[];
 let mails: { kind: string; to: string; url?: string; code?: string }[];
 let revokedSessions: string[];
 let cache: Map<string, unknown>;
 let cacheTtls: Map<string, number | undefined>;
 let accounts: PortalAccountService;
 
-const company = (id: string, name: string, status = 'active') => ({ id, name, status, taxId: null }) as TCustomerCompanySelect;
+const company = (id: string, name: string, status = 'active') =>
+	({ id, code: name.toUpperCase(), name, status, taxId: null, ownerCustomerId: null, deletedAt: null }) as unknown as TCustomerCompanySelect;
 
 function personRow(data: Partial<TCustomerSelect>): TCustomerSelect {
 	const now = new Date();
@@ -89,18 +107,15 @@ function personRow(data: Partial<TCustomerSelect>): TCustomerSelect {
 		companyId: null,
 		name: 'X',
 		position: null,
-		email: null,
 		phone: null,
-		whatsapp: null,
-		isPrimary: false,
 		customerType: 'individual',
 		status: 'active',
-		ownerUserId: null,
 		userId: null,
 		portalRole: null,
 		portalStatus: null,
 		portalInvitedBy: null,
 		portalLastLoginAt: null,
+		portalPasswordChangeRequired: false,
 		notes: null,
 		createdBy: null,
 		createdAt: now,
@@ -112,13 +127,23 @@ function personRow(data: Partial<TCustomerSelect>): TCustomerSelect {
 
 type TPeopleFake = Pick<
 	ICustomerPersonRepository,
-	'findById' | 'findByUserId' | 'create' | 'update' | 'listPortalAccounts' | 'grantPortalAccess' | 'revokePortalAccess' | 'touchPortalLogin'
+	| 'findById'
+	| 'findByCode'
+	| 'findByUserId'
+	| 'create'
+	| 'update'
+	| 'listPortalAccounts'
+	| 'grantPortalAccess'
+	| 'revokePortalAccess'
+	| 'touchPortalLogin'
+	| 'clearPasswordChangeRequired'
 >;
 
 function fakePeople(): ICustomerPersonRepository {
 	const live = (row: TCustomerSelect) => !row.deletedAt;
 	const fake: TPeopleFake = {
 		findById: async (id) => people.find((row) => live(row) && row.id === id) ?? null,
+		findByCode: async (code) => people.find((row) => live(row) && row.code === code) ?? null,
 		findByUserId: async (userId) => people.find((row) => live(row) && row.userId === userId) ?? null,
 		async create(data) {
 			const row = personRow(data as Partial<TCustomerSelect>);
@@ -147,8 +172,12 @@ function fakePeople(): ICustomerPersonRepository {
 			const row = people.find((item) => live(item) && item.id === id && item.userId && item.portalStatus !== 'revoked');
 			if (!row) return null;
 			const before = { ...row };
-			Object.assign(row, { portalStatus: 'revoked', userId: null });
+			Object.assign(row, { portalStatus: 'revoked' });
 			return before;
+		},
+		async clearPasswordChangeRequired(id) {
+			const row = people.find((item) => item.id === id);
+			if (row) row.portalPasswordChangeRequired = false;
 		},
 		async touchPortalLogin(id) {
 			const row = people.find((item) => item.id === id);
@@ -158,8 +187,22 @@ function fakePeople(): ICustomerPersonRepository {
 	return fake as ICustomerPersonRepository;
 }
 
-const fakeCompanies = (): Pick<ICompanyRepository, 'findById'> => ({
-	findById: async (id) => companies.find((row) => row.id === id) ?? null,
+const fakeCompanies = (): Pick<ICompanyRepository, 'findById' | 'findByCode' | 'update' | 'create' | 'softDelete'> => ({
+	findById: async (id) => companies.find((row) => row.id === id && !row.deletedAt) ?? null,
+	findByCode: async (code) => companies.find((row) => row.code === code && !row.deletedAt) ?? null,
+	async update(id, patch) {
+		const row = companies.find((item) => item.id === id);
+		return row ? Object.assign(row, patch) : null;
+	},
+	async create(data) {
+		const row = { ...data, id: crypto.randomUUID(), ownerCustomerId: null, deletedAt: null } as TCustomerCompanySelect;
+		companies.push(row);
+		return row;
+	},
+	async softDelete(id) {
+		const row = companies.find((item) => item.id === id);
+		if (row) row.deletedAt = new Date();
+	},
 });
 
 function fakeUsers() {
@@ -189,7 +232,47 @@ function fakeUsers() {
 			const user = users.find((item) => item.id === userId)!;
 			user.roles = [...new Set([...(user.roles ?? []).filter((role) => role !== 'user'), 'customer'])];
 		},
+		/* ERP-0114: accounts created by the customer create path. */
+		isUsernameTaken: async (username: string) => users.some((user) => user.username === username),
+		async createCustomerAccount(input: { name: string; email: string; username: string; password: string }) {
+			const user = { id: `u-${users.length + 1}`, name: input.name, email: input.email, emailVerified: false, member: false, password: input.password, username: input.username };
+			users.push(user);
+			return pick(user)!;
+		},
+		async deleteUnusedUser(id: string) {
+			users = users.filter((user) => user.id !== id);
+		},
+		async summaries(ids: string[]) {
+			return new Map(
+				users
+					.filter((user) => ids.includes(user.id))
+					.map((user) => [user.id, { id: user.id, name: user.name, email: user.email, emailVerified: user.emailVerified, username: user.username ?? null, image: null }]),
+			);
+		},
+		findIdsByEmail: async () => [],
+		async updateProfile() {},
+		setAvatar: async () => '',
+		async clearAvatar() {},
 	};
+}
+
+/** Customer create path with the same fakes (codes CUS-n, credentials into `mails`). */
+function customerService(usersFake: ReturnType<typeof fakeUsers>) {
+	let seq = 0;
+	const credentials = new CustomerAccountService(usersFake as never, {
+		sendCredentials: async (input) => {
+			mails.push({ kind: 'credentials', to: input.to });
+		},
+	});
+	return new CustomerService(
+		fakeCompanies() as ICompanyRepository,
+		fakePeople(),
+		{} as never,
+		{ listByCustomer: async () => [] } as never,
+		{ next: async () => `CUS-${++seq}` } as never,
+		credentials,
+		usersFake as never,
+	);
 }
 
 const fakeCache = () => ({
@@ -211,10 +294,11 @@ beforeEach(() => {
 	revokedSessions = [];
 	cache = new Map();
 	cacheTtls = new Map();
+	const usersFake = fakeUsers();
 	accounts = new PortalAccountService(
 		fakePeople(),
 		fakeCompanies() as ICompanyRepository,
-		fakeUsers(),
+		usersFake,
 		{
 			sendInvitation: async (input) => {
 				mails.push({ kind: 'invite', to: input.to, url: input.url });
@@ -225,7 +309,11 @@ beforeEach(() => {
 			sendSignupCode: async (input) => {
 				mails.push({ kind: 'code', to: input.to, code: input.code });
 			},
+			sendCredentials: async (input) => {
+				mails.push({ kind: 'credentials', to: input.to });
+			},
 		},
+		customerService(usersFake),
 		fakeCache(),
 	);
 	accounts.portalUrl = 'https://portal.example.com/';
@@ -238,15 +326,42 @@ const asCaller = (identity: TPortalCustomerIdentity | null) => identity!;
 const signedIn = (result: TPortalSignIn): TPortalSignIn => result;
 
 describe('portal accounts (staff invitations, D2)', () => {
-	test('an invitation creates a contact person with an owner login and emails a link to the portal reset page', async () => {
+	test('an invitation creates a contact person through the customer create path: the owner, credentials by email', async () => {
 		const account = await invite({ companyId: COMPANY_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		expect(account.companyId).toBe(COMPANY_A);
 		expect(account.role).toBe('owner');
-		expect(account.passwordSet).toBe(false);
+		expect(account.passwordSet).toBe(true);
 		expect(people).toHaveLength(1);
-		expect(people[0]).toMatchObject({ customerType: 'contact', companyId: COMPANY_A, portalStatus: 'active', portalInvitedBy: 'staff-1' });
+		expect(people[0]).toMatchObject({
+			customerType: 'contact',
+			companyId: COMPANY_A,
+			portalStatus: 'active',
+			portalInvitedBy: 'staff-1',
+			portalPasswordChangeRequired: true,
+		});
 		expect(account.id).toBe(people[0]!.id);
-		expect(mails).toEqual([{ kind: 'invite', to: 'budi@alfa.co.id', url: expect.stringMatching(/^https:\/\/portal\.example\.com\/reset-password\?token=/) }]);
+		expect(companies.find((row) => row.id === COMPANY_A)!.ownerCustomerId).toBe(account.id);
+		expect(mails).toEqual([{ kind: 'credentials', to: 'budi@alfa.co.id' }]);
+	});
+
+	test('a company has one owner: an invite with role owner moves ownership and the old owner becomes a viewer', async () => {
+		const budi = await invite({ companyId: COMPANY_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		const joko = await invite({ companyId: COMPANY_A, name: 'Joko', email: 'joko@alfa.co.id', role: 'owner' });
+		expect(companies.find((row) => row.id === COMPANY_A)!.ownerCustomerId).toBe(joko.id);
+		expect((await accounts.resolveCustomer(budi.user.id))?.role).toBe('viewer');
+		expect((await accounts.resolveCustomer(joko.user.id))?.role).toBe('owner');
+		// A stale stored owner role never grants ownership.
+		people.find((row) => row.id === budi.id)!.portalRole = 'owner';
+		expect((await accounts.resolveCustomer(budi.user.id))?.role).toBe('viewer');
+	});
+
+	test('the first sign-in verifies the email; a password change clears the default-password flag', async () => {
+		const budi = await invite({ companyId: COMPANY_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
+		expect(users.find((user) => user.id === budi.user.id)!.emailVerified).toBe(false);
+		await accounts.recordLogin(budi.id);
+		expect(users.find((user) => user.id === budi.user.id)!.emailVerified).toBe(true);
+		await accounts.passwordChanged(budi.id);
+		expect(people.find((row) => row.id === budi.id)!.portalPasswordChangeRequired).toBe(false);
 	});
 
 	test('an invitation grants the global customer role (ADR-0027)', async () => {
@@ -275,12 +390,12 @@ describe('portal accounts (staff invitations, D2)', () => {
 		expect(people).toHaveLength(0);
 	});
 
-	test('revoking ends the sessions and frees the user; the login no longer resolves; the person can be invited again', async () => {
+	test('revoking ends the sessions and keeps the account; the login no longer resolves; the person can be invited again', async () => {
 		const account = await invite({ companyId: COMPANY_A, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
 		expect((await accounts.resolveCustomer(account.user.id))?.role).toBe('owner');
 		await accounts.revoke(account.id);
 		expect(revokedSessions).toEqual([account.user.id]);
-		expect(people[0]).toMatchObject({ userId: null, portalStatus: 'revoked' });
+		expect(people[0]).toMatchObject({ userId: account.user.id, portalStatus: 'revoked' });
 		expect(await accounts.resolveCustomer(account.user.id)).toBeNull();
 		await expect(accounts.revoke(account.id)).rejects.toBeInstanceOf(PortalAccountNotFoundError);
 		const again = await invite({ customerId: account.id, name: 'Budi', email: 'budi@alfa.co.id', role: 'owner' });
@@ -341,7 +456,7 @@ describe('portal sign-up of individuals (D1)', () => {
 		expect(identity.role).toBe('owner');
 		expect(identity.companyId).toBeNull();
 		expect(people).toHaveLength(1);
-		expect(people[0]).toMatchObject({ id: identity.customerId, name: 'Dewi', email: 'dewi@mail.id', phone: '0812 3456', customerType: 'individual', portalStatus: 'active' });
+		expect(people[0]).toMatchObject({ id: identity.customerId, name: 'Dewi', phone: '0812 3456', customerType: 'individual', portalStatus: 'active' });
 		expect(people[0]!.code).toMatch(/^PRT-/);
 		expect(users.find((user) => user.email === 'dewi@mail.id')!.emailVerified).toBe(true);
 		expect(users.find((user) => user.email === 'dewi@mail.id')!.roles).toEqual(['customer']);
@@ -550,8 +665,8 @@ describe('portal sign-in', () => {
 
 	/* ERP-0106: devices, deleting one's own login */
 
-	const budiOf = () => people.find((row) => row.email === 'budi@alfa.co.id')!;
 	const budiUser = () => users.find((user) => user.email === 'budi@alfa.co.id')!;
+	const budiOf = () => people.find((row) => row.userId === budiUser().id)!;
 	const loginBudi = (password = FAKE_PASSWORD_2, headers = new Headers()) => auth.login({ email: 'budi@alfa.co.id', password }, headers);
 
 	test('devices: listed without tokens, the current one first; sign out one by id or all others', async () => {
@@ -590,27 +705,26 @@ describe('portal sign-in', () => {
 		await auth.closeAccount(context, FAKE_PASSWORD_1);
 		expect(revokedSessions).toEqual([sari.user.id]);
 		const row = people.find((item) => item.id === sari.id)!;
-		expect(row).toMatchObject({ userId: null, portalStatus: 'revoked', deletedAt: null, name: 'Sari', companyId: COMPANY_A });
+		expect(row).toMatchObject({ userId: sari.user.id, portalStatus: 'revoked', deletedAt: null, name: 'Sari', companyId: COMPANY_A });
 		expect(await auth.resolve(new Headers({ cookie: `sid=${context.sessionToken}` }))).toBeNull();
 	});
 
-	test('delete own login: the only active owner of a company is refused; with a second owner it works', async () => {
+	test('delete own login: the one owner of a company is refused; once ownership moved, the former owner may', async () => {
 		const { context } = signedIn(await loginBudi());
 		await expect(auth.closeAccount(context, FAKE_PASSWORD_2)).rejects.toBeInstanceOf(PortalLastOwnerError);
 		expect(budiOf()).toMatchObject({ portalStatus: 'active' });
-		const suspended = await invite({ companyId: COMPANY_A, name: 'Wati', email: 'wati@alfa.co.id', role: 'owner' });
-		people.find((row) => row.id === suspended.id)!.portalStatus = 'suspended';
-		await expect(auth.closeAccount(context, FAKE_PASSWORD_2)).rejects.toBeInstanceOf(PortalLastOwnerError);
 		await invite({ companyId: COMPANY_A, name: 'Joko', email: 'joko@alfa.co.id', role: 'owner' });
-		await auth.closeAccount(context, FAKE_PASSWORD_2);
-		expect(budiOf()).toMatchObject({ portalStatus: 'revoked', userId: null });
+		const { context: staffContext } = signedIn(await loginBudi());
+		expect(staffContext.role).toBe('viewer');
+		await auth.closeAccount(staffContext, FAKE_PASSWORD_2);
+		expect(budiOf()).toMatchObject({ portalStatus: 'revoked', userId: budiUser().id });
 	});
 
 	test('delete own login: an individual customer (their own account) may', async () => {
 		await accounts.startSignup({ accountType: 'individual', name: 'Dewi', email: 'dewi@mail.id', phone: null, password: FAKE_PASSWORD_1 });
 		const { context } = await auth.verifySignup('dewi@mail.id', mails.find((mail) => mail.kind === 'code')!.code!);
 		await auth.closeAccount(context, FAKE_PASSWORD_1);
-		expect(people.find((row) => row.id === context.customerId)).toMatchObject({ portalStatus: 'revoked', userId: null, customerType: 'individual' });
+		expect(people.find((row) => row.id === context.customerId)).toMatchObject({ portalStatus: 'revoked', customerType: 'individual' });
 	});
 
 	test('HTTP: devices hide tokens; the account answers in the Accept-Language with no stored settings; close clears the cookie', async () => {

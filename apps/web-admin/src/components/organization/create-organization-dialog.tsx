@@ -11,7 +11,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import { ImageDropzone } from '@/components/image-dropzone';
@@ -205,7 +206,7 @@ function CreateOrganizationDialogBody({
 						/>
 					</Field>
 					<Field>
-						<FieldLabel htmlFor='new-org-description'>
+						<FieldLabel htmlFor='new-org-description' optional>
 							{t('orgs.descriptionLabel')}
 						</FieldLabel>
 						<Textarea

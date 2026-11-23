@@ -2,6 +2,8 @@ import type {
 	TCustomerCompanySelect,
 	TCustomerSelect,
 } from '@drizzle/schemas/customer.schema';
+import { EXPORTED_USER_SERVICE_TOKEN } from '@app/user/constants/di';
+import type { ExportedUserService } from '@app/user/services/exported-user.service';
 import { inject, injectable } from 'tsyringe';
 
 import { COMPANY_REPOSITORY_TOKEN, CUSTOMER_PERSON_REPOSITORY_TOKEN } from '../constants/di';
@@ -15,13 +17,17 @@ export type TCustomerSnapshot = {
 	code: string;
 	name: string;
 	type: string;
+	/** The company email, or the person's account email (ERP-0114). */
 	email: string | null;
+	/** E.164; also the WhatsApp number (the separate column is gone, ERP-0114). */
 	phone: string | null;
-	whatsapp: string | null;
 	taxId: string | null;
 	addressLine: string | null;
 	postalCode: string | null;
 };
+
+/** A person with the email of their Better Auth account (ERP-0114). */
+export type TCustomerContact = TCustomerSelect & { email: string | null };
 
 /**
  * Repository-only facade over the customer master.
@@ -29,8 +35,9 @@ export type TCustomerSnapshot = {
  * @remarks
  * `sale`, `project`, `ticket`, `payment` and `inventory` resolve customer
  * references and build document snapshots here — never by importing this
- * module's schema. Repository-only so a consumer that itself depends on
- * `sale` cannot create a cycle.
+ * module's schema. Repository-only (plus the identity facade, which depends
+ * on nothing) so a consumer that itself depends on `sale` cannot create a
+ * cycle. A person's email lives on their account and is read there.
  */
 @injectable()
 export class ExportedCustomerService {
@@ -39,7 +46,14 @@ export class ExportedCustomerService {
 		private readonly companies: ICompanyRepository,
 		@inject(CUSTOMER_PERSON_REPOSITORY_TOKEN)
 		private readonly people: ICustomerPersonRepository,
+		@inject(EXPORTED_USER_SERVICE_TOKEN)
+		private readonly users: Pick<ExportedUserService, 'findById'>,
 	) {}
+
+	/** The email of a person's account, or `null`. */
+	async emailOf(person: Pick<TCustomerSelect, 'userId'>): Promise<string | null> {
+		return person.userId ? ((await this.users.findById(person.userId))?.email ?? null) : null;
+	}
 
 	/** The live person regardless of status, or an error. */
 	async assertCustomer(id: string): Promise<TCustomerSelect> {
@@ -49,9 +63,10 @@ export class ExportedCustomerService {
 	}
 
 	/** An active person, or `null` — for documents naming a person. */
-	async getActiveCustomer(id: string): Promise<TCustomerSelect | null> {
+	async getActiveCustomer(id: string): Promise<TCustomerContact | null> {
 		const customer = await this.people.findById(id);
-		return customer?.status === 'active' ? customer : null;
+		if (customer?.status !== 'active') return null;
+		return { ...customer, email: await this.emailOf(customer) };
 	}
 
 	/** An active company, or `null` — for documents naming the entity. */
@@ -87,7 +102,6 @@ export class ExportedCustomerService {
 				type: company.companyType,
 				email: company.email,
 				phone: company.phone,
-				whatsapp: company.whatsapp,
 				taxId: company.taxId,
 				addressLine: null,
 				postalCode: null,
@@ -100,9 +114,8 @@ export class ExportedCustomerService {
 			code: person.code,
 			name: person.name,
 			type: person.customerType,
-			email: person.email,
+			email: await this.emailOf(person),
 			phone: person.phone,
-			whatsapp: person.whatsapp,
 			taxId: null,
 			addressLine: null,
 			postalCode: null,

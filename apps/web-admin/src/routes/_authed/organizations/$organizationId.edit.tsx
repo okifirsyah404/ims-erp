@@ -19,11 +19,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Field,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import {
@@ -128,7 +125,7 @@ function EditOrganizationPage() {
 								/>
 							</Field>
 							<Field>
-								<FieldLabel htmlFor='description'>
+								<FieldLabel htmlFor='description' optional>
 									{t('orgs.descriptionLabel')}
 								</FieldLabel>
 								<Textarea

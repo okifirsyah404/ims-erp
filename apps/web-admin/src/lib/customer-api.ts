@@ -31,7 +31,28 @@ export type TCompanyAddressKind = (typeof COMPANY_ADDRESS_KINDS)[number];
 export const CUSTOMER_ADDRESS_KINDS = ['residence', 'office', 'billing', 'other'] as const;
 export type TCustomerAddressKind = (typeof CUSTOMER_ADDRESS_KINDS)[number];
 
-/** A person: an individual customer, or the contact of a company. */
+/** Server-side sort of the list endpoints. */
+export const CUSTOMER_SORTS = ['code', 'name', 'status', 'createdAt'] as const;
+export type TCustomerSort = (typeof CUSTOMER_SORTS)[number];
+export type TSortOrder = 'asc' | 'desc';
+
+/** Short reference to a company or person. */
+export type TCustomerRef = { id: string; code: string; name: string };
+
+/**
+ * The Better Auth account of a person (ERP-0114): one account per person.
+ * `image` is a short-lived presigned URL; a verified email is locked.
+ */
+export type TCustomerAccount = {
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	username: string | null;
+	image: string | null;
+};
+
+/** A person: an individual customer, or a contact (owner or staff) of a company. */
 export type TCustomer = {
 	id: string;
 	code: string;
@@ -39,16 +60,23 @@ export type TCustomer = {
 	customerType: TCustomerType;
 	name: string;
 	position: string | null;
-	email: string | null;
+	/** E.164. The email lives on `account`. */
 	phone: string | null;
-	whatsapp: string | null;
-	isPrimary: boolean;
 	status: TCustomerStatus;
+	userId: string | null;
 	portalRole: string | null;
 	portalStatus: string | null;
+	portalPasswordChangeRequired: boolean;
 	notes: string | null;
 	createdAt: string;
+	account: TCustomerAccount | null;
+	company: TCustomerRef | null;
+	/** Owns their company (or is an individual, who owns their own account). */
+	isOwner: boolean;
 };
+
+/** Returned once by a create: shown to staff, also emailed to the customer. */
+export type TCustomerCredentials = { username: string; password: string };
 
 export type TCustomerAddress = {
 	id: string;
@@ -63,6 +91,8 @@ export type TCustomerAddress = {
 
 export type TCustomerDetail = TCustomer & { addresses: TCustomerAddress[] };
 
+export type TCustomerCreated = TCustomerDetail & { credentials: TCustomerCredentials };
+
 /** A B2B customer company. */
 export type TCompany = {
 	id: string;
@@ -73,9 +103,11 @@ export type TCompany = {
 	taxId: string | null;
 	email: string | null;
 	phone: string | null;
-	whatsapp: string | null;
 	website: string | null;
 	status: TCustomerStatus;
+	/** The one owner: a contact of this company (ERP-0114). */
+	ownerCustomerId: string | null;
+	owner: TCustomerRef | null;
 	notes: string | null;
 	createdAt: string;
 };
@@ -95,18 +127,25 @@ export type TCompanyAddress = {
 
 export type TCompanyDetail = TCompany & { addresses: TCompanyAddress[] };
 
+/** A company created together with the person, who becomes its owner. */
+export type TInlineCompanyInput = { code?: string; name: string; companyType: TCompanyType };
+
 export type TCustomerInput = {
 	/** Optional on create: omitted, the server generates it (`customer.code_numberings`). */
 	code?: string;
 	companyId: string | null;
-	customerType: TCustomerType;
+	/** Create only. */
+	newCompany?: TInlineCompanyInput | null;
+	/** Make this contact the owner of its company. */
+	isOwner: boolean;
 	name: string;
 	position: string | null;
-	email: string | null;
+	/** The email of the person's account; locked once verified. */
+	email: string;
 	phone: string | null;
-	whatsapp: string | null;
-	isPrimary: boolean;
 	notes: string | null;
+	/** Edit only. */
+	status?: TCustomerStatus;
 };
 
 export type TCompanyInput = {
@@ -118,9 +157,12 @@ export type TCompanyInput = {
 	taxId: string | null;
 	email: string | null;
 	phone: string | null;
-	whatsapp: string | null;
 	website: string | null;
 	notes: string | null;
+	/** Edit only. */
+	status?: TCustomerStatus;
+	/** Edit only: one of the company's contacts, or null. */
+	ownerCustomerId?: string | null;
 };
 
 export type TCompanyAddressInput = Omit<TCompanyAddress, 'id' | 'companyId'>;
@@ -133,6 +175,8 @@ export type TCustomerListParams = {
 	status?: TCustomerStatus;
 	customerType?: TCustomerType;
 	companyId?: string;
+	sort?: TCustomerSort;
+	order?: TSortOrder;
 };
 
 export type TCompanyListParams = {
@@ -141,6 +185,8 @@ export type TCompanyListParams = {
 	search?: string;
 	status?: TCustomerStatus;
 	companyType?: TCompanyType;
+	sort?: TCustomerSort;
+	order?: TSortOrder;
 };
 
 async function request<T>(path: string, init?: RequestInit): Promise<TApiResponse<T>> {
@@ -149,7 +195,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 		headers: {
 			// Server error messages come back in the UI language.
 			'Accept-Language': currentLanguage(),
-			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+			// A FormData body sets its own multipart boundary.
+			...(init?.body != null && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
 		},
 		...init,
 	});
@@ -192,9 +239,21 @@ export function customerQueryOptions(id: string, enabled = true) {
 	});
 }
 
-export const createCustomer = (input: TCustomerInput) => send<TCustomer>('/customers/people', 'POST', input);
+/** Creates the person and their account; the credentials come back once. */
+export const createCustomer = (input: TCustomerInput) => send<TCustomerCreated>('/customers/people', 'POST', input);
 export const updateCustomer = (id: string, input: Partial<TCustomerInput>) =>
-	send<TCustomer>(`/customers/people/${id}`, 'PATCH', input);
+	send<TCustomerDetail>(`/customers/people/${id}`, 'PATCH', input);
+
+/** Uploads the person's photo (stored on their account); returns its URL. */
+export async function uploadCustomerPhoto(id: string, file: File): Promise<{ image: string }> {
+	const body = new FormData();
+	body.set('file', file);
+	return (await request<{ image: string }>(`/customers/people/${id}/photo`, { method: 'POST', body })).data as {
+		image: string;
+	};
+}
+
+export const removeCustomerPhoto = (id: string) => send<null>(`/customers/people/${id}/photo`, 'DELETE');
 export const setCustomerActive = (id: string, active: boolean) =>
 	send<TCustomer>(`/customers/people/${id}/${active ? 'activate' : 'deactivate'}`, 'POST');
 

@@ -65,6 +65,7 @@ export class PortalAuthService implements IPortalSessionResolver {
 			| 'verifySignup'
 			| 'resendSignupCode'
 			| 'closeOwnLogin'
+			| 'passwordChanged'
 		>,
 		@inject(CACHE_CLIENT_TOKEN) private readonly cache: Pick<ICacheClient, 'get' | 'set' | 'del'>,
 	) {}
@@ -180,5 +181,6 @@ export class PortalAuthService implements IPortalSessionResolver {
 
 	async changePassword(portal: PortalContext, current: string, next: string): Promise<void> {
 		if (!(await this.sessions.changePassword(portal.sessionToken, current, next))) throw new PortalWrongPasswordError();
+		await this.accounts.passwordChanged(portal.customerId);
 	}
 }

@@ -11,12 +11,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Field,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { DialogFooter } from '@ims-erp/ui/components/dialog';
 import { Input } from '@ims-erp/ui/components/input';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
@@ -228,7 +224,7 @@ export function ItemForm({
 				</Field>
 
 				<Field>
-					<FieldLabel htmlFor='serialNumber'>{t('product:items.serialNumber')}</FieldLabel>
+					<FieldLabel htmlFor='serialNumber' optional>{t('product:items.serialNumber')}</FieldLabel>
 					<Input
 						id='serialNumber'
 						value={serialNumber}
@@ -260,7 +256,7 @@ export function ItemForm({
 				</Field>
 
 				<Field>
-					<FieldLabel htmlFor='brand'>{t('product:items.brand')}</FieldLabel>
+					<FieldLabel htmlFor='brand' optional>{t('product:items.brand')}</FieldLabel>
 					<Input
 						id='brand'
 						value={brand}
@@ -270,7 +266,7 @@ export function ItemForm({
 				</Field>
 
 				<Field className='sm:col-span-2'>
-					<FieldLabel htmlFor='description'>{t('product:items.description_label')}</FieldLabel>
+					<FieldLabel htmlFor='description' optional>{t('product:items.description_label')}</FieldLabel>
 					<Input
 						id='description'
 						value={description}
@@ -305,11 +301,11 @@ export function ItemForm({
 		>
 			<FieldGroup className='grid gap-4 sm:grid-cols-2'>
 				<Field>
-					<FieldLabel htmlFor='sellingPrice'>{t('product:items.sellingPrice')}</FieldLabel>
+					<FieldLabel htmlFor='sellingPrice' optional>{t('product:items.sellingPrice')}</FieldLabel>
 					<MoneyInput id='sellingPrice' value={sellingPrice} onValueChange={setSellingPrice} />
 				</Field>
 				<Field>
-					<FieldLabel htmlFor='purchasePrice'>{t('product:items.purchasePrice')}</FieldLabel>
+					<FieldLabel htmlFor='purchasePrice' optional>{t('product:items.purchasePrice')}</FieldLabel>
 					<MoneyInput id='purchasePrice' value={purchasePrice} onValueChange={setPurchasePrice} />
 				</Field>
 			</FieldGroup>
@@ -343,7 +339,7 @@ export function ItemForm({
 				</Field>
 
 				<Field>
-					<FieldLabel htmlFor='minStockQty'>{t('product:items.minStockQty')}</FieldLabel>
+					<FieldLabel htmlFor='minStockQty' optional>{t('product:items.minStockQty')}</FieldLabel>
 					<Input
 						id='minStockQty'
 						type='number'
@@ -355,7 +351,7 @@ export function ItemForm({
 				</Field>
 
 				<Field className='sm:col-span-2'>
-					<FieldLabel htmlFor='barcode'>{t('product:items.barcode')}</FieldLabel>
+					<FieldLabel htmlFor='barcode' optional>{t('product:items.barcode')}</FieldLabel>
 					<Input id='barcode' value={barcode} onChange={(event) => setBarcode(event.target.value)} />
 				</Field>
 			</FieldGroup>

@@ -18,7 +18,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Table,
@@ -355,7 +356,7 @@ function InvoiceDetailPage() {
 											</Select>
 										</Field>
 										<Field>
-											<FieldLabel htmlFor='receipt-reference'>{t('finance:receipt.reference')}</FieldLabel>
+											<FieldLabel htmlFor='receipt-reference' optional>{t('finance:receipt.reference')}</FieldLabel>
 											<Input
 												id='receipt-reference'
 												maxLength={100}

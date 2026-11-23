@@ -21,7 +21,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@ims-erp/ui/components/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -200,7 +201,7 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 							</Field>
 						)}
 						<Field>
-							<FieldLabel htmlFor='invoice-description'>{t('finance:invoice.description')}</FieldLabel>
+							<FieldLabel htmlFor='invoice-description' optional>{t('finance:invoice.description')}</FieldLabel>
 							<Input
 								id='invoice-description'
 								maxLength={200}
@@ -211,7 +212,7 @@ function CreateInvoiceDialog({ summary, onClose }: { summary: TBillingSummary; o
 							<FieldDescription>{t('finance:billing.descriptionHint')}</FieldDescription>
 						</Field>
 						<Field>
-							<FieldLabel htmlFor='invoice-due'>{t('finance:invoice.dueDate')}</FieldLabel>
+							<FieldLabel htmlFor='invoice-due' optional>{t('finance:invoice.dueDate')}</FieldLabel>
 							<DatePicker id='invoice-due' value={dueDate} onChange={setDueDate} />
 						</Field>
 					</FieldGroup>

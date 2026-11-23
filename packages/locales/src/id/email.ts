@@ -43,6 +43,16 @@ const email = {
 	'portalSignupCode.body': 'Gunakan kode ini untuk menyelesaikan pembuatan akun portal pelanggan {{app}} Anda.',
 	'portalSignupCode.expiry': 'Kode berlaku 10 menit. Jika Anda tidak mendaftar, abaikan email ini.',
 
+	// Kredensial akun pelanggan (ERP-0114): staf membuat akun dengan kata
+	// sandi bawaan yang wajib diganti saat pertama kali masuk.
+	'customerCredentials.subject': 'Akun pelanggan {{app}} Anda',
+	'customerCredentials.greeting': 'Hai {{name}},',
+	'customerCredentials.body': 'Akun pelanggan {{app}} untuk Anda sudah dibuat. Masuk ke portal pelanggan dengan data berikut.',
+	'customerCredentials.username': 'Nama pengguna',
+	'customerCredentials.password': 'Kata sandi',
+	'customerCredentials.changeNotice': 'Demi keamanan, Anda akan diminta mengganti kata sandi ini saat pertama kali masuk.',
+	'customerCredentials.action': 'Masuk',
+
 	// Undangan organisasi (invitation.type = 'org'): undangan bergabung ke
 	// organisasi tertentu dengan peran.
 	'organizationInvitation.subject':

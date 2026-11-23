@@ -6,6 +6,8 @@ import type common from '../en/common';
  * translated while the key set stays compiler-enforced.
  */
 const common_: Record<keyof typeof common, string> = {
+	// Suffix of an optional form field label: "Phone (Optional)" (ERP-0114).
+	'form.optional': 'Opsional',
 	'action.cancel': 'Batal',
 	'cardMenu.label': 'Aksi',
 	'cardMenu.stockAdjustment': 'Penyesuaian stok',

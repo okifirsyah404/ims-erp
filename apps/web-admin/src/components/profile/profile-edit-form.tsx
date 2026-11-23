@@ -20,12 +20,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@ims-erp/ui/components/card';
-import {
-	Field,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-} from '@ims-erp/ui/components/field';
+import { Field, FieldDescription, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 
@@ -164,7 +160,7 @@ export function ProfileEditForm() {
 							</Field>
 							<Field>
 								<div className='flex items-baseline justify-between gap-2'>
-									<FieldLabel htmlFor='profile-bio'>{t('profile.bio')}</FieldLabel>
+									<FieldLabel htmlFor='profile-bio' optional>{t('profile.bio')}</FieldLabel>
 									<span
 										className='text-xs tabular-nums text-muted-foreground'
 										aria-live='polite'

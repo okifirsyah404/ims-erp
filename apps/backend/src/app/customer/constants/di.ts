@@ -8,6 +8,7 @@ import type {
 	ICustomerPersonRepository,
 } from '../contracts/customer.repository.interface';
 import type { CustomerService } from '../services/customer.service';
+import type { CustomerAccountService } from '../services/customer-account.service';
 import type { CustomerNumberingService } from '../services/customer-numbering.service';
 import type { CustomerCodeNumberingRepository } from '../repositories/code-numbering.repository';
 import type { ExportedCustomerService } from '../services/exported-customer.service';
@@ -30,6 +31,11 @@ export const COMPANY_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ICompanyAddressRep
 /** Token resolving to the {@link ICustomerAddressRepository} implementation. */
 export const CUSTOMER_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ICustomerAddressRepository> =
 	Symbol('CUSTOMER_ADDRESS_REPOSITORY');
+
+/** Token resolving to the {@link CustomerAccountService} (Better Auth account of a person, ERP-0114). */
+export const CUSTOMER_ACCOUNT_SERVICE_TOKEN: InjectionToken<CustomerAccountService> = Symbol(
+	'CUSTOMER_ACCOUNT_SERVICE',
+);
 
 /** Token resolving to the {@link CustomerService} implementation. */
 export const CUSTOMER_SERVICE_TOKEN: InjectionToken<CustomerService> = Symbol(

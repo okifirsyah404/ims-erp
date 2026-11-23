@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@ims-erp/ui/components/dialog';
-import { Field, FieldGroup, FieldLabel } from '@ims-erp/ui/components/field';
+import { Field, FieldGroup } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { MonthPicker } from '@ims-erp/ui/components/month-picker';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@ims-erp/ui/components/table';
@@ -280,7 +281,7 @@ function SalaryRowDialog({
 							</Field>
 						</div>
 						<Field>
-							<FieldLabel htmlFor='salary-notes'>{t('hr:field.notes')}</FieldLabel>
+							<FieldLabel htmlFor='salary-notes' optional>{t('hr:field.notes')}</FieldLabel>
 							<Input id='salary-notes' maxLength={1000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 						</Field>
 					</FieldGroup>

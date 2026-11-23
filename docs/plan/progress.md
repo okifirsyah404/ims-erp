@@ -12,6 +12,131 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-23 - ERP-0114: `/crm/customers` robustness, one account per customer, one owner per company, global form conventions
+
+**Owner request** (grill-me, Q1-Q34, all settled in session): make
+`/crm/customers` robust - forms aligned to `customer.*` and grouped by use,
+"(Optional)" on optional fields, the E.164 `CountryPhoneField`, "Rp" money
+fields, no number spinner (globally in web-admin); a TanStack table with
+dropdown filters, pagination, sort, the customer photo and company; a Better
+Auth account created with every customer (username from the name + 6 digits
+of the timestamp, password `{username}12345678`).
+
+**Design gate (Gate 1 + 2).** Read `docs.dbml` (customer, identity modules),
+`module-ownership.md`, `integrity-and-consistency.md`; manual grilling pass
+(the `grilling` skill was available this time). Decisions:
+- Ownership: all tables stay in schema `customer`; the account stays in
+  `auth` behind `ExportedUserService` (no cross-schema FK, no `auth` query from
+  the customer module). Company-wide (no `organization_id`, ADR-0011).
+- **One Better Auth account = one `customer.customers` row** (Q34): created
+  with the person, kept on revoke, email lives on the account (Q5:
+  `customers.email` dropped), required on create; verified at the first portal
+  sign-in and locked afterwards (Q14/Q23); username always
+  `{base}_{last 6 ms digits}` (Q19/Q27); default password; credentials shown
+  once to staff **and** emailed (Q17/Q26); `portal_password_change_required`
+  set (Q7b; enforcement is ERP-0115, Q32).
+- **One owner per customer company + N staff** (Q29c): new
+  `companies.owner_customer_id` (intra-schema FK `on delete set null`, unique
+  among live rows); `customers.is_primary`, `customers.owner_user_id`,
+  `companies.owner_user_id` dropped (Q25/Q30); the portal role is derived
+  from the column (`utils/ownership.ts`).
+- `whatsapp` dropped from both tables (Q9/Q12): the phone (E.164) is the
+  WhatsApp number; frozen document snapshots keep their `whatsapp` key.
+- Photo = `auth.users.image` via the user module, uploaded from the form
+  (Q2/Q22/Q28). Sort on the server (Q3). Inline "new company" from the person
+  form, the person becomes its owner (Q24). Customer companies are data
+  records only (Q15).
+- Money/datetime: no money column touched; timestamps unchanged (unix ms).
+  Soft delete: unchanged; an inline company is soft-deleted on a failed create.
+
+**Schema** (`docs.dbml` first, then Drizzle, then the generators):
+- `customer.customers`: - `email`, `whatsapp`, `is_primary`, `owner_user_id`
+  (+ their indexes); + `portal_password_change_required boolean not null default false`.
+- `customer.companies`: - `whatsapp`, `owner_user_id`; + `owner_customer_id uuid`
+  (FK, partial unique index `customer_companies_owner_uq`).
+- Migration `database/migrations/20261123010354_customer_account_owner`
+  (generated with `--hints` for the three new objects; SQL inspected: 3 index
+  drops, 2 adds, 6 column drops, 1 unique index, 1 FK). No backfill: nothing
+  is deployed (ADR-0024 Q34). No customer seeder exists, so seeds are
+  unaffected.
+
+**Backend.** `customer`: new `CustomerAccountService` (username, default
+password, provisioning with compensation, credentials mail), `CustomerService`
+create/update with account, inline company, ownership transfer, email lock,
+`POST|DELETE /customers/people/:id/photo` (`customer:update`), list sort
+(`sort`, `order`) and email search through `ExportedUserService.findIdsByEmail`;
+list/detail rows carry `account`, `company`, `isOwner` (people) and `owner`
+(companies). `PortalAccountService`: invites of new contacts use the create
+path (credentials email), revoke keeps `user_id`, role derived from the
+owner column, invite with role owner moves ownership, the owner cannot close
+their login, first sign-in verifies the email, password change clears the
+flag. `ExportedCustomerService`: email from the account, no `whatsapp`.
+`user`: `ExportedUserService` + account gateway (`createCustomerAccount`,
+`summaries`, `findIdsByEmail`, `updateProfile`, `setAvatar`, `clearAvatar`,
+`isUsernameTaken`, `deleteUnusedUser`). Consumers: `sale` quotation
+delivery/invoice events, `ticket`, `project` licensing, `payment` checkout
+read the phone where they read `whatsapp`. Lead conversion uses the new create
+input (email required; a lead company becomes an inline company).
+New errors + `api` keys (en/id): `crm.customerEmailTaken`,
+`customerEmailVerified`, `customerUsernameUnavailable`, `customerOwnerInvalid`,
+`customerAccountMissing`, `customerPhotoInvalid`. Mail: `CredentialsEmail`
+(`packages/react-email`) + `email:customerCredentials.*`.
+
+**Web-admin.** `/crm/customers`: People tab first; TanStack tables with
+`ServerSortHeader` (server sort), status/type/company filters, page size
+10/20/50/100, avatar + email + company/owner badge, created date; Companies
+tab with owner. Sectioned `CustomerFormDialog` (identity + photo, company:
+individual / existing / new, contact, management) and `CompanyFormDialog`
+(owner on edit); `CustomerCredentialsDialog`; `useCustomerSave`;
+`CompanyCombobox`. Detail page shows avatar, account email, username, owner.
+**Global:** `components/form/field-label.tsx` (`optional` prop,
+`common:form.optional` "Optional"/"Opsional") applied to 106 optional labels
+by a scripted sweep (ambiguous fields excluded: quantities, conditional
+borrower/guest fields, invite modes, gateway secrets, setting values, VAT and
+validity/contract dates, BAST fields); `CountryPhoneField` gained
+`defaultValue`, `required` and inline validity, and replaced the plain phone
+inputs of the lead, supplier, supplier contact, company profile, employee and
+borrowing-guest forms (the ticket "reporter contact" stays free text);
+`packages/ui` `Input` hides the number spinner everywhere. Every money input
+already used `MoneyInput` ("Rp" prefix); no change needed.
+
+**Checks.**
+- `bunx tsc --noEmit -p tsconfig.json` (apps/backend): clean.
+- `bunx tsc -p tsconfig.app.json --noEmit` (apps/web-admin): clean.
+- `bun test` (apps/backend, with the local `.env`): 1397 pass, 0 fail
+  (customer.service 27, portal-account 31). Without an `.env` the worktree's
+  backend suite fails on config validation (61 load errors) - environmental,
+  same as before this change.
+- `bun run test` (root): web-admin 209, web-customer-portal 68, web-landing
+  25, react-email 6, locales 106 - all pass; backend as above.
+- `bun run typecheck` (root): 6/6. `bun run lint` (root): 0 errors
+  (warnings pre-existing; the new ones in touched files were fixed).
+- `bun docs/database/gen-logical-references.ts` + `bun docs/database/validate-dbml.ts`: OK
+  (0 cross-module refs, 0 timestamp gaps, 0 drizzle/column parity drift).
+- Disposable database `ims_erp_scratch_0114` (local PostgreSQL, dropped
+  afterwards): `drizzle-kit migrate` applied the full chain, seed run twice
+  (second run inserted 0), `drizzle-kit check` "Everything's fine", a second
+  `generate` "No schema changes".
+- Browser (scratch backend on :3011 with mail pointed at a closed port and
+  separate Redis DBs, web-admin on :5174, session-only test admin): created
+  "Budi Santoso" with a new company "PT Maju Jaya" -> credentials dialog
+  (`budi_santoso_130883`), phone stored `+6281234567890`, owner badge, email
+  search hit, Companies tab shows the owner.
+- Not run: photo upload in a browser (writes to the configured S3), real email
+  delivery, the lead conversion in a browser.
+
+**Docs.** `docs/database/docs.dbml` + `logical-references.md` regenerated;
+`docs/role-permission.md` regenerated (`bun docs/gen-role-permission.ts`,
+630 routes; the two photo routes added). New plan
+`docs/plan/plans/customer-portal-owner-and-first-login.md` (ERP-0115,
+planned). `backlog.md` ERP-0114 implemented, ERP-0115 planned;
+`features.md` updated.
+
+Next executable task: ERP-0115 (portal: forced password change at the first
+sign-in, username sign-in, owner/staff UI) - or, before it, a browser check of
+the ERP-0114 photo upload against a dev S3 bucket. The earlier ERP-0112 browser
+check and ERP-0111 Google walk-through remain open.
+
 ## 2026-11-23 - web-admin: tall form dialogs scroll inside `ScrollArea`
 
 Eight form dialogs still used the browser's native scrollbar

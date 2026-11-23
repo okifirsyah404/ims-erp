@@ -43,6 +43,16 @@ const email = {
 	'portalSignupCode.body': 'Use this code to finish creating your {{app}} customer portal account.',
 	'portalSignupCode.expiry': 'The code expires in 10 minutes. If you did not sign up, ignore this email.',
 
+	// Customer account credentials (ERP-0114): staff created the account with
+	// a default password that must be changed at the first sign-in.
+	'customerCredentials.subject': 'Your {{app}} customer account',
+	'customerCredentials.greeting': 'Hi {{name}},',
+	'customerCredentials.body': 'A {{app}} customer account has been created for you. Sign in to the customer portal with the details below.',
+	'customerCredentials.username': 'Username',
+	'customerCredentials.password': 'Password',
+	'customerCredentials.changeNotice': 'For your security, you will be asked to change this password the first time you sign in.',
+	'customerCredentials.action': 'Sign in',
+
 	// Organization invitation (invitation.type = 'org'): invite to join a
 	// specific organization with a role.
 	'organizationInvitation.subject': 'You are invited to join {{organization}}',

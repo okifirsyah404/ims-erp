@@ -7,14 +7,15 @@ import {
 	Field,
 	FieldDescription,
 	FieldGroup,
-	FieldLabel,
 	FieldLegend,
 	FieldSeparator,
 	FieldSet,
 } from '@ims-erp/ui/components/field';
+import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Textarea } from '@ims-erp/ui/components/textarea';
 import type { TCompanyProfile, TCompanyProfileInput } from '@/lib/company-api';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 
 /** The fields this form still edits. Everything else is left to storage. */
 type TTextKey =
@@ -77,14 +78,27 @@ export function CompanyProfileForm({
 		const { hint, ...input } = props;
 		return (
 			<Field>
-				<FieldLabel htmlFor={`company-${key}`}>{label}</FieldLabel>
-				<Input
-					id={`company-${key}`}
-					value={values[key]}
-					onChange={set(key)}
-					disabled={readOnly}
-					{...input}
-				/>
+				<FieldLabel htmlFor={`company-${key}`} optional={!input.required && !readOnly}>
+					{label}
+				</FieldLabel>
+				{key === 'phone' ? (
+					// E.164 like every phone of the ERP (ERP-0114).
+					<CountryPhoneField
+						id='company-phone'
+						defaultValue={profile?.phone}
+						required={false}
+						disabled={readOnly}
+						onChange={(value) => setValues((current) => ({ ...current, phone: value }))}
+					/>
+				) : (
+					<Input
+						id={`company-${key}`}
+						value={values[key]}
+						onChange={set(key)}
+						disabled={readOnly}
+						{...input}
+					/>
+				)}
 				{hint && <FieldDescription>{hint}</FieldDescription>}
 			</Field>
 		);

@@ -1,3 +1,5 @@
+
+import { sniffImageType, UnsupportedImageError } from '@utils/image.util';
 import { container } from 'tsyringe';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
@@ -16,6 +18,16 @@ import {
 	updateCustomerAddressSchema,
 	updateCustomerSchema,
 } from '../contracts/customer.contract';
+import { CustomerPhotoInvalidError } from '../errors/customer.errors';
+
+/** Photo upload cap: 2 MiB, the same as the self-service avatar. */
+const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+/** The multipart `file` field; the parsed body is the only safe source. */
+function photoFileFrom(body: unknown): File | null {
+	const file = body && typeof body === 'object' ? (body as { file?: unknown }).file : undefined;
+	return file instanceof File ? file : null;
+}
 
 /**
  * REST controller for the customer master (`/customers`).
@@ -207,7 +219,10 @@ export class CustomerController {
 					),
 				{
 					erp: { permission: ['customer:create'] },
-					detail: { description: 'Creates a customer person' },
+					detail: {
+						description:
+							'Creates a customer person with a Better Auth account (generated username, default password `{username}12345678`, emailed). The response carries `credentials` once (ERP-0114).',
+					},
 				},
 			)
 			.patch(
@@ -222,6 +237,41 @@ export class CustomerController {
 				{
 					erp: { permission: ['customer:update'] },
 					detail: { description: 'Updates a customer person' },
+				},
+			)
+			.post(
+				'/people/:id/photo',
+				async ({ params, body }) => {
+					const { id } = idParamSchema.parse(params);
+					const file = photoFileFrom(body);
+					if (!file) throw new CustomerPhotoInvalidError();
+					if (file.size > PHOTO_MAX_BYTES) throw new CustomerPhotoInvalidError(413);
+					const bytes = new Uint8Array(await file.arrayBuffer());
+					if (!sniffImageType(bytes.subarray(0, 16))) throw new CustomerPhotoInvalidError();
+					try {
+						return ok(await service.setCustomerPhoto(id, bytes));
+					} catch (error) {
+						if (error instanceof UnsupportedImageError) throw new CustomerPhotoInvalidError();
+						throw error;
+					}
+				},
+				{
+					erp: { permission: ['customer:update'] },
+					detail: {
+						description:
+							'Uploads the photo of a person (multipart, field `file`, 2 MiB, any decodable image, stored as WebP on the account; ERP-0114)',
+					},
+				},
+			)
+			.delete(
+				'/people/:id/photo',
+				async ({ params }) => {
+					await service.clearCustomerPhoto(idParamSchema.parse(params).id);
+					return noContent();
+				},
+				{
+					erp: { permission: ['customer:update'] },
+					detail: { description: 'Removes the photo of a person (ERP-0114)' },
 				},
 			)
 			.post(
