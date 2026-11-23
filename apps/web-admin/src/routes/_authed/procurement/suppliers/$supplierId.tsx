@@ -44,6 +44,7 @@ import {
 	setSupplierCompanyActive,
 	supplierCompanyQueryOptions,
 	updateSupplierCompany,
+	updateSupplierCompanyAddress,
 	type TSupplierCompanyAddress,
 	type TSupplierCompanyAddressInput,
 } from '@/lib/supplier-api';
@@ -434,7 +435,17 @@ function SupplierDetailPage() {
 					canSeeBank={canSeeBank}
 					submitting={busy}
 					onClose={() => setEditing(false)}
-					onSave={(input) => void run(() => updateSupplierCompany(supplierId, input), t('procurement:suppliers.saved'))}
+					onSave={(input, address) =>
+						void run(async () => {
+							await updateSupplierCompany(supplierId, input);
+							if (!address) return;
+							if (address.id) {
+								await updateSupplierCompanyAddress(supplierId, address.id, address.values);
+							} else {
+								await createSupplierCompanyAddress(supplierId, address.values);
+							}
+						}, t('procurement:suppliers.saved'))
+					}
 				/>
 			)}
 			{addingAddress && (

@@ -43,10 +43,11 @@ import type { DataTableFeatures } from '@/components/data-table/data-table-featu
 import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
-import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
+import { SupplierFormDialog, type TSupplierAddressDraft } from '@/components/procurement/supplier-form-dialog';
 import { toast } from '@/components/toast';
 import {
 	createSupplierCompany,
+	createSupplierCompanyAddress,
 	SUPPLIER_SORT_FIELDS,
 	setSupplierCompanyActive,
 	supplierCompaniesQueryOptions,
@@ -108,10 +109,14 @@ function SupplierListPage() {
 		await queryClient.invalidateQueries({ queryKey: ['procurement', 'suppliers'] });
 	}
 
-	async function handleCreate(input: Partial<TSupplierCompanyInput>) {
+	async function handleCreate(
+		input: Partial<TSupplierCompanyInput>,
+		address: TSupplierAddressDraft | null,
+	) {
 		setSubmitting(true);
 		try {
 			const created = await createSupplierCompany(input);
+			if (address) await createSupplierCompanyAddress(created.id, address.values);
 			await refresh();
 			toast.success(t('procurement:suppliers.saved'));
 			setCreating(false);
@@ -333,7 +338,7 @@ function SupplierListPage() {
 					canSeeBank={canSeeBank}
 					submitting={submitting}
 					onClose={() => setCreating(false)}
-					onSave={(input) => void handleCreate(input)}
+					onSave={(input, address) => void handleCreate(input, address)}
 				/>
 			)}
 		</div>
