@@ -18,7 +18,6 @@ const hr_ = {
 	'list.organizationLevel': 'Organisasi',
 	'list.created': 'Dibuat',
 	'list.actions': 'Aksi',
-	'list.view': 'Lihat',
 	'list.search': 'Cari',
 	'list.tableTitle': 'Daftar karyawan',
 	'list.count': '{{total}} karyawan',

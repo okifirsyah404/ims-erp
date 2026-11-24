@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getRouteApi } from '@tanstack/react-router';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Eye, Funnel, IdCard, Pencil, Plus } from 'lucide-react';
+import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Funnel, IdCard, Pencil, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -194,12 +194,6 @@ export function EmployeeList() {
 							label={t('hr:list.actions')}
 							disabled={archive.isPending}
 							actions={[
-								{
-									key: 'view',
-									label: t('hr:list.view'),
-									icon: Eye,
-									onSelect: () => void navigate({ to: '/hr/employees/$employeeId', params: { employeeId: row.original.id } }),
-								},
 								{
 									key: 'edit',
 									label: t('hr:detail.edit'),

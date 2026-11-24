@@ -18,7 +18,6 @@ const hr = {
 	'list.organizationLevel': 'Organization',
 	'list.created': 'Created',
 	'list.actions': 'Actions',
-	'list.view': 'View',
 	'list.search': 'Search',
 	'list.tableTitle': 'Employee list',
 	'list.count': '{{total}} employee(s)',

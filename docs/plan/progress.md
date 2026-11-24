@@ -92,6 +92,13 @@ instead of only the name link.
   on `/hr/employees` (propagation stopped). The only console error is the
   pre-existing `nativeButton` warning from the detail page.
 
+**Follow-up (same day).** Owner asked to drop the redundant View (eye) icon now
+that the row itself opens the detail page: the `view` action and the `Eye`
+import are gone from `employee-list.tsx`, and the now-unused `list.view` locale
+key was deleted from `en`/`id` (dead-key guard). Row actions are Edit + Archive.
+Re-checked in the browser: two icons per row, no console errors; web-admin 209
+pass, locales 106 pass, root lint 0 errors.
+
 ## 2026-11-24 - HR employees: `legal_name` / `whatsapp` columns dropped, phone uses the country field
 
 User request: Identity card on `/hr/employees/:id/edit` should drop Legal name
