@@ -18,6 +18,10 @@ export const LEGACY_FIXTURE_CODES: Record<string, string> = {
 	vat_input: '1-1800',
 	inventory: '1-1400',
 	claim_payable: '2-1200',
+	// ERP-0136: the older AP fixtures seed no GR/IR account; their bills carry
+	// no stock lines, so these roles never resolve there.
+	grir_clearing: '2-1150',
+	purchase_price_variance: '5-1300',
 };
 
 type TAccountLookup = {

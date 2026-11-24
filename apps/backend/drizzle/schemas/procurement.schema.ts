@@ -458,6 +458,8 @@ export const purchaseReturns = procurementSchema.table(
 		cancelledBy: text('cancelled_by'),
 		cancelledAt: unixTimestampNullable('cancelled_at'),
 		cancelledReason: text('cancelled_reason'),
+		/** Logical reference to finance.journal_entries.id (ERP-0136). */
+		journalEntryId: uuid('journal_entry_id'),
 		...timestamps,
 	},
 	(table) => [

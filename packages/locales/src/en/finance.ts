@@ -675,6 +675,12 @@ const finance = {
 	'postingRules.event.finance.deferred_revenue_recognized': 'Deferred revenue recognised',
 	'postingRules.event.finance.credit_memo_applied': 'Credit memo applied',
 	'postingRules.event.finance.receivable_written_off': 'Receivable written off',
+	'postingRules.role.project_cogs': 'Project cost of goods sold',
+	'postingRules.event.procurement.goods_received': 'Goods received',
+	'postingRules.event.procurement.purchase_returned': 'Purchase return shipped',
+	'postingRules.event.sale.delivery_shipped': 'Delivery note shipped',
+	'postingRules.event.sale.return_received': 'Sales return received',
+	'postingRules.event.inventory.adjustment_posted': 'Stock adjustment posted',
 } as const;
 
 export default finance;

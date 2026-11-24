@@ -2806,6 +2806,7 @@ Table procurement.purchase_returns {
   cancelled_by text [note: "Logical reference to auth.users.id."]
   cancelled_at bigint
   cancelled_reason text
+  journal_entry_id uuid [note: "Logical reference to finance.journal_entries.id. Cross-module FK intentionally omitted. Validated through the Finance module contract. The Dr GR/IR / Cr inventory journal posted when the return shipped (ERP-0136)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -3383,7 +3384,8 @@ Table finance.supplier_bill_items {
   unit_price bigint [not null, default: 0, note: "The purchase order unit price (IDR minor units), VAT as the order states it."]
   line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
   tax_base bigint [not null, default: 0, note: "Ex-VAT part of the line total (IDR minor units); what the line debits."]
-  is_stock boolean [not null, default: false, note: "Stock-tracked product: the line debits inventory instead of expense."]
+  is_stock boolean [not null, default: false, note: "Stock-tracked product: the line clears GR/IR instead of debiting expense."]
+  grir_amount bigint [not null, default: 0, note: "Value the goods receipt credited to GR/IR for these units (quantity x ex-VAT receipt cost, ERP-0136); tax_base - grir_amount is the purchase price variance."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]

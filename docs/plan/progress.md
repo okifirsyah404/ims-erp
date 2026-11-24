@@ -12,6 +12,53 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0136/0137: GR/IR, purchase price variance, COGS, stock adjustment journals
+
+**Scope.** Phase B slice 2 (grill Q24/Q25/Q26/Q40).
+
+**Design gate.** `docs/database/` read for `procurement` (goods_receipts,
+purchase_returns), `finance` (supplier_bill_items), `sale` (delivery notes,
+returns), `inventory` (adjustments). Facts that shaped it: every goods
+receipt line has a product and is valued at the ex-VAT order price; bills are
+already capped at received-minus-billed (the 3-way match of Q25 existed);
+delivery notes issue stock on `shipped` with the moving-average cost on the
+line; sales returns come back at the delivery cost; a sale order's project is
+found through `PROJECT_LOOKUP_SERVICE_TOKEN.liveProjectOfOrder`.
+
+**Changes.** Schema: `finance.supplier_bill_items.grir_amount`,
+`procurement.purchase_returns.journal_entry_id` (logical reference). Migration
+`20261124214438_erp0136_grir_cogs` (2 ADD COLUMN). A first generate put the
+procurement column on `purchase_requests` (wrong table matched by the edit
+script); that folder was never committed, was deleted, the schema fixed, the
+migration regenerated and the scratch DB rebuilt with `drizzle:migrate-reset`.
+Backend: goods receipt, purchase return, delivery note, sales return and stock
+adjustment post through `postBusinessEvent`; supplier bill clears GR/IR with
+PPV; billable PO lines carry `receivedUnitCost`; new role `project_cogs`
+(5-1200) and five event types; `finance/utils/inventory-value.ts`. Web-admin:
+posting-rule labels for the new role/events (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts; bun docs/database/validate-dbml.ts   # OK
+bun run drizzle:generate --name erp0136_grir_cogs; bun run drizzle:migrate-reset   # migrated + seeded
+bun run drizzle:seed                         # rulesInserted 1 (project_cogs), 0 else
+bun run <temporary stock-smoke script>       # 7/7 PASS: stock adjustment create -> submit -> approve -> post gives
+                                             # Dr 1-1410 1 000 000 / Cr 5-1400; goods_received, purchase_returned,
+                                             # supplier_bill_recorded (with PPV), delivery_shipped (cogs and project_cogs),
+                                             # return_received resolve to 1-1410 / 2-1150 / 5-1300 / 1-1810 / 2-1100 / 5-1100 / 5-1200
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+bun run test                                 # 7/7: backend 1482, web-admin 209, locales 106, portal 68, landing 25, email 6
+```
+
+**Not verified.** PO -> goods receipt -> bill and order -> delivery note ->
+return were not run end to end on a database: the seed has no suppliers,
+purchase orders or sale orders. The services' own unit tests construct them
+without the posting dependency (optional injection), so their journals are
+covered by the rule-resolution smoke and the PPV test, not by an end-to-end run.
+
+Next executable task: ERP-0139 (payment gateway clearing and settlement fees).
+
 ## 2026-11-25 - ERP-0135: AR postings (Phase B slice 1, ADR-0030 accepted)
 
 **Scope.** The owner ordered Phase B and confirmed that this is the owner's

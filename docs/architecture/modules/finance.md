@@ -189,6 +189,34 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   invoices are single-line terms without a product), so service periods and
   per-category revenue are reachable through the API only for now.
 
+## Inventory and purchasing postings (B, ERP-0136/0137, built)
+
+- **Goods receipt** (procurement): stock-tracked lines post
+  `procurement.goods_received` Dr inventory 1-1410 / Cr GR/IR 2-1150 at
+  quantity x ex-VAT order price (the receipt cost), in the receipt's
+  transaction.
+- **Supplier bill** (finance): stock lines clear GR/IR at the receipt value
+  stored on the line (`supplier_bill_items.grir_amount`); the difference to
+  the billed tax base is purchase price variance 5-1300 (debit or credit);
+  service/non-stock lines debit expense. The 3-way match (billed quantity <=
+  received minus billed) already existed (ERP-0012).
+- **Purchase return** (procurement, `shipped`): Dr GR/IR / Cr inventory at the
+  receipt cost; `purchase_returns.journal_entry_id`. Units already billed
+  keep a GR/IR debit until a supplier credit note exists (not built).
+- **Delivery note** (sale, `shipped`): Dr COGS 5-1100, or project COGS 5-1200
+  with `project_id` when the order has a live project / Cr inventory at the
+  moving-average cost of the issue movements.
+- **Sales return** (sale, `received`): Dr inventory / Cr COGS (project COGS)
+  at the delivery cost; the replacement ships on a new delivery note.
+- **Stock adjustment** (inventory, `posted`): gains Dr inventory / Cr
+  inventory variance 5-1400, losses the reverse, at the movement cost.
+- Every flow values a line as `round(quantity x unit cost)`
+  (`finance/utils/inventory-value.ts`). GR/IR is posted in the receiving
+  user's organization and cleared in the bill's organization; when the two
+  differ the balance nets only at company level.
+- **Not built:** the GR/IR-older-than-30-days close warning, asset-category
+  receipts to fixed assets (ERP-0145), inventory disposals.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

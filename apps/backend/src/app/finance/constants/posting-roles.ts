@@ -21,6 +21,7 @@ export const POSTING_ROLES = [
 	'deferred_revenue',
 	'sales_return',
 	'cogs',
+	'project_cogs',
 	'grir_clearing',
 	'purchase_price_variance',
 	'inventory_variance',
@@ -49,6 +50,11 @@ export const POSTING_EVENT_TYPES = [
 	'finance.deferred_revenue_recognized',
 	'finance.credit_memo_applied',
 	'finance.receivable_written_off',
+	'procurement.goods_received',
+	'procurement.purchase_returned',
+	'sale.delivery_shipped',
+	'sale.return_received',
+	'inventory.adjustment_posted',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -83,6 +89,7 @@ export const DEFAULT_POSTING_RULE_CODES: Partial<Record<TPostingRole, string>> =
 	deferred_revenue: '2-1500',
 	sales_return: '4-1900',
 	cogs: '5-1100',
+	project_cogs: '5-1200',
 	grir_clearing: '2-1150',
 	purchase_price_variance: '5-1300',
 	inventory_variance: '5-1400',

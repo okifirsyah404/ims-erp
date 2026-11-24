@@ -338,7 +338,15 @@ function makeHarness() {
 		transaction: async (fn: (tx: never) => unknown) => fn(tx),
 	} as unknown as BunSQLDatabase;
 
-	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
+	const posting = new PostingService(
+		{} as unknown as BunSQLDatabase,
+		repo as never,
+		repo as never,
+		repo as never,
+		numbering,
+		undefined,
+		fixturePostingRules(repo as never),
+	);
 	const arResolver = new ArAccountResolverService(fixturePostingRules(repo as never));
 	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
 

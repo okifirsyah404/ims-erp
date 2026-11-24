@@ -677,6 +677,12 @@ const finance: Record<keyof typeof en, string> = {
 	'postingRules.event.finance.deferred_revenue_recognized': 'Pendapatan diterima dimuka diakui',
 	'postingRules.event.finance.credit_memo_applied': 'Nota kredit diterapkan',
 	'postingRules.event.finance.receivable_written_off': 'Piutang dihapuskan',
+	'postingRules.role.project_cogs': 'HPP proyek',
+	'postingRules.event.procurement.goods_received': 'Barang diterima',
+	'postingRules.event.procurement.purchase_returned': 'Retur pembelian dikirim',
+	'postingRules.event.sale.delivery_shipped': 'Surat jalan dikirim',
+	'postingRules.event.sale.return_received': 'Retur penjualan diterima',
+	'postingRules.event.inventory.adjustment_posted': 'Penyesuaian stok diposting',
 } as const;
 
 export default finance;

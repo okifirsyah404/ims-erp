@@ -380,6 +380,7 @@ export const POSTING_ROLES = [
 	'deferred_revenue',
 	'sales_return',
 	'cogs',
+	'project_cogs',
 	'grir_clearing',
 	'purchase_price_variance',
 	'inventory_variance',
@@ -407,6 +408,11 @@ export const POSTING_EVENT_TYPES = [
 	'finance.deferred_revenue_recognized',
 	'finance.credit_memo_applied',
 	'finance.receivable_written_off',
+	'procurement.goods_received',
+	'procurement.purchase_returned',
+	'sale.delivery_shipped',
+	'sale.return_received',
+	'inventory.adjustment_posted',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 

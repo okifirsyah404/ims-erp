@@ -64,8 +64,8 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 195 |
-| Distinct targets | 26 |
+| Logical reference columns | 196 |
+| Distinct targets | 27 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 160 |
 
@@ -96,6 +96,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `project.leads.id` | Project | 2 |
 | `sale.orders.id` | Sale | 2 |
 | `finance.cash_bank_accounts.id` | Finance | 1 |
+| `finance.journal_entries.id` | Finance | 1 |
 | `finance.payment_terms.id` | Finance | 1 |
 | `inventory.item_serials.id` | Inventory | 1 |
 | `inventory.items.id` | Inventory | 1 |
@@ -104,7 +105,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `sale.invoice_items.id` | Sale | 1 |
 | `supplier.suppliers.id` | Supplier | 1 |
 
-## The 26 targets in full
+## The 27 targets in full
 
 ### `auth.organizations.id` - owner Identity, 56 referring columns
 
@@ -350,6 +351,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ### `finance.cash_bank_accounts.id` - owner Finance, 1 referring column
 
 - `payment.payments`  ->  `cash_bank_account_id`
+
+### `finance.journal_entries.id` - owner Finance, 1 referring column
+
+- `procurement.purchase_returns`  ->  `journal_entry_id`
 
 ### `finance.payment_terms.id` - owner Finance, 1 referring column
 

@@ -915,8 +915,16 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   DB, DB smoke 11/11, 9 unit tests, backend 1481 pass. Open: line-item invoice
   editor (service periods are API-only), credit allocation/refund.
 
+- GR/IR and COGS, Phase B (ERP-0136/0137, 2026-11-25): goods receipts post
+  Dr inventory / Cr GR/IR, bills clear GR/IR with purchase price variance,
+  purchase returns reverse it, delivery notes post COGS (project COGS for a
+  project order), sales returns reverse COGS, stock adjustments post against
+  inventory variance. Evidence: migration `20261124214438_erp0136_grir_cogs`,
+  DB smoke 7/7, PPV unit test. Open: PO-to-bill not run end to end on a
+  database, supplier credit note, GR/IR aging warning.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close; ERP-0136..0142 (Phase B: GR/IR, COGS,
+- ERP-0131 year-end close; ERP-0138..0142 (Phase B:
   payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
   sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,

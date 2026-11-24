@@ -1,3 +1,4 @@
+import { inventoryValue } from '../utils/inventory-value';
 import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DRIZZLE_TOKEN } from '@di/provider';
@@ -256,6 +257,7 @@ export class SupplierBillService {
 					lineTotal: priced.lines[index]!.lineTotal,
 					taxBase: priced.lines[index]!.taxBase,
 					isStock: orderLine.isStock,
+					grirAmount: orderLine.isStock ? inventoryValue(quantity, orderLine.receivedUnitCost) : 0,
 					sortOrder: index,
 				})),
 				tx,
@@ -347,53 +349,35 @@ export class SupplierBillService {
 			if (!bill) throw new BillNotFoundError();
 			if (bill.status !== 'draft') throw new BillNotDraftError();
 
-			const accounts = await this.accountResolver.resolveAllBill(ctx.organizationId);
 			const billDate = bill.billDate ?? new Date().toISOString().slice(0, 10);
 
-			// ERP-0012: stock lines of a bill made from a purchase order debit
-			// inventory (Persediaan); everything else stays an expense.
+			// ERP-0136 (grill Q24): stock lines clear GR/IR at the receipt value;
+			// the difference to the billed base is purchase price variance.
+			// Service and non-stock lines stay an expense.
 			const items = await this.billItems.findSupplierBillItems(ctx.organizationId, id, tx);
-			const toInventory = items.filter((item) => item.isStock).reduce((sum, item) => sum + item.taxBase, 0);
-			const lines: Array<{
-				accountId: string;
-				debit: number;
-				credit: number;
-			}> = [];
-			if (toInventory > 0) {
-				lines.push({
-					accountId: await this.accountResolver.resolve(ctx.organizationId, 'inventory'),
-					debit: toInventory,
-					credit: 0,
-				});
-			}
-			if (bill.subtotal - toInventory > 0) {
-				lines.push({
-					accountId: accounts.expense,
-					debit: bill.subtotal - toInventory,
-					credit: 0,
-				});
-			}
-			if (bill.taxTotal > 0) {
-				lines.push({
-					accountId: accounts.taxInput,
-					debit: bill.taxTotal,
-					credit: 0,
-				});
-			}
-			lines.push({
-				accountId: accounts.ap,
-				debit: 0,
-				credit: bill.grandTotal,
-			});
+			const stockItems = items.filter((item) => item.isStock);
+			const grir = stockItems.reduce((sum, item) => sum + item.grirAmount, 0);
+			const stockBase = stockItems.reduce((sum, item) => sum + item.taxBase, 0);
+			const variance = stockBase - grir;
+			const party = { partyType: 'supplier', partyId: bill.supplierCompanyId };
+			const lines = [
+				{ role: 'grir_clearing', debit: grir, credit: 0 },
+				{ role: 'purchase_price_variance', debit: Math.max(variance, 0), credit: Math.max(-variance, 0) },
+				{ role: 'expense', debit: bill.subtotal - stockBase, credit: 0 },
+				{ role: 'vat_input', debit: bill.taxTotal, credit: 0 },
+				{ role: 'payable', debit: 0, credit: bill.grandTotal, ...party },
+			].filter((line) => line.debit > 0 || line.credit > 0);
 
-			await this.posting.post(tx, {
+			await this.posting.postBusinessEvent(tx, {
 				organizationId: ctx.organizationId,
 				entryDate: billDate,
 				sourceModule: 'finance',
 				sourceType: 'supplier_bill',
 				sourceId: bill.id,
 				idempotencyKey: `supplier-bill:${bill.id}`,
+				eventType: 'finance.supplier_bill_recorded',
 				description: `Supplier bill ${bill.code}`,
+				actorUserId: ctx.actorUserId,
 				lines,
 			});
 

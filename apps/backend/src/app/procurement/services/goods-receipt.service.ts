@@ -7,6 +7,9 @@ import { SERIAL_UNIT_SERVICE_TOKEN } from '@app/inventory/constants/di';
 import type { SerialUnitService } from '@app/inventory/services/serial-unit.service';
 import type { StockService } from '@app/inventory/services/stock.service';
 import { exVatUnitCost } from '@app/inventory/utils/moving-average';
+import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PostingService } from '@app/finance/services/posting.service';
+import { inventoryValue } from '@app/finance/utils/inventory-value';
 import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { ProcurementNumberingService } from './procurement-numbering.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
@@ -95,6 +98,9 @@ export class GoodsReceiptService {
 		/** ERP-0044: received goods are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register'>,
+		/** ERP-0136: received stock posts Dr inventory / Cr GR/IR. */
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
 	) {}
 
 	list(query: TGoodsReceiptListQuery): Promise<TPaginationResult<TGoodsReceiptRow>> {
@@ -289,6 +295,36 @@ export class GoodsReceiptService {
 						tx,
 					);
 				}
+			}
+			// ERP-0136 (ADR-0030, grill Q24): stock lines are valued at the ex-VAT
+			// order price and parked in GR/IR until the supplier bill clears it.
+			const stockLines = items
+				.map((row, index) => ({ row, item: lines[index]!.item }))
+				.filter(({ item }) => item.isStockTracked)
+				.map(({ row }) => ({ productId: row.productId, value: inventoryValue(row.quantity, row.unitCost) }))
+				.filter((line) => line.value > 0);
+			const total = stockLines.reduce((sum, line) => sum + line.value, 0);
+			if (this.posting && total > 0) {
+				await this.posting.postBusinessEvent(tx, {
+					organizationId: actor.organizationId,
+					entryDate: receiptDate,
+					sourceModule: 'procurement',
+					sourceType: 'goods_receipt',
+					sourceId: receipt.id,
+					idempotencyKey: `goods_receipt:${receipt.id}`,
+					eventType: 'procurement.goods_received',
+					description: `Goods receipt ${code}`,
+					lines: [
+						...stockLines.map((line) => ({ role: 'inventory', debit: line.value, credit: 0, productId: line.productId })),
+						{
+							role: 'grir_clearing',
+							debit: 0,
+							credit: total,
+							partyType: 'supplier',
+							partyId: order.supplierCompanyId ?? null,
+						},
+					],
+				});
 			}
 			return receipt;
 		});

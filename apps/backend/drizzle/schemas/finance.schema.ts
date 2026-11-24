@@ -935,6 +935,8 @@ export const supplierBillItems = financeSchema.table(
 		lineTotal: moneyAmount('line_total'),
 		taxBase: moneyAmount('tax_base'),
 		isStock: boolean('is_stock').notNull().default(false),
+		/** GR/IR value of these units at the receipt cost (ERP-0136). */
+		grirAmount: moneyAmount('grir_amount'),
 		sortOrder: integer('sort_order').notNull().default(0),
 		...timestamps,
 	},
