@@ -14,6 +14,37 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 
 
+## 2026-11-24 - dependabot PR #157: re-patch `@unplugin-pwa/core` 0.0.8 for Bun
+
+`Docker Build Web Customer Portal` failed on PR #157 (`@vite-pwa/astro`
+`2.0.3` -> `2.0.4`, which pulls `@unplugin-pwa/core`/`vite`/`inspector`
+`0.0.7` -> `0.0.8`). Symptom, job `138373169544`:
+
+```text
+[ERROR] [@vite-pwa/astro-integration] An unhandled error occurred while
+running the "astro:config:setup" hook
+Export named 'findPackageJSON' not found in module 'node:module'.
+error: script "build" exited with code 1
+```
+
+Cause: the `bun patch` in ERP-0107 is keyed by exact version
+(`"@unplugin-pwa/core@0.0.7"`), so the bump silently dropped it and the
+unpatched `0.0.8` went back to the static `findPackageJSON` import. Same
+failure mode already recorded in `stack-compatibility.md`.
+
+Fix: `patches/@unplugin-pwa%2Fcore@0.0.8.patch` (same hunk, retargeted; the
+`0.0.7` patch and its `patchedDependencies` entry are gone) — only
+`dist/resolve-inspector-dist.mjs` carries the import; all 30 `core` and 25
+`vite` `0.0.8` `dist/*.mjs` files were scanned, no other hit.
+
+Verified locally on `fix/dependabot-pwa-0-0-8` (based on the dependabot
+commit `f9318f7e`):
+
+- `bun install` -> patched file present in `node_modules/@unplugin-pwa/core/dist/resolve-inspector-dist.mjs`; `bun.lock` `patchedDependencies` now keyed `0.0.8`.
+- `bun install --frozen-lockfile` -> `Checked 1394 installs across 1445 packages (no changes)`.
+- `bun --bun run --cwd apps/web-customer-portal build` -> `[build] ✓ Completed in 12.53s` (was the CI failure point).
+- `docs/database/` reviewed, unchanged (dependency-only change).
+
 ## 2026-11-24 - docs sync: project structure, ADR-0026 modules, no more "disposable DB"
 
 Docs-only change (no code, no migration, no seed). Scope: `AGENTS.md`,
