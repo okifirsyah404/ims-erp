@@ -1,6 +1,6 @@
 {
   "type": "diff",
-  "version": "9",
+  "version": "10",
   "dialect": "postgres",
   "id": "d69c5688-1476-4660-aed7-527c39d04025",
   "prevIds": [
@@ -1045,7 +1045,6 @@
         "where": "deleted_at IS NULL AND is_primary",
         "with": "",
         "method": "btree",
-        "concurrently": false,
         "entityType": "indexes"
       }
     },
@@ -1069,7 +1068,6 @@
         "where": "deleted_at IS NULL",
         "with": "",
         "method": "btree",
-        "concurrently": false,
         "entityType": "indexes"
       }
     },
@@ -1100,7 +1098,6 @@
         "where": "deleted_at IS NULL",
         "with": "",
         "method": "btree",
-        "concurrently": false,
         "entityType": "indexes"
       }
     },
@@ -1131,7 +1128,6 @@
         "where": "deleted_at IS NULL AND is_primary",
         "with": "",
         "method": "btree",
-        "concurrently": false,
         "entityType": "indexes"
       }
     },
@@ -1155,7 +1151,6 @@
         "where": null,
         "with": "",
         "method": "btree",
-        "concurrently": false,
         "entityType": "indexes"
       }
     },

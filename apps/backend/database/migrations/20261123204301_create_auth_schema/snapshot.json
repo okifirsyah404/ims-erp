@@ -1,6 +1,6 @@
 {
   "type": "base",
-  "version": "9",
+  "version": "10",
   "dialect": "postgres",
   "id": "b3494e39-7a98-4f34-b3dd-e4ad0c4ebcb7",
   "prevIds": [
@@ -2640,7 +2640,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2661,7 +2660,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2682,7 +2680,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2703,7 +2700,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2724,7 +2720,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2745,7 +2740,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2766,7 +2760,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2787,7 +2780,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2822,7 +2814,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2843,7 +2834,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2864,7 +2854,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2885,7 +2874,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2906,7 +2894,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2927,7 +2914,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2948,7 +2934,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2969,7 +2954,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -2990,7 +2974,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -3011,7 +2994,6 @@
       "where": "phone IS NOT NULL",
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
@@ -3032,7 +3014,6 @@
       "where": null,
       "with": "",
       "method": "btree",
-      "concurrently": false,
       "entityType": "indexes"
     },
     {
