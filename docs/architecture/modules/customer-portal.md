@@ -136,7 +136,7 @@ the HTTP routes) and
 `test/unit/portal-data.test.ts` (cross-customer denial for projects, tickets
 and devices, no internal notes or costs, confirmation). The portal's own role
 check is covered by `apps/web-customer-portal/src/lib/portal-role.test.ts`. E2E against a
-disposable database: `progress.md` 2026-11-14 and 2026-11-21 (ERP-0094, ERP-0106).
+throwaway local database: `progress.md` 2026-11-14 and 2026-11-21 (ERP-0094, ERP-0106).
 
 Left for P2 (ERP-0100): account pages (profile, company change request,
 sites, onboarding, members screens). A second sign-in factor via Better Auth's

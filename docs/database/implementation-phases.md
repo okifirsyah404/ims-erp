@@ -3,9 +3,11 @@
 Companion to `docs.dbml` (canonical). This file used to be a forward-looking
 plan (steps S1-S8 building a 27-schema, 270-table target on top of a 3-schema
 database). ADR-0024 replaced that plan: the database was **normalized in one
-refactor and re-baselined**, and the target is now **18 schemas / 188 tables**.
+refactor and re-baselined**, and the target was **18 schemas / 188 tables**.
+ADR-0026 (accepted 2026-11-23) then split `product` and `warehouse` out of
+`inventory`, so the current target is **20 schemas / 196 tables**.
 This page records what each phase of that refactor did, in what order, and
-what proves it done. The design record is
+what proves it done — including the numbers as they stood at the time. The design record is
 `docs/architecture/decisions/ADR-0024-database-normalization-baseline-v2.md`;
 the working plan (decisions Q1-Q39, per-module files) is
 `docs/plan/database-refactor/`; the dated evidence is `docs/plan/progress.md`.
@@ -93,7 +95,7 @@ profiles: `module-ownership.md`.
   164 `CREATE TABLE`, 151 unique indexes, **0 cross-schema `REFERENCES`**
   (checked with a regex over the SQL).
 - A second `generate` reported "No schema changes".
-- On a disposable database: `drizzle:migrate` applied cleanly, `drizzle:seed`
+- On a throwaway local database: `drizzle:migrate` applied cleanly, `drizzle:seed`
   ran twice and the second run inserted 0 rows (idempotent). A later smoke run
   (2026-11-20) repeated migrate + seed and booted the backend (see below).
 - Root `bun run lint`, `bun run test`, `bun run build`, `bun run typecheck`
@@ -117,7 +119,7 @@ ADR-0024 decision 6 said "per-schema baseline" but P8 shipped a single folder.
   `pg_dump --schema-only` of a database migrated from the chain is byte-identical
   to one migrated from the single baseline (9669 lines, 169 tables, 22 schemas,
   20 journal rows, 0 cross-schema FKs).
-- Gates re-run on a disposable database: `migrate` OK, `seed` OK and idempotent
+- Gates re-run on a throwaway local database: `migrate` OK, `seed` OK and idempotent
   (second run 0 inserts), `generate` "No schema changes", `check`
   "Everything's fine", `validate-dbml.ts` OK (192 tables, 147 refs, 0 drift).
 
@@ -177,7 +179,7 @@ longer read as "one folder per schema". 2026-11-24 squashed it back:
 | Alias removal | the Q34 aliases removed from the backend; docs updated | ERP-0088 | `3b9edfda` |
 | Slice 6 | web-landing and web-customer-portal connected to the ERP public / portal API | ERP-0091 | `23e541cb`, `8620ee66`, `114dbd2e` |
 | Dependency pin | `@lucide/astro` 1.61.0, `@vite-pwa/astro` 1.2.0, `vite-plugin-pwa` 1.3.0 (builds were broken on a fresh frozen install) | - | `01473a2a` |
-| Live API smoke | disposable DB: baseline + seed, backend boot (every controller resolved through DI), 69 GET endpoints as owner (65 x 200, 4 x 400 needing query params, 0 x 404/5xx), supplier/employee/gateway writes, supplier bank gate, removed aliases answer 404 | - | `5929efd9` |
+| Live API smoke | throwaway local DB: baseline + seed, backend boot (every controller resolved through DI), 69 GET endpoints as owner (65 x 200, 4 x 400 needing query params, 0 x 404/5xx), supplier/employee/gateway writes, supplier bank gate, removed aliases answer 404 | - | `5929efd9` |
 
 ## Still open (not done by ADR-0024)
 
@@ -199,10 +201,10 @@ longer read as "one folder per schema". 2026-11-24 squashed it back:
 | Command | Status |
 |---|---|
 | `bunx --bun drizzle-kit generate` | verified 2026-11-19: one baseline; a second run reports no changes |
-| `bun run drizzle:migrate` (disposable DB only) | verified 2026-11-19 and 2026-11-20 |
+| `bun run drizzle:migrate` (local DB you can recreate only) | verified 2026-11-19 and 2026-11-20 |
 | `bun run drizzle:seed` | verified twice on 2026-11-19: second run inserted 0 rows |
 | `bun docs/database/gen-logical-references.ts` (repo root) | verified, regenerates `logical-references.md` |
-| `bun docs/database/validate-dbml.ts` (repo root) | verified, prints `OK` (188 tables, 162 intra-module refs, 169 logical reference columns) |
+| `bun docs/database/validate-dbml.ts` (repo root) | verified, prints `OK` (196 tables, 153 intra-module refs, 189 logical reference columns) |
 
 Never migrate a production database or run destructive operations against an
 unknown `POSTGRES_URL`.

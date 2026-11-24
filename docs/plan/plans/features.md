@@ -14,7 +14,11 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15 (ERP-0111 account pages added 2026-11-21). Full inventory of what has no code yet:
+Last synced: 2026-11-15 (ERP-0111 account pages added 2026-11-21). The schema
+numbers quoted in the ERP-0070 entry below (18 schemas / 188 tables) are the
+ADR-0024 figures as of 2026-11-19; ADR-0026 (2026-11-23) split `product` and
+`warehouse` out of `inventory`, so the current contract is **20 schemas /
+196 tables** (`docs/database/docs.dbml`). Full inventory of what has no code yet:
 `plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
 "missing feature" claims that actually ship, e.g. the report API and the
 assets operations surface). §7 item 3 (statement exports + monthly archive +

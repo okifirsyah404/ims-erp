@@ -10,9 +10,9 @@ Excel Tracker/UAT details live there too).
 Status vocabulary: `planned / in-progress / implemented / verified / accepted /
 blocked`.
 
-## Module index (ADR-0024, 2026-11-20)
+## Module index (ADR-0024, ADR-0026, 2026-11-24)
 
-The ERP has 18 Postgres schemas / 188 tables plus the schema-less `webhook`
+The ERP has 20 Postgres schemas / 196 tables plus the schema-less `webhook`
 module. Ownership, tables and contracts: `docs/database/module-ownership.md`.
 Deprecated pages are kept for history (owner decision) and start with a banner
 naming the current owner. The `user` and `organization` backend modules both
@@ -27,7 +27,9 @@ sit in the `auth` schema (Better Auth owns those tables).
 | Company | `company` | [company](company.md) | current (fixed in place: bank accounts moved to `finance`) |
 | Customer | `customer` | [customer-portal](customer-portal.md) (portal API) | current for the portal API (fixed in place: `/customers/portal/v1`); `customer.md` deprecated |
 | Supplier | `supplier` | [supplier](supplier.md) | current (rewritten 2026-11-20) |
-| Inventory | `inventory` | [inventory](inventory.md) | current (banner: absorbs assets, catalog, warehouse) |
+| Product | `product` | [product](product.md) | current (rewritten 2026-11-24 for ADR-0026: own schema, `/products`, `/product-categories`, `/product-listings`, `/products/public/v1/catalog`) |
+| Warehouse | `warehouse` | [warehouse](warehouse.md) | current (rewritten 2026-11-24 for ADR-0026: own schema, `/warehouses`) |
+| Inventory | `inventory` | [inventory](inventory.md) | current (absorbs assets; product master and the physical estate left for `product`/`warehouse` in ADR-0026) |
 | Sale | `sale` | [sale](sale.md) | current (new) |
 | Procurement | `procurement` | - | current, no page; `purchasing.md` deprecated |
 | Finance | `finance` | [finance](finance.md) | current (banner: absorbs accounting) |
@@ -63,11 +65,9 @@ sit in the `auth` schema (Better Auth owns those tables).
 | [licensing-subscription](licensing-subscription.md) | licensing | deprecated -> [project](project.md) |
 | [organization](organization.md) | organization | deprecated -> `auth` schema (HTTP stays in `src/app/organization`) |
 | [payment](payment.md) | payment (NestJS audit) | deprecated -> `payment` schema (ownership doc) |
-| [product](product.md) | catalog | deprecated -> [inventory](inventory.md) |
 | [purchasing](purchasing.md) | purchasing | deprecated -> `procurement`, [supplier](supplier.md), finance bills |
 | [reporting](reporting.md) | reporting | deprecated -> `finance.report_archives`, dashboard |
 | [sales](sales.md) | sales | deprecated -> [sale](sale.md) |
-| [warehouse](warehouse.md) | warehouse | deprecated -> [inventory](inventory.md) |
 ## Cross-module rules (apply everywhere)
 
 - Repositories use the Drizzle client from `drizzle/container.ts`; routes never

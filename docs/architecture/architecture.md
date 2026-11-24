@@ -67,12 +67,14 @@ drizzle/                      Drizzle client + schemas (code-owned)
 - `erp` schema: never existed. The shared domain schema in the original plan
   was never created; its tables landed in their own schemas (`audit.audit_logs`,
   `customer.customers`). Do not create it.
-- One module owns exactly one Postgres schema (ADR-0024: 18 schemas, 188
-  tables: `auth`, `location`, `company`, `customer`, `supplier`, `inventory`,
-  `sale`, `procurement`, `finance`, `tax`, `payment`, `project`, `ticket`,
-  `human_resource`, `document`, `notification`, `audit`, `automation`). The old
-  two-schema exception (Inventory owning a `warehouse` schema) is gone:
-  warehouses live in `inventory`. The `webhook` module has no schema and no
+- One module owns exactly one Postgres schema (ADR-0024, ADR-0026: 20 schemas,
+  196 tables: `auth`, `location`, `company`, `customer`, `supplier`, `product`,
+  `warehouse`, `inventory`, `sale`, `procurement`, `finance`, `tax`, `payment`,
+  `project`, `ticket`, `human_resource`, `document`, `notification`, `audit`,
+  `automation`). The historical two-schema exception is gone and stayed gone:
+  ADR-0026 gave `product` (the SKU master) and `warehouse` (the physical estate)
+  their own schemas because reference data does not belong to the stock ledger.
+  The `webhook` module has no schema and no
   tables; it is the inbound provider edge and delegates to `payment` and
   `automation` through their exported webhook services. `src/app/user` and
   `src/app/organization` are modules over the `auth` schema.

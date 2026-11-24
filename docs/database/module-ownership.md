@@ -16,8 +16,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   Identity module owns the single `auth` schema, shared by Better Auth's 9 core
   tables and the 6 ERP extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 147 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` checks all 147; before 2026-11-05 it read
+  `docs.dbml` contains 153 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` checks all 153; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 169 such logical reference columns exist across 25 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
+- 189 such logical reference columns exist across 25 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -35,14 +35,16 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 
 ## The 20 modules
 
+| # | Module | Schema | Tables | Refs |
+|---|---|---|---|---|
 | 1 | Identity | `auth` | 11 | 9 |
 | 2 | Location | `location` | 4 | 3 |
 | 3 | Company | `company` | 4 | 0 |
-| 4 | Customer | `customer` | 6 | 3 |
+| 4 | Customer | `customer` | 6 | 4 |
 | 5 | Supplier | `supplier` | 6 | 3 |
-| 6 | Product | `product` | 4 | 1 |
-| 7 | Warehouse | `warehouse` | 8 | 5 |
-| 8 | Inventory | `inventory` | 20 | 16 |
+| 6 | Product | `product` | 6 | 4 |
+| 7 | Warehouse | `warehouse` | 9 | 6 |
+| 8 | Inventory | `inventory` | 21 | 17 |
 | 9 | Sale | `sale` | 18 | 20 |
 | 10 | Procurement | `procurement` | 9 | 11 |
 | 11 | Finance | `finance` | 27 | 20 |
@@ -55,15 +57,15 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 18 | Notification | `notification` | 2 | 1 |
 | 19 | Audit | `audit` | 1 | 0 |
 | 20 | Automation | `automation` | 4 | 2 |
-| | **Total** | **20 schemas** | **192** | **147** |
+| | **Total** | **20 schemas** | **196** | **153** |
 
 The `webhook` module (ADR-0024 Q38) has **no schema and no tables**: it owns
 the inbound provider HTTP edge and hands every call to `payment` or
 `automation` through their exported webhook services.
 
-Counts are re-derived from `docs.dbml` on every validation run
+Table and `Ref:` counts are re-derived from `docs.dbml` on every validation run
 (`validate-dbml.ts`), and the cross-module references are in
-`logical-references.md` (169 logical reference columns, 25 targets, 0
+`logical-references.md` (189 logical reference columns, 25 targets, 0
 cross-module `Ref:`).
 ## Module profiles
 

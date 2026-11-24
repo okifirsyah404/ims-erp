@@ -14,6 +14,59 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 
 
+## 2026-11-24 - docs sync: project structure, ADR-0026 modules, no more "disposable DB"
+
+Docs-only change (no code, no migration, no seed). Scope: `AGENTS.md`,
+`README.md`, `docs/**`. `migrate-reset.ts` and the `drizzle:migrate-reset`
+script stay; only the *concept* of "disposable database" was retired in favour
+of "a local database you can drop and recreate".
+
+**Verified numbers (source of truth: `docs.dbml` + validator, not prose).**
+`bun docs/database/validate-dbml.ts` → `parsed: 196 tables, 153 refs /
+cross-module refs: 0 / timestamp gaps: 0 / drizzle parity drift: 0 / column
+parity drift (nullability, type): 0 / OK`; `gen-logical-references.ts` →
+`regenerated: 189 refs across 25 targets, 153 intra-module refs`. The previous
+prose figures (188/192 tables, 147/162 refs, 169/190 logical columns) were all
+stale, so every doc now says **20 schemas / 196 tables / 153 `Ref:` / 189
+logical-reference columns / 25 targets**. Baseline migrations create **176**
+`CREATE TABLE`, so 20 `docs.dbml` tables are still target-only
+(`sale.discount_requests|contracts|targets`, `finance.journal_templates|
+credit_memos|employee_advances|expense_settlements|expense_settlement_items`,
+8 `project.*`, `ticket.ticket_templates`, `ticket.sub_ticket_templates`).
+
+**Structure.** `README.md` project tree rewritten to what exists: 4 apps
+(backend, web-admin, web-landing, web-customer-portal), the real backend
+`src/` layout (`app/`, `app/app.ts`, `authorization/`, `cache/`, `di/`,
+`http/`, `providers/`, `shared/`, `utils/`), `database/` vs `drizzle/`,
+5 packages (common, design-tokens, locales, react-email, ui), 5 doc folders;
+env setup for all four apps; ports corrected to backend 3001 / admin 5173 /
+landing 4321 / portal 4322; the stale 2026-11-12 "blocked on main" note removed
+(replaced by the `drizzle:migrate-reset` explanation); deploy section lists the
+Astro services and their host-port knobs.
+
+**Modules.** `product` and `warehouse` are now documented as current modules
+with their own schemas (ADR-0026): `docs/architecture/modules/product.md` and
+`warehouse.md` rewritten, `inventory.md` rewritten (21 tables, product/estate
+moved out, `/products` + `/warehouse` + `/stock` route map), `modules/README.md`
+index moved them out of the deprecated table, `architecture.md`, `domain-map.md`
+and `data-model.md` updated, `security-and-access.md` says 20 modules.
+`docs/database/module-ownership.md` per-module table/ref counts recomputed from
+`docs.dbml` and its broken header row fixed.
+
+**Not touched on purpose:** ADR files (decision records), `progress.md` history,
+`docs/plan/database-refactor/**`, `docs/plan/uat/**`,
+`docs/plan/erp-module-plans/**`, `apps/**`, `package.json`. Historical entries
+inside `implementation-phases.md` keep their dates and figures; only its
+present-tense summary and command table were corrected.
+
+**docs/database/ status.** Reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (prose only) — but the
+companion MDs were wrong about counts, so `module-ownership.md`,
+`integrity-and-consistency.md` (incl. the `ON DELETE` split, re-derived:
+CASCADE 74 / RESTRICT 59 / SET NULL 20), `data-dictionary.md` and
+`implementation-phases.md` were corrected. `docs.dbml` itself is untouched and
+`validate-dbml.ts` prints `OK`. No `ERP-*` status moved.
+
 ## 2026-11-24 - migrations squashed back to one folder per Postgres schema
 
 User request: squash `apps/backend/database/migrations` against
