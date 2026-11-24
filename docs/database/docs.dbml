@@ -838,6 +838,7 @@ Table supplier.companies {
   bank_name text
   bank_account_number text
   bank_account_holder text
+  image_object_key text [note: "Object-storage key of the single supplier photo. Presigned on read; never a public URL."]
   status text [not null, default: 'active']
   notes text
   created_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -851,7 +852,7 @@ Table supplier.companies {
     tax_id [name: 'supplier_companies_tax_id_idx']
   }
   Checks {
-    `supplier_type IN ('company', 'government')`
+    `supplier_type IN ('company', 'government', 'individual')`
     `status IN ('active', 'inactive')`
   }
 }

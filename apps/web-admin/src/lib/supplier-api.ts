@@ -10,7 +10,7 @@ import { currentLanguage } from '@/i18n';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-export const SUPPLIER_TYPES = ['company', 'government'] as const;
+export const SUPPLIER_TYPES = ['company', 'government', 'individual'] as const;
 export type TSupplierType = (typeof SUPPLIER_TYPES)[number];
 
 export const SUPPLIER_SORT_FIELDS = ['name', 'code', 'createdAt'] as const;
@@ -31,8 +31,11 @@ export type TSupplierCompany = {
 	bankName: string | null;
 	bankAccountNumber: string | null;
 	bankAccountHolder: string | null;
+	/** Presigned URL of the single supplier photo, or `null`. */
+	imageUrl: string | null;
 	status: 'active' | 'inactive';
 	notes: string | null;
+	createdAt: string;
 };
 
 /** `supplier.suppliers` row: the supplier-side person in charge. */
@@ -78,7 +81,10 @@ export type TSupplierCompanyDetail = TSupplierCompany & {
 	addresses: TSupplierCompanyAddress[];
 };
 
-export type TSupplierCompanyInput = Omit<TSupplierCompany, 'id' | 'status'>;
+export type TSupplierCompanyInput = Omit<
+	TSupplierCompany,
+	'id' | 'status' | 'imageUrl' | 'createdAt'
+>;
 
 export type TSupplierPersonInput = {
 	companyId: string | null;
@@ -124,7 +130,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<TApiRespons
 		headers: {
 			// Server error messages come back in the UI language.
 			'Accept-Language': currentLanguage(),
-			...(init?.body != null ? { 'Content-Type': 'application/json' } : {}),
+			// Multipart bodies (the photo upload) must set their own boundary.
+			...(typeof init?.body === 'string' ? { 'Content-Type': 'application/json' } : {}),
 		},
 		...init,
 	});
@@ -187,9 +194,25 @@ export const setSupplierCompanyActive = (id: string, active: boolean) =>
 	send<TSupplierCompany>(`/suppliers/companies/${id}/${active ? 'activate' : 'deactivate'}`, 'POST');
 
 export const createSupplierPerson = (input: TSupplierPersonInput) => send<TSupplierPerson>('/suppliers/people', 'POST', input);
+export const updateSupplierPerson = (id: string, input: Partial<TSupplierPersonInput>) =>
+	send<TSupplierPerson>(`/suppliers/people/${id}`, 'PATCH', input);
 export const removeSupplierPerson = async (id: string) => {
 	await request(`/suppliers/people/${id}`, { method: 'DELETE' });
 };
+
+/** Uploads the single supplier photo; the server normalises it to WebP. */
+export async function uploadSupplierImage(companyId: string, file: File) {
+	const body = new FormData();
+	body.set('file', file, `photo.${file.type === 'image/png' ? 'png' : 'webp'}`);
+	return (await request<TSupplierCompany>(`/suppliers/companies/${companyId}/image`, {
+		method: 'PUT',
+		body,
+	})).data as TSupplierCompany;
+}
+
+export async function removeSupplierImage(companyId: string) {
+	await request(`/suppliers/companies/${companyId}/image`, { method: 'DELETE' });
+}
 
 export const createSupplierCompanyAddress = (companyId: string, input: TSupplierCompanyAddressInput) =>
 	send<TSupplierCompanyAddress>(`/suppliers/companies/${companyId}/addresses`, 'POST', input);

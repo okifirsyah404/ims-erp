@@ -27,7 +27,11 @@ import {
 
 export const supplierSchema = pgSchema('supplier');
 
-export const SUPPLIER_COMPANY_TYPES = ['company', 'government'] as const;
+export const SUPPLIER_COMPANY_TYPES = [
+	'company',
+	'government',
+	'individual',
+] as const;
 export type SupplierCompanyType = (typeof SUPPLIER_COMPANY_TYPES)[number];
 
 /** Inactive suppliers stay readable but cannot be used on new POs. */
@@ -76,6 +80,8 @@ export const supplierCompanies = supplierSchema.table(
 		bankName: text('bank_name'),
 		bankAccountNumber: text('bank_account_number'),
 		bankAccountHolder: text('bank_account_holder'),
+		/** Object-storage key of the single supplier photo; never a public URL. */
+		imageObjectKey: text('image_object_key'),
 		status: text('status').notNull().default('active'),
 		notes: text('notes'),
 		/** Logical reference to auth.users.id — cross-module FK omitted. */
@@ -91,7 +97,7 @@ export const supplierCompanies = supplierSchema.table(
 		index('supplier_companies_tax_id_idx').on(table.taxId),
 		check(
 			'supplier_companies_type_check',
-			sql`${table.supplierType} IN ('company', 'government')`,
+			sql`${table.supplierType} IN ('company', 'government', 'individual')`,
 		),
 		check(
 			'supplier_companies_status_check',

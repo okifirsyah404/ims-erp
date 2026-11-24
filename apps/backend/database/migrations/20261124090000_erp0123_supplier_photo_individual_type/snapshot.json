@@ -1,0 +1,72 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "56ee8360-b8b8-4d02-acb3-51304e45af24",
+  "prevIds": [
+    "f3b4364a-ce9c-469a-a097-0a92ad15434b"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "supplier",
+        "companies",
+        "image_object_key"
+      ],
+      "writes": [
+        "s|col|supplier.companies.image_object_key",
+        "n|col|supplier.companies.image_object_key",
+        "e|col|supplier.companies.image_object_key"
+      ],
+      "reads": [
+        "n|tbl|supplier.companies",
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "companies"
+      ],
+      "writes": [
+        "s|ck|supplier.companies.supplier_companies_type_check"
+      ],
+      "reads": [
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.companies.supplier_type",
+        "e|col|supplier.companies.supplier_type"
+      ],
+      "sqlHash": "8a175e2f5f309d3a"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "image_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"supplier\",\"companies\",\"supplier_companies_type_check\"]",
+      "set": {
+        "value": "\"supplier_type\" IN ('company', 'government', 'individual')"
+      }
+    }
+  ]
+}

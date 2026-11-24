@@ -20,10 +20,15 @@ supplier company and its people (PIC); it does not own purchase documents
 (`SupplierNumberingService`, ADR-0024 Q32). Addresses store only `village_id`;
 the rest of the path is derived through `ExportedLocationService`.
 
+`companies.supplier_type` is `company | government | individual`;
+`companies.image_object_key` holds the single supplier photo (presigned on
+read through `SupplierImageService`).
+
 ## HTTP
 
 Prefix `/suppliers` (`erp` guard): `GET|POST /companies`,
 `GET|PATCH /companies/:id`, `POST /companies/:id/activate|deactivate`,
+`PUT|DELETE /companies/:id/image` (multipart `file`, WebP, `supplier:update`),
 `GET|POST /people`, `PATCH|DELETE /people/:id` (soft delete).
 
 ## Contract
@@ -46,3 +51,9 @@ Resource `supplier`: `read`, `create`, `update`, `archive`, `read_bank`.
   checked by `assertActiveCompany` before the write (ADR-0014).
 - Soft delete only; a supplier referenced by purchase or finance documents is
   never hard-deleted.
+- An `individual` supplier has no legal name and no NPWP (the UI hides and
+  clears both); the schema still allows them, so a type switch loses nothing.
+- The code is editable but always upper-cased and unique among live rows; an
+  empty code on create is generated from `supplier.code_numberings`.
+- One photo per company (`image_object_key`); a replacement stores a fresh key
+  so nothing that snapshotted the old one breaks.

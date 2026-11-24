@@ -51,6 +51,7 @@ import {
 	SUPPLIER_SORT_FIELDS,
 	setSupplierCompanyActive,
 	supplierCompaniesQueryOptions,
+	uploadSupplierImage,
 	type TSupplierCompany,
 	type TSupplierCompanyInput,
 	type TSupplierSortDir,
@@ -112,10 +113,12 @@ function SupplierListPage() {
 	async function handleCreate(
 		input: Partial<TSupplierCompanyInput>,
 		address: TSupplierAddressDraft | null,
+		photo: File | null,
 	) {
 		setSubmitting(true);
 		try {
 			const created = await createSupplierCompany(input);
+			if (photo) await uploadSupplierImage(created.id, photo);
 			if (address) await createSupplierCompanyAddress(created.id, address.values);
 			await refresh();
 			toast.success(t('procurement:suppliers.saved'));
@@ -181,6 +184,23 @@ function SupplierListPage() {
 
 	const columns = useMemo<ColumnDef<DataTableFeatures, TSupplierCompany, CellData>[]>(
 		() => [
+			{
+				id: 'photo',
+				header: () => null,
+				meta: { cellClassName: 'w-12' },
+				cell: ({ row }) =>
+					row.original.imageUrl ? (
+						<img
+							src={row.original.imageUrl}
+							alt=''
+							className='size-8 rounded object-cover'
+						/>
+					) : (
+						<span className='grid size-8 place-items-center rounded bg-muted text-muted-foreground'>
+							<Truck className='size-4' />
+						</span>
+					),
+			},
 			{
 				id: 'name',
 				header: sortHeader(t('procurement:supplier.name'), 'name'),
@@ -338,7 +358,7 @@ function SupplierListPage() {
 					canSeeBank={canSeeBank}
 					submitting={submitting}
 					onClose={() => setCreating(false)}
-					onSave={(input, address) => void handleCreate(input, address)}
+					onSave={(input, address, photo) => void handleCreate(input, address, photo)}
 				/>
 			)}
 		</div>

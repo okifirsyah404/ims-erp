@@ -93,15 +93,36 @@ export class SupplierService {
 		actorUserId: string,
 		organizationId?: string | null,
 	) {
-		const code =
-			data.code ?? (await this.numbering.next('supplier_company', undefined, new Date(), organizationId));
+		const code = data.code
+			? data.code.toUpperCase()
+			: await this.numbering.next(
+					'supplier_company',
+					undefined,
+					new Date(),
+					organizationId,
+				);
 		const existing = await this.companies.findByCode(code);
 		if (existing) throw new SupplierCompanyCodeTakenError(code);
 		return this.companies.create({ ...data, code, createdBy: actorUserId });
 	}
 
+	/**
+	 * Updates a supplier company; a new code is upper-cased and must be free.
+	 *
+	 * @throws {SupplierCompanyNotFoundError} The id does not resolve to a live row
+	 * @throws {SupplierCompanyCodeTakenError} Another live company holds the code
+	 */
 	async updateCompany(id: string, patch: TSupplierCompanyUpdateInput) {
-		const row = await this.companies.update(id, patch);
+		let next = patch;
+		if (patch.code) {
+			const code = patch.code.toUpperCase();
+			const existing = await this.companies.findByCode(code);
+			if (existing && existing.id !== id) {
+				throw new SupplierCompanyCodeTakenError(code);
+			}
+			next = { ...patch, code };
+		}
+		const row = await this.companies.update(id, next);
 		if (!row) throw new SupplierCompanyNotFoundError();
 		return row;
 	}

@@ -35,6 +35,7 @@ import {
 	SupplierCompanyNotFoundError,
 } from '../../src/app/supplier/errors/supplier.errors';
 import { SupplierService } from '../../src/app/supplier/services/supplier.service';
+import { SupplierImageService } from '../../src/app/supplier/services/supplier-image.service';
 import {
 	ExportedSupplierService,
 } from '../../src/app/supplier/services/exported-supplier.service';
@@ -58,6 +59,7 @@ class FakeCompanies implements ISupplierCompanyRepository {
 			bankName: 'BCA',
 			bankAccountNumber: '123',
 			bankAccountHolder: 'PT Sumber',
+			imageObjectKey: null,
 			status: 'active',
 			notes: null,
 			createdBy: null,
@@ -102,6 +104,13 @@ class FakeCompanies implements ISupplierCompanyRepository {
 		const row = await this.findById(id);
 		if (!row) return null;
 		Object.assign(row, patch);
+		return row;
+	}
+
+	async setImageObjectKey(id: string, objectKey: string | null) {
+		const row = await this.findById(id);
+		if (!row) return null;
+		row.imageObjectKey = objectKey;
 		return row;
 	}
 
@@ -407,6 +416,38 @@ describe('SupplierService', () => {
 		).rejects.toBeInstanceOf(SupplierCompanyCodeTakenError);
 	});
 
+	test('a typed code is upper-cased on create', async () => {
+		const company = await service.createCompany(
+			{ code: 'acme', name: 'PT Acme', supplierType: 'company' } as TSupplierCompanyCreateInput,
+			'u1',
+		);
+		expect(company.code).toBe('ACME');
+	});
+
+	test('an update may change the code but not onto a taken one', async () => {
+		const first = await service.createCompany(
+			{ code: 'AAA', name: 'PT A', supplierType: 'company' } as TSupplierCompanyCreateInput,
+			'u1',
+		);
+		await service.createCompany(
+			{ code: 'BBB', name: 'PT B', supplierType: 'company' } as TSupplierCompanyCreateInput,
+			'u1',
+		);
+		const renamed = await service.updateCompany(first.id, { code: 'ccc' });
+		expect(renamed.code).toBe('CCC');
+		expect(service.updateCompany(first.id, { code: 'BBB' })).rejects.toBeInstanceOf(
+			SupplierCompanyCodeTakenError,
+		);
+	});
+
+	test('an individual supplier is accepted', async () => {
+		const company = await service.createCompany(
+			{ code: 'AGUS', name: 'Agus Setiawan', supplierType: 'individual' } as TSupplierCompanyCreateInput,
+			'u1',
+		);
+		expect(company.supplierType).toBe('individual');
+	});
+
 	test('activation guards return 409 on the same status', async () => {
 		const company = await service.createCompany(
 			{ code: 'ACME', name: 'PT Acme', supplierType: 'company', paymentTermsDays: 0 } as TSupplierCompanyCreateInput,
@@ -565,5 +606,45 @@ describe('ExportedSupplierService', () => {
 		const details = await exported.getBankDetails(company.id);
 		expect(details?.bankName).toBe('BCA');
 		expect(details?.bankAccountNumber).toBe('1234567890');
+	});
+});
+
+describe('SupplierImageService', () => {
+	const storage = {
+		presignGet: (key: string) => `signed:${key}`,
+	} as never;
+
+	test('signs the stored key and keeps a missing photo null', () => {
+		const service = new SupplierImageService(
+			{ findById: async () => null, setImageObjectKey: async () => null } as never,
+			storage,
+		);
+		expect(service.withImageUrl({ imageObjectKey: null }).imageUrl).toBeNull();
+		expect(service.withImageUrl({ imageObjectKey: 'supplier/companies/a.webp' }).imageUrl).toBe(
+			'signed:supplier/companies/a.webp',
+		);
+	});
+
+	test('removing the photo clears the key', async () => {
+		const companies = new FakeCompanies();
+		const row = await companies.create({
+			code: 'ACME',
+			name: 'PT Acme',
+			createdBy: 'u1',
+		} as TSupplierCompanyCreateInput & { createdBy: string });
+		row.imageObjectKey = 'supplier/companies/a.webp';
+
+		const service = new SupplierImageService(companies, storage);
+		const updated = await service.setImage(row.id, null);
+
+		expect(updated.imageObjectKey).toBeNull();
+		expect(updated.imageUrl).toBeNull();
+	});
+
+	test('an unknown company surfaces SupplierCompanyNotFoundError', () => {
+		const service = new SupplierImageService(new FakeCompanies(), storage);
+		expect(service.setImage('missing', null)).rejects.toBeInstanceOf(
+			SupplierCompanyNotFoundError,
+		);
 	});
 });

@@ -153,6 +153,19 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 		return row ?? null;
 	}
 
+	async setImageObjectKey(
+		id: string,
+		objectKey: string | null,
+	): Promise<TSupplierCompanySelect | null> {
+		const [row] = await this.database
+			.update(supplierCompanies)
+			.set({ imageObjectKey: objectKey, updatedAt: new Date() })
+			.where(this.live(id))
+			.returning();
+		if (row) await this.invalidate(row);
+		return row ?? null;
+	}
+
 	async transitionStatus(
 		id: string,
 		from: 'active' | 'inactive',
@@ -166,7 +179,6 @@ export class SupplierCompanyRepository implements ISupplierCompanyRepository {
 		if (row) await this.invalidate(row);
 		return row ?? null;
 	}
-
 	private async invalidate(row: TSupplierCompanySelect): Promise<void> {
 		await this.cache.del(
 			cacheIdKey(this.cachePrefix, row.id),

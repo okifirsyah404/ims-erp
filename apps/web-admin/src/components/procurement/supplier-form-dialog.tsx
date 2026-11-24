@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
 import { Button } from '@ims-erp/ui/components/button';
 import { Checkbox } from '@ims-erp/ui/components/checkbox';
 import {
@@ -11,6 +10,7 @@ import {
 } from '@ims-erp/ui/components/dialog';
 import { Field, FieldDescription } from '@ims-erp/ui/components/field';
 import { FieldLabel } from '@/components/form/field-label';
+import { ImageDropzone } from '@/components/image-dropzone';
 import { Input } from '@ims-erp/ui/components/input';
 import {
 	Select,
@@ -111,10 +111,19 @@ export function SupplierFormDialog({
 	onSave: (
 		input: Partial<TSupplierCompanyInput>,
 		address: TSupplierAddressDraft | null,
+		/** The picked photo, uploaded after the company write. */
+		photo: File | null,
 	) => void;
 }) {
 	const { t } = useTranslation(['procurement', 'common']);
 	const [supplierType, setSupplierType] = useState<TSupplierType>(supplier?.supplierType ?? 'company');
+	const [photo, setPhoto] = useState<File | null>(null);
+	const [photoError, setPhotoError] = useState(false);
+	const previewUrl = useMemo(
+		() => (photo ? URL.createObjectURL(photo) : null),
+		[photo],
+	);
+	const shownPhoto = previewUrl ?? supplier?.imageUrl ?? null;
 	const [values, setValues] = useState<Record<TTextField, string>>(
 		() => Object.fromEntries(TEXT_KEYS.map((key) => [key, supplier?.[key] ?? ''])) as Record<TTextField, string>,
 	);
@@ -174,6 +183,12 @@ export function SupplierFormDialog({
 						for (const key of TEXT_KEYS) {
 							if (key === 'code' || key === 'name') continue;
 							if (!canSeeBank && key.startsWith('bank')) continue;
+							// An individual has no legal name and no NPWP; switching
+							// type clears what a company row may have held.
+							if (supplierType === 'individual' && (key === 'legalName' || key === 'taxId')) {
+								(input as Record<string, unknown>)[key] = null;
+								continue;
+							}
 							(input as Record<string, unknown>)[key] = text(values[key]);
 						}
 						// An empty street leaves the address alone (no write at all).
@@ -192,7 +207,7 @@ export function SupplierFormDialog({
 									},
 								}
 							: null;
-						onSave(input, address);
+						onSave(input, address, photo);
 					}}
 				>
 					<DialogHeader>
@@ -202,6 +217,27 @@ export function SupplierFormDialog({
 						title={t('procurement:suppliers.identity')}
 						description={t('procurement:suppliers.identityDescription')}
 					>
+						<div className='sm:col-span-2'>
+							<Field>
+								<FieldLabel optional>{t('procurement:supplier.photo')}</FieldLabel>
+								<ImageDropzone
+									previewUrl={shownPhoto}
+									disabled={submitting}
+									label={t('procurement:supplier.photoChoose')}
+									hint={t('procurement:supplier.photoHint')}
+									onSelect={(file) => {
+										setPhotoError(false);
+										setPhoto(file);
+									}}
+									onReject={() => setPhotoError(true)}
+								/>
+								{photoError && (
+									<p className='text-xs text-destructive'>
+										{t('procurement:supplier.photoRejected')}
+									</p>
+								)}
+							</Field>
+						</div>
 						{field(
 							'code',
 							{ required: !!supplier, maxLength: 32, minLength: 2, pattern: '[A-Za-z0-9]+', className: 'uppercase' },
@@ -226,8 +262,8 @@ export function SupplierFormDialog({
 							</Select>
 						</Field>
 						{field('name', { required: true, maxLength: 200 })}
-						{field('legalName', { maxLength: 200 })}
-						{field('taxId', { inputMode: 'numeric', maxLength: 16 })}
+						{supplierType !== 'individual' && field('legalName', { maxLength: 200 })}
+						{supplierType !== 'individual' && field('taxId', { inputMode: 'numeric', maxLength: 16 })}
 						{field('website', { type: 'url', maxLength: 200, placeholder: 'https://' })}
 					</FormSection>
 					<Separator />

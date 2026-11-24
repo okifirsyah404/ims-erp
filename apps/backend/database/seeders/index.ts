@@ -18,6 +18,7 @@ import { SEED_ORGANIZATION_SLUG, seedOrganization } from './seed/organization.se
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
+import { seedSupplier } from './seed/supplier.seeder';
 import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { seedHrSchedules } from './seed/hr-schedules.seeder';
@@ -54,6 +55,8 @@ export async function runSeeders(): Promise<void> {
 	await seedOrganization();
 	await seedOrganizationMembers();
 	await seedOrganizationRoles();
+	// Supplier fixtures: one company, one government agency, one individual.
+	await seedSupplier();
 	// ADR-0026: the product master and the warehouse estate are their own
 	// modules now, and the inventory fixtures reference both.
 	await seedProduct();

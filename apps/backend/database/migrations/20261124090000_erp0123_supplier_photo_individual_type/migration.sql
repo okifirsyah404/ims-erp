@@ -1,0 +1,2 @@
+ALTER TABLE "supplier"."companies" ADD COLUMN "image_object_key" text;--> statement-breakpoint
+ALTER TABLE "supplier"."companies" DROP CONSTRAINT "supplier_companies_type_check", ADD CONSTRAINT "supplier_companies_type_check" CHECK ("supplier_type" IN ('company', 'government', 'individual'));

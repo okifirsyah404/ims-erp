@@ -6,7 +6,8 @@ import {
 } from '@authorization/permission-resolver';
 import { domainPlugin } from '@http/plugin';
 import { created, noContent, ok, okPaginated } from '@http/response';
-import { SUPPLIER_SERVICE_TOKEN } from '../constants/di';
+import { documentImageFrom } from '@providers/s3/document-image';
+import { SUPPLIER_IMAGE_SERVICE_TOKEN, SUPPLIER_SERVICE_TOKEN } from '../constants/di';
 import {
 	supplierAddressParamSchema,
 	supplierAddressSchema,
@@ -22,6 +23,7 @@ import {
 } from '../contracts/supplier.contract';
 import { uuidParamSchema } from '../contracts/params.schema';
 import { SupplierBankForbiddenError } from '../errors/supplier.errors';
+import type { TWithSupplierImage } from '../services/supplier-image.service';
 
 /** Bank columns of a supplier company, restricted to supplier:read_bank. */
 const BANK_FIELDS = ['bankName', 'bankAccountNumber', 'bankAccountHolder'] as const;
@@ -44,6 +46,7 @@ function hideBank<T extends object>(row: T): T {
 export class SupplierController {
 	static plugin() {
 		const service = container.resolve(SUPPLIER_SERVICE_TOKEN);
+		const images = container.resolve(SUPPLIER_IMAGE_SERVICE_TOKEN);
 		const permissions = container.resolve<IPermissionResolver>(PERMISSION_RESOLVER_TOKEN);
 		const canSeeBank = (erp: ErpContext) =>
 			permissions.hasPermission(
@@ -56,8 +59,15 @@ export class SupplierController {
 			const touchesBank = BANK_FIELDS.some((field) => (input as Record<string, unknown>)[field] !== undefined);
 			if (touchesBank && !(await canSeeBank(erp))) throw new SupplierBankForbiddenError();
 		};
-		const view = async <T extends object>(erp: ErpContext, row: T | null): Promise<T | null> =>
-			row === null || (await canSeeBank(erp)) ? row : hideBank(row);
+		const view = async <T extends { imageObjectKey: string | null }>(
+			erp: ErpContext,
+			row: T | null,
+		): Promise<TWithSupplierImage<T> | null> => {
+			if (row === null) return null;
+			return images.withImageUrl(
+				(await canSeeBank(erp)) ? row : hideBank(row),
+			);
+		};
 
 		return domainPlugin({
 			name: 'supplier-master',
@@ -69,7 +79,8 @@ export class SupplierController {
 				'/companies',
 				async ({ query, erp }) => {
 					const page = await service.listCompanies(supplierCompanyListQuerySchema.parse(query));
-					return okPaginated((await canSeeBank(erp)) ? page : { ...page, data: page.data.map(hideBank) });
+					const rows = (await canSeeBank(erp)) ? page.data : page.data.map(hideBank);
+					return okPaginated({ ...page, data: rows.map((row) => images.withImageUrl(row)) });
 				},
 				{
 					erp: { permission: ['supplier:read'] },
@@ -128,6 +139,29 @@ export class SupplierController {
 						description:
 							'Deactivates a supplier company (no new purchase orders)',
 					},
+				},
+			)
+			.put(
+				'/companies/:id/image',
+				async ({ params, body }) =>
+					ok(
+						await images.setImage(
+							uuidParamSchema.parse(params).id,
+							documentImageFrom(body),
+						),
+					),
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Uploads the supplier photo (multipart `file`)' },
+				},
+			)
+			.delete(
+				'/companies/:id/image',
+				async ({ params }) =>
+					ok(await images.setImage(uuidParamSchema.parse(params).id, null)),
+				{
+					erp: { permission: ['supplier:update'] },
+					detail: { description: 'Removes the supplier photo' },
 				},
 			)
 			.get(

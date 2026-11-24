@@ -14,6 +14,75 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 
 
 
+## 2026-11-24 - supplier: individual type, one photo, editable code
+
+User request (grill-me, 3 rounds): fix supplier CRUD — code from the code
+numbering settings, types `Company / Government / Individual`, NPWP not
+deleted (only optional), and one photo like a warehouse instead of a gallery.
+Resolved: Individual is a `supplier_type` value (not a company-less PIC row),
+NPWP stays untouched in the schema and the PO snapshot, code stays editable,
+photo is a single `image_object_key`, list stays minimal.
+
+**Backend (`src/app/supplier`)**
+
+- `SUPPLIER_COMPANY_TYPES` + `supplier_type` check now
+  `('company','government','individual')`; `contracts` enum widened.
+- `companies.image_object_key text` (nullable). New
+  `services/supplier-image.service.ts` (+ `SUPPLIER_IMAGE_SERVICE_TOKEN`,
+  registered in `container.ts`): `PUT|DELETE /suppliers/companies/:id/image`
+  behind `supplier:update`, multipart `file` → `storeDocumentImage` (WebP, 2 MB)
+  → `documentImageUrl` presigned. `imageUrl` rides on the list, detail, create
+  and update responses; bank masking still applies first.
+- `SupplierService.updateCompany` upper-cases a new code and rejects one held
+  by another live company (`SupplierCompanyCodeTakenError`); `createCompany`
+  upper-cases a typed code. Previously a duplicate on update surfaced as a raw
+  500 from the unique index.
+- `ExportedSupplierService.getPurchaseSnapshot` unchanged: NPWP still travels
+  into `procurement.purchase_orders.supplier_snapshot` (nothing dropped, no
+  backfill).
+
+**Migration** `20261124090000_erp0123_supplier_photo_individual_type`
+(2 statements, inspected): `ADD COLUMN image_object_key text`; drop + recreate
+`supplier_companies_type_check` with the third value. **Not applied** to any
+database.
+
+**Web admin**
+
+- `lib/supplier-api.ts`: `SUPPLIER_TYPES` + `individual`, `imageUrl` and
+  `createdAt` on the row type, `uploadSupplierImage` / `removeSupplierImage`,
+  `updateSupplierPerson`; the request helper now only sets a JSON content type
+  for string bodies (a `FormData` body keeps its own boundary).
+- Form dialog: `ImageDropzone` single photo (uploaded right after the company
+  write, create and edit), NPWP and legal name hidden for `individual` and
+  cleared when switching type, "(Optional)" from the shared `FieldLabel`.
+- List: photo thumbnail column, rest unchanged (photo, code, name, type,
+  contact, status, actions).
+- Detail: photo card (upload/replace/delete), village → province line under
+  each address (`villageChainQueryOptions`), editable PIC, `createdAt`.
+
+**Seed.** `database/seeders/seed/supplier.seeder.ts` (called after
+`seedOrganizationRoles`): `DEV-SUP-CO`, `DEV-SUP-GOV`, `DEV-SUP-IND` anchored
+by code, PIC + address for the first two; a second run inserts nothing.
+
+**Verification**
+
+- `bun docs/database/gen-logical-references.ts` → 189 refs; `validate-dbml.ts`
+  → `OK` (196 tables, 153 refs, 0 cross-module, 0 timestamp gaps, 0 drizzle
+  parity drift, 0 column parity drift).
+- `bun run drizzle:generate` → the 2-statement migration above;
+  `bunx --bun drizzle-kit check` → `Everything's fine`;
+  `generate --explain` → `no_changes`.
+- `apps/backend`: `bun run typecheck` clean; `bun test` **1459 pass / 0 fail**
+  (new: upper-case on create, duplicate code on update, individual accepted,
+  image signing/clearing/not-found).
+- `apps/web-admin`: `bunx tsc -p tsconfig.app.json --noEmit` clean.
+- `packages/locales`: `bun test` 106 pass (parity + no dead keys, so every new
+  key exists in `en` and `id` and is referenced).
+- `bun docs/gen-role-permission.ts` → 679 routes (the two photo routes added).
+
+**Not verified.** Migration not applied to a disposable database, no HTTP run
+against a real database, no S3 upload, no browser walk-through.
+
 ## 2026-11-24 - migrations squashed back to one folder per Postgres schema
 
 User request: squash `apps/backend/database/migrations` against

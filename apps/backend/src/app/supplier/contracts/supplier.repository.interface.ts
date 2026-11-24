@@ -55,6 +55,12 @@ export interface ISupplierCompanyRepository {
 		patch: TSupplierCompanyUpdateInput,
 	): Promise<TSupplierCompanySelect | null>;
 
+	/** Points the row at its (single) photo object key; `null` clears it. */
+	setImageObjectKey(
+		id: string,
+		objectKey: string | null,
+	): Promise<TSupplierCompanySelect | null>;
+
 	/** Moves `from` → `to`; `null` when the company is not in `from`. */
 	transitionStatus(
 		id: string,

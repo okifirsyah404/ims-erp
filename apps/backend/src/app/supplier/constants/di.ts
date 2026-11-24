@@ -4,6 +4,7 @@ import type { ISupplierRepository } from '../contracts/supplier.repository.inter
 import type { SupplierService } from '../services/supplier.service';
 import type { ExportedSupplierService } from '../services/exported-supplier.service';
 import type { SupplierNumberingService } from '../services/supplier-numbering.service';
+import type { SupplierImageService } from '../services/supplier-image.service';
 import type { SupplierCodeNumberingRepository } from '../repositories/code-numbering.repository';
 
 /** Token resolving to the repository of `supplier.code_numberings`. */
@@ -34,6 +35,10 @@ export const SUPPLIER_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ISupplierAddressR
 export const SUPPLIER_SERVICE_TOKEN: InjectionToken<SupplierService> = Symbol(
 	'SUPPLIER_SERVICE',
 );
+
+/** Token resolving to the {@link SupplierImageService} (single company photo). */
+export const SUPPLIER_IMAGE_SERVICE_TOKEN: InjectionToken<SupplierImageService> =
+	Symbol('SUPPLIER_IMAGE_SERVICE');
 
 /**
  * Token resolving to the repository-only `ExportedSupplierService`.

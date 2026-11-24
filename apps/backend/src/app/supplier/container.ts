@@ -6,6 +6,7 @@ import {
 	SUPPLIER_CODE_NUMBERING_REPOSITORY_TOKEN,
 	SUPPLIER_COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	SUPPLIER_COMPANY_REPOSITORY_TOKEN,
+	SUPPLIER_IMAGE_SERVICE_TOKEN,
 	SUPPLIER_NUMBERING_SERVICE_TOKEN,
 	SUPPLIER_PERSON_REPOSITORY_TOKEN,
 	SUPPLIER_SERVICE_TOKEN,
@@ -15,6 +16,7 @@ import { SupplierCodeNumberingRepository } from './repositories/code-numbering.r
 import { SupplierNumberingService } from './services/supplier-numbering.service';
 import { ExportedSupplierService } from './services/exported-supplier.service';
 import { SupplierService } from './services/supplier.service';
+import { SupplierImageService } from './services/supplier-image.service';
 import { SupplierCompanyRepository } from './repositories/supplier-company.repository';
 import { SupplierRepository } from './repositories/supplier.repository';
 
@@ -42,6 +44,9 @@ export function registerSupplier(container: DependencyContainer): void {
 	});
 	container.register(SUPPLIER_SERVICE_TOKEN, {
 		useClass: SupplierService,
+	});
+	container.register(SUPPLIER_IMAGE_SERVICE_TOKEN, {
+		useClass: SupplierImageService,
 	});
 	container.register(EXPORTED_SUPPLIER_SERVICE_TOKEN, {
 		useClass: ExportedSupplierService,

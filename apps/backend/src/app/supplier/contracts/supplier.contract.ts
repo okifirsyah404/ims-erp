@@ -24,7 +24,7 @@ export const supplierCompanyCreateSchema = z.object({
 	),
 	name: z.string().min(1).max(200),
 	legalName: z.string().max(200).optional().nullable(),
-	supplierType: z.enum(['company', 'government']).default('company'),
+	supplierType: z.enum(['company', 'government', 'individual']).default('company'),
 	taxId: z.string().max(16).optional().nullable(),
 	email: z.string().email().optional().nullable(),
 	phone: z.string().max(30).optional().nullable(),

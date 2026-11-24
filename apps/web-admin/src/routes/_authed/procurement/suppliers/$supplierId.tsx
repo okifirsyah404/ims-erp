@@ -36,18 +36,24 @@ import {
 	type TLocationSelection,
 } from '@/components/inventory/location-cascade';
 import { SupplierFormDialog } from '@/components/procurement/supplier-form-dialog';
+import { ImageDropzone } from '@/components/image-dropzone';
 import { toast } from '@/components/toast';
+import { villageChainQueryOptions } from '@/lib/location-api';
 import {
 	createSupplierCompanyAddress,
 	createSupplierPerson,
 	removeSupplierCompanyAddress,
+	removeSupplierImage,
 	removeSupplierPerson,
 	setSupplierCompanyActive,
 	supplierCompanyQueryOptions,
 	updateSupplierCompany,
 	updateSupplierCompanyAddress,
+	updateSupplierPerson,
+	uploadSupplierImage,
 	type TSupplierCompanyAddress,
 	type TSupplierCompanyAddressInput,
+	type TSupplierPerson,
 } from '@/lib/supplier-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -65,6 +71,21 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
 			<div className='whitespace-pre-line'>{value || '-'}</div>
 		</div>
 	);
+}
+
+/** Village → province of a stored village id (only the id is stored). */
+function AddressRegion({ villageId }: { villageId: string | null }) {
+	const { data } = useQuery(villageChainQueryOptions(villageId));
+	if (!villageId || !data) return null;
+	const parts = [
+		data.village?.name,
+		data.district?.name,
+		data.regency?.name,
+		data.province?.name,
+	].filter(Boolean);
+	return parts.length ? (
+		<div className='text-xs text-muted-foreground'>{parts.join(', ')}</div>
+	) : null;
 }
 
 /** Add-address dialog; only the village is stored, the server derives the rest. */
@@ -181,20 +202,23 @@ function CompanyAddressDialog({
 }
 
 function PersonDialog({
+	person,
 	submitting,
 	onClose,
 	onSave,
 }: {
+	/** The row being edited; `null` adds a new contact. */
+	person: TSupplierPerson | null;
 	submitting: boolean;
 	onClose: () => void;
 	onSave: (input: { name: string; title: string | null; phone: string | null; email: string | null; isPrimary: boolean }) => void;
 }) {
 	const { t } = useTranslation(['procurement', 'common']);
-	const [name, setName] = useState('');
-	const [title, setTitle] = useState('');
-	const [phone, setPhone] = useState('');
-	const [email, setEmail] = useState('');
-	const [isPrimary, setIsPrimary] = useState(false);
+	const [name, setName] = useState(person?.name ?? '');
+	const [title, setTitle] = useState(person?.title ?? '');
+	const [phone, setPhone] = useState(person?.phone ?? '');
+	const [email, setEmail] = useState(person?.email ?? '');
+	const [isPrimary, setIsPrimary] = useState(person?.isPrimary ?? false);
 	return (
 		<Dialog open onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className='sm:max-w-lg'>
@@ -211,7 +235,11 @@ function PersonDialog({
 					}}
 				>
 					<DialogHeader>
-						<DialogTitle>{t('procurement:suppliers.addPerson')}</DialogTitle>
+						<DialogTitle>
+							{person
+								? t('procurement:suppliers.editPerson')
+								: t('procurement:suppliers.addPerson')}
+						</DialogTitle>
 					</DialogHeader>
 					<FieldGroup className='grid gap-4 py-4 sm:grid-cols-2'>
 						<Field className='sm:col-span-2'>
@@ -224,7 +252,7 @@ function PersonDialog({
 						</Field>
 						<Field>
 							<FieldLabel htmlFor='person-phone' optional>{t('procurement:supplier.picPhone')}</FieldLabel>
-							<CountryPhoneField id='person-phone' required={false} onChange={setPhone} />
+							<CountryPhoneField id='person-phone' required={false} defaultValue={person?.phone ?? undefined} onChange={setPhone} />
 						</Field>
 						<Field className='sm:col-span-2'>
 							<FieldLabel htmlFor='person-email' optional>{t('procurement:supplier.picEmail')}</FieldLabel>
@@ -258,6 +286,7 @@ function SupplierDetailPage() {
 	const canSeeBank = usePermission('supplier.read_bank');
 	const [editing, setEditing] = useState(false);
 	const [addingPerson, setAddingPerson] = useState(false);
+	const [editingPerson, setEditingPerson] = useState<TSupplierPerson | null>(null);
 	const [addingAddress, setAddingAddress] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const { data, isPending, isError, error } = useQuery(supplierCompanyQueryOptions(supplierId));
@@ -270,6 +299,7 @@ function SupplierDetailPage() {
 			toast.success(message);
 			setEditing(false);
 			setAddingPerson(false);
+			setEditingPerson(null);
 			setAddingAddress(false);
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
@@ -319,6 +349,43 @@ function SupplierDetailPage() {
 			<div className='grid gap-6 lg:grid-cols-2'>
 				<Card>
 					<CardHeader>
+						<CardTitle>{t('procurement:suppliers.photo')}</CardTitle>
+					</CardHeader>
+					<CardContent className='flex items-center gap-4'>
+						<ImageDropzone
+							previewUrl={data.imageUrl}
+							disabled={!canUpdate}
+							busy={busy}
+							label={t('procurement:supplier.photoChoose')}
+							hint={t('procurement:supplier.photoHint')}
+							onSelect={(file) =>
+								void run(
+									() => uploadSupplierImage(supplierId, file),
+									t('procurement:suppliers.photoSaved'),
+								)
+							}
+							onReject={() => toast.error(t('procurement:supplier.photoRejected'))}
+						/>
+						{canUpdate && data.imageUrl && (
+							<Button
+								type='button'
+								variant='ghost'
+								size='sm'
+								disabled={busy}
+								onClick={() =>
+									void run(
+										() => removeSupplierImage(supplierId),
+										t('procurement:suppliers.photoRemoved'),
+									)
+								}
+							>
+								{t('common:action.delete')}
+							</Button>
+						)}
+					</CardContent>
+				</Card>
+				<Card>
+					<CardHeader>
 						<CardTitle>{t('procurement:suppliers.identity')}</CardTitle>
 					</CardHeader>
 					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
@@ -326,25 +393,26 @@ function SupplierDetailPage() {
 						<Detail label={t('procurement:supplier.legalName')} value={data.legalName} />
 						<Detail label={t('procurement:supplier.taxId')} value={data.taxId} />
 						<Detail label={t('procurement:supplier.website')} value={data.website} />
-					</CardContent>
-				</Card>
-				<Card>
-					<CardHeader>
-						<CardTitle>{t('procurement:suppliers.contact')}</CardTitle>
-					</CardHeader>
-					<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
-						<Detail label={t('procurement:supplier.email')} value={data.email} />
-						<Detail label={t('procurement:supplier.phone')} value={data.phone} />
-						{canSeeBank && (
-							<Detail
-								label={t('procurement:suppliers.bank')}
-								value={[data.bankName, data.bankAccountNumber, data.bankAccountHolder].filter(Boolean).join(' · ')}
-							/>
-						)}
-						<Detail label={t('procurement:supplier.notes')} value={data.notes} />
+						<Detail label={t('procurement:suppliers.createdAt')} value={new Date(data.createdAt).toLocaleDateString()} />
 					</CardContent>
 				</Card>
 			</div>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('procurement:suppliers.contact')}</CardTitle>
+				</CardHeader>
+				<CardContent className='grid gap-3 text-sm sm:grid-cols-2'>
+					<Detail label={t('procurement:supplier.email')} value={data.email} />
+					<Detail label={t('procurement:supplier.phone')} value={data.phone} />
+					{canSeeBank && (
+						<Detail
+							label={t('procurement:suppliers.bank')}
+							value={[data.bankName, data.bankAccountNumber, data.bankAccountHolder].filter(Boolean).join(' · ')}
+						/>
+					)}
+					<Detail label={t('procurement:supplier.notes')} value={data.notes} />
+				</CardContent>
+			</Card>
 			<Card>
 				<CardHeader>
 					<CardTitle>{t('procurement:suppliers.addresses')}</CardTitle>
@@ -369,6 +437,7 @@ function SupplierDetailPage() {
 									{address.isPrimary && <Badge variant='secondary'>{t('procurement:suppliers.primary')}</Badge>}
 								</div>
 								<div className='text-muted-foreground'>{address.addressLine}</div>
+								<AddressRegion villageId={address.villageId} />
 								<div className='text-xs text-muted-foreground'>
 									{[address.contactName, address.contactPhone, address.postalCode].filter(Boolean).join(' · ')}
 								</div>
@@ -416,14 +485,23 @@ function SupplierDetailPage() {
 								<div className='text-muted-foreground'>{[person.phone, person.email].filter(Boolean).join(' · ') || '-'}</div>
 							</div>
 							{canUpdate && (
-								<Button
-									variant='ghost'
-									size='sm'
-									disabled={busy}
-									onClick={() => void run(() => removeSupplierPerson(person.id), t('procurement:suppliers.personRemoved'))}
-								>
-									{t('common:action.delete')}
-								</Button>
+								<div className='flex items-center gap-1'>
+									<Button
+										variant='ghost'
+										size='sm'
+										onClick={() => setEditingPerson(person)}
+									>
+										{t('common:action.edit')}
+									</Button>
+									<Button
+										variant='ghost'
+										size='sm'
+										disabled={busy}
+										onClick={() => void run(() => removeSupplierPerson(person.id), t('procurement:suppliers.personRemoved'))}
+									>
+										{t('common:action.delete')}
+									</Button>
+								</div>
 							)}
 						</div>
 					))}
@@ -435,9 +513,10 @@ function SupplierDetailPage() {
 					canSeeBank={canSeeBank}
 					submitting={busy}
 					onClose={() => setEditing(false)}
-					onSave={(input, address) =>
+					onSave={(input, address, photo) =>
 						void run(async () => {
 							await updateSupplierCompany(supplierId, input);
+							if (photo) await uploadSupplierImage(supplierId, photo);
 							if (!address) return;
 							if (address.id) {
 								await updateSupplierCompanyAddress(supplierId, address.id, address.values);
@@ -459,10 +538,21 @@ function SupplierDetailPage() {
 			)}
 			{addingPerson && (
 				<PersonDialog
+					person={null}
 					submitting={busy}
 					onClose={() => setAddingPerson(false)}
 					onSave={(input) =>
 						void run(() => createSupplierPerson({ ...input, companyId: supplierId }), t('procurement:suppliers.personSaved'))
+					}
+				/>
+			)}
+			{editingPerson && (
+				<PersonDialog
+					person={editingPerson}
+					submitting={busy}
+					onClose={() => setEditingPerson(null)}
+					onSave={(input) =>
+						void run(() => updateSupplierPerson(editingPerson.id, input), t('procurement:suppliers.saved'))
 					}
 				/>
 			)}
