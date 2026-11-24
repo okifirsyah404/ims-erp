@@ -2,10 +2,10 @@ import {
 	Bell,
 	Boxes,
 	Building2,
+	Calculator,
 	CalendarCheck,
 	CalendarClock,
 	CalendarOff,
-	Calculator,
 	Contact,
 	CreditCard,
 	FileCheck2,
@@ -205,37 +205,6 @@ export const navSections: {
 		],
 	},
 
-	// M04 — Integrations. Flat items.
-	{
-		labelKey: 'section.integrations',
-		items: [
-			{
-				titleKey: 'item.websiteCatalog',
-				url: '/integrations/website-catalog',
-				icon: Globe,
-				permission: 'catalog.read',
-			},
-			{
-				titleKey: 'item.whatsappAi',
-				url: '/integrations/whatsapp-ai',
-				icon: MessageSquare,
-				permission: 'automation.read',
-			},
-			{
-				titleKey: 'item.notifications',
-				url: '/integrations/notifications',
-				icon: Bell,
-				open: true,
-			},
-			{
-				titleKey: 'item.webhooks',
-				url: '/integrations/webhooks',
-				icon: Webhook,
-				permission: 'integration.read',
-			},
-		],
-	},
-
 	// M05 — Inventory & Purchasing, with Assets & Equipment (M06) folded in.
 	// Warehouses and the product master are their own modules (ADR-0026) but
 	// share this one sidebar group.
@@ -392,13 +361,48 @@ export const navSections: {
 	{
 		labelKey: 'section.hr',
 		items: [
-			{ titleKey: 'item.employees', url: '/hr/employees', icon: IdCard, permission: 'employee.read' },
-			{ titleKey: 'item.hrTasks', url: '/hr/tasks', icon: ListTodo, permission: 'task.read' },
-			{ titleKey: 'item.schedule', url: '/hr/schedule', icon: CalendarClock, permission: 'schedule.read' },
-			{ titleKey: 'item.attendance', url: '/hr/attendance', icon: CalendarCheck, permission: 'attendance.read' },
-			{ titleKey: 'item.leave', url: '/hr/leave', icon: CalendarOff, permission: 'leave.read' },
-			{ titleKey: 'item.overtime', url: '/hr/overtime', icon: Timer, permission: 'overtime.read' },
-			{ titleKey: 'item.payroll', url: '/hr/payroll', icon: Wallet, permission: 'payroll.read' },
+			{
+				titleKey: 'item.employees',
+				url: '/hr/employees',
+				icon: IdCard,
+				permission: 'employee.read',
+			},
+			{
+				titleKey: 'item.hrTasks',
+				url: '/hr/tasks',
+				icon: ListTodo,
+				permission: 'task.read',
+			},
+			{
+				titleKey: 'item.schedule',
+				url: '/hr/schedule',
+				icon: CalendarClock,
+				permission: 'schedule.read',
+			},
+			{
+				titleKey: 'item.attendance',
+				url: '/hr/attendance',
+				icon: CalendarCheck,
+				permission: 'attendance.read',
+			},
+			{
+				titleKey: 'item.leave',
+				url: '/hr/leave',
+				icon: CalendarOff,
+				permission: 'leave.read',
+			},
+			{
+				titleKey: 'item.overtime',
+				url: '/hr/overtime',
+				icon: Timer,
+				permission: 'overtime.read',
+			},
+			{
+				titleKey: 'item.payroll',
+				url: '/hr/payroll',
+				icon: Wallet,
+				permission: 'payroll.read',
+			},
 		],
 	},
 
@@ -531,6 +535,37 @@ export const navSections: {
 						permission: 'financial_report.read',
 					},
 				],
+			},
+		],
+	},
+
+	// M04 — Integrations. Flat items.
+	{
+		labelKey: 'section.integrations',
+		items: [
+			{
+				titleKey: 'item.websiteCatalog',
+				url: '/integrations/website-catalog',
+				icon: Globe,
+				permission: 'catalog.read',
+			},
+			{
+				titleKey: 'item.whatsappAi',
+				url: '/integrations/whatsapp-ai',
+				icon: MessageSquare,
+				permission: 'automation.read',
+			},
+			{
+				titleKey: 'item.notifications',
+				url: '/integrations/notifications',
+				icon: Bell,
+				open: true,
+			},
+			{
+				titleKey: 'item.webhooks',
+				url: '/integrations/webhooks',
+				icon: Webhook,
+				permission: 'integration.read',
 			},
 		],
 	},
