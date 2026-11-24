@@ -12,7 +12,95 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0123..ERP-0125: COA page CRUD, cash/bank invoice details + GL link, default COA seed
 
+**Scope.** `/finance/accounts` was the weakest list page in the app (bare
+placeholder inputs, no edit at all, and a bug where the *filter* select also
+chose the created account's type). `/finance/cash-bank` could not fill the
+invoice bank fields, so a form-created account never appeared on a printed
+invoice, and the GL link was a session-only UI hack. A fresh database also had
+no chart of accounts, so invoice/bill posting could not resolve its
+`constants/ar-posting.ts` codes.
+
+**Design gate.** `docs/database/` read: `docs.dbml` (Finance
+`chart_of_accounts`, `cash_bank_accounts`, `bank_account_links`),
+`module-ownership.md` (finance owns all three), `integrity-and-consistency.md`,
+`data-dictionary.md`; `logical-references.md` not needed (no new cross-module
+link). Manual grill pass (the `grill-me`/`grilling` skills are not installed):
+ownership unchanged (finance), tenant scoping (`organization_id` on every
+query), soft delete (`deleted_at` filters kept), column types untouched (money
+stays integer minor units; `invoice_usage`/`is_primary` already existed), no
+status vocabulary change. No schema change was required - every column used
+here was already in `finance.*`.
+
+**Backend.**
+
+- `finance/contracts/ledger.contract.ts`: `accountListQuerySchema` gained
+  `search` (trimmed, max 100) and `isPostable`; `cashBankAccountCreateSchema`
+  gained `invoiceUsage` (`vat`/`non_vat`) and `isPrimary`;
+  `cashBankAccountUpdateSchema` gained both (nullable `invoiceUsage`).
+- `ChartOfAccountRepository.paginateAccounts`: `ilike` on `code` or `name` plus
+  the `isPostable` filter.
+- `CashBankRepository`: insert/update carry `invoiceUsage`/`isPrimary`; new
+  `listCashBankAccountsWithLink` (left join `bank_account_links` on the active,
+  non-deleted link) and `clearPrimaryForInvoiceUsage`. `CashBankService`
+  enforces one primary per usage on create and on update (only when the patch
+  touches `isPrimary`/`invoiceUsage`), and `listAccounts` now returns the link.
+
+**Seeder.** `database/seeders/seed/chart-of-accounts.seeder.ts` (new): 22
+Indonesian accounts, one header per account type (`isPostable: false`) and every
+`constants/ar-posting.ts` code (`1-1300`, `1-1400`, `1-1800`, `2-1000`,
+`2-1100`, `2-1200`, `4-1000`, `5-1000`) marked `isSystem`. Idempotent on
+`(organization, code)`; existing rows are never updated. `index.ts` runs it
+before `seedFinance`, and `finance.seeder.ts` now links `BANK-BCA`->`1-1100`,
+`BANK-MANDIRI`->`1-1200`, `CASH`->`1-1000` (skips an existing link).
+
+**Web admin.** New `components/finance/account-form-dialog.tsx` and
+`cash-bank-form-dialog.tsx`; `account-list.tsx` rewritten on the
+`/procurement/suppliers` pattern (header icon, URL-backed
+search/type/status/postable filters, count, row actions Edit / Activate /
+Archive with confirm); `cash-bank-page.tsx` drops the inline create form and the
+session-only `linkedGl` map and shows the GL link from the API instead;
+`routes/_authed/finance/accounts/index.tsx` validates the new search params;
+`lib/finance-api.ts` types `glAccountId` and the new input fields and adds
+`search`/`isPostable` to `accountsQueryOptions`. i18n: new `finance:accounts.*`
+and `finance:cashBank.*` keys plus `accountType.ewallet`/`accountType.clearing`,
+all in `en` + `id`.
+
+**Verified.**
+
+- `cd apps/backend && bun test` - 1453 pass, 0 fail (116 files).
+- `cd apps/backend && bunx tsc --noEmit` - clean.
+- `cd apps/backend && bun run lint` - 0 errors (pre-existing warnings only).
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` - clean.
+- `cd apps/web-admin && bun test` - 209 pass, 0 fail.
+- `cd apps/web-admin && bun run lint` - 0 errors (pre-existing warnings only).
+- `cd packages/locales && bun test` - 106 pass (parity + dead keys); the
+  `accounts.nonPostable` key failed the no-untranslated-copy guard on the first
+  run ("Header" in both bundles) and was changed to `Header account` /
+  `Akun header`.
+- `docs/database/` reviewed, **unchanged**: no table, column, index or
+  constraint moved, so nothing in `docs.dbml` changed (it was `OK` in the
+  2026-11-24 entry).
+- `docs/role-permission.md` not regenerated: no route, guard option or role
+  grant changed (the same routes take extra body fields/query params).
+
+**Not verified.** `bun run drizzle:seed` was **not** executed: this environment
+has no `POSTGRES_URL`/`POSTGRES_DB` in `apps/backend/.env` and Docker is not
+running, so the seeder's double-run idempotency is by construction (select on
+the unique key before insert) rather than measured. No browser walk-through of
+either page, and no invoice print checked against a form-created account.
+
+**Docs.** `docs/plan/backlog.md` ERP-0123/0124/0125,
+`docs/plan/plans/features.md` (M09 finance), this entry.
+
+Next executable task: verify the COA seed on a local database you can drop and
+recreate (`bun run drizzle:seed` twice -> second run inserts 0 accounts and 0
+links), then walk `/finance/accounts` and `/finance/cash-bank` in the browser
+and print one invoice whose bank account was created from the form. Still open
+from ERP-0117..ERP-0122: the duplicate supplier migration folder
+(`...erp0114...` vs `...erp0116...`) breaks `drizzle:migrate` on an empty
+database.
 
 ## 2026-11-24 - dependabot PR #157: re-patch `@unplugin-pwa/core` 0.0.8 for Bun
 

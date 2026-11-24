@@ -2,10 +2,10 @@ import {
 	Bell,
 	Boxes,
 	Building2,
+	Calculator,
 	CalendarCheck,
 	CalendarClock,
 	CalendarOff,
-	Calculator,
 	Contact,
 	CreditCard,
 	FileCheck2,
@@ -172,6 +172,120 @@ export const navSections: {
 				titleKey: 'item.templates',
 				url: '/documents/templates',
 				icon: LayoutTemplate,
+			},
+		],
+	},
+
+	// M09 — Finance, with Tax (M10) and Investors (M11) merged in.
+	{
+		labelKey: 'section.finance',
+		items: [
+			{
+				titleKey: 'item.finance',
+				url: '/finance',
+				icon: Wallet,
+				items: [
+					// No catalog resource yet: hidden.
+					{
+						titleKey: 'item.cashBank',
+						url: '/finance/cash-bank',
+						permission: 'cash_bank.read',
+					},
+					{
+						titleKey: 'item.openingBalances',
+						url: '/finance/opening-balances',
+					},
+					{
+						titleKey: 'item.accounts',
+						url: '/finance/accounts',
+						permission: 'chart_of_account.read',
+					},
+					{
+						titleKey: 'item.journal',
+						url: '/finance/journal',
+						permission: 'journal.read',
+					},
+					{
+						titleKey: 'item.reconciliation',
+						url: '/finance/reconciliation',
+						permission: 'cash_bank.reconcile',
+					},
+					{
+						titleKey: 'item.receivables',
+						url: '/finance/receivables',
+						permission: 'invoice.read',
+					},
+					{
+						titleKey: 'item.payables',
+						url: '/finance/payables',
+						permission: 'bill.read',
+					},
+					{
+						titleKey: 'item.expenses',
+						url: '/finance/expenses',
+						permission: 'expense_claim.read',
+					},
+					{
+						titleKey: 'item.financialReports',
+						url: '/finance/reports',
+						permission: 'financial_report.read',
+					},
+					{
+						titleKey: 'item.periodClosing',
+						url: '/finance/closing',
+						permission: 'accounting_period.close',
+					},
+				],
+			},
+			{
+				titleKey: 'item.tax',
+				url: '/finance/tax',
+				icon: Scale,
+				items: [
+					{
+						titleKey: 'item.taxTypes',
+						url: '/finance/tax/types',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxRecords',
+						url: '/finance/tax/records',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxRecap',
+						url: '/finance/tax/recap',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxWithholding',
+						url: '/finance/tax/withholding',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxCorrections',
+						url: '/finance/tax/corrections',
+						permission: 'tax.read',
+					},
+				],
+			},
+			{
+				// M11 — Investors, merged into Finance per plan review.
+				titleKey: 'item.investors',
+				url: '/finance/investors',
+				icon: HandCoins,
+				items: [
+					{
+						titleKey: 'item.investorList',
+						url: '/finance/investors/registry',
+						permission: 'investor.read',
+					},
+					{
+						titleKey: 'item.profitSharing',
+						url: '/finance/investors/profit-sharing',
+						permission: 'profit_distribution.read',
+					},
+				],
 			},
 		],
 	},
@@ -392,126 +506,47 @@ export const navSections: {
 	{
 		labelKey: 'section.hr',
 		items: [
-			{ titleKey: 'item.employees', url: '/hr/employees', icon: IdCard, permission: 'employee.read' },
-			{ titleKey: 'item.hrTasks', url: '/hr/tasks', icon: ListTodo, permission: 'task.read' },
-			{ titleKey: 'item.schedule', url: '/hr/schedule', icon: CalendarClock, permission: 'schedule.read' },
-			{ titleKey: 'item.attendance', url: '/hr/attendance', icon: CalendarCheck, permission: 'attendance.read' },
-			{ titleKey: 'item.leave', url: '/hr/leave', icon: CalendarOff, permission: 'leave.read' },
-			{ titleKey: 'item.overtime', url: '/hr/overtime', icon: Timer, permission: 'overtime.read' },
-			{ titleKey: 'item.payroll', url: '/hr/payroll', icon: Wallet, permission: 'payroll.read' },
-		],
-	},
-
-	// M09 — Finance, with Tax (M10) and Investors (M11) merged in.
-	{
-		labelKey: 'section.finance',
-		items: [
 			{
-				titleKey: 'item.finance',
-				url: '/finance',
+				titleKey: 'item.employees',
+				url: '/hr/employees',
+				icon: IdCard,
+				permission: 'employee.read',
+			},
+			{
+				titleKey: 'item.hrTasks',
+				url: '/hr/tasks',
+				icon: ListTodo,
+				permission: 'task.read',
+			},
+			{
+				titleKey: 'item.schedule',
+				url: '/hr/schedule',
+				icon: CalendarClock,
+				permission: 'schedule.read',
+			},
+			{
+				titleKey: 'item.attendance',
+				url: '/hr/attendance',
+				icon: CalendarCheck,
+				permission: 'attendance.read',
+			},
+			{
+				titleKey: 'item.leave',
+				url: '/hr/leave',
+				icon: CalendarOff,
+				permission: 'leave.read',
+			},
+			{
+				titleKey: 'item.overtime',
+				url: '/hr/overtime',
+				icon: Timer,
+				permission: 'overtime.read',
+			},
+			{
+				titleKey: 'item.payroll',
+				url: '/hr/payroll',
 				icon: Wallet,
-				items: [
-					// No catalog resource yet: hidden.
-					{
-						titleKey: 'item.cashBank',
-						url: '/finance/cash-bank',
-						permission: 'cash_bank.read',
-					},
-					{
-						titleKey: 'item.openingBalances',
-						url: '/finance/opening-balances',
-					},
-					{
-						titleKey: 'item.accounts',
-						url: '/finance/accounts',
-						permission: 'chart_of_account.read',
-					},
-					{
-						titleKey: 'item.journal',
-						url: '/finance/journal',
-						permission: 'journal.read',
-					},
-					{
-						titleKey: 'item.reconciliation',
-						url: '/finance/reconciliation',
-						permission: 'cash_bank.reconcile',
-					},
-					{
-						titleKey: 'item.receivables',
-						url: '/finance/receivables',
-						permission: 'invoice.read',
-					},
-					{
-						titleKey: 'item.payables',
-						url: '/finance/payables',
-						permission: 'bill.read',
-					},
-					{
-						titleKey: 'item.expenses',
-						url: '/finance/expenses',
-						permission: 'expense_claim.read',
-					},
-					{
-						titleKey: 'item.financialReports',
-						url: '/finance/reports',
-						permission: 'financial_report.read',
-					},
-					{
-						titleKey: 'item.periodClosing',
-						url: '/finance/closing',
-						permission: 'accounting_period.close',
-					},
-				],
-			},
-			{
-				titleKey: 'item.tax',
-				url: '/finance/tax',
-				icon: Scale,
-				items: [
-					{
-						titleKey: 'item.taxTypes',
-						url: '/finance/tax/types',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxRecords',
-						url: '/finance/tax/records',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxRecap',
-						url: '/finance/tax/recap',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxWithholding',
-						url: '/finance/tax/withholding',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxCorrections',
-						url: '/finance/tax/corrections',
-						permission: 'tax.read',
-					},
-				],
-			},
-			{
-				// M11 — Investors, merged into Finance per plan review.
-				titleKey: 'item.investors',
-				url: '/finance/investors',
-				icon: HandCoins,
-				items: [
-					{
-						titleKey: 'item.investorList',
-						url: '/finance/investors/registry',
-						permission: 'investor.read',
-					},
-					{
-						titleKey: 'item.profitSharing',
-						url: '/finance/investors/profit-sharing',
-						permission: 'profit_distribution.read',
-					},
-				],
+				permission: 'payroll.read',
 			},
 		],
 	},

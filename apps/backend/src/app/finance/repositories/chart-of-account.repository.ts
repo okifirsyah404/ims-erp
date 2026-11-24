@@ -7,7 +7,7 @@ import {
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type {
@@ -106,12 +106,13 @@ export class ChartOfAccountRepository implements IChartOfAccountRepository {
 	/**
 	 * Fetches one page of the tenant's chart of accounts, ordered by code.
 	 *
-	 * @param request - Tenant, page settings and the optional type/active filters
+	 * @param request - Tenant, page settings and the optional type/active/postable/search filters
 	 */
 	async paginateAccounts(
 		request: TAccountPaginationRequest,
 	): Promise<TPaginationResult<TChartOfAccountSelect>> {
-		const { organizationId, accountType, isActive, page, limit } = request;
+		const { organizationId, accountType, search, isActive, isPostable, page, limit } =
+			request;
 		const conditions = [
 			eq(chartOfAccounts.organizationId, organizationId),
 			isNull(chartOfAccounts.deletedAt),
@@ -119,8 +120,20 @@ export class ChartOfAccountRepository implements IChartOfAccountRepository {
 		if (accountType) {
 			conditions.push(eq(chartOfAccounts.accountType, accountType));
 		}
+		if (search) {
+			const pattern = `%${search}%`;
+			conditions.push(
+				or(
+					ilike(chartOfAccounts.code, pattern),
+					ilike(chartOfAccounts.name, pattern),
+				)!,
+			);
+		}
 		if (isActive !== undefined) {
 			conditions.push(eq(chartOfAccounts.isActive, isActive));
+		}
+		if (isPostable !== undefined) {
+			conditions.push(eq(chartOfAccounts.isPostable, isPostable));
 		}
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database

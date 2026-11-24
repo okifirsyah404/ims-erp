@@ -125,6 +125,8 @@ export function accountsQueryOptions(params: {
 	limit: number;
 	accountType?: TAccountType;
 	isActive?: boolean;
+	isPostable?: boolean;
+	search?: string;
 }) {
 	const search = new URLSearchParams({
 		page: String(params.page),
@@ -133,6 +135,9 @@ export function accountsQueryOptions(params: {
 	if (params.accountType) search.set('accountType', params.accountType);
 	if (params.isActive !== undefined)
 		search.set('isActive', String(params.isActive));
+	if (params.isPostable !== undefined)
+		search.set('isPostable', String(params.isPostable));
+	if (params.search) search.set('search', params.search);
 	return queryOptions({
 		queryKey: ['accounts', params],
 		queryFn: () => getDataPaginated<TAccount>(`/finance/ledger/accounts?${search}`),
@@ -348,6 +353,8 @@ export type TCashBankAccount = {
 	invoiceUsage: 'vat' | 'non_vat' | null;
 	isPrimary: boolean;
 	isActive: boolean;
+	/** Linked `chart_of_accounts` row; `null` until the account is linked. */
+	glAccountId: string | null;
 };
 
 export type TCashBankTransaction = {
@@ -376,6 +383,8 @@ export function createCashBankAccount(input: {
 	bankName?: string | null;
 	accountNumber?: string | null;
 	accountHolder?: string | null;
+	invoiceUsage?: 'vat' | 'non_vat' | null;
+	isPrimary?: boolean;
 	openingBalance?: number;
 	glAccountId?: string | null;
 }) {
@@ -389,6 +398,8 @@ export function updateCashBankAccount(
 		bankName: string | null;
 		accountNumber: string | null;
 		accountHolder: string | null;
+		invoiceUsage: 'vat' | 'non_vat' | null;
+		isPrimary: boolean;
 		isActive: boolean;
 		glAccountId: string | null;
 	}>,
