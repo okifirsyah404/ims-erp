@@ -111,7 +111,7 @@ elsewhere and are not in the table:
 
 | Role | English | Indonesian | Resources granted |
 | --- | --- | --- | --- |
-| `owner` | Owner | Pemilik | 78 |
+| `owner` | Owner | Pemilik | 80 |
 | `admin` | Admin | Admin | 26 |
 | `member` | Member | Anggota | 4 |
 | `operations_manager` | Operations Manager | Manajer Operasional | 21 |
@@ -122,12 +122,12 @@ elsewhere and are not in the table:
 | `freelancer` | Freelancer | Pekerja Lepas | 5 |
 | `purchasing` | Purchasing | Pembelian | 12 |
 | `warehouse` | Warehouse | Gudang | 9 |
-| `finance` | Finance | Keuangan | 28 |
-| `accountant` | Accountant | Akuntan | 20 |
+| `finance` | Finance | Keuangan | 30 |
+| `accountant` | Accountant | Akuntan | 22 |
 | `hr` | Human Resource | Sumber Daya Manusia | 17 |
 | `customer_service` | Customer Service | Layanan Pelanggan | 12 |
 | `marketing` | Marketing | Pemasaran | 12 |
-| `auditor` | Auditor | Auditor | 42 |
+| `auditor` | Auditor | Auditor | 44 |
 
 ## Permissions per organization role
 
@@ -187,6 +187,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `accounting_period` | read, close, reopen |
 | `posting_rule` | read, update |
 | `cost_center` | read, create, update, archive |
+| `credit_memo` | read, create, apply, void |
+| `ar_write_off` | read, request, approve |
 | `tax` | read, create, update, verify, export |
 | `financial_report` | read, export |
 | `service_ticket` | read, create, update, assign, resolve, close |
@@ -458,6 +460,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `financial_report` | read, export |
 | `posting_rule` | read |
 | `cost_center` | read |
+| `credit_memo` | read, create, apply, void |
+| `ar_write_off` | read, request |
 | `tax` | read, export |
 | `product` | read, read_cost |
 | `supplier` | read, read_bank |
@@ -483,6 +487,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `accounting_period` | read, close, reopen |
 | `posting_rule` | read, update |
 | `cost_center` | read, create, update, archive |
+| `credit_memo` | read, apply, void |
+| `ar_write_off` | read, approve |
 | `tax` | read, create, update, verify, export |
 | `financial_report` | read, export |
 | `invoice` | read, export |
@@ -603,6 +609,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `accounting_period` | read |
 | `posting_rule` | read |
 | `cost_center` | read |
+| `credit_memo` | read |
+| `ar_write_off` | read |
 | `tax` | read, export |
 | `financial_report` | read, export |
 | `service_ticket` | read |
@@ -631,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-693 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+703 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -773,7 +781,11 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | Method | Path | Guard | Requirement | Who |
 | --- | --- | --- | --- | --- |
 | GET | `/finance/ap/aging` | org member + permission | `bill:read` | `owner`, `finance`, `accountant` |
+| POST | `/finance/ar/:invoiceId/write-off/approve` | org member + permission | `ar_write_off:approve` | `owner`, `accountant` |
+| POST | `/finance/ar/:invoiceId/write-off/cancel` | org member + permission | `ar_write_off:request` | `owner`, `finance` |
+| POST | `/finance/ar/:invoiceId/write-off/request` | org member + permission | `ar_write_off:request` | `owner`, `finance` |
 | GET | `/finance/ar/aging` | org member + permission | `payment:read` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/ar/write-offs` | org member + permission | `ar_write_off:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/bank-reconciliations/:id/items/:productId/match` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | GET | `/finance/cash-bank-accounts` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/cash-bank-accounts` | org member + permission | `cash_bank:create` | `owner`, `finance` |
@@ -791,6 +803,12 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | DELETE | `/finance/cost-centers/:id` | org member + permission | `cost_center:archive` | `owner`, `accountant` |
 | GET | `/finance/cost-centers/:id` | org member + permission | `cost_center:read` | `owner`, `finance`, `accountant`, `auditor` |
 | PATCH | `/finance/cost-centers/:id` | org member + permission | `cost_center:update` | `owner`, `accountant` |
+| GET | `/finance/credit-memos` | org member + permission | `credit_memo:read` | `owner`, `finance`, `accountant`, `auditor` |
+| POST | `/finance/credit-memos` | org member + permission | `credit_memo:create` | `owner`, `finance` |
+| POST | `/finance/credit-memos/:id/apply` | org member + permission | `credit_memo:apply` | `owner`, `finance`, `accountant` |
+| POST | `/finance/credit-memos/:id/void` | org member + permission | `credit_memo:void` | `owner`, `finance`, `accountant` |
+| GET | `/finance/deferred-revenue` | org member + permission | `journal:read` | `owner`, `accountant`, `auditor` |
+| POST | `/finance/deferred-revenue/run` | org member + permission | `journal:post` | `owner`, `accountant` |
 | GET | `/finance/depreciations` | org member + permission | `asset:read` | `owner`, `admin`, `operations_manager`, `project_manager`, `auditor` |
 | POST | `/finance/depreciations` | org member + permission | `asset:update` | `owner`, `operations_manager` |
 | GET | `/finance/employee-bank-accounts` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |

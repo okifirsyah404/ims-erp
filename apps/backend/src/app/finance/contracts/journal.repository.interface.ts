@@ -144,6 +144,13 @@ export interface IJournalRepository {
 		patch: TJournalEntryPatch,
 		tx?: TTx,
 	): Promise<TJournalEntrySelect | null>;
+	/** Every live entry produced by one source document, oldest first. */
+	listEntriesBySource(
+		organizationId: string,
+		sourceType: string,
+		sourceId: string,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect[]>;
 	/** Soft-deletes every live line of a draft before it is rewritten. */
 	softDeleteLines(organizationId: string, entryId: string, tx?: TTx): Promise<void>;
 	/** Draft, submitted or approved-but-unposted entries in a period (lock gate). */

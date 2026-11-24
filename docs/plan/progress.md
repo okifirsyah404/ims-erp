@@ -12,6 +12,71 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0135: AR postings (Phase B slice 1, ADR-0030 accepted)
+
+**Scope.** The owner ordered Phase B and confirmed that this is the owner's
+approval of ADR-0030 (ADR status -> accepted; module plans now say the ADR
+wins). Phase B runs in order 0135 -> 0136/0137 -> 0139 -> 0141 -> 0140 ->
+0138 -> 0142, one commit per slice. This entry is slice 1 (AR).
+
+**Design gate.** `docs/database/` read for `sale` (invoices, invoice_items,
+returns) and `finance` (ar_open_items, credit_memos target). Decisions are the
+grill answers Q27/Q28/Q47/Q56/Q57 plus three facts found in the code:
+(1) order invoices are single-line terms without a product, so per-category
+revenue only applies to line-item invoices (API); (2) `sale.returns` are
+replacements whose DBML note says "no credit memo", so the credit memo is a
+finance document issued from the invoice (deviation from Q56, recorded in
+`finance.md`); (3) the payment module computes `outstanding = original - paid`,
+so adjustments lower `original_amount` and are tracked in a new
+`adjusted_amount` instead of touching payment.
+
+**Changes.** Schema (`docs.dbml` first): `sale.invoice_items.service_period_*`,
+`sale.invoices` + `finance.ar_open_items` status `written_off`, AR open item
+`adjusted_amount` + write-off columns, `finance.credit_memos` built (+
+`tax_amount`, `journal_entry_id`, `created_by`), new
+`finance.deferred_revenue_schedules`. Migration
+`20261124212044_erp0135_ar_postings` (inspected: 2 CREATE TABLE, 9 ADD COLUMN,
+checks/indexes/FKs). Backend: `sale/utils/invoice-posting.ts` (pure builder),
+invoice issue through `postBusinessEvent` + schedules, void cancels schedules
+and refuses an invoice with an applied credit memo, `DeferredRevenueService`
+(port for sale, monthly run), `ReceivableAdjustmentService` (credit memo,
+write-off), lock gate for pending amortisation, product snapshot gains
+`productCategoryId`, code type `credit_memo` (`CN`), permissions
+`credit_memo:*`, `ar_write_off:read/request/approve`, routes
+`/finance/credit-memos*`, `/finance/ar/write-offs`,
+`/finance/ar/:invoiceId/write-off/{request,cancel,approve}`,
+`/finance/deferred-revenue{,/run}`. Web-admin: credit memo / write-off card
+on the invoice page, pending write-offs on `/finance/receivables`,
+amortisation button on `/finance/closing`, `written_off` labels, en/id.
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 195 refs across 26 targets, 160 intra-module
+bun docs/database/validate-dbml.ts            # OK (199 tables, 0 drift)
+bun run drizzle:generate --name erp0135_ar_postings; bun run drizzle:migrate   # applied to the scratch DB
+bun run <temporary ar-smoke script>           # 11/11 PASS: invoice journal (1-1310 / 4-1100 / 2-1500 / 2-1410), product
+                                              # dimension, schedule opened, November amortises 100 000 once (re-run 0),
+                                              # credit memo lowers open item + invoice, void refused with an applied memo,
+                                              # write-off maker-checker, void cancels schedule, lock refused while pending
+cd packages/common && bun run build           # new permissions
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json         # exit 0
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run test                                  # 7/7: backend 1481, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun docs/gen-role-permission.ts               # 703 routes written
+```
+
+**docs/database/** updated (`docs.dbml`, `logical-references.md`,
+`module-ownership.md`: finance 30 tables / 27 refs, totals 199 / 160).
+
+**Not verified / open.** No browser walk-through. Service periods and
+per-category revenue are API-only (no line-item invoice editor). Credit
+allocation to another invoice and refunds are not built.
+
+Next executable task: ERP-0136/0137 (GR/IR on goods receipt, bill clears
+GR/IR with PPV and a 3-way match, COGS at delivery-note `shipped`, stock
+adjustment journals).
+
 ## 2026-11-25 - ERP-0126..ERP-0134: ERP-grade finance design (ADR-0030) + Phase A GL foundation
 
 **Scope.** User request: make finance an ERP-grade accounting module (CoA, GL

@@ -46,6 +46,9 @@ export const POSTING_EVENT_TYPES = [
 	'payment.settled',
 	'finance.supplier_bill_recorded',
 	'finance.expense_claim_approved',
+	'finance.deferred_revenue_recognized',
+	'finance.credit_memo_applied',
+	'finance.receivable_written_off',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 

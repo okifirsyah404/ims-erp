@@ -295,6 +295,27 @@ export class JournalRepository implements IJournalRepository {
 		return updated ?? null;
 	}
 
+	async listEntriesBySource(
+		organizationId: string,
+		sourceType: string,
+		sourceId: string,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect[]> {
+		const db = tx ?? this.database;
+		return db
+			.select()
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.sourceType, sourceType),
+					eq(journalEntries.sourceId, sourceId),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.orderBy(asc(journalEntries.createdAt));
+	}
+
 	async softDeleteLines(organizationId: string, entryId: string, tx?: TTx): Promise<void> {
 		const db = tx ?? this.database;
 		const now = new Date();

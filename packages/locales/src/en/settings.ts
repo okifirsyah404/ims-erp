@@ -176,6 +176,7 @@ const settings = {
 	'payroll.nextRun': 'Next run: {{date}}',
 	'payroll.off': 'The automatic run is off.',
 	'payroll.saved': 'Payroll settings saved',
+	'numbering.type.credit_memo': 'Credit memo',
 } as const;
 
 export default settings;

@@ -15,6 +15,11 @@ import type { IPostingRuleRepository } from '../contracts/posting-rule.repositor
 import type { CostCenterService } from '../services/cost-center.service';
 import type { PostingRuleService } from '../services/posting-rule.service';
 import type { ManualJournalService } from '../services/manual-journal.service';
+import type { ICreditMemoRepository } from '../contracts/credit-memo.repository.interface';
+import type { IDeferredRevenueRepository } from '../contracts/deferred-revenue.repository.interface';
+import type { IDeferredRevenuePort } from '../contracts/deferred-revenue.port';
+import type { DeferredRevenueService } from '../services/deferred-revenue.service';
+import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
 import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
 import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
 import type { ExportedFinanceService } from '../services/exported-finance.service';
@@ -141,3 +146,16 @@ export const MANUAL_JOURNAL_SERVICE_TOKEN: InjectionToken<ManualJournalService> 
 );
 /** Finance's audit trail writer (ADR-0030 §7). */
 export const FINANCE_AUDIT_WRITER_TOKEN: InjectionToken<AuditWriter> = Symbol('FINANCE_AUDIT_WRITER');
+
+/* ----------------------------- AR postings (ERP-0135) ----------------------------- */
+
+export const CREDIT_MEMO_REPOSITORY_TOKEN: InjectionToken<ICreditMemoRepository> = Symbol('CREDIT_MEMO_REPOSITORY');
+export const DEFERRED_REVENUE_REPOSITORY_TOKEN: InjectionToken<IDeferredRevenueRepository> = Symbol(
+	'DEFERRED_REVENUE_REPOSITORY',
+);
+export const DEFERRED_REVENUE_SERVICE_TOKEN: InjectionToken<DeferredRevenueService> = Symbol('DEFERRED_REVENUE_SERVICE');
+/** Contract the sale module calls to open/cancel deferred-revenue schedules. */
+export const DEFERRED_REVENUE_PORT_TOKEN: InjectionToken<IDeferredRevenuePort> = Symbol('DEFERRED_REVENUE_PORT');
+export const RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN: InjectionToken<ReceivableAdjustmentService> = Symbol(
+	'RECEIVABLE_ADJUSTMENT_SERVICE',
+);

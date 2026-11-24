@@ -273,7 +273,15 @@ function makeHarness() {
 	} as unknown as BunSQLDatabase;
 
 	const repo = repoFake;
-	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
+	const posting = new PostingService(
+		{} as unknown as BunSQLDatabase,
+		repo as never,
+		repo as never,
+		repo as never,
+		numbering,
+		undefined,
+		fixturePostingRules(repo as never),
+	);
 	const arResolver = new ArAccountResolverService(fixturePostingRules(repo as never));
 	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
 	// ADR-0024: the payment ledger moved to its own module. These adapters point
@@ -403,7 +411,9 @@ function makeHarness() {
 				voided.push(`${module}/${sourceType}/${sourceId}`);
 				return 1;
 			},
-		},
+		},		// ERP-0135: no product categories, no service periods in these flows.
+		{ productsById: async () => new Map() } as never,
+		{ createSchedules: async () => undefined, cancelForInvoice: async () => undefined },
 	);
 
 	return {

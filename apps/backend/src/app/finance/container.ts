@@ -38,6 +38,11 @@ import {
 	MANUAL_JOURNAL_SERVICE_TOKEN,
 	POSTING_RULE_REPOSITORY_TOKEN,
 	POSTING_RULE_SERVICE_TOKEN,
+	CREDIT_MEMO_REPOSITORY_TOKEN,
+	DEFERRED_REVENUE_PORT_TOKEN,
+	DEFERRED_REVENUE_REPOSITORY_TOKEN,
+	DEFERRED_REVENUE_SERVICE_TOKEN,
+	RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -75,6 +80,10 @@ import { PostingRuleRepository } from './repositories/posting-rule.repository';
 import { CostCenterService } from './services/cost-center.service';
 import { PostingRuleService } from './services/posting-rule.service';
 import { ManualJournalService } from './services/manual-journal.service';
+import { CreditMemoRepository } from './repositories/credit-memo.repository';
+import { DeferredRevenueRepository } from './repositories/deferred-revenue.repository';
+import { DeferredRevenueService } from './services/deferred-revenue.service';
+import { ReceivableAdjustmentService } from './services/receivable-adjustment.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
 import { AuditWriter } from '@shared/audit';
@@ -176,6 +185,13 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(COST_CENTER_SERVICE_TOKEN, { useClass: CostCenterService });
 	container.register(POSTING_RULE_SERVICE_TOKEN, { useClass: PostingRuleService });
 	container.register(MANUAL_JOURNAL_SERVICE_TOKEN, { useClass: ManualJournalService });
+
+	// AR postings (ERP-0135).
+	container.register(CREDIT_MEMO_REPOSITORY_TOKEN, { useClass: CreditMemoRepository });
+	container.register(DEFERRED_REVENUE_REPOSITORY_TOKEN, { useClass: DeferredRevenueRepository });
+	container.register(DEFERRED_REVENUE_SERVICE_TOKEN, { useClass: DeferredRevenueService });
+	container.register(DEFERRED_REVENUE_PORT_TOKEN, { useClass: DeferredRevenueService });
+	container.register(RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN, { useClass: ReceivableAdjustmentService });
 }
 
 export * from './constants/di';

@@ -470,3 +470,62 @@ export class NoOpenPeriodForReversalError extends AppError {
 		);
 	}
 }
+
+/* ------------------------- AR postings (ERP-0135) ------------------------- */
+
+export class CreditMemoNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.creditMemoNotFound', 'Credit memo not found');
+	}
+}
+
+export class CreditMemoTransitionError extends AppError {
+	constructor() {
+		super(409, 'accounting.creditMemoTransition', 'That status change is not allowed for this credit memo');
+	}
+}
+
+/** The invoice is not issued, or the credit exceeds what is still open. */
+export class CreditMemoAmountError extends AppError {
+	constructor() {
+		super(
+			422,
+			'accounting.creditMemoAmount',
+			'A credit memo needs an issued invoice and cannot exceed its open amount',
+		);
+	}
+}
+
+export class WriteOffNotAllowedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.writeOffNotAllowed',
+			'Only an open receivable without a pending request can be written off',
+		);
+	}
+}
+
+export class WriteOffNotRequestedError extends AppError {
+	constructor() {
+		super(409, 'accounting.writeOffNotRequested', 'No write-off request is pending for this receivable');
+	}
+}
+
+/** Maker-checker on write-offs: the requester cannot approve. */
+export class WriteOffSelfApprovalError extends AppError {
+	constructor() {
+		super(403, 'accounting.writeOffSelfApproval', 'The requester of a write-off cannot approve it');
+	}
+}
+
+/** Locking a period while deferred revenue is not amortised through it. */
+export class DeferredRevenuePendingError extends AppError {
+	constructor(pending: number) {
+		super(
+			409,
+			'accounting.deferredRevenuePending',
+			`${pending} deferred revenue schedules are not amortised through this period`,
+		);
+	}
+}

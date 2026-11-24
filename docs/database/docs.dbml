@@ -2349,7 +2349,7 @@ Table sale.invoices {
   Checks {
     `invoice_type IN ('sales', 'proforma', 'recurring')`
     `term_kind IS NULL OR term_kind IN ('down_payment', 'installment', 'settlement')`
-    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')`
+    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'written_off', 'void', 'cancelled')`
     `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
@@ -2374,6 +2374,8 @@ Table sale.invoice_items {
   line_total bigint [not null, default: 0]
   sort_order integer [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
+  service_period_start date [note: "Service period of a maintenance/subscription line (ERP-0135): when set, the line's revenue is deferred and amortised monthly over the period."]
+  service_period_end date
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -2388,6 +2390,8 @@ Table sale.invoice_items {
     `discount_amount >= 0`
     `tax_amount >= 0`
     `line_total >= 0`
+    `(service_period_start IS NULL) = (service_period_end IS NULL)`
+    `service_period_end IS NULL OR service_period_end >= service_period_start`
   }
 }
 
@@ -3119,6 +3123,36 @@ Table finance.posting_rules {
   }
 }
 
+Table finance.deferred_revenue_schedules {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  invoice_id uuid [note: "Logical reference to sale.invoices.id. Cross-module FK intentionally omitted. Validated through the Sale module contract."]
+  invoice_item_id uuid [note: "Logical reference to sale.invoice_items.id. Cross-module FK intentionally omitted. Validated through the Sale module contract."]
+  issue_entry_id uuid [note: "Same-schema reference to the invoice journal that credited deferred revenue."]
+  discriminator_type text [not null, default: '', note: "Revenue posting-rule discriminator carried to each amortisation (e.g. product_category)."]
+  discriminator_value text [not null, default: '']
+  total_amount bigint [not null]
+  recognized_amount bigint [not null, default: 0]
+  start_date date [not null]
+  end_date date [not null]
+  recognized_through varchar(7) [note: "Last month (YYYY-MM) amortised; null before the first run."]
+  status text [not null, default: 'active']
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Deferred revenue of one invoice line with a service period (ERP-0135). The monthly run posts Dr deferred revenue / Cr revenue straight-line per calendar month, idempotent per schedule and month; voiding the invoice cancels the schedule and reverses its amortisations."
+  Indexes {
+    invoice_id [name: 'deferred_revenue_schedules_invoice_id_idx']
+    status [name: 'deferred_revenue_schedules_status_idx']
+  }
+  Checks {
+    `status IN ('active', 'completed', 'cancelled')`
+    `total_amount > 0`
+    `recognized_amount >= 0 AND recognized_amount <= total_amount`
+    `end_date >= start_date`
+  }
+}
+
 Table finance.bank_account_links {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
@@ -3377,8 +3411,15 @@ Table finance.ar_open_items {
   original_amount bigint [not null]
   paid_amount bigint [not null, default: 0]
   outstanding_amount bigint [not null]
+  adjusted_amount bigint [not null, default: 0, note: "Credit memos and write-offs taken off the invoice amount (ERP-0135); original_amount is already net of it."]
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'open']
+  write_off_reason text
+  write_off_requested_by text [note: "Logical reference to auth.users.id."]
+  write_off_requested_at bigint
+  written_off_by text [note: "Logical reference to auth.users.id. Must differ from write_off_requested_by (maker-checker)."]
+  written_off_at bigint
+  write_off_entry_id uuid
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow - never computed by reading sale tables. Aging reports are built on this table. No deleted_at: the row is a running balance cleared by status (projection exemption)."
@@ -3389,10 +3430,11 @@ Table finance.ar_open_items {
     due_date [name: 'ar_open_items_due_date_idx']
   }
   Checks {
-    `status IN ('open', 'partially_paid', 'paid', 'void')`
+    `status IN ('open', 'partially_paid', 'paid', 'written_off', 'void')`
     `original_amount >= 0`
     `paid_amount >= 0`
     `outstanding_amount >= 0`
+    `adjusted_amount >= 0`
     `outstanding_amount = original_amount - paid_amount`
     `currency_code = 'IDR'`
   }
@@ -3518,16 +3560,19 @@ Table finance.credit_memos {
   invoice_id uuid [note: "Logical reference to sale.invoices.id. Cross-module FK intentionally omitted."]
   customer_id uuid [note: "Logical reference to customer.customers.id. Cross-module FK intentionally omitted."]
   memo_date date
-  amount bigint [not null, default: 0]
+  amount bigint [not null, default: 0, note: "Total credited including VAT (IDR minor units)."]
+  tax_amount bigint [not null, default: 0, note: "VAT part of amount, split at the invoice's VAT ratio."]
   currency_code varchar(3) [not null, default: 'IDR']
   reason text
   status text [not null, default: 'draft']
+  journal_entry_id uuid
+  created_by text [note: "Logical reference to auth.users.id."]
   issued_by text [note: "Logical reference to auth.users.id."]
   issued_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Credit note against an invoice. It reduces the receivable, it is not a payment."
+  Note: "Credit note against an issued invoice (ERP-0135; built). draft -> applied (posting Dr sales returns + Dr VAT output / Cr receivable and lowering the invoice's open amount) -> void (a reversal). It reduces the receivable, it is not a payment; sale.returns are replacements and do not create one."
   Indexes {
     (organization_id, code) [unique, name: 'credit_memos_org_code_uq']
     invoice_id [name: 'credit_memos_invoice_id_idx']
@@ -3536,6 +3581,7 @@ Table finance.credit_memos {
   Checks {
     `status IN ('draft', 'issued', 'applied', 'void')`
     `amount > 0`
+    `tax_amount >= 0 AND tax_amount <= amount`
     `currency_code = 'IDR'`
   }
 }
@@ -3706,6 +3752,9 @@ Ref: finance.journal_lines.cost_center_id > finance.cost_centers.id [delete: res
 Ref: finance.journal_entries.reverses_entry_id > finance.journal_entries.id [delete: set null]
 Ref: finance.cost_centers.parent_cost_center_id > finance.cost_centers.id [delete: restrict]
 Ref: finance.posting_rules.account_id > finance.chart_of_accounts.id [delete: restrict]
+Ref: finance.deferred_revenue_schedules.issue_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.credit_memos.journal_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.ar_open_items.write_off_entry_id > finance.journal_entries.id [delete: set null]
 Ref: finance.opening_balances.account_id > finance.chart_of_accounts.id [delete: cascade]
 Ref: finance.account_balances.account_id > finance.chart_of_accounts.id [delete: cascade]
 Ref: finance.account_balances.accounting_period_id > finance.accounting_periods.id [delete: cascade]

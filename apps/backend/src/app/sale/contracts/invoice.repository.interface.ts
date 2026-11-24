@@ -66,6 +66,8 @@ export type TInvoiceItemInput = {
 	unitPrice: number;
 	discountAmount: number;
 	taxAmount: number;
+	servicePeriodStart?: string | null;
+	servicePeriodEnd?: string | null;
 };
 
 export type TCreateInvoiceInput = {
@@ -152,6 +154,11 @@ export type TInvoiceRepository = {
 	listByOrder(orderId: string): Promise<TInvoiceSelect[]>;
 	/** True while the order has an invoice that is neither void nor cancelled. */
 	hasLiveInvoices(orderId: string): Promise<boolean>;
+	/**
+	 * Tax base of the order's issued, non-void down-payment invoices other than
+	 * `exceptInvoiceId` (released from customer advances at settlement, ERP-0135).
+	 */
+	sumLiveDownPaymentBase(organizationId: string, orderId: string, exceptInvoiceId: string, tx?: unknown): Promise<number>;
 	/**
 	 * Drafts one billing term of an order under a per-order lock (two clicks
 	 * never bill the same term twice). `build` sees what the order's live

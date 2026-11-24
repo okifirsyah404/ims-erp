@@ -2,8 +2,8 @@
 
 > Rewritten 2026-11-25 (ERP-0126, ADR-0030). Module: `apps/backend/src/app/finance`,
 > Postgres schema `finance`, routes `/finance/*`. Tables: `docs/database/docs.dbml`
-> `finance.*`. Everything below marked **(A)** is Phase A; B-D are planned and
-> outside the v5.1 baseline until the owner records ADR-0030.
+> `finance.*`. Everything below marked **(A)** is Phase A, **(B)** Phase B;
+> ADR-0030 was accepted by the owner on 2026-11-25.
 
 ## Purpose and boundary
 
@@ -151,12 +151,50 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   ratios (current, quick, cash, GPM, NPM, ROA, ROE, DER, DSO, DPO, DIO),
   budget vs actual and the monthly management pack (PDF/Excel).
 
+## AR postings (B, ERP-0135, built)
+
+- **Invoice issue** posts `sale.invoice_issued` through `postBusinessEvent`
+  (`sale/utils/invoice-posting.ts`, pure and unit-tested):
+  - DP invoice: Dr receivable / Cr customer advances 2-1300 + Cr VAT output.
+  - Installment and plain invoices: revenue per line, discriminated by the
+    product's category (rule `product_category` -> account); lines without a
+    product use the default revenue rule. The invoice discount is allocated
+    pro rata (largest remainder).
+  - Settlement: the order's earlier live DP tax base is released (Dr customer
+    advances) into revenue together with this invoice's base.
+  - Lines with `service_period_start/end` credit deferred revenue 2-1500 and
+    open a `finance.deferred_revenue_schedules` row through the
+    `DEFERRED_REVENUE_PORT_TOKEN` contract.
+- **Deferred revenue:** `POST /finance/deferred-revenue/run {year, month}`
+  catches every due schedule up, one journal per schedule and month
+  (straight-line per calendar month, last month takes the remainder),
+  idempotent on `deferred:<schedule>:<YYYY-MM>`. Voiding the invoice reverses
+  posted amortisations and cancels the schedule. Locking a period is refused
+  while a schedule is not amortised through it.
+- **Credit memo** (`finance.credit_memos`, built from the DBML target):
+  drafted against an issued invoice, `apply` posts Dr sales returns 4-1900 +
+  Dr VAT output / Cr receivable and lowers the open item; `void` of an applied
+  memo reverses it. Deviation from grill Q56: `sale.returns` are replacements
+  (their DBML note says "no credit memo"), so a credit memo is a finance
+  document issued from the invoice, not created by a return. Allocating a
+  credit to another invoice and refunds through `payment` are not built.
+- **Write-off:** request (`ar_write_off:request`) and approve
+  (`ar_write_off:approve`, not by the requester): Dr allowance 1-1390 / Cr
+  receivable for the whole open amount; open item and invoice `written_off`.
+- **Open item arithmetic:** adjustments lower `original_amount` and are kept
+  in `adjusted_amount`, so `outstanding = original - paid` and the payment
+  module's settlement math are unchanged. An issued invoice carrying a credit
+  memo cannot be voided until the memo is voided.
+- **Not built:** the web-admin has no line-item invoice editor (order
+  invoices are single-line terms without a product), so service periods and
+  per-category revenue are reachable through the API only for now.
+
 ## Phase B-D decisions (recorded, not built)
 
-- **AR:** sale owns invoices; finance owns `ar_open_items`; `sale.invoices`
-  gains `project_id`; invoice lines gain `service_period_start/end` (from
-  `project.license_contracts`). Installation projects: DP = advance,
-  further termin invoices are revenue (milestone), settlement deducts the DP.
+- **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service
+  periods filled from `project.license_contracts` need a line-item invoice UI.
+  Installation projects: DP = advance, further termin invoices are revenue
+  (milestone), settlement deducts the DP (built in ERP-0135).
 - **AP:** GR/IR; bills over received quantity are blocked (3-way match);
   price variance always allowed. `purchase_returns.journal_entry_id`.
 - **Payroll:** `human_resource.payroll_runs` (`draft -> calculated ->

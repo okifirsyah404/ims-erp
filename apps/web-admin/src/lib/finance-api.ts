@@ -404,6 +404,9 @@ export const POSTING_EVENT_TYPES = [
 	'payment.settled',
 	'finance.supplier_bill_recorded',
 	'finance.expense_claim_approved',
+	'finance.deferred_revenue_recognized',
+	'finance.credit_memo_applied',
+	'finance.receivable_written_off',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -1302,3 +1305,80 @@ export const rejectExpenseClaim = (id: string) =>
 	sendData<TExpenseClaim>(`/finance/expenses/${id}/reject`, 'POST');
 export const cancelExpenseClaim = (id: string) =>
 	sendData<TExpenseClaim>(`/finance/expenses/${id}/cancel`, 'POST');
+
+/* ----------------------------- receivable adjustments (ERP-0135) ----------------------------- */
+
+export type TCreditMemoStatus = 'draft' | 'issued' | 'applied' | 'void';
+
+export type TCreditMemo = {
+	id: string;
+	code: string;
+	invoiceId: string | null;
+	customerId: string | null;
+	memoDate: string | null;
+	amount: number;
+	taxAmount: number;
+	reason: string | null;
+	status: TCreditMemoStatus;
+	journalEntryId: string | null;
+};
+
+export function creditMemosQueryOptions(params: { page: number; limit: number; invoiceId?: string; status?: TCreditMemoStatus }) {
+	const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
+	if (params.invoiceId) search.set('invoiceId', params.invoiceId);
+	if (params.status) search.set('status', params.status);
+	return queryOptions({
+		queryKey: ['credit-memos', params],
+		queryFn: () => getDataPaginated<TCreditMemo>(`/finance/credit-memos?${search}`),
+	});
+}
+
+export function createCreditMemo(input: { invoiceId: string; memoDate: string; amount: number; reason: string }) {
+	return sendData<TCreditMemo>('/finance/credit-memos', 'POST', input);
+}
+
+export function applyCreditMemo(id: string) {
+	return sendData<TCreditMemo>(`/finance/credit-memos/${id}/apply`, 'POST');
+}
+
+export function voidCreditMemo(id: string, reason: string) {
+	return sendData<TCreditMemo>(`/finance/credit-memos/${id}/void`, 'POST', { reason });
+}
+
+/** An AR open item carrying a pending write-off request. */
+export type TWriteOffRequest = {
+	id: string;
+	invoiceId: string | null;
+	customerId: string | null;
+	outstandingAmount: number;
+	writeOffReason: string | null;
+	writeOffRequestedBy: string | null;
+	writeOffRequestedAt: string | null;
+};
+
+export function writeOffRequestsQueryOptions() {
+	return queryOptions({
+		queryKey: ['write-offs'],
+		queryFn: () => getData<TWriteOffRequest[]>('/finance/ar/write-offs'),
+	});
+}
+
+export function requestWriteOff(invoiceId: string, reason: string) {
+	return sendData<TWriteOffRequest>(`/finance/ar/${invoiceId}/write-off/request`, 'POST', { reason });
+}
+
+export function cancelWriteOff(invoiceId: string) {
+	return sendData<TWriteOffRequest>(`/finance/ar/${invoiceId}/write-off/cancel`, 'POST');
+}
+
+export function approveWriteOff(invoiceId: string) {
+	return sendData<TWriteOffRequest>(`/finance/ar/${invoiceId}/write-off/approve`, 'POST');
+}
+
+/* ----------------------------- deferred revenue (ERP-0135) ----------------------------- */
+
+export type TAmortisationRun = { month: string; schedules: number; entries: number; amount: number };
+
+export function runDeferredRevenue(year: number, month: number) {
+	return sendData<TAmortisationRun>('/finance/deferred-revenue/run', 'POST', { year, month });
+}

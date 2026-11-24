@@ -559,6 +559,13 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.accountBalanceNotZero': 'Hanya akun bersaldo nol yang dapat dinonaktifkan',
 	'accounting.periodLockBlocked': 'Periode masih memiliki jurnal yang belum diposting; posting atau batalkan sebelum dikunci',
 	'accounting.noOpenPeriodForReversal': 'Tidak ada periode akuntansi terbuka untuk menampung jurnal pembalik',
+	'accounting.creditMemoNotFound': 'Nota kredit tidak ditemukan',
+	'accounting.creditMemoTransition': 'Perubahan status ini tidak diizinkan untuk nota kredit tersebut',
+	'accounting.creditMemoAmount': 'Nota kredit butuh faktur yang sudah terbit dan tidak boleh melebihi sisa tagihannya',
+	'accounting.writeOffNotAllowed': 'Hanya piutang terbuka tanpa permintaan yang tertunda yang bisa dihapuskan',
+	'accounting.writeOffNotRequested': 'Tidak ada permintaan penghapusan yang tertunda untuk piutang ini',
+	'accounting.writeOffSelfApproval': 'Pengaju penghapusan piutang tidak boleh menyetujuinya sendiri',
+	'accounting.deferredRevenuePending': 'Pendapatan diterima dimuka belum diamortisasi sampai periode ini; jalankan amortisasi dulu',
 	'accounting.openItemNotFound': 'Baris sub-buku besar untuk dokumen ini tidak ditemukan',
 	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
 	'accounting.paymentInvalidTransition':

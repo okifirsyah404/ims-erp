@@ -66,7 +66,7 @@ _Interpretation, needs owner confirmation:_
   bank.
 
 ## Explicit limits (out of scope)
-> **ADR-0030 (2026-11-25, proposed):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table). Until the owner records the scope change, the limits here remain the contract baseline.
+> **ADR-0030 (accepted by the owner 2026-11-25):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table); where they conflict, the ADR wins.
 
 
 - No multi-entity consolidation.

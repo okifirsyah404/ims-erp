@@ -310,6 +310,31 @@ export class InvoiceRepository implements TInvoiceRepository {
 		return !!row;
 	}
 
+	async sumLiveDownPaymentBase(
+		organizationId: string,
+		orderId: string,
+		exceptInvoiceId: string,
+		tx?: unknown,
+	): Promise<number> {
+		const db = (tx as TTx | undefined) ?? this.database;
+		const [row] = await db
+			.select({
+				value: sql<number>`coalesce(sum(${invoices.subtotal} - ${invoices.discountTotal}), 0)::bigint`.mapWith(Number),
+			})
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					eq(invoices.orderId, orderId),
+					eq(invoices.termKind, 'down_payment'),
+					ne(invoices.id, exceptInvoiceId),
+					inArray(invoices.status, ['issued', 'partially_paid', 'paid']),
+					isNull(invoices.deletedAt),
+				),
+			);
+		return row?.value ?? 0;
+	}
+
 	withLockedInvoice<T>(organizationId: string, id: string, work: (invoice: TInvoiceSelect, tx: unknown) => Promise<T>): Promise<T | null> {
 		return this.database.transaction(async (tx) => {
 			const [invoice] = await tx

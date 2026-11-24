@@ -39,7 +39,9 @@ export type TAuditTargetType =
 	| 'accounting_period'
 	| 'chart_of_account'
 	| 'posting_rule'
-	| 'cost_center';
+	| 'cost_center'
+	| 'credit_memo'
+	| 'ar_open_item';
 
 /** One audited action (mirrors the `audit.audit_logs.action` enum). */
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

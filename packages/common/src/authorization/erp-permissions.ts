@@ -122,6 +122,10 @@ export const erpStatements = {
 	posting_rule: ['read', 'update'],
 	/** Cost-centre master data (ERP-0127). */
 	cost_center: ['read', 'create', 'update', 'archive'],
+	/** Credit notes against issued invoices (ERP-0135). */
+	credit_memo: ['read', 'create', 'apply', 'void'],
+	/** Receivable write-off, maker-checker (ERP-0135). */
+	ar_write_off: ['read', 'request', 'approve'],
 	tax: ['read', 'create', 'update', 'verify', 'export'],
 	financial_report: ['read', 'export'],
 
@@ -764,6 +768,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		financial_report: ['read', 'export'],
 		posting_rule: ['read'],
 		cost_center: ['read'],
+		credit_memo: ['read', 'create', 'apply', 'void'],
+		ar_write_off: ['read', 'request'],
 		tax: ['read', 'export'],
 		product: ['read', 'read_cost'],
 		// Supplier payments need the supplier's bank account (decision 2026-11-02).
@@ -786,6 +792,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		accounting_period: ['read', 'close', 'reopen'],
 		posting_rule: ['read', 'update'],
 		cost_center: ['read', 'create', 'update', 'archive'],
+		credit_memo: ['read', 'apply', 'void'],
+		ar_write_off: ['read', 'approve'],
 		tax: ['read', 'create', 'update', 'verify', 'export'],
 		financial_report: ['read', 'export'],
 		invoice: ['read', 'export'],
@@ -901,6 +909,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		accounting_period: ['read'],
 		posting_rule: ['read'],
 		cost_center: ['read'],
+		credit_memo: ['read'],
+		ar_write_off: ['read'],
 		tax: ['read', 'export'],
 		financial_report: ['read', 'export'],
 		service_ticket: ['read'],

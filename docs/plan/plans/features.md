@@ -906,8 +906,17 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   backend 1472 / web-admin 209 / locales 106 pass, lint 0 errors,
   `validate-dbml.ts` OK. Open: browser walk-through; ADR-0030 owner approval.
 
-### planned (ADR-0030 Phases B-D, owner approval of the lifted v5.1 limits pending)
-- ERP-0131 year-end close; ERP-0135..0142 (Phase B: AR rules, GR/IR, COGS,
+- AR postings, Phase B (ERP-0135, 2026-11-25): invoices post through posting
+  rules (DP to customer advances, revenue per product category, settlement
+  releases the DP, service-period lines to deferred revenue with a monthly
+  amortisation run and a lock gate), credit memos (apply/void) and
+  maker-checker write-offs on the invoice page, `written_off` statuses.
+  Evidence: migration `20261124212044_erp0135_ar_postings` on a local scratch
+  DB, DB smoke 11/11, 9 unit tests, backend 1481 pass. Open: line-item invoice
+  editor (service periods are API-only), credit allocation/refund.
+
+### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
+- ERP-0131 year-end close; ERP-0136..0142 (Phase B: GR/IR, COGS,
   payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
   sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,

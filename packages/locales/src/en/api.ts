@@ -558,6 +558,13 @@ const api = {
 	'accounting.accountBalanceNotZero': 'Only an account with a zero balance can be deactivated',
 	'accounting.periodLockBlocked': 'The period still has unposted journal entries; post or void them before locking',
 	'accounting.noOpenPeriodForReversal': 'No open accounting period exists to carry the reversal',
+	'accounting.creditMemoNotFound': 'Credit memo not found',
+	'accounting.creditMemoTransition': 'That status change is not allowed for this credit memo',
+	'accounting.creditMemoAmount': 'A credit memo needs an issued invoice and cannot exceed its open amount',
+	'accounting.writeOffNotAllowed': 'Only an open receivable without a pending request can be written off',
+	'accounting.writeOffNotRequested': 'No write-off request is pending for this receivable',
+	'accounting.writeOffSelfApproval': 'The requester of a write-off cannot approve it',
+	'accounting.deferredRevenuePending': 'Deferred revenue is not amortised through this period yet; run the amortisation first',
 	'accounting.openItemNotFound': 'The open-item sub-ledger row for this document is missing',
 	'accounting.paymentNotFound': 'Payment not found',
 	'accounting.paymentInvalidTransition':

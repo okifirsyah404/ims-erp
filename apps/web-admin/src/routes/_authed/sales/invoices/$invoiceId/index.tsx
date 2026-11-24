@@ -53,6 +53,7 @@ import {
 	voidInvoice,
 } from '@/lib/invoice-api';
 import { usePermission } from '@/lib/use-permission';
+import { ReceivableAdjustmentsCard } from '@/components/finance/receivable-adjustments-card';
 
 /** `/sales/invoices/$invoiceId` — one invoice: issue, void, receipts, print. */
 export const Route = createFileRoute('/_authed/sales/invoices/$invoiceId/')({
@@ -172,6 +173,10 @@ function InvoiceDetailPage() {
 				<p className='text-sm text-muted-foreground'>
 					{t('finance:invoice.voidReason')}: {data.voidReason}
 				</p>
+			)}
+
+			{data.status !== 'draft' && data.status !== 'void' && data.status !== 'cancelled' && (
+				<ReceivableAdjustmentsCard invoiceId={invoiceId} outstandingTotal={data.outstandingTotal} open={payable} />
 			)}
 
 			<div className='grid gap-6 lg:grid-cols-2'>

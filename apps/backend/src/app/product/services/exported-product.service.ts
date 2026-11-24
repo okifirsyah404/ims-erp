@@ -182,6 +182,7 @@ function toSnapshot(row: TProductSnapshot): TProductSnapshot {
 		isActive: row.isActive,
 		isSerialized: row.isSerialized,
 		isStockTracked: row.isStockTracked,
+		productCategoryId: row.productCategoryId ?? null,
 	};
 }
 
@@ -201,6 +202,8 @@ export type TProductSnapshot = {
 	isActive: boolean;
 	isSerialized: boolean;
 	isStockTracked: boolean;
+	/** Revenue posting-rule discriminator (ERP-0135). */
+	productCategoryId: string | null;
 };
 
 /** Type-only re-exports for the module's own services. */

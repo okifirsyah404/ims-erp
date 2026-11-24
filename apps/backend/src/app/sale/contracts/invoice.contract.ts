@@ -5,14 +5,26 @@ import { RECEIPT_METHODS, RECEIPT_STATUSES } from '@drizzle/schemas/sale.schema'
 
 /* ----------------------------- invoices (F4) ----------------------------- */
 
-export const invoiceItemSchema = z.object({
-	productId: z.string().uuid().nullish().transform((v) => v ?? null),
-	description: z.string().nullish().transform((v) => v ?? null),
-	quantity: z.number().nonnegative().max(1_000_000),
-	unitPrice: minorAmount,
-	discountAmount: minorAmount.default(0),
-	taxAmount: minorAmount.default(0),
-});
+export const invoiceItemSchema = z
+	.object({
+		productId: z.string().uuid().nullish().transform((v) => v ?? null),
+		description: z.string().nullish().transform((v) => v ?? null),
+		quantity: z.number().nonnegative().max(1_000_000),
+		unitPrice: minorAmount,
+		discountAmount: minorAmount.default(0),
+		taxAmount: minorAmount.default(0),
+		/** Service period of a maintenance/subscription line: revenue is deferred (ERP-0135). */
+		servicePeriodStart: isoDate.nullish().transform((v) => v ?? null),
+		servicePeriodEnd: isoDate.nullish().transform((v) => v ?? null),
+	})
+	.refine((item) => (item.servicePeriodStart === null) === (item.servicePeriodEnd === null), {
+		message: 'A service period needs both a start and an end date',
+		path: ['servicePeriodEnd'],
+	})
+	.refine((item) => !item.servicePeriodStart || !item.servicePeriodEnd || item.servicePeriodEnd >= item.servicePeriodStart, {
+		message: 'The service period cannot end before it starts',
+		path: ['servicePeriodEnd'],
+	});
 
 export const invoiceCreateSchema = z.object({
 	invoiceType: z.enum(['sales', 'proforma', 'recurring']).default('sales'),

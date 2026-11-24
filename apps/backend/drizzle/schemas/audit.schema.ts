@@ -122,6 +122,13 @@ export const AUDIT_ACTIONS = [
 	'cost_center.created',
 	'cost_center.updated',
 	'cost_center.archived',
+	// --- receivables (ERP-0135) ---
+	'credit_memo.created',
+	'credit_memo.applied',
+	'credit_memo.voided',
+	'receivable.write_off_requested',
+	'receivable.write_off_cancelled',
+	'receivable.write_off_approved',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

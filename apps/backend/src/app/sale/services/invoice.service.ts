@@ -43,6 +43,11 @@ import {
 } from '../errors/invoice.errors';
 import { businessDateOf } from '@utils/business-date.util';
 import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
+import { buildInvoicePosting } from '../utils/invoice-posting';
+import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ExportedProductService } from '@app/product/services/exported-product.service';
+import { DEFERRED_REVENUE_PORT_TOKEN } from '@app/finance/constants/di';
+import type { IDeferredRevenuePort } from '@app/finance/contracts/deferred-revenue.port';
 import type {
 	TCreateReceiptInput,
 	TInvoiceListRequest,
@@ -84,6 +89,12 @@ export class InvoiceService {
 		/** ERP-0044: issued invoices and receipts are registered documents. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0135: revenue discriminator (product category) per invoice line. */
+		@inject(EXPORTED_PRODUCT_SERVICE_TOKEN)
+		private readonly products: Pick<ExportedProductService, 'productsById'>,
+		/** ERP-0135: service-period lines open finance's deferred-revenue schedules. */
+		@inject(DEFERRED_REVENUE_PORT_TOKEN)
+		private readonly deferredRevenue: IDeferredRevenuePort,
 	) {}
 
 	/**
@@ -247,45 +258,54 @@ export class InvoiceService {
 				throw new InvoiceDueBeforeIssueError();
 			}
 
-			const accounts = await this.arResolver.resolveAll(ctx.organizationId);
 			const issueDate =
 				invoice.issueDate ?? new Date().toISOString().slice(0, 10);
-			const revenue = invoice.subtotal - invoice.discountTotal;
 
-			const lines: Array<{
-				accountId: string;
-				debit: number;
-				credit: number;
-			}> = [
-				{
-					accountId: accounts.ar,
-					debit: invoice.grandTotal,
-					credit: 0,
-				},
-				{
-					accountId: accounts.revenue,
-					debit: 0,
-					credit: revenue,
-				},
-			];
-			if (invoice.taxTotal > 0) {
-				lines.push({
-					accountId: accounts.taxPayable,
-					debit: 0,
-					credit: invoice.taxTotal,
-				});
-			}
+			// ERP-0135: business facts by role; finance's posting rules pick the
+			// accounts (DP -> customer advances, revenue per product category,
+			// service-period lines -> deferred revenue).
+			const productIds = [...new Set(items.map((item) => item.productId).filter((id): id is string => !!id))];
+			const products = productIds.length ? await this.products.productsById(productIds) : new Map();
+			const productCategoryById = new Map<string, string | null>(
+				[...products.values()].map((product) => [product.id, product.productCategoryId]),
+			);
+			const advanceBase =
+				invoice.termKind === 'settlement' && invoice.orderId
+					? await this.repo.sumLiveDownPaymentBase(ctx.organizationId, invoice.orderId, invoice.id, tx)
+					: 0;
+			const posting = buildInvoicePosting({
+				invoice,
+				items: items.map((item) => ({
+					id: item.id,
+					productId: item.productId,
+					lineTotal: item.lineTotal,
+					taxAmount: item.taxAmount,
+					servicePeriodStart: item.servicePeriodStart,
+					servicePeriodEnd: item.servicePeriodEnd,
+				})),
+				productCategoryById,
+				advanceBase,
+			});
 
-			await this.posting.post(tx, {
+			const { entry } = await this.posting.postBusinessEvent(tx, {
 				organizationId: ctx.organizationId,
 				entryDate: issueDate,
 				sourceModule: 'sale',
 				sourceType: 'invoice',
 				sourceId: invoice.id,
 				idempotencyKey: `invoice:${invoice.id}`,
+				eventType: 'sale.invoice_issued',
 				description: `Invoice ${invoice.code}`,
-				lines,
+				lines: posting.lines,
 			});
+			if (posting.schedules.length > 0) {
+				await this.deferredRevenue.createSchedules(tx, {
+					organizationId: ctx.organizationId,
+					invoiceId: invoice.id,
+					issueEntryId: entry.id,
+					schedules: posting.schedules,
+				});
+			}
 
 			await this.arLedger.openItem(
 				ctx.organizationId,
@@ -381,6 +401,8 @@ export class InvoiceService {
 			unitPrice: i.unitPrice,
 			discountAmount: i.discountAmount,
 			taxAmount: i.taxAmount,
+			servicePeriodStart: i.servicePeriodStart,
+			servicePeriodEnd: i.servicePeriodEnd,
 		}));
 	}
 
@@ -405,6 +427,8 @@ export class InvoiceService {
 				lineTotal:
 					item.quantity * item.unitPrice - item.discountAmount + item.taxAmount,
 				currencyCode: 'IDR',
+				servicePeriodStart: item.servicePeriodStart ?? null,
+				servicePeriodEnd: item.servicePeriodEnd ?? null,
 			})),
 			tx,
 		);

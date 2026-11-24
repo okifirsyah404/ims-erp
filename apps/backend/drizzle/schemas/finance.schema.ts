@@ -10,8 +10,8 @@
  * out to the `tax` schema.
  *
  * The single payment ledger lives in `payment`. Target-only tables
- * (`journal_templates`, `credit_memos`, `employee_advances`,
- * `expense_settlements`) are defined in `docs.dbml` only (Q22).
+ * (`journal_templates`, `employee_advances`, `expense_settlements`) are
+ * defined in `docs.dbml` only (Q22); `credit_memos` is built (ERP-0135).
  * `expense_claims` + `expense_claim_items` are built (ERP-0013).
  */
 import {
@@ -142,8 +142,16 @@ export const OPEN_ITEM_STATUSES = [
 	'open',
 	'partially_paid',
 	'paid',
+	'written_off',
 	'void',
 ] as const;
+
+/** Credit memo lifecycle (ERP-0135): `issued` is reserved, issuing applies it. */
+export const CREDIT_MEMO_STATUSES = ['draft', 'issued', 'applied', 'void'] as const;
+export type CreditMemoStatus = (typeof CREDIT_MEMO_STATUSES)[number];
+
+export const DEFERRED_REVENUE_STATUSES = ['active', 'completed', 'cancelled'] as const;
+export type DeferredRevenueStatus = (typeof DEFERRED_REVENUE_STATUSES)[number];
 export type OpenItemStatus = (typeof OPEN_ITEM_STATUSES)[number];
 
 export const REPORT_ARCHIVE_TYPES = [
@@ -531,6 +539,81 @@ export const postingRules = financeSchema.table(
 			'posting_rules_discriminator_pair_check',
 			sql`(discriminator_type = '') = (discriminator_value = '')`,
 		),
+	],
+);
+
+/** Credit note against an issued invoice (ERP-0135). */
+export const creditMemos = financeSchema.table(
+	'credit_memos',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Logical reference to sale.invoices.id — cross-module FK omitted. */
+		invoiceId: uuid('invoice_id'),
+		/** Logical reference to customer.customers.id — cross-module FK omitted. */
+		customerId: uuid('customer_id'),
+		memoDate: date('memo_date', { mode: 'string' }),
+		amount: moneyAmount('amount'),
+		taxAmount: moneyAmount('tax_amount'),
+		currencyCode: currencyCode(),
+		reason: text('reason'),
+		status: text('status').notNull().default('draft'),
+		journalEntryId: uuid('journal_entry_id').references(() => journalEntries.id, {
+			onDelete: 'set null',
+		}),
+		createdBy: text('created_by'),
+		issuedBy: text('issued_by'),
+		issuedAt: unixTimestampNullable('issued_at'),
+		...timestamps,
+	},
+	(table) => [
+		idrCheck('credit_memos'),
+		uniqueIndex('credit_memos_org_code_uq').on(table.organizationId, table.code),
+		index('credit_memos_invoice_id_idx').on(table.invoiceId),
+		index('credit_memos_status_idx').on(table.status),
+		check('credit_memos_status_check', sql`status IN ('draft', 'issued', 'applied', 'void')`),
+		check('credit_memos_amount_check', sql`amount > 0`),
+		check('credit_memos_tax_check', sql`tax_amount >= 0 AND tax_amount <= amount`),
+	],
+);
+
+/** Deferred revenue of one invoice line with a service period (ERP-0135). */
+export const deferredRevenueSchedules = financeSchema.table(
+	'deferred_revenue_schedules',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		/** Logical reference to sale.invoices.id — cross-module FK omitted. */
+		invoiceId: uuid('invoice_id'),
+		/** Logical reference to sale.invoice_items.id — cross-module FK omitted. */
+		invoiceItemId: uuid('invoice_item_id'),
+		issueEntryId: uuid('issue_entry_id').references(() => journalEntries.id, {
+			onDelete: 'set null',
+		}),
+		discriminatorType: text('discriminator_type').notNull().default(''),
+		discriminatorValue: text('discriminator_value').notNull().default(''),
+		totalAmount: bigint('total_amount', { mode: 'number' }).notNull(),
+		recognizedAmount: moneyAmount('recognized_amount'),
+		startDate: date('start_date', { mode: 'string' }).notNull(),
+		endDate: date('end_date', { mode: 'string' }).notNull(),
+		recognizedThrough: varchar('recognized_through', { length: 7 }),
+		status: text('status').notNull().default('active'),
+		...timestamps,
+	},
+	(table) => [
+		index('deferred_revenue_schedules_invoice_id_idx').on(table.invoiceId),
+		index('deferred_revenue_schedules_status_idx').on(table.status),
+		check(
+			'deferred_revenue_schedules_status_check',
+			sql`status IN ('active', 'completed', 'cancelled')`,
+		),
+		check('deferred_revenue_schedules_total_check', sql`total_amount > 0`),
+		check(
+			'deferred_revenue_schedules_recognized_check',
+			sql`recognized_amount >= 0 AND recognized_amount <= total_amount`,
+		),
+		check('deferred_revenue_schedules_range_check', sql`end_date >= start_date`),
 	],
 );
 
@@ -948,8 +1031,18 @@ export const arOpenItems = financeSchema.table(
 		outstandingAmount: bigint('outstanding_amount', {
 			mode: 'number',
 		}).notNull(),
+		/** Credit memos + write-offs taken off; `originalAmount` is net of it. */
+		adjustedAmount: moneyAmount('adjusted_amount'),
 		currencyCode: currencyCode(),
 		status: text('status').notNull().default('open'),
+		writeOffReason: text('write_off_reason'),
+		writeOffRequestedBy: text('write_off_requested_by'),
+		writeOffRequestedAt: unixTimestampNullable('write_off_requested_at'),
+		writtenOffBy: text('written_off_by'),
+		writtenOffAt: unixTimestampNullable('written_off_at'),
+		writeOffEntryId: uuid('write_off_entry_id').references(() => journalEntries.id, {
+			onDelete: 'set null',
+		}),
 		createdAt: unixTimestamp('created_at').notNull(),
 		updatedAt: unixTimestamp('updated_at')
 			.notNull()
@@ -957,6 +1050,7 @@ export const arOpenItems = financeSchema.table(
 	},
 	(table) => [
 		idrCheck('ar_open_items'),
+		check('ar_open_items_adjusted_check', sql`adjusted_amount >= 0`),
 		uniqueIndex('ar_open_items_org_invoice_uq').on(
 			table.organizationId,
 			table.invoiceId,
@@ -966,7 +1060,7 @@ export const arOpenItems = financeSchema.table(
 		index('ar_open_items_due_date_idx').on(table.dueDate),
 		check(
 			'ar_open_items_status_check',
-			sql`status IN ('open', 'partially_paid', 'paid', 'void')`,
+			sql`status IN ('open', 'partially_paid', 'paid', 'written_off', 'void')`,
 		),
 		check('ar_open_items_original_check', sql`original_amount >= 0`),
 		check('ar_open_items_paid_check', sql`paid_amount >= 0`),
@@ -1121,6 +1215,10 @@ export type TCostCenterSelect = typeof costCenters.$inferSelect;
 export type TCostCenterInsert = typeof costCenters.$inferInsert;
 export type TPostingRuleSelect = typeof postingRules.$inferSelect;
 export type TPostingRuleInsert = typeof postingRules.$inferInsert;
+export type TCreditMemoSelect = typeof creditMemos.$inferSelect;
+export type TCreditMemoInsert = typeof creditMemos.$inferInsert;
+export type TDeferredRevenueScheduleSelect = typeof deferredRevenueSchedules.$inferSelect;
+export type TDeferredRevenueScheduleInsert = typeof deferredRevenueSchedules.$inferInsert;
 export type TReportArchiveSelect = typeof reportArchives.$inferSelect;
 export type TReportArchiveInsert = typeof reportArchives.$inferInsert;
 export type TPaymentTermSelect = typeof paymentTerms.$inferSelect;

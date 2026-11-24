@@ -180,6 +180,7 @@ const settings: Record<keyof typeof en, string> = {
 	'payroll.nextRun': 'Eksekusi berikutnya: {{date}}',
 	'payroll.off': 'Proses otomatis nonaktif.',
 	'payroll.saved': 'Pengaturan penggajian disimpan',
+	'numbering.type.credit_memo': 'Nota kredit',
 };
 
 export default settings;

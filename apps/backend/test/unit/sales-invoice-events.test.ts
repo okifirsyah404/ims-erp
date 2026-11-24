@@ -44,6 +44,8 @@ function service(events: { topic: string; data: Record<string, unknown> }[]) {
 		},
 		// ERP-0044: the registry is exercised elsewhere; receipts register here.
 		{ register: async () => ({}) as never, voidBySource: async () => 1 },
+		{ productsById: async () => new Map() } as never,
+		{ createSchedules: async () => undefined, cancelForInvoice: async () => undefined },
 	);
 }
 

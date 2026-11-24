@@ -8,6 +8,7 @@
  * the module's controllers individually. Mirrors every other module
  * entry point.
  */
+import { ReceivablesController } from './controllers/receivables.controller';
 import { FinanceSetupController } from './controllers/finance-setup.controller';
 import Elysia from 'elysia';
 
@@ -37,5 +38,6 @@ export function financeModule() {
 		.use(FinanceOperationsController.plugin())
 		.use(EmployeeBankAccountController.plugin())
 		.use(ExpenseController.plugin())
-		.use(FinanceSetupController.plugin());
+		.use(FinanceSetupController.plugin())
+		.use(ReceivablesController.plugin());
 }

@@ -2,8 +2,10 @@ import type { TAccountingPeriodSelect } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
 import type { AuditWriter } from '@shared/audit';
-import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNT_BALANCE_REPOSITORY_TOKEN, FINANCE_AUDIT_WRITER_TOKEN } from '../constants/di';
+import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNT_BALANCE_REPOSITORY_TOKEN, FINANCE_AUDIT_WRITER_TOKEN, DEFERRED_REVENUE_REPOSITORY_TOKEN } from '../constants/di';
+import type { IDeferredRevenueRepository } from '../contracts/deferred-revenue.repository.interface';
 import {
+	DeferredRevenuePendingError,
 	PeriodLockBlockedError,
 	PeriodNotFoundError,
 	PeriodTransitionError,
@@ -48,6 +50,8 @@ export class PeriodService {
 		@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
 		@inject(ACCOUNT_BALANCE_REPOSITORY_TOKEN) private readonly balances: IAccountBalanceRepository,
 		@inject(FINANCE_AUDIT_WRITER_TOKEN) private readonly audit?: AuditWriter,
+		@inject(DEFERRED_REVENUE_REPOSITORY_TOKEN)
+		private readonly deferredRevenue?: Pick<IDeferredRevenueRepository, 'countPending'>,
 	) {}
 
 	/** Fetches one page of the tenant's accounting periods. */
@@ -129,6 +133,11 @@ export class PeriodService {
 			// submitted or approved must be posted or voided first.
 			const pending = await this.journal.countUnpostedInPeriod(organizationId, period.id);
 			if (pending > 0) throw new PeriodLockBlockedError(pending);
+			// ERP-0135 (grill Q52): deferred revenue amortised through the period.
+			const deferred = this.deferredRevenue
+				? await this.deferredRevenue.countPending(organizationId, period.code, period.endDate)
+				: 0;
+			if (deferred > 0) throw new DeferredRevenuePendingError(deferred);
 			updated =
 				(await this.periods.updatePeriodStatus(organizationId, period.id, {
 					status: 'locked',
