@@ -1,57 +1,62 @@
-> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "product / catalog". It is kept for history. Current owner: inventory (schema `inventory`: products, product_categories) - see docs/database/module-ownership.md.
-> Mapping: catalog -> inventory.
-
-> 2026-10-28: content below describes the deleted NestJS backend (apps/backend-nest). Domains listed as modules/ stubs do not exist in apps/backend-elysia (which has only user, organization, location). Treat as historical audit; re-verify against backend-elysia before acting.
->
-> 2026-11-02: the **item master now lives in Inventory** — `inventory.items`
-> supersedes `catalog.items` (ADR-0008), and item status only exists on
-> serialized units. See `inventory.md`. `catalog.item_categories` and
-> `catalog.units` exist but are unadopted; `inventory.items` carries free-text
-> `category` and `unit_label` meanwhile.
-
 # Product Module
+
+Own schema: **`product`** (ADR-0026, accepted 2026-11-23, which split it out of
+`inventory`). 6 tables. Tables, contracts and columns: `docs.dbml` (canonical)
+and `docs/database/module-ownership.md` (profile 6).
+
+> This page was rewritten 2026-11-24. The pre-refactor "product / catalog"
+> page (NestJS-era stubs, `erp.products`) is history only and no longer
+> describes the module.
 
 ## Purpose and boundary
 
-Sales catalog: products and services, categories, units. One catalog entity
-with a type discriminator (products carry SKU/stock flag/optional serial
-tracking; services carry code/description/unit/price) — decision recorded for
-Phase 3, no duplicated tables (commercial T03; master data catalog in
-`../domain-map.md`).
+The product (SKU) master and its website listing: what the company sells,
+without any stock truth. Stock balances, the ledger, serial units, borrowings
+and tools stay in `inventory`; the physical estate stays in `warehouse`.
 
-## Current state (audit, 2026-10-25)
+## Tables (`product` schema)
 
-**Scaffold only:**
+| Table | Holds |
+|---|---|
+| `product.products` | SKU master: code, name, kind, category, prices (integer IDR minor units), stock flag, listing columns (ADR-0024 Q14) |
+| `product.product_images` | Gallery images per product |
+| `product.product_components` | Bill of materials: product → component product + quantity |
+| `product.product_categories` | Category tree (slug, parent) |
+| `product.product_settings` | Module settings (one row) |
+| `product.code_numberings` | Per-module numbering series (ADR-0024 Q32) |
 
-- `modules/product/**` — empty stubs; registered in `app.module.ts`.
-- Pre-written unit specs (controller/service) exist.
+## HTTP surface
 
-## Data ownership (planned, Phase 3)
+| Route | Guard | Notes |
+|---|---|---|
+| `/products` | `erp` | CRUD, filters, price ranges |
+| `/product-categories` | `erp` | CRUD |
+| `/product-listings` | `erp` | Website listing view over products |
+| `/products/public/v1/catalog` | `none` (API key) | Public website catalog, the single external URL for this surface |
+| `/products/code-numberings` | `erp` | Numbering series management |
 
-- `erp.products` — type (`product` | `service`), SKU/code (unique alive),
-  name, category ref, unit ref, selling price (**integer IDR minor units**),
-  stock flag, serial-tracking policy (optional), status/deleted_at.
-- `erp.categories`, `erp.units` — consistent definitions (units, sets,
-  pieces, packages, months, years) — shared master data, owned here.
-- Subscription package linkage (software/product + duration + price +
-  renewal policy) is a licensing/subscription concern — reference by id from
-  there (see [licensing-subscription](licensing-subscription.md)).
+## Cross-module contract
 
-## Behavior targets
-
-- CRUD + deactivate with permission gates; catalog used by sales (SPH/invoice
-  lines), purchasing (supplier items), inventory (stock flag → movements),
-  licensing (software products).
-- Prices in minor units end-to-end; no floats in JSON.
+`ExportedProductService` (token `EXPORTED_PRODUCT_SERVICE_TOKEN`) is the only
+way another module touches products: `resolve*` / `assert*` before writing a
+logical product id (ADR-0014), plus read relays. It depends on this module's
+repositories and on inventory's repository-only facade — never on another
+module's *service*, which is how the product ↔ inventory cycle is broken
+(ADR-0026).
 
 ## Dependencies and rules
 
-- Pure master data — depended on by sales/purchasing/inventory/licensing.
-  Keep its public surface (search-by, price-at-time-of-document semantics)
-  stable; documents snapshot prices at creation (financial-correctness rule).
+- **Outbound:** no service-to-service calls; other modules consume the facade.
+- **Inbound logical references:** `inventory.items`, `inventory.movements`,
+  `sale.*` line tables, `procurement.*`, `project.*` carry nullable
+  `product_id` columns (plain ids, no cross-schema FK).
+- Prices are integer IDR minor units end to end (ADR-0002); documents snapshot
+  the price at creation.
+- Soft delete only (`deleted_at`); SKU uniqueness is a partial index over live
+  rows, mapped to 409.
 
 ## Tests
 
-- Existing stub specs to replace.
-- Required: unique SKU on alive rows (partial index + 23505→409), category/
-  unit referential integrity, price serialization invariance (integers only).
+`apps/backend/test/unit/**` product suites: SKU uniqueness (23505 → 409),
+category integrity, price serialization invariance, listing filters, and the
+facade's `assert`/`resolve` behaviour.

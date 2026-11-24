@@ -30,10 +30,10 @@ the same schema (`user_invitations`, `organization_settings`) follow the
 Better Auth id style too. Any column that references `auth.users.id` or
 `auth.organizations.id` is therefore `text`, not `uuid`.
 
-The baseline v2 contract (ADR-0024) is 18 Postgres schemas and 188 tables in
-`docs.dbml`. Some tables are marked `status: target` in their note: they are
-listed by the owning module but not built yet, so the generated baseline
-migration creates fewer tables than `docs.dbml` lists.
+The baseline v2 contract (ADR-0024, extended by ADR-0026) is 20 Postgres schemas
+and 196 tables in `docs.dbml`. Some tables are marked `status: target` in their
+note: they are listed by the owning module but not built yet, so the generated
+baseline migration creates fewer tables (176) than `docs.dbml` lists.
 
 ### 1.2 Tenant column
 
