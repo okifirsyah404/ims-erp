@@ -6,7 +6,10 @@ import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 export type TAccountPaginationRequest = TPaginationRequest & {
 	organizationId: string;
 	accountType?: string;
+	/** Case-insensitive match on `code` or `name`. */
+	search?: string;
 	isActive?: boolean;
+	isPostable?: boolean;
 };
 
 export interface IChartOfAccountRepository {

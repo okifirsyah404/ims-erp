@@ -13,6 +13,7 @@ import { seedWarehouse } from './seed/warehouse.seeder';
 import { seedInventory } from './seed/inventory.seeder';
 import { seedWarehouseManagers } from './seed/warehouse-managers.seeder';
 import { seedFinance } from './seed/finance.seeder';
+import { seedChartOfAccounts } from './seed/chart-of-accounts.seeder';
 import { seedTax } from './seed/tax.seeder';
 import { SEED_ORGANIZATION_SLUG, seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
@@ -72,6 +73,8 @@ export async function runSeeders(): Promise<void> {
 	// Needs the live warehouse rows above and the seeded `warehouse` role
 	// account from `seedOrganizationMembers` (ADR-0017).
 	await seedWarehouseManagers();
+	// COA first: `seedFinance` links the cash/bank accounts to its `1-1xxx` rows.
+	await seedChartOfAccounts();
 	await seedFinance();
 	await seedTax();
 	await seedHrEmployees();

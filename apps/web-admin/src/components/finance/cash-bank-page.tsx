@@ -16,13 +16,18 @@ import {
 	SelectValue,
 } from '@ims-erp/ui/components/select';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Landmark, Plus } from 'lucide-react';
+import { Landmark, Pencil, Plus } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { RowActions } from '@/components/data-table/row-actions';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
+import {
+	CashBankFormDialog,
+	type TCashBankFormValues,
+} from '@/components/finance/cash-bank-form-dialog';
 import {
 	accountsQueryOptions,
 	cashBankAccountsQueryOptions,
@@ -45,6 +50,14 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
+/** Literal label keys of the treasury account types (typed for `t`). */
+const CASH_TYPE_KEYS = {
+	bank: 'finance:accountType.bank',
+	cash: 'finance:accountType.cash',
+	ewallet: 'finance:accountType.ewallet',
+	clearing: 'finance:accountType.clearing',
+} as const;
+
 /** Cash & bank: accounts with GL links + movement ledger (F3). */
 export function CashBankPage() {
 	const { t } = useTranslation(['finance', 'common']);
@@ -55,16 +68,8 @@ export function CashBankPage() {
 	const canCreate = usePermission('cash_bank.create');
 	const canUpdate = usePermission('cash_bank.update');
 
-	const [showAccountForm, setShowAccountForm] = useState(false);
-	const [code, setCode] = useState('');
-	const [name, setName] = useState('');
-	const [accountType, setAccountType] = useState<'bank' | 'cash'>('bank');
-	const [bankName, setBankName] = useState('');
-	const [openingBalance, setOpeningBalance] = useState('');
-	const [glAccountId, setGlAccountId] = useState('none');
-	// The backend does not return the GL link of an account (it lives in a link
-	// table), so show the links set in this session only.
-	const [linkedGl, setLinkedGl] = useState<Record<string, string>>({});
+	const [creating, setCreating] = useState(false);
+	const [editing, setEditing] = useState<TCashBankAccount | null>(null);
 
 	const [movementAccountId, setMovementAccountId] = useState('none');
 	const [movementDate, setMovementDate] = useState(today());
@@ -92,8 +97,13 @@ export function CashBankPage() {
 
 	const { data: glAccounts } = useQuery({
 		...accountsQueryOptions({ page: 1, limit: 100 }),
-		enabled: canCreate || canUpdate,
+		enabled: canRead,
 	});
+
+	const glById = useMemo(
+		() => new Map((glAccounts?.rows ?? []).map((gl) => [gl.id, gl])),
+		[glAccounts],
+	);
 
 	const invalidate = () => {
 		void queryClient.invalidateQueries({ queryKey: ['cash-bank-accounts'] });
@@ -101,33 +111,41 @@ export function CashBankPage() {
 	};
 
 	const createAccount = useMutation({
-		mutationFn: () =>
+		mutationFn: (values: TCashBankFormValues) =>
 			createCashBankAccount({
-				code,
-				name,
-				accountType,
-				bankName: bankName || null,
-				openingBalance: toMinor(openingBalance),
-				glAccountId: glAccountId === 'none' ? null : glAccountId,
+				code: values.code,
+				name: values.name,
+				accountType: values.accountType,
+				bankName: values.bankName,
+				accountNumber: values.accountNumber,
+				accountHolder: values.accountHolder,
+				invoiceUsage: values.invoiceUsage,
+				isPrimary: values.isPrimary,
+				openingBalance: values.openingBalance,
+				glAccountId: values.glAccountId,
 			}),
 		onSuccess: async () => {
 			toast.success(t('finance:cashBank.created'));
-			setShowAccountForm(false);
-			setCode('');
-			setName('');
-			setBankName('');
-			setOpeningBalance('');
+			setCreating(false);
 			invalidate();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
 
-	const linkGl = useMutation({
-		mutationFn: (input: { id: string; glAccountId: string | null }) =>
-			updateCashBankAccount(input.id, { glAccountId: input.glAccountId }),
-		onSuccess: async (_account, input) => {
-			setLinkedGl((previous) => ({ ...previous, [input.id]: input.glAccountId ?? 'none' }));
+	const editAccount = useMutation({
+		mutationFn: (values: TCashBankFormValues) =>
+			updateCashBankAccount(editing?.id ?? '', {
+				name: values.name,
+				bankName: values.bankName,
+				accountNumber: values.accountNumber,
+				accountHolder: values.accountHolder,
+				invoiceUsage: values.invoiceUsage,
+				isPrimary: values.isPrimary,
+				glAccountId: values.glAccountId,
+			}),
+		onSuccess: async () => {
 			toast.success(t('finance:cashBank.updated'));
+			setEditing(null);
 			invalidate();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -167,10 +185,25 @@ export function CashBankPage() {
 				header: t('finance:cashBank.accountType'),
 				cell: ({ row }) =>
 					t(
-						row.original.accountType === 'cash'
-							? 'finance:accountType.cash'
-							: 'finance:accountType.bank',
+						CASH_TYPE_KEYS[
+							row.original.accountType as keyof typeof CASH_TYPE_KEYS
+						] ?? 'finance:accountType.bank',
 					),
+			},
+			{
+				id: 'invoiceUsage',
+				header: t('finance:cashBank.invoiceUsage'),
+				cell: ({ row }) => {
+					const usage = row.original.invoiceUsage;
+					if (!usage) return t('finance:common.none');
+					return (
+						<Badge variant={row.original.isPrimary ? 'default' : 'outline'}>
+							{usage === 'vat'
+								? t('finance:cashBank.invoiceUsage.vat')
+								: t('finance:cashBank.invoiceUsage.nonVat')}
+						</Badge>
+					);
+				},
 			},
 			{
 				id: 'currentBalance',
@@ -178,42 +211,49 @@ export function CashBankPage() {
 				meta: { align: 'right' },
 				cell: ({ row }) => formatMoney(row.original.currentBalance),
 			},
+			{
+				id: 'glLink',
+				header: t('finance:cashBank.glLink'),
+				cell: ({ row }) => {
+					const gl = row.original.glAccountId
+						? glById.get(row.original.glAccountId)
+						: null;
+					return gl ? (
+						<span className='font-mono text-xs'>
+							{gl.code} — {gl.name}
+						</span>
+					) : (
+						<span className='text-xs text-muted-foreground'>
+							{t('finance:common.none')}
+						</span>
+					);
+				},
+			},
 		];
 		if (!canUpdate) return base;
 		return [
 			...base,
 			{
-				id: 'glLink',
-				header: t('finance:cashBank.glLink'),
+				id: 'actions',
+				header: () => <span className='sr-only'>{t('finance:common.actions')}</span>,
+				meta: { align: 'right' },
 				cell: ({ row }) => (
-					<Select
-						value={linkedGl[row.original.id] ?? 'none'}
-						disabled={linkGl.isPending}
-						onValueChange={(value: string | null) =>
-							void linkGl.mutateAsync({
-								id: row.original.id,
-								glAccountId: value == null || value === 'none' ? null : value,
-							})
-						}
-					>
-						<SelectTrigger className='w-56 text-xs'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='none'>{t('finance:common.none')}</SelectItem>
-							{glAccounts?.rows
-								.filter((gl) => gl.isActive && gl.isPostable)
-								.map((gl) => (
-									<SelectItem key={gl.id} value={gl.id}>
-										{gl.code} — {gl.name}
-									</SelectItem>
-								))}
-						</SelectContent>
-					</Select>
+					<RowActions
+						label={t('finance:common.actions')}
+						disabled={editAccount.isPending}
+						actions={[
+							{
+								key: 'edit',
+								label: t('finance:cashBank.edit'),
+								icon: Pencil,
+								onSelect: () => setEditing(row.original),
+							},
+						]}
+					/>
 				),
 			},
 		];
-	}, [canUpdate, glAccounts, linkGl, linkedGl, t]);
+	}, [canUpdate, editAccount.isPending, glById, t]);
 
 	const movementColumns = useMemo<
 		ColumnDef<DataTableFeatures, TCashBankTransaction, CellData>[]
@@ -278,81 +318,12 @@ export function CashBankPage() {
 					</p>
 				</div>
 				{canCreate ? (
-					<Button
-						size='sm'
-						variant='outline'
-						onClick={() => setShowAccountForm((value) => !value)}
-					>
+					<Button size='sm' variant='outline' onClick={() => setCreating(true)}>
 						<Plus className='size-4' data-icon='inline-start' />
 						{t('finance:cashBank.create')}
 					</Button>
 				) : null}
 			</div>
-
-			{canCreate && showAccountForm ? (
-				<div className='flex flex-wrap items-center gap-2 rounded-md border p-4'>
-					<Input
-						className='w-28'
-						placeholder={t('finance:common.code')}
-						value={code}
-						onChange={(event) => setCode(event.target.value)}
-					/>
-					<Input
-						className='w-48'
-						placeholder={t('finance:common.name')}
-						value={name}
-						onChange={(event) => setName(event.target.value)}
-					/>
-					<Select
-						value={accountType}
-						onValueChange={(value) => setAccountType(value as 'bank' | 'cash')}
-					>
-						<SelectTrigger className='w-32'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='bank'>{t('finance:accountType.bank')}</SelectItem>
-							<SelectItem value='cash'>{t('finance:accountType.cash')}</SelectItem>
-						</SelectContent>
-					</Select>
-					<Input
-						className='w-40'
-						placeholder={t('finance:cashBank.bankName')}
-						value={bankName}
-						onChange={(event) => setBankName(event.target.value)}
-					/>
-					<MoneyInput
-						className='w-40'
-						placeholder={t('finance:cashBank.openingBalance')}
-						value={openingBalance}
-						onValueChange={setOpeningBalance}
-					/>
-					<Select value={glAccountId} onValueChange={(value: string | null) => setGlAccountId(value ?? 'none')}>
-						<SelectTrigger className='w-64'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value='none'>{t('finance:cashBank.glLink')} — {t('finance:common.none')}</SelectItem>
-							{glAccounts?.rows
-								.filter((account) => account.isActive && account.isPostable)
-								.map((account) => (
-									<SelectItem key={account.id} value={account.id}>
-										{account.code} — {account.name}
-									</SelectItem>
-								))}
-						</SelectContent>
-					</Select>
-					<Button
-						size='sm'
-						disabled={createAccount.isPending || !code || !name}
-						onClick={() => void createAccount.mutateAsync()}
-					>
-						{createAccount.isPending
-							? t('finance:common.creating')
-							: t('finance:common.create')}
-					</Button>
-				</div>
-			) : null}
 
 			{accountsError ? (
 				<ErrorState error={accountsErr} bordered />
@@ -487,6 +458,24 @@ export function CashBankPage() {
 					/>
 				</DataTableCard>
 			)}
+
+			{creating ? (
+				<CashBankFormDialog
+					account={null}
+					submitting={createAccount.isPending}
+					onClose={() => setCreating(false)}
+					onSave={(values) => void createAccount.mutateAsync(values)}
+				/>
+			) : null}
+
+			{editing ? (
+				<CashBankFormDialog
+					account={editing}
+					submitting={editAccount.isPending}
+					onClose={() => setEditing(null)}
+					onSave={(values) => void editAccount.mutateAsync(values)}
+				/>
+			) : null}
 		</div>
 	);
 }

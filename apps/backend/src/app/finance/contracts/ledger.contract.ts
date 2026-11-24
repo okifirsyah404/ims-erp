@@ -47,7 +47,13 @@ export const accountListQuerySchema = z.object({
 	page: z.coerce.number().int().positive().default(1),
 	limit: z.coerce.number().int().positive().max(100).default(50),
 	accountType: z.enum(ACCOUNT_TYPES).optional(),
+	/** Case-insensitive match on `code` or `name`. */
+	search: z.string().trim().max(100).optional(),
 	isActive: z
+		.enum(['true', 'false'])
+		.optional()
+		.transform((v) => (v === undefined ? undefined : v === 'true')),
+	isPostable: z
 		.enum(['true', 'false'])
 		.optional()
 		.transform((v) => (v === undefined ? undefined : v === 'true')),
@@ -142,6 +148,9 @@ export const cashBankAccountCreateSchema = z.object({
 	bankName: z.string().nullish().transform((v) => v ?? null),
 	accountNumber: z.string().nullish().transform((v) => v ?? null),
 	accountHolder: z.string().nullish().transform((v) => v ?? null),
+	/** Which invoice kind prints this account; `null` = never printed. */
+	invoiceUsage: z.enum(['vat', 'non_vat']).nullish().transform((v) => v ?? null),
+	isPrimary: z.boolean().default(false),
 	/** Informasional (finance plan F3 Q3) — GL tetap dari opening-balance JE. */
 	openingBalance: minorAmount.default(0),
 	glAccountId: z.string().uuid().nullish().transform((v) => v ?? null),
@@ -153,6 +162,8 @@ export const cashBankAccountUpdateSchema = z
 		bankName: z.string().nullable().optional(),
 		accountNumber: z.string().nullable().optional(),
 		accountHolder: z.string().nullable().optional(),
+		invoiceUsage: z.enum(['vat', 'non_vat']).nullable().optional(),
+		isPrimary: z.boolean().optional(),
 		isActive: z.boolean().optional(),
 		glAccountId: z.string().uuid().nullable().optional(),
 	})

@@ -19,6 +19,11 @@ export type TCashFlowSummaryBucket = {
 	totalOut: number;
 };
 
+/** A cash/bank account plus its GL link (`null` when never linked). */
+export type TCashBankAccountWithLink = TCashBankAccountSelect & {
+	glAccountId: string | null;
+};
+
 /** Cash in/out over a window: zero-filled buckets plus their totals. */
 export type TCashFlowSummary = {
 	from: string;
@@ -43,6 +48,10 @@ export interface ICashBankRepository {
 		tx?: TTx,
 	): Promise<TCashBankAccountSelect | null>;
 	listCashBankAccounts(organizationId: string): Promise<TCashBankAccountSelect[]>;
+	/** The same list, each row carrying its active GL link (left join). */
+	listCashBankAccountsWithLink(
+		organizationId: string,
+	): Promise<TCashBankAccountWithLink[]>;
 	insertCashBankAccount(
 		row: {
 			organizationId: string;
@@ -52,6 +61,8 @@ export interface ICashBankRepository {
 			bankName: string | null;
 			accountNumber: string | null;
 			accountHolder: string | null;
+			invoiceUsage: string | null;
+			isPrimary: boolean;
 			openingBalance: number;
 			currentBalance: number;
 		},
@@ -65,11 +76,22 @@ export interface ICashBankRepository {
 			bankName?: string | null;
 			accountNumber?: string | null;
 			accountHolder?: string | null;
+			invoiceUsage?: string | null;
+			isPrimary?: boolean;
 			isActive?: boolean;
 			currentBalance?: number;
 		},
 		tx?: TTx,
 	): Promise<TCashBankAccountSelect | null>;
+	/**
+	 * Clears `is_primary` on the tenant's other live accounts of the same
+	 * invoice usage, so one usage prints one primary account.
+	 */
+	clearPrimaryForInvoiceUsage(
+		organizationId: string,
+		usage: string,
+		exceptId: string,
+	): Promise<void>;
 	insertCashBankTransaction(
 		row: {
 			organizationId: string;

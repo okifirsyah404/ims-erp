@@ -876,11 +876,27 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   still `planned` in `backlog.md`, so this section stays `in-progress` here
   until the backlog is decided. Code evidence is in `main` (accounting schema,
   migrations, tests).
+- COA and cash/bank UX + default seed (ERP-0123..ERP-0125, 2026-11-25):
+  `/finance/accounts` rebuilt on the `/procurement/suppliers` pattern (URL-backed
+  search/type/status/postable filters, create/edit dialog, row actions, count)
+  with a backend `search` (ilike code/name) + `isPostable` list filter;
+  `/finance/cash-bank` gained a create/edit dialog carrying the invoice bank
+  details (number, holder, usage, primary — one primary per usage enforced in
+  the service) and the list now returns `glAccountId` (left join
+  `bank_account_links`), so invoice printing finally sees form-entered accounts;
+  `chart-of-accounts.seeder.ts` seeds 22 Indonesian accounts (every
+  `constants/ar-posting.ts` code marked `isSystem`) and `finance.seeder.ts`
+  links the seeded cash/bank accounts to `1-1000`/`1-1100`/`1-1200`. Evidence:
+  backend 1453 pass, web-admin 209, locales 106, lint 0 errors,
+  `validate-dbml.ts` OK; no schema change. Open: the seeder was not run against
+  a database in this environment (no `POSTGRES_URL`), and there is no browser
+  walk-through.
 
 ### planned (Stage 2)
 - Payroll + gateway postings (Stage 2) - T20, T22. Evidence: none.
-- Final COA seed list from finance/owner (provisional codes
-  `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/`5-1000`/`1-1800` in use).
+- Final COA list confirmed by finance/owner. A provisional default seed now
+  exists (ERP-0125); the codes `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/
+  `5-1000`/`1-1800`/`1-1400`/`2-1200` stay provisional until that confirmation.
 
 ## M10 Tax
 
