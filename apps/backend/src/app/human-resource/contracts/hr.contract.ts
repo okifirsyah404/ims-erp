@@ -34,7 +34,6 @@ export const employeeBaseSchema = z.object({
 		.nullish()
 		.transform((value) => (value ? value : null)),
 	fullName: z.string().trim().min(1).max(200),
-	legalName: optionalText(200),
 	nickname: optionalText(100),
 	gender: z.enum(['male', 'female']).nullish(),
 	birthDate: z.iso.date().nullish(),
@@ -45,7 +44,6 @@ export const employeeBaseSchema = z.object({
 		.nullish(),
 	email: z.email().max(320).nullish(),
 	phone: optionalText(100),
-	whatsapp: optionalText(100),
 	employmentStatus: z.enum(EMPLOYMENT_STATUSES).default('active'),
 	employmentType: z.enum(EMPLOYMENT_TYPES).default('permanent'),
 	workType: z.enum(WORK_TYPES).default('onsite'),

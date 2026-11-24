@@ -1,8 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { erpRoleLabel } from '@ims-erp/common';
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
@@ -10,6 +11,7 @@ import { Input } from '@ims-erp/ui/components/input';
 import { Label } from '@ims-erp/ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { toast } from '@/components/toast';
+import { CountryPhoneField } from '@/components/form/country-phone-field';
 import {
 	EMPLOYMENT_STATUSES,
 	EMPLOYMENT_TYPES,
@@ -20,6 +22,9 @@ import {
 	updateEmployee,
 	WORK_TYPES,
 } from '@/lib/hr-api';
+import { organizationMembersQueryOptions, updateMemberRole } from '@/lib/organization-api';
+import { useAssignableOrgRoles } from '@/lib/use-caller-org-roles';
+import { usePermission } from '@/lib/use-permission';
 
 /**
  * The employee API returns hire/termination dates as Jakarta midnight
@@ -38,16 +43,14 @@ function toBusinessDate(value: string | null): string {
  * birth data and marital status live on the user account (ERP-0034).
  */
 export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
-	const { t } = useTranslation(['hr', 'common']);
+	const { t, i18n } = useTranslation(['hr', 'common']);
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
 	const [employeeCode, setEmployeeCode] = useState(employee.employeeCode);
 	const [fullName, setFullName] = useState(employee.fullName);
-	const [legalName, setLegalName] = useState(employee.legalName ?? '');
 	const [nickname, setNickname] = useState(employee.nickname ?? '');
 	const [phone, setPhone] = useState(employee.phone ?? '');
-	const [whatsapp, setWhatsapp] = useState(employee.whatsapp ?? '');
 	const [nationalId, setNationalId] = useState(employee.nationalId ?? '');
 	const [employmentStatus, setEmploymentStatus] = useState<TEmploymentStatus>(employee.employmentStatus);
 	const [employmentType, setEmploymentType] = useState<TEmploymentType>(employee.employmentType);
@@ -57,15 +60,59 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 
 	const back = () => void navigate({ to: '/hr/employees/$employeeId', params: { employeeId: employee.id } });
 
+	// The organization role is a membership fact, not an employee column, so it
+	// is saved through the organization member endpoint (the same one the
+	// organization member page uses) rather than `PATCH /human-resources/...`.
+	// A pending invite has no membership row yet: the roles land on claim.
+	//
+	// The card always renders (the roles are worth seeing even without the
+	// grant), but only a caller holding `member.update` can change them. UX
+	// only: the backend re-checks every assignment.
+	const organizationId = employee.organizationId;
+	const canUpdateRoles = usePermission('member.update');
+	const members = useQuery({
+		...organizationMembersQueryOptions(organizationId ?? '', 1, 100),
+		enabled: Boolean(organizationId && employee.userId),
+	});
+	const member = members.data?.rows.find((row) => row.userId === employee.userId);
+	const currentRoles = (member?.role ?? '')
+		.split(',')
+		.map((role) => role.trim())
+		.filter(Boolean);
+	const { roles: assignableRoles } = useAssignableOrgRoles(organizationId, currentRoles);
+	// `null` until the user edits: the member query is async, so the saved role
+	// is derived at render, not copied in an effect.
+	const [role, setRole] = useState<string | null>(null);
+	// One role in the dropdown, like `/admin/users` (the invite dialog). A
+	// member that already holds several keeps the first until the user picks.
+	const chosen = role ?? currentRoles[0] ?? 'member';
+	const effectiveRole = assignableRoles.includes(chosen as never)
+		? chosen
+		: assignableRoles.includes('member')
+			? 'member'
+			: (assignableRoles[0] ?? 'member');
+	const hiddenRoles = currentRoles.filter((roleName) => !assignableRoles.includes(roleName as never));
+
+	const saveRoles = useMutation({
+		mutationFn: () => {
+			if (!organizationId || !member) throw new Error('No organization membership');
+			// Single-role dropdown: the save replaces the whole comma-joined set.
+			return updateMemberRole(organizationId, member.id, [effectiveRole]);
+		},
+		onSuccess: async () => {
+			toast.success(t('hr:form.saved'));
+			await queryClient.invalidateQueries({ queryKey: ['organizations', organizationId, 'members'] });
+		},
+		onError: (error: Error) => toast.error(error.message),
+	});
+
 	const save = useMutation({
 		mutationFn: () =>
 			updateEmployee(employee.id, {
 				employeeCode: employeeCode.trim() || null,
 				fullName: fullName.trim(),
-				legalName: legalName.trim() || null,
 				nickname: nickname.trim() || null,
-				phone: phone.trim() || null,
-				whatsapp: whatsapp.trim() || null,
+				phone: phone || null,
 				nationalId: nationalId.trim() || null,
 				employmentStatus,
 				employmentType,
@@ -108,11 +155,12 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 				<CardContent className='grid gap-4 sm:grid-cols-2'>
 					{text('employeeCode', t('hr:form.employeeCode'), employeeCode, setEmployeeCode)}
 					{text('fullName', t('hr:form.fullName'), fullName, setFullName, true)}
-					{text('legalName', t('hr:form.legalName'), legalName, setLegalName)}
 					{text('nickname', t('hr:form.nickname'), nickname, setNickname)}
 					{text('nationalId', t('hr:form.nationalId'), nationalId, setNationalId)}
-					{text('phone', t('hr:form.phone'), phone, setPhone)}
-					{text('whatsapp', t('hr:form.whatsapp'), whatsapp, setWhatsapp)}
+					<div className='space-y-2 sm:col-span-2'>
+						<Label htmlFor='phone'>{t('hr:form.phone')}</Label>
+						<CountryPhoneField id='phone' defaultValue={employee.phone} required={false} onChange={setPhone} />
+					</div>
 				</CardContent>
 			</Card>
 			<Card>
@@ -121,12 +169,12 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 				</CardHeader>
 				<CardContent className='grid gap-4 sm:grid-cols-2'>
 					<div className='space-y-2'>
-						<Label>{t('hr:form.employmentStatus')}</Label>
+						<Label htmlFor='employmentStatus'>{t('hr:form.employmentStatus')}</Label>
 						<Select
 							value={employmentStatus}
 							onValueChange={(value: string | null) => setEmploymentStatus((value ?? 'active') as TEmploymentStatus)}
 						>
-							<SelectTrigger>
+							<SelectTrigger id='employmentStatus' className='w-full'>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -139,12 +187,12 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 						</Select>
 					</div>
 					<div className='space-y-2'>
-						<Label>{t('hr:form.employmentType')}</Label>
+						<Label htmlFor='employmentType'>{t('hr:form.employmentType')}</Label>
 						<Select
 							value={employmentType}
 							onValueChange={(value: string | null) => setEmploymentType((value ?? 'permanent') as TEmploymentType)}
 						>
-							<SelectTrigger>
+							<SelectTrigger id='employmentType' className='w-full'>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -157,9 +205,9 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 						</Select>
 					</div>
 					<div className='space-y-2'>
-						<Label>{t('hr:form.workType')}</Label>
+						<Label htmlFor='workType'>{t('hr:form.workType')}</Label>
 						<Select value={workType} onValueChange={(value: string | null) => setWorkType((value ?? 'onsite') as TWorkType)}>
-							<SelectTrigger>
+							<SelectTrigger id='workType' className='w-full'>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -171,6 +219,32 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 							</SelectContent>
 						</Select>
 					</div>
+					{/* Organization role sits with the other employment fields (a
+					    membership fact, saved through the organization member
+					    endpoint); only the write controls are gated. */}
+					<div className='space-y-2'>
+						<Label htmlFor='employee-role'>{t('hr:form.role')}</Label>
+						{member ? (
+							<Select
+								value={effectiveRole}
+								disabled={!canUpdateRoles}
+								onValueChange={(value: string | null) => setRole(value ?? 'member')}
+							>
+								<SelectTrigger id='employee-role' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{assignableRoles.map((roleName) => (
+										<SelectItem key={roleName} value={roleName}>
+											{erpRoleLabel(roleName, i18n.language)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						) : (
+							<p className='text-sm text-muted-foreground'>{t('hr:form.roleNoMember')}</p>
+						)}
+					</div>
 					<div className='space-y-2'>
 						<Label htmlFor='hireDate'>{t('hr:form.hireDate')}</Label>
 						<DatePicker id='hireDate' value={hireDate} onChange={setHireDate} />
@@ -179,6 +253,30 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 						<Label htmlFor='terminationDate'>{t('hr:form.terminationDate')}</Label>
 						<DatePicker id='terminationDate' value={terminationDate} onChange={setTerminationDate} />
 					</div>
+					{member && (
+						<div className='flex flex-wrap items-center gap-2 sm:col-span-2'>
+							<p className='text-xs text-muted-foreground'>
+								{canUpdateRoles ? t('hr:form.roleHint') : t('hr:form.roleReadOnly')}
+								{hiddenRoles.length > 0 &&
+									` ${t('hr:form.rolesLocked', {
+										roles: hiddenRoles.map((roleName) => erpRoleLabel(roleName, i18n.language)).join(', '),
+									})}`}
+								{currentRoles.length > 1 && ` ${t('hr:form.rolesMultiple')}`}
+							</p>
+							{canUpdateRoles && (
+								<Button
+									type='button'
+									size='sm'
+									variant='outline'
+									className='ml-auto'
+									disabled={saveRoles.isPending || effectiveRole === member.role}
+									onClick={() => saveRoles.mutate()}
+								>
+									{t('hr:form.saveRole')}
+								</Button>
+							)}
+						</div>
+					)}
 				</CardContent>
 			</Card>
 			</div>

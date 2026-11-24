@@ -112,8 +112,8 @@ afterAll(() => {
 
 beforeEach(() => {
 	staff = [
-		{ id: E1, organizationId: 'org-sales', userId: 'user-e1', employeeCode: 'EMP-0001', employmentType: 'permanent', legalName: null } as TEmployeeSelect,
-		{ id: E3, organizationId: 'org-other', userId: null, employeeCode: 'EMP-0003', employmentType: 'contract', legalName: null } as TEmployeeSelect,
+		{ id: E1, organizationId: 'org-sales', userId: 'user-e1', employeeCode: 'EMP-0001', employmentType: 'permanent' } as TEmployeeSelect,
+		{ id: E3, organizationId: 'org-other', userId: null, employeeCode: 'EMP-0003', employmentType: 'contract' } as TEmployeeSelect,
 	];
 	records = [record('r1', E1), record('r3', E3), record('d1', E1, { status: 'draft', period: '2026-12' })];
 	docs = [];

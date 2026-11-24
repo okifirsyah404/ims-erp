@@ -157,7 +157,7 @@ export class PayslipService {
 			},
 			employee: {
 				employeeCode: employee?.employeeCode ?? '',
-				fullName: employee?.legalName ?? record.employeeName,
+				fullName: employee?.fullName ?? record.employeeName,
 				employmentType: employee?.employmentType ?? '',
 			},
 			payee: payee ? { bankName: payee.bankName, accountNumber: maskTail(payee.accountNumber), accountHolder: payee.accountHolder } : null,

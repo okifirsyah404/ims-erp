@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getRouteApi, Link } from '@tanstack/react-router';
+import { getRouteApi } from '@tanstack/react-router';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Eye, Funnel, IdCard, Pencil, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -187,45 +187,48 @@ export function EmployeeList() {
 				id: 'actions',
 				header: () => <span className='sr-only'>{t('hr:list.actions')}</span>,
 				meta: { align: 'right' },
+				// The row itself opens the detail page; the menu must not.
 				cell: ({ row }) => (
-					<RowActions
-						label={t('hr:list.actions')}
-						disabled={archive.isPending}
-						actions={[
-							{
-								key: 'view',
-								label: t('hr:list.view'),
-								icon: Eye,
-								onSelect: () => void navigate({ to: '/hr/employees/$employeeId', params: { employeeId: row.original.id } }),
-							},
-							{
-								key: 'edit',
-								label: t('hr:detail.edit'),
-								icon: Pencil,
-								hidden: !canUpdate,
-								onSelect: () => void navigate({ to: '/hr/employees/$employeeId/edit', params: { employeeId: row.original.id } }),
-							},
-							{
-								key: 'archive',
-								label: t('hr:list.archive'),
-								icon: Archive,
-								destructive: true,
-								hidden: !canArchive,
-								onSelect: async () => {
-									if (
-										await confirm({
-											title: t('hr:list.archiveConfirm', { name: row.original.fullName }),
-											description: t('hr:list.archiveConfirmDescription'),
-											confirmLabel: t('hr:list.archive'),
-											destructive: true,
-										})
-									) {
-										archive.mutate(row.original.id);
-									}
+					<div onClick={(event) => event.stopPropagation()}>
+						<RowActions
+							label={t('hr:list.actions')}
+							disabled={archive.isPending}
+							actions={[
+								{
+									key: 'view',
+									label: t('hr:list.view'),
+									icon: Eye,
+									onSelect: () => void navigate({ to: '/hr/employees/$employeeId', params: { employeeId: row.original.id } }),
 								},
-							},
-						]}
-					/>
+								{
+									key: 'edit',
+									label: t('hr:detail.edit'),
+									icon: Pencil,
+									hidden: !canUpdate,
+									onSelect: () => void navigate({ to: '/hr/employees/$employeeId/edit', params: { employeeId: row.original.id } }),
+								},
+								{
+									key: 'archive',
+									label: t('hr:list.archive'),
+									icon: Archive,
+									destructive: true,
+									hidden: !canArchive,
+									onSelect: async () => {
+										if (
+											await confirm({
+												title: t('hr:list.archiveConfirm', { name: row.original.fullName }),
+												description: t('hr:list.archiveConfirmDescription'),
+												confirmLabel: t('hr:list.archive'),
+												destructive: true,
+											})
+										) {
+											archive.mutate(row.original.id);
+										}
+									},
+								},
+							]}
+						/>
+					</div>
 				),
 			},
 		];
@@ -293,7 +296,15 @@ export function EmployeeList() {
 				<CardContent>
 					{isError && <ErrorState error={error} size='sm' />}
 					{!isPending && !isError && rows.length === 0 && <EmptyState title={t('hr:list.emptyTitle')} size='sm' />}
-					{(isPending || rows.length > 0) && <DataTable columns={columns} data={rows} getRowId={(employee) => employee.id} loading={isPending} />}
+					{(isPending || rows.length > 0) && (
+						<DataTable
+							columns={columns}
+							data={rows}
+							getRowId={(employee) => employee.id}
+							loading={isPending}
+							onRowClick={(employee) => void navigate({ to: '/hr/employees/$employeeId', params: { employeeId: employee.id } })}
+						/>
+					)}
 					{pagination && pagination.totalPages > 1 && (
 						<PaginationControls
 							page={pagination.page}
@@ -309,7 +320,7 @@ export function EmployeeList() {
 	);
 }
 
-/** Avatar + name (link to the page) + email + login handle. */
+/** Avatar + name + email + login handle. The whole row opens the detail page. */
 function EmployeeIdentity({ employee }: { employee: TEmployee }) {
 	const initials = employee.fullName
 		.split(' ')
@@ -324,9 +335,7 @@ function EmployeeIdentity({ employee }: { employee: TEmployee }) {
 				<AvatarFallback>{initials || '—'}</AvatarFallback>
 			</Avatar>
 			<div className='flex min-w-0 flex-col'>
-				<Link to='/hr/employees/$employeeId' params={{ employeeId: employee.id }} className='font-medium hover:underline'>
-					{employee.fullName}
-				</Link>
+				<span className='font-medium'>{employee.fullName}</span>
 				{employee.email && <span className='truncate text-xs text-muted-foreground'>{employee.email}</span>}
 				{employee.login?.username && <span className='text-xs text-muted-foreground'>@{employee.login.username}</span>}
 			</div>
