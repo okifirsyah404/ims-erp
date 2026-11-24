@@ -1,54 +1,67 @@
-> **Deprecated (ADR-0024, 2026-11-20).** This page describes the pre-refactor module "warehouse". It is kept for history. Current owner: inventory (schema `inventory`: warehouses, warehouse_storages, ...) - see docs/database/module-ownership.md.
-> Mapping: warehouse -> inventory.
-
 # Warehouse Module
 
-> 2026-11-02: **This module has been folded into Inventory.** Warehouses are
-> no longer a separate module or a separate Postgres schema; they are tables in
-> `inventory` (ADR-0008). The content below is retained only as a pointer —
-> Note: `.agents/docs/modules/inventory.md` was later moved to
-> `docs/architecture/modules/inventory.md`.
->
-> The earlier text here described the deleted NestJS backend
-> (`apps/backend-nest`) and a "one warehouse only, do not pretend
-> multi-warehouse" rule. That rule is **retired**: the schema models multiple
-> warehouses, and the company currently runs as many as it needs.
+Own schema: **`warehouse`** (ADR-0026, accepted 2026-11-23, which split it out of
+`inventory`). 9 tables. Tables, contracts and columns: `docs.dbml` (canonical)
+and `docs/database/module-ownership.md` (profile 7).
+
+> This page was rewritten 2026-11-24. Two earlier states are history only: the
+> NestJS-era "one warehouse only, do not pretend multi-warehouse" rule is
+> **retired** (the schema models as many warehouses as the company runs), and
+> the ADR-0008/ADR-0024 arrangement that kept warehouses inside `inventory` is
+> superseded by ADR-0026.
 
 ## Purpose and boundary
 
-Warehouse is physical estate: master data for the places stock sits. It owns
-no quantities and no movements — those belong to the stock ledger.
+The physical estate: master data for the places stock sits. It owns **no
+quantities and no movements** — those are the stock ledger, which stays in
+`inventory`.
 
-## Where it lives now
+## Tables (`warehouse` schema)
 
-| Concern | Table | Notes |
+| Table | Holds |
+|---|---|
+| `warehouse.warehouses` | Warehouse master; `organization_id` frozen at `NULL` (ADR-0010 — every warehouse is global), `responsible_employee_id` for the PIC |
+| `warehouse.warehouse_images` | Gallery images per warehouse |
+| `warehouse.warehouse_addresses` | Strict 1:1 satellite, ADR-0003 address shape; no `kind` discriminator |
+| `warehouse.warehouse_storages` | Bins: one level deep (warehouse → storage), **no zone level** |
+| `warehouse.warehouse_managers` | Person-in-charge rows (ADR-0017) |
+| `warehouse.warehouse_organizations` | Which organizations may use a warehouse — the only source of org access |
+| `warehouse.warehouse_settings` | Per-warehouse settings |
+| `warehouse.warehouse_module_settings` | Module settings (one row) |
+| `warehouse.code_numberings` | Per-module numbering series (ADR-0024 Q32) |
+
+## HTTP surface
+
+| Route | Guard | Notes |
 |---|---|---|
-| Warehouse master | `inventory.warehouses` | `organization_id` nullable; `NULL` = global estate |
-| Address | `inventory.warehouse_addresses` | Strict 1:1 satellite, ADR-0003 shape; no `kind` discriminator |
-| Storages (bins) | `inventory.warehouse_storages` | One level deep: warehouse → storage, **no zone level** |
+| `/warehouses` | `session+warehouse` | CRUD, address/storage/manager sub-resources; application administrators only |
+| `/warehouses/linked` | `erp` | The organization-scoped read used by business modules |
+| `/warehouses/code-numberings` | `erp` | Numbering series management |
 
-The retired `warehouse` schema and its `warehouse_zones` / `warehouse_bins`
-tables are gone from `docs/database/docs.dbml`.
+Two guards share the plugin on purpose: a **global** warehouse has no
+organization context for `erpGuard` to resolve, so the admin surface uses
+`sessionGuard` + the global-admin policy, while the org-scoped read uses `erp`.
 
-## Behavior targets
+## Cross-module contract
 
-- Full CRUD, **application administrators only** (`user.role === 'admin'`).
-  No organization role holds `warehouse:*`, including `owner`. Routes use
-  `sessionGuard` + the global-admin policy, not `erpGuard`: a global warehouse
-  has no organization context for `erpGuard` to resolve.
-- Deactivation (`is_active`) rather than deletion when movements reference the
-  warehouse — `stock_movements.warehouse_id` is `RESTRICT`.
-- Uniqueness is a partial-index pair per organization scope, because
-  `organization_id` may be `NULL` (ADR-0008).
+`ExportedWarehouseService` answers the `resolve*` / `assert*` questions other
+modules ask before writing a logical warehouse id (ADR-0014). Consumers:
+`inventory` movements, balances, serial units and borrowing lines (which
+snapshot `origin_warehouse_id`), plus sale/procurement documents that record a
+warehouse.
 
 ## Dependencies and rules
 
-- Consumed by `inventory` movements, balances, serial units, and borrowing
-  lines (which snapshot `origin_warehouse_id`).
-- `responsible_employee_id` is a logical reference to `hr.employees` — no
-  cross-module FK.
+- **Inbound logical references:** `warehouse.warehouses.responsible_employee_id`
+  → `human_resource.employees.id`; `warehouse.warehouse_organizations.organization_id`
+  → `auth.organizations.id`. Both nullable, no cross-schema FK.
+- Deactivate (`is_active`) instead of deleting when movements reference the
+  warehouse; those references are `RESTRICT`.
+- Uniqueness is a partial-index pair per organization scope (a global unique
+  index where `organization_id IS NULL`, a per-organization one otherwise).
 
 ## Tests
 
-Planned for slice S2 (ERP-0027): permission gates proving org roles are
-denied, address 1:1 enforcement, and deactivation filtering.
+`apps/backend/test/unit/**` warehouse suites: permission gates (org roles
+denied), address 1:1 enforcement, storage depth, deactivation filtering, and
+the exported facade's `assert`/`resolve` behaviour.

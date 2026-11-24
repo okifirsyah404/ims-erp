@@ -1,0 +1,57 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "baf2d491-b272-44c0-afe7-bd11d043e1aa",
+  "prevIds": [
+    "f3b4364a-ce9c-469a-a097-0a92ad15434b"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employees",
+        "legal_name"
+      ],
+      "writes": [
+        "s|col|human_resource.employees.legal_name",
+        "n|col|human_resource.employees.legal_name",
+        "e|col|human_resource.employees.legal_name"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employees",
+        "whatsapp"
+      ],
+      "writes": [
+        "s|col|human_resource.employees.whatsapp",
+        "n|col|human_resource.employees.whatsapp",
+        "e|col|human_resource.employees.whatsapp"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"human_resource\",\"employees\",\"legal_name\"]"
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"human_resource\",\"employees\",\"whatsapp\"]"
+    }
+  ]
+}

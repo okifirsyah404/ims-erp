@@ -8,8 +8,8 @@ re-mapped. Mark verbatim-mapping as pending.**
 
 ## Quick note on what is real
 
-> Updated 2026-11-20 for ADR-0024: the ERP is **18 Postgres schemas / 188
-> tables** plus the schema-less `webhook` module. The map below is business
+> Updated 2026-11-24 for ADR-0024 + ADR-0026: the ERP is **20 Postgres schemas /
+> 196 tables** plus the schema-less `webhook` module. The map below is business
 > ownership; per-module tables, contracts and boundaries live in
 > `docs/database/module-ownership.md` and `docs/database/docs.dbml`. A module
 > being listed here is not a claim that every capability is built: see
@@ -23,7 +23,7 @@ re-mapped. Mark verbatim-mapping as pending.**
 | Company, users, roles, permissions, audit | `company`, `auth` (Identity; `user` and `organization` modules sit over it), `document`, `notification`, `audit` | Company profile and settings = `company.*`; issued document registry = `document.*`; audit trail = `audit.audit_logs`; users, organizations, members = Better Auth; roles are a code-defined enum (no role table). Numbering is per module (`code_numberings` in each schema) |
 | Customers & leads | `customer`, `project` (leads), `automation` | B2B companies and people (incl. portal login) in `customer`; leads and follow-up in `project`; approved FAQ knowledge and WhatsApp in `automation` |
 | Suppliers & procurement | `supplier`, `procurement`, `finance` | Supplier companies/PICs (bank details restricted); purchase requests/orders/receipts/returns; supplier bills and payables in `finance` |
-| Products, stock & warehouse | `inventory` | Products and categories, physical items/assets, stock ledger and balances, adjustments, borrowing, maintenance, disposals; the warehouse tables live in `inventory` (one schema, ADR-0008/ADR-0024) |
+| Products, stock & warehouse | `product`, `warehouse`, `inventory` | Product (SKU) master, categories and website listings in `product`; warehouse master, addresses, storages and PICs in `warehouse`; physical items/assets, serial units, stock ledger and balances, adjustments, borrowing, maintenance, disposals in `inventory` (ADR-0026) |
 | Sales & payments | `sale`, `payment` | Quotation, order, delivery note, return, invoice, receipt; one payment ledger (channel manual or gateway) with allocations |
 | Accounting & expenses | `finance` | COA, periods, journals, opening balances, cash/bank, reconciliation, supplier bills, AR/AP, expense claims, advances, depreciation, period close |
 | Tax | `tax` | Taxes, period records, corrections, withholding records (configurable recap; filing stays with finance) |
@@ -44,13 +44,13 @@ re-mapped. Mark verbatim-mapping as pending.**
 3. **Suppliers** — code, name, address, contact person, payment terms, bank
    details (restricted access).
 4. **Products / services** — SKU, name, category, unit, selling price (integer
-   IDR minor units, ADR-0002), stock flag, optional serial tracking; one catalog
-   entity with type discriminator (decide in Phase 3; do not duplicate tables
-   without need).
+   IDR minor units, ADR-0002), stock flag, optional serial tracking; one product
+   master with a kind discriminator in `product.products` (ADR-0026).
 5. **Categories & units** — consistent definitions (units, sets, pieces,
    packages, months, years).
-6. **Warehouse** — one operational warehouse (code, name, address, responsible
-   employee); stored in `inventory.warehouses` and related tables.
+6. **Warehouse** — warehouse master (code, name, address, storages, responsible
+   employee, organization access); stored in `warehouse.*` (ADR-0026). The
+   schema supports as many warehouses as the company runs.
 7. **Assets/tools** — code, category, serial, acquisition value/date, location,
    responsible person, condition.
 8. **Employees** — code, name, position, contact, joining date, status, salary

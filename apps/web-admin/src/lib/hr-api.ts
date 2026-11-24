@@ -40,7 +40,6 @@ export type TEmployee = {
 	userId: string | null;
 	employeeCode: string;
 	fullName: string;
-	legalName: string | null;
 	nickname: string | null;
 	gender: 'male' | 'female' | null;
 	birthDate: string | null;
@@ -49,7 +48,6 @@ export type TEmployee = {
 	maritalStatus: string | null;
 	email: string | null;
 	phone: string | null;
-	whatsapp: string | null;
 	employmentStatus: TEmploymentStatus;
 	employmentType: TEmploymentType;
 	workType: TWorkType;
@@ -205,7 +203,6 @@ export function createEmployee(input: {
 	organizationId?: string | null;
 	organizationRoles?: string[];
 	employeeCode?: string | null;
-	legalName?: string | null;
 	nickname?: string | null;
 	gender?: 'male' | 'female' | null;
 	birthDate?: string | null;
@@ -213,7 +210,6 @@ export function createEmployee(input: {
 	nationalId?: string | null;
 	maritalStatus?: string | null;
 	phone?: string | null;
-	whatsapp?: string | null;
 	employmentStatus?: TEmploymentStatus;
 	employmentType?: TEmploymentType;
 	workType?: TWorkType;

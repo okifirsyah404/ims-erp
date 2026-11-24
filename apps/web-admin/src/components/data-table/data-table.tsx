@@ -64,6 +64,7 @@ export function DataTable<TData extends RowData>({
 	bordered = false,
 	sortable = false,
 	rowClassName,
+	onRowClick,
 }: {
 	/** Column definitions; build with `useMemo` so headers can use `t()`. */
 	columns: ColumnDef<DataTableFeatures, TData, CellData>[];
@@ -90,6 +91,16 @@ export function DataTable<TData extends RowData>({
 	sortable?: boolean;
 	/** Extra classes for a row, e.g. highlighting the selected record. */
 	rowClassName?: (row: TData) => string | undefined;
+	/**
+	 * Makes the whole row activate on click (and Enter/Space), for list pages
+	 * whose row opens a detail page.
+	 *
+	 * @remarks
+	 * A clickable row is not a button, so the row gets `tabIndex` and keyboard
+	 * activation to stay reachable. Cells with their own controls (row actions)
+	 * must stop propagation themselves.
+	 */
+	onRowClick?: (row: TData) => void;
 }) {
 	const table = useTable({ features, columns, data, getRowId });
 	const headers = table.getHeaderGroups()[0]?.headers ?? [];
@@ -151,7 +162,24 @@ export function DataTable<TData extends RowData>({
 						</TableRow>
 					) : (
 						rows.map((row) => (
-							<TableRow key={row.id} className={rowClassName?.(row.original)}>
+							<TableRow
+								key={row.id}
+								className={[rowClassName?.(row.original), onRowClick ? 'cursor-pointer' : '']
+									.filter(Boolean)
+									.join(' ') || undefined}
+								onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+								onKeyDown={
+									onRowClick
+										? (event) => {
+												if (event.key === 'Enter' || event.key === ' ') {
+													event.preventDefault();
+													onRowClick(row.original);
+												}
+											}
+										: undefined
+								}
+								tabIndex={onRowClick ? 0 : undefined}
+							>
 								{row.getVisibleCells().map((cell) => (
 									<TableCell
 										key={cell.id}

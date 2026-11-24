@@ -24,13 +24,13 @@ call the owning module's assert method first**.
 ### 2.1 The rule
 
 A foreign key may only connect two tables of the same schema. `docs.dbml`
-contains 162 `Ref:` declarations and 0 cross-module refs, across 188 tables in
-18 schemas (ADR-0024).
+contains 153 `Ref:` declarations and 0 cross-module refs, across 196 tables in
+20 schemas (ADR-0024, ADR-0026).
 
 Verified by parsing the file (`validate-dbml.ts`, `@dbml/core`):
 
 ```text
-parsed: 188 tables, 162 refs
+parsed: 196 tables, 153 refs
 cross-module refs: 0
 timestamp gaps: 0
 drizzle parity drift: 0
@@ -67,8 +67,8 @@ Concrete mapping:
 | Self-referencing hierarchies and history links (parent category, parent ticket, superseded document, reversed journal entry, renewed license contract, employee manager) | `SET NULL` |
 | Optional links (storage bin of a stock row, gateway of a payment, template of a ticket or document, journal entry of a depreciation) | `SET NULL` |
 
-Across the 162 declared `Ref:` lines the split is `CASCADE` 72, `RESTRICT` 64,
-`SET NULL` 26. `RESTRICT` is the default posture for anything a financial
+Across the 153 declared `Ref:` lines the split is `CASCADE` 74, `RESTRICT` 59,
+`SET NULL` 20. `RESTRICT` is the default posture for anything a financial
 record points at. `CASCADE` is used only where the child is meaningless alone.
 
 ## 3. Tenant consistency
@@ -487,7 +487,7 @@ Before a schema change is accepted:
 
 1. The change is in `docs.dbml`.
 2. The migration is generated and the SQL was read by a human.
-3. The migration was applied to a **disposable** database.
+3. The migration was applied to a local database you can drop and recreate.
 4. Every new status value was added to the `CHECK`, the TypeScript constant
    and the API contract together.
 5. Every new logical reference has the standard note wording and a contract

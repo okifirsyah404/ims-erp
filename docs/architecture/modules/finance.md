@@ -88,7 +88,7 @@ allocation), receipt attachment, settlements, advances.
 
 ## Tests
 
-Integration tests on disposable PG cover the balance invariant, idempotent
+Integration tests on throwaway local PG cover the balance invariant, idempotent
 posting, reversal math, period-close rejection, reconciliation tie-outs,
 opening-balance balancing, payment workflow transitions, and the
 reconciliation exact-match gate (backend suite: 686 tests).

@@ -4911,12 +4911,10 @@ Table human_resource.employees {
   user_id text [note: "Logical reference to auth.users.id. Set only by the invite-first creation flow; a user is linked to at most one alive employee."]
   employee_code varchar(32) [not null, note: "Issued from the numbering authority (EMP-00001), editable."]
   full_name text [not null]
-  legal_name text
   nickname text
   national_id varchar(32) [note: "National identity number (NIK)."]
   email varchar(320)
   phone varchar(100)
-  whatsapp varchar(100)
   photo_object_key text
   employment_status text [not null, default: 'active']
   employment_type text [not null, default: 'permanent']

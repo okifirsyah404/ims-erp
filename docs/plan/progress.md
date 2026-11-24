@@ -82,6 +82,257 @@ by code, PIC + address for the first two; a second run inserts nothing.
 
 **Not verified.** Migration not applied to a disposable database, no HTTP run
 against a real database, no S3 upload, no browser walk-through.
+## 2026-11-24 - dependabot PR #157: re-patch `@unplugin-pwa/core` 0.0.8 for Bun
+
+`Docker Build Web Customer Portal` failed on PR #157 (`@vite-pwa/astro`
+`2.0.3` -> `2.0.4`, which pulls `@unplugin-pwa/core`/`vite`/`inspector`
+`0.0.7` -> `0.0.8`). Symptom, job `138373169544`:
+
+```text
+[ERROR] [@vite-pwa/astro-integration] An unhandled error occurred while
+running the "astro:config:setup" hook
+Export named 'findPackageJSON' not found in module 'node:module'.
+error: script "build" exited with code 1
+```
+
+Cause: the `bun patch` in ERP-0107 is keyed by exact version
+(`"@unplugin-pwa/core@0.0.7"`), so the bump silently dropped it and the
+unpatched `0.0.8` went back to the static `findPackageJSON` import. Same
+failure mode already recorded in `stack-compatibility.md`.
+
+Fix: `patches/@unplugin-pwa%2Fcore@0.0.8.patch` (same hunk, retargeted; the
+`0.0.7` patch and its `patchedDependencies` entry are gone) — only
+`dist/resolve-inspector-dist.mjs` carries the import; all 30 `core` and 25
+`vite` `0.0.8` `dist/*.mjs` files were scanned, no other hit.
+
+Verified locally on `fix/dependabot-pwa-0-0-8` (based on the dependabot
+commit `f9318f7e`):
+
+- `bun install` -> patched file present in `node_modules/@unplugin-pwa/core/dist/resolve-inspector-dist.mjs`; `bun.lock` `patchedDependencies` now keyed `0.0.8`.
+- `bun install --frozen-lockfile` -> `Checked 1394 installs across 1445 packages (no changes)`.
+- `bun --bun run --cwd apps/web-customer-portal build` -> `[build] ✓ Completed in 12.53s` (was the CI failure point).
+- `docs/database/` reviewed, unchanged (dependency-only change).
+
+## 2026-11-24 - docs sync: project structure, ADR-0026 modules, no more "disposable DB"
+
+Docs-only change (no code, no migration, no seed). Scope: `AGENTS.md`,
+`README.md`, `docs/**`. `migrate-reset.ts` and the `drizzle:migrate-reset`
+script stay; only the *concept* of "disposable database" was retired in favour
+of "a local database you can drop and recreate".
+
+**Verified numbers (source of truth: `docs.dbml` + validator, not prose).**
+`bun docs/database/validate-dbml.ts` → `parsed: 196 tables, 153 refs /
+cross-module refs: 0 / timestamp gaps: 0 / drizzle parity drift: 0 / column
+parity drift (nullability, type): 0 / OK`; `gen-logical-references.ts` →
+`regenerated: 189 refs across 25 targets, 153 intra-module refs`. The previous
+prose figures (188/192 tables, 147/162 refs, 169/190 logical columns) were all
+stale, so every doc now says **20 schemas / 196 tables / 153 `Ref:` / 189
+logical-reference columns / 25 targets**. Baseline migrations create **176**
+`CREATE TABLE`, so 20 `docs.dbml` tables are still target-only
+(`sale.discount_requests|contracts|targets`, `finance.journal_templates|
+credit_memos|employee_advances|expense_settlements|expense_settlement_items`,
+8 `project.*`, `ticket.ticket_templates`, `ticket.sub_ticket_templates`).
+
+**Structure.** `README.md` project tree rewritten to what exists: 4 apps
+(backend, web-admin, web-landing, web-customer-portal), the real backend
+`src/` layout (`app/`, `app/app.ts`, `authorization/`, `cache/`, `di/`,
+`http/`, `providers/`, `shared/`, `utils/`), `database/` vs `drizzle/`,
+5 packages (common, design-tokens, locales, react-email, ui), 5 doc folders;
+env setup for all four apps; ports corrected to backend 3001 / admin 5173 /
+landing 4321 / portal 4322; the stale 2026-11-12 "blocked on main" note removed
+(replaced by the `drizzle:migrate-reset` explanation); deploy section lists the
+Astro services and their host-port knobs.
+
+**Modules.** `product` and `warehouse` are now documented as current modules
+with their own schemas (ADR-0026): `docs/architecture/modules/product.md` and
+`warehouse.md` rewritten, `inventory.md` rewritten (21 tables, product/estate
+moved out, `/products` + `/warehouse` + `/stock` route map), `modules/README.md`
+index moved them out of the deprecated table, `architecture.md`, `domain-map.md`
+and `data-model.md` updated, `security-and-access.md` says 20 modules.
+`docs/database/module-ownership.md` per-module table/ref counts recomputed from
+`docs.dbml` and its broken header row fixed.
+
+**Not touched on purpose:** ADR files (decision records), `progress.md` history,
+`docs/plan/database-refactor/**`, `docs/plan/uat/**`,
+`docs/plan/erp-module-plans/**`, `apps/**`, `package.json`. Historical entries
+inside `implementation-phases.md` keep their dates and figures; only its
+present-tense summary and command table were corrected.
+
+**docs/database/ status.** Reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (prose only) — but the
+companion MDs were wrong about counts, so `module-ownership.md`,
+`integrity-and-consistency.md` (incl. the `ON DELETE` split, re-derived:
+CASCADE 74 / RESTRICT 59 / SET NULL 20), `data-dictionary.md` and
+`implementation-phases.md` were corrected. `docs.dbml` itself is untouched and
+`validate-dbml.ts` prints `OK`. No `ERP-*` status moved.
+
+## 2026-11-24 - HR employee list: whole row opens the detail page
+
+User request: on `/hr/employees`, clicking the row should open the detail page
+instead of only the name link.
+
+- `components/data-table/data-table.tsx`: new optional `onRowClick`. When set,
+  the row gets `cursor-pointer`, `tabIndex=0` and Enter/Space activation, so it
+  is reachable without a pointer (a clickable `<tr>` is not a button, so the
+  keyboard path is spelled out).
+- `components/hr/employee-list.tsx`: `onRowClick` navigates to
+  `/hr/employees/$employeeId`; the name is now plain text (no `Link`, `Link`
+  import dropped); the row-actions cell wraps `RowActions` in a
+  `stopPropagation` div so the View/Edit/Archive icons do not also trigger the
+  row navigation.
+
+**Checks.**
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun test` (web-admin): 209 pass, 0 fail.
+- `bunx biome check` on the two files: clean.
+- Browser pass as `hr.seed@…`: clicking a row opened
+  `/hr/employees/01a20adf-d876-…`; focusing a row with Tab and pressing Enter
+  did the same; the Archive icon opened its confirm dialog while the URL stayed
+  on `/hr/employees` (propagation stopped). The only console error is the
+  pre-existing `nativeButton` warning from the detail page.
+
+**Follow-up (same day).** Owner asked to drop the redundant View (eye) icon now
+that the row itself opens the detail page: the `view` action and the `Eye`
+import are gone from `employee-list.tsx`, and the now-unused `list.view` locale
+key was deleted from `en`/`id` (dead-key guard). Row actions are Edit + Archive.
+Re-checked in the browser: two icons per row, no console errors; web-admin 209
+pass, locales 106 pass, root lint 0 errors.
+
+## 2026-11-24 - HR employees: `legal_name` / `whatsapp` columns dropped, phone uses the country field
+
+User request: Identity card on `/hr/employees/:id/edit` should drop Legal name
+and WhatsApp, and Phone should use `CountryPhoneField` (E.164 assembly) like the
+new-employee dialog. Owner then asked for the columns to go too, not just the
+form fields.
+
+**Schema (destructive, applied to the local dev database).**
+- `docs/database/docs.dbml` edited first: `legal_name text` and
+  `whatsapp varchar(100)` removed from `human_resource.employees`, then
+  `drizzle/schemas/human-resource.schema.ts` matched to it.
+- `bun run drizzle:generate` → `database/migrations/20261124112024_slimy_gideon`
+  with exactly two statements (`ALTER TABLE "human_resource"."employees" DROP
+  COLUMN "legal_name"`, `DROP COLUMN "whatsapp"`), inspected before applying.
+- Checked the dev database first: 29 employee rows, **0** with either column
+  set, so nothing was lost. `bun run drizzle:migrate` applied it;
+  `information_schema.columns` no longer lists the two columns.
+- `bun docs/database/gen-logical-references.ts` (189 refs across 25 targets) and
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs, 0 timestamp
+  gaps, 0 drizzle parity drift, 0 column parity drift`.
+
+**Backend.**
+- `hr.contract.ts`: both fields removed from `employeeBaseSchema` (create and
+  update share it).
+- `employee.mappers.ts` (`toRow`), `employee.service.ts` (patch builder): the
+  two assignments removed.
+- PDF fallbacks now use the surviving column: `agreement-pdf.service.ts` →
+  `employee.fullName`; `payslip.service.ts` → `employee?.fullName ??
+  record.employeeName`. Company letterhead `legalName` (company profile) is
+  untouched.
+- Fixtures: `hr-employee-document.service.test.ts`, `hr-payslip.service.test.ts`
+  dropped their `legalName: null`.
+
+**Frontend.**
+- `hr-api.ts`: `legalName`/`whatsapp` removed from `TEmployee` and
+  `createEmployee`.
+- `employee-edit-form.tsx`: both inputs and their state removed; Phone is now
+  `<CountryPhoneField id='phone' defaultValue={employee.phone} required={false}>`
+  spanning both grid columns. Identity is now code | full name, nickname | NIK,
+  phone (full width).
+- Locales en/id: `form.legalName` and `form.whatsapp` deleted (dead-key guard
+  would fail otherwise).
+
+**Checks.**
+- `bunx tsc --noEmit -p tsconfig.json` (backend): clean.
+- `bun test` (backend): 1453 pass, 0 fail.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean; `bun test` 209 pass.
+- `bun test` (packages/locales): 106 pass.
+- `bun run lint` (root): 0 errors (18 web-admin, 26 backend, 19 ui warnings are
+  pre-existing).
+- Browser pass (`/hr/employees/01a20adf-…/edit`, logged in as `hr.seed@…`):
+  Identity shows five fields, the country picker defaults to Indonesia (+62),
+  typing `81234567890` and saving wrote `+6281234567890` (read back from
+  Postgres), then clearing it and saving wrote `NULL` — round trip both ways.
+  As org HR the role dropdown renders read-only with the hint. No new console
+  errors (the `nativeButton` warning on the employee detail page is
+  pre-existing).
+
+## 2026-11-24 - web-admin: organization role dropdown on the new-employee dialog
+
+User request: `/hr/employees` "Karyawan baru" dialog had no role picker, while
+`/admin/users` does. Backend already supported it — `POST
+/human-resources/employees` accepts `organizationRoles` (`hr.contract.ts`),
+validates it against the shared ladder (`employee.controller.ts`), and
+`EmployeeInviteService` defaults to `['member']` when an organization is set —
+so this was frontend-only. Invited employees silently always got `member`.
+
+- `components/hr/employee-create-dialog.tsx`: `useGrantableOrgRoles(activeOrganizationId)`
+  supplies the options (same ladder as the invitation dialog: no `owner`, no
+  `admin`/`hr` above the caller's tier), `erpRoleLabel` renders them in the UI
+  language, and the picked role is sent as `organizationRoles: [effectiveRole]`.
+  The effective role is clamped at render (a role picked before the ladder
+  loads is not trusted), and the field only renders when an active
+  organization exists — without one the backend reads a role list as an org
+  invite and rejects it, so `organizationRoles` stays `undefined`.
+- Locales en/id: `form.role` ("Organization role"/"Peran organisasi"),
+  `form.roleHint`.
+
+**Edit page (same day, follow-up).** `/hr/employees/$employeeId/edit` now has an
+organization role card too. It is a *membership* fact, not an employee column,
+so it saves through the existing `PATCH /organizations/:id/members/:memberId`
+(the endpoint the organization member page uses) instead of the employee PATCH:
+`PATCH /human-resources/employees/:id` still does not accept `organizationRoles`.
+- `components/hr/employee-edit-form.tsx`: member row resolved from
+  `GET /organizations/:id/members` (limit 100 — the contract caps it at 100)
+  by `employee.userId`; checkbox grid over `useAssignableOrgRoles` (existing
+  grants stay visible, the ladder hides what the caller may not grant);
+  separate "Save role" button with its own mutation and member-query
+  invalidation.
+- First attempt gated the whole card on `member.update`, which hid it for the
+  org `hr` role (grants `member: ['read']` only) — reported by the owner as
+  "still missing". The card now always renders and only the write controls
+  (checkbox enabled state + Save role) are gated; a caller without the grant
+  sees the roles read-only (`form.roleReadOnly`). Verified against the dev DB:
+  employee `01a20adf-…` has a membership row with `role = 'hr'`, so the lookup
+  itself was fine.
+- A pending invite has no membership row yet, so the card shows a hint instead
+  (`form.roleNoMember`): the role is granted on claim, and no endpoint updates
+  a pending invitation's roles.
+- Locales en/id: `form.roleNoMember`, `form.roleReadOnly`, `form.rolesLocked`,
+  `form.rolesMultiple`, `form.saveRole`; `form.roleHint` shortened to the
+  generic wording (it now serves both dialogs).
+- Owner follow-up: the checkbox grid was replaced by a single `Select`, the
+  same shape `/admin/users` (invite dialog) uses. Saving sends
+  `[effectiveRole]`, so it replaces a member's whole comma-joined role set —
+  `form.rolesMultiple` warns when the member currently holds more than one.
+- Owner follow-up 2: the separate role card is gone; the role field now sits
+  inside the "Kepegawaian" (employment) card, below work type and the dates.
+- Owner follow-up 3 (browser pass): the role field was a `sm:col-span-2` block
+  under a five-field grid, which left the third row half empty and made the
+  save button stretch inside the grid. It is now a normal sixth grid cell
+  (status/type, work type/hire date, termination date/role), with the hint and
+  an outline "Save role" on their own full-width row. Verified in the browser
+  on `/hr/employees/01a20adf-…/edit` as an org admin: dropdown lists the
+  assignable roles, saving rewrote `auth.members.role` (`hr` → `member`, read
+  back from Postgres, then restored to `hr`), no console errors.
+- Owner follow-up 4: every `SelectTrigger` in the employment card is `w-full`
+  (they were intrinsic-width, narrower than the date pickers), and the grid is
+  reordered to status/type, work type/role, hire date/termination date so the
+  two dates sit on one row. Re-checked in the browser: six equal columns, no
+  console errors.
+- Ceiling: the member lookup reads one page of 100 (40 members in the dev
+  tenant); an organization with more members would need a `userId` filter on
+  the members list.
+
+**Checks.**
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun test` (web-admin): 209 pass, 0 fail.
+- `bun test` (packages/locales): 106 pass, 0 fail (en/id parity + dead keys).
+- `bunx biome check` on the touched files: clean.
+- `bun run lint` (root): 0 errors (18 pre-existing web-admin warnings).
+- No browser walk-through.
+
+**Docs.** `backlog.md` ERP-0117 evidence appended. `docs/database/` reviewed:
+no table/column/index/constraint change, `docs.dbml` unchanged.
 
 ## 2026-11-24 - migrations squashed back to one folder per Postgres schema
 

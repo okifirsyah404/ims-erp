@@ -243,12 +243,10 @@ export class EmployeeService {
 		const patch: Partial<TEmployeeInsert> = {
 			...(body.employeeCode !== undefined && body.employeeCode !== null ? { employeeCode: body.employeeCode } : {}),
 			...(body.fullName !== undefined ? { fullName: body.fullName } : {}),
-			...(body.legalName !== undefined ? { legalName: body.legalName } : {}),
 			...(body.nickname !== undefined ? { nickname: body.nickname } : {}),
 			...(body.nationalId !== undefined && ctx.canReadPrivate !== false ? { nationalId: body.nationalId } : {}),
 			...(body.email !== undefined ? { email: body.email } : {}),
 			...(body.phone !== undefined ? { phone: body.phone } : {}),
-			...(body.whatsapp !== undefined ? { whatsapp: body.whatsapp } : {}),
 			...(body.employmentStatus !== undefined ? { employmentStatus: body.employmentStatus } : {}),
 			...(body.employmentType !== undefined ? { employmentType: body.employmentType } : {}),
 			...(body.workType !== undefined ? { workType: body.workType } : {}),

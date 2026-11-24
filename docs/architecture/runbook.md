@@ -50,7 +50,7 @@ loaded per-workspace from `.env`).
 | `bun run scripts/smoke-admin-api.ts` | 18 checks over `/admin/users`, `/admin/roles`, `/admin/roles/permissions`, `/admin/audit`, `/admin/invitations`, the escalation guard, and every member denial (403) | ✅ verified 2026-11-02 — 18 passed / 0 failed |
 | `bun run scripts/smoke-cache-invalidation.ts` | the shared `auth.users` cache: an admin deactivate/restore/soft-delete is visible on the self-service read path **immediately** (no 5-minute staleness) | ✅ verified 2026-11-02 — 9 passed / 0 failed, idempotent |
 | `bun run scripts/smoke-avatar-worker.ts` | the avatar BullMQ worker was **started through the worker registry** and is subscribed to the queue: dispatches a job and waits for the worker to consume it (state leaves `waiting`) | ✅ verified 2026-11-02 — consumed, idempotent |
-| `bun run scripts/smoke-login-gate.ts` | the web-admin login gate on the real Better Auth instance (ADR-0017 §8, ADR-0018): app admin without membership signs in, portal role alone is refused with 403, portal role plus an internal membership signs in. Creates and removes its own users | ✅ verified 2026-11-14 — 8/8 cases on a disposable database. Needs `POSTGRES_URL` pointed at a throwaway database, never the dev one |
+| `bun run scripts/smoke-login-gate.ts` | the web-admin login gate on the real Better Auth instance (ADR-0017 §8, ADR-0018): app admin without membership signs in, portal role alone is refused with 403, portal role plus an internal membership signs in. Creates and removes its own users | ✅ verified 2026-11-14 — 8/8 cases on a throwaway local database. Needs `POSTGRES_URL` pointed at that database, never the dev one |
 
 Both scripts sign in as the seeded admin (`admin@local.com`) and/or member
 (`member.seed@entragate.local`) and reference the seeded organization id.
@@ -100,8 +100,8 @@ driver is `drizzle-orm/bun-sql`:
 
 ```powershell
 bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-11-19 (baseline below: "No schema changes")
-bun run drizzle:migrate    # apply migrations — verified 2026-11-19 on a disposable database (baseline below)
-bun run drizzle:push       # disposable DBs only
+bun run drizzle:migrate    # apply migrations — verified 2026-11-19 on a local database (baseline below)
+bun run drizzle:push       # only against a local database you can drop and recreate
 bun run drizzle:studio     # inspect
 bun run drizzle:seed       # seed runners (database/seeders) — verified idempotent (run twice)
 ```
@@ -123,28 +123,27 @@ re-squashed 2026-11-24).** History, kept honest:
 - 2026-11-21: that single baseline was re-split into **one migration per
   Postgres schema** — 20 folders, `20261120214111_create_auth_schema` through
   `20261120214130_create_warehouse_schema` — restoring the ADR-0019 property
-  that a reader can see which migration introduced which table. The single
-  baseline is archived at
-  `apps/backend/database/migrations-archive/v3-per-schema-20261121` (history
-  only, never applied). The chain is **1 `base` + 19 chained `diff` snapshots**
-  in dependency order (`auth` first, then alphabetical), produced by
+  that a reader can see which migration introduced which table. That single
+  baseline folder is no longer in the tree (git history only; the 2026-11-24
+  re-squash replaced the chain). The chain is **1 `base` + 19 chained `diff`
+  snapshots** in dependency order (`auth` first, then alphabetical), produced by
   `drizzle-kit generate` against a cumulative `--schema` list — generated, not
   hand-assembled, so `check`/`generate` agree by construction.
 - Verified 2026-11-19 (single baseline) and 2026-11-21 (per-schema chain) on
-  disposable databases (dropped afterwards): `drizzle:migrate` applied it
+  throwaway local databases (dropped afterwards): `drizzle:migrate` applied it
   cleanly; `drizzle:seed` ran twice and the second run inserted nothing; a
   second `drizzle-kit generate` printed "No schema changes"; `drizzle-kit check`
-  printed "Everything's fine". On 2026-11-20 a fresh disposable database
+  printed "Everything's fine". On 2026-11-20 a fresh local database
   (`ims_smoke`) was migrated and seeded again for the live API smoke test. The
   2026-11-21 run additionally proved the split is **equivalent** to the
-  archived baseline: the 20 folders concatenate to the same 728 statements, and
+  single baseline: the 20 folders concatenate to the same 728 statements, and
   `pg_dump --schema-only` of a database built from the chain is identical to one
   built from the single baseline (9669 lines, 169 tables, 22 schemas, 20 journal
   rows, 0 cross-schema FKs).
 - So `generate` and `migrate` work again. New schema changes: edit
   `docs/database/docs.dbml` first, then the Drizzle schema, run
-  `bun run drizzle:generate`, inspect the SQL, and apply it to a **disposable**
-  database only.
+  `bun run drizzle:generate`, inspect the SQL, and apply it to a local database
+  you can drop and recreate.
 - 2026-11-24: the 33-folder chain (20 per-schema baseline folders + 13
   incremental ones added between 2026-11-21 and 2026-11-24) was **squashed back
   to 20 per-schema folders** — `20261123204301_create_auth_schema` through
@@ -165,7 +164,7 @@ re-squashed 2026-11-24).** History, kept honest:
   remain in git history). A database migrated by the 33-folder chain cannot be
   upgraded in place; rebuild it with `bun run drizzle:migrate-reset`.
 
-Disposable-database recipe (also used for the reset tooling):
+Local reset recipe (also used for the reset tooling):
 
 ```powershell
 docker exec ims-erp-postgres-1 sh -c 'createdb -U "$POSTGRES_USER" ims_erp_scratch'
@@ -190,10 +189,10 @@ services:
 
 Rules:
 - Never run `drizzle-kit push` or migrations against a database you cannot
-  recreate. Push is for disposable DBs only.
+  recreate. Push only ever runs against such a database.
 - Before a `generate` run, confirm `drizzle-kit check` is clean; if the chain
-  looks inconsistent, create a disposable DB, apply the full set from scratch,
-  and record the outcome before proceeding.
+  looks inconsistent, create a fresh local database, apply the full set from
+  scratch, and record the outcome before proceeding.
 - `auth:generate` script pins nothing (`auth@latest`) — pin before running.
 - Seeds must be idempotent (safe to run twice).
 

@@ -75,7 +75,7 @@ checks, with ERP-0022 wiring later.
 
 - Existing scaffolding specs (controller/service) — upgrade to real endpoint
   + service tests.
-- Required (Phase-2 exit): integration tests on disposable PG — unique-code
+- Required (Phase-2 exit): integration tests on throwaway local PG — unique-code
   race (23505→409), pagination totals, soft-delete filtering, address FK
   chain integrity; e2e — session, authorization denial, CRUD, deactivation;
   Relational v2 query exercising a real declared relationship.
