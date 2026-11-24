@@ -147,6 +147,8 @@ const nav = {
 	'breadcrumb.salesReturnNew': 'Customer return',
 	'breadcrumb.whatsappFaq': 'Assistant FAQ',
 	'breadcrumb.whatsappChat': 'Conversation',
+	'item.postingRules': 'Posting Rules',
+	'item.costCenters': 'Cost Centres',
 } as const;
 
 export default nav;

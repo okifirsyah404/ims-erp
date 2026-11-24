@@ -3,6 +3,7 @@
  * ap_open_items), supplier payment execution (cash out = DR AP / CR cash) and
  * AP aging. Real posting service over fake repos (same harness as F4).
  */
+import { fixturePostingRules } from './posting-rules.fixture';
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -353,7 +354,7 @@ function makeHarness() {
 	};
 
 	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
-	const arResolver = new ArAccountResolverService(repo as never);
+	const arResolver = new ArAccountResolverService(fixturePostingRules(repo as never));
 	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
 	const paymentService = new PaymentService(dbLike, paymentLedger as never, settlement as never, numbering);
 	const billService = new SupplierBillService(

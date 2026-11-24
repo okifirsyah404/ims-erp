@@ -4,6 +4,7 @@
  * cash movement + AP/AR open-item rollback, all through the real posting
  * path (D4 append-only corrections).
  */
+import { fixturePostingRules } from './posting-rules.fixture';
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -338,7 +339,7 @@ function makeHarness() {
 	} as unknown as BunSQLDatabase;
 
 	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
-	const arResolver = new ArAccountResolverService(repo as never);
+	const arResolver = new ArAccountResolverService(fixturePostingRules(repo as never));
 	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
 
 	// ADR-0024: the ledger moved to the payment module. Two fakes keep this

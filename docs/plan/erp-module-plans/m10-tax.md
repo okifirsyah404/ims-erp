@@ -44,6 +44,8 @@ _Interpretation, needs owner confirmation:_
   added.
 
 ## Explicit limits (out of scope)
+> **ADR-0030 (2026-11-25, proposed):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table). Until the owner records the scope change, the limits here remain the contract baseline.
+
 
 - No official DJP filing (no e-Faktur, e-Bupot or Coretax integration).
 - No tax engine covering every tax type or every scenario.

@@ -34,7 +34,12 @@ export type TAuditTargetType =
 	| 'asset_depreciation'
 	| 'asset_disposal'
 	| 'asset_document'
-	| 'tool_set';
+	| 'tool_set'
+	| 'journal_entry'
+	| 'accounting_period'
+	| 'chart_of_account'
+	| 'posting_rule'
+	| 'cost_center';
 
 /** One audited action (mirrors the `audit.audit_logs.action` enum). */
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

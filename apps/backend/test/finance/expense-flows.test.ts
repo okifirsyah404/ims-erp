@@ -6,6 +6,7 @@
  * input tax), the server-derived total, the state machine, the employee and
  * expense-account gates, and posting idempotency.
  */
+import { fixturePostingRules } from './posting-rules.fixture';
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -199,7 +200,7 @@ function makeHarness(employeeStatus = 'active') {
 	};
 
 	const posting = new PostingService(dbLike, repo as never, repo as never, repo as never, numbering);
-	const resolver = new ArAccountResolverService(repo as never);
+	const resolver = new ArAccountResolverService(fixturePostingRules(repo as never));
 	const service = new ExpenseClaimService(
 		dbLike,
 		repo as never,

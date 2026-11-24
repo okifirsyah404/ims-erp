@@ -14,6 +14,7 @@ import {
 	journalEntryCreateSchema,
 	journalEntryListQuerySchema,
 	journalReversalCreateSchema,
+	journalRejectSchema,
 	ledgerIdParamSchema,
 	openingBalanceRowSchema,
 	openingBalanceUpdateSchema,
@@ -27,7 +28,9 @@ import {
 	OPENING_BALANCE_SERVICE_TOKEN,
 	PERIOD_SERVICE_TOKEN,
 	POSTING_SERVICE_TOKEN,
+	MANUAL_JOURNAL_SERVICE_TOKEN,
 } from '../constants/di';
+import type { ManualJournalService } from '../services/manual-journal.service';
 import type { AccountService } from '../services/account.service';
 import type { PeriodService } from '../services/period.service';
 import type { PostingService } from '../services/posting.service';
@@ -56,6 +59,7 @@ export class LedgerController {
 		);
 		const cashBank =
 			container.resolve<CashBankService>(CASH_BANK_SERVICE_TOKEN);
+		const manualJournals = container.resolve<ManualJournalService>(MANUAL_JOURNAL_SERVICE_TOKEN);
 
 		const ctxOf = (erp: ErpContext) => ({
 			organizationId: erp.organizationId,
@@ -106,6 +110,7 @@ export class LedgerController {
 							await accounts.createAccount(
 								erp.organizationId,
 								accountCreateSchema.parse(body),
+								erp.session.user.id,
 							),
 						),
 					),
@@ -122,6 +127,7 @@ export class LedgerController {
 							erp.organizationId,
 							ledgerIdParamSchema.parse(params).id,
 							accountUpdateSchema.parse(body),
+							erp.session.user.id,
 						),
 					),
 				{
@@ -136,13 +142,14 @@ export class LedgerController {
 						await accounts.archiveAccount(
 							erp.organizationId,
 							ledgerIdParamSchema.parse(params).id,
+							erp.session.user.id,
 						),
 					),
 				{
 					erp: { permission: ['chart_of_account:archive'] },
 					detail: {
 						description:
-							'Deactivates an account that has no journal history',
+							'Deactivates an account with a zero balance and no active posting rule',
 					},
 				},
 			)
@@ -181,15 +188,17 @@ export class LedgerController {
 			)
 			.post(
 				'/periods/:id/transition',
-				async ({ params, body, erp }) =>
-					ok(
+				async ({ params, body, erp }) => {
+					const input = periodTransitionSchema.parse(body);
+					return ok(
 						await periods.transition(
 							erp.organizationId,
 							ledgerIdParamSchema.parse(params).id,
-							periodTransitionSchema.parse(body).to,
-							ctxOf(erp),
+							input.to,
+							{ ...ctxOf(erp), reason: input.reason },
 						),
-					),
+					);
+				},
 				{
 					erp: {
 						// `locked -> open` stays owner-only: the `reopen` permission is
@@ -236,34 +245,77 @@ export class LedgerController {
 				'/ledger/journal',
 				async ({ body, erp, status }) => {
 					const input = journalEntryCreateSchema.parse(body);
-					return status(
-						201,
-						created(
-							await posting.postManual(
-								ctxOf(erp),
-								{
-									entryDate: input.entryDate,
-									description: input.description,
-									idempotencyKey: input.idempotencyKey,
-									lines: input.lines,
-								},
-							),
-						),
-					);
+					return status(201, created(await manualJournals.createDraft(ctxOf(erp), input)));
 				},
 				{
-					erp: { permission: ['journal:post'] },
+					erp: { permission: ['journal:create'] },
+					detail: { description: 'Creates a draft manual journal entry (maker)' },
+				},
+			)
+			.patch(
+				'/ledger/journal/:id',
+				async ({ params, body, erp }) =>
+					ok(
+						await manualJournals.updateDraft(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+							journalEntryCreateSchema.parse(body),
+						),
+					),
+				{
+					erp: { permission: ['journal:update'] },
+					detail: { description: 'Rewrites a draft manual journal entry' },
+				},
+			)
+			.post(
+				'/ledger/journal/:id/submit',
+				async ({ params, erp }) =>
+					ok(await manualJournals.submit(ctxOf(erp), ledgerIdParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['journal:submit'] },
+					detail: { description: 'Submits a draft journal entry for approval' },
+				},
+			)
+			.post(
+				'/ledger/journal/:id/approve',
+				async ({ params, erp }) =>
+					ok(await manualJournals.approve(ctxOf(erp), ledgerIdParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['journal:approve'] },
 					detail: {
-						description:
-							'Posts a manual balanced journal entry (accountant)',
+						description: 'Approves and posts a submitted entry; the preparer cannot approve (maker-checker)',
 					},
+				},
+			)
+			.post(
+				'/ledger/journal/:id/reject',
+				async ({ params, body, erp }) =>
+					ok(
+						await manualJournals.reject(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+							journalRejectSchema.parse(body).reason,
+						),
+					),
+				{
+					erp: { permission: ['journal:approve'] },
+					detail: { description: 'Returns a submitted entry to draft with a reason' },
+				},
+			)
+			.post(
+				'/ledger/journal/:id/void',
+				async ({ params, erp }) =>
+					ok(await manualJournals.void(ctxOf(erp), ledgerIdParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['journal:update'] },
+					detail: { description: 'Discards a draft or submitted entry' },
 				},
 			)
 			.post(
 				'/ledger/journal/:id/reverse',
 				async ({ params, body, erp }) =>
 					ok(
-						await posting.reverseManual(
+						await manualJournals.reverse(
 							ctxOf(erp),
 							ledgerIdParamSchema.parse(params).id,
 							journalReversalCreateSchema.parse(body),
@@ -273,7 +325,7 @@ export class LedgerController {
 					erp: { permission: ['journal:reverse'] },
 					detail: {
 						description:
-							'Reverses a posted entry with a mirrored, append-only entry',
+							'Reverses a posted entry with a mirrored, append-only entry (reason required; lands in the next open period when the original period is closed)',
 					},
 				},
 			)

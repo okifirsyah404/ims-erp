@@ -872,10 +872,8 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   new `expense_claim:*` permission. Evidence: 9 unit tests, migration
   `20261123150453_erp0013_expense_claims`, `validate-dbml.ts` OK, `progress.md`
   2026-11-23. Open: disposable-DB apply (Docker down) + browser check.
-- Backlog mismatch: ERP-0010 (accounting foundations) and ERP-0011..0012 are
-  still `planned` in `backlog.md`, so this section stays `in-progress` here
-  until the backlog is decided. Code evidence is in `main` (accounting schema,
-  migrations, tests).
+- Backlog mismatch resolved 2026-11-25: ERP-0010 moved to `implemented`
+  (grill Q19); ERP-0011/0012 were already `implemented`.
 - COA and cash/bank UX + default seed (ERP-0123..ERP-0125, 2026-11-25):
   `/finance/accounts` rebuilt on the `/procurement/suppliers` pattern (URL-backed
   search/type/status/postable filters, create/edit dialog, row actions, count)
@@ -892,11 +890,35 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   a database in this environment (no `POSTGRES_URL`), and there is no browser
   walk-through.
 
+- GL foundation, Phase A of ADR-0030 (ERP-0126..0130, ERP-0132..0134,
+  2026-11-25): `finance.posting_rules` + `PostingService.postBusinessEvent`
+  (most specific rule wins; the hard-coded posting codes became 25 seeded `*`
+  rules), `finance.cost_centers` (validated on journal lines),
+  `journal_lines.product_id`, manual journals draft -> submitted ->
+  approved/posted with maker-checker, reversal with mandatory reason that lands
+  in the next open period when the original is closed, soft close (adjusting
+  entries only) vs hard lock behind a no-pending-journal gate, CoA locking,
+  IDR checks, trial balance + general ledger, audit trail; full 94-account
+  `X-XXXX` CoA seed. Fixed: reports summed `posted` only, so a reversal negated
+  the original instead of cancelling it. Evidence: migration
+  `20261124201506_erp0127_finance_gl_foundation` applied to a local scratch DB,
+  seed twice (second run 0 inserts), DB smoke 15/15, 19 new unit tests,
+  backend 1472 / web-admin 209 / locales 106 pass, lint 0 errors,
+  `validate-dbml.ts` OK. Open: browser walk-through; ADR-0030 owner approval.
+
+### planned (ADR-0030 Phases B-D, owner approval of the lifted v5.1 limits pending)
+- ERP-0131 year-end close; ERP-0135..0142 (Phase B: AR rules, GR/IR, COGS,
+  payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
+  sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
+  advances/settlements, fixed-asset register + depreciation, project budgets,
+  cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
+  profitability, ratios, management pack, closed-period profit contract).
+
 ### planned (Stage 2)
-- Payroll + gateway postings (Stage 2) - T20, T22. Evidence: none.
-- Final COA list confirmed by finance/owner. A provisional default seed now
-  exists (ERP-0125); the codes `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/
-  `5-1000`/`1-1800`/`1-1400`/`2-1200` stay provisional until that confirmation.
+- Payroll + gateway postings (Stage 2) - T20, T22 (now ERP-0138 / ERP-0139). Evidence: none.
+- Final COA list confirmed by finance/owner. The default seed is the 94-account
+  `X-XXXX` hierarchy (ERP-0127); accounts are remapped through posting rules,
+  not code changes, so the confirmation no longer needs a deploy.
 
 ## M10 Tax
 

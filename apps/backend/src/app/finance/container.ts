@@ -32,6 +32,12 @@ import {
 	EMPLOYEE_BANK_ACCOUNT_REPOSITORY_TOKEN,
 	EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN,
 	EXPORTED_FINANCE_SERVICE_TOKEN,
+	COST_CENTER_REPOSITORY_TOKEN,
+	COST_CENTER_SERVICE_TOKEN,
+	FINANCE_AUDIT_WRITER_TOKEN,
+	MANUAL_JOURNAL_SERVICE_TOKEN,
+	POSTING_RULE_REPOSITORY_TOKEN,
+	POSTING_RULE_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -64,6 +70,14 @@ import { ReportArchiveRepository } from './repositories/report-archive.repositor
 import { ReportArchiveService } from './services/report-archive.service';
 import { BankReconciliationService } from './services/bank-reconciliation.service';
 import { MonthEndCloseService } from './services/month-end-close.service';
+import { CostCenterRepository } from './repositories/cost-center.repository';
+import { PostingRuleRepository } from './repositories/posting-rule.repository';
+import { CostCenterService } from './services/cost-center.service';
+import { PostingRuleService } from './services/posting-rule.service';
+import { ManualJournalService } from './services/manual-journal.service';
+import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
+import type { AuditService } from '@app/audit/services/audit.service';
+import { AuditWriter } from '@shared/audit';
 import {
 	AR_ACCOUNT_RESOLVER_TOKEN,
 	AR_LEDGER_PORT_TOKEN,
@@ -152,6 +166,16 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(REPORT_ARCHIVE_SERVICE_TOKEN, {
 		useClass: ReportArchiveService,
 	});
+
+	// GL foundation (ERP-0127..0130, ADR-0030).
+	container.register(FINANCE_AUDIT_WRITER_TOKEN, {
+		useFactory: (c) => new AuditWriter(c.resolve<AuditService>(AUDIT_SERVICE_TOKEN)),
+	});
+	container.register(COST_CENTER_REPOSITORY_TOKEN, { useClass: CostCenterRepository });
+	container.register(POSTING_RULE_REPOSITORY_TOKEN, { useClass: PostingRuleRepository });
+	container.register(COST_CENTER_SERVICE_TOKEN, { useClass: CostCenterService });
+	container.register(POSTING_RULE_SERVICE_TOKEN, { useClass: PostingRuleService });
+	container.register(MANUAL_JOURNAL_SERVICE_TOKEN, { useClass: ManualJournalService });
 }
 
 export * from './constants/di';

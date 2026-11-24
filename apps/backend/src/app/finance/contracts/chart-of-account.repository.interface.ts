@@ -61,4 +61,6 @@ export interface IChartOfAccountRepository {
 	): Promise<TChartOfAccountSelect | null>;
 	/** True when at least one live journal line references the account. */
 	accountHasJournalLines(organizationId: string, accountId: string): Promise<boolean>;
+	/** Debit minus credit over the ledger (posted + reversed entries). */
+	accountNetBalance(organizationId: string, accountId: string): Promise<number>;
 }

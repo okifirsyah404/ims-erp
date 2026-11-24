@@ -1,0 +1,1551 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "b3a4f1d4-1fcc-4307-b37a-a002f4f9b535",
+  "prevIds": [
+    "baf2d491-b272-44c0-afe7-bd11d043e1aa"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "cost_centers"
+      ],
+      "writes": [
+        "s|tbl|finance.cost_centers",
+        "n|tbl|finance.cost_centers",
+        "e|tbl|finance.cost_centers",
+        "n|rel|finance.cost_centers",
+        "n|type|finance.cost_centers",
+        "n|rel|finance.cost_centers_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "posting_rules"
+      ],
+      "writes": [
+        "s|tbl|finance.posting_rules",
+        "n|tbl|finance.posting_rules",
+        "e|tbl|finance.posting_rules",
+        "n|rel|finance.posting_rules",
+        "n|type|finance.posting_rules",
+        "n|rel|finance.posting_rules_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "journal_entries",
+        "event_type"
+      ],
+      "writes": [
+        "s|col|finance.journal_entries.event_type",
+        "n|col|finance.journal_entries.event_type",
+        "e|col|finance.journal_entries.event_type"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "journal_entries",
+        "is_adjusting"
+      ],
+      "writes": [
+        "s|col|finance.journal_entries.is_adjusting",
+        "n|col|finance.journal_entries.is_adjusting",
+        "e|col|finance.journal_entries.is_adjusting"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "journal_entries",
+        "reverses_entry_id"
+      ],
+      "writes": [
+        "s|col|finance.journal_entries.reverses_entry_id",
+        "n|col|finance.journal_entries.reverses_entry_id",
+        "e|col|finance.journal_entries.reverses_entry_id"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "journal_lines",
+        "product_id"
+      ],
+      "writes": [
+        "s|col|finance.journal_lines.product_id",
+        "n|col|finance.journal_lines.product_id",
+        "e|col|finance.journal_lines.product_id"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_lines",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "journal_entries",
+        "code"
+      ],
+      "writes": [
+        "s|colprop|finance.journal_entries.code.notNull"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.journal_entries.code"
+      ],
+      "sqlHash": "455bf7b646af1115"
+    },
+    {
+      "statementType": "recreate_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "journal_lines",
+        "journal_lines_line_no_uq"
+      ],
+      "writes": [
+        "s|idx|finance.journal_lines_line_no_uq",
+        "n|idx|finance.journal_lines_line_no_uq",
+        "e|idx|finance.journal_lines_line_no_uq",
+        "n|rel|finance.journal_lines_line_no_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_lines",
+        "n|sch|finance",
+        "n|col|finance.journal_lines.journal_entry_id",
+        "n|col|finance.journal_lines.line_no"
+      ],
+      "sharedWrites": [
+        "e|uniqueness|finance.journal_lines.journal_entry_id.line_no"
+      ],
+      "sqlHash": "23d259afa2128b83"
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "cost_centers",
+        "cost_centers_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|finance.cost_centers_org_code_uq",
+        "n|idx|finance.cost_centers_org_code_uq",
+        "e|idx|finance.cost_centers_org_code_uq",
+        "n|rel|finance.cost_centers_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.cost_centers",
+        "n|sch|finance",
+        "n|col|finance.cost_centers.organization_id",
+        "n|col|finance.cost_centers.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "cost_centers",
+        "cost_centers_parent_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.cost_centers_parent_id_idx",
+        "n|idx|finance.cost_centers_parent_id_idx",
+        "e|idx|finance.cost_centers_parent_id_idx",
+        "n|rel|finance.cost_centers_parent_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.cost_centers",
+        "n|sch|finance",
+        "n|col|finance.cost_centers.parent_cost_center_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "journal_entries",
+        "journal_entries_reverses_entry_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.journal_entries_reverses_entry_id_idx",
+        "n|idx|finance.journal_entries_reverses_entry_id_idx",
+        "e|idx|finance.journal_entries_reverses_entry_id_idx",
+        "n|rel|finance.journal_entries_reverses_entry_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.journal_entries.reverses_entry_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "journal_lines",
+        "journal_lines_cost_center_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.journal_lines_cost_center_id_idx",
+        "n|idx|finance.journal_lines_cost_center_id_idx",
+        "e|idx|finance.journal_lines_cost_center_id_idx",
+        "n|rel|finance.journal_lines_cost_center_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_lines",
+        "n|sch|finance",
+        "n|col|finance.journal_lines.cost_center_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "journal_lines",
+        "journal_lines_project_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.journal_lines_project_id_idx",
+        "n|idx|finance.journal_lines_project_id_idx",
+        "e|idx|finance.journal_lines_project_id_idx",
+        "n|rel|finance.journal_lines_project_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_lines",
+        "n|sch|finance",
+        "n|col|finance.journal_lines.project_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "posting_rules",
+        "posting_rules_scope_uq"
+      ],
+      "writes": [
+        "s|idx|finance.posting_rules_scope_uq",
+        "n|idx|finance.posting_rules_scope_uq",
+        "e|idx|finance.posting_rules_scope_uq",
+        "n|rel|finance.posting_rules_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.posting_rules",
+        "n|sch|finance",
+        "n|col|finance.posting_rules.organization_id",
+        "n|col|finance.posting_rules.event_type",
+        "n|col|finance.posting_rules.role",
+        "n|col|finance.posting_rules.discriminator_type",
+        "n|col|finance.posting_rules.discriminator_value"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "posting_rules",
+        "posting_rules_account_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.posting_rules_account_id_idx",
+        "n|idx|finance.posting_rules_account_id_idx",
+        "e|idx|finance.posting_rules_account_id_idx",
+        "n|rel|finance.posting_rules_account_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.posting_rules",
+        "n|sch|finance",
+        "n|col|finance.posting_rules.account_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "cost_centers"
+      ],
+      "writes": [
+        "s|fk|finance.cost_centers.cost_centers_parent_cost_center_id_cost_centers_id_fkey",
+        "n|fk|finance.cost_centers.cost_centers_parent_cost_center_id_cost_centers_id_fkey",
+        "e|fk|finance.cost_centers.cost_centers_parent_cost_center_id_cost_centers_id_fkey",
+        "n|con|finance.cost_centers.cost_centers_parent_cost_center_id_cost_centers_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.cost_centers",
+        "n|sch|finance",
+        "n|tbl|finance.cost_centers",
+        "n|sch|finance",
+        "n|col|finance.cost_centers.parent_cost_center_id",
+        "n|col|finance.cost_centers.id",
+        "e|uniqueness|finance.cost_centers.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "journal_entries"
+      ],
+      "writes": [
+        "s|fk|finance.journal_entries.journal_entries_reverses_entry_id_journal_entries_id_fkey",
+        "n|fk|finance.journal_entries.journal_entries_reverses_entry_id_journal_entries_id_fkey",
+        "e|fk|finance.journal_entries.journal_entries_reverses_entry_id_journal_entries_id_fkey",
+        "n|con|finance.journal_entries.journal_entries_reverses_entry_id_journal_entries_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.journal_entries.reverses_entry_id",
+        "n|col|finance.journal_entries.id",
+        "e|uniqueness|finance.journal_entries.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "journal_lines"
+      ],
+      "writes": [
+        "s|fk|finance.journal_lines.journal_lines_cost_center_id_cost_centers_id_fkey",
+        "n|fk|finance.journal_lines.journal_lines_cost_center_id_cost_centers_id_fkey",
+        "e|fk|finance.journal_lines.journal_lines_cost_center_id_cost_centers_id_fkey",
+        "n|con|finance.journal_lines.journal_lines_cost_center_id_cost_centers_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_lines",
+        "n|sch|finance",
+        "n|tbl|finance.cost_centers",
+        "n|sch|finance",
+        "n|col|finance.journal_lines.cost_center_id",
+        "n|col|finance.cost_centers.id",
+        "e|uniqueness|finance.cost_centers.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "posting_rules"
+      ],
+      "writes": [
+        "s|fk|finance.posting_rules.posting_rules_account_id_chart_of_accounts_id_fkey",
+        "n|fk|finance.posting_rules.posting_rules_account_id_chart_of_accounts_id_fkey",
+        "e|fk|finance.posting_rules.posting_rules_account_id_chart_of_accounts_id_fkey",
+        "n|con|finance.posting_rules.posting_rules_account_id_chart_of_accounts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.posting_rules",
+        "n|sch|finance",
+        "n|tbl|finance.chart_of_accounts",
+        "n|sch|finance",
+        "n|col|finance.posting_rules.account_id",
+        "n|col|finance.chart_of_accounts.id",
+        "e|uniqueness|finance.chart_of_accounts.id"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "account_balances"
+      ],
+      "writes": [
+        "s|ck|finance.account_balances.account_balances_currency_idr_check",
+        "n|ck|finance.account_balances.account_balances_currency_idr_check",
+        "e|ck|finance.account_balances.account_balances_currency_idr_check",
+        "n|con|finance.account_balances.account_balances_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.account_balances",
+        "n|sch|finance",
+        "n|col|finance.account_balances.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "ap_open_items"
+      ],
+      "writes": [
+        "s|ck|finance.ap_open_items.ap_open_items_currency_idr_check",
+        "n|ck|finance.ap_open_items.ap_open_items_currency_idr_check",
+        "e|ck|finance.ap_open_items.ap_open_items_currency_idr_check",
+        "n|con|finance.ap_open_items.ap_open_items_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.ap_open_items",
+        "n|sch|finance",
+        "n|col|finance.ap_open_items.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "ar_open_items"
+      ],
+      "writes": [
+        "s|ck|finance.ar_open_items.ar_open_items_currency_idr_check",
+        "n|ck|finance.ar_open_items.ar_open_items_currency_idr_check",
+        "e|ck|finance.ar_open_items.ar_open_items_currency_idr_check",
+        "n|con|finance.ar_open_items.ar_open_items_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance",
+        "n|col|finance.ar_open_items.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "asset_depreciations"
+      ],
+      "writes": [
+        "s|ck|finance.asset_depreciations.asset_depreciations_currency_idr_check",
+        "n|ck|finance.asset_depreciations.asset_depreciations_currency_idr_check",
+        "e|ck|finance.asset_depreciations.asset_depreciations_currency_idr_check",
+        "n|con|finance.asset_depreciations.asset_depreciations_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.asset_depreciations",
+        "n|sch|finance",
+        "n|col|finance.asset_depreciations.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "cash_bank_accounts"
+      ],
+      "writes": [
+        "s|ck|finance.cash_bank_accounts.cash_bank_accounts_currency_idr_check",
+        "n|ck|finance.cash_bank_accounts.cash_bank_accounts_currency_idr_check",
+        "e|ck|finance.cash_bank_accounts.cash_bank_accounts_currency_idr_check",
+        "n|con|finance.cash_bank_accounts.cash_bank_accounts_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.cash_bank_accounts",
+        "n|sch|finance",
+        "n|col|finance.cash_bank_accounts.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "cash_bank_transactions"
+      ],
+      "writes": [
+        "s|ck|finance.cash_bank_transactions.cash_bank_transactions_currency_idr_check",
+        "n|ck|finance.cash_bank_transactions.cash_bank_transactions_currency_idr_check",
+        "e|ck|finance.cash_bank_transactions.cash_bank_transactions_currency_idr_check",
+        "n|con|finance.cash_bank_transactions.cash_bank_transactions_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.cash_bank_transactions",
+        "n|sch|finance",
+        "n|col|finance.cash_bank_transactions.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_claim_items"
+      ],
+      "writes": [
+        "s|ck|finance.expense_claim_items.expense_claim_items_currency_idr_check",
+        "n|ck|finance.expense_claim_items.expense_claim_items_currency_idr_check",
+        "e|ck|finance.expense_claim_items.expense_claim_items_currency_idr_check",
+        "n|con|finance.expense_claim_items.expense_claim_items_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_claim_items",
+        "n|sch|finance",
+        "n|col|finance.expense_claim_items.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_claims"
+      ],
+      "writes": [
+        "s|ck|finance.expense_claims.expense_claims_currency_idr_check",
+        "n|ck|finance.expense_claims.expense_claims_currency_idr_check",
+        "e|ck|finance.expense_claims.expense_claims_currency_idr_check",
+        "n|con|finance.expense_claims.expense_claims_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_claims",
+        "n|sch|finance",
+        "n|col|finance.expense_claims.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "journal_entries"
+      ],
+      "writes": [
+        "s|ck|finance.journal_entries.journal_entries_currency_idr_check",
+        "n|ck|finance.journal_entries.journal_entries_currency_idr_check",
+        "e|ck|finance.journal_entries.journal_entries_currency_idr_check",
+        "n|con|finance.journal_entries.journal_entries_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.journal_entries.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "journal_entries"
+      ],
+      "writes": [
+        "s|ck|finance.journal_entries.journal_entries_code_posted_check",
+        "n|ck|finance.journal_entries.journal_entries_code_posted_check",
+        "e|ck|finance.journal_entries.journal_entries_code_posted_check",
+        "n|con|finance.journal_entries.journal_entries_code_posted_check"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.journal_entries.code",
+        "n|col|finance.journal_entries.status"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "journal_lines"
+      ],
+      "writes": [
+        "s|ck|finance.journal_lines.journal_lines_currency_idr_check",
+        "n|ck|finance.journal_lines.journal_lines_currency_idr_check",
+        "e|ck|finance.journal_lines.journal_lines_currency_idr_check",
+        "n|con|finance.journal_lines.journal_lines_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_lines",
+        "n|sch|finance",
+        "n|col|finance.journal_lines.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "opening_balances"
+      ],
+      "writes": [
+        "s|ck|finance.opening_balances.opening_balances_currency_idr_check",
+        "n|ck|finance.opening_balances.opening_balances_currency_idr_check",
+        "e|ck|finance.opening_balances.opening_balances_currency_idr_check",
+        "n|con|finance.opening_balances.opening_balances_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.opening_balances",
+        "n|sch|finance",
+        "n|col|finance.opening_balances.currency_code"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "supplier_bills"
+      ],
+      "writes": [
+        "s|ck|finance.supplier_bills.supplier_bills_currency_idr_check",
+        "n|ck|finance.supplier_bills.supplier_bills_currency_idr_check",
+        "e|ck|finance.supplier_bills.supplier_bills_currency_idr_check",
+        "n|con|finance.supplier_bills.supplier_bills_currency_idr_check"
+      ],
+      "reads": [
+        "n|tbl|finance.supplier_bills",
+        "n|sch|finance",
+        "n|col|finance.supplier_bills.currency_code"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "cost_centers",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "posting_rules",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "parent_cost_center_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "event_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "is_adjusting",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "reverses_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_lines",
+        "name": "product_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "event_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'*'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "role",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "discriminator_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "''",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "discriminator_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "''",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "account_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "cost_centers_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "cost_centers_parent_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "parent_cost_center_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "journal_entries_reverses_entry_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "reverses_entry_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_lines",
+        "name": "journal_lines_cost_center_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "cost_center_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_lines",
+        "name": "journal_lines_project_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "posting_rules_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "event_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "role",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "discriminator_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "discriminator_value",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "posting_rules_account_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "account_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "cost_centers_parent_cost_center_id_cost_centers_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "parent_cost_center_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "cost_centers",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "journal_entries_reverses_entry_id_journal_entries_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "reverses_entry_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "journal_entries",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_lines",
+        "name": "journal_lines_cost_center_id_cost_centers_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "cost_center_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "cost_centers",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "posting_rules_account_id_chart_of_accounts_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "account_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "chart_of_accounts",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cost_centers",
+        "name": "cost_centers_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "posting_rules_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "account_balances",
+        "name": "account_balances_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ap_open_items",
+        "name": "ap_open_items_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "ar_open_items_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "asset_depreciations",
+        "name": "asset_depreciations_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_bank_accounts",
+        "name": "cash_bank_accounts_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_bank_transactions",
+        "name": "cash_bank_transactions_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_claim_items",
+        "name": "expense_claim_items_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_claims",
+        "name": "expense_claims_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "journal_entries_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_entries",
+        "name": "journal_entries_code_posted_check",
+        "value": "code IS NOT NULL OR status IN ('draft', 'submitted', 'approved', 'void')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "journal_lines",
+        "name": "journal_lines_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_balances",
+        "name": "opening_balances_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "posting_rules_discriminator_type_check",
+        "value": "discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "posting_rules",
+        "name": "posting_rules_discriminator_pair_check",
+        "value": "(discriminator_type = '') = (discriminator_value = '')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "supplier_bills",
+        "name": "supplier_bills_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"finance\",\"journal_entries\",\"code\"]",
+      "set": {
+        "notNull": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "indexes\u0000[\"finance\",\"journal_lines_line_no_uq\"]",
+      "set": {
+        "where": "deleted_at IS NULL"
+      }
+    }
+  ]
+}

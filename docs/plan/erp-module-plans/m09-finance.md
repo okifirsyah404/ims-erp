@@ -66,6 +66,8 @@ _Interpretation, needs owner confirmation:_
   bank.
 
 ## Explicit limits (out of scope)
+> **ADR-0030 (2026-11-25, proposed):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table). Until the owner records the scope change, the limits here remain the contract baseline.
+
 
 - No multi-entity consolidation.
 - Journal entries are not automated for every activity. Only the defined

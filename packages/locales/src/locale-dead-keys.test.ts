@@ -58,6 +58,11 @@ const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n'
  */
 const DYNAMIC_PREFIXES = [
 	'common:status.',
+	// Journal status and posting-rule vocabularies come from server values (ERP-0128/0129).
+	'finance:journal.status.',
+	'finance:postingRules.role.',
+	'finance:postingRules.event.',
+	'finance:postingRules.discriminator.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',

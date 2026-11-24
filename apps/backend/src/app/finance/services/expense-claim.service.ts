@@ -131,7 +131,7 @@ export class ExpenseClaimService {
 			...claim,
 			items,
 			journalEntry: entry
-				? { id: entry.id, code: entry.code, entryDate: entry.entryDate }
+				? { id: entry.id, code: entry.code ?? '', entryDate: entry.entryDate }
 				: null,
 		};
 	}

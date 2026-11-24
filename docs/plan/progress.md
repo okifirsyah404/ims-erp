@@ -12,6 +12,125 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0126..ERP-0134: ERP-grade finance design (ADR-0030) + Phase A GL foundation
+
+**Scope.** User request: make finance an ERP-grade accounting module (CoA, GL
+as single source of truth, journals, AR/AP, cash & bank, period close, budget,
+expense, tax, cost accounting, fixed assets, bank reconciliation, statements,
+forecast, profitability, ratios, management reports), every operational module
+posting through one standard mechanism. Delivered: the full A-D design
+(ADR-0030 + `docs/architecture/modules/finance.md`), backlog ERP-0126..0153,
+and Phase A (GL foundation). Phases B-D are `planned`.
+
+**Design gate.** Grill-me session 2026-11-25, rounds 1-4 (Q1-Q59), answers
+recorded in `finance.md` and ADR-0030; checked against
+`docs/plan/erp-plan-id.md` v5.1 and `docs/plan/erp-module-plans/m05,m06,m08,
+m09,m10,m11` - the lifted v5.1 limits are listed in ADR-0030 and flagged in
+each module plan; the owner must record the scope change before B-D leave
+`planned`. `docs/database/` read: `docs.dbml` (finance, tax, payment, sale,
+procurement, inventory, human_resource, project modules),
+`module-ownership.md`, `integrity-and-consistency.md`, `data-dictionary.md`,
+`logical-references.md` (new `journal_lines.product_id` reference);
+`implementation-phases.md` skipped (history only). Key answers: posting is a
+synchronous call in the caller's transaction (existing D9) with source modules
+naming roles, not accounts; IDR only; SAK EP accrual; moving average;
+maker-checker on manual journals; `closed` = soft close (finance adjusting
+entries only), `locked` = hard close; GR/IR (Phase B); PPh 21 TER + BPJS behind
+toggles (Phase B); Coretax XML export, no DJP API (Phase B); POS replaced by
+the sales flow; M11 out of scope.
+
+**Gate failure found and fixed (step 0).** `bun run drizzle:migrate` on an
+empty local database failed: `snapshot.json is not of the latest version,
+please run "drizzle-kit up"` (cause: the merged dependabot bump drizzle-kit
+rc.5 -> rc.6). `bunx --bun drizzle-kit up` rewrote the 21 `snapshot.json`
+files (`"version": "9"` -> `"10"`, `concurrently` key dropped); no
+`migration.sql` changed. Then migrate succeeded and `drizzle:seed` ran twice
+with identical row counts (176 tables, 92 333 rows) - this also closes the
+2026-11-25 "verify the COA seed" task (the old duplicate-folder note was stale:
+the 2026-11-24 re-squash removed it).
+
+**Phase A changes.**
+- Schema (`docs.dbml` first, then Drizzle): new `finance.cost_centers`,
+  `finance.posting_rules`; `journal_entries.code` nullable for drafts
+  (`code IS NOT NULL OR status IN (draft, submitted, approved, void)`),
+  `event_type`, `is_adjusting`, `reverses_entry_id`; `journal_lines.cost_center_id`
+  is now an FK to `cost_centers`, new `product_id` (logical reference),
+  `line_no` unique only among live lines; `currency_code = 'IDR'` check on
+  every finance money table. Migration
+  `20261124201506_erp0127_finance_gl_foundation` (inspected: 2 CREATE TABLE,
+  4 ADD COLUMN, 1 DROP NOT NULL, index/FK/check additions only).
+- Backend `finance`: `PostingRuleService` + `pickPostingRule` (event+disc >
+  event > `*`+disc > `*`), `PostingService.postBusinessEvent`,
+  `ArAccountResolverService` now delegates to rules (call sites unchanged;
+  `constants/ar-posting.ts` deleted), `ManualJournalService` (draft, update,
+  submit, approve = post with maker-checker, reject with reason, void,
+  reverse with reason), reversal dating (next open period when the original
+  is closed), period rules (soft close / hard lock + lock gate), CoA locking
+  (postable flag frozen once posted; deactivate only at zero balance, no active
+  rule, not system), `CostCenterService`, trial balance + general ledger in
+  `ReportService`, audit writes for every transition (`FINANCE_AUDIT_WRITER_TOKEN`).
+  New routes: `/finance/cost-centers*`, `/finance/posting-rules*`,
+  `/finance/ledger/journal/:id/{submit,approve,reject,void}`, `PATCH
+  /finance/ledger/journal/:id`, `/finance/reports/{trial-balance,general-ledger}`;
+  `POST /finance/ledger/journal` now creates a draft (`journal:create`).
+- **Bug fixed:** every ledger query summed `status = 'posted'` only, so after a
+  reversal the original (now `reversed`) dropped out and the mirror stayed:
+  reports showed the negated amount instead of zero. Ledger queries now sum
+  `posted` and `reversed` (`LEDGER_JOURNAL_STATUSES`).
+- Permissions (`packages/common`): `posting_rule: read, update`,
+  `cost_center: read, create, update, archive` (accountant full, finance and
+  auditor read, owner blanket). `docs/role-permission.md` regenerated.
+- Seed: 94-account `X-XXXX` CoA (SAK EP layout, headers + leaves), 25 `*`
+  posting rules, 3 cost centres; cash/bank links moved to `1-1110/1-1120/1-1130`.
+  Existing local databases built from the old 22-account seed keep their rows
+  (the seeder never overwrites); rebuild them with `drizzle:migrate-reset`.
+- Web-admin: journal page reworked (draft form with adjusting flag and cost
+  centre per line, status filter, submit/approve/reject/void/reverse with a
+  reason dialog), new `/finance/posting-rules` and `/finance/cost-centers`,
+  trial balance + general ledger tabs on `/finance/reports`, nav items, en/id
+  locales (finance, nav, api). `routeTree.gen.ts` regenerated by `vite build`.
+
+**Commands and outcomes (worktree, local scratch database `ims_finance_scratch`,
+dropped and recreated for this work).**
+
+```text
+bunx --bun drizzle-kit up                      # 21 snapshots upgraded, "Everything's fine"
+bun run drizzle:migrate                        # migrations applied successfully
+bun run drizzle:seed (x2)                      # identical row counts (176 tables)
+bun run drizzle:generate --name erp0127_finance_gl_foundation   # SQL inspected
+bun run drizzle:migrate                        # applied
+bun docs/database/gen-logical-references.ts    # 192 refs across 25 targets, 157 intra-module
+bun docs/database/validate-dbml.ts             # OK: 198 tables, 0 cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity drift
+bun run drizzle:migrate-reset; bun run drizzle:seed   # COA 94 / rules 25 / cost centres 3, then 0/0/0; row counts identical (178 tables)
+bun run <temporary gl-smoke script>            # 15/15 PASS against Postgres (rule resolution, reversal nets to zero in TB and P&L,
+                                               # maker-checker, soft close refuses system posting, adjusting entry posts,
+                                               # lock gate, reversal lands 2026-11-01, TB ties, GL running balance, audit rows)
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+cd packages/common && bun run build            # dist refreshed for the new permissions
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run lint                                   # 0 errors (warnings pre-existing)
+bun run test                                   # 7/7 tasks: backend 1472, web-admin 209, locales 106, web-customer-portal 68, web-landing 25, react-email 6
+bun docs/gen-role-permission.ts                # 693 routes written
+```
+
+New tests: `apps/backend/test/finance/gl-foundation.test.ts` (19). Updated:
+four flow test files use `test/finance/posting-rules.fixture.ts` (fixtures
+map roles to the codes they already seed), `dashboard-aggregates.test.ts`
+stubs the new manual-journal token.
+
+**docs/database/** updated: `docs.dbml`, `logical-references.md`
+(regenerated), `module-ownership.md` (finance 29 tables / 24 refs, totals
+198 / 157). AGENTS.md and `docs/architecture/README.md` table counts follow.
+
+**Not verified.** No browser walk-through of the new and changed pages. The
+DB smoke ran against services wired from the real container, not over HTTP.
+
+Next executable task: walk `/finance/journal` (draft -> submit -> approve as a
+second user -> reverse), `/finance/posting-rules`, `/finance/cost-centers` and
+the trial-balance / general-ledger tabs in the browser on a freshly reset local
+database; then get the owner's decision on ADR-0030 before starting Phase B
+(ERP-0131 year-end close is inside the v5.1 baseline and can go first).
+
 ## 2026-11-25 - ERP-0123..ERP-0125: COA page CRUD, cash/bank invoice details + GL link, default COA seed
 
 **Scope.** `/finance/accounts` was the weakest list page in the app (bare

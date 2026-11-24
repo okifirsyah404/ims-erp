@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { generalLedgerQuerySchema, trialBalanceQuerySchema } from '../contracts/ledger.contract';
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
@@ -332,6 +333,30 @@ export class FinanceOperationsController {
 				},
 			)
 			/* ---------------- financial reports (F6) ---------------- */
+			.get(
+				'/reports/trial-balance',
+				async ({ query, erp }) => {
+					const { startDate, endDate } = trialBalanceQuerySchema.parse(query);
+					return ok(await reports.trialBalance({ organizationId: erp.organizationId }, startDate, endDate));
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: { description: 'Trial balance: opening, period movement and closing per account (ERP-0133)' },
+				},
+			)
+			.get(
+				'/reports/general-ledger',
+				async ({ query, erp }) => {
+					const { accountId, startDate, endDate } = generalLedgerQuerySchema.parse(query);
+					return ok(
+						await reports.generalLedger({ organizationId: erp.organizationId }, accountId, startDate, endDate),
+					);
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: { description: 'General ledger of one account with a running balance (ERP-0133)' },
+				},
+			)
 			.get(
 				'/reports/profit-and-loss',
 				async ({ query, erp }) => {

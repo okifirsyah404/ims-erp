@@ -547,6 +547,17 @@ const api = {
 	// Invoices & AR (F4)
 	'accounting.arAccountNotConfigured':
 		'No active general-ledger account is configured for this posting role; set up the chart of accounts first',
+	'accounting.postingRuleNotFound': 'No active posting rule maps this role for the business event; configure it under Finance > Posting rules',
+	'accounting.postingRuleMissing': 'Posting rule not found',
+	'accounting.postingRuleScopeTaken': 'A posting rule for this event, role and discriminator already exists',
+	'accounting.costCenterNotFound': 'Cost centre not found',
+	'accounting.costCenterInactive': 'Cost centre is inactive',
+	'accounting.costCenterCodeTaken': 'Cost centre code already exists',
+	'accounting.journalSelfApproval': 'The preparer of a journal entry cannot approve it',
+	'accounting.accountLocked': 'The account already has postings: its type, normal balance and postable flag cannot change',
+	'accounting.accountBalanceNotZero': 'Only an account with a zero balance can be deactivated',
+	'accounting.periodLockBlocked': 'The period still has unposted journal entries; post or void them before locking',
+	'accounting.noOpenPeriodForReversal': 'No open accounting period exists to carry the reversal',
 	'accounting.openItemNotFound': 'The open-item sub-ledger row for this document is missing',
 	'accounting.paymentNotFound': 'Payment not found',
 	'accounting.paymentInvalidTransition':

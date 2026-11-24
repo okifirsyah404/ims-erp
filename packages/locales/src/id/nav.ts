@@ -146,6 +146,8 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.salesReturnNew': 'Retur pelanggan',
 	'breadcrumb.whatsappFaq': 'FAQ asisten',
 	'breadcrumb.whatsappChat': 'Percakapan',
+	'item.postingRules': 'Aturan Posting',
+	'item.costCenters': 'Pusat Biaya',
 };
 
 export default nav_;

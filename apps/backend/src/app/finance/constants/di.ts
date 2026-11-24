@@ -9,6 +9,12 @@
  * injects the repositories it actually queries instead of one god repository.
  */
 import type { InjectionToken } from 'tsyringe';
+import type { AuditWriter } from '@shared/audit';
+import type { ICostCenterRepository } from '../contracts/cost-center.repository.interface';
+import type { IPostingRuleRepository } from '../contracts/posting-rule.repository.interface';
+import type { CostCenterService } from '../services/cost-center.service';
+import type { PostingRuleService } from '../services/posting-rule.service';
+import type { ManualJournalService } from '../services/manual-journal.service';
 import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
 import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
 import type { ExportedFinanceService } from '../services/exported-finance.service';
@@ -116,3 +122,22 @@ export const EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN: InjectionToken<EmployeeBankAcc
 
 /** Repository-only facade for other modules (ERP-0122: the payslip's payee account). */
 export const EXPORTED_FINANCE_SERVICE_TOKEN: InjectionToken<ExportedFinanceService> = Symbol('EXPORTED_FINANCE_SERVICE');
+
+/* ---------------------- GL foundation (ERP-0127..0130) ---------------------- */
+
+/** Repository of `finance.cost_centers` (ERP-0127). */
+export const COST_CENTER_REPOSITORY_TOKEN: InjectionToken<ICostCenterRepository> = Symbol(
+	'COST_CENTER_REPOSITORY',
+);
+/** Repository of `finance.posting_rules` (ERP-0128). */
+export const POSTING_RULE_REPOSITORY_TOKEN: InjectionToken<IPostingRuleRepository> = Symbol(
+	'POSTING_RULE_REPOSITORY',
+);
+export const COST_CENTER_SERVICE_TOKEN: InjectionToken<CostCenterService> = Symbol('COST_CENTER_SERVICE');
+export const POSTING_RULE_SERVICE_TOKEN: InjectionToken<PostingRuleService> = Symbol('POSTING_RULE_SERVICE');
+/** Manual journal lifecycle with maker-checker (ERP-0129). */
+export const MANUAL_JOURNAL_SERVICE_TOKEN: InjectionToken<ManualJournalService> = Symbol(
+	'MANUAL_JOURNAL_SERVICE',
+);
+/** Finance's audit trail writer (ADR-0030 §7). */
+export const FINANCE_AUDIT_WRITER_TOKEN: InjectionToken<AuditWriter> = Symbol('FINANCE_AUDIT_WRITER');

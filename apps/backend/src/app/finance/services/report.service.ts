@@ -3,6 +3,7 @@ import { JOURNAL_REPOSITORY_TOKEN, CHART_OF_ACCOUNT_REPOSITORY_TOKEN } from '../
 import type { TChartOfAccountSelect } from '@drizzle/schemas/finance.schema';
 import type { IJournalRepository } from '../contracts/journal.repository.interface';
 import type { IChartOfAccountRepository } from '../contracts/chart-of-account.repository.interface';
+import { AccountNotFoundError } from '../errors/ledger.errors';
 
 export type TReportContext = {
 	organizationId: string;
@@ -57,6 +58,59 @@ export type TCashFlowStatement = {
 	netFinancing: number;
 	netChangeInCash: number;
 };
+
+/** One account row of the trial balance (ERP-0133). */
+export type TTrialBalanceRow = {
+	accountId: string;
+	code: string;
+	name: string;
+	accountType: string;
+	normalBalance: string;
+	openingDebit: number;
+	openingCredit: number;
+	periodDebit: number;
+	periodCredit: number;
+	closingDebit: number;
+	closingCredit: number;
+};
+
+export type TTrialBalance = {
+	startDate: string;
+	endDate: string;
+	rows: TTrialBalanceRow[];
+	totals: Omit<TTrialBalanceRow, 'accountId' | 'code' | 'name' | 'accountType' | 'normalBalance'>;
+	/** True when closing debits equal closing credits (the ledger ties). */
+	balanced: boolean;
+};
+
+export type TGeneralLedgerLine = {
+	entryId: string;
+	entryCode: string | null;
+	entryDate: string;
+	sourceModule: string;
+	sourceType: string | null;
+	description: string | null;
+	debit: number;
+	credit: number;
+	/** Running balance on the account's normal side after this line. */
+	balance: number;
+};
+
+export type TGeneralLedger = {
+	account: { id: string; code: string; name: string; normalBalance: string };
+	startDate: string;
+	endDate: string;
+	openingBalance: number;
+	lines: TGeneralLedgerLine[];
+	totalDebit: number;
+	totalCredit: number;
+	closingBalance: number;
+};
+
+/** Splits a net debit-minus-credit amount into a debit or credit column. */
+function splitNet(net: number): { debit: number; credit: number } {
+	return net >= 0 ? { debit: net, credit: 0 } : { debit: 0, credit: -net };
+}
 
 const REPORT_ACCOUNT_TYPES = {
 	/** Account types that sum into P&L (closed into equity at year end). */
@@ -259,6 +313,120 @@ export class ReportService {
 			netInvesting,
 			netFinancing,
 			netChangeInCash: netOperating + netInvesting + netFinancing,
+		};
+	}
+
+	/**
+	 * Trial balance for a date range (ERP-0133): opening (everything before
+	 * `startDate`), period movement and closing per account, each split into
+	 * debit/credit columns. Totals must tie; `balanced` says whether they do.
+	 */
+	async trialBalance(
+		ctx: TReportContext,
+		startDate: string,
+		endDate: string,
+	): Promise<TTrialBalance> {
+		const accounts = await this.accounts.listAccountsMap(ctx.organizationId);
+		const opening = await this.journal.accountTotalsBefore(ctx.organizationId, startDate);
+		const movement = await this.journal.listAccountActivity(ctx.organizationId, startDate, endDate);
+		const openingById = new Map(opening.map((row) => [row.accountId, row]));
+		const movementById = new Map(movement.map((row) => [row.accountId, row]));
+		const ids = new Set([...openingById.keys(), ...movementById.keys()]);
+
+		const rows: TTrialBalanceRow[] = [];
+		for (const id of ids) {
+			const account = accounts.get(id);
+			if (!account) continue;
+			const open = openingById.get(id);
+			const move = movementById.get(id);
+			const openingNet = (open?.debit ?? 0) - (open?.credit ?? 0);
+			const periodDebit = move?.debit ?? 0;
+			const periodCredit = move?.credit ?? 0;
+			const closingNet = openingNet + periodDebit - periodCredit;
+			if (openingNet === 0 && periodDebit === 0 && periodCredit === 0) continue;
+			const openingSplit = splitNet(openingNet);
+			const closingSplit = splitNet(closingNet);
+			rows.push({
+				accountId: account.id,
+				code: account.code,
+				name: account.name,
+				accountType: account.accountType,
+				normalBalance: account.normalBalance,
+				openingDebit: openingSplit.debit,
+				openingCredit: openingSplit.credit,
+				periodDebit,
+				periodCredit,
+				closingDebit: closingSplit.debit,
+				closingCredit: closingSplit.credit,
+			});
+		}
+		rows.sort((a, b) => a.code.localeCompare(b.code));
+		const totals = rows.reduce(
+			(acc, row) => ({
+				openingDebit: acc.openingDebit + row.openingDebit,
+				openingCredit: acc.openingCredit + row.openingCredit,
+				periodDebit: acc.periodDebit + row.periodDebit,
+				periodCredit: acc.periodCredit + row.periodCredit,
+				closingDebit: acc.closingDebit + row.closingDebit,
+				closingCredit: acc.closingCredit + row.closingCredit,
+			}),
+			{ openingDebit: 0, openingCredit: 0, periodDebit: 0, periodCredit: 0, closingDebit: 0, closingCredit: 0 },
+		);
+		return {
+			startDate,
+			endDate,
+			rows,
+			totals,
+			balanced: totals.closingDebit === totals.closingCredit && totals.periodDebit === totals.periodCredit,
+		};
+	}
+
+	/**
+	 * General ledger of one account (ERP-0133): opening balance, every
+	 * ledger line in the range with a running balance on the account's
+	 * normal side, and the closing balance.
+	 */
+	async generalLedger(
+		ctx: TReportContext,
+		accountId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<TGeneralLedger> {
+		const account = await this.accounts.findAccountById(ctx.organizationId, accountId);
+		if (!account) throw new AccountNotFoundError();
+		const opening = await this.journal.accountTotalsBefore(ctx.organizationId, startDate);
+		const openingRow = opening.find((row) => row.accountId === accountId);
+		const openingBalance = this.signedAmount(account, openingRow?.debit ?? 0, openingRow?.credit ?? 0);
+		const ledgerLines = await this.journal.listLedgerLines(ctx.organizationId, accountId, startDate, endDate);
+
+		let balance = openingBalance;
+		let totalDebit = 0;
+		let totalCredit = 0;
+		const lines: TGeneralLedgerLine[] = ledgerLines.map((line) => {
+			balance += this.signedAmount(account, line.debit, line.credit);
+			totalDebit += line.debit;
+			totalCredit += line.credit;
+			return {
+				entryId: line.entryId,
+				entryCode: line.entryCode,
+				entryDate: line.entryDate,
+				sourceModule: line.sourceModule,
+				sourceType: line.sourceType,
+				description: line.lineDescription ?? line.entryDescription,
+				debit: line.debit,
+				credit: line.credit,
+				balance,
+			};
+		});
+		return {
+			account: { id: account.id, code: account.code, name: account.name, normalBalance: account.normalBalance },
+			startDate,
+			endDate,
+			openingBalance,
+			lines,
+			totalDebit,
+			totalCredit,
+			closingBalance: balance,
 		};
 	}
 

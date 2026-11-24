@@ -368,3 +368,105 @@ export class EmployeeNotVisibleError extends AppError {
 		super(404, 'accounting.employeeNotFound', 'Employee not found');
 	}
 }
+
+/* -------------------- GL foundation (ERP-0127..0130) -------------------- */
+
+/** No active posting rule resolves a role for a business event (ERP-0128). */
+export class PostingRuleNotFoundError extends AppError {
+	constructor(eventType: string, role: string) {
+		super(
+			422,
+			'accounting.postingRuleNotFound',
+			`No active posting rule maps role ${role} for event ${eventType}`,
+		);
+	}
+}
+
+export class PostingRuleNotFoundByIdError extends AppError {
+	constructor() {
+		super(404, 'accounting.postingRuleMissing', 'Posting rule not found');
+	}
+}
+
+/** A rule with the same event, role and discriminator already exists. */
+export class PostingRuleScopeTakenError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.postingRuleScopeTaken',
+			'A posting rule for this event, role and discriminator already exists',
+		);
+	}
+}
+
+export class CostCenterNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.costCenterNotFound', 'Cost centre not found');
+	}
+}
+
+export class CostCenterInactiveError extends AppError {
+	constructor() {
+		super(422, 'accounting.costCenterInactive', 'Cost centre is inactive');
+	}
+}
+
+export class CostCenterCodeTakenError extends AppError {
+	constructor() {
+		super(409, 'accounting.costCenterCodeTaken', 'Cost centre code already exists');
+	}
+}
+
+/** Maker-checker: the preparer of a manual journal cannot approve it. */
+export class JournalSelfApprovalError extends AppError {
+	constructor() {
+		super(
+			403,
+			'accounting.journalSelfApproval',
+			'The preparer of a journal entry cannot approve it',
+		);
+	}
+}
+
+/** Type, normal balance and postable flag freeze once an account has postings. */
+export class AccountLockedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.accountLocked',
+			'The account already has postings: its type, normal balance and postable flag cannot change',
+		);
+	}
+}
+
+export class AccountBalanceNotZeroError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.accountBalanceNotZero',
+			'Only an account with a zero balance can be deactivated',
+		);
+	}
+}
+
+/** Locking a period with journals still in draft/submitted. */
+export class PeriodLockBlockedError extends AppError {
+	constructor(pendingJournals: number) {
+		super(
+			409,
+			'accounting.periodLockBlocked',
+			`The period still has ${pendingJournals} unposted journal entries`,
+		);
+	}
+}
+
+/** No open period exists after the original entry to carry its reversal. */
+export class NoOpenPeriodForReversalError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.noOpenPeriodForReversal',
+			'No open accounting period exists to carry the reversal',
+		);
+	}
+}

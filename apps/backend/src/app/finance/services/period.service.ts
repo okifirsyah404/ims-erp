@@ -1,8 +1,10 @@
 import type { TAccountingPeriodSelect } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
-import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNT_BALANCE_REPOSITORY_TOKEN } from '../constants/di';
+import type { AuditWriter } from '@shared/audit';
+import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNT_BALANCE_REPOSITORY_TOKEN, FINANCE_AUDIT_WRITER_TOKEN } from '../constants/di';
 import {
+	PeriodLockBlockedError,
 	PeriodNotFoundError,
 	PeriodTransitionError,
 } from '../errors/ledger.errors';
@@ -16,6 +18,8 @@ import type { IAccountBalanceRepository } from '../contracts/account-balance.rep
 export type TPeriodTransitionContext = {
 	organizationId: string;
 	actorUserId: string;
+	/** Optional reason (reopen); stored in the audit log. */
+	reason?: string | null;
 };
 
 /** Allowed period transitions. `locked → open` is owner-only (guard level). */
@@ -43,6 +47,7 @@ export class PeriodService {
 		@inject(ACCOUNTING_PERIOD_REPOSITORY_TOKEN) private readonly periods: IAccountingPeriodRepository,
 		@inject(JOURNAL_REPOSITORY_TOKEN) private readonly journal: IJournalRepository,
 		@inject(ACCOUNT_BALANCE_REPOSITORY_TOKEN) private readonly balances: IAccountBalanceRepository,
+		@inject(FINANCE_AUDIT_WRITER_TOKEN) private readonly audit?: AuditWriter,
 	) {}
 
 	/** Fetches one page of the tenant's accounting periods. */
@@ -109,32 +114,48 @@ export class PeriodService {
 		if (!allowed.includes(to)) throw new PeriodTransitionError();
 
 		const now = new Date();
+		let updated: TAccountingPeriodSelect;
 
 		if (to === 'closed') {
 			await this.snapshotBalances(organizationId, period);
-			return (
+			updated =
 				(await this.periods.updatePeriodStatus(organizationId, period.id, {
 					status: 'closed',
 					closedBy: ctx.actorUserId,
 					closedAt: now,
-				})) ?? period
-			);
-		}
-		if (to === 'locked') {
-			return (
+				})) ?? period;
+		} else if (to === 'locked') {
+			// Hard-close gate (ERP-0130): manual journals still in draft,
+			// submitted or approved must be posted or voided first.
+			const pending = await this.journal.countUnpostedInPeriod(organizationId, period.id);
+			if (pending > 0) throw new PeriodLockBlockedError(pending);
+			updated =
 				(await this.periods.updatePeriodStatus(organizationId, period.id, {
 					status: 'locked',
-				})) ?? period
-			);
+				})) ?? period;
+		} else {
+			updated =
+				(await this.periods.updatePeriodStatus(organizationId, period.id, {
+					status: 'open',
+					reopenedBy: ctx.actorUserId,
+					reopenedAt: now,
+				})) ?? period;
 		}
-		// reopen
-		return (
-			(await this.periods.updatePeriodStatus(organizationId, period.id, {
-				status: 'open',
-				reopenedBy: ctx.actorUserId,
-				reopenedAt: now,
-			})) ?? period
-		);
+
+		await this.audit?.record({
+			actor: { userId: ctx.actorUserId },
+			action:
+				to === 'closed'
+					? 'accounting_period.closed'
+					: to === 'locked'
+						? 'accounting_period.locked'
+						: 'accounting_period.reopened',
+			targetType: 'accounting_period',
+			targetId: period.id,
+			organizationId,
+			meta: { code: period.code, from: period.status, to, reason: ctx.reason ?? null },
+		});
+		return updated;
 	}
 
 	/**

@@ -548,6 +548,17 @@ const api: Record<keyof typeof en, string> = {
 	// Faktur & Piutang (F4)
 	'accounting.arAccountNotConfigured':
 		'Belum ada akun buku besar aktif untuk peran posting ini; lengkapi bagan akun terlebih dahulu',
+	'accounting.postingRuleNotFound': 'Belum ada aturan posting aktif untuk peran ini pada transaksi tersebut; atur di Keuangan > Aturan posting',
+	'accounting.postingRuleMissing': 'Aturan posting tidak ditemukan',
+	'accounting.postingRuleScopeTaken': 'Aturan posting untuk transaksi, peran, dan pembeda ini sudah ada',
+	'accounting.costCenterNotFound': 'Pusat biaya tidak ditemukan',
+	'accounting.costCenterInactive': 'Pusat biaya tidak aktif',
+	'accounting.costCenterCodeTaken': 'Kode pusat biaya sudah dipakai',
+	'accounting.journalSelfApproval': 'Pembuat jurnal tidak boleh menyetujui jurnalnya sendiri',
+	'accounting.accountLocked': 'Akun sudah memiliki posting: tipe, saldo normal, dan status dapat-diposting tidak bisa diubah',
+	'accounting.accountBalanceNotZero': 'Hanya akun bersaldo nol yang dapat dinonaktifkan',
+	'accounting.periodLockBlocked': 'Periode masih memiliki jurnal yang belum diposting; posting atau batalkan sebelum dikunci',
+	'accounting.noOpenPeriodForReversal': 'Tidak ada periode akuntansi terbuka untuk menampung jurnal pembalik',
 	'accounting.openItemNotFound': 'Baris sub-buku besar untuk dokumen ini tidak ditemukan',
 	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
 	'accounting.paymentInvalidTransition':

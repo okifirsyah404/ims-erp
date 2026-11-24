@@ -118,6 +118,10 @@ export const erpStatements = {
 	chart_of_account: ['read', 'create', 'update', 'archive'],
 	journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
 	accounting_period: ['read', 'close', 'reopen'],
+	/** Account determination for business-event postings (ERP-0128). */
+	posting_rule: ['read', 'update'],
+	/** Cost-centre master data (ERP-0127). */
+	cost_center: ['read', 'create', 'update', 'archive'],
 	tax: ['read', 'create', 'update', 'verify', 'export'],
 	financial_report: ['read', 'export'],
 
@@ -758,6 +762,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		employee: ['read', 'read_private'],
 		payroll: ['read', 'create', 'update', 'export'],
 		financial_report: ['read', 'export'],
+		posting_rule: ['read'],
+		cost_center: ['read'],
 		tax: ['read', 'export'],
 		product: ['read', 'read_cost'],
 		// Supplier payments need the supplier's bank account (decision 2026-11-02).
@@ -778,6 +784,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		chart_of_account: ['read', 'create', 'update', 'archive'],
 		journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
 		accounting_period: ['read', 'close', 'reopen'],
+		posting_rule: ['read', 'update'],
+		cost_center: ['read', 'create', 'update', 'archive'],
 		tax: ['read', 'create', 'update', 'verify', 'export'],
 		financial_report: ['read', 'export'],
 		invoice: ['read', 'export'],
@@ -891,6 +899,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		chart_of_account: ['read'],
 		journal: ['read', 'export'],
 		accounting_period: ['read'],
+		posting_rule: ['read'],
+		cost_center: ['read'],
 		tax: ['read', 'export'],
 		financial_report: ['read', 'export'],
 		service_ticket: ['read'],

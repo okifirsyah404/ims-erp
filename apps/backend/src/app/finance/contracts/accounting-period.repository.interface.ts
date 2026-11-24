@@ -51,4 +51,13 @@ export interface IAccountingPeriodRepository {
 	): Promise<TAccountingPeriodSelect | null>;
 	/** True when the period still has posted journal entries. */
 	periodHasPostedEntries(organizationId: string, periodId: string): Promise<boolean>;
+	/**
+	 * The earliest `open` period whose end date is on or after `date`
+	 * (carries a reversal whose original period is no longer open, ERP-0129).
+	 */
+	findFirstOpenPeriodFrom(
+		organizationId: string,
+		date: string,
+		tx?: TTx,
+	): Promise<TAccountingPeriodSelect | null>;
 }

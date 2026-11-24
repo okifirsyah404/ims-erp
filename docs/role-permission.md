@@ -111,7 +111,7 @@ elsewhere and are not in the table:
 
 | Role | English | Indonesian | Resources granted |
 | --- | --- | --- | --- |
-| `owner` | Owner | Pemilik | 76 |
+| `owner` | Owner | Pemilik | 78 |
 | `admin` | Admin | Admin | 26 |
 | `member` | Member | Anggota | 4 |
 | `operations_manager` | Operations Manager | Manajer Operasional | 21 |
@@ -122,12 +122,12 @@ elsewhere and are not in the table:
 | `freelancer` | Freelancer | Pekerja Lepas | 5 |
 | `purchasing` | Purchasing | Pembelian | 12 |
 | `warehouse` | Warehouse | Gudang | 9 |
-| `finance` | Finance | Keuangan | 26 |
-| `accountant` | Accountant | Akuntan | 18 |
+| `finance` | Finance | Keuangan | 28 |
+| `accountant` | Accountant | Akuntan | 20 |
 | `hr` | Human Resource | Sumber Daya Manusia | 17 |
 | `customer_service` | Customer Service | Layanan Pelanggan | 12 |
 | `marketing` | Marketing | Pemasaran | 12 |
-| `auditor` | Auditor | Auditor | 40 |
+| `auditor` | Auditor | Auditor | 42 |
 
 ## Permissions per organization role
 
@@ -185,6 +185,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `chart_of_account` | read, create, update, archive |
 | `journal` | read, create, update, submit, approve, post, reverse, export |
 | `accounting_period` | read, close, reopen |
+| `posting_rule` | read, update |
+| `cost_center` | read, create, update, archive |
 | `tax` | read, create, update, verify, export |
 | `financial_report` | read, export |
 | `service_ticket` | read, create, update, assign, resolve, close |
@@ -454,6 +456,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `employee` | read, read_private |
 | `payroll` | read, create, update, export |
 | `financial_report` | read, export |
+| `posting_rule` | read |
+| `cost_center` | read |
 | `tax` | read, export |
 | `product` | read, read_cost |
 | `supplier` | read, read_bank |
@@ -477,6 +481,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `chart_of_account` | read, create, update, archive |
 | `journal` | read, create, update, submit, approve, post, reverse, export |
 | `accounting_period` | read, close, reopen |
+| `posting_rule` | read, update |
+| `cost_center` | read, create, update, archive |
 | `tax` | read, create, update, verify, export |
 | `financial_report` | read, export |
 | `invoice` | read, export |
@@ -595,6 +601,8 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `chart_of_account` | read |
 | `journal` | read, export |
 | `accounting_period` | read |
+| `posting_rule` | read |
+| `cost_center` | read |
 | `tax` | read, export |
 | `financial_report` | read, export |
 | `service_ticket` | read |
@@ -623,7 +631,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-677 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+693 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -778,6 +786,11 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/code-numberings` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
 | PUT | `/finance/code-numberings/:codeType` | app admin, or org member + permission | `code_number:update` | app admin; `owner`, `admin` |
 | POST | `/finance/code-numberings/:codeType/preview` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
+| GET | `/finance/cost-centers` | org member + permission | `cost_center:read` | `owner`, `finance`, `accountant`, `auditor` |
+| POST | `/finance/cost-centers` | org member + permission | `cost_center:create` | `owner`, `accountant` |
+| DELETE | `/finance/cost-centers/:id` | org member + permission | `cost_center:archive` | `owner`, `accountant` |
+| GET | `/finance/cost-centers/:id` | org member + permission | `cost_center:read` | `owner`, `finance`, `accountant`, `auditor` |
+| PATCH | `/finance/cost-centers/:id` | org member + permission | `cost_center:update` | `owner`, `accountant` |
 | GET | `/finance/depreciations` | org member + permission | `asset:read` | `owner`, `admin`, `operations_manager`, `project_manager`, `auditor` |
 | POST | `/finance/depreciations` | org member + permission | `asset:update` | `owner`, `operations_manager` |
 | GET | `/finance/employee-bank-accounts` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
@@ -798,9 +811,14 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/ledger/accounts/:id` | org member + permission | `chart_of_account:read` | `owner`, `accountant`, `auditor` |
 | PATCH | `/finance/ledger/accounts/:id` | org member + permission | `chart_of_account:update` | `owner`, `accountant` |
 | GET | `/finance/ledger/journal` | org member + permission | `journal:read` | `owner`, `accountant`, `auditor` |
-| POST | `/finance/ledger/journal` | org member + permission | `journal:post` | `owner`, `accountant` |
+| POST | `/finance/ledger/journal` | org member + permission | `journal:create` | `owner`, `accountant` |
 | GET | `/finance/ledger/journal/:id` | org member + permission | `journal:read` | `owner`, `accountant`, `auditor` |
+| PATCH | `/finance/ledger/journal/:id` | org member + permission | `journal:update` | `owner`, `accountant` |
+| POST | `/finance/ledger/journal/:id/approve` | org member + permission | `journal:approve` | `owner`, `accountant` |
+| POST | `/finance/ledger/journal/:id/reject` | org member + permission | `journal:approve` | `owner`, `accountant` |
 | POST | `/finance/ledger/journal/:id/reverse` | org member + permission | `journal:reverse` | `owner`, `accountant` |
+| POST | `/finance/ledger/journal/:id/submit` | org member + permission | `journal:submit` | `owner`, `accountant` |
+| POST | `/finance/ledger/journal/:id/void` | org member + permission | `journal:update` | `owner`, `accountant` |
 | GET | `/finance/ledger/opening-balances` | org member + permission | `journal:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/ledger/opening-balances` | org member + permission | `journal:create` | `owner`, `accountant` |
 | DELETE | `/finance/ledger/opening-balances/:id` | org member + permission | `journal:update` | `owner`, `accountant` |
@@ -810,6 +828,10 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/periods` | org member + permission | `accounting_period:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/periods` | org member + permission | `accounting_period:create` | no org role |
 | POST | `/finance/periods/:id/transition` | org member + permission | `accounting_period:close` | `owner`, `accountant` |
+| GET | `/finance/posting-rules` | org member + permission | `posting_rule:read` | `owner`, `finance`, `accountant`, `auditor` |
+| POST | `/finance/posting-rules` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
+| DELETE | `/finance/posting-rules/:id` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
+| PATCH | `/finance/posting-rules/:id` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
 | GET | `/finance/reconciliations` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/reconciliations` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | GET | `/finance/reconciliations/:id` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
@@ -823,8 +845,10 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/reports/balance-sheet.csv` | org member + permission | `financial_report:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/cash-flow` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/cash-flow.csv` | org member + permission | `financial_report:export` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/reports/general-ledger` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/profit-and-loss` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/profit-and-loss.csv` | org member + permission | `financial_report:export` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/reports/trial-balance` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/supplier-bills` | org member + permission | `bill:read` | `owner`, `finance`, `accountant` |
 | POST | `/finance/supplier-bills` | org member + permission | `bill:create` | `owner`, `finance`, `accountant` |
 | GET | `/finance/supplier-bills/:id` | org member + permission | `bill:read` | `owner`, `finance`, `accountant` |

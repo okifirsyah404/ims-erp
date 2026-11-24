@@ -3,17 +3,23 @@ import type { TTx } from '@drizzle/types';
 import {
 	journalEntries,
 	journalLines,
+	LEDGER_JOURNAL_STATUSES,
+	UNPOSTED_JOURNAL_STATUSES,
 	type TJournalEntrySelect,
 	type TJournalLineSelect,
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type {
 	IJournalRepository,
 	TAccountActivity,
+	TJournalEntryInsertRow,
+	TJournalEntryPatch,
+	TJournalLineInsertRow,
+	TLedgerLine,
 	TJournalEntryPaginationRequest,
 } from '../contracts/journal.repository.interface';
 
@@ -132,49 +138,25 @@ export class JournalRepository implements IJournalRepository {
 	}
 
 	async insertEntry(
-		row: {
-			organizationId: string;
-			code: string;
-			accountingPeriodId: string;
-			entryDate: string;
-			description: string | null;
-			sourceType: string | null;
-			sourceId: string | null;
-			idempotencyKey: string | null;
-			sourceModule: string;
-			status: string;
-			totalDebit: number;
-			totalCredit: number;
-			currencyCode: string;
-			postedBy: string | null;
-			postedAt: Date | null;
-		},
+		row: TJournalEntryInsertRow,
 		tx?: TTx,
 	): Promise<TJournalEntrySelect> {
 		const db = tx ?? this.database;
 		const now = new Date();
 		const [created] = await db
 			.insert(journalEntries)
-			.values({ ...row, preparedBy: row.postedBy, createdAt: now, updatedAt: now })
+			.values({
+				...row,
+				preparedBy: row.preparedBy ?? row.postedBy,
+				createdAt: now,
+				updatedAt: now,
+			})
 			.returning();
 		return created;
 	}
 
 	async insertLines(
-		rows: Array<{
-			organizationId: string;
-			journalEntryId: string;
-			lineNo: number;
-			accountId: string;
-			debit: number;
-			credit: number;
-			currencyCode: string;
-			description: string | null;
-			costCenterId: string | null;
-			projectId: string | null;
-			partyType: string | null;
-			partyId: string | null;
-		}>,
+		rows: TJournalLineInsertRow[],
 		tx?: TTx,
 	): Promise<TJournalLineSelect[]> {
 		const db = tx ?? this.database;
@@ -258,8 +240,9 @@ export class JournalRepository implements IJournalRepository {
 			.where(
 				and(
 					eq(journalEntries.organizationId, organizationId),
-					eq(journalEntries.status, 'posted'),
+					inArray(journalEntries.status, [...LEDGER_JOURNAL_STATUSES]),
 					isNull(journalEntries.deletedAt),
+					isNull(journalLines.deletedAt),
 					sql`${journalEntries.entryDate} >= ${startDate}`,
 					sql`${journalEntries.entryDate} <= ${endDate}`,
 				),
@@ -283,11 +266,123 @@ export class JournalRepository implements IJournalRepository {
 				and(
 					eq(journalLines.organizationId, organizationId),
 					eq(journalEntries.accountingPeriodId, periodId),
-					eq(journalEntries.status, 'posted'),
+					inArray(journalEntries.status, [...LEDGER_JOURNAL_STATUSES]),
 					isNull(journalLines.deletedAt),
 					isNull(journalEntries.deletedAt),
 				),
 			)
 			.groupBy(journalLines.accountId);
+	}
+
+	async updateEntry(
+		organizationId: string,
+		entryId: string,
+		patch: TJournalEntryPatch,
+		tx?: TTx,
+	): Promise<TJournalEntrySelect | null> {
+		const db = tx ?? this.database;
+		const [updated] = await db
+			.update(journalEntries)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(journalEntries.id, entryId),
+					eq(journalEntries.organizationId, organizationId),
+					isNull(journalEntries.deletedAt),
+				),
+			)
+			.returning();
+		return updated ?? null;
+	}
+
+	async softDeleteLines(organizationId: string, entryId: string, tx?: TTx): Promise<void> {
+		const db = tx ?? this.database;
+		const now = new Date();
+		await db
+			.update(journalLines)
+			.set({ deletedAt: now, updatedAt: now })
+			.where(
+				and(
+					eq(journalLines.journalEntryId, entryId),
+					eq(journalLines.organizationId, organizationId),
+					isNull(journalLines.deletedAt),
+				),
+			);
+	}
+
+	async countUnpostedInPeriod(organizationId: string, periodId: string): Promise<number> {
+		const [row] = await this.database
+			.select({ value: count() })
+			.from(journalEntries)
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalEntries.accountingPeriodId, periodId),
+					inArray(journalEntries.status, [...UNPOSTED_JOURNAL_STATUSES]),
+					isNull(journalEntries.deletedAt),
+				),
+			);
+		return row.value;
+	}
+
+	async accountTotalsBefore(
+		organizationId: string,
+		beforeDate: string,
+	): Promise<TAccountActivity[]> {
+		return this.database
+			.select({
+				accountId: journalLines.accountId,
+				debit: sql<number>`coalesce(sum(${journalLines.debit}), 0)::bigint`.mapWith(Number),
+				credit: sql<number>`coalesce(sum(${journalLines.credit}), 0)::bigint`.mapWith(Number),
+			})
+			.from(journalLines)
+			.innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					inArray(journalEntries.status, [...LEDGER_JOURNAL_STATUSES]),
+					isNull(journalEntries.deletedAt),
+					isNull(journalLines.deletedAt),
+					sql`${journalEntries.entryDate} < ${beforeDate}`,
+				),
+			)
+			.groupBy(journalLines.accountId);
+	}
+
+	async listLedgerLines(
+		organizationId: string,
+		accountId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<TLedgerLine[]> {
+		return this.database
+			.select({
+				lineId: journalLines.id,
+				entryId: journalEntries.id,
+				entryCode: journalEntries.code,
+				entryDate: journalEntries.entryDate,
+				sourceModule: journalEntries.sourceModule,
+				sourceType: journalEntries.sourceType,
+				entryDescription: journalEntries.description,
+				lineDescription: journalLines.description,
+				debit: journalLines.debit,
+				credit: journalLines.credit,
+				costCenterId: journalLines.costCenterId,
+				projectId: journalLines.projectId,
+			})
+			.from(journalLines)
+			.innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+			.where(
+				and(
+					eq(journalEntries.organizationId, organizationId),
+					eq(journalLines.accountId, accountId),
+					inArray(journalEntries.status, [...LEDGER_JOURNAL_STATUSES]),
+					isNull(journalEntries.deletedAt),
+					isNull(journalLines.deletedAt),
+					sql`${journalEntries.entryDate} >= ${startDate}`,
+					sql`${journalEntries.entryDate} <= ${endDate}`,
+				),
+			)
+			.orderBy(asc(journalEntries.entryDate), asc(journalEntries.postedAt), asc(journalLines.lineNo));
 	}
 }

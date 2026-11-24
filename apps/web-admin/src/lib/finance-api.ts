@@ -203,8 +203,12 @@ export function ensurePeriod(periodYear: number, periodMonth: number) {
 	return sendData<TPeriod>('/finance/periods', 'POST', { periodYear, periodMonth });
 }
 
-export function transitionPeriod(id: string, to: 'closed' | 'locked' | 'open') {
-	return sendData<TPeriod>(`/finance/periods/${id}/transition`, 'POST', { to });
+export function transitionPeriod(
+	id: string,
+	to: 'closed' | 'locked' | 'open',
+	reason?: string | null,
+) {
+	return sendData<TPeriod>(`/finance/periods/${id}/transition`, 'POST', { to, reason: reason ?? null });
 }
 
 /* ----------------------------- journal (F2) ------------------------------- */
@@ -217,12 +221,18 @@ export type TJournalLine = {
 	debit: number;
 	credit: number;
 	description: string | null;
+	costCenterId?: string | null;
 };
+
+/** Manual journal lifecycle (ERP-0129); system journals are `posted` directly. */
+export const JOURNAL_STATUSES = ['draft', 'submitted', 'approved', 'posted', 'reversed', 'void'] as const;
+export type TJournalStatus = (typeof JOURNAL_STATUSES)[number];
 
 export type TJournalEntry = {
 	id: string;
 	organizationId: string | null;
-	code: string;
+	/** Assigned at posting; null for draft/submitted/void manual entries. */
+	code: string | null;
 	accountingPeriodId: string;
 	entryDate: string;
 	/** Posting module: finance | sale | procurement | inventory | payment | tax | human_resource. */
@@ -230,11 +240,16 @@ export type TJournalEntry = {
 	sourceType: string | null;
 	sourceId: string | null;
 	description: string | null;
-	status: string;
+	status: TJournalStatus;
 	totalDebit: number;
 	totalCredit: number;
 	reversedByEntryId: string | null;
+	reversesEntryId: string | null;
 	idempotencyKey: string | null;
+	eventType: string | null;
+	isAdjusting: boolean;
+	preparedBy: string | null;
+	approvedBy: string | null;
 	lines?: TJournalLine[];
 };
 
@@ -265,24 +280,247 @@ export function journalEntryQueryOptions(id: string) {
 	});
 }
 
-export function postJournalEntry(input: {
+export type TJournalDraftInput = {
 	entryDate: string;
 	description?: string | null;
+	isAdjusting: boolean;
 	lines: Array<{
 		accountId: string;
 		debit: number;
 		credit: number;
 		description?: string | null;
+		costCenterId?: string | null;
 	}>;
-}) {
+};
+
+/** Creates a draft manual entry (maker). */
+export function createJournalDraft(input: TJournalDraftInput) {
 	return sendData<TJournalEntry>('/finance/ledger/journal', 'POST', input);
 }
 
-export function reverseJournalEntry(
-	id: string,
-	input?: { entryDate?: string; description?: string | null },
-) {
+export function updateJournalDraft(id: string, input: TJournalDraftInput) {
+	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}`, 'PATCH', input);
+}
+
+export function submitJournalEntry(id: string) {
+	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}/submit`, 'POST');
+}
+
+/** Approves and posts; the server refuses the preparer (maker-checker). */
+export function approveJournalEntry(id: string) {
+	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}/approve`, 'POST');
+}
+
+export function rejectJournalEntry(id: string, reason: string) {
+	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}/reject`, 'POST', { reason });
+}
+
+export function voidJournalEntry(id: string) {
+	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}/void`, 'POST');
+}
+
+/** Reverses a posted entry; the reason is mandatory (ERP-0129). */
+export function reverseJournalEntry(id: string, input: { reason: string; entryDate?: string }) {
 	return sendData<TJournalEntry>(`/finance/ledger/journal/${id}/reverse`, 'POST', input);
+}
+
+/* ----------------------------- cost centres (ERP-0127) ----------------------------- */
+
+export type TCostCenter = {
+	id: string;
+	code: string;
+	name: string;
+	parentCostCenterId: string | null;
+	isActive: boolean;
+	description: string | null;
+};
+
+export function costCentersQueryOptions(params: { page: number; limit: number; search?: string; isActive?: boolean }) {
+	const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
+	if (params.search) search.set('search', params.search);
+	if (params.isActive !== undefined) search.set('isActive', String(params.isActive));
+	return queryOptions({
+		queryKey: ['cost-centers', params],
+		queryFn: () => getDataPaginated<TCostCenter>(`/finance/cost-centers?${search}`),
+	});
+}
+
+export type TCostCenterInput = {
+	code: string;
+	name: string;
+	parentCostCenterId: string | null;
+	description: string | null;
+};
+
+export function createCostCenter(input: TCostCenterInput) {
+	return sendData<TCostCenter>('/finance/cost-centers', 'POST', input);
+}
+
+export function updateCostCenter(id: string, input: Partial<Omit<TCostCenterInput, 'code'>> & { isActive?: boolean }) {
+	return sendData<TCostCenter>(`/finance/cost-centers/${id}`, 'PATCH', input);
+}
+
+export function archiveCostCenter(id: string) {
+	return sendData<TCostCenter>(`/finance/cost-centers/${id}`, 'DELETE');
+}
+
+/* ----------------------------- posting rules (ERP-0128) ----------------------------- */
+
+/** Mirrors `POSTING_ROLES` in the backend (`constants/posting-roles.ts`). */
+export const POSTING_ROLES = [
+	'receivable',
+	'revenue',
+	'vat_output',
+	'payable',
+	'expense',
+	'vat_input',
+	'inventory',
+	'claim_payable',
+	'customer_advance',
+	'deferred_revenue',
+	'sales_return',
+	'cogs',
+	'grir_clearing',
+	'purchase_price_variance',
+	'inventory_variance',
+	'gateway_clearing',
+	'gateway_fee',
+	'salary_expense',
+	'bpjs_expense',
+	'salary_payable',
+	'pph21_payable',
+	'bpjs_payable',
+	'fixed_asset',
+	'accumulated_depreciation',
+	'depreciation_expense',
+	'bad_debt_allowance',
+	'retained_earnings',
+] as const;
+export type TPostingRole = (typeof POSTING_ROLES)[number];
+
+export const POSTING_EVENT_TYPES = [
+	'*',
+	'sale.invoice_issued',
+	'payment.settled',
+	'finance.supplier_bill_recorded',
+	'finance.expense_claim_approved',
+] as const;
+export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
+
+export const POSTING_DISCRIMINATORS = [
+	'',
+	'product_category',
+	'tax',
+	'cash_bank_account',
+	'expense_category',
+	'asset_category',
+	'cost_category',
+] as const;
+export type TPostingDiscriminator = (typeof POSTING_DISCRIMINATORS)[number];
+
+export type TPostingRule = {
+	id: string;
+	eventType: TPostingEventType;
+	role: TPostingRole;
+	discriminatorType: TPostingDiscriminator;
+	discriminatorValue: string;
+	accountId: string;
+	isActive: boolean;
+	description: string | null;
+};
+
+export function postingRulesQueryOptions(params: { includeInactive?: boolean } = {}) {
+	const search = new URLSearchParams();
+	if (params.includeInactive) search.set('includeInactive', 'true');
+	return queryOptions({
+		queryKey: ['posting-rules', params],
+		queryFn: () => getData<TPostingRule[]>(`/finance/posting-rules?${search}`),
+	});
+}
+
+export type TPostingRuleInput = {
+	eventType: TPostingEventType;
+	role: TPostingRole;
+	discriminatorType: TPostingDiscriminator;
+	discriminatorValue: string;
+	accountId: string;
+	description: string | null;
+};
+
+export function createPostingRule(input: TPostingRuleInput) {
+	return sendData<TPostingRule>('/finance/posting-rules', 'POST', input);
+}
+
+export function updatePostingRule(id: string, input: { accountId?: string; isActive?: boolean; description?: string | null }) {
+	return sendData<TPostingRule>(`/finance/posting-rules/${id}`, 'PATCH', input);
+}
+
+export function archivePostingRule(id: string) {
+	return sendData<TPostingRule>(`/finance/posting-rules/${id}`, 'DELETE');
+}
+
+/* ----------------------------- ledger reports (ERP-0133) ----------------------------- */
+
+export type TTrialBalanceRow = {
+	accountId: string;
+	code: string;
+	name: string;
+	accountType: TAccountType;
+	normalBalance: 'debit' | 'credit';
+	openingDebit: number;
+	openingCredit: number;
+	periodDebit: number;
+	periodCredit: number;
+	closingDebit: number;
+	closingCredit: number;
+};
+
+export type TTrialBalance = {
+	startDate: string;
+	endDate: string;
+	rows: TTrialBalanceRow[];
+	totals: Omit<TTrialBalanceRow, 'accountId' | 'code' | 'name' | 'accountType' | 'normalBalance'>;
+	balanced: boolean;
+};
+
+export function trialBalanceQueryOptions(startDate: string, endDate: string) {
+	return queryOptions({
+		queryKey: ['trial-balance', startDate, endDate],
+		queryFn: () => getData<TTrialBalance>(`/finance/reports/trial-balance?startDate=${startDate}&endDate=${endDate}`),
+	});
+}
+
+export type TGeneralLedgerLine = {
+	entryId: string;
+	entryCode: string | null;
+	entryDate: string;
+	sourceModule: string;
+	sourceType: string | null;
+	description: string | null;
+	debit: number;
+	credit: number;
+	balance: number;
+};
+
+export type TGeneralLedger = {
+	account: { id: string; code: string; name: string; normalBalance: 'debit' | 'credit' };
+	startDate: string;
+	endDate: string;
+	openingBalance: number;
+	lines: TGeneralLedgerLine[];
+	totalDebit: number;
+	totalCredit: number;
+	closingBalance: number;
+};
+
+export function generalLedgerQueryOptions(accountId: string, startDate: string, endDate: string) {
+	return queryOptions({
+		queryKey: ['general-ledger', accountId, startDate, endDate],
+		queryFn: () =>
+			getData<TGeneralLedger>(
+				`/finance/reports/general-ledger?accountId=${accountId}&startDate=${startDate}&endDate=${endDate}`,
+			),
+	});
 }
 
 /* ------------------------ opening balances (F3) --------------------------- */

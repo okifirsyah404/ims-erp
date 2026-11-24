@@ -38,12 +38,13 @@ beforeAll(async () => {
 	const { LedgerController } = await import('../../src/app/finance/controllers/ledger.controller');
 	const { erpGuard } = await import('../../src/authorization/elysia-auth');
 
-	// The ledger controller resolves five services at plugin build time; only
+	// The ledger controller resolves six services at plugin build time; only
 	// the cash/bank summary is exercised, so the rest are empty stubs.
 	container.register(finance.ACCOUNT_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.PERIOD_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.POSTING_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.OPENING_BALANCE_SERVICE_TOKEN, { useValue: {} as never });
+	container.register(finance.MANUAL_JOURNAL_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.CASH_BANK_SERVICE_TOKEN, {
 		useValue: {
 			summary: async (organizationId: string, range: { groupBy: string }) => ({

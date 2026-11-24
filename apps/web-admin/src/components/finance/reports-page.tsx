@@ -15,6 +15,7 @@ import {
 } from '@/lib/finance-api';
 import { downloadFile } from '@/lib/download';
 import { usePermission } from '@/lib/use-permission';
+import { GeneralLedgerReport, TrialBalanceReport } from './ledger-reports';
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
@@ -120,7 +121,17 @@ export function ReportsPage() {
 					<TabsTrigger value='pl'>{t('finance:reports.tab.pl')}</TabsTrigger>
 					<TabsTrigger value='bs'>{t('finance:reports.tab.balanceSheet')}</TabsTrigger>
 					<TabsTrigger value='cf'>{t('finance:reports.tab.cashFlow')}</TabsTrigger>
+					<TabsTrigger value='tb'>{t('finance:reports.tab.trialBalance')}</TabsTrigger>
+					<TabsTrigger value='gl'>{t('finance:reports.tab.generalLedger')}</TabsTrigger>
 				</TabsList>
+
+				<TabsContent value='tb' className='space-y-3'>
+					<TrialBalanceReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='gl' className='space-y-3'>
+					<GeneralLedgerReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
 
 				<TabsContent value='pl' className='space-y-3'>
 					{pl ? (

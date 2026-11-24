@@ -206,6 +206,16 @@ export const navSections: {
 						permission: 'journal.read',
 					},
 					{
+						titleKey: 'item.postingRules',
+						url: '/finance/posting-rules',
+						permission: 'posting_rule.read',
+					},
+					{
+						titleKey: 'item.costCenters',
+						url: '/finance/cost-centers',
+						permission: 'cost_center.read',
+					},
+					{
 						titleKey: 'item.reconciliation',
 						url: '/finance/reconciliation',
 						permission: 'cash_bank.reconcile',

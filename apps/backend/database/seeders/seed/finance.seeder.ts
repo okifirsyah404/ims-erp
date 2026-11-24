@@ -122,9 +122,9 @@ export async function seedFinance(): Promise<void> {
  * GL account each seeded cash/bank account posts to (`chart-of-accounts.seeder`).
  */
 const CASH_BANK_GL_CODES: Record<string, string> = {
-	'BANK-BCA': '1-1100',
-	'BANK-MANDIRI': '1-1200',
-	CASH: '1-1000',
+	'BANK-BCA': '1-1120',
+	'BANK-MANDIRI': '1-1130',
+	CASH: '1-1110',
 };
 
 /**

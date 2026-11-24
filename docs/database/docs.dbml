@@ -2947,7 +2947,7 @@ Table finance.accounting_periods {
 Table finance.journal_entries {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [note: "Journal number, assigned at posting (JE series). Null while a manual entry is draft/submitted/void (ERP-0129)."]
   accounting_period_id uuid [not null]
   entry_date date [not null]
   description text
@@ -2955,6 +2955,8 @@ Table finance.journal_entries {
   source_id text
   idempotency_key text [note: "Posting-service idempotency: a second posted entry with the same (organization_id, idempotency_key) is refused. Null keys skip the rule."]
   source_module text [not null, default: 'finance', note: "Producing module, guarded by the posting service. Other modules never write journal rows directly."]
+  event_type text [note: "Business event that produced the entry through postBusinessEvent (e.g. sale.invoice_issued); null for manual journals and explicit-account postings (ERP-0128)."]
+  is_adjusting boolean [not null, default: false, note: "Manual adjusting entry: the only kind a soft-closed period accepts (ERP-0130)."]
   status text [not null, default: 'draft']
   total_debit bigint [not null, default: 0]
   total_credit bigint [not null, default: 0]
@@ -2966,10 +2968,11 @@ Table finance.journal_entries {
   posted_by text [note: "Logical reference to auth.users.id."]
   posted_at bigint
   reversed_by_entry_id uuid
+  reverses_entry_id uuid [note: "On a reversal: the original entry it mirrors (ERP-0129)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Journal header (was accounting.journal_entries). Debit must equal credit; the posting service enforces it inside one transaction."
+  Note: "Journal header (was accounting.journal_entries). Debit must equal credit; the posting service enforces it inside one transaction. Manual entries: draft -> submitted -> approved/posted with maker-checker; reports sum posted and reversed entries."
   Indexes {
     (organization_id, code) [unique, name: 'journal_entries_org_code_uq']
     accounting_period_id [name: 'journal_entries_period_id_idx']
@@ -2977,6 +2980,7 @@ Table finance.journal_entries {
     entry_date [name: 'journal_entries_entry_date_idx']
     source_type [name: 'journal_entries_source_type_idx']
     source_id [name: 'journal_entries_source_id_idx']
+    reverses_entry_id [name: 'journal_entries_reverses_entry_id_idx']
     (organization_id, idempotency_key) [unique, name: 'journal_entries_idempotency_uq', note: "WHERE idempotency_key IS NOT NULL AND status <> 'void'"]
   }
   Checks {
@@ -2985,6 +2989,8 @@ Table finance.journal_entries {
     `total_credit >= 0`
     `total_debit = total_credit`
     `source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource')`
+    `code IS NOT NULL OR status IN ('draft', 'submitted', 'approved', 'void')`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -2998,23 +3004,27 @@ Table finance.journal_lines {
   credit bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   description text
-  cost_center_id uuid [note: "Column kept nullable and unvalidated: branches, departments, positions and cost centres were never built and are dropped with the organization schema (ADR-0024 Q4). Not a logical reference."]
+  cost_center_id uuid [note: "Same-schema reference to finance.cost_centers.id (ERP-0127); the posting service rejects unknown or inactive cost centres."]
   project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through the Project module contract."]
   party_type text
   party_id text
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract by the source module before it posts (ERP-0128)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Journal line (was accounting.journal_lines). Exactly one of debit and credit is positive."
+  Note: "Journal line (was accounting.journal_lines). Exactly one of debit and credit is positive. Dimensions: cost centre, project, party, product."
   Indexes {
     journal_entry_id [name: 'journal_lines_entry_id_idx']
     account_id [name: 'journal_lines_account_id_idx']
-    (journal_entry_id, line_no) [unique, name: 'journal_lines_line_no_uq']
+    cost_center_id [name: 'journal_lines_cost_center_id_idx']
+    project_id [name: 'journal_lines_project_id_idx']
+    (journal_entry_id, line_no) [unique, name: 'journal_lines_line_no_uq', note: "WHERE deleted_at IS NULL (draft lines are replaced by soft delete)"]
   }
   Checks {
     `debit >= 0`
     `credit >= 0`
     `(debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0)`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3038,6 +3048,7 @@ Table finance.opening_balances {
   Checks {
     `debit_balance >= 0`
     `credit_balance >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3062,6 +3073,49 @@ Table finance.account_balances {
   Checks {
     `debit_total >= 0`
     `credit_total >= 0`
+    `currency_code = 'IDR'`
+  }
+}
+
+Table finance.cost_centers {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  name text [not null]
+  parent_cost_center_id uuid
+  is_active boolean [not null, default: true]
+  description text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Cost centre for cost accounting and management reports (ERP-0127). Finance-owned: the organization schema's departments are gone (ADR-0024 Q4)."
+  Indexes {
+    (organization_id, code) [unique, name: 'cost_centers_org_code_uq', note: "WHERE deleted_at IS NULL"]
+    parent_cost_center_id [name: 'cost_centers_parent_id_idx']
+  }
+}
+
+Table finance.posting_rules {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  event_type text [not null, default: '*', note: "Business event (e.g. sale.invoice_issued) or '*' for any event."]
+  role text [not null, note: "Semantic posting role (receivable, revenue, vat_output, payable, expense, vat_input, inventory, claim_payable, ...); vocabulary guarded by POSTING_ROLES in application code."]
+  discriminator_type text [not null, default: '', note: "Optional refinement; '' means none."]
+  discriminator_value text [not null, default: '', note: "Id or code the discriminator matches; '' when discriminator_type is ''."]
+  account_id uuid [not null]
+  is_active boolean [not null, default: true]
+  description text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Account determination for postBusinessEvent (ERP-0128, ADR-0030). Resolution order: event+discriminator, event, '*'+discriminator, '*'. A missing rule fails the posting."
+  Indexes {
+    (organization_id, event_type, role, discriminator_type, discriminator_value) [unique, name: 'posting_rules_scope_uq', note: "WHERE deleted_at IS NULL"]
+    account_id [name: 'posting_rules_account_id_idx']
+  }
+  Checks {
+    `discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category')`
+    `(discriminator_type = '') = (discriminator_value = '')`
   }
 }
 
@@ -3158,6 +3212,7 @@ Table finance.cash_bank_accounts {
     `opening_balance >= 0`
     `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
     `employee_id IS NULL OR (account_type IN ('bank', 'ewallet') AND opening_balance = 0 AND current_balance = 0 AND invoice_usage IS NULL)`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3192,6 +3247,7 @@ Table finance.cash_bank_transactions {
     `direction IN ('in', 'out')`
     `status IN ('draft', 'posted', 'reversed')`
     `amount > 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3277,6 +3333,7 @@ Table finance.supplier_bills {
     `grand_total >= 0`
     `paid_total >= 0`
     `outstanding_total >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3337,6 +3394,7 @@ Table finance.ar_open_items {
     `paid_amount >= 0`
     `outstanding_amount >= 0`
     `outstanding_amount = original_amount - paid_amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3367,6 +3425,7 @@ Table finance.ap_open_items {
     `paid_amount >= 0`
     `outstanding_amount >= 0`
     `outstanding_amount = original_amount - paid_amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3396,6 +3455,7 @@ Table finance.asset_depreciations {
     `depreciation_method IN ('straight_line', 'declining_balance', 'none')`
     `depreciation_amount >= 0`
     `closing_book_value >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3476,6 +3536,7 @@ Table finance.credit_memos {
   Checks {
     `status IN ('draft', 'issued', 'applied', 'void')`
     `amount > 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3506,6 +3567,7 @@ Table finance.expense_claims {
   Checks {
     `status IN ('draft', 'submitted', 'approved', 'rejected', 'paid', 'cancelled')`
     `total_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3530,6 +3592,7 @@ Table finance.expense_claim_items {
   Checks {
     `amount >= 0`
     `tax_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3566,6 +3629,7 @@ Table finance.employee_advances {
     `amount > 0`
     `settled_amount >= 0`
     `settled_amount <= amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3602,6 +3666,7 @@ Table finance.expense_settlements {
     `settlement_type IN ('expense', 'advance')`
     `status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')`
     `total_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3628,6 +3693,7 @@ Table finance.expense_settlement_items {
   Checks {
     `amount >= 0`
     `tax_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3636,6 +3702,10 @@ Ref: finance.journal_entries.accounting_period_id > finance.accounting_periods.i
 Ref: finance.journal_entries.reversed_by_entry_id > finance.journal_entries.id [delete: set null]
 Ref: finance.journal_lines.journal_entry_id > finance.journal_entries.id [delete: cascade]
 Ref: finance.journal_lines.account_id > finance.chart_of_accounts.id [delete: restrict]
+Ref: finance.journal_lines.cost_center_id > finance.cost_centers.id [delete: restrict]
+Ref: finance.journal_entries.reverses_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.cost_centers.parent_cost_center_id > finance.cost_centers.id [delete: restrict]
+Ref: finance.posting_rules.account_id > finance.chart_of_accounts.id [delete: restrict]
 Ref: finance.opening_balances.account_id > finance.chart_of_accounts.id [delete: cascade]
 Ref: finance.account_balances.account_id > finance.chart_of_accounts.id [delete: cascade]
 Ref: finance.account_balances.accounting_period_id > finance.accounting_periods.id [delete: cascade]

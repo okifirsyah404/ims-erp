@@ -64,10 +64,10 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 189 |
+| Logical reference columns | 192 |
 | Distinct targets | 25 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 153 |
+| Intra-module `Ref:` declarations | 157 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -77,9 +77,9 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 53 |
+| `auth.organizations.id` | Identity | 55 |
 | `auth.users.id` | Identity | 32 |
-| `product.products.id` | Product | 15 |
+| `product.products.id` | Product | 16 |
 | `customer.customers.id` | Customer | 12 |
 | `human_resource.employees.id` | Human Resource | 9 |
 | `location.villages.id` | Location | 8 |
@@ -105,7 +105,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 ## The 25 targets in full
 
-### `auth.organizations.id` - owner Identity, 53 referring columns
+### `auth.organizations.id` - owner Identity, 55 referring columns
 
 - `finance.account_balances`  ->  `organization_id`
 - `finance.accounting_periods`  ->  `organization_id`
@@ -117,6 +117,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.cash_bank_accounts`  ->  `organization_id`
 - `finance.cash_bank_transactions`  ->  `organization_id`
 - `finance.chart_of_accounts`  ->  `organization_id`
+- `finance.cost_centers`  ->  `organization_id`
 - `finance.credit_memos`  ->  `organization_id`
 - `finance.employee_advances`  ->  `organization_id`
 - `finance.expense_claim_items`  ->  `organization_id`
@@ -128,6 +129,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.journal_templates`  ->  `organization_id`
 - `finance.opening_balances`  ->  `organization_id`
 - `finance.payment_terms`  ->  `organization_id`
+- `finance.posting_rules`  ->  `organization_id`
 - `finance.report_archives`  ->  `organization_id`
 - `finance.settings`  ->  `organization_id`
 - `finance.supplier_bill_items`  ->  `organization_id`
@@ -196,8 +198,9 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `warehouse.settings`  ->  `updated_by`
 - `warehouse.warehouse_settings`  ->  `updated_by`
 
-### `product.products.id` - owner Product, 15 referring columns
+### `product.products.id` - owner Product, 16 referring columns
 
+- `finance.journal_lines`  ->  `product_id`
 - `finance.supplier_bill_items`  ->  `product_id`
 - `inventory.documents`  ->  `product_id`
 - `inventory.item_serials`  ->  `product_id`

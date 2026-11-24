@@ -2,12 +2,14 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TTx } from '@drizzle/types';
 import {
 	chartOfAccounts,
+	journalEntries,
 	journalLines,
+	LEDGER_JOURNAL_STATUSES,
 	type TChartOfAccountSelect,
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, inArray, isNull, or, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type {
@@ -216,5 +218,24 @@ export class ChartOfAccountRepository implements IChartOfAccountRepository {
 			)
 			.limit(1);
 		return row.value > 0;
+	}
+
+	async accountNetBalance(organizationId: string, accountId: string): Promise<number> {
+		const [row] = await this.database
+			.select({
+				value: sql<number>`coalesce(sum(${journalLines.debit} - ${journalLines.credit}), 0)::bigint`.mapWith(Number),
+			})
+			.from(journalLines)
+			.innerJoin(journalEntries, eq(journalLines.journalEntryId, journalEntries.id))
+			.where(
+				and(
+					eq(journalLines.organizationId, organizationId),
+					eq(journalLines.accountId, accountId),
+					inArray(journalEntries.status, [...LEDGER_JOURNAL_STATUSES]),
+					isNull(journalLines.deletedAt),
+					isNull(journalEntries.deletedAt),
+				),
+			);
+		return row?.value ?? 0;
 	}
 }

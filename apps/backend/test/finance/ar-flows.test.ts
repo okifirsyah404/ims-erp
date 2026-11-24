@@ -3,6 +3,7 @@
  * ar_open_items) and the payment workflow (D5) with allocations updating both
  * AR mirrors, plus the AR aging buckets. Real posting service over fake repos.
  */
+import { fixturePostingRules } from './posting-rules.fixture';
 import 'reflect-metadata';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
@@ -26,7 +27,7 @@ import { CashBankService } from '../../src/app/finance/services/cash-bank.servic
 import { PaymentService } from '../../src/app/payment/services/payment.service';
 import { InvoiceService } from '../../src/app/sale/services/invoice.service';
 import {
-	ArAccountNotConfiguredError,
+	PostingRuleNotFoundError,
 	CashBankAccountInactiveError,
 } from '../../src/app/finance/errors/ledger.errors';
 import {
@@ -273,7 +274,7 @@ function makeHarness() {
 
 	const repo = repoFake;
 	const posting = new PostingService({} as unknown as BunSQLDatabase, repo as never, repo as never, repo as never, numbering);
-	const arResolver = new ArAccountResolverService(repo as never);
+	const arResolver = new ArAccountResolverService(fixturePostingRules(repo as never));
 	const cashBank = new CashBankService(dbLike, repo as never, repo as never, posting, numbering);
 	// ADR-0024: the payment ledger moved to its own module. These adapters point
 	// the payment service at this fake through its own repository and through
@@ -552,7 +553,7 @@ describe('InvoiceService (F4)', () => {
 
 	test('refuses when the AR account is not configured', async () => {
 		h.accounts.delete('acc-ar');
-		await expect(seedIssuedInvoice(h)).rejects.toThrow(ArAccountNotConfiguredError);
+		await expect(seedIssuedInvoice(h)).rejects.toThrow(PostingRuleNotFoundError);
 	});
 });
 

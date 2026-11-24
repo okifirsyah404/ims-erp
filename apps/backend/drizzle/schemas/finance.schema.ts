@@ -21,6 +21,7 @@ import {
 import { createCodeNumberingTable } from '@shared/numbering/table';
 import { sql } from 'drizzle-orm';
 import {
+	type AnyPgColumn,
 	bigint,
 	boolean,
 	check,
@@ -74,6 +75,16 @@ export const JOURNAL_ENTRY_STATUSES = [
 	'void',
 ] as const;
 export type JournalEntryStatus = (typeof JOURNAL_ENTRY_STATUSES)[number];
+
+/**
+ * Statuses that count in the ledger: a reversed original stays in the sums
+ * and its posted mirror cancels it (ERP-0129 fix - summing `posted` only made
+ * a reversal negate the original instead of cancelling it).
+ */
+export const LEDGER_JOURNAL_STATUSES = ['posted', 'reversed'] as const;
+
+/** Manual-journal statuses that still block a period lock (ERP-0130). */
+export const UNPOSTED_JOURNAL_STATUSES = ['draft', 'submitted', 'approved'] as const;
 
 /** Modules allowed to post journals through the posting service. */
 export const JOURNAL_SOURCE_MODULES = [
@@ -162,6 +173,9 @@ const moneyAmount = (name: string) =>
 	bigint(name, { mode: 'number' }).notNull().default(0);
 const currencyCode = () =>
 	varchar('currency_code', { length: 3 }).notNull().default('IDR');
+/** IDR is the only currency (ADR-0030, grill Q7/Q22): enforced per money table. */
+const idrCheck = (tableName: string) =>
+	check(`${tableName}_currency_idr_check`, sql`currency_code = 'IDR'`);
 
 const timestamps = {
 	createdAt: unixTimestamp('created_at').notNull(),
@@ -255,7 +269,8 @@ export const journalEntries = financeSchema.table(
 	{
 		id: uuid('id').primaryKey().default(sql`uuidv7()`),
 		organizationId: organizationId(),
-		code: varchar('code', { length: 32 }).notNull(),
+		/** Assigned at posting; null while a manual entry is draft/submitted/void. */
+		code: varchar('code', { length: 32 }),
 		accountingPeriodId: uuid('accounting_period_id')
 			.notNull()
 			.references(() => accountingPeriods.id, { onDelete: 'restrict' }),
@@ -266,6 +281,10 @@ export const journalEntries = financeSchema.table(
 		/** Posting-service idempotency; null keys skip the rule. */
 		idempotencyKey: text('idempotency_key'),
 		sourceModule: text('source_module').notNull().default('finance'),
+		/** Business event behind a `postBusinessEvent` entry (ERP-0128). */
+		eventType: text('event_type'),
+		/** Manual adjusting entry: the only kind a soft-closed period accepts. */
+		isAdjusting: boolean('is_adjusting').notNull().default(false),
 		status: text('status').notNull().default('draft'),
 		totalDebit: bigint('total_debit', { mode: 'number' }).notNull().default(0),
 		totalCredit: bigint('total_credit', { mode: 'number' })
@@ -279,9 +298,20 @@ export const journalEntries = financeSchema.table(
 		postedBy: text('posted_by'),
 		postedAt: unixTimestampNullable('posted_at'),
 		reversedByEntryId: uuid('reversed_by_entry_id'),
+		/** On a reversal: the original entry it mirrors (ERP-0129). */
+		reversesEntryId: uuid('reverses_entry_id').references(
+			(): AnyPgColumn => journalEntries.id,
+			{ onDelete: 'set null' },
+		),
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('journal_entries'),
+		index('journal_entries_reverses_entry_id_idx').on(table.reversesEntryId),
+		check(
+			'journal_entries_code_posted_check',
+			sql`code IS NOT NULL OR status IN ('draft', 'submitted', 'approved', 'void')`,
+		),
 		uniqueIndex('journal_entries_org_code_uq').on(
 			table.organizationId,
 			table.code,
@@ -324,21 +354,27 @@ export const journalLines = financeSchema.table(
 		credit: bigint('credit', { mode: 'number' }).notNull().default(0),
 		currencyCode: currencyCode(),
 		description: text('description'),
-		/** Legacy column: the organization schema's cost centres are gone (Q4). */
-		costCenterId: uuid('cost_center_id'),
+		/** Finance-owned cost centre (ERP-0127). */
+		costCenterId: uuid('cost_center_id').references(() => costCenters.id, {
+			onDelete: 'restrict',
+		}),
 		/** Logical reference to project.projects.id — cross-module FK omitted. */
 		projectId: uuid('project_id'),
 		partyType: text('party_type'),
 		partyId: text('party_id'),
+		/** Logical reference to product.products.id — validated by the source module. */
+		productId: uuid('product_id'),
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('journal_lines'),
 		index('journal_lines_entry_id_idx').on(table.journalEntryId),
 		index('journal_lines_account_id_idx').on(table.accountId),
-		uniqueIndex('journal_lines_line_no_uq').on(
-			table.journalEntryId,
-			table.lineNo,
-		),
+		index('journal_lines_cost_center_id_idx').on(table.costCenterId),
+		index('journal_lines_project_id_idx').on(table.projectId),
+		uniqueIndex('journal_lines_line_no_uq')
+			.on(table.journalEntryId, table.lineNo)
+			.where(sql`deleted_at IS NULL`),
 		check('journal_lines_debit_check', sql`debit >= 0`),
 		check('journal_lines_credit_check', sql`credit >= 0`),
 		check(
@@ -369,6 +405,7 @@ export const openingBalances = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('opening_balances'),
 		uniqueIndex('opening_balances_account_date_uq').on(
 			table.accountId,
 			table.asOfDate,
@@ -402,12 +439,98 @@ export const accountBalances = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('account_balances'),
 		uniqueIndex('account_balances_account_period_uq').on(
 			table.accountId,
 			table.accountingPeriodId,
 		),
 		check('account_balances_debit_check', sql`debit_total >= 0`),
 		check('account_balances_credit_check', sql`credit_total >= 0`),
+	],
+);
+
+/** Cost centre for cost accounting and management reports (ERP-0127). */
+export const costCenters = financeSchema.table(
+	'cost_centers',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		code: varchar('code', { length: 32 }).notNull(),
+		name: text('name').notNull(),
+		parentCostCenterId: uuid('parent_cost_center_id').references(
+			(): AnyPgColumn => costCenters.id,
+			{ onDelete: 'restrict' },
+		),
+		isActive: boolean('is_active').notNull().default(true),
+		description: text('description'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('cost_centers_org_code_uq')
+			.on(table.organizationId, table.code)
+			.where(sql`deleted_at IS NULL`),
+		index('cost_centers_parent_id_idx').on(table.parentCostCenterId),
+	],
+);
+
+/** Discriminators a posting rule may refine on (ERP-0128). */
+export const POSTING_RULE_DISCRIMINATORS = [
+	'',
+	'product_category',
+	'tax',
+	'cash_bank_account',
+	'expense_category',
+	'asset_category',
+	'cost_category',
+] as const;
+export type PostingRuleDiscriminator =
+	(typeof POSTING_RULE_DISCRIMINATORS)[number];
+
+/** Wildcard event type: the rule applies to every business event. */
+export const ANY_POSTING_EVENT = '*';
+
+/**
+ * Account determination for `PostingService.postBusinessEvent` (ERP-0128).
+ *
+ * @remarks
+ * `discriminator_type` / `discriminator_value` use `''` for "none" so the
+ * scope unique index treats a missing discriminator as one value.
+ */
+export const postingRules = financeSchema.table(
+	'posting_rules',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		eventType: text('event_type').notNull().default(ANY_POSTING_EVENT),
+		role: text('role').notNull(),
+		discriminatorType: text('discriminator_type').notNull().default(''),
+		discriminatorValue: text('discriminator_value').notNull().default(''),
+		accountId: uuid('account_id')
+			.notNull()
+			.references(() => chartOfAccounts.id, { onDelete: 'restrict' }),
+		isActive: boolean('is_active').notNull().default(true),
+		description: text('description'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('posting_rules_scope_uq')
+			.on(
+				table.organizationId,
+				table.eventType,
+				table.role,
+				table.discriminatorType,
+				table.discriminatorValue,
+			)
+			.where(sql`deleted_at IS NULL`),
+		index('posting_rules_account_id_idx').on(table.accountId),
+		check(
+			'posting_rules_discriminator_type_check',
+			sql`discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category')`,
+		),
+		check(
+			'posting_rules_discriminator_pair_check',
+			sql`(discriminator_type = '') = (discriminator_value = '')`,
+		),
 	],
 );
 
@@ -502,6 +625,7 @@ export const cashBankAccounts = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('cash_bank_accounts'),
 		uniqueIndex('cash_bank_accounts_org_code_uq').on(
 			table.organizationId,
 			table.code,
@@ -551,6 +675,7 @@ export const cashBankTransactions = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('cash_bank_transactions'),
 		uniqueIndex('cash_bank_transactions_org_code_uq').on(
 			table.organizationId,
 			table.code,
@@ -687,6 +812,7 @@ export const supplierBills = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('supplier_bills'),
 		uniqueIndex('supplier_bills_org_code_uq').on(
 			table.organizationId,
 			table.code,
@@ -764,6 +890,7 @@ export const expenseClaims = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('expense_claims'),
 		uniqueIndex('expense_claims_org_code_uq').on(
 			table.organizationId,
 			table.code,
@@ -798,6 +925,7 @@ export const expenseClaimItems = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('expense_claim_items'),
 		index('expense_claim_items_claim_id_idx').on(table.expenseClaimId),
 		check('expense_claim_items_amount_check', sql`amount >= 0`),
 		check('expense_claim_items_tax_amount_check', sql`tax_amount >= 0`),
@@ -828,6 +956,7 @@ export const arOpenItems = financeSchema.table(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
+		idrCheck('ar_open_items'),
 		uniqueIndex('ar_open_items_org_invoice_uq').on(
 			table.organizationId,
 			table.invoiceId,
@@ -874,6 +1003,7 @@ export const apOpenItems = financeSchema.table(
 			.$onUpdate(() => new Date()),
 	},
 	(table) => [
+		idrCheck('ap_open_items'),
 		uniqueIndex('ap_open_items_org_bill_uq').on(
 			table.organizationId,
 			table.supplierBillId,
@@ -923,6 +1053,7 @@ export const assetDepreciations = financeSchema.table(
 		...timestamps,
 	},
 	(table) => [
+		idrCheck('asset_depreciations'),
 		uniqueIndex('asset_depreciations_period_uq').on(
 			table.itemId,
 			table.periodYear,
@@ -986,6 +1117,10 @@ export type TOpeningBalanceSelect = typeof openingBalances.$inferSelect;
 export type TOpeningBalanceInsert = typeof openingBalances.$inferInsert;
 export type TAccountBalanceSelect = typeof accountBalances.$inferSelect;
 export type TAccountBalanceInsert = typeof accountBalances.$inferInsert;
+export type TCostCenterSelect = typeof costCenters.$inferSelect;
+export type TCostCenterInsert = typeof costCenters.$inferInsert;
+export type TPostingRuleSelect = typeof postingRules.$inferSelect;
+export type TPostingRuleInsert = typeof postingRules.$inferInsert;
 export type TReportArchiveSelect = typeof reportArchives.$inferSelect;
 export type TReportArchiveInsert = typeof reportArchives.$inferInsert;
 export type TPaymentTermSelect = typeof paymentTerms.$inferSelect;
