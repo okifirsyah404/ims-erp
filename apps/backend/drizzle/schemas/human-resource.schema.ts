@@ -121,13 +121,11 @@ export const employees = humanResourceSchema.table(
 		userId: text('user_id'),
 		employeeCode: varchar('employee_code', { length: 32 }).notNull(),
 		fullName: text('full_name').notNull(),
-		legalName: text('legal_name'),
 		nickname: text('nickname'),
 		/** National identity number (NIK). */
 		nationalId: varchar('national_id', { length: 32 }),
 		email: varchar('email', { length: 320 }),
 		phone: varchar('phone', { length: 100 }),
-		whatsapp: varchar('whatsapp', { length: 100 }),
 		photoObjectKey: text('photo_object_key'),
 		employmentStatus: text('employment_status').notNull().default('active'),
 		employmentType: text('employment_type').notNull().default('permanent'),

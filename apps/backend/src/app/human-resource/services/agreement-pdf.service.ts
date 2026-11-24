@@ -87,7 +87,7 @@ export class AgreementPdfService {
 			document: { id: document.id, code: document.code, title: document.title, status: document.status },
 			employee: {
 				employeeCode: employee.employeeCode,
-				fullName: employee.legalName ?? employee.fullName,
+				fullName: employee.fullName,
 				nationalId: employee.nationalId,
 				email: employee.email,
 				phone: employee.phone,
