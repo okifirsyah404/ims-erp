@@ -38,6 +38,6 @@
   },
   "patchedDependencies": {
     "@vite-pwa/workbox-build@8.0.15": "patches/@vite-pwa%2Fworkbox-build@8.0.15.patch",
-    "@unplugin-pwa/core@0.0.7": "patches/@unplugin-pwa%2Fcore@0.0.7.patch"
+    "@unplugin-pwa/core@0.0.8": "patches/@unplugin-pwa%2Fcore@0.0.8.patch"
   }
 }
