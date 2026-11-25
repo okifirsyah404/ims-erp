@@ -64,7 +64,7 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 211 |
+| Logical reference columns | 212 |
 | Distinct targets | 28 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 169 |
@@ -77,7 +77,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 60 |
+| `auth.organizations.id` | Identity | 61 |
 | `auth.users.id` | Identity | 32 |
 | `product.products.id` | Product | 16 |
 | `customer.customers.id` | Customer | 13 |
@@ -108,7 +108,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 ## The 28 targets in full
 
-### `auth.organizations.id` - owner Identity, 60 referring columns
+### `auth.organizations.id` - owner Identity, 61 referring columns
 
 - `finance.account_balances`  ->  `organization_id`
 - `finance.accounting_periods`  ->  `organization_id`
@@ -119,6 +119,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.bank_reconciliations`  ->  `organization_id`
 - `finance.cash_bank_accounts`  ->  `organization_id`
 - `finance.cash_bank_transactions`  ->  `organization_id`
+- `finance.cash_forecast_lines`  ->  `organization_id`
 - `finance.chart_of_accounts`  ->  `organization_id`
 - `finance.cost_centers`  ->  `organization_id`
 - `finance.credit_memos`  ->  `organization_id`

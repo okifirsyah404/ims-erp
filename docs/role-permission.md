@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-755 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+759 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -891,6 +891,10 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/reports/balance-sheet.csv` | org member + permission | `financial_report:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/cash-flow` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/cash-flow.csv` | org member + permission | `financial_report:export` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/reports/cash-forecast` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/reports/cash-forecast/lines` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
+| POST | `/finance/reports/cash-forecast/lines` | org member + permission | `cash_bank:create` | `owner`, `finance` |
+| DELETE | `/finance/reports/cash-forecast/lines/:id` | org member + permission | `cash_bank:create` | `owner`, `finance` |
 | GET | `/finance/reports/cost-center-pl` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/general-ledger` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/profit-and-loss` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |

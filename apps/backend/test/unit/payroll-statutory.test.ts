@@ -186,6 +186,7 @@ describe('SalaryService approval (ERP-0138)', () => {
 				listApprovedForEmployee: async () => [],
 				listEmployeeYear: async () => [],
 				listByIds: async () => rows as never,
+				latestApprovedTotals: async () => null,
 				setJournalEntry: async (ids: string[], id: string) => {
 					stamped.push([ids, id]);
 				},

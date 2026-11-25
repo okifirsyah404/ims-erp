@@ -58,6 +58,8 @@ import {
 	COST_REPORT_SERVICE_TOKEN,
 	STATEMENT_REPOSITORY_TOKEN,
 	STATEMENT_SERVICE_TOKEN,
+	CASH_FORECAST_REPOSITORY_TOKEN,
+	CASH_FORECAST_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -113,6 +115,8 @@ import { CostReportRepository } from './repositories/cost-report.repository';
 import { CostReportService } from './services/cost-report.service';
 import { StatementRepository } from './repositories/statement.repository';
 import { StatementService } from './services/statement.service';
+import { CashForecastRepository } from './repositories/cash-forecast.repository';
+import { CashForecastService } from './services/cash-forecast.service';
 import { TaxLedgerService } from './services/tax-ledger.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
@@ -237,6 +241,8 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(COST_REPORT_SERVICE_TOKEN, { useClass: CostReportService });
 	container.register(STATEMENT_REPOSITORY_TOKEN, { useClass: StatementRepository });
 	container.register(STATEMENT_SERVICE_TOKEN, { useClass: StatementService });
+	container.register(CASH_FORECAST_REPOSITORY_TOKEN, { useClass: CashForecastRepository });
+	container.register(CASH_FORECAST_SERVICE_TOKEN, { useClass: CashForecastService });
 }
 
 export * from './constants/di';

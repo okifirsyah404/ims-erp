@@ -530,6 +530,23 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   as an invoice show as inflow. The new statement is the correct one; the old
   endpoint should be retired or rebuilt on it.
 
+## 13-week cash forecast (D, ERP-0149, built)
+
+- `GET /finance/reports/cash-forecast` (`financial_report:read`), manual
+  lines `GET|POST /cash-forecast/lines`, `DELETE /cash-forecast/lines/:id`
+  (`cash_bank:create`, `finance.cash_forecast_lines`); reports page tab
+  "Cash forecast".
+- From today: opening cash = ledger balance of the statement cash accounts;
+  13 weekly buckets of open AR and AP on their due dates (overdue or undated
+  in week 1), payroll at the latest approved month's run-rate (net pay on the
+  payday, month end when none is set; PPh 21 and BPJS on the 10th of the next
+  month) through HR's repository-only `ExportedPayrollService`, and manual
+  lines. Licence contracts ending in the horizon are listed through
+  `ProjectLookupService.renewalsDue`; contracts carry no amount, so finance
+  adds the expected receipt as a manual line.
+- Not built: collection-pattern or probability adjustments, sales pipeline,
+  recurring manual lines.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

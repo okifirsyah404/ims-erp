@@ -1393,6 +1393,27 @@ export const projectBudgetLines = financeSchema.table(
 	],
 );
 
+/** Manual lines of the 13-week cash forecast (ERP-0149). */
+export const cashForecastLines = financeSchema.table(
+	'cash_forecast_lines',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		expectedDate: date('expected_date', { mode: 'string' }).notNull(),
+		direction: text('direction').$type<'in' | 'out'>().notNull(),
+		amount: bigint('amount', { mode: 'number' }).notNull(),
+		description: text('description').notNull(),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		index('cash_forecast_lines_date_idx').on(table.organizationId, table.expectedDate),
+		check('cash_forecast_lines_direction_check', sql`direction IN ('in', 'out')`),
+		check('cash_forecast_lines_amount_check', sql`amount > 0`),
+	],
+);
+
 export const assetDepreciations = financeSchema.table(
 	'asset_depreciations',
 	{
@@ -1541,3 +1562,5 @@ export type TFixedAssetBookSelect = typeof fixedAssetBooks.$inferSelect;
 
 export type TProjectBudgetSelect = typeof projectBudgets.$inferSelect;
 export type TProjectBudgetLineSelect = typeof projectBudgetLines.$inferSelect;
+
+export type TCashForecastLineSelect = typeof cashForecastLines.$inferSelect;

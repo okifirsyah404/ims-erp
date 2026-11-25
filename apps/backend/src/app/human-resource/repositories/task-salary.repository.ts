@@ -198,4 +198,30 @@ export class SalaryRepository implements ISalaryRepository {
 			)
 			.orderBy(desc(employeeSalaryRecords.period));
 	}
+
+	async latestApprovedTotals() {
+		const [latest] = await this.database
+			.select({ period: employeeSalaryRecords.period })
+			.from(employeeSalaryRecords)
+			.where(and(eq(employeeSalaryRecords.status, 'approved'), isNull(employeeSalaryRecords.deletedAt)))
+			.orderBy(desc(employeeSalaryRecords.period))
+			.limit(1);
+		if (!latest) return null;
+		const [totals] = await this.database
+			.select({
+				net: sql<string>`coalesce(sum(${employeeSalaryRecords.netPay}), 0)`,
+				pph21: sql<string>`coalesce(sum(${employeeSalaryRecords.pph21Amount}), 0)`,
+				bpjsEmployee: sql<string>`coalesce(sum(${employeeSalaryRecords.bpjsEmployeeAmount}), 0)`,
+				bpjsCompany: sql<string>`coalesce(sum(${employeeSalaryRecords.bpjsCompanyAmount}), 0)`,
+			})
+			.from(employeeSalaryRecords)
+			.where(and(eq(employeeSalaryRecords.period, latest.period), eq(employeeSalaryRecords.status, 'approved'), isNull(employeeSalaryRecords.deletedAt)));
+		return {
+			period: latest.period,
+			net: Number(totals?.net ?? 0),
+			pph21: Number(totals?.pph21 ?? 0),
+			bpjsEmployee: Number(totals?.bpjsEmployee ?? 0),
+			bpjsCompany: Number(totals?.bpjsCompany ?? 0),
+		};
+	}
 }

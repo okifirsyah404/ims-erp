@@ -12,6 +12,49 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0149: 13-week cash forecast
+
+**Scope.** Phase D slice 2.
+
+**Design gate.** `docs/database/` read for `finance.ar_open_items`,
+`ap_open_items`, `human_resource.employee_salary_records`, `settings`,
+`project.license_contracts` (no amount column). New table
+`finance.cash_forecast_lines` (one new logical reference `created_by`).
+Manual grill pass: ownership - finance owns the forecast and manual lines; HR
+exposes a repository-only payroll estimate, project a renewals list through
+its repository-only lookup; tenancy - `organization_id`; soft delete; money -
+minor units; no status vocabulary beyond direction in/out. Decisions:
+overdue and undated items fall in week 1; payroll uses the latest approved
+month as run-rate; renewals are informational because contracts carry no
+amount.
+
+**Changes.** Migration `20261125130528_erp0149_cash_forecast` (1 CREATE
+TABLE). Backend: `CashForecastRepository`, `CashForecastService`, routes under
+`/finance/reports/cash-forecast*`, `SalaryRepository.latestApprovedTotals`,
+`ExportedPayrollService`, `ProjectLookupService.renewalsDue`. Web-admin:
+"Cash forecast" tab (weeks, manual lines, renewals; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 212 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0149_cash_forecast; bun run drizzle:migrate   # applied
+bun run <temporary forecast smoke>            # 6/6 PASS: opening cash = ledger cash (15,256,210.00); payroll
+                                              # run-rate from the approved 2026-11 period (net 10,812,760); opening
+                                              # AR 3,000,000 / AP 1,200,000 in the horizon; a manual line lands in
+                                              # week 3 and is removed; weeks chain
+bun test test/finance/cash-forecast.test.ts   # 2 pass
+bun run test                                  # 7/7 tasks: backend 1578, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 759 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: ERP-0150 (profitability by project, customer,
+product, business line).
+
 ## 2026-11-25 - ERP-0148: direct and indirect cash flow, changes in equity, comparatives
 
 **Scope.** Phase D slice 1 (owner: "Lanjut fase D").

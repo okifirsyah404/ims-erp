@@ -1,3 +1,5 @@
+import type { ICashForecastRepository } from '../contracts/cash-forecast.contract';
+import type { CashForecastService } from '../services/cash-forecast.service';
 import type { IStatementRepository } from '../contracts/statement.contract';
 import type { StatementService } from '../services/statement.service';
 import type { ICostReportRepository } from '../contracts/cost-report.contract';
@@ -209,3 +211,7 @@ export const COST_REPORT_SERVICE_TOKEN: InjectionToken<CostReportService> = Symb
 /** Statements: direct/indirect cash flow, changes in equity, comparatives (ERP-0148). */
 export const STATEMENT_REPOSITORY_TOKEN: InjectionToken<IStatementRepository> = Symbol('STATEMENT_REPOSITORY');
 export const STATEMENT_SERVICE_TOKEN: InjectionToken<StatementService> = Symbol('STATEMENT_SERVICE');
+
+/** 13-week cash forecast (ERP-0149). */
+export const CASH_FORECAST_REPOSITORY_TOKEN: InjectionToken<ICashForecastRepository> = Symbol('CASH_FORECAST_REPOSITORY');
+export const CASH_FORECAST_SERVICE_TOKEN: InjectionToken<CashForecastService> = Symbol('CASH_FORECAST_SERVICE');

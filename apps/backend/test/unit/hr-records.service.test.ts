@@ -220,6 +220,7 @@ function salaryService() {
 			listEmployeeYear: async () => [],
 			listByIds: async (ids) => salaries.filter((row) => ids.includes(row.id)),
 			setJournalEntry: async () => {},
+			latestApprovedTotals: async () => null,
 		},
 		people(),
 		leaveService(),

@@ -991,6 +991,11 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   tied to the cash balance, the indirect reconciliation and the statement of
   changes in equity, each with a comparative column.
 
+- Cash forecast, Phase D (ERP-0149, 2026-11-25): 13 weeks ahead from today's
+  cash with receivables and payables by due date, payroll and its taxes,
+  and manual lines; licence renewals due are listed. Evidence: migration
+  `20261125130528_erp0149_cash_forecast`, unit tests, DB smoke 6/6.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phases B and C complete except stock/asset
   opening detail and capitalization from goods receipts); (Phase C: bank statement import,

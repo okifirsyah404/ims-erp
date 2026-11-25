@@ -22,6 +22,7 @@ import type { SalaryPeriodService } from '../services/salary-period.service';
 import type { PayrollScheduleService } from '../services/payroll-schedule.service';
 import type { PayrollStatutoryService } from '../services/payroll-statutory.service';
 import type { PayrollCalculationService } from '../services/payroll-calculation.service';
+import type { ExportedPayrollService } from '../services/exported-payroll.service';
 import type { IAgreementPdfQueue, IEmployeeAddressRepository } from '../contracts/employee-document.contract';
 import type { EmployeeDocumentService } from '../services/employee-document.service';
 import type { AgreementPdfService } from '../services/agreement-pdf.service';
@@ -97,3 +98,6 @@ export const HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<Huma
 /** Token resolving to the {@link HumanResourceNumberingService}. */
 export const HUMAN_RESOURCE_NUMBERING_SERVICE_TOKEN: InjectionToken<HumanResourceNumberingService> =
 	Symbol('HUMAN_RESOURCE_NUMBERING_SERVICE');
+
+/** Repository-only payroll facade for finance's cash forecast (ERP-0149). */
+export const EXPORTED_PAYROLL_SERVICE_TOKEN: InjectionToken<ExportedPayrollService> = Symbol('EXPORTED_PAYROLL_SERVICE');

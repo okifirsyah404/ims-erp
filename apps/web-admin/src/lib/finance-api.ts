@@ -1828,3 +1828,46 @@ export function statementsQueryOptions(from: string, to: string, compare: TState
 		queryFn: () => getData<TStatements>(`/finance/reports/statements?from=${from}&to=${to}&compare=${compare}`),
 	});
 }
+
+/* ----------------------------- cash forecast (ERP-0149) ----------------------------- */
+
+export type TCashForecast = {
+	today: string;
+	openingCash: number;
+	weeks: Array<{
+		week: number;
+		start: string;
+		end: string;
+		receivables: number;
+		manualIn: number;
+		payables: number;
+		payroll: number;
+		statutory: number;
+		manualOut: number;
+		inflow: number;
+		outflow: number;
+		net: number;
+		opening: number;
+		closing: number;
+	}>;
+	lowestWeek: { week: number; closing: number };
+	payrollBasis: { period: string; net: number; statutory: number; payDay: number | null } | null;
+	renewalsDue: Array<{ id: string; code: string; customerName: string; endDate: string | null; billingCycle: string }>;
+};
+export type TForecastLine = { id: string; expectedDate: string; direction: 'in' | 'out'; amount: number; description: string };
+
+export function cashForecastQueryOptions() {
+	return queryOptions({ queryKey: ['finance', 'forecast', 'weeks'], queryFn: () => getData<TCashForecast>('/finance/reports/cash-forecast') });
+}
+
+export function forecastLinesQueryOptions() {
+	return queryOptions({ queryKey: ['finance', 'forecast', 'lines'], queryFn: () => getData<TForecastLine[]>('/finance/reports/cash-forecast/lines') });
+}
+
+export function addForecastLine(input: { expectedDate: string; direction: 'in' | 'out'; amount: number; description: string }) {
+	return sendData<TForecastLine>('/finance/reports/cash-forecast/lines', 'POST', input);
+}
+
+export function removeForecastLine(id: string) {
+	return sendData<{ removed: boolean }>(`/finance/reports/cash-forecast/lines/${id}`, 'DELETE');
+}

@@ -73,6 +73,7 @@ describe('locale values', () => {
 			'finance:costReports.margin',
 			'finance:costReports.marginPct',
 			'finance:costReports.total',
+			'finance:forecast.statutory',
 			// "Owner" of a customer company is the same loanword in Indonesian (ERP-0114).
 			'crm:customer.owner',
 			'crm:customer.ownerBadge',

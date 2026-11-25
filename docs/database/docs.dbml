@@ -3620,6 +3620,27 @@ Table finance.project_budget_lines {
   }
 }
 
+Table finance.cash_forecast_lines {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  expected_date date [not null]
+  direction text [not null]
+  amount bigint [not null, note: "IDR minor units."]
+  description text [not null]
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Manual line of the 13-week cash forecast (ERP-0149): expected receipts or payments that no document carries yet (renewal amounts, tax instalments, capital, loans)."
+  Indexes {
+    (organization_id, expected_date) [name: 'cash_forecast_lines_date_idx']
+  }
+  Checks {
+    `direction IN ('in', 'out')`
+    `amount > 0`
+  }
+}
+
 Table finance.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]

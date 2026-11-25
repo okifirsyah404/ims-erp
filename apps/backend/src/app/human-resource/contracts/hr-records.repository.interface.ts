@@ -101,4 +101,6 @@ export interface ISalaryRepository {
 	setJournalEntry(ids: string[], journalEntryId: string, tx?: TTx): Promise<void>;
 	/** Approved records of one employee, newest period first (the self-service payslips). */
 	listApprovedForEmployee(employeeId: string): Promise<TEmployeeSalaryRecordSelect[]>;
+	/** Totals of the latest approved period, company-wide (ERP-0149 forecast run-rate). */
+	latestApprovedTotals(): Promise<{ period: string; net: number; pph21: number; bpjsEmployee: number; bpjsCompany: number } | null>;
 }
