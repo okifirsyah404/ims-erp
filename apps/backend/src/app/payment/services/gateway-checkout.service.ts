@@ -260,6 +260,7 @@ export class GatewayCheckoutService {
 			await this.documents.register(
 				{
 					code: receipt.code,
+					title: `Kuitansi - ${invoice.customerSnapshot?.name ?? invoice.title ?? receipt.code}`,
 					documentType: 'receipt',
 					module: 'sale',
 					sourceType: 'receipt',

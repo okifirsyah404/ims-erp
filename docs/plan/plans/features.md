@@ -1081,6 +1081,21 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `is_secret` stays reserved (`false`): the API neither accepts nor returns it.
   UI `CompanySettingsCard` on `/admin/company`. Evidence: `progress.md`
   2026-11-13 ERP-0045; `test/unit/company.service.test.ts` 15 pass.
+- ERP-0130 Document files named after the document (2026-11-25). Uploaded and
+  generated files are stored as `<slug(title)>_<dd_mm_yyyy>_<HHmmss>.<ext>` in
+  Jakarta time (`_2` on a same-second match, 80-char word-boundary slug, the
+  uploader's own name discarded); the S3 key stays `<prefix>/<uuid>.<ext>` so a
+  re-upload never overwrites. `attachGeneratedFile{,To}` return
+  `{ id, fileName }`, the signed-PDF artifact is `<slug>_signed_<stamp>.pdf`, and
+  the payslip ZIP is `slip_gaji_<periode>_<dd_mm_yyyy>.zip`. Every registry
+  registration now carries a human title so the name means something
+  (`Penawaran`, `Pesanan Penjualan`, `Surat Jalan`, `Faktur`, `Kuitansi`,
+  `Retur Penjualan`, `Pesanan Pembelian`, `Penerimaan Barang`,
+  `Retur Pembelian`, `BAST`, `Garansi`, `Kontrak Lisensi`, `Tiket Servis` + the
+  counterparty / project code). Evidence: `progress.md` 2026-11-25 ERP-0130
+  (browser-checked upload name + download `content-disposition`); backend 1464
+  pass. Gaps: existing rows are not backfilled, the payslip ZIP header and the
+  three Chromium render paths are unit-tested only.
 - ERP-0129 Document registry as a card grid + full-page viewer (2026-11-25).
   `/documents/files` lists registry rows as cards whose image is the first page
   of the newest live file (client-rendered by `pdfjs-dist`, viewport-lazy,

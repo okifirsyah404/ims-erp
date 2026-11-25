@@ -323,6 +323,7 @@ export class InvoiceService {
 				await this.documents.register(
 					{
 						code: invoice.code,
+						title: `Faktur - ${invoice.customerSnapshot?.name ?? invoice.title}`,
 						documentType: 'invoice',
 						module: 'sale',
 						sourceType: 'invoice',
@@ -465,6 +466,7 @@ export class InvoiceService {
 		// ERP-0044: a receipt (kuitansi) is an issued document too.
 		await this.documents.register({
 			code: receipt.code,
+			title: `Kuitansi - ${invoice.customerSnapshot?.name ?? invoice.title}`,
 			documentType: 'receipt',
 			module: 'sale',
 			sourceType: 'receipt',

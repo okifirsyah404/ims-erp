@@ -67,18 +67,17 @@ export class QuotationDeliveryService {
 		const token = createRenderToken(QUOTATION_RENDER_KIND, quotation.id);
 		const url = `${appConfig.pdf.renderBaseUrl.replace(/\/+$/, '')}/print/quotations/${quotation.id}?token=${encodeURIComponent(token)}`;
 		const bytes = await this.renderer.render(url);
-		const fileName = `${(quotation.code ?? 'penawaran').replace(/[^\w.-]+/g, '-')}.pdf`;
 		const actor = quotation.sentBy ?? quotation.createdBy ?? null;
-		const documentId = await this.documents.attachGeneratedFile(
+		const attached = await this.documents.attachGeneratedFile(
 			{ module: 'sale', sourceType: 'quotation', sourceId: quotation.id },
-			new File([new Uint8Array(bytes)], fileName, { type: 'application/pdf' }),
+			new File([new Uint8Array(bytes)], 'quotation.pdf', { type: 'application/pdf' }),
 			actor,
 		);
-		if (!documentId) return null;
-		const share = await this.documents.createShare(documentId, appConfig.pdf.linkDays, actor);
+		if (!attached) return null;
+		const share = await this.documents.createShare(attached.id, appConfig.pdf.linkDays, actor);
 		return {
 			url: `${appConfig.app.url.replace(/\/+$/, '')}/documents/public/v1/shares/${share.token}/file`,
-			fileName,
+			fileName: attached.fileName,
 			expiresAt: share.expiresAt,
 		};
 	}

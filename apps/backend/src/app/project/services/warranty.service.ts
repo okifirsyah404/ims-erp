@@ -156,6 +156,7 @@ export class WarrantyService {
 			// ERP-0044: the certificate the customer holds is a registered document.
 			await this.documents.register({
 				code: certificate.code,
+				title: `Garansi - ${customer?.name ?? project.customerName} - ${project.code}`,
 				documentType: 'warranty',
 				module: 'project',
 				sourceType: 'warranty',

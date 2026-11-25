@@ -12,6 +12,90 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0130: document files named after the document
+
+**Request.** An uploaded or generated file must be named after its document,
+e.g. `perjanjian_kerja_pertiwi_jamalia_25_11_2026.pdf`, instead of whatever the
+uploader's file was called (`scan001.pdf`) or the bare registry code.
+
+**Design (grilled in-session, 14 decisions).** Name =
+`<slug(title)>_<dd_mm_yyyy>_<HHmmss>.<ext>`; the title is the source (falling
+back to the code); the stamp is always the creation instant in Asia/Jakarta, so
+two files never collide, with `_2`, `_3` for a same-second match; the slug is
+cut at 80 characters on a word boundary; the uploader's file name is discarded;
+the S3 key stays `<prefix>/<uuid>.<ext>`; existing rows are not backfilled; the
+signed-PDF artifact follows the same rule; and every document that registers
+from another module gets a human title so the name means something.
+
+**Change — naming.**
+
+- New `app/document/utils/document-file-name.ts`: `slugifyDocumentTitle`,
+  `jakartaFileStamp` (`dd_mm_yyyy_HHmmss`, +7h shift, no new dependency) and
+  `documentFileName` (`taken` names get the next suffix). Unit test
+  `test/unit/document-file-name.test.ts` (8 tests: diacritics, punctuation,
+  word-boundary cap, Jakarta day rollover, code fallback, collision, case).
+- `document.service.ts`: one private `attachFile(document, file, actor)` used by
+  upload and both generated-file paths; it lists the document's live files for
+  `taken` and stores the derived name. `attachGeneratedFile` and
+  `attachGeneratedFileTo` now return `{ id, fileName } | null`, so callers stop
+  inventing a name.
+- `providers/s3/document-file.ts`: `fileExtensionOf(mimeType)` exported.
+- `signature.service.ts`: the signed-PDF URL uses
+  `<slug(title)>_signed_<stamp>.pdf` instead of `signed.pdf`.
+- `human-resource`: agreement + payslip PDFs no longer build a name from the
+  code (the service names them); `payslip.controller.ts` ZIP header is
+  `slip_gaji_<periode>_<dd_mm_yyyy>.zip` (ZIP entries already carry each file's
+  stored name, so they follow automatically).
+- `sale/quotation-delivery.service.ts`: uses the returned `fileName` for the
+  public link instead of `code.pdf`.
+
+**Change — titles** (label Indonesia; no backfill, `docs.dbml` untouched):
+
+| register site | title |
+|---|---|
+| quotation | `Penawaran - <customerSnapshot.name>` |
+| sales order | `Pesanan Penjualan - <customerSnapshot.name>` |
+| delivery note | `Surat Jalan - <customerName>` |
+| invoice | `Faktur - <customerSnapshot.name>` (fallback `title`) |
+| receipt (sale + gateway) | `Kuitansi - <customerSnapshot.name>` |
+| sales return | `Retur Penjualan - <row.customerName>` |
+| purchase order | `Pesanan Pembelian - <supplierSnapshot.name>` |
+| goods receipt | `Penerimaan Barang - <supplierSnapshot.name>` |
+| purchase return | `Retur Pembelian - <row.supplierName>` |
+| BAST | `BAST - <project.customerName> - <project.code>` |
+| warranty | `Garansi - <customer.name> - <project.code>` |
+| license contract | `Kontrak Lisensi - <customer.name>` (one `getActiveCustomer`) |
+| ticket | `Tiket Servis - <code> - <customerName>` |
+
+Every name comes from data already loaded at that point (snapshot columns,
+joined row types, the project row) except the licence contract, which reads the
+customer once. `handover.service.ts` now keeps the `requireActive` result
+instead of discarding it.
+
+**Checks.**
+
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `cd apps/backend && bun test`: 1464 pass, 0 fail (was 1455: +8 helper tests,
+  +1 upload-name test; upload/preview/generated-file/quotation-delivery/
+  agreement assertions updated for the new contract).
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- `bun docs/database/validate-dbml.ts`: OK (196 tables, 153 refs).
+- Browser (dev servers :5173/:3001, admin): uploaded `scan001.pdf` to
+  `0029/DOC/DEV/XI/26` → stored as
+  `perjanjian_kerja_elma_elma_pratiwi_25_11_2026_111818.pdf`, shown under that
+  name in the viewer's Files table, and the download URL's
+  `response-content-disposition` carried the same name. The QA file was deleted
+  afterwards (200). **Not exercised**: the payslip ZIP header (no salary
+  records for any period in this tenant, `409`), and no PDF render was run
+  (Chromium not configured here) so the agreement/payslip/signed-PDF names are
+  covered by unit tests only.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (the name is computed at write
+time into the existing `document.files.file_name`), so `docs.dbml` is unchanged.
+No route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
 ## 2026-11-25 - ERP-0129: document registry as a card grid + full-page viewer
 
 **Request.** `/documents/files` was a table. Make each registry document a

@@ -1,5 +1,6 @@
 import { domainPlugin } from '@http/plugin';
 import { ok } from '@http/response';
+import { businessDateOf } from '@utils/business-date.util';
 import { container } from 'tsyringe';
 import { z } from 'zod';
 import { PAYSLIP_SERVICE_TOKEN } from '../constants/di';
@@ -26,8 +27,10 @@ export class PayslipController {
 					const { period } = payslipZipQuerySchema.parse(query);
 					const ctx = await context(erp);
 					const bytes = await service.zip(ctx.scope, period, ctx.actorUserId);
+					const [year = '', month = '', day = ''] = businessDateOf().split('-');
+					const fileName = `slip_gaji_${period.replace('-', '_')}_${day}_${month}_${year}.zip`;
 					return new Response(new Blob([bytes as BlobPart]), {
-						headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="slip-gaji-${period}.zip"` },
+						headers: { 'Content-Type': 'application/zip', 'Content-Disposition': `attachment; filename="${fileName}"` },
 					});
 				},
 				{ erp: { permission: ['payroll:read'] }, detail: { description: 'Every ready payslip of a period in one ZIP' } },
