@@ -77,6 +77,7 @@ const DYNAMIC_PREFIXES = [
 	'finance:fixedAssets.status.',
 	'finance:budgets.status.',
 	'finance:budgets.total.',
+	'finance:statements.compare.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',

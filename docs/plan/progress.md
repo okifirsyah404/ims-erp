@@ -12,6 +12,43 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0148: direct and indirect cash flow, changes in equity, comparatives
+
+**Scope.** Phase D slice 1 (owner: "Lanjut fase D").
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`,
+`journal_entries`, `chart_of_accounts.cash_flow_category`,
+`bank_account_links`): no schema change, `docs/database/` unchanged. Manual
+grill pass: read-only, finance tables, tenant-scoped, posted and reversed
+entries. Decisions: cash accounts = postable 1-11xx plus linked GL accounts;
+the direct method uses the balanced-entry identity instead of proportional
+allocation; contra assets are a non-cash operating adjustment in the
+indirect view; equity without a category is financing; whole-month ranges
+compare with whole months.
+
+**Changes.** Backend: `StatementRepository` (cash accounts, cash
+counterparts, activity), `StatementService` (build, statements with
+comparatives), `GET /finance/reports/statements`. Web-admin: "Cash flow &
+equity" tab (direct, indirect, equity, comparative column; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary statements smoke>          # run 1: 4/4 but the "previous period" of November was 2-31 October;
+                                              # fixed to whole months; run 2: 4/4 - direct ties to balance-sheet
+                                              # cash (opening 0 + 4,427,459.12 = closing), indirect = direct,
+                                              # closing equity = balance-sheet equity, comparative 1-31 October
+bun test test/finance/statements.test.ts      # 4 pass (hand-worked mini ledger)
+bun run test                                  # 7/7 tasks: backend 1576, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 755 routes
+```
+
+**Not verified.** No browser walk-through. The ERP-0133 cash-flow endpoint is
+unchanged and still misclassifies non-cash entries (documented).
+
+Next executable task: ERP-0149 (13-week cash-flow forecast).
+
 ## 2026-11-25 - ERP-0147: cost accounting reports; contra-account signing fixed
 
 **Scope.** Phase C slice 5 (Phase C complete).

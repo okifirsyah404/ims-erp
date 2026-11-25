@@ -2,7 +2,8 @@ import { domainPlugin } from '@http/plugin';
 import { ok } from '@http/response';
 import { container } from 'tsyringe';
 import { z } from 'zod';
-import { COST_REPORT_SERVICE_TOKEN } from '../constants/di';
+import { COST_REPORT_SERVICE_TOKEN, STATEMENT_SERVICE_TOKEN } from '../constants/di';
+import { statementQuerySchema } from '../contracts/statement.contract';
 import { costReportQuerySchema } from '../contracts/cost-report.contract';
 
 /**
@@ -12,6 +13,7 @@ import { costReportQuerySchema } from '../contracts/cost-report.contract';
 export class CostReportController {
 	static plugin() {
 		const service = container.resolve(COST_REPORT_SERVICE_TOKEN);
+		const statements = container.resolve(STATEMENT_SERVICE_TOKEN);
 		return domainPlugin({ name: 'finance-cost-reports', prefix: '/finance/reports', tags: ['Finance'], guards: 'erp' })
 			.get(
 				'/project-costing',
@@ -28,6 +30,17 @@ export class CostReportController {
 					return ok(await service.projectDetail(erp.organizationId, z.object({ projectId: z.uuid() }).parse(params).projectId, from, to));
 				},
 				{ erp: { permission: ['financial_report:read'] }, detail: { description: "One project's revenue and cost per account" } },
+			)
+			.get(
+				'/statements',
+				async ({ query, erp }) => {
+					const { from, to, compare } = statementQuerySchema.parse(query);
+					return ok(await statements.statements(erp.organizationId, from, to, compare));
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: { description: 'Direct and indirect cash flow, changes in equity, with an optional comparative range (ERP-0148)' },
+				},
 			)
 			.get(
 				'/cost-center-pl',

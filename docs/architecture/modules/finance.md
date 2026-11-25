@@ -504,6 +504,32 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   each account's own normal-side running balance. Found because the
   cost-centre totals did not tie to the P&L.
 
+## Statements: direct and indirect cash flow, changes in equity (D, ERP-0148, built)
+
+- `GET /finance/reports/statements?from&to&compare=none|previous_period|previous_year`
+  (`financial_report:read`); reports page tab "Cash flow & equity".
+- Direct method (primary): the non-cash lines of every posted entry that
+  touches a cash account (postable 1-11xx Kas dan Setara Kas, or a GL account
+  linked to a cash/bank account), netted per counterpart account; in a
+  balanced entry their credit - debit is exactly the cash moved, so
+  cash-to-cash transfers vanish. Category: the account's cash-flow category;
+  P&L and uncategorised accounts are operating, equity defaults to
+  financing. Closing cash is tied to the balance-sheet cash
+  (`tieDifference`, zero when tied).
+- Indirect view: net income + non-cash adjustments (contra assets, i.e.
+  accumulated depreciation) + working-capital changes + investing and
+  financing balance movements; equals the direct total by double entry.
+- Changes in equity per equity account (opening, increases, decreases,
+  closing) plus earlier results not yet closed and the period result; the
+  closing ties to the balance-sheet equity.
+- Comparatives: whole calendar months step back by the same number of
+  months, other ranges by the same number of days; or the same range a year
+  earlier.
+- Known issue kept: the ERP-0133 `GET /finance/reports/cash-flow` (tab "Cash
+  flow") treats every counterpart movement as cash, so non-cash entries such
+  as an invoice show as inflow. The new statement is the correct one; the old
+  endpoint should be retired or rebuilt on it.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

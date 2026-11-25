@@ -1802,3 +1802,29 @@ export function costCenterPlQueryOptions(from: string, to: string) {
 			),
 	});
 }
+
+/* ----------------------------- statements (ERP-0148) ----------------------------- */
+
+export type TStatementCompare = 'none' | 'previous_period' | 'previous_year';
+type TSection = { lines: Array<{ accountId: string; code: string; name: string; amount: number }>; total: number };
+export type TStatementSet = {
+	from: string;
+	to: string;
+	directCashFlow: { operating: TSection; investing: TSection; financing: TSection; netChange: number; openingCash: number; closingCash: number; tieDifference: number };
+	indirectCashFlow: { netIncome: number; adjustments: TSection; workingCapital: TSection; operating: number; investing: TSection; financing: TSection; netChange: number };
+	changesInEquity: {
+		lines: Array<{ accountId: string; code: string; name: string; opening: number; increase: number; decrease: number; closing: number }>;
+		unclosedPriorResult: number;
+		periodResult: number;
+		opening: number;
+		closing: number;
+	};
+};
+export type TStatements = { current: TStatementSet; comparative: TStatementSet | null };
+
+export function statementsQueryOptions(from: string, to: string, compare: TStatementCompare) {
+	return queryOptions({
+		queryKey: ['finance', 'reports', 'statements', from, to, compare],
+		queryFn: () => getData<TStatements>(`/finance/reports/statements?from=${from}&to=${to}&compare=${compare}`),
+	});
+}

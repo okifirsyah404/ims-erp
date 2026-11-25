@@ -56,6 +56,8 @@ import {
 	PROJECT_BUDGET_SERVICE_TOKEN,
 	COST_REPORT_REPOSITORY_TOKEN,
 	COST_REPORT_SERVICE_TOKEN,
+	STATEMENT_REPOSITORY_TOKEN,
+	STATEMENT_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -109,6 +111,8 @@ import { ProjectBudgetRepository } from './repositories/project-budget.repositor
 import { ProjectBudgetService } from './services/project-budget.service';
 import { CostReportRepository } from './repositories/cost-report.repository';
 import { CostReportService } from './services/cost-report.service';
+import { StatementRepository } from './repositories/statement.repository';
+import { StatementService } from './services/statement.service';
 import { TaxLedgerService } from './services/tax-ledger.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
@@ -231,6 +235,8 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(PROJECT_BUDGET_SERVICE_TOKEN, { useClass: ProjectBudgetService });
 	container.register(COST_REPORT_REPOSITORY_TOKEN, { useClass: CostReportRepository });
 	container.register(COST_REPORT_SERVICE_TOKEN, { useClass: CostReportService });
+	container.register(STATEMENT_REPOSITORY_TOKEN, { useClass: StatementRepository });
+	container.register(STATEMENT_SERVICE_TOKEN, { useClass: StatementService });
 }
 
 export * from './constants/di';

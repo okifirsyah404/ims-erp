@@ -987,6 +987,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   page. The P&L and balance sheet now subtract contra accounts (sales
   returns, accumulated depreciation) instead of adding them.
 
+- Statements, Phase D (ERP-0148, 2026-11-25): cash flow by the direct method
+  tied to the cash balance, the indirect reconciliation and the statement of
+  changes in equity, each with a comparative column.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phases B and C complete except stock/asset
   opening detail and capitalization from goods receipts); (Phase C: bank statement import,

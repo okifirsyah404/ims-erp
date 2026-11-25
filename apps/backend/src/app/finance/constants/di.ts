@@ -1,3 +1,5 @@
+import type { IStatementRepository } from '../contracts/statement.contract';
+import type { StatementService } from '../services/statement.service';
 import type { ICostReportRepository } from '../contracts/cost-report.contract';
 import type { CostReportService } from '../services/cost-report.service';
 import type { IProjectBudgetRepository } from '../contracts/project-budget.contract';
@@ -203,3 +205,7 @@ export const PROJECT_BUDGET_SERVICE_TOKEN: InjectionToken<ProjectBudgetService> 
 /** Cost accounting reports (ERP-0147). */
 export const COST_REPORT_REPOSITORY_TOKEN: InjectionToken<ICostReportRepository> = Symbol('COST_REPORT_REPOSITORY');
 export const COST_REPORT_SERVICE_TOKEN: InjectionToken<CostReportService> = Symbol('COST_REPORT_SERVICE');
+
+/** Statements: direct/indirect cash flow, changes in equity, comparatives (ERP-0148). */
+export const STATEMENT_REPOSITORY_TOKEN: InjectionToken<IStatementRepository> = Symbol('STATEMENT_REPOSITORY');
+export const STATEMENT_SERVICE_TOKEN: InjectionToken<StatementService> = Symbol('STATEMENT_SERVICE');
