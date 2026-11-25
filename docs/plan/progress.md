@@ -12,6 +12,139 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0129: document registry as a card grid + full-page viewer
+
+**Request.** `/documents/files` was a table. Make each registry document a
+card whose image is the first page of the document (or a document icon), and
+open the document as a full page when the card is clicked — Google Docs as the
+reference, simpler.
+
+**Design (grilled in-session, 12 decisions).** The existing detail route
+`/documents/files/$documentId` becomes the viewer (no second route); PDFs render
+as a continuous, lazily drawn page stack at fit-width with no zoom; one
+document shows its newest file with a file switcher when it has more; card
+thumbnails are rendered client-side by `pdfjs-dist` and cached for the session;
+cards show preview + title + code + type + date + status with void behind a
+hover menu; a document without files still shows a card (icon) and its viewer
+offers the upload; everything that used to be the detail page moves into a
+right-hand Details sheet; pagination stays at 20/page; a thumbnail render never
+writes an access-trail row; print draws every page first, then opens the
+browser dialog; void asks for confirmation; signed-PDF artifacts stay out of
+scope.
+
+**Change — backend.**
+
+- `GET /documents` rows now carry `preview: { fileId, fileName, mimeType, url }
+  | null` — the newest live file of the row, presigned inline for 300 s.
+  `IDocumentRepository.latestFiles(documentIds)` fetches the files of a whole
+  page in one `IN (...)` query, so a page of cards is two queries and the
+  service picks the newest per document. No migration, no schema change.
+- `test/unit/document.service.test.ts`: two new tests (newest file wins and the
+  preview writes no trail row; a row without files has `preview: null`).
+
+**Change — web-admin.**
+
+- New `components/documents/document-canvas.tsx`: `DocumentThumbnail` (page-one
+  render near the viewport, session cache keyed by presigned URL, capped at 200,
+  images render directly, icon fallback, one refetch on a dead URL) and
+  `DocumentPages` (page stack, `IntersectionObserver` per page, device-pixel
+  ratio capped at 2, `force` renders everything for print and reports when all
+  pages are drawn).
+- `routes/_authed/documents/files/index.tsx`: DataTable replaced by a responsive
+  card grid (2/3/4/5 columns) with skeleton cards; the card link is not
+  prefetched on purpose (the detail endpoint appends a `view` row); void moved
+  to a hover `RowActions` outside the anchor and now asks for confirmation.
+- `routes/_authed/documents/files/$documentId.tsx`: rewritten as the viewer —
+  toolbar (back, code/title/status, file switcher, download, print, void,
+  details), canvas, and a Details `Sheet` holding the overview, files, share
+  links, signatures and access trail cards unchanged.
+- `lib/documents-api.ts`: `TDocumentPreview` and `preview` on `TDocument`.
+- Locales en+id: `details`, `print`, `previewUnavailable`,
+  `voidConfirmTitle`, `voidConfirmDescription`.
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `cd apps/web-admin && bun run build`: built (same pre-existing >500 kB chunk
+  warning; `pdfjs` now also sits in the main chunk because the list page needs
+  it for thumbnails).
+- `bunx oxlint src/components/documents src/routes/_authed/documents/files`:
+  clean (the two warnings in `signatures/.../place.tsx` are pre-existing).
+- `cd apps/backend && bun test`: 1455 pass, 0 fail.
+- `bun test apps/web-admin`: 211 pass, 0 fail.
+- `bun test packages/locales`: 106 pass, 0 fail.
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `bun docs/database/validate-dbml.ts`: OK (196 tables, 153 refs).
+
+**Browser verification** (in-app browser, dev servers on :5173 + :3001, app
+admin, tenant with 29 documents):
+
+- `/documents/files`: 29 documents render as a card grid (4 columns at
+  1280 px), each with title, code, type, status badge; documents without files
+  show the `FileText` icon. No console error.
+- Uploaded a 3-page QA PDF to `0029/DOC/DEV/XI/26` (multipart through the API
+  from the page context): the first card rendered page one as a 320 px WebP
+  thumbnail (`data:image/webp`, 320x453) within ~2 s; the other 28 cards kept
+  the icon and rendered nothing.
+- Clicking that card opened `/documents/files/01a20e95-…`; the viewer stacked
+  three A4 pages (`900x1274` canvases) and the third canvas stayed at its
+  default size until it scrolled into range, then rendered `900x1274` — the
+  lazy per-page path works.
+- Toolbar: Download and Print are disabled for a document with no file; Void
+  opened the confirm dialog ("Void this document? … This cannot be undone"),
+  Cancel closed it and the status stayed `Draft`.
+- Print (with `window.print` stubbed in the page): the button rendered the
+  unvisited third page and then called `window.print` exactly once — all three
+  canvases were drawn first.
+- Uploaded a second 1-page PDF: the toolbar showed a file switcher reading the
+  newest file, and switching back to `qa-3pages.pdf` re-rendered the stack from
+  page one.
+- Details sheet: shows code as its title, the overview, both files with size and
+  upload time, the empty share/signature states and the access trail — the
+  trail shows the viewer visits and nothing from the list or the thumbnails,
+  which is the intended behaviour.
+- Deleted both QA files through the API afterwards (200, 200); the card went
+  back to the icon and the registry is as it was.
+
+Two fixes came out of that pass: the back button used `render={<Link/>}` without
+`nativeButton={false}` (Base UI `nativeButton` console error), and the Details
+sheet needed `data-[side=right]:sm:max-w-2xl` because the base class's
+`sm:max-w-sm` was capping it at 384 px.
+
+**Follow-up, same day (card corner menu).** The corner action was a bare Void
+button on hover; it is now a `…` dropdown with **Detail, Void, Print,
+Download**:
+
+- `components/data-table/row-actions.tsx` gained an optional `menu` prop so a
+  short action list still renders as a dropdown (the table default of turning
+  ≤3 actions into an icon strip is unchanged everywhere else).
+- `RowActions` in a card needs no anchor: it stays outside the card's `<Link>`,
+  revealed on hover/focus.
+- Detail navigates to the viewer; Void opens the existing confirm dialog;
+  Download calls `downloadDocumentFile` (writes a `download` trail row) and
+  opens the presigned URL; Print navigates to the viewer with `?print=1`, which
+  the viewer reads via `validateSearch` and auto-prints once every page is
+  drawn, then drops the flag (`navigate({ search: {}, replace: true })`) so a
+  reload does not print again.
+- Print and Download are disabled when the row has no file (no `preview`);
+  Void is hidden without `document.update` or for a void document; Download is
+  also disabled without `document.download`.
+- Locale key `documents:detailAction` (en `Detail`, id `Lihat detail`).
+
+Browser re-verified with a QA 2-page PDF: the menu lists exactly Detail, Void,
+Print, Download in that order; Detail opened the viewer (`900x1274` canvases,
+no console error); Print navigated to `…$documentId`, rendered both pages and
+called `window.print` once, leaving no `print` query in the URL; Download
+opened the MinIO presigned URL; Void opened and cancelled the confirm dialog;
+after deleting the file the card showed the icon and Print/Download were
+`aria-disabled`. The QA file was deleted afterwards (200).
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (the preview is a computed
+presigned URL, not a stored column), so `docs.dbml` is unchanged. No route,
+guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
 ## 2026-11-25 - ERP-0128: sidebar section order and Subscription inside Projects
 
 **Request.** Reorder the sidebar sections to Dashboard, CRM & Sales, Finance,

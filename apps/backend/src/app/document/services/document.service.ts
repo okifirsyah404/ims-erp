@@ -1,4 +1,4 @@
-import type { TDocumentSelect, TDocumentTemplateSelect } from '@drizzle/schemas/document.schema';
+import type { TDocumentFileSelect, TDocumentSelect, TDocumentTemplateSelect } from '@drizzle/schemas/document.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import { documentFileFrom, storeDocumentFile } from '@providers/s3/document-file';
@@ -15,6 +15,8 @@ import type {
 	TIssueDocumentInput,
 	TPublicDocumentView,
 	TDraftDocumentInput,
+	TDocumentListRow,
+	TDocumentPreviewView,
 	TRegisterDocumentInput,
 	TSourceDocument,
 } from '../contracts/document.contract';
@@ -171,9 +173,27 @@ export class DocumentService {
 		return true;
 	}
 
-	/** Fetches one page of the document registry. */
-	list(request: TDocumentPaginationRequest): Promise<TPaginationResult<TDocumentSelect>> {
-		return this.repository.paginate(request);
+	/**
+	 * One page of the registry, each row carrying the preview of its newest
+	 * live file (the card thumbnail).
+	 *
+	 * @remarks
+	 * The files of the whole page come from one query, so a page of cards is
+	 * two queries, not one per row. A preview never writes an access-trail
+	 * row: only opening the document does.
+	 */
+	async list(request: TDocumentPaginationRequest): Promise<TPaginationResult<TDocumentListRow>> {
+		const page = await this.repository.paginate(request);
+		if (page.data.length === 0) return { ...page, data: [] };
+		const files = await this.repository.latestFiles(page.data.map((row) => row.id));
+		const newest = new Map<string, TDocumentFileSelect>();
+		for (const file of files) {
+			if (!newest.has(file.documentId)) newest.set(file.documentId, file);
+		}
+		return {
+			...page,
+			data: page.data.map((row) => ({ ...row, preview: this.previewView(newest.get(row.id)) })),
+		};
 	}
 
 	/** One document; reading it appends a `view` row to the access trail. */
@@ -591,6 +611,21 @@ export class DocumentService {
 		const document = await this.repository.findById(share.documentId);
 		if (!document || document.status === 'void') throw new DocumentShareNotFoundError();
 		return document;
+	}
+
+	/** The newest file of a row as the card sees it, or `null` when it has none. */
+	private previewView(file: TDocumentFileSelect | undefined): TDocumentPreviewView | null {
+		if (!file) return null;
+		return {
+			fileId: file.id,
+			fileName: file.fileName,
+			mimeType: file.mimeType,
+			url: this.storage.presignGet(file.storageKey, {
+				fileName: file.fileName,
+				inline: true,
+				expiresIn: DOWNLOAD_TTL_SECONDS,
+			}),
+		};
 	}
 
 	/** One file row as the client sees it, with a presigned inline URL. */

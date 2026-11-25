@@ -1081,6 +1081,23 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `is_secret` stays reserved (`false`): the API neither accepts nor returns it.
   UI `CompanySettingsCard` on `/admin/company`. Evidence: `progress.md`
   2026-11-13 ERP-0045; `test/unit/company.service.test.ts` 15 pass.
+- ERP-0129 Document registry as a card grid + full-page viewer (2026-11-25).
+  `/documents/files` lists registry rows as cards whose image is the first page
+  of the newest live file (client-rendered by `pdfjs-dist`, viewport-lazy,
+  session-cached) or a document icon; `GET /documents` rows carry
+  `preview {fileId,fileName,mimeType,url}` from one file query per page and the
+  preview writes no access-trail row. `/documents/files/$documentId` is the
+  viewer: continuous lazily drawn page stack at fit-width, file switcher,
+  download/print/void/details toolbar, and a Details sheet holding the overview,
+  files, share links, signatures and access trail. Print draws every page before
+  `window.print()`; void asks for confirmation. The card's corner is a forced
+  dropdown — Detail, Void, Print (`?print=1` on the viewer, auto-print then the
+  flag is dropped), Download — with Print/Download disabled for a row without a
+  file, so the list exposes the same actions as the viewer without opening it.
+  Evidence: `progress.md`
+  2026-11-25 ERP-0129 (browser-verified: thumbnail, lazy pages, print, file
+  switcher, details sheet); backend 1455, web-admin 211, locales 106.
+  Gaps: no e2e, no zoom, signed-PDF artifacts stay out of the viewer.
 - ERP-0044 Document registry wiring + files + public share links (2026-11-13).
   11 outward-facing types register through `DocumentService.register` and void
   with `voidBySource`; `document.files` upload/list/soft-delete/presigned download

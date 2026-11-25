@@ -131,6 +131,18 @@ export type TDocumentFileView = {
 	url: string;
 };
 
+/** The newest file of a registry row, for the card thumbnail. */
+export type TDocumentPreviewView = {
+	fileId: string;
+	fileName: string;
+	mimeType: string | null;
+	/** Short-lived inline presigned URL; never appends an access-trail row. */
+	url: string;
+};
+
+/** A registry row as the list screen sees it: with its newest file's preview. */
+export type TDocumentListRow = TDocumentSelect & { preview: TDocumentPreviewView | null };
+
 /** One share link as the client sees it. */
 export type TDocumentShareView = {
 	id: string;

@@ -65,6 +65,20 @@ class FakeRepository {
 		return this.document?.id === id ? this.document : null;
 	}
 
+	async paginate() {
+		const rows = this.document ? [this.document] : [];
+		return {
+			meta: { page: 1, limit: 20, total: rows.length, totalPages: rows.length ? 1 : 0 },
+			data: rows,
+		};
+	}
+
+	async latestFiles(documentIds: string[]) {
+		return this.files
+			.filter((file) => documentIds.includes(file.documentId))
+			.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
+	}
+
 	async findLiveBySource(module: string, sourceType: string, sourceId: string) {
 		const doc = this.document;
 		return doc && doc.status !== 'void' && doc.module === module && doc.sourceType === sourceType && doc.sourceId === sourceId
@@ -254,6 +268,27 @@ describe('document share links', () => {
 		await expect(service.revokeShare(other.id, share.id)).rejects.toBeInstanceOf(
 			DocumentShareNotFoundError,
 		);
+	});
+});
+
+describe('document list previews', () => {
+	test('a row carries the newest file and the preview writes no trail row', async () => {
+		const first = new File(['a'], 'original.pdf', { type: 'application/pdf' });
+		const second = new File(['bb'], 'signed.pdf', { type: 'application/pdf' });
+		await service.uploadFile(repository.document!.id, { file: first }, USER);
+		repository.files[0].uploadedAt = new Date(Date.now() - 60_000);
+		await service.uploadFile(repository.document!.id, { file: second }, USER);
+
+		const page = await service.list({ page: 1, limit: 20, search: null, status: null, documentType: null, organizationId: null });
+
+		expect(page.data[0].preview).toMatchObject({ fileName: 'signed.pdf', mimeType: 'application/pdf' });
+		expect(page.data[0].preview?.url).toContain('https://files.test/documents/');
+		expect(repository.trail).toHaveLength(0);
+	});
+
+	test('a row with no file has a null preview', async () => {
+		const page = await service.list({ page: 1, limit: 20, search: null, status: null, documentType: null, organizationId: null });
+		expect(page.data[0].preview).toBeNull();
 	});
 });
 
