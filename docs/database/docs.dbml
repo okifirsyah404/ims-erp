@@ -3058,6 +3058,40 @@ Table finance.opening_balances {
   }
 }
 
+Table finance.opening_subledger_items {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  ledger text [not null, note: "ar or ap."]
+  customer_id uuid [note: "Logical reference to customer.customers.id. Cross-module FK intentionally omitted. Resolved by code through ExportedCustomerService.findCustomerByCode on import; set on ar rows."]
+  supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Resolved by code through ExportedSupplierService.findCompanyByCode on import; set on ap rows."]
+  party_code varchar(32) [not null, note: "Customer or supplier code as imported (snapshot)."]
+  party_name text [not null, note: "Snapshot."]
+  document_number varchar(100) [not null, note: "The open invoice or bill number at cutover."]
+  document_date date [not null]
+  due_date date
+  amount bigint [not null, note: "Outstanding amount at the as-of date, IDR minor units."]
+  currency_code varchar(3) [not null, default: 'IDR']
+  as_of_date date [not null, note: "Cutover date; must equal the opening-balance batch date when posted."]
+  ar_open_item_id uuid [ref: > finance.ar_open_items.id, note: "The AR open item created when the batch posted."]
+  supplier_bill_id uuid [ref: > finance.supplier_bills.id, note: "The opening supplier bill created when the batch posted (ap rows)."]
+  ap_open_item_id uuid [ref: > finance.ap_open_items.id, note: "The AP open item created when the batch posted."]
+  posted_at bigint
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Sub-ledger detail behind the opening balance of the AR and AP control accounts (ERP-0142). Imported per ledger as CSV (all or nothing; an import replaces the unposted rows of its ledger). Posting the opening batch is refused while a ledger's total differs from its control account's opening row; on posting, AR rows become ar_open_items (no invoice) and AP rows become approved supplier bills with ap_open_items, without a journal of their own (the opening journal carries the amounts)."
+  Indexes {
+    (organization_id, ledger, document_number) [unique, name: 'opening_subledger_items_document_uq', note: 'WHERE deleted_at IS NULL']
+    (organization_id, ledger, posted_at) [name: 'opening_subledger_items_ledger_idx']
+  }
+  Checks {
+    `ledger IN ('ar', 'ap')`
+    `amount > 0`
+    `currency_code = 'IDR'`
+  }
+}
+
 Table finance.account_balances {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]

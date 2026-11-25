@@ -46,6 +46,8 @@ import {
 	GATEWAY_SETTLEMENT_SERVICE_TOKEN,
 	TAX_LEDGER_SERVICE_TOKEN,
 	PAYROLL_LEDGER_SERVICE_TOKEN,
+	OPENING_SUBLEDGER_REPOSITORY_TOKEN,
+	OPENING_SUBLEDGER_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -89,6 +91,8 @@ import { DeferredRevenueService } from './services/deferred-revenue.service';
 import { ReceivableAdjustmentService } from './services/receivable-adjustment.service';
 import { GatewaySettlementService } from './services/gateway-settlement.service';
 import { PayrollLedgerService } from './services/payroll-ledger.service';
+import { OpeningSubledgerRepository } from './repositories/opening-subledger.repository';
+import { OpeningSubledgerService } from './services/opening-subledger.service';
 import { TaxLedgerService } from './services/tax-ledger.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
@@ -201,6 +205,8 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(GATEWAY_SETTLEMENT_SERVICE_TOKEN, { useClass: GatewaySettlementService });
 	container.register(TAX_LEDGER_SERVICE_TOKEN, { useClass: TaxLedgerService });
 	container.register(PAYROLL_LEDGER_SERVICE_TOKEN, { useClass: PayrollLedgerService });
+	container.register(OPENING_SUBLEDGER_REPOSITORY_TOKEN, { useClass: OpeningSubledgerRepository });
+	container.register(OPENING_SUBLEDGER_SERVICE_TOKEN, { useClass: OpeningSubledgerService });
 }
 
 export * from './constants/di';

@@ -661,6 +661,13 @@ const api: Record<keyof typeof en, string> = {
 	'hr.payroll.bp21IdentityMissing': 'Karyawan tanpa NIK atau NPWP menghambat ekspor BP21: {{names}}',
 	'hr.payroll.bp21AnnualUnsupported': 'Masa pajak terakhir dilaporkan di bukti potong tahunan, yang belum dibuat oleh ekspor ini',
 	'hr.payroll.bp21NothingToExport': 'Periode ini tidak punya data gaji disetujui dengan PPh 21',
+	'accounting.openingSubledgerMismatch': 'Rincian saldo awal {{ledger}} berjumlah {{subledger}} sedangkan akun kontrolnya dibuka {{control}}',
+	'accounting.openingSubledgerDate': 'Baris buku pembantu bertanggal {{itemDate}} sedangkan batch saldo awal {{batchDate}}',
+	'accounting.openingSubledgerPosted': 'Buku pembantu ini sudah punya rincian saldo awal yang diposting',
+	'accounting.openingSubledgerFile.type': 'Unggah berkas .csv',
+	'accounting.openingSubledgerFile.size': 'Berkas lebih besar dari 2 MB',
+	'accounting.openingSubledgerFile.empty': 'Berkas tidak berisi baris data',
+	'accounting.openingSubledgerFile.tooMany': 'Berkas berisi lebih dari 5000 baris',
 };
 
 export default api;

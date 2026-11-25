@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 200 such logical reference columns exist across 28 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
+- 203 such logical reference columns exist across 28 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -116,7 +116,7 @@ no central code-number module.
   identity folded into `customers` (Q5, Q12, Q16).
 - **Contract**: `ExportedCustomerService` (`assertCustomer`,
   `getActiveCustomer`, `getActiveCompany`, `resolvePortalIdentity`,
-  `getSnapshot`).
+  `getSnapshot`, `findCustomerByCode` - finance's opening AR import, ERP-0142).
 
 ### 5. Supplier - `supplier` (new, split from procurement)
 

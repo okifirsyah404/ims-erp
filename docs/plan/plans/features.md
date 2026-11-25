@@ -944,10 +944,17 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   unverified until a test import). Evidence: migration
   `20261125011648_erp0140_tax_postings`, unit tests, DB smoke 7/7.
 
+- Opening receivables and payables, Phase B (ERP-0142, 2026-11-25): the open
+  customer invoices and supplier bills at cutover are imported as CSV on the
+  opening-balance page; the batch posts only when each ledger equals its
+  control account, and posting creates the open items (supplier bills ready
+  to pay). Stock and fixed-asset opening detail are not covered yet.
+  Evidence: migration `20261125021519_erp0142_opening_subledger`, unit tests,
+  DB smoke 12/12.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close; ERP-0142 (Phase B:
-  payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
-  sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
+- ERP-0131 year-end close (Phase B complete except stock/asset opening
+  detail); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
   cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
   profitability, ratios, management pack, closed-period profit contract).

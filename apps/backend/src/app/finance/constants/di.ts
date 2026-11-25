@@ -1,3 +1,5 @@
+import type { IOpeningSubledgerRepository } from '../contracts/opening-subledger.contract';
+import type { OpeningSubledgerService } from '../services/opening-subledger.service';
 import type { PayrollLedgerService } from '../services/payroll-ledger.service';
 /**
  * DI tokens for the accounting module (tax + ledger slices).
@@ -173,3 +175,7 @@ export const TAX_LEDGER_SERVICE_TOKEN: InjectionToken<TaxLedgerService> = Symbol
 
 /** The payroll journal posted by Human Resource (ERP-0138). */
 export const PAYROLL_LEDGER_SERVICE_TOKEN: InjectionToken<PayrollLedgerService> = Symbol('PAYROLL_LEDGER_SERVICE');
+
+/** Sub-ledger opening balances (ERP-0142). */
+export const OPENING_SUBLEDGER_REPOSITORY_TOKEN: InjectionToken<IOpeningSubledgerRepository> = Symbol('OPENING_SUBLEDGER_REPOSITORY');
+export const OPENING_SUBLEDGER_SERVICE_TOKEN: InjectionToken<OpeningSubledgerService> = Symbol('OPENING_SUBLEDGER_SERVICE');

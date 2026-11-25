@@ -1,5 +1,6 @@
 import { MoneyInput } from '@/components/money-input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { OpeningSubledgerCard } from './opening-subledger-card';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -313,6 +314,8 @@ export function OpeningBalancePage() {
 					</Button>
 				</div>
 			) : null}
+
+			<OpeningSubledgerCard asOfDate={asOfDate} canEdit={canEdit && !hasPosted} />
 		</div>
 	);
 }

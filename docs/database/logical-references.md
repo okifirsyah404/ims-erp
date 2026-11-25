@@ -64,10 +64,10 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 200 |
+| Logical reference columns | 203 |
 | Distinct targets | 28 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 160 |
+| Intra-module `Ref:` declarations | 163 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -77,10 +77,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 56 |
+| `auth.organizations.id` | Identity | 57 |
 | `auth.users.id` | Identity | 32 |
 | `product.products.id` | Product | 16 |
-| `customer.customers.id` | Customer | 12 |
+| `customer.customers.id` | Customer | 13 |
 | `human_resource.employees.id` | Human Resource | 9 |
 | `location.villages.id` | Location | 8 |
 | `warehouse.warehouse_storages.id` | Warehouse | 8 |
@@ -88,7 +88,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `customer.companies.id` | Customer | 7 |
 | `project.projects.id` | Project | 7 |
 | `document.documents.id` | Document | 6 |
-| `supplier.companies.id` | Supplier | 5 |
+| `supplier.companies.id` | Supplier | 6 |
 | `finance.journal_entries.id` | Finance | 3 |
 | `payment.payments.id` | Payment | 3 |
 | `sale.invoices.id` | Sale | 3 |
@@ -108,7 +108,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 ## The 28 targets in full
 
-### `auth.organizations.id` - owner Identity, 56 referring columns
+### `auth.organizations.id` - owner Identity, 57 referring columns
 
 - `finance.account_balances`  ->  `organization_id`
 - `finance.accounting_periods`  ->  `organization_id`
@@ -132,6 +132,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.journal_lines`  ->  `organization_id`
 - `finance.journal_templates`  ->  `organization_id`
 - `finance.opening_balances`  ->  `organization_id`
+- `finance.opening_subledger_items`  ->  `organization_id`
 - `finance.payment_terms`  ->  `organization_id`
 - `finance.posting_rules`  ->  `organization_id`
 - `finance.report_archives`  ->  `organization_id`
@@ -221,10 +222,11 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sale.quotation_items`  ->  `product_id`
 - `sale.return_items`  ->  `product_id`
 
-### `customer.customers.id` - owner Customer, 12 referring columns
+### `customer.customers.id` - owner Customer, 13 referring columns
 
 - `finance.ar_open_items`  ->  `customer_id`
 - `finance.credit_memos`  ->  `customer_id`
+- `finance.opening_subledger_items`  ->  `customer_id`
 - `inventory.borrowing_requests`  ->  `borrower_customer_id`
 - `project.license_contracts`  ->  `customer_id`
 - `project.projects`  ->  `customer_id`
@@ -310,9 +312,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sale.contracts`  ->  `document_id`
 - `tax.corrections`  ->  `evidence_document_id`
 
-### `supplier.companies.id` - owner Supplier, 5 referring columns
+### `supplier.companies.id` - owner Supplier, 6 referring columns
 
 - `finance.ap_open_items`  ->  `supplier_company_id`
+- `finance.opening_subledger_items`  ->  `supplier_company_id`
 - `finance.supplier_bills`  ->  `supplier_company_id`
 - `inventory.items`  ->  `supplier_company_id`
 - `procurement.purchase_orders`  ->  `supplier_company_id`

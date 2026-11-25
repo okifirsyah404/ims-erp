@@ -20,7 +20,8 @@ export interface IArOpenItemRepository {
 	insertArOpenItem(
 		row: {
 			organizationId: string;
-			invoiceId: string;
+			/** `null` for an opening item without an invoice (ERP-0142). */
+			invoiceId: string | null;
 			customerId: string | null;
 			invoiceDate: string | null;
 			dueDate: string | null;

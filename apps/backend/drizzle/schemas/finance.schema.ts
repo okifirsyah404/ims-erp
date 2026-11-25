@@ -1128,6 +1128,44 @@ export const apOpenItems = financeSchema.table(
  * Asset depreciation (was assets.asset_depreciations)
  * ------------------------------------------------------------------------ */
 
+/** Sub-ledger detail behind the AR/AP opening balances (ERP-0142). */
+export const openingSubledgerItems = financeSchema.table(
+	'opening_subledger_items',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		ledger: text('ledger').$type<'ar' | 'ap'>().notNull(),
+		/** Logical reference to customer.customers.id — cross-module FK omitted. */
+		customerId: uuid('customer_id'),
+		/** Logical reference to supplier.companies.id — cross-module FK omitted. */
+		supplierCompanyId: uuid('supplier_company_id'),
+		partyCode: varchar('party_code', { length: 32 }).notNull(),
+		partyName: text('party_name').notNull(),
+		documentNumber: varchar('document_number', { length: 100 }).notNull(),
+		documentDate: date('document_date').notNull(),
+		dueDate: date('due_date'),
+		amount: bigint('amount', { mode: 'number' }).notNull(),
+		currencyCode: currencyCode(),
+		asOfDate: date('as_of_date').notNull(),
+		arOpenItemId: uuid('ar_open_item_id').references(() => arOpenItems.id, { onDelete: 'set null' }),
+		supplierBillId: uuid('supplier_bill_id').references(() => supplierBills.id, { onDelete: 'set null' }),
+		apOpenItemId: uuid('ap_open_item_id').references(() => apOpenItems.id, { onDelete: 'set null' }),
+		postedAt: unixTimestampNullable('posted_at'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		idrCheck('opening_subledger_items'),
+		uniqueIndex('opening_subledger_items_document_uq')
+			.on(table.organizationId, table.ledger, table.documentNumber)
+			.where(sql`deleted_at IS NULL`),
+		index('opening_subledger_items_ledger_idx').on(table.organizationId, table.ledger, table.postedAt),
+		check('opening_subledger_items_ledger_check', sql`ledger IN ('ar', 'ap')`),
+		check('opening_subledger_items_amount_check', sql`amount > 0`),
+	],
+);
+
 export const assetDepreciations = financeSchema.table(
 	'asset_depreciations',
 	{
@@ -1264,3 +1302,6 @@ export type TFinanceCodeNumberingSelect =
 	typeof financeCodeNumberings.$inferSelect;
 export type TFinanceCodeNumberingInsert =
 	typeof financeCodeNumberings.$inferInsert;
+
+export type TOpeningSubledgerItemSelect = typeof openingSubledgerItems.$inferSelect;
+export type TOpeningSubledgerItemInsert = typeof openingSubledgerItems.$inferInsert;

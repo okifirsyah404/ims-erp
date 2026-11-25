@@ -657,6 +657,13 @@ const api = {
 	'hr.payroll.bp21IdentityMissing': 'Employees without NIK or NPWP block the BP21 export: {{names}}',
 	'hr.payroll.bp21AnnualUnsupported': 'The last tax month is reported on the annual slip, which this export does not build',
 	'hr.payroll.bp21NothingToExport': 'This period has no approved record with PPh 21',
+	'accounting.openingSubledgerMismatch': 'The {{ledger}} opening detail totals {{subledger}} but its control account opens at {{control}}',
+	'accounting.openingSubledgerDate': 'Sub-ledger rows are dated {{itemDate}} but the opening batch is {{batchDate}}',
+	'accounting.openingSubledgerPosted': 'This ledger already has posted opening detail',
+	'accounting.openingSubledgerFile.type': 'Upload a .csv file',
+	'accounting.openingSubledgerFile.size': 'The file is larger than 2 MB',
+	'accounting.openingSubledgerFile.empty': 'The file has no data rows',
+	'accounting.openingSubledgerFile.tooMany': 'The file has more than 5000 rows',
 } as const;
 
 export default api;

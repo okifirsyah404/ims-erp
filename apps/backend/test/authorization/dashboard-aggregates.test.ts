@@ -44,6 +44,7 @@ beforeAll(async () => {
 	container.register(finance.PERIOD_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.POSTING_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.OPENING_BALANCE_SERVICE_TOKEN, { useValue: {} as never });
+	container.register(finance.OPENING_SUBLEDGER_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.MANUAL_JOURNAL_SERVICE_TOKEN, { useValue: {} as never });
 	container.register(finance.CASH_BANK_SERVICE_TOKEN, {
 		useValue: {

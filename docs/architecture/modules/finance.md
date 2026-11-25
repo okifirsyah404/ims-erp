@@ -351,6 +351,27 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   when an employee has neither NIK nor NPWP, and for the last tax month
   (the annual slip is not built). Format unverified until a test import.
 
+## Sub-ledger opening balances (B, ERP-0142, AR and AP built)
+
+- `finance.opening_subledger_items` holds the open customer invoices (`ar`)
+  and supplier bills (`ap`) at cutover, imported per ledger as CSV
+  (`/finance/ledger/opening-balances/subledger/import`, all or nothing,
+  parties resolved by code through `ExportedCustomerService.findCustomerByCode`
+  and `ExportedSupplierService.findCompanyByCode`; an import replaces the
+  unposted rows of its ledger and is refused once the ledger has posted
+  detail).
+- Posting the opening batch (`POST /finance/ledger/opening-balances/post`) is
+  refused while a ledger's draft total differs from the draft opening row of
+  its control account (rules `receivable` / `payable`, `'*'` event), whenever
+  either side is non-zero, and while detail rows carry another as-of date.
+- In the opening-journal transaction AR rows become `ar_open_items` without
+  an invoice; AP rows become approved supplier bills (no purchase order) with
+  `ap_open_items`, payable by the normal supplier payment flow. Neither posts
+  a journal: the opening journal carries the control-account amounts.
+- Not covered: stock (no inventory valuation contract yet) and fixed assets
+  (register is Phase C). An opening AR item has no invoice, so collecting it
+  through a receipt is not wired yet.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service
@@ -379,6 +400,7 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   and reference, unmatched lines become cash/bank transactions.
 - **Opening balances (B):** per sub-ledger import (AR, AP, stock, assets)
   that must tie to the control accounts, posted as one opening journal.
+  AR and AP built in ERP-0142 (see below); stock and assets still open.
 
 ## Permissions
 

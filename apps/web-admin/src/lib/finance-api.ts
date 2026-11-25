@@ -1453,3 +1453,62 @@ export function payPayroll(input: {
 }) {
 	return sendData<{ id: string }>('/finance/payroll/payments', 'POST', input);
 }
+
+/* ----------------------------- opening sub-ledgers (ERP-0142) ----------------------------- */
+
+export type TSubledger = 'ar' | 'ap';
+
+export type TSubledgerTie = {
+	ledger: TSubledger;
+	items: number;
+	total: number;
+	controlAccountId: string | null;
+	control: number;
+	tied: boolean;
+	posted: number;
+};
+
+export type TOpeningSubledgerItem = {
+	id: string;
+	ledger: TSubledger;
+	partyCode: string;
+	partyName: string;
+	documentNumber: string;
+	documentDate: string;
+	dueDate: string | null;
+	amount: number;
+	asOfDate: string;
+	postedAt: string | null;
+};
+
+export type TOpeningSubledgerImportResult = {
+	imported: number;
+	total: number;
+	errors: { row: number; code: string; value: string }[];
+};
+
+export function openingSubledgerQueryOptions() {
+	return queryOptions({
+		queryKey: ['opening-balances', 'subledger'],
+		queryFn: () => getData<{ ledgers: TSubledgerTie[]; items: TOpeningSubledgerItem[] }>('/finance/ledger/opening-balances/subledger'),
+	});
+}
+
+/** Uploads the open AR invoices or AP bills at cutover (CSV, all or nothing). */
+export async function importOpeningSubledger(ledger: TSubledger, asOfDate: string, file: File): Promise<TOpeningSubledgerImportResult> {
+	const form = new FormData();
+	form.append('file', file);
+	const response = await fetch(`${API_URL}/finance/ledger/opening-balances/subledger/import?ledger=${ledger}&asOfDate=${asOfDate}`, {
+		method: 'POST',
+		credentials: 'include',
+		headers: { ...organizationHeaders() },
+		body: form,
+	});
+	const envelope = (await response.json()) as TApiResponse<TOpeningSubledgerImportResult>;
+	if (!response.ok) throw new Error(envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed');
+	return envelope.data as TOpeningSubledgerImportResult;
+}
+
+export function discardOpeningSubledger(ledger: TSubledger) {
+	return sendData<{ removed: number }>(`/finance/ledger/opening-balances/subledger/discard?ledger=${ledger}`, 'POST');
+}

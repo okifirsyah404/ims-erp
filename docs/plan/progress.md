@@ -12,6 +12,64 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0142: AR and AP opening detail tied to the control accounts
+
+**Scope.** Phase B slice 7, the last of the owner's 2026-11-25 order.
+
+**Design gate.** `docs/database/` read for `finance.opening_balances`,
+`ar_open_items`, `ap_open_items`, `supplier_bills`, `customer.customers`,
+`supplier.companies` and `logical-references.md` (three new logical
+references on `finance.opening_subledger_items`: `customer_id`,
+`supplier_company_id`, `created_by`). Manual grill pass: ownership - finance
+owns the staging table and the open items, parties are resolved through the
+customer and supplier facades (one new contract method,
+`ExportedCustomerService.findCustomerByCode`); tenancy - `organization_id`;
+soft delete - imports soft-delete the unposted rows they replace; money -
+bigint minor units, `amount > 0`; status - `posted_at` stamp, no new
+vocabulary. Decisions: one staging table for both ledgers; the tie check runs
+when either the detail or the control row is non-zero (a control balance with
+no detail is refused); opening AP becomes approved supplier bills so the
+existing payment flow settles them; opening items post no journal of their
+own; stock and assets are left out (no inventory valuation contract, asset
+register is Phase C).
+
+**Changes.** Migration `20261125021519_erp0142_opening_subledger` (1 CREATE
+TABLE, 3 intra-module FKs). Backend: `OpeningSubledgerRepository`,
+`OpeningSubledgerService` (import, summary, discard, assertTied, materialize),
+`OpeningBalanceService.post` calls the tie check before posting and creates
+the open items inside the opening-journal transaction; `utils/csv.ts`;
+routes `GET /finance/ledger/opening-balances/subledger`,
+`GET .../subledger/template.csv`, `POST .../subledger/import`,
+`POST .../subledger/discard`; errors `accounting.openingSubledger*`.
+Web-admin: "Receivable and payable detail" card on the opening-balance page
+(import, tie status, discard, row errors; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 203 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0142_opening_subledger; bun run drizzle:migrate   # applied
+bun run <temporary opening-smoke script>      # 12/12 PASS: AR/AP import, AP short by Rp200.000 refuses the
+                                              # post with no journal written, re-import ties, post creates 2 AR
+                                              # open items (no invoice) and 2 approved bills + AP open items with
+                                              # no bill journal, detail stamped, re-import after posting refused
+bun test test/finance/opening-subledger.test.ts   # 5 pass
+bun run test                                  # 7/7 tasks: backend 1546, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 721 routes
+```
+
+The smoke inserted one customer (`CUS-OPEN`) and one supplier company
+(`SUP-OPEN`) into the scratch database, which had none.
+
+**Not verified.** Stock and fixed-asset opening detail (not built); collecting
+an opening AR item through a receipt (not wired); no browser walk-through.
+
+Next executable task: Phase B is done except the stock and fixed-asset
+opening detail. Next in ADR-0030 order: ERP-0131 (year-end close) or Phase C
+(ERP-0143 bank statement import); walk the Phase B screens in a browser first.
+
 ## 2026-11-25 - ERP-0138 part 2: PPh 21 and BPJS on salary records, payroll journal, payment, BP21
 
 **Scope.** Phase B slice 6b (owner's proposal 4 of 2026-11-25, completed).

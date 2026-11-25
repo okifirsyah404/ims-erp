@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import type { OpeningSubledgerService } from '../services/opening-subledger.service';
 import { container } from 'tsyringe';
 import type { ErpContext } from '@authorization/elysia-auth';
 import { domainPlugin } from '@http/plugin';
@@ -26,6 +28,7 @@ import {
 	ACCOUNT_SERVICE_TOKEN,
 	CASH_BANK_SERVICE_TOKEN,
 	OPENING_BALANCE_SERVICE_TOKEN,
+	OPENING_SUBLEDGER_SERVICE_TOKEN,
 	PERIOD_SERVICE_TOKEN,
 	POSTING_SERVICE_TOKEN,
 	MANUAL_JOURNAL_SERVICE_TOKEN,
@@ -54,6 +57,9 @@ export class LedgerController {
 		const accounts = container.resolve<AccountService>(ACCOUNT_SERVICE_TOKEN);
 		const periods = container.resolve<PeriodService>(PERIOD_SERVICE_TOKEN);
 		const posting = container.resolve<PostingService>(POSTING_SERVICE_TOKEN);
+		const subledger = container.resolve<OpeningSubledgerService>(OPENING_SUBLEDGER_SERVICE_TOKEN);
+		const subledgerLedgerSchema = z.object({ ledger: z.enum(['ar', 'ap']) });
+		const subledgerImportSchema = subledgerLedgerSchema.extend({ asOfDate: z.iso.date() });
 		const openingBalances = container.resolve<OpeningBalanceService>(
 			OPENING_BALANCE_SERVICE_TOKEN,
 		);
@@ -400,7 +406,42 @@ export class LedgerController {
 					},
 				},
 			)
-			/* ---------------- cash/bank (F3) ---------------- */
+
+			/* ---------------- sub-ledger opening balances (ERP-0142) ---------------- */
+			.get('/ledger/opening-balances/subledger', async ({ erp }) => ok(await subledger.summary(erp.organizationId)), {
+				erp: { permission: ['journal:read'] },
+				detail: { description: 'AR/AP opening detail and its tie to the control accounts' },
+			})
+			.get(
+				'/ledger/opening-balances/subledger/template.csv',
+				({ query }) => {
+					const { ledger } = subledgerLedgerSchema.parse(query);
+					return new Response(subledger.template(ledger), {
+						headers: {
+							'content-type': 'text/csv; charset=utf-8',
+							'content-disposition': `attachment; filename="opening-${ledger}-template.csv"`,
+						},
+					});
+				},
+				{ erp: { permission: ['journal:read'] }, detail: { description: 'CSV template of an AR or AP opening import' } },
+			)
+			.post(
+				'/ledger/opening-balances/subledger/import',
+				async ({ query, body, erp }) => {
+					const { ledger, asOfDate } = subledgerImportSchema.parse(query);
+					const file = body && typeof body === 'object' && 'file' in body ? (body as { file: unknown }).file : undefined;
+					return ok(await subledger.import(ctxOf(erp), ledger, asOfDate, file));
+				},
+				{
+					erp: { permission: ['journal:create'] },
+					detail: { description: 'Imports open AR invoices or AP bills at cutover (CSV, all or nothing, replaces unposted rows)' },
+				},
+			)
+			.post(
+				'/ledger/opening-balances/subledger/discard',
+				async ({ query, erp }) => ok(await subledger.discard(erp.organizationId, subledgerLedgerSchema.parse(query).ledger)),
+				{ erp: { permission: ['journal:update'] }, detail: { description: 'Discards the unposted opening detail of a ledger' } },
+			)			/* ---------------- cash/bank (F3) ---------------- */
 			.get(
 				'/cash-bank-accounts',
 				async ({ erp }) =>

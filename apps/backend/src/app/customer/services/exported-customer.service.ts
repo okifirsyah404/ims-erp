@@ -55,6 +55,11 @@ export class ExportedCustomerService {
 		return person.userId ? ((await this.users.findById(person.userId))?.email ?? null) : null;
 	}
 
+	/** The live person by code, or `null` (opening AR import, ERP-0142). */
+	findCustomerByCode(code: string): Promise<TCustomerSelect | null> {
+		return this.people.findByCode(code);
+	}
+
 	/** The live person regardless of status, or an error. */
 	async assertCustomer(id: string): Promise<TCustomerSelect> {
 		const customer = await this.people.findById(id);

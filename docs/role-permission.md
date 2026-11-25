@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-717 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+721 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -843,6 +843,10 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | DELETE | `/finance/ledger/opening-balances/:id` | org member + permission | `journal:update` | `owner`, `accountant` |
 | PATCH | `/finance/ledger/opening-balances/:id` | org member + permission | `journal:update` | `owner`, `accountant` |
 | POST | `/finance/ledger/opening-balances/post` | org member + permission | `journal:post` | `owner`, `accountant` |
+| GET | `/finance/ledger/opening-balances/subledger` | org member + permission | `journal:read` | `owner`, `accountant`, `auditor` |
+| POST | `/finance/ledger/opening-balances/subledger/discard` | org member + permission | `journal:update` | `owner`, `accountant` |
+| POST | `/finance/ledger/opening-balances/subledger/import` | org member + permission | `journal:create` | `owner`, `accountant` |
+| GET | `/finance/ledger/opening-balances/subledger/template.csv` | org member + permission | `journal:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/payments/:id/void-executed` | org member + permission | `payment:approve` | `owner`, `finance` |
 | POST | `/finance/payroll/payments` | org member + permission | `payroll_payment:execute` | `owner`, `finance` |
 | GET | `/finance/periods` | org member + permission | `accounting_period:read` | `owner`, `accountant`, `auditor` |

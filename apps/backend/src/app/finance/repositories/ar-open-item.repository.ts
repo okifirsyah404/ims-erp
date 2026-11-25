@@ -21,7 +21,7 @@ export class ArOpenItemRepository implements IArOpenItemRepository {
 	async insertArOpenItem(
 		row: {
 			organizationId: string;
-			invoiceId: string;
+			invoiceId: string | null;
 			customerId: string | null;
 			invoiceDate: string | null;
 			dueDate: string | null;

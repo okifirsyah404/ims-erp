@@ -548,3 +548,37 @@ export class TaxPaymentAmountError extends AppError {
 		super(422, 'accounting.taxPaymentAmount', 'A tax payment needs a positive amount');
 	}
 }
+
+/** A sub-ledger's opening total differs from its control account (ERP-0142). */
+export class OpeningSubledgerMismatchError extends AppError {
+	constructor(params: { ledger: string; subledger: number; control: number }) {
+		super(422, 'accounting.openingSubledgerMismatch', 'The sub-ledger opening total differs from its control account', params);
+	}
+}
+
+/** Sub-ledger rows carry another as-of date than the opening batch (ERP-0142). */
+export class OpeningSubledgerDateError extends AppError {
+	constructor(params: { itemDate: string; batchDate: string }) {
+		super(422, 'accounting.openingSubledgerDate', 'Sub-ledger opening rows must share the batch as-of date', params);
+	}
+}
+
+/** The ledger's opening detail was already posted (ERP-0142). */
+export class OpeningSubledgerPostedError extends AppError {
+	constructor() {
+		super(409, 'accounting.openingSubledgerPosted', 'This ledger already has posted opening detail');
+	}
+}
+
+/** A sub-ledger import file was rejected before its rows were read (ERP-0142). */
+export class OpeningSubledgerFileError extends AppError {
+	constructor(kind: 'type' | 'size' | 'empty' | 'tooMany') {
+		const messages = {
+			type: 'Upload a .csv file',
+			size: 'The file is larger than 2 MB',
+			empty: 'The file has no data rows',
+			tooMany: 'The file has more than 5000 rows',
+		};
+		super(422, `accounting.openingSubledgerFile.${kind}` as const, messages[kind]);
+	}
+}
