@@ -1,3 +1,8 @@
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
+import { PROJECT_BUDGET_SERVICE_TOKEN } from '../constants/di';
+import type { ProjectBudgetService } from './project-budget.service';
+import { ProjectBudgetProjectError } from '../errors/project-budget.errors';
 import { inject, injectable } from 'tsyringe';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type { TTx } from '@drizzle/types';
@@ -49,6 +54,7 @@ export type TExpenseClaimItemInput = {
 
 export type TCreateExpenseClaimInput = {
 	employeeId: string;
+	projectId?: string | null;
 	claimDate: string;
 	notes: string | null;
 	items: TExpenseClaimItemInput[];
@@ -56,6 +62,7 @@ export type TCreateExpenseClaimInput = {
 
 export type TUpdateExpenseClaimInput = {
 	employeeId?: string;
+	projectId?: string | null;
 	claimDate?: string;
 	notes?: string | null;
 	items?: TExpenseClaimItemInput[];
@@ -95,7 +102,19 @@ export class ExpenseClaimService {
 		private readonly numbering: FinanceNumberingService,
 		@inject(EXPORTED_HUMAN_RESOURCE_SERVICE_TOKEN)
 		private readonly employees: Pick<ExportedEmployeeService, 'findEmployeeById'>,
+		/** ERP-0146: project validation and the budget check at submit; optional for older tests. */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'getProject'>,
+		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
+		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
 	) {}
+
+	/** Projects are company-wide; the project must exist. */
+	private async assertProject(_organizationId: string, projectId: string | null): Promise<string | null> {
+		if (!projectId || !this.projects) return projectId;
+		if (!(await this.projects.getProject(projectId))) throw new ProjectBudgetProjectError();
+		return projectId;
+	}
 
 	/** Employee must exist and not be terminated, in an organization that matches. */
 	private async assertEmployee(organizationId: string, employeeId: string): Promise<void> {
@@ -174,6 +193,7 @@ export class ExpenseClaimService {
 					organizationId: ctx.organizationId,
 					code,
 					employeeId: input.employeeId,
+					projectId: await this.assertProject(ctx.organizationId, input.projectId ?? null),
 					claimDate: input.claimDate,
 					totalAmount: sum(input.items),
 					currencyCode: 'IDR',
@@ -208,6 +228,7 @@ export class ExpenseClaimService {
 			const patch: Record<string, unknown> = {};
 			if (input.employeeId) patch.employeeId = input.employeeId;
 			if (input.claimDate) patch.claimDate = input.claimDate;
+			if (input.projectId !== undefined) patch.projectId = await this.assertProject(ctx.organizationId, input.projectId);
 			if (input.notes !== undefined) patch.notes = input.notes;
 			if (input.items) {
 				await this.claims.deleteExpenseClaimItems(ctx.organizationId, id, tx);
@@ -254,6 +275,8 @@ export class ExpenseClaimService {
 		}
 		const items = await this.claims.findExpenseClaimItems(ctx.organizationId, id);
 		if (items.length === 0 || claim.totalAmount <= 0) throw new ExpenseClaimEmptyError();
+		// ERP-0146: a project claim counts against the project budget.
+		if (claim.projectId) await this.budgets?.check({ projectId: claim.projectId, amount: claim.totalAmount });
 		return this.transition(ctx.organizationId, id, ['draft', 'rejected'], 'submitted', {
 			submittedBy: ctx.actorUserId,
 			submittedAt: new Date(),
@@ -298,10 +321,11 @@ export class ExpenseClaimService {
 				}
 				debits.push({ accountId: account.id, amount });
 			}
-			const lines = debits.map((debit) => ({
+			const lines: Array<{ accountId: string; debit: number; credit: number; projectId?: string | null }> = debits.map((debit) => ({
 				accountId: debit.accountId,
 				debit: debit.amount,
 				credit: 0,
+				projectId: claim.projectId,
 			}));
 			if (taxTotal > 0) {
 				lines.push({

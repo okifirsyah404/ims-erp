@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-744 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+751 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -868,6 +868,13 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/posting-rules` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
 | DELETE | `/finance/posting-rules/:id` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
 | PATCH | `/finance/posting-rules/:id` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
+| POST | `/finance/project-budgets/:id/activate` | org member + permission | `journal:approve` | `owner`, `accountant` |
+| PUT | `/finance/project-budgets/:id/lines` | org member + permission | `journal:approve` | `owner`, `accountant` |
+| PATCH | `/finance/project-budgets/:id/mode` | org member + permission | `journal:approve` | `owner`, `accountant` |
+| GET | `/finance/project-budgets/check` | org member + permission | `project:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `finance`, `customer_service`, `auditor` |
+| GET | `/finance/project-budgets/projects/:projectId` | org member + permission | `project:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `finance`, `customer_service`, `auditor` |
+| POST | `/finance/project-budgets/projects/:projectId` | org member + permission | `journal:approve` | `owner`, `accountant` |
+| GET | `/finance/project-budgets/projects/:projectId/report` | org member + permission | `project:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `finance`, `customer_service`, `auditor` |
 | GET | `/finance/reconciliations` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/reconciliations` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | GET | `/finance/reconciliations/:id` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |

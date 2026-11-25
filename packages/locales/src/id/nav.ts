@@ -150,6 +150,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.costCenters': 'Pusat Biaya',
 	'item.taxPph21': 'Tabel PPh 21',
 	'item.fixedAssets': 'Aset tetap',
+	'item.projectBudgets': 'Anggaran proyek',
 };
 
 export default nav_;

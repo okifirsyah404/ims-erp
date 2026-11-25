@@ -2,6 +2,7 @@ import { MoneyInput } from '@/components/money-input';
 import { useQuery } from '@tanstack/react-query';
 import { useDeferredValue, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ProjectSelect } from '@/components/finance/project-select';
 
 import { Button } from '@ims-erp/ui/components/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
@@ -132,6 +133,7 @@ export function PurchaseOrderForm({
 	const [supplierQuoteRef, setSupplierQuoteRef] = useState(order?.supplierQuoteRef ?? '');
 	const [supplierQuoteDate, setSupplierQuoteDate] = useState(order?.supplierQuoteDate ?? '');
 	const [projectName, setProjectName] = useState(order?.projectName ?? '');
+	const [projectId, setProjectId] = useState<string | null>(order?.projectId ?? null);
 	const [buyerPicName, setBuyerPicName] = useState(order?.buyerPicName ?? '');
 	const [vatMode, setVatMode] = useState<TPoVatMode>(order?.vatMode ?? 'included');
 	const [vatPercent, setVatPercent] = useState(String((order && order.vatMode !== 'none' ? order.vatRateBps : 1100) / 100));
@@ -240,6 +242,7 @@ export function PurchaseOrderForm({
 					supplierQuoteRef: text(supplierQuoteRef),
 					supplierQuoteDate: supplierQuoteDate || null,
 					projectName: text(projectName),
+					projectId,
 					buyerPicName: text(buyerPicName),
 					vatMode,
 					vatRateBps: vatMode === 'none' ? null : vatRateBps,
@@ -348,6 +351,10 @@ export function PurchaseOrderForm({
 						{input('po-quote-ref', t('procurement:po.supplierQuoteRef'), supplierQuoteRef, setSupplierQuoteRef, { maxLength: 100 })}
 						{input('po-quote-date', t('procurement:po.supplierQuoteDate'), supplierQuoteDate, setSupplierQuoteDate, { type: 'date' })}
 						{input('po-project', t('procurement:po.projectName'), projectName, setProjectName, { maxLength: 200 })}
+						<Field>
+							<FieldLabel htmlFor='po-project-id'>{t('procurement:po.budgetProject')}</FieldLabel>
+							<ProjectSelect id='po-project-id' value={projectId} onChange={setProjectId} />
+						</Field>
 						{input('po-buyer-pic', t('procurement:po.buyerPicName'), buyerPicName, setBuyerPicName, { maxLength: 120 })}
 					</FieldGroup>
 				</CardContent>

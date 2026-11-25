@@ -56,6 +56,8 @@ export const purchaseOrderBodySchema = z.object({
 	supplierQuoteRef: optionalText(100),
 	supplierQuoteDate: businessDate.nullish(),
 	projectName: optionalText(200),
+	/** ERP-0146: the project the order is bought for (budget commitment). */
+	projectId: z.uuid().nullish().transform((v) => v ?? null),
 	buyerPicName: optionalText(120),
 	vatMode: z.enum(PO_VAT_MODES),
 	/** Basis points; defaults to 11% when VAT applies. */

@@ -1,3 +1,5 @@
+import type { IProjectBudgetRepository } from '../contracts/project-budget.contract';
+import type { ProjectBudgetService } from '../services/project-budget.service';
 import type { IFixedAssetBookRepository } from '../contracts/fixed-asset.contract';
 import type { FixedAssetService } from '../services/fixed-asset.service';
 import type { IEmployeeAdvanceRepository } from '../contracts/employee-advance.contract';
@@ -191,3 +193,7 @@ export const EMPLOYEE_ADVANCE_SERVICE_TOKEN: InjectionToken<EmployeeAdvanceServi
 /** Fixed-asset books (ERP-0145). */
 export const FIXED_ASSET_BOOK_REPOSITORY_TOKEN: InjectionToken<IFixedAssetBookRepository> = Symbol('FIXED_ASSET_BOOK_REPOSITORY');
 export const FIXED_ASSET_SERVICE_TOKEN: InjectionToken<FixedAssetService> = Symbol('FIXED_ASSET_SERVICE');
+
+/** Project budgets (ERP-0146). */
+export const PROJECT_BUDGET_REPOSITORY_TOKEN: InjectionToken<IProjectBudgetRepository> = Symbol('PROJECT_BUDGET_REPOSITORY');
+export const PROJECT_BUDGET_SERVICE_TOKEN: InjectionToken<ProjectBudgetService> = Symbol('PROJECT_BUDGET_SERVICE');

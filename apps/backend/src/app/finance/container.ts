@@ -52,6 +52,8 @@ import {
 	EMPLOYEE_ADVANCE_SERVICE_TOKEN,
 	FIXED_ASSET_BOOK_REPOSITORY_TOKEN,
 	FIXED_ASSET_SERVICE_TOKEN,
+	PROJECT_BUDGET_REPOSITORY_TOKEN,
+	PROJECT_BUDGET_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -101,6 +103,8 @@ import { EmployeeAdvanceRepository } from './repositories/employee-advance.repos
 import { EmployeeAdvanceService } from './services/employee-advance.service';
 import { FixedAssetBookRepository } from './repositories/fixed-asset.repository';
 import { FixedAssetService } from './services/fixed-asset.service';
+import { ProjectBudgetRepository } from './repositories/project-budget.repository';
+import { ProjectBudgetService } from './services/project-budget.service';
 import { TaxLedgerService } from './services/tax-ledger.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
@@ -219,6 +223,8 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(EMPLOYEE_ADVANCE_SERVICE_TOKEN, { useClass: EmployeeAdvanceService });
 	container.register(FIXED_ASSET_BOOK_REPOSITORY_TOKEN, { useClass: FixedAssetBookRepository });
 	container.register(FIXED_ASSET_SERVICE_TOKEN, { useClass: FixedAssetService });
+	container.register(PROJECT_BUDGET_REPOSITORY_TOKEN, { useClass: ProjectBudgetRepository });
+	container.register(PROJECT_BUDGET_SERVICE_TOKEN, { useClass: ProjectBudgetService });
 }
 
 export * from './constants/di';

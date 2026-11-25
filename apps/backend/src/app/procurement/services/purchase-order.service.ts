@@ -1,3 +1,7 @@
+import { PROJECT_BUDGET_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { ProjectBudgetService } from '@app/finance/services/project-budget.service';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import type { ProductService } from '@app/product/services/product.service';
 import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
@@ -37,6 +41,7 @@ import {
 	PurchaseOrderStateError,
 	PurchaseOrderSupplierUnavailableError,
 	PurchaseRequestLineUnavailableError,
+	PurchaseOrderProjectError,
 } from '../errors/procurement.errors';
 import { computePoTotals, DEFAULT_PO_VAT_RATE_BPS, poLineTotal } from '../utils/po-totals';
 
@@ -90,7 +95,18 @@ export class PurchaseOrderService {
 		/** ERP-0044: approved purchase orders are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0146: project validation and the budget check on approval; optional for older tests. */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'getProject'>,
+		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
+		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
 	) {}
+
+	private async assertProject(projectId: string | null): Promise<string | null> {
+		if (!projectId || !this.projects) return projectId;
+		if (!(await this.projects.getProject(projectId))) throw new PurchaseOrderProjectError();
+		return projectId;
+	}
 
 	private async require(id: string): Promise<TPurchaseOrderSelect> {
 		const order = await this.orders.findById(id);
@@ -134,6 +150,7 @@ export class PurchaseOrderService {
 				supplierQuoteRef: body.supplierQuoteRef,
 				supplierQuoteDate: body.supplierQuoteDate ?? null,
 				projectName: body.projectName,
+				projectId: await this.assertProject(body.projectId ?? null),
 				buyerPicName: body.buyerPicName,
 				vatMode: body.vatMode,
 				vatRateBps,
@@ -211,6 +228,8 @@ export class PurchaseOrderService {
 			if (!rejected) throw new PurchaseOrderStateError('notSubmitted');
 			return rejected;
 		}
+		// ERP-0146: an approved order commits the project budget.
+		if (order.projectId) await this.budgets?.check({ projectId: order.projectId, amount: order.subtotal, excludePurchaseOrderId: order.id });
 		const code = await this.numbering.next('purchase_order', {
 			date: new Date(`${order.orderDate}T12:00:00+07:00`),
 			context: { supplier: order.supplierSnapshot.code, category: PURCHASE_CATEGORY_CODES[order.category] },

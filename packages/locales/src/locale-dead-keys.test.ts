@@ -75,6 +75,8 @@ const DYNAMIC_PREFIXES = [
 	'finance:settlements.status.',
 	'finance:fixedAssets.group.',
 	'finance:fixedAssets.status.',
+	'finance:budgets.status.',
+	'finance:budgets.total.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',
@@ -202,6 +204,7 @@ const DYNAMIC_PREFIXES = [
 	'hr.payroll.',
 	'accounting.openingSubledgerFile.',
 	'accounting.statementFile.',
+	'accounting.budget.',
 	'hr.attendance.',
 	'hr.schedule.',
 	'hr.salaryPeriod.',

@@ -216,6 +216,11 @@ export const navSections: {
 						permission: 'cost_center.read',
 					},
 					{
+						titleKey: 'item.projectBudgets',
+						url: '/finance/project-budgets',
+						permission: 'project.read',
+					},
+					{
 						titleKey: 'item.fixedAssets',
 						url: '/finance/fixed-assets',
 						permission: 'asset.read',

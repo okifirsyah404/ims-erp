@@ -678,6 +678,13 @@ const api = {
 	'accounting.fixedAssetNotFound': 'This item is not capitalized',
 	'accounting.fixedAssetCapitalized': 'This item is already capitalized',
 	'accounting.fixedAssetItemInvalid': 'The item needs an acquisition cost, this organization and a live status',
+	'accounting.budgetNotFound': 'Project budget not found',
+	'accounting.budgetProjectNotFound': 'Project not found in this organization',
+	'accounting.budget.draftExists': 'This project already has a draft budget version',
+	'accounting.budget.notDraft': 'Only a draft budget version can be changed',
+	'accounting.budget.duplicateLine': 'An account appears twice for the same month',
+	'accounting.budgetExceeded': 'This would exceed the project budget (available Rp {{available}})',
+	'procurement.order.projectInvalid': 'The project does not exist',
 } as const;
 
 export default api;

@@ -25,6 +25,8 @@ export type TExpenseClaimRow = {
 	organizationId: string;
 	code: string;
 	employeeId: string | null;
+	/** ERP-0146. */
+	projectId?: string | null;
 	claimDate: string | null;
 	totalAmount: number;
 	currencyCode: string;

@@ -10,6 +10,7 @@
  */
 import { EmployeeAdvanceController } from './controllers/employee-advance.controller';
 import { FixedAssetController } from './controllers/fixed-asset.controller';
+import { ProjectBudgetController } from './controllers/project-budget.controller';
 import { ReceivablesController } from './controllers/receivables.controller';
 import { FinanceSetupController } from './controllers/finance-setup.controller';
 import Elysia from 'elysia';
@@ -43,5 +44,6 @@ export function financeModule() {
 		.use(FinanceSetupController.plugin())
 		.use(ReceivablesController.plugin())
 		.use(EmployeeAdvanceController.plugin())
-		.use(FixedAssetController.plugin());
+		.use(FixedAssetController.plugin())
+		.use(ProjectBudgetController.plugin());
 }

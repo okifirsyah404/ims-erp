@@ -462,6 +462,31 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   and asset opening detail, collecting disposal proceeds (a manual cash
   movement against 1-1330).
 
+## Project budgets (C, ERP-0146, built)
+
+- `finance.project_budgets` (versions: draft -> active -> superseded, one
+  active per project, `control_mode` warn/block) and
+  `finance.project_budget_lines` (account x month x amount).
+  `/finance/project-budgets*`: versions, draft lines, activation, mode,
+  report; reading `project:read`, maintaining `journal:approve`.
+- Actual = posted journal movement of expense accounts tagged with the
+  project (debit - credit). Commitment = approved / sent / received purchase
+  orders of the project (new nullable `procurement.purchase_orders.project_id`,
+  read through the repository-only `ExportedPurchaseOrderService`) less
+  finance's non-draft, non-void bills on those orders.
+- Checked against the active version's total at purchase-order approval
+  (the order itself excluded from commitment), expense-claim submission (new
+  nullable `finance.expense_claims.project_id`; approval now tags the expense
+  lines with the project) and project-cost entry. `block` refuses
+  (`accounting.budgetExceeded`), `warn` lets it through and the report shows
+  the overrun.
+- Projects are company-wide (no tenant column): a project has at most one
+  active budget across organizations, and the owning organization's ledger
+  and bills are the ones counted.
+- Not built: per-account or per-month blocking (the check is the project
+  total), warnings surfaced in the forms (the report and
+  `GET /finance/project-budgets/check` show them).
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

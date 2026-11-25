@@ -2653,6 +2653,7 @@ Table procurement.purchase_orders {
   code varchar(40) [note: "Assigned on approval, e.g. PO/IMS-HIT/HW/1026/001; null before. Unique among live rows."]
   supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
   supplier_pic_id uuid [note: "Logical reference to supplier.suppliers.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through ProjectLookupService.getProject; an approved, unbilled order is a commitment against the project budget (ERP-0146)."]
   supplier_snapshot jsonb [not null, note: "Supplier name, address, NPWP and PIC printed on the PO."]
   category text [not null, note: "{CATEGORY} token of the number: hardware HW, software SW, service JS, other LN."]
   subject varchar(200) [not null]
@@ -3574,6 +3575,51 @@ Table finance.fixed_asset_books {
   }
 }
 
+Table finance.project_budgets {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. The project's organization."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through ProjectLookupService.getProject."]
+  version integer [not null]
+  status text [not null, default: 'draft']
+  control_mode text [not null, default: 'warn', note: "warn: overruns are reported; block: an approval, claim or cost entry that would overrun is refused."]
+  notes text
+  activated_by text [note: "Logical reference to auth.users.id."]
+  activated_at bigint
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Versioned budget of a project (ERP-0146): draft -> active -> superseded; one active version per project. Checked against actual (posted journal lines of expense accounts with the project) plus commitment (approved purchase orders of the project not yet billed)."
+  Indexes {
+    (organization_id, project_id, version) [unique, name: 'project_budgets_version_uq', note: 'WHERE deleted_at IS NULL']
+    project_id [unique, name: 'project_budgets_active_uq', note: "WHERE status = 'active' AND deleted_at IS NULL"]
+  }
+  Checks {
+    `status IN ('draft', 'active', 'superseded')`
+    `control_mode IN ('warn', 'block')`
+    `version > 0`
+  }
+}
+
+Table finance.project_budget_lines {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  project_budget_id uuid [not null]
+  account_id uuid [not null]
+  period varchar(7) [not null, note: "YYYY-MM."]
+  amount bigint [not null, note: "IDR minor units."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Budget amount of one account for one month of a project budget version (ERP-0146)."
+  Indexes {
+    (project_budget_id, account_id, period) [unique, name: 'project_budget_lines_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `amount >= 0`
+  }
+}
+
 Table finance.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -3664,6 +3710,7 @@ Table finance.expense_claims {
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   employee_id uuid [note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through ProjectLookupService.getProject; the claim counts against the project budget at submit (ERP-0146)."]
   claim_date date
   total_amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
@@ -3854,6 +3901,8 @@ Ref: finance.expense_settlements.journal_entry_id > finance.journal_entries.id [
 Ref: finance.fixed_asset_books.counterpart_account_id > finance.chart_of_accounts.id [delete: restrict]
 Ref: finance.fixed_asset_books.capitalization_entry_id > finance.journal_entries.id [delete: set null]
 Ref: finance.fixed_asset_books.disposal_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.project_budget_lines.project_budget_id > finance.project_budgets.id [delete: cascade]
+Ref: finance.project_budget_lines.account_id > finance.chart_of_accounts.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Tax  (schema: tax, new; split out of accounting). Tax rates, the

@@ -12,6 +12,62 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0146: project budgets with actual, commitment and checks
+
+**Scope.** Phase C slice 4.
+
+**Design gate.** `docs/database/` read for `project.projects` (company-wide,
+no tenant column), `procurement.purchase_orders` (company-wide, statuses),
+`finance.expense_claims`, `finance.supplier_bills`, `finance.journal_lines`
+(`project_id`) and `logical-references.md`. New logical references:
+`project_budgets.project_id`, `activated_by`, `created_by`,
+`expense_claims.project_id`, `purchase_orders.project_id`. Manual grill pass:
+ownership - finance owns budgets and the check; procurement exposes open
+orders through a repository-only facade (finance reads it, procurement calls
+finance on approval: no service cycle); tenancy - budgets carry the creating
+organization, the check follows the project's single active budget because
+projects are company-wide; soft delete - versions and lines soft-delete;
+money - minor units; status - draft / active / superseded, warn / block.
+Decisions: the check is on the project total (lines give the report
+granularity); the order being approved is excluded from commitment; claim
+approval now tags expense lines with the project so claims become actuals.
+
+**Changes.** Migration `20261125060448_erp0146_project_budgets` (2 CREATE
+TABLE, 2 ADD COLUMN, intra-module FKs). Backend: `ProjectBudgetRepository`,
+`ProjectBudgetService` (versions, createVersion, replaceLines, activate,
+setControlMode, report, check), `ProjectBudgetController`,
+`ExportedPurchaseOrderService.openOrdersOfProject`,
+`PurchaseOrderRepository.listOpenForProject`, project on the PO body
+(validated), budget check in `PurchaseOrderService.decide`,
+`ExpenseClaimService` (project on create/update, check at submit, project on
+approval lines), `ProjectService.addCost` check. Web-admin:
+`/finance/project-budgets` (version editor, mode, report), project select on
+the PO form and the claim form, nav entry (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 211 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0146_project_budgets; bun run drizzle:migrate   # applied
+bun run <temporary budget-smoke script>       # 7/7 PASS: v1 active (Rp1,000,000); project claim approved ->
+                                              # actual 600,000 from project-tagged journal lines; warn reports an
+                                              # overrun; block refuses a 500,000 claim (available 400,000), claim
+                                              # stays draft; v2 (1,500,000) supersedes v1 and the claim submits
+bun test test/finance/project-budgets.test.ts test/unit/procurement.service.test.ts   # 3 + 8 pass
+bun run test                                  # 7/7 tasks: backend 1569, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 751 routes
+```
+
+The smoke inserted project `PRJ-SMOKE-0146` into the scratch database.
+
+**Not verified.** PO approval check on a database (no supplier/product seed;
+unit-tested); no browser walk-through.
+
+Next executable task: ERP-0147 (cost accounting reports: project job
+costing, cost-centre P&L).
+
 ## 2026-11-25 - ERP-0145: fixed assets in the general ledger
 
 **Scope.** Phase C slice 3.

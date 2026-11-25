@@ -1,3 +1,5 @@
+import { PROJECT_BUDGET_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { ProjectBudgetService } from '@app/finance/services/project-budget.service';
 import { ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
 import { PROJECT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { ProjectNumberingService } from './project-numbering.service';
@@ -150,6 +152,9 @@ export class ProjectService {
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions?: ITransactionRunner,
 		@inject(POSTING_SERVICE_TOKEN)
 		private readonly posting?: Pick<PostingService, 'postBusinessEvent' | 'reverse'>,
+			/** ERP-0146: the project budget check on cost entry. */
+		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
+		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
 	) {}
 
 	// Visibility -------------------------------------------------------------
@@ -478,6 +483,8 @@ export class ProjectService {
 
 	async addCost(ctx: TProjectContext, id: string, body: TCostBodyRequest): Promise<TCostSelect> {
 		await this.requireActive(ctx, id);
+		// ERP-0146: a cost entry counts against the project budget.
+		await this.budgets?.check({ projectId: id, amount: body.amount });
 		let receipt: { key: string; name: string; type: string } | null = null;
 		if (body.receipt && body.receipt.size > 0) {
 			const type = await this.checkFile(body.receipt);

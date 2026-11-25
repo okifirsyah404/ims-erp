@@ -93,6 +93,8 @@ export interface IPurchaseOrderRepository extends IPurchaseOrderReceiving {
 	): Promise<TPurchaseOrderSelect | null>;
 	/** Whether anything was received on the PO. */
 	hasReceipts(id: string): Promise<boolean>;
+	/** Approved, sent and (partly) received orders of a project (ERP-0146). */
+	listOpenForProject(projectId: string): Promise<Array<{ id: string; subtotal: number }>>;
 }
 
 /* --------------------------- purchase requests --------------------------- */

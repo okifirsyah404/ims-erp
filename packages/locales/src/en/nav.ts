@@ -151,6 +151,7 @@ const nav = {
 	'item.costCenters': 'Cost Centres',
 	'item.taxPph21': 'PPh 21 tables',
 	'item.fixedAssets': 'Fixed assets',
+	'item.projectBudgets': 'Project budgets',
 } as const;
 
 export default nav;

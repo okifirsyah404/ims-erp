@@ -311,6 +311,7 @@ const procurement = {
 	'doc.payment': 'Payment',
 	'doc.issuedBy': 'Issued by,',
 	'doc.acknowledgedBy': 'Acknowledged / confirmed by,',
+	'po.budgetProject': 'Project (budget)',
 } as const;
 
 export default procurement;

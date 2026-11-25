@@ -1258,6 +1258,8 @@ export type TExpenseClaimItem = {
 };
 
 export type TExpenseClaim = {
+	/** ERP-0146: the project the claim is charged to. */
+	projectId?: string | null;
 	id: string;
 	organizationId: string | null;
 	code: string;
@@ -1709,4 +1711,52 @@ export function setFiscalGroup(itemId: string, fiscalGroup: TFiscalGroup | null)
 
 export function runDepreciation(year: number, month: number) {
 	return sendData<{ depreciated: number; total: number; journalEntryId: string | null }>('/finance/fixed-assets/depreciation-runs', 'POST', { year, month });
+}
+
+/* ----------------------------- project budgets (ERP-0146) ----------------------------- */
+
+export type TBudgetLine = { accountId: string; period: string; amount: number };
+
+export type TBudgetVersion = {
+	id: string;
+	projectId: string;
+	version: number;
+	status: 'draft' | 'active' | 'superseded';
+	controlMode: 'warn' | 'block';
+	lines: Array<TBudgetLine & { id: string }>;
+};
+
+export type TBudgetReport = {
+	rows: Array<{ accountId: string; period: string; budget: number; actual: number }>;
+	totals: { budget: number; actual: number; commitment: number; available: number };
+};
+
+export function budgetVersionsQueryOptions(projectId: string) {
+	return queryOptions({
+		queryKey: ['finance', 'budgets', projectId, 'versions'],
+		queryFn: () => getData<TBudgetVersion[]>(`/finance/project-budgets/projects/${projectId}`),
+	});
+}
+
+export function budgetReportQueryOptions(projectId: string) {
+	return queryOptions({
+		queryKey: ['finance', 'budgets', projectId, 'report'],
+		queryFn: () => getData<TBudgetReport>(`/finance/project-budgets/projects/${projectId}/report`),
+	});
+}
+
+export function createBudgetVersion(projectId: string) {
+	return sendData<TBudgetVersion>(`/finance/project-budgets/projects/${projectId}`, 'POST', { copyFromActive: true });
+}
+
+export function replaceBudgetLines(budgetId: string, lines: TBudgetLine[]) {
+	return putData<TBudgetLine[]>(`/finance/project-budgets/${budgetId}/lines`, { lines });
+}
+
+export function activateBudget(budgetId: string) {
+	return sendData<TBudgetVersion>(`/finance/project-budgets/${budgetId}/activate`, 'POST');
+}
+
+export function setBudgetMode(budgetId: string, controlMode: 'warn' | 'block') {
+	return sendData<TBudgetVersion>(`/finance/project-budgets/${budgetId}/mode`, 'PATCH', { controlMode });
 }

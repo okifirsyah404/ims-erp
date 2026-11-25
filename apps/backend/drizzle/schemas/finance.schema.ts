@@ -978,6 +978,8 @@ export const expenseClaims = financeSchema.table(
 		code: varchar('code', { length: 32 }).notNull(),
 		/** Logical reference to human_resource.employees.id — cross-module FK omitted. */
 		employeeId: uuid('employee_id'),
+		/** Logical reference to project.projects.id — cross-module FK omitted (ERP-0146). */
+		projectId: uuid('project_id'),
 		claimDate: date('claim_date'),
 		totalAmount: moneyAmount('total_amount'),
 		currencyCode: currencyCode(),
@@ -1344,6 +1346,53 @@ export const fixedAssetBooks = financeSchema.table(
 	],
 );
 
+/** Versioned project budgets (ERP-0146). */
+export const projectBudgets = financeSchema.table(
+	'project_budgets',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		/** Logical reference to project.projects.id — cross-module FK omitted. */
+		projectId: uuid('project_id'),
+		version: integer('version').notNull(),
+		status: text('status').$type<'draft' | 'active' | 'superseded'>().notNull().default('draft'),
+		controlMode: text('control_mode').$type<'warn' | 'block'>().notNull().default('warn'),
+		notes: text('notes'),
+		activatedBy: text('activated_by'),
+		activatedAt: unixTimestampNullable('activated_at'),
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('project_budgets_version_uq').on(table.organizationId, table.projectId, table.version).where(sql`deleted_at IS NULL`),
+		uniqueIndex('project_budgets_active_uq').on(table.projectId).where(sql`status = 'active' AND deleted_at IS NULL`),
+		check('project_budgets_status_check', sql`status IN ('draft', 'active', 'superseded')`),
+		check('project_budgets_control_mode_check', sql`control_mode IN ('warn', 'block')`),
+		check('project_budgets_version_check', sql`version > 0`),
+	],
+);
+
+export const projectBudgetLines = financeSchema.table(
+	'project_budget_lines',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		projectBudgetId: uuid('project_budget_id')
+			.notNull()
+			.references(() => projectBudgets.id, { onDelete: 'cascade' }),
+		accountId: uuid('account_id')
+			.notNull()
+			.references(() => chartOfAccounts.id, { onDelete: 'restrict' }),
+		period: varchar('period', { length: 7 }).notNull(),
+		amount: bigint('amount', { mode: 'number' }).notNull(),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('project_budget_lines_uq').on(table.projectBudgetId, table.accountId, table.period).where(sql`deleted_at IS NULL`),
+		check('project_budget_lines_amount_check', sql`amount >= 0`),
+	],
+);
+
 export const assetDepreciations = financeSchema.table(
 	'asset_depreciations',
 	{
@@ -1489,3 +1538,6 @@ export type TExpenseSettlementSelect = typeof expenseSettlements.$inferSelect;
 export type TExpenseSettlementItemSelect = typeof expenseSettlementItems.$inferSelect;
 
 export type TFixedAssetBookSelect = typeof fixedAssetBooks.$inferSelect;
+
+export type TProjectBudgetSelect = typeof projectBudgets.$inferSelect;
+export type TProjectBudgetLineSelect = typeof projectBudgetLines.$inferSelect;

@@ -975,9 +975,16 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `20261125054928_erp0145_fixed_asset_books`,
   `20261125055729_erp0145_item_kind_discriminator`, unit tests, DB smoke.
 
+- Project budgets, Phase C (ERP-0146, 2026-11-25): a versioned budget per
+  project, account and month; actual costs and open purchase orders count
+  against it; purchase-order approval, project claims and project costs are
+  checked (warn by default, block when set); budget vs actual on its own
+  page. Evidence: migration `20261125060448_erp0146_project_budgets`, unit
+  tests, DB smoke 7/7.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phase B complete except stock/asset opening
-  detail); ERP-0146..0147 (Phase C: bank statement import,
+  detail); ERP-0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
   cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
   profitability, ratios, management pack, closed-period profit contract).

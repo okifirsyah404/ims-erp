@@ -682,6 +682,13 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.fixedAssetNotFound': 'Barang ini belum dikapitalisasi',
 	'accounting.fixedAssetCapitalized': 'Barang ini sudah dikapitalisasi',
 	'accounting.fixedAssetItemInvalid': 'Barang harus punya harga perolehan, milik organisasi ini, dan belum dilepas',
+	'accounting.budgetNotFound': 'Anggaran proyek tidak ditemukan',
+	'accounting.budgetProjectNotFound': 'Proyek tidak ditemukan di organisasi ini',
+	'accounting.budget.draftExists': 'Proyek ini sudah punya draf versi anggaran',
+	'accounting.budget.notDraft': 'Hanya draf versi anggaran yang bisa diubah',
+	'accounting.budget.duplicateLine': 'Satu akun muncul dua kali di bulan yang sama',
+	'accounting.budgetExceeded': 'Ini akan melampaui anggaran proyek (tersisa Rp {{available}})',
+	'procurement.order.projectInvalid': 'Proyek tidak ditemukan',
 };
 
 export default api;
