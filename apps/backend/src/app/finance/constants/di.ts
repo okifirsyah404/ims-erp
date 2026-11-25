@@ -1,3 +1,5 @@
+import type { IEmployeeAdvanceRepository } from '../contracts/employee-advance.contract';
+import type { EmployeeAdvanceService } from '../services/employee-advance.service';
 import type { IOpeningSubledgerRepository } from '../contracts/opening-subledger.contract';
 import type { OpeningSubledgerService } from '../services/opening-subledger.service';
 import type { PayrollLedgerService } from '../services/payroll-ledger.service';
@@ -179,3 +181,7 @@ export const PAYROLL_LEDGER_SERVICE_TOKEN: InjectionToken<PayrollLedgerService> 
 /** Sub-ledger opening balances (ERP-0142). */
 export const OPENING_SUBLEDGER_REPOSITORY_TOKEN: InjectionToken<IOpeningSubledgerRepository> = Symbol('OPENING_SUBLEDGER_REPOSITORY');
 export const OPENING_SUBLEDGER_SERVICE_TOKEN: InjectionToken<OpeningSubledgerService> = Symbol('OPENING_SUBLEDGER_SERVICE');
+
+/** Employee advances and settlements (ERP-0144). */
+export const EMPLOYEE_ADVANCE_REPOSITORY_TOKEN: InjectionToken<IEmployeeAdvanceRepository> = Symbol('EMPLOYEE_ADVANCE_REPOSITORY');
+export const EMPLOYEE_ADVANCE_SERVICE_TOKEN: InjectionToken<EmployeeAdvanceService> = Symbol('EMPLOYEE_ADVANCE_SERVICE');

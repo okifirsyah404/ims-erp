@@ -44,7 +44,7 @@ export function TaxPaymentDialog({
 	const [role, setRole] = useState<TTaxPaymentRole | TPayrollPaymentRole>(roles[0]!);
 	const [taxCode, setTaxCode] = useState('');
 	const [accountId, setAccountId] = useState(NONE);
-	const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+	const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
 	const [amount, setAmount] = useState('');
 	const [reference, setReference] = useState('');
 	const save = useMutation({

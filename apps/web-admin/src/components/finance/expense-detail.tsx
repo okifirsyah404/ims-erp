@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { EmployeePaymentDialog } from './employee-payment-dialog';
 import { getRouteApi, Link } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,6 +43,8 @@ export function ExpenseDetail() {
 	const canApprove = usePermission('expense_claim.approve');
 	const canReject = usePermission('expense_claim.reject');
 	const canCancel = usePermission('expense_claim.cancel');
+	const canPay = usePermission('payment.create');
+	const [paying, setPaying] = useState(false);
 
 	const [editing, setEditing] = useState(false);
 	const { data: claim, isPending, isError, error } = useQuery(expenseClaimQueryOptions(claimId));
@@ -183,6 +186,11 @@ export function ExpenseDetail() {
 							{t('finance:expenses.reject')}
 						</Button>
 					) : null}
+					{canPay && status === 'approved' && claim?.employeeId ? (
+						<Button size='sm' variant='outline' onClick={() => setPaying(true)}>
+							{t('finance:expenses.pay')}
+						</Button>
+					) : null}
 					{canCancel && (status === 'draft' || status === 'submitted') ? (
 						<Button
 							size='sm'
@@ -258,6 +266,18 @@ export function ExpenseDetail() {
 			</DataTableCard>
 
 			<ExpenseFormDialog open={editing} onOpenChange={setEditing} claim={claim} />
+			{paying && claim?.employeeId ? (
+				<EmployeePaymentDialog
+					employeeId={claim.employeeId}
+					payableType='expense_claim'
+					payableId={claim.id}
+					amount={claim.totalAmount}
+					exact
+					direction='out'
+					title={t('finance:expenses.pay')}
+					onClose={() => setPaying(false)}
+				/>
+			) : null}
 		</div>
 	);
 }

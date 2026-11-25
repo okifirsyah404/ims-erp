@@ -7,7 +7,7 @@ export type TPaymentActionContext = { organizationId: string; actorUserId: strin
 
 export type TCreatePaymentInput = {
 	paymentType: 'receipt' | 'disbursement';
-	counterpartyType: 'customer' | 'supplier' | null;
+	counterpartyType: 'customer' | 'supplier' | 'employee' | null;
 	counterpartyId: string | null;
 	amount: number;
 	paymentMethod: 'bank_transfer' | 'cash' | 'card' | 'e_wallet' | 'cheque' | 'offset';

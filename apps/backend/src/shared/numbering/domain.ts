@@ -68,6 +68,9 @@ export const CODE_TYPES_BY_SCHEMA = {
 		'employee_bank_account',
 		// Credit notes against issued invoices (ERP-0135).
 		'credit_memo',
+		// Employee advances and their settlements (ERP-0144).
+		'employee_advance',
+		'expense_settlement',
 	],
 	tax: ['tax_record', 'withholding_tax_record'],
 	payment: ['payment'],
@@ -132,6 +135,8 @@ export const CODE_TYPE_CODES: Record<CodeType, string> = {
 	asset_depreciation: 'DEP',
 	employee_bank_account: 'REK',
 	credit_memo: 'CN',
+	employee_advance: 'ADV',
+	expense_settlement: 'SET',
 	tax_record: 'TAX',
 	withholding_tax_record: 'WHT',
 	payment: 'PAY',

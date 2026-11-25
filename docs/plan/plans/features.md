@@ -960,9 +960,17 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   statement date. Evidence: migration `20261125051738_erp0143_bank_statement`,
   unit tests, DB smoke 8/8.
 
+- Employee advances and settlements, Phase C (ERP-0144, 2026-11-25): staff
+  request advances, a manager approves, finance disburses through a payment;
+  the employee accounts for it with expense lines that finance verifies and a
+  manager approves; any excess is paid out and unused cash is received back.
+  Approved expense claims are paid the same way. All on the expenses page.
+  Evidence: migration `20261125053043_erp0144_employee_advances`, unit tests,
+  DB smoke 8/8.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phase B complete except stock/asset opening
-  detail); ERP-0144..0147 (Phase C: bank statement import,
+  detail); ERP-0145..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
   cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
   profitability, ratios, management pack, closed-period profit contract).

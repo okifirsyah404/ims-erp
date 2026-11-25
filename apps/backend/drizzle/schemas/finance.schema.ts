@@ -1178,6 +1178,126 @@ export const openingSubledgerItems = financeSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * Employee advances and their settlements (ERP-0144)
+ * ------------------------------------------------------------------------ */
+
+export const employeeAdvances = financeSchema.table(
+	'employee_advances',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Logical reference to human_resource.employees.id — cross-module FK omitted. */
+		employeeId: uuid('employee_id'),
+		/** Logical reference to project.projects.id — cross-module FK omitted. */
+		projectId: uuid('project_id'),
+		amount: moneyAmount('amount'),
+		settledAmount: moneyAmount('settled_amount'),
+		currencyCode: currencyCode(),
+		requestDate: date('request_date'),
+		purpose: text('purpose'),
+		status: text('status').notNull().default('draft'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		requestedBy: text('requested_by'),
+		submittedAt: unixTimestampNullable('submitted_at'),
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		disbursedAt: unixTimestampNullable('disbursed_at'),
+		/** Logical reference to payment.payments.id — cross-module FK omitted. */
+		paymentId: uuid('payment_id'),
+		...timestamps,
+	},
+	(table) => [
+		idrCheck('employee_advances'),
+		uniqueIndex('employee_advances_org_code_uq').on(table.organizationId, table.code),
+		index('employee_advances_employee_id_idx').on(table.employeeId),
+		index('employee_advances_project_id_idx').on(table.projectId),
+		index('employee_advances_status_idx').on(table.status),
+		check('employee_advances_status_check', sql`status IN ('draft', 'submitted', 'approved', 'disbursed', 'settled', 'cancelled')`),
+		check('employee_advances_amount_check', sql`amount > 0`),
+		check('employee_advances_settled_amount_check', sql`settled_amount >= 0`),
+		check('employee_advances_settled_le_amount_check', sql`settled_amount <= amount`),
+	],
+);
+
+export const expenseSettlements = financeSchema.table(
+	'expense_settlements',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		code: varchar('code', { length: 32 }).notNull(),
+		/** Logical reference to human_resource.employees.id — cross-module FK omitted. */
+		employeeId: uuid('employee_id'),
+		/** Logical reference to project.projects.id — cross-module FK omitted. */
+		projectId: uuid('project_id'),
+		settlementType: text('settlement_type').notNull().default('expense'),
+		employeeAdvanceId: uuid('employee_advance_id').references(() => employeeAdvances.id, { onDelete: 'set null' }),
+		totalAmount: moneyAmount('total_amount'),
+		advanceOffsetAmount: moneyAmount('advance_offset_amount'),
+		payableAmount: moneyAmount('payable_amount'),
+		paidAmount: moneyAmount('paid_amount'),
+		journalEntryId: uuid('journal_entry_id').references(() => journalEntries.id, { onDelete: 'set null' }),
+		/** Logical reference to payment.payments.id — cross-module FK omitted. */
+		paymentId: uuid('payment_id'),
+		currencyCode: currencyCode(),
+		settlementDate: date('settlement_date'),
+		status: text('status').notNull().default('draft'),
+		submittedBy: text('submitted_by'),
+		submittedAt: unixTimestampNullable('submitted_at'),
+		verifiedBy: text('verified_by'),
+		verifiedAt: unixTimestampNullable('verified_at'),
+		approvedBy: text('approved_by'),
+		approvedAt: unixTimestampNullable('approved_at'),
+		notes: text('notes'),
+		...timestamps,
+	},
+	(table) => [
+		idrCheck('expense_settlements'),
+		uniqueIndex('expense_settlements_org_code_uq').on(table.organizationId, table.code),
+		index('expense_settlements_employee_id_idx').on(table.employeeId),
+		index('expense_settlements_advance_id_idx').on(table.employeeAdvanceId),
+		index('expense_settlements_status_idx').on(table.status),
+		check('expense_settlements_settlement_type_check', sql`settlement_type IN ('expense', 'advance')`),
+		check(
+			'expense_settlements_status_check',
+			sql`status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')`,
+		),
+		check('expense_settlements_total_amount_check', sql`total_amount >= 0`),
+		check('expense_settlements_split_check', sql`advance_offset_amount >= 0 AND payable_amount >= 0`),
+		check('expense_settlements_paid_check', sql`paid_amount >= 0 AND paid_amount <= payable_amount`),
+	],
+);
+
+export const expenseSettlementItems = financeSchema.table(
+	'expense_settlement_items',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		expenseSettlementId: uuid('expense_settlement_id')
+			.notNull()
+			.references(() => expenseSettlements.id, { onDelete: 'cascade' }),
+		expenseDate: date('expense_date'),
+		categoryCode: text('category_code'),
+		description: text('description'),
+		amount: moneyAmount('amount'),
+		taxAmount: moneyAmount('tax_amount'),
+		currencyCode: currencyCode(),
+		isAdvanceOffset: boolean('is_advance_offset').notNull().default(false),
+		/** Logical reference to project.projects.id — cross-module FK omitted. */
+		projectId: uuid('project_id'),
+		/** Logical reference to document.documents.id — cross-module FK omitted. */
+		receiptDocumentId: uuid('receipt_document_id'),
+		...timestamps,
+	},
+	(table) => [
+		idrCheck('expense_settlement_items'),
+		index('expense_settlement_items_settlement_id_idx').on(table.expenseSettlementId),
+		check('expense_settlement_items_amount_check', sql`amount >= 0`),
+		check('expense_settlement_items_tax_amount_check', sql`tax_amount >= 0`),
+	],
+);
+
 export const assetDepreciations = financeSchema.table(
 	'asset_depreciations',
 	{
@@ -1317,3 +1437,7 @@ export type TFinanceCodeNumberingInsert =
 
 export type TOpeningSubledgerItemSelect = typeof openingSubledgerItems.$inferSelect;
 export type TOpeningSubledgerItemInsert = typeof openingSubledgerItems.$inferInsert;
+
+export type TEmployeeAdvanceSelect = typeof employeeAdvances.$inferSelect;
+export type TExpenseSettlementSelect = typeof expenseSettlements.$inferSelect;
+export type TExpenseSettlementItemSelect = typeof expenseSettlementItems.$inferSelect;

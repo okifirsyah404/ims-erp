@@ -76,3 +76,10 @@ export class PaymentWithholdingError extends AppError {
 		);
 	}
 }
+
+/** One payment settles one kind of counterpart (ERP-0144). */
+export class PaymentAllocationMixedError extends AppError {
+	constructor() {
+		super(422, 'payment.allocationMixed', 'A payment cannot mix invoices or bills, claims and advances');
+	}
+}

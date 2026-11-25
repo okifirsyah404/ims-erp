@@ -597,3 +597,10 @@ export class StatementFileError extends AppError {
 		super(422, `accounting.statementFile.${kind}` as const, messages[kind]);
 	}
 }
+
+/** Executed payments to or from employees cannot be voided yet (ERP-0144). */
+export class EmployeePaymentVoidError extends AppError {
+	constructor() {
+		super(409, 'accounting.employeePaymentVoid', 'Payments of claims, advances and settlements cannot be voided yet; correct them with a new payment');
+	}
+}

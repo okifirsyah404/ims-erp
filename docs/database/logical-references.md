@@ -64,10 +64,10 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 203 |
+| Logical reference columns | 204 |
 | Distinct targets | 28 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 163 |
+| Intra-module `Ref:` declarations | 164 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -89,8 +89,8 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `project.projects.id` | Project | 7 |
 | `document.documents.id` | Document | 6 |
 | `supplier.companies.id` | Supplier | 6 |
+| `payment.payments.id` | Payment | 4 |
 | `finance.journal_entries.id` | Finance | 3 |
-| `payment.payments.id` | Payment | 3 |
 | `sale.invoices.id` | Sale | 3 |
 | `inventory.movements.id` | Inventory | 2 |
 | `procurement.purchase_orders.id` | Procurement | 2 |
@@ -321,17 +321,18 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `procurement.purchase_orders`  ->  `supplier_company_id`
 - `procurement.purchase_returns`  ->  `supplier_company_id`
 
+### `payment.payments.id` - owner Payment, 4 referring columns
+
+- `finance.employee_advances`  ->  `payment_id`
+- `finance.expense_claims`  ->  `payment_id`
+- `finance.expense_settlements`  ->  `payment_id`
+- `sale.receipts`  ->  `payment_id`
+
 ### `finance.journal_entries.id` - owner Finance, 3 referring columns
 
 - `human_resource.employee_salary_records`  ->  `journal_entry_id`
 - `procurement.purchase_returns`  ->  `journal_entry_id`
 - `project.costs`  ->  `journal_entry_id`
-
-### `payment.payments.id` - owner Payment, 3 referring columns
-
-- `finance.employee_advances`  ->  `payment_id`
-- `finance.expense_claims`  ->  `payment_id`
-- `sale.receipts`  ->  `payment_id`
 
 ### `sale.invoices.id` - owner Sale, 3 referring columns
 

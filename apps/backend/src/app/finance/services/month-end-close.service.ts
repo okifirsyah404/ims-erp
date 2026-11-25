@@ -23,6 +23,7 @@ import {
 	JournalEntryNotFoundError,
 	OpenItemNotFoundError,
 	ReportPeriodInvalidError,
+	EmployeePaymentVoidError,
 } from '../errors/ledger.errors';
 import type { ICloseChecklistRepository } from '../contracts/close-checklist.repository.interface';
 import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
@@ -184,6 +185,11 @@ export class MonthEndCloseService {
 				payment.id,
 				tx,
 			);
+			// ERP-0144: employee payables (claims, advances, settlements) have no
+			// rollback yet; voiding would reverse the cash but leave them paid.
+			if (allocations.some((allocation) => ['expense_claim', 'employee_advance', 'expense_settlement'].includes(allocation.payableType))) {
+				throw new EmployeePaymentVoidError();
+			}
 			// ADR-0024 Q18: the direction is the ledger fact, not a type name.
 			const isPayable = payment.direction === 'out';
 

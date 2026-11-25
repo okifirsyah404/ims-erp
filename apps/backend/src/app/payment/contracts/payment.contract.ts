@@ -24,7 +24,7 @@ export const paymentAllocationInputSchema = z.object({
 export const paymentCreateSchema = z.object({
 	paymentType: z.enum(['receipt', 'disbursement']).default('receipt'),
 	counterpartyType: z
-		.enum(['customer', 'supplier'])
+		.enum(['customer', 'supplier', 'employee'])
 		.nullish()
 		.transform((v) => v ?? null),
 	counterpartyId: z.string().min(1).nullish().transform((v) => v ?? null),
@@ -56,6 +56,8 @@ export const paymentListQuerySchema = z.object({
 	limit: z.coerce.number().int().positive().max(100).default(20),
 	status: z.enum(PAYMENT_STATUSES).optional(),
 	paymentType: z.enum(PAYMENT_TYPES).optional(),
+	/** ERP-0144: customer, supplier or employee payments. */
+	counterpartyType: z.enum(['customer', 'supplier', 'employee']).optional(),
 });
 
 export const paymentVoidSchema = z.object({

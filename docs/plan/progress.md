@@ -12,6 +12,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0144: employee advances, settlements and employee payments
+
+**Scope.** Phase C slice 2.
+
+**Design gate.** `docs/database/` read for `finance.employee_advances`,
+`expense_settlements`, `expense_settlement_items` (all `status: target`),
+`expense_claims`, `payment.payments`, `payment.payment_allocations` (the
+`payable_type` vocabulary already listed the three employee types) and
+`journal_lines` (no party check). One new logical reference:
+`expense_settlements.payment_id`. Manual grill pass: ownership - finance owns
+the documents, payment owns the money movement and calls finance's
+settlement port; tenancy - `organization_id`; soft delete - `deleted_at`;
+money - minor units, `settled_amount <= amount`, `paid_amount <=
+payable_amount`; status - the DBML vocabularies, no `rejected` on advances
+(rejection cancels). Decisions: settlements only for advances (claims cover
+plain reimbursements); maker-checker on every step; one payment one
+counterpart kind; voiding employee payments refused until a rollback exists;
+new account 1-1340 Uang Muka Karyawan (1-1320 Piutang Karyawan stays for
+payroll deductions).
+
+**Changes.** Migration `20261125053043_erp0144_employee_advances` (3 CREATE
+TABLE, 3 intra-module FKs). Backend: `EmployeeAdvanceRepository`,
+`EmployeeAdvanceService`, `EmployeeAdvanceController` (`/finance/advances*`,
+`/finance/settlements*`), settlement-port `findEmployeePayable` /
+`applyEmployeePayable` and `counterpartRole` on the cash movement, payment
+validation/execution for employee payables, `PaymentAllocationMixedError`,
+`EmployeePaymentVoidError`, `GET /payments?counterpartyType=`, numbering
+`employee_advance` (ADV) and `expense_settlement` (SET), role
+`employee_advance`, event `finance.advance_settled`, seed account 1-1340.
+Web-admin: advances and settlements panel, employee payment dialog, "Pay
+claim" on the claim detail, employee payments table on `/finance/expenses`,
+payment tables send real filters (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 204 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0144_employee_advances; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # inserted 1 account (1-1340), rulesInserted 1
+bun run <temporary advance-smoke script>      # 8/8 PASS: requester cannot approve; partial disbursement refused;
+                                              # payment executes -> disbursed, Dr 1-1340 2,000,000; settlement
+                                              # 1,521,000 (with PPN) offsets the advance, balanced journal, Cr 1-1340
+                                              # party employee; 479,000 received back -> settled, 1-1340 back to its
+                                              # start; claim paid through payment -> paid, Dr 2-1200; mixed refused
+bun test test/finance/employee-advances.test.ts test/finance/ap-flows.test.ts   # 4 + 9 pass
+bun run test                                  # 7/7 tasks: backend 1558, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors (web-admin warnings down to 20: two date initializers fixed)
+bun docs/gen-role-permission.ts               # 739 routes
+```
+
+The first smoke run stopped on insufficient bank balance in the scratch
+database (setup; funded with a cash-in, Rp5,000,000).
+
+**Not verified.** Voiding an employee payment (refused by design); no browser
+walk-through.
+
+Next executable task: ERP-0145 (fixed-asset register, categories, monthly
+depreciation, disposal).
+
 ## 2026-11-25 - ERP-0143: bank statement CSV import and auto-match
 
 **Scope.** Phase C slice 1 (owner: "Lanjut Fase C").

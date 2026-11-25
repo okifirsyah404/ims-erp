@@ -149,7 +149,7 @@ export function PaymentsTable({
 	paymentType,
 	title,
 }: {
-	paymentType: 'customer_payment' | 'supplier_payment';
+	paymentType: 'customer_payment' | 'supplier_payment' | 'employee_payment';
 	title: string;
 }) {
 	const { t } = useTranslation(['finance', 'common']);

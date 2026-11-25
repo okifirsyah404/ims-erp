@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-725 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+739 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -780,6 +780,12 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 
 | Method | Path | Guard | Requirement | Who |
 | --- | --- | --- | --- | --- |
+| GET | `/finance/advances` | org member + permission | `advance:read` | `owner`, `operations_manager`, `technician` |
+| POST | `/finance/advances` | org member + permission | `advance:create` | `owner`, `technician` |
+| GET | `/finance/advances/:id` | org member + permission | `advance:read` | `owner`, `operations_manager`, `technician` |
+| POST | `/finance/advances/:id/approve` | org member + permission | `advance:approve` | `owner`, `operations_manager` |
+| POST | `/finance/advances/:id/cancel` | org member + permission | `advance:reject` | `owner`, `operations_manager` |
+| POST | `/finance/advances/:id/submit` | org member + permission | `advance:submit` | `owner`, `technician` |
 | GET | `/finance/ap/aging` | org member + permission | `bill:read` | `owner`, `finance`, `accountant` |
 | POST | `/finance/ar/:invoiceId/write-off/approve` | org member + permission | `ar_write_off:approve` | `owner`, `accountant` |
 | POST | `/finance/ar/:invoiceId/write-off/cancel` | org member + permission | `ar_write_off:request` | `owner`, `finance` |
@@ -877,6 +883,14 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/reports/profit-and-loss` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/profit-and-loss.csv` | org member + permission | `financial_report:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/trial-balance` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/settlements` | org member + permission | `settlement:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer` |
+| POST | `/finance/settlements` | org member + permission | `settlement:create` | `owner`, `project_manager`, `technician`, `freelancer` |
+| GET | `/finance/settlements/:id` | org member + permission | `settlement:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer` |
+| POST | `/finance/settlements/:id/approve` | org member + permission | `settlement:approve` | `owner`, `operations_manager` |
+| POST | `/finance/settlements/:id/cancel` | org member + permission | `settlement:update` | `owner`, `project_manager`, `technician`, `freelancer` |
+| POST | `/finance/settlements/:id/reject` | org member + permission | `settlement:reject` | `owner`, `operations_manager` |
+| POST | `/finance/settlements/:id/submit` | org member + permission | `settlement:submit` | `owner`, `project_manager`, `technician`, `freelancer` |
+| POST | `/finance/settlements/:id/verify` | org member + permission | `settlement:verify` | `owner`, `operations_manager` |
 | GET | `/finance/supplier-bills` | org member + permission | `bill:read` | `owner`, `finance`, `accountant` |
 | POST | `/finance/supplier-bills` | org member + permission | `bill:create` | `owner`, `finance`, `accountant` |
 | GET | `/finance/supplier-bills/:id` | org member + permission | `bill:read` | `owner`, `finance`, `accountant` |

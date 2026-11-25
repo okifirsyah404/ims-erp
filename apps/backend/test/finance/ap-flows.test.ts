@@ -5,7 +5,7 @@
  */
 import { fixturePostingRules } from './posting-rules.fixture';
 import 'reflect-metadata';
-import { PaymentWithholdingError } from '../../src/app/payment/errors/payment.errors';
+import { PaymentAllocationMixedError, PaymentWithholdingError } from '../../src/app/payment/errors/payment.errors';
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import type {
@@ -313,6 +313,8 @@ function makeHarness() {
 		listAllocations: repoFake.listPaymentAllocations,
 	};
 	const withholdings: Array<Record<string, unknown>> = [];
+	const employeePayments: Array<Record<string, unknown>> = [];
+	const cashInputs: Array<Record<string, unknown>> = [];
 	const withholdingRecords: Array<Record<string, unknown>> = [];
 	const settlement = {
 		postWithholding: async (input: Record<string, unknown>) => {
@@ -336,7 +338,13 @@ function makeHarness() {
 				status: patch.status,
 			});
 		},
+		findEmployeePayable: async (_org: string, type: string, id: string, direction: string) =>
+			type === 'expense_claim' && id === 'claim-1' && direction === 'out' ? { outstanding: 750_000, exact: true, employeeId: 'emp-1' } : null,
+		applyEmployeePayable: async (_org: string, type: string, id: string, direction: string, amount: number, paymentId: string) => {
+			employeePayments.push({ type, id, direction, amount, paymentId });
+		},
 		postCashMovement: async (input: Record<string, unknown>, txIn: never) => {
+			cashInputs.push(input);
 			const counterpartAccountId = await arResolver.resolve(
 				input.organizationId as string,
 				input.side === 'payable' ? 'ap' : 'ar',
@@ -391,6 +399,8 @@ function makeHarness() {
 	);
 
 	return {
+		employeePayments,
+		cashInputs,
 		withholdings,
 		withholdingRecords,
 		posting,
@@ -542,6 +552,39 @@ describe('Supplier payments + AP aging (F5)', () => {
 		const cash = lines.find((l) => l.accountId === 'acc-cash-gl')!;
 		expect(ap.debit).toBe(1_000_000);
 		expect(cash.credit).toBe(1_000_000);
+	});
+
+	test('an approved expense claim is paid in full against claims payable (ERP-0144)', async () => {
+		const base = {
+			paymentType: 'disbursement' as const,
+			counterpartyType: 'employee' as const,
+			counterpartyId: 'emp-1',
+			amount: 750_000,
+			paymentMethod: 'bank_transfer' as const,
+			paymentDate: '2026-01-20',
+			cashBankAccountId: cashId(h),
+			referenceNumber: null,
+			notes: null,
+		};
+		const short = await h.paymentService.create(ctx, { ...base, amount: 500_000 }, []);
+		await expect(
+			h.paymentService.setAllocations(ctx, short.id, [{ payableType: 'expense_claim', payableId: 'claim-1', amount: 500_000 }]),
+		).rejects.toThrow();
+		const bill = await seedRecordedBill(h, 250_000);
+		const mixed = await h.paymentService.create(ctx, { ...base, amount: 1_000_000 }, []);
+		await expect(
+			h.paymentService.setAllocations(ctx, mixed.id, [
+				{ payableType: 'expense_claim', payableId: 'claim-1', amount: 750_000 },
+				{ payableType: 'supplier_bill', payableId: bill.id, amount: 250_000 },
+			]),
+		).rejects.toThrow(PaymentAllocationMixedError);
+		const payment = await h.paymentService.create(ctx, base, []);
+		await h.paymentService.setAllocations(ctx, payment.id, [{ payableType: 'expense_claim', payableId: 'claim-1', amount: 750_000 }]);
+		await h.paymentService.submit(ctx, payment.id);
+		await h.paymentService.approve(ctx, payment.id);
+		await h.paymentService.execute(ctx, payment.id);
+		expect(h.employeePayments).toEqual([{ type: 'expense_claim', id: 'claim-1', direction: 'out', amount: 750_000, paymentId: payment.id }]);
+		expect(h.cashInputs[h.cashInputs.length - 1]).toMatchObject({ counterpartRole: 'claim_payable', direction: 'out', amount: 750_000 });
 	});
 
 	test('PPh withheld on a supplier payment: AP settled in full, bank pays the net (ERP-0140)', async () => {

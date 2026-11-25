@@ -1,3 +1,4 @@
+import type { TEmployeePayableType } from '@app/finance/contracts/ledger-settlement.port';
 import { inject, injectable } from 'tsyringe';
 import { EXPORTED_TAX_SERVICE_TOKEN } from '@app/tax/constants/di';
 import type { ExportedTaxService } from '@app/tax/services/exported-tax.service';
@@ -26,9 +27,24 @@ import {
 	PaymentOverAllocationError,
 	PaymentTargetNotIssuedError,
 	PaymentVoidNotAllowedError,
+	PaymentAllocationMixedError,
 } from '../errors/payment.errors';
 
 /** Which side of the ledger a payment type settles. */
+const EMPLOYEE_PAYABLES: readonly TEmployeePayableType[] = ['expense_claim', 'employee_advance', 'expense_settlement'];
+
+/** The cash counterpart of a payment's allocations; mixing kinds is refused (ERP-0144). */
+function counterpartFor(types: string[]): 'claim_payable' | 'employee_advance' | undefined {
+	const kinds = new Set(
+		types.map((type) =>
+			type === 'employee_advance' ? 'employee_advance' : type === 'expense_claim' || type === 'expense_settlement' ? 'claim_payable' : 'ledger',
+		),
+	);
+	if (kinds.size > 1) throw new PaymentAllocationMixedError();
+	const [kind] = [...kinds];
+	return kind === 'ledger' ? undefined : (kind as 'claim_payable' | 'employee_advance');
+}
+
 const PAYMENT_SIDE: Record<TCreatePaymentInput['paymentType'], 'receivable' | 'payable'> = {
 	receipt: 'receivable',
 	disbursement: 'payable',
@@ -175,17 +191,28 @@ export class PaymentService implements IPaymentService {
 				tx,
 			);
 
+			const side = PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']];
+			const direction = side === 'payable' ? 'out' : 'in';
 			for (const allocation of allocations) {
 				if (allocation.payableType === 'supplier_bill') {
 					await this.applyBillAllocation(ctx.organizationId, allocation.payableId, allocation.amount, tx);
 				} else if (allocation.payableType === 'sale_invoice') {
 					await this.applyInvoiceAllocation(ctx.organizationId, allocation.payableId, allocation.amount, tx);
+				} else if (EMPLOYEE_PAYABLES.includes(allocation.payableType as TEmployeePayableType)) {
+					await this.settlement.applyEmployeePayable(
+						ctx.organizationId,
+						allocation.payableType as TEmployeePayableType,
+						allocation.payableId,
+						direction,
+						allocation.amount,
+						payment.id,
+						tx,
+					);
 				} else {
 					throw new PaymentTargetNotIssuedError();
 				}
 			}
-
-			const side = PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']];
+			const counterpartRole = counterpartFor(allocations.map((a) => a.payableType));
 			const businessDate = payment.paymentDate ?? new Date().toISOString().slice(0, 10);
 			// ERP-0140: PPh withheld stays with the company until it is paid to the
 			// state: AP is settled in full, the bank pays the net, the rest becomes
@@ -227,7 +254,8 @@ export class PaymentService implements IPaymentService {
 					actorUserId: ctx.actorUserId,
 					cashBankAccountId: payment.cashBankAccountId,
 					side,
-					direction: side === 'payable' ? 'out' : 'in',
+					counterpartRole,
+					direction,
 					amount: payment.amount - withheld,
 					businessDate,
 					description: `Payment ${payment.code}`,
@@ -284,8 +312,25 @@ export class PaymentService implements IPaymentService {
 		const total = allocations.reduce((s, a) => s + a.amount, 0);
 		if (total !== amount) throw new PaymentAllocationMismatchError();
 		const expectsPayable = PAYMENT_SIDE[paymentType] === 'payable';
+		// ERP-0144: one payment settles one kind of counterpart (AR, AP, claims
+		// payable or advances), because it posts one cash movement.
+		counterpartFor(allocations.map((a) => a.payableType));
 		for (const allocation of allocations) {
-			// Resolver map: only the payables of the two ledger sides are wired so far.
+			if (EMPLOYEE_PAYABLES.includes(allocation.payableType as TEmployeePayableType)) {
+				const target = await this.settlement.findEmployeePayable(
+					organizationId,
+					allocation.payableType as TEmployeePayableType,
+					allocation.payableId,
+					expectsPayable ? 'out' : 'in',
+					tx,
+				);
+				if (!target) throw new PaymentTargetNotIssuedError();
+				if (target.exact ? allocation.amount !== target.outstanding : allocation.amount > target.outstanding) {
+					throw new PaymentOverAllocationError();
+				}
+				continue;
+			}
+			// Resolver map: invoices and bills on the two ledger sides.
 			if (allocation.payableType !== 'sale_invoice' && allocation.payableType !== 'supplier_bill') {
 				throw new PaymentTargetNotIssuedError();
 			}

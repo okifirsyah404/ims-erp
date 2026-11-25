@@ -3707,9 +3707,9 @@ Table finance.employee_advances {
   disbursed_at bigint
   payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Cash advance to an employee. Disbursement is a payment.payments row; the advance is never a payment ledger of its own."
+  Note: "Cash advance to an employee (ERP-0144): draft -> submitted -> approved -> disbursed -> settled, or cancelled. Disbursement is a payment.payments row (allocation payable_type employee_advance, Dr Uang Muka Karyawan / Cr cash); the advance is never a payment ledger of its own. settled_amount counts what an approved settlement offset plus cash the employee returned (a receipt allocated to the advance); settled when it reaches amount."
   Indexes {
     (organization_id, code) [unique, name: 'employee_advances_org_code_uq']
     employee_id [name: 'employee_advances_employee_id_idx']
@@ -3734,6 +3734,11 @@ Table finance.expense_settlements {
   settlement_type text [not null, default: 'expense']
   employee_advance_id uuid
   total_amount bigint [not null, default: 0]
+  advance_offset_amount bigint [not null, default: 0, note: "Part of the total charged against the advance at approval (ERP-0144)."]
+  payable_amount bigint [not null, default: 0, note: "Expenses above the advance's open balance, owed to the employee (claims payable)."]
+  paid_amount bigint [not null, default: 0, note: "Paid out of payable_amount through payment allocations (payable_type expense_settlement)."]
+  journal_entry_id uuid [note: "The settlement journal posted at approval."]
+  payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted. The payment that paid payable_amount."]
   currency_code varchar(3) [not null, default: 'IDR']
   settlement_date date
   status text [not null, default: 'draft']
@@ -3745,9 +3750,9 @@ Table finance.expense_settlements {
   approved_at bigint
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Settlement of a project advance and of the operational expenses of an employee. Verification and approval are separate steps."
+  Note: "Settlement of an employee advance (ERP-0144): draft -> submitted -> verified -> approved -> paid, or rejected / cancelled; verification and approval are separate steps by different users. Approval posts Dr expenses (+ PPN input) / Cr Uang Muka Karyawan up to the advance's open balance / Cr claims payable for the rest. Only settlement_type advance is created; plain expense reimbursements stay finance.expense_claims."
   Indexes {
     (organization_id, code) [unique, name: 'expense_settlements_org_code_uq']
     employee_id [name: 'expense_settlements_employee_id_idx']
@@ -3758,6 +3763,8 @@ Table finance.expense_settlements {
     `settlement_type IN ('expense', 'advance')`
     `status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')`
     `total_amount >= 0`
+    `advance_offset_amount >= 0 AND payable_amount >= 0`
+    `paid_amount >= 0 AND paid_amount <= payable_amount`
     `currency_code = 'IDR'`
   }
 }
@@ -3776,9 +3783,9 @@ Table finance.expense_settlement_items {
   project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted."]
   receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Line of an expense settlement."
+  Note: "Line of an expense settlement (ERP-0144). category_code is the expense account code, as on expense claim items."
   Indexes {
     expense_settlement_id [name: 'expense_settlement_items_settlement_id_idx']
   }
@@ -3816,6 +3823,7 @@ Ref: finance.asset_depreciations.journal_entry_id > finance.journal_entries.id [
 Ref: finance.expense_claim_items.expense_claim_id > finance.expense_claims.id [delete: cascade]
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
+Ref: finance.expense_settlements.journal_entry_id > finance.journal_entries.id [delete: set null]
 
 // ---------------------------------------------------------------------------
 // MODULE: Tax  (schema: tax, new; split out of accounting). Tax rates, the

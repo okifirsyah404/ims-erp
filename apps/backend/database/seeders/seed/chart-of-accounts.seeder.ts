@@ -88,6 +88,7 @@ const ACCOUNTS: TAccountSeed[] = [
 	p('1-1310', 'Piutang Usaha', 'asset', '1-1300', 'operating'),
 	p('1-1320', 'Piutang Karyawan', 'asset', '1-1300', 'operating'),
 	p('1-1330', 'Piutang Lain-lain', 'asset', '1-1300', 'operating'),
+	p('1-1340', 'Uang Muka Karyawan', 'asset', '1-1300', 'operating'),
 	p('1-1390', 'Cadangan Kerugian Piutang', 'asset', '1-1300', 'operating', 'credit'),
 	h('1-1400', 'Persediaan', 'asset', '1-1000'),
 	p('1-1410', 'Persediaan Barang Dagang', 'asset', '1-1400', 'operating'),

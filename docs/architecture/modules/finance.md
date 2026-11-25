@@ -400,6 +400,36 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - `GET /finance/reconciliations/:id` now returns the lines; the page shows
   them from the server instead of the current session only.
 
+## Employee advances, settlements and employee payments (C, ERP-0144, built)
+
+- `finance.employee_advances`, `expense_settlements`,
+  `expense_settlement_items` (previously `status: target`) are built.
+  Advance: draft -> submitted -> approved (not by the requester) ->
+  disbursed -> settled, or cancelled before disbursement. Settlement of a
+  disbursed advance: draft -> submitted -> verified -> approved, each step by
+  a different user than the previous one; one open settlement per advance.
+  Only `settlement_type = advance` is created; plain reimbursements stay
+  expense claims.
+- Settlement approval (`finance.advance_settled`): Dr each expense account
+  (the advance's project on every expense line) and PPN input / Cr Uang Muka
+  Karyawan 1-1340 (new account and role `employee_advance`, party employee)
+  up to the advance's open balance / Cr claims payable 2-1200 for the rest
+  (`payable_amount`).
+- Payments to and from employees go through `payment`
+  (`counterparty_type = employee`): disbursement allocations
+  `employee_advance` (approved advance, full amount; Dr 1-1340),
+  `expense_claim` (approved claim, full amount; Dr 2-1200; claim -> paid) and
+  `expense_settlement` (unpaid payable; Dr 2-1200; settlement -> paid);
+  a receipt allocated to a disbursed advance takes back cash the employee
+  returns (Cr 1-1340; advance settled when fully accounted for). One payment
+  settles one kind of counterpart (`payment.allocationMixed`).
+- Voiding an executed employee payment is refused
+  (`accounting.employeePaymentVoid`): there is no rollback of the advance,
+  claim or settlement state yet.
+- `GET /payments` gained a `counterpartyType` filter; the web payment tables
+  now send real filters (they sent `customer_payment` / `supplier_payment`,
+  which the API rejects - a pre-existing bug).
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

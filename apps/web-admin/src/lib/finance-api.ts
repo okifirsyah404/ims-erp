@@ -732,6 +732,12 @@ export type TPaymentAllocation = {
 	amount: number;
 };
 
+const PAYMENT_KIND_FILTERS = {
+	customer_payment: { paymentType: 'receipt', counterpartyType: 'customer' },
+	supplier_payment: { paymentType: 'disbursement', counterpartyType: 'supplier' },
+	employee_payment: { paymentType: undefined, counterpartyType: 'employee' },
+} as const;
+
 export function paymentsQueryOptions(params: {
 	page: number;
 	limit: number;
@@ -743,7 +749,12 @@ export function paymentsQueryOptions(params: {
 		limit: String(params.limit),
 	});
 	if (params.status) search.set('status', params.status);
-	if (params.paymentType) search.set('paymentType', params.paymentType);
+	// The table kinds map to real filters (the backend has no `*_payment` type).
+	const kind = PAYMENT_KIND_FILTERS[params.paymentType as keyof typeof PAYMENT_KIND_FILTERS];
+	if (kind) {
+		if (kind.paymentType) search.set('paymentType', kind.paymentType);
+		search.set('counterpartyType', kind.counterpartyType);
+	} else if (params.paymentType) search.set('paymentType', params.paymentType);
 	return queryOptions({
 		queryKey: ['payments', params],
 		queryFn: () => getDataPaginated<TPayment>(`/payments?${search}`),
@@ -1577,4 +1588,69 @@ export function createStatementTransaction(reconciliationId: string, itemId: str
 	return sendData<TBankReconciliationItem>(`/finance/reconciliations/${reconciliationId}/items/${itemId}/transaction`, 'POST', {
 		counterpartAccountId,
 	});
+}
+
+/* ----------------------------- employee advances (ERP-0144) ----------------------------- */
+
+export type TEmployeePayableType = 'expense_claim' | 'employee_advance' | 'expense_settlement';
+
+export type TEmployeeAdvance = {
+	id: string;
+	code: string;
+	employeeId: string | null;
+	projectId: string | null;
+	amount: number;
+	settledAmount: number;
+	requestDate: string | null;
+	purpose: string | null;
+	status: 'draft' | 'submitted' | 'approved' | 'disbursed' | 'settled' | 'cancelled';
+	paymentId: string | null;
+};
+
+export type TExpenseSettlement = {
+	id: string;
+	code: string;
+	employeeId: string | null;
+	employeeAdvanceId: string | null;
+	totalAmount: number;
+	advanceOffsetAmount: number;
+	payableAmount: number;
+	paidAmount: number;
+	settlementDate: string | null;
+	status: 'draft' | 'submitted' | 'verified' | 'approved' | 'rejected' | 'paid' | 'cancelled';
+	journalEntryId: string | null;
+};
+
+export function advancesQueryOptions() {
+	return queryOptions({
+		queryKey: ['finance', 'advances', 'list'],
+		queryFn: () => getDataPaginated<TEmployeeAdvance>('/finance/advances?page=1&limit=100'),
+	});
+}
+
+export function settlementsQueryOptions() {
+	return queryOptions({
+		queryKey: ['finance', 'advances', 'settlements'],
+		queryFn: () => getDataPaginated<TExpenseSettlement>('/finance/settlements?page=1&limit=100'),
+	});
+}
+
+export function createAdvance(input: { employeeId: string; amount: number; requestDate: string; purpose: string }) {
+	return sendData<TEmployeeAdvance>('/finance/advances', 'POST', input);
+}
+
+export function advanceAction(id: string, action: string) {
+	return sendData<TEmployeeAdvance>(`/finance/advances/${id}/${action}`, 'POST');
+}
+
+export function createSettlement(input: {
+	employeeAdvanceId: string;
+	settlementDate: string;
+	items: Array<{ expenseDate: string; categoryCode: string; description: string | null; amount: number; taxAmount: number }>;
+}) {
+	return sendData<TExpenseSettlement>('/finance/settlements', 'POST', input);
+}
+
+export function settlementAction(id: string, action: string) {
+	return sendData<TExpenseSettlement>(`/finance/settlements/${id}/${action}`, 'POST');
 }

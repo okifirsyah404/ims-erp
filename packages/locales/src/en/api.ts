@@ -668,6 +668,13 @@ const api = {
 	'accounting.statementFile.type': 'Upload a .csv file',
 	'accounting.statementFile.size': 'The file is larger than 5 MB',
 	'accounting.statementFile.empty': 'The file has no statement lines',
+	'accounting.advanceNotFound': 'Employee advance not found',
+	'accounting.settlementNotFound': 'Expense settlement not found',
+	'accounting.advanceTransition': 'Cannot move from {{from}} to {{to}}',
+	'accounting.advanceSameActor': 'A different user must take this step',
+	'accounting.settlementAdvanceInvalid': 'The advance must be disbursed and have no other open settlement',
+	'payment.allocationMixed': 'A payment cannot mix invoices or bills, claims and advances',
+	'accounting.employeePaymentVoid': 'Payments of claims, advances and settlements cannot be voided yet; correct them with a new payment',
 } as const;
 
 export default api;

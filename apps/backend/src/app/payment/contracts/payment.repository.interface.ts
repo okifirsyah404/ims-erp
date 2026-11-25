@@ -2,7 +2,7 @@ import type { TPaymentAllocationSelect, TPaymentInsert, TPaymentSelect } from '@
 import type { TPaginationRequest, TPaginationResult } from '@ims-erp/common';
 
 /** Filters of the payment list (`GET /payments`). */
-export type TPaymentListFilters = { status?: string; paymentType?: string };
+export type TPaymentListFilters = { status?: string; paymentType?: string; counterpartyType?: string };
 
 /**
  * Page settings plus the tenant and filters of `GET /payments`.

@@ -52,10 +52,11 @@ export class PaymentRepository implements IPaymentRepository {
 	async paginate(
 		request: TPaymentPaginationRequest,
 	): Promise<TPaginationResult<TPaymentSelect>> {
-		const { organizationId, status, paymentType, page, limit } = request;
+		const { organizationId, status, paymentType, counterpartyType, page, limit } = request;
 		const conditions = [eq(payments.organizationId, organizationId), isNull(payments.deletedAt)];
 		if (status) conditions.push(eq(payments.status, status));
 		if (paymentType) conditions.push(eq(payments.paymentType, paymentType));
+		if (counterpartyType) conditions.push(eq(payments.counterpartyType, counterpartyType));
 		const where = and(...conditions);
 		const [{ value: total }] = await this.database.select({ value: count() }).from(payments).where(where);
 		const data = await this.database
