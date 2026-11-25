@@ -12,6 +12,46 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0141: project-tagged invoices and project costs in the GL
+
+**Scope.** Phase B slice 4 (grill Q32/Q39/Q42).
+
+**Design gate.** `docs/database/` read for `sale.invoices`, `project.costs`,
+`project.projects` and `logical-references.md` (two new logical references:
+`sale.invoices.project_id`, `project.costs.journal_entry_id`). Decisions:
+stamp the project at issue (projects can be created after an invoice draft);
+`payment_source` (employee_claim / petty_cash / bank, default employee_claim
+for existing rows) decides the credit side; the duplicate check is a UI
+warning on `reference`, not a server refusal.
+
+**Changes.** Schema: `sale.invoices.project_id`, `project.costs.payment_source`
+/ `reference` / `journal_entry_id`, journal `source_module` + `project`
+(migration `20261125002439_erp0141_project_postings`: 4 ADD COLUMN, 1 check
+added, 1 replaced). Backend: invoice issue stamps the live project and tags
+revenue/advance/deferral lines; `ProjectService.addCost/voidCost` post and
+reverse in one transaction; role `cash_payment` (seed: default 1-1120, cash
+-> 1-1110), event `project.cost_recorded`. Web-admin: cost form "paid by" +
+reference + duplicate warning + ledger hint (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 198 refs across 27 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0141_project_postings; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # rulesInserted 2 (cash_payment default + cash)
+bun run <temporary project-smoke script>      # 3/3 PASS: source module project accepted; Dr 5-1200 / Cr 2-1200,
+                                              # Cr 1-1110 (petty cash), Cr 1-1120 (bank)
+bun test test/unit/project.service.test.ts test/finance/ar-postings.test.ts   # 8 + 10 pass
+bun run test                                  # 7/7: backend 1491, web-admin 209, locales 106, portal 68, landing 25, email 6
+```
+
+**Not verified.** Invoice project stamping on a database (no seeded orders or
+projects); no browser walk-through.
+
+Next executable task: ERP-0140 (tax postings, withholding slip data, Coretax
+XML export).
+
 ## 2026-11-25 - ERP-0139: receipts post to the ledger, gateway clearing and settlement
 
 **Scope.** Phase B slice 3 (M09 plan "gateway accounting split", grill Q45).

@@ -91,6 +91,9 @@ export type TProjectCost = {
 	receiptUrl: string | null;
 	voidedAt: string | null;
 	voidReason: string | null;
+	paymentSource: TCostPaymentSource;
+	reference: string | null;
+	journalEntryId: string | null;
 };
 
 export type TProjectCosts = {
@@ -228,12 +231,28 @@ export function uploadEvidence(id: string, input: { file: File; kind: TEvidenceK
 
 export const removeEvidence = (id: string, evidenceId: string) => send<TProjectEvidence>(`/projects/${id}/evidence/${evidenceId}`, 'DELETE');
 
-export function addCost(id: string, input: { category: TCostCategory; costDate: string; amount: number; description: string; receipt?: File | null }) {
+export const COST_PAYMENT_SOURCES = ['employee_claim', 'petty_cash', 'bank'] as const;
+export type TCostPaymentSource = (typeof COST_PAYMENT_SOURCES)[number];
+
+export function addCost(
+	id: string,
+	input: {
+		category: TCostCategory;
+		costDate: string;
+		amount: number;
+		description: string;
+		receipt?: File | null;
+		paymentSource: TCostPaymentSource;
+		reference?: string | null;
+	},
+) {
 	const body = new FormData();
 	body.set('category', input.category);
 	body.set('costDate', input.costDate);
 	body.set('amount', String(input.amount));
 	body.set('description', input.description);
+	body.set('paymentSource', input.paymentSource);
+	if (input.reference) body.set('reference', input.reference);
 	if (input.receipt) body.set('receipt', input.receipt);
 	return send<TProjectCost>(`/projects/${id}/costs`, 'POST', body);
 }

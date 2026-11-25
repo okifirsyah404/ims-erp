@@ -2306,6 +2306,7 @@ Table sale.invoices {
   company_id uuid [note: "Logical reference to customer.companies.id. Cross-module FK intentionally omitted. Validated through the Customer module contract."]
   customer_snapshot jsonb [note: "Customer data copied from the sales order. Null when the invoice has no order."]
   order_id uuid [note: "Plain id of a row in sale.orders (same module). Nullable: proforma and recurring invoices may have no order."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through the Project module contract. The live project of the order, stamped when the invoice is issued (ERP-0141)."]
   order_code varchar(32)
   quotation_code varchar(40) [note: "The SPH number printed as No. Ref."]
   title text [note: "Subject (Perihal), from the order."]
@@ -2993,7 +2994,7 @@ Table finance.journal_entries {
     `total_debit >= 0`
     `total_credit >= 0`
     `total_debit = total_credit`
-    `source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource')`
+    `source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource', 'project')`
     `code IS NOT NULL OR status IN ('draft', 'submitted', 'approved', 'void')`
     `currency_code = 'IDR'`
   }
@@ -4195,16 +4196,20 @@ Table project.costs {
   voided_by text [note: "Logical reference to auth.users.id."]
   voided_at bigint
   void_reason text
+  payment_source text [not null, default: 'employee_claim', note: "Who paid (ERP-0141): employee_claim (owed to the employee, Cr claims payable), petty_cash or bank (Cr cash by method)."]
+  reference varchar(100) [note: "Receipt or claim number; the UI warns on a duplicate within the project."]
+  journal_entry_id uuid [note: "Logical reference to finance.journal_entries.id. Cross-module FK intentionally omitted. Validated through the Finance module contract. Dr project COGS / Cr the payment source, posted with the cost (ERP-0141)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Direct cost of a project (was projects.project_costs); visible only with project:read_cost. Corrected by voiding, never deleted."
+  Note: "Direct cost of a project (was projects.project_costs); visible only with project:read_cost. Corrected by voiding, never deleted. Every cost posts to the general ledger and its void reverses the journal (ERP-0141)."
   Indexes {
     (project_id, cost_date) [name: 'costs_project_date_idx']
   }
   Checks {
     `category IN ('material', 'transport', 'accommodation', 'subcontract', 'other')`
     `amount > 0`
+    `payment_source IN ('employee_claim', 'petty_cash', 'bank')`
   }
 }
 

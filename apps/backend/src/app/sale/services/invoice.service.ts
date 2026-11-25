@@ -45,6 +45,8 @@ import {
 import { businessDateOf } from '@utils/business-date.util';
 import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
 import { buildInvoicePosting } from '../utils/invoice-posting';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import type { ExportedProductService } from '@app/product/services/exported-product.service';
 import { DEFERRED_REVENUE_PORT_TOKEN } from '@app/finance/constants/di';
@@ -96,6 +98,9 @@ export class InvoiceService {
 		/** ERP-0135: service-period lines open finance's deferred-revenue schedules. */
 		@inject(DEFERRED_REVENUE_PORT_TOKEN)
 		private readonly deferredRevenue: IDeferredRevenuePort,
+		/** ERP-0141: the order's live project is stamped on the invoice at issue. */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'liveProjectOfOrder'>,
 		/** ERP-0139: receipts post to the ledger and the AR open item. */
 		@inject(RECEIPT_LEDGER_SERVICE_TOKEN)
 		private readonly receiptLedger?: Pick<ReceiptLedgerService, 'post' | 'reverse'>,
@@ -273,6 +278,9 @@ export class InvoiceService {
 			const productCategoryById = new Map<string, string | null>(
 				[...products.values()].map((product) => [product.id, product.productCategoryId]),
 			);
+			// ERP-0141: the order's live project tags the invoice and its revenue lines.
+			const project = invoice.orderId && this.projects ? await this.projects.liveProjectOfOrder(invoice.orderId) : null;
+			const projectId = invoice.projectId ?? project?.id ?? null;
 			const advanceBase =
 				invoice.termKind === 'settlement' && invoice.orderId
 					? await this.repo.sumLiveDownPaymentBase(ctx.organizationId, invoice.orderId, invoice.id, tx)
@@ -289,6 +297,7 @@ export class InvoiceService {
 				})),
 				productCategoryById,
 				advanceBase,
+				projectId,
 			});
 
 			const { entry } = await this.posting.postBusinessEvent(tx, {
@@ -337,6 +346,7 @@ export class InvoiceService {
 					issuedBy: ctx.actorUserId,
 					issuedAt: new Date(),
 					outstandingTotal: invoice.grandTotal,
+					projectId,
 				},
 				tx,
 			);

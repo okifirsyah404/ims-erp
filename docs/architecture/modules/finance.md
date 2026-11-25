@@ -244,6 +244,23 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   line by line (reconciliation of clearing is manual through the GL report);
   refunds.
 
+## Project postings (B, ERP-0141, built)
+
+- `sale.invoices.project_id` (logical reference) is stamped at issue from
+  the order's live project (`PROJECT_LOOKUP_SERVICE_TOKEN`); the revenue,
+  deferred-revenue and customer-advance lines carry `project_id`, so project
+  profitability reads the GL without joining sale.
+- **Manual project costs** (`project.costs`) post `project.cost_recorded` in
+  the cost's transaction: Dr project COGS 5-1200 (posting-rule discriminator
+  `cost_category` = the cost category) / Cr claims payable 2-1200 when an
+  employee paid (`payment_source = employee_claim`) or Cr `cash_payment`
+  (discriminator `payment_method`: petty cash -> 1-1110, bank -> 1-1120).
+  The journal id is kept on `project.costs.journal_entry_id`; voiding the
+  cost reverses it. `reference` lets the UI warn about a duplicate entry.
+  `project` joined the journal `source_module` vocabulary.
+- Costs recorded before ERP-0141 have no journal; their void touches only the
+  project.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

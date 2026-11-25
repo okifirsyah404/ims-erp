@@ -679,6 +679,8 @@ export const invoices = saleSchema.table(
 		customerSnapshot: jsonb('customer_snapshot').$type<TCustomerSnapshot | null>(),
 		/** Plain id of a row in sale.orders (same module). */
 		orderId: uuid('order_id'),
+		/** Logical reference to project.projects.id, stamped at issue (ERP-0141). */
+		projectId: uuid('project_id'),
 		orderCode: varchar('order_code', { length: 32 }),
 		quotationCode: varchar('quotation_code', { length: 40 }),
 		title: text('title'),

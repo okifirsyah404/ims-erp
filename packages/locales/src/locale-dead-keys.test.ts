@@ -64,6 +64,7 @@ const DYNAMIC_PREFIXES = [
 	'finance:postingRules.event.',
 	'finance:postingRules.discriminator.',
 	'finance:adjustments.memoStatus.',
+	'projects:costs.paymentSource.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',

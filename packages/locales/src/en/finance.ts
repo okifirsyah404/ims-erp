@@ -691,6 +691,8 @@ const finance = {
 	'gatewaySettlement.fee': 'Gateway fee',
 	'gatewaySettlement.reference': 'Settlement reference',
 	'gatewaySettlement.recorded': 'Gateway settlement recorded',
+	'postingRules.role.cash_payment': 'Cash paid (by method)',
+	'postingRules.event.project.cost_recorded': 'Project cost recorded',
 } as const;
 
 export default finance;

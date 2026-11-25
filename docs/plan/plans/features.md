@@ -930,8 +930,15 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `20261125001655_erp0139_receipts_gateway`, DB smoke 8/8, 7 unit tests.
   Open: settlement-report import, refunds.
 
+- Project postings, Phase B (ERP-0141, 2026-11-25): invoices carry the
+  order's project and tag their revenue lines; manual project costs post to
+  project COGS against claims payable or cash (by payment source) and their
+  void reverses the journal; the cost form asks who paid and warns about a
+  duplicate reference. Evidence: migration
+  `20261125002439_erp0141_project_postings`, unit tests, DB smoke 3/3.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close; ERP-0138, 0140..0142 (Phase B:
+- ERP-0131 year-end close; ERP-0138, 0140, 0142 (Phase B:
   payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
   sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,

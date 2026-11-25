@@ -83,6 +83,10 @@ export const COST_CATEGORIES = [
 ] as const;
 export type CostCategory = (typeof COST_CATEGORIES)[number];
 
+/** Who paid a project cost; decides the credit side of its journal (ERP-0141). */
+export const COST_PAYMENT_SOURCES = ['employee_claim', 'petty_cash', 'bank'] as const;
+export type CostPaymentSource = (typeof COST_PAYMENT_SOURCES)[number];
+
 export const BAST_STATUSES = ['issued', 'cancelled'] as const;
 export type BastStatus = (typeof BAST_STATUSES)[number];
 
@@ -350,6 +354,11 @@ export const costs = projectSchema.table(
 		voidedBy: text('voided_by'),
 		voidedAt: unixTimestampNullable('voided_at'),
 		voidReason: text('void_reason'),
+		/** Who paid (ERP-0141). */
+		paymentSource: text('payment_source').$type<CostPaymentSource>().notNull().default('employee_claim'),
+		reference: varchar('reference', { length: 100 }),
+		/** Logical reference to finance.journal_entries.id (ERP-0141). */
+		journalEntryId: uuid('journal_entry_id'),
 		...timestamps,
 	},
 	(table) => [
@@ -359,6 +368,10 @@ export const costs = projectSchema.table(
 			sql`${table.category} IN ('material', 'transport', 'accommodation', 'subcontract', 'other')`,
 		),
 		check('costs_amount_check', sql`${table.amount} > 0`),
+		check(
+			'costs_payment_source_check',
+			sql`${table.paymentSource} IN ('employee_claim', 'petty_cash', 'bank')`,
+		),
 	],
 );
 

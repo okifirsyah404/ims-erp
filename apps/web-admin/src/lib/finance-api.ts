@@ -383,6 +383,7 @@ export const POSTING_ROLES = [
 	'project_cogs',
 	'grir_clearing',
 	'cash_receipt',
+	'cash_payment',
 	'purchase_price_variance',
 	'inventory_variance',
 	'gateway_clearing',
@@ -416,6 +417,7 @@ export const POSTING_EVENT_TYPES = [
 	'inventory.adjustment_posted',
 	'sale.receipt_posted',
 	'payment.gateway_settled',
+	'project.cost_recorded',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 

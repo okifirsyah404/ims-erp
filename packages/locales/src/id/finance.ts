@@ -693,6 +693,8 @@ const finance: Record<keyof typeof en, string> = {
 	'gatewaySettlement.fee': 'Biaya gateway',
 	'gatewaySettlement.reference': 'Referensi settlement',
 	'gatewaySettlement.recorded': 'Settlement payment gateway dicatat',
+	'postingRules.role.cash_payment': 'Kas dibayarkan (per metode)',
+	'postingRules.event.project.cost_recorded': 'Biaya proyek dicatat',
 } as const;
 
 export default finance;

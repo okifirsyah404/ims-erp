@@ -83,6 +83,19 @@ describe('buildInvoicePosting', () => {
 		expect(sum(lines, 'debit')).toBe(sum(lines, 'credit'));
 	});
 
+	test('the project tags revenue and the receivable stays untagged (ERP-0141)', () => {
+		const { lines } = buildInvoicePosting({
+			invoice: { ...invoice, termKind: 'installment' },
+			items: [{ id: 'l1', productId: null, lineTotal: 1_110_000, taxAmount: 110_000, servicePeriodStart: null, servicePeriodEnd: null }],
+			productCategoryById: new Map(),
+			advanceBase: 0,
+			projectId: 'prj-1',
+		});
+		expect(lines.find((l) => l.role === 'revenue')?.projectId).toBe('prj-1');
+		expect(lines.find((l) => l.role === 'vat_output')?.projectId).toBeUndefined();
+		expect(lines.find((l) => l.role === 'receivable')?.projectId).toBeUndefined();
+	});
+
 	test('allocation is exact', () => {
 		expect(allocateProRata(100, [1, 1, 1])).toEqual([34, 33, 33]);
 		expect(allocateProRata(7, [0, 0])).toEqual([7, 0]);

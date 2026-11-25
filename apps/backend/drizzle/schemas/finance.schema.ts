@@ -95,6 +95,7 @@ export const JOURNAL_SOURCE_MODULES = [
 	'payment',
 	'tax',
 	'human_resource',
+	'project',
 ] as const;
 export type JournalSourceModule = (typeof JOURNAL_SOURCE_MODULES)[number];
 
@@ -341,7 +342,7 @@ export const journalEntries = financeSchema.table(
 		check('journal_entries_balanced_check', sql`total_debit = total_credit`),
 		check(
 			'journal_entries_source_module_check',
-			sql`source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource')`,
+			sql`source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource', 'project')`,
 		),
 	],
 );

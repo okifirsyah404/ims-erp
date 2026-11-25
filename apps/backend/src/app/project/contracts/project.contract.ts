@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-	COST_CATEGORIES,
+	COST_CATEGORIES, COST_PAYMENT_SOURCES,
 	EVIDENCE_KINDS,
 	PROJECT_STAGES,
 	PROJECT_STATUSES,
@@ -72,6 +72,9 @@ export const costBodySchema = z.object({
 	amount: z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
 	description: z.string().trim().min(1).max(300),
 	receipt: z.instanceof(File).optional(),
+	/** Who paid; decides the credit side of the journal (ERP-0141). */
+	paymentSource: z.enum(COST_PAYMENT_SOURCES).default('employee_claim'),
+	reference: z.string().trim().max(100).optional(),
 });
 
 export const reasonSchema = z.object({ reason: z.string().trim().min(1).max(1000) });
