@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components
 import { CostCenterPlReport, ProjectCostingReport } from './cost-reports';
 import { StatementsReport } from './statements-report';
 import { CashForecastReport } from './cash-forecast-report';
+import { ProfitabilityReport } from './profitability-report';
 import { Button } from '@ims-erp/ui/components/button';
 import { useState } from 'react';
 import { FileSpreadsheet, Download } from 'lucide-react';
@@ -128,6 +129,7 @@ export function ReportsPage() {
 					<TabsTrigger value='gl'>{t('finance:reports.tab.generalLedger')}</TabsTrigger>
 					<TabsTrigger value='forecast'>{t('finance:reports.tab.forecast')}</TabsTrigger>
 					<TabsTrigger value='statements'>{t('finance:reports.tab.statements')}</TabsTrigger>
+					<TabsTrigger value='profitability'>{t('finance:reports.tab.profitability')}</TabsTrigger>
 					<TabsTrigger value='projects'>{t('finance:reports.tab.projectCosting')}</TabsTrigger>
 					<TabsTrigger value='cost-centers'>{t('finance:reports.tab.costCenters')}</TabsTrigger>
 				</TabsList>
@@ -146,6 +148,10 @@ export function ReportsPage() {
 
 				<TabsContent value='statements' className='space-y-3'>
 					<StatementsReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='profitability' className='space-y-3'>
+					<ProfitabilityReport startDate={applied.startDate} endDate={applied.endDate} />
 				</TabsContent>
 
 				<TabsContent value='projects' className='space-y-3'>

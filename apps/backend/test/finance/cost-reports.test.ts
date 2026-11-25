@@ -15,6 +15,18 @@ function service() {
 				{ projectId: 'p-2', revenue: 0, cost: rp(9_000_000) },
 			],
 			projectAccounts: async () => [],
+			byDimension: async (_o: string, _f: string, _t: string, dimension: string) =>
+				dimension === 'product'
+					? [
+							{ key: 'prod-a', revenue: rp(6_000_000), cost: rp(4_000_000) },
+							{ key: 'prod-b', revenue: rp(2_000_000), cost: rp(500_000) },
+							{ key: 'prod-c', revenue: rp(1_000_000), cost: rp(900_000) },
+							{ key: null, revenue: 0, cost: rp(1_500_000) },
+						]
+					: [
+							{ key: 'cus-1', revenue: rp(9_000_000), cost: rp(5_400_000) },
+							{ key: null, revenue: 0, cost: rp(1_500_000) },
+						],
 			byCostCenter: async () => [
 				{ costCenterId: null, code: null, name: null, revenue: rp(1_000_000), cost: rp(200_000) },
 				{ costCenterId: 'cc-2', code: 'OPS', name: 'Operasional', revenue: 0, cost: rp(3_000_000) },
@@ -25,6 +37,16 @@ function service() {
 		{
 			findActive: async (_o: string, projectId: string) => (projectId === 'p-1' ? ({ id: 'b-1' } as never) : null),
 			listLines: async () => [{ amount: rp(8_000_000) }] as never,
+		},
+		{ assertCustomer: async (id: string) => ({ id, code: 'CUS-1', name: 'PT Satu' }) as never },
+		{
+			productsById: async () =>
+				new Map([
+					['prod-a', { id: 'prod-a', code: 'P-A', name: 'Controller', productCategoryId: 'cat-hw' }],
+					['prod-b', { id: 'prod-b', code: 'P-B', name: 'Reader', productCategoryId: 'cat-hw' }],
+					['prod-c', { id: 'prod-c', code: 'P-C', name: 'Instalasi', productCategoryId: 'cat-svc' }],
+				]) as never,
+			categoryNames: async () => new Map([['cat-hw', 'Hardware'], ['cat-svc', 'Jasa instalasi']]),
 		},
 	);
 }
@@ -75,5 +97,24 @@ describe('ReportService contra accounts (ERP-0147 fix)', () => {
 		const bs = await service.balanceSheet({ organizationId: 'org-1' }, '2026-12-31');
 		expect(bs.totalAssets).toBe(rp(4_000_000));
 		expect(bs.unexplained).toBe(0);
+	});
+});
+
+describe('CostReportService.profitability (ERP-0150)', () => {
+	test('business line groups products by category; the unassigned row keeps the total whole', async () => {
+		const report = await service().profitability('org-1', '2026-01-01', '2026-12-31', 'business_line');
+		expect(report.rows.map((row) => [row.label, row.revenue, row.cost, row.marginBps])).toEqual([
+			['Hardware', rp(8_000_000), rp(4_500_000), 4375],
+			['Jasa instalasi', rp(1_000_000), rp(900_000), 1000],
+			[null, 0, rp(1_500_000), null],
+		]);
+		expect(report.totals).toEqual({ revenue: rp(9_000_000), cost: rp(6_900_000), margin: rp(2_100_000) });
+	});
+
+	test('customer and product views label their keys', async () => {
+		const customers = await service().profitability('org-1', '2026-01-01', '2026-12-31', 'customer');
+		expect(customers.rows[0]).toMatchObject({ label: 'CUS-1 — PT Satu', margin: rp(3_600_000) });
+		const products = await service().profitability('org-1', '2026-01-01', '2026-12-31', 'product');
+		expect(products.rows.map((row) => row.label)).toEqual(['P-A — Controller', 'P-B — Reader', 'P-C — Instalasi', null]);
 	});
 });

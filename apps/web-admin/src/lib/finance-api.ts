@@ -1871,3 +1871,19 @@ export function addForecastLine(input: { expectedDate: string; direction: 'in' |
 export function removeForecastLine(id: string) {
 	return sendData<{ removed: boolean }>(`/finance/reports/cash-forecast/lines/${id}`, 'DELETE');
 }
+
+/* ----------------------------- profitability (ERP-0150) ----------------------------- */
+
+export const PROFITABILITY_DIMENSIONS = ['business_line', 'project', 'customer', 'product'] as const;
+export type TProfitabilityDimension = (typeof PROFITABILITY_DIMENSIONS)[number];
+export type TProfitability = {
+	rows: Array<{ key: string | null; label: string | null; revenue: number; cost: number; margin: number; marginBps: number | null }>;
+	totals: { revenue: number; cost: number; margin: number };
+};
+
+export function profitabilityQueryOptions(from: string, to: string, dimension: TProfitabilityDimension) {
+	return queryOptions({
+		queryKey: ['finance', 'reports', 'profitability', from, to, dimension],
+		queryFn: () => getData<TProfitability>(`/finance/reports/profitability?from=${from}&to=${to}&dimension=${dimension}`),
+	});
+}

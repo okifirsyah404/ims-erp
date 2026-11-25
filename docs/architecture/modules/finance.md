@@ -547,6 +547,20 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - Not built: collection-pattern or probability adjustments, sales pipeline,
   recurring manual lines.
 
+## Profitability (D, ERP-0150, built)
+
+- `GET /finance/reports/profitability?from&to&dimension=project|customer|product|business_line`
+  (`financial_report:read`); reports page tab "Profitability".
+- Built on journal-line dimensions: `project_id`, `product_id`, and the
+  customer party. Invoice revenue and deferred-revenue lines now carry the
+  customer party (they already carried the product) and delivery COGS lines
+  carry the customer. Business line = product category (names through
+  `ExportedProductService.categoryNames`). Lines without the dimension
+  (overheads, entries posted before the dimension existed) form the
+  unattributed row, so every view totals the P&L.
+- Not built: overhead allocation keys; deferred-revenue recognition entries
+  do not carry party/product yet.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

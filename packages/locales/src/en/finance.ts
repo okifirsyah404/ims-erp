@@ -927,6 +927,13 @@ const finance = {
 	'forecast.remove': 'Remove line',
 	'forecast.renewalsTitle': 'Licence renewals due',
 	'forecast.renewalsHint': 'Contracts carry no amount: add the expected receipt as a manual line.',
+	'reports.tab.profitability': 'Profitability',
+	'profitability.dimension.business_line': 'Business line',
+	'profitability.dimension.project': 'Project',
+	'profitability.dimension.customer': 'Customer',
+	'profitability.dimension.product': 'Product',
+	'profitability.unassigned': 'Not attributed (overheads, older entries)',
+	'profitability.hint': 'From the dimensions on journal lines: invoices carry customer and product, deliveries their COGS, projects their costs. Business line is the product category. Lines without the dimension stay unattributed, so the total equals the P&L.',
 } as const;
 
 export default finance;

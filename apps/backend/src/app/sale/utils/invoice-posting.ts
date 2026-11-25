@@ -117,7 +117,7 @@ export function buildInvoicePosting(input: {
 			const discriminatorType = categoryId ? 'product_category' : '';
 			const discriminatorValue = categoryId ?? '';
 			if (item.servicePeriodStart && item.servicePeriodEnd) {
-				addCredit({ role: 'deferred_revenue', credit: amount, productId: item.productId });
+				addCredit({ role: 'deferred_revenue', credit: amount, productId: item.productId, ...party });
 				schedules.push({
 					invoiceItemId: item.id,
 					amount,
@@ -133,12 +133,14 @@ export function buildInvoicePosting(input: {
 					discriminatorValue: discriminatorValue || null,
 					credit: amount,
 					productId: item.productId,
+					// ERP-0150: the customer dimension for profitability.
+					...party,
 				});
 			}
 		});
 		if (invoice.termKind === 'settlement' && input.advanceBase > 0) {
 			debits.push({ role: 'customer_advance', debit: input.advanceBase, credit: 0, ...party, projectId });
-			addCredit({ role: 'revenue', credit: input.advanceBase });
+			addCredit({ role: 'revenue', credit: input.advanceBase, ...party });
 		}
 	}
 	addCredit({ role: 'vat_output', credit: invoice.taxTotal });

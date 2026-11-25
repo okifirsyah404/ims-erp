@@ -383,7 +383,16 @@ export class DeliveryNoteService {
 					lines: [
 						...cogs
 							.filter((line) => line.value > 0)
-							.map((line) => ({ role, debit: line.value, credit: 0, productId: line.productId, projectId: project?.id ?? null })),
+							.map((line) => ({
+								role,
+								debit: line.value,
+								credit: 0,
+								productId: line.productId,
+								projectId: project?.id ?? null,
+								// ERP-0150: the customer dimension for profitability.
+								partyType: 'customer',
+								partyId: note.customerId,
+							})),
 						...cogs
 							.filter((line) => line.value > 0)
 							.map((line) => ({ role: 'inventory', debit: 0, credit: line.value, productId: line.productId })),

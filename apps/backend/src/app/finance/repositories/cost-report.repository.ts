@@ -62,6 +62,23 @@ export class CostReportRepository implements ICostReportRepository {
 		return rows.map((row) => ({ ...row, amount: Number(row.amount) }));
 	}
 
+	async byDimension(organizationId: string, from: string, to: string, dimension: 'project' | 'customer' | 'product') {
+		const column =
+			dimension === 'project'
+				? journalLines.projectId
+				: dimension === 'product'
+					? journalLines.productId
+					: sql<string | null>`case when ${journalLines.partyType} = 'customer' then ${journalLines.partyId} else null end`;
+		const rows = await this.database
+			.select({ key: sql<string | null>`${column}`, revenue, cost })
+			.from(journalLines)
+			.innerJoin(journalEntries, eq(journalEntries.id, journalLines.journalEntryId))
+			.innerJoin(chartOfAccounts, eq(chartOfAccounts.id, journalLines.accountId))
+			.where(and(this.range(organizationId, from, to), inArray(chartOfAccounts.accountType, ['revenue', 'expense'])))
+			.groupBy(sql`1`);
+		return rows.map((row) => ({ key: row.key ? String(row.key) : null, revenue: Number(row.revenue), cost: Number(row.cost) }));
+	}
+
 	async byCostCenter(organizationId: string, from: string, to: string) {
 		const rows = await this.database
 			.select({ costCenterId: journalLines.costCenterId, code: costCenters.code, name: costCenters.name, revenue, cost })

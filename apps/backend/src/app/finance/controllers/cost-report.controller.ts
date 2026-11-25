@@ -6,6 +6,7 @@ import type { ErpContext } from '@authorization/elysia-auth';
 import { businessDateOf } from '@utils/business-date.util';
 import { CASH_FORECAST_SERVICE_TOKEN, COST_REPORT_SERVICE_TOKEN, STATEMENT_SERVICE_TOKEN } from '../constants/di';
 import { forecastLineSchema } from '../contracts/cash-forecast.contract';
+import { profitabilityQuerySchema } from '../contracts/cost-report.contract';
 import { statementQuerySchema } from '../contracts/statement.contract';
 import { costReportQuerySchema } from '../contracts/cost-report.contract';
 
@@ -67,6 +68,17 @@ export class CostReportController {
 				'/cash-forecast/lines/:id',
 				async ({ params, erp }) => ok({ removed: await forecasts.removeLine(erp.organizationId, z.object({ id: z.uuid() }).parse(params).id) }),
 				{ erp: { permission: ['cash_bank:create'] }, detail: { description: 'Removes a manual forecast line' } },
+			)
+			.get(
+				'/profitability',
+				async ({ query, erp }) => {
+					const { from, to, dimension } = profitabilityQuerySchema.parse(query);
+					return ok(await service.profitability(erp.organizationId, from, to, dimension));
+				},
+				{
+					erp: { permission: ['financial_report:read'] },
+					detail: { description: 'Revenue, cost and margin by project, customer, product or business line (ERP-0150)' },
+				},
 			)
 			.get(
 				'/cost-center-pl',

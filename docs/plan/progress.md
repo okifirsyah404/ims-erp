@@ -12,6 +12,44 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0150: profitability by project, customer, product, business line
+
+**Scope.** Phase D slice 3.
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`
+`project_id`, `product_id`, `party_type`/`party_id`; product categories): no
+schema change, `docs/database/` unchanged. Manual grill pass: read-only,
+dimensions from the ledger, names through the owning modules' facades
+(project lookup, `ExportedCustomerService.assertCustomer`,
+`ExportedProductService.productsById` + new `categoryNames`). Decision:
+business line = product category; no overhead allocation (the unattributed
+row keeps the total honest).
+
+**Changes.** Backend: `CostReportRepository.byDimension`,
+`CostReportService.profitability`, `GET /finance/reports/profitability`;
+sale invoice posting adds the customer party to revenue and deferred-revenue
+lines, delivery COGS lines carry the customer; product facade
+`categoryNames`. Web-admin: "Profitability" tab with a dimension selector
+(en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary profitability smoke>       # 4/4 PASS: project, customer, product and business-line views each add
+                                              # up to the November P&L (revenue and cost)
+bun test test/finance/cost-reports.test.ts    # 5 pass
+bun test test/finance test/unit               # 1149 pass (sale posting tests unchanged)
+bun run test                                  # 7/7 tasks: backend 1580, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 760 routes
+```
+
+**Not verified.** The scratch database's revenue lines predate the customer
+dimension, so the customer view shows them unattributed; no browser
+walk-through.
+
+Next executable task: ERP-0151 (financial ratios).
+
 ## 2026-11-25 - ERP-0149: 13-week cash forecast
 
 **Scope.** Phase D slice 2.

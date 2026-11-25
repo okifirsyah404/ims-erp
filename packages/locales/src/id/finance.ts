@@ -929,6 +929,13 @@ const finance: Record<keyof typeof en, string> = {
 	'forecast.remove': 'Hapus baris',
 	'forecast.renewalsTitle': 'Perpanjangan lisensi jatuh tempo',
 	'forecast.renewalsHint': 'Kontrak tidak menyimpan nominal: tambahkan perkiraan penerimaan sebagai baris manual.',
+	'reports.tab.profitability': 'Profitabilitas',
+	'profitability.dimension.business_line': 'Lini bisnis',
+	'profitability.dimension.project': 'Proyek',
+	'profitability.dimension.customer': 'Pelanggan',
+	'profitability.dimension.product': 'Produk',
+	'profitability.unassigned': 'Tidak teratribusi (overhead, jurnal lama)',
+	'profitability.hint': 'Dari dimensi pada baris jurnal: faktur membawa pelanggan dan produk, pengiriman membawa HPP-nya, proyek membawa biayanya. Lini bisnis adalah kategori produk. Baris tanpa dimensi tetap tidak teratribusi, sehingga totalnya sama dengan laporan laba rugi.',
 } as const;
 
 export default finance;

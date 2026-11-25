@@ -996,6 +996,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   and manual lines; licence renewals due are listed. Evidence: migration
   `20261125130528_erp0149_cash_forecast`, unit tests, DB smoke 6/6.
 
+- Profitability, Phase D (ERP-0150, 2026-11-25): revenue, cost and margin by
+  business line, project, customer or product; what cannot be attributed is
+  shown separately so the total always equals the P&L.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phases B and C complete except stock/asset
   opening detail and capitalization from goods receipts); (Phase C: bank statement import,

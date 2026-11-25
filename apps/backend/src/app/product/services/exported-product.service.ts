@@ -139,6 +139,16 @@ export class ExportedProductService {
 		}
 	}
 
+	/** Category names by id (finance profitability by business line, ERP-0150). */
+	async categoryNames(ids: string[]): Promise<Map<string, string>> {
+		const names = new Map<string, string>();
+		for (const id of new Set(ids)) {
+			const category = await this.categories.findById(id);
+			if (category) names.set(id, category.name);
+		}
+		return names;
+	}
+
 	/** Whether the product category exists and is usable. */
 	async categoryExists(categoryId: string): Promise<boolean> {
 		const category = await this.categories.findById(categoryId);
