@@ -871,6 +871,19 @@ const finance = {
 	'budgets.total.available': 'Available',
 	'budgets.period': 'Month',
 	'budgets.variance': 'Variance',
+	'reports.tab.projectCosting': 'Project costing',
+	'reports.tab.costCenters': 'Cost centres',
+	'costReports.noProjects': 'No project has ledger movement in this range.',
+	'costReports.project': 'Project',
+	'costReports.revenue': 'Revenue (Rp)',
+	'costReports.cost': 'Cost (Rp)',
+	'costReports.margin': 'Margin (Rp)',
+	'costReports.marginPct': 'Margin %',
+	'costReports.budget': 'Budget (Rp)',
+	'costReports.costCenter': 'Cost centre',
+	'costReports.result': 'Result (Rp)',
+	'costReports.unassigned': 'Without cost centre',
+	'costReports.total': 'Total',
 } as const;
 
 export default finance;

@@ -1760,3 +1760,45 @@ export function activateBudget(budgetId: string) {
 export function setBudgetMode(budgetId: string, controlMode: 'warn' | 'block') {
 	return sendData<TBudgetVersion>(`/finance/project-budgets/${budgetId}/mode`, 'PATCH', { controlMode });
 }
+
+/* ----------------------------- cost accounting (ERP-0147) ----------------------------- */
+
+export type TProjectCostingRow = {
+	projectId: string;
+	code: string | null;
+	title: string | null;
+	revenue: number;
+	cost: number;
+	margin: number;
+	marginBps: number | null;
+	budget: number | null;
+};
+
+export type TCostCenterPlRow = { costCenterId: string | null; code: string | null; name: string | null; revenue: number; cost: number; result: number };
+
+export function projectCostingQueryOptions(from: string, to: string) {
+	return queryOptions({
+		queryKey: ['finance', 'reports', 'project-costing', from, to],
+		queryFn: () => getData<{ rows: TProjectCostingRow[] }>(`/finance/reports/project-costing?from=${from}&to=${to}`),
+	});
+}
+
+export function projectCostingDetailQueryOptions(projectId: string, from: string, to: string) {
+	return queryOptions({
+		queryKey: ['finance', 'reports', 'project-costing', projectId, from, to],
+		queryFn: () =>
+			getData<{ rows: Array<{ accountId: string; code: string; name: string; accountType: string; amount: number }> }>(
+				`/finance/reports/project-costing/${projectId}?from=${from}&to=${to}`,
+			),
+	});
+}
+
+export function costCenterPlQueryOptions(from: string, to: string) {
+	return queryOptions({
+		queryKey: ['finance', 'reports', 'cost-center-pl', from, to],
+		queryFn: () =>
+			getData<{ rows: TCostCenterPlRow[]; totals: { revenue: number; cost: number; result: number } }>(
+				`/finance/reports/cost-center-pl?from=${from}&to=${to}`,
+			),
+	});
+}

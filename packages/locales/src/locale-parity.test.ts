@@ -70,6 +70,9 @@ describe('locale values', () => {
 			'finance:statement.method.manual',
 			'finance:settlements.tax',
 			'finance:settlements.total',
+			'finance:costReports.margin',
+			'finance:costReports.marginPct',
+			'finance:costReports.total',
 			// "Owner" of a customer company is the same loanword in Indonesian (ERP-0114).
 			'crm:customer.owner',
 			'crm:customer.ownerBadge',

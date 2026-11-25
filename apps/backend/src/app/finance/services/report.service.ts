@@ -396,14 +396,14 @@ export class ReportService {
 		if (!account) throw new AccountNotFoundError();
 		const opening = await this.journal.accountTotalsBefore(ctx.organizationId, startDate);
 		const openingRow = opening.find((row) => row.accountId === accountId);
-		const openingBalance = this.signedAmount(account, openingRow?.debit ?? 0, openingRow?.credit ?? 0);
+		const openingBalance = this.normalAmount(account, openingRow?.debit ?? 0, openingRow?.credit ?? 0);
 		const ledgerLines = await this.journal.listLedgerLines(ctx.organizationId, accountId, startDate, endDate);
 
 		let balance = openingBalance;
 		let totalDebit = 0;
 		let totalCredit = 0;
 		const lines: TGeneralLedgerLine[] = ledgerLines.map((line) => {
-			balance += this.signedAmount(account, line.debit, line.credit);
+			balance += this.normalAmount(account, line.debit, line.credit);
 			totalDebit += line.debit;
 			totalCredit += line.credit;
 			return {
@@ -431,11 +431,24 @@ export class ReportService {
 	}
 
 	/** Positive along the account's normal-balance side, negative against it. */
+	/** One account's own running balance on its normal side (general ledger detail). */
+	private normalAmount(account: TChartOfAccountSelect, debit: number, credit: number): number {
+		return account.normalBalance === 'debit' ? debit - credit : credit - debit;
+	}
+
+	/**
+	 * Amount on the natural side of the account TYPE (assets and expenses
+	 * debit, the rest credit). Contra accounts - sales returns under revenue,
+	 * accumulated depreciation under assets - therefore come out negative and
+	 * reduce their section. Signing by each account's own normal balance (the
+	 * ERP-0133 behaviour) added them instead: the P&L overstated revenue by
+	 * twice the returns and the balance sheet overstated assets (ERP-0147).
+	 */
 	private signedAmount(
 		account: TChartOfAccountSelect,
 		debit: number,
 		credit: number,
 	): number {
-		return account.normalBalance === 'debit' ? debit - credit : credit - debit;
+		return account.accountType === 'asset' || account.accountType === 'expense' ? debit - credit : credit - debit;
 	}
 }

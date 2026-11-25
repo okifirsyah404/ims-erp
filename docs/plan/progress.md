@@ -12,6 +12,43 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0147: cost accounting reports; contra-account signing fixed
+
+**Scope.** Phase C slice 5 (Phase C complete).
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`
+dimensions `project_id`, `cost_center_id`; `finance.cost_centers`): no schema
+change, `docs/database/` unchanged. Manual grill pass: read-only reports in
+finance, tenant-scoped, posted and reversed entries (the reversal nets the
+original), revenue credit - debit and cost debit - credit by account type.
+
+**Changes.** Backend: `CostReportRepository`, `CostReportService`,
+`CostReportController` (`/finance/reports/project-costing`,
+`/project-costing/:projectId`, `/cost-center-pl`). `ReportService` signs P&L
+and balance-sheet amounts by account type (contra accounts negative); the
+general-ledger detail keeps the normal-side running balance. Web-admin:
+"Project costing" (expandable per account) and "Cost centres" tabs on the
+reports page (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary cost-report smoke>         # run 1: 2/3 - project costing (PRJ-SMOKE-0146 cost 600,000, budget
+                                              # 1,500,000) and per-account detail pass; cost-centre revenue 900,901 vs
+                                              # P&L 1,099,099: the P&L added the 4-1900 Retur Penjualan debit 99,099;
+                                              # run 2 after the fix: 3/3, totals tie (revenue 900,901)
+bun test test/finance/cost-reports.test.ts test/finance/reports-reconciliation.test.ts   # 10 pass
+bun run test                                  # 7/7 tasks: backend 1572, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 754 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: Phase C is done. Walk the Phase B and C screens in a
+browser, push the branch and open a PR, then ERP-0131 (year-end close) or
+Phase D (ERP-0148 statements).
+
 ## 2026-11-25 - ERP-0146: project budgets with actual, commitment and checks
 
 **Scope.** Phase C slice 4.

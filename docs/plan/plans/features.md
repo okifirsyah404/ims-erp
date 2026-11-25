@@ -982,9 +982,14 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   page. Evidence: migration `20261125060448_erp0146_project_budgets`, unit
   tests, DB smoke 7/7.
 
+- Cost accounting reports, Phase C (ERP-0147, 2026-11-25): project job
+  costing with margin and budget, and a P&L per cost centre, on the reports
+  page. The P&L and balance sheet now subtract contra accounts (sales
+  returns, accumulated depreciation) instead of adding them.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close (Phase B complete except stock/asset opening
-  detail); ERP-0147 (Phase C: bank statement import,
+- ERP-0131 year-end close (Phases B and C complete except stock/asset
+  opening detail and capitalization from goods receipts); (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
   cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
   profitability, ratios, management pack, closed-period profit contract).

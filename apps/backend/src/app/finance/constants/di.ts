@@ -1,3 +1,5 @@
+import type { ICostReportRepository } from '../contracts/cost-report.contract';
+import type { CostReportService } from '../services/cost-report.service';
 import type { IProjectBudgetRepository } from '../contracts/project-budget.contract';
 import type { ProjectBudgetService } from '../services/project-budget.service';
 import type { IFixedAssetBookRepository } from '../contracts/fixed-asset.contract';
@@ -197,3 +199,7 @@ export const FIXED_ASSET_SERVICE_TOKEN: InjectionToken<FixedAssetService> = Symb
 /** Project budgets (ERP-0146). */
 export const PROJECT_BUDGET_REPOSITORY_TOKEN: InjectionToken<IProjectBudgetRepository> = Symbol('PROJECT_BUDGET_REPOSITORY');
 export const PROJECT_BUDGET_SERVICE_TOKEN: InjectionToken<ProjectBudgetService> = Symbol('PROJECT_BUDGET_SERVICE');
+
+/** Cost accounting reports (ERP-0147). */
+export const COST_REPORT_REPOSITORY_TOKEN: InjectionToken<ICostReportRepository> = Symbol('COST_REPORT_REPOSITORY');
+export const COST_REPORT_SERVICE_TOKEN: InjectionToken<CostReportService> = Symbol('COST_REPORT_SERVICE');

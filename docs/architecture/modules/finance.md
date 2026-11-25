@@ -487,6 +487,23 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   total), warnings surfaced in the forms (the report and
   `GET /finance/project-budgets/check` show them).
 
+## Cost accounting reports (C, ERP-0147, built)
+
+- `GET /finance/reports/project-costing?from&to` (revenue, cost, margin,
+  margin %, active budget per project with ledger movement),
+  `/project-costing/:projectId` (per account) and `/cost-center-pl` (revenue,
+  cost, result per cost centre, lines without one as "unassigned"), all
+  `financial_report:read`, over posted (and reversed) journal lines by their
+  `project_id` / `cost_center_id`. Reports page tabs "Project costing" and
+  "Cost centres".
+- Fixed with it (pre-existing since ERP-0133): the P&L and balance sheet
+  signed each account by its own normal balance, so contra accounts were
+  added to their section (sales returns raised revenue, accumulated
+  depreciation raised assets). They now sign by the account type's natural
+  side and contra accounts show negative; the general-ledger detail keeps
+  each account's own normal-side running balance. Found because the
+  cost-centre totals did not tie to the P&L.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

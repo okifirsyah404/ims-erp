@@ -873,6 +873,19 @@ const finance: Record<keyof typeof en, string> = {
 	'budgets.total.available': 'Tersisa',
 	'budgets.period': 'Bulan',
 	'budgets.variance': 'Selisih',
+	'reports.tab.projectCosting': 'Biaya proyek',
+	'reports.tab.costCenters': 'Pusat biaya',
+	'costReports.noProjects': 'Tidak ada proyek yang punya mutasi buku besar di rentang ini.',
+	'costReports.project': 'Proyek',
+	'costReports.revenue': 'Pendapatan (Rp)',
+	'costReports.cost': 'Biaya (Rp)',
+	'costReports.margin': 'Margin (Rp)',
+	'costReports.marginPct': 'Margin %',
+	'costReports.budget': 'Anggaran (Rp)',
+	'costReports.costCenter': 'Pusat biaya',
+	'costReports.result': 'Hasil (Rp)',
+	'costReports.unassigned': 'Tanpa pusat biaya',
+	'costReports.total': 'Total',
 } as const;
 
 export default finance;

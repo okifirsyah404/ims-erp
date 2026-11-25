@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
+import { CostCenterPlReport, ProjectCostingReport } from './cost-reports';
 import { Button } from '@ims-erp/ui/components/button';
 import { useState } from 'react';
 import { FileSpreadsheet, Download } from 'lucide-react';
@@ -123,6 +124,8 @@ export function ReportsPage() {
 					<TabsTrigger value='cf'>{t('finance:reports.tab.cashFlow')}</TabsTrigger>
 					<TabsTrigger value='tb'>{t('finance:reports.tab.trialBalance')}</TabsTrigger>
 					<TabsTrigger value='gl'>{t('finance:reports.tab.generalLedger')}</TabsTrigger>
+					<TabsTrigger value='projects'>{t('finance:reports.tab.projectCosting')}</TabsTrigger>
+					<TabsTrigger value='cost-centers'>{t('finance:reports.tab.costCenters')}</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value='tb' className='space-y-3'>
@@ -131,6 +134,14 @@ export function ReportsPage() {
 
 				<TabsContent value='gl' className='space-y-3'>
 					<GeneralLedgerReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='projects' className='space-y-3'>
+					<ProjectCostingReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='cost-centers' className='space-y-3'>
+					<CostCenterPlReport startDate={applied.startDate} endDate={applied.endDate} />
 				</TabsContent>
 
 				<TabsContent value='pl' className='space-y-3'>
