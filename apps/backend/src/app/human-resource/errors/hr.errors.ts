@@ -182,3 +182,29 @@ export class PayslipError extends AppError {
 		super(kind === 'notReady' ? 409 : 422, `hr.payslip.${kind}` as const, messages[kind]);
 	}
 }
+
+/** PPh 21 / BPJS cannot be calculated or exported (ERP-0138). */
+export class PayrollStatutoryError extends AppError {
+	constructor(
+		kind:
+			| 'pensionWageCapMissing'
+			| 'ptkpMissing'
+			| 'bracketsMissing'
+			| 'terMissing'
+			| 'bp21IdentityMissing'
+			| 'bp21AnnualUnsupported'
+			| 'bp21NothingToExport',
+		params?: Record<string, string | number>,
+	) {
+		const messages = {
+			pensionWageCapMissing: 'Enter the JP wage cap in the payroll settings before calculating BPJS Ketenagakerjaan',
+			ptkpMissing: 'No PTKP table is in force for this month',
+			bracketsMissing: 'No Pasal 17 table is in force for this month',
+			terMissing: 'No TER table is in force for this month; import it under Finance > Tax > PPh 21 tables',
+			bp21IdentityMissing: 'Employees without NIK or NPWP block the BP21 export',
+			bp21AnnualUnsupported: 'The last tax month is reported on the annual slip, which this export does not build',
+			bp21NothingToExport: 'This period has no approved record with PPh 21',
+		};
+		super(422, `hr.payroll.${kind}` as const, messages[kind], params);
+	}
+}

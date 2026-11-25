@@ -11,6 +11,11 @@ import type { SaleNumberingService } from './sale-numbering.service';
 import { OUTBOX_SERVICE_TOKEN } from '@app/automation/constants/di';
 import type { OutboxService } from '@app/automation/services/outbox.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
+import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PostingService } from '@app/finance/services/posting.service';
+import { inventoryValue } from '@app/finance/utils/inventory-value';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import type { DocumentService } from '@app/document';
 import { isUniqueViolation } from '@drizzle/errors';
 import type {
@@ -123,6 +128,11 @@ export class SalesReturnService {
 		/** M04: every state change goes to n8n as `sales_return.updated`. */
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
+		/** ERP-0137: received returns post Dr inventory / Cr COGS. */
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'liveProjectOfOrder'>,
 	) {}
 
 	/** Publishes `sales_return.updated` after a committed change; never throws. */
@@ -397,6 +407,7 @@ export class SalesReturnService {
 		const storages = new Set(warehouse.storages.filter((storage) => storage.isActive).map((storage) => storage.id));
 		if (body.lines.some((line) => line.binId && !storages.has(line.binId))) throw new SalesReturnReceiveError('bin');
 		const occurredAt = noon(body.receivedDate ?? businessDateOf());
+		const project = this.projects ? await this.projects.liveProjectOfOrder(head.orderId) : null;
 
 		const received = await this.transactions.run(async (tx) => {
 			const row = await this.returns.claimForReceive(id, tx);
@@ -462,6 +473,31 @@ export class SalesReturnService {
 					if (missing.length) throw new SalesReturnLineError('notSold', index + 1);
 				}
 				await this.returns.setReceived(line.id, { condition: choice.condition, binId, movementId: posted.movement.id }, tx);
+			}
+			// ERP-0137: the goods come back at their delivery cost; COGS is
+			// credited (project COGS for a project order). Replacements ship on
+			// a new delivery note, which books COGS again.
+			const back = lines
+				.filter((line) => line.productId)
+				.map((line) => ({ productId: line.productId as string, value: inventoryValue(line.quantity, line.unitCost) }))
+				.filter((line) => line.value > 0);
+			const backTotal = back.reduce((sum, line) => sum + line.value, 0);
+			if (this.posting && backTotal > 0) {
+				const role = project ? 'project_cogs' : 'cogs';
+				await this.posting.postBusinessEvent(tx, {
+					organizationId: actor.organizationId,
+					entryDate: occurredAt.toISOString().slice(0, 10),
+					sourceModule: 'sale',
+					sourceType: 'sales_return',
+					sourceId: row.id,
+					idempotencyKey: `sales_return:${row.id}`,
+					eventType: 'sale.return_received',
+					description: `Sales return ${row.code ?? ''}`.trim(),
+					lines: [
+						...back.map((line) => ({ role: 'inventory', debit: line.value, credit: 0, productId: line.productId })),
+						...back.map((line) => ({ role, debit: 0, credit: line.value, productId: line.productId, projectId: project?.id ?? null })),
+					],
+				});
 			}
 			await this.orders.reopenForReplacement(row.orderId, actor.userId, `sales return ${row.code ?? ''} received`, tx);
 			const updated = await this.returns.transition(

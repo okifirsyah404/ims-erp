@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { likePattern } from '@drizzle/search';
 import {
@@ -316,18 +317,18 @@ export class ProjectRepository implements IProjectRepository {
 			.orderBy(desc(costs.costDate), desc(costs.id));
 	}
 
-	async addCost(data: Parameters<IProjectRepository['addCost']>[0]) {
+	async addCost(data: Parameters<IProjectRepository['addCost']>[0], tx?: unknown) {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await ((tx as TTx | undefined) ?? this.database)
 			.insert(costs)
 			.values({ ...data, createdAt: now, updatedAt: now })
 			.returning();
 		return row;
 	}
 
-	async voidCost(projectId: string, costId: string, actorUserId: string, reason: string) {
+	async voidCost(projectId: string, costId: string, actorUserId: string, reason: string, tx?: unknown) {
 		const now = new Date();
-		const [row] = await this.database
+		const [row] = await ((tx as TTx | undefined) ?? this.database)
 			.update(costs)
 			.set({ voidedBy: actorUserId, voidedAt: now, voidReason: reason, updatedAt: now })
 			.where(
@@ -340,5 +341,12 @@ export class ProjectRepository implements IProjectRepository {
 			)
 			.returning();
 		return row ?? null;
+	}
+
+	async setCostJournal(costId: string, journalEntryId: string, tx?: unknown): Promise<void> {
+		await ((tx as TTx | undefined) ?? this.database)
+			.update(costs)
+			.set({ journalEntryId, updatedAt: new Date() })
+			.where(eq(costs.id, costId));
 	}
 }

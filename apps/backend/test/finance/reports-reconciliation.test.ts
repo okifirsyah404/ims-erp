@@ -438,8 +438,13 @@ describe('BankReconciliationService (F6)', () => {
 		);
 	});
 
-	test('refuses reconciling when matched items do not explain the statement balance', async () => {
-		const rec = await create();
+	test('refuses reconciling while the statement balance differs from the book balance (ERP-0143)', async () => {
+		const rec = (await h.reconciliations.create(ctx, {
+			cashBankAccountId: 'cba-1',
+			reconciliationDate: '2026-01-31',
+			statementBalance: 6_000_000,
+			notes: null,
+		})) as { id: string };
 		await h.reconciliations.addItems(ctx, rec.id, [
 			{
 				cashBankTransactionId: null,

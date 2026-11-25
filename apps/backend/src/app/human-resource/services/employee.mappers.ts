@@ -18,6 +18,10 @@ export function toRow(body: {
 	fullName: string;
 	nickname?: string | null;
 	nationalId?: string | null;
+	taxId?: string | null;
+	ptkpStatus?: string | null;
+	bpjsHealthNumber?: string | null;
+	bpjsEmploymentNumber?: string | null;
 	email?: string | null;
 	phone?: string | null;
 	employmentStatus?: string;
@@ -31,6 +35,10 @@ export function toRow(body: {
 		fullName: body.fullName,
 		nickname: body.nickname ?? null,
 		nationalId: body.nationalId ?? null,
+		taxId: body.taxId ?? null,
+		ptkpStatus: body.ptkpStatus ?? null,
+		bpjsHealthNumber: body.bpjsHealthNumber ?? null,
+		bpjsEmploymentNumber: body.bpjsEmploymentNumber ?? null,
 		email: body.email ?? null,
 		phone: body.phone ?? null,
 		employmentStatus: body.employmentStatus,

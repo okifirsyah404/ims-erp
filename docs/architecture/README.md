@@ -25,7 +25,7 @@ status live in `docs/plan/`; agent skills inventory in `.agents/docs/skills.md`.
 | `decisions/` | architectural decision records (ADRs) |
 
 Database schema documentation lives in `docs/database/` (sibling folder):
-`docs.dbml` (canonical persistence contract: 20 Postgres schemas, 196 tables,
+`docs.dbml` (canonical persistence contract: 20 Postgres schemas, 199 tables,
 ADR-0024 + ADR-0026), 5 companion MDs
 (`module-ownership` with the 20 module profiles, `integrity-and-consistency`,
 `data-dictionary`, `logical-references`, `implementation-phases`), and the
@@ -62,8 +62,9 @@ applies to backlog `ERP-*` IDs.
 | [ADR-0021](decisions/ADR-0021-provider-neutral-payment-gateway.md) | Provider-Neutral Payment Gateway for Invoices | proposed (2026-11-14) |
 | [ADR-0022](decisions/ADR-0022-customer-portal-api.md) | Customer Portal: Portal Identities and the portal API | proposed (2026-11-14; renumbered from 0018, then 0020); since ADR-0024 the portal login is `customer.customers` and the API is `/customers/portal/v1` |
 | [ADR-0023](decisions/ADR-0023-payment-module-owns-gateway-checkouts.md) | Payment Module Owns Gateway Checkouts | accepted (2026-11-18); its `payment.gateway_payments` table and `/payments/gateway` URLs are superseded in part by ADR-0024 |
-| [ADR-0024](decisions/ADR-0024-database-normalization-baseline-v2.md) | Database Normalization Baseline v2 (18 schemas, 188 tables, per-schema baseline migrations) | proposed (2026-11-19) per the ADR file; implemented on the working branch, all ERP-0070..0089 `in-progress`. ADR-0026 then split `product` and `warehouse` out of `inventory`: today **20 schemas / 196 tables** |
+| [ADR-0024](decisions/ADR-0024-database-normalization-baseline-v2.md) | Database Normalization Baseline v2 (18 schemas, 188 tables, per-schema baseline migrations) | proposed (2026-11-19) per the ADR file; implemented on the working branch, all ERP-0070..0089 `in-progress`. ADR-0026 then split `product` and `warehouse` out of `inventory`: today **20 schemas / 199 tables** (ADR-0030 added `finance.cost_centers`, `finance.posting_rules`, `finance.deferred_revenue_schedules`) |
 | [ADR-0025](decisions/ADR-0025-tanstack-table-for-web-admin.md) | TanStack Table drives every web-admin data table | accepted (2026-11-21) |
 | [ADR-0026](decisions/ADR-0026-product-and-warehouse-modules.md) | Product and warehouse become their own modules (own schemas) | accepted (2026-11-23) |
 | [ADR-0027](decisions/ADR-0027-portal-session-cookie-and-customer-role.md) | Customer Portal: Server-Held Session Cookie and the `customer` Role | accepted as proposed (2026-11-21, port plan D10; branch ADR-0024 renumbered); implemented by ERP-0094 |
 | [ADR-0029](decisions/ADR-0029-invitation-only-sign-in.md) | Invitation-only sign-in: Google never signs up, only active accounts get a session | proposed (2026-11-21, ERP-0111) |
+| [ADR-0030](decisions/ADR-0030-finance-erp-grade-scope-extension.md) | Finance becomes an ERP-grade general ledger: posting rules, maker-checker journals, soft/hard close; lifts v5.1 limits (owner approval pending) | accepted (owner, 2026-11-25); Phase A implemented, Phase B in progress |

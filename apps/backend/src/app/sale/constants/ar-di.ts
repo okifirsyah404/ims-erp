@@ -1,3 +1,4 @@
+import type { ReceiptLedgerService } from '../services/receipt-ledger.service';
 import type { InjectionToken } from 'tsyringe';
 import type { InvoiceService } from '../services/invoice.service';
 import type { InvoiceBillingService } from '../services/invoice-billing.service';
@@ -25,3 +26,6 @@ export const INVOICE_PAYMENT_PORT_TOKEN: InjectionToken<IInvoicePaymentPort> = S
 /** Published to Accounting: invoice reads, the AR mirror totals write and the draft count. */
 export const EXPORTED_INVOICE_SERVICE_TOKEN: InjectionToken<IExportedInvoiceService> =
 	Symbol('EXPORTED_INVOICE_SERVICE');
+
+/** Ledger side of a kuitansi: journal + AR open item (ERP-0139). */
+export const RECEIPT_LEDGER_SERVICE_TOKEN: InjectionToken<ReceiptLedgerService> = Symbol('RECEIPT_LEDGER_SERVICE_TOKEN');

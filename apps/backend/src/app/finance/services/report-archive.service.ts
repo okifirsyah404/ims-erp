@@ -6,10 +6,11 @@ import {
 	type TReportArchiveSelect,
 } from '@drizzle/schemas/finance.schema';
 import { REPORT_ARCHIVE_REPOSITORY_TOKEN, REPORT_SERVICE_TOKEN } from '../constants/ar-di';
-import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN } from '../constants/di';
+import { ACCOUNTING_PERIOD_REPOSITORY_TOKEN, MANAGEMENT_PACK_SERVICE_TOKEN } from '../constants/di';
 import type { TReportArchivePaginationRequest } from '../repositories/report-archive.repository';
 import type { IAccountingPeriodRepository } from '../contracts/accounting-period.repository.interface';
 import type { ReportArchiveRepository } from '../repositories/report-archive.repository';
+import type { ManagementPackService } from './management-pack.service';
 import type { ReportService } from './report.service';
 import {
 	ReportArchiveNotFoundError,
@@ -34,7 +35,8 @@ const monthRange = (year: number, month: number) => {
  * Monthly report archive (M12 T30, SOP S13).
  *
  * @remarks
- * Archives the three financial statements of a **closed** month as immutable
+ * Archives the three financial statements (and, since ERP-0152, the
+ * management pack) of a **closed** month as immutable
  * `accounting.report_archives` rows, so the figures the owner approved cannot
  * drift after a later posting. The payload is the `ReportService` output
  * verbatim - no reshaping, no stored totals that could disagree with it.
@@ -52,6 +54,9 @@ export class ReportArchiveService {
 		private readonly periods: IAccountingPeriodRepository,
 		@inject(REPORT_SERVICE_TOKEN)
 		private readonly reports: ReportService,
+		/** ERP-0152: archives the management pack too; optional for older tests. */
+		@inject(MANAGEMENT_PACK_SERVICE_TOKEN)
+		private readonly managementPack?: Pick<ManagementPackService, 'build'>,
 	) {}
 
 	/**
@@ -102,6 +107,9 @@ export class ReportArchiveService {
 				),
 			],
 		];
+		if (this.managementPack) {
+			payloads.push(['management_pack', await this.managementPack.build(ctx.organizationId, periodYear, periodMonth)]);
+		}
 
 		const created: TReportArchiveSelect[] = [];
 		for (const [reportType, payload] of payloads) {

@@ -42,6 +42,8 @@ _Interpretation, needs owner confirmation:_
 - Stage 2 adds nothing to this module.
 
 ## Explicit limits (out of scope)
+> **ADR-0030 (accepted by the owner 2026-11-25):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table); where they conflict, the ADR wins.
+
 
 - No barcode or QR labels or scanning.
 - No service schedule (preventive maintenance plans, reminders).

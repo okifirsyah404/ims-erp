@@ -311,6 +311,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'doc.payment': 'Pembayaran',
 	'doc.issuedBy': 'Diterbitkan oleh,',
 	'doc.acknowledgedBy': 'Diketahui / dikonfirmasi oleh,',
+	'po.budgetProject': 'Proyek (anggaran)',
 };
 
 export default procurement;

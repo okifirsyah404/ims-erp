@@ -176,6 +176,18 @@ const settings = {
 	'payroll.nextRun': 'Next run: {{date}}',
 	'payroll.off': 'The automatic run is off.',
 	'payroll.saved': 'Payroll settings saved',
+	'numbering.type.credit_memo': 'Credit memo',
+	'payroll.statutoryTitle': 'PPh 21 and BPJS',
+	'payroll.statutoryDescription': 'Switch statutory deductions on or off for the whole company.',
+	'payroll.pph21Enabled': 'Withhold PPh 21 (TER, annual Pasal 17 in the last month)',
+	'payroll.bpjsHealthEnabled': 'BPJS Kesehatan (company 4%, employee 1%)',
+	'payroll.bpjsEmploymentEnabled': 'BPJS Ketenagakerjaan (JHT, JP, JKK, JKM)',
+	'payroll.jkkRate': 'JKK rate (%)',
+	'payroll.jkkRateHint': 'By the company risk class: 0.24 (very low) to 1.74 (very high).',
+	'payroll.healthWageCap': 'BPJS Kesehatan wage cap',
+	'payroll.pensionWageCap': 'JP wage cap',
+	'payroll.pensionWageCapHint': 'BPJS announces it every year; payroll with BPJS Ketenagakerjaan on is blocked until it is entered.',
+	'payroll.statutoryHint': 'PPh 21 needs the TER table imported under Finance > Tax > PPh 21 tables.',
 } as const;
 
 export default settings;

@@ -37,7 +37,7 @@ import { sumTerms, type TTermAmounts } from '../utils/invoice-terms';
 import type { TReceiptData } from '../contracts/invoice.repository.interface';
 import type { TReceiptListQuery } from '../contracts/invoice.contract';
 import { likePattern } from '@drizzle/search';
-import { paymentStatus } from '../utils/payment-status';
+import { receiptStatus } from '../utils/payment-status';
 import { fillSummary } from '../utils/invoice-summary';
 import { INVOICED_STATUSES } from '../contracts/invoice.repository.interface';
 
@@ -310,6 +310,48 @@ export class InvoiceRepository implements TInvoiceRepository {
 		return !!row;
 	}
 
+	async listTaxInvoicesInRange(organizationId: string, startDate: string, endDate: string): Promise<TInvoiceSelect[]> {
+		return this.database
+			.select()
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					inArray(invoices.status, ['issued', 'partially_paid', 'paid', 'written_off']),
+					sql`${invoices.taxTotal} > 0`,
+					gte(invoices.issueDate, startDate),
+					lte(invoices.issueDate, endDate),
+					isNull(invoices.deletedAt),
+				),
+			)
+			.orderBy(asc(invoices.issueDate), asc(invoices.code));
+	}
+
+	async sumLiveDownPaymentBase(
+		organizationId: string,
+		orderId: string,
+		exceptInvoiceId: string,
+		tx?: unknown,
+	): Promise<number> {
+		const db = (tx as TTx | undefined) ?? this.database;
+		const [row] = await db
+			.select({
+				value: sql<number>`coalesce(sum(${invoices.subtotal} - ${invoices.discountTotal}), 0)::bigint`.mapWith(Number),
+			})
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					eq(invoices.orderId, orderId),
+					eq(invoices.termKind, 'down_payment'),
+					ne(invoices.id, exceptInvoiceId),
+					inArray(invoices.status, ['issued', 'partially_paid', 'paid']),
+					isNull(invoices.deletedAt),
+				),
+			);
+		return row?.value ?? 0;
+	}
+
 	withLockedInvoice<T>(organizationId: string, id: string, work: (invoice: TInvoiceSelect, tx: unknown) => Promise<T>): Promise<T | null> {
 		return this.database.transaction(async (tx) => {
 			const [invoice] = await tx
@@ -469,13 +511,16 @@ export class InvoiceRepository implements TInvoiceRepository {
 				.insert(receipts)
 				.values({ ...data, amount, status: 'posted', createdAt: now, updatedAt: now })
 				.returning();
+			// ERP-0139: outstanding moves by the receipt, so a credit memo that
+			// already lowered it (ERP-0135) is not undone by `grand - paid`.
 			const paid = invoice.paidTotal + amount;
+			const outstanding = invoice.outstandingTotal - amount;
 			await tx
 				.update(invoices)
 				.set({
 					paidTotal: paid,
-					outstandingTotal: invoice.grandTotal - paid,
-					status: paymentStatus(invoice.grandTotal, paid),
+					outstandingTotal: outstanding,
+					status: receiptStatus(paid, outstanding),
 					updatedAt: now,
 				})
 				.where(eq(invoices.id, invoice.id));
@@ -491,8 +536,9 @@ export class InvoiceRepository implements TInvoiceRepository {
 		id: string,
 		actorUserId: string,
 		reason: string,
+		outerTx?: unknown,
 	): Promise<TReceiptSelect | null> {
-		return this.database.transaction(async (tx) => {
+		const run = async (tx: TTx): Promise<TReceiptSelect | null> => {
 			const now = new Date();
 			const [receipt] = await tx
 				.update(receipts)
@@ -519,16 +565,18 @@ export class InvoiceRepository implements TInvoiceRepository {
 				.where(eq(invoices.id, receipt.invoiceId))
 				.for('update');
 			const paid = invoice.paidTotal - receipt.amount;
+			const outstanding = invoice.outstandingTotal + receipt.amount;
 			await tx
 				.update(invoices)
 				.set({
 					paidTotal: paid,
-					outstandingTotal: invoice.grandTotal - paid,
-					status: paymentStatus(invoice.grandTotal, paid),
+					outstandingTotal: outstanding,
+					status: receiptStatus(paid, outstanding),
 					updatedAt: now,
 				})
 				.where(eq(invoices.id, invoice.id));
 			return receipt;
-		});
+		};
+		return outerTx ? run(outerTx as TTx) : this.database.transaction((tx) => run(tx));
 	}
 }

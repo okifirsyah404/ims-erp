@@ -149,6 +149,11 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.salesReturnNew': 'Retur pelanggan',
 	'breadcrumb.whatsappFaq': 'FAQ asisten',
 	'breadcrumb.whatsappChat': 'Percakapan',
+	'item.postingRules': 'Aturan Posting',
+	'item.costCenters': 'Pusat Biaya',
+	'item.taxPph21': 'Tabel PPh 21',
+	'item.fixedAssets': 'Aset tetap',
+	'item.projectBudgets': 'Anggaran proyek',
 };
 
 export default nav_;

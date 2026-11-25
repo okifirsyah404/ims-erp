@@ -178,6 +178,26 @@ export const navSections: {
 						permission: 'journal.read',
 					},
 					{
+						titleKey: 'item.postingRules',
+						url: '/finance/posting-rules',
+						permission: 'posting_rule.read',
+					},
+					{
+						titleKey: 'item.costCenters',
+						url: '/finance/cost-centers',
+						permission: 'cost_center.read',
+					},
+					{
+						titleKey: 'item.projectBudgets',
+						url: '/finance/project-budgets',
+						permission: 'project.read',
+					},
+					{
+						titleKey: 'item.fixedAssets',
+						url: '/finance/fixed-assets',
+						permission: 'asset.read',
+					},
+					{
 						titleKey: 'item.reconciliation',
 						url: '/finance/reconciliation',
 						permission: 'cash_bank.reconcile',
@@ -232,6 +252,11 @@ export const navSections: {
 					{
 						titleKey: 'item.taxWithholding',
 						url: '/finance/tax/withholding',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxPph21',
+						url: '/finance/tax/pph21',
 						permission: 'tax.read',
 					},
 					{

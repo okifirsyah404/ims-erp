@@ -1,5 +1,5 @@
 /**
- * File names of registry documents (ERP-0130).
+ * File names of registry documents (ERP-0158).
  *
  * @remarks
  * Pure helpers, so the rules are pinned here: the name comes from the title,

@@ -66,6 +66,8 @@ export type TInvoiceItemInput = {
 	unitPrice: number;
 	discountAmount: number;
 	taxAmount: number;
+	servicePeriodStart?: string | null;
+	servicePeriodEnd?: string | null;
 };
 
 export type TCreateInvoiceInput = {
@@ -150,8 +152,15 @@ export type TInvoiceRepository = {
 	): Promise<TInvoiceItemSelect[]>;
 	/** Every non-deleted invoice of a sales order, oldest first (includes void). */
 	listByOrder(orderId: string): Promise<TInvoiceSelect[]>;
+	/** Issued invoices carrying VAT with an issue date in the range (Coretax export, ERP-0140). */
+	listTaxInvoicesInRange(organizationId: string, startDate: string, endDate: string): Promise<TInvoiceSelect[]>;
 	/** True while the order has an invoice that is neither void nor cancelled. */
 	hasLiveInvoices(orderId: string): Promise<boolean>;
+	/**
+	 * Tax base of the order's issued, non-void down-payment invoices other than
+	 * `exceptInvoiceId` (released from customer advances at settlement, ERP-0135).
+	 */
+	sumLiveDownPaymentBase(organizationId: string, orderId: string, exceptInvoiceId: string, tx?: unknown): Promise<number>;
 	/**
 	 * Drafts one billing term of an order under a per-order lock (two clicks
 	 * never bill the same term twice). `build` sees what the order's live
@@ -207,6 +216,7 @@ export type TInvoiceRepository = {
 		id: string,
 		actorUserId: string,
 		reason: string,
+		tx?: unknown,
 	): Promise<TReceiptSelect | null>;
 };
 

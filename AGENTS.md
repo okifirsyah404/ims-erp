@@ -67,7 +67,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   `location`, `company`, `customer`, `supplier`, `product`, `warehouse`,
   `inventory`, `sale`, `procurement`, `finance`, `tax`, `payment`, `project`,
   `ticket`, `human_resource`, `document`, `notification`, `audit`,
-  `automation`) and 196 tables; each
+  `automation`) and 199 tables; each
   business module owns exactly one of them. Two exceptions are by design: the
   `user` and `organization` backend modules both live in the `auth` schema
   because Better Auth owns those tables (the standalone `organization` *schema*
@@ -202,7 +202,7 @@ the same change); a backend-only move is an incomplete change.
 Creating, updating, or deleting a feature module — and any backend feature
 work that adds or changes endpoints, services, repositories, Drizzle schemas,
 or migrations — passes through two gates **before** code and one **after** it.
-The schema contract is 196 tables across 20 schemas; nobody holds it in their
+The schema contract is 199 tables across 20 schemas; nobody holds it in their
 head, and inventing a column or a cross-module link is the most expensive
 mistake available here.
 

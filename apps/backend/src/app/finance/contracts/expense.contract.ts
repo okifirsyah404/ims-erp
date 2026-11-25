@@ -20,6 +20,7 @@ export const expenseClaimItemInputSchema = z.object({
 
 export const expenseClaimCreateSchema = z.object({
 	employeeId: z.string().uuid(),
+	projectId: z.uuid().nullish().transform((v) => v ?? null),
 	claimDate: isoDate,
 	notes: z.string().trim().max(2000).nullish().transform((v) => v ?? null),
 	items: z.array(expenseClaimItemInputSchema).min(1).max(200),
@@ -28,6 +29,7 @@ export const expenseClaimCreateSchema = z.object({
 export const expenseClaimUpdateSchema = z
 	.object({
 		employeeId: z.string().uuid().optional(),
+		projectId: z.uuid().nullable().optional(),
 		claimDate: isoDate.optional(),
 		notes: z.string().trim().max(2000).nullable().optional(),
 		items: z.array(expenseClaimItemInputSchema).min(1).max(200).optional(),

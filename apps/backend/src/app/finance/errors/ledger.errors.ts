@@ -355,6 +355,20 @@ export class ReportArchivePeriodOpenError extends AppError {
 	}
 }
 
+/**
+ * The closed-period profit contract (ERP-0153) answers for `locked` periods
+ * only: an open or merely closed month can still change.
+ */
+export class ProfitPeriodNotLockedError extends AppError {
+	constructor(periodYear: number, periodMonth: number) {
+		super(
+			409,
+			'accounting.profitPeriodNotLocked',
+			`Period ${periodYear}-${String(periodMonth).padStart(2, '0')} is not locked; profit is only final for locked periods`,
+		);
+	}
+}
+
 /** The employee payee account does not exist or belongs to an employee the caller does not see (ERP-0119). */
 export class EmployeeBankAccountNotFoundError extends AppError {
 	constructor() {
@@ -366,5 +380,241 @@ export class EmployeeBankAccountNotFoundError extends AppError {
 export class EmployeeNotVisibleError extends AppError {
 	constructor() {
 		super(404, 'accounting.employeeNotFound', 'Employee not found');
+	}
+}
+
+/* -------------------- GL foundation (ERP-0127..0130) -------------------- */
+
+/** No active posting rule resolves a role for a business event (ERP-0128). */
+export class PostingRuleNotFoundError extends AppError {
+	constructor(eventType: string, role: string) {
+		super(
+			422,
+			'accounting.postingRuleNotFound',
+			`No active posting rule maps role ${role} for event ${eventType}`,
+		);
+	}
+}
+
+export class PostingRuleNotFoundByIdError extends AppError {
+	constructor() {
+		super(404, 'accounting.postingRuleMissing', 'Posting rule not found');
+	}
+}
+
+/** A rule with the same event, role and discriminator already exists. */
+export class PostingRuleScopeTakenError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.postingRuleScopeTaken',
+			'A posting rule for this event, role and discriminator already exists',
+		);
+	}
+}
+
+export class CostCenterNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.costCenterNotFound', 'Cost centre not found');
+	}
+}
+
+export class CostCenterInactiveError extends AppError {
+	constructor() {
+		super(422, 'accounting.costCenterInactive', 'Cost centre is inactive');
+	}
+}
+
+export class CostCenterCodeTakenError extends AppError {
+	constructor() {
+		super(409, 'accounting.costCenterCodeTaken', 'Cost centre code already exists');
+	}
+}
+
+/** Maker-checker: the preparer of a manual journal cannot approve it. */
+export class JournalSelfApprovalError extends AppError {
+	constructor() {
+		super(
+			403,
+			'accounting.journalSelfApproval',
+			'The preparer of a journal entry cannot approve it',
+		);
+	}
+}
+
+/** Type, normal balance and postable flag freeze once an account has postings. */
+export class AccountLockedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.accountLocked',
+			'The account already has postings: its type, normal balance and postable flag cannot change',
+		);
+	}
+}
+
+export class AccountBalanceNotZeroError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.accountBalanceNotZero',
+			'Only an account with a zero balance can be deactivated',
+		);
+	}
+}
+
+/** Locking a period with journals still in draft/submitted. */
+export class PeriodLockBlockedError extends AppError {
+	constructor(pendingJournals: number) {
+		super(
+			409,
+			'accounting.periodLockBlocked',
+			`The period still has ${pendingJournals} unposted journal entries`,
+		);
+	}
+}
+
+/** No open period exists after the original entry to carry its reversal. */
+export class NoOpenPeriodForReversalError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.noOpenPeriodForReversal',
+			'No open accounting period exists to carry the reversal',
+		);
+	}
+}
+
+/* ------------------------- AR postings (ERP-0135) ------------------------- */
+
+export class CreditMemoNotFoundError extends AppError {
+	constructor() {
+		super(404, 'accounting.creditMemoNotFound', 'Credit memo not found');
+	}
+}
+
+export class CreditMemoTransitionError extends AppError {
+	constructor() {
+		super(409, 'accounting.creditMemoTransition', 'That status change is not allowed for this credit memo');
+	}
+}
+
+/** The invoice is not issued, or the credit exceeds what is still open. */
+export class CreditMemoAmountError extends AppError {
+	constructor() {
+		super(
+			422,
+			'accounting.creditMemoAmount',
+			'A credit memo needs an issued invoice and cannot exceed its open amount',
+		);
+	}
+}
+
+export class WriteOffNotAllowedError extends AppError {
+	constructor() {
+		super(
+			409,
+			'accounting.writeOffNotAllowed',
+			'Only an open receivable without a pending request can be written off',
+		);
+	}
+}
+
+export class WriteOffNotRequestedError extends AppError {
+	constructor() {
+		super(409, 'accounting.writeOffNotRequested', 'No write-off request is pending for this receivable');
+	}
+}
+
+/** Maker-checker on write-offs: the requester cannot approve. */
+export class WriteOffSelfApprovalError extends AppError {
+	constructor() {
+		super(403, 'accounting.writeOffSelfApproval', 'The requester of a write-off cannot approve it');
+	}
+}
+
+/** Locking a period while deferred revenue is not amortised through it. */
+export class DeferredRevenuePendingError extends AppError {
+	constructor(pending: number) {
+		super(
+			409,
+			'accounting.deferredRevenuePending',
+			`${pending} deferred revenue schedules are not amortised through this period`,
+		);
+	}
+}
+
+/* ------------------------- gateway settlement (ERP-0139) ------------------------- */
+
+/** Gross must be positive and larger than the fee. */
+export class GatewaySettlementAmountError extends AppError {
+	constructor() {
+		super(
+			422,
+			'accounting.gatewaySettlementAmount',
+			'A settlement needs a positive gross amount larger than the fee',
+		);
+	}
+}
+
+export class TaxPaymentAmountError extends AppError {
+	constructor() {
+		super(422, 'accounting.taxPaymentAmount', 'A tax payment needs a positive amount');
+	}
+}
+
+/** A sub-ledger's opening total differs from its control account (ERP-0142). */
+export class OpeningSubledgerMismatchError extends AppError {
+	constructor(params: { ledger: string; subledger: number; control: number }) {
+		super(422, 'accounting.openingSubledgerMismatch', 'The sub-ledger opening total differs from its control account', params);
+	}
+}
+
+/** Sub-ledger rows carry another as-of date than the opening batch (ERP-0142). */
+export class OpeningSubledgerDateError extends AppError {
+	constructor(params: { itemDate: string; batchDate: string }) {
+		super(422, 'accounting.openingSubledgerDate', 'Sub-ledger opening rows must share the batch as-of date', params);
+	}
+}
+
+/** The ledger's opening detail was already posted (ERP-0142). */
+export class OpeningSubledgerPostedError extends AppError {
+	constructor() {
+		super(409, 'accounting.openingSubledgerPosted', 'This ledger already has posted opening detail');
+	}
+}
+
+/** A sub-ledger import file was rejected before its rows were read (ERP-0142). */
+export class OpeningSubledgerFileError extends AppError {
+	constructor(kind: 'type' | 'size' | 'empty' | 'tooMany') {
+		const messages = {
+			type: 'Upload a .csv file',
+			size: 'The file is larger than 2 MB',
+			empty: 'The file has no data rows',
+			tooMany: 'The file has more than 5000 rows',
+		};
+		super(422, `accounting.openingSubledgerFile.${kind}` as const, messages[kind]);
+	}
+}
+
+/** The cash/bank account has no statement CSV mapping yet (ERP-0143). */
+export class StatementMappingMissingError extends AppError {
+	constructor() {
+		super(422, 'accounting.statementMappingMissing', 'Set the bank statement CSV mapping on this account first');
+	}
+}
+
+/** A statement file was rejected before its rows were read (ERP-0143). */
+export class StatementFileError extends AppError {
+	constructor(kind: 'type' | 'size' | 'empty') {
+		const messages = { type: 'Upload a .csv file', size: 'The file is larger than 5 MB', empty: 'The file has no statement lines' };
+		super(422, `accounting.statementFile.${kind}` as const, messages[kind]);
+	}
+}
+
+/** Executed payments to or from employees cannot be voided yet (ERP-0144). */
+export class EmployeePaymentVoidError extends AppError {
+	constructor() {
+		super(409, 'accounting.employeePaymentVoid', 'Payments of claims, advances and settlements cannot be voided yet; correct them with a new payment');
 	}
 }

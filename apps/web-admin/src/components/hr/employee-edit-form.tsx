@@ -21,6 +21,8 @@ import {
 	type TWorkType,
 	updateEmployee,
 	WORK_TYPES,
+	PTKP_STATUSES,
+	type TPtkpStatus,
 } from '@/lib/hr-api';
 import { organizationMembersQueryOptions, updateMemberRole } from '@/lib/organization-api';
 import { useAssignableOrgRoles } from '@/lib/use-caller-org-roles';
@@ -42,6 +44,9 @@ function toBusinessDate(value: string | null): string {
  * The login email belongs to the invitation and is not edited here; gender,
  * birth data and marital status live on the user account (ERP-0034).
  */
+/** Select value for "no PTKP status" (Base UI selects need a non-empty value). */
+const NO_PTKP = 'none';
+
 export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 	const { t, i18n } = useTranslation(['hr', 'common']);
 	const navigate = useNavigate();
@@ -52,6 +57,10 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 	const [nickname, setNickname] = useState(employee.nickname ?? '');
 	const [phone, setPhone] = useState(employee.phone ?? '');
 	const [nationalId, setNationalId] = useState(employee.nationalId ?? '');
+	const [taxId, setTaxId] = useState(employee.taxId ?? '');
+	const [ptkpStatus, setPtkpStatus] = useState<string>(employee.ptkpStatus ?? NO_PTKP);
+	const [bpjsHealthNumber, setBpjsHealthNumber] = useState(employee.bpjsHealthNumber ?? '');
+	const [bpjsEmploymentNumber, setBpjsEmploymentNumber] = useState(employee.bpjsEmploymentNumber ?? '');
 	const [employmentStatus, setEmploymentStatus] = useState<TEmploymentStatus>(employee.employmentStatus);
 	const [employmentType, setEmploymentType] = useState<TEmploymentType>(employee.employmentType);
 	const [workType, setWorkType] = useState<TWorkType>(employee.workType);
@@ -114,6 +123,10 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 				nickname: nickname.trim() || null,
 				phone: phone || null,
 				nationalId: nationalId.trim() || null,
+				taxId: taxId.trim() || null,
+				ptkpStatus: ptkpStatus === NO_PTKP ? null : (ptkpStatus as TPtkpStatus),
+				bpjsHealthNumber: bpjsHealthNumber.trim() || null,
+				bpjsEmploymentNumber: bpjsEmploymentNumber.trim() || null,
 				employmentStatus,
 				employmentType,
 				workType,
@@ -277,6 +290,33 @@ export function EmployeeEditForm({ employee }: { employee: TEmployee }) {
 							)}
 						</div>
 					)}
+				</CardContent>
+			</Card>
+			<Card>
+				<CardHeader>
+					<CardTitle>{t('hr:form.taxBpjs')}</CardTitle>
+				</CardHeader>
+				<CardContent className='grid gap-4 sm:grid-cols-2'>
+					{text('taxId', t('hr:form.taxId'), taxId, setTaxId)}
+					<div className='space-y-2'>
+						<Label htmlFor='ptkpStatus'>{t('hr:form.ptkpStatus')}</Label>
+						<Select value={ptkpStatus} onValueChange={(value: string | null) => setPtkpStatus(value ?? NO_PTKP)}>
+							<SelectTrigger id='ptkpStatus' className='w-full'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={NO_PTKP}>{t('hr:form.ptkpNone')}</SelectItem>
+								{PTKP_STATUSES.map((value) => (
+									<SelectItem key={value} value={value}>
+										{value}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					{text('bpjsHealthNumber', t('hr:form.bpjsHealthNumber'), bpjsHealthNumber, setBpjsHealthNumber)}
+					{text('bpjsEmploymentNumber', t('hr:form.bpjsEmploymentNumber'), bpjsEmploymentNumber, setBpjsEmploymentNumber)}
+					<p className='text-xs text-muted-foreground sm:col-span-2'>{t('hr:form.taxBpjsHint')}</p>
 				</CardContent>
 			</Card>
 			</div>

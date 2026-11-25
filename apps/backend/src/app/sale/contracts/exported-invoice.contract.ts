@@ -1,4 +1,4 @@
-import type { TInvoiceSelect } from '@drizzle/schemas/sale.schema';
+import type { TInvoiceItemSelect, TInvoiceSelect } from '@drizzle/schemas/sale.schema';
 
 /**
  * Sales' published contract for other modules (pattern: `Exported<Module>Service`).
@@ -28,4 +28,11 @@ export interface IExportedInvoiceService {
 
 	/** How many invoices are still `draft` and were created inside a window. */
 	countDraftsInWindow(organizationId: string, startDate: string, endDate: string): Promise<number>;
+
+	/** Issued (not void) invoices with VAT whose issue date falls in the range, with their lines (Coretax, ERP-0140). */
+	listTaxInvoices(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<Array<{ invoice: TInvoiceSelect; items: TInvoiceItemSelect[] }>>;
 }

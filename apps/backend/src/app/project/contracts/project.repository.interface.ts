@@ -91,7 +91,10 @@ export interface IProjectRepository {
 	listCosts(projectId: string): Promise<TCostSelect[]>;
 	addCost(
 		data: Omit<TCostInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'voidedBy' | 'voidedAt' | 'voidReason'>,
+		tx?: unknown,
 	): Promise<TCostSelect>;
 	/** Voids a valid cost of the project; `null` when missing or already voided. */
-	voidCost(projectId: string, costId: string, actorUserId: string, reason: string): Promise<TCostSelect | null>;
+	voidCost(projectId: string, costId: string, actorUserId: string, reason: string, tx?: unknown): Promise<TCostSelect | null>;
+	/** Stamps the journal a cost posted (ERP-0141). */
+	setCostJournal(costId: string, journalEntryId: string, tx?: unknown): Promise<void>;
 }

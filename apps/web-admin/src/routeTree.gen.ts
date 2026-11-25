@@ -68,11 +68,15 @@ import { Route as AuthedDocumentsSignaturesRequestRouteImport } from './routes/_
 import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
 import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed/finance/cash-bank/index'
 import { Route as AuthedFinanceClosingIndexRouteImport } from './routes/_authed/finance/closing/index'
+import { Route as AuthedFinanceCostCentersIndexRouteImport } from './routes/_authed/finance/cost-centers/index'
 import { Route as AuthedFinanceExpensesIndexRouteImport } from './routes/_authed/finance/expenses/index'
+import { Route as AuthedFinanceFixedAssetsIndexRouteImport } from './routes/_authed/finance/fixed-assets/index'
 import { Route as AuthedFinanceInvestorsIndexRouteImport } from './routes/_authed/finance/investors/index'
 import { Route as AuthedFinanceJournalIndexRouteImport } from './routes/_authed/finance/journal/index'
 import { Route as AuthedFinanceOpeningBalancesIndexRouteImport } from './routes/_authed/finance/opening-balances/index'
 import { Route as AuthedFinancePayablesIndexRouteImport } from './routes/_authed/finance/payables/index'
+import { Route as AuthedFinancePostingRulesIndexRouteImport } from './routes/_authed/finance/posting-rules/index'
+import { Route as AuthedFinanceProjectBudgetsIndexRouteImport } from './routes/_authed/finance/project-budgets/index'
 import { Route as AuthedFinanceReceivablesIndexRouteImport } from './routes/_authed/finance/receivables/index'
 import { Route as AuthedFinanceReconciliationIndexRouteImport } from './routes/_authed/finance/reconciliation/index'
 import { Route as AuthedFinanceReportsIndexRouteImport } from './routes/_authed/finance/reports/index'
@@ -139,6 +143,7 @@ import { Route as AuthedFinanceExpensesClaimIdIndexRouteImport } from './routes/
 import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './routes/_authed/finance/investors/profit-sharing/index'
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
+import { Route as AuthedFinanceTaxPph21IndexRouteImport } from './routes/_authed/finance/tax/pph21/index'
 import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed/finance/tax/recap/index'
 import { Route as AuthedFinanceTaxRecordsIndexRouteImport } from './routes/_authed/finance/tax/records/index'
 import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
@@ -493,10 +498,22 @@ const AuthedFinanceClosingIndexRoute =
     path: '/finance/closing/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceCostCentersIndexRoute =
+  AuthedFinanceCostCentersIndexRouteImport.update({
+    id: '/finance/cost-centers/',
+    path: '/finance/cost-centers/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceExpensesIndexRoute =
   AuthedFinanceExpensesIndexRouteImport.update({
     id: '/finance/expenses/',
     path: '/finance/expenses/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceFixedAssetsIndexRoute =
+  AuthedFinanceFixedAssetsIndexRouteImport.update({
+    id: '/finance/fixed-assets/',
+    path: '/finance/fixed-assets/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceInvestorsIndexRoute =
@@ -521,6 +538,18 @@ const AuthedFinancePayablesIndexRoute =
   AuthedFinancePayablesIndexRouteImport.update({
     id: '/finance/payables/',
     path: '/finance/payables/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinancePostingRulesIndexRoute =
+  AuthedFinancePostingRulesIndexRouteImport.update({
+    id: '/finance/posting-rules/',
+    path: '/finance/posting-rules/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceProjectBudgetsIndexRoute =
+  AuthedFinanceProjectBudgetsIndexRouteImport.update({
+    id: '/finance/project-budgets/',
+    path: '/finance/project-budgets/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceReceivablesIndexRoute =
@@ -906,6 +935,12 @@ const AuthedFinanceTaxCorrectionsIndexRoute =
     path: '/finance/tax/corrections/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceTaxPph21IndexRoute =
+  AuthedFinanceTaxPph21IndexRouteImport.update({
+    id: '/finance/tax/pph21/',
+    path: '/finance/tax/pph21/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceTaxRecapIndexRoute =
   AuthedFinanceTaxRecapIndexRouteImport.update({
     id: '/finance/tax/recap/',
@@ -1190,11 +1225,15 @@ export interface FileRoutesByFullPath {
   '/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
   '/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
   '/finance/closing/': typeof AuthedFinanceClosingIndexRoute
+  '/finance/cost-centers/': typeof AuthedFinanceCostCentersIndexRoute
   '/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/fixed-assets/': typeof AuthedFinanceFixedAssetsIndexRoute
   '/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
   '/finance/journal/': typeof AuthedFinanceJournalIndexRoute
   '/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
   '/finance/payables/': typeof AuthedFinancePayablesIndexRoute
+  '/finance/posting-rules/': typeof AuthedFinancePostingRulesIndexRoute
+  '/finance/project-budgets/': typeof AuthedFinanceProjectBudgetsIndexRoute
   '/finance/receivables/': typeof AuthedFinanceReceivablesIndexRoute
   '/finance/reconciliation/': typeof AuthedFinanceReconciliationIndexRoute
   '/finance/reports/': typeof AuthedFinanceReportsIndexRoute
@@ -1256,6 +1295,7 @@ export interface FileRoutesByFullPath {
   '/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/finance/tax/pph21/': typeof AuthedFinanceTaxPph21IndexRoute
   '/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
   '/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
@@ -1355,11 +1395,15 @@ export interface FileRoutesByTo {
   '/finance/accounts': typeof AuthedFinanceAccountsIndexRoute
   '/finance/cash-bank': typeof AuthedFinanceCashBankIndexRoute
   '/finance/closing': typeof AuthedFinanceClosingIndexRoute
+  '/finance/cost-centers': typeof AuthedFinanceCostCentersIndexRoute
   '/finance/expenses': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/fixed-assets': typeof AuthedFinanceFixedAssetsIndexRoute
   '/finance/investors': typeof AuthedFinanceInvestorsIndexRoute
   '/finance/journal': typeof AuthedFinanceJournalIndexRoute
   '/finance/opening-balances': typeof AuthedFinanceOpeningBalancesIndexRoute
   '/finance/payables': typeof AuthedFinancePayablesIndexRoute
+  '/finance/posting-rules': typeof AuthedFinancePostingRulesIndexRoute
+  '/finance/project-budgets': typeof AuthedFinanceProjectBudgetsIndexRoute
   '/finance/receivables': typeof AuthedFinanceReceivablesIndexRoute
   '/finance/reconciliation': typeof AuthedFinanceReconciliationIndexRoute
   '/finance/reports': typeof AuthedFinanceReportsIndexRoute
@@ -1421,6 +1465,7 @@ export interface FileRoutesByTo {
   '/finance/investors/profit-sharing': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/finance/tax/pph21': typeof AuthedFinanceTaxPph21IndexRoute
   '/finance/tax/recap': typeof AuthedFinanceTaxRecapIndexRoute
   '/finance/tax/records': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
@@ -1522,11 +1567,15 @@ export interface FileRoutesById {
   '/_authed/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
   '/_authed/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
   '/_authed/finance/closing/': typeof AuthedFinanceClosingIndexRoute
+  '/_authed/finance/cost-centers/': typeof AuthedFinanceCostCentersIndexRoute
   '/_authed/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/_authed/finance/fixed-assets/': typeof AuthedFinanceFixedAssetsIndexRoute
   '/_authed/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
   '/_authed/finance/journal/': typeof AuthedFinanceJournalIndexRoute
   '/_authed/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
   '/_authed/finance/payables/': typeof AuthedFinancePayablesIndexRoute
+  '/_authed/finance/posting-rules/': typeof AuthedFinancePostingRulesIndexRoute
+  '/_authed/finance/project-budgets/': typeof AuthedFinanceProjectBudgetsIndexRoute
   '/_authed/finance/receivables/': typeof AuthedFinanceReceivablesIndexRoute
   '/_authed/finance/reconciliation/': typeof AuthedFinanceReconciliationIndexRoute
   '/_authed/finance/reports/': typeof AuthedFinanceReportsIndexRoute
@@ -1588,6 +1637,7 @@ export interface FileRoutesById {
   '/_authed/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/_authed/finance/tax/pph21/': typeof AuthedFinanceTaxPph21IndexRoute
   '/_authed/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
   '/_authed/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
@@ -1689,11 +1739,15 @@ export interface FileRouteTypes {
     | '/finance/accounts/'
     | '/finance/cash-bank/'
     | '/finance/closing/'
+    | '/finance/cost-centers/'
     | '/finance/expenses/'
+    | '/finance/fixed-assets/'
     | '/finance/investors/'
     | '/finance/journal/'
     | '/finance/opening-balances/'
     | '/finance/payables/'
+    | '/finance/posting-rules/'
+    | '/finance/project-budgets/'
     | '/finance/receivables/'
     | '/finance/reconciliation/'
     | '/finance/reports/'
@@ -1755,6 +1809,7 @@ export interface FileRouteTypes {
     | '/finance/investors/profit-sharing/'
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
+    | '/finance/tax/pph21/'
     | '/finance/tax/recap/'
     | '/finance/tax/records/'
     | '/finance/tax/types/'
@@ -1854,11 +1909,15 @@ export interface FileRouteTypes {
     | '/finance/accounts'
     | '/finance/cash-bank'
     | '/finance/closing'
+    | '/finance/cost-centers'
     | '/finance/expenses'
+    | '/finance/fixed-assets'
     | '/finance/investors'
     | '/finance/journal'
     | '/finance/opening-balances'
     | '/finance/payables'
+    | '/finance/posting-rules'
+    | '/finance/project-budgets'
     | '/finance/receivables'
     | '/finance/reconciliation'
     | '/finance/reports'
@@ -1920,6 +1979,7 @@ export interface FileRouteTypes {
     | '/finance/investors/profit-sharing'
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
+    | '/finance/tax/pph21'
     | '/finance/tax/recap'
     | '/finance/tax/records'
     | '/finance/tax/types'
@@ -2020,11 +2080,15 @@ export interface FileRouteTypes {
     | '/_authed/finance/accounts/'
     | '/_authed/finance/cash-bank/'
     | '/_authed/finance/closing/'
+    | '/_authed/finance/cost-centers/'
     | '/_authed/finance/expenses/'
+    | '/_authed/finance/fixed-assets/'
     | '/_authed/finance/investors/'
     | '/_authed/finance/journal/'
     | '/_authed/finance/opening-balances/'
     | '/_authed/finance/payables/'
+    | '/_authed/finance/posting-rules/'
+    | '/_authed/finance/project-budgets/'
     | '/_authed/finance/receivables/'
     | '/_authed/finance/reconciliation/'
     | '/_authed/finance/reports/'
@@ -2086,6 +2150,7 @@ export interface FileRouteTypes {
     | '/_authed/finance/investors/profit-sharing/'
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
+    | '/_authed/finance/tax/pph21/'
     | '/_authed/finance/tax/recap/'
     | '/_authed/finance/tax/records/'
     | '/_authed/finance/tax/types/'
@@ -2533,11 +2598,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceClosingIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/cost-centers/': {
+      id: '/_authed/finance/cost-centers/'
+      path: '/finance/cost-centers'
+      fullPath: '/finance/cost-centers/'
+      preLoaderRoute: typeof AuthedFinanceCostCentersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/expenses/': {
       id: '/_authed/finance/expenses/'
       path: '/finance/expenses'
       fullPath: '/finance/expenses/'
       preLoaderRoute: typeof AuthedFinanceExpensesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/fixed-assets/': {
+      id: '/_authed/finance/fixed-assets/'
+      path: '/finance/fixed-assets'
+      fullPath: '/finance/fixed-assets/'
+      preLoaderRoute: typeof AuthedFinanceFixedAssetsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/investors/': {
@@ -2566,6 +2645,20 @@ declare module '@tanstack/react-router' {
       path: '/finance/payables'
       fullPath: '/finance/payables/'
       preLoaderRoute: typeof AuthedFinancePayablesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/posting-rules/': {
+      id: '/_authed/finance/posting-rules/'
+      path: '/finance/posting-rules'
+      fullPath: '/finance/posting-rules/'
+      preLoaderRoute: typeof AuthedFinancePostingRulesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/project-budgets/': {
+      id: '/_authed/finance/project-budgets/'
+      path: '/finance/project-budgets'
+      fullPath: '/finance/project-budgets/'
+      preLoaderRoute: typeof AuthedFinanceProjectBudgetsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/receivables/': {
@@ -3030,6 +3123,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceTaxCorrectionsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/tax/pph21/': {
+      id: '/_authed/finance/tax/pph21/'
+      path: '/finance/tax/pph21'
+      fullPath: '/finance/tax/pph21/'
+      preLoaderRoute: typeof AuthedFinanceTaxPph21IndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/tax/recap/': {
       id: '/_authed/finance/tax/recap/'
       path: '/finance/tax/recap'
@@ -3386,11 +3486,15 @@ interface AuthedRouteChildren {
   AuthedFinanceAccountsIndexRoute: typeof AuthedFinanceAccountsIndexRoute
   AuthedFinanceCashBankIndexRoute: typeof AuthedFinanceCashBankIndexRoute
   AuthedFinanceClosingIndexRoute: typeof AuthedFinanceClosingIndexRoute
+  AuthedFinanceCostCentersIndexRoute: typeof AuthedFinanceCostCentersIndexRoute
   AuthedFinanceExpensesIndexRoute: typeof AuthedFinanceExpensesIndexRoute
+  AuthedFinanceFixedAssetsIndexRoute: typeof AuthedFinanceFixedAssetsIndexRoute
   AuthedFinanceInvestorsIndexRoute: typeof AuthedFinanceInvestorsIndexRoute
   AuthedFinanceJournalIndexRoute: typeof AuthedFinanceJournalIndexRoute
   AuthedFinanceOpeningBalancesIndexRoute: typeof AuthedFinanceOpeningBalancesIndexRoute
   AuthedFinancePayablesIndexRoute: typeof AuthedFinancePayablesIndexRoute
+  AuthedFinancePostingRulesIndexRoute: typeof AuthedFinancePostingRulesIndexRoute
+  AuthedFinanceProjectBudgetsIndexRoute: typeof AuthedFinanceProjectBudgetsIndexRoute
   AuthedFinanceReceivablesIndexRoute: typeof AuthedFinanceReceivablesIndexRoute
   AuthedFinanceReconciliationIndexRoute: typeof AuthedFinanceReconciliationIndexRoute
   AuthedFinanceReportsIndexRoute: typeof AuthedFinanceReportsIndexRoute
@@ -3452,6 +3556,7 @@ interface AuthedRouteChildren {
   AuthedFinanceInvestorsProfitSharingIndexRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
+  AuthedFinanceTaxPph21IndexRoute: typeof AuthedFinanceTaxPph21IndexRoute
   AuthedFinanceTaxRecapIndexRoute: typeof AuthedFinanceTaxRecapIndexRoute
   AuthedFinanceTaxRecordsIndexRoute: typeof AuthedFinanceTaxRecordsIndexRoute
   AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
@@ -3549,12 +3654,16 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFinanceAccountsIndexRoute: AuthedFinanceAccountsIndexRoute,
   AuthedFinanceCashBankIndexRoute: AuthedFinanceCashBankIndexRoute,
   AuthedFinanceClosingIndexRoute: AuthedFinanceClosingIndexRoute,
+  AuthedFinanceCostCentersIndexRoute: AuthedFinanceCostCentersIndexRoute,
   AuthedFinanceExpensesIndexRoute: AuthedFinanceExpensesIndexRoute,
+  AuthedFinanceFixedAssetsIndexRoute: AuthedFinanceFixedAssetsIndexRoute,
   AuthedFinanceInvestorsIndexRoute: AuthedFinanceInvestorsIndexRoute,
   AuthedFinanceJournalIndexRoute: AuthedFinanceJournalIndexRoute,
   AuthedFinanceOpeningBalancesIndexRoute:
     AuthedFinanceOpeningBalancesIndexRoute,
   AuthedFinancePayablesIndexRoute: AuthedFinancePayablesIndexRoute,
+  AuthedFinancePostingRulesIndexRoute: AuthedFinancePostingRulesIndexRoute,
+  AuthedFinanceProjectBudgetsIndexRoute: AuthedFinanceProjectBudgetsIndexRoute,
   AuthedFinanceReceivablesIndexRoute: AuthedFinanceReceivablesIndexRoute,
   AuthedFinanceReconciliationIndexRoute: AuthedFinanceReconciliationIndexRoute,
   AuthedFinanceReportsIndexRoute: AuthedFinanceReportsIndexRoute,
@@ -3642,6 +3751,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFinanceInvestorsRegistryIndexRoute:
     AuthedFinanceInvestorsRegistryIndexRoute,
   AuthedFinanceTaxCorrectionsIndexRoute: AuthedFinanceTaxCorrectionsIndexRoute,
+  AuthedFinanceTaxPph21IndexRoute: AuthedFinanceTaxPph21IndexRoute,
   AuthedFinanceTaxRecapIndexRoute: AuthedFinanceTaxRecapIndexRoute,
   AuthedFinanceTaxRecordsIndexRoute: AuthedFinanceTaxRecordsIndexRoute,
   AuthedFinanceTaxTypesIndexRoute: AuthedFinanceTaxTypesIndexRoute,

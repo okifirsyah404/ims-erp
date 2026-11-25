@@ -1,3 +1,21 @@
+import type { ExportedProfitService } from '../services/exported-profit.service';
+import type { ManagementPackService } from '../services/management-pack.service';
+import type { RatioService } from '../services/ratio.service';
+import type { ICashForecastRepository } from '../contracts/cash-forecast.contract';
+import type { CashForecastService } from '../services/cash-forecast.service';
+import type { IStatementRepository } from '../contracts/statement.contract';
+import type { StatementService } from '../services/statement.service';
+import type { ICostReportRepository } from '../contracts/cost-report.contract';
+import type { CostReportService } from '../services/cost-report.service';
+import type { IProjectBudgetRepository } from '../contracts/project-budget.contract';
+import type { ProjectBudgetService } from '../services/project-budget.service';
+import type { IFixedAssetBookRepository } from '../contracts/fixed-asset.contract';
+import type { FixedAssetService } from '../services/fixed-asset.service';
+import type { IEmployeeAdvanceRepository } from '../contracts/employee-advance.contract';
+import type { EmployeeAdvanceService } from '../services/employee-advance.service';
+import type { IOpeningSubledgerRepository } from '../contracts/opening-subledger.contract';
+import type { OpeningSubledgerService } from '../services/opening-subledger.service';
+import type { PayrollLedgerService } from '../services/payroll-ledger.service';
 /**
  * DI tokens for the accounting module (tax + ledger slices).
  *
@@ -9,6 +27,19 @@
  * injects the repositories it actually queries instead of one god repository.
  */
 import type { InjectionToken } from 'tsyringe';
+import type { AuditWriter } from '@shared/audit';
+import type { ICostCenterRepository } from '../contracts/cost-center.repository.interface';
+import type { IPostingRuleRepository } from '../contracts/posting-rule.repository.interface';
+import type { CostCenterService } from '../services/cost-center.service';
+import type { PostingRuleService } from '../services/posting-rule.service';
+import type { ManualJournalService } from '../services/manual-journal.service';
+import type { ICreditMemoRepository } from '../contracts/credit-memo.repository.interface';
+import type { IDeferredRevenueRepository } from '../contracts/deferred-revenue.repository.interface';
+import type { IDeferredRevenuePort } from '../contracts/deferred-revenue.port';
+import type { DeferredRevenueService } from '../services/deferred-revenue.service';
+import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
+import type { GatewaySettlementService } from '../services/gateway-settlement.service';
+import type { TaxLedgerService } from '../services/tax-ledger.service';
 import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
 import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
 import type { ExportedFinanceService } from '../services/exported-finance.service';
@@ -116,3 +147,83 @@ export const EMPLOYEE_BANK_ACCOUNT_SERVICE_TOKEN: InjectionToken<EmployeeBankAcc
 
 /** Repository-only facade for other modules (ERP-0122: the payslip's payee account). */
 export const EXPORTED_FINANCE_SERVICE_TOKEN: InjectionToken<ExportedFinanceService> = Symbol('EXPORTED_FINANCE_SERVICE');
+
+/* ---------------------- GL foundation (ERP-0127..0130) ---------------------- */
+
+/** Repository of `finance.cost_centers` (ERP-0127). */
+export const COST_CENTER_REPOSITORY_TOKEN: InjectionToken<ICostCenterRepository> = Symbol(
+	'COST_CENTER_REPOSITORY',
+);
+/** Repository of `finance.posting_rules` (ERP-0128). */
+export const POSTING_RULE_REPOSITORY_TOKEN: InjectionToken<IPostingRuleRepository> = Symbol(
+	'POSTING_RULE_REPOSITORY',
+);
+export const COST_CENTER_SERVICE_TOKEN: InjectionToken<CostCenterService> = Symbol('COST_CENTER_SERVICE');
+export const POSTING_RULE_SERVICE_TOKEN: InjectionToken<PostingRuleService> = Symbol('POSTING_RULE_SERVICE');
+/** Manual journal lifecycle with maker-checker (ERP-0129). */
+export const MANUAL_JOURNAL_SERVICE_TOKEN: InjectionToken<ManualJournalService> = Symbol(
+	'MANUAL_JOURNAL_SERVICE',
+);
+/** Finance's audit trail writer (ADR-0030 §7). */
+export const FINANCE_AUDIT_WRITER_TOKEN: InjectionToken<AuditWriter> = Symbol('FINANCE_AUDIT_WRITER');
+
+/* ----------------------------- AR postings (ERP-0135) ----------------------------- */
+
+export const CREDIT_MEMO_REPOSITORY_TOKEN: InjectionToken<ICreditMemoRepository> = Symbol('CREDIT_MEMO_REPOSITORY');
+export const DEFERRED_REVENUE_REPOSITORY_TOKEN: InjectionToken<IDeferredRevenueRepository> = Symbol(
+	'DEFERRED_REVENUE_REPOSITORY',
+);
+export const DEFERRED_REVENUE_SERVICE_TOKEN: InjectionToken<DeferredRevenueService> = Symbol('DEFERRED_REVENUE_SERVICE');
+/** Contract the sale module calls to open/cancel deferred-revenue schedules. */
+export const DEFERRED_REVENUE_PORT_TOKEN: InjectionToken<IDeferredRevenuePort> = Symbol('DEFERRED_REVENUE_PORT');
+export const RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN: InjectionToken<ReceivableAdjustmentService> = Symbol(
+	'RECEIVABLE_ADJUSTMENT_SERVICE',
+);
+
+/** Payment-gateway settlement: net payout + fee against gateway clearing (ERP-0139). */
+export const GATEWAY_SETTLEMENT_SERVICE_TOKEN: InjectionToken<GatewaySettlementService> = Symbol(
+	'GATEWAY_SETTLEMENT_SERVICE',
+);
+
+/** PPN period settlement and tax payments (ERP-0140). */
+export const TAX_LEDGER_SERVICE_TOKEN: InjectionToken<TaxLedgerService> = Symbol('TAX_LEDGER_SERVICE');
+
+/** The payroll journal posted by Human Resource (ERP-0138). */
+export const PAYROLL_LEDGER_SERVICE_TOKEN: InjectionToken<PayrollLedgerService> = Symbol('PAYROLL_LEDGER_SERVICE');
+
+/** Sub-ledger opening balances (ERP-0142). */
+export const OPENING_SUBLEDGER_REPOSITORY_TOKEN: InjectionToken<IOpeningSubledgerRepository> = Symbol('OPENING_SUBLEDGER_REPOSITORY');
+export const OPENING_SUBLEDGER_SERVICE_TOKEN: InjectionToken<OpeningSubledgerService> = Symbol('OPENING_SUBLEDGER_SERVICE');
+
+/** Employee advances and settlements (ERP-0144). */
+export const EMPLOYEE_ADVANCE_REPOSITORY_TOKEN: InjectionToken<IEmployeeAdvanceRepository> = Symbol('EMPLOYEE_ADVANCE_REPOSITORY');
+export const EMPLOYEE_ADVANCE_SERVICE_TOKEN: InjectionToken<EmployeeAdvanceService> = Symbol('EMPLOYEE_ADVANCE_SERVICE');
+
+/** Fixed-asset books (ERP-0145). */
+export const FIXED_ASSET_BOOK_REPOSITORY_TOKEN: InjectionToken<IFixedAssetBookRepository> = Symbol('FIXED_ASSET_BOOK_REPOSITORY');
+export const FIXED_ASSET_SERVICE_TOKEN: InjectionToken<FixedAssetService> = Symbol('FIXED_ASSET_SERVICE');
+
+/** Project budgets (ERP-0146). */
+export const PROJECT_BUDGET_REPOSITORY_TOKEN: InjectionToken<IProjectBudgetRepository> = Symbol('PROJECT_BUDGET_REPOSITORY');
+export const PROJECT_BUDGET_SERVICE_TOKEN: InjectionToken<ProjectBudgetService> = Symbol('PROJECT_BUDGET_SERVICE');
+
+/** Cost accounting reports (ERP-0147). */
+export const COST_REPORT_REPOSITORY_TOKEN: InjectionToken<ICostReportRepository> = Symbol('COST_REPORT_REPOSITORY');
+export const COST_REPORT_SERVICE_TOKEN: InjectionToken<CostReportService> = Symbol('COST_REPORT_SERVICE');
+
+/** Statements: direct/indirect cash flow, changes in equity, comparatives (ERP-0148). */
+export const STATEMENT_REPOSITORY_TOKEN: InjectionToken<IStatementRepository> = Symbol('STATEMENT_REPOSITORY');
+export const STATEMENT_SERVICE_TOKEN: InjectionToken<StatementService> = Symbol('STATEMENT_SERVICE');
+
+/** 13-week cash forecast (ERP-0149). */
+export const CASH_FORECAST_REPOSITORY_TOKEN: InjectionToken<ICashForecastRepository> = Symbol('CASH_FORECAST_REPOSITORY');
+export const CASH_FORECAST_SERVICE_TOKEN: InjectionToken<CashForecastService> = Symbol('CASH_FORECAST_SERVICE');
+
+/** Financial ratios (ERP-0151). */
+export const RATIO_SERVICE_TOKEN: InjectionToken<RatioService> = Symbol('RATIO_SERVICE');
+
+/** Monthly management pack (ERP-0152). */
+export const MANAGEMENT_PACK_SERVICE_TOKEN: InjectionToken<ManagementPackService> = Symbol('MANAGEMENT_PACK_SERVICE');
+
+/** Closed-period profit contract for other modules (ERP-0153, M11). */
+export const EXPORTED_PROFIT_SERVICE_TOKEN: InjectionToken<ExportedProfitService> = Symbol('EXPORTED_PROFIT_SERVICE');

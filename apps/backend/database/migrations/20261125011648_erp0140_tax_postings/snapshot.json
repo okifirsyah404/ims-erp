@@ -1,0 +1,378 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "6dd63b09-a418-479c-9ad4-1f3bef521c1f",
+  "prevIds": [
+    "05a2b2bc-68af-4a2c-86fb-f7cf89fd0420"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "payment",
+        "payments",
+        "withholding_tax_id"
+      ],
+      "writes": [
+        "s|col|payment.payments.withholding_tax_id",
+        "n|col|payment.payments.withholding_tax_id",
+        "e|col|payment.payments.withholding_tax_id"
+      ],
+      "reads": [
+        "n|tbl|payment.payments",
+        "n|sch|payment"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "payment",
+        "payments",
+        "withholding_amount"
+      ],
+      "writes": [
+        "s|col|payment.payments.withholding_amount",
+        "n|col|payment.payments.withholding_amount",
+        "e|col|payment.payments.withholding_amount"
+      ],
+      "reads": [
+        "n|tbl|payment.payments",
+        "n|sch|payment"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "payment",
+        "payments",
+        "tax_object_code"
+      ],
+      "writes": [
+        "s|col|payment.payments.tax_object_code",
+        "n|col|payment.payments.tax_object_code",
+        "e|col|payment.payments.tax_object_code"
+      ],
+      "reads": [
+        "n|tbl|payment.payments",
+        "n|sch|payment"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "tax",
+        "withholding_tax_records",
+        "tax_object_code"
+      ],
+      "writes": [
+        "s|col|tax.withholding_tax_records.tax_object_code",
+        "n|col|tax.withholding_tax_records.tax_object_code",
+        "e|col|tax.withholding_tax_records.tax_object_code"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "tax",
+        "withholding_tax_records",
+        "withholding_slip_number"
+      ],
+      "writes": [
+        "s|col|tax.withholding_tax_records.withholding_slip_number",
+        "n|col|tax.withholding_tax_records.withholding_slip_number",
+        "e|col|tax.withholding_tax_records.withholding_slip_number"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "tax",
+        "withholding_tax_records",
+        "counterparty_tax_id"
+      ],
+      "writes": [
+        "s|col|tax.withholding_tax_records.counterparty_tax_id",
+        "n|col|tax.withholding_tax_records.counterparty_tax_id",
+        "e|col|tax.withholding_tax_records.counterparty_tax_id"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "tax",
+        "withholding_tax_records",
+        "source_module"
+      ],
+      "writes": [
+        "s|col|tax.withholding_tax_records.source_module",
+        "n|col|tax.withholding_tax_records.source_module",
+        "e|col|tax.withholding_tax_records.source_module"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "tax",
+        "withholding_tax_records",
+        "source_id"
+      ],
+      "writes": [
+        "s|col|tax.withholding_tax_records.source_id",
+        "n|col|tax.withholding_tax_records.source_id",
+        "e|col|tax.withholding_tax_records.source_id"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "tax",
+        "withholding_tax_records",
+        "coretax_status"
+      ],
+      "writes": [
+        "s|col|tax.withholding_tax_records.coretax_status",
+        "n|col|tax.withholding_tax_records.coretax_status",
+        "e|col|tax.withholding_tax_records.coretax_status"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "payment",
+        "payments"
+      ],
+      "writes": [
+        "s|ck|payment.payments.payments_withholding_check",
+        "n|ck|payment.payments.payments_withholding_check",
+        "e|ck|payment.payments.payments_withholding_check",
+        "n|con|payment.payments.payments_withholding_check"
+      ],
+      "reads": [
+        "n|tbl|payment.payments",
+        "n|sch|payment",
+        "n|col|payment.payments.withholding_amount",
+        "n|col|payment.payments.amount"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "tax",
+        "withholding_tax_records"
+      ],
+      "writes": [
+        "s|ck|tax.withholding_tax_records.withholding_coretax_status_check",
+        "n|ck|tax.withholding_tax_records.withholding_coretax_status_check",
+        "e|ck|tax.withholding_tax_records.withholding_coretax_status_check",
+        "n|con|tax.withholding_tax_records.withholding_coretax_status_check"
+      ],
+      "reads": [
+        "n|tbl|tax.withholding_tax_records",
+        "n|sch|tax",
+        "n|col|tax.withholding_tax_records.coretax_status"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "payment",
+        "table": "payments",
+        "name": "withholding_tax_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "payment",
+        "table": "payments",
+        "name": "withholding_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "payment",
+        "table": "payments",
+        "name": "tax_object_code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "tax_object_code",
+        "type": "varchar(20)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "withholding_slip_number",
+        "type": "varchar(40)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "counterparty_tax_id",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "source_module",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "source_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "coretax_status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'not_exported'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "payment",
+        "table": "payments",
+        "name": "payments_withholding_check",
+        "value": "withholding_amount >= 0 AND withholding_amount < amount",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "withholding_tax_records",
+        "name": "withholding_coretax_status_check",
+        "value": "coretax_status IN ('not_exported', 'exported', 'uploaded')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

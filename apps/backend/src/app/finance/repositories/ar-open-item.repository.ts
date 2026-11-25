@@ -2,9 +2,9 @@ import { DRIZZLE_TOKEN } from '@di/provider';
 import type { TTx } from '@drizzle/types';
 import { arOpenItems, type TArOpenItemSelect } from '@drizzle/schemas/finance.schema';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
-import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
+import type { IArOpenItemRepository, TArOpenItemPatch } from '../contracts/ar-open-item.repository.interface';
 
 /**
  * Drizzle queries of `finance.ar_open_items` — the Accounts Receivable
@@ -21,7 +21,7 @@ export class ArOpenItemRepository implements IArOpenItemRepository {
 	async insertArOpenItem(
 		row: {
 			organizationId: string;
-			invoiceId: string;
+			invoiceId: string | null;
 			customerId: string | null;
 			invoiceDate: string | null;
 			dueDate: string | null;
@@ -64,7 +64,7 @@ export class ArOpenItemRepository implements IArOpenItemRepository {
 	async updateArOpenItem(
 		organizationId: string,
 		invoiceId: string,
-		patch: { paidAmount?: number; outstandingAmount?: number; status?: string },
+		patch: TArOpenItemPatch,
 		tx?: TTx,
 	): Promise<TArOpenItemSelect | null> {
 		const db = tx ?? this.database;
@@ -79,6 +79,20 @@ export class ArOpenItemRepository implements IArOpenItemRepository {
 			)
 			.returning();
 		return updated ?? null;
+	}
+
+	async listWriteOffRequests(organizationId: string): Promise<TArOpenItemSelect[]> {
+		return this.database
+			.select()
+			.from(arOpenItems)
+			.where(
+				and(
+					eq(arOpenItems.organizationId, organizationId),
+					isNotNull(arOpenItems.writeOffRequestedAt),
+					isNull(arOpenItems.writtenOffAt),
+				),
+			)
+			.orderBy(asc(arOpenItems.writeOffRequestedAt));
 	}
 
 	async listArOpenItemsForAging(

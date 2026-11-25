@@ -4,8 +4,10 @@ import { inject, injectable } from 'tsyringe';
 import {
 	CHART_OF_ACCOUNT_REPOSITORY_TOKEN,
 	OPENING_BALANCE_REPOSITORY_TOKEN,
+	OPENING_SUBLEDGER_SERVICE_TOKEN,
 	POSTING_SERVICE_TOKEN,
 } from '../constants/di';
+import type { OpeningSubledgerService } from './opening-subledger.service';
 import type { PostingService } from '../services/posting.service';
 import { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { DRIZZLE_TOKEN } from '@di/provider';
@@ -49,6 +51,9 @@ export class OpeningBalanceService {
 		@inject(OPENING_BALANCE_REPOSITORY_TOKEN) private readonly balances: IOpeningBalanceRepository,
 		@inject(CHART_OF_ACCOUNT_REPOSITORY_TOKEN) private readonly accounts: IChartOfAccountRepository,
 		@inject(POSTING_SERVICE_TOKEN) private readonly posting: PostingService,
+		/** ERP-0142: AR/AP detail that must tie to the control accounts; optional for older tests. */
+		@inject(OPENING_SUBLEDGER_SERVICE_TOKEN)
+		private readonly subledger?: Pick<OpeningSubledgerService, 'assertTied' | 'materialize'>,
 	) {}
 
 	async list(organizationId: string): Promise<TOpeningBalanceSelect[]> {
@@ -153,6 +158,8 @@ export class OpeningBalanceService {
 			throw new JournalUnbalancedError();
 		}
 
+		const subledgerDrafts = this.subledger ? await this.subledger.assertTied(ctx.organizationId, asOfDate, rows) : [];
+
 		return this.database.transaction(async (tx: TTx) => {
 			const result = await this.posting.post(tx, {
 				organizationId: ctx.organizationId,
@@ -182,7 +189,7 @@ export class OpeningBalanceService {
 					tx,
 				);
 			}
-			void ctx.actorUserId;
+			if (this.subledger && subledgerDrafts.length > 0) await this.subledger.materialize(tx, ctx, subledgerDrafts);
 			return { entryId: result.entry.id, rows: rows.length };
 		});
 	}

@@ -20,7 +20,10 @@ import {
 	withholdingPatchSchema,
 	withholdingTransitionSchema,
 } from '../contracts/tax.contract';
-import { TAX_SERVICE_TOKEN } from '../constants/di';
+import { CORETAX_EXPORT_SERVICE_TOKEN, PPH21_TABLE_SERVICE_TOKEN, TAX_SERVICE_TOKEN } from '../constants/di';
+import type { Pph21TableService } from '../services/pph21-table.service';
+import type { CoretaxExportService } from '../services/coretax-export.service';
+import { z } from 'zod';
 import type { TaxService } from '../services/tax.service';
 import { recapToCsv } from '../utils/tax-csv';
 import { recapToXlsx } from '../utils/tax-xlsx';
@@ -39,6 +42,17 @@ export class TaxController {
 	/** Builds the Elysia plugin mounting `/tax`. */
 	static plugin() {
 		const tax = container.resolve<TaxService>(TAX_SERVICE_TOKEN);
+		const coretax = container.resolve<CoretaxExportService>(CORETAX_EXPORT_SERVICE_TOKEN);
+		const pph21 = container.resolve<Pph21TableService>(PPH21_TABLE_SERVICE_TOKEN);
+		const tableDateSchema = z.object({ date: z.iso.date().optional() });
+		const coretaxPatchSchema = z
+			.object({
+				coretaxStatus: z.enum(['not_exported', 'exported', 'uploaded']).optional(),
+				withholdingSlipNumber: z.string().trim().max(40).nullable().optional(),
+				counterpartyTaxId: z.string().trim().max(32).nullable().optional(),
+				taxObjectCode: z.string().trim().max(20).nullable().optional(),
+			})
+			.refine((data) => Object.keys(data).length > 0, { message: 'At least one field is required' });
 
 		const ctxOf = (erp: ErpContext) => ({
 			organizationId: erp.organizationId,
@@ -51,6 +65,40 @@ export class TaxController {
 			tags: ['Tax'],
 			guards: 'erp',
 		})
+			/* ---------------- PPh 21 tables (ERP-0138) ---------------- */
+			.get(
+				'/pph21/tables',
+				async ({ query }) => {
+					const { date } = tableDateSchema.parse(query);
+					return ok({ ...(await pph21.tables(date ?? new Date().toISOString().slice(0, 10))), terVersions: await pph21.terVersions() });
+				},
+				{
+					erp: { permission: ['tax:read'] },
+					detail: { description: 'PTKP, TER and Pasal 17 tables in force on a date, plus the stored TER versions' },
+				},
+			)
+			.get(
+				'/pph21/ter-rates/template.csv',
+				() =>
+					new Response(pph21.template(), {
+						headers: {
+							'content-type': 'text/csv; charset=utf-8',
+							'content-disposition': 'attachment; filename="ter-template.csv"',
+						},
+					}),
+				{ erp: { permission: ['tax:read'] }, detail: { description: 'CSV template of the TER import' } },
+			)
+			.post(
+				'/pph21/ter-rates/import',
+				async ({ body }) => {
+					const file = body && typeof body === 'object' && 'file' in body ? (body as { file: unknown }).file : undefined;
+					return ok(await pph21.importTer(file));
+				},
+				{
+					erp: { permission: ['tax:update'] },
+					detail: { description: 'Imports the official TER table (CSV); all rows or none, replacing each effective date it carries' },
+				},
+			)
 			/* ---------------- tax types ---------------- */
 			.get(
 				'',
@@ -136,6 +184,44 @@ export class TaxController {
 				{
 					erp: { permission: ['tax:read'] },
 					detail: { description: 'Period recap with corrections and net payable' },
+				},
+			)
+			/* ---------------- Coretax XML (ERP-0140) ---------------- */
+			.get(
+				'/coretax/faktur.xml',
+				async ({ query, erp, set }) => {
+					const { year, month } = recapQuerySchema.parse(query);
+					const { xml } = await coretax.fakturXml(erp.organizationId, year, month);
+					set.headers['content-type'] = 'application/xml; charset=utf-8';
+					set.headers['content-disposition'] = `attachment; filename="coretax-faktur-${year}-${String(month).padStart(2, '0')}.xml"`;
+					return xml;
+				},
+				{
+					erp: { permission: ['tax:export'] },
+					detail: { description: 'Output invoices of a period as Coretax TaxInvoiceBulk XML (manual upload; format unverified until a test import passes)' },
+				},
+			)
+			.get(
+				'/coretax/bupot.xml',
+				async ({ query, erp, set }) => {
+					const { year, month } = recapQuerySchema.parse(query);
+					const { xml } = await coretax.bupotXml(erp.organizationId, year, month);
+					set.headers['content-type'] = 'application/xml; charset=utf-8';
+					set.headers['content-disposition'] = `attachment; filename="coretax-bupot-${year}-${String(month).padStart(2, '0')}.xml"`;
+					return xml;
+				},
+				{
+					erp: { permission: ['tax:export'] },
+					detail: { description: 'Withholdings of a period as Coretax BpuBulk XML (manual upload; format unverified until a test import passes)' },
+				},
+			)
+			.patch(
+				'/withholdings/:id/coretax',
+				async ({ params, body, erp }) =>
+					ok(await coretax.updateCoretax(erp.organizationId, z.object({ id: z.string().uuid() }).parse(params).id, coretaxPatchSchema.parse(body))),
+				{
+					erp: { permission: ['tax:update'] },
+					detail: { description: 'Records bukti-potong data and the Coretax status of a withholding' },
 				},
 			)
 			.get(

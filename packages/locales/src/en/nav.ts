@@ -150,6 +150,11 @@ const nav = {
 	'breadcrumb.salesReturnNew': 'Customer return',
 	'breadcrumb.whatsappFaq': 'Assistant FAQ',
 	'breadcrumb.whatsappChat': 'Conversation',
+	'item.postingRules': 'Posting Rules',
+	'item.costCenters': 'Cost Centres',
+	'item.taxPph21': 'PPh 21 tables',
+	'item.fixedAssets': 'Fixed assets',
+	'item.projectBudgets': 'Project budgets',
 } as const;
 
 export default nav;

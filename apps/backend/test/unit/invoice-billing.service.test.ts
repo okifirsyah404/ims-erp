@@ -122,7 +122,7 @@ beforeEach(() => {
 				voidedDocs.push(sourceId);
 				return 1;
 			},
-		},
+		},		{ cancelForInvoice: async () => undefined },
 	);
 });
 

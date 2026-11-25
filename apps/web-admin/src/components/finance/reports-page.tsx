@@ -4,6 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@ims-erp/ui/components/card';
 import { DatePicker } from '@ims-erp/ui/components/date-picker';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ims-erp/ui/components/tabs';
+import { CostCenterPlReport, ProjectCostingReport } from './cost-reports';
+import { StatementsReport } from './statements-report';
+import { CashForecastReport } from './cash-forecast-report';
+import { ProfitabilityReport } from './profitability-report';
+import { RatiosReport } from './ratios-report';
+import { ManagementPackReport } from './management-pack-report';
 import { Button } from '@ims-erp/ui/components/button';
 import { useState } from 'react';
 import { FileSpreadsheet, Download } from 'lucide-react';
@@ -15,6 +21,7 @@ import {
 } from '@/lib/finance-api';
 import { downloadFile } from '@/lib/download';
 import { usePermission } from '@/lib/use-permission';
+import { GeneralLedgerReport, TrialBalanceReport } from './ledger-reports';
 
 const formatMoney = (minor: number) => (minor / 100).toLocaleString();
 
@@ -120,7 +127,52 @@ export function ReportsPage() {
 					<TabsTrigger value='pl'>{t('finance:reports.tab.pl')}</TabsTrigger>
 					<TabsTrigger value='bs'>{t('finance:reports.tab.balanceSheet')}</TabsTrigger>
 					<TabsTrigger value='cf'>{t('finance:reports.tab.cashFlow')}</TabsTrigger>
+					<TabsTrigger value='tb'>{t('finance:reports.tab.trialBalance')}</TabsTrigger>
+					<TabsTrigger value='gl'>{t('finance:reports.tab.generalLedger')}</TabsTrigger>
+					<TabsTrigger value='pack'>{t('finance:reports.tab.pack')}</TabsTrigger>
+					<TabsTrigger value='forecast'>{t('finance:reports.tab.forecast')}</TabsTrigger>
+					<TabsTrigger value='statements'>{t('finance:reports.tab.statements')}</TabsTrigger>
+					<TabsTrigger value='ratios'>{t('finance:reports.tab.ratios')}</TabsTrigger>
+					<TabsTrigger value='profitability'>{t('finance:reports.tab.profitability')}</TabsTrigger>
+					<TabsTrigger value='projects'>{t('finance:reports.tab.projectCosting')}</TabsTrigger>
+					<TabsTrigger value='cost-centers'>{t('finance:reports.tab.costCenters')}</TabsTrigger>
 				</TabsList>
+
+				<TabsContent value='tb' className='space-y-3'>
+					<TrialBalanceReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='gl' className='space-y-3'>
+					<GeneralLedgerReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='pack' className='space-y-3'>
+					<ManagementPackReport />
+				</TabsContent>
+
+				<TabsContent value='forecast' className='space-y-3'>
+					<CashForecastReport />
+				</TabsContent>
+
+				<TabsContent value='statements' className='space-y-3'>
+					<StatementsReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='ratios' className='space-y-3'>
+					<RatiosReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='profitability' className='space-y-3'>
+					<ProfitabilityReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='projects' className='space-y-3'>
+					<ProjectCostingReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='cost-centers' className='space-y-3'>
+					<CostCenterPlReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
 
 				<TabsContent value='pl' className='space-y-3'>
 					{pl ? (

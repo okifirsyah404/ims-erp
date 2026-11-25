@@ -220,6 +220,8 @@ export const purchaseOrders = procurementSchema.table(
 		supplierCompanyId: uuid('supplier_company_id'),
 		/** Logical reference to supplier.suppliers.id — cross-module FK omitted. */
 		supplierPicId: uuid('supplier_pic_id'),
+		/** Logical reference to project.projects.id — cross-module FK omitted (ERP-0146). */
+		projectId: uuid('project_id'),
 		supplierSnapshot: jsonb('supplier_snapshot')
 			.$type<TPoSupplierSnapshot>()
 			.notNull(),
@@ -458,6 +460,8 @@ export const purchaseReturns = procurementSchema.table(
 		cancelledBy: text('cancelled_by'),
 		cancelledAt: unixTimestampNullable('cancelled_at'),
 		cancelledReason: text('cancelled_reason'),
+		/** Logical reference to finance.journal_entries.id (ERP-0136). */
+		journalEntryId: uuid('journal_entry_id'),
 		...timestamps,
 	},
 	(table) => [

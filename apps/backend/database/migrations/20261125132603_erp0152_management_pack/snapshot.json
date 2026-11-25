@@ -1,0 +1,38 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "07e6b790-c3f2-46f7-bbdc-67f6b78b98d0",
+  "prevIds": [
+    "3c04eeb4-75b3-46e5-99a9-056c083ed138"
+  ],
+  "footprints": [
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "report_archives"
+      ],
+      "writes": [
+        "s|ck|finance.report_archives.report_archives_type_check"
+      ],
+      "reads": [
+        "n|tbl|finance.report_archives",
+        "n|sch|finance",
+        "n|col|finance.report_archives.report_type",
+        "e|col|finance.report_archives.report_type"
+      ],
+      "sqlHash": "3152b726ea5f7f58"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"finance\",\"report_archives\",\"report_archives_type_check\"]",
+      "set": {
+        "value": "report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow', 'management_pack')"
+      }
+    }
+  ]
+}

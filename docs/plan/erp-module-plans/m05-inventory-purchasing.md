@@ -43,6 +43,8 @@ _Interpretation, needs owner confirmation:_
 - No new automation. Stage 2 adds nothing to this module.
 
 ## Explicit limits (out of scope)
+> **ADR-0030 (accepted by the owner 2026-11-25):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table); where they conflict, the ADR wins.
+
 
 - No multiple warehouses.
 - No multi-level purchase requisitions or purchase orders (no PR → PO chain).

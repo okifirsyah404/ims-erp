@@ -679,6 +679,8 @@ export const invoices = saleSchema.table(
 		customerSnapshot: jsonb('customer_snapshot').$type<TCustomerSnapshot | null>(),
 		/** Plain id of a row in sale.orders (same module). */
 		orderId: uuid('order_id'),
+		/** Logical reference to project.projects.id, stamped at issue (ERP-0141). */
+		projectId: uuid('project_id'),
 		orderCode: varchar('order_code', { length: 32 }),
 		quotationCode: varchar('quotation_code', { length: 40 }),
 		title: text('title'),
@@ -739,7 +741,7 @@ export const invoices = saleSchema.table(
 		),
 		check(
 			'invoices_status_check',
-			sql`status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')`,
+			sql`status IN ('draft', 'issued', 'partially_paid', 'paid', 'written_off', 'void', 'cancelled')`,
 		),
 		check(
 			'invoices_vat_rate_check',
@@ -787,6 +789,9 @@ export const invoiceItems = saleSchema.table(
 		currencyCode: varchar('currency_code', { length: 3 })
 			.notNull()
 			.default('IDR'),
+		/** Service period: revenue is deferred and amortised monthly (ERP-0135). */
+		servicePeriodStart: date('service_period_start', { mode: 'string' }),
+		servicePeriodEnd: date('service_period_end', { mode: 'string' }),
 		createdAt: unixTimestamp('created_at').notNull(),
 		updatedAt: unixTimestamp('updated_at')
 			.notNull()
@@ -795,6 +800,14 @@ export const invoiceItems = saleSchema.table(
 	},
 	(table) => [
 		index('invoice_items_invoice_id_idx').on(table.invoiceId),
+		check(
+			'invoice_items_service_period_pair_check',
+			sql`(service_period_start IS NULL) = (service_period_end IS NULL)`,
+		),
+		check(
+			'invoice_items_service_period_range_check',
+			sql`service_period_end IS NULL OR service_period_end >= service_period_start`,
+		),
 		index('invoice_items_product_id_idx').on(table.productId),
 		check('invoice_items_quantity_check', sql`quantity >= 0`),
 		check('invoice_items_unit_price_check', sql`unit_price >= 0`),

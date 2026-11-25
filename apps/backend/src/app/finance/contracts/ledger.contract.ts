@@ -3,7 +3,9 @@ import {
 	ACCOUNT_TYPES,
 	CASH_FLOW_CATEGORIES,
 	NORMAL_BALANCES,
+	POSTING_RULE_DISCRIMINATORS,
 } from '@drizzle/schemas/finance.schema';
+import { POSTING_EVENT_TYPES, POSTING_ROLES } from '../constants/posting-roles';
 
 /** Shared `:id` param. */
 export const ledgerIdParamSchema = z.object({ id: z.string().uuid() });
@@ -73,6 +75,8 @@ export const periodListQuerySchema = z.object({
 
 export const periodTransitionSchema = z.object({
 	to: z.enum(['closed', 'locked', 'open']),
+	/** Why the period changes state; kept in the audit log (ERP-0130). */
+	reason: z.string().trim().max(500).nullish().transform((v) => v ?? null),
 });
 
 /* ----------------------------- journal entries ----------------------------- */
@@ -96,8 +100,8 @@ export const journalEntryCreateSchema = z
 	.object({
 		entryDate: isoDate,
 		description: z.string().nullish().transform((v) => v ?? null),
-		/** Client-supplied idempotency key (recommended for automated callers). */
-		idempotencyKey: z.string().min(1).max(128).nullish().transform((v) => v ?? null),
+		/** Adjusting entry: the only kind a soft-closed period accepts (ERP-0130). */
+		isAdjusting: z.boolean().default(false),
 		lines: z.array(journalLineInputSchema).min(2),
 	})
 	.refine((data) => data.lines.length >= 2, {
@@ -114,10 +118,87 @@ export const journalEntryListQuerySchema = z.object({
 		.optional(),
 });
 
+/** Manual reversal: the reason is mandatory (grill Q54). */
 export const journalReversalCreateSchema = z.object({
 	entryDate: isoDate.optional(),
+	reason: z.string().trim().min(1).max(500),
+});
+
+/** Rejecting a submitted journal back to draft needs a reason. */
+export const journalRejectSchema = z.object({
+	reason: z.string().trim().min(1).max(500),
+});
+
+/* ----------------------------- cost centres (ERP-0127) ----------------------------- */
+
+export const costCenterCreateSchema = z.object({
+	code: z.string().trim().min(1).max(32),
+	name: z.string().trim().min(1).max(200),
+	parentCostCenterId: z.string().uuid().nullish().transform((v) => v ?? null),
 	description: z.string().nullish().transform((v) => v ?? null),
 });
+
+export const costCenterUpdateSchema = z
+	.object({
+		name: z.string().trim().min(1).max(200).optional(),
+		parentCostCenterId: z.string().uuid().nullable().optional(),
+		isActive: z.boolean().optional(),
+		description: z.string().nullable().optional(),
+	})
+	.refine((data) => Object.keys(data).length > 0, { message: 'At least one field is required' });
+
+export const costCenterListQuerySchema = z.object({
+	page: z.coerce.number().int().positive().default(1),
+	limit: z.coerce.number().int().positive().max(100).default(50),
+	search: z.string().trim().min(1).optional(),
+	isActive: z
+		.enum(['true', 'false'])
+		.transform((v) => v === 'true')
+		.optional(),
+});
+
+/* ----------------------------- posting rules (ERP-0128) ----------------------------- */
+
+export const postingRuleCreateSchema = z
+	.object({
+		eventType: z.enum(POSTING_EVENT_TYPES).default('*'),
+		role: z.enum(POSTING_ROLES),
+		discriminatorType: z.enum(POSTING_RULE_DISCRIMINATORS).default(''),
+		discriminatorValue: z.string().trim().max(128).default(''),
+		accountId: z.string().uuid(),
+		description: z.string().nullish().transform((v) => v ?? null),
+	})
+	.refine((data) => (data.discriminatorType === '') === (data.discriminatorValue === ''), {
+		message: 'A discriminator needs both a type and a value',
+		path: ['discriminatorValue'],
+	});
+
+export const postingRuleUpdateSchema = z
+	.object({
+		accountId: z.string().uuid().optional(),
+		isActive: z.boolean().optional(),
+		description: z.string().nullable().optional(),
+	})
+	.refine((data) => Object.keys(data).length > 0, { message: 'At least one field is required' });
+
+export const postingRuleListQuerySchema = z.object({
+	eventType: z.string().min(1).optional(),
+	role: z.string().min(1).optional(),
+	includeInactive: z
+		.enum(['true', 'false'])
+		.transform((v) => v === 'true')
+		.optional(),
+});
+
+/* ----------------------------- ledger reports (ERP-0133) ----------------------------- */
+
+export const trialBalanceQuerySchema = z
+	.object({ startDate: isoDate, endDate: isoDate })
+	.refine((d) => d.startDate <= d.endDate, { message: 'startDate must not be after endDate', path: ['endDate'] });
+
+export const generalLedgerQuerySchema = z
+	.object({ accountId: z.string().uuid(), startDate: isoDate, endDate: isoDate })
+	.refine((d) => d.startDate <= d.endDate, { message: 'startDate must not be after endDate', path: ['endDate'] });
 
 /* ----------------------------- opening balances (F3) ----------------------------- */
 

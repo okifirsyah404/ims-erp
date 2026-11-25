@@ -18,7 +18,8 @@ import {
 	POSTING_SERVICE_TOKEN,
 	AR_ACCOUNT_RESOLVER_TOKEN,
 } from '../../finance/constants/ar-di';
-import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
+import { INVOICE_REPOSITORY_TOKEN, RECEIPT_LEDGER_SERVICE_TOKEN } from '../constants/ar-di';
+import type { ReceiptLedgerService } from './receipt-ledger.service';
 import type {
 	TInvoiceRepository,
 	TInvoiceSummary,
@@ -43,6 +44,13 @@ import {
 } from '../errors/invoice.errors';
 import { businessDateOf } from '@utils/business-date.util';
 import { invoiceIssuedEvent, receiptRecordedEvent } from '../utils/invoice-events';
+import { buildInvoicePosting } from '../utils/invoice-posting';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
+import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import type { ExportedProductService } from '@app/product/services/exported-product.service';
+import { DEFERRED_REVENUE_PORT_TOKEN } from '@app/finance/constants/di';
+import type { IDeferredRevenuePort } from '@app/finance/contracts/deferred-revenue.port';
 import type {
 	TCreateReceiptInput,
 	TInvoiceListRequest,
@@ -84,6 +92,18 @@ export class InvoiceService {
 		/** ERP-0044: issued invoices and receipts are registered documents. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0135: revenue discriminator (product category) per invoice line. */
+		@inject(EXPORTED_PRODUCT_SERVICE_TOKEN)
+		private readonly products: Pick<ExportedProductService, 'productsById'>,
+		/** ERP-0135: service-period lines open finance's deferred-revenue schedules. */
+		@inject(DEFERRED_REVENUE_PORT_TOKEN)
+		private readonly deferredRevenue: IDeferredRevenuePort,
+		/** ERP-0141: the order's live project is stamped on the invoice at issue. */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'liveProjectOfOrder'>,
+		/** ERP-0139: receipts post to the ledger and the AR open item. */
+		@inject(RECEIPT_LEDGER_SERVICE_TOKEN)
+		private readonly receiptLedger?: Pick<ReceiptLedgerService, 'post' | 'reverse'>,
 	) {}
 
 	/**
@@ -247,45 +267,58 @@ export class InvoiceService {
 				throw new InvoiceDueBeforeIssueError();
 			}
 
-			const accounts = await this.arResolver.resolveAll(ctx.organizationId);
 			const issueDate =
 				invoice.issueDate ?? new Date().toISOString().slice(0, 10);
-			const revenue = invoice.subtotal - invoice.discountTotal;
 
-			const lines: Array<{
-				accountId: string;
-				debit: number;
-				credit: number;
-			}> = [
-				{
-					accountId: accounts.ar,
-					debit: invoice.grandTotal,
-					credit: 0,
-				},
-				{
-					accountId: accounts.revenue,
-					debit: 0,
-					credit: revenue,
-				},
-			];
-			if (invoice.taxTotal > 0) {
-				lines.push({
-					accountId: accounts.taxPayable,
-					debit: 0,
-					credit: invoice.taxTotal,
-				});
-			}
+			// ERP-0135: business facts by role; finance's posting rules pick the
+			// accounts (DP -> customer advances, revenue per product category,
+			// service-period lines -> deferred revenue).
+			const productIds = [...new Set(items.map((item) => item.productId).filter((id): id is string => !!id))];
+			const products = productIds.length ? await this.products.productsById(productIds) : new Map();
+			const productCategoryById = new Map<string, string | null>(
+				[...products.values()].map((product) => [product.id, product.productCategoryId]),
+			);
+			// ERP-0141: the order's live project tags the invoice and its revenue lines.
+			const project = invoice.orderId && this.projects ? await this.projects.liveProjectOfOrder(invoice.orderId) : null;
+			const projectId = invoice.projectId ?? project?.id ?? null;
+			const advanceBase =
+				invoice.termKind === 'settlement' && invoice.orderId
+					? await this.repo.sumLiveDownPaymentBase(ctx.organizationId, invoice.orderId, invoice.id, tx)
+					: 0;
+			const posting = buildInvoicePosting({
+				invoice,
+				items: items.map((item) => ({
+					id: item.id,
+					productId: item.productId,
+					lineTotal: item.lineTotal,
+					taxAmount: item.taxAmount,
+					servicePeriodStart: item.servicePeriodStart,
+					servicePeriodEnd: item.servicePeriodEnd,
+				})),
+				productCategoryById,
+				advanceBase,
+				projectId,
+			});
 
-			await this.posting.post(tx, {
+			const { entry } = await this.posting.postBusinessEvent(tx, {
 				organizationId: ctx.organizationId,
 				entryDate: issueDate,
 				sourceModule: 'sale',
 				sourceType: 'invoice',
 				sourceId: invoice.id,
 				idempotencyKey: `invoice:${invoice.id}`,
+				eventType: 'sale.invoice_issued',
 				description: `Invoice ${invoice.code}`,
-				lines,
+				lines: posting.lines,
 			});
+			if (posting.schedules.length > 0) {
+				await this.deferredRevenue.createSchedules(tx, {
+					organizationId: ctx.organizationId,
+					invoiceId: invoice.id,
+					issueEntryId: entry.id,
+					schedules: posting.schedules,
+				});
+			}
 
 			await this.arLedger.openItem(
 				ctx.organizationId,
@@ -313,6 +346,7 @@ export class InvoiceService {
 					issuedBy: ctx.actorUserId,
 					issuedAt: new Date(),
 					outstandingTotal: invoice.grandTotal,
+					projectId,
 				},
 				tx,
 			);
@@ -382,6 +416,8 @@ export class InvoiceService {
 			unitPrice: i.unitPrice,
 			discountAmount: i.discountAmount,
 			taxAmount: i.taxAmount,
+			servicePeriodStart: i.servicePeriodStart,
+			servicePeriodEnd: i.servicePeriodEnd,
 		}));
 	}
 
@@ -406,6 +442,8 @@ export class InvoiceService {
 				lineTotal:
 					item.quantity * item.unitPrice - item.discountAmount + item.taxAmount,
 				currencyCode: 'IDR',
+				servicePeriodStart: item.servicePeriodStart ?? null,
+				servicePeriodEnd: item.servicePeriodEnd ?? null,
 			})),
 			tx,
 		);
@@ -450,19 +488,27 @@ export class InvoiceService {
 		const code = await this.numbering.next('receipt', {
 			date: new Date(`${receivedDate}T12:00:00+07:00`),
 		});
-		const receipt = await this.repo.addReceipt({
-			invoiceId: invoiceId,
-			organizationId: ctx.organizationId,
-			code,
-			receivedDate,
-			amount: body.amount,
-			currencyCode: invoice.currencyCode,
-			method: body.method,
-			reference: body.reference,
-			notes: body.notes,
-			receivedBy: ctx.actorUserId,
+		// ERP-0139: the receipt, its journal and the AR open item commit together.
+		const receipt = await this.database.transaction(async (tx) => {
+			const created = await this.repo.addReceipt(
+				{
+					invoiceId: invoiceId,
+					organizationId: ctx.organizationId,
+					code,
+					receivedDate,
+					amount: body.amount,
+					currencyCode: invoice.currencyCode,
+					method: body.method,
+					reference: body.reference,
+					notes: body.notes,
+					receivedBy: ctx.actorUserId,
+				},
+				{ tx },
+			);
+			if (!created) throw new ReceiptExceedsOutstandingError();
+			await this.receiptLedger?.post(tx, created, invoice, false);
+			return created;
 		});
-		if (!receipt) throw new ReceiptExceedsOutstandingError();
 		// ERP-0044: a receipt (kuitansi) is an issued document too.
 		await this.documents.register({
 			code: receipt.code,
@@ -489,13 +535,12 @@ export class InvoiceService {
 	): Promise<TReceiptSelect> {
 		if (!(await this.repo.findReceipt(ctx.organizationId, id)))
 			throw new ReceiptNotFoundError();
-		const reversed = await this.repo.reverseReceipt(
-			ctx.organizationId,
-			id,
-			ctx.actorUserId,
-			reason,
-		);
-		if (!reversed) throw new ReceiptAlreadyReversedError();
+		const reversed = await this.database.transaction(async (tx) => {
+			const row = await this.repo.reverseReceipt(ctx.organizationId, id, ctx.actorUserId, reason, tx);
+			if (!row) throw new ReceiptAlreadyReversedError();
+			await this.receiptLedger?.reverse(tx, row, ctx.actorUserId, reason);
+			return row;
+		});
 		// ERP-0044: a reversed receipt is a dead document.
 		await this.documents.voidBySource('sale', 'receipt', id);
 		return reversed;

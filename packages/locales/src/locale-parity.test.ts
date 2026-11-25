@@ -60,6 +60,20 @@ describe('locale values', () => {
 		// Guards against copy-pasting the English bundle into `id`. Brand names
 		// and locale-neutral tokens are expected to match, so they're exempt.
 		const ALLOWED_IDENTICAL = new Set([
+			// Statutory acronyms and programme names are the same in both languages (ERP-0138).
+			'hr:form.taxId',
+			'tax:pph21.ptkpTitle',
+			'tax:pph21.status',
+			'settings:payroll.bpjsEmploymentEnabled',
+			'hr:salary.pph21',
+			'finance:openingSubledger.template',
+			'finance:statement.method.manual',
+			'finance:settlements.tax',
+			'finance:settlements.total',
+			'finance:costReports.margin',
+			'finance:costReports.marginPct',
+			'finance:costReports.total',
+			'finance:forecast.statutory',
 			// "Owner" of a customer company is the same loanword in Indonesian (ERP-0114).
 			'crm:customer.owner',
 			'crm:customer.ownerBadge',
@@ -238,6 +252,7 @@ describe('locale values', () => {
 			'finance:closing.item.pass',
 			// The em-dash placeholder is locale-neutral.
 			'finance:common.none',
+			'finance:pack.excel',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

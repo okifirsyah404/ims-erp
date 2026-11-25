@@ -12,7 +12,1076 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
-## 2026-11-25 - ERP-0130: document files named after the document
+## 2026-11-25 - merge `main` into the ADR-0030 branch: backlog ID collision
+
+`main` (PRs #162, #163) used ERP-0126..ERP-0130 for work unrelated to the
+ADR-0030 finance IDs of the same numbers on this branch (whose IDs are already
+baked into migration folder names and commits). Main's five items are
+renumbered: ERP-0126 -> ERP-0154 (sidebar nav audit), ERP-0127 -> ERP-0155
+(asset category dialog), ERP-0128 -> ERP-0156 (sidebar section order),
+ERP-0129 -> ERP-0157 (document card grid + viewer), ERP-0130 -> ERP-0158
+(document file names), in `backlog.md`, `features.md`, `progress.md` and one
+test comment. No code behaviour changed by the merge resolution.
+
+## 2026-11-25 - dev tooling: `.claude/launch.json`
+
+Adds a preview launch config (`backend` on 3001, `web-admin` on 5173). No code,
+migration, seed or test change; no backlog item moves. Note for worktrees:
+`apps/web-admin/.env` is gitignored and is not copied into a new worktree;
+without it the web admin falls back to `localhost:3000` and login fails with
+"Cannot reach the server" — copy `.env.example` to `.env` (verified
+2026-11-25: after the copy the page calls `localhost:3001`, session endpoint
+200).
+
+## 2026-11-25 - ERP-0153: closed-period profit contract (Phase D complete)
+
+**Scope.** Phase D slice 6, the last ADR-0030 slice.
+
+**Design gate.** `docs/database/` read (`finance.accounting_periods` status
+vocabulary, `finance.posting_rules`): no table or column change; the posting
+role vocabulary is application-guarded (no DB check), so `docs.dbml` is
+unchanged; `module-ownership.md` gains the contract method. Manual grill
+pass: owner finance; tenant-scoped; read-only; `locked` only because closed
+periods can still be reopened by the accountant and locked ones accept no
+posting; figures from the GL P&L (single source); income tax identified by a
+posting role, not a hard-coded code; no investor schema, no route (M11 is out
+of scope, ADR-0030).
+
+**Changes.** Backend: `ExportedProfitService`, `EXPORTED_PROFIT_SERVICE_TOKEN`
+exported from `@app/finance`, `ProfitPeriodNotLockedError`, posting role
+`income_tax_expense` (default 8-3000, seeded). Web-admin: the role appears in
+the posting-rule list (en/id); api error key (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun test test/finance/exported-profit.test.ts   # 3 pass
+bun run drizzle:seed                            # rulesInserted 1 (income_tax_expense); second run rulesInserted 0
+bun run <temporary profit-contract smoke>       # 5/5 PASS: open November refused 409, missing period 404; with
+                                                # November locked temporarily: after tax = P&L net income, the
+                                                # seeded rule resolves, before tax = after tax + 8-3000; status restored
+bun run test                                    # 7/7 tasks: backend 1589, web-admin 209, locales 106
+bun run lint                                    # 0 errors
+```
+
+`docs/database/docs.dbml` reviewed and unchanged; `validate-dbml.ts` OK
+(from ERP-0152, no schema change since).
+
+**Not verified.** No consumer exists yet (M11 is not built).
+
+Next executable task: ADR-0030 Phases A-D are implemented. Next is the
+browser walk-through of the finance screens and owner acceptance of Phases
+B-D; then the open gaps listed in `modules/finance.md` (old
+`/reports/cash-flow` endpoint, Coretax format verification, annual A1 slip,
+stock/asset opening detail, capitalisation from goods receipts).
+
+## 2026-11-25 - ERP-0152: monthly management pack
+
+**Scope.** Phase D slice 5.
+
+**Design gate.** `docs/database/` read (`finance.report_archives`,
+`finance.project_budgets`/`project_budget_lines`). Manual grill pass:
+ownership stays in finance (archive table is finance's; project names through
+`ProjectLookupService`); tenant-scoped by `organization_id`; no new money or
+date columns; status vocabulary change = `report_archives.report_type` gains
+`management_pack`. Decisions: budget vs actual is per project (no company
+budget exists and the `budgeting` schema must not return); PDF is the
+browser print of the pack tab (no new server renderer); the pack is archived
+by the existing closed-period archive, not a new route.
+
+**Changes.** `docs.dbml` check + note, Drizzle check, migration
+`20261125132603_erp0152_management_pack`. Backend: `ManagementPackService`
+(`build`, `budgetVsActual`, `toXlsx`), `ProjectBudgetRepository.listActiveBudgets`,
+`ReportArchiveService` archives the pack, routes
+`GET /finance/reports/management-pack` and `.xlsx`. Web-admin: "Management
+pack" tab, archive list shows the new type (en/id).
+
+**Commands and outcomes.**
+
+```text
+bunx --bun drizzle-kit generate --name erp0152_management_pack   # one ALTER of report_archives_type_check (inspected)
+bunx --bun drizzle-kit migrate                                    # applied to the local scratch database
+bun docs/database/gen-logical-references.ts                       # regenerated, unchanged
+bun docs/database/validate-dbml.ts                                # OK
+bun docs/gen-role-permission.ts                                   # 763 routes written
+bun test test/finance/management-pack.test.ts                     # 5 pass
+bun run <temporary management-pack smoke>                         # 7/7 then 8/8 PASS: pack P&L, balance sheet, ratios equal the
+                                                                  # reports; profitability ties to revenue; cash flow ties (0);
+                                                                  # xlsx written (12.5 KB); open month refused; with November
+                                                                  # closed temporarily the archive wrote the four types incl.
+                                                                  # management_pack, re-archive wrote nothing; November reopened
+bun run test                                                      # 7/7 tasks: backend 1586, web-admin 209, locales 106
+bun run lint                                                      # 0 errors
+```
+
+**Not verified.** No browser walk-through (print layout prints the whole
+app shell around the tab).
+
+Next executable task: ERP-0153 (closed-period profit contract for M11).
+
+## 2026-11-25 - ERP-0151: financial ratios
+
+**Scope.** Phase D slice 4.
+
+**Design gate.** `docs/database/` reviewed: no schema change, unchanged.
+Manual grill pass: read-only, tenant-scoped, figures from posted journal
+lines with the ERP-0147 sign convention; definitions recorded in
+`modules/finance.md` (current items by code prefix, roles for AR/AP/
+inventory, 5-xxxx as cost of goods, closing balances for ROA/ROE).
+
+**Changes.** Backend: `RatioService`, `GET /finance/reports/ratios`.
+Web-admin: "Ratios" tab (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary ratios smoke>              # 3/3 PASS: total assets, liabilities and equity equal the balance
+                                              # sheet (7,483,458.12 / 4,076,790.21 / 3,406,667.91); net income equals
+                                              # the P&L; ratios computed (DSO is large on scratch data: AR 3,000,000
+                                              # against revenue 9,009)
+bun test test/finance/ratios.test.ts          # 1 pass (hand-computed)
+bun run test                                  # 7/7 tasks: backend 1581, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 761 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: ERP-0152 (management pack: budget vs actual,
+monthly PDF/Excel, archive).
+
+## 2026-11-25 - ERP-0150: profitability by project, customer, product, business line
+
+**Scope.** Phase D slice 3.
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`
+`project_id`, `product_id`, `party_type`/`party_id`; product categories): no
+schema change, `docs/database/` unchanged. Manual grill pass: read-only,
+dimensions from the ledger, names through the owning modules' facades
+(project lookup, `ExportedCustomerService.assertCustomer`,
+`ExportedProductService.productsById` + new `categoryNames`). Decision:
+business line = product category; no overhead allocation (the unattributed
+row keeps the total honest).
+
+**Changes.** Backend: `CostReportRepository.byDimension`,
+`CostReportService.profitability`, `GET /finance/reports/profitability`;
+sale invoice posting adds the customer party to revenue and deferred-revenue
+lines, delivery COGS lines carry the customer; product facade
+`categoryNames`. Web-admin: "Profitability" tab with a dimension selector
+(en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary profitability smoke>       # 4/4 PASS: project, customer, product and business-line views each add
+                                              # up to the November P&L (revenue and cost)
+bun test test/finance/cost-reports.test.ts    # 5 pass
+bun test test/finance test/unit               # 1149 pass (sale posting tests unchanged)
+bun run test                                  # 7/7 tasks: backend 1580, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 760 routes
+```
+
+**Not verified.** The scratch database's revenue lines predate the customer
+dimension, so the customer view shows them unattributed; no browser
+walk-through.
+
+Next executable task: ERP-0151 (financial ratios).
+
+## 2026-11-25 - ERP-0149: 13-week cash forecast
+
+**Scope.** Phase D slice 2.
+
+**Design gate.** `docs/database/` read for `finance.ar_open_items`,
+`ap_open_items`, `human_resource.employee_salary_records`, `settings`,
+`project.license_contracts` (no amount column). New table
+`finance.cash_forecast_lines` (one new logical reference `created_by`).
+Manual grill pass: ownership - finance owns the forecast and manual lines; HR
+exposes a repository-only payroll estimate, project a renewals list through
+its repository-only lookup; tenancy - `organization_id`; soft delete; money -
+minor units; no status vocabulary beyond direction in/out. Decisions:
+overdue and undated items fall in week 1; payroll uses the latest approved
+month as run-rate; renewals are informational because contracts carry no
+amount.
+
+**Changes.** Migration `20261125130528_erp0149_cash_forecast` (1 CREATE
+TABLE). Backend: `CashForecastRepository`, `CashForecastService`, routes under
+`/finance/reports/cash-forecast*`, `SalaryRepository.latestApprovedTotals`,
+`ExportedPayrollService`, `ProjectLookupService.renewalsDue`. Web-admin:
+"Cash forecast" tab (weeks, manual lines, renewals; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 212 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0149_cash_forecast; bun run drizzle:migrate   # applied
+bun run <temporary forecast smoke>            # 6/6 PASS: opening cash = ledger cash (15,256,210.00); payroll
+                                              # run-rate from the approved 2026-11 period (net 10,812,760); opening
+                                              # AR 3,000,000 / AP 1,200,000 in the horizon; a manual line lands in
+                                              # week 3 and is removed; weeks chain
+bun test test/finance/cash-forecast.test.ts   # 2 pass
+bun run test                                  # 7/7 tasks: backend 1578, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 759 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: ERP-0150 (profitability by project, customer,
+product, business line).
+
+## 2026-11-25 - ERP-0148: direct and indirect cash flow, changes in equity, comparatives
+
+**Scope.** Phase D slice 1 (owner: "Lanjut fase D").
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`,
+`journal_entries`, `chart_of_accounts.cash_flow_category`,
+`bank_account_links`): no schema change, `docs/database/` unchanged. Manual
+grill pass: read-only, finance tables, tenant-scoped, posted and reversed
+entries. Decisions: cash accounts = postable 1-11xx plus linked GL accounts;
+the direct method uses the balanced-entry identity instead of proportional
+allocation; contra assets are a non-cash operating adjustment in the
+indirect view; equity without a category is financing; whole-month ranges
+compare with whole months.
+
+**Changes.** Backend: `StatementRepository` (cash accounts, cash
+counterparts, activity), `StatementService` (build, statements with
+comparatives), `GET /finance/reports/statements`. Web-admin: "Cash flow &
+equity" tab (direct, indirect, equity, comparative column; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary statements smoke>          # run 1: 4/4 but the "previous period" of November was 2-31 October;
+                                              # fixed to whole months; run 2: 4/4 - direct ties to balance-sheet
+                                              # cash (opening 0 + 4,427,459.12 = closing), indirect = direct,
+                                              # closing equity = balance-sheet equity, comparative 1-31 October
+bun test test/finance/statements.test.ts      # 4 pass (hand-worked mini ledger)
+bun run test                                  # 7/7 tasks: backend 1576, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 755 routes
+```
+
+**Not verified.** No browser walk-through. The ERP-0133 cash-flow endpoint is
+unchanged and still misclassifies non-cash entries (documented).
+
+Next executable task: ERP-0149 (13-week cash-flow forecast).
+
+## 2026-11-25 - ERP-0147: cost accounting reports; contra-account signing fixed
+
+**Scope.** Phase C slice 5 (Phase C complete).
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`
+dimensions `project_id`, `cost_center_id`; `finance.cost_centers`): no schema
+change, `docs/database/` unchanged. Manual grill pass: read-only reports in
+finance, tenant-scoped, posted and reversed entries (the reversal nets the
+original), revenue credit - debit and cost debit - credit by account type.
+
+**Changes.** Backend: `CostReportRepository`, `CostReportService`,
+`CostReportController` (`/finance/reports/project-costing`,
+`/project-costing/:projectId`, `/cost-center-pl`). `ReportService` signs P&L
+and balance-sheet amounts by account type (contra accounts negative); the
+general-ledger detail keeps the normal-side running balance. Web-admin:
+"Project costing" (expandable per account) and "Cost centres" tabs on the
+reports page (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary cost-report smoke>         # run 1: 2/3 - project costing (PRJ-SMOKE-0146 cost 600,000, budget
+                                              # 1,500,000) and per-account detail pass; cost-centre revenue 900,901 vs
+                                              # P&L 1,099,099: the P&L added the 4-1900 Retur Penjualan debit 99,099;
+                                              # run 2 after the fix: 3/3, totals tie (revenue 900,901)
+bun test test/finance/cost-reports.test.ts test/finance/reports-reconciliation.test.ts   # 10 pass
+bun run test                                  # 7/7 tasks: backend 1572, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 754 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: Phase C is done. Walk the Phase B and C screens in a
+browser, push the branch and open a PR, then ERP-0131 (year-end close) or
+Phase D (ERP-0148 statements).
+
+## 2026-11-25 - ERP-0146: project budgets with actual, commitment and checks
+
+**Scope.** Phase C slice 4.
+
+**Design gate.** `docs/database/` read for `project.projects` (company-wide,
+no tenant column), `procurement.purchase_orders` (company-wide, statuses),
+`finance.expense_claims`, `finance.supplier_bills`, `finance.journal_lines`
+(`project_id`) and `logical-references.md`. New logical references:
+`project_budgets.project_id`, `activated_by`, `created_by`,
+`expense_claims.project_id`, `purchase_orders.project_id`. Manual grill pass:
+ownership - finance owns budgets and the check; procurement exposes open
+orders through a repository-only facade (finance reads it, procurement calls
+finance on approval: no service cycle); tenancy - budgets carry the creating
+organization, the check follows the project's single active budget because
+projects are company-wide; soft delete - versions and lines soft-delete;
+money - minor units; status - draft / active / superseded, warn / block.
+Decisions: the check is on the project total (lines give the report
+granularity); the order being approved is excluded from commitment; claim
+approval now tags expense lines with the project so claims become actuals.
+
+**Changes.** Migration `20261125060448_erp0146_project_budgets` (2 CREATE
+TABLE, 2 ADD COLUMN, intra-module FKs). Backend: `ProjectBudgetRepository`,
+`ProjectBudgetService` (versions, createVersion, replaceLines, activate,
+setControlMode, report, check), `ProjectBudgetController`,
+`ExportedPurchaseOrderService.openOrdersOfProject`,
+`PurchaseOrderRepository.listOpenForProject`, project on the PO body
+(validated), budget check in `PurchaseOrderService.decide`,
+`ExpenseClaimService` (project on create/update, check at submit, project on
+approval lines), `ProjectService.addCost` check. Web-admin:
+`/finance/project-budgets` (version editor, mode, report), project select on
+the PO form and the claim form, nav entry (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 211 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0146_project_budgets; bun run drizzle:migrate   # applied
+bun run <temporary budget-smoke script>       # 7/7 PASS: v1 active (Rp1,000,000); project claim approved ->
+                                              # actual 600,000 from project-tagged journal lines; warn reports an
+                                              # overrun; block refuses a 500,000 claim (available 400,000), claim
+                                              # stays draft; v2 (1,500,000) supersedes v1 and the claim submits
+bun test test/finance/project-budgets.test.ts test/unit/procurement.service.test.ts   # 3 + 8 pass
+bun run test                                  # 7/7 tasks: backend 1569, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 751 routes
+```
+
+The smoke inserted project `PRJ-SMOKE-0146` into the scratch database.
+
+**Not verified.** PO approval check on a database (no supplier/product seed;
+unit-tested); no browser walk-through.
+
+Next executable task: ERP-0147 (cost accounting reports: project job
+costing, cost-centre P&L).
+
+## 2026-11-25 - ERP-0145: fixed assets in the general ledger
+
+**Scope.** Phase C slice 3.
+
+**Design gate.** `docs/database/` read for `inventory.items` (asset columns),
+`inventory.disposals`, `finance.asset_depreciations`, `finance.posting_rules`
+(discriminator check) and the CoA. New logical references:
+`fixed_asset_books.item_id`, `created_by`. Manual grill pass: ownership -
+inventory keeps the physical asset and its valuation (ADR-0024 Q15), finance
+keeps the book, journals and fiscal view; inventory calls finance only to post
+the disposal; tenancy - `organization_id`; soft delete - `deleted_at`; money -
+minor units, rupiah rounding down; status - `active` / `disposed`; one new
+discriminator value `item_kind`. Decision: no `fixed_assets` /
+`asset_categories` tables (the grill's wording) because that would be a second
+register of the same units; capitalization from goods receipts deferred.
+
+**Changes.** Migrations `20261125054928_erp0145_fixed_asset_books` (1 CREATE
+TABLE, 3 intra-module FKs) and `20261125055729_erp0145_item_kind_discriminator`
+(posting-rule check widened). Backend: `utils/depreciation.ts`,
+`FixedAssetBookRepository`, `FixedAssetService` (list, capitalize,
+setFiscalGroup, runMonth, fiscalReport, postDisposal), `FixedAssetController`
+(`/finance/fixed-assets*`), `DepreciationRepository.listForItem`,
+`DisposalService.executeDisposal` posts through finance; roles
+`disposal_receivable`, `asset_disposal_gain`, `asset_disposal_loss`, defaults
+for `fixed_asset` / `accumulated_depreciation`, events
+`finance.asset_capitalized|depreciated|disposed`; seed 1-2390 and 8 item-kind
+rules. Web-admin: `/finance/fixed-assets` (list, capitalize, run, fiscal
+group, fiscal report), nav entry, item-kind discriminator label (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 206 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0145_fixed_asset_books / erp0145_item_kind_discriminator; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # first run failed: item_kind rules violated the discriminator check
+                                              # (fixed by the second migration); then rulesInserted 8
+bun run <temporary asset-smoke script>        # run 1: 6 PASS (capitalize Dr 1-2120 / Cr equity, November run 1,333 Dr
+                                              # 6-2500 / Cr 1-2220, rerun posts nothing, item valuation moved, fiscal
+                                              # report) then the disposal was refused - no December 2026 period - and
+                                              # rolled back; run 2: 2/2 PASS (disposal still approved; re-dated to
+                                              # 2026-11-28, journal Dr 1-1330 25,000 + 1-2220 1,333 + 8-2000 5,667 /
+                                              # Cr 1-2120 32,000, book disposed)
+bun test test/finance/fixed-assets.test.ts    # 7 pass
+bun run test                                  # 7/7 tasks: backend 1565, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 744 routes
+```
+
+The smoke changed the scratch item AST-SEED-002 (vehicle, 24 months) and
+disposed it.
+
+**Not verified.** Capitalization from goods receipts (not built); no browser
+walk-through.
+
+Next executable task: ERP-0146 (project budgets: versioned, actual +
+commitment, warn/block on PO approval, claim submit, project cost entry).
+
+## 2026-11-25 - ERP-0144: employee advances, settlements and employee payments
+
+**Scope.** Phase C slice 2.
+
+**Design gate.** `docs/database/` read for `finance.employee_advances`,
+`expense_settlements`, `expense_settlement_items` (all `status: target`),
+`expense_claims`, `payment.payments`, `payment.payment_allocations` (the
+`payable_type` vocabulary already listed the three employee types) and
+`journal_lines` (no party check). One new logical reference:
+`expense_settlements.payment_id`. Manual grill pass: ownership - finance owns
+the documents, payment owns the money movement and calls finance's
+settlement port; tenancy - `organization_id`; soft delete - `deleted_at`;
+money - minor units, `settled_amount <= amount`, `paid_amount <=
+payable_amount`; status - the DBML vocabularies, no `rejected` on advances
+(rejection cancels). Decisions: settlements only for advances (claims cover
+plain reimbursements); maker-checker on every step; one payment one
+counterpart kind; voiding employee payments refused until a rollback exists;
+new account 1-1340 Uang Muka Karyawan (1-1320 Piutang Karyawan stays for
+payroll deductions).
+
+**Changes.** Migration `20261125053043_erp0144_employee_advances` (3 CREATE
+TABLE, 3 intra-module FKs). Backend: `EmployeeAdvanceRepository`,
+`EmployeeAdvanceService`, `EmployeeAdvanceController` (`/finance/advances*`,
+`/finance/settlements*`), settlement-port `findEmployeePayable` /
+`applyEmployeePayable` and `counterpartRole` on the cash movement, payment
+validation/execution for employee payables, `PaymentAllocationMixedError`,
+`EmployeePaymentVoidError`, `GET /payments?counterpartyType=`, numbering
+`employee_advance` (ADV) and `expense_settlement` (SET), role
+`employee_advance`, event `finance.advance_settled`, seed account 1-1340.
+Web-admin: advances and settlements panel, employee payment dialog, "Pay
+claim" on the claim detail, employee payments table on `/finance/expenses`,
+payment tables send real filters (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 204 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0144_employee_advances; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # inserted 1 account (1-1340), rulesInserted 1
+bun run <temporary advance-smoke script>      # 8/8 PASS: requester cannot approve; partial disbursement refused;
+                                              # payment executes -> disbursed, Dr 1-1340 2,000,000; settlement
+                                              # 1,521,000 (with PPN) offsets the advance, balanced journal, Cr 1-1340
+                                              # party employee; 479,000 received back -> settled, 1-1340 back to its
+                                              # start; claim paid through payment -> paid, Dr 2-1200; mixed refused
+bun test test/finance/employee-advances.test.ts test/finance/ap-flows.test.ts   # 4 + 9 pass
+bun run test                                  # 7/7 tasks: backend 1558, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors (web-admin warnings down to 20: two date initializers fixed)
+bun docs/gen-role-permission.ts               # 739 routes
+```
+
+The first smoke run stopped on insufficient bank balance in the scratch
+database (setup; funded with a cash-in, Rp5,000,000).
+
+**Not verified.** Voiding an employee payment (refused by design); no browser
+walk-through.
+
+Next executable task: ERP-0145 (fixed-asset register, categories, monthly
+depreciation, disposal).
+
+## 2026-11-25 - ERP-0143: bank statement CSV import and auto-match
+
+**Scope.** Phase C slice 1 (owner: "Lanjut Fase C").
+
+**Design gate.** `docs/database/` read for `finance.cash_bank_accounts`,
+`cash_bank_transactions`, `bank_reconciliations`, `bank_reconciliation_items`;
+no new logical reference. Manual grill pass: ownership - all finance; tenancy
+- `organization_id` on every query; soft delete - unchanged; money - minor
+units, statement amounts parsed exactly from Indonesian or English formats;
+status vocabulary - new `direction` (in/out) and `match_method`
+(auto/manual/created) on lines. Decisions: reuse the reconciliation tables
+instead of the `bank_statements` / `bank_statement_lines` named in the grill
+(one structure per statement); the mapping lives on the account as jsonb; the
+reconcile check compares the statement balance with the book balance on the
+statement date (the old "matched lines sum to the statement balance" rule was
+wrong for movement lines; its test was rewritten).
+
+**Changes.** Migration `20261125051738_erp0143_bank_statement` (5 ADD COLUMN,
+2 checks). Backend: `utils/bank-statement.ts` (mapping schema, parser,
+matcher), `BankReconciliationService.setStatementMapping / importStatement /
+autoMatch / createTransaction`, `get` returns the lines, reconcile check;
+repository `listMatchCandidates`, `balanceAsOf`; routes
+`PUT /finance/cash-bank-accounts/:id/statement-mapping`,
+`POST /finance/reconciliations/:id/statement`, `.../auto-match`,
+`.../items/:itemId/transaction`. Web-admin: mapping dialog, statement import,
+auto-match, "book as transaction" per unmatched line, lines read from the
+server (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/validate-dbml.ts            # OK (203 refs, unchanged)
+bun run drizzle:generate --name erp0143_bank_statement; bun run drizzle:migrate   # applied
+bun run <temporary bank-smoke script>         # 8/8 PASS on BANK-MANDIRI: 4 book movements + 1 fee imported
+                                              # (balance footer skipped), re-import skipped 5, auto-match 4/1,
+                                              # reconcile refused while the fee is unmatched, fee booked against a
+                                              # 6-xxxx expense, reconciled with difference 0 on 2026-11-30
+bun test test/finance/bank-statement.test.ts test/finance/reports-reconciliation.test.ts   # 7 + 7 pass
+bun run test                                  # 7/7 tasks: backend 1553, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 725 routes
+```
+
+`docs/database/` updated (docs.dbml: two tables' columns and checks).
+
+**Not verified.** Real bank exports (finance maps each bank's layout); no
+browser walk-through.
+
+Next executable task: ERP-0144 (employee advances and settlements, claim
+payment through `payment`).
+
+## 2026-11-25 - ERP-0142: AR and AP opening detail tied to the control accounts
+
+**Scope.** Phase B slice 7, the last of the owner's 2026-11-25 order.
+
+**Design gate.** `docs/database/` read for `finance.opening_balances`,
+`ar_open_items`, `ap_open_items`, `supplier_bills`, `customer.customers`,
+`supplier.companies` and `logical-references.md` (three new logical
+references on `finance.opening_subledger_items`: `customer_id`,
+`supplier_company_id`, `created_by`). Manual grill pass: ownership - finance
+owns the staging table and the open items, parties are resolved through the
+customer and supplier facades (one new contract method,
+`ExportedCustomerService.findCustomerByCode`); tenancy - `organization_id`;
+soft delete - imports soft-delete the unposted rows they replace; money -
+bigint minor units, `amount > 0`; status - `posted_at` stamp, no new
+vocabulary. Decisions: one staging table for both ledgers; the tie check runs
+when either the detail or the control row is non-zero (a control balance with
+no detail is refused); opening AP becomes approved supplier bills so the
+existing payment flow settles them; opening items post no journal of their
+own; stock and assets are left out (no inventory valuation contract, asset
+register is Phase C).
+
+**Changes.** Migration `20261125021519_erp0142_opening_subledger` (1 CREATE
+TABLE, 3 intra-module FKs). Backend: `OpeningSubledgerRepository`,
+`OpeningSubledgerService` (import, summary, discard, assertTied, materialize),
+`OpeningBalanceService.post` calls the tie check before posting and creates
+the open items inside the opening-journal transaction; `utils/csv.ts`;
+routes `GET /finance/ledger/opening-balances/subledger`,
+`GET .../subledger/template.csv`, `POST .../subledger/import`,
+`POST .../subledger/discard`; errors `accounting.openingSubledger*`.
+Web-admin: "Receivable and payable detail" card on the opening-balance page
+(import, tie status, discard, row errors; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 203 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0142_opening_subledger; bun run drizzle:migrate   # applied
+bun run <temporary opening-smoke script>      # 12/12 PASS: AR/AP import, AP short by Rp200.000 refuses the
+                                              # post with no journal written, re-import ties, post creates 2 AR
+                                              # open items (no invoice) and 2 approved bills + AP open items with
+                                              # no bill journal, detail stamped, re-import after posting refused
+bun test test/finance/opening-subledger.test.ts   # 5 pass
+bun run test                                  # 7/7 tasks: backend 1546, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 721 routes
+```
+
+The smoke inserted one customer (`CUS-OPEN`) and one supplier company
+(`SUP-OPEN`) into the scratch database, which had none.
+
+**Not verified.** Stock and fixed-asset opening detail (not built); collecting
+an opening AR item through a receipt (not wired); no browser walk-through.
+
+Next executable task: Phase B is done except the stock and fixed-asset
+opening detail. Next in ADR-0030 order: ERP-0131 (year-end close) or Phase C
+(ERP-0143 bank statement import); walk the Phase B screens in a browser first.
+
+## 2026-11-25 - ERP-0138 part 2: PPh 21 and BPJS on salary records, payroll journal, payment, BP21
+
+**Scope.** Phase B slice 6b (owner's proposal 4 of 2026-11-25, completed).
+
+**Design gate.** `docs/database/` read for `human_resource.employee_salary_records`,
+`finance.journal_entries` and `logical-references.md` (one new logical
+reference: `employee_salary_records.journal_entry_id`). Manual grill pass:
+ownership - HR computes and owns the amounts, tax owns tables and the BP21
+builder, finance owns the journal through a new facade (`PayrollLedgerService`)
+because `ExportedFinanceService` must stay repository-only (it is read by HR
+while finance reads HR's facade); tenancy - HR is company-wide, the journal
+goes to the approving organization's ledger; money - integer minor units,
+PPh 21 may be negative only on an annual refund (no non-negative check on that
+column, the others are checked); status vocabulary - `tax_method` ter / annual.
+Decisions: the salary period stays the payroll run; recalculation happens on
+every draft write and again at approval; other deductions credit Piutang
+Karyawan (1-1320, new role `employee_receivable`); BP21 refuses missing
+NIK/NPWP and the last tax month (annual slip not built).
+
+**Changes.** Migration `20261125015720_erp0138_payroll_statutory` (9 ADD COLUMN,
+2 checks added, the net-pay check replaced). Backend:
+`utils/payroll-statutory.ts`, `PayrollCalculationService`, SalaryService
+(save / generate / import / recalculate / approve / bp21Xml),
+`PayrollLedgerService.postPayroll`, `TaxLedgerService.payPayroll`,
+`buildBp21Xml`, `ExportedTaxService.bp21Xml`; routes
+`POST /human-resources/salary-records/recalculate`,
+`GET /human-resources/salary-records/bp21.xml`, `POST /finance/payroll/payments`;
+events `payroll.approved`, `payroll.paid`; errors `hr.payroll.*`. Web-admin:
+PPh 21 and BPJS columns, "Recalculate" and "BP21 XML" on `/hr/payroll`,
+"Pay salaries / BPJS" on the cash/bank page (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 200 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0138_payroll_statutory; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # rulesInserted 1 (employee_receivable)
+bun run <temporary payroll-smoke script>      # 9/9 PASS: JP cap and TER missing are refused; with a synthetic
+                                              # 5% TER (1990, soft-deleted after) the draft carries PPh 21 627,240 /
+                                              # BPJS 460,000 + 1,188,800 / net 10,812,760 (rupiah); approval posts
+                                              # a balanced human_resource journal and stamps it; BP21 refuses a
+                                              # missing NIK/NPWP, then builds; the salary payment clears 2-1600
+bun test test/unit/payroll-statutory.test.ts  # 8 pass (hand-computed TER month, December refund, ledger, approval)
+bun run test                                  # 7/7 tasks: backend 1541, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 717 routes
+```
+
+The smoke left an approved 2026-11 salary record, its journal and NPWP/PTKP
+values on the scratch employees (throwaway database).
+
+**Not verified.** BP21 Coretax import (format unverified); the annual BP A1
+slip is not built; no official TER table imported; no browser walk-through.
+
+Next executable task: ERP-0142 (sub-ledger opening balance import).
+
+## 2026-11-25 - ERP-0138 part 1: PPh 21 tables, TER import, employee tax fields, statutory toggles
+
+**Scope.** Phase B slice 6a (owner's proposal 4 of 2026-11-25: build the
+engine and tables, seed PTKP and Pasal 17, never fabricate TER rows).
+
+**Design gate.** `docs/database/` read for the `tax` and `human_resource`
+modules (`taxes`, `employees`, `employee_salary_records`, `settings`) and
+`data-dictionary.md` (global reference data without a tenant column, like
+`location.*`). Manual grill pass (the `grilling` skill is not installed):
+ownership - the statutory tables live in `tax`, HR reads them through
+`ExportedTaxService`; tenancy - global, statutory law is not per tenant; soft
+delete - `deleted_at`, an import soft-deletes the version it replaces;
+money - bigint minor units, rates `numeric(7,4)` strings applied in integer
+arithmetic; dates - `effective_from` business dates, the version in force is
+the latest on or before a date; no new cross-module reference. Decisions:
+missing PTKP status = TK/0 (grill Q30); the existing salary period stays the
+payroll run (a separate `payroll_runs` table is not added); the JP wage cap
+has no default, so payroll with BPJS Ketenagakerjaan on will refuse to run
+until it is entered.
+
+**Changes.** Migration `20261125014130_erp0138_pph21_tables` (3 CREATE TABLE,
+4 ADD COLUMN on `human_resource.employees`, 1 check). Backend:
+`Pph21Repository`, `Pph21TableService` (tables in force, TER CSV import with
+per-row errors), `utils/pph21.ts`, `ExportedTaxService.pph21Tables`,
+`PayrollStatutoryService`; routes `GET /taxes/pph21/tables`,
+`GET /taxes/pph21/ter-rates/template.csv`, `POST /taxes/pph21/ter-rates/import`,
+`GET|PUT /human-resources/payroll-settings/statutory`; seeder
+`seedPph21Statutory` (8 PTKP rows, 5 brackets). Web-admin: `/finance/tax/pph21`
+page (tables + CSV import), "Tax & BPJS" card on the employee form, PPh 21 /
+BPJS card on `/settings/payroll` (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 199 refs across 28 targets (unchanged)
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0138_pph21_tables; bun run drizzle:migrate   # applied
+bun run drizzle:seed; bun run drizzle:seed    # ptkp 8 / brackets 5, then 0 / 0
+bun run <temporary pph21-smoke script>        # 10/10 PASS: seeded tables in force, none before 2024 for PTKP,
+                                              # synthetic 1990 TER import + replace (soft-deleted again after),
+                                              # import without a 0 row rejected, ptkp check, settings round trip
+bun test test/unit/pph21.test.ts              # 10 pass
+bun test test/authorization/tax-authorization.test.ts   # 104 pass (3 new routes)
+bun run test                                  # 7/7 tasks: backend 1533, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 714 routes
+```
+
+**Not verified.** No browser walk-through; no official TER table imported
+(finance owns that step).
+
+Next executable task: ERP-0138 part 2 (PPh 21 and BPJS on salary records,
+payroll journal on approval, payroll payment, BP21 export).
+
+## 2026-11-25 - ERP-0140: PPh withholding at payment, PPN settlement, tax payments, Coretax XML
+
+**Scope.** Phase B slice 5 (owner's proposals 1-3 of 2026-11-25).
+
+**Design gate.** `docs/database/` read for `payment.payments`,
+`tax.withholding_tax_records`, `tax.taxes`, `sale.invoices` and
+`logical-references.md` (one new logical reference:
+`payment.payments.withholding_tax_id`). Decisions: withholding happens at
+payment, not at bill (the bill stays gross, AP settles in full); PPN figures
+come from the GL, not the tax working papers; Coretax files are built from the
+DJP template as understood and flagged unverified.
+
+**Changes.** Schema (migration `20261125011648_erp0140_tax_postings`):
+`payment.payments.withholding_tax_id` / `withholding_amount` (check
+`>= 0 AND < amount`) / `tax_object_code`; `tax.withholding_tax_records`
+`tax_object_code`, `withholding_slip_number`, `counterparty_tax_id`,
+`source_module`, `source_id`, `coretax_status`. Backend: payment create
+validates the withholding (`payment.withholdingInvalid`), execute posts
+`payment.withholding_recorded` and records the withholding through
+`ExportedTaxService`; void reverses both; `TaxLedgerService.settlePpn`
+/ `payTax`; `CoretaxExportService` + `coretax-xml.ts`; routes
+`POST /finance/tax/ppn-settlements`, `POST /finance/tax/payments`,
+`GET /taxes/coretax/{faktur,bupot}.xml`, `PATCH /taxes/withholdings/:id/coretax`.
+Roles `wht_payable`, `vat_payable`, `vat_overpaid`, `pph25_payable`; seed
+accounts 1-1830 PPN Lebih Bayar, 2-1460 Utang PPN; rule `tax=PPH4_2 -> 2-1440`.
+Web-admin: "Setor pajak" dialog (cash/bank), "Tutup PPN masa" (closing), Coretax
+downloads + bukti-potong dialog on withholdings (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 199 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0140_tax_postings; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # inserted 2 accounts, rulesInserted 5
+bun run <temporary tax-smoke script>          # 7/7 PASS (second run): PPN 2026-11 output 99099 / input 11 ->
+                                              # Utang PPN 99088, repeat returns the same journal, payment clears
+                                              # 2-1460, zero payment rejected, faktur XML lists 1 invoice, bupot builds
+bun test test/finance/ap-flows.test.ts test/finance/tax-postings.test.ts   # pass
+bun run test                                  # 7/7 tasks: backend 1511, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors (21 pre-existing warnings)
+bun docs/gen-role-permission.ts               # 709 routes
+```
+
+`test/authorization/tax-authorization.test.ts` covers the three new tax routes
+(401/403) and stubs `CORETAX_EXPORT_SERVICE_TOKEN`; the first full run failed
+there on the unregistered token.
+
+The first smoke run failed twice: a repeat settlement reported zeros (its own
+journal had zeroed the activity; fixed: it returns the posted journal) and the
+scratch bank account had no balance (smoke setup; funded with a cash-in).
+
+**Not verified.** Coretax import of either XML (format unverified); the
+withholding-at-payment flow on a database (no disbursement form or seeded
+supplier bill); no browser walk-through. `docs/database/` updated (docs.dbml +
+logical-references.md).
+
+Next executable task: ERP-0138 (payroll runs, PPh 21 TER engine with imported
+TER tables, BPJS, payroll journal, BP21 export).
+
+## 2026-11-25 - ERP-0141: project-tagged invoices and project costs in the GL
+
+**Scope.** Phase B slice 4 (grill Q32/Q39/Q42).
+
+**Design gate.** `docs/database/` read for `sale.invoices`, `project.costs`,
+`project.projects` and `logical-references.md` (two new logical references:
+`sale.invoices.project_id`, `project.costs.journal_entry_id`). Decisions:
+stamp the project at issue (projects can be created after an invoice draft);
+`payment_source` (employee_claim / petty_cash / bank, default employee_claim
+for existing rows) decides the credit side; the duplicate check is a UI
+warning on `reference`, not a server refusal.
+
+**Changes.** Schema: `sale.invoices.project_id`, `project.costs.payment_source`
+/ `reference` / `journal_entry_id`, journal `source_module` + `project`
+(migration `20261125002439_erp0141_project_postings`: 4 ADD COLUMN, 1 check
+added, 1 replaced). Backend: invoice issue stamps the live project and tags
+revenue/advance/deferral lines; `ProjectService.addCost/voidCost` post and
+reverse in one transaction; role `cash_payment` (seed: default 1-1120, cash
+-> 1-1110), event `project.cost_recorded`. Web-admin: cost form "paid by" +
+reference + duplicate warning + ledger hint (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 198 refs across 27 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0141_project_postings; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # rulesInserted 2 (cash_payment default + cash)
+bun run <temporary project-smoke script>      # 3/3 PASS: source module project accepted; Dr 5-1200 / Cr 2-1200,
+                                              # Cr 1-1110 (petty cash), Cr 1-1120 (bank)
+bun test test/unit/project.service.test.ts test/finance/ar-postings.test.ts   # 8 + 10 pass
+bun run test                                  # 7/7: backend 1491, web-admin 209, locales 106, portal 68, landing 25, email 6
+```
+
+**Not verified.** Invoice project stamping on a database (no seeded orders or
+projects); no browser walk-through.
+
+Next executable task: ERP-0140 (tax postings, withholding slip data, Coretax
+XML export).
+
+## 2026-11-25 - ERP-0139: receipts post to the ledger, gateway clearing and settlement
+
+**Scope.** Phase B slice 3 (M09 plan "gateway accounting split", grill Q45).
+
+**Design gate.** `docs/database/` read for `sale` (receipts, invoices),
+`payment` (payments, allocations), `finance` (posting_rules, cash/bank).
+Finding: a sale receipt (kuitansi) only raised `sale.invoices.paid_total`;
+it wrote no journal and did not touch `finance.ar_open_items`, so the GL
+receivable was never cleared on the receipt path - and the gateway callback
+records its payment as such a receipt. Second finding: receipts recomputed
+`outstanding = grand_total - paid_total`, which undoes a credit memo
+(ERP-0135). Both are fixed here. Decisions: the cash account of a receipt
+comes from posting rules discriminated by the receipt method (no new column
+or form field); the settlement is recorded by finance from the provider's
+payout figures (no report import yet).
+
+**Changes.** Schema: `posting_rules` discriminator vocabulary + `payment_method`
+(migration `20261125001655_erp0139_receipts_gateway`, 1 check replaced).
+Backend: `sale/services/receipt-ledger.service.ts` (receipt journal +
+open item, reversal), `InvoiceService.addReceipt/reverseReceipt` now run in one
+transaction with it, the gateway's `InvoicePaymentPortService.addReceipt`
+posts in the callback transaction, repository outstanding math and
+`receiptStatus`, `IArLedgerPort.applyReceipt`, `GatewaySettlementService` +
+`POST /finance/gateway-settlements`, role `cash_receipt`, events
+`sale.receipt_posted` / `payment.gateway_settled`, seed rule cash -> 1-1110.
+Web-admin: gateway settlement dialog on `/finance/cash-bank`, posting-rule
+labels, en/id.
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/validate-dbml.ts                  # OK
+bun run drizzle:generate --name erp0139_receipts_gateway; bun run drizzle:migrate   # applied
+bun run drizzle:seed                                # rulesInserted 2 (cash_receipt default + cash), then 0
+bun run <temporary receipt-smoke script>            # 8/8 PASS: cash receipt Dr 1-1110 / Cr 1-1310; open item and invoice
+                                                    # 600 000 open after a 110 000 credit + 400 000 receipt; reversal restores
+                                                    # both; gateway receipt Dr 1-1250; invoice paid; settlement Dr 1-1120 995 000
+                                                    # / Cr 1-1250 and fee Dr 6-3200 5 000 / Cr 1-1250
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run test                                        # 7/7: backend 1489, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun docs/gen-role-permission.ts                     # 704 routes written
+```
+
+`docs/database/` updated (`docs.dbml` posting_rules check).
+
+**Not verified.** No browser walk-through; the payment-gateway callback
+itself was not replayed (the smoke called its receipt port in a transaction).
+
+Next executable task: ERP-0141 (`sale.invoices.project_id`, manual project
+costs posted to the GL).
+
+## 2026-11-25 - ERP-0136/0137: GR/IR, purchase price variance, COGS, stock adjustment journals
+
+**Scope.** Phase B slice 2 (grill Q24/Q25/Q26/Q40).
+
+**Design gate.** `docs/database/` read for `procurement` (goods_receipts,
+purchase_returns), `finance` (supplier_bill_items), `sale` (delivery notes,
+returns), `inventory` (adjustments). Facts that shaped it: every goods
+receipt line has a product and is valued at the ex-VAT order price; bills are
+already capped at received-minus-billed (the 3-way match of Q25 existed);
+delivery notes issue stock on `shipped` with the moving-average cost on the
+line; sales returns come back at the delivery cost; a sale order's project is
+found through `PROJECT_LOOKUP_SERVICE_TOKEN.liveProjectOfOrder`.
+
+**Changes.** Schema: `finance.supplier_bill_items.grir_amount`,
+`procurement.purchase_returns.journal_entry_id` (logical reference). Migration
+`20261124214438_erp0136_grir_cogs` (2 ADD COLUMN). A first generate put the
+procurement column on `purchase_requests` (wrong table matched by the edit
+script); that folder was never committed, was deleted, the schema fixed, the
+migration regenerated and the scratch DB rebuilt with `drizzle:migrate-reset`.
+Backend: goods receipt, purchase return, delivery note, sales return and stock
+adjustment post through `postBusinessEvent`; supplier bill clears GR/IR with
+PPV; billable PO lines carry `receivedUnitCost`; new role `project_cogs`
+(5-1200) and five event types; `finance/utils/inventory-value.ts`. Web-admin:
+posting-rule labels for the new role/events (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts; bun docs/database/validate-dbml.ts   # OK
+bun run drizzle:generate --name erp0136_grir_cogs; bun run drizzle:migrate-reset   # migrated + seeded
+bun run drizzle:seed                         # rulesInserted 1 (project_cogs), 0 else
+bun run <temporary stock-smoke script>       # 7/7 PASS: stock adjustment create -> submit -> approve -> post gives
+                                             # Dr 1-1410 1 000 000 / Cr 5-1400; goods_received, purchase_returned,
+                                             # supplier_bill_recorded (with PPV), delivery_shipped (cogs and project_cogs),
+                                             # return_received resolve to 1-1410 / 2-1150 / 5-1300 / 1-1810 / 2-1100 / 5-1100 / 5-1200
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+bun run test                                 # 7/7: backend 1482, web-admin 209, locales 106, portal 68, landing 25, email 6
+```
+
+**Not verified.** PO -> goods receipt -> bill and order -> delivery note ->
+return were not run end to end on a database: the seed has no suppliers,
+purchase orders or sale orders. The services' own unit tests construct them
+without the posting dependency (optional injection), so their journals are
+covered by the rule-resolution smoke and the PPV test, not by an end-to-end run.
+
+Next executable task: ERP-0139 (payment gateway clearing and settlement fees).
+
+## 2026-11-25 - ERP-0135: AR postings (Phase B slice 1, ADR-0030 accepted)
+
+**Scope.** The owner ordered Phase B and confirmed that this is the owner's
+approval of ADR-0030 (ADR status -> accepted; module plans now say the ADR
+wins). Phase B runs in order 0135 -> 0136/0137 -> 0139 -> 0141 -> 0140 ->
+0138 -> 0142, one commit per slice. This entry is slice 1 (AR).
+
+**Design gate.** `docs/database/` read for `sale` (invoices, invoice_items,
+returns) and `finance` (ar_open_items, credit_memos target). Decisions are the
+grill answers Q27/Q28/Q47/Q56/Q57 plus three facts found in the code:
+(1) order invoices are single-line terms without a product, so per-category
+revenue only applies to line-item invoices (API); (2) `sale.returns` are
+replacements whose DBML note says "no credit memo", so the credit memo is a
+finance document issued from the invoice (deviation from Q56, recorded in
+`finance.md`); (3) the payment module computes `outstanding = original - paid`,
+so adjustments lower `original_amount` and are tracked in a new
+`adjusted_amount` instead of touching payment.
+
+**Changes.** Schema (`docs.dbml` first): `sale.invoice_items.service_period_*`,
+`sale.invoices` + `finance.ar_open_items` status `written_off`, AR open item
+`adjusted_amount` + write-off columns, `finance.credit_memos` built (+
+`tax_amount`, `journal_entry_id`, `created_by`), new
+`finance.deferred_revenue_schedules`. Migration
+`20261124212044_erp0135_ar_postings` (inspected: 2 CREATE TABLE, 9 ADD COLUMN,
+checks/indexes/FKs). Backend: `sale/utils/invoice-posting.ts` (pure builder),
+invoice issue through `postBusinessEvent` + schedules, void cancels schedules
+and refuses an invoice with an applied credit memo, `DeferredRevenueService`
+(port for sale, monthly run), `ReceivableAdjustmentService` (credit memo,
+write-off), lock gate for pending amortisation, product snapshot gains
+`productCategoryId`, code type `credit_memo` (`CN`), permissions
+`credit_memo:*`, `ar_write_off:read/request/approve`, routes
+`/finance/credit-memos*`, `/finance/ar/write-offs`,
+`/finance/ar/:invoiceId/write-off/{request,cancel,approve}`,
+`/finance/deferred-revenue{,/run}`. Web-admin: credit memo / write-off card
+on the invoice page, pending write-offs on `/finance/receivables`,
+amortisation button on `/finance/closing`, `written_off` labels, en/id.
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 195 refs across 26 targets, 160 intra-module
+bun docs/database/validate-dbml.ts            # OK (199 tables, 0 drift)
+bun run drizzle:generate --name erp0135_ar_postings; bun run drizzle:migrate   # applied to the scratch DB
+bun run <temporary ar-smoke script>           # 11/11 PASS: invoice journal (1-1310 / 4-1100 / 2-1500 / 2-1410), product
+                                              # dimension, schedule opened, November amortises 100 000 once (re-run 0),
+                                              # credit memo lowers open item + invoice, void refused with an applied memo,
+                                              # write-off maker-checker, void cancels schedule, lock refused while pending
+cd packages/common && bun run build           # new permissions
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json         # exit 0
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run test                                  # 7/7: backend 1481, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun docs/gen-role-permission.ts               # 703 routes written
+```
+
+**docs/database/** updated (`docs.dbml`, `logical-references.md`,
+`module-ownership.md`: finance 30 tables / 27 refs, totals 199 / 160).
+
+**Not verified / open.** No browser walk-through. Service periods and
+per-category revenue are API-only (no line-item invoice editor). Credit
+allocation to another invoice and refunds are not built.
+
+Next executable task: ERP-0136/0137 (GR/IR on goods receipt, bill clears
+GR/IR with PPV and a 3-way match, COGS at delivery-note `shipped`, stock
+adjustment journals).
+
+## 2026-11-25 - ERP-0126..ERP-0134: ERP-grade finance design (ADR-0030) + Phase A GL foundation
+
+**Scope.** User request: make finance an ERP-grade accounting module (CoA, GL
+as single source of truth, journals, AR/AP, cash & bank, period close, budget,
+expense, tax, cost accounting, fixed assets, bank reconciliation, statements,
+forecast, profitability, ratios, management reports), every operational module
+posting through one standard mechanism. Delivered: the full A-D design
+(ADR-0030 + `docs/architecture/modules/finance.md`), backlog ERP-0126..0153,
+and Phase A (GL foundation). Phases B-D are `planned`.
+
+**Design gate.** Grill-me session 2026-11-25, rounds 1-4 (Q1-Q59), answers
+recorded in `finance.md` and ADR-0030; checked against
+`docs/plan/erp-plan-id.md` v5.1 and `docs/plan/erp-module-plans/m05,m06,m08,
+m09,m10,m11` - the lifted v5.1 limits are listed in ADR-0030 and flagged in
+each module plan; the owner must record the scope change before B-D leave
+`planned`. `docs/database/` read: `docs.dbml` (finance, tax, payment, sale,
+procurement, inventory, human_resource, project modules),
+`module-ownership.md`, `integrity-and-consistency.md`, `data-dictionary.md`,
+`logical-references.md` (new `journal_lines.product_id` reference);
+`implementation-phases.md` skipped (history only). Key answers: posting is a
+synchronous call in the caller's transaction (existing D9) with source modules
+naming roles, not accounts; IDR only; SAK EP accrual; moving average;
+maker-checker on manual journals; `closed` = soft close (finance adjusting
+entries only), `locked` = hard close; GR/IR (Phase B); PPh 21 TER + BPJS behind
+toggles (Phase B); Coretax XML export, no DJP API (Phase B); POS replaced by
+the sales flow; M11 out of scope.
+
+**Gate failure found and fixed (step 0).** `bun run drizzle:migrate` on an
+empty local database failed: `snapshot.json is not of the latest version,
+please run "drizzle-kit up"` (cause: the merged dependabot bump drizzle-kit
+rc.5 -> rc.6). `bunx --bun drizzle-kit up` rewrote the 21 `snapshot.json`
+files (`"version": "9"` -> `"10"`, `concurrently` key dropped); no
+`migration.sql` changed. Then migrate succeeded and `drizzle:seed` ran twice
+with identical row counts (176 tables, 92 333 rows) - this also closes the
+2026-11-25 "verify the COA seed" task (the old duplicate-folder note was stale:
+the 2026-11-24 re-squash removed it).
+
+**Phase A changes.**
+- Schema (`docs.dbml` first, then Drizzle): new `finance.cost_centers`,
+  `finance.posting_rules`; `journal_entries.code` nullable for drafts
+  (`code IS NOT NULL OR status IN (draft, submitted, approved, void)`),
+  `event_type`, `is_adjusting`, `reverses_entry_id`; `journal_lines.cost_center_id`
+  is now an FK to `cost_centers`, new `product_id` (logical reference),
+  `line_no` unique only among live lines; `currency_code = 'IDR'` check on
+  every finance money table. Migration
+  `20261124201506_erp0127_finance_gl_foundation` (inspected: 2 CREATE TABLE,
+  4 ADD COLUMN, 1 DROP NOT NULL, index/FK/check additions only).
+- Backend `finance`: `PostingRuleService` + `pickPostingRule` (event+disc >
+  event > `*`+disc > `*`), `PostingService.postBusinessEvent`,
+  `ArAccountResolverService` now delegates to rules (call sites unchanged;
+  `constants/ar-posting.ts` deleted), `ManualJournalService` (draft, update,
+  submit, approve = post with maker-checker, reject with reason, void,
+  reverse with reason), reversal dating (next open period when the original
+  is closed), period rules (soft close / hard lock + lock gate), CoA locking
+  (postable flag frozen once posted; deactivate only at zero balance, no active
+  rule, not system), `CostCenterService`, trial balance + general ledger in
+  `ReportService`, audit writes for every transition (`FINANCE_AUDIT_WRITER_TOKEN`).
+  New routes: `/finance/cost-centers*`, `/finance/posting-rules*`,
+  `/finance/ledger/journal/:id/{submit,approve,reject,void}`, `PATCH
+  /finance/ledger/journal/:id`, `/finance/reports/{trial-balance,general-ledger}`;
+  `POST /finance/ledger/journal` now creates a draft (`journal:create`).
+- **Bug fixed:** every ledger query summed `status = 'posted'` only, so after a
+  reversal the original (now `reversed`) dropped out and the mirror stayed:
+  reports showed the negated amount instead of zero. Ledger queries now sum
+  `posted` and `reversed` (`LEDGER_JOURNAL_STATUSES`).
+- Permissions (`packages/common`): `posting_rule: read, update`,
+  `cost_center: read, create, update, archive` (accountant full, finance and
+  auditor read, owner blanket). `docs/role-permission.md` regenerated.
+- Seed: 94-account `X-XXXX` CoA (SAK EP layout, headers + leaves), 25 `*`
+  posting rules, 3 cost centres; cash/bank links moved to `1-1110/1-1120/1-1130`.
+  Existing local databases built from the old 22-account seed keep their rows
+  (the seeder never overwrites); rebuild them with `drizzle:migrate-reset`.
+- Web-admin: journal page reworked (draft form with adjusting flag and cost
+  centre per line, status filter, submit/approve/reject/void/reverse with a
+  reason dialog), new `/finance/posting-rules` and `/finance/cost-centers`,
+  trial balance + general ledger tabs on `/finance/reports`, nav items, en/id
+  locales (finance, nav, api). `routeTree.gen.ts` regenerated by `vite build`.
+
+**Commands and outcomes (worktree, local scratch database `ims_finance_scratch`,
+dropped and recreated for this work).**
+
+```text
+bunx --bun drizzle-kit up                      # 21 snapshots upgraded, "Everything's fine"
+bun run drizzle:migrate                        # migrations applied successfully
+bun run drizzle:seed (x2)                      # identical row counts (176 tables)
+bun run drizzle:generate --name erp0127_finance_gl_foundation   # SQL inspected
+bun run drizzle:migrate                        # applied
+bun docs/database/gen-logical-references.ts    # 192 refs across 25 targets, 157 intra-module
+bun docs/database/validate-dbml.ts             # OK: 198 tables, 0 cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity drift
+bun run drizzle:migrate-reset; bun run drizzle:seed   # COA 94 / rules 25 / cost centres 3, then 0/0/0; row counts identical (178 tables)
+bun run <temporary gl-smoke script>            # 15/15 PASS against Postgres (rule resolution, reversal nets to zero in TB and P&L,
+                                               # maker-checker, soft close refuses system posting, adjusting entry posts,
+                                               # lock gate, reversal lands 2026-11-01, TB ties, GL running balance, audit rows)
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+cd packages/common && bun run build            # dist refreshed for the new permissions
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run lint                                   # 0 errors (warnings pre-existing)
+bun run test                                   # 7/7 tasks: backend 1472, web-admin 209, locales 106, web-customer-portal 68, web-landing 25, react-email 6
+bun docs/gen-role-permission.ts                # 693 routes written
+```
+
+New tests: `apps/backend/test/finance/gl-foundation.test.ts` (19). Updated:
+four flow test files use `test/finance/posting-rules.fixture.ts` (fixtures
+map roles to the codes they already seed), `dashboard-aggregates.test.ts`
+stubs the new manual-journal token.
+
+**docs/database/** updated: `docs.dbml`, `logical-references.md`
+(regenerated), `module-ownership.md` (finance 29 tables / 24 refs, totals
+198 / 157). AGENTS.md and `docs/architecture/README.md` table counts follow.
+
+**Not verified.** No browser walk-through of the new and changed pages. The
+DB smoke ran against services wired from the real container, not over HTTP.
+
+Next executable task: walk `/finance/journal` (draft -> submit -> approve as a
+second user -> reverse), `/finance/posting-rules`, `/finance/cost-centers` and
+the trial-balance / general-ledger tabs in the browser on a freshly reset local
+database; then get the owner's decision on ADR-0030 before starting Phase B
+(ERP-0131 year-end close is inside the v5.1 baseline and can go first).
+## 2026-11-25 - ERP-0158: document files named after the document
 
 **Request.** An uploaded or generated file must be named after its document,
 e.g. `perjanjian_kerja_pertiwi_jamalia_25_11_2026.pdf`, instead of whatever the
@@ -96,7 +1165,7 @@ time into the existing `document.files.file_name`), so `docs.dbml` is unchanged.
 No route, guard or role grant changed, so `docs/role-permission.md` needs no
 regeneration.
 
-## 2026-11-25 - ERP-0129: document registry as a card grid + full-page viewer
+## 2026-11-25 - ERP-0157: document registry as a card grid + full-page viewer
 
 **Request.** `/documents/files` was a table. Make each registry document a
 card whose image is the first page of the document (or a document icon), and
@@ -229,7 +1298,7 @@ presigned URL, not a stored column), so `docs.dbml` is unchanged. No route,
 guard or role grant changed, so `docs/role-permission.md` needs no
 regeneration.
 
-## 2026-11-25 - ERP-0128: sidebar section order and Subscription inside Projects
+## 2026-11-25 - ERP-0156: sidebar section order and Subscription inside Projects
 
 **Request.** Reorder the sidebar sections to Dashboard, CRM & Sales, Finance,
 Projects, Inventory, Human Resource, Documents, Reports, Integrations,
@@ -276,7 +1345,7 @@ the Reports label.
 logical reference or status vocabulary changed. No route, guard or role grant
 changed, so `docs/role-permission.md` needs no regeneration.
 
-## 2026-11-25 - ERP-0127: asset categories create/edit dialog
+## 2026-11-25 - ERP-0155: asset categories create/edit dialog
 
 **Request.** `/assets/categories` only had two bare inline inputs that created a
 category with a hardcoded `equipment` / `straight_line` default and no way to
@@ -322,7 +1391,7 @@ logical reference or status vocabulary changed, so `docs.dbml` is unchanged. No
 route, guard or role grant changed, so `docs/role-permission.md` needs no
 regeneration.
 
-## 2026-11-25 - ERP-0126: sidebar nav audit (drop Notifications, add orphan-page menus, un-hide four items)
+## 2026-11-25 - ERP-0154: sidebar nav audit (drop Notifications, add orphan-page menus, un-hide four items)
 
 **Request.** Audit `apps/web-admin/src/components/sidebar/nav-config.ts`
 against `docs/` and the route tree, then: remove the Notifications item, add

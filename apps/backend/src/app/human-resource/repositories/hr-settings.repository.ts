@@ -25,7 +25,7 @@ export class HrSettingsRepository implements IHrSettingsRepository {
 		return row ?? null;
 	}
 
-	async upsert(group: string, key: string, value: string | null, valueType: 'number' | 'string', updatedBy: string | null) {
+	async upsert(group: string, key: string, value: string | null, valueType: 'number' | 'string' | 'boolean', updatedBy: string | null) {
 		const now = new Date();
 		await this.database
 			.insert(humanResourceSettings)

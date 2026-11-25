@@ -1,3 +1,4 @@
+import { exVatUnitCost } from '@app/inventory/utils/moving-average';
 import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import type { ProductService } from '@app/product/services/product.service';
 import type { PoVatMode, PurchaseOrderStatus } from '@drizzle/schemas/procurement.schema';
@@ -27,8 +28,10 @@ export type TBillableOrder = {
 		unit: string;
 		unitPrice: number;
 		quantityReceived: string;
-		/** Stock-tracked item: the bill line debits inventory. */
+		/** Stock-tracked item: the bill line clears GR/IR. */
 		isStock: boolean;
+		/** Ex-VAT unit cost the goods receipts valued these units at (ERP-0136). */
+		receivedUnitCost: number;
 	}[];
 };
 
@@ -82,6 +85,7 @@ export class PurchaseBillingService {
 					unit: line.unit,
 					unitPrice: line.unitPrice,
 					quantityReceived: line.quantityReceived,
+					receivedUnitCost: exVatUnitCost(line.unitPrice, order.vatMode === 'included', order.vatRateBps),
 					isStock: line.productId
 						? ((await this.items.getProduct(line.productId).catch(() => null))?.isStockTracked ?? false)
 						: false,

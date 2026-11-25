@@ -136,6 +136,7 @@ function productSnapshot(productId: string): TProductSnapshot {
 		isActive: true,
 		isSerialized: true,
 		isStockTracked: true,
+		productCategoryId: null,
 	};
 }
 

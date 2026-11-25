@@ -1,3 +1,4 @@
+import { ReceiptLedgerService } from './services/receipt-ledger.service';
 import { InvoiceBillingService } from './services/invoice-billing.service';
 import { InvoicePaymentPortService } from './services/invoice-payment.port.service';
 import { ExportedInvoiceService } from './services/exported-invoice.service';
@@ -42,6 +43,7 @@ import {
 	INVOICE_SERVICE_TOKEN,
 	INVOICE_BILLING_SERVICE_TOKEN,
 	INVOICE_PAYMENT_PORT_TOKEN,
+	RECEIPT_LEDGER_SERVICE_TOKEN,
 	EXPORTED_INVOICE_SERVICE_TOKEN,
 } from './constants/ar-di';
 
@@ -74,6 +76,7 @@ export function registerSales(container: DependencyContainer): void {
 	container.register(INVOICE_BILLING_SERVICE_TOKEN, { useClass: InvoiceBillingService });
 	// ADR-0023: the payment module records online receipts through this port.
 	container.register(INVOICE_PAYMENT_PORT_TOKEN, { useClass: InvoicePaymentPortService });
+	container.register(RECEIPT_LEDGER_SERVICE_TOKEN, { useClass: ReceiptLedgerService });
 	// Consumed by Accounting: never let another module read sales.invoices directly.
 	container.register(EXPORTED_INVOICE_SERVICE_TOKEN, { useClass: ExportedInvoiceService });
 	container.register(INVOICE_LOOKUP_SERVICE_TOKEN, {

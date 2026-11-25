@@ -46,6 +46,15 @@ Uses the existing `tax` resource in `packages/common/src/authorization/erp-permi
 `tax:export` reserved for CSV/XLSX (phases 2 and 3, not built). The older
 `tax.configuration.*` names are retired.
 
+## PPh 21 tables (ERP-0138)
+
+`pph21_ptkp`, `pph21_ter_rates`, `pph21_brackets` are global statutory
+reference data (no tenant column). PTKP and Pasal 17 are seeded; TER rows are
+imported by finance from the official PP 58/2023 table
+(`/taxes/pph21/ter-rates/import`, `tax:update`) and never seeded. The engine is
+`utils/pph21.ts`; HR reads the tables through `ExportedTaxService.pph21Tables`.
+Page: `/finance/tax/pph21`.
+
 ## Not built yet
 
 - Web UI in `apps/web-admin` (en + id).

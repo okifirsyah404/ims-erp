@@ -1,3 +1,5 @@
+import { FIXED_ASSET_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { FixedAssetService } from '@app/finance/services/fixed-asset.service';
 import type { TDisposalSelect, TItemSelect } from '@drizzle/schemas/inventory.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
@@ -44,6 +46,9 @@ export class DisposalService {
 		private readonly audit: AuditWriter,
 		@inject(TRANSACTION_RUNNER_TOKEN)
 		private readonly transactions: ITransactionRunner,
+		/** ERP-0145: the disposal journal of a capitalized asset; optional for older tests. */
+		@inject(FIXED_ASSET_SERVICE_TOKEN)
+		private readonly fixedAssets?: Pick<FixedAssetService, 'postDisposal'>,
 	) {}
 
 	/** Raises a disposal in `draft`. */
@@ -133,6 +138,18 @@ export class DisposalService {
 				tx,
 			);
 			if (!claimed) throw new ItemRuleViolationError('disposal_already_executed');
+			await this.fixedAssets?.postDisposal(tx, {
+				organizationId,
+				actorUserId: actor.userId,
+				itemId: item.id,
+				itemCode: item.code,
+				itemKind: item.itemKind,
+				disposalId,
+				disposalDate: disposal.disposalDate ?? new Date().toISOString().slice(0, 10),
+				acquisitionCost: item.acquisitionCost,
+				accumulatedDepreciation: item.accumulatedDepreciation,
+				proceeds: disposal.proceedsAmount,
+			});
 			await this.itemRepository.update(disposal.itemId, { status: 'disposed', bookValue: 0 }, tx);
 			// Soft delete the unit; the disposal row is the financial proof.
 			await this.itemRepository.archive(disposal.itemId, tx);

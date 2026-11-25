@@ -32,6 +32,7 @@ import {
 	type TExpenseClaimDetail,
 } from '@/lib/finance-api';
 import { employeePickerQueryOptions, type TEmployeePickerRow } from '@/lib/hr-api';
+import { ProjectSelect } from './project-select';
 import { getActiveOrganizationId } from '@/lib/organization-store';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -82,6 +83,7 @@ function ExpenseFormBody(props: {
 
 	const [employeeId, setEmployeeId] = useState(claim?.employeeId ?? '');
 	const [claimDate, setClaimDate] = useState(claim?.claimDate ?? today());
+	const [projectId, setProjectId] = useState<string | null>(claim?.projectId ?? null);
 	const [notes, setNotes] = useState(claim?.notes ?? '');
 	const [lines, setLines] = useState<TLineDraft[]>(() =>
 		claim && claim.items.length > 0
@@ -135,6 +137,7 @@ function ExpenseFormBody(props: {
 				}));
 			const payload = {
 				employeeId,
+				projectId,
 				claimDate,
 				notes: notes.trim() === '' ? null : notes.trim(),
 				items,
@@ -186,6 +189,9 @@ function ExpenseFormBody(props: {
 					</SelectContent>
 				</Select>
 				<DatePicker value={claimDate} onChange={setClaimDate} />
+				<div className='sm:col-span-2'>
+					<ProjectSelect value={projectId} onChange={setProjectId} />
+				</div>
 			</div>
 
 			<Input

@@ -102,6 +102,33 @@ export const AUDIT_ACTIONS = [
 	'asset.tool_set_created',
 	'asset.tool_set_updated',
 	'asset.tool_set_archived',
+	// --- finance GL foundation (ERP-0127..0130, ADR-0030) ---
+	'journal.drafted',
+	'journal.updated',
+	'journal.submitted',
+	'journal.approved',
+	'journal.rejected',
+	'journal.voided',
+	'journal.reversed',
+	'accounting_period.closed',
+	'accounting_period.locked',
+	'accounting_period.reopened',
+	'chart_of_account.created',
+	'chart_of_account.updated',
+	'chart_of_account.archived',
+	'posting_rule.created',
+	'posting_rule.updated',
+	'posting_rule.archived',
+	'cost_center.created',
+	'cost_center.updated',
+	'cost_center.archived',
+	// --- receivables (ERP-0135) ---
+	'credit_memo.created',
+	'credit_memo.applied',
+	'credit_memo.voided',
+	'receivable.write_off_requested',
+	'receivable.write_off_cancelled',
+	'receivable.write_off_approved',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

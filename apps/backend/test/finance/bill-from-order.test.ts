@@ -1,7 +1,7 @@
 /**
  * Supplier bills from a purchase order (ERP-0012): lines at the order price
  * and VAT, never more than received minus what live bills hold, and
- * recording debits inventory for stock lines and expense for the rest.
+ * recording clears GR/IR for stock lines (ERP-0136) and debits expense for the rest.
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type { TSupplierBillItemSelect, TSupplierBillSelect } from '@drizzle/schemas/finance.schema';
@@ -17,7 +17,7 @@ const ctx = { organizationId: 'org-1', actorUserId: 'finance-1' };
 let order: TBillableOrder;
 let bills: Map<string, TSupplierBillSelect>;
 let items: TSupplierBillItemSelect[];
-let posted: { accountId: string; debit: number; credit: number }[];
+let posted: { role: string; debit: number; credit: number }[];
 let events: { topic: string; data: Record<string, unknown>; dedupeKey?: string }[];
 let openBills: TSupplierBillSelect[];
 let service: SupplierBillService;
@@ -34,8 +34,8 @@ beforeEach(() => {
 		vatMode: 'added',
 		vatRateBps: 1100,
 		lines: [
-			{ id: READER, productId: 'item-reader', sku: 'RDR', name: 'Reader', unit: 'pcs', unitPrice: 1_000_000_00, quantityReceived: '3.000', isStock: true },
-			{ id: INSTALL, productId: 'item-install', sku: 'JS', name: 'Instalasi', unit: 'ls', unitPrice: 500_000_00, quantityReceived: '1.000', isStock: false },
+			{ id: READER, productId: 'item-reader', sku: 'RDR', name: 'Reader', unit: 'pcs', unitPrice: 1_000_000_00, quantityReceived: '3.000', isStock: true, receivedUnitCost: 1_000_000_00 },
+			{ id: INSTALL, productId: 'item-install', sku: 'JS', name: 'Instalasi', unit: 'ls', unitPrice: 500_000_00, quantityReceived: '1.000', isStock: false, receivedUnitCost: 0 },
 		],
 	};
 	bills = new Map();
@@ -85,8 +85,9 @@ beforeEach(() => {
 		repo as never,
 		repo as never,
 		{
-			post: async (_tx: unknown, entry: { lines: { accountId: string; debit: number; credit: number }[] }) => {
-				posted.push(...entry.lines);
+			postBusinessEvent: async (_tx: unknown, entry: { lines: { role: string; debit: number; credit: number }[] }) => {
+				posted.push(...entry.lines.map((line) => ({ role: line.role, debit: line.debit, credit: line.credit })));
+				return { entry: { id: 'je' }, lines: [], replayed: false };
 			},
 		} as never,
 		{
@@ -181,7 +182,7 @@ describe('drafting a bill from a purchase order', () => {
 });
 
 describe('recording a bill made from an order', () => {
-	test('debits inventory for stock lines, expense for the rest, input tax, credits AP', async () => {
+	test('clears GR/IR for stock lines (ERP-0136), expense for the rest, input tax, credits AP', async () => {
 		const bill = await service.createFromPurchaseOrder(
 			ctx,
 			input([
@@ -191,11 +192,31 @@ describe('recording a bill made from an order', () => {
 		);
 		await service.record(ctx, bill.id);
 		expect(posted).toEqual([
-			{ accountId: 'acc-inventory', debit: 3_000_000_00, credit: 0 },
-			{ accountId: 'acc-expense', debit: 500_000_00, credit: 0 },
-			{ accountId: 'acc-tax', debit: 385_000_00, credit: 0 },
-			{ accountId: 'acc-ap', debit: 0, credit: 3_885_000_00 },
+			{ role: 'grir_clearing', debit: 3_000_000_00, credit: 0 },
+			{ role: 'expense', debit: 500_000_00, credit: 0 },
+			{ role: 'vat_input', debit: 385_000_00, credit: 0 },
+			{ role: 'payable', debit: 0, credit: 3_885_000_00 },
 		]);
+	});
+});
+
+describe('purchase price variance (ERP-0136)', () => {
+	test('a bill above the receipt cost debits PPV for the difference', async () => {
+		const reader = order.lines[0]!;
+		const original = reader.receivedUnitCost;
+		reader.receivedUnitCost = 900_000_00;
+		try {
+			const bill = await service.createFromPurchaseOrder(ctx, input([{ purchaseOrderItemId: READER, quantity: '2' }]));
+			await service.record(ctx, bill.id);
+			expect(posted).toEqual([
+				{ role: 'grir_clearing', debit: 1_800_000_00, credit: 0 },
+				{ role: 'purchase_price_variance', debit: 200_000_00, credit: 0 },
+				{ role: 'vat_input', debit: 220_000_00, credit: 0 },
+				{ role: 'payable', debit: 0, credit: 2_220_000_00 },
+			]);
+		} finally {
+			reader.receivedUnitCost = original;
+		}
 	});
 });
 

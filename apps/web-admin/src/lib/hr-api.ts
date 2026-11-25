@@ -45,6 +45,10 @@ export type TEmployee = {
 	birthDate: string | null;
 	birthPlace: string | null;
 	nationalId: string | null;
+	taxId: string | null;
+	ptkpStatus: TPtkpStatus | null;
+	bpjsHealthNumber: string | null;
+	bpjsEmploymentNumber: string | null;
 	maritalStatus: string | null;
 	email: string | null;
 	phone: string | null;
@@ -208,6 +212,10 @@ export function createEmployee(input: {
 	birthDate?: string | null;
 	birthPlace?: string | null;
 	nationalId?: string | null;
+	taxId?: string | null;
+	ptkpStatus?: TPtkpStatus | null;
+	bpjsHealthNumber?: string | null;
+	bpjsEmploymentNumber?: string | null;
 	maritalStatus?: string | null;
 	phone?: string | null;
 	employmentStatus?: TEmploymentStatus;
@@ -226,3 +234,7 @@ export function updateEmployee(id: string, input: Record<string, unknown>) {
 export function archiveEmployee(id: string) {
 	return sendData<{ archived: boolean }>(`/human-resources/employees/${id}`, 'DELETE');
 }
+
+/** PTKP statuses (ERP-0138); an employee without one is taxed as TK/0. */
+export const PTKP_STATUSES = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'] as const;
+export type TPtkpStatus = (typeof PTKP_STATUSES)[number];

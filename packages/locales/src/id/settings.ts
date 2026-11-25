@@ -180,6 +180,18 @@ const settings: Record<keyof typeof en, string> = {
 	'payroll.nextRun': 'Eksekusi berikutnya: {{date}}',
 	'payroll.off': 'Proses otomatis nonaktif.',
 	'payroll.saved': 'Pengaturan penggajian disimpan',
+	'numbering.type.credit_memo': 'Nota kredit',
+	'payroll.statutoryTitle': 'PPh 21 dan BPJS',
+	'payroll.statutoryDescription': 'Aktifkan atau nonaktifkan potongan wajib untuk seluruh perusahaan.',
+	'payroll.pph21Enabled': 'Potong PPh 21 (TER, Pasal 17 tahunan di bulan terakhir)',
+	'payroll.bpjsHealthEnabled': 'BPJS Kesehatan (perusahaan 4%, karyawan 1%)',
+	'payroll.bpjsEmploymentEnabled': 'BPJS Ketenagakerjaan (JHT, JP, JKK, JKM)',
+	'payroll.jkkRate': 'Tarif JKK (%)',
+	'payroll.jkkRateHint': 'Sesuai kelompok risiko perusahaan: 0,24 (sangat rendah) sampai 1,74 (sangat tinggi).',
+	'payroll.healthWageCap': 'Batas upah BPJS Kesehatan',
+	'payroll.pensionWageCap': 'Batas upah JP',
+	'payroll.pensionWageCapHint': 'Diumumkan BPJS setiap tahun; penggajian dengan BPJS Ketenagakerjaan aktif terhenti sampai nilai ini diisi.',
+	'payroll.statutoryHint': 'PPh 21 memerlukan tabel TER yang diimpor di Keuangan > Pajak > Tabel PPh 21.',
 };
 
 export default settings;

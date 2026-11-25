@@ -256,6 +256,7 @@ function fakeProducts(known: readonly string[]) {
 				isActive: true,
 				isSerialized: false,
 				isStockTracked: true,
+				productCategoryId: null,
 			};
 		},
 	};

@@ -84,6 +84,9 @@ class FakeSuppliers {
 }
 
 class FakeOrders implements IPurchaseOrderRepository {
+	async listOpenForProject(): Promise<Array<{ id: string; subtotal: number }>> {
+		return [];
+	}
 	rows: TPurchaseOrderSelect[] = [];
 	items = new Map<string, TPurchaseOrderItemSelect[]>();
 	received = new Set<string>();
@@ -218,6 +221,36 @@ describe('purchase orders', () => {
 		);
 		supplier.status = 'inactive';
 		await expect(orders.create('purchasing', body(supplier.id))).rejects.toBeInstanceOf(PurchaseOrderSupplierUnavailableError);
+	});
+
+	test('approval of a project order runs the budget check; a blocking budget keeps it submitted (ERP-0146)', async () => {
+		const checks: unknown[] = [];
+		let block = false;
+		const budgeted = new PurchaseOrderService(
+			orderRepo,
+			suppliers,
+			{ getActiveProducts: async (ids: string[]) => (ids.includes(ITEM) ? ([{ id: ITEM, sku: 'QR50', name: 'QR50 Mifare', specification: null, unitLabel: 'pcs', purchasePrice: 190_000_000 }] as never) : []) },
+			{ next: async () => 'PO/IMS-HIT/HW/1026/009' },
+			{ register: async () => ({}) as never, voidBySource: async () => 0 },
+			{ getProject: async (id: string) => (id === '01930000-0000-7000-8000-0000000000f1' ? ({ id } as never) : null) },
+			{
+				check: async (input: unknown) => {
+					checks.push(input);
+					if (block) throw new Error('budget exceeded');
+					return null;
+				},
+			},
+		);
+		const supplier = suppliers.addCompany();
+		await expect(budgeted.create('purchasing', body(supplier.id, { projectId: '01930000-0000-7000-8000-0000000000ff' }))).rejects.toThrow();
+		const order = await budgeted.create('purchasing', body(supplier.id, { projectId: '01930000-0000-7000-8000-0000000000f1' }));
+		await budgeted.submit('purchasing', order.id);
+		block = true;
+		await expect(budgeted.decide('owner', order.id, { decision: 'approve' })).rejects.toThrow('budget exceeded');
+		block = false;
+		const approved = await budgeted.decide('owner', order.id, { decision: 'approve' });
+		expect(approved.status).toBe('approved');
+		expect(checks[1]).toEqual({ projectId: '01930000-0000-7000-8000-0000000000f1', amount: approved.subtotal, excludePurchaseOrderId: order.id });
 	});
 
 	test('submit, reject back to draft, approve with number — never by the creator', async () => {

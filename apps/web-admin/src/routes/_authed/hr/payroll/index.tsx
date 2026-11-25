@@ -1,6 +1,7 @@
 import { MoneyInput } from '@/components/money-input';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { downloadFile } from '@/lib/download';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -19,6 +20,7 @@ import { toast } from '@/components/toast';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import {
 	approveSalary,
+	recalculateSalary,
 	generateSalary,
 	importSalary,
 	downloadPayslipZip,
@@ -40,12 +42,20 @@ export const Route = createFileRoute('/_authed/hr/payroll/')({
 
 const AMOUNT_FIELDS = ['baseSalary', 'allowances', 'overtimePay', 'bonus', 'deductions'] as const;
 type TAmountField = (typeof AMOUNT_FIELDS)[number];
-const AMOUNT_LABEL: Record<TAmountField | 'netPay', 'salary.base' | 'salary.allowances' | 'salary.overtime' | 'salary.bonus' | 'salary.deductions' | 'salary.net'> = {
+/** Columns of the table: the editable amounts, the statutory deductions (ERP-0138), net pay. */
+const SHOWN_FIELDS = [...AMOUNT_FIELDS, 'pph21Amount', 'bpjsEmployeeAmount', 'netPay'] as const;
+type TShownField = (typeof SHOWN_FIELDS)[number];
+const AMOUNT_LABEL: Record<
+	TShownField,
+	'salary.base' | 'salary.allowances' | 'salary.overtime' | 'salary.bonus' | 'salary.deductions' | 'salary.pph21' | 'salary.bpjs' | 'salary.net'
+> = {
 	baseSalary: 'salary.base',
 	allowances: 'salary.allowances',
 	overtimePay: 'salary.overtime',
 	bonus: 'salary.bonus',
 	deductions: 'salary.deductions',
+	pph21Amount: 'salary.pph21',
+	bpjsEmployeeAmount: 'salary.bpjs',
 	netPay: 'salary.net',
 };
 
@@ -57,6 +67,8 @@ function SalaryPage() {
 	const canEdit = usePermission('payroll.update');
 	const canCreate = usePermission('payroll.create');
 	const canApprove = usePermission('payroll.approve');
+	const canCalculate = usePermission('payroll.calculate');
+	const canExport = usePermission('payroll.export');
 	const [period, setPeriod] = useState(todayBusinessDate().slice(0, 7));
 	const { data, isPending, isError, error } = useQuery(salaryQueryOptions(period));
 	const [editing, setEditing] = useState<TEditing | null>(null);
@@ -97,6 +109,24 @@ function SalaryPage() {
 								{t('hr:salary.import')}
 							</Button>
 						</>
+					)}
+					{canCalculate && data?.state === 'draft' && (
+						<Button variant='outline' disabled={busy} onClick={() => void run(() => recalculateSalary(period), t('hr:salary.recalculated'))}>
+							{t('hr:salary.recalculate')}
+						</Button>
+					)}
+					{canExport && locked && (
+						<Button
+							variant='outline'
+							disabled={busy}
+							onClick={() =>
+								void downloadFile(`/human-resources/salary-records/bp21.xml?period=${period}`, `coretax-bp21-${period}.xml`).catch((cause: Error) =>
+									toast.error(cause.message),
+								)
+							}
+						>
+							{t('hr:salary.bp21')}
+						</Button>
 					)}
 					{canEdit && !locked && <Button onClick={() => setEditing({ row: null })}>{t('hr:salary.add')}</Button>}
 					{locked && (
@@ -142,7 +172,7 @@ function SalaryPage() {
 							<TableHeader>
 								<TableRow>
 									<TableHead>{t('hr:field.employee')}</TableHead>
-									{[...AMOUNT_FIELDS, 'netPay' as const].map((field) => (
+									{SHOWN_FIELDS.map((field) => (
 										<TableHead key={field} className='text-right'>
 											{t(`hr:${AMOUNT_LABEL[field]}`)}
 										</TableHead>
@@ -160,7 +190,7 @@ function SalaryPage() {
 											)}
 											{row.notes && <div className='max-w-56 truncate text-xs text-muted-foreground'>{row.notes}</div>}
 										</TableCell>
-										{[...AMOUNT_FIELDS, 'netPay' as const].map((field) => (
+										{SHOWN_FIELDS.map((field) => (
 											<TableCell key={field} className={`text-right whitespace-nowrap tabular-nums ${field === 'netPay' ? 'font-medium' : ''}`}>
 												{formatIdr(row[field])}
 											</TableCell>
@@ -206,7 +236,7 @@ function SalaryPage() {
 							<TableFooter>
 								<TableRow>
 									<TableCell className='font-medium'>{t('hr:salary.total')}</TableCell>
-									{[...AMOUNT_FIELDS, 'netPay' as const].map((field) => (
+									{SHOWN_FIELDS.map((field) => (
 										<TableCell key={field} className='text-right font-medium whitespace-nowrap tabular-nums'>
 											{formatIdr(data.totals[field])}
 										</TableCell>

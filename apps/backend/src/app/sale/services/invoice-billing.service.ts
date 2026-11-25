@@ -5,7 +5,8 @@ import type { CompanyService } from '@app/company';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
 import { AR_LEDGER_PORT_TOKEN } from '@app/finance/constants/ar-di';
-import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import { DEFERRED_REVENUE_PORT_TOKEN, POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { IDeferredRevenuePort } from '@app/finance/contracts/deferred-revenue.port';
 import type { TTx } from '@drizzle/types';
 import type { TInvoiceSelect, TReceiptSelect, TOrderItemSelect, TOrderSelect } from '@drizzle/schemas/sale.schema';
 import { businessDateOf } from '@utils/business-date.util';
@@ -121,6 +122,8 @@ export class InvoiceBillingService {
 		@inject(AR_LEDGER_PORT_TOKEN)
 		private readonly arLedger: Pick<IArLedgerPort, 'findPostedEntryForSource' | 'setOpenItemStatus'>,
 		@inject(DOCUMENT_SERVICE_TOKEN) private readonly documents: Pick<DocumentService, 'voidBySource'>,
+		@inject(DEFERRED_REVENUE_PORT_TOKEN)
+		private readonly deferredRevenue: Pick<IDeferredRevenuePort, 'cancelForInvoice'>,
 	) {}
 
 	/** Billing state of an order, for the order page and the invoice form. */
@@ -281,6 +284,8 @@ export class InvoiceBillingService {
 	async void(ctx: TBillingContext, id: string, reason: string): Promise<TInvoiceSelect> {
 		const result = await this.invoices.withLockedInvoice(ctx.organizationId, id, async (invoice, tx) => {
 			if ((invoice.status !== 'draft' && invoice.status !== 'issued') || invoice.paidTotal > 0) throw new InvoiceNotVoidableError();
+			// ERP-0135: a credit memo already lowered the open amount; void that first.
+			if (invoice.status === 'issued' && invoice.outstandingTotal !== invoice.grandTotal) throw new InvoiceNotVoidableError();
 			if (invoice.status === 'issued') {
 				const entry = await this.arLedger.findPostedEntryForSource(ctx.organizationId, 'invoice', invoice.id, tx as TTx);
 				if (entry && entry.status === 'posted' && !entry.reversedByEntryId) {
@@ -290,6 +295,9 @@ export class InvoiceBillingService {
 						description: `Void of invoice ${invoice.code}: ${reason}`.slice(0, 500),
 					});
 				}
+				// ERP-0135: deferred revenue of the invoice is cancelled and its
+				// posted amortisations reversed in the same transaction.
+				await this.deferredRevenue.cancelForInvoice(tx as TTx, ctx.organizationId, invoice.id, ctx.actorUserId);
 				// Amounts stay (outstanding = original − paid is a DB check); `void`
 				// takes the item out of the aging (open / partially paid only).
 				await this.arLedger.setOpenItemStatus(ctx.organizationId, invoice.id, { status: 'void' }, tx as TTx);
