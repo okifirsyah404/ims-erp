@@ -167,6 +167,27 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
   declares only `read`/`update`/`archive`), and Phase 5 was re-run 47/47 against a
   freshly reset `ims_erp_local`.
 
+### implemented
+- Sidebar section order + Subscription inside Projects (ERP-0128, 2026-11-25):
+  sections follow the product order (Dashboard, CRM & Sales, Finance, Projects,
+  Inventory, HR, Documents, Reports, Integrations, Administration, Settings);
+  Subscription & Licensing became a Projects leaf after Warranty;
+  `section.reports` shortened to "Reports"/"Laporan" and `section.subscription`
+  deleted. Evidence: web-admin tsc clean, 317 web-admin + 106 locale tests pass,
+  root lint 0 errors, browser walk-through (11 sections in order, Subscription
+  expansion, `/subscription/*` still guarded by the leaf); no schema change.
+- Sidebar nav audit (ERP-0126, 2026-11-25): the dangling Notifications leaf
+  (`open: true` with no route, a guaranteed 404) removed; Assets group gained
+  Categories/Tool sets/Disposals and Depreciation was un-hidden (all
+  `asset.read`); WhatsApp AI became a parent with Conversations + FAQ
+  (`automation.read`); Down payments (`invoice.read`), Templates
+  (`document.read`) and Opening balances (`journal.read`) un-hidden with the
+  grant each page already calls; en/id keys added and the dead
+  `item.notifications` key removed. Evidence: web-admin tsc clean, 315 tests
+  pass (locale parity + dead keys), root lint 0 errors, browser walk-through
+  (sidebar leaves, click-through, direct visits to all nine affected URLs);
+  no backend, route or schema change.
+
 ### planned
 - Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
   `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
@@ -689,6 +710,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Depreciation as manual journal — T07, ERP-0015. Evidence: none.
 
 ### implemented
+- Asset categories create/edit dialog (ERP-0127, 2026-11-25): `/assets/categories`
+  lost its two bare inline inputs in favour of `AssetCategoryFormDialog`
+  (code create-only, name, kind, default depreciation method, useful life) plus
+  an `Edit` row action; `asset.create`/`asset.update` gate the button and the
+  action. Evidence: web-admin tsc clean, 209 web-admin + 106 locale tests pass,
+  root lint 0 errors, browser create/edit/validation/persistence walk-through;
+  no schema change.
 - Location tracking + borrowing ownership — ERP-0036. Evidence: contract
   shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
   `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`

@@ -82,12 +82,44 @@ describe('nav-config M07 (ERP-0108)', () => {
 	test('every M07 leaf carries a gate (deny-by-default would hide it)', () => {
 		const m07 = navSections.find((section) => section.labelKey === 'section.projects')!;
 		expect(m07.items.length).toBeGreaterThan(0);
-		for (const item of m07.items) {
+		const leaves = m07.items.flatMap((item) => item.items ?? [item]);
+		for (const item of leaves) {
 			expect(item.permission ?? item.anyPermission ?? item.open ?? item.internalRole).toBeTruthy();
 		}
 	});
-	test('Projects, Tickets and Warranty point at their own top-level URLs', () => {
+	test('Projects, Tickets, Warranty and Subscription point at their own top-level URLs', () => {
 		const m07 = navSections.find((section) => section.labelKey === 'section.projects')!;
-		expect(m07.items.map((item) => item.url)).toEqual(['/projects', '/tickets', '/warranties']);
+		expect(m07.items.map((item) => item.url)).toEqual([
+			'/projects',
+			'/tickets',
+			'/warranties',
+			'/subscription',
+		]);
+	});
+});
+
+describe('nav section order', () => {
+	test('sections follow the product order, Subscription lives inside Projects', () => {
+		expect(navSections.map((section) => section.labelKey)).toEqual([
+			'section.dashboard',
+			'section.crmSales',
+			'section.finance',
+			'section.projects',
+			'section.inventory',
+			'section.hr',
+			'section.documents',
+			'section.reports',
+			'section.integrations',
+			'section.administration',
+			'section.settings',
+		]);
+	});
+
+	test('Subscription & Licensing is a Projects leaf, not its own section', () => {
+		const projects = navSections.find((section) => section.labelKey === 'section.projects')!;
+		expect(projects.items.map((item) => item.titleKey)).toContain('item.subscription');
+		expect(navSections.some((section) => section.labelKey === 'section.subscription')).toBe(
+			false,
+		);
 	});
 });
