@@ -1000,6 +1000,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   business line, project, customer or product; what cannot be attributed is
   shown separately so the total always equals the P&L.
 
+- Financial ratios, Phase D (ERP-0151, 2026-11-25): liquidity,
+  profitability, leverage and efficiency ratios for a range on the reports
+  page.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phases B and C complete except stock/asset
   opening detail and capitalization from goods receipts); (Phase C: bank statement import,

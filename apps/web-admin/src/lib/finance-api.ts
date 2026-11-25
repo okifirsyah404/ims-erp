@@ -1887,3 +1887,18 @@ export function profitabilityQueryOptions(from: string, to: string, dimension: T
 		queryFn: () => getData<TProfitability>(`/finance/reports/profitability?from=${from}&to=${to}&dimension=${dimension}`),
 	});
 }
+
+/* ----------------------------- ratios (ERP-0151) ----------------------------- */
+
+export type TRatios = {
+	days: number;
+	components: Record<string, number>;
+	liquidity: { current: number | null; quick: number | null; cash: number | null };
+	profitability: { grossMargin: number | null; netMargin: number | null; returnOnAssets: number | null; returnOnEquity: number | null };
+	leverage: { debtToEquity: number | null };
+	efficiency: { dso: number | null; dpo: number | null; dio: number | null };
+};
+
+export function ratiosQueryOptions(from: string, to: string) {
+	return queryOptions({ queryKey: ['finance', 'reports', 'ratios', from, to], queryFn: () => getData<TRatios>(`/finance/reports/ratios?from=${from}&to=${to}`) });
+}

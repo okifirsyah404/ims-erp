@@ -12,6 +12,37 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0151: financial ratios
+
+**Scope.** Phase D slice 4.
+
+**Design gate.** `docs/database/` reviewed: no schema change, unchanged.
+Manual grill pass: read-only, tenant-scoped, figures from posted journal
+lines with the ERP-0147 sign convention; definitions recorded in
+`modules/finance.md` (current items by code prefix, roles for AR/AP/
+inventory, 5-xxxx as cost of goods, closing balances for ROA/ROE).
+
+**Changes.** Backend: `RatioService`, `GET /finance/reports/ratios`.
+Web-admin: "Ratios" tab (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary ratios smoke>              # 3/3 PASS: total assets, liabilities and equity equal the balance
+                                              # sheet (7,483,458.12 / 4,076,790.21 / 3,406,667.91); net income equals
+                                              # the P&L; ratios computed (DSO is large on scratch data: AR 3,000,000
+                                              # against revenue 9,009)
+bun test test/finance/ratios.test.ts          # 1 pass (hand-computed)
+bun run test                                  # 7/7 tasks: backend 1581, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 761 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: ERP-0152 (management pack: budget vs actual,
+monthly PDF/Excel, archive).
+
 ## 2026-11-25 - ERP-0150: profitability by project, customer, product, business line
 
 **Scope.** Phase D slice 3.

@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-760 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+761 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -902,6 +902,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/reports/profitability` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/project-costing` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/project-costing/:projectId` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/finance/reports/ratios` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/statements` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/reports/trial-balance` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/finance/settlements` | org member + permission | `settlement:read` | `owner`, `operations_manager`, `project_manager`, `technician`, `freelancer` |

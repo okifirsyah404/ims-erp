@@ -1,3 +1,4 @@
+import type { RatioService } from '../services/ratio.service';
 import type { ICashForecastRepository } from '../contracts/cash-forecast.contract';
 import type { CashForecastService } from '../services/cash-forecast.service';
 import type { IStatementRepository } from '../contracts/statement.contract';
@@ -215,3 +216,6 @@ export const STATEMENT_SERVICE_TOKEN: InjectionToken<StatementService> = Symbol(
 /** 13-week cash forecast (ERP-0149). */
 export const CASH_FORECAST_REPOSITORY_TOKEN: InjectionToken<ICashForecastRepository> = Symbol('CASH_FORECAST_REPOSITORY');
 export const CASH_FORECAST_SERVICE_TOKEN: InjectionToken<CashForecastService> = Symbol('CASH_FORECAST_SERVICE');
+
+/** Financial ratios (ERP-0151). */
+export const RATIO_SERVICE_TOKEN: InjectionToken<RatioService> = Symbol('RATIO_SERVICE');

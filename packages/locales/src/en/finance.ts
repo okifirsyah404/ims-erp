@@ -934,6 +934,23 @@ const finance = {
 	'profitability.dimension.product': 'Product',
 	'profitability.unassigned': 'Not attributed (overheads, older entries)',
 	'profitability.hint': 'From the dimensions on journal lines: invoices carry customer and product, deliveries their COGS, projects their costs. Business line is the product category. Lines without the dimension stay unattributed, so the total equals the P&L.',
+	'reports.tab.ratios': 'Ratios',
+	'ratios.liquidity': 'Liquidity',
+	'ratios.current': 'Current ratio',
+	'ratios.quick': 'Quick ratio',
+	'ratios.cash': 'Cash ratio',
+	'ratios.profitability': 'Profitability',
+	'ratios.grossMargin': 'Gross profit margin',
+	'ratios.netMargin': 'Net profit margin',
+	'ratios.roa': 'Return on assets',
+	'ratios.roe': 'Return on equity',
+	'ratios.leverage': 'Leverage',
+	'ratios.der': 'Debt to equity',
+	'ratios.efficiency': 'Efficiency (days, over {{days}} days)',
+	'ratios.dso': 'Days sales outstanding',
+	'ratios.dpo': 'Days payables outstanding',
+	'ratios.dio': 'Days inventory outstanding',
+	'ratios.hint': 'Balance-sheet figures at the end date, P&L over the range; ROA and ROE on closing balances; cost of goods = 5-xxxx accounts. "—" when the denominator is zero.',
 } as const;
 
 export default finance;

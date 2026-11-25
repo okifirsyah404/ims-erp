@@ -936,6 +936,23 @@ const finance: Record<keyof typeof en, string> = {
 	'profitability.dimension.product': 'Produk',
 	'profitability.unassigned': 'Tidak teratribusi (overhead, jurnal lama)',
 	'profitability.hint': 'Dari dimensi pada baris jurnal: faktur membawa pelanggan dan produk, pengiriman membawa HPP-nya, proyek membawa biayanya. Lini bisnis adalah kategori produk. Baris tanpa dimensi tetap tidak teratribusi, sehingga totalnya sama dengan laporan laba rugi.',
+	'reports.tab.ratios': 'Rasio',
+	'ratios.liquidity': 'Likuiditas',
+	'ratios.current': 'Rasio lancar',
+	'ratios.quick': 'Rasio cepat',
+	'ratios.cash': 'Rasio kas',
+	'ratios.profitability': 'Profitabilitas',
+	'ratios.grossMargin': 'Margin laba kotor',
+	'ratios.netMargin': 'Margin laba bersih',
+	'ratios.roa': 'Imbal hasil aset (ROA)',
+	'ratios.roe': 'Imbal hasil ekuitas (ROE)',
+	'ratios.leverage': 'Solvabilitas',
+	'ratios.der': 'Utang terhadap ekuitas (DER)',
+	'ratios.efficiency': 'Efisiensi (hari, dari {{days}} hari)',
+	'ratios.dso': 'Rata-rata umur piutang (DSO)',
+	'ratios.dpo': 'Rata-rata umur utang (DPO)',
+	'ratios.dio': 'Rata-rata umur persediaan (DIO)',
+	'ratios.hint': 'Angka neraca per tanggal akhir, laba rugi selama rentang; ROA dan ROE memakai saldo akhir; HPP = akun 5-xxxx. "—" bila penyebutnya nol.',
 } as const;
 
 export default finance;

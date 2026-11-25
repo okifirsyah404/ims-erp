@@ -561,6 +561,18 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - Not built: overhead allocation keys; deferred-revenue recognition entries
   do not carry party/product yet.
 
+## Financial ratios (D, ERP-0151, built)
+
+- `GET /finance/reports/ratios?from&to` (`financial_report:read`); reports
+  page tab "Ratios". Current, quick, cash; gross and net margin, ROA, ROE;
+  debt to equity; DSO, DPO, DIO (days over the range).
+- Balance-sheet figures at the end date (contra accounts against their
+  section), P&L over the range. Current = 1-1xxx assets / 2-1xxx
+  liabilities; cash = statement cash accounts; receivables, payables and
+  inventory = the `'*'` posting-rule accounts of those roles; cost of goods =
+  5-xxxx expense accounts. ROA and ROE use closing balances, not averages.
+  `null` when a denominator is zero.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

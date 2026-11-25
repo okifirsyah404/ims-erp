@@ -4,7 +4,7 @@ import { container } from 'tsyringe';
 import { z } from 'zod';
 import type { ErpContext } from '@authorization/elysia-auth';
 import { businessDateOf } from '@utils/business-date.util';
-import { CASH_FORECAST_SERVICE_TOKEN, COST_REPORT_SERVICE_TOKEN, STATEMENT_SERVICE_TOKEN } from '../constants/di';
+import { CASH_FORECAST_SERVICE_TOKEN, COST_REPORT_SERVICE_TOKEN, RATIO_SERVICE_TOKEN, STATEMENT_SERVICE_TOKEN } from '../constants/di';
 import { forecastLineSchema } from '../contracts/cash-forecast.contract';
 import { profitabilityQuerySchema } from '../contracts/cost-report.contract';
 import { statementQuerySchema } from '../contracts/statement.contract';
@@ -19,6 +19,7 @@ export class CostReportController {
 		const service = container.resolve(COST_REPORT_SERVICE_TOKEN);
 		const statements = container.resolve(STATEMENT_SERVICE_TOKEN);
 		const forecasts = container.resolve(CASH_FORECAST_SERVICE_TOKEN);
+		const ratios = container.resolve(RATIO_SERVICE_TOKEN);
 		const ctxOf = (erp: ErpContext) => ({ organizationId: erp.organizationId, actorUserId: erp.session.user.id });
 		return domainPlugin({ name: 'finance-cost-reports', prefix: '/finance/reports', tags: ['Finance'], guards: 'erp' })
 			.get(
@@ -79,6 +80,14 @@ export class CostReportController {
 					erp: { permission: ['financial_report:read'] },
 					detail: { description: 'Revenue, cost and margin by project, customer, product or business line (ERP-0150)' },
 				},
+			)
+			.get(
+				'/ratios',
+				async ({ query, erp }) => {
+					const { from, to } = costReportQuerySchema.parse(query);
+					return ok(await ratios.ratios(erp.organizationId, from, to));
+				},
+				{ erp: { permission: ['financial_report:read'] }, detail: { description: 'Liquidity, profitability, leverage and efficiency ratios (ERP-0151)' } },
 			)
 			.get(
 				'/cost-center-pl',
