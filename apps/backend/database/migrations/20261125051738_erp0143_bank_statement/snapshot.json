@@ -1,0 +1,241 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "feeb438c-aab8-4a16-9895-6f6c4ee6362d",
+  "prevIds": [
+    "052508d3-b46b-4d3a-a208-a9633c575835"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "bank_reconciliation_items",
+        "statement_date"
+      ],
+      "writes": [
+        "s|col|finance.bank_reconciliation_items.statement_date",
+        "n|col|finance.bank_reconciliation_items.statement_date",
+        "e|col|finance.bank_reconciliation_items.statement_date"
+      ],
+      "reads": [
+        "n|tbl|finance.bank_reconciliation_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "bank_reconciliation_items",
+        "description"
+      ],
+      "writes": [
+        "s|col|finance.bank_reconciliation_items.description",
+        "n|col|finance.bank_reconciliation_items.description",
+        "e|col|finance.bank_reconciliation_items.description"
+      ],
+      "reads": [
+        "n|tbl|finance.bank_reconciliation_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "bank_reconciliation_items",
+        "direction"
+      ],
+      "writes": [
+        "s|col|finance.bank_reconciliation_items.direction",
+        "n|col|finance.bank_reconciliation_items.direction",
+        "e|col|finance.bank_reconciliation_items.direction"
+      ],
+      "reads": [
+        "n|tbl|finance.bank_reconciliation_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "bank_reconciliation_items",
+        "match_method"
+      ],
+      "writes": [
+        "s|col|finance.bank_reconciliation_items.match_method",
+        "n|col|finance.bank_reconciliation_items.match_method",
+        "e|col|finance.bank_reconciliation_items.match_method"
+      ],
+      "reads": [
+        "n|tbl|finance.bank_reconciliation_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "cash_bank_accounts",
+        "statement_mapping"
+      ],
+      "writes": [
+        "s|col|finance.cash_bank_accounts.statement_mapping",
+        "n|col|finance.cash_bank_accounts.statement_mapping",
+        "e|col|finance.cash_bank_accounts.statement_mapping"
+      ],
+      "reads": [
+        "n|tbl|finance.cash_bank_accounts",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "bank_reconciliation_items"
+      ],
+      "writes": [
+        "s|ck|finance.bank_reconciliation_items.bank_reconciliation_items_direction_check",
+        "n|ck|finance.bank_reconciliation_items.bank_reconciliation_items_direction_check",
+        "e|ck|finance.bank_reconciliation_items.bank_reconciliation_items_direction_check",
+        "n|con|finance.bank_reconciliation_items.bank_reconciliation_items_direction_check"
+      ],
+      "reads": [
+        "n|tbl|finance.bank_reconciliation_items",
+        "n|sch|finance",
+        "n|col|finance.bank_reconciliation_items.direction"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "bank_reconciliation_items"
+      ],
+      "writes": [
+        "s|ck|finance.bank_reconciliation_items.bank_reconciliation_items_match_method_check",
+        "n|ck|finance.bank_reconciliation_items.bank_reconciliation_items_match_method_check",
+        "e|ck|finance.bank_reconciliation_items.bank_reconciliation_items_match_method_check",
+        "n|con|finance.bank_reconciliation_items.bank_reconciliation_items_match_method_check"
+      ],
+      "reads": [
+        "n|tbl|finance.bank_reconciliation_items",
+        "n|sch|finance",
+        "n|col|finance.bank_reconciliation_items.match_method"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "bank_reconciliation_items",
+        "name": "statement_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "bank_reconciliation_items",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "bank_reconciliation_items",
+        "name": "direction",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "bank_reconciliation_items",
+        "name": "match_method",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_bank_accounts",
+        "name": "statement_mapping",
+        "type": "jsonb",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "bank_reconciliation_items",
+        "name": "bank_reconciliation_items_direction_check",
+        "value": "direction IS NULL OR direction IN ('in', 'out')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "bank_reconciliation_items",
+        "name": "bank_reconciliation_items_match_method_check",
+        "value": "match_method IS NULL OR match_method IN ('auto', 'manual', 'created')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

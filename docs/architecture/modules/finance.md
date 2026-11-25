@@ -372,6 +372,34 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   (register is Phase C). An opening AR item has no invoice, so collecting it
   through a receipt is not wired yet.
 
+## Bank statement import and auto-match (C, ERP-0143, built)
+
+- No `bank_statements` / `bank_statement_lines` tables: a
+  `bank_reconciliations` row is one statement and its
+  `bank_reconciliation_items` are the lines, now with `statement_date`,
+  `description`, `direction` and `match_method` (auto / manual / created).
+  Two parallel structures for the same statement would have drifted.
+- Each cash/bank account stores its bank's CSV layout in `statement_mapping`
+  (`PUT /finance/cash-bank-accounts/:id/statement-mapping`): delimiter, rows
+  to skip, date column and format (incl. `DD/MM` taking the statement's year),
+  description and reference columns, amount as signed / debit+credit /
+  amount+DB/CR, decimal separator.
+- `POST /finance/reconciliations/:id/statement` imports a CSV (all or nothing;
+  rows without a date are skipped, a dated row with an unreadable amount
+  rejects the file; lines already present by date, direction, amount and text
+  are skipped). `POST .../auto-match` pairs lines with unmatched posted
+  movements of the account: same direction and amount, +-3 days, a book code
+  or reference number in the line text wins, then the nearest date; a tie
+  without reference stays for manual matching; each movement is used once.
+  `POST .../items/:itemId/transaction` books an unmatched line (bank fee,
+  interest) as a cash/bank movement against a chosen account and matches it.
+- The reconcile check changed: lines are movements, so the statement balance
+  must equal the book balance on the statement date (recomputed at reconcile)
+  with every line matched. The old rule (matched lines sum to the statement
+  balance) treated lines as balances.
+- `GET /finance/reconciliations/:id` now returns the lines; the page shows
+  them from the server instead of the current session only.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service
@@ -397,7 +425,8 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   approval, expense-claim submit and project-cost entry; default `warn`.
 - **Bank reconciliation (C):** CSV statement import per bank mapping
   (`bank_statements`, `bank_statement_lines`), auto-match on amount, +-3 days
-  and reference, unmatched lines become cash/bank transactions.
+  and reference, unmatched lines become cash/bank transactions. Built in
+  ERP-0143 on the existing reconciliation tables instead (see below).
 - **Opening balances (B):** per sub-ledger import (AR, AP, stock, assets)
   that must tie to the control accounts, posted as one opening journal.
   AR and AP built in ERP-0142 (see below); stock and assets still open.

@@ -700,6 +700,8 @@ export const cashBankAccounts = financeSchema.table(
 		currentBalance: moneyAmount('current_balance'),
 		/** Account printed on invoices with VAT (vat) or without VAT (non_vat). */
 		invoiceUsage: text('invoice_usage'),
+		/** Bank statement CSV layout (ERP-0143); null until mapped. */
+		statementMapping: jsonb('statement_mapping').$type<Record<string, unknown>>(),
 		isPrimary: boolean('is_primary').notNull().default(false),
 		isActive: boolean('is_active').notNull().default(true),
 		/**
@@ -831,6 +833,11 @@ export const bankReconciliationItems = financeSchema.table(
 		),
 		statementReference: text('statement_reference'),
 		statementAmount: bigint('statement_amount', { mode: 'number' }),
+		/** ERP-0143: imported statement line facts. */
+		statementDate: date('statement_date'),
+		description: text('description'),
+		direction: text('direction').$type<'in' | 'out'>(),
+		matchMethod: text('match_method').$type<'auto' | 'manual' | 'created'>(),
 		isMatched: boolean('is_matched').notNull().default(false),
 		notes: text('notes'),
 		...timestamps,
@@ -841,6 +848,11 @@ export const bankReconciliationItems = financeSchema.table(
 		),
 		index('bank_reconciliation_items_transaction_id_idx').on(
 			table.cashBankTransactionId,
+		),
+		check('bank_reconciliation_items_direction_check', sql`direction IS NULL OR direction IN ('in', 'out')`),
+		check(
+			'bank_reconciliation_items_match_method_check',
+			sql`match_method IS NULL OR match_method IN ('auto', 'manual', 'created')`,
 		),
 	],
 );

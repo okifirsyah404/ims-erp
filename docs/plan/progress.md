@@ -12,6 +12,57 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0143: bank statement CSV import and auto-match
+
+**Scope.** Phase C slice 1 (owner: "Lanjut Fase C").
+
+**Design gate.** `docs/database/` read for `finance.cash_bank_accounts`,
+`cash_bank_transactions`, `bank_reconciliations`, `bank_reconciliation_items`;
+no new logical reference. Manual grill pass: ownership - all finance; tenancy
+- `organization_id` on every query; soft delete - unchanged; money - minor
+units, statement amounts parsed exactly from Indonesian or English formats;
+status vocabulary - new `direction` (in/out) and `match_method`
+(auto/manual/created) on lines. Decisions: reuse the reconciliation tables
+instead of the `bank_statements` / `bank_statement_lines` named in the grill
+(one structure per statement); the mapping lives on the account as jsonb; the
+reconcile check compares the statement balance with the book balance on the
+statement date (the old "matched lines sum to the statement balance" rule was
+wrong for movement lines; its test was rewritten).
+
+**Changes.** Migration `20261125051738_erp0143_bank_statement` (5 ADD COLUMN,
+2 checks). Backend: `utils/bank-statement.ts` (mapping schema, parser,
+matcher), `BankReconciliationService.setStatementMapping / importStatement /
+autoMatch / createTransaction`, `get` returns the lines, reconcile check;
+repository `listMatchCandidates`, `balanceAsOf`; routes
+`PUT /finance/cash-bank-accounts/:id/statement-mapping`,
+`POST /finance/reconciliations/:id/statement`, `.../auto-match`,
+`.../items/:itemId/transaction`. Web-admin: mapping dialog, statement import,
+auto-match, "book as transaction" per unmatched line, lines read from the
+server (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/validate-dbml.ts            # OK (203 refs, unchanged)
+bun run drizzle:generate --name erp0143_bank_statement; bun run drizzle:migrate   # applied
+bun run <temporary bank-smoke script>         # 8/8 PASS on BANK-MANDIRI: 4 book movements + 1 fee imported
+                                              # (balance footer skipped), re-import skipped 5, auto-match 4/1,
+                                              # reconcile refused while the fee is unmatched, fee booked against a
+                                              # 6-xxxx expense, reconciled with difference 0 on 2026-11-30
+bun test test/finance/bank-statement.test.ts test/finance/reports-reconciliation.test.ts   # 7 + 7 pass
+bun run test                                  # 7/7 tasks: backend 1553, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 725 routes
+```
+
+`docs/database/` updated (docs.dbml: two tables' columns and checks).
+
+**Not verified.** Real bank exports (finance maps each bank's layout); no
+browser walk-through.
+
+Next executable task: ERP-0144 (employee advances and settlements, claim
+payment through `payment`).
+
 ## 2026-11-25 - ERP-0142: AR and AP opening detail tied to the control accounts
 
 **Scope.** Phase B slice 7, the last of the owner's 2026-11-25 order.

@@ -77,6 +77,7 @@ export interface ICashBankRepository {
 			accountNumber?: string | null;
 			accountHolder?: string | null;
 			invoiceUsage?: string | null;
+			statementMapping?: Record<string, unknown> | null;
 			isPrimary?: boolean;
 			isActive?: boolean;
 			currentBalance?: number;

@@ -600,6 +600,8 @@ export function postOpeningBalances() {
 
 export type TCashBankAccount = {
 	id: string;
+	/** Bank statement CSV layout (ERP-0143). */
+	statementMapping?: TStatementMapping | null;
 	organizationId: string | null;
 	code: string;
 	name: string;
@@ -1123,6 +1125,11 @@ export type TBankReconciliationItem = {
 	cashBankTransactionId: string | null;
 	statementReference: string | null;
 	statementAmount: number | null;
+	/** ERP-0143: imported statement line facts (null on hand-keyed lines). */
+	statementDate: string | null;
+	description: string | null;
+	direction: 'in' | 'out' | null;
+	matchMethod: 'auto' | 'manual' | 'created' | null;
 	isMatched: boolean;
 	notes: string | null;
 };
@@ -1137,6 +1144,8 @@ export type TBankReconciliation = {
 	difference: number;
 	status: 'draft' | 'in_progress' | 'reconciled' | 'closed';
 	notes: string | null;
+	/** Present on the detail read (ERP-0143). */
+	items?: TBankReconciliationItem[];
 };
 
 export function reconciliationsQueryOptions(params: {
@@ -1511,4 +1520,61 @@ export async function importOpeningSubledger(ledger: TSubledger, asOfDate: strin
 
 export function discardOpeningSubledger(ledger: TSubledger) {
 	return sendData<{ removed: number }>(`/finance/ledger/opening-balances/subledger/discard?ledger=${ledger}`, 'POST');
+}
+
+/* ----------------------------- bank statement import (ERP-0143) ----------------------------- */
+
+export const STATEMENT_DATE_FORMATS = ['YYYY-MM-DD', 'DD/MM/YYYY', 'DD-MM-YYYY', 'DD/MM/YY', 'DD/MM'] as const;
+export const STATEMENT_AMOUNT_MODES = ['signed', 'split', 'indicator'] as const;
+
+export type TStatementMapping = {
+	delimiter: ',' | ';' | '\t';
+	skipRows: number;
+	dateColumn: number;
+	dateFormat: (typeof STATEMENT_DATE_FORMATS)[number];
+	descriptionColumn: number;
+	referenceColumn: number | null;
+	amountMode: (typeof STATEMENT_AMOUNT_MODES)[number];
+	amountColumn: number | null;
+	debitColumn: number | null;
+	creditColumn: number | null;
+	indicatorColumn: number | null;
+	creditIndicator: string;
+	decimalSeparator: ',' | '.';
+};
+
+async function putData<T>(path: string, body: unknown): Promise<T> {
+	const envelope = await request<T>(path, { method: 'PUT', body: JSON.stringify(body) });
+	return envelope.data as T;
+}
+
+export function saveStatementMapping(cashBankAccountId: string, mapping: TStatementMapping) {
+	return putData<TStatementMapping>(`/finance/cash-bank-accounts/${cashBankAccountId}/statement-mapping`, mapping);
+}
+
+export async function importBankStatement(
+	reconciliationId: string,
+	file: File,
+): Promise<{ imported: number; skipped: number; errors: { row: number; code: string; value: string }[] }> {
+	const form = new FormData();
+	form.append('file', file);
+	const response = await fetch(`${API_URL}/finance/reconciliations/${reconciliationId}/statement`, {
+		method: 'POST',
+		credentials: 'include',
+		headers: { ...organizationHeaders() },
+		body: form,
+	});
+	const envelope = (await response.json()) as TApiResponse<{ imported: number; skipped: number; errors: { row: number; code: string; value: string }[] }>;
+	if (!response.ok) throw new Error(envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed');
+	return envelope.data as { imported: number; skipped: number; errors: { row: number; code: string; value: string }[] };
+}
+
+export function autoMatchReconciliation(reconciliationId: string) {
+	return sendData<{ matched: number; unmatched: number }>(`/finance/reconciliations/${reconciliationId}/auto-match`, 'POST');
+}
+
+export function createStatementTransaction(reconciliationId: string, itemId: string, counterpartAccountId: string) {
+	return sendData<TBankReconciliationItem>(`/finance/reconciliations/${reconciliationId}/items/${itemId}/transaction`, 'POST', {
+		counterpartAccountId,
+	});
 }

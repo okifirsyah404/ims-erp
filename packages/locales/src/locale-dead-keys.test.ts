@@ -69,6 +69,8 @@ const DYNAMIC_PREFIXES = [
 	'tax:pph21.importError.',
 	'finance:openingSubledger.error.',
 	'finance:openingSubledger.ledgerName.',
+	'finance:statement.amountModeValue.',
+	'finance:statement.method.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',
@@ -195,6 +197,7 @@ const DYNAMIC_PREFIXES = [
 	'accounting.terImport.',
 	'hr.payroll.',
 	'accounting.openingSubledgerFile.',
+	'accounting.statementFile.',
 	'hr.attendance.',
 	'hr.schedule.',
 	'hr.salaryPeriod.',

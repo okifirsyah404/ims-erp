@@ -668,6 +668,10 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.openingSubledgerFile.size': 'Berkas lebih besar dari 2 MB',
 	'accounting.openingSubledgerFile.empty': 'Berkas tidak berisi baris data',
 	'accounting.openingSubledgerFile.tooMany': 'Berkas berisi lebih dari 5000 baris',
+	'accounting.statementMappingMissing': 'Atur pemetaan CSV rekening koran untuk rekening ini terlebih dahulu',
+	'accounting.statementFile.type': 'Unggah berkas .csv',
+	'accounting.statementFile.size': 'Berkas lebih besar dari 5 MB',
+	'accounting.statementFile.empty': 'Berkas tidak berisi baris mutasi',
 };
 
 export default api;

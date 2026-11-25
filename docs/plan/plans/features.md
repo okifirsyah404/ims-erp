@@ -952,9 +952,17 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   Evidence: migration `20261125021519_erp0142_opening_subledger`, unit tests,
   DB smoke 12/12.
 
+- Bank statement import, Phase C (ERP-0143, 2026-11-25): each bank account
+  keeps its CSV layout; a statement imports into the reconciliation, lines
+  match book movements automatically (amount, direction, +-3 days,
+  reference), leftover lines such as bank fees are booked from the line, and
+  reconciling checks the statement balance against the book balance on the
+  statement date. Evidence: migration `20261125051738_erp0143_bank_statement`,
+  unit tests, DB smoke 8/8.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phase B complete except stock/asset opening
-  detail); ERP-0143..0147 (Phase C: bank statement import,
+  detail); ERP-0144..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
   cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
   profitability, ratios, management pack, closed-period profit contract).

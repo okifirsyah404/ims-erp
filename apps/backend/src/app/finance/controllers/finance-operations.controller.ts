@@ -673,6 +673,53 @@ export class FinanceOperationsController {
 					erp: { permission: ['cash_bank:reconcile'] },
 					detail: { description: 'reconciled → closed (terminal)' },
 				},
+			)
+			/* ---------------- bank statement import (ERP-0143) ---------------- */
+			.put(
+				'/cash-bank-accounts/:id/statement-mapping',
+				async ({ params, body, erp }) =>
+					ok(await reconciliations.setStatementMapping(ctxOf(erp), ledgerIdParamSchema.parse(params).id, body)),
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: { description: "Saves the bank's statement CSV layout on a cash/bank account" },
+				},
+			)
+			.post(
+				'/reconciliations/:id/statement',
+				async ({ params, body, erp }) => {
+					const file = body && typeof body === 'object' && 'file' in body ? (body as { file: unknown }).file : undefined;
+					return ok(await reconciliations.importStatement(ctxOf(erp), ledgerIdParamSchema.parse(params).id, file));
+				},
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: { description: 'Imports a bank statement CSV as statement lines (all or nothing, duplicates skipped)' },
+				},
+			)
+			.post(
+				'/reconciliations/:id/auto-match',
+				async ({ params, erp }) => ok(await reconciliations.autoMatch(ctxOf(erp), ledgerIdParamSchema.parse(params).id)),
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: { description: 'Matches statement lines on amount, direction, +-3 days and reference' },
+				},
+			)
+			.post(
+				'/reconciliations/:id/items/:itemId/transaction',
+				async ({ params, body, erp }) => {
+					const { counterpartAccountId } = z.object({ counterpartAccountId: z.uuid() }).parse(body);
+					return ok(
+						await reconciliations.createTransaction(
+							ctxOf(erp),
+							ledgerIdParamSchema.parse(params).id,
+							ledgerIdParamSchema.parse({ id: (params as { itemId: string }).itemId }).id,
+							counterpartAccountId,
+						),
+					);
+				},
+				{
+					erp: { permission: ['cash_bank:reconcile'] },
+					detail: { description: 'Books an unmatched statement line as a cash/bank movement and matches it' },
+				},
 			);
 	}
 }

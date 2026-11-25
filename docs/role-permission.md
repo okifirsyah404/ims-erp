@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-721 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+725 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -791,6 +791,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/cash-bank-accounts` | org member + permission | `cash_bank:create` | `owner`, `finance` |
 | GET | `/finance/cash-bank-accounts/:id` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
 | PATCH | `/finance/cash-bank-accounts/:id` | org member + permission | `cash_bank:update` | `owner`, `finance` |
+| PUT | `/finance/cash-bank-accounts/:id/statement-mapping` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | GET | `/finance/cash-bank-transactions` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/cash-bank-transactions` | org member + permission | `cash_bank:create` | `owner`, `finance` |
 | GET | `/finance/cash-bank-transactions/summary` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
@@ -859,9 +860,12 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/finance/reconciliations` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/reconciliations` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | GET | `/finance/reconciliations/:id` | org member + permission | `cash_bank:read` | `owner`, `finance`, `accountant`, `auditor` |
+| POST | `/finance/reconciliations/:id/auto-match` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | POST | `/finance/reconciliations/:id/close` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | POST | `/finance/reconciliations/:id/items` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
+| POST | `/finance/reconciliations/:id/items/:itemId/transaction` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | POST | `/finance/reconciliations/:id/reconcile` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
+| POST | `/finance/reconciliations/:id/statement` | org member + permission | `cash_bank:reconcile` | `owner`, `finance`, `accountant` |
 | GET | `/finance/reports/archives` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/reports/archives` | org member + permission | `accounting_period:close` | `owner`, `accountant` |
 | GET | `/finance/reports/archives/:id` | org member + permission | `financial_report:read` | `owner`, `finance`, `accountant`, `auditor` |

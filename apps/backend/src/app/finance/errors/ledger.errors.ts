@@ -582,3 +582,18 @@ export class OpeningSubledgerFileError extends AppError {
 		super(422, `accounting.openingSubledgerFile.${kind}` as const, messages[kind]);
 	}
 }
+
+/** The cash/bank account has no statement CSV mapping yet (ERP-0143). */
+export class StatementMappingMissingError extends AppError {
+	constructor() {
+		super(422, 'accounting.statementMappingMissing', 'Set the bank statement CSV mapping on this account first');
+	}
+}
+
+/** A statement file was rejected before its rows were read (ERP-0143). */
+export class StatementFileError extends AppError {
+	constructor(kind: 'type' | 'size' | 'empty') {
+		const messages = { type: 'Upload a .csv file', size: 'The file is larger than 5 MB', empty: 'The file has no statement lines' };
+		super(422, `accounting.statementFile.${kind}` as const, messages[kind]);
+	}
+}

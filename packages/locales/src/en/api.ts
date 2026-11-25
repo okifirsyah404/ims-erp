@@ -664,6 +664,10 @@ const api = {
 	'accounting.openingSubledgerFile.size': 'The file is larger than 2 MB',
 	'accounting.openingSubledgerFile.empty': 'The file has no data rows',
 	'accounting.openingSubledgerFile.tooMany': 'The file has more than 5000 rows',
+	'accounting.statementMappingMissing': 'Set the bank statement CSV mapping on this account first',
+	'accounting.statementFile.type': 'Upload a .csv file',
+	'accounting.statementFile.size': 'The file is larger than 5 MB',
+	'accounting.statementFile.empty': 'The file has no statement lines',
 } as const;
 
 export default api;

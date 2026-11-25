@@ -3,10 +3,12 @@ import type { TTx } from '@drizzle/types';
 import {
 	bankReconciliationItems,
 	bankReconciliations,
+	cashBankAccounts,
+	cashBankTransactions,
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNull, lte, notExists, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type {
@@ -134,6 +136,10 @@ export class BankReconciliationRepository implements IBankReconciliationReposito
 			statementAmount: number | null;
 			isMatched: boolean;
 			notes: string | null;
+			statementDate?: string | null;
+			description?: string | null;
+			direction?: 'in' | 'out' | null;
+			matchMethod?: 'auto' | 'manual' | 'created' | null;
 		}>,
 		tx?: TTx,
 	): Promise<unknown[]> {
@@ -182,5 +188,65 @@ export class BankReconciliationRepository implements IBankReconciliationReposito
 			)
 			.returning();
 		return updated ?? null;
+	}
+
+	listMatchCandidates(organizationId: string, cashBankAccountId: string, from: string, to: string, tx?: TTx) {
+		const db = tx ?? this.database;
+		return db
+			.select({
+				id: cashBankTransactions.id,
+				code: cashBankTransactions.code,
+				transactionDate: cashBankTransactions.transactionDate,
+				direction: sql<'in' | 'out'>`${cashBankTransactions.direction}`,
+				amount: cashBankTransactions.amount,
+				referenceNumber: cashBankTransactions.referenceNumber,
+			})
+			.from(cashBankTransactions)
+			.where(
+				and(
+					eq(cashBankTransactions.organizationId, organizationId),
+					eq(cashBankTransactions.cashBankAccountId, cashBankAccountId),
+					eq(cashBankTransactions.status, 'posted'),
+					isNull(cashBankTransactions.deletedAt),
+					gte(cashBankTransactions.transactionDate, from),
+					lte(cashBankTransactions.transactionDate, to),
+					notExists(
+						db
+							.select({ id: bankReconciliationItems.id })
+							.from(bankReconciliationItems)
+							.where(
+								and(
+									eq(bankReconciliationItems.cashBankTransactionId, cashBankTransactions.id),
+									eq(bankReconciliationItems.isMatched, true),
+									isNull(bankReconciliationItems.deletedAt),
+								),
+							),
+					),
+				),
+			);
+	}
+
+	async balanceAsOf(organizationId: string, cashBankAccountId: string, date: string, tx?: TTx): Promise<number> {
+		const db = tx ?? this.database;
+		const [account] = await db
+			.select({ opening: cashBankAccounts.openingBalance })
+			.from(cashBankAccounts)
+			.where(and(eq(cashBankAccounts.organizationId, organizationId), eq(cashBankAccounts.id, cashBankAccountId)))
+			.limit(1);
+		const [movement] = await db
+			.select({
+				net: sql<string>`coalesce(sum(case when ${cashBankTransactions.direction} = 'in' then ${cashBankTransactions.amount} else -${cashBankTransactions.amount} end), 0)`,
+			})
+			.from(cashBankTransactions)
+			.where(
+				and(
+					eq(cashBankTransactions.organizationId, organizationId),
+					eq(cashBankTransactions.cashBankAccountId, cashBankAccountId),
+					eq(cashBankTransactions.status, 'posted'),
+					isNull(cashBankTransactions.deletedAt),
+					lte(cashBankTransactions.transactionDate, date),
+				),
+			);
+		return (account?.opening ?? 0) + Number(movement?.net ?? 0);
 	}
 }

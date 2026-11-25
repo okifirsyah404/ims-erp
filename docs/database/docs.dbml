@@ -3265,6 +3265,7 @@ Table finance.cash_bank_accounts {
   current_balance bigint [not null, default: 0, note: "Denormalized running balance, maintained transactionally by the service."]
   invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts. Came from company.bank_accounts."]
   employee_id uuid [note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract (ExportedEmployeeService.findEmployeeById). Set on an employee's salary payee account (ERP-0119); NULL on every company cash or bank account, and every treasury query filters employee_id IS NULL."]
+  statement_mapping jsonb [note: "Bank statement CSV layout (ERP-0143): delimiter, rows to skip, date column and format, description and reference columns, amount mode (signed, split debit/credit, or amount + DB/CR indicator), decimal separator. Null until finance maps the bank's export."]
   is_primary boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
@@ -3355,15 +3356,23 @@ Table finance.bank_reconciliation_items {
   cash_bank_transaction_id uuid
   statement_reference text
   statement_amount bigint
+  statement_date date [note: "Value date of the statement line (ERP-0143); null on lines keyed in by hand before ERP-0143."]
+  description text [note: "Statement line text as exported by the bank."]
+  direction text [note: "in (credit to our account) or out (debit); null on hand-keyed lines."]
+  match_method text [note: "auto (amount, direction, +-3 days, reference), manual, or created (an unmatched line turned into a cash/bank transaction)."]
   is_matched boolean [not null, default: false]
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Line of a reconciliation, matched against a book transaction."
+  Note: "Line of a reconciliation, matched against a book transaction. ERP-0143: a reconciliation is one bank statement; its lines come from a CSV import (deduplicated on date, direction, amount and text) or are keyed in. A book transaction is matched by at most one live line."
   Indexes {
     bank_reconciliation_id [name: 'bank_reconciliation_items_reconciliation_id_idx']
     cash_bank_transaction_id [name: 'bank_reconciliation_items_transaction_id_idx']
+  }
+  Checks {
+    `direction IS NULL OR direction IN ('in', 'out')`
+    `match_method IS NULL OR match_method IN ('auto', 'manual', 'created')`
   }
 }
 
