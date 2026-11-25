@@ -968,9 +968,16 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   Evidence: migration `20261125053043_erp0144_employee_advances`, unit tests,
   DB smoke 8/8.
 
+- Fixed assets in the ledger, Phase C (ERP-0145, 2026-11-25): finance
+  capitalizes inventory assets, runs monthly depreciation into the ledger,
+  disposals post their gain or loss, and a fiscal report compares tax
+  depreciation per group with the books. Evidence: migrations
+  `20261125054928_erp0145_fixed_asset_books`,
+  `20261125055729_erp0145_item_kind_discriminator`, unit tests, DB smoke.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phase B complete except stock/asset opening
-  detail); ERP-0145..0147 (Phase C: bank statement import,
+  detail); ERP-0146..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
   cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
   profitability, ratios, management pack, closed-period profit contract).

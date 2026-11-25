@@ -6,7 +6,7 @@ import {
 } from '@drizzle/schemas/finance.schema';
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, count, desc, eq, isNull, asc } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
@@ -78,5 +78,13 @@ export class DepreciationRepository implements IDepreciationRepository {
 			this.database.select({ value: count() }).from(assetDepreciations).where(where),
 		]);
 		return paginationResult(request, Number(total?.value ?? 0), rows);
+	}
+
+	listForItem(itemId: string, tx?: TTx) {
+		return (tx ?? this.database)
+			.select()
+			.from(assetDepreciations)
+			.where(and(eq(assetDepreciations.itemId, itemId), isNull(assetDepreciations.deletedAt)))
+			.orderBy(asc(assetDepreciations.periodYear), asc(assetDepreciations.periodMonth));
 	}
 }

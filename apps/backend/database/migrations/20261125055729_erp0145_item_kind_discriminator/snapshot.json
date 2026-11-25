@@ -1,0 +1,38 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "35e95890-e043-4451-8462-b0be412eefdd",
+  "prevIds": [
+    "c606d7b2-1f55-4923-a79d-d47986817cbb"
+  ],
+  "footprints": [
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "posting_rules"
+      ],
+      "writes": [
+        "s|ck|finance.posting_rules.posting_rules_discriminator_type_check"
+      ],
+      "reads": [
+        "n|tbl|finance.posting_rules",
+        "n|sch|finance",
+        "n|col|finance.posting_rules.discriminator_type",
+        "e|col|finance.posting_rules.discriminator_type"
+      ],
+      "sqlHash": "f63ecb0630ab3aa2"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"finance\",\"posting_rules\",\"posting_rules_discriminator_type_check\"]",
+      "set": {
+        "value": "discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method', 'item_kind')"
+      }
+    }
+  ]
+}

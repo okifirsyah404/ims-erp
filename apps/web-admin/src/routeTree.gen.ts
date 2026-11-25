@@ -70,6 +70,7 @@ import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed
 import { Route as AuthedFinanceClosingIndexRouteImport } from './routes/_authed/finance/closing/index'
 import { Route as AuthedFinanceCostCentersIndexRouteImport } from './routes/_authed/finance/cost-centers/index'
 import { Route as AuthedFinanceExpensesIndexRouteImport } from './routes/_authed/finance/expenses/index'
+import { Route as AuthedFinanceFixedAssetsIndexRouteImport } from './routes/_authed/finance/fixed-assets/index'
 import { Route as AuthedFinanceInvestorsIndexRouteImport } from './routes/_authed/finance/investors/index'
 import { Route as AuthedFinanceJournalIndexRouteImport } from './routes/_authed/finance/journal/index'
 import { Route as AuthedFinanceOpeningBalancesIndexRouteImport } from './routes/_authed/finance/opening-balances/index'
@@ -506,6 +507,12 @@ const AuthedFinanceExpensesIndexRoute =
   AuthedFinanceExpensesIndexRouteImport.update({
     id: '/finance/expenses/',
     path: '/finance/expenses/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceFixedAssetsIndexRoute =
+  AuthedFinanceFixedAssetsIndexRouteImport.update({
+    id: '/finance/fixed-assets/',
+    path: '/finance/fixed-assets/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceInvestorsIndexRoute =
@@ -1213,6 +1220,7 @@ export interface FileRoutesByFullPath {
   '/finance/closing/': typeof AuthedFinanceClosingIndexRoute
   '/finance/cost-centers/': typeof AuthedFinanceCostCentersIndexRoute
   '/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/fixed-assets/': typeof AuthedFinanceFixedAssetsIndexRoute
   '/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
   '/finance/journal/': typeof AuthedFinanceJournalIndexRoute
   '/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
@@ -1381,6 +1389,7 @@ export interface FileRoutesByTo {
   '/finance/closing': typeof AuthedFinanceClosingIndexRoute
   '/finance/cost-centers': typeof AuthedFinanceCostCentersIndexRoute
   '/finance/expenses': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/fixed-assets': typeof AuthedFinanceFixedAssetsIndexRoute
   '/finance/investors': typeof AuthedFinanceInvestorsIndexRoute
   '/finance/journal': typeof AuthedFinanceJournalIndexRoute
   '/finance/opening-balances': typeof AuthedFinanceOpeningBalancesIndexRoute
@@ -1551,6 +1560,7 @@ export interface FileRoutesById {
   '/_authed/finance/closing/': typeof AuthedFinanceClosingIndexRoute
   '/_authed/finance/cost-centers/': typeof AuthedFinanceCostCentersIndexRoute
   '/_authed/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/_authed/finance/fixed-assets/': typeof AuthedFinanceFixedAssetsIndexRoute
   '/_authed/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
   '/_authed/finance/journal/': typeof AuthedFinanceJournalIndexRoute
   '/_authed/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
@@ -1721,6 +1731,7 @@ export interface FileRouteTypes {
     | '/finance/closing/'
     | '/finance/cost-centers/'
     | '/finance/expenses/'
+    | '/finance/fixed-assets/'
     | '/finance/investors/'
     | '/finance/journal/'
     | '/finance/opening-balances/'
@@ -1889,6 +1900,7 @@ export interface FileRouteTypes {
     | '/finance/closing'
     | '/finance/cost-centers'
     | '/finance/expenses'
+    | '/finance/fixed-assets'
     | '/finance/investors'
     | '/finance/journal'
     | '/finance/opening-balances'
@@ -2058,6 +2070,7 @@ export interface FileRouteTypes {
     | '/_authed/finance/closing/'
     | '/_authed/finance/cost-centers/'
     | '/_authed/finance/expenses/'
+    | '/_authed/finance/fixed-assets/'
     | '/_authed/finance/investors/'
     | '/_authed/finance/journal/'
     | '/_authed/finance/opening-balances/'
@@ -2584,6 +2597,13 @@ declare module '@tanstack/react-router' {
       path: '/finance/expenses'
       fullPath: '/finance/expenses/'
       preLoaderRoute: typeof AuthedFinanceExpensesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/fixed-assets/': {
+      id: '/_authed/finance/fixed-assets/'
+      path: '/finance/fixed-assets'
+      fullPath: '/finance/fixed-assets/'
+      preLoaderRoute: typeof AuthedFinanceFixedAssetsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/investors/': {
@@ -3448,6 +3468,7 @@ interface AuthedRouteChildren {
   AuthedFinanceClosingIndexRoute: typeof AuthedFinanceClosingIndexRoute
   AuthedFinanceCostCentersIndexRoute: typeof AuthedFinanceCostCentersIndexRoute
   AuthedFinanceExpensesIndexRoute: typeof AuthedFinanceExpensesIndexRoute
+  AuthedFinanceFixedAssetsIndexRoute: typeof AuthedFinanceFixedAssetsIndexRoute
   AuthedFinanceInvestorsIndexRoute: typeof AuthedFinanceInvestorsIndexRoute
   AuthedFinanceJournalIndexRoute: typeof AuthedFinanceJournalIndexRoute
   AuthedFinanceOpeningBalancesIndexRoute: typeof AuthedFinanceOpeningBalancesIndexRoute
@@ -3614,6 +3635,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFinanceClosingIndexRoute: AuthedFinanceClosingIndexRoute,
   AuthedFinanceCostCentersIndexRoute: AuthedFinanceCostCentersIndexRoute,
   AuthedFinanceExpensesIndexRoute: AuthedFinanceExpensesIndexRoute,
+  AuthedFinanceFixedAssetsIndexRoute: AuthedFinanceFixedAssetsIndexRoute,
   AuthedFinanceInvestorsIndexRoute: AuthedFinanceInvestorsIndexRoute,
   AuthedFinanceJournalIndexRoute: AuthedFinanceJournalIndexRoute,
   AuthedFinanceOpeningBalancesIndexRoute:

@@ -430,6 +430,38 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   now send real filters (they sent `customer_payment` / `supplier_payment`,
   which the API rejects - a pre-existing bug).
 
+## Fixed assets in the general ledger (C, ERP-0145, built)
+
+- The physical unit stays `inventory.items` (ADR-0024 Q15: cost, salvage,
+  useful life, method, book value). Finance adds `finance.fixed_asset_books`,
+  one per capitalized item: fiscal group, capitalization and disposal
+  journals, status active/disposed. No second asset master.
+- Capitalization (`POST /finance/fixed-assets/:itemId/capitalize`): Dr fixed
+  asset / Cr the account the cost sits in (GR/IR, inventory, payables, cash or
+  opening equity). Fixed-asset and accumulated-depreciation accounts follow
+  the item kind (new posting-rule discriminator `item_kind`: vehicle
+  1-2120/1-2220, it and furniture 1-2130/1-2230, intangible 1-2310/1-2390,
+  others 1-2110/1-2210).
+- Monthly run (`POST /finance/fixed-assets/depreciation-runs`): every
+  active book from its start month, straight line ((cost - salvage) / life)
+  or double declining (2 / life on the book value), never below salvage, the
+  last month takes the rest; the valuation moves through
+  `ItemService.applyDepreciation`; one journal per run (Dr 6-2500 / Cr
+  accumulated by kind), stamped on each `asset_depreciations` row; items
+  already depreciated for the month are skipped.
+- Disposal: inventory's disposal execution calls `FixedAssetService.postDisposal`
+  in its transaction: Dr accumulated, Dr Piutang Lain-lain 1-1330 (proceeds),
+  Dr loss 8-2000 / Cr fixed asset, Cr gain 7-2000; the book closes. A
+  posting failure rolls the disposal back. Uncapitalized items post nothing.
+- Fiscal report (`GET /finance/fixed-assets/fiscal-report?year=`): UU PPh
+  Pasal 11 groups (kelompok 1-4, buildings), from the acquisition month,
+  declining balance expensing the rest in the last year, buildings straight
+  line only; the difference to the commercial depreciation is the fiscal
+  correction.
+- Not built: capitalization from goods receipts of asset categories, stock
+  and asset opening detail, collecting disposal proceeds (a manual cash
+  movement against 1-1330).
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service
@@ -449,7 +481,9 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - **Fixed assets (C):** `fixed_assets` + `asset_categories` (commercial
   book in the GL, fiscal group for the fiscal-depreciation report),
   straight-line and declining balance, created from goods receipts of
-  asset-flagged product categories.
+  asset-flagged product categories. Built in ERP-0145 as a finance book over
+  `inventory.items` instead of a second register (see below); creation from
+  goods receipts is not built.
 - **Budgets (C):** project x account x month, versioned, actual (posted GL
   lines with `project_id`) + commitment (approved, unbilled PO), checked on PO
   approval, expense-claim submit and project-cost entry; default `warn`.

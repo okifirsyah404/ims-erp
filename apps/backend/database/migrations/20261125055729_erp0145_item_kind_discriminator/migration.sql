@@ -1,0 +1,1 @@
+ALTER TABLE "finance"."posting_rules" DROP CONSTRAINT "posting_rules_discriminator_type_check", ADD CONSTRAINT "posting_rules_discriminator_type_check" CHECK (discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method', 'item_kind'));

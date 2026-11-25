@@ -13,6 +13,8 @@ export interface IDepreciationRepository {
 	/** The entry of one item for one period, or `null`. */
 	findPeriod(itemId: string, periodYear: number, periodMonth: number, tx?: TTx): Promise<TAssetDepreciationSelect | null>;
 	create(data: Omit<TAssetDepreciationInsert, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>, tx?: TTx): Promise<TAssetDepreciationSelect>;
+	/** Every live entry of one item, oldest first (ERP-0145 run and fiscal report). */
+	listForItem(itemId: string, tx?: TTx): Promise<TAssetDepreciationSelect[]>;
 	/** Fetches one page of depreciation entries, newest period first. */
 	paginate(
 		request: TDepreciationPaginationRequest,

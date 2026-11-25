@@ -675,6 +675,9 @@ const api = {
 	'accounting.settlementAdvanceInvalid': 'The advance must be disbursed and have no other open settlement',
 	'payment.allocationMixed': 'A payment cannot mix invoices or bills, claims and advances',
 	'accounting.employeePaymentVoid': 'Payments of claims, advances and settlements cannot be voided yet; correct them with a new payment',
+	'accounting.fixedAssetNotFound': 'This item is not capitalized',
+	'accounting.fixedAssetCapitalized': 'This item is already capitalized',
+	'accounting.fixedAssetItemInvalid': 'The item needs an acquisition cost, this organization and a live status',
 } as const;
 
 export default api;

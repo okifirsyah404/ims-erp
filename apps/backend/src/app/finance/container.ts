@@ -50,6 +50,8 @@ import {
 	OPENING_SUBLEDGER_SERVICE_TOKEN,
 	EMPLOYEE_ADVANCE_REPOSITORY_TOKEN,
 	EMPLOYEE_ADVANCE_SERVICE_TOKEN,
+	FIXED_ASSET_BOOK_REPOSITORY_TOKEN,
+	FIXED_ASSET_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -97,6 +99,8 @@ import { OpeningSubledgerRepository } from './repositories/opening-subledger.rep
 import { OpeningSubledgerService } from './services/opening-subledger.service';
 import { EmployeeAdvanceRepository } from './repositories/employee-advance.repository';
 import { EmployeeAdvanceService } from './services/employee-advance.service';
+import { FixedAssetBookRepository } from './repositories/fixed-asset.repository';
+import { FixedAssetService } from './services/fixed-asset.service';
 import { TaxLedgerService } from './services/tax-ledger.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
@@ -213,6 +217,8 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(OPENING_SUBLEDGER_SERVICE_TOKEN, { useClass: OpeningSubledgerService });
 	container.register(EMPLOYEE_ADVANCE_REPOSITORY_TOKEN, { useClass: EmployeeAdvanceRepository });
 	container.register(EMPLOYEE_ADVANCE_SERVICE_TOKEN, { useClass: EmployeeAdvanceService });
+	container.register(FIXED_ASSET_BOOK_REPOSITORY_TOKEN, { useClass: FixedAssetBookRepository });
+	container.register(FIXED_ASSET_SERVICE_TOKEN, { useClass: FixedAssetService });
 }
 
 export * from './constants/di';

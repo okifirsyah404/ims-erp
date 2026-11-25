@@ -64,10 +64,10 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 204 |
+| Logical reference columns | 206 |
 | Distinct targets | 28 |
 | Cross-module `Ref:` declarations | 0 |
-| Intra-module `Ref:` declarations | 164 |
+| Intra-module `Ref:` declarations | 167 |
 
 Counts are re-derived on every run of `validate-dbml.ts`, which parses
 `docs.dbml` with `@dbml/core` and fails the run if a `Ref:` crosses a module
@@ -77,7 +77,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 57 |
+| `auth.organizations.id` | Identity | 58 |
 | `auth.users.id` | Identity | 32 |
 | `product.products.id` | Product | 16 |
 | `customer.customers.id` | Customer | 13 |
@@ -92,6 +92,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `payment.payments.id` | Payment | 4 |
 | `finance.journal_entries.id` | Finance | 3 |
 | `sale.invoices.id` | Sale | 3 |
+| `inventory.items.id` | Inventory | 2 |
 | `inventory.movements.id` | Inventory | 2 |
 | `procurement.purchase_orders.id` | Procurement | 2 |
 | `project.leads.id` | Project | 2 |
@@ -99,7 +100,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `finance.cash_bank_accounts.id` | Finance | 1 |
 | `finance.payment_terms.id` | Finance | 1 |
 | `inventory.item_serials.id` | Inventory | 1 |
-| `inventory.items.id` | Inventory | 1 |
 | `procurement.purchase_order_items.id` | Procurement | 1 |
 | `project.warranties.id` | Project | 1 |
 | `sale.invoice_items.id` | Sale | 1 |
@@ -108,7 +108,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 ## The 28 targets in full
 
-### `auth.organizations.id` - owner Identity, 57 referring columns
+### `auth.organizations.id` - owner Identity, 58 referring columns
 
 - `finance.account_balances`  ->  `organization_id`
 - `finance.accounting_periods`  ->  `organization_id`
@@ -128,6 +128,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.expense_claims`  ->  `organization_id`
 - `finance.expense_settlement_items`  ->  `organization_id`
 - `finance.expense_settlements`  ->  `organization_id`
+- `finance.fixed_asset_books`  ->  `organization_id`
 - `finance.journal_entries`  ->  `organization_id`
 - `finance.journal_lines`  ->  `organization_id`
 - `finance.journal_templates`  ->  `organization_id`
@@ -340,6 +341,11 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `finance.credit_memos`  ->  `invoice_id`
 - `finance.deferred_revenue_schedules`  ->  `invoice_id`
 
+### `inventory.items.id` - owner Inventory, 2 referring columns
+
+- `finance.asset_depreciations`  ->  `item_id`
+- `finance.fixed_asset_books`  ->  `item_id`
+
 ### `inventory.movements.id` - owner Inventory, 2 referring columns
 
 - `procurement.goods_receipt_items`  ->  `movement_id`
@@ -371,10 +377,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ### `inventory.item_serials.id` - owner Inventory, 1 referring column
 
 - `ticket.tickets`  ->  `item_serial_id`
-
-### `inventory.items.id` - owner Inventory, 1 referring column
-
-- `finance.asset_depreciations`  ->  `item_id`
 
 ### `procurement.purchase_order_items.id` - owner Procurement, 1 referring column
 

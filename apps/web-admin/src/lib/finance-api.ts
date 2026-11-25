@@ -440,6 +440,7 @@ export const POSTING_DISCRIMINATORS = [
 	'asset_category',
 	'cost_category',
 	'payment_method',
+	'item_kind',
 ] as const;
 export type TPostingDiscriminator = (typeof POSTING_DISCRIMINATORS)[number];
 
@@ -1653,4 +1654,59 @@ export function createSettlement(input: {
 
 export function settlementAction(id: string, action: string) {
 	return sendData<TExpenseSettlement>(`/finance/settlements/${id}/${action}`, 'POST');
+}
+
+/* ----------------------------- fixed assets (ERP-0145) ----------------------------- */
+
+export const FISCAL_GROUPS = ['kelompok_1', 'kelompok_2', 'kelompok_3', 'kelompok_4', 'bangunan_permanen', 'bangunan_tidak_permanen'] as const;
+export type TFiscalGroup = (typeof FISCAL_GROUPS)[number];
+
+export type TFixedAsset = {
+	id: string;
+	itemId: string | null;
+	itemCode: string;
+	itemName: string;
+	itemKind: string;
+	fiscalGroup: TFiscalGroup | null;
+	capitalizedOn: string;
+	capitalizedAmount: number;
+	accumulatedDepreciation: number;
+	bookValue: number;
+	status: 'active' | 'disposed';
+};
+
+export type TFiscalReportRow = {
+	itemId: string;
+	itemCode: string;
+	itemName: string;
+	fiscalGroup: TFiscalGroup | null;
+	fiscalDepreciation: number | null;
+	commercialDepreciation: number;
+	difference: number | null;
+};
+
+export function fixedAssetsQueryOptions() {
+	return queryOptions({
+		queryKey: ['finance', 'fixed-assets', 'list'],
+		queryFn: () => getData<TFixedAsset[]>('/finance/fixed-assets'),
+	});
+}
+
+export function fiscalReportQueryOptions(year: number) {
+	return queryOptions({
+		queryKey: ['finance', 'fixed-assets', 'fiscal', year],
+		queryFn: () => getData<{ year: number; rows: TFiscalReportRow[] }>(`/finance/fixed-assets/fiscal-report?year=${year}`),
+	});
+}
+
+export function capitalizeAsset(itemId: string, input: { capitalizedOn: string; counterpartAccountId: string; fiscalGroup: TFiscalGroup | null }) {
+	return sendData<TFixedAsset>(`/finance/fixed-assets/${itemId}/capitalize`, 'POST', input);
+}
+
+export function setFiscalGroup(itemId: string, fiscalGroup: TFiscalGroup | null) {
+	return sendData<TFixedAsset>(`/finance/fixed-assets/${itemId}/fiscal-group`, 'PATCH', { fiscalGroup });
+}
+
+export function runDepreciation(year: number, month: number) {
+	return sendData<{ depreciated: number; total: number; journalEntryId: string | null }>('/finance/fixed-assets/depreciation-runs', 'POST', { year, month });
 }

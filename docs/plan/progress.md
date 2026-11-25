@@ -12,6 +12,64 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0145: fixed assets in the general ledger
+
+**Scope.** Phase C slice 3.
+
+**Design gate.** `docs/database/` read for `inventory.items` (asset columns),
+`inventory.disposals`, `finance.asset_depreciations`, `finance.posting_rules`
+(discriminator check) and the CoA. New logical references:
+`fixed_asset_books.item_id`, `created_by`. Manual grill pass: ownership -
+inventory keeps the physical asset and its valuation (ADR-0024 Q15), finance
+keeps the book, journals and fiscal view; inventory calls finance only to post
+the disposal; tenancy - `organization_id`; soft delete - `deleted_at`; money -
+minor units, rupiah rounding down; status - `active` / `disposed`; one new
+discriminator value `item_kind`. Decision: no `fixed_assets` /
+`asset_categories` tables (the grill's wording) because that would be a second
+register of the same units; capitalization from goods receipts deferred.
+
+**Changes.** Migrations `20261125054928_erp0145_fixed_asset_books` (1 CREATE
+TABLE, 3 intra-module FKs) and `20261125055729_erp0145_item_kind_discriminator`
+(posting-rule check widened). Backend: `utils/depreciation.ts`,
+`FixedAssetBookRepository`, `FixedAssetService` (list, capitalize,
+setFiscalGroup, runMonth, fiscalReport, postDisposal), `FixedAssetController`
+(`/finance/fixed-assets*`), `DepreciationRepository.listForItem`,
+`DisposalService.executeDisposal` posts through finance; roles
+`disposal_receivable`, `asset_disposal_gain`, `asset_disposal_loss`, defaults
+for `fixed_asset` / `accumulated_depreciation`, events
+`finance.asset_capitalized|depreciated|disposed`; seed 1-2390 and 8 item-kind
+rules. Web-admin: `/finance/fixed-assets` (list, capitalize, run, fiscal
+group, fiscal report), nav entry, item-kind discriminator label (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 206 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0145_fixed_asset_books / erp0145_item_kind_discriminator; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # first run failed: item_kind rules violated the discriminator check
+                                              # (fixed by the second migration); then rulesInserted 8
+bun run <temporary asset-smoke script>        # run 1: 6 PASS (capitalize Dr 1-2120 / Cr equity, November run 1,333 Dr
+                                              # 6-2500 / Cr 1-2220, rerun posts nothing, item valuation moved, fiscal
+                                              # report) then the disposal was refused - no December 2026 period - and
+                                              # rolled back; run 2: 2/2 PASS (disposal still approved; re-dated to
+                                              # 2026-11-28, journal Dr 1-1330 25,000 + 1-2220 1,333 + 8-2000 5,667 /
+                                              # Cr 1-2120 32,000, book disposed)
+bun test test/finance/fixed-assets.test.ts    # 7 pass
+bun run test                                  # 7/7 tasks: backend 1565, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 744 routes
+```
+
+The smoke changed the scratch item AST-SEED-002 (vehicle, 24 months) and
+disposed it.
+
+**Not verified.** Capitalization from goods receipts (not built); no browser
+walk-through.
+
+Next executable task: ERP-0146 (project budgets: versioned, actual +
+commitment, warn/block on PO approval, claim submit, project cost entry).
+
 ## 2026-11-25 - ERP-0144: employee advances, settlements and employee payments
 
 **Scope.** Phase C slice 2.

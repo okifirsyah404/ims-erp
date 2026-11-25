@@ -216,6 +216,11 @@ export const navSections: {
 						permission: 'cost_center.read',
 					},
 					{
+						titleKey: 'item.fixedAssets',
+						url: '/finance/fixed-assets',
+						permission: 'asset.read',
+					},
+					{
 						titleKey: 'item.reconciliation',
 						url: '/finance/reconciliation',
 						permission: 'cash_bank.reconcile',

@@ -73,6 +73,8 @@ const DYNAMIC_PREFIXES = [
 	'finance:statement.method.',
 	'finance:advances.status.',
 	'finance:settlements.status.',
+	'finance:fixedAssets.group.',
+	'finance:fixedAssets.status.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',

@@ -111,6 +111,7 @@ const ACCOUNTS: TAccountSeed[] = [
 	p('1-2240', 'Akumulasi Penyusutan Bangunan', 'asset', '1-2200', 'investing', 'credit'),
 	h('1-2300', 'Aset Tak Berwujud', 'asset', '1-2000'),
 	p('1-2310', 'Perangkat Lunak dan Lisensi', 'asset', '1-2300', 'investing'),
+	p('1-2390', 'Akumulasi Amortisasi Aset Tak Berwujud', 'asset', '1-2300', 'investing', 'credit'),
 	// 2 Liabilitas
 	h('2-0000', 'Liabilitas', 'liability'),
 	h('2-1000', 'Liabilitas Jangka Pendek', 'liability', '2-0000'),
@@ -392,6 +393,52 @@ export async function seedChartOfAccounts(): Promise<void> {
 			updatedAt: now,
 		});
 		costCentersInserted += 1;
+	}
+
+	// ERP-0145: fixed-asset and accumulated-depreciation accounts follow the
+	// inventory item kind; equipment and tools use the defaults (1-2110/1-2210).
+	const KIND_RULES: Array<[string, string, string]> = [
+		['fixed_asset', 'vehicle', '1-2120'],
+		['accumulated_depreciation', 'vehicle', '1-2220'],
+		['fixed_asset', 'it', '1-2130'],
+		['accumulated_depreciation', 'it', '1-2230'],
+		['fixed_asset', 'furniture', '1-2130'],
+		['accumulated_depreciation', 'furniture', '1-2230'],
+		['fixed_asset', 'intangible', '1-2310'],
+		['accumulated_depreciation', 'intangible', '1-2390'],
+	];
+	for (const [role, kind, code] of KIND_RULES) {
+		const target = byCode.get(code);
+		if (!target) continue;
+		const [existing] = await drizzleDB
+			.select({ id: postingRules.id })
+			.from(postingRules)
+			.where(
+				and(
+					eq(postingRules.organizationId, organization.id),
+					eq(postingRules.eventType, ANY_POSTING_EVENT),
+					eq(postingRules.role, role),
+					eq(postingRules.discriminatorType, 'item_kind'),
+					eq(postingRules.discriminatorValue, kind),
+					isNull(postingRules.deletedAt),
+				),
+			)
+			.limit(1);
+		if (existing) continue;
+		const now = new Date();
+		await drizzleDB.insert(postingRules).values({
+			organizationId: organization.id,
+			eventType: ANY_POSTING_EVENT,
+			role,
+			discriminatorType: 'item_kind',
+			discriminatorValue: kind,
+			accountId: target.id,
+			isActive: true,
+			description: `Asset kind ${kind} (seed)`,
+			createdAt: now,
+			updatedAt: now,
+		});
+		rulesInserted += 1;
 	}
 
 	logger.info({ inserted, rulesInserted, costCentersInserted }, 'Chart of accounts seeded');

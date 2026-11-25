@@ -149,6 +149,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.postingRules': 'Aturan Posting',
 	'item.costCenters': 'Pusat Biaya',
 	'item.taxPph21': 'Tabel PPh 21',
+	'item.fixedAssets': 'Aset tetap',
 };
 
 export default nav_;

@@ -40,6 +40,9 @@ export const POSTING_ROLES = [
 	'bpjs_payable',
 	'employee_receivable',
 	'employee_advance',
+	'disposal_receivable',
+	'asset_disposal_gain',
+	'asset_disposal_loss',
 	'fixed_asset',
 	'accumulated_depreciation',
 	'depreciation_expense',
@@ -72,6 +75,9 @@ export const POSTING_EVENT_TYPES = [
 	'payroll.approved',
 	'payroll.paid',
 	'finance.advance_settled',
+	'finance.asset_capitalized',
+	'finance.asset_depreciated',
+	'finance.asset_disposed',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -126,7 +132,12 @@ export const DEFAULT_POSTING_RULE_CODES: Partial<Record<TPostingRole, string>> =
 	bpjs_payable: '2-1700',
 	employee_receivable: '1-1320',
 	employee_advance: '1-1340',
+	disposal_receivable: '1-1330',
+	asset_disposal_gain: '7-2000',
+	asset_disposal_loss: '8-2000',
 	depreciation_expense: '6-2500',
+	fixed_asset: '1-2110',
+	accumulated_depreciation: '1-2210',
 	bad_debt_allowance: '1-1390',
 	retained_earnings: '3-2000',
 };

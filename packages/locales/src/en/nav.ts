@@ -150,6 +150,7 @@ const nav = {
 	'item.postingRules': 'Posting Rules',
 	'item.costCenters': 'Cost Centres',
 	'item.taxPph21': 'PPh 21 tables',
+	'item.fixedAssets': 'Fixed assets',
 } as const;
 
 export default nav;

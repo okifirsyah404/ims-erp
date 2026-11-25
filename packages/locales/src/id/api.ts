@@ -679,6 +679,9 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.settlementAdvanceInvalid': 'Uang muka harus sudah dicairkan dan tidak punya pertanggungjawaban lain yang masih terbuka',
 	'payment.allocationMixed': 'Satu pembayaran tidak boleh mencampur faktur/tagihan, klaim, dan uang muka',
 	'accounting.employeePaymentVoid': 'Pembayaran klaim, uang muka, dan pertanggungjawaban belum bisa dibatalkan; koreksi dengan pembayaran baru',
+	'accounting.fixedAssetNotFound': 'Barang ini belum dikapitalisasi',
+	'accounting.fixedAssetCapitalized': 'Barang ini sudah dikapitalisasi',
+	'accounting.fixedAssetItemInvalid': 'Barang harus punya harga perolehan, milik organisasi ini, dan belum dilepas',
 };
 
 export default api;

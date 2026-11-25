@@ -3154,7 +3154,7 @@ Table finance.posting_rules {
     account_id [name: 'posting_rules_account_id_idx']
   }
   Checks {
-    `discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method')`
+    `discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method', 'item_kind')`
     `(discriminator_type = '') = (discriminator_value = '')`
   }
 }
@@ -3547,6 +3547,33 @@ Table finance.asset_depreciations {
   }
 }
 
+Table finance.fixed_asset_books {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through ItemService.getItem (same organization, acquisition cost > 0, not disposed). The physical unit stays the asset master in inventory (ADR-0024 Q15)."]
+  fiscal_group text [note: "Tax depreciation group (UU PPh Pasal 11): kelompok_1..kelompok_4, bangunan_permanen, bangunan_tidak_permanen. Null until finance assigns it; such assets are left out of the fiscal report."]
+  capitalized_on date [not null]
+  capitalized_amount bigint [not null]
+  counterpart_account_id uuid [not null, note: "Account credited at capitalization (GR/IR, inventory, payables, cash or opening equity)."]
+  capitalization_entry_id uuid [note: "The capitalization journal: Dr fixed asset (by item kind) / Cr counterpart."]
+  disposal_entry_id uuid [note: "The disposal journal posted when inventory executes the disposal."]
+  status text [not null, default: 'active']
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Finance's book of a capitalized fixed asset (ERP-0145): links an inventory item to its capitalization and disposal journals and its fiscal group. Only capitalized items enter the monthly depreciation run (Dr Beban Penyusutan / Cr Akumulasi Penyusutan by item kind)."
+  Indexes {
+    (organization_id, item_id) [unique, name: 'fixed_asset_books_item_uq', note: 'WHERE deleted_at IS NULL']
+    status [name: 'fixed_asset_books_status_idx']
+  }
+  Checks {
+    `status IN ('active', 'disposed')`
+    `capitalized_amount > 0`
+    `fiscal_group IS NULL OR fiscal_group IN ('kelompok_1', 'kelompok_2', 'kelompok_3', 'kelompok_4', 'bangunan_permanen', 'bangunan_tidak_permanen')`
+  }
+}
+
 Table finance.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -3824,6 +3851,9 @@ Ref: finance.expense_claim_items.expense_claim_id > finance.expense_claims.id [d
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
 Ref: finance.expense_settlements.journal_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.fixed_asset_books.counterpart_account_id > finance.chart_of_accounts.id [delete: restrict]
+Ref: finance.fixed_asset_books.capitalization_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.fixed_asset_books.disposal_entry_id > finance.journal_entries.id [delete: set null]
 
 // ---------------------------------------------------------------------------
 // MODULE: Tax  (schema: tax, new; split out of accounting). Tax rates, the

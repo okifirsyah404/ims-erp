@@ -493,6 +493,8 @@ export const POSTING_RULE_DISCRIMINATORS = [
 	'cost_category',
 	/** Receipt method (cash, bank_transfer, ...) for the `cash_receipt` role (ERP-0139). */
 	'payment_method',
+	/** Inventory item kind (vehicle, it, ...) for the fixed-asset accounts (ERP-0145). */
+	'item_kind',
 ] as const;
 export type PostingRuleDiscriminator =
 	(typeof POSTING_RULE_DISCRIMINATORS)[number];
@@ -536,7 +538,7 @@ export const postingRules = financeSchema.table(
 		index('posting_rules_account_id_idx').on(table.accountId),
 		check(
 			'posting_rules_discriminator_type_check',
-			sql`discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method')`,
+			sql`discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method', 'item_kind')`,
 		),
 		check(
 			'posting_rules_discriminator_pair_check',
@@ -1298,6 +1300,50 @@ export const expenseSettlementItems = financeSchema.table(
 	],
 );
 
+/** Fiscal depreciation groups of UU PPh Pasal 11 (ERP-0145). */
+export const FISCAL_GROUPS = [
+	'kelompok_1',
+	'kelompok_2',
+	'kelompok_3',
+	'kelompok_4',
+	'bangunan_permanen',
+	'bangunan_tidak_permanen',
+] as const;
+export type TFiscalGroup = (typeof FISCAL_GROUPS)[number];
+
+/** Finance's book of a capitalized inventory item (ERP-0145). */
+export const fixedAssetBooks = financeSchema.table(
+	'fixed_asset_books',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		organizationId: organizationId(),
+		/** Logical reference to inventory.items.id — cross-module FK omitted. */
+		itemId: uuid('item_id'),
+		fiscalGroup: text('fiscal_group').$type<TFiscalGroup>(),
+		capitalizedOn: date('capitalized_on').notNull(),
+		capitalizedAmount: bigint('capitalized_amount', { mode: 'number' }).notNull(),
+		counterpartAccountId: uuid('counterpart_account_id')
+			.notNull()
+			.references(() => chartOfAccounts.id, { onDelete: 'restrict' }),
+		capitalizationEntryId: uuid('capitalization_entry_id').references(() => journalEntries.id, { onDelete: 'set null' }),
+		disposalEntryId: uuid('disposal_entry_id').references(() => journalEntries.id, { onDelete: 'set null' }),
+		status: text('status').$type<'active' | 'disposed'>().notNull().default('active'),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('fixed_asset_books_item_uq').on(table.organizationId, table.itemId).where(sql`deleted_at IS NULL`),
+		index('fixed_asset_books_status_idx').on(table.status),
+		check('fixed_asset_books_status_check', sql`status IN ('active', 'disposed')`),
+		check('fixed_asset_books_amount_check', sql`capitalized_amount > 0`),
+		check(
+			'fixed_asset_books_fiscal_group_check',
+			sql`fiscal_group IS NULL OR fiscal_group IN ('kelompok_1', 'kelompok_2', 'kelompok_3', 'kelompok_4', 'bangunan_permanen', 'bangunan_tidak_permanen')`,
+		),
+	],
+);
+
 export const assetDepreciations = financeSchema.table(
 	'asset_depreciations',
 	{
@@ -1441,3 +1487,5 @@ export type TOpeningSubledgerItemInsert = typeof openingSubledgerItems.$inferIns
 export type TEmployeeAdvanceSelect = typeof employeeAdvances.$inferSelect;
 export type TExpenseSettlementSelect = typeof expenseSettlements.$inferSelect;
 export type TExpenseSettlementItemSelect = typeof expenseSettlementItems.$inferSelect;
+
+export type TFixedAssetBookSelect = typeof fixedAssetBooks.$inferSelect;

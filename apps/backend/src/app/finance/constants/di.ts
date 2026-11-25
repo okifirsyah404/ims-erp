@@ -1,3 +1,5 @@
+import type { IFixedAssetBookRepository } from '../contracts/fixed-asset.contract';
+import type { FixedAssetService } from '../services/fixed-asset.service';
 import type { IEmployeeAdvanceRepository } from '../contracts/employee-advance.contract';
 import type { EmployeeAdvanceService } from '../services/employee-advance.service';
 import type { IOpeningSubledgerRepository } from '../contracts/opening-subledger.contract';
@@ -185,3 +187,7 @@ export const OPENING_SUBLEDGER_SERVICE_TOKEN: InjectionToken<OpeningSubledgerSer
 /** Employee advances and settlements (ERP-0144). */
 export const EMPLOYEE_ADVANCE_REPOSITORY_TOKEN: InjectionToken<IEmployeeAdvanceRepository> = Symbol('EMPLOYEE_ADVANCE_REPOSITORY');
 export const EMPLOYEE_ADVANCE_SERVICE_TOKEN: InjectionToken<EmployeeAdvanceService> = Symbol('EMPLOYEE_ADVANCE_SERVICE');
+
+/** Fixed-asset books (ERP-0145). */
+export const FIXED_ASSET_BOOK_REPOSITORY_TOKEN: InjectionToken<IFixedAssetBookRepository> = Symbol('FIXED_ASSET_BOOK_REPOSITORY');
+export const FIXED_ASSET_SERVICE_TOKEN: InjectionToken<FixedAssetService> = Symbol('FIXED_ASSET_SERVICE');
