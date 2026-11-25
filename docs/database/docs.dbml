@@ -3119,7 +3119,7 @@ Table finance.posting_rules {
     account_id [name: 'posting_rules_account_id_idx']
   }
   Checks {
-    `discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category')`
+    `discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method')`
     `(discriminator_type = '') = (discriminator_value = '')`
   }
 }

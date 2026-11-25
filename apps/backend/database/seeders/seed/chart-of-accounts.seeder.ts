@@ -290,6 +290,42 @@ export async function seedChartOfAccounts(): Promise<void> {
 		rulesInserted += 1;
 	}
 
+	// ERP-0139: receipts paid in cash land in petty cash; every other method
+	// uses the default `cash_receipt` rule (the main bank account).
+	const pettyCash = byCode.get('1-1110');
+	if (pettyCash) {
+		const [existing] = await drizzleDB
+			.select({ id: postingRules.id })
+			.from(postingRules)
+			.where(
+				and(
+					eq(postingRules.organizationId, organization.id),
+					eq(postingRules.eventType, ANY_POSTING_EVENT),
+					eq(postingRules.role, 'cash_receipt'),
+					eq(postingRules.discriminatorType, 'payment_method'),
+					eq(postingRules.discriminatorValue, 'cash'),
+					isNull(postingRules.deletedAt),
+				),
+			)
+			.limit(1);
+		if (!existing) {
+			const now = new Date();
+			await drizzleDB.insert(postingRules).values({
+				organizationId: organization.id,
+				eventType: ANY_POSTING_EVENT,
+				role: 'cash_receipt',
+				discriminatorType: 'payment_method',
+				discriminatorValue: 'cash',
+				accountId: pettyCash.id,
+				isActive: true,
+				description: 'Cash receipts (seed)',
+				createdAt: now,
+				updatedAt: now,
+			});
+			rulesInserted += 1;
+		}
+	}
+
 	let costCentersInserted = 0;
 	for (const center of COST_CENTERS) {
 		const [existing] = await drizzleDB

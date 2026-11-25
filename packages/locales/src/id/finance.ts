@@ -683,6 +683,16 @@ const finance: Record<keyof typeof en, string> = {
 	'postingRules.event.sale.delivery_shipped': 'Surat jalan dikirim',
 	'postingRules.event.sale.return_received': 'Retur penjualan diterima',
 	'postingRules.event.inventory.adjustment_posted': 'Penyesuaian stok diposting',
+	'postingRules.role.cash_receipt': 'Kas diterima (per metode)',
+	'postingRules.discriminator.payment_method': 'Metode pembayaran',
+	'postingRules.event.sale.receipt_posted': 'Kuitansi dicatat',
+	'postingRules.event.payment.gateway_settled': 'Settlement payment gateway',
+	'gatewaySettlement.title': 'Catat settlement payment gateway',
+	'gatewaySettlement.hint': 'Dana neto masuk ke rekening ini dengan lawan akun kliring gateway; biayanya dibukukan sebagai beban payment gateway.',
+	'gatewaySettlement.gross': 'Total bruto',
+	'gatewaySettlement.fee': 'Biaya gateway',
+	'gatewaySettlement.reference': 'Referensi settlement',
+	'gatewaySettlement.recorded': 'Settlement payment gateway dicatat',
 } as const;
 
 export default finance;

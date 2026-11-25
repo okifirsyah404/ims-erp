@@ -490,6 +490,8 @@ export const POSTING_RULE_DISCRIMINATORS = [
 	'expense_category',
 	'asset_category',
 	'cost_category',
+	/** Receipt method (cash, bank_transfer, ...) for the `cash_receipt` role (ERP-0139). */
+	'payment_method',
 ] as const;
 export type PostingRuleDiscriminator =
 	(typeof POSTING_RULE_DISCRIMINATORS)[number];
@@ -533,7 +535,7 @@ export const postingRules = financeSchema.table(
 		index('posting_rules_account_id_idx').on(table.accountId),
 		check(
 			'posting_rules_discriminator_type_check',
-			sql`discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category')`,
+			sql`discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method')`,
 		),
 		check(
 			'posting_rules_discriminator_pair_check',

@@ -923,8 +923,15 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   DB smoke 7/7, PPV unit test. Open: PO-to-bill not run end to end on a
   database, supplier credit note, GR/IR aging warning.
 
+- Receipts and gateway settlement, Phase B (ERP-0139, 2026-11-25): kuitansi
+  (manual and online) now post to the GL and the AR open item (they did not
+  before), credit memos survive later receipts, and gateway payouts are
+  recorded as net to bank + fee against gateway clearing. Evidence: migration
+  `20261125001655_erp0139_receipts_gateway`, DB smoke 8/8, 7 unit tests.
+  Open: settlement-report import, refunds.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close; ERP-0138..0142 (Phase B:
+- ERP-0131 year-end close; ERP-0138, 0140..0142 (Phase B:
   payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
   sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,

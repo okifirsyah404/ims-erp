@@ -23,6 +23,7 @@ export const POSTING_ROLES = [
 	'cogs',
 	'project_cogs',
 	'grir_clearing',
+	'cash_receipt',
 	'purchase_price_variance',
 	'inventory_variance',
 	'gateway_clearing',
@@ -55,6 +56,8 @@ export const POSTING_EVENT_TYPES = [
 	'sale.delivery_shipped',
 	'sale.return_received',
 	'inventory.adjustment_posted',
+	'sale.receipt_posted',
+	'payment.gateway_settled',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -91,6 +94,7 @@ export const DEFAULT_POSTING_RULE_CODES: Partial<Record<TPostingRole, string>> =
 	cogs: '5-1100',
 	project_cogs: '5-1200',
 	grir_clearing: '2-1150',
+	cash_receipt: '1-1120',
 	purchase_price_variance: '5-1300',
 	inventory_variance: '5-1400',
 	gateway_clearing: '1-1250',

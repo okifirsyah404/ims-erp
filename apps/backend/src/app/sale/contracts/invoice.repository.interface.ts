@@ -214,6 +214,7 @@ export type TInvoiceRepository = {
 		id: string,
 		actorUserId: string,
 		reason: string,
+		tx?: unknown,
 	): Promise<TReceiptSelect | null>;
 };
 

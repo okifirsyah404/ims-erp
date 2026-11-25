@@ -40,6 +40,7 @@ import {
 	updateCashBankAccount,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
+import { GatewaySettlementDialog } from './gateway-settlement-dialog';
 
 /** The route API for `/finance/cash-bank` (validated search params). */
 const routeApi = getRouteApi('/_authed/finance/cash-bank/');
@@ -67,6 +68,7 @@ export function CashBankPage() {
 	const canRead = usePermission('cash_bank.read');
 	const canCreate = usePermission('cash_bank.create');
 	const canUpdate = usePermission('cash_bank.update');
+	const [settling, setSettling] = useState(false);
 
 	const [creating, setCreating] = useState(false);
 	const [editing, setEditing] = useState<TCashBankAccount | null>(null);
@@ -318,12 +320,18 @@ export function CashBankPage() {
 					</p>
 				</div>
 				{canCreate ? (
-					<Button size='sm' variant='outline' onClick={() => setCreating(true)}>
-						<Plus className='size-4' data-icon='inline-start' />
-						{t('finance:cashBank.create')}
-					</Button>
+					<div className='flex gap-2'>
+						<Button size='sm' variant='outline' onClick={() => setSettling(true)}>
+							{t('finance:gatewaySettlement.title')}
+						</Button>
+						<Button size='sm' variant='outline' onClick={() => setCreating(true)}>
+							<Plus className='size-4' data-icon='inline-start' />
+							{t('finance:cashBank.create')}
+						</Button>
+					</div>
 				) : null}
 			</div>
+			{settling ? <GatewaySettlementDialog accounts={accounts ?? []} onClose={() => setSettling(false)} /> : null}
 
 			{accountsError ? (
 				<ErrorState error={accountsErr} bordered />

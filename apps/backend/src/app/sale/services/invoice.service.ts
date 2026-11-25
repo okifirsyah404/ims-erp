@@ -18,7 +18,8 @@ import {
 	POSTING_SERVICE_TOKEN,
 	AR_ACCOUNT_RESOLVER_TOKEN,
 } from '../../finance/constants/ar-di';
-import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
+import { INVOICE_REPOSITORY_TOKEN, RECEIPT_LEDGER_SERVICE_TOKEN } from '../constants/ar-di';
+import type { ReceiptLedgerService } from './receipt-ledger.service';
 import type {
 	TInvoiceRepository,
 	TInvoiceSummary,
@@ -95,6 +96,9 @@ export class InvoiceService {
 		/** ERP-0135: service-period lines open finance's deferred-revenue schedules. */
 		@inject(DEFERRED_REVENUE_PORT_TOKEN)
 		private readonly deferredRevenue: IDeferredRevenuePort,
+		/** ERP-0139: receipts post to the ledger and the AR open item. */
+		@inject(RECEIPT_LEDGER_SERVICE_TOKEN)
+		private readonly receiptLedger?: Pick<ReceiptLedgerService, 'post' | 'reverse'>,
 	) {}
 
 	/**
@@ -473,19 +477,27 @@ export class InvoiceService {
 		const code = await this.numbering.next('receipt', {
 			date: new Date(`${receivedDate}T12:00:00+07:00`),
 		});
-		const receipt = await this.repo.addReceipt({
-			invoiceId: invoiceId,
-			organizationId: ctx.organizationId,
-			code,
-			receivedDate,
-			amount: body.amount,
-			currencyCode: invoice.currencyCode,
-			method: body.method,
-			reference: body.reference,
-			notes: body.notes,
-			receivedBy: ctx.actorUserId,
+		// ERP-0139: the receipt, its journal and the AR open item commit together.
+		const receipt = await this.database.transaction(async (tx) => {
+			const created = await this.repo.addReceipt(
+				{
+					invoiceId: invoiceId,
+					organizationId: ctx.organizationId,
+					code,
+					receivedDate,
+					amount: body.amount,
+					currencyCode: invoice.currencyCode,
+					method: body.method,
+					reference: body.reference,
+					notes: body.notes,
+					receivedBy: ctx.actorUserId,
+				},
+				{ tx },
+			);
+			if (!created) throw new ReceiptExceedsOutstandingError();
+			await this.receiptLedger?.post(tx, created, invoice, false);
+			return created;
 		});
-		if (!receipt) throw new ReceiptExceedsOutstandingError();
 		// ERP-0044: a receipt (kuitansi) is an issued document too.
 		await this.documents.register({
 			code: receipt.code,
@@ -511,13 +523,12 @@ export class InvoiceService {
 	): Promise<TReceiptSelect> {
 		if (!(await this.repo.findReceipt(ctx.organizationId, id)))
 			throw new ReceiptNotFoundError();
-		const reversed = await this.repo.reverseReceipt(
-			ctx.organizationId,
-			id,
-			ctx.actorUserId,
-			reason,
-		);
-		if (!reversed) throw new ReceiptAlreadyReversedError();
+		const reversed = await this.database.transaction(async (tx) => {
+			const row = await this.repo.reverseReceipt(ctx.organizationId, id, ctx.actorUserId, reason, tx);
+			if (!row) throw new ReceiptAlreadyReversedError();
+			await this.receiptLedger?.reverse(tx, row, ctx.actorUserId, reason);
+			return row;
+		});
 		// ERP-0044: a reversed receipt is a dead document.
 		await this.documents.voidBySource('sale', 'receipt', id);
 		return reversed;

@@ -565,6 +565,7 @@ const api = {
 	'accounting.writeOffNotRequested': 'No write-off request is pending for this receivable',
 	'accounting.writeOffSelfApproval': 'The requester of a write-off cannot approve it',
 	'accounting.deferredRevenuePending': 'Deferred revenue is not amortised through this period yet; run the amortisation first',
+	'accounting.gatewaySettlementAmount': 'A settlement needs a positive gross amount larger than the fee',
 	'accounting.openItemNotFound': 'The open-item sub-ledger row for this document is missing',
 	'accounting.paymentNotFound': 'Payment not found',
 	'accounting.paymentInvalidTransition':

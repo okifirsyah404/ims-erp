@@ -529,3 +529,16 @@ export class DeferredRevenuePendingError extends AppError {
 		);
 	}
 }
+
+/* ------------------------- gateway settlement (ERP-0139) ------------------------- */
+
+/** Gross must be positive and larger than the fee. */
+export class GatewaySettlementAmountError extends AppError {
+	constructor() {
+		super(
+			422,
+			'accounting.gatewaySettlementAmount',
+			'A settlement needs a positive gross amount larger than the fee',
+		);
+	}
+}

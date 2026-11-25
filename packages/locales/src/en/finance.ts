@@ -681,6 +681,16 @@ const finance = {
 	'postingRules.event.sale.delivery_shipped': 'Delivery note shipped',
 	'postingRules.event.sale.return_received': 'Sales return received',
 	'postingRules.event.inventory.adjustment_posted': 'Stock adjustment posted',
+	'postingRules.role.cash_receipt': 'Cash received (by method)',
+	'postingRules.discriminator.payment_method': 'Payment method',
+	'postingRules.event.sale.receipt_posted': 'Receipt (kuitansi) recorded',
+	'postingRules.event.payment.gateway_settled': 'Gateway payout settled',
+	'gatewaySettlement.title': 'Record gateway settlement',
+	'gatewaySettlement.hint': 'The net payout goes to this account against gateway clearing; the fee is booked as gateway fees.',
+	'gatewaySettlement.gross': 'Gross collected',
+	'gatewaySettlement.fee': 'Gateway fee',
+	'gatewaySettlement.reference': 'Settlement reference',
+	'gatewaySettlement.recorded': 'Gateway settlement recorded',
 } as const;
 
 export default finance;

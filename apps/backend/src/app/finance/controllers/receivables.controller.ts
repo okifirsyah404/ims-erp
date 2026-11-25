@@ -6,8 +6,10 @@ import { created, ok, okPaginated } from '@http/response';
 import { isoDate, ledgerIdParamSchema } from '../contracts/ledger.contract';
 import {
 	DEFERRED_REVENUE_SERVICE_TOKEN,
+	GATEWAY_SETTLEMENT_SERVICE_TOKEN,
 	RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN,
 } from '../constants/di';
+import type { GatewaySettlementService } from '../services/gateway-settlement.service';
 import type { DeferredRevenueService } from '../services/deferred-revenue.service';
 import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
 
@@ -32,6 +34,13 @@ const deferredListQuerySchema = z.object({
 	...pageQuery,
 	status: z.enum(['active', 'completed', 'cancelled']).optional(),
 });
+const gatewaySettlementSchema = z.object({
+	cashBankAccountId: z.string().uuid(),
+	settlementDate: isoDate,
+	grossAmount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+	feeAmount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+	reference: z.string().trim().min(1).max(100),
+});
 const deferredRunSchema = z.object({
 	year: z.number().int().min(2000).max(2100),
 	month: z.number().int().min(1).max(12),
@@ -50,6 +59,7 @@ export class ReceivablesController {
 	static plugin() {
 		const adjustments = container.resolve<ReceivableAdjustmentService>(RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN);
 		const deferred = container.resolve<DeferredRevenueService>(DEFERRED_REVENUE_SERVICE_TOKEN);
+		const settlements = container.resolve<GatewaySettlementService>(GATEWAY_SETTLEMENT_SERVICE_TOKEN);
 		const ctxOf = (erp: ErpContext) => ({ organizationId: erp.organizationId, actorUserId: erp.session.user.id });
 
 		return domainPlugin({ name: 'finance-receivables', prefix: '/finance', tags: ['Accounting'], guards: 'erp' })
@@ -139,6 +149,18 @@ export class ReceivablesController {
 					erp: { permission: ['ar_write_off:approve'] },
 					detail: {
 						description: 'Approves and posts a write-off (Dr allowance / Cr receivable); not by the requester',
+					},
+				},
+			)
+			/* ---------------- gateway settlement (ERP-0139) ---------------- */
+			.post(
+				'/gateway-settlements',
+				async ({ body, erp, status }) =>
+					status(201, created(await settlements.record(ctxOf(erp), gatewaySettlementSchema.parse(body)))),
+				{
+					erp: { permission: ['cash_bank:create'] },
+					detail: {
+						description: 'Records a gateway payout: net to the bank against gateway clearing, fee to gateway fees',
 					},
 				},
 			)

@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-703 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+704 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -823,6 +823,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/expenses/:id/cancel` | org member + permission | `expense_claim:cancel` | `owner`, `finance` |
 | POST | `/finance/expenses/:id/reject` | org member + permission | `expense_claim:reject` | `owner`, `finance`, `accountant` |
 | POST | `/finance/expenses/:id/submit` | org member + permission | `expense_claim:submit` | `owner`, `finance` |
+| POST | `/finance/gateway-settlements` | org member + permission | `cash_bank:create` | `owner`, `finance` |
 | GET | `/finance/ledger/accounts` | org member + permission | `chart_of_account:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/ledger/accounts` | org member + permission | `chart_of_account:create` | `owner`, `accountant` |
 | DELETE | `/finance/ledger/accounts/:id` | org member + permission | `chart_of_account:archive` | `owner`, `accountant` |

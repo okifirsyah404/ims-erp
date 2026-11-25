@@ -12,6 +12,58 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0139: receipts post to the ledger, gateway clearing and settlement
+
+**Scope.** Phase B slice 3 (M09 plan "gateway accounting split", grill Q45).
+
+**Design gate.** `docs/database/` read for `sale` (receipts, invoices),
+`payment` (payments, allocations), `finance` (posting_rules, cash/bank).
+Finding: a sale receipt (kuitansi) only raised `sale.invoices.paid_total`;
+it wrote no journal and did not touch `finance.ar_open_items`, so the GL
+receivable was never cleared on the receipt path - and the gateway callback
+records its payment as such a receipt. Second finding: receipts recomputed
+`outstanding = grand_total - paid_total`, which undoes a credit memo
+(ERP-0135). Both are fixed here. Decisions: the cash account of a receipt
+comes from posting rules discriminated by the receipt method (no new column
+or form field); the settlement is recorded by finance from the provider's
+payout figures (no report import yet).
+
+**Changes.** Schema: `posting_rules` discriminator vocabulary + `payment_method`
+(migration `20261125001655_erp0139_receipts_gateway`, 1 check replaced).
+Backend: `sale/services/receipt-ledger.service.ts` (receipt journal +
+open item, reversal), `InvoiceService.addReceipt/reverseReceipt` now run in one
+transaction with it, the gateway's `InvoicePaymentPortService.addReceipt`
+posts in the callback transaction, repository outstanding math and
+`receiptStatus`, `IArLedgerPort.applyReceipt`, `GatewaySettlementService` +
+`POST /finance/gateway-settlements`, role `cash_receipt`, events
+`sale.receipt_posted` / `payment.gateway_settled`, seed rule cash -> 1-1110.
+Web-admin: gateway settlement dialog on `/finance/cash-bank`, posting-rule
+labels, en/id.
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/validate-dbml.ts                  # OK
+bun run drizzle:generate --name erp0139_receipts_gateway; bun run drizzle:migrate   # applied
+bun run drizzle:seed                                # rulesInserted 2 (cash_receipt default + cash), then 0
+bun run <temporary receipt-smoke script>            # 8/8 PASS: cash receipt Dr 1-1110 / Cr 1-1310; open item and invoice
+                                                    # 600 000 open after a 110 000 credit + 400 000 receipt; reversal restores
+                                                    # both; gateway receipt Dr 1-1250; invoice paid; settlement Dr 1-1120 995 000
+                                                    # / Cr 1-1250 and fee Dr 6-3200 5 000 / Cr 1-1250
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run test                                        # 7/7: backend 1489, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun docs/gen-role-permission.ts                     # 704 routes written
+```
+
+`docs/database/` updated (`docs.dbml` posting_rules check).
+
+**Not verified.** No browser walk-through; the payment-gateway callback
+itself was not replayed (the smoke called its receipt port in a transaction).
+
+Next executable task: ERP-0141 (`sale.invoices.project_id`, manual project
+costs posted to the GL).
+
 ## 2026-11-25 - ERP-0136/0137: GR/IR, purchase price variance, COGS, stock adjustment journals
 
 **Scope.** Phase B slice 2 (grill Q24/Q25/Q26/Q40).

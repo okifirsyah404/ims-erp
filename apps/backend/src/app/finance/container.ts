@@ -43,6 +43,7 @@ import {
 	DEFERRED_REVENUE_REPOSITORY_TOKEN,
 	DEFERRED_REVENUE_SERVICE_TOKEN,
 	RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN,
+	GATEWAY_SETTLEMENT_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -84,6 +85,7 @@ import { CreditMemoRepository } from './repositories/credit-memo.repository';
 import { DeferredRevenueRepository } from './repositories/deferred-revenue.repository';
 import { DeferredRevenueService } from './services/deferred-revenue.service';
 import { ReceivableAdjustmentService } from './services/receivable-adjustment.service';
+import { GatewaySettlementService } from './services/gateway-settlement.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
 import { AuditWriter } from '@shared/audit';
@@ -192,6 +194,7 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(DEFERRED_REVENUE_SERVICE_TOKEN, { useClass: DeferredRevenueService });
 	container.register(DEFERRED_REVENUE_PORT_TOKEN, { useClass: DeferredRevenueService });
 	container.register(RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN, { useClass: ReceivableAdjustmentService });
+	container.register(GATEWAY_SETTLEMENT_SERVICE_TOKEN, { useClass: GatewaySettlementService });
 }
 
 export * from './constants/di';

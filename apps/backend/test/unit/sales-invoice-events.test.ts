@@ -24,7 +24,7 @@ const invoice = {
 function service(events: { topic: string; data: Record<string, unknown> }[]) {
 	let current = { ...invoice };
 	return new InvoiceService(
-		{} as never,
+		{ transaction: async (work: (tx: never) => Promise<unknown>) => work({} as never) } as never,
 		{
 			findById: async () => current,
 			addReceipt: async (data: Record<string, unknown>) => {

@@ -217,6 +217,33 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - **Not built:** the GR/IR-older-than-30-days close warning, asset-category
   receipts to fixed assets (ERP-0145), inventory disposals.
 
+## Receipts and gateway settlement (B, ERP-0139, built)
+
+- **Gap found and fixed:** a sale receipt (kuitansi, manual or from the
+  payment gateway) only raised the invoice's paid total; no journal was
+  written and finance's AR open item did not move, so the receivable in the
+  GL was never cleared on this path. Receipts recorded before ERP-0139 stay
+  without a journal (their reversal only touches sale).
+- **Receipt** (`ReceiptLedgerService`, in the receipt's transaction):
+  `sale.receipt_posted` Dr `cash_receipt` (posting-rule discriminator
+  `payment_method`: seeded `cash` -> petty cash 1-1110, everything else ->
+  1-1120) or Dr gateway clearing 1-1250 for an online payment / Cr
+  receivable; the AR open item takes the payment (`applyReceipt` on the AR
+  ledger port). A reversal reverses the journal and gives the amount back.
+- **Outstanding math:** receipts and their reversals now move
+  `outstanding_total` by the amount instead of recomputing `grand - paid`,
+  which would have undone a credit memo (ERP-0135). Status comes from paid
+  and outstanding (`receiptStatus`).
+- **Gateway settlement** (`POST /finance/gateway-settlements`,
+  `cash_bank:create`, dialog on `/finance/cash-bank`): a cash/bank movement
+  for the net payout against gateway clearing (visible to bank
+  reconciliation) plus `payment.gateway_settled` Dr gateway fees 6-3200 / Cr
+  gateway clearing. The clearing balance (general ledger of 1-1250) is what
+  still awaits settlement.
+- **Not built:** importing the provider's settlement report and matching it
+  line by line (reconciliation of clearing is manual through the GL report);
+  refunds.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

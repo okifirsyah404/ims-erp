@@ -382,6 +382,7 @@ export const POSTING_ROLES = [
 	'cogs',
 	'project_cogs',
 	'grir_clearing',
+	'cash_receipt',
 	'purchase_price_variance',
 	'inventory_variance',
 	'gateway_clearing',
@@ -413,6 +414,8 @@ export const POSTING_EVENT_TYPES = [
 	'sale.delivery_shipped',
 	'sale.return_received',
 	'inventory.adjustment_posted',
+	'sale.receipt_posted',
+	'payment.gateway_settled',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -424,6 +427,7 @@ export const POSTING_DISCRIMINATORS = [
 	'expense_category',
 	'asset_category',
 	'cost_category',
+	'payment_method',
 ] as const;
 export type TPostingDiscriminator = (typeof POSTING_DISCRIMINATORS)[number];
 
@@ -1387,4 +1391,16 @@ export type TAmortisationRun = { month: string; schedules: number; entries: numb
 
 export function runDeferredRevenue(year: number, month: number) {
 	return sendData<TAmortisationRun>('/finance/deferred-revenue/run', 'POST', { year, month });
+}
+
+/* ----------------------------- gateway settlement (ERP-0139) ----------------------------- */
+
+export function recordGatewaySettlement(input: {
+	cashBankAccountId: string;
+	settlementDate: string;
+	grossAmount: number;
+	feeAmount: number;
+	reference: string;
+}) {
+	return sendData<{ net: number; fee: number }>('/finance/gateway-settlements', 'POST', input);
 }

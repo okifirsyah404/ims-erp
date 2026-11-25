@@ -566,6 +566,7 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.writeOffNotRequested': 'Tidak ada permintaan penghapusan yang tertunda untuk piutang ini',
 	'accounting.writeOffSelfApproval': 'Pengaju penghapusan piutang tidak boleh menyetujuinya sendiri',
 	'accounting.deferredRevenuePending': 'Pendapatan diterima dimuka belum diamortisasi sampai periode ini; jalankan amortisasi dulu',
+	'accounting.gatewaySettlementAmount': 'Settlement butuh nilai bruto positif yang lebih besar dari biayanya',
 	'accounting.openItemNotFound': 'Baris sub-buku besar untuk dokumen ini tidak ditemukan',
 	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
 	'accounting.paymentInvalidTransition':

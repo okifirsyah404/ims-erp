@@ -20,6 +20,7 @@ import type { IDeferredRevenueRepository } from '../contracts/deferred-revenue.r
 import type { IDeferredRevenuePort } from '../contracts/deferred-revenue.port';
 import type { DeferredRevenueService } from '../services/deferred-revenue.service';
 import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
+import type { GatewaySettlementService } from '../services/gateway-settlement.service';
 import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
 import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
 import type { ExportedFinanceService } from '../services/exported-finance.service';
@@ -158,4 +159,9 @@ export const DEFERRED_REVENUE_SERVICE_TOKEN: InjectionToken<DeferredRevenueServi
 export const DEFERRED_REVENUE_PORT_TOKEN: InjectionToken<IDeferredRevenuePort> = Symbol('DEFERRED_REVENUE_PORT');
 export const RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN: InjectionToken<ReceivableAdjustmentService> = Symbol(
 	'RECEIVABLE_ADJUSTMENT_SERVICE',
+);
+
+/** Payment-gateway settlement: net payout + fee against gateway clearing (ERP-0139). */
+export const GATEWAY_SETTLEMENT_SERVICE_TOKEN: InjectionToken<GatewaySettlementService> = Symbol(
+	'GATEWAY_SETTLEMENT_SERVICE',
 );
