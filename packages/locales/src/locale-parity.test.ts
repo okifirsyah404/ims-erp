@@ -60,6 +60,11 @@ describe('locale values', () => {
 		// Guards against copy-pasting the English bundle into `id`. Brand names
 		// and locale-neutral tokens are expected to match, so they're exempt.
 		const ALLOWED_IDENTICAL = new Set([
+			// Statutory acronyms and programme names are the same in both languages (ERP-0138).
+			'hr:form.taxId',
+			'tax:pph21.ptkpTitle',
+			'tax:pph21.status',
+			'settings:payroll.bpjsEmploymentEnabled',
 			// "Owner" of a customer company is the same loanword in Indonesian (ERP-0114).
 			'crm:customer.owner',
 			'crm:customer.ownerBadge',

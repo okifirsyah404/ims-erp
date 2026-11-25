@@ -293,6 +293,20 @@ export const payrollSettingsQueryOptions = () => single<TPayrollSettings>(['hr',
 export const savePayrollSettings = (input: { payDay: number | null }) =>
 	send<TPayrollSettings>('/human-resources/payroll-settings', 'PUT', input);
 
+// Statutory payroll settings (ERP-0138): PPh 21 and BPJS toggles, application admins only
+export type TPayrollStatutory = {
+	pph21Enabled: boolean;
+	bpjsHealthEnabled: boolean;
+	bpjsEmploymentEnabled: boolean;
+	jkkRate: string;
+	healthWageCap: number;
+	pensionWageCap: number | null;
+};
+export const payrollStatutoryQueryOptions = () =>
+	single<TPayrollStatutory>(['hr', 'payroll-statutory'], '/human-resources/payroll-settings/statutory');
+export const savePayrollStatutory = (input: TPayrollStatutory) =>
+	send<TPayrollStatutory>('/human-resources/payroll-settings/statutory', 'PUT', input);
+
 // Employee documents (ERP-0121): registry rows of the document module kept on the employee
 export const EMPLOYEE_DOCUMENT_TYPES = ['employment_agreement', 'id_card', 'tax_id', 'cv', 'certificate', 'other'] as const;
 export type TEmployeeDocumentType = (typeof EMPLOYEE_DOCUMENT_TYPES)[number];

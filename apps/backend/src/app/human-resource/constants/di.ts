@@ -20,6 +20,7 @@ import type { TaskService } from '../services/task.service';
 import type { ScheduleService } from '../services/schedule.service';
 import type { SalaryPeriodService } from '../services/salary-period.service';
 import type { PayrollScheduleService } from '../services/payroll-schedule.service';
+import type { PayrollStatutoryService } from '../services/payroll-statutory.service';
 import type { IAgreementPdfQueue, IEmployeeAddressRepository } from '../contracts/employee-document.contract';
 import type { EmployeeDocumentService } from '../services/employee-document.service';
 import type { AgreementPdfService } from '../services/agreement-pdf.service';
@@ -72,6 +73,9 @@ export const SALARY_PERIOD_SERVICE_TOKEN: InjectionToken<SalaryPeriodService> = 
 /** Payroll payday setting and its daily draft run (ERP-0120). */
 export const HR_SETTINGS_REPOSITORY_TOKEN: InjectionToken<IHrSettingsRepository> = Symbol('HR_SETTINGS_REPOSITORY');
 export const PAYROLL_SCHEDULE_SERVICE_TOKEN: InjectionToken<PayrollScheduleService> = Symbol('PAYROLL_SCHEDULE_SERVICE');
+
+/** PPh 21 and BPJS toggles and parameters (ERP-0138). */
+export const PAYROLL_STATUTORY_SERVICE_TOKEN: InjectionToken<PayrollStatutoryService> = Symbol('PAYROLL_STATUTORY_SERVICE');
 
 /** Employee documents, addresses and the employment agreement PDF (ERP-0121). */
 export const EMPLOYEE_ADDRESS_REPOSITORY_TOKEN: InjectionToken<IEmployeeAddressRepository> = Symbol('EMPLOYEE_ADDRESS_REPOSITORY');

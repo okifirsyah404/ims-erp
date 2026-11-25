@@ -273,6 +273,11 @@ export const navSections: {
 						permission: 'tax.read',
 					},
 					{
+						titleKey: 'item.taxPph21',
+						url: '/finance/tax/pph21',
+						permission: 'tax.read',
+					},
+					{
 						titleKey: 'item.taxCorrections',
 						url: '/finance/tax/corrections',
 						permission: 'tax.read',

@@ -12,6 +12,60 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0138 part 1: PPh 21 tables, TER import, employee tax fields, statutory toggles
+
+**Scope.** Phase B slice 6a (owner's proposal 4 of 2026-11-25: build the
+engine and tables, seed PTKP and Pasal 17, never fabricate TER rows).
+
+**Design gate.** `docs/database/` read for the `tax` and `human_resource`
+modules (`taxes`, `employees`, `employee_salary_records`, `settings`) and
+`data-dictionary.md` (global reference data without a tenant column, like
+`location.*`). Manual grill pass (the `grilling` skill is not installed):
+ownership - the statutory tables live in `tax`, HR reads them through
+`ExportedTaxService`; tenancy - global, statutory law is not per tenant; soft
+delete - `deleted_at`, an import soft-deletes the version it replaces;
+money - bigint minor units, rates `numeric(7,4)` strings applied in integer
+arithmetic; dates - `effective_from` business dates, the version in force is
+the latest on or before a date; no new cross-module reference. Decisions:
+missing PTKP status = TK/0 (grill Q30); the existing salary period stays the
+payroll run (a separate `payroll_runs` table is not added); the JP wage cap
+has no default, so payroll with BPJS Ketenagakerjaan on will refuse to run
+until it is entered.
+
+**Changes.** Migration `20261125014130_erp0138_pph21_tables` (3 CREATE TABLE,
+4 ADD COLUMN on `human_resource.employees`, 1 check). Backend:
+`Pph21Repository`, `Pph21TableService` (tables in force, TER CSV import with
+per-row errors), `utils/pph21.ts`, `ExportedTaxService.pph21Tables`,
+`PayrollStatutoryService`; routes `GET /taxes/pph21/tables`,
+`GET /taxes/pph21/ter-rates/template.csv`, `POST /taxes/pph21/ter-rates/import`,
+`GET|PUT /human-resources/payroll-settings/statutory`; seeder
+`seedPph21Statutory` (8 PTKP rows, 5 brackets). Web-admin: `/finance/tax/pph21`
+page (tables + CSV import), "Tax & BPJS" card on the employee form, PPh 21 /
+BPJS card on `/settings/payroll` (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 199 refs across 28 targets (unchanged)
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0138_pph21_tables; bun run drizzle:migrate   # applied
+bun run drizzle:seed; bun run drizzle:seed    # ptkp 8 / brackets 5, then 0 / 0
+bun run <temporary pph21-smoke script>        # 10/10 PASS: seeded tables in force, none before 2024 for PTKP,
+                                              # synthetic 1990 TER import + replace (soft-deleted again after),
+                                              # import without a 0 row rejected, ptkp check, settings round trip
+bun test test/unit/pph21.test.ts              # 10 pass
+bun test test/authorization/tax-authorization.test.ts   # 104 pass (3 new routes)
+bun run test                                  # 7/7 tasks: backend 1533, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 714 routes
+```
+
+**Not verified.** No browser walk-through; no official TER table imported
+(finance owns that step).
+
+Next executable task: ERP-0138 part 2 (PPh 21 and BPJS on salary records,
+payroll journal on approval, payroll payment, BP21 export).
+
 ## 2026-11-25 - ERP-0140: PPh withholding at payment, PPN settlement, tax payments, Coretax XML
 
 **Scope.** Phase B slice 5 (owner's proposals 1-3 of 2026-11-25).

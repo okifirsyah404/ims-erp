@@ -148,6 +148,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'breadcrumb.whatsappChat': 'Percakapan',
 	'item.postingRules': 'Aturan Posting',
 	'item.costCenters': 'Pusat Biaya',
+	'item.taxPph21': 'Tabel PPh 21',
 };
 
 export default nav_;

@@ -646,6 +646,10 @@ const api = {
 	'catalog.listing.noPrice': 'The item has no selling price; use quotation pricing',
 
 	'notification.notFound': 'Notification not found',
+	'accounting.terImport.type': 'Upload a .csv file',
+	'accounting.terImport.size': 'The file is larger than 1 MB',
+	'accounting.terImport.empty': 'The file has no data rows',
+	'accounting.terImport.tooMany': 'The file has more than 2000 rows',
 } as const;
 
 export default api;

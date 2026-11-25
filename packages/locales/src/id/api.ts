@@ -650,6 +650,10 @@ const api: Record<keyof typeof en, string> = {
 	'catalog.listing.noPrice': 'Barang belum punya harga jual; gunakan harga lewat penawaran',
 
 	'notification.notFound': 'Notifikasi tidak ditemukan',
+	'accounting.terImport.type': 'Unggah berkas .csv',
+	'accounting.terImport.size': 'Berkas lebih besar dari 1 MB',
+	'accounting.terImport.empty': 'Berkas tidak berisi baris data',
+	'accounting.terImport.tooMany': 'Berkas berisi lebih dari 2000 baris',
 };
 
 export default api;

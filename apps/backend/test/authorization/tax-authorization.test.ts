@@ -121,6 +121,9 @@ const ROUTES: ReadonlyArray<{
 		path: `/taxes/withholdings/${WITHHOLDING_ID}/coretax`,
 		body: { coretaxStatus: 'uploaded' },
 	},
+	{ method: 'GET', path: '/taxes/pph21/tables' },
+	{ method: 'GET', path: '/taxes/pph21/ter-rates/template.csv' },
+	{ method: 'POST', path: '/taxes/pph21/ter-rates/import', body: {} },
 ];
 
 beforeAll(async () => {
@@ -128,9 +131,17 @@ beforeAll(async () => {
 	installPermissionResolverMock();
 
 	const { container } = await import('tsyringe');
-	const { CORETAX_EXPORT_SERVICE_TOKEN, TAX_SERVICE_TOKEN } = await import(
+	const { CORETAX_EXPORT_SERVICE_TOKEN, PPH21_TABLE_SERVICE_TOKEN, TAX_SERVICE_TOKEN } = await import(
 		'../../src/app/tax/constants/di'
 	);
+	container.register(PPH21_TABLE_SERVICE_TOKEN, {
+		useValue: {
+			tables: async () => ({ ptkp: [], ptkpEffectiveFrom: null, ter: [], terEffectiveFrom: null, brackets: [], bracketsEffectiveFrom: null }),
+			terVersions: async () => [],
+			template: () => 'kategori\n',
+			importTer: async () => ({ imported: 0, effectiveFrom: [], errors: [] }),
+		} as never,
+	});
 	container.register(CORETAX_EXPORT_SERVICE_TOKEN, {
 		useValue: {
 			fakturXml: async () => ({ xml: '<TaxInvoiceBulk/>', count: 0 }),

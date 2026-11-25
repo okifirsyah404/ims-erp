@@ -3899,6 +3899,64 @@ Table tax.withholding_tax_records {
   }
 }
 
+Table tax.pph21_ptkp {
+  id uuid [pk, default: `uuidv7()`]
+  status_code varchar(5) [not null, note: "PTKP status: TK/0..TK/3, K/0..K/3."]
+  annual_amount bigint [not null, note: "Annual PTKP in IDR minor units."]
+  ter_category varchar(1) [not null, note: "TER category of the status (PP 58/2023): A, B or C."]
+  effective_from date [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "PPh 21 non-taxable income per PTKP status and its TER category (ERP-0138). Global statutory reference data: no organization_id, like location.*. A change is a new row set with a later effective_from; the set in force on a date is the one with the latest effective_from on or before it."
+  Indexes {
+    (status_code, effective_from) [unique, name: 'pph21_ptkp_status_effective_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `status_code IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`
+    `ter_category IN ('A', 'B', 'C')`
+    `annual_amount >= 0`
+  }
+}
+
+Table tax.pph21_ter_rates {
+  id uuid [pk, default: `uuidv7()`]
+  category varchar(1) [not null, note: "TER category: A, B or C."]
+  lower_bound bigint [not null, note: "Monthly gross income in IDR minor units from which the rate applies (inclusive); the rate holds until the next row's lower_bound."]
+  rate numeric(7,4) [not null, note: "Percentage, e.g. 0.2500 for 0.25%."]
+  effective_from date [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Monthly PPh 21 effective rates (TER, PP 58/2023) per category (ERP-0138). Global statutory reference data: no organization_id. Never seeded: finance imports the official table as CSV; an import replaces the rows of its effective_from."
+  Indexes {
+    (category, lower_bound, effective_from) [unique, name: 'pph21_ter_rates_category_bound_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `category IN ('A', 'B', 'C')`
+    `lower_bound >= 0`
+    `rate >= 0 AND rate <= 100`
+  }
+}
+
+Table tax.pph21_brackets {
+  id uuid [pk, default: `uuidv7()`]
+  lower_bound bigint [not null, note: "Annual taxable income (PKP) in IDR minor units from which the rate applies (inclusive); the rate holds until the next row's lower_bound."]
+  rate numeric(7,4) [not null, note: "Percentage."]
+  effective_from date [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Progressive Pasal 17 rates for the annual PPh 21 reconciliation (UU HPP, ERP-0138). Global statutory reference data: no organization_id."
+  Indexes {
+    (lower_bound, effective_from) [unique, name: 'pph21_brackets_bound_effective_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `lower_bound >= 0`
+    `rate >= 0 AND rate <= 100`
+  }
+}
+
 Table tax.code_numberings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -5049,6 +5107,10 @@ Table human_resource.employees {
   full_name text [not null]
   nickname text
   national_id varchar(32) [note: "National identity number (NIK)."]
+  tax_id varchar(32) [note: "NPWP (ERP-0138). Optional; missing NIK and NPWP blocks the BP21 export."]
+  ptkp_status varchar(5) [note: "PTKP status (TK/0..K/3). Optional; payroll treats NULL as TK/0."]
+  bpjs_health_number varchar(32) [note: "BPJS Kesehatan participant number. Optional."]
+  bpjs_employment_number varchar(32) [note: "BPJS Ketenagakerjaan participant number. Optional."]
   email varchar(320)
   phone varchar(100)
   photo_object_key text
@@ -5071,6 +5133,7 @@ Table human_resource.employees {
     (organization_id, full_name) [name: 'employees_org_name_idx']
   }
   Checks {
+    `ptkp_status IS NULL OR ptkp_status IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`
     `employment_status IN ('active', 'inactive', 'terminated')`
     `employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')`
     `work_type IN ('onsite', 'remote', 'hybrid')`

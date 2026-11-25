@@ -291,6 +291,32 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - No disbursement creation form exists in web-admin yet, so withholding at
   payment is API-only.
 
+## Payroll statutory tables (B, ERP-0138 part 1, built)
+
+- `tax.pph21_ptkp`, `tax.pph21_ter_rates`, `tax.pph21_brackets`: global
+  statutory reference data (no `organization_id`), effective-dated by row
+  set; the set in force on a date has the latest `effective_from` on or before
+  it. A rate applies from its `lower_bound` up to the next row's.
+- Seeded: PTKP per status (PMK 101/2016) with the PP 58/2023 TER category
+  (from 2024-01-01) and Pasal 17 UU HPP brackets (from 2022-01-01). **TER rates
+  are never seeded or invented**: finance imports the official table as CSV
+  (`POST /taxes/pph21/ter-rates/import`, all or nothing, each category must
+  start at 0, an import replaces the rows of each effective date it carries).
+- `tax/utils/pph21.ts` is the engine: TER lookup, `applyRate` (exact integer
+  percentage, rounded down to whole rupiah), Pasal 17 `progressiveTax`, and
+  `annualPph21` (biaya jabatan 5% capped at Rp500.000 a month, employee
+  pension contribution capped at Rp200.000 a month, PKP rounded down to
+  thousands). Payroll reads the tables through `ExportedTaxService.pph21Tables`.
+- Employees gain optional `tax_id` (NPWP, masked like the NIK without
+  `employee:read_private`), `ptkp_status` (NULL counts as TK/0) and BPJS
+  participant numbers. Company-wide toggles in `human_resource.settings`
+  (`/human-resources/payroll-settings/statutory`, application admins):
+  `pph21_enabled`, `bpjs_health_enabled`, `bpjs_employment_enabled`, the JKK
+  rate (default 0.24%), the BPJS Kesehatan wage cap (default Rp12.000.000)
+  and the JP wage cap (no default: BPJS announces it yearly).
+- Part 2 (calculation on salary records, payroll journal, payment, BP21) is
+  not built yet.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

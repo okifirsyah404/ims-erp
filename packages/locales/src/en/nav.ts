@@ -149,6 +149,7 @@ const nav = {
 	'breadcrumb.whatsappChat': 'Conversation',
 	'item.postingRules': 'Posting Rules',
 	'item.costCenters': 'Cost Centres',
+	'item.taxPph21': 'PPh 21 tables',
 } as const;
 
 export default nav;

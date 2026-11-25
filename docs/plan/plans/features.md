@@ -961,6 +961,12 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
 ## M10 Tax
 
 ### in-progress
+- PPh 21 tables, ERP-0138 part 1 (2026-11-25): PTKP and Pasal 17 seeded,
+  the TER table imported by finance as CSV at `/finance/tax/pph21` (never
+  seeded), the PPh 21 engine, optional employee NPWP / PTKP / BPJS numbers,
+  and company-wide PPh 21 / BPJS switches in the payroll settings. Payroll
+  does not calculate with them yet (part 2). Evidence: migration
+  `20261125014130_erp0138_pph21_tables`, unit tests, DB smoke 10/10.
 - ERP-0016 Phases 1–3: backend (tax rate master, period working papers
   draft → verified → filed, corrections, withholding, recap), web-admin UI
   at `/finance/tax/*` (recap with CSV/XLSX export, types, records, corrections,

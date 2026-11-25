@@ -1,6 +1,8 @@
 import type { CoretaxExportService } from '../services/coretax-export.service';
 import type { ExportedTaxService } from '../services/exported-tax.service';
 import type { InjectionToken } from 'tsyringe';
+import type { IPph21Repository } from '../contracts/pph21.contract';
+import type { Pph21TableService } from '../services/pph21-table.service';
 import type { TTaxRepository } from '../contracts/tax.repository.interface';
 import type { TaxCodeNumberingRepository } from '../repositories/code-numbering.repository';
 import type { TaxNumberingService } from '../services/tax-numbering.service';
@@ -23,3 +25,7 @@ export const EXPORTED_TAX_SERVICE_TOKEN: InjectionToken<ExportedTaxService> = Sy
 
 /** Coretax XML export (ERP-0140). */
 export const CORETAX_EXPORT_SERVICE_TOKEN: InjectionToken<CoretaxExportService> = Symbol('CORETAX_EXPORT_SERVICE');
+
+/** PPh 21 statutory tables (ERP-0138). */
+export const PPH21_REPOSITORY_TOKEN: InjectionToken<IPph21Repository> = Symbol('PPH21_REPOSITORY');
+export const PPH21_TABLE_SERVICE_TOKEN: InjectionToken<Pph21TableService> = Symbol('PPH21_TABLE_SERVICE');

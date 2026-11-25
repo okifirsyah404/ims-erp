@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-709 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+714 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -930,6 +930,8 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/human-resources/overtime/:id/reject` | org member + permission | `overtime:reject` | `owner`, `hr` |
 | GET | `/human-resources/payroll-settings` | app admin | - | app admin |
 | PUT | `/human-resources/payroll-settings` | app admin | - | app admin |
+| GET | `/human-resources/payroll-settings/statutory` | app admin | - | app admin |
+| PUT | `/human-resources/payroll-settings/statutory` | app admin | - | app admin |
 | GET | `/human-resources/public/v1/render/employment-agreements/:id` | no guard macro | - | - |
 | GET | `/human-resources/public/v1/render/payslips/:id` | no guard macro | - | - |
 | DELETE | `/human-resources/salaries/:id` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
@@ -1356,6 +1358,9 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/taxes/coretax/faktur.xml` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/export.csv` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/export.xlsx` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/taxes/pph21/tables` | org member + permission | `tax:read` | `owner`, `finance`, `accountant`, `auditor` |
+| POST | `/taxes/pph21/ter-rates/import` | org member + permission | `tax:update` | `owner`, `accountant` |
+| GET | `/taxes/pph21/ter-rates/template.csv` | org member + permission | `tax:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/recap` | org member + permission | `tax:read` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/records` | org member + permission | `tax:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/taxes/records` | org member + permission | `tax:update` | `owner`, `accountant` |

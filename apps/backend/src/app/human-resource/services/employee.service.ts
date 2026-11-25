@@ -52,7 +52,7 @@ export type TEmployeeContext = {
 /** The NIK shown to a caller without `employee:read_private`. */
 function masked(ctx: TEmployeeContext, dto: TEmployeeDto): TEmployeeDto {
 	if (ctx.canReadPrivate !== false) return dto;
-	return { ...dto, nationalId: maskTail(dto.nationalId ?? null) } as TEmployeeDto;
+	return { ...dto, nationalId: maskTail(dto.nationalId ?? null), taxId: maskTail(dto.taxId ?? null) } as TEmployeeDto;
 }
 
 import { jakartaDate, personalPatchFrom, withPersonalFields } from './employee.mappers';
@@ -245,6 +245,10 @@ export class EmployeeService {
 			...(body.fullName !== undefined ? { fullName: body.fullName } : {}),
 			...(body.nickname !== undefined ? { nickname: body.nickname } : {}),
 			...(body.nationalId !== undefined && ctx.canReadPrivate !== false ? { nationalId: body.nationalId } : {}),
+			...(body.taxId !== undefined && ctx.canReadPrivate !== false ? { taxId: body.taxId } : {}),
+			...(body.ptkpStatus !== undefined ? { ptkpStatus: body.ptkpStatus } : {}),
+			...(body.bpjsHealthNumber !== undefined ? { bpjsHealthNumber: body.bpjsHealthNumber } : {}),
+			...(body.bpjsEmploymentNumber !== undefined ? { bpjsEmploymentNumber: body.bpjsEmploymentNumber } : {}),
 			...(body.email !== undefined ? { email: body.email } : {}),
 			...(body.phone !== undefined ? { phone: body.phone } : {}),
 			...(body.employmentStatus !== undefined ? { employmentStatus: body.employmentStatus } : {}),

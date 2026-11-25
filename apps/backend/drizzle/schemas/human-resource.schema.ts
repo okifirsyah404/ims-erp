@@ -124,6 +124,12 @@ export const employees = humanResourceSchema.table(
 		nickname: text('nickname'),
 		/** National identity number (NIK). */
 		nationalId: varchar('national_id', { length: 32 }),
+		/** NPWP (ERP-0138); optional. */
+		taxId: varchar('tax_id', { length: 32 }),
+		/** PTKP status TK/0..K/3 (ERP-0138); NULL counts as TK/0. */
+		ptkpStatus: varchar('ptkp_status', { length: 5 }),
+		bpjsHealthNumber: varchar('bpjs_health_number', { length: 32 }),
+		bpjsEmploymentNumber: varchar('bpjs_employment_number', { length: 32 }),
 		email: varchar('email', { length: 320 }),
 		phone: varchar('phone', { length: 100 }),
 		photoObjectKey: text('photo_object_key'),
@@ -162,6 +168,10 @@ export const employees = humanResourceSchema.table(
 		check(
 			'employees_work_type_check',
 			sql`work_type IN ('onsite', 'remote', 'hybrid')`,
+		),
+		check(
+			'employees_ptkp_status_check',
+			sql`ptkp_status IS NULL OR ptkp_status IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`,
 		),
 		check(
 			'employees_termination_check',

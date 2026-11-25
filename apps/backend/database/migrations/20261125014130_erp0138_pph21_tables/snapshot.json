@@ -1,0 +1,910 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "3a58890f-8d7d-46d7-bf91-bbba2767380a",
+  "prevIds": [
+    "6dd63b09-a418-479c-9ad4-1f3bef521c1f"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "tax",
+        "pph21_brackets"
+      ],
+      "writes": [
+        "s|tbl|tax.pph21_brackets",
+        "n|tbl|tax.pph21_brackets",
+        "e|tbl|tax.pph21_brackets",
+        "n|rel|tax.pph21_brackets",
+        "n|type|tax.pph21_brackets",
+        "n|rel|tax.pph21_brackets_pkey"
+      ],
+      "reads": [
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "tax",
+        "pph21_ptkp"
+      ],
+      "writes": [
+        "s|tbl|tax.pph21_ptkp",
+        "n|tbl|tax.pph21_ptkp",
+        "e|tbl|tax.pph21_ptkp",
+        "n|rel|tax.pph21_ptkp",
+        "n|type|tax.pph21_ptkp",
+        "n|rel|tax.pph21_ptkp_pkey"
+      ],
+      "reads": [
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "tax",
+        "pph21_ter_rates"
+      ],
+      "writes": [
+        "s|tbl|tax.pph21_ter_rates",
+        "n|tbl|tax.pph21_ter_rates",
+        "e|tbl|tax.pph21_ter_rates",
+        "n|rel|tax.pph21_ter_rates",
+        "n|type|tax.pph21_ter_rates",
+        "n|rel|tax.pph21_ter_rates_pkey"
+      ],
+      "reads": [
+        "n|sch|tax"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employees",
+        "tax_id"
+      ],
+      "writes": [
+        "s|col|human_resource.employees.tax_id",
+        "n|col|human_resource.employees.tax_id",
+        "e|col|human_resource.employees.tax_id"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employees",
+        "ptkp_status"
+      ],
+      "writes": [
+        "s|col|human_resource.employees.ptkp_status",
+        "n|col|human_resource.employees.ptkp_status",
+        "e|col|human_resource.employees.ptkp_status"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employees",
+        "bpjs_health_number"
+      ],
+      "writes": [
+        "s|col|human_resource.employees.bpjs_health_number",
+        "n|col|human_resource.employees.bpjs_health_number",
+        "e|col|human_resource.employees.bpjs_health_number"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employees",
+        "bpjs_employment_number"
+      ],
+      "writes": [
+        "s|col|human_resource.employees.bpjs_employment_number",
+        "n|col|human_resource.employees.bpjs_employment_number",
+        "e|col|human_resource.employees.bpjs_employment_number"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "tax",
+        "pph21_brackets",
+        "pph21_brackets_bound_effective_uq"
+      ],
+      "writes": [
+        "s|idx|tax.pph21_brackets_bound_effective_uq",
+        "n|idx|tax.pph21_brackets_bound_effective_uq",
+        "e|idx|tax.pph21_brackets_bound_effective_uq",
+        "n|rel|tax.pph21_brackets_bound_effective_uq"
+      ],
+      "reads": [
+        "n|tbl|tax.pph21_brackets",
+        "n|sch|tax",
+        "n|col|tax.pph21_brackets.lower_bound",
+        "n|col|tax.pph21_brackets.effective_from"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "tax",
+        "pph21_ptkp",
+        "pph21_ptkp_status_effective_uq"
+      ],
+      "writes": [
+        "s|idx|tax.pph21_ptkp_status_effective_uq",
+        "n|idx|tax.pph21_ptkp_status_effective_uq",
+        "e|idx|tax.pph21_ptkp_status_effective_uq",
+        "n|rel|tax.pph21_ptkp_status_effective_uq"
+      ],
+      "reads": [
+        "n|tbl|tax.pph21_ptkp",
+        "n|sch|tax",
+        "n|col|tax.pph21_ptkp.status_code",
+        "n|col|tax.pph21_ptkp.effective_from"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "tax",
+        "pph21_ter_rates",
+        "pph21_ter_rates_category_bound_uq"
+      ],
+      "writes": [
+        "s|idx|tax.pph21_ter_rates_category_bound_uq",
+        "n|idx|tax.pph21_ter_rates_category_bound_uq",
+        "e|idx|tax.pph21_ter_rates_category_bound_uq",
+        "n|rel|tax.pph21_ter_rates_category_bound_uq"
+      ],
+      "reads": [
+        "n|tbl|tax.pph21_ter_rates",
+        "n|sch|tax",
+        "n|col|tax.pph21_ter_rates.category",
+        "n|col|tax.pph21_ter_rates.lower_bound",
+        "n|col|tax.pph21_ter_rates.effective_from"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employees"
+      ],
+      "writes": [
+        "s|ck|human_resource.employees.employees_ptkp_status_check",
+        "n|ck|human_resource.employees.employees_ptkp_status_check",
+        "e|ck|human_resource.employees.employees_ptkp_status_check",
+        "n|con|human_resource.employees.employees_ptkp_status_check"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employees",
+        "n|sch|human_resource",
+        "n|col|human_resource.employees.ptkp_status"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "name": "pph21_brackets",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "name": "pph21_ptkp",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "name": "pph21_ter_rates",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "tax_id",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "ptkp_status",
+        "type": "varchar(5)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "bpjs_health_number",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "bpjs_employment_number",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "lower_bound",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "rate",
+        "type": "numeric(7,4)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "effective_from",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "status_code",
+        "type": "varchar(5)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "annual_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "ter_category",
+        "type": "varchar(1)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "effective_from",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "category",
+        "type": "varchar(1)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "lower_bound",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "rate",
+        "type": "numeric(7,4)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "effective_from",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "pph21_brackets_bound_effective_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "lower_bound",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "effective_from",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "pph21_ptkp_status_effective_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status_code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "effective_from",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "pph21_ter_rates_category_bound_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "category",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "lower_bound",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "effective_from",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "pph21_brackets_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "pph21_ptkp_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "pph21_ter_rates_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employees",
+        "name": "employees_ptkp_status_check",
+        "value": "ptkp_status IS NULL OR ptkp_status IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "pph21_brackets_lower_bound_check",
+        "value": "lower_bound >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_brackets",
+        "name": "pph21_brackets_rate_check",
+        "value": "rate >= 0 AND rate <= 100",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "pph21_ptkp_status_code_check",
+        "value": "status_code IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "pph21_ptkp_ter_category_check",
+        "value": "ter_category IN ('A', 'B', 'C')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ptkp",
+        "name": "pph21_ptkp_annual_amount_check",
+        "value": "annual_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "pph21_ter_rates_category_check",
+        "value": "category IN ('A', 'B', 'C')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "pph21_ter_rates_lower_bound_check",
+        "value": "lower_bound >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "tax",
+        "table": "pph21_ter_rates",
+        "name": "pph21_ter_rates_rate_check",
+        "value": "rate >= 0 AND rate <= 100",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

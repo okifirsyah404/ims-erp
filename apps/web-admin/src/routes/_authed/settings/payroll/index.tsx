@@ -13,7 +13,15 @@ import { FieldLabel } from '@/components/form/field-label';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { toast } from '@/components/toast';
 import { formatBusinessDate } from '@/lib/format';
-import { payrollSettingsQueryOptions, savePayrollSettings, type TPayrollSettings } from '@/lib/hr-records-api';
+import {
+	payrollSettingsQueryOptions,
+	payrollStatutoryQueryOptions,
+	savePayrollSettings,
+	savePayrollStatutory,
+	type TPayrollSettings,
+	type TPayrollStatutory,
+} from '@/lib/hr-records-api';
+import { MoneyInput } from '@/components/money-input';
 import { useIsAppAdmin } from '@/lib/use-is-app-admin';
 
 /**
@@ -29,6 +37,7 @@ function PayrollSettingsPage() {
 	const { t } = useTranslation(['settings', 'common']);
 	const { isAppAdmin, isPending: checking } = useIsAppAdmin();
 	const query = useQuery({ ...payrollSettingsQueryOptions(), enabled: isAppAdmin });
+	const statutory = useQuery({ ...payrollStatutoryQueryOptions(), enabled: isAppAdmin });
 
 	if (checking) return <PageSkeleton cards={1} />;
 	if (!isAppAdmin) {
@@ -50,6 +59,11 @@ function PayrollSettingsPage() {
 				<ErrorState error={query.error} bordered />
 			) : (
 				<PayDayForm key={String(query.data.payDay)} current={query.data} />
+			)}
+			{statutory.isPending ? null : statutory.isError ? (
+				<ErrorState error={statutory.error} bordered />
+			) : (
+				<StatutoryForm current={statutory.data} />
 			)}
 		</div>
 	);
@@ -109,6 +123,95 @@ function PayDayForm({ current }: { current: TPayrollSettings }) {
 							<FieldDescription>{t('settings:payroll.payDayHint')}</FieldDescription>
 						</Field>
 						<p className='text-sm text-muted-foreground'>{t('settings:payroll.runHint')}</p>
+						<div>
+							<Button type='submit' disabled={busy || !valid}>
+								{t('common:action.save')}
+							</Button>
+						</div>
+					</FieldGroup>
+				</form>
+			</CardContent>
+		</Card>
+	);
+}
+
+const toRupiahText = (minor: number | null) => (minor === null ? '' : String(minor / 100));
+const toMinorOrNull = (text: string) => {
+	const value = Number(text.replace(/[^\d.]/g, ''));
+	return text.trim() === '' || !Number.isFinite(value) ? null : Math.round(value * 100);
+};
+
+/** PPh 21 and BPJS toggles and parameters (ERP-0138). */
+function StatutoryForm({ current }: { current: TPayrollStatutory }) {
+	const { t } = useTranslation(['settings', 'common']);
+	const queryClient = useQueryClient();
+	const [pph21, setPph21] = useState(current.pph21Enabled);
+	const [health, setHealth] = useState(current.bpjsHealthEnabled);
+	const [employment, setEmployment] = useState(current.bpjsEmploymentEnabled);
+	const [jkkRate, setJkkRate] = useState(current.jkkRate);
+	const [healthCap, setHealthCap] = useState(toRupiahText(current.healthWageCap));
+	const [pensionCap, setPensionCap] = useState(toRupiahText(current.pensionWageCap));
+	const [busy, setBusy] = useState(false);
+	const jkkValid = /^\d(\.\d{1,4})?$/.test(jkkRate.trim());
+	const healthMinor = toMinorOrNull(healthCap);
+	const valid = jkkValid && healthMinor !== null;
+
+	const toggle = (id: string, label: string, checked: boolean, set: (value: boolean) => void) => (
+		<label className='flex items-center gap-2 text-sm' htmlFor={id}>
+			<Switch id={id} checked={checked} onCheckedChange={(value: boolean) => set(value)} />
+			{label}
+		</label>
+	);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>{t('settings:payroll.statutoryTitle')}</CardTitle>
+				<CardDescription>{t('settings:payroll.statutoryDescription')}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<form
+					onSubmit={async (event) => {
+						event.preventDefault();
+						if (!valid || healthMinor === null) return;
+						setBusy(true);
+						try {
+							const saved = await savePayrollStatutory({
+								pph21Enabled: pph21,
+								bpjsHealthEnabled: health,
+								bpjsEmploymentEnabled: employment,
+								jkkRate: jkkRate.trim(),
+								healthWageCap: healthMinor,
+								pensionWageCap: toMinorOrNull(pensionCap),
+							});
+							queryClient.setQueryData(payrollStatutoryQueryOptions().queryKey, saved);
+							toast.success(t('settings:payroll.saved'));
+						} catch (cause) {
+							toast.error(cause instanceof Error ? cause.message : t('common:error.failed'));
+						} finally {
+							setBusy(false);
+						}
+					}}
+				>
+					<FieldGroup>
+						{toggle('pph21-enabled', t('settings:payroll.pph21Enabled'), pph21, setPph21)}
+						{toggle('bpjs-health-enabled', t('settings:payroll.bpjsHealthEnabled'), health, setHealth)}
+						{toggle('bpjs-employment-enabled', t('settings:payroll.bpjsEmploymentEnabled'), employment, setEmployment)}
+						<Field>
+							<FieldLabel htmlFor='jkk-rate'>{t('settings:payroll.jkkRate')}</FieldLabel>
+							<Input id='jkk-rate' className='w-28' value={jkkRate} onChange={(event) => setJkkRate(event.target.value)} />
+							<FieldDescription>{t('settings:payroll.jkkRateHint')}</FieldDescription>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='health-cap'>{t('settings:payroll.healthWageCap')}</FieldLabel>
+							<MoneyInput value={healthCap} onValueChange={setHealthCap} />
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='pension-cap'>{t('settings:payroll.pensionWageCap')}</FieldLabel>
+							<MoneyInput value={pensionCap} onValueChange={setPensionCap} />
+							<FieldDescription>{t('settings:payroll.pensionWageCapHint')}</FieldDescription>
+						</Field>
+						<p className='text-sm text-muted-foreground'>{t('settings:payroll.statutoryHint')}</p>
 						<div>
 							<Button type='submit' disabled={busy || !valid}>
 								{t('common:action.save')}

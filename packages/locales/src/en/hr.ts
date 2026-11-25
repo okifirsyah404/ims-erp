@@ -374,6 +374,13 @@ const hr = {
 	'payslip.downloadAll': 'Download all payslips (ZIP)',
 	'payslip.regenerate': 'Regenerate PDF',
 	'payslip.queued': 'Payslip PDF queued',
+	'form.taxBpjs': 'Tax & BPJS',
+	'form.taxId': 'NPWP',
+	'form.ptkpStatus': 'PTKP status',
+	'form.ptkpNone': 'Not set (taxed as TK/0)',
+	'form.bpjsHealthNumber': 'BPJS Kesehatan number',
+	'form.bpjsEmploymentNumber': 'BPJS Ketenagakerjaan number',
+	'form.taxBpjsHint': 'All optional. Payroll uses them only when PPh 21 or BPJS is switched on in the payroll settings; the BP21 export needs a NIK or NPWP.',
 } as const;
 
 export default hr;

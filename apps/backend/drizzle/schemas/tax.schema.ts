@@ -253,6 +253,81 @@ export const withholdingTaxRecords = taxSchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * PPh 21 statutory tables (ERP-0138): global reference data, no tenant column
+ * ------------------------------------------------------------------------ */
+
+export const PTKP_STATUSES = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'] as const;
+export type TPtkpStatus = (typeof PTKP_STATUSES)[number];
+export const TER_CATEGORIES = ['A', 'B', 'C'] as const;
+export type TTerCategory = (typeof TER_CATEGORIES)[number];
+
+/** PTKP per status and its TER category; the set in force has the latest effective_from. */
+export const pph21Ptkp = taxSchema.table(
+	'pph21_ptkp',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		statusCode: varchar('status_code', { length: 5 }).$type<TPtkpStatus>().notNull(),
+		annualAmount: bigint('annual_amount', { mode: 'number' }).notNull(),
+		terCategory: varchar('ter_category', { length: 1 }).$type<TTerCategory>().notNull(),
+		effectiveFrom: date('effective_from', { mode: 'string' }).notNull(),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('pph21_ptkp_status_effective_uq')
+			.on(table.statusCode, table.effectiveFrom)
+			.where(sql`deleted_at IS NULL`),
+		check(
+			'pph21_ptkp_status_code_check',
+			sql`status_code IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`,
+		),
+		check('pph21_ptkp_ter_category_check', sql`ter_category IN ('A', 'B', 'C')`),
+		check('pph21_ptkp_annual_amount_check', sql`annual_amount >= 0`),
+	],
+);
+
+/** Monthly TER rates (PP 58/2023). Imported by finance, never seeded. */
+export const pph21TerRates = taxSchema.table(
+	'pph21_ter_rates',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		category: varchar('category', { length: 1 }).$type<TTerCategory>().notNull(),
+		/** Monthly gross (minor units) from which the rate applies, up to the next row. */
+		lowerBound: bigint('lower_bound', { mode: 'number' }).notNull(),
+		rate: numeric('rate', { precision: 7, scale: 4 }).notNull(),
+		effectiveFrom: date('effective_from', { mode: 'string' }).notNull(),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('pph21_ter_rates_category_bound_uq')
+			.on(table.category, table.lowerBound, table.effectiveFrom)
+			.where(sql`deleted_at IS NULL`),
+		check('pph21_ter_rates_category_check', sql`category IN ('A', 'B', 'C')`),
+		check('pph21_ter_rates_lower_bound_check', sql`lower_bound >= 0`),
+		check('pph21_ter_rates_rate_check', sql`rate >= 0 AND rate <= 100`),
+	],
+);
+
+/** Pasal 17 progressive rates for the annual reconciliation (UU HPP). */
+export const pph21Brackets = taxSchema.table(
+	'pph21_brackets',
+	{
+		id: uuid('id').primaryKey().default(sql`uuidv7()`),
+		/** Annual PKP (minor units) from which the rate applies, up to the next row. */
+		lowerBound: bigint('lower_bound', { mode: 'number' }).notNull(),
+		rate: numeric('rate', { precision: 7, scale: 4 }).notNull(),
+		effectiveFrom: date('effective_from', { mode: 'string' }).notNull(),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('pph21_brackets_bound_effective_uq')
+			.on(table.lowerBound, table.effectiveFrom)
+			.where(sql`deleted_at IS NULL`),
+		check('pph21_brackets_lower_bound_check', sql`lower_bound >= 0`),
+		check('pph21_brackets_rate_check', sql`rate >= 0 AND rate <= 100`),
+	],
+);
+
 export const taxCodeNumberings = createCodeNumberingTable(taxSchema);
 
 export type TTaxSelect = typeof taxes.$inferSelect;
@@ -265,5 +340,11 @@ export type TWithholdingTaxRecordSelect =
 	typeof withholdingTaxRecords.$inferSelect;
 export type TWithholdingTaxRecordInsert =
 	typeof withholdingTaxRecords.$inferInsert;
+export type TPph21PtkpSelect = typeof pph21Ptkp.$inferSelect;
+export type TPph21PtkpInsert = typeof pph21Ptkp.$inferInsert;
+export type TPph21TerRateSelect = typeof pph21TerRates.$inferSelect;
+export type TPph21TerRateInsert = typeof pph21TerRates.$inferInsert;
+export type TPph21BracketSelect = typeof pph21Brackets.$inferSelect;
+export type TPph21BracketInsert = typeof pph21Brackets.$inferInsert;
 export type TTaxCodeNumberingSelect = typeof taxCodeNumberings.$inferSelect;
 export type TTaxCodeNumberingInsert = typeof taxCodeNumberings.$inferInsert;

@@ -112,3 +112,16 @@ export class WithholdingTransitionError extends AppError {
 		);
 	}
 }
+
+/** A TER import file was rejected before its rows were read (ERP-0138). */
+export class TerImportFileError extends AppError {
+	constructor(kind: 'type' | 'size' | 'empty' | 'tooMany') {
+		const messages = {
+			type: 'Upload a .csv file',
+			size: 'The file is larger than 1 MB',
+			empty: 'The file has no data rows',
+			tooMany: 'The file has more than 2000 rows',
+		};
+		super(422, `accounting.terImport.${kind}` as const, messages[kind]);
+	}
+}

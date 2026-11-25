@@ -20,7 +20,8 @@ import {
 	withholdingPatchSchema,
 	withholdingTransitionSchema,
 } from '../contracts/tax.contract';
-import { CORETAX_EXPORT_SERVICE_TOKEN, TAX_SERVICE_TOKEN } from '../constants/di';
+import { CORETAX_EXPORT_SERVICE_TOKEN, PPH21_TABLE_SERVICE_TOKEN, TAX_SERVICE_TOKEN } from '../constants/di';
+import type { Pph21TableService } from '../services/pph21-table.service';
 import type { CoretaxExportService } from '../services/coretax-export.service';
 import { z } from 'zod';
 import type { TaxService } from '../services/tax.service';
@@ -42,6 +43,8 @@ export class TaxController {
 	static plugin() {
 		const tax = container.resolve<TaxService>(TAX_SERVICE_TOKEN);
 		const coretax = container.resolve<CoretaxExportService>(CORETAX_EXPORT_SERVICE_TOKEN);
+		const pph21 = container.resolve<Pph21TableService>(PPH21_TABLE_SERVICE_TOKEN);
+		const tableDateSchema = z.object({ date: z.iso.date().optional() });
 		const coretaxPatchSchema = z
 			.object({
 				coretaxStatus: z.enum(['not_exported', 'exported', 'uploaded']).optional(),
@@ -62,6 +65,40 @@ export class TaxController {
 			tags: ['Tax'],
 			guards: 'erp',
 		})
+			/* ---------------- PPh 21 tables (ERP-0138) ---------------- */
+			.get(
+				'/pph21/tables',
+				async ({ query }) => {
+					const { date } = tableDateSchema.parse(query);
+					return ok({ ...(await pph21.tables(date ?? new Date().toISOString().slice(0, 10))), terVersions: await pph21.terVersions() });
+				},
+				{
+					erp: { permission: ['tax:read'] },
+					detail: { description: 'PTKP, TER and Pasal 17 tables in force on a date, plus the stored TER versions' },
+				},
+			)
+			.get(
+				'/pph21/ter-rates/template.csv',
+				() =>
+					new Response(pph21.template(), {
+						headers: {
+							'content-type': 'text/csv; charset=utf-8',
+							'content-disposition': 'attachment; filename="ter-template.csv"',
+						},
+					}),
+				{ erp: { permission: ['tax:read'] }, detail: { description: 'CSV template of the TER import' } },
+			)
+			.post(
+				'/pph21/ter-rates/import',
+				async ({ body }) => {
+					const file = body && typeof body === 'object' && 'file' in body ? (body as { file: unknown }).file : undefined;
+					return ok(await pph21.importTer(file));
+				},
+				{
+					erp: { permission: ['tax:update'] },
+					detail: { description: 'Imports the official TER table (CSV); all rows or none, replacing each effective date it carries' },
+				},
+			)
 			/* ---------------- tax types ---------------- */
 			.get(
 				'',

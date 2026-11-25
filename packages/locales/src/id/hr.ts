@@ -374,6 +374,13 @@ const hr_ = {
 	'payslip.downloadAll': 'Unduh semua slip gaji (ZIP)',
 	'payslip.regenerate': 'Generate ulang PDF',
 	'payslip.queued': 'PDF slip gaji masuk antrean',
+	'form.taxBpjs': 'Pajak & BPJS',
+	'form.taxId': 'NPWP',
+	'form.ptkpStatus': 'Status PTKP',
+	'form.ptkpNone': 'Belum diisi (dihitung TK/0)',
+	'form.bpjsHealthNumber': 'Nomor BPJS Kesehatan',
+	'form.bpjsEmploymentNumber': 'Nomor BPJS Ketenagakerjaan',
+	'form.taxBpjsHint': 'Semua opsional. Penggajian memakainya hanya bila PPh 21 atau BPJS diaktifkan di pengaturan penggajian; ekspor BP21 memerlukan NIK atau NPWP.',
 } as const;
 
 export default hr_;

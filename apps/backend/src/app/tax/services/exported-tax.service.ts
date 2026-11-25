@@ -1,8 +1,13 @@
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
-import { TAX_NUMBERING_SERVICE_TOKEN, TAX_REPOSITORY_TOKEN } from '../constants/di';
+import { PPH21_TABLE_SERVICE_TOKEN, TAX_NUMBERING_SERVICE_TOKEN, TAX_REPOSITORY_TOKEN } from '../constants/di';
 import type { TTaxRepository } from '../contracts/tax.repository.interface';
+import type { TPph21Tables } from '../utils/pph21';
+import type { Pph21TableService } from './pph21-table.service';
 import type { TaxNumberingService } from './tax-numbering.service';
+
+export type { TPph21Tables } from '../utils/pph21';
+export { annualPph21, applyRate, ptkpFor, terRateFor } from '../utils/pph21';
 
 /** What another module may read about a tax rate row. */
 export type TTaxSnapshot = { id: string; code: string; taxType: string; rate: string };
@@ -21,7 +26,15 @@ export class ExportedTaxService {
 		@inject(TAX_REPOSITORY_TOKEN)
 		private readonly repo: Pick<TTaxRepository, 'findTaxTypeById' | 'insertWithholding' | 'reverseWithholdingBySource'>,
 		@inject(TAX_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<TaxNumberingService, 'next'>,
+		/** ERP-0138: PPh 21 tables for payroll; optional so older callers need not wire it. */
+		@inject(PPH21_TABLE_SERVICE_TOKEN) private readonly pph21?: Pick<Pph21TableService, 'tables'>,
 	) {}
+
+	/** The PPh 21 tables in force on a business date (payroll, ERP-0138). */
+	pph21Tables(date: string): Promise<TPph21Tables> {
+		if (!this.pph21) throw new Error('PPh 21 tables are not wired');
+		return this.pph21.tables(date);
+	}
 
 	async findTax(organizationId: string, id: string): Promise<TTaxSnapshot | null> {
 		const row = await this.repo.findTaxTypeById(organizationId, id);

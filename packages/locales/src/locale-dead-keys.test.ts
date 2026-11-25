@@ -66,6 +66,7 @@ const DYNAMIC_PREFIXES = [
 	'finance:adjustments.memoStatus.',
 	'projects:costs.paymentSource.',
 	'tax:coretax.statusValue.',
+	'tax:pph21.importError.',
 	// Online payment status labels come from server values (ERP-0020).
 	'finance:gateway.status.',
 	'status.',
@@ -189,6 +190,7 @@ const DYNAMIC_PREFIXES = [
 	'hr.requestState.',
 	'hr.salary.',
 	'hr.import.',
+	'accounting.terImport.',
 	'hr.attendance.',
 	'hr.schedule.',
 	'hr.salaryPeriod.',

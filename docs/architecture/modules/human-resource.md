@@ -48,4 +48,9 @@ Resources `employee` (`read_private` for sensitive fields), `attendance`
   organization's employees plus company-level ones.
 - Approving leave writes the attendance days; cancelling removes them.
 - Attendance and salary imports are all-or-nothing, with errors per row.
-- Salary components wait for finance sign-off; no automatic payroll posting.
+- Salary components wait for finance sign-off; no automatic payroll posting
+  yet (ERP-0138 part 2).
+- Employees carry optional NPWP (masked like the NIK), PTKP status (NULL counts
+  as TK/0) and BPJS numbers (ERP-0138). PPh 21 and BPJS are switched on
+  company-wide in `/human-resources/payroll-settings/statutory` (application
+  admins).

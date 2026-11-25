@@ -25,6 +25,9 @@ const optionalText = (max: number) =>
 		.nullish()
 		.transform((value) => (value ? value : null));
 
+/** PTKP statuses (ERP-0138); `NULL` on the employee counts as TK/0. */
+export const EMPLOYEE_PTKP_STATUSES = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'] as const;
+
 /** Identity/contact fields a caller can set on create and update. */
 export const employeeBaseSchema = z.object({
 	employeeCode: z
@@ -39,6 +42,11 @@ export const employeeBaseSchema = z.object({
 	birthDate: z.iso.date().nullish(),
 	birthPlace: optionalText(200),
 	nationalId: optionalText(32),
+	/** NPWP; private like the NIK (ERP-0138). */
+	taxId: optionalText(32),
+	ptkpStatus: z.enum(EMPLOYEE_PTKP_STATUSES).nullish(),
+	bpjsHealthNumber: optionalText(32),
+	bpjsEmploymentNumber: optionalText(32),
 	maritalStatus: z
 		.enum(['single', 'married', 'divorced', 'widowed'])
 		.nullish(),
