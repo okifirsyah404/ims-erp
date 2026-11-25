@@ -29,7 +29,7 @@ import { en } from './index';
 
 const APP_SRC = join(import.meta.dir, '../../../apps/web-admin/src');
 /** The employee portal renders the same bundles (its own `employee` namespace too). */
-const PORTAL_SRC = join(import.meta.dir, '../../../apps/web-employee-portal/src');
+const PORTAL_SRC = join(import.meta.dir, '../../../apps/web-employee/src');
 /** The backend resolves `api.*` keys from its own controllers and errors. */
 const API_SRC = join(import.meta.dir, '../../../apps/backend/src');
 /** The package's own entry point: `LANGUAGES` references keys by name. */

@@ -1,6 +1,6 @@
-# web-employee-portal
+# web-employee
 
-Employee self-service portal (`@ims-erp/web-employee-portal`). Same stack as
+Employee self-service portal (`@ims-erp/web-employee`). Same stack as
 `apps/web-admin` (React 19 + Vite 8 + TanStack Router/Query/Table + Tailwind 4 +
 `@ims-erp/ui`), mobile-first.
 
@@ -106,8 +106,8 @@ bun run build
 Docker build context is the repository root:
 
 ```bash
-docker build -f apps/web-employee-portal/Dockerfile .
-docker compose up -d web-employee-portal   # host port WEB_EMPLOYEE_PORTAL_PORT (8081)
+docker build -f apps/web-employee/Dockerfile .
+docker compose up -d web-employee   # host port WEB_EMPLOYEE_PORT (8081)
 ```
 
 `VITE_API_URL` is baked in at build time (same as web-admin).

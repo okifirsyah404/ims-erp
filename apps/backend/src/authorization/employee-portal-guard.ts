@@ -1,5 +1,5 @@
 /**
- * Guard for the employee portal (`apps/web-employee-portal`).
+ * Guard for the employee portal (`apps/web-employee`).
  *
  * @remarks
  * A fourth path next to `erpGuard`, `sessionGuard` and `warehouseGuard`, with

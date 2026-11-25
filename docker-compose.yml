@@ -146,13 +146,13 @@ services:
       # reverse proxy (e.g. Caddy). Override with WEB_ADMIN_PORT in .env.
       - "${WEB_ADMIN_PORT:-8080}:80"
 
-  # Employee self-service portal (apps/web-employee-portal). Same static
+  # Employee self-service portal (apps/web-employee). Same static
   # bundle as web-admin; 8081 keeps both running side by side.
-  web-employee-portal:
-    image: ghcr.io/okifirsyah404/ims-erp-web-employee-portal:${IMAGE_TAG:-dev}
+  web-employee:
+    image: ghcr.io/okifirsyah404/ims-erp-web-employee:${IMAGE_TAG:-dev}
     restart: unless-stopped
     ports:
-      - "${WEB_EMPLOYEE_PORTAL_PORT:-8081}:80"
+      - "${WEB_EMPLOYEE_PORT:-8081}:80"
 
   # Public website (apps/web-landing). Node standalone server on 4321 inside
   # the container. Reaches the ERP server-to-server over the internal network.

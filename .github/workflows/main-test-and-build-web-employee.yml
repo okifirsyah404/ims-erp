@@ -4,13 +4,13 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "apps/web-employee-portal/**"
+      - "apps/web-employee/**"
       - "packages/**"
       - "package.json"
       - "bun.lock"
       - "bunfig.toml"
       - "turbo.json"
-      - ".github/workflows/main-test-and-build-web-employee-portal.yml"
+      - ".github/workflows/main-test-and-build-web-employee.yml"
   pull_request:
     branches: ["main"]
 
@@ -25,29 +25,29 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      web-employee-portal: ${{ steps.filter.outputs.web-employee-portal }}
+      web-employee: ${{ steps.filter.outputs.web-employee }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Check for web-employee-portal-related changes
+      - name: Check for web-employee-related changes
         uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
-            web-employee-portal:
-              - "apps/web-employee-portal/**"
+            web-employee:
+              - "apps/web-employee/**"
               - "packages/**"
               - "package.json"
               - "bun.lock"
               - "bunfig.toml"
               - "turbo.json"
-              - ".github/workflows/main-test-and-build-web-employee-portal.yml"
+              - ".github/workflows/main-test-and-build-web-employee.yml"
 
   lint:
     name: Lint Web Employee Portal
     needs: changes
-    if: needs.changes.outputs.web-employee-portal == 'true'
+    if: needs.changes.outputs.web-employee == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -62,13 +62,13 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Lint web-employee-portal
-        run: bun run --cwd apps/web-employee-portal lint
+      - name: Lint web-employee
+        run: bun run --cwd apps/web-employee lint
 
   test:
     name: Unit Test Web Employee Portal
     needs: changes
-    if: needs.changes.outputs.web-employee-portal == 'true'
+    if: needs.changes.outputs.web-employee == 'true'
     runs-on: ubuntu-latest
 
     permissions:
@@ -95,13 +95,13 @@ jobs:
         run: |
           mkdir -p test-result coverage
           bun run test:cov -- --reporter=junit --reporter-outfile=./test-result/junit.xml
-        working-directory: apps/web-employee-portal
+        working-directory: apps/web-employee
 
       - name: Publish JUnit report
         uses: mikepenz/action-junit-report@v6
         if: (!cancelled())
         with:
-          report_paths: apps/web-employee-portal/test-result/junit.xml
+          report_paths: apps/web-employee/test-result/junit.xml
           require_tests: true
 
       - name: Setup LCOV
@@ -111,12 +111,12 @@ jobs:
         uses: zgosalvez/github-actions-report-lcov@v7.2.3
         if: (!cancelled())
         with:
-          coverage-files: apps/web-employee-portal/coverage/lcov.info
+          coverage-files: apps/web-employee/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
           update-comment: true
-          artifact-name: web-employee-portal-coverage-report
+          artifact-name: web-employee-coverage-report
           title-prefix: Web Employee Portal
-          working-directory: apps/web-employee-portal
+          working-directory: apps/web-employee
 
   docker:
     name: Docker Build Web Employee Portal
@@ -133,13 +133,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build ims-erp-web-employee-portal image
+      - name: Build ims-erp-web-employee image
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./apps/web-employee-portal/Dockerfile
+          file: ./apps/web-employee/Dockerfile
           push: false
-          tags: ims-erp-web-employee-portal:ci
-          cache-from: type=gha,scope=web-employee-portal
-          cache-to: type=gha,scope=web-employee-portal,mode=max,ignore-error=true
+          tags: ims-erp-web-employee:ci
+          cache-from: type=gha,scope=web-employee
+          cache-to: type=gha,scope=web-employee,mode=max,ignore-error=true
 

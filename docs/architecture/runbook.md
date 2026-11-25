@@ -27,7 +27,7 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun dev` | `apps/backend` | ✅ verified 2026-10-29/30 — `bun run --watch src/index.ts` |
 | `bun run build` | repo root / `apps/web-admin` | ✅ verified 2026-10-29/30 (web-admin tsc + vite) |
 | `bun run dev:website` / `bun run dev:portal` | repo root | proposed — the public website (`@ims-erp/web-landing`, :4321) and the customer portal (`@ims-erp/web-customer-portal`, :4322) in `apps/`, moved in 2026-11-15; their `astro check` (0 errors) and `astro build` were verified the same day, dev servers not started here |
-| `bun run dev:employee` | repo root | ✅ verified 2026-11-25 (build only) — the employee portal (`@ims-erp/web-employee-portal`, :5174; web-admin keeps :5173). `vite build` and `tsc -p tsconfig.app.json --noEmit` clean; the dev server was not started |
+| `bun run dev:employee` | repo root | ✅ verified 2026-11-25 (build only) — the employee portal (`@ims-erp/web-employee`, :5174; web-admin keeps :5173). `vite build` and `tsc -p tsconfig.app.json --noEmit` clean; the dev server was not started |
 | `bun run typecheck` | repo root | ✅ verified 2026-11-15 — 6/6 turbo tasks, including `astro check` of `@ims-erp/web-landing` (167 files) and `@ims-erp/web-customer-portal` (147 files), 0 errors each |
 
 ## Checks
@@ -38,7 +38,7 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
 | `bun run test` | repo root | ✅ verified 2026-11-25 — 8/8 turbo tasks (backend 1608 incl. 8 new employee-portal, web-admin 211, locales 110, employee-portal 5, web-customer-portal 68, web-landing 25, react-email 6) |
 | `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-admin` | ✅ verified 2026-11-20 — 0 errors. The root `typecheck` does not cover web-admin (no `typecheck` script); this is the real check (also part of `build`) |
-| `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-employee-portal` | ✅ verified 2026-11-25 — 0 errors (same reason: the app has no `typecheck` script) |
+| `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-employee` | ✅ verified 2026-11-25 — 0 errors (same reason: the app has no `typecheck` script) |
 | `bun docs/gen-role-permission.ts` | repo root | ✅ verified 2026-11-23 — rewrites the generated block of `docs/role-permission.md` (628 routes, 0 unresolved). Run after any route, guard option or role-grant change |
 
 ### Live smoke tests (need a running backend on :3001)

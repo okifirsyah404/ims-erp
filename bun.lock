@@ -132,8 +132,8 @@
         "vite-plugin-pwa": "2.0.0",
       },
     },
-    "apps/web-employee-portal": {
-      "name": "@ims-erp/web-employee-portal",
+    "apps/web-employee": {
+      "name": "@ims-erp/web-employee",
       "version": "0.0.0",
       "dependencies": {
         "@ims-erp/common": "workspace:*",
@@ -778,7 +778,7 @@
 
     "@ims-erp/web-customer-portal": ["@ims-erp/web-customer-portal@workspace:apps/web-customer-portal"],
 
-    "@ims-erp/web-employee-portal": ["@ims-erp/web-employee-portal@workspace:apps/web-employee-portal"],
+    "@ims-erp/web-employee": ["@ims-erp/web-employee@workspace:apps/web-employee"],
 
     "@ims-erp/web-landing": ["@ims-erp/web-landing@workspace:apps/web-landing"],
 

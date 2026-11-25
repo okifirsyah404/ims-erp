@@ -5,13 +5,13 @@ on:
     types: [closed]
     branches: ["main"]
     paths:
-      - "apps/web-employee-portal/**"
+      - "apps/web-employee/**"
       - "packages/**"
       - "package.json"
       - "bun.lock"
       - "bunfig.toml"
       - "turbo.json"
-      - ".github/workflows/main-deploy-web-employee-portal.yml"
+      - ".github/workflows/main-deploy-web-employee.yml"
 
 env:
   HUSKY: 0
@@ -50,7 +50,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/okifirsyah404/ims-erp-web-employee-portal
+          images: ghcr.io/okifirsyah404/ims-erp-web-employee
           tags: |
             type=sha,prefix=sha-
             type=raw,value=dev
@@ -59,10 +59,10 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./apps/web-employee-portal/Dockerfile
+          file: ./apps/web-employee/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=web-employee-portal
-          cache-to: type=gha,scope=web-employee-portal,mode=max,ignore-error=true
+          cache-from: type=gha,scope=web-employee
+          cache-to: type=gha,scope=web-employee,mode=max,ignore-error=true
           platforms: linux/amd64

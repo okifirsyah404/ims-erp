@@ -1,4 +1,4 @@
-/** Portal karyawan (`apps/web-employee-portal`): beranda, absensi, pekerjaan saya. */
+/** Portal karyawan (`apps/web-employee`): beranda, absensi, pekerjaan saya. */
 const employee = {
 	'appName': 'Entragate Employee',
 	'nav.attendance': 'Absensi',

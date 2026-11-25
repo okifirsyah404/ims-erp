@@ -1,4 +1,4 @@
-/** Employee portal (`apps/web-employee-portal`): home, attendance, my work. */
+/** Employee portal (`apps/web-employee`): home, attendance, my work. */
 const employee = {
 	'appName': 'Entragate Employee',
 	'nav.attendance': 'Attendance',

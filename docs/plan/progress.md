@@ -12,6 +12,40 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-26 - rename `web-employee-portal` to `web-employee`
+
+**Scope.** The app folder, package name and every reference are now
+`web-employee` / `@ims-erp/web-employee`. No behaviour changed.
+
+**Changes.** `git mv apps/web-employee-portal apps/web-employee`;
+`package.json` name `@ims-erp/web-employee`; root `dev:employee` filter;
+`bun install` regenerated `bun.lock` (workspace entry + `@ims-erp/web-employee`);
+Dockerfile build paths and comments; compose service `web-employee` with image
+`ghcr.io/okifirsyah404/ims-erp-web-employee` and host port env
+`WEB_EMPLOYEE_PORT`; both CI workflows renamed to
+`main-{test-and-build,deploy}-web-employee.yml` (paths filters, job names,
+`bun run --cwd apps/web-employee`, Dockerfile path, GHA cache scope
+`web-employee`); portal README; locale dead-key scan path; `runbook.md`,
+`backlog.md`, `features.md`, `progress.md`; the doc comments in
+`employee-portal-guard.ts` and both `employee.ts` locale bundles.
+
+```bash
+bun install                                     # 1 package installed, lockfile rewritten
+bunx tsc --noEmit -p tsconfig.app.json          # (apps/web-employee) 0 errors
+bun test                                        # (apps/web-employee) 5 pass
+bun run lint                                    # 7/7 tasks, 0 errors
+bun run test                                    # 8/8 tasks: backend 1620, web-admin 211,
+                                                # locales 110, web-employee 5, customer 68,
+                                                # landing 25, email 6
+bun run --filter '@ims-erp/web-employee' build   # clean
+```
+
+Browser: dev server on :5174 boots from the new path and `/projects` renders
+with the seeded project, 0 console errors.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips).
+
 ## 2026-11-26 - employee portal: UI aligned with web-admin, verified in the browser
 
 **Scope.** Browser walk-through of the portal (real backend, real Postgres +
@@ -177,7 +211,7 @@ bun run --cwd apps/backend drizzle:seed      # twice: 2nd run "Demo project alre
 bun run lint                                 # 0 errors
 bun run test                                 # 8/8: backend 1620, web-admin 211, locales 110, portal 5, customer 68, landing 25, email 6
 bunx tsc --noEmit -p tsconfig.app.json       # (portal) 0 errors
-bun run --filter '@ims-erp/web-employee-portal' build
+bun run --filter '@ims-erp/web-employee' build
 bun docs/database/validate-dbml.ts           # OK
 ```
 
@@ -205,7 +239,7 @@ payslips).
 
 ## 2026-11-26 - employee portal Phase B: projects, project tasks, PIC management, field attendance (PostGIS)
 
-**Scope.** Second phase of `apps/web-employee-portal`: the project surface. An
+**Scope.** Second phase of `apps/web-employee`: the project surface. An
 employee sees the projects they are involved in, works their own tasks, and a
 PIC manages tasks/evidence and reviews the site visits; field check-in is
 verified server-side with PostGIS.
@@ -251,7 +285,7 @@ bun test test/unit/site-attendance.service.test.ts                # 12 pass
 bun run lint                                                      # 0 errors
 bun run test                                                      # 8/8: backend 1620, web-admin 211, locales 110, portal 5, customer 68, landing 25, email 6
 bunx tsc --noEmit -p tsconfig.app.json                            # (portal) 0 errors
-bun run --filter '@ims-erp/web-employee-portal' build             # clean
+bun run --filter '@ims-erp/web-employee' build             # clean
 ```
 
 **Not verified.** The local Postgres here does not ship PostGIS
@@ -266,7 +300,7 @@ payslips), and verify Phase B on a PostGIS-enabled database.
 
 ## 2026-11-25 - employee portal Phase A: foundation, auth gate, HR self-service
 
-**Scope.** First of three phases for `apps/web-employee-portal`. Delivers the
+**Scope.** First of three phases for `apps/web-employee`. Delivers the
 foundation (dependency parity with web-admin, auth, employee-only gate, shell,
 i18n) and the HR slice: attendance, schedule, leave/overtime, tasks,
 notifications, profile.
@@ -305,11 +339,11 @@ three notification templates (schema enum + seeder + `en`/`id` copy +
 `notification-text.ts`). Web-admin: the three new notification cases.
 Locales: new `employee` namespace (en + id), `nav.item.more`, `signatures` and
 `employee` added to `NAMESPACES`, `EmployeeKey` exported, dead-key scan now also
-scans the portal and treats `template.*` as live. Web-employee-portal: package
+scans the portal and treats `template.*` as live. web-employee: package
 and tsconfigs copied verbatim from web-admin (deps identical; `zod` declared
 explicitly, which web-admin resolves transitively), vite on :5174, TanStack
 Router, i18n, shell (desktop sidebar + mobile bottom bar), mobile-first pages,
-Dockerfile + `.docker/nginx.conf` + compose service (`WEB_EMPLOYEE_PORTAL_PORT`,
+Dockerfile + `.docker/nginx.conf` + compose service (`WEB_EMPLOYEE_PORT`,
 8081) + two CI workflows, `dev:employee` at the root.
 
 ```bash
@@ -319,8 +353,8 @@ bun docs/database/gen-logical-references.ts && bun docs/database/validate-dbml.t
 bun docs/gen-role-permission.ts                                   # 782 routes written
 bun run lint                                                      # 0 errors
 bun run test                                                      # 8/8 tasks: backend 1608, web-admin 211, locales 110, portal 5, customer portal 68, landing 25, email 6
-bunx tsc --noEmit -p tsconfig.app.json                            # (apps/web-employee-portal) 0 errors
-bun run build                                                     # (apps/web-employee-portal) tsc -b + vite build OK
+bunx tsc --noEmit -p tsconfig.app.json                            # (apps/web-employee) 0 errors
+bun run build                                                     # (apps/web-employee) tsc -b + vite build OK
 bun run --cwd apps/backend scripts/seed.ts                        # twice: second run inserted 0 (3 templates on the first)
 ```
 

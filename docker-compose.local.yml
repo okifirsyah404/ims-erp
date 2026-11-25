@@ -18,10 +18,10 @@ services:
       dockerfile: apps/web-admin/Dockerfile
     image: ims-erp-web-admin:local
 
-  web-employee-portal:
+  web-employee:
     build:
       context: .
-      dockerfile: apps/web-employee-portal/Dockerfile
+      dockerfile: apps/web-employee/Dockerfile
     image: ims-erp-employee-portal:local
 
   # PUBLIC_* values are inlined into the client bundle at build time, so they are
