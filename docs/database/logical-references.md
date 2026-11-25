@@ -64,8 +64,8 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 198 |
-| Distinct targets | 27 |
+| Logical reference columns | 199 |
+| Distinct targets | 28 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 160 |
 
@@ -104,8 +104,9 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `project.warranties.id` | Project | 1 |
 | `sale.invoice_items.id` | Sale | 1 |
 | `supplier.suppliers.id` | Supplier | 1 |
+| `tax.taxes.id` | Tax | 1 |
 
-## The 27 targets in full
+## The 28 targets in full
 
 ### `auth.organizations.id` - owner Identity, 56 referring columns
 
@@ -385,6 +386,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 ### `supplier.suppliers.id` - owner Supplier, 1 referring column
 
 - `procurement.purchase_orders`  ->  `supplier_pic_id`
+
+### `tax.taxes.id` - owner Tax, 1 referring column
+
+- `payment.payments`  ->  `withholding_tax_id`
 
 ## Contract obligations per target
 

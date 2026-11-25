@@ -3876,10 +3876,16 @@ Table tax.withholding_tax_records {
   period_year integer
   period_month integer
   status text [not null, default: 'recorded']
+  tax_object_code varchar(20) [note: "Kode objek pajak (ERP-0140), needed by the Coretax bukti potong."]
+  withholding_slip_number varchar(40) [note: "Bukti potong number once Coretax issued it (entered after upload)."]
+  counterparty_tax_id varchar(32) [note: "NPWP/NIK of the party withheld from."]
+  source_module text [note: "Module whose document produced the record (payment for a supplier payment withholding)."]
+  source_id text
+  coretax_status text [not null, default: 'not_exported']
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Withholding tax collected on a payment (was accounting.withholding_tax_records)."
+  Note: "Withholding tax collected on a payment (was accounting.withholding_tax_records). Since ERP-0140 a supplier payment with PPh creates its row (source_module = payment)."
   Indexes {
     (organization_id, code) [unique, name: 'withholding_tax_records_org_code_uq']
     tax_type_id [name: 'withholding_tax_records_tax_type_id_idx']
@@ -3889,6 +3895,7 @@ Table tax.withholding_tax_records {
     `base_amount >= 0`
     `tax_amount >= 0`
     `status IN ('recorded', 'verified', 'paid', 'reversed')`
+    `coretax_status IN ('not_exported', 'exported', 'uploaded')`
   }
 }
 
@@ -3961,6 +3968,9 @@ Table payment.payments {
   notes text
   voided_at bigint
   void_reason text
+  withholding_tax_id uuid [note: "Logical reference to tax.taxes.id. Cross-module FK intentionally omitted. Validated through the Tax module contract. PPh withheld from a supplier payment (ERP-0140)."]
+  withholding_amount bigint [not null, default: 0, note: "PPh withheld (IDR minor units): the bank pays amount - withholding_amount, the rest is owed to the state."]
+  tax_object_code varchar(20) [note: "Kode objek pajak of the withholding, e.g. 24-104-14."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "THE single payment ledger of the ERP, receipts and disbursements both (merged with payment.gateway_payments per ADR-0024 Q18). A payment settles payables through payment.payment_allocations, so the direct invoice/bill/advance columns are gone. Execution requires approval and is not allowed by the requester. A paid webhook on an expired or failed gateway row still counts: money received is a fact; paid is applied once, and a replayed webhook finds receipt_id and does nothing."
@@ -3973,6 +3983,7 @@ Table payment.payments {
     receipt_id [unique, name: 'payments_receipt_id_uq', note: "Partial: WHERE receipt_id IS NOT NULL."]
   }
   Checks {
+    `withholding_amount >= 0 AND withholding_amount < amount`
     `payment_type IN ('receipt', 'disbursement', 'refund', 'advance_disbursement', 'payroll', 'profit_distribution', 'investment')`
     `direction IN ('in', 'out')`
     `channel IN ('manual', 'gateway')`

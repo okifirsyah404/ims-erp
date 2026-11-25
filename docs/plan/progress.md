@@ -12,6 +12,66 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0140: PPh withholding at payment, PPN settlement, tax payments, Coretax XML
+
+**Scope.** Phase B slice 5 (owner's proposals 1-3 of 2026-11-25).
+
+**Design gate.** `docs/database/` read for `payment.payments`,
+`tax.withholding_tax_records`, `tax.taxes`, `sale.invoices` and
+`logical-references.md` (one new logical reference:
+`payment.payments.withholding_tax_id`). Decisions: withholding happens at
+payment, not at bill (the bill stays gross, AP settles in full); PPN figures
+come from the GL, not the tax working papers; Coretax files are built from the
+DJP template as understood and flagged unverified.
+
+**Changes.** Schema (migration `20261125011648_erp0140_tax_postings`):
+`payment.payments.withholding_tax_id` / `withholding_amount` (check
+`>= 0 AND < amount`) / `tax_object_code`; `tax.withholding_tax_records`
+`tax_object_code`, `withholding_slip_number`, `counterparty_tax_id`,
+`source_module`, `source_id`, `coretax_status`. Backend: payment create
+validates the withholding (`payment.withholdingInvalid`), execute posts
+`payment.withholding_recorded` and records the withholding through
+`ExportedTaxService`; void reverses both; `TaxLedgerService.settlePpn`
+/ `payTax`; `CoretaxExportService` + `coretax-xml.ts`; routes
+`POST /finance/tax/ppn-settlements`, `POST /finance/tax/payments`,
+`GET /taxes/coretax/{faktur,bupot}.xml`, `PATCH /taxes/withholdings/:id/coretax`.
+Roles `wht_payable`, `vat_payable`, `vat_overpaid`, `pph25_payable`; seed
+accounts 1-1830 PPN Lebih Bayar, 2-1460 Utang PPN; rule `tax=PPH4_2 -> 2-1440`.
+Web-admin: "Setor pajak" dialog (cash/bank), "Tutup PPN masa" (closing), Coretax
+downloads + bukti-potong dialog on withholdings (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 199 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0140_tax_postings; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # inserted 2 accounts, rulesInserted 5
+bun run <temporary tax-smoke script>          # 7/7 PASS (second run): PPN 2026-11 output 99099 / input 11 ->
+                                              # Utang PPN 99088, repeat returns the same journal, payment clears
+                                              # 2-1460, zero payment rejected, faktur XML lists 1 invoice, bupot builds
+bun test test/finance/ap-flows.test.ts test/finance/tax-postings.test.ts   # pass
+bun run test                                  # 7/7 tasks: backend 1511, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors (21 pre-existing warnings)
+bun docs/gen-role-permission.ts               # 709 routes
+```
+
+`test/authorization/tax-authorization.test.ts` covers the three new tax routes
+(401/403) and stubs `CORETAX_EXPORT_SERVICE_TOKEN`; the first full run failed
+there on the unregistered token.
+
+The first smoke run failed twice: a repeat settlement reported zeros (its own
+journal had zeroed the activity; fixed: it returns the posted journal) and the
+scratch bank account had no balance (smoke setup; funded with a cash-in).
+
+**Not verified.** Coretax import of either XML (format unverified); the
+withholding-at-payment flow on a database (no disbursement form or seeded
+supplier bill); no browser walk-through. `docs/database/` updated (docs.dbml +
+logical-references.md).
+
+Next executable task: ERP-0138 (payroll runs, PPh 21 TER engine with imported
+TER tables, BPJS, payroll journal, BP21 export).
+
 ## 2026-11-25 - ERP-0141: project-tagged invoices and project costs in the GL
 
 **Scope.** Phase B slice 4 (grill Q32/Q39/Q42).

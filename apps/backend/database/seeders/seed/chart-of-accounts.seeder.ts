@@ -96,6 +96,7 @@ const ACCOUNTS: TAccountSeed[] = [
 	h('1-1800', 'Pajak Dibayar Dimuka', 'asset', '1-1000'),
 	p('1-1810', 'PPN Masukan', 'asset', '1-1800', 'operating'),
 	p('1-1820', 'PPh 23 Dibayar Dimuka', 'asset', '1-1800', 'operating'),
+	p('1-1830', 'PPN Lebih Bayar', 'asset', '1-1800', 'operating'),
 	h('1-2000', 'Aset Tidak Lancar', 'asset', '1-0000'),
 	h('1-2100', 'Aset Tetap', 'asset', '1-2000'),
 	p('1-2110', 'Peralatan Instalasi dan Alat Uji', 'asset', '1-2100', 'investing'),
@@ -122,6 +123,7 @@ const ACCOUNTS: TAccountSeed[] = [
 	p('2-1430', 'Utang PPh 23', 'liability', '2-1400', 'operating'),
 	p('2-1440', 'Utang PPh 4 Ayat 2', 'liability', '2-1400', 'operating'),
 	p('2-1450', 'Utang PPh 25/29', 'liability', '2-1400', 'operating'),
+	p('2-1460', 'Utang PPN', 'liability', '2-1400', 'operating'),
 	p('2-1500', 'Pendapatan Diterima Dimuka', 'liability', '2-1000', 'operating'),
 	p('2-1600', 'Utang Gaji', 'liability', '2-1000', 'operating'),
 	p('2-1700', 'Utang BPJS', 'liability', '2-1000', 'operating'),
@@ -320,6 +322,42 @@ export async function seedChartOfAccounts(): Promise<void> {
 				accountId: pettyCash.id,
 				isActive: true,
 				description: 'Cash in petty cash (seed)',
+				createdAt: now,
+				updatedAt: now,
+			});
+			rulesInserted += 1;
+		}
+	}
+
+	// ERP-0140: PPh 4(2) withheld goes to its own payable; PPh 23 uses the
+	// default `wht_payable` rule.
+	const pph42 = byCode.get('2-1440');
+	if (pph42) {
+		const [existing] = await drizzleDB
+			.select({ id: postingRules.id })
+			.from(postingRules)
+			.where(
+				and(
+					eq(postingRules.organizationId, organization.id),
+					eq(postingRules.eventType, ANY_POSTING_EVENT),
+					eq(postingRules.role, 'wht_payable'),
+					eq(postingRules.discriminatorType, 'tax'),
+					eq(postingRules.discriminatorValue, 'PPH4_2'),
+					isNull(postingRules.deletedAt),
+				),
+			)
+			.limit(1);
+		if (!existing) {
+			const now = new Date();
+			await drizzleDB.insert(postingRules).values({
+				organizationId: organization.id,
+				eventType: ANY_POSTING_EVENT,
+				role: 'wht_payable',
+				discriminatorType: 'tax',
+				discriminatorValue: 'PPH4_2',
+				accountId: pph42.id,
+				isActive: true,
+				description: 'PPh 4(2) withheld (seed)',
 				createdAt: now,
 				updatedAt: now,
 			});

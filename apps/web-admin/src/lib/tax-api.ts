@@ -243,7 +243,23 @@ export type TWithholdingRecord = {
 	periodYear: number | null;
 	periodMonth: number | null;
 	status: string;
+	taxObjectCode: string | null;
+	withholdingSlipNumber: string | null;
+	counterpartyTaxId: string | null;
+	sourceModule: string | null;
+	coretaxStatus: TCoretaxStatus;
 };
+
+export const CORETAX_STATUSES = ['not_exported', 'exported', 'uploaded'] as const;
+export type TCoretaxStatus = (typeof CORETAX_STATUSES)[number];
+
+/** Bukti-potong data and Coretax status (ERP-0140). */
+export function updateWithholdingCoretax(
+	id: string,
+	input: { coretaxStatus?: TCoretaxStatus; withholdingSlipNumber?: string | null; counterpartyTaxId?: string | null; taxObjectCode?: string | null },
+) {
+	return sendData<TWithholdingRecord>(`/taxes/withholdings/${id}/coretax`, 'PATCH', input);
+}
 
 export function withholdingQueryOptions(params: { page: number; limit: number }) {
 	const search = new URLSearchParams({

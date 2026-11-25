@@ -13,6 +13,10 @@ import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 // type only — never the other module's index (that would pull its HTTP surface
 // and container into Accounting).
 import { PAYMENT_LEDGER_GATEWAY_TOKEN } from '@app/payment/constants/di';
+import { EXPORTED_TAX_SERVICE_TOKEN } from '@app/tax/constants/di';
+import type { ExportedTaxService } from '@app/tax/services/exported-tax.service';
+import { POSTING_SERVICE_TOKEN } from '../constants/di';
+import type { PostingService } from './posting.service';
 import type { IPaymentLedgerGateway } from '@app/payment/contracts/payment-ledger.gateway.interface';
 import {
 	CashBankLinkRequiredError,
@@ -89,6 +93,10 @@ export class MonthEndCloseService {
 		@inject(CASH_BANK_SERVICE_TOKEN) private readonly cashBank: CashBankService,
 		/** ADR-0024: payment owns payment.payments; F7 reads/stamps it through this. */
 		@inject(PAYMENT_LEDGER_GATEWAY_TOKEN) private readonly payments: IPaymentLedgerGateway,
+		@inject(POSTING_SERVICE_TOKEN) private readonly posting?: Pick<PostingService, 'reverse'>,
+		/** ERP-0140: a voided payment reverses its withholding record. */
+		@inject(EXPORTED_TAX_SERVICE_TOKEN)
+		private readonly taxes?: Pick<ExportedTaxService, 'reverseWithholdingBySource'>,
 	) {}
 
 	/** Pre-close checklist for one month (computed on demand, D7). */
@@ -233,7 +241,7 @@ export class MonthEndCloseService {
 					cashBankAccountId: payment.cashBankAccountId!,
 					transactionDate: new Date().toISOString().slice(0, 10),
 					direction: isPayable ? 'in' : 'out',
-					amount: payment.amount,
+					amount: payment.amount - (payment.withholdingAmount ?? 0),
 					description: `Void of payment ${payment.code}: ${input.reason}`,
 					referenceNumber: payment.code,
 					counterpartAccountId: counterpartLine.accountId,
@@ -242,6 +250,17 @@ export class MonthEndCloseService {
 				},
 				tx,
 			);
+
+			// 3) ERP-0140: the PPh withheld on the payment is reversed too.
+			if ((payment.withholdingAmount ?? 0) > 0) {
+				const withholding = await this.journal.findEntryBySource(ctx.organizationId, 'payment_withholding', payment.id, tx);
+				if (withholding && withholding.status === 'posted' && !withholding.reversedByEntryId && this.posting) {
+					await this.posting.reverse(tx, ctx.organizationId, withholding.id, ctx.actorUserId, {
+						description: `Void of payment ${payment.code}: ${input.reason}`.slice(0, 500),
+					});
+				}
+				await this.taxes?.reverseWithholdingBySource(tx, ctx.organizationId, 'payment', payment.id);
+			}
 
 			return this.payments.markVoided(ctx.organizationId, payment.id, input.reason, tx);
 		});

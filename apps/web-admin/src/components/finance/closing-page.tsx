@@ -21,6 +21,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
 	runDeferredRevenue,
+	settlePpn,
 	closeChecklistQueryOptions,
 	ensurePeriod,
 	periodsQueryOptions,
@@ -86,6 +87,21 @@ export function ClosingPage() {
 				t('finance:closing.deferredRevenueDone', {
 					entries: result.entries,
 					amount: (result.amount / 100).toLocaleString(),
+				}),
+			);
+			invalidate();
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+
+	const ppn = useMutation({
+		mutationFn: () => settlePpn(applied.year, applied.month),
+		onSuccess: (result) => {
+			toast.success(
+				t('finance:closing.ppnSettled', {
+					output: (result.output / 100).toLocaleString(),
+					input: (result.input / 100).toLocaleString(),
+					net: (result.net / 100).toLocaleString(),
 				}),
 			);
 			invalidate();
@@ -248,6 +264,16 @@ export function ClosingPage() {
 									onClick={() => void amortise.mutateAsync()}
 								>
 									{t('finance:closing.runDeferredRevenue')}
+								</Button>
+							) : null}
+							{canAmortise ? (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={ppn.isPending}
+									onClick={() => void ppn.mutateAsync()}
+								>
+									{t('finance:closing.settlePpn')}
 								</Button>
 							) : null}
 						</div>

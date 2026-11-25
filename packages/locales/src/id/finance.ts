@@ -695,6 +695,21 @@ const finance: Record<keyof typeof en, string> = {
 	'gatewaySettlement.recorded': 'Settlement payment gateway dicatat',
 	'postingRules.role.cash_payment': 'Kas dibayarkan (per metode)',
 	'postingRules.event.project.cost_recorded': 'Biaya proyek dicatat',
+	'postingRules.role.wht_payable': 'Utang PPh potong (PPh 23 / 4(2))',
+	'postingRules.role.vat_payable': 'Utang PPN',
+	'postingRules.role.vat_overpaid': 'PPN lebih bayar',
+	'postingRules.role.pph25_payable': 'Utang PPh 25/29',
+	'postingRules.event.payment.withholding_recorded': 'PPh dipotong saat pembayaran',
+	'postingRules.event.finance.ppn_settled': 'PPN masa ditutup',
+	'postingRules.event.finance.tax_paid': 'Pajak disetor',
+	'taxPayment.title': 'Setor pajak',
+	'taxPayment.hint': 'Menyetor utang pajak ke negara; kas/bank keluar dengan lawan akun utang pajaknya.',
+	'taxPayment.liability': 'Utang pajak',
+	'taxPayment.taxCode': 'Kode pajak (mis. PPH23)',
+	'taxPayment.reference': 'Kode billing / NTPN',
+	'taxPayment.recorded': 'Setoran pajak dicatat',
+	'closing.settlePpn': 'Tutup PPN masa',
+	'closing.ppnSettled': 'PPN ditutup: keluaran {{output}}, masukan {{input}}, neto {{net}}',
 } as const;
 
 export default finance;

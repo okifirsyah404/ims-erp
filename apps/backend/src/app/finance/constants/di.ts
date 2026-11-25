@@ -21,6 +21,7 @@ import type { IDeferredRevenuePort } from '../contracts/deferred-revenue.port';
 import type { DeferredRevenueService } from '../services/deferred-revenue.service';
 import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
 import type { GatewaySettlementService } from '../services/gateway-settlement.service';
+import type { TaxLedgerService } from '../services/tax-ledger.service';
 import type { IEmployeeBankAccountRepository } from '../contracts/employee-bank-account.contract';
 import type { EmployeeBankAccountService } from '../services/employee-bank-account.service';
 import type { ExportedFinanceService } from '../services/exported-finance.service';
@@ -165,3 +166,6 @@ export const RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN: InjectionToken<ReceivableAdjus
 export const GATEWAY_SETTLEMENT_SERVICE_TOKEN: InjectionToken<GatewaySettlementService> = Symbol(
 	'GATEWAY_SETTLEMENT_SERVICE',
 );
+
+/** PPN period settlement and tax payments (ERP-0140). */
+export const TAX_LEDGER_SERVICE_TOKEN: InjectionToken<TaxLedgerService> = Symbol('TAX_LEDGER_SERVICE');

@@ -1,3 +1,4 @@
+import type { TTx } from '@drizzle/types';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import {
 	taxCorrections,
@@ -444,24 +445,91 @@ export class TaxRepository implements TTaxRepository {
 		return row ?? null;
 	}
 
-	async insertWithholding(row: {
-		organizationId: string;
-		code: string;
-		taxTypeId: string;
-		counterpartyType: string | null;
-		counterpartyId: string | null;
-		baseAmount: number;
-		taxAmount: number;
-		transactionDate: string | null;
-		periodYear: number | null;
-		periodMonth: number | null;
-	}): Promise<TWithholdingTaxRecordSelect> {
+	async insertWithholding(
+		row: {
+			organizationId: string;
+			code: string;
+			taxTypeId: string;
+			counterpartyType: string | null;
+			counterpartyId: string | null;
+			baseAmount: number;
+			taxAmount: number;
+			transactionDate: string | null;
+			periodYear: number | null;
+			periodMonth: number | null;
+			taxObjectCode?: string | null;
+			counterpartyTaxId?: string | null;
+			sourceModule?: string | null;
+			sourceId?: string | null;
+		},
+		tx?: unknown,
+	): Promise<TWithholdingTaxRecordSelect> {
 		const now = new Date();
-		const [created] = await this.database
+		const [created] = await ((tx as TTx | undefined) ?? this.database)
 			.insert(withholdingTaxRecords)
 			.values({ ...row, createdAt: now, updatedAt: now })
 			.returning();
 		return created;
+	}
+
+	async listWithholdingsForPeriod(organizationId: string, year: number, month: number): Promise<TWithholdingTaxRecordSelect[]> {
+		return this.database
+			.select()
+			.from(withholdingTaxRecords)
+			.where(
+				and(
+					eq(withholdingTaxRecords.organizationId, organizationId),
+					eq(withholdingTaxRecords.periodYear, year),
+					eq(withholdingTaxRecords.periodMonth, month),
+					sql`${withholdingTaxRecords.status} <> 'reversed'`,
+					isNull(withholdingTaxRecords.deletedAt),
+				),
+			)
+			.orderBy(asc(withholdingTaxRecords.code));
+	}
+
+	async updateWithholdingCoretax(
+		organizationId: string,
+		id: string,
+		patch: Partial<{
+			coretaxStatus: string;
+			withholdingSlipNumber: string | null;
+			counterpartyTaxId: string | null;
+			taxObjectCode: string | null;
+		}>,
+	): Promise<TWithholdingTaxRecordSelect | null> {
+		const [row] = await this.database
+			.update(withholdingTaxRecords)
+			.set({ ...patch, updatedAt: new Date() })
+			.where(
+				and(
+					eq(withholdingTaxRecords.id, id),
+					eq(withholdingTaxRecords.organizationId, organizationId),
+					sql`${withholdingTaxRecords.status} <> 'reversed'`,
+					isNull(withholdingTaxRecords.deletedAt),
+				),
+			)
+			.returning();
+		return row ?? null;
+	}
+
+	async reverseWithholdingBySource(
+		organizationId: string,
+		sourceModule: string,
+		sourceId: string,
+		tx?: unknown,
+	): Promise<void> {
+		await ((tx as TTx | undefined) ?? this.database)
+			.update(withholdingTaxRecords)
+			.set({ status: 'reversed', updatedAt: new Date() })
+			.where(
+				and(
+					eq(withholdingTaxRecords.organizationId, organizationId),
+					eq(withholdingTaxRecords.sourceModule, sourceModule),
+					eq(withholdingTaxRecords.sourceId, sourceId),
+					isNull(withholdingTaxRecords.deletedAt),
+				),
+			);
 	}
 
 	async updateRecordedWithholding(

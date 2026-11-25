@@ -384,6 +384,10 @@ export const POSTING_ROLES = [
 	'grir_clearing',
 	'cash_receipt',
 	'cash_payment',
+	'wht_payable',
+	'vat_payable',
+	'vat_overpaid',
+	'pph25_payable',
 	'purchase_price_variance',
 	'inventory_variance',
 	'gateway_clearing',
@@ -418,6 +422,9 @@ export const POSTING_EVENT_TYPES = [
 	'sale.receipt_posted',
 	'payment.gateway_settled',
 	'project.cost_recorded',
+	'payment.withholding_recorded',
+	'finance.ppn_settled',
+	'finance.tax_paid',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -1405,4 +1412,26 @@ export function recordGatewaySettlement(input: {
 	reference: string;
 }) {
 	return sendData<{ net: number; fee: number }>('/finance/gateway-settlements', 'POST', input);
+}
+
+/* ----------------------------- tax postings (ERP-0140) ----------------------------- */
+
+export const TAX_PAYMENT_ROLES = ['vat_payable', 'wht_payable', 'pph21_payable', 'pph25_payable'] as const;
+export type TTaxPaymentRole = (typeof TAX_PAYMENT_ROLES)[number];
+
+export type TPpnSettlement = { period: string; output: number; input: number; net: number; journalEntryId: string | null };
+
+export function settlePpn(year: number, month: number) {
+	return sendData<TPpnSettlement>('/finance/tax/ppn-settlements', 'POST', { year, month });
+}
+
+export function payTax(input: {
+	role: TTaxPaymentRole;
+	taxCode: string | null;
+	cashBankAccountId: string;
+	paymentDate: string;
+	amount: number;
+	reference: string;
+}) {
+	return sendData<{ id: string }>('/finance/tax/payments', 'POST', input);
 }

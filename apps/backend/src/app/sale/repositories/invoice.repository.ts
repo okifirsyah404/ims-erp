@@ -310,6 +310,23 @@ export class InvoiceRepository implements TInvoiceRepository {
 		return !!row;
 	}
 
+	async listTaxInvoicesInRange(organizationId: string, startDate: string, endDate: string): Promise<TInvoiceSelect[]> {
+		return this.database
+			.select()
+			.from(invoices)
+			.where(
+				and(
+					eq(invoices.organizationId, organizationId),
+					inArray(invoices.status, ['issued', 'partially_paid', 'paid', 'written_off']),
+					sql`${invoices.taxTotal} > 0`,
+					gte(invoices.issueDate, startDate),
+					lte(invoices.issueDate, endDate),
+					isNull(invoices.deletedAt),
+				),
+			)
+			.orderBy(asc(invoices.issueDate), asc(invoices.code));
+	}
+
 	async sumLiveDownPaymentBase(
 		organizationId: string,
 		orderId: string,

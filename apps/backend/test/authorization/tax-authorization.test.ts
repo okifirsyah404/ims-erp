@@ -114,6 +114,13 @@ const ROUTES: ReadonlyArray<{
 		path: `/taxes/withholdings/${WITHHOLDING_ID}/transition`,
 		body: { to: 'verified' },
 	},
+	{ method: 'GET', path: '/taxes/coretax/faktur.xml?year=2026&month=11' },
+	{ method: 'GET', path: '/taxes/coretax/bupot.xml?year=2026&month=11' },
+	{
+		method: 'PATCH',
+		path: `/taxes/withholdings/${WITHHOLDING_ID}/coretax`,
+		body: { coretaxStatus: 'uploaded' },
+	},
 ];
 
 beforeAll(async () => {
@@ -121,9 +128,16 @@ beforeAll(async () => {
 	installPermissionResolverMock();
 
 	const { container } = await import('tsyringe');
-	const { TAX_SERVICE_TOKEN } = await import(
+	const { CORETAX_EXPORT_SERVICE_TOKEN, TAX_SERVICE_TOKEN } = await import(
 		'../../src/app/tax/constants/di'
 	);
+	container.register(CORETAX_EXPORT_SERVICE_TOKEN, {
+		useValue: {
+			fakturXml: async () => ({ xml: '<TaxInvoiceBulk/>', count: 0 }),
+			bupotXml: async () => ({ xml: '<BpuBulk/>', count: 0 }),
+			updateCoretax: async () => ({}),
+		} as never,
+	});
 
 	const noop = async () => ({});
 	const serviceStub = {

@@ -937,8 +937,15 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   duplicate reference. Evidence: migration
   `20261125002439_erp0141_project_postings`, unit tests, DB smoke 3/3.
 
+- Tax postings, Phase B (ERP-0140, 2026-11-25): PPh withheld at supplier
+  payment (AP settled in full, bank pays the net, Utang PPh by tax code);
+  monthly PPN settlement to Utang PPN / PPN lebih bayar; tax payments from
+  cash/bank; Coretax e-Faktur and bukti-potong XML downloads (format
+  unverified until a test import). Evidence: migration
+  `20261125011648_erp0140_tax_postings`, unit tests, DB smoke 7/7.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close; ERP-0138, 0140, 0142 (Phase B:
+- ERP-0131 year-end close; ERP-0138, 0142 (Phase B:
   payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
   sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,

@@ -41,6 +41,7 @@ import {
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 import { GatewaySettlementDialog } from './gateway-settlement-dialog';
+import { TaxPaymentDialog } from './tax-payment-dialog';
 
 /** The route API for `/finance/cash-bank` (validated search params). */
 const routeApi = getRouteApi('/_authed/finance/cash-bank/');
@@ -69,6 +70,7 @@ export function CashBankPage() {
 	const canCreate = usePermission('cash_bank.create');
 	const canUpdate = usePermission('cash_bank.update');
 	const [settling, setSettling] = useState(false);
+	const [payingTax, setPayingTax] = useState(false);
 
 	const [creating, setCreating] = useState(false);
 	const [editing, setEditing] = useState<TCashBankAccount | null>(null);
@@ -321,6 +323,9 @@ export function CashBankPage() {
 				</div>
 				{canCreate ? (
 					<div className='flex gap-2'>
+						<Button size='sm' variant='outline' onClick={() => setPayingTax(true)}>
+							{t('finance:taxPayment.title')}
+						</Button>
 						<Button size='sm' variant='outline' onClick={() => setSettling(true)}>
 							{t('finance:gatewaySettlement.title')}
 						</Button>
@@ -332,6 +337,7 @@ export function CashBankPage() {
 				) : null}
 			</div>
 			{settling ? <GatewaySettlementDialog accounts={accounts ?? []} onClose={() => setSettling(false)} /> : null}
+			{payingTax ? <TaxPaymentDialog accounts={accounts ?? []} onClose={() => setPayingTax(false)} /> : null}
 
 			{accountsError ? (
 				<ErrorState error={accountsErr} bordered />

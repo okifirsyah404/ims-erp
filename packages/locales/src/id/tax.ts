@@ -96,6 +96,20 @@ const tax = {
 	'status.recorded': 'Tercatat',
 	'status.paid': 'Terbayar',
 	'status.reversed': 'Dibatalkan',
+	'coretax.year': 'Tahun',
+	'coretax.month': 'Bulan',
+	'coretax.faktur': 'XML e-Faktur Coretax',
+	'coretax.bupot': 'XML bukti potong Coretax',
+	'coretax.hint': 'Berkas untuk diunggah manual di Coretax. Formatnya mengikuti template impor DJP sejauh yang kami pahami dan belum terverifikasi sampai uji impor berhasil.',
+	'coretax.dialogTitle': 'Data Coretax',
+	'coretax.taxObjectCode': 'Kode objek pajak',
+	'coretax.counterpartyTaxId': 'NPWP/NIK lawan transaksi',
+	'coretax.slipNumber': 'Nomor bukti potong',
+	'coretax.status': 'Status Coretax',
+	'coretax.statusValue.not_exported': 'Belum diekspor',
+	'coretax.statusValue.exported': 'Sudah diekspor',
+	'coretax.statusValue.uploaded': 'Sudah diunggah ke Coretax',
+	'coretax.saved': 'Data Coretax disimpan',
 } as const;
 
 export default tax;

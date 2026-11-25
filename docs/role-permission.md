@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-704 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+709 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -875,6 +875,8 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/supplier-bills/:id/record` | org member + permission | `bill:record` | `owner`, `finance`, `accountant` |
 | GET | `/finance/supplier-bills/billable-orders` | org member + permission | `bill:create` | `owner`, `finance`, `accountant` |
 | POST | `/finance/supplier-bills/from-purchase-order` | org member + permission | `bill:create` | `owner`, `finance`, `accountant` |
+| POST | `/finance/tax/payments` | org member + permission | `cash_bank:create` | `owner`, `finance` |
+| POST | `/finance/tax/ppn-settlements` | org member + permission | `journal:post` | `owner`, `accountant` |
 
 ### human-resource
 
@@ -1350,6 +1352,8 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/taxes/code-numberings` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
 | PUT | `/taxes/code-numberings/:codeType` | app admin, or org member + permission | `code_number:update` | app admin; `owner`, `admin` |
 | POST | `/taxes/code-numberings/:codeType/preview` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
+| GET | `/taxes/coretax/bupot.xml` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
+| GET | `/taxes/coretax/faktur.xml` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/export.csv` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/export.xlsx` | org member + permission | `tax:export` | `owner`, `finance`, `accountant`, `auditor` |
 | GET | `/taxes/recap` | org member + permission | `tax:read` | `owner`, `finance`, `accountant`, `auditor` |
@@ -1365,6 +1369,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/taxes/withholdings` | org member + permission | `tax:update` | `owner`, `accountant` |
 | GET | `/taxes/withholdings/:id` | org member + permission | `tax:read` | `owner`, `finance`, `accountant`, `auditor` |
 | PATCH | `/taxes/withholdings/:id` | org member + permission | `tax:update` | `owner`, `accountant` |
+| PATCH | `/taxes/withholdings/:id/coretax` | org member + permission | `tax:update` | `owner`, `accountant` |
 | POST | `/taxes/withholdings/:id/transition` | org member + permission | `tax:verify` | `owner`, `accountant` |
 
 ### ticket

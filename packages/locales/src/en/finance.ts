@@ -693,6 +693,21 @@ const finance = {
 	'gatewaySettlement.recorded': 'Gateway settlement recorded',
 	'postingRules.role.cash_payment': 'Cash paid (by method)',
 	'postingRules.event.project.cost_recorded': 'Project cost recorded',
+	'postingRules.role.wht_payable': 'Withholding tax payable (PPh 23 / 4(2))',
+	'postingRules.role.vat_payable': 'VAT payable',
+	'postingRules.role.vat_overpaid': 'VAT overpaid',
+	'postingRules.role.pph25_payable': 'PPh 25/29 payable',
+	'postingRules.event.payment.withholding_recorded': 'PPh withheld on a payment',
+	'postingRules.event.finance.ppn_settled': 'PPN period settled',
+	'postingRules.event.finance.tax_paid': 'Tax paid to the state',
+	'taxPayment.title': 'Pay tax',
+	'taxPayment.hint': 'Pays a tax liability to the state; the bank goes out against the liability account.',
+	'taxPayment.liability': 'Liability',
+	'taxPayment.taxCode': 'Tax code (e.g. PPH23)',
+	'taxPayment.reference': 'Billing code / NTPN',
+	'taxPayment.recorded': 'Tax payment recorded',
+	'closing.settlePpn': 'Settle PPN',
+	'closing.ppnSettled': 'PPN settled: output {{output}}, input {{input}}, net {{net}}',
 } as const;
 
 export default finance;

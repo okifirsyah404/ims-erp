@@ -1,4 +1,6 @@
 import { inject, injectable } from 'tsyringe';
+import { POSTING_SERVICE_TOKEN } from '../constants/di';
+import type { PostingService } from './posting.service';
 import type { TTx } from '@drizzle/types';
 import { AR_ACCOUNT_RESOLVER_TOKEN, CASH_BANK_SERVICE_TOKEN } from '../constants/ar-di';
 import {
@@ -43,6 +45,8 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		private readonly cashBank: Pick<CashBankService, 'postMovement'>,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: Pick<ArAccountResolverService, 'resolve'>,
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
 	) {}
 
 	async findSalesInvoice(
@@ -133,6 +137,38 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 			},
 			tx,
 		);
+	}
+
+	async postWithholding(
+		input: {
+			organizationId: string;
+			actorUserId: string;
+			paymentId: string;
+			paymentCode: string;
+			businessDate: string;
+			amount: number;
+			taxCode: string;
+			supplierId: string | null;
+		},
+		tx: TTx,
+	): Promise<void> {
+		if (!this.posting) return;
+		const party = { partyType: 'supplier', partyId: input.supplierId };
+		await this.posting.postBusinessEvent(tx, {
+			organizationId: input.organizationId,
+			entryDate: input.businessDate,
+			sourceModule: 'payment',
+			sourceType: 'payment_withholding',
+			sourceId: input.paymentId,
+			idempotencyKey: `payment_withholding:${input.paymentId}`,
+			eventType: 'payment.withholding_recorded',
+			description: `PPh withheld on payment ${input.paymentCode}`,
+			actorUserId: input.actorUserId,
+			lines: [
+				{ role: 'payable', debit: input.amount, credit: 0, ...party },
+				{ role: 'wht_payable', discriminatorType: 'tax', discriminatorValue: input.taxCode, debit: 0, credit: input.amount, ...party },
+			],
+		});
 	}
 
 	async postCashMovement(

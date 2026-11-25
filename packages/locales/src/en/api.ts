@@ -566,6 +566,8 @@ const api = {
 	'accounting.writeOffSelfApproval': 'The requester of a write-off cannot approve it',
 	'accounting.deferredRevenuePending': 'Deferred revenue is not amortised through this period yet; run the amortisation first',
 	'accounting.gatewaySettlementAmount': 'A settlement needs a positive gross amount larger than the fee',
+	'payment.withholdingInvalid': 'Withholding needs a supplier disbursement, a PPh tax and an amount below the payment',
+	'accounting.taxPaymentAmount': 'A tax payment needs a positive amount',
 	'accounting.openItemNotFound': 'The open-item sub-ledger row for this document is missing',
 	'accounting.paymentNotFound': 'Payment not found',
 	'accounting.paymentInvalidTransition':

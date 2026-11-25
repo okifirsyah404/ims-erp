@@ -222,6 +222,13 @@ export const withholdingTaxRecords = taxSchema.table(
 		periodYear: integer('period_year'),
 		periodMonth: integer('period_month'),
 		status: text('status').notNull().default('recorded'),
+		/** Bukti potong data for Coretax (ERP-0140). */
+		taxObjectCode: varchar('tax_object_code', { length: 20 }),
+		withholdingSlipNumber: varchar('withholding_slip_number', { length: 40 }),
+		counterpartyTaxId: varchar('counterparty_tax_id', { length: 32 }),
+		sourceModule: text('source_module'),
+		sourceId: text('source_id'),
+		coretaxStatus: text('coretax_status').notNull().default('not_exported'),
 		...timestamps,
 	},
 	(table) => [
@@ -238,6 +245,10 @@ export const withholdingTaxRecords = taxSchema.table(
 		check(
 			'withholding_status_check',
 			sql`status IN ('recorded', 'verified', 'paid', 'reversed')`,
+		),
+		check(
+			'withholding_coretax_status_check',
+			sql`coretax_status IN ('not_exported', 'exported', 'uploaded')`,
 		),
 	],
 );

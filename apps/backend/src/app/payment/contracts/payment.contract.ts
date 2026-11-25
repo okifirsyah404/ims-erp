@@ -36,6 +36,15 @@ export const paymentCreateSchema = z.object({
 	notes: z.string().nullish().transform((v) => v ?? null),
 	/** Optional initial allocations (validated, stored while draft). */
 	allocations: z.array(paymentAllocationInputSchema).max(100).default([]),
+	/** PPh withheld from a supplier payment (ERP-0140): the bank pays amount - withholding. */
+	withholding: z
+		.object({
+			taxId: z.string().uuid(),
+			amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+			taxObjectCode: z.string().trim().max(20).nullish().transform((v) => v ?? null),
+		})
+		.nullish()
+		.transform((v) => v ?? null),
 });
 
 export const paymentAllocationsSchema = z.object({

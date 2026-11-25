@@ -261,6 +261,36 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
 - Costs recorded before ERP-0141 have no journal; their void touches only the
   project.
 
+## Tax postings (B, ERP-0140, built)
+
+- **PPh withheld at supplier payment.** A disbursement may carry
+  `withholding {taxId, amount, taxObjectCode}` (PPh tax types only, amount
+  below the payment). Execution settles the AP open item in full and posts
+  `payment.withholding_recorded`: Dr AP / Cr `wht_payable` (posting-rule
+  discriminator `tax` = tax code: PPH23 -> 2-1430, PPH4_2 -> 2-1440); the
+  bank moves only the net. The tax module records the withholding
+  (`source_module = payment`, `source_id`) in the same transaction through
+  `EXPORTED_TAX_SERVICE_TOKEN`. Voiding the payment returns the net cash,
+  reverses the withholding entry and reverses the withholding record.
+- **PPN period close** (`POST /finance/tax/ppn-settlements`): that month's GL
+  activity on `vat_output` / `vat_input` moves out: Dr PPN output / Cr PPN
+  input / Cr Utang PPN 2-1460 (or Dr PPN Lebih Bayar 1-1830), dated the
+  period's last day, idempotency key `ppn_settlement:YYYY-MM`. A repeat call
+  returns the posted journal. PPN booked after settlement needs a reversal and
+  a fresh settlement.
+- **Tax payment** (`POST /finance/tax/payments`): a cash/bank movement out
+  against the liability its role resolves (`vat_payable`, `wht_payable` by tax
+  code, `pph21_payable`, `pph25_payable`); reference = billing code / NTPN.
+- **Coretax XML** (`GET /taxes/coretax/faktur.xml`, `bupot.xml`): built from
+  issued VAT invoices (TrxCode 04, DPP nilai lain 11/12, 12%) and the
+  period's withholdings. The layout follows the DJP import template as
+  understood and is **unverified until a test import into Coretax
+  succeeds**. Withholdings carry `tax_object_code`, `withholding_slip_number`,
+  `counterparty_tax_id`, `coretax_status` (not_exported / exported /
+  uploaded). BP21 export moves to ERP-0138 with payroll.
+- No disbursement creation form exists in web-admin yet, so withholding at
+  payment is API-only.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

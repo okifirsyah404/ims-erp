@@ -567,6 +567,8 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.writeOffSelfApproval': 'Pengaju penghapusan piutang tidak boleh menyetujuinya sendiri',
 	'accounting.deferredRevenuePending': 'Pendapatan diterima dimuka belum diamortisasi sampai periode ini; jalankan amortisasi dulu',
 	'accounting.gatewaySettlementAmount': 'Settlement butuh nilai bruto positif yang lebih besar dari biayanya',
+	'payment.withholdingInvalid': 'Potongan PPh hanya untuk pembayaran ke pemasok, dengan jenis pajak PPh, dan nilainya di bawah jumlah pembayaran',
+	'accounting.taxPaymentAmount': 'Setoran pajak butuh jumlah yang lebih dari nol',
 	'accounting.openItemNotFound': 'Baris sub-buku besar untuk dokumen ini tidak ditemukan',
 	'accounting.paymentNotFound': 'Pembayaran tidak ditemukan',
 	'accounting.paymentInvalidTransition':

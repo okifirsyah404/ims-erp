@@ -58,6 +58,25 @@ export interface ILedgerSettlementPort {
 	 * DR cash / CR AR or DR AP / CR cash), joining the caller's transaction.
 	 * This module resolves the counterpart GL account from `side`.
 	 */
+	/**
+	 * PPh withheld from a supplier payment (ERP-0140): Dr payable / Cr the
+	 * withholding payable of that tax (posting-rule discriminator `tax` = tax
+	 * code). The cash movement carries only the net amount.
+	 */
+	postWithholding(
+		input: {
+			organizationId: string;
+			actorUserId: string;
+			paymentId: string;
+			paymentCode: string;
+			businessDate: string;
+			amount: number;
+			taxCode: string;
+			supplierId: string | null;
+		},
+		tx: TTx,
+	): Promise<void>;
+
 	postCashMovement(
 		input: {
 			organizationId: string;

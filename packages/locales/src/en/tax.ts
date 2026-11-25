@@ -96,6 +96,20 @@ const tax = {
 	'status.recorded': 'Recorded',
 	'status.paid': 'Paid',
 	'status.reversed': 'Reversed',
+	'coretax.year': 'Year',
+	'coretax.month': 'Month',
+	'coretax.faktur': 'Coretax e-Faktur XML',
+	'coretax.bupot': 'Coretax bukti potong XML',
+	'coretax.hint': 'Files for manual upload in Coretax. The format follows the DJP import template as we understood it and is unverified until a test import succeeds.',
+	'coretax.dialogTitle': 'Coretax data',
+	'coretax.taxObjectCode': 'Tax object code',
+	'coretax.counterpartyTaxId': 'Counterparty NPWP/NIK',
+	'coretax.slipNumber': 'Bukti potong number',
+	'coretax.status': 'Coretax status',
+	'coretax.statusValue.not_exported': 'Not exported',
+	'coretax.statusValue.exported': 'Exported',
+	'coretax.statusValue.uploaded': 'Uploaded to Coretax',
+	'coretax.saved': 'Coretax data saved',
 } as const;
 
 export default tax;

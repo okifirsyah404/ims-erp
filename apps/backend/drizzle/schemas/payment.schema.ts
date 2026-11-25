@@ -228,6 +228,10 @@ export const payments = paymentSchema.table(
 		notes: text('notes'),
 		voidedAt: unixTimestampNullable('voided_at'),
 		voidReason: text('void_reason'),
+		/** Logical reference to tax.taxes.id: PPh withheld (ERP-0140). */
+		withholdingTaxId: uuid('withholding_tax_id'),
+		withholdingAmount: bigint('withholding_amount', { mode: 'number' }).notNull().default(0),
+		taxObjectCode: varchar('tax_object_code', { length: 20 }),
 		...timestamps,
 	},
 	(table) => [
@@ -260,6 +264,7 @@ export const payments = paymentSchema.table(
 			sql`status IN ('draft', 'submitted', 'approved', 'executed', 'pending', 'paid', 'expired', 'failed', 'reversed', 'void', 'cancelled')`,
 		),
 		check('payments_amount_check', sql`amount > 0`),
+		check('payments_withholding_check', sql`withholding_amount >= 0 AND withholding_amount < amount`),
 		check(
 			'payments_paid_amount_check',
 			sql`paid_amount IS NULL OR paid_amount >= 0`,

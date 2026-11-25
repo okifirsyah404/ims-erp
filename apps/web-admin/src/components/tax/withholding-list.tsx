@@ -15,6 +15,7 @@ import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
 import { RowActions } from '@/components/data-table/row-actions';
+import { CoretaxDialog, CoretaxDownloads } from './coretax-panel';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
 import {
 	Select,
@@ -23,7 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import { Ban, Check, CircleCheck, Pencil, ReceiptText, Plus } from 'lucide-react';
+import { Ban, Check, CircleCheck, Pencil, ReceiptText, Plus, FileCode } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
@@ -72,6 +73,7 @@ export function WithholdingList() {
 	const [baseAmount, setBaseAmount] = useState('');
 	const [taxAmount, setTaxAmount] = useState('');
 	const [editing, setEditing] = useState<TWithholdingRecord | null>(null);
+	const [coretaxRecord, setCoretaxRecord] = useState<TWithholdingRecord | null>(null);
 
 	const page = search.page ?? 1;
 	const { data, isPending, isError, error } = useQuery({
@@ -178,6 +180,13 @@ export function WithholdingList() {
 									onSelect: () => setEditing(row.original),
 								},
 								{
+									key: 'coretax',
+									label: t('tax:coretax.dialogTitle'),
+									icon: FileCode,
+									hidden: !canUpdate || status === 'reversed',
+									onSelect: () => setCoretaxRecord(row.original),
+								},
+								{
 									key: 'verify',
 									label: t('tax:withholding.verify'),
 									icon: Check,
@@ -222,6 +231,8 @@ export function WithholdingList() {
 					{t('tax:withholding.description')}
 				</p>
 			</div>
+			<CoretaxDownloads />
+			{coretaxRecord ? <CoretaxDialog record={coretaxRecord} onClose={() => setCoretaxRecord(null)} /> : null}
 
 			{canUpdate ? (
 				<div className='flex flex-wrap items-center gap-2'>

@@ -15,6 +15,8 @@ export type TCreatePaymentInput = {
 	cashBankAccountId: string | null;
 	referenceNumber: string | null;
 	notes: string | null;
+	/** PPh withheld (ERP-0140); supplier disbursements only. */
+	withholding?: { taxId: string; amount: number; taxObjectCode: string | null } | null;
 };
 
 /** What a payment settles: a payable document and the amount applied to it. */

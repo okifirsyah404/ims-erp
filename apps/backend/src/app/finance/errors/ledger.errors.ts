@@ -542,3 +542,9 @@ export class GatewaySettlementAmountError extends AppError {
 		);
 	}
 }
+
+export class TaxPaymentAmountError extends AppError {
+	constructor() {
+		super(422, 'accounting.taxPaymentAmount', 'A tax payment needs a positive amount');
+	}
+}

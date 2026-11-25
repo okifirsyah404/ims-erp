@@ -10,6 +10,8 @@ import {
 	RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN,
 } from '../constants/di';
 import type { GatewaySettlementService } from '../services/gateway-settlement.service';
+import { TAX_LEDGER_SERVICE_TOKEN } from '../constants/di';
+import { TAX_PAYMENT_ROLES, type TaxLedgerService } from '../services/tax-ledger.service';
 import type { DeferredRevenueService } from '../services/deferred-revenue.service';
 import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
 
@@ -41,6 +43,18 @@ const gatewaySettlementSchema = z.object({
 	feeAmount: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
 	reference: z.string().trim().min(1).max(100),
 });
+const ppnSettlementSchema = z.object({
+	year: z.number().int().min(2000).max(2100),
+	month: z.number().int().min(1).max(12),
+});
+const taxPaymentSchema = z.object({
+	role: z.enum(TAX_PAYMENT_ROLES),
+	taxCode: z.string().trim().max(32).nullish().transform((v) => v ?? null),
+	cashBankAccountId: z.string().uuid(),
+	paymentDate: isoDate,
+	amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+	reference: z.string().trim().min(1).max(100),
+});
 const deferredRunSchema = z.object({
 	year: z.number().int().min(2000).max(2100),
 	month: z.number().int().min(1).max(12),
@@ -60,6 +74,7 @@ export class ReceivablesController {
 		const adjustments = container.resolve<ReceivableAdjustmentService>(RECEIVABLE_ADJUSTMENT_SERVICE_TOKEN);
 		const deferred = container.resolve<DeferredRevenueService>(DEFERRED_REVENUE_SERVICE_TOKEN);
 		const settlements = container.resolve<GatewaySettlementService>(GATEWAY_SETTLEMENT_SERVICE_TOKEN);
+		const taxLedger = container.resolve<TaxLedgerService>(TAX_LEDGER_SERVICE_TOKEN);
 		const ctxOf = (erp: ErpContext) => ({ organizationId: erp.organizationId, actorUserId: erp.session.user.id });
 
 		return domainPlugin({ name: 'finance-receivables', prefix: '/finance', tags: ['Accounting'], guards: 'erp' })
@@ -162,6 +177,26 @@ export class ReceivablesController {
 					detail: {
 						description: 'Records a gateway payout: net to the bank against gateway clearing, fee to gateway fees',
 					},
+				},
+			)
+			/* ---------------- tax postings (ERP-0140) ---------------- */
+			.post(
+				'/tax/ppn-settlements',
+				async ({ body, erp }) => {
+					const { year, month } = ppnSettlementSchema.parse(body);
+					return ok(await taxLedger.settlePpn(ctxOf(erp), year, month));
+				},
+				{
+					erp: { permission: ['journal:post'] },
+					detail: { description: "Settles a month's PPN: output vs input, the difference to Utang PPN or PPN Lebih Bayar" },
+				},
+			)
+			.post(
+				'/tax/payments',
+				async ({ body, erp, status }) => status(201, created(await taxLedger.payTax(ctxOf(erp), taxPaymentSchema.parse(body)))),
+				{
+					erp: { permission: ['cash_bank:create'] },
+					detail: { description: 'Pays a tax liability to the state from a cash/bank account' },
 				},
 			)
 			/* ---------------- deferred revenue ---------------- */

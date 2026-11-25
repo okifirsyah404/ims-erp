@@ -1,3 +1,5 @@
+import type { CoretaxExportService } from '../services/coretax-export.service';
+import type { ExportedTaxService } from '../services/exported-tax.service';
 import type { InjectionToken } from 'tsyringe';
 import type { TTaxRepository } from '../contracts/tax.repository.interface';
 import type { TaxCodeNumberingRepository } from '../repositories/code-numbering.repository';
@@ -15,3 +17,9 @@ export const TAX_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<TaxCodeNumberin
 
 /** Token resolving to the {@link TaxNumberingService}. */
 export const TAX_NUMBERING_SERVICE_TOKEN: InjectionToken<TaxNumberingService> = Symbol('TAX_NUMBERING_SERVICE');
+
+/** The tax module's contract for payment and finance (ERP-0140). */
+export const EXPORTED_TAX_SERVICE_TOKEN: InjectionToken<ExportedTaxService> = Symbol('EXPORTED_TAX_SERVICE');
+
+/** Coretax XML export (ERP-0140). */
+export const CORETAX_EXPORT_SERVICE_TOKEN: InjectionToken<CoretaxExportService> = Symbol('CORETAX_EXPORT_SERVICE');

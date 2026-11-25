@@ -152,6 +152,8 @@ export type TInvoiceRepository = {
 	): Promise<TInvoiceItemSelect[]>;
 	/** Every non-deleted invoice of a sales order, oldest first (includes void). */
 	listByOrder(orderId: string): Promise<TInvoiceSelect[]>;
+	/** Issued invoices carrying VAT with an issue date in the range (Coretax export, ERP-0140). */
+	listTaxInvoicesInRange(organizationId: string, startDate: string, endDate: string): Promise<TInvoiceSelect[]>;
 	/** True while the order has an invoice that is neither void nor cancelled. */
 	hasLiveInvoices(orderId: string): Promise<boolean>;
 	/**

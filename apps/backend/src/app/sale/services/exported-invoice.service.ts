@@ -1,5 +1,5 @@
 import { inject, injectable } from 'tsyringe';
-import type { TInvoiceSelect } from '@drizzle/schemas/sale.schema';
+import type { TInvoiceItemSelect, TInvoiceSelect } from '@drizzle/schemas/sale.schema';
 import { INVOICE_REPOSITORY_TOKEN } from '../constants/ar-di';
 import type { TInvoiceRepository } from '../contracts/invoice.repository.interface';
 import type { IExportedInvoiceService } from '../contracts/exported-invoice.contract';
@@ -21,7 +21,7 @@ export class ExportedInvoiceService implements IExportedInvoiceService {
 		@inject(INVOICE_REPOSITORY_TOKEN)
 		private readonly invoices: Pick<
 			TInvoiceRepository,
-			'findById' | 'update' | 'countDraftsInWindow'
+			'findById' | 'update' | 'countDraftsInWindow' | 'listTaxInvoicesInRange' | 'listItems'
 		>,
 	) {}
 
@@ -41,5 +41,14 @@ export class ExportedInvoiceService implements IExportedInvoiceService {
 
 	countDraftsInWindow(organizationId: string, startDate: string, endDate: string): Promise<number> {
 		return this.invoices.countDraftsInWindow(organizationId, startDate, endDate);
+	}
+
+	async listTaxInvoices(
+		organizationId: string,
+		startDate: string,
+		endDate: string,
+	): Promise<Array<{ invoice: TInvoiceSelect; items: TInvoiceItemSelect[] }>> {
+		const rows = await this.invoices.listTaxInvoicesInRange(organizationId, startDate, endDate);
+		return Promise.all(rows.map(async (invoice) => ({ invoice, items: await this.invoices.listItems(organizationId, invoice.id) })));
 	}
 }

@@ -1,4 +1,6 @@
 import { inject, injectable } from 'tsyringe';
+import { EXPORTED_TAX_SERVICE_TOKEN } from '@app/tax/constants/di';
+import type { ExportedTaxService } from '@app/tax/services/exported-tax.service';
 import type { TTx } from '@drizzle/types';
 import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -18,6 +20,7 @@ import type {
 import {
 	PaymentAllocationMismatchError,
 	PaymentCashAccountRequiredError,
+	PaymentWithholdingError,
 	PaymentInvalidTransitionError,
 	PaymentNotFoundError,
 	PaymentOverAllocationError,
@@ -39,6 +42,9 @@ export class PaymentService implements IPaymentService {
 		/** Accounting/Finance effects of a settled payment (mirrors, cash/bank). */
 		@inject(LEDGER_SETTLEMENT_PORT_TOKEN) private readonly settlement: ILedgerSettlementPort,
 		@inject(PAYMENT_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<PaymentNumberingService, 'next'>,
+		/** ERP-0140: validates and records PPh withheld from supplier payments. */
+		@inject(EXPORTED_TAX_SERVICE_TOKEN)
+		private readonly taxes?: Pick<ExportedTaxService, 'findTax' | 'recordWithholding'>,
 	) {}
 
 	async get(organizationId: string, id: string): Promise<TPaymentSelect> {
@@ -56,6 +62,13 @@ export class PaymentService implements IPaymentService {
 		input: TCreatePaymentInput,
 		_allocations: TAllocationInput[],
 	): Promise<TPaymentSelect> {
+		const withholding = input.withholding ?? null;
+		if (withholding) {
+			// ERP-0140: only a supplier disbursement withholds, never all of it.
+			if (input.paymentType !== 'disbursement' || withholding.amount >= input.amount) throw new PaymentWithholdingError();
+			const tax = this.taxes ? await this.taxes.findTax(ctx.organizationId, withholding.taxId) : null;
+			if (!tax || tax.taxType !== 'pph') throw new PaymentWithholdingError();
+		}
 		return this.database.transaction(async (tx) => {
 			const code = await this.numbering.next('payment', {
 				date: new Date(`${input.paymentDate}T12:00:00+07:00`),
@@ -84,6 +97,9 @@ export class PaymentService implements IPaymentService {
 					cashBankAccountId: input.cashBankAccountId,
 					referenceNumber: input.referenceNumber,
 					notes: input.notes,
+					withholdingTaxId: withholding?.taxId ?? null,
+					withholdingAmount: withholding?.amount ?? 0,
+					taxObjectCode: withholding?.taxObjectCode ?? null,
 				},
 				tx,
 			);
@@ -170,6 +186,41 @@ export class PaymentService implements IPaymentService {
 			}
 
 			const side = PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']];
+			const businessDate = payment.paymentDate ?? new Date().toISOString().slice(0, 10);
+			// ERP-0140: PPh withheld stays with the company until it is paid to the
+			// state: AP is settled in full, the bank pays the net, the rest becomes
+			// the withholding payable and a withholding record in the tax module.
+			const withheld = payment.withholdingAmount ?? 0;
+			if (withheld > 0 && payment.withholdingTaxId) {
+				const tax = this.taxes ? await this.taxes.findTax(ctx.organizationId, payment.withholdingTaxId) : null;
+				if (!tax) throw new PaymentWithholdingError();
+				await this.settlement.postWithholding(
+					{
+						organizationId: ctx.organizationId,
+						actorUserId: ctx.actorUserId,
+						paymentId: payment.id,
+						paymentCode: payment.code ?? '',
+						businessDate,
+						amount: withheld,
+						taxCode: tax.code,
+						supplierId: payment.counterpartyId,
+					},
+					tx,
+				);
+				await this.taxes?.recordWithholding(tx, {
+					organizationId: ctx.organizationId,
+					taxTypeId: tax.id,
+					counterpartyType: payment.counterpartyType,
+					counterpartyId: payment.counterpartyId,
+					counterpartyTaxId: null,
+					baseAmount: payment.amount,
+					taxAmount: withheld,
+					transactionDate: businessDate,
+					taxObjectCode: payment.taxObjectCode,
+					sourceModule: 'payment',
+					sourceId: payment.id,
+				});
+			}
 			await this.settlement.postCashMovement(
 				{
 					organizationId: ctx.organizationId,
@@ -177,8 +228,8 @@ export class PaymentService implements IPaymentService {
 					cashBankAccountId: payment.cashBankAccountId,
 					side,
 					direction: side === 'payable' ? 'out' : 'in',
-					amount: payment.amount,
-					businessDate: payment.paymentDate ?? new Date().toISOString().slice(0, 10),
+					amount: payment.amount - withheld,
+					businessDate,
 					description: `Payment ${payment.code}`,
 					referenceNumber: payment.code,
 					sourceType: 'payment',

@@ -25,6 +25,10 @@ export const POSTING_ROLES = [
 	'grir_clearing',
 	'cash_receipt',
 	'cash_payment',
+	'wht_payable',
+	'vat_payable',
+	'vat_overpaid',
+	'pph25_payable',
 	'purchase_price_variance',
 	'inventory_variance',
 	'gateway_clearing',
@@ -60,6 +64,9 @@ export const POSTING_EVENT_TYPES = [
 	'sale.receipt_posted',
 	'payment.gateway_settled',
 	'project.cost_recorded',
+	'payment.withholding_recorded',
+	'finance.ppn_settled',
+	'finance.tax_paid',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -98,6 +105,10 @@ export const DEFAULT_POSTING_RULE_CODES: Partial<Record<TPostingRole, string>> =
 	grir_clearing: '2-1150',
 	cash_receipt: '1-1120',
 	cash_payment: '1-1120',
+	wht_payable: '2-1430',
+	vat_payable: '2-1460',
+	vat_overpaid: '1-1830',
+	pph25_payable: '2-1450',
 	purchase_price_variance: '5-1300',
 	inventory_variance: '5-1400',
 	gateway_clearing: '1-1250',
