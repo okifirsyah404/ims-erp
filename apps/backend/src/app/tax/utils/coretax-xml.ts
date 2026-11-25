@@ -164,3 +164,56 @@ export function buildBupotXml(sellerTin: string, rows: readonly TCoretaxWithhold
 	out.push('  </ListOfBpu>', '</BpuBulk>');
 	return `${out.join('\n')}\n`;
 }
+
+/** One employee line of the monthly BP21 (bukti potong PPh 21 bulanan). */
+export type TCoretaxBp21 = {
+	periodYear: number;
+	periodMonth: number;
+	/** NPWP or NIK of the employee. */
+	counterpartyTin: string;
+	ptkpStatus: string;
+	taxObjectCode: string;
+	/** TER base in minor units. */
+	gross: number;
+	ratePercent: string;
+	withholdingDate: string;
+};
+
+/**
+ * Monthly BP21 for permanent employees (`MmPayrollBulk`, ERP-0138).
+ *
+ * @remarks
+ * Built from the Coretax BPMP import template as we understood it; the
+ * layout is unverified until a test import succeeds.
+ */
+export function buildBp21Xml(sellerTin: string, rows: readonly TCoretaxBp21[]): string {
+	const seller = normalizeTin(sellerTin) ?? sellerTin;
+	const out: string[] = [
+		'<?xml version="1.0" encoding="utf-8"?>',
+		'<MmPayrollBulk xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">',
+		el('TIN', seller, '  '),
+		'  <ListOfMmPayroll>',
+	];
+	for (const row of rows) {
+		const tin = normalizeTin(row.counterpartyTin) ?? row.counterpartyTin;
+		out.push(
+			'    <MmPayroll>',
+			el('TaxPeriodMonth', row.periodMonth, '      '),
+			el('TaxPeriodYear', row.periodYear, '      '),
+			el('CounterpartOpt', 'Resident', '      '),
+			el('CounterpartPassport', null, '      '),
+			el('CounterpartTin', tin, '      '),
+			el('StatusTaxExemption', row.ptkpStatus, '      '),
+			el('Position', 'Pegawai', '      '),
+			el('TaxCertificate', 'N/A', '      '),
+			el('TaxObjectCode', row.taxObjectCode, '      '),
+			el('Gross', rupiah(row.gross), '      '),
+			el('Rate', row.ratePercent, '      '),
+			el('IDPlaceOfBusinessActivity', `${seller}000000`, '      '),
+			el('WithholdingDate', row.withholdingDate, '      '),
+			'    </MmPayroll>',
+		);
+	}
+	out.push('  </ListOfMmPayroll>', '</MmPayrollBulk>');
+	return `${out.join('\n')}\n`;
+}

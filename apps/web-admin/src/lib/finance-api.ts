@@ -397,6 +397,7 @@ export const POSTING_ROLES = [
 	'salary_payable',
 	'pph21_payable',
 	'bpjs_payable',
+	'employee_receivable',
 	'fixed_asset',
 	'accumulated_depreciation',
 	'depreciation_expense',
@@ -425,6 +426,8 @@ export const POSTING_EVENT_TYPES = [
 	'payment.withholding_recorded',
 	'finance.ppn_settled',
 	'finance.tax_paid',
+	'payroll.approved',
+	'payroll.paid',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -1434,4 +1437,19 @@ export function payTax(input: {
 	reference: string;
 }) {
 	return sendData<{ id: string }>('/finance/tax/payments', 'POST', input);
+}
+
+/* ----------------------------- payroll payments (ERP-0138) ----------------------------- */
+
+export const PAYROLL_PAYMENT_ROLES = ['salary_payable', 'bpjs_payable'] as const;
+export type TPayrollPaymentRole = (typeof PAYROLL_PAYMENT_ROLES)[number];
+
+export function payPayroll(input: {
+	role: TPayrollPaymentRole;
+	cashBankAccountId: string;
+	paymentDate: string;
+	amount: number;
+	reference: string;
+}) {
+	return sendData<{ id: string }>('/finance/payroll/payments', 'POST', input);
 }

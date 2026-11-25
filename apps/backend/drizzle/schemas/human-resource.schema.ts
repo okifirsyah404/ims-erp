@@ -495,6 +495,17 @@ export const employeeSalaryRecords = humanResourceSchema.table(
 			.default(0),
 		bonus: bigint('bonus', { mode: 'number' }).notNull().default(0),
 		deductions: bigint('deductions', { mode: 'number' }).notNull().default(0),
+		/** PPh 21 withheld (ERP-0138); negative only on an annual refund. */
+		pph21Amount: bigint('pph21_amount', { mode: 'number' }).notNull().default(0),
+		bpjsEmployeeAmount: bigint('bpjs_employee_amount', { mode: 'number' }).notNull().default(0),
+		bpjsCompanyAmount: bigint('bpjs_company_amount', { mode: 'number' }).notNull().default(0),
+		pensionEmployeeAmount: bigint('pension_employee_amount', { mode: 'number' }).notNull().default(0),
+		taxableGross: bigint('taxable_gross', { mode: 'number' }).notNull().default(0),
+		ptkpStatus: varchar('ptkp_status', { length: 5 }),
+		terRate: numeric('ter_rate', { precision: 7, scale: 4 }),
+		taxMethod: text('tax_method').$type<'ter' | 'annual'>(),
+		/** Logical reference to finance.journal_entries.id — cross-module FK omitted. */
+		journalEntryId: uuid('journal_entry_id'),
 		netPay: bigint('net_pay', { mode: 'number' }).notNull(),
 		notes: text('notes'),
 		status: text('status').$type<SalaryStatus>().notNull().default('draft'),
@@ -520,7 +531,15 @@ export const employeeSalaryRecords = humanResourceSchema.table(
 		),
 		check(
 			'employee_salary_records_net_check',
-			sql`net_pay = base_salary + allowances + overtime_pay + bonus - deductions`,
+			sql`net_pay = base_salary + allowances + overtime_pay + bonus - deductions - pph21_amount - bpjs_employee_amount`,
+		),
+		check(
+			'employee_salary_records_statutory_check',
+			sql`bpjs_employee_amount >= 0 AND bpjs_company_amount >= 0 AND pension_employee_amount >= 0 AND taxable_gross >= 0`,
+		),
+		check(
+			'employee_salary_records_tax_method_check',
+			sql`tax_method IS NULL OR tax_method IN ('ter', 'annual')`,
 		),
 	],
 );

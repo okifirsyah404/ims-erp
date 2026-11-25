@@ -12,6 +12,63 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0138 part 2: PPh 21 and BPJS on salary records, payroll journal, payment, BP21
+
+**Scope.** Phase B slice 6b (owner's proposal 4 of 2026-11-25, completed).
+
+**Design gate.** `docs/database/` read for `human_resource.employee_salary_records`,
+`finance.journal_entries` and `logical-references.md` (one new logical
+reference: `employee_salary_records.journal_entry_id`). Manual grill pass:
+ownership - HR computes and owns the amounts, tax owns tables and the BP21
+builder, finance owns the journal through a new facade (`PayrollLedgerService`)
+because `ExportedFinanceService` must stay repository-only (it is read by HR
+while finance reads HR's facade); tenancy - HR is company-wide, the journal
+goes to the approving organization's ledger; money - integer minor units,
+PPh 21 may be negative only on an annual refund (no non-negative check on that
+column, the others are checked); status vocabulary - `tax_method` ter / annual.
+Decisions: the salary period stays the payroll run; recalculation happens on
+every draft write and again at approval; other deductions credit Piutang
+Karyawan (1-1320, new role `employee_receivable`); BP21 refuses missing
+NIK/NPWP and the last tax month (annual slip not built).
+
+**Changes.** Migration `20261125015720_erp0138_payroll_statutory` (9 ADD COLUMN,
+2 checks added, the net-pay check replaced). Backend:
+`utils/payroll-statutory.ts`, `PayrollCalculationService`, SalaryService
+(save / generate / import / recalculate / approve / bp21Xml),
+`PayrollLedgerService.postPayroll`, `TaxLedgerService.payPayroll`,
+`buildBp21Xml`, `ExportedTaxService.bp21Xml`; routes
+`POST /human-resources/salary-records/recalculate`,
+`GET /human-resources/salary-records/bp21.xml`, `POST /finance/payroll/payments`;
+events `payroll.approved`, `payroll.paid`; errors `hr.payroll.*`. Web-admin:
+PPh 21 and BPJS columns, "Recalculate" and "BP21 XML" on `/hr/payroll`,
+"Pay salaries / BPJS" on the cash/bank page (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 200 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0138_payroll_statutory; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # rulesInserted 1 (employee_receivable)
+bun run <temporary payroll-smoke script>      # 9/9 PASS: JP cap and TER missing are refused; with a synthetic
+                                              # 5% TER (1990, soft-deleted after) the draft carries PPh 21 627,240 /
+                                              # BPJS 460,000 + 1,188,800 / net 10,812,760 (rupiah); approval posts
+                                              # a balanced human_resource journal and stamps it; BP21 refuses a
+                                              # missing NIK/NPWP, then builds; the salary payment clears 2-1600
+bun test test/unit/payroll-statutory.test.ts  # 8 pass (hand-computed TER month, December refund, ledger, approval)
+bun run test                                  # 7/7 tasks: backend 1541, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 717 routes
+```
+
+The smoke left an approved 2026-11 salary record, its journal and NPWP/PTKP
+values on the scratch employees (throwaway database).
+
+**Not verified.** BP21 Coretax import (format unverified); the annual BP A1
+slip is not built; no official TER table imported; no browser walk-through.
+
+Next executable task: ERP-0142 (sub-ledger opening balance import).
+
 ## 2026-11-25 - ERP-0138 part 1: PPh 21 tables, TER import, employee tax fields, statutory toggles
 
 **Scope.** Phase B slice 6a (owner's proposal 4 of 2026-11-25: build the

@@ -102,6 +102,15 @@ export type TSalaryRow = {
 	overtimePay: number;
 	bonus: number;
 	deductions: number;
+	/** ERP-0138: PPh 21 (negative on an annual refund) and BPJS. */
+	pph21Amount: number;
+	bpjsEmployeeAmount: number;
+	bpjsCompanyAmount: number;
+	taxableGross: number;
+	ptkpStatus: string | null;
+	terRate: string | null;
+	taxMethod: 'ter' | 'annual' | null;
+	journalEntryId: string | null;
 	netPay: number;
 	notes: string | null;
 	status: 'draft' | 'approved';
@@ -110,7 +119,10 @@ export type TSalaryRow = {
 export type TSalaryPeriod = {
 	period: string;
 	rows: TSalaryRow[];
-	totals: Pick<TSalaryRow, 'baseSalary' | 'allowances' | 'overtimePay' | 'bonus' | 'deductions' | 'netPay'>;
+	totals: Pick<
+		TSalaryRow,
+		'baseSalary' | 'allowances' | 'overtimePay' | 'bonus' | 'deductions' | 'pph21Amount' | 'bpjsEmployeeAmount' | 'bpjsCompanyAmount' | 'netPay'
+	>;
 	state: 'empty' | 'draft' | 'approved';
 };
 export type TSalaryInput = Pick<TSalaryRow, 'period' | 'employeeId' | 'baseSalary' | 'allowances' | 'overtimePay' | 'bonus' | 'deductions' | 'notes'>;
@@ -412,4 +424,7 @@ export const saveSalary = (input: TSalaryInput) => send<TSalaryRow>('/human-reso
 export const removeSalary = (id: string) => send<{ removed: true }>(`/human-resources/salary-records/${id}`, 'DELETE');
 export const generateSalary = (period: string) => send<TSalaryPeriod>(`/human-resources/salary-records/generate?period=${period}`, 'POST');
 export const approveSalary = (period: string) => send<TSalaryPeriod>(`/human-resources/salary-records/approve?period=${period}`, 'POST');
+/** ERP-0138: recompute PPh 21 and BPJS on the month's drafts. */
+export const recalculateSalary = (period: string) =>
+	send<TSalaryPeriod>(`/human-resources/salary-records/recalculate?period=${period}`, 'POST');
 export const importSalary = (period: string, file: File) => upload(`/human-resources/salary-records/import?period=${period}`, file);

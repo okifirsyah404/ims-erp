@@ -23,6 +23,7 @@ import { SalaryPeriodService } from './services/salary-period.service';
 import { HrSettingsRepository } from './repositories/hr-settings.repository';
 import { PayrollScheduleService } from './services/payroll-schedule.service';
 import { PayrollStatutoryService } from './services/payroll-statutory.service';
+import { PayrollCalculationService } from './services/payroll-calculation.service';
 import { EmployeeAddressRepository } from './repositories/employee-address.repository';
 import { AgreementPdfQueue } from './queues/agreement-pdf.queue';
 import { EmployeeDocumentService } from './services/employee-document.service';
@@ -51,6 +52,7 @@ import {
 	HR_SETTINGS_REPOSITORY_TOKEN,
 	PAYROLL_SCHEDULE_SERVICE_TOKEN,
 	PAYROLL_STATUTORY_SERVICE_TOKEN,
+	PAYROLL_CALCULATION_SERVICE_TOKEN,
 	EMPLOYEE_ADDRESS_REPOSITORY_TOKEN,
 	AGREEMENT_PDF_QUEUE_TOKEN,
 	EMPLOYEE_DOCUMENT_SERVICE_TOKEN,
@@ -120,6 +122,7 @@ export function registerHumanResource(container: DependencyContainer): void {
 	container.register(HR_SETTINGS_REPOSITORY_TOKEN, { useClass: HrSettingsRepository });
 	container.register(PAYROLL_SCHEDULE_SERVICE_TOKEN, { useClass: PayrollScheduleService });
 	container.register(PAYROLL_STATUTORY_SERVICE_TOKEN, { useClass: PayrollStatutoryService });
+	container.register(PAYROLL_CALCULATION_SERVICE_TOKEN, { useClass: PayrollCalculationService });
 
 	// Employee documents, the claim's personal data and the agreement PDF (ERP-0121).
 	container.register(EMPLOYEE_ADDRESS_REPOSITORY_TOKEN, { useClass: EmployeeAddressRepository });

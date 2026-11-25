@@ -19,6 +19,10 @@ import type { PostingService } from './posting.service';
 export const TAX_PAYMENT_ROLES = ['vat_payable', 'wht_payable', 'pph21_payable', 'pph25_payable'] as const;
 export type TTaxPaymentRole = (typeof TAX_PAYMENT_ROLES)[number];
 
+/** Payroll liabilities paid out from cash/bank (ERP-0138). */
+export const PAYROLL_PAYMENT_ROLES = ['salary_payable', 'bpjs_payable'] as const;
+export type TPayrollPaymentRole = (typeof PAYROLL_PAYMENT_ROLES)[number];
+
 export type TPpnSettlementResult = {
 	period: string;
 	output: number;
@@ -107,8 +111,16 @@ export class TaxLedgerService {
 		});
 	}
 
+	/** Pays salaries (net) or BPJS (both shares) from a cash/bank account (ERP-0138). */
+	payPayroll(
+		ctx: { organizationId: string; actorUserId: string },
+		input: { role: TPayrollPaymentRole; cashBankAccountId: string; paymentDate: string; amount: number; reference: string },
+	) {
+		return this.payLiability(ctx, { ...input, taxCode: null }, 'payroll.paid', 'payroll_payment', 'Payroll payment');
+	}
+
 	/** Pays a tax liability to the state from a cash/bank account. */
-	async payTax(
+	payTax(
 		ctx: { organizationId: string; actorUserId: string },
 		input: {
 			role: TTaxPaymentRole;
@@ -119,12 +131,29 @@ export class TaxLedgerService {
 			reference: string;
 		},
 	) {
+		return this.payLiability(ctx, input, 'finance.tax_paid', 'tax_payment', 'Tax payment');
+	}
+
+	private async payLiability(
+		ctx: { organizationId: string; actorUserId: string },
+		input: {
+			role: TTaxPaymentRole | TPayrollPaymentRole;
+			taxCode: string | null;
+			cashBankAccountId: string;
+			paymentDate: string;
+			amount: number;
+			reference: string;
+		},
+		eventType: 'finance.tax_paid' | 'payroll.paid',
+		sourceType: string,
+		label: string,
+	) {
 		if (input.amount <= 0) throw new TaxPaymentAmountError();
 		return this.transactions.run(async (tx: TTx) => {
 			const liability = await this.rules.resolveAccountId(
 				ctx.organizationId,
 				{
-					eventType: 'finance.tax_paid',
+					eventType,
 					role: input.role,
 					discriminatorType: input.taxCode ? 'tax' : null,
 					discriminatorValue: input.taxCode,
@@ -138,10 +167,10 @@ export class TaxLedgerService {
 					transactionDate: input.paymentDate,
 					direction: 'out',
 					amount: input.amount,
-					description: `Tax payment ${input.reference}`,
+					description: `${label} ${input.reference}`,
 					referenceNumber: input.reference,
 					counterpartAccountId: liability,
-					sourceType: 'tax_payment',
+					sourceType,
 					sourceId: null,
 				},
 				tx,

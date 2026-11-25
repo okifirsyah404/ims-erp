@@ -710,6 +710,13 @@ const finance: Record<keyof typeof en, string> = {
 	'taxPayment.recorded': 'Setoran pajak dicatat',
 	'closing.settlePpn': 'Tutup PPN masa',
 	'closing.ppnSettled': 'PPN ditutup: keluaran {{output}}, masukan {{input}}, neto {{net}}',
+	'postingRules.role.employee_receivable': 'Piutang karyawan (potongan gaji lain)',
+	'postingRules.event.payroll.approved': 'Penggajian disetujui',
+	'postingRules.event.payroll.paid': 'Gaji atau BPJS dibayar',
+	'payrollPayment.title': 'Bayar gaji / BPJS',
+	'payrollPayment.hint': 'Membayar gaji neto yang disetujui atau iuran BPJS; kas/bank keluar dengan lawan Utang Gaji atau Utang BPJS.',
+	'payrollPayment.reference': 'Referensi (batch transfer / tagihan BPJS)',
+	'payrollPayment.recorded': 'Pembayaran gaji dicatat',
 } as const;
 
 export default finance;

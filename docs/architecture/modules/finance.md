@@ -314,8 +314,42 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   `pph21_enabled`, `bpjs_health_enabled`, `bpjs_employment_enabled`, the JKK
   rate (default 0.24%), the BPJS Kesehatan wage cap (default Rp12.000.000)
   and the JP wage cap (no default: BPJS announces it yearly).
-- Part 2 (calculation on salary records, payroll journal, payment, BP21) is
-  not built yet.
+
+## Payroll calculation, journal and BP21 (B, ERP-0138 part 2, built)
+
+- The salary period stays the payroll run (no `payroll_runs` table): every
+  draft write (save, generate, import) and the explicit
+  `POST /human-resources/salary-records/recalculate` (`payroll:calculate`)
+  compute PPh 21 and BPJS when switched on; approval recalculates the drafts
+  with the tables in force, locks them and posts the journal in one
+  transaction.
+- BPJS on the wage (base + fixed allowances): Kesehatan 4% / 1% up to its
+  cap, JHT 3.7% / 2%, JP 2% / 1% up to the JP cap (refused while the cap is
+  empty), JKK at the configured rate and JKM 0.3%. The TER base adds JKK, JKM
+  and the company Kesehatan share to the pay.
+- PPh 21: TER on the TER base, refused while no TER table is in force; in
+  the last tax month (December or the month employment ends) the annual
+  Pasal 17 tax less the year's earlier withholding, which may be negative.
+  Missing PTKP status counts as TK/0. No 20% surcharge for employees without
+  NPWP (the NIK serves as NPWP).
+- `employee_salary_records` keeps `pph21_amount`, `bpjs_employee_amount`,
+  `bpjs_company_amount`, `pension_employee_amount`, `taxable_gross`,
+  `ptkp_status`, `ter_rate`, `tax_method`, `journal_entry_id`; net pay is
+  pay - deductions - PPh 21 - employee BPJS (database check).
+- Journal (`payroll.approved`, through `PayrollLedgerService`, not the
+  repository-only `ExportedFinanceService`): Dr 6-1100 pay, Dr 6-1200 company
+  BPJS / Cr 2-1600 net, Cr 2-1420 PPh 21 (Dr on a refund), Cr 2-1700 both
+  BPJS shares, Cr 1-1320 Piutang Karyawan for other deductions (new role
+  `employee_receivable`). One journal per approval, posted to the approving
+  organization's ledger.
+- Payment: `POST /finance/payroll/payments` (`payroll_payment:execute`)
+  pays `salary_payable` or `bpjs_payable` from cash/bank (`payroll.paid`);
+  the cash/bank page has a "Pay salaries / BPJS" dialog. Salary records are
+  not marked paid individually.
+- BP21: `GET /human-resources/salary-records/bp21.xml` (`payroll:export`),
+  `MmPayrollBulk` built by the tax module from approved TER months. Refused
+  when an employee has neither NIK nor NPWP, and for the last tax month
+  (the annual slip is not built). Format unverified until a test import.
 
 ## Phase B-D decisions (recorded, not built)
 

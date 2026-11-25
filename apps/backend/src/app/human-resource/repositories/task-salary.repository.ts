@@ -1,7 +1,7 @@
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { employeeTasks, employeeSalaryRecords } from '@drizzle/schemas/human-resource.schema';
 import type { TTx } from '@drizzle/types';
-import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, isNull, sql, gte, lt, inArray } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
@@ -108,6 +108,14 @@ export class SalaryRepository implements ISalaryRepository {
 					overtimePay: data.overtimePay,
 					bonus: data.bonus,
 					deductions: data.deductions,
+					pph21Amount: data.pph21Amount ?? 0,
+					bpjsEmployeeAmount: data.bpjsEmployeeAmount ?? 0,
+					bpjsCompanyAmount: data.bpjsCompanyAmount ?? 0,
+					pensionEmployeeAmount: data.pensionEmployeeAmount ?? 0,
+					taxableGross: data.taxableGross ?? 0,
+					ptkpStatus: data.ptkpStatus ?? null,
+					terRate: data.terRate ?? null,
+					taxMethod: data.taxMethod ?? null,
 					netPay: data.netPay,
 					notes: data.notes,
 					updatedAt: now,
@@ -129,9 +137,9 @@ export class SalaryRepository implements ISalaryRepository {
 		return removed.length > 0;
 	}
 
-	async approvePeriod(period: string, actorUserId: string, scope: THrScope) {
+	async approvePeriod(period: string, actorUserId: string, scope: THrScope, tx?: TTx) {
 		const now = new Date();
-		const approved = await this.database
+		const approved = await (tx ?? this.database)
 			.update(employeeSalaryRecords)
 			.set({ status: 'approved', approvedBy: actorUserId, approvedAt: now, updatedAt: now })
 			.where(
@@ -144,6 +152,37 @@ export class SalaryRepository implements ISalaryRepository {
 			)
 			.returning({ id: employeeSalaryRecords.id });
 		return approved.map((row) => row.id);
+	}
+
+	listEmployeeYear(employeeId: string, period: string, tx?: TTx) {
+		return (tx ?? this.database)
+			.select()
+			.from(employeeSalaryRecords)
+			.where(
+				and(
+					eq(employeeSalaryRecords.employeeId, employeeId),
+					isNull(employeeSalaryRecords.deletedAt),
+					gte(employeeSalaryRecords.period, `${period.slice(0, 4)}-01`),
+					lt(employeeSalaryRecords.period, period),
+				),
+			)
+			.orderBy(asc(employeeSalaryRecords.period));
+	}
+
+	listByIds(ids: string[], tx?: TTx) {
+		if (ids.length === 0) return Promise.resolve([]);
+		return (tx ?? this.database)
+			.select()
+			.from(employeeSalaryRecords)
+			.where(and(inArray(employeeSalaryRecords.id, ids), isNull(employeeSalaryRecords.deletedAt)));
+	}
+
+	async setJournalEntry(ids: string[], journalEntryId: string, tx?: TTx) {
+		if (ids.length === 0) return;
+		await (tx ?? this.database)
+			.update(employeeSalaryRecords)
+			.set({ journalEntryId, updatedAt: new Date() })
+			.where(inArray(employeeSalaryRecords.id, ids));
 	}
 
 	listApprovedForEmployee(employeeId: string) {

@@ -93,7 +93,12 @@ export interface ISalaryRepository {
 	upsertDraft(data: TNew<TEmployeeSalaryRecordInsert>, tx?: TTx): Promise<TEmployeeSalaryRecordSelect | null>;
 	removeDraft(id: string): Promise<boolean>;
 	/** Approves every draft of a period; returns the ids it approved (ERP-0122: their payslips). */
-	approvePeriod(period: string, actorUserId: string, scope: THrScope): Promise<string[]>;
+	approvePeriod(period: string, actorUserId: string, scope: THrScope, tx?: TTx): Promise<string[]>;
+	/** Live records of an employee earlier in the same year as `period` (annual PPh 21, ERP-0138). */
+	listEmployeeYear(employeeId: string, period: string, tx?: TTx): Promise<TEmployeeSalaryRecordSelect[]>;
+	listByIds(ids: string[], tx?: TTx): Promise<TEmployeeSalaryRecordSelect[]>;
+	/** Stamps the payroll journal on approved records (ERP-0138). */
+	setJournalEntry(ids: string[], journalEntryId: string, tx?: TTx): Promise<void>;
 	/** Approved records of one employee, newest period first (the self-service payslips). */
 	listApprovedForEmployee(employeeId: string): Promise<TEmployeeSalaryRecordSelect[]>;
 }

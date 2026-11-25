@@ -191,6 +191,7 @@ const DYNAMIC_PREFIXES = [
 	'hr.salary.',
 	'hr.import.',
 	'accounting.terImport.',
+	'hr.payroll.',
 	'hr.attendance.',
 	'hr.schedule.',
 	'hr.salaryPeriod.',

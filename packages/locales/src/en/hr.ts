@@ -381,6 +381,11 @@ const hr = {
 	'form.bpjsHealthNumber': 'BPJS Kesehatan number',
 	'form.bpjsEmploymentNumber': 'BPJS Ketenagakerjaan number',
 	'form.taxBpjsHint': 'All optional. Payroll uses them only when PPh 21 or BPJS is switched on in the payroll settings; the BP21 export needs a NIK or NPWP.',
+	'salary.pph21': 'PPh 21',
+	'salary.bpjs': 'BPJS (employee)',
+	'salary.recalculate': 'Recalculate PPh 21 & BPJS',
+	'salary.recalculated': 'PPh 21 and BPJS recalculated',
+	'salary.bp21': 'BP21 XML (Coretax)',
 } as const;
 
 export default hr;

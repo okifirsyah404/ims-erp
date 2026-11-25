@@ -708,6 +708,13 @@ const finance = {
 	'taxPayment.recorded': 'Tax payment recorded',
 	'closing.settlePpn': 'Settle PPN',
 	'closing.ppnSettled': 'PPN settled: output {{output}}, input {{input}}, net {{net}}',
+	'postingRules.role.employee_receivable': 'Employee receivable (other payroll deductions)',
+	'postingRules.event.payroll.approved': 'Payroll approved',
+	'postingRules.event.payroll.paid': 'Salaries or BPJS paid',
+	'payrollPayment.title': 'Pay salaries / BPJS',
+	'payrollPayment.hint': 'Pays approved net salaries or the BPJS contributions; the bank goes out against Utang Gaji or Utang BPJS.',
+	'payrollPayment.reference': 'Reference (transfer batch / BPJS billing)',
+	'payrollPayment.recorded': 'Payroll payment recorded',
 } as const;
 
 export default finance;

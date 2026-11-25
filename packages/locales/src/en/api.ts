@@ -650,6 +650,13 @@ const api = {
 	'accounting.terImport.size': 'The file is larger than 1 MB',
 	'accounting.terImport.empty': 'The file has no data rows',
 	'accounting.terImport.tooMany': 'The file has more than 2000 rows',
+	'hr.payroll.pensionWageCapMissing': 'Enter the JP wage cap in the payroll settings before calculating BPJS Ketenagakerjaan',
+	'hr.payroll.ptkpMissing': 'No PTKP table is in force for this month',
+	'hr.payroll.bracketsMissing': 'No Pasal 17 table is in force for this month',
+	'hr.payroll.terMissing': 'No TER table is in force for this month; import it under Finance > Tax > PPh 21 tables',
+	'hr.payroll.bp21IdentityMissing': 'Employees without NIK or NPWP block the BP21 export: {{names}}',
+	'hr.payroll.bp21AnnualUnsupported': 'The last tax month is reported on the annual slip, which this export does not build',
+	'hr.payroll.bp21NothingToExport': 'This period has no approved record with PPh 21',
 } as const;
 
 export default api;

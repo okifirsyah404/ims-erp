@@ -8,7 +8,7 @@ import { inject, injectable } from 'tsyringe';
 import { TAX_REPOSITORY_TOKEN } from '../constants/di';
 import type { TTaxRepository } from '../contracts/tax.repository.interface';
 import { WithholdingNotFoundError } from '../errors/tax.errors';
-import { buildBupotXml, buildFakturXml, type TCoretaxInvoice } from '../utils/coretax-xml';
+import { buildBp21Xml, buildBupotXml, buildFakturXml, type TCoretaxBp21, type TCoretaxInvoice } from '../utils/coretax-xml';
 
 const monthRange = (year: number, month: number) => ({
 	start: `${year}-${String(month).padStart(2, '0')}-01`,
@@ -83,6 +83,11 @@ export class CoretaxExportService {
 			}),
 		);
 		return { xml: buildBupotXml(await this.sellerTin(), xmlRows), count: xmlRows.length };
+	}
+
+	/** BP21 of a payroll month; HR supplies the rows (ERP-0138). */
+	async bp21Xml(rows: readonly TCoretaxBp21[]): Promise<string> {
+		return buildBp21Xml(await this.sellerTin(), rows);
 	}
 
 	async updateCoretax(

@@ -1,6 +1,10 @@
 import type { TTx } from '@drizzle/types';
 import { inject, injectable } from 'tsyringe';
-import { PPH21_TABLE_SERVICE_TOKEN, TAX_NUMBERING_SERVICE_TOKEN, TAX_REPOSITORY_TOKEN } from '../constants/di';
+import { CORETAX_EXPORT_SERVICE_TOKEN, PPH21_TABLE_SERVICE_TOKEN, TAX_NUMBERING_SERVICE_TOKEN, TAX_REPOSITORY_TOKEN } from '../constants/di';
+import type { TCoretaxBp21 } from '../utils/coretax-xml';
+import type { CoretaxExportService } from './coretax-export.service';
+
+export type { TCoretaxBp21 } from '../utils/coretax-xml';
 import type { TTaxRepository } from '../contracts/tax.repository.interface';
 import type { TPph21Tables } from '../utils/pph21';
 import type { Pph21TableService } from './pph21-table.service';
@@ -28,7 +32,15 @@ export class ExportedTaxService {
 		@inject(TAX_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<TaxNumberingService, 'next'>,
 		/** ERP-0138: PPh 21 tables for payroll; optional so older callers need not wire it. */
 		@inject(PPH21_TABLE_SERVICE_TOKEN) private readonly pph21?: Pick<Pph21TableService, 'tables'>,
+		/** ERP-0138: the BP21 file for payroll. */
+		@inject(CORETAX_EXPORT_SERVICE_TOKEN) private readonly coretax?: Pick<CoretaxExportService, 'bp21Xml'>,
 	) {}
+
+	/** Coretax BP21 XML of a payroll month (format unverified, ERP-0138). */
+	bp21Xml(rows: readonly TCoretaxBp21[]): Promise<string> {
+		if (!this.coretax) throw new Error('Coretax export is not wired');
+		return this.coretax.bp21Xml(rows);
+	}
 
 	/** The PPh 21 tables in force on a business date (payroll, ERP-0138). */
 	pph21Tables(date: string): Promise<TPph21Tables> {

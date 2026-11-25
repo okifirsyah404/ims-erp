@@ -1,3 +1,4 @@
+import type { PayrollLedgerService } from '../services/payroll-ledger.service';
 /**
  * DI tokens for the accounting module (tax + ledger slices).
  *
@@ -169,3 +170,6 @@ export const GATEWAY_SETTLEMENT_SERVICE_TOKEN: InjectionToken<GatewaySettlementS
 
 /** PPN period settlement and tax payments (ERP-0140). */
 export const TAX_LEDGER_SERVICE_TOKEN: InjectionToken<TaxLedgerService> = Symbol('TAX_LEDGER_SERVICE');
+
+/** The payroll journal posted by Human Resource (ERP-0138). */
+export const PAYROLL_LEDGER_SERVICE_TOKEN: InjectionToken<PayrollLedgerService> = Symbol('PAYROLL_LEDGER_SERVICE');

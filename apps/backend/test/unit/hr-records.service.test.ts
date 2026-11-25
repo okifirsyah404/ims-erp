@@ -217,6 +217,9 @@ function salaryService() {
 				return drafts.map((row) => row.id);
 			},
 			listApprovedForEmployee: async (employeeId) => salaries.filter((row) => row.employeeId === employeeId && row.status === 'approved'),
+			listEmployeeYear: async () => [],
+			listByIds: async (ids) => salaries.filter((row) => ids.includes(row.id)),
+			setJournalEntry: async () => {},
 		},
 		people(),
 		leaveService(),

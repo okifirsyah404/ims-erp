@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-714 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+717 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -844,6 +844,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | PATCH | `/finance/ledger/opening-balances/:id` | org member + permission | `journal:update` | `owner`, `accountant` |
 | POST | `/finance/ledger/opening-balances/post` | org member + permission | `journal:post` | `owner`, `accountant` |
 | POST | `/finance/payments/:id/void-executed` | org member + permission | `payment:approve` | `owner`, `finance` |
+| POST | `/finance/payroll/payments` | org member + permission | `payroll_payment:execute` | `owner`, `finance` |
 | GET | `/finance/periods` | org member + permission | `accounting_period:read` | `owner`, `accountant`, `auditor` |
 | POST | `/finance/periods` | org member + permission | `accounting_period:create` | no org role |
 | POST | `/finance/periods/:id/transition` | org member + permission | `accounting_period:close` | `owner`, `accountant` |
@@ -942,9 +943,11 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/human-resources/salary-records/:id/payslip` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/:id/payslip/regenerate` | org member + permission | `payroll:update` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/approve` | org member + permission | `payroll:approve` | `owner` |
+| GET | `/human-resources/salary-records/bp21.xml` | org member + permission | `payroll:export` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/generate` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/salary-records/import` | org member + permission | `payroll:create` | `owner`, `finance`, `hr` |
 | GET | `/human-resources/salary-records/payslips.zip` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
+| POST | `/human-resources/salary-records/recalculate` | org member + permission | `payroll:calculate` | `owner`, `hr` |
 | GET | `/human-resources/salary-records/template` | org member + permission | `payroll:read` | `owner`, `finance`, `hr` |
 | POST | `/human-resources/schedules` | org member + permission | `schedule:create` | `owner`, `admin`, `hr` |
 | DELETE | `/human-resources/schedules/:id` | org member + permission | `schedule:delete` | `owner`, `admin`, `hr` |

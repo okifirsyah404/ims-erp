@@ -945,7 +945,7 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `20261125011648_erp0140_tax_postings`, unit tests, DB smoke 7/7.
 
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close; ERP-0138, 0142 (Phase B:
+- ERP-0131 year-end close; ERP-0142 (Phase B:
   payroll + PPh 21 TER, gateway clearing, tax + Coretax XML, project costs,
   sub-ledger opening import); ERP-0143..0147 (Phase C: bank statement import,
   advances/settlements, fixed-asset register + depreciation, project budgets,
@@ -964,9 +964,14 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
 - PPh 21 tables, ERP-0138 part 1 (2026-11-25): PTKP and Pasal 17 seeded,
   the TER table imported by finance as CSV at `/finance/tax/pph21` (never
   seeded), the PPh 21 engine, optional employee NPWP / PTKP / BPJS numbers,
-  and company-wide PPh 21 / BPJS switches in the payroll settings. Payroll
-  does not calculate with them yet (part 2). Evidence: migration
-  `20261125014130_erp0138_pph21_tables`, unit tests, DB smoke 10/10.
+  and company-wide PPh 21 / BPJS switches in the payroll settings. Evidence:
+  migration `20261125014130_erp0138_pph21_tables`, unit tests, DB smoke 10/10.
+- Payroll PPh 21 and BPJS, ERP-0138 part 2 (2026-11-25): salary records
+  calculate PPh 21 (TER monthly, annual Pasal 17 in the last tax month) and
+  BPJS when switched on; approval posts the payroll journal; salaries and
+  BPJS are paid from the cash/bank page; BP21 XML from an approved month
+  (format unverified, no annual slip). Evidence: migration
+  `20261125015720_erp0138_payroll_statutory`, unit tests, DB smoke 9/9.
 - ERP-0016 Phases 1–3: backend (tax rate master, period working papers
   draft → verified → filed, corrections, withholding, recap), web-admin UI
   at `/finance/tax/*` (recap with CSV/XLSX export, types, records, corrections,

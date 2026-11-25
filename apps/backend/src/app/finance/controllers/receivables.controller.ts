@@ -11,7 +11,7 @@ import {
 } from '../constants/di';
 import type { GatewaySettlementService } from '../services/gateway-settlement.service';
 import { TAX_LEDGER_SERVICE_TOKEN } from '../constants/di';
-import { TAX_PAYMENT_ROLES, type TaxLedgerService } from '../services/tax-ledger.service';
+import { PAYROLL_PAYMENT_ROLES, TAX_PAYMENT_ROLES, type TaxLedgerService } from '../services/tax-ledger.service';
 import type { DeferredRevenueService } from '../services/deferred-revenue.service';
 import type { ReceivableAdjustmentService } from '../services/receivable-adjustment.service';
 
@@ -50,6 +50,13 @@ const ppnSettlementSchema = z.object({
 const taxPaymentSchema = z.object({
 	role: z.enum(TAX_PAYMENT_ROLES),
 	taxCode: z.string().trim().max(32).nullish().transform((v) => v ?? null),
+	cashBankAccountId: z.string().uuid(),
+	paymentDate: isoDate,
+	amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+	reference: z.string().trim().min(1).max(100),
+});
+const payrollPaymentSchema = z.object({
+	role: z.enum(PAYROLL_PAYMENT_ROLES),
 	cashBankAccountId: z.string().uuid(),
 	paymentDate: isoDate,
 	amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
@@ -197,6 +204,15 @@ export class ReceivablesController {
 				{
 					erp: { permission: ['cash_bank:create'] },
 					detail: { description: 'Pays a tax liability to the state from a cash/bank account' },
+				},
+			)
+			.post(
+				'/payroll/payments',
+				async ({ body, erp, status }) =>
+					status(201, created(await taxLedger.payPayroll(ctxOf(erp), payrollPaymentSchema.parse(body)))),
+				{
+					erp: { permission: ['payroll_payment:execute'] },
+					detail: { description: 'Pays salaries or BPJS from a cash/bank account (ERP-0138)' },
 				},
 			)
 			/* ---------------- deferred revenue ---------------- */

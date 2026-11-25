@@ -38,6 +38,7 @@ export const POSTING_ROLES = [
 	'salary_payable',
 	'pph21_payable',
 	'bpjs_payable',
+	'employee_receivable',
 	'fixed_asset',
 	'accumulated_depreciation',
 	'depreciation_expense',
@@ -67,6 +68,8 @@ export const POSTING_EVENT_TYPES = [
 	'payment.withholding_recorded',
 	'finance.ppn_settled',
 	'finance.tax_paid',
+	'payroll.approved',
+	'payroll.paid',
 ] as const;
 export type TPostingEventType = (typeof POSTING_EVENT_TYPES)[number];
 
@@ -118,6 +121,7 @@ export const DEFAULT_POSTING_RULE_CODES: Partial<Record<TPostingRole, string>> =
 	salary_payable: '2-1600',
 	pph21_payable: '2-1420',
 	bpjs_payable: '2-1700',
+	employee_receivable: '1-1320',
 	depreciation_expense: '6-2500',
 	bad_debt_allowance: '1-1390',
 	retained_earnings: '3-2000',

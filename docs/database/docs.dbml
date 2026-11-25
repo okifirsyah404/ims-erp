@@ -5317,6 +5317,15 @@ Table human_resource.employee_salary_records {
   overtime_pay bigint [not null, default: 0]
   bonus bigint [not null, default: 0]
   deductions bigint [not null, default: 0]
+  pph21_amount bigint [not null, default: 0, note: "PPh 21 withheld (ERP-0138). Negative only in the last tax month when the annual reconciliation refunds."]
+  bpjs_employee_amount bigint [not null, default: 0, note: "Employee BPJS share: Kesehatan 1% plus JHT 2% and JP 1%."]
+  bpjs_company_amount bigint [not null, default: 0, note: "Company BPJS share: Kesehatan 4%, JHT 3.7%, JP 2%, JKK, JKM."]
+  pension_employee_amount bigint [not null, default: 0, note: "Employee JHT + JP, the deductible pension part of bpjs_employee_amount."]
+  taxable_gross bigint [not null, default: 0, note: "TER base: pay plus the taxable company benefits (JKK, JKM, BPJS Kesehatan company share)."]
+  ptkp_status varchar(5) [note: "Snapshot of the employee's PTKP status used (NULL employee status = TK/0)."]
+  ter_rate numeric(7,4) [note: "TER rate applied; NULL in the last tax month or when PPh 21 is off."]
+  tax_method text [note: "ter or annual; NULL when PPh 21 is off."]
+  journal_entry_id uuid [note: "Logical reference to finance.journal_entries.id. Cross-module FK intentionally omitted. The payroll journal posted when the period was approved (ERP-0138)."]
   net_pay bigint [not null]
   notes text
   status text [not null, default: 'draft']
@@ -5326,7 +5335,7 @@ Table human_resource.employee_salary_records {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Monthly salary record per employee (was hr.salary_summaries, ADR-0024 Q39), entered or imported by HR/finance and approved by the owner; approved rows are locked. Unique (period, employee_id) among live rows. Payment allocates against it (payable_type employee_salary_record)."
+  Note: "Monthly salary record per employee (was hr.salary_summaries, ADR-0024 Q39), entered or imported by HR/finance and approved by the owner; approved rows are locked. Unique (period, employee_id) among live rows. Payment allocates against it (payable_type employee_salary_record). ERP-0138: PPh 21 (TER monthly, annual Pasal 17 in the last tax month) and BPJS are calculated on every draft write when switched on; approval posts one payroll journal per approval and stamps journal_entry_id."
   Indexes {
     (period, employee_id) [unique, name: 'employee_salary_records_period_uq', note: 'WHERE deleted_at IS NULL']
     period [name: 'employee_salary_records_period_idx']
@@ -5335,7 +5344,9 @@ Table human_resource.employee_salary_records {
   Checks {
     `status IN ('draft', 'approved')`
     `base_salary >= 0 AND allowances >= 0 AND overtime_pay >= 0 AND bonus >= 0 AND deductions >= 0`
-    `net_pay = base_salary + allowances + overtime_pay + bonus - deductions`
+    `net_pay = base_salary + allowances + overtime_pay + bonus - deductions - pph21_amount - bpjs_employee_amount`
+    `bpjs_employee_amount >= 0 AND bpjs_company_amount >= 0 AND pension_employee_amount >= 0 AND taxable_gross >= 0`
+    `tax_method IS NULL OR tax_method IN ('ter', 'annual')`
   }
 }
 

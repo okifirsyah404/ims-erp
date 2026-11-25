@@ -71,6 +71,7 @@ export function CashBankPage() {
 	const canUpdate = usePermission('cash_bank.update');
 	const [settling, setSettling] = useState(false);
 	const [payingTax, setPayingTax] = useState(false);
+	const [payingPayroll, setPayingPayroll] = useState(false);
 
 	const [creating, setCreating] = useState(false);
 	const [editing, setEditing] = useState<TCashBankAccount | null>(null);
@@ -326,6 +327,9 @@ export function CashBankPage() {
 						<Button size='sm' variant='outline' onClick={() => setPayingTax(true)}>
 							{t('finance:taxPayment.title')}
 						</Button>
+						<Button size='sm' variant='outline' onClick={() => setPayingPayroll(true)}>
+							{t('finance:payrollPayment.title')}
+						</Button>
 						<Button size='sm' variant='outline' onClick={() => setSettling(true)}>
 							{t('finance:gatewaySettlement.title')}
 						</Button>
@@ -338,6 +342,7 @@ export function CashBankPage() {
 			</div>
 			{settling ? <GatewaySettlementDialog accounts={accounts ?? []} onClose={() => setSettling(false)} /> : null}
 			{payingTax ? <TaxPaymentDialog accounts={accounts ?? []} onClose={() => setPayingTax(false)} /> : null}
+			{payingPayroll ? <TaxPaymentDialog mode='payroll' accounts={accounts ?? []} onClose={() => setPayingPayroll(false)} /> : null}
 
 			{accountsError ? (
 				<ErrorState error={accountsErr} bordered />

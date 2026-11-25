@@ -65,6 +65,7 @@ describe('locale values', () => {
 			'tax:pph21.ptkpTitle',
 			'tax:pph21.status',
 			'settings:payroll.bpjsEmploymentEnabled',
+			'hr:salary.pph21',
 			// "Owner" of a customer company is the same loanword in Indonesian (ERP-0114).
 			'crm:customer.owner',
 			'crm:customer.ownerBadge',

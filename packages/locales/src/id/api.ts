@@ -654,6 +654,13 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.terImport.size': 'Berkas lebih besar dari 1 MB',
 	'accounting.terImport.empty': 'Berkas tidak berisi baris data',
 	'accounting.terImport.tooMany': 'Berkas berisi lebih dari 2000 baris',
+	'hr.payroll.pensionWageCapMissing': 'Isi batas upah JP di pengaturan penggajian sebelum menghitung BPJS Ketenagakerjaan',
+	'hr.payroll.ptkpMissing': 'Tidak ada tabel PTKP yang berlaku untuk bulan ini',
+	'hr.payroll.bracketsMissing': 'Tidak ada tabel Pasal 17 yang berlaku untuk bulan ini',
+	'hr.payroll.terMissing': 'Tidak ada tabel TER yang berlaku untuk bulan ini; impor di Keuangan > Pajak > Tabel PPh 21',
+	'hr.payroll.bp21IdentityMissing': 'Karyawan tanpa NIK atau NPWP menghambat ekspor BP21: {{names}}',
+	'hr.payroll.bp21AnnualUnsupported': 'Masa pajak terakhir dilaporkan di bukti potong tahunan, yang belum dibuat oleh ekspor ini',
+	'hr.payroll.bp21NothingToExport': 'Periode ini tidak punya data gaji disetujui dengan PPh 21',
 };
 
 export default api;
