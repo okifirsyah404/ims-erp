@@ -405,6 +405,7 @@ export class DeliveryNoteService {
 			await this.documents.register(
 				{
 					code: note.code,
+					title: `Surat Jalan - ${note.customerName}`,
 					documentType: 'delivery_note',
 					module: 'sale',
 					sourceType: 'delivery_note',

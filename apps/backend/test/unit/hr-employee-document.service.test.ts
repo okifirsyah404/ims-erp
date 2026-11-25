@@ -155,7 +155,7 @@ describe('agreement render data', () => {
 	test('a valid render token is required; the data carries no salary', async () => {
 		const agreement = await service().ensureAgreement(staff[0]!);
 		const pdf = new AgreementPdfService(
-			{ find: documents.find, attachGeneratedFileTo: async () => true },
+			{ find: documents.find, attachGeneratedFileTo: async () => ({ id: 'doc', fileName: 'agreement.pdf' }) },
 			{ findById: async (id) => ({ ...staff.find((row) => row.id === id)!, employeeCode: 'EMP-0001', nationalId: '3201', employmentType: 'permanent', workType: 'onsite', hireDate: null, email: null, phone: null }) },
 			{ findPrimary: async () => null },
 			{ get: async () => ({ gender: 'male', birthDate: null, birthPlace: 'Bogor', maritalStatus: 'single' }), update: async () => undefined },

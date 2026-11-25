@@ -67,6 +67,12 @@ export interface IDocumentRepository {
 	/** Live files of one document, newest first. */
 	listFiles(documentId: string): Promise<TDocumentFileSelect[]>;
 
+	/**
+	 * Every live file of the given documents, newest first — one query for a
+	 * whole list page, so the card previews never become N+1.
+	 */
+	latestFiles(documentIds: string[]): Promise<TDocumentFileSelect[]>;
+
 	/** One live file of one document. */
 	findFile(documentId: string, fileId: string): Promise<TDocumentFileSelect | null>;
 

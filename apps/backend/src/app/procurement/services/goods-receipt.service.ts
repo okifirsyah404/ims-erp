@@ -333,6 +333,7 @@ export class GoodsReceiptService {
 		// correction, which the registry keeps as history.
 		await this.documents.register({
 			code: created.code,
+			title: `Penerimaan Barang - ${order.supplierSnapshot.name}`,
 			documentType: 'goods_receipt',
 			module: 'procurement',
 			sourceType: 'goods_receipt',

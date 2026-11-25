@@ -45,7 +45,6 @@ export type TPayslipRenderData = {
 const renderBase = () => (appConfig.pdf.renderBaseUrl ?? '').replace(/\/+$/, '');
 
 const isLive = (row: TSourceDocument) => row.documentType === PAYSLIP_DOCUMENT_TYPE && row.status !== 'void';
-const fileNameOf = (code: string) => `${code.replace(/[^\w.-]+/g, '-')}.pdf`;
 
 /**
  * Payslips (ERP-0122, grill-me Q32-Q37).
@@ -110,7 +109,7 @@ export class PayslipService {
 		const bytes = await this.renderer.render(url);
 		const attached = await this.documents.attachGeneratedFileTo(
 			payslip.id,
-			new File([new Uint8Array(bytes)], fileNameOf(payslip.code), { type: 'application/pdf' }),
+			new File([new Uint8Array(bytes)], 'payslip.pdf', { type: 'application/pdf' }),
 			null,
 		);
 		if (!attached) return 'missing';

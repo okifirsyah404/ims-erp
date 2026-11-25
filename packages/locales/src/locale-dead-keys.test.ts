@@ -247,6 +247,7 @@ const DYNAMIC_PREFIXES = [
 	'assets:toolSetStatus.',
 	'assets:movementType.',
 	'assets:itemKind.',
+	'assets:depreciationMethod.',
 	// Finance/accounting (M09): statuses, enum labels and report sections are
 	// server values, so the label keys are composed at runtime.
 	'finance:accountType.',

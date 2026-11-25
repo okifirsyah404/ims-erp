@@ -12,6 +12,17 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - merge `main` into the ADR-0030 branch: backlog ID collision
+
+`main` (PRs #162, #163) used ERP-0126..ERP-0130 for work unrelated to the
+ADR-0030 finance IDs of the same numbers on this branch (whose IDs are already
+baked into migration folder names and commits). Main's five items are
+renumbered: ERP-0126 -> ERP-0154 (sidebar nav audit), ERP-0127 -> ERP-0155
+(asset category dialog), ERP-0128 -> ERP-0156 (sidebar section order),
+ERP-0129 -> ERP-0157 (document card grid + viewer), ERP-0130 -> ERP-0158
+(document file names), in `backlog.md`, `features.md`, `progress.md` and one
+test comment. No code behaviour changed by the merge resolution.
+
 ## 2026-11-25 - dev tooling: `.claude/launch.json`
 
 Adds a preview launch config (`backend` on 3001, `web-admin` on 5173). No code,
@@ -1070,6 +1081,396 @@ second user -> reverse), `/finance/posting-rules`, `/finance/cost-centers` and
 the trial-balance / general-ledger tabs in the browser on a freshly reset local
 database; then get the owner's decision on ADR-0030 before starting Phase B
 (ERP-0131 year-end close is inside the v5.1 baseline and can go first).
+## 2026-11-25 - ERP-0158: document files named after the document
+
+**Request.** An uploaded or generated file must be named after its document,
+e.g. `perjanjian_kerja_pertiwi_jamalia_25_11_2026.pdf`, instead of whatever the
+uploader's file was called (`scan001.pdf`) or the bare registry code.
+
+**Design (grilled in-session, 14 decisions).** Name =
+`<slug(title)>_<dd_mm_yyyy>_<HHmmss>.<ext>`; the title is the source (falling
+back to the code); the stamp is always the creation instant in Asia/Jakarta, so
+two files never collide, with `_2`, `_3` for a same-second match; the slug is
+cut at 80 characters on a word boundary; the uploader's file name is discarded;
+the S3 key stays `<prefix>/<uuid>.<ext>`; existing rows are not backfilled; the
+signed-PDF artifact follows the same rule; and every document that registers
+from another module gets a human title so the name means something.
+
+**Change — naming.**
+
+- New `app/document/utils/document-file-name.ts`: `slugifyDocumentTitle`,
+  `jakartaFileStamp` (`dd_mm_yyyy_HHmmss`, +7h shift, no new dependency) and
+  `documentFileName` (`taken` names get the next suffix). Unit test
+  `test/unit/document-file-name.test.ts` (8 tests: diacritics, punctuation,
+  word-boundary cap, Jakarta day rollover, code fallback, collision, case).
+- `document.service.ts`: one private `attachFile(document, file, actor)` used by
+  upload and both generated-file paths; it lists the document's live files for
+  `taken` and stores the derived name. `attachGeneratedFile` and
+  `attachGeneratedFileTo` now return `{ id, fileName } | null`, so callers stop
+  inventing a name.
+- `providers/s3/document-file.ts`: `fileExtensionOf(mimeType)` exported.
+- `signature.service.ts`: the signed-PDF URL uses
+  `<slug(title)>_signed_<stamp>.pdf` instead of `signed.pdf`.
+- `human-resource`: agreement + payslip PDFs no longer build a name from the
+  code (the service names them); `payslip.controller.ts` ZIP header is
+  `slip_gaji_<periode>_<dd_mm_yyyy>.zip` (ZIP entries already carry each file's
+  stored name, so they follow automatically).
+- `sale/quotation-delivery.service.ts`: uses the returned `fileName` for the
+  public link instead of `code.pdf`.
+
+**Change — titles** (label Indonesia; no backfill, `docs.dbml` untouched):
+
+| register site | title |
+|---|---|
+| quotation | `Penawaran - <customerSnapshot.name>` |
+| sales order | `Pesanan Penjualan - <customerSnapshot.name>` |
+| delivery note | `Surat Jalan - <customerName>` |
+| invoice | `Faktur - <customerSnapshot.name>` (fallback `title`) |
+| receipt (sale + gateway) | `Kuitansi - <customerSnapshot.name>` |
+| sales return | `Retur Penjualan - <row.customerName>` |
+| purchase order | `Pesanan Pembelian - <supplierSnapshot.name>` |
+| goods receipt | `Penerimaan Barang - <supplierSnapshot.name>` |
+| purchase return | `Retur Pembelian - <row.supplierName>` |
+| BAST | `BAST - <project.customerName> - <project.code>` |
+| warranty | `Garansi - <customer.name> - <project.code>` |
+| license contract | `Kontrak Lisensi - <customer.name>` (one `getActiveCustomer`) |
+| ticket | `Tiket Servis - <code> - <customerName>` |
+
+Every name comes from data already loaded at that point (snapshot columns,
+joined row types, the project row) except the licence contract, which reads the
+customer once. `handover.service.ts` now keeps the `requireActive` result
+instead of discarding it.
+
+**Checks.**
+
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `cd apps/backend && bun test`: 1464 pass, 0 fail (was 1455: +8 helper tests,
+  +1 upload-name test; upload/preview/generated-file/quotation-delivery/
+  agreement assertions updated for the new contract).
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- `bun docs/database/validate-dbml.ts`: OK (196 tables, 153 refs).
+- Browser (dev servers :5173/:3001, admin): uploaded `scan001.pdf` to
+  `0029/DOC/DEV/XI/26` → stored as
+  `perjanjian_kerja_elma_elma_pratiwi_25_11_2026_111818.pdf`, shown under that
+  name in the viewer's Files table, and the download URL's
+  `response-content-disposition` carried the same name. The QA file was deleted
+  afterwards (200). **Not exercised**: the payslip ZIP header (no salary
+  records for any period in this tenant, `409`), and no PDF render was run
+  (Chromium not configured here) so the agreement/payslip/signed-PDF names are
+  covered by unit tests only.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (the name is computed at write
+time into the existing `document.files.file_name`), so `docs.dbml` is unchanged.
+No route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0157: document registry as a card grid + full-page viewer
+
+**Request.** `/documents/files` was a table. Make each registry document a
+card whose image is the first page of the document (or a document icon), and
+open the document as a full page when the card is clicked — Google Docs as the
+reference, simpler.
+
+**Design (grilled in-session, 12 decisions).** The existing detail route
+`/documents/files/$documentId` becomes the viewer (no second route); PDFs render
+as a continuous, lazily drawn page stack at fit-width with no zoom; one
+document shows its newest file with a file switcher when it has more; card
+thumbnails are rendered client-side by `pdfjs-dist` and cached for the session;
+cards show preview + title + code + type + date + status with void behind a
+hover menu; a document without files still shows a card (icon) and its viewer
+offers the upload; everything that used to be the detail page moves into a
+right-hand Details sheet; pagination stays at 20/page; a thumbnail render never
+writes an access-trail row; print draws every page first, then opens the
+browser dialog; void asks for confirmation; signed-PDF artifacts stay out of
+scope.
+
+**Change — backend.**
+
+- `GET /documents` rows now carry `preview: { fileId, fileName, mimeType, url }
+  | null` — the newest live file of the row, presigned inline for 300 s.
+  `IDocumentRepository.latestFiles(documentIds)` fetches the files of a whole
+  page in one `IN (...)` query, so a page of cards is two queries and the
+  service picks the newest per document. No migration, no schema change.
+- `test/unit/document.service.test.ts`: two new tests (newest file wins and the
+  preview writes no trail row; a row without files has `preview: null`).
+
+**Change — web-admin.**
+
+- New `components/documents/document-canvas.tsx`: `DocumentThumbnail` (page-one
+  render near the viewport, session cache keyed by presigned URL, capped at 200,
+  images render directly, icon fallback, one refetch on a dead URL) and
+  `DocumentPages` (page stack, `IntersectionObserver` per page, device-pixel
+  ratio capped at 2, `force` renders everything for print and reports when all
+  pages are drawn).
+- `routes/_authed/documents/files/index.tsx`: DataTable replaced by a responsive
+  card grid (2/3/4/5 columns) with skeleton cards; the card link is not
+  prefetched on purpose (the detail endpoint appends a `view` row); void moved
+  to a hover `RowActions` outside the anchor and now asks for confirmation.
+- `routes/_authed/documents/files/$documentId.tsx`: rewritten as the viewer —
+  toolbar (back, code/title/status, file switcher, download, print, void,
+  details), canvas, and a Details `Sheet` holding the overview, files, share
+  links, signatures and access trail cards unchanged.
+- `lib/documents-api.ts`: `TDocumentPreview` and `preview` on `TDocument`.
+- Locales en+id: `details`, `print`, `previewUnavailable`,
+  `voidConfirmTitle`, `voidConfirmDescription`.
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `cd apps/web-admin && bun run build`: built (same pre-existing >500 kB chunk
+  warning; `pdfjs` now also sits in the main chunk because the list page needs
+  it for thumbnails).
+- `bunx oxlint src/components/documents src/routes/_authed/documents/files`:
+  clean (the two warnings in `signatures/.../place.tsx` are pre-existing).
+- `cd apps/backend && bun test`: 1455 pass, 0 fail.
+- `bun test apps/web-admin`: 211 pass, 0 fail.
+- `bun test packages/locales`: 106 pass, 0 fail.
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `bun docs/database/validate-dbml.ts`: OK (196 tables, 153 refs).
+
+**Browser verification** (in-app browser, dev servers on :5173 + :3001, app
+admin, tenant with 29 documents):
+
+- `/documents/files`: 29 documents render as a card grid (4 columns at
+  1280 px), each with title, code, type, status badge; documents without files
+  show the `FileText` icon. No console error.
+- Uploaded a 3-page QA PDF to `0029/DOC/DEV/XI/26` (multipart through the API
+  from the page context): the first card rendered page one as a 320 px WebP
+  thumbnail (`data:image/webp`, 320x453) within ~2 s; the other 28 cards kept
+  the icon and rendered nothing.
+- Clicking that card opened `/documents/files/01a20e95-…`; the viewer stacked
+  three A4 pages (`900x1274` canvases) and the third canvas stayed at its
+  default size until it scrolled into range, then rendered `900x1274` — the
+  lazy per-page path works.
+- Toolbar: Download and Print are disabled for a document with no file; Void
+  opened the confirm dialog ("Void this document? … This cannot be undone"),
+  Cancel closed it and the status stayed `Draft`.
+- Print (with `window.print` stubbed in the page): the button rendered the
+  unvisited third page and then called `window.print` exactly once — all three
+  canvases were drawn first.
+- Uploaded a second 1-page PDF: the toolbar showed a file switcher reading the
+  newest file, and switching back to `qa-3pages.pdf` re-rendered the stack from
+  page one.
+- Details sheet: shows code as its title, the overview, both files with size and
+  upload time, the empty share/signature states and the access trail — the
+  trail shows the viewer visits and nothing from the list or the thumbnails,
+  which is the intended behaviour.
+- Deleted both QA files through the API afterwards (200, 200); the card went
+  back to the icon and the registry is as it was.
+
+Two fixes came out of that pass: the back button used `render={<Link/>}` without
+`nativeButton={false}` (Base UI `nativeButton` console error), and the Details
+sheet needed `data-[side=right]:sm:max-w-2xl` because the base class's
+`sm:max-w-sm` was capping it at 384 px.
+
+**Follow-up, same day (card corner menu).** The corner action was a bare Void
+button on hover; it is now a `…` dropdown with **Detail, Void, Print,
+Download**:
+
+- `components/data-table/row-actions.tsx` gained an optional `menu` prop so a
+  short action list still renders as a dropdown (the table default of turning
+  ≤3 actions into an icon strip is unchanged everywhere else).
+- `RowActions` in a card needs no anchor: it stays outside the card's `<Link>`,
+  revealed on hover/focus.
+- Detail navigates to the viewer; Void opens the existing confirm dialog;
+  Download calls `downloadDocumentFile` (writes a `download` trail row) and
+  opens the presigned URL; Print navigates to the viewer with `?print=1`, which
+  the viewer reads via `validateSearch` and auto-prints once every page is
+  drawn, then drops the flag (`navigate({ search: {}, replace: true })`) so a
+  reload does not print again.
+- Print and Download are disabled when the row has no file (no `preview`);
+  Void is hidden without `document.update` or for a void document; Download is
+  also disabled without `document.download`.
+- Locale key `documents:detailAction` (en `Detail`, id `Lihat detail`).
+
+Browser re-verified with a QA 2-page PDF: the menu lists exactly Detail, Void,
+Print, Download in that order; Detail opened the viewer (`900x1274` canvases,
+no console error); Print navigated to `…$documentId`, rendered both pages and
+called `window.print` once, leaving no `print` query in the URL; Download
+opened the MinIO presigned URL; Void opened and cancelled the confirm dialog;
+after deleting the file the card showed the icon and Print/Download were
+`aria-disabled`. The QA file was deleted afterwards (200).
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (the preview is a computed
+presigned URL, not a stored column), so `docs.dbml` is unchanged. No route,
+guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0156: sidebar section order and Subscription inside Projects
+
+**Request.** Reorder the sidebar sections to Dashboard, CRM & Sales, Finance,
+Projects, Inventory, Human Resource, Documents, Reports, Integrations,
+Administration, Settings; move Subscription & Licensing into Projects; shorten
+the Reports label.
+
+**Change.**
+
+- `components/sidebar/nav-config.ts`: array reordered to the product order
+  above. The `M03 — Subscription & Licensing` section is gone; its
+  `item.subscription` block (icon `KeyRound`, children `license.read` /
+  `license.manage_api` / `license.activate`) now sits after Warranty inside
+  `section.projects`. No gate, URL or `SidebarItem` field changed - only
+  placement. The file header now states that section order is the product's
+  order, not the M-numbering, and the per-block `M0x —` comments stay.
+- `packages/locales/src/{en,id}/nav.ts`: `section.subscription` removed from
+  both bundles (the key was referenced only by the deleted section);
+  `section.reports` is `Reports` / `Laporan` (was `Reports & Access` /
+  `Laporan & Hak Akses`).
+- `test/unit/filter-nav.test.ts`: the M07 URL assertion extended to
+  `['/projects','/tickets','/warranties','/subscription']` and its leaf-gate
+  loop now descends into children (Subscription has children, so the top-level
+  loop would have skipped its gate check). Two new tests: the exact 11-key
+  section order, and "Subscription is a Projects leaf, no `section.subscription`".
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test packages/locales/src`: 317 pass, 0 fail.
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- Browser (`:5173`, backend :3001, app admin): the sidebar renders exactly 11
+  groups in the requested order; Projects holds Projects, Tickets, Warranty,
+  Subscription & Licensing, and the last one expands to Applications, API Keys,
+  Validation & Activation. Clicking `Applications` navigated to
+  `/subscription/applications` with the leaf `data-active="true"`. Direct visits
+  to `/documents/files`, `/reports`, `/reports/monthly-archives`,
+  `/integrations/webhooks`, `/hr/employees`, `/warehouses`, `/finance/accounts`,
+  `/projects`, `/tickets`, `/warranties`, `/subscription/api-keys`,
+  `/subscription/activations`, `/documents/templates`, `/hr/payroll` all
+  rendered with no console error (the known Base UI `nativeButton` warning on
+  `/integrations/whatsapp-ai` is unchanged and unrelated).
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed. No route, guard or role grant
+changed, so `docs/role-permission.md` needs no regeneration.
+
+## 2026-11-25 - ERP-0155: asset categories create/edit dialog
+
+**Request.** `/assets/categories` only had two bare inline inputs that created a
+category with a hardcoded `equipment` / `straight_line` default and no way to
+edit anything. Give it the create/edit dialog pattern the other list pages use.
+
+**Change.**
+
+- New `components/assets/asset-category-form-dialog.tsx`: one dialog for both
+  modes, `code` (create only, disabled with a hint when editing because the
+  backend's `itemCategoryUpdateSchema` has no `code`), `name`, `itemKind`,
+  `defaultDepreciationMethod` and an optional `defaultUsefulLifeMonths` that
+  must be a positive integer before Save enables.
+- `asset-category-list.tsx`: inline create row removed; `New category` button in
+  the page header (`asset.create`) opens the dialog, and a `RowActions` edit
+  button (`asset.update`) opens it prefilled. Archive still has no UI (the API
+  helper exists) - out of scope for this request.
+- `lib/asset-api.ts`: `DEPRECIATION_METHODS` / `TDepreciationMethod` exported and
+  used by `createAssetCategory` / `updateAssetCategory` instead of inline unions.
+- Locales en+id: `categories.edit`, `categories.updated`,
+  `categories.immutableHint`, `categories.lifeMonthsInvalid`, and
+  `depreciationMethod.{straight_line,declining_balance,none}` (added to the
+  dead-key test's `DYNAMIC_PREFIXES` as `assets:depreciationMethod.`).
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test`: 209 pass, 0 fail.
+- `bun test packages/locales/src`: 106 pass, 0 fail (parity + dead keys).
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- Browser (`/assets/categories`, backend :3001 + vite :5173, app admin):
+  `New category` opened the dialog; saving `QA-DLG1 / Dialog QA category /
+  Equipment / Straight line / 24` toasted "Category created." and the row
+  appeared. `Edit` on that row opened it prefilled with `Code` disabled; saving
+  `Dialog QA edited / Tool / Declining balance` toasted "Category updated." and
+  the row reflected all three. Typing `0` in useful life showed the hint and
+  kept Save disabled. A reload still showed the edited values (server round
+  trip, not local state). The QA row was then archived through
+  `DELETE /inventory/item-categories/:id` (200), leaving the two seeded
+  categories.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed, so `docs.dbml` is unchanged. No
+route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0154: sidebar nav audit (drop Notifications, add orphan-page menus, un-hide four items)
+
+**Request.** Audit `apps/web-admin/src/components/sidebar/nav-config.ts`
+against `docs/` and the route tree, then: remove the Notifications item, add
+menus for pages that existed without one, and un-hide the four items that were
+denied by default.
+
+**Findings that drove the change.**
+
+- `item.notifications` pointed at `/integrations/notifications`, which has no
+  route file and no entry in `routeTree.gen.ts`, and carried `open: true` -
+  every logged-in user could click into a 404.
+- `/assets/categories`, `/assets/disposals`, `/assets/tool-sets` and
+  `/integrations/whatsapp-ai/faq` had routes and pages but no nav leaf.
+- Four leaves were commented "no catalog resource yet" and therefore hidden
+  while their pages were fully built: Down payments, Templates, Opening
+  balances, Depreciation.
+
+**Change.**
+
+- Notifications leaf removed; `Bell` import dropped. `item.notifications`
+  removed from `packages/locales/src/{en,id}/nav.ts` (dead-key guard).
+- Assets group gained `item.assetCategories` (`/assets/categories`),
+  `item.toolSets` (`/assets/tool-sets`) and `item.disposals`
+  (`/assets/disposals`), all `asset.read` - the same grant the backend uses
+  (`asset:read` on `/inventory/item-categories`, `/inventory/tool-sets`,
+  `/inventory/disposals`). `item.depreciation` un-hidden with `asset.read`
+  (`/finance/depreciations` is `asset:read`).
+- WhatsApp AI became a parent (icon kept) with `item.conversations`
+  (`/integrations/whatsapp-ai`) and `item.faq`
+  (`/integrations/whatsapp-ai/faq`), both `automation.read`. `findNavLeaf`
+  resolves the longer FAQ url first, so the FAQ page is not guarded by the
+  conversations leaf.
+- Un-hidden with the permission the page itself already calls:
+  `item.downPayments` -> `invoice.read` (`InvoiceList` reads
+  `/sales/invoices` with `termKind=down_payment`), `item.templates` ->
+  `document.read` (still the ERP-0050 placeholder page),
+  `item.openingBalances` -> `journal.read`
+  (`opening-balance-page.tsx` uses `journal.read`/`update`/`post`).
+- Locales en/id: new `item.assetCategories`, `item.toolSets`, `item.disposals`,
+  `item.conversations`, `item.faq`.
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test packages/locales/src`: 315 pass, 0 fail
+  (includes `locale-parity` and `locale-dead-keys`).
+- `bun run lint` at the root: 5/5 tasks, 0 errors (26 pre-existing backend
+  warnings).
+- Browser walk-through (in-app browser, backend :3001 + vite :5173, signed in
+  as the seeded app admin):
+  - Sidebar renders no Notifications leaf; the bell in the header still opens
+    its popover on `/` (that is the in-app notification panel, not a route).
+  - Integrations shows `Website Catalog`, `WhatsApp AI` (parent),
+    `Webhooks (n8n)`. WhatsApp AI expands to `Conversations` + `FAQ Knowledge`.
+  - Inventory > Assets & Equipment expands to `Asset Register`, `Borrowings`,
+    `Service Records`, `Asset Categories`, `Tool Sets`, `Disposals`,
+    `Depreciation`.
+  - Sales expands to 7 leaves including `Down Payments`; Finance to 10
+    including `Opening Balances`; Documents shows `Files`, `Signatures`,
+    `Templates`.
+  - Clicking `Asset Categories` navigated to `/assets/categories` and the leaf
+    took `data-active="true"`.
+  - Direct visits to `/assets/categories`, `/assets/tool-sets`,
+    `/assets/disposals`, `/assets/depreciation`, `/sales/down-payments`,
+    `/finance/opening-balances`, `/documents/templates`,
+    `/integrations/whatsapp-ai`, `/integrations/whatsapp-ai/faq` all rendered
+    their own heading with no console error. (The WhatsApp inbox page logs one
+    pre-existing Base UI `nativeButton` warning at
+    `integrations/whatsapp-ai/index.tsx:124`; it is unrelated to this change and
+    was left alone.)
+- Login note: the password in `apps/backend/.env` does not match the one
+  recorded in earlier `progress.md` entries, so the seeded credentials were
+  read from `.env` for the walk-through and never printed. Both dev servers
+  were stopped afterwards.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed, so `docs.dbml` is unchanged.
+No route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
 
 ## 2026-11-25 - ERP-0123..ERP-0125: COA page CRUD, cash/bank invoice details + GL link, default COA seed
 

@@ -366,6 +366,7 @@ export class SalesReturnService {
 			// ERP-0044: the approved return is the document the customer signs.
 			await this.documents.register({
 				code: approved.code ?? code,
+				title: `Retur Penjualan - ${row.customerName}`,
 				documentType: 'return',
 				module: 'sale',
 				sourceType: 'sales_return',

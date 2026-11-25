@@ -1,5 +1,4 @@
 import {
-	Bell,
 	Boxes,
 	Building2,
 	Calculator,
@@ -41,6 +40,13 @@ import type { SidebarItem } from './sidebar-item';
 
 /**
  * Full ERP navigation map (docs module map M01–M12 + Administration).
+ *
+ * @remarks
+ * Section order is the product's own order, not the M-numbering: Dashboard,
+ * CRM & Sales, Finance, Projects, Inventory, Human Resource, Documents,
+ * Reports, Integrations, Administration, Settings. Subscription & Licensing
+ * (M03) is a leaf inside Projects because it belongs to the same customer
+ * engagement. The per-block `M0x —` comments keep the module trace.
  *
  * Visibility is declared per item (see `filterNav`):
  * - `permission`: shown when the active organization holds it.
@@ -123,55 +129,19 @@ export const navSections: {
 						url: '/sales/invoices',
 						permission: 'invoice.read',
 					},
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
+					// DP invoices are the same list as `/sales/invoices`, narrowed by
+					// `termKind=down_payment`, so they share `invoice.read`.
+					{
+						titleKey: 'item.downPayments',
+						url: '/sales/down-payments',
+						permission: 'invoice.read',
+					},
 					{
 						titleKey: 'item.receipts',
 						url: '/sales/receipts',
 						permission: 'receipt.read',
 					},
 				],
-			},
-		],
-	},
-
-	// Document registry (ERP-0042). Signatures are gated by the
-	// `document.signature_*` actions (ERP-0048/ERP-0049, flow not built yet);
-	// templates have no catalog resource yet (ERP-0050): hidden.
-	{
-		labelKey: 'section.documents',
-		items: [
-			{
-				titleKey: 'item.files',
-				url: '/documents/files',
-				icon: FileText,
-				permission: 'document.read',
-			},
-			{
-				titleKey: 'item.signatures',
-				icon: PenLine,
-				items: [
-					{
-						titleKey: 'item.documentSignatures',
-						url: '/documents/signatures/documents',
-						permission: 'document.signature_read',
-					},
-					{
-						titleKey: 'item.requestSignature',
-						url: '/documents/signatures/request',
-						permission: 'document.signature_request',
-					},
-					{
-						titleKey: 'item.mySignature',
-						url: '/documents/signatures/mine',
-						permission: 'document.signature_sign',
-					},
-				],
-			},
-			{
-				titleKey: 'item.templates',
-				url: '/documents/templates',
-				icon: LayoutTemplate,
 			},
 		],
 	},
@@ -185,15 +155,17 @@ export const navSections: {
 				url: '/finance',
 				icon: Wallet,
 				items: [
-					// No catalog resource yet: hidden.
 					{
 						titleKey: 'item.cashBank',
 						url: '/finance/cash-bank',
 						permission: 'cash_bank.read',
 					},
+					// The page posts through `/finance/ledger/opening-balances`
+					// (`journal:read` / `create` / `post`).
 					{
 						titleKey: 'item.openingBalances',
 						url: '/finance/opening-balances',
+						permission: 'journal.read',
 					},
 					{
 						titleKey: 'item.accounts',
@@ -315,10 +287,29 @@ export const navSections: {
 		],
 	},
 
-	// M03 — Subscription & Licensing.
+	// M07 — Projects, with Subscription & Licensing (M03) as a leaf: same
+	// customer engagement, so it sits next to Projects/Tickets/Warranty.
 	{
-		labelKey: 'section.subscription',
+		labelKey: 'section.projects',
 		items: [
+			{
+				titleKey: 'item.projects',
+				url: '/projects',
+				icon: FileCheck2,
+				permission: 'project.read',
+			},
+			{
+				titleKey: 'item.tickets',
+				url: '/tickets',
+				icon: Ticket,
+				permission: 'service_ticket.read',
+			},
+			{
+				titleKey: 'item.warranty',
+				url: '/warranties',
+				icon: ShieldCheck,
+				permission: 'project.read',
+			},
 			{
 				titleKey: 'item.subscription',
 				url: '/subscription',
@@ -340,37 +331,6 @@ export const navSections: {
 						permission: 'license.activate',
 					},
 				],
-			},
-		],
-	},
-
-	// M04 — Integrations. Flat items.
-	{
-		labelKey: 'section.integrations',
-		items: [
-			{
-				titleKey: 'item.websiteCatalog',
-				url: '/integrations/website-catalog',
-				icon: Globe,
-				permission: 'catalog.read',
-			},
-			{
-				titleKey: 'item.whatsappAi',
-				url: '/integrations/whatsapp-ai',
-				icon: MessageSquare,
-				permission: 'automation.read',
-			},
-			{
-				titleKey: 'item.notifications',
-				url: '/integrations/notifications',
-				icon: Bell,
-				open: true,
-			},
-			{
-				titleKey: 'item.webhooks',
-				url: '/integrations/webhooks',
-				icon: Webhook,
-				permission: 'integration.read',
 			},
 		],
 	},
@@ -460,8 +420,27 @@ export const navSections: {
 						url: '/assets/service-records',
 						permission: 'asset.read',
 					},
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.depreciation', url: '/assets/depreciation' },
+					{
+						titleKey: 'item.assetCategories',
+						url: '/assets/categories',
+						permission: 'asset.read',
+					},
+					{
+						titleKey: 'item.toolSets',
+						url: '/assets/tool-sets',
+						permission: 'asset.read',
+					},
+					{
+						titleKey: 'item.disposals',
+						url: '/assets/disposals',
+						permission: 'asset.read',
+					},
+					// `/finance/depreciations` is guarded by `asset:read`.
+					{
+						titleKey: 'item.depreciation',
+						url: '/assets/depreciation',
+						permission: 'asset.read',
+					},
 				],
 			},
 			{
@@ -497,31 +476,6 @@ export const navSections: {
 						permission: 'purchase_return.read',
 					},
 				],
-			},
-		],
-	},
-
-	// M07 — Projects.
-	{
-		labelKey: 'section.projects',
-		items: [
-			{
-				titleKey: 'item.projects',
-				url: '/projects',
-				icon: FileCheck2,
-				permission: 'project.read',
-			},
-			{
-				titleKey: 'item.tickets',
-				url: '/tickets',
-				icon: Ticket,
-				permission: 'service_ticket.read',
-			},
-			{
-				titleKey: 'item.warranty',
-				url: '/warranties',
-				icon: ShieldCheck,
-				permission: 'project.read',
 			},
 		],
 	},
@@ -576,7 +530,49 @@ export const navSections: {
 		],
 	},
 
-	// M12 — Reports & Access.
+	// Document registry (ERP-0042). Signatures are gated by the
+	// `document.signature_*` actions (ERP-0048/ERP-0049); templates stay a
+	// placeholder page (ERP-0050) but already sit behind `document.read`.
+	{
+		labelKey: 'section.documents',
+		items: [
+			{
+				titleKey: 'item.files',
+				url: '/documents/files',
+				icon: FileText,
+				permission: 'document.read',
+			},
+			{
+				titleKey: 'item.signatures',
+				icon: PenLine,
+				items: [
+					{
+						titleKey: 'item.documentSignatures',
+						url: '/documents/signatures/documents',
+						permission: 'document.signature_read',
+					},
+					{
+						titleKey: 'item.requestSignature',
+						url: '/documents/signatures/request',
+						permission: 'document.signature_request',
+					},
+					{
+						titleKey: 'item.mySignature',
+						url: '/documents/signatures/mine',
+						permission: 'document.signature_sign',
+					},
+				],
+			},
+			{
+				titleKey: 'item.templates',
+				url: '/documents/templates',
+				icon: LayoutTemplate,
+				permission: 'document.read',
+			},
+		],
+	},
+
+	// M12 — Reports.
 	{
 		labelKey: 'section.reports',
 		items: [
@@ -591,6 +587,42 @@ export const navSections: {
 						permission: 'financial_report.read',
 					},
 				],
+			},
+		],
+	},
+
+	// M04 — Integrations.
+	{
+		labelKey: 'section.integrations',
+		items: [
+			{
+				titleKey: 'item.websiteCatalog',
+				url: '/integrations/website-catalog',
+				icon: Globe,
+				permission: 'catalog.read',
+			},
+			{
+				titleKey: 'item.whatsappAi',
+				url: '/integrations/whatsapp-ai',
+				icon: MessageSquare,
+				items: [
+					{
+						titleKey: 'item.conversations',
+						url: '/integrations/whatsapp-ai',
+						permission: 'automation.read',
+					},
+					{
+						titleKey: 'item.faq',
+						url: '/integrations/whatsapp-ai/faq',
+						permission: 'automation.read',
+					},
+				],
+			},
+			{
+				titleKey: 'item.webhooks',
+				url: '/integrations/webhooks',
+				icon: Webhook,
+				permission: 'integration.read',
 			},
 		],
 	},
@@ -645,9 +677,9 @@ export const navSections: {
 				icon: CreditCard,
 				permission: 'payment_gateway.read',
 			},
-			// No catalog resource yet: hidden. The document settings page carries
-			// no permission of its own (its values are edited per group), so it
-			// stays open like the settings section itself.
+			// The document settings page carries no permission of its own (its
+			// values are edited per group), so it stays open like the settings
+			// section itself.
 			{
 				titleKey: 'item.documentSettings',
 				url: '/settings/documents',

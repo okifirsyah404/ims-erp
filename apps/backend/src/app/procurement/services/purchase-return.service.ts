@@ -358,6 +358,7 @@ export class PurchaseReturnService {
 			// ERP-0044: the approved return goes to the supplier with the goods.
 			await this.documents.register({
 				code: approved.code ?? code,
+				title: `Retur Pembelian - ${row.supplierName}`,
 				documentType: 'purchase_return',
 				module: 'procurement',
 				sourceType: 'purchase_return',

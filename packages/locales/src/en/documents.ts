@@ -27,6 +27,13 @@ const documents = {
 	'status.void': 'Void',
 	'status.archived': 'Archived',
 	'back': 'Back to documents',
+	'details': 'Details',
+	'detailAction': 'Detail',
+	'print': 'Print',
+	'previewUnavailable': 'This preview could not be loaded.',
+	'voidConfirmTitle': 'Void this document?',
+	'voidConfirmDescription':
+		'The document stays in the registry as void and is no longer valid. This cannot be undone.',
 	'overview': 'Details',
 	'source': 'Source',
 	'files': 'Files',

@@ -325,6 +325,7 @@ export class QuotationService {
 		// ERP-0044: the printed SPH is registered with the same code.
 		await this.documents.register({
 			code: quotation.code,
+			title: `Penawaran - ${quotation.customerSnapshot.name}`,
 			documentType: 'quotation',
 			module: 'sale',
 			sourceType: 'quotation',

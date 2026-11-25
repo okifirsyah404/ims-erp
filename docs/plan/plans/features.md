@@ -167,6 +167,27 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
   declares only `read`/`update`/`archive`), and Phase 5 was re-run 47/47 against a
   freshly reset `ims_erp_local`.
 
+### implemented
+- Sidebar section order + Subscription inside Projects (ERP-0156, 2026-11-25):
+  sections follow the product order (Dashboard, CRM & Sales, Finance, Projects,
+  Inventory, HR, Documents, Reports, Integrations, Administration, Settings);
+  Subscription & Licensing became a Projects leaf after Warranty;
+  `section.reports` shortened to "Reports"/"Laporan" and `section.subscription`
+  deleted. Evidence: web-admin tsc clean, 317 web-admin + 106 locale tests pass,
+  root lint 0 errors, browser walk-through (11 sections in order, Subscription
+  expansion, `/subscription/*` still guarded by the leaf); no schema change.
+- Sidebar nav audit (ERP-0154, 2026-11-25): the dangling Notifications leaf
+  (`open: true` with no route, a guaranteed 404) removed; Assets group gained
+  Categories/Tool sets/Disposals and Depreciation was un-hidden (all
+  `asset.read`); WhatsApp AI became a parent with Conversations + FAQ
+  (`automation.read`); Down payments (`invoice.read`), Templates
+  (`document.read`) and Opening balances (`journal.read`) un-hidden with the
+  grant each page already calls; en/id keys added and the dead
+  `item.notifications` key removed. Evidence: web-admin tsc clean, 315 tests
+  pass (locale parity + dead keys), root lint 0 errors, browser walk-through
+  (sidebar leaves, click-through, direct visits to all nine affected URLs);
+  no backend, route or schema change.
+
 ### planned
 - Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
   `docs/plan/plans/erp-0051-follow-ups.md` (ERP-0053 … ERP-0058): one route-guard
@@ -689,6 +710,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Depreciation as manual journal — T07, ERP-0015. Evidence: none.
 
 ### implemented
+- Asset categories create/edit dialog (ERP-0155, 2026-11-25): `/assets/categories`
+  lost its two bare inline inputs in favour of `AssetCategoryFormDialog`
+  (code create-only, name, kind, default depreciation method, useful life) plus
+  an `Edit` row action; `asset.create`/`asset.update` gate the button and the
+  action. Evidence: web-admin tsc clean, 209 web-admin + 106 locale tests pass,
+  root lint 0 errors, browser create/edit/validation/persistence walk-through;
+  no schema change.
 - Location tracking + borrowing ownership — ERP-0036. Evidence: contract
   shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
   `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`
@@ -1189,6 +1217,38 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `is_secret` stays reserved (`false`): the API neither accepts nor returns it.
   UI `CompanySettingsCard` on `/admin/company`. Evidence: `progress.md`
   2026-11-13 ERP-0045; `test/unit/company.service.test.ts` 15 pass.
+- ERP-0158 Document files named after the document (2026-11-25). Uploaded and
+  generated files are stored as `<slug(title)>_<dd_mm_yyyy>_<HHmmss>.<ext>` in
+  Jakarta time (`_2` on a same-second match, 80-char word-boundary slug, the
+  uploader's own name discarded); the S3 key stays `<prefix>/<uuid>.<ext>` so a
+  re-upload never overwrites. `attachGeneratedFile{,To}` return
+  `{ id, fileName }`, the signed-PDF artifact is `<slug>_signed_<stamp>.pdf`, and
+  the payslip ZIP is `slip_gaji_<periode>_<dd_mm_yyyy>.zip`. Every registry
+  registration now carries a human title so the name means something
+  (`Penawaran`, `Pesanan Penjualan`, `Surat Jalan`, `Faktur`, `Kuitansi`,
+  `Retur Penjualan`, `Pesanan Pembelian`, `Penerimaan Barang`,
+  `Retur Pembelian`, `BAST`, `Garansi`, `Kontrak Lisensi`, `Tiket Servis` + the
+  counterparty / project code). Evidence: `progress.md` 2026-11-25 ERP-0158
+  (browser-checked upload name + download `content-disposition`); backend 1464
+  pass. Gaps: existing rows are not backfilled, the payslip ZIP header and the
+  three Chromium render paths are unit-tested only.
+- ERP-0157 Document registry as a card grid + full-page viewer (2026-11-25).
+  `/documents/files` lists registry rows as cards whose image is the first page
+  of the newest live file (client-rendered by `pdfjs-dist`, viewport-lazy,
+  session-cached) or a document icon; `GET /documents` rows carry
+  `preview {fileId,fileName,mimeType,url}` from one file query per page and the
+  preview writes no access-trail row. `/documents/files/$documentId` is the
+  viewer: continuous lazily drawn page stack at fit-width, file switcher,
+  download/print/void/details toolbar, and a Details sheet holding the overview,
+  files, share links, signatures and access trail. Print draws every page before
+  `window.print()`; void asks for confirmation. The card's corner is a forced
+  dropdown — Detail, Void, Print (`?print=1` on the viewer, auto-print then the
+  flag is dropped), Download — with Print/Download disabled for a row without a
+  file, so the list exposes the same actions as the viewer without opening it.
+  Evidence: `progress.md`
+  2026-11-25 ERP-0157 (browser-verified: thumbnail, lazy pages, print, file
+  switcher, details sheet); backend 1455, web-admin 211, locales 106.
+  Gaps: no e2e, no zoom, signed-PDF artifacts stay out of the viewer.
 - ERP-0044 Document registry wiring + files + public share links (2026-11-13).
   11 outward-facing types register through `DocumentService.register` and void
   with `voidBySource`; `document.files` upload/list/soft-delete/presigned download

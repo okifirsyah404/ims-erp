@@ -189,6 +189,7 @@ export class SalesOrderService {
 			// ERP-0044: the confirmed order is registered with the same code.
 			await this.documents.register({
 				code: order.code,
+				title: `Pesanan Penjualan - ${order.customerSnapshot.name}`,
 				documentType: 'order',
 				module: 'sale',
 				sourceType: 'sales_order',
