@@ -1,0 +1,650 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "0108a686-16a3-4d3f-85dd-6f15c6587371",
+  "prevIds": [
+    "954f7e97-5f1c-4fec-b279-23a71445ea3b"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "project",
+        "site_attendances"
+      ],
+      "writes": [
+        "s|tbl|project.site_attendances",
+        "n|tbl|project.site_attendances",
+        "e|tbl|project.site_attendances",
+        "n|rel|project.site_attendances",
+        "n|type|project.site_attendances",
+        "n|rel|project.site_attendances_pkey"
+      ],
+      "reads": [
+        "n|sch|project"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "project",
+        "site_attendances",
+        "site_attendances_project_date_idx"
+      ],
+      "writes": [
+        "s|idx|project.site_attendances_project_date_idx",
+        "n|idx|project.site_attendances_project_date_idx",
+        "e|idx|project.site_attendances_project_date_idx",
+        "n|rel|project.site_attendances_project_date_idx"
+      ],
+      "reads": [
+        "n|tbl|project.site_attendances",
+        "n|sch|project",
+        "n|col|project.site_attendances.project_id",
+        "n|col|project.site_attendances.business_date"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "project",
+        "site_attendances",
+        "site_attendances_employee_date_idx"
+      ],
+      "writes": [
+        "s|idx|project.site_attendances_employee_date_idx",
+        "n|idx|project.site_attendances_employee_date_idx",
+        "e|idx|project.site_attendances_employee_date_idx",
+        "n|rel|project.site_attendances_employee_date_idx"
+      ],
+      "reads": [
+        "n|tbl|project.site_attendances",
+        "n|sch|project",
+        "n|col|project.site_attendances.employee_id",
+        "n|col|project.site_attendances.business_date"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "project",
+        "site_attendances",
+        "site_attendances_organization_id_idx"
+      ],
+      "writes": [
+        "s|idx|project.site_attendances_organization_id_idx",
+        "n|idx|project.site_attendances_organization_id_idx",
+        "e|idx|project.site_attendances_organization_id_idx",
+        "n|rel|project.site_attendances_organization_id_idx"
+      ],
+      "reads": [
+        "n|tbl|project.site_attendances",
+        "n|sch|project",
+        "n|col|project.site_attendances.organization_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "project",
+        "site_attendances",
+        "site_attendances_day_uq"
+      ],
+      "writes": [
+        "s|idx|project.site_attendances_day_uq",
+        "n|idx|project.site_attendances_day_uq",
+        "e|idx|project.site_attendances_day_uq",
+        "n|rel|project.site_attendances_day_uq"
+      ],
+      "reads": [
+        "n|tbl|project.site_attendances",
+        "n|sch|project",
+        "n|col|project.site_attendances.project_id",
+        "n|col|project.site_attendances.employee_id",
+        "n|col|project.site_attendances.business_date"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "name": "site_attendances",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "business_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "check_in_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "check_out_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "latitude",
+        "type": "numeric(10,7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "longitude",
+        "type": "numeric(10,7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "accuracy_meters",
+        "type": "numeric(8,2)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "check_out_latitude",
+        "type": "numeric(10,7)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "check_out_longitude",
+        "type": "numeric(10,7)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "distance_meters",
+        "type": "numeric(10,2)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "radius_meters",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "selfie_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "selfie_content_type",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "note",
+        "type": "varchar(500)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_project_date_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "business_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_employee_date_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "business_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_organization_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_day_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "business_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_status_check",
+        "value": "status IN ('verified', 'out_of_range')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_distance_check",
+        "value": "distance_meters >= 0 AND radius_meters > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_times_check",
+        "value": "check_out_at IS NULL OR check_out_at >= check_in_at",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "site_attendances",
+        "name": "site_attendances_coordinates_check",
+        "value": "latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

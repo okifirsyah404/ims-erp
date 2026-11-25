@@ -1,0 +1,90 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "bf1f03fa-e847-4333-8678-bfc15eef845f",
+  "prevIds": [
+    "c1945431-51a5-4e8a-abed-20bbcb997bdb"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "project",
+        "addresses",
+        "site_point"
+      ],
+      "writes": [
+        "s|col|project.addresses.site_point",
+        "n|col|project.addresses.site_point",
+        "e|col|project.addresses.site_point"
+      ],
+      "reads": [
+        "n|tbl|project.addresses",
+        "n|sch|project"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "project",
+        "addresses",
+        "project_addresses_site_point_idx"
+      ],
+      "writes": [
+        "s|idx|project.project_addresses_site_point_idx",
+        "n|idx|project.project_addresses_site_point_idx",
+        "e|idx|project.project_addresses_site_point_idx",
+        "n|rel|project.project_addresses_site_point_idx"
+      ],
+      "reads": [
+        "n|tbl|project.addresses",
+        "n|sch|project",
+        "n|col|project.addresses.site_point"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "addresses",
+        "name": "site_point",
+        "type": "geometry(point,4326)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "addresses",
+        "name": "project_addresses_site_point_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "site_point",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "gist",
+        "entityType": "indexes"
+      }
+    }
+  ]
+}

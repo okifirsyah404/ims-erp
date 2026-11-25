@@ -15,6 +15,8 @@ const nav = {
 	'section.finance': 'Finance',
 	'section.reports': 'Reports',
 	'section.settings': 'Settings',
+	/** Portal-only: the employee's own account area. */
+	'section.account': 'Account',
 
 	'item.dashboard': 'Dashboard',
 	'item.files': 'Files',
@@ -62,11 +64,15 @@ const nav = {
 	'item.tickets': 'Tickets',
 	'item.warranty': 'Warranty',
 	'item.hrTasks': 'Tasks',
+	/** Portal-only: the bottom-bar sheet holding the destinations without a tab. */
+	'item.more': 'More',
 	'item.schedule': 'Schedule',
 	'item.employees': 'Employees',
 	'item.attendance': 'Attendance',
 	'item.leave': 'Leave',
 	'item.overtime': 'Overtime',
+	/** Portal-only label: the employee's own profile screen. */
+	'item.employeeProfile': 'Employee Profile',
 	'item.payroll': 'Payroll',
 	'item.finance': 'Finance',
 	'item.accounts': 'Chart of Accounts',
@@ -158,3 +164,4 @@ const nav = {
 } as const;
 
 export default nav;
+

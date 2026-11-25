@@ -32,6 +32,17 @@ const notifications = {
 		'Tanda tangan ditolak: {{documentName}}',
 	'template.document.signatureDeclined.body':
 		'{{signerName}} menolak menandatangani {{documentName}}.',
+	'template.hr.taskAssigned.title': 'Tugas baru: {{title}}',
+	'template.hr.taskAssigned.body':
+		'Anda diberi tugas {{title}} dengan tenggat {{dueDate}}.',
+	'template.hr.leaveDecided.title':
+		'Pengajuan {{requestType}} Anda {{decision}}',
+	'template.hr.leaveDecided.body':
+		'Pengajuan {{requestType}} Anda untuk {{period}} {{decision}}.',
+	'template.project.attendanceRecorded.title':
+		'Absensi tercatat di {{projectName}}',
+	'template.project.attendanceRecorded.body':
+		'{{employeeName}} check-in di {{projectName}} pada {{checkedAt}}.',
 	'template.hr.payrollDraftReady.title': 'Penggajian {{period}} siap disetujui',
 	'template.hr.payrollDraftReady.body': 'Proses hari gajian membuat {{records}} draf gaji untuk {{period}}.',
 	'template.hr.payslipReady.title': 'Slip gaji {{period}} tersedia',

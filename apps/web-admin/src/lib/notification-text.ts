@@ -98,6 +98,39 @@ export function notificationText(
 					records: variables.records ?? '',
 				}),
 			};
+		case 'hr.task_assigned':
+			return {
+				title: t('template.hr.taskAssigned.title', {
+					title: variables.title ?? '',
+				}),
+				body: t('template.hr.taskAssigned.body', {
+					title: variables.title ?? '',
+					dueDate: variables.dueDate ?? '',
+				}),
+			};
+		case 'hr.leave_decided':
+			return {
+				title: t('template.hr.leaveDecided.title', {
+					requestType: variables.requestType ?? '',
+					decision: variables.decision ?? '',
+				}),
+				body: t('template.hr.leaveDecided.body', {
+					requestType: variables.requestType ?? '',
+					period: variables.period ?? '',
+					decision: variables.decision ?? '',
+				}),
+			};
+		case 'project.attendance_recorded':
+			return {
+				title: t('template.project.attendanceRecorded.title', {
+					projectName: variables.projectName ?? '',
+				}),
+				body: t('template.project.attendanceRecorded.body', {
+					employeeName: variables.employeeName ?? '',
+					projectName: variables.projectName ?? '',
+					checkedAt: variables.checkedAt ?? '',
+				}),
+			};
 		default:
 			return fallback;
 	}

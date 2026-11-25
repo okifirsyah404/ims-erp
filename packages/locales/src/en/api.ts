@@ -118,8 +118,19 @@ const api = {
 	'projects.childNotFound.cost': 'Cost not found in this project',
 	'projects.forbidden.task': 'Only the assignee or a project manager can update this task',
 	'projects.forbidden.evidence': 'Only the uploader or a project manager can remove this file',
+	'projects.forbidden.pic': 'Only the project person in charge can do this',
 	'projects.file.type': 'Use a JPG, PNG, WebP or PDF file',
 	'projects.file.size': 'Each file must be 15 MB or smaller',
+	// Field attendance (employee portal Phase B).
+	'projects.siteCoordinates':
+		'This project has no site coordinates; ask an administrator to fill its site address',
+	'projects.selfie.missing': 'A selfie is required to check in at a project site',
+	'projects.selfie.type': 'The selfie must be a JPG, PNG or WebP image',
+	'projects.selfie.size': 'The selfie must be 5 MB or smaller',
+	'projects.selfie.empty': 'The selfie file is empty',
+	'projects.siteAttendance.alreadyCheckedIn': 'You already checked in on this project today',
+	'projects.siteAttendance.notCheckedIn': 'Check in before checking out',
+	'projects.siteAttendance.alreadyCheckedOut': 'This site visit is already checked out',
 	'projects.file.empty': 'The file is empty',
 	'projects.costVoided': 'This cost is already voided',
 	'sales.orderHasProject': 'This sales order has a project; cancel the project first',
@@ -473,6 +484,10 @@ const api = {
 	'hr.attendanceTimes': 'The check-out time is before the check-in time',
 	'hr.attendance.leaveOwned': 'This day was written by an approved leave request; cancel the leave instead',
 	'hr.attendance.duplicate': 'The employee already has an attendance record on this date',
+	'hr.attendance.notActive': 'The employee is not active',
+	'hr.attendance.alreadyCheckedIn': 'You have already checked in today',
+	'hr.attendance.alreadyCheckedOut': 'You have already checked out today',
+	'hr.attendance.notCheckedIn': 'Check in before checking out',
 	'hr.schedule.duplicate': 'The employee already has a schedule on this date',
 	'hr.schedule.rangeTooLong': 'A fill covers at most {{max}} days',
 	'hr.salaryPeriod.overlap': 'A new period must start after {{after}}',
@@ -689,3 +704,4 @@ const api = {
 } as const;
 
 export default api;
+

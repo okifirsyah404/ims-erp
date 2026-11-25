@@ -21,6 +21,8 @@ export type AccountKey = NamespaceKey<'account'>;
 export type CommonKey = NamespaceKey<'common'>;
 /** Keys of the `notifications` namespace: the bell and its template copy. */
 export type NotificationKey = NamespaceKey<'notifications'>;
+/** Keys of the `employee` namespace: the employee portal's own copy. */
+export type EmployeeKey = NamespaceKey<'employee'>;
 
 /** Locale codes the app ships translations for. */
 export const LANGUAGE_CODES = ['en', 'id'] as const;
@@ -40,7 +42,7 @@ export const LANGUAGES = [
 export const DEFAULT_LANGUAGE: LanguageCode = 'en';
 
 /** Every i18next namespace, in the order resources are registered. */
-export const NAMESPACES = ['common', 'email', 'nav', 'auth', 'account', 'admin', 'inventory', 'product', 'warehouse', 'dashboard', 'api', 'settings', 'crm', 'sales', 'finance', 'procurement', 'projects', 'licensing', 'tax', 'assets', 'hr', 'claim', 'documents', 'notifications', 'integrations'] as const;
+export const NAMESPACES = ['common', 'email', 'nav', 'auth', 'account', 'admin', 'inventory', 'product', 'warehouse', 'dashboard', 'api', 'settings', 'crm', 'sales', 'finance', 'procurement', 'projects', 'licensing', 'tax', 'assets', 'hr', 'claim', 'documents', 'notifications', 'integrations', 'signatures', 'employee'] as const;
 
 /** Narrows an arbitrary string (e.g. a detector result) to a shipped code. */
 export function isLanguageCode(value: string | null | undefined): value is LanguageCode {

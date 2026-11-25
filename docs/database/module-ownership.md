@@ -230,7 +230,8 @@ no central code-number module.
 ### 14. Project - `project` (was `projects`; absorbs leads, licensing, warranty)
 
 - **Owns** projects and their tasks, phases, milestones, costs, evidence,
-  handover, daily reports, site assignments, KPIs, changes, work plans, leads
+  handover, daily reports, site assignments, site attendance (field check-ins
+  with PostGIS radius verification), KPIs, changes, work plans, leads
   and lead activities/attachments, warranties, and the license tables
   (applications, contracts, keys, activations, events, API keys).
 - **Contract**: project/lead/warranty reads through its services.

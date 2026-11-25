@@ -32,6 +32,9 @@ import { AgreementPdfService } from './services/agreement-pdf.service';
 import { InvitationClaimAdapter } from './adapters/invitation-claim';
 import { PayslipPdfQueue } from './queues/payslip-pdf.queue';
 import { PayslipService } from './services/payslip.service';
+import { EmployeePortalResolver } from './adapters/employee-portal-resolver';
+import { EmployeePortalService } from './services/employee-portal.service';
+import { EMPLOYEE_PORTAL_RESOLVER_TOKEN } from '@authorization/employee-portal-resolver';
 import {
 	ATTENDANCE_REPOSITORY_TOKEN,
 	ATTENDANCE_SERVICE_TOKEN,
@@ -61,6 +64,7 @@ import {
 	AGREEMENT_PDF_SERVICE_TOKEN,
 	PAYSLIP_QUEUE_TOKEN,
 	PAYSLIP_SERVICE_TOKEN,
+	EMPLOYEE_PORTAL_SERVICE_TOKEN,
 	SCHEDULE_SERVICE_TOKEN,
 	TASK_REPOSITORY_TOKEN,
 	TASK_SERVICE_TOKEN,
@@ -137,4 +141,8 @@ export function registerHumanResource(container: DependencyContainer): void {
 	// Payslips (ERP-0122).
 	container.register(PAYSLIP_QUEUE_TOKEN, { useClass: PayslipPdfQueue });
 	container.register(PAYSLIP_SERVICE_TOKEN, { useClass: PayslipService });
+
+	// Employee portal self-service (Phase A).
+	container.register(EMPLOYEE_PORTAL_RESOLVER_TOKEN, { useClass: EmployeePortalResolver });
+	container.register(EMPLOYEE_PORTAL_SERVICE_TOKEN, { useClass: EmployeePortalService });
 }

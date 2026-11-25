@@ -64,7 +64,7 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 212 |
+| Logical reference columns | 214 |
 | Distinct targets | 28 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 169 |
@@ -77,12 +77,12 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 | Target | Owner | Referring columns |
 |---|---|---|
-| `auth.organizations.id` | Identity | 61 |
+| `auth.organizations.id` | Identity | 62 |
 | `auth.users.id` | Identity | 32 |
 | `product.products.id` | Product | 16 |
 | `customer.customers.id` | Customer | 13 |
+| `human_resource.employees.id` | Human Resource | 10 |
 | `project.projects.id` | Project | 10 |
-| `human_resource.employees.id` | Human Resource | 9 |
 | `location.villages.id` | Location | 8 |
 | `warehouse.warehouse_storages.id` | Warehouse | 8 |
 | `warehouse.warehouses.id` | Warehouse | 8 |
@@ -108,7 +108,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 ## The 28 targets in full
 
-### `auth.organizations.id` - owner Identity, 61 referring columns
+### `auth.organizations.id` - owner Identity, 62 referring columns
 
 - `finance.account_balances`  ->  `organization_id`
 - `finance.accounting_periods`  ->  `organization_id`
@@ -157,6 +157,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `project.milestones`  ->  `organization_id`
 - `project.phases`  ->  `organization_id`
 - `project.site_assignments`  ->  `organization_id`
+- `project.site_attendances`  ->  `organization_id`
 - `project.task_dependencies`  ->  `organization_id`
 - `project.types`  ->  `organization_id`
 - `project.work_plans`  ->  `organization_id`
@@ -242,6 +243,19 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `sale.returns`  ->  `customer_id`
 - `ticket.tickets`  ->  `customer_id`
 
+### `human_resource.employees.id` - owner Human Resource, 10 referring columns
+
+- `finance.cash_bank_accounts`  ->  `employee_id`
+- `finance.employee_advances`  ->  `employee_id`
+- `finance.expense_claims`  ->  `employee_id`
+- `finance.expense_settlements`  ->  `employee_id`
+- `inventory.maintenances`  ->  `performed_by_employee_id`
+- `inventory.tool_sets`  ->  `custodian_employee_id`
+- `project.daily_reports`  ->  `technician_employee_id`
+- `project.kpi_evaluations`  ->  `employee_id`
+- `project.site_assignments`  ->  `employee_id`
+- `project.site_attendances`  ->  `employee_id`
+
 ### `project.projects.id` - owner Project, 10 referring columns
 
 - `finance.employee_advances`  ->  `project_id`
@@ -254,18 +268,6 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `procurement.purchase_orders`  ->  `project_id`
 - `sale.invoices`  ->  `project_id`
 - `ticket.tickets`  ->  `project_id`
-
-### `human_resource.employees.id` - owner Human Resource, 9 referring columns
-
-- `finance.cash_bank_accounts`  ->  `employee_id`
-- `finance.employee_advances`  ->  `employee_id`
-- `finance.expense_claims`  ->  `employee_id`
-- `finance.expense_settlements`  ->  `employee_id`
-- `inventory.maintenances`  ->  `performed_by_employee_id`
-- `inventory.tool_sets`  ->  `custodian_employee_id`
-- `project.daily_reports`  ->  `technician_employee_id`
-- `project.kpi_evaluations`  ->  `employee_id`
-- `project.site_assignments`  ->  `employee_id`
 
 ### `location.villages.id` - owner Location, 8 referring columns
 

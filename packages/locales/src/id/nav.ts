@@ -14,6 +14,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'section.finance': 'Keuangan',
 	'section.reports': 'Laporan',
 	'section.settings': 'Pengaturan',
+	'section.account': 'Akun',
 
 	'item.dashboard': 'Dasbor',
 	'item.files': 'Berkas',
@@ -61,11 +62,13 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.tickets': 'Tiket',
 	'item.warranty': 'Garansi',
 	'item.hrTasks': 'Tugas',
+	'item.more': 'Lainnya',
 	'item.schedule': 'Jadwal Kerja',
 	'item.employees': 'Karyawan',
 	'item.attendance': 'Absensi',
 	'item.leave': 'Cuti',
 	'item.overtime': 'Lembur',
+	'item.employeeProfile': 'Profil Karyawan',
 	'item.payroll': 'Penggajian',
 	'item.finance': 'Keuangan',
 	'item.accounts': 'Daftar Akun',
@@ -157,3 +160,4 @@ const nav_: Record<keyof typeof nav, string> = {
 };
 
 export default nav_;
+

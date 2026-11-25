@@ -27,6 +27,7 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun dev` | `apps/backend` | ✅ verified 2026-10-29/30 — `bun run --watch src/index.ts` |
 | `bun run build` | repo root / `apps/web-admin` | ✅ verified 2026-10-29/30 (web-admin tsc + vite) |
 | `bun run dev:website` / `bun run dev:portal` | repo root | proposed — the public website (`@ims-erp/web-landing`, :4321) and the customer portal (`@ims-erp/web-customer-portal`, :4322) in `apps/`, moved in 2026-11-15; their `astro check` (0 errors) and `astro build` were verified the same day, dev servers not started here |
+| `bun run dev:employee` | repo root | ✅ verified 2026-11-25 (build only) — the employee portal (`@ims-erp/web-employee-portal`, :5174; web-admin keeps :5173). `vite build` and `tsc -p tsconfig.app.json --noEmit` clean; the dev server was not started |
 | `bun run typecheck` | repo root | ✅ verified 2026-11-15 — 6/6 turbo tasks, including `astro check` of `@ims-erp/web-landing` (167 files) and `@ims-erp/web-customer-portal` (147 files), 0 errors each |
 
 ## Checks
@@ -35,8 +36,9 @@ Environment is loaded per-workspace from `.env` (the backend uses
 |---|---|---|
 | `bun run lint` | repo root | ✅ verified 2026-10-28→30 — pass; remaining warnings pre-existing |
 | `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
-| `bun run test` | repo root | ✅ verified 2026-11-20 — 7/7 turbo tasks (backend 1232, web-landing 24, web-customer-portal 60 pass); earlier 2026-11-02: backend 131, web-admin 21 |
+| `bun run test` | repo root | ✅ verified 2026-11-25 — 8/8 turbo tasks (backend 1608 incl. 8 new employee-portal, web-admin 211, locales 110, employee-portal 5, web-customer-portal 68, web-landing 25, react-email 6) |
 | `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-admin` | ✅ verified 2026-11-20 — 0 errors. The root `typecheck` does not cover web-admin (no `typecheck` script); this is the real check (also part of `build`) |
+| `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-employee-portal` | ✅ verified 2026-11-25 — 0 errors (same reason: the app has no `typecheck` script) |
 | `bun docs/gen-role-permission.ts` | repo root | ✅ verified 2026-11-23 — rewrites the generated block of `docs/role-permission.md` (628 routes, 0 unresolved). Run after any route, guard option or role-grant change |
 
 ### Live smoke tests (need a running backend on :3001)
@@ -180,7 +182,6 @@ bunx --bun drizzle-kit push --explain      # prints the diff, executes nothing
 
 Local infra: `docker-compose.yml` publishes no Postgres/Redis ports; the dev
 `.env` expects 15432/16379. Use an override file kept outside the repo:
-
 ```yaml
 services:
   postgres: { ports: ["15432:5432"] }
@@ -188,6 +189,25 @@ services:
 ```
 
 Rules:
+- **PostGIS is required** for the project module's field attendance
+  (`ST_Distance` / `ST_DWithin` on `project.addresses.site_point`, a
+  `geometry(point, 4326)` column with a GiST index — the Drizzle PostGIS guide
+  pattern). `docker-compose.yml` runs `postgis/postgis:18-3.6`; the local
+  FlyEnv Postgres 18.7 has PostGIS 3.7.0 installed from the OSGeo
+  `postgis-bundle-pg18` build (its `bin\postgisgui\` brotli DLLs and a
+  `libnghttp2-14.dll` must sit next to `postgres.exe`, or the extension fails
+  to load). The backend calls `ensurePostgisExtension` at boot and **warns**
+  (does not crash) when the extension is missing — only site check-in fails
+  then, every other route works.
+- The radius is the `project.settings` row `attendance/site_radius_meters`
+  (default **100 m** when absent), snapshotted onto each `project.site_attendances`
+  row at check-in.
+- **The employee portal's dev origin must be allowed twice** (verified
+  2026-11-26 by browser walk-through): `cors.json` `allow` needs
+  `http://localhost:5174` for credentialed XHR, **and**
+  `betterAuthTrustedOrigins` needs it too — without the second entry every
+  portal sign-in answers "Invalid origin" even though CORS passes. The
+  committed template `cors.example.json` already carries both origins.
 - Never run `drizzle-kit push` or migrations against a database you cannot
   recreate. Push only ever runs against such a database.
 - Before a `generate` run, confirm `drizzle-kit check` is clean; if the chain

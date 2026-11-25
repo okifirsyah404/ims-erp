@@ -17,6 +17,7 @@ import { SalaryPeriodController } from './controllers/salary-period.controller';
 import { PayrollSettingsController } from './controllers/payroll-settings.controller';
 import { AgreementRenderController, EmployeeDocumentController } from './controllers/employee-document.controller';
 import { MyPayslipController, PayslipController, PayslipRenderController } from './controllers/payslip.controller';
+import { EmployeePortalController, MyPortalAccessController } from './controllers/employee-portal.controller';
 
 /**
  * Public entry point of the human-resource module.
@@ -58,5 +59,8 @@ export function humanResourceModule() {
 		.use(PayslipController.plugin())
 		// Self-service, session only: the employee comes from the session (ERP-0122).
 		.use(MyPayslipController.plugin())
+		// Employee portal (Phase A): access probe, then the `/me` self-service routes.
+		.use(MyPortalAccessController.plugin())
+		.use(EmployeePortalController.plugin())
 		.use(PayslipRenderController.plugin());
 }

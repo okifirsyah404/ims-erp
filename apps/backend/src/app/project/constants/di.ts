@@ -18,6 +18,7 @@ import type {
 import type { ILicenseApiRepository } from '../contracts/license-api.contract';
 import type { ILicensingRepository } from '../contracts/licensing.contract';
 import type { IProjectRepository } from '../contracts/project.repository.interface';
+import type { ISiteAttendanceRepository } from '../contracts/site-attendance.repository.interface';
 import type { IWarrantyRepository } from '../contracts/warranty.contract';
 import type { ProjectCodeNumberingRepository } from '../repositories/code-numbering.repository';
 import type { HandoverService } from '../services/handover.service';
@@ -28,6 +29,8 @@ import type { ProjectLookupService } from '../services/project-lookup.service';
 import type { ProjectNumberingService } from '../services/project-numbering.service';
 import type { ProjectPortalService } from '../services/project-portal.service';
 import type { ProjectService } from '../services/project.service';
+import type { PortalProjectService } from '../services/portal-project.service';
+import type { SiteAttendanceService } from '../services/site-attendance.service';
 import type { WarrantyService } from '../services/warranty.service';
 import type { WebsiteInquiryService } from '../services/website-inquiry.service';
 
@@ -46,6 +49,13 @@ export const WEBSITE_INQUIRY_SERVICE_TOKEN: InjectionToken<WebsiteInquiryService
 
 export const PROJECT_REPOSITORY_TOKEN: InjectionToken<IProjectRepository> = Symbol('PROJECT_REPOSITORY_TOKEN');
 export const PROJECT_SERVICE_TOKEN: InjectionToken<ProjectService> = Symbol('PROJECT_SERVICE_TOKEN');
+
+/** Employee portal project routes (Phase B): visibility, PIC task management. */
+export const PORTAL_PROJECT_SERVICE_TOKEN: InjectionToken<PortalProjectService> = Symbol('PORTAL_PROJECT_SERVICE_TOKEN');
+
+/** Field attendance at project sites (Phase B): PostGIS radius check, selfie. */
+export const SITE_ATTENDANCE_REPOSITORY_TOKEN: InjectionToken<ISiteAttendanceRepository> = Symbol('SITE_ATTENDANCE_REPOSITORY');
+export const SITE_ATTENDANCE_SERVICE_TOKEN: InjectionToken<SiteAttendanceService> = Symbol('SITE_ATTENDANCE_SERVICE');
 /** Projects contract for Sale: "does this order still have a live project?". */
 export const PROJECT_LOOKUP_SERVICE_TOKEN: InjectionToken<ProjectLookupService> = Symbol(
 	'PROJECT_LOOKUP_SERVICE_TOKEN',
@@ -79,3 +89,4 @@ export const PROJECT_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<ProjectCode
 	Symbol('PROJECT_CODE_NUMBERING_REPOSITORY');
 export const PROJECT_NUMBERING_SERVICE_TOKEN: InjectionToken<ProjectNumberingService> =
 	Symbol('PROJECT_NUMBERING_SERVICE');
+

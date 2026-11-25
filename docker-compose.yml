@@ -11,7 +11,9 @@ name: ims-erp
 
 services:
   postgres:
-    image: postgres:18-alpine
+    # postgis/postgis (not `postgres`): the project module measures field
+    # attendance distance with PostGIS (`ST_Distance` / `ST_DWithin`).
+    image: postgis/postgis:18-3.6
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ims_erp}
@@ -143,6 +145,14 @@ services:
       # Host 8080 by default: host port 80 is commonly taken by a local
       # reverse proxy (e.g. Caddy). Override with WEB_ADMIN_PORT in .env.
       - "${WEB_ADMIN_PORT:-8080}:80"
+
+  # Employee self-service portal (apps/web-employee-portal). Same static
+  # bundle as web-admin; 8081 keeps both running side by side.
+  web-employee-portal:
+    image: ghcr.io/okifirsyah404/ims-erp-web-employee-portal:${IMAGE_TAG:-dev}
+    restart: unless-stopped
+    ports:
+      - "${WEB_EMPLOYEE_PORTAL_PORT:-8081}:80"
 
   # Public website (apps/web-landing). Node standalone server on 4321 inside
   # the container. Reaches the ERP server-to-server over the internal network.

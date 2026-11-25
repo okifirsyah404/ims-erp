@@ -21,6 +21,8 @@ import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
 import { DEFAULT_LANGUAGE, LANGUAGE_CODES, en, id } from '@ims-erp/locales';
+import { ensurePostgisExtension } from '@drizzle/datatypes/geo';
+import { drizzleDB } from '@drizzle/db';
 import { pinoLogger } from '@providers/logger/logger';
 import { requestLogger } from '@providers/logger/request-logger';
 import {
@@ -104,6 +106,21 @@ registerAuthorization(container);
  * has no resources.
  */
 const apiI18n = createInstance();
+
+/**
+ * PostGIS is a database capability, not a table, so it cannot live in the
+ * Drizzle baseline: the custom migration `20261125201740_postgis_extension`
+ * creates it, and this call is the safety net for a database where that
+ * migration ran without superuser rights. When the database is a plain
+ * Postgres the app still boots and only site check-in fails, which is a far
+ * better failure than a dead server.
+ */
+await ensurePostgisExtension(drizzleDB).then(
+	(ready) =>
+		ready
+			? pinoLogger.info('PostGIS ready (field attendance)')
+			: pinoLogger.warn('PostGIS unavailable: site attendance check-in will fail'),
+);
 
 /**
  * Root Elysia application. The i18n plugin is mounted first so every controller
@@ -260,3 +277,4 @@ process.on('SIGTERM', async () => {
 pinoLogger.info(
 	`🦊 Elysia is running at ${bootstrap.server?.hostname}:${bootstrap.server?.port}`,
 );
+

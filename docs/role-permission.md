@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-763 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+795 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -969,6 +969,25 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/human-resources/leave/:id/cancel` | org member + permission | `leave:cancel` | `owner`, `hr` |
 | POST | `/human-resources/leave/:id/reject` | org member + permission | `leave:reject` | `owner`, `hr` |
 | GET | `/human-resources/leave/balances` | org member + permission | `leave:read` | `owner`, `hr` |
+| GET | `/human-resources/me/access` | session | - | any signed-in user |
+| GET | `/human-resources/me/attendance` | no guard macro | - | - |
+| POST | `/human-resources/me/attendance/check-in` | no guard macro | - | - |
+| POST | `/human-resources/me/attendance/check-out` | no guard macro | - | - |
+| GET | `/human-resources/me/attendance/month` | no guard macro | - | - |
+| GET | `/human-resources/me/attendance/today` | no guard macro | - | - |
+| GET | `/human-resources/me/context` | no guard macro | - | - |
+| GET | `/human-resources/me/leave` | no guard macro | - | - |
+| POST | `/human-resources/me/leave` | no guard macro | - | - |
+| GET | `/human-resources/me/leave-balances` | no guard macro | - | - |
+| GET | `/human-resources/me/leave-types` | no guard macro | - | - |
+| POST | `/human-resources/me/leave/:id/cancel` | no guard macro | - | - |
+| GET | `/human-resources/me/overtime` | no guard macro | - | - |
+| POST | `/human-resources/me/overtime` | no guard macro | - | - |
+| GET | `/human-resources/me/profile` | no guard macro | - | - |
+| PATCH | `/human-resources/me/profile` | no guard macro | - | - |
+| GET | `/human-resources/me/schedule` | no guard macro | - | - |
+| GET | `/human-resources/me/tasks` | no guard macro | - | - |
+| POST | `/human-resources/me/tasks/:id/status` | no guard macro | - | - |
 | GET | `/human-resources/overtime` | org member + permission | `overtime:read` | `owner`, `hr` |
 | POST | `/human-resources/overtime` | org member + permission | `overtime:create` | `owner`, `hr` |
 | PUT | `/human-resources/overtime/:id` | org member + permission | `overtime:create` | `owner`, `hr` |
@@ -1304,6 +1323,19 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/projects/licenses/applications/:id/retire` | org member + permission | `license:create` | `owner`, `sales_manager`, `sales` |
 | GET | `/projects/licenses/events` | org member + permission | `license:read` | `owner`, `admin`, `sales_manager`, `sales`, `finance`, `customer_service`, `auditor` |
 | GET | `/projects/licenses/summary` | org member + permission | `license:read` | `owner`, `admin`, `sales_manager`, `sales`, `finance`, `customer_service`, `auditor` |
+| GET | `/projects/me/projects` | no guard macro | - | - |
+| GET | `/projects/me/projects/:id` | no guard macro | - | - |
+| POST | `/projects/me/projects/:id/evidence` | no guard macro | - | - |
+| DELETE | `/projects/me/projects/:id/evidence/:childId` | no guard macro | - | - |
+| GET | `/projects/me/projects/:id/site-attendance` | no guard macro | - | - |
+| POST | `/projects/me/projects/:id/tasks` | no guard macro | - | - |
+| DELETE | `/projects/me/projects/:id/tasks/:childId` | no guard macro | - | - |
+| PUT | `/projects/me/projects/:id/tasks/:childId` | no guard macro | - | - |
+| POST | `/projects/me/projects/:id/tasks/:childId/status` | no guard macro | - | - |
+| GET | `/projects/me/site-attendance` | no guard macro | - | - |
+| POST | `/projects/me/site-attendance/:id/check-out` | no guard macro | - | - |
+| POST | `/projects/me/site-attendance/check-in` | no guard macro | - | - |
+| GET | `/projects/me/staff` | no guard macro | - | - |
 | GET | `/projects/open-deals` | org member + permission | `project:create` | `owner`, `operations_manager`, `project_manager` |
 | POST | `/projects/public/v1/contact` | public API key | - | - |
 | POST | `/projects/public/v1/demo` | public API key | - | - |

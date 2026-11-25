@@ -124,6 +124,33 @@ export class EmployeeRepository implements IEmployeeRepository {
 		return row ?? null;
 	}
 
+	async findByUserAndOrganization(
+		userId: string,
+		organizationId: string,
+		tx?: TTx,
+	): Promise<TEmployeeSelect | null> {
+		const [row] = await (tx ?? this.database)
+			.select()
+			.from(employees)
+			.where(
+				and(
+					eq(employees.userId, userId),
+					eq(employees.organizationId, organizationId),
+					isNull(employees.deletedAt),
+				),
+			)
+			.limit(1);
+		return row ?? null;
+	}
+
+	async listByUserId(userId: string, tx?: TTx): Promise<TEmployeeSelect[]> {
+		return (tx ?? this.database)
+			.select()
+			.from(employees)
+			.where(and(eq(employees.userId, userId), isNull(employees.deletedAt)))
+			.orderBy(asc(employees.createdAt));
+	}
+
 	async findByEmail(email: string, tx?: TTx): Promise<TEmployeeSelect | null> {
 		const [row] = await (tx ?? this.database)
 			.select()

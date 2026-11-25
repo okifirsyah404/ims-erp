@@ -12,6 +12,326 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-26 - employee portal: UI aligned with web-admin, verified in the browser
+
+**Scope.** Browser walk-through of the portal (real backend, real Postgres +
+PostGIS, seeded `hr_seed_08` PIC account) and the layout/UI corrections the
+walk-through made obvious.
+
+**Bugs the browser caught (none of them were visible to lint/tsc/tests):**
+
+1. **`/projects/$projectId` never rendered.** `_authed.projects.tsx` was both the
+   list page and the parent of `_authed.projects.$projectId.tsx`, so the parent
+   route matched `/projects/<id>` and showed the list. Split into
+   `_authed.projects.tsx` (layout `<Outlet/>`), `_authed.projects.index.tsx`
+   (list) and the detail route.
+2. **Portal sign-in failed with "Invalid origin".** CORS allowed 5174 but
+   `betterAuthTrustedOrigins` did not — two separate allowlists. Added
+   `http://localhost:5174` to `social-providers.auth.ts` and to the committed
+   `cors.example.json` (the gitignored `cors.json` was patched locally too).
+3. **Breadcrumbs read leaf-first** (`Instalasi Demo > Projects`):
+   `useMatches()` is outermost-first, the builder reversed it. Rewritten, and a
+   project crumb now takes the title from `myProjectQueryOptions` (subscribed,
+   so it fills in instead of sticking on the fallback label).
+4. **Selfie capture rendered a large empty `<video>`** while idle; the element
+   now mounts only while streaming.
+5. Task rows could not be identified (`mine` compared against the PIC, not the
+   caller) — every row offered the same controls.
+
+**UI corrections requested (web-admin parity):**
+- **Organization switcher** rebuilt on the admin's component: `SidebarMenu` +
+  `size="lg"` `SidebarMenuButton`, org logo in a `size-8` primary tile, name over
+  slug, dropdown with check/spinner per row and the role as a shortcut. The list
+  stays narrowed to organizations with an employee record.
+- **Side nav sections**: `portal-nav.ts` is now `{ labelKey, items }[]` sections
+  (Dashboard / Human Resource / Projects / Documents / Account) rendered by
+  `PortalSidebarSection`, the same `SidebarGroup` + `SidebarMenu` markup the
+  admin uses. The app-name header tile is gone (the org switcher is the header,
+  as in web-admin).
+- **Leave and overtime are separate pages** (`/leave`, `/overtime`), matching
+  `/hr/leave` and `/hr/overtime`; the tab that hid one of them is gone.
+- **Profile renamed "Employee Profile" / "Profil Karyawan"** (`item.employeeProfile`
+  in the `nav` namespace), and the org switcher card was removed from it (the
+  switcher lives in the rail header, one place).
+- **Notifications removed from the side nav**; the header bell is the inbox.
+- **Employee Profile is no longer a rail entry** (follow-up request): the page
+  stays at `/profile` and is reached from the account menu in the header
+  (`NavUser` → "Akun"), like web-admin's `/profiles`. The `Account` section is
+  therefore empty in this build (payroll is Phase C) and is dropped by
+  `liveNavSections`.
+- **Project task CRUD is a dialog** (`components/projects/task-dialog.tsx`): one
+  dialog for create and edit, `+ Add task` in the card header, `Edit`/`Delete`
+  per row (delete behind the confirm dialog). Status and assignee stay inline
+  selects because they are one-click actions.
+
+**Browser verification (Playwright-free, in-app browser):**
+
+```text
+sign in hr_seed_08            -> lands on /projects, org tile "Entragate / entragate"
+org switcher dropdown         -> "Ganti organisasi", one row with check + role "hr"
+sidebar                       -> Dasbor / Sumber Daya Manusia (Absensi, Jadwal Kerja,
+                                 Cuti, Lembur, Tugas) / Proyek / Akun (Profil Karyawan)
+/projects                     -> PRJ-DEMO-001 card with PIC + Active + Installation
+detail Tasks tab              -> task list, inline status select, Ubah/Hapus
+"+ Tambah tugas"              -> dialog (title, stage, due date, assignee), Simpan disabled while empty
+save                          -> row appears; edit renames it; delete asks and removes it
+/leave, /overtime, /profile   -> separate pages, "Cuti", "Lembur", "Profil Karyawan"
+console                       -> 0 errors on every route
+```
+
+Gates: `bun run lint` 0 errors · `bun run test` 8/8 (backend 1620, web-admin
+211, locales 110, portal 5, customer 68, landing 25, email 6) · portal `tsc` 0
+errors · portal `vite build` clean.
+
+**Not verified.** Mobile bottom bar at phone width, camera/GPS on a device
+(geolocation is blocked in the desktop browser, so the check-in itself was
+exercised through the API, not the button).
+
+**Follow-up.** "Profil Karyawan" removed from the side nav on request; `/profile`
+remains reachable from the header account menu ("Akun"), verified in the browser
+(sidebar now: Dasbor / Sumber Daya Manusia / Proyek, 0 console errors).
+
+## 2026-11-26 - PostGIS installed and wired (Drizzle `geometry` guide)
+
+**Scope.** PostGIS is now real, not aspirational: the local FlyEnv Postgres 18.7
+has PostGIS 3.7.0, and the radius check reads an indexed `geometry(point, 4326)`
+column following the Drizzle PostGIS guide.
+
+**Install (FlyEnv MCP).** Postgres runs from FlyEnv
+(`C:\Program Files\FlyEnv-Data\app\postgresql-18.7\pgsql`). Downloaded
+`postgis-bundle-pg18-3.7.0x64.zip` from OSGeo, stopped the service through
+FlyEnv, copied `bin/ lib/ share/` into the pgsql root, added three DLLs the
+bundle hides in `bin\postgisgui\` (`libbrotlicommon/dec/enc.dll`) plus
+`libnghttp2-14.dll` (from Git's mingw64) into `pgsql\bin` — the server resolves
+`postgis-3.dll`'s dependencies from its own exe directory, so without those the
+extension failed with "The specified module could not be found". Restarted via
+FlyEnv, `CREATE EXTENSION postgis` succeeded, `postgis_lib_version()` = 3.7.0.
+
+**Schema (guide-faithful).** `project.addresses` gains
+`site_point geometry(point, 4326)` (`geometry(..., { type: 'point', mode: 'xy',
+srid: 4326 })`) with a GiST index; `latitude`/`longitude` stay as the display
+mirror. Two migrations:
+
+- `20261125201740_postgis_extension` — **custom** migration (`drizzle-kit
+  generate --custom`) with `CREATE EXTENSION IF NOT EXISTS postgis` (the guide's
+  recommendation: Drizzle never generates extensions);
+- `20261125201752_project_site_point_geometry` — the column + index, plus a
+  backfill `UPDATE` that builds the point from existing coordinates.
+
+`drizzle/datatypes/geo.ts` is now just `pointSql` (`ST_SetSRID(ST_MakePoint(lng,
+lat), 4326)`) and `ensurePostgisExtension`; the measure query composes the
+guide's operators over the column: `ST_Distance(site_point::geography,
+point::geography)` / `ST_DWithin(..., meters)` — the `geography` cast is what
+makes the answer metres. The seeder writes `sitePoint` (`{ x, y }`).
+
+**Verified live against the seeded demo project** (real service, real
+repository, real PostGIS — scripts removed afterwards):
+
+```text
+measure same point   -> { distanceMeters: 0,      within: true  }
+measure +11 m        -> { distanceMeters: 11.07,  within: true  }   (SQL: 11.07)
+measure +110 m       -> { distanceMeters: 121.75, within: false }
+check-in (PIC)       -> status verified, distance 0.00, row persisted
+check-in again       -> 409 "You already checked in on this project today"
+check-out            -> stamps check_out_at
+check-in far, other
+employee with a task -> notify -> { projectName, employeeName, checkedAt }
+                       status out_of_range, distance 121.75, radius 100
+seed re-run          -> "Demo project already seeded; skipping" (idempotent)
+```
+
+Gates: `bun run lint` 0 errors · `bun run test` 8/8 (backend 1620, web-admin
+211, locales 110, portal 5, customer 68, landing 25, email 6) · backend tsc
+clean · `drizzle:generate` reports no changes · `validate-dbml.ts` OK.
+
+**Not verified.** The HTTP route itself (no server started); camera/GPS on a
+real phone. Everything below the controller is proven above.
+
+## 2026-11-26 - employee portal: gap fixes after the phase audit
+
+**Scope.** Follow-up to the Phase A/B audit (code + database checked, not the
+notes). Six defects the gates could not catch:
+
+1. `portal-nav.ts` gated the rail on `phase === 'a'` while `/projects` is Phase
+   B (menu entry missing) and listed `/documents` + `/payslips` as Phase A
+   before those pages exist (two 404 links). The rail is now derived from
+   `SHIPPED` phases, and `/profile` + `/notifications` are entries of their own.
+2. `/notifications` and `/profile` had no way in (the bell is a popover).
+3. `hr.task_assigned` and `hr.leave_decided` were seeded but never produced:
+   `TaskService.create` now notifies the assignee's login user, and
+   `LeaveService` notifies on approve/reject for both leave and overtime
+   (`notifyDecision`, best-effort, never blocks the decision).
+4. The profile's "account security" card was a `<Skeleton>` placeholder;
+   `AccountSecurityCard` now changes the password (`revokeOtherSessions: true`)
+   and signs out. Email/username/roles stay HR-owned and say so.
+5. The seed had no project and no site coordinates, so Phase B could not be
+   tried at all: `project-demo.seeder.ts` creates `PRJ-DEMO-001` (PIC = first
+   linked employee, primary site address with Monas-area coordinates, one open
+   task) plus the `attendance/site_radius_meters = 100` setting. Idempotent on
+   the project code.
+6. Dead locale keys removed (`profile.account`), nav labels resolved per
+   namespace through `portalLabel`.
+
+```bash
+bun run --cwd apps/backend drizzle:seed      # twice: 2nd run "Demo project already seeded; skipping"
+bun run lint                                 # 0 errors
+bun run test                                 # 8/8: backend 1620, web-admin 211, locales 110, portal 5, customer 68, landing 25, email 6
+bunx tsc --noEmit -p tsconfig.app.json       # (portal) 0 errors
+bun run --filter '@ims-erp/web-employee-portal' build
+bun docs/database/validate-dbml.ts           # OK
+```
+
+Seed verified in the database: project `PRJ-DEMO-001` with a PIC that has a
+linked login, primary site address `-6.1753920 / 106.8271530`, one `todo` task
+assigned to that PIC, and the 100 m radius setting.
+
+**Not verified.** Still no browser walk-through and no live check-in: this
+machine has no PostGIS (`pg_available_extensions` has no `postgis`) and Docker
+Desktop is not running, so `ensurePostgisExtension` returns false and
+`ST_Distance` / `ST_DWithin` have never executed. The seeded coordinates mean
+the demo is one PostGIS-enabled database away from working.
+
+A second seeder pass added the rest of the manual-test fixture: a **pending
+leave request** (`ANNUAL`, 2 days starting D+3) and an **approved overtime**
+record (2 h, yesterday) for `EMP-00001`, plus the portal account printed for a
+walk-through — `admin_seed` / `admin.seed@entragate.local`, role `user`, employee
+of org `entragate`, member of it, and the PIC of `PRJ-DEMO-001` (verified by
+query: 1 leave row, 1 overtime row, no duplicates on a re-run). No password is
+seeded; reset it through the login page's "forgot password" flow before
+signing in.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips).
+
+## 2026-11-26 - employee portal Phase B: projects, project tasks, PIC management, field attendance (PostGIS)
+
+**Scope.** Second phase of `apps/web-employee-portal`: the project surface. An
+employee sees the projects they are involved in, works their own tasks, and a
+PIC manages tasks/evidence and reviews the site visits; field check-in is
+verified server-side with PostGIS.
+
+**Design gate.** `docs/database/` read: one new table
+`project.site_attendances`, no changes to existing tables (`docs.dbml` updated;
+`validate-dbml.ts` OK, 0 drift). Manual grill pass on the new design:
+- table owned by `project` (no cross-schema FK); `employee_id` is a logical
+  reference to `human_resource.employees.id`, `organization_id` to `auth`;
+- one row per **employee × project × business date** (unique partial index);
+  a day on two sites is two rows, a break inside one visit is not;
+- coordinates stay plain `numeric(10,7)` columns and the distance is computed by
+  PostGIS (`ST_Distance` / `ST_DWithin` on a `geography` cast) — no stored
+  geometry, so every other reader needs no GIS type;
+- the radius is the `project.settings` `attendance/site_radius_meters` row
+  (default 100 m) and is **snapshotted** on the row with the measured distance
+  and the verdict, so a later settings change cannot rewrite history;
+- an out-of-range check-in is **recorded** (`out_of_range`), not rejected —
+  the row is evidence; a missing selfie is rejected, because without it the
+  coordinates are only the phone's claim;
+- PIC rights come from `project.projects.pic_user_id = caller` (the fact the
+  admin screen shows); no organization permission is required on the portal
+  path, and a technician's `project:read` alone never grants a write.
+
+**Changes.** Migration `20261125165744_project_site_attendances` (1 table, 4
+indexes). `drizzle/datatypes/geo.ts` (PostGIS expressions +
+`ensurePostgisExtension`), wired at boot with a warning when the extension is
+missing. Project module: `contracts/site-attendance.{contract,repository.interface}.ts`,
+`repositories/site-attendance.repository.ts`,
+`services/site-attendance.service.ts`, `services/portal-project.service.ts`,
+`controllers/portal-project.controller.ts` (13 routes under `/projects/me/*`,
+`employee-portal` guard, `GET /projects/me/staff` for the assignee picker),
+3 new error classes + `projects.forbidden.pic`. Compose: `postgis/postgis:18-3.6`.
+Portal: `lib/project-api.ts`, selfie capture component, `/projects` and
+`/projects/$projectId` (tasks / evidence / site attendance tabs), `employee`
+locale keys (en+id). Docs: `module-ownership.md`, `runbook.md`.
+
+```bash
+cd apps/backend && bun run drizzle:generate --name project_site_attendances && bun run drizzle:migrate
+bun docs/database/gen-logical-references.ts && bun docs/database/validate-dbml.ts   # OK
+bun docs/gen-role-permission.ts                                   # 795 routes written
+bun test test/unit/site-attendance.service.test.ts                # 12 pass
+bun run lint                                                      # 0 errors
+bun run test                                                      # 8/8: backend 1620, web-admin 211, locales 110, portal 5, customer 68, landing 25, email 6
+bunx tsc --noEmit -p tsconfig.app.json                            # (portal) 0 errors
+bun run --filter '@ims-erp/web-employee-portal' build             # clean
+```
+
+**Not verified.** The local Postgres here does not ship PostGIS
+(`extension "postgis" is not available`), so the `ST_Distance` / `ST_DWithin`
+query itself was **not executed**: `ensurePostgisExtension` returns false and
+the migration was applied without the extension statement (which makes the
+migration portable). No browser walk-through, no real camera/GPS run, and no
+end-to-end check-in against a PostGIS-enabled database.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips), and verify Phase B on a PostGIS-enabled database.
+
+## 2026-11-25 - employee portal Phase A: foundation, auth gate, HR self-service
+
+**Scope.** First of three phases for `apps/web-employee-portal`. Delivers the
+foundation (dependency parity with web-admin, auth, employee-only gate, shell,
+i18n) and the HR slice: attendance, schedule, leave/overtime, tasks,
+notifications, profile.
+
+**Design gate.** `docs/database/` reviewed: the only schema change is
+`human_resource.attendances.source` gaining `'self'` (check constraint only;
+`docs.dbml` updated, `validate-dbml.ts` OK: 0 drift), plus three notification
+template codes (`hr.task_assigned`, `hr.leave_decided`,
+`project.attendance_recorded`) which seed `notification.push_notification_templates`
+rows, not DDL. Manual grill pass (23 decisions, recorded in the session):
+- portal serves employees only; app roles `admin`/`investor`/`customer` are
+  refused **even with an employee record** (they belong in their own app);
+- self-service endpoints live at `/human-resources/me/*` inside the owning
+  module, authorised by a new `employee-portal` guard (session + employee record
+  in the resolved organization), never by an org permission, and no route takes
+  an `employeeId`;
+- multi-org: the employee is resolved per active organization
+  (`x-organization-id` > session), so a user with records in two organizations
+  reads the right one;
+- a refused session is **revoked** (`signOut`) by the client guard, not merely
+  redirected;
+- leave/overtime are requested by the employee and still decided by HR/owner;
+- attendance keeps one row per employee-day; `source = 'self'` plus
+  `recorded_by = user` marks self check-in, and a `leave` day refuses check-in.
+
+**Changes.** Migration `20261125160412_employee_portal_attendance_source`
+(1 check constraint). Backend: `authorization/employee-portal-resolver.ts`
+(port), `authorization/employee-portal-guard.ts` (guard + error envelope),
+`guards: 'employee-portal'` in `http/plugin.ts`,
+`human-resource/adapters/employee-portal-resolver.ts`,
+`services/employee-portal.service.ts`, `contracts/employee-portal.contract.ts`,
+`controllers/employee-portal.controller.ts` (`GET /human-resources/me/access`
+with the session guard + 17 `/me` routes), `findByUserAndOrganization` and
+`listByUserId` on `IEmployeeRepository`, three new `AttendanceStateError` kinds,
+three notification templates (schema enum + seeder + `en`/`id` copy +
+`notification-text.ts`). Web-admin: the three new notification cases.
+Locales: new `employee` namespace (en + id), `nav.item.more`, `signatures` and
+`employee` added to `NAMESPACES`, `EmployeeKey` exported, dead-key scan now also
+scans the portal and treats `template.*` as live. Web-employee-portal: package
+and tsconfigs copied verbatim from web-admin (deps identical; `zod` declared
+explicitly, which web-admin resolves transitively), vite on :5174, TanStack
+Router, i18n, shell (desktop sidebar + mobile bottom bar), mobile-first pages,
+Dockerfile + `.docker/nginx.conf` + compose service (`WEB_EMPLOYEE_PORTAL_PORT`,
+8081) + two CI workflows, `dev:employee` at the root.
+
+```bash
+bun install                                                       # lockfile now lists the portal
+cd apps/backend && bun run drizzle:generate --name employee_portal_attendance_source && bun run drizzle:migrate
+bun docs/database/gen-logical-references.ts && bun docs/database/validate-dbml.ts   # OK, 0 drift
+bun docs/gen-role-permission.ts                                   # 782 routes written
+bun run lint                                                      # 0 errors
+bun run test                                                      # 8/8 tasks: backend 1608, web-admin 211, locales 110, portal 5, customer portal 68, landing 25, email 6
+bunx tsc --noEmit -p tsconfig.app.json                            # (apps/web-employee-portal) 0 errors
+bun run build                                                     # (apps/web-employee-portal) tsc -b + vite build OK
+bun run --cwd apps/backend scripts/seed.ts                        # twice: second run inserted 0 (3 templates on the first)
+```
+
+**Not verified.** No browser walk-through (no dev server started; login, the
+denial path and check-in were not exercised against a running backend), and the
+seed used the existing demo employee — no portal user was created to log in as.
+`git status` may show `tsconfig.tsbuildinfo` artefacts from the inline builds.
+
+Next executable task: employee portal Phase B (projects: assigned projects,
+project tasks, PIC management, field attendance with GPS + selfie).
+
 ## 2026-11-25 - merge `main` into the ADR-0030 branch: backlog ID collision
 
 `main` (PRs #162, #163) used ERP-0126..ERP-0130 for work unrelated to the

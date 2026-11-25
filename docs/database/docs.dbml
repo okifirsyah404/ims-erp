@@ -201,6 +201,7 @@ TableGroup "Project" {
   project.changes
   project.work_plans
   project.settings
+  project.site_attendances
   project.code_numberings
 }
 
@@ -4475,6 +4476,7 @@ Table project.addresses {
   postal_code varchar(10)
   latitude numeric(10,7)
   longitude numeric(10,7)
+  site_point geometry(point,4326) [note: "PostGIS point built from latitude/longitude; the spatial source for ST_Distance / ST_DWithin (GiST-indexed). Written by the service/seeder, backfilled by the migration."]
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -4482,6 +4484,7 @@ Table project.addresses {
   Note: "Project site address (ADR-0024 Q10: only village_id is stored)."
   Indexes {
     project_id [name: 'project_addresses_project_id_idx']
+    site_point [type: gist, name: 'project_addresses_site_point_idx']
   }
   Checks {
     `kind IN ('site', 'billing', 'other')`
@@ -5012,6 +5015,44 @@ Table project.work_plans {
   }
 }
 
+Table project.site_attendances {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted."]
+  project_id uuid [not null, note: "Same-module reference to project.projects.id (validated by the service, no FK by design)."]
+  employee_id uuid [not null, note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted."]
+  user_id text [not null, note: "Logical reference to auth.users.id; the device owner who checked in."]
+  business_date date [not null, note: "Jakarta business date of the check-in."]
+  check_in_at bigint [not null, note: "Unix ms (UTC), server-stamped."]
+  check_out_at bigint
+  latitude numeric(10,7) [not null]
+  longitude numeric(10,7) [not null]
+  accuracy_meters numeric(8,2) [note: "Device-reported GPS accuracy in metres."]
+  check_out_latitude numeric(10,7)
+  check_out_longitude numeric(10,7)
+  distance_meters numeric(10,2) [not null, note: "Metres from the project site at check-in, computed by PostGIS (ST_Distance on geography)."]
+  radius_meters integer [not null, note: "Radius in force at check-in (project.settings site_radius_meters, default 100)."]
+  status text [not null, note: "verified when the phone was inside the radius, out_of_range otherwise; the row is kept either way."]
+  selfie_key text [not null, note: "Object-storage key of the mandatory check-in selfie."]
+  selfie_content_type varchar(100) [not null]
+  note varchar(500)
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "One row per site check-in by an employee (employee portal Phase B). PostGIS supplies the distance and the radius test; coordinates stay plain numeric columns so every other reader needs no GIS type. Unique (project_id, employee_id, business_date) among live rows: one visit per site per day."
+  Indexes {
+    (project_id, business_date) [name: 'site_attendances_project_date_idx']
+    (employee_id, business_date) [name: 'site_attendances_employee_date_idx']
+    organization_id [name: 'site_attendances_organization_id_idx']
+    (project_id, employee_id, business_date) [unique, name: 'site_attendances_day_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `status IN ('verified', 'out_of_range')`
+    `distance_meters >= 0 AND radius_meters > 0`
+    `check_out_at IS NULL OR check_out_at >= check_in_at`
+    `latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180`
+  }
+}
+
 Table project.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -5320,7 +5361,7 @@ Table human_resource.attendances {
   status text [not null]
   check_in_at bigint [note: "Unix ms (UTC)."]
   check_out_at bigint
-  source text [not null, default: 'manual', note: "manual, import, or leave (written by an approved leave request)."]
+  source text [not null, default: 'manual', note: "manual, import, leave (written by an approved leave request), or self (employee portal check-in)."]
   leave_request_id uuid
   notes text
   recorded_by text [note: "Logical reference to auth.users.id."]
@@ -5335,7 +5376,7 @@ Table human_resource.attendances {
   }
   Checks {
     `status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')`
-    `source IN ('manual', 'import', 'leave')`
+    `source IN ('manual', 'import', 'leave', 'self')`
     `check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at`
   }
 }
