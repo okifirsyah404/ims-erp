@@ -12,6 +12,180 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0128: sidebar section order and Subscription inside Projects
+
+**Request.** Reorder the sidebar sections to Dashboard, CRM & Sales, Finance,
+Projects, Inventory, Human Resource, Documents, Reports, Integrations,
+Administration, Settings; move Subscription & Licensing into Projects; shorten
+the Reports label.
+
+**Change.**
+
+- `components/sidebar/nav-config.ts`: array reordered to the product order
+  above. The `M03 — Subscription & Licensing` section is gone; its
+  `item.subscription` block (icon `KeyRound`, children `license.read` /
+  `license.manage_api` / `license.activate`) now sits after Warranty inside
+  `section.projects`. No gate, URL or `SidebarItem` field changed - only
+  placement. The file header now states that section order is the product's
+  order, not the M-numbering, and the per-block `M0x —` comments stay.
+- `packages/locales/src/{en,id}/nav.ts`: `section.subscription` removed from
+  both bundles (the key was referenced only by the deleted section);
+  `section.reports` is `Reports` / `Laporan` (was `Reports & Access` /
+  `Laporan & Hak Akses`).
+- `test/unit/filter-nav.test.ts`: the M07 URL assertion extended to
+  `['/projects','/tickets','/warranties','/subscription']` and its leaf-gate
+  loop now descends into children (Subscription has children, so the top-level
+  loop would have skipped its gate check). Two new tests: the exact 11-key
+  section order, and "Subscription is a Projects leaf, no `section.subscription`".
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test packages/locales/src`: 317 pass, 0 fail.
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- Browser (`:5173`, backend :3001, app admin): the sidebar renders exactly 11
+  groups in the requested order; Projects holds Projects, Tickets, Warranty,
+  Subscription & Licensing, and the last one expands to Applications, API Keys,
+  Validation & Activation. Clicking `Applications` navigated to
+  `/subscription/applications` with the leaf `data-active="true"`. Direct visits
+  to `/documents/files`, `/reports`, `/reports/monthly-archives`,
+  `/integrations/webhooks`, `/hr/employees`, `/warehouses`, `/finance/accounts`,
+  `/projects`, `/tickets`, `/warranties`, `/subscription/api-keys`,
+  `/subscription/activations`, `/documents/templates`, `/hr/payroll` all
+  rendered with no console error (the known Base UI `nativeButton` warning on
+  `/integrations/whatsapp-ai` is unchanged and unrelated).
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed. No route, guard or role grant
+changed, so `docs/role-permission.md` needs no regeneration.
+
+## 2026-11-25 - ERP-0127: asset categories create/edit dialog
+
+**Request.** `/assets/categories` only had two bare inline inputs that created a
+category with a hardcoded `equipment` / `straight_line` default and no way to
+edit anything. Give it the create/edit dialog pattern the other list pages use.
+
+**Change.**
+
+- New `components/assets/asset-category-form-dialog.tsx`: one dialog for both
+  modes, `code` (create only, disabled with a hint when editing because the
+  backend's `itemCategoryUpdateSchema` has no `code`), `name`, `itemKind`,
+  `defaultDepreciationMethod` and an optional `defaultUsefulLifeMonths` that
+  must be a positive integer before Save enables.
+- `asset-category-list.tsx`: inline create row removed; `New category` button in
+  the page header (`asset.create`) opens the dialog, and a `RowActions` edit
+  button (`asset.update`) opens it prefilled. Archive still has no UI (the API
+  helper exists) - out of scope for this request.
+- `lib/asset-api.ts`: `DEPRECIATION_METHODS` / `TDepreciationMethod` exported and
+  used by `createAssetCategory` / `updateAssetCategory` instead of inline unions.
+- Locales en+id: `categories.edit`, `categories.updated`,
+  `categories.immutableHint`, `categories.lifeMonthsInvalid`, and
+  `depreciationMethod.{straight_line,declining_balance,none}` (added to the
+  dead-key test's `DYNAMIC_PREFIXES` as `assets:depreciationMethod.`).
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test`: 209 pass, 0 fail.
+- `bun test packages/locales/src`: 106 pass, 0 fail (parity + dead keys).
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- Browser (`/assets/categories`, backend :3001 + vite :5173, app admin):
+  `New category` opened the dialog; saving `QA-DLG1 / Dialog QA category /
+  Equipment / Straight line / 24` toasted "Category created." and the row
+  appeared. `Edit` on that row opened it prefilled with `Code` disabled; saving
+  `Dialog QA edited / Tool / Declining balance` toasted "Category updated." and
+  the row reflected all three. Typing `0` in useful life showed the hint and
+  kept Save disabled. A reload still showed the edited values (server round
+  trip, not local state). The QA row was then archived through
+  `DELETE /inventory/item-categories/:id` (200), leaving the two seeded
+  categories.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed, so `docs.dbml` is unchanged. No
+route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0126: sidebar nav audit (drop Notifications, add orphan-page menus, un-hide four items)
+
+**Request.** Audit `apps/web-admin/src/components/sidebar/nav-config.ts`
+against `docs/` and the route tree, then: remove the Notifications item, add
+menus for pages that existed without one, and un-hide the four items that were
+denied by default.
+
+**Findings that drove the change.**
+
+- `item.notifications` pointed at `/integrations/notifications`, which has no
+  route file and no entry in `routeTree.gen.ts`, and carried `open: true` -
+  every logged-in user could click into a 404.
+- `/assets/categories`, `/assets/disposals`, `/assets/tool-sets` and
+  `/integrations/whatsapp-ai/faq` had routes and pages but no nav leaf.
+- Four leaves were commented "no catalog resource yet" and therefore hidden
+  while their pages were fully built: Down payments, Templates, Opening
+  balances, Depreciation.
+
+**Change.**
+
+- Notifications leaf removed; `Bell` import dropped. `item.notifications`
+  removed from `packages/locales/src/{en,id}/nav.ts` (dead-key guard).
+- Assets group gained `item.assetCategories` (`/assets/categories`),
+  `item.toolSets` (`/assets/tool-sets`) and `item.disposals`
+  (`/assets/disposals`), all `asset.read` - the same grant the backend uses
+  (`asset:read` on `/inventory/item-categories`, `/inventory/tool-sets`,
+  `/inventory/disposals`). `item.depreciation` un-hidden with `asset.read`
+  (`/finance/depreciations` is `asset:read`).
+- WhatsApp AI became a parent (icon kept) with `item.conversations`
+  (`/integrations/whatsapp-ai`) and `item.faq`
+  (`/integrations/whatsapp-ai/faq`), both `automation.read`. `findNavLeaf`
+  resolves the longer FAQ url first, so the FAQ page is not guarded by the
+  conversations leaf.
+- Un-hidden with the permission the page itself already calls:
+  `item.downPayments` -> `invoice.read` (`InvoiceList` reads
+  `/sales/invoices` with `termKind=down_payment`), `item.templates` ->
+  `document.read` (still the ERP-0050 placeholder page),
+  `item.openingBalances` -> `journal.read`
+  (`opening-balance-page.tsx` uses `journal.read`/`update`/`post`).
+- Locales en/id: new `item.assetCategories`, `item.toolSets`, `item.disposals`,
+  `item.conversations`, `item.faq`.
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test packages/locales/src`: 315 pass, 0 fail
+  (includes `locale-parity` and `locale-dead-keys`).
+- `bun run lint` at the root: 5/5 tasks, 0 errors (26 pre-existing backend
+  warnings).
+- Browser walk-through (in-app browser, backend :3001 + vite :5173, signed in
+  as the seeded app admin):
+  - Sidebar renders no Notifications leaf; the bell in the header still opens
+    its popover on `/` (that is the in-app notification panel, not a route).
+  - Integrations shows `Website Catalog`, `WhatsApp AI` (parent),
+    `Webhooks (n8n)`. WhatsApp AI expands to `Conversations` + `FAQ Knowledge`.
+  - Inventory > Assets & Equipment expands to `Asset Register`, `Borrowings`,
+    `Service Records`, `Asset Categories`, `Tool Sets`, `Disposals`,
+    `Depreciation`.
+  - Sales expands to 7 leaves including `Down Payments`; Finance to 10
+    including `Opening Balances`; Documents shows `Files`, `Signatures`,
+    `Templates`.
+  - Clicking `Asset Categories` navigated to `/assets/categories` and the leaf
+    took `data-active="true"`.
+  - Direct visits to `/assets/categories`, `/assets/tool-sets`,
+    `/assets/disposals`, `/assets/depreciation`, `/sales/down-payments`,
+    `/finance/opening-balances`, `/documents/templates`,
+    `/integrations/whatsapp-ai`, `/integrations/whatsapp-ai/faq` all rendered
+    their own heading with no console error. (The WhatsApp inbox page logs one
+    pre-existing Base UI `nativeButton` warning at
+    `integrations/whatsapp-ai/index.tsx:124`; it is unrelated to this change and
+    was left alone.)
+- Login note: the password in `apps/backend/.env` does not match the one
+  recorded in earlier `progress.md` entries, so the seeded credentials were
+  read from `.env` for the walk-through and never printed. Both dev servers
+  were stopped afterwards.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed, so `docs.dbml` is unchanged.
+No route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
 ## 2026-11-25 - ERP-0123..ERP-0125: COA page CRUD, cash/bank invoice details + GL link, default COA seed
 
 **Scope.** `/finance/accounts` was the weakest list page in the app (bare
