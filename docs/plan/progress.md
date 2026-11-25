@@ -12,6 +12,16 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - dev tooling: `.claude/launch.json`
+
+Adds a preview launch config (`backend` on 3001, `web-admin` on 5173). No code,
+migration, seed or test change; no backlog item moves. Note for worktrees:
+`apps/web-admin/.env` is gitignored and is not copied into a new worktree;
+without it the web admin falls back to `localhost:3000` and login fails with
+"Cannot reach the server" — copy `.env.example` to `.env` (verified
+2026-11-25: after the copy the page calls `localhost:3001`, session endpoint
+200).
+
 ## 2026-11-25 - ERP-0153: closed-period profit contract (Phase D complete)
 
 **Scope.** Phase D slice 6, the last ADR-0030 slice.
