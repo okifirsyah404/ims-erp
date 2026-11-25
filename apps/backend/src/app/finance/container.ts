@@ -62,6 +62,7 @@ import {
 	CASH_FORECAST_SERVICE_TOKEN,
 	RATIO_SERVICE_TOKEN,
 	MANAGEMENT_PACK_SERVICE_TOKEN,
+	EXPORTED_PROFIT_SERVICE_TOKEN,
 } from './constants/di';
 import { ChartOfAccountRepository } from './repositories/chart-of-account.repository';
 import { AccountingPeriodRepository } from './repositories/accounting-period.repository';
@@ -121,6 +122,7 @@ import { CashForecastRepository } from './repositories/cash-forecast.repository'
 import { CashForecastService } from './services/cash-forecast.service';
 import { RatioService } from './services/ratio.service';
 import { ManagementPackService } from './services/management-pack.service';
+import { ExportedProfitService } from './services/exported-profit.service';
 import { TaxLedgerService } from './services/tax-ledger.service';
 import { AUDIT_SERVICE_TOKEN } from '@app/audit/constants/di';
 import type { AuditService } from '@app/audit/services/audit.service';
@@ -249,6 +251,7 @@ export function registerFinance(container: DependencyContainer): void {
 	container.register(CASH_FORECAST_SERVICE_TOKEN, { useClass: CashForecastService });
 	container.register(RATIO_SERVICE_TOKEN, { useClass: RatioService });
 	container.register(MANAGEMENT_PACK_SERVICE_TOKEN, { useClass: ManagementPackService });
+	container.register(EXPORTED_PROFIT_SERVICE_TOKEN, { useClass: ExportedProfitService });
 }
 
 export * from './constants/di';

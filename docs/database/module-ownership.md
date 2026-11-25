@@ -207,7 +207,11 @@ no central code-number module.
   `/finance/employee-bank-accounts` and invisible to every treasury query.
 - **Contract**: finance services for posting; `ExportedFinanceService`
   (repository-only, ERP-0122: `findPrimaryEmployeeBankAccount` for the
-  payslip); `ExportedJournalService` (tax recap) is not built yet.
+  payslip); `ExportedProfitService.closedPeriodProfit(organizationId, year,
+  month)` (ERP-0153, `EXPORTED_PROFIT_SERVICE_TOKEN`): profit before and
+  after income tax of a `locked` period only, for a future M11 profit-sharing
+  module (finance keeps no investor data); `ExportedJournalService` (tax
+  recap) is not built yet.
 
 ### 12. Tax - `tax` (new, split from accounting)
 

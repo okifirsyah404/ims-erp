@@ -591,6 +591,21 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   (report-type check widened, migration `20261125132603_erp0152_management_pack`);
   re-archiving stays idempotent.
 
+## Closed-period profit contract (D, ERP-0153, built)
+
+- `ExportedProfitService.closedPeriodProfit(organizationId, year, month)`,
+  token `EXPORTED_PROFIT_SERVICE_TOKEN` (exported from `@app/finance`). No
+  HTTP route and no investor schema: M11 profit sharing, when built, injects
+  it and owns shares, allocations and payouts.
+- Answers for `locked` periods only (409 `accounting.profitPeriodNotLocked`
+  for open or closed, 404 when the month has no period). A locked month takes
+  no posting, so the figure is final.
+- Revenue, expenses, `incomeTaxExpense`, `profitBeforeTax`,
+  `profitAfterTax` from the month's GL P&L. Income tax = the account of the
+  new `'*'` / `income_tax_expense` posting rule (default 8-3000 Beban Pajak
+  Penghasilan, seeded); without the rule before tax equals after tax and
+  `incomeTaxAccountConfigured` is false.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

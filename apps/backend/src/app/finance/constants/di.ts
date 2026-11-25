@@ -1,3 +1,4 @@
+import type { ExportedProfitService } from '../services/exported-profit.service';
 import type { ManagementPackService } from '../services/management-pack.service';
 import type { RatioService } from '../services/ratio.service';
 import type { ICashForecastRepository } from '../contracts/cash-forecast.contract';
@@ -223,3 +224,6 @@ export const RATIO_SERVICE_TOKEN: InjectionToken<RatioService> = Symbol('RATIO_S
 
 /** Monthly management pack (ERP-0152). */
 export const MANAGEMENT_PACK_SERVICE_TOKEN: InjectionToken<ManagementPackService> = Symbol('MANAGEMENT_PACK_SERVICE');
+
+/** Closed-period profit contract for other modules (ERP-0153, M11). */
+export const EXPORTED_PROFIT_SERVICE_TOKEN: InjectionToken<ExportedProfitService> = Symbol('EXPORTED_PROFIT_SERVICE');

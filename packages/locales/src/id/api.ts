@@ -603,6 +603,7 @@ const api: Record<keyof typeof en, string> = {
 		'Tindakan rekonsiliasi tersebut tidak diizinkan untuk dokumen ini',
 	'accounting.reportPeriodInvalid':
 		'Rentang tanggal laporan tidak valid',
+	'accounting.profitPeriodNotLocked': 'Periode belum dikunci; laba hanya final untuk periode yang terkunci',
 	'accounting.reportArchiveNotFound': 'Arsip laporan tidak ditemukan',
 	'accounting.reportArchivePeriodOpen':
 		'Periode masih terbuka; tutup dulu sebelum mengarsipkan',

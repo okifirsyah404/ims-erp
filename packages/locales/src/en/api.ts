@@ -600,6 +600,7 @@ const api = {
 	'accounting.bankReconciliationState':
 		'That reconciliation action is not allowed for this document',
 	'accounting.reportPeriodInvalid': 'Report date range is invalid',
+	'accounting.profitPeriodNotLocked': 'That period is not locked; profit is only final for locked periods',
 	'accounting.reportArchiveNotFound': 'Report archive not found',
 	'accounting.reportArchivePeriodOpen':
 		'That period is still open; close it before archiving',

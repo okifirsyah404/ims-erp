@@ -12,6 +12,48 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0153: closed-period profit contract (Phase D complete)
+
+**Scope.** Phase D slice 6, the last ADR-0030 slice.
+
+**Design gate.** `docs/database/` read (`finance.accounting_periods` status
+vocabulary, `finance.posting_rules`): no table or column change; the posting
+role vocabulary is application-guarded (no DB check), so `docs.dbml` is
+unchanged; `module-ownership.md` gains the contract method. Manual grill
+pass: owner finance; tenant-scoped; read-only; `locked` only because closed
+periods can still be reopened by the accountant and locked ones accept no
+posting; figures from the GL P&L (single source); income tax identified by a
+posting role, not a hard-coded code; no investor schema, no route (M11 is out
+of scope, ADR-0030).
+
+**Changes.** Backend: `ExportedProfitService`, `EXPORTED_PROFIT_SERVICE_TOKEN`
+exported from `@app/finance`, `ProfitPeriodNotLockedError`, posting role
+`income_tax_expense` (default 8-3000, seeded). Web-admin: the role appears in
+the posting-rule list (en/id); api error key (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun test test/finance/exported-profit.test.ts   # 3 pass
+bun run drizzle:seed                            # rulesInserted 1 (income_tax_expense); second run rulesInserted 0
+bun run <temporary profit-contract smoke>       # 5/5 PASS: open November refused 409, missing period 404; with
+                                                # November locked temporarily: after tax = P&L net income, the
+                                                # seeded rule resolves, before tax = after tax + 8-3000; status restored
+bun run test                                    # 7/7 tasks: backend 1589, web-admin 209, locales 106
+bun run lint                                    # 0 errors
+```
+
+`docs/database/docs.dbml` reviewed and unchanged; `validate-dbml.ts` OK
+(from ERP-0152, no schema change since).
+
+**Not verified.** No consumer exists yet (M11 is not built).
+
+Next executable task: ADR-0030 Phases A-D are implemented. Next is the
+browser walk-through of the finance screens and owner acceptance of Phases
+B-D; then the open gaps listed in `modules/finance.md` (old
+`/reports/cash-flow` endpoint, Coretax format verification, annual A1 slip,
+stock/asset opening detail, capitalisation from goods receipts).
+
 ## 2026-11-25 - ERP-0152: monthly management pack
 
 **Scope.** Phase D slice 5.

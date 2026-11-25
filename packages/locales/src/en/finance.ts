@@ -617,6 +617,7 @@ const finance = {
 	'postingRules.role.accumulated_depreciation': 'Accumulated depreciation',
 	'postingRules.role.depreciation_expense': 'Depreciation expense',
 	'postingRules.role.bad_debt_allowance': 'Allowance for doubtful accounts',
+	'postingRules.role.income_tax_expense': 'Income tax expense',
 	'postingRules.role.retained_earnings': 'Retained earnings',
 	'costCenters.title': 'Cost Centres',
 	'costCenters.description': 'Dimensions for cost accounting and management reports. Journal lines may carry one.',

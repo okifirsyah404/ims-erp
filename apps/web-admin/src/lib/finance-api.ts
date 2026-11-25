@@ -403,6 +403,7 @@ export const POSTING_ROLES = [
 	'depreciation_expense',
 	'bad_debt_allowance',
 	'retained_earnings',
+	'income_tax_expense',
 ] as const;
 export type TPostingRole = (typeof POSTING_ROLES)[number];
 

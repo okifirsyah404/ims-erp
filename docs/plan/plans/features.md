@@ -1008,12 +1008,14 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   the statements, ratios, profitability and project budget vs actual; Excel
   download, print to PDF, archived with the month-end close.
 
+- Closed-period profit for profit sharing, Phase D (ERP-0153, 2026-11-25):
+  finance gives a final profit before and after tax for locked months only,
+  ready for a future profit-sharing module.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
-- ERP-0131 year-end close (Phases B and C complete except stock/asset
-  opening detail and capitalization from goods receipts); (Phase C: bank statement import,
-  advances/settlements, fixed-asset register + depreciation, project budgets,
-  cost accounting); ERP-0148..0153 (Phase D: statements, forecast,
-  profitability, ratios, management pack, closed-period profit contract).
+- ERP-0131 year-end close to retained earnings (still planned). Phases B, C
+  and D (ERP-0148..0153) are implemented; open gaps: stock/asset opening
+  detail and capitalization from goods receipts.
 
 ### planned (Stage 2)
 - Payroll + gateway postings (Stage 2) - T20, T22 (now ERP-0138 / ERP-0139). Evidence: none.

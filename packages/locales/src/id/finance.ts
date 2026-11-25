@@ -619,6 +619,7 @@ const finance: Record<keyof typeof en, string> = {
 	'postingRules.role.accumulated_depreciation': 'Akumulasi penyusutan',
 	'postingRules.role.depreciation_expense': 'Beban penyusutan',
 	'postingRules.role.bad_debt_allowance': 'Cadangan kerugian piutang',
+	'postingRules.role.income_tax_expense': 'Beban pajak penghasilan',
 	'postingRules.role.retained_earnings': 'Laba ditahan',
 	'costCenters.title': 'Pusat Biaya',
 	'costCenters.description': 'Dimensi untuk akuntansi biaya dan laporan manajemen. Setiap baris jurnal boleh membawa satu pusat biaya.',

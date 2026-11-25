@@ -355,6 +355,20 @@ export class ReportArchivePeriodOpenError extends AppError {
 	}
 }
 
+/**
+ * The closed-period profit contract (ERP-0153) answers for `locked` periods
+ * only: an open or merely closed month can still change.
+ */
+export class ProfitPeriodNotLockedError extends AppError {
+	constructor(periodYear: number, periodMonth: number) {
+		super(
+			409,
+			'accounting.profitPeriodNotLocked',
+			`Period ${periodYear}-${String(periodMonth).padStart(2, '0')} is not locked; profit is only final for locked periods`,
+		);
+	}
+}
+
 /** The employee payee account does not exist or belongs to an employee the caller does not see (ERP-0119). */
 export class EmployeeBankAccountNotFoundError extends AppError {
 	constructor() {

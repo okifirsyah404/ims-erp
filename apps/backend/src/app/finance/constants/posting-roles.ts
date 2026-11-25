@@ -48,6 +48,8 @@ export const POSTING_ROLES = [
 	'depreciation_expense',
 	'bad_debt_allowance',
 	'retained_earnings',
+	// ERP-0153: income tax expense, split out by the closed-period profit contract.
+	'income_tax_expense',
 ] as const;
 export type TPostingRole = (typeof POSTING_ROLES)[number];
 
@@ -140,4 +142,5 @@ export const DEFAULT_POSTING_RULE_CODES: Partial<Record<TPostingRole, string>> =
 	accumulated_depreciation: '1-2210',
 	bad_debt_allowance: '1-1390',
 	retained_earnings: '3-2000',
+	income_tax_expense: '8-3000',
 };
