@@ -227,6 +227,7 @@ export class PurchaseOrderService {
 			// code is allocated above, so the registry copies it verbatim.
 			await this.documents.register({
 				code: approved.code ?? code,
+				title: `Pesanan Pembelian - ${order.supplierSnapshot.name}`,
 				documentType: 'purchase_order',
 				module: 'procurement',
 				sourceType: 'purchase_order',

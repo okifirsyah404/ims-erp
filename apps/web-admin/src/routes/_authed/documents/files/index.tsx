@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { FileText } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Ban, Download, Eye, FileText, Printer } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
@@ -15,17 +15,16 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@ims-erp/ui/components/select';
-import type { CellData, ColumnDef } from '@tanstack/react-table';
-import { Ban } from 'lucide-react';
-import { DataTable } from '@/components/data-table/data-table';
-import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { DocumentThumbnail } from '@/components/documents/document-canvas';
 import { RowActions } from '@/components/data-table/row-actions';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
+import { useConfirm } from '@/components/confirm-dialog';
 import { toast } from '@/components/toast';
 import {
 	DOCUMENT_STATUSES,
 	documentsQueryOptions,
+	downloadDocumentFile,
 	voidDocument,
 	type TDocument,
 	type TDocumentListParams,
@@ -44,15 +43,19 @@ export const Route = createFileRoute('/_authed/documents/files/')({
 	component: DocumentsPage,
 });
 
-/** `/documents/files` — the issued-document registry. */
+/** `/documents/files` — the issued-document registry as cards with a page preview. */
 function DocumentsPage() {
 	const { t } = useTranslation(['documents', 'common']);
 	const search = Route.useSearch();
 	const navigate = Route.useNavigate();
 	const queryClient = useQueryClient();
+	const confirm = useConfirm();
 	const canRead = usePermission('document.read');
 	const canUpdate = usePermission('document.update');
 	const [draft, setDraft] = useState(search.search ?? '');
+	// A presigned URL lives five minutes; one refetch per mount hands out fresh
+	// ones instead of retrying a dead link on every card.
+	const refreshed = useRef(false);
 
 	const params: TDocumentListParams = {
 		page: search.page ?? 1,
@@ -65,6 +68,12 @@ function DocumentsPage() {
 		enabled: canRead,
 	});
 
+	const onPreviewError = useCallback(() => {
+		if (refreshed.current) return;
+		refreshed.current = true;
+		void queryClient.invalidateQueries({ queryKey: ['documents'] });
+	}, [queryClient]);
+
 	const voidMutation = useMutation({
 		mutationFn: voidDocument,
 		onSuccess: async () => {
@@ -74,69 +83,15 @@ function DocumentsPage() {
 		onError: (cause) => toast.error(cause instanceof Error ? cause.message : t('common:error.failed')),
 	});
 
-	const columns = useMemo<ColumnDef<DataTableFeatures, TDocument, CellData>[]>(() => {
-		const base: ColumnDef<DataTableFeatures, TDocument, CellData>[] = [
-			{
-				id: 'code',
-				header: t('documents:code'),
-				meta: { cellClassName: 'font-mono text-xs' },
-				cell: ({ row }) => (
-					<Link
-						to='/documents/files/$documentId'
-						params={{ documentId: row.original.id }}
-						className='hover:underline'
-					>
-						{row.original.code}
-					</Link>
-				),
-			},
-			{
-				accessorKey: 'documentType',
-				header: t('documents:type'),
-				meta: { cellClassName: 'text-xs' },
-			},
-			{ accessorKey: 'title', header: t('documents:documentTitle') },
-			{
-				accessorKey: 'issuedOn',
-				header: t('documents:issuedOn'),
-				meta: { cellClassName: 'whitespace-nowrap text-xs' },
-			},
-			{
-				id: 'status',
-				header: t('documents:status'),
-				cell: ({ row }) => (
-					<Badge variant={row.original.status === 'void' ? 'outline' : 'secondary'}>
-						{t(`documents:status.${row.original.status}`)}
-					</Badge>
-				),
-			},
-		];
-		if (!canUpdate) return base;
-		return [
-			...base,
-			{
-				id: 'actions',
-				header: () => <span className='sr-only'>{t('common:action.actions')}</span>,
-				meta: { align: 'right' },
-				cell: ({ row }) => (
-					<RowActions
-						label={t('common:action.actions')}
-						disabled={voidMutation.isPending}
-						actions={[
-							{
-								key: 'void',
-								label: t('documents:void'),
-								icon: Ban,
-								destructive: true,
-								hidden: row.original.status === 'void',
-								onSelect: () => voidMutation.mutate(row.original.id),
-							},
-						]}
-					/>
-				),
-			},
-		];
-	}, [t, canUpdate, voidMutation]);
+	const voidWithConfirm = async (document: TDocument) => {
+		const confirmed = await confirm({
+			title: t('documents:voidConfirmTitle'),
+			description: t('documents:voidConfirmDescription'),
+			confirmLabel: t('documents:void'),
+			destructive: true,
+		});
+		if (confirmed) voidMutation.mutate(document.id);
+	};
 
 	if (!canRead) {
 		return <div className='text-sm text-muted-foreground'>{t('documents:noPermission')}</div>;
@@ -212,13 +167,27 @@ function DocumentsPage() {
 						{pagination ? t('documents:count', { count: pagination.total }) : null}
 					</CardDescription>
 				</CardHeader>
-				<CardContent>
+				<CardContent className='flex flex-col gap-4'>
 					{isError && <ErrorState error={error} size='sm' />}
 					{!isPending && !isError && rows.length === 0 && (
 						<EmptyState title={t('documents:empty')} size='sm' />
 					)}
 					{(isPending || rows.length > 0) && (
-						<DataTable columns={columns} data={rows} getRowId={(row) => row.id} loading={isPending} />
+						<div className='grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5'>
+							{isPending
+								? Array.from({ length: 8 }, (_, index) => (
+										<div key={index} className='aspect-210/297 animate-pulse rounded-lg bg-muted' />
+									))
+								: rows.map((document) => (
+										<DocumentCard
+											key={document.id}
+											document={document}
+											canUpdate={canUpdate}
+											onVoid={() => void voidWithConfirm(document)}
+											onPreviewError={onPreviewError}
+										/>
+									))}
+						</div>
 					)}
 					{pagination && (
 						<PaginationControls
@@ -229,6 +198,113 @@ function DocumentsPage() {
 					)}
 				</CardContent>
 			</Card>
+		</div>
+	);
+}
+
+/**
+ * One registry row as a card. The whole card is a link; void sits beside it so
+ * the card never nests a button inside an anchor.
+ *
+ * @remarks
+ * The link is deliberately not prefetched: the detail endpoint appends a
+ * `view` row to the access trail, so hovering a card must not write one.
+ */
+function DocumentCard({
+	document,
+	canUpdate,
+	onVoid,
+	onPreviewError,
+}: {
+	document: TDocument;
+	canUpdate: boolean;
+	onVoid: () => void;
+	onPreviewError: () => void;
+}) {
+	const { t } = useTranslation(['documents', 'common']);
+	const navigate = Route.useNavigate();
+	const canDownload = usePermission('document.download');
+	const preview = document.preview;
+
+	const open = (search?: { print: true }) =>
+		void navigate({
+			to: '/documents/files/$documentId',
+			params: { documentId: document.id },
+			search: search ?? {},
+		});
+
+	const download = () => {
+		if (!preview) return;
+		void downloadDocumentFile(document.id, preview.fileId)
+			.then((url) => window.open(url, '_blank', 'noopener'))
+			.catch((cause) =>
+				toast.error(cause instanceof Error ? cause.message : t('common:error.failed')),
+			);
+	};
+
+	return (
+		<div className='group relative flex flex-col gap-2'>
+			<Link
+				to='/documents/files/$documentId'
+				params={{ documentId: document.id }}
+				preload={false}
+				className={`flex flex-col gap-2 rounded-lg p-1.5 transition-colors hover:bg-muted/60 ${document.status === 'void' ? 'opacity-60' : ''}`}
+			>
+				<DocumentThumbnail
+					file={document.preview}
+					alt={document.title}
+					onError={onPreviewError}
+				/>
+				<div className='min-w-0 px-1 pb-1'>
+					<div className='truncate text-sm font-medium'>{document.title}</div>
+					<div className='truncate font-mono text-xs text-muted-foreground'>{document.code}</div>
+					<div className='flex items-center justify-between gap-2 text-xs text-muted-foreground'>
+						<span className='truncate'>
+							{document.documentType}
+							{document.issuedOn ? ` · ${document.issuedOn}` : ''}
+						</span>
+						<Badge variant={document.status === 'void' ? 'outline' : 'secondary'}>
+							{t(`documents:status.${document.status}`)}
+						</Badge>
+					</div>
+				</div>
+			</Link>
+			<div className='absolute top-2 right-2 rounded-md bg-background/80 backdrop-blur opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100'>
+				<RowActions
+					menu
+					label={t('common:action.actions')}
+					actions={[
+						{
+							key: 'detail',
+							label: t('documents:detailAction'),
+							icon: Eye,
+							onSelect: () => open(),
+						},
+						{
+							key: 'void',
+							label: t('documents:void'),
+							icon: Ban,
+							destructive: true,
+							hidden: !canUpdate || document.status === 'void',
+							onSelect: onVoid,
+						},
+						{
+							key: 'print',
+							label: t('documents:print'),
+							icon: Printer,
+							disabled: !preview,
+							onSelect: () => open({ print: true }),
+						},
+						{
+							key: 'download',
+							label: t('common:action.download'),
+							icon: Download,
+							disabled: !preview || !canDownload,
+							onSelect: download,
+						},
+					]}
+				/>
+			</div>
 		</div>
 	);
 }

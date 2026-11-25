@@ -126,8 +126,13 @@ export class AgreementPdfService {
 		const token = createRenderToken(AGREEMENT_RENDER_KIND, documentId);
 		const url = `${(appConfig.pdf.renderBaseUrl ?? '').replace(/\/+$/, '')}/print/employment-agreements/${documentId}?token=${encodeURIComponent(token)}`;
 		const bytes = await this.renderer.render(url);
-		const fileName = `${document.code.replace(/[^\w.-]+/g, '-')}.pdf`;
-		const attached = await this.documents.attachGeneratedFileTo(documentId, new File([new Uint8Array(bytes)], fileName, { type: 'application/pdf' }), null);
+		// The stored name comes from the document title (`document.service`), so a
+		// placeholder here is fine.
+		const attached = await this.documents.attachGeneratedFileTo(
+			documentId,
+			new File([new Uint8Array(bytes)], 'agreement.pdf', { type: 'application/pdf' }),
+			null,
+		);
 		return attached ? 'attached' : 'missing';
 	}
 }

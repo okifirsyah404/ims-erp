@@ -30,6 +30,13 @@ const documents: Record<keyof typeof en, string> = {
 	'status.void': 'Dibatalkan',
 	'status.archived': 'Diarsipkan',
 	'back': 'Kembali ke dokumen',
+	'details': 'Rincian',
+	'detailAction': 'Lihat detail',
+	'print': 'Cetak',
+	'previewUnavailable': 'Pratinjau tidak dapat dimuat.',
+	'voidConfirmTitle': 'Batalkan dokumen ini?',
+	'voidConfirmDescription':
+		'Dokumen tetap tercatat di registri sebagai dibatalkan dan tidak berlaku lagi. Tindakan ini tidak dapat diurungkan.',
 	'overview': 'Rincian',
 	'source': 'Sumber',
 	'files': 'Berkas',

@@ -231,6 +231,7 @@ export class TicketService {
 		// ERP-0044: a closed ticket is the service report the customer signed.
 		await this.documents.register({
 			code: updated.code,
+			title: `Tiket Servis - ${updated.code} - ${updated.customerName}`,
 			documentType: 'ticket',
 			module: 'ticket',
 			sourceType: 'service_ticket',
@@ -340,6 +341,7 @@ export class TicketService {
 		if (!updated) throw new TicketStateError('close');
 		await this.documents.register({
 			code: updated.code,
+			title: `Tiket Servis - ${updated.code} - ${updated.customerName}`,
 			documentType: 'ticket',
 			module: 'ticket',
 			sourceType: 'service_ticket',
