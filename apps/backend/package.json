@@ -37,7 +37,7 @@
 		"elysia": "1.4.32",
 		"elysia-i18next": "^4.0.3",
 		"exceljs": "^4.4.0",
-		"i18next": "^27.2.2",
+		"i18next": "^27.2.3",
 		"jszip": "3.10.2",
 		"libphonenumber-js": "^1.13.17",
 		"luxon": "^3.7.2",
