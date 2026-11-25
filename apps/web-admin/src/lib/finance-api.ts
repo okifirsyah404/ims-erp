@@ -1057,6 +1057,7 @@ export const REPORT_ARCHIVE_TYPES = [
 	'profit_and_loss',
 	'balance_sheet',
 	'cash_flow',
+	'management_pack',
 ] as const;
 export type TReportArchiveType = (typeof REPORT_ARCHIVE_TYPES)[number];
 
@@ -1066,7 +1067,7 @@ export type TReportArchive = {
 	periodYear: number;
 	periodMonth: number;
 	reportType: TReportArchiveType;
-	payload: TProfitAndLoss | TBalanceSheet | TCashFlowStatement;
+	payload: TProfitAndLoss | TBalanceSheet | TCashFlowStatement | TManagementPack;
 	generatedBy: string | null;
 	generatedAt: string;
 };
@@ -1901,4 +1902,33 @@ export type TRatios = {
 
 export function ratiosQueryOptions(from: string, to: string) {
 	return queryOptions({ queryKey: ['finance', 'reports', 'ratios', from, to], queryFn: () => getData<TRatios>(`/finance/reports/ratios?from=${from}&to=${to}`) });
+}
+
+/* ------------------------ management pack (ERP-0152) ------------------------ */
+
+export type TManagementPack = {
+	year: number;
+	month: number;
+	from: string;
+	to: string;
+	periodStatus: string | null;
+	profitAndLoss: TProfitAndLoss;
+	balanceSheet: TBalanceSheet;
+	cashFlow: { netChange: number; openingCash: number; closingCash: number };
+	ratios: TRatios;
+	profitability: {
+		rows: Array<{ key: string | null; label: string | null; revenue: number; cost: number; margin: number }>;
+		totals: { revenue: number; cost: number; margin: number };
+	};
+	budgetVsActual: {
+		rows: Array<{ projectId: string; code: string | null; title: string | null; budget: number; actual: number; variance: number; budgetToDate: number; actualToDate: number }>;
+		totals: { budget: number; actual: number; variance: number; budgetToDate: number; actualToDate: number };
+	};
+};
+
+export function managementPackQueryOptions(year: number, month: number) {
+	return queryOptions({
+		queryKey: ['finance', 'reports', 'management-pack', year, month],
+		queryFn: () => getData<TManagementPack>(`/finance/reports/management-pack?year=${year}&month=${month}`),
+	});
 }

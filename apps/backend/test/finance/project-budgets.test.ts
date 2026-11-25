@@ -21,6 +21,7 @@ function harness() {
 			findBudget: async (_o: string, id: string) => (budgets.find((b) => b.id === id) ?? null) as never,
 			findActive: async () => (budgets.find((b) => b.status === 'active') ?? null) as never,
 			findActiveByProject: async (projectId: string) => (budgets.find((b) => b.status === 'active' && b.projectId === projectId) ?? null) as never,
+			listActiveBudgets: async () => budgets.filter((b) => b.status === 'active') as never,
 			insertBudget: async (row: Record<string, unknown>) => {
 				const created = { ...row, id: `b-${budgets.length + 1}` };
 				budgets.push(created);

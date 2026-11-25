@@ -1,3 +1,4 @@
+import type { ManagementPackService } from '../services/management-pack.service';
 import type { RatioService } from '../services/ratio.service';
 import type { ICashForecastRepository } from '../contracts/cash-forecast.contract';
 import type { CashForecastService } from '../services/cash-forecast.service';
@@ -219,3 +220,6 @@ export const CASH_FORECAST_SERVICE_TOKEN: InjectionToken<CashForecastService> = 
 
 /** Financial ratios (ERP-0151). */
 export const RATIO_SERVICE_TOKEN: InjectionToken<RatioService> = Symbol('RATIO_SERVICE');
+
+/** Monthly management pack (ERP-0152). */
+export const MANAGEMENT_PACK_SERVICE_TOKEN: InjectionToken<ManagementPackService> = Symbol('MANAGEMENT_PACK_SERVICE');

@@ -1004,6 +1004,10 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   profitability, leverage and efficiency ratios for a range on the reports
   page.
 
+- Management pack, Phase D (ERP-0152, 2026-11-25): one monthly pack with
+  the statements, ratios, profitability and project budget vs actual; Excel
+  download, print to PDF, archived with the month-end close.
+
 ### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
 - ERP-0131 year-end close (Phases B and C complete except stock/asset
   opening detail and capitalization from goods receipts); (Phase C: bank statement import,

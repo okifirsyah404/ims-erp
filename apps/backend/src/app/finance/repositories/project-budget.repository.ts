@@ -62,6 +62,13 @@ export class ProjectBudgetRepository implements IProjectBudgetRepository {
 		return row ?? null;
 	}
 
+	listActiveBudgets(organizationId: string) {
+		return this.database
+			.select()
+			.from(projectBudgets)
+			.where(and(eq(projectBudgets.organizationId, organizationId), eq(projectBudgets.status, 'active'), isNull(projectBudgets.deletedAt)));
+	}
+
 	async insertBudget(row: Parameters<IProjectBudgetRepository['insertBudget']>[0], tx?: TTx) {
 		const now = new Date();
 		const [created] = await (tx ?? this.database).insert(projectBudgets).values({ ...row, createdAt: now, updatedAt: now }).returning();

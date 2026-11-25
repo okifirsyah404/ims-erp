@@ -573,6 +573,24 @@ inactive cost centres. `journal_lines.product_id` is a logical reference to
   5-xxxx expense accounts. ROA and ROE use closing balances, not averages.
   `null` when a denominator is zero.
 
+## Management pack (D, ERP-0152, built)
+
+- `GET /finance/reports/management-pack?year&month` (`financial_report:read`),
+  `GET /finance/reports/management-pack.xlsx` (`financial_report:export`);
+  reports page tab "Management pack" with month picker, Excel download and
+  Print / PDF (the browser print of the tab; no server-side PDF).
+- `ManagementPackService.build` assembles one month from the existing report
+  services (P&L, balance sheet, direct and indirect cash flow, changes in
+  equity, ratios, profitability by business line), so every figure equals the
+  individual report.
+- Budget vs actual = project budgets only (the ERP has no company budget;
+  ERP-0146): active version lines for the month and year to date against the
+  posted expense movement tagged with the project. Variance = budget - actual.
+- Archive: `ReportArchiveService.archivePeriod` (closed/locked months only)
+  now also stores a `management_pack` row in `finance.report_archives`
+  (report-type check widened, migration `20261125132603_erp0152_management_pack`);
+  re-archiving stays idempotent.
+
 ## Phase B-D decisions (recorded, not built)
 
 - **AR (rest):** `sale.invoices` gains `project_id` (ERP-0141); service

@@ -10,6 +10,12 @@ export const profitabilityQuerySchema = z
 	.object({ from: isoDate, to: isoDate, dimension: z.enum(['project', 'customer', 'product', 'business_line']) })
 	.refine((value) => value.from <= value.to, { message: 'from must not be after to' });
 
+/** One month of the management pack (ERP-0152). */
+export const managementPackQuerySchema = z.object({
+	year: z.coerce.number().int().min(2000).max(2100),
+	month: z.coerce.number().int().min(1).max(12),
+});
+
 /** Read port of the cost-accounting aggregates (ERP-0147). */
 export interface ICostReportRepository {
 	/** Revenue and cost per dimension value (ERP-0150); `null` key = lines without it. */

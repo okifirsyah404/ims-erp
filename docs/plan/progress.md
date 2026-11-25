@@ -12,6 +12,50 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-25 - ERP-0152: monthly management pack
+
+**Scope.** Phase D slice 5.
+
+**Design gate.** `docs/database/` read (`finance.report_archives`,
+`finance.project_budgets`/`project_budget_lines`). Manual grill pass:
+ownership stays in finance (archive table is finance's; project names through
+`ProjectLookupService`); tenant-scoped by `organization_id`; no new money or
+date columns; status vocabulary change = `report_archives.report_type` gains
+`management_pack`. Decisions: budget vs actual is per project (no company
+budget exists and the `budgeting` schema must not return); PDF is the
+browser print of the pack tab (no new server renderer); the pack is archived
+by the existing closed-period archive, not a new route.
+
+**Changes.** `docs.dbml` check + note, Drizzle check, migration
+`20261125132603_erp0152_management_pack`. Backend: `ManagementPackService`
+(`build`, `budgetVsActual`, `toXlsx`), `ProjectBudgetRepository.listActiveBudgets`,
+`ReportArchiveService` archives the pack, routes
+`GET /finance/reports/management-pack` and `.xlsx`. Web-admin: "Management
+pack" tab, archive list shows the new type (en/id).
+
+**Commands and outcomes.**
+
+```text
+bunx --bun drizzle-kit generate --name erp0152_management_pack   # one ALTER of report_archives_type_check (inspected)
+bunx --bun drizzle-kit migrate                                    # applied to the local scratch database
+bun docs/database/gen-logical-references.ts                       # regenerated, unchanged
+bun docs/database/validate-dbml.ts                                # OK
+bun docs/gen-role-permission.ts                                   # 763 routes written
+bun test test/finance/management-pack.test.ts                     # 5 pass
+bun run <temporary management-pack smoke>                         # 7/7 then 8/8 PASS: pack P&L, balance sheet, ratios equal the
+                                                                  # reports; profitability ties to revenue; cash flow ties (0);
+                                                                  # xlsx written (12.5 KB); open month refused; with November
+                                                                  # closed temporarily the archive wrote the four types incl.
+                                                                  # management_pack, re-archive wrote nothing; November reopened
+bun run test                                                      # 7/7 tasks: backend 1586, web-admin 209, locales 106
+bun run lint                                                      # 0 errors
+```
+
+**Not verified.** No browser walk-through (print layout prints the whole
+app shell around the tab).
+
+Next executable task: ERP-0153 (closed-period profit contract for M11).
+
 ## 2026-11-25 - ERP-0151: financial ratios
 
 **Scope.** Phase D slice 4.

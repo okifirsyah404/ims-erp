@@ -181,12 +181,19 @@ function ArchiveRow({ row }: { row: TReportArchive }) {
 		profit_and_loss: 'type.profit_and_loss',
 		balance_sheet: 'type.balance_sheet',
 		cash_flow: 'type.cash_flow',
+		management_pack: 'type.management_pack',
 	} as const;
 	const headline = (() => {
 		if (row.reportType === 'profit_and_loss') {
 			return {
 				label: t('archives.netIncome'),
 				value: (row.payload as { netIncome: number }).netIncome,
+			};
+		}
+		if (row.reportType === 'management_pack') {
+			return {
+				label: t('archives.netIncome'),
+				value: (row.payload as { profitAndLoss: { netIncome: number } }).profitAndLoss.netIncome,
 			};
 		}
 		if (row.reportType === 'balance_sheet') {

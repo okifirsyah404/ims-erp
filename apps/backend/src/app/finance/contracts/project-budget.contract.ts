@@ -44,6 +44,8 @@ export interface IProjectBudgetRepository {
 	findActive(organizationId: string, projectId: string, tx?: TTx): Promise<TProjectBudgetSelect | null>;
 	/** The project's active budget whatever organization owns it (projects are company-wide). */
 	findActiveByProject(projectId: string): Promise<TProjectBudgetSelect | null>;
+	/** Every active budget of the organization, one per project (ERP-0152 management pack). */
+	listActiveBudgets(organizationId: string): Promise<TProjectBudgetSelect[]>;
 	insertBudget(row: Omit<typeof projectBudgets.$inferInsert, 'createdAt' | 'updatedAt'>, tx?: TTx): Promise<TProjectBudgetSelect>;
 	updateBudget(organizationId: string, id: string, patch: Partial<TProjectBudgetSelect>, tx?: TTx): Promise<TProjectBudgetSelect | null>;
 	listLines(organizationId: string, budgetId: string, tx?: TTx): Promise<TProjectBudgetLineSelect[]>;

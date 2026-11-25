@@ -1,0 +1,1 @@
+ALTER TABLE "finance"."report_archives" DROP CONSTRAINT "report_archives_type_check", ADD CONSTRAINT "report_archives_type_check" CHECK (report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow', 'management_pack'));

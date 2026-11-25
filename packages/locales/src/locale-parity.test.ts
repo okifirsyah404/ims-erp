@@ -252,6 +252,7 @@ describe('locale values', () => {
 			'finance:closing.item.pass',
 			// The em-dash placeholder is locale-neutral.
 			'finance:common.none',
+			'finance:pack.excel',
 		]);
 
 		const untranslated = Object.entries(en_).flatMap(([namespace, bundle]) =>

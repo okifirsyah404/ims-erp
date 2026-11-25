@@ -9,6 +9,7 @@ import { StatementsReport } from './statements-report';
 import { CashForecastReport } from './cash-forecast-report';
 import { ProfitabilityReport } from './profitability-report';
 import { RatiosReport } from './ratios-report';
+import { ManagementPackReport } from './management-pack-report';
 import { Button } from '@ims-erp/ui/components/button';
 import { useState } from 'react';
 import { FileSpreadsheet, Download } from 'lucide-react';
@@ -128,6 +129,7 @@ export function ReportsPage() {
 					<TabsTrigger value='cf'>{t('finance:reports.tab.cashFlow')}</TabsTrigger>
 					<TabsTrigger value='tb'>{t('finance:reports.tab.trialBalance')}</TabsTrigger>
 					<TabsTrigger value='gl'>{t('finance:reports.tab.generalLedger')}</TabsTrigger>
+					<TabsTrigger value='pack'>{t('finance:reports.tab.pack')}</TabsTrigger>
 					<TabsTrigger value='forecast'>{t('finance:reports.tab.forecast')}</TabsTrigger>
 					<TabsTrigger value='statements'>{t('finance:reports.tab.statements')}</TabsTrigger>
 					<TabsTrigger value='ratios'>{t('finance:reports.tab.ratios')}</TabsTrigger>
@@ -142,6 +144,10 @@ export function ReportsPage() {
 
 				<TabsContent value='gl' className='space-y-3'>
 					<GeneralLedgerReport startDate={applied.startDate} endDate={applied.endDate} />
+				</TabsContent>
+
+				<TabsContent value='pack' className='space-y-3'>
+					<ManagementPackReport />
 				</TabsContent>
 
 				<TabsContent value='forecast' className='space-y-3'>

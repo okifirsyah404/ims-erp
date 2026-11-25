@@ -159,6 +159,8 @@ export const REPORT_ARCHIVE_TYPES = [
 	'profit_and_loss',
 	'balance_sheet',
 	'cash_flow',
+	/** Monthly management pack (ERP-0152). */
+	'management_pack',
 ] as const;
 export type ReportArchiveType = (typeof REPORT_ARCHIVE_TYPES)[number];
 
@@ -645,7 +647,7 @@ export const reportArchives = financeSchema.table(
 		check('report_archives_month_check', sql`period_month BETWEEN 1 AND 12`),
 		check(
 			'report_archives_type_check',
-			sql`report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')`,
+			sql`report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow', 'management_pack')`,
 		),
 	],
 );

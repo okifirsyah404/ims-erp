@@ -3218,13 +3218,13 @@ Table finance.report_archives {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Immutable snapshot of a financial statement for a closed month (was accounting.report_archives). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent."
+  Note: "Immutable snapshot of a financial statement for a closed month (was accounting.report_archives); `management_pack` (ERP-0152) is the monthly management pack (statements, ratios, profitability, project budget vs actual). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent."
   Indexes {
     (organization_id, period_year, period_month, report_type) [unique, name: 'report_archives_scope_uq']
   }
   Checks {
     `period_month BETWEEN 1 AND 12`
-    `report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')`
+    `report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow', 'management_pack')`
   }
 }
 
