@@ -7,6 +7,7 @@ import { LogOut, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { authClient } from '@/lib/auth-client';
+import { resetAndNavigate } from '@/lib/account-switch';
 import { selfUserQueryOptions, type TSelfUser } from '@/lib/user-api';
 import {
 	Avatar,
@@ -114,7 +115,9 @@ export function NavUser() {
 
 	async function handleSignOut() {
 		await authClient.signOut();
-		router.navigate({ to: '/login', search: { redirect: undefined } });
+		// Full reload with an empty cache: nothing of this account may
+		// survive into the next sign-in.
+		resetAndNavigate('/login');
 	}
 
 	return (
