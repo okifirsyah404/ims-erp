@@ -9,6 +9,7 @@ import { GoodsReceiptController } from './controllers/goods-receipt.controller';
 import { PurchaseOrderController } from './controllers/purchase-order.controller';
 import { PurchaseReturnController } from './controllers/purchase-return.controller';
 import { PurchaseRequestController } from './controllers/purchase-request.controller';
+import { PurchaseTermTemplateController } from './controllers/purchase-term-template.controller';
 
 export { registerProcurement } from './container';
 export {
@@ -23,6 +24,7 @@ export function procurementModule() {
 		// Static `/code-numberings` routes: settings of this module's series.
 		.use(ProcurementCodeNumberingController.plugin())
 		.use(PurchaseRequestController.plugin())
+		.use(PurchaseTermTemplateController.plugin())
 		.use(PurchaseOrderController.plugin())
 		.use(GoodsReceiptController.plugin())
 		.use(PurchaseReturnController.plugin());

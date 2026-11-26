@@ -418,9 +418,14 @@ export class PurchaseReturnService {
 				if (progress.reason === 'overReturned') throw new PurchaseReturnLineError('over', progress.line ?? 1);
 				throw new PurchaseReturnReceiptError();
 			}
+			// A receipt line that posted no movement was a non-stock product (a
+			// licence, a service): it left no stock and no inventory value, so its
+			// return moves neither.
+			const stocked = (line: (typeof lines)[number]) => Boolean(receiptLines.get(line.goodsReceiptItemId)?.movementId);
 			for (const [index, line] of lines.entries()) {
 				const { productId } = line;
 				if (!productId) throw new PurchaseOrderItemUnavailableError(index + 1);
+				if (!stocked(line)) continue;
 				const posted = await this.stock.postMovement(
 					{
 						actorOrganizationId: actor.organizationId,
@@ -454,6 +459,7 @@ export class PurchaseReturnService {
 			// back. Units already billed keep a GR/IR debit until a supplier
 			// credit note exists (not built, see finance.md).
 			const returnLines = lines
+				.filter(stocked)
 				.map((line) => ({ productId: line.productId, value: inventoryValue(line.quantity, line.unitCost) }))
 				.filter((line) => line.value > 0);
 			const total = returnLines.reduce((sum, line) => sum + line.value, 0);

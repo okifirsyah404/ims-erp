@@ -1,0 +1,535 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "62ebbf3e-5051-4e42-af72-993b6bc9d412",
+  "prevIds": [
+    "bf1f03fa-e847-4333-8678-bfc15eef845f"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "company",
+        "letterheads"
+      ],
+      "writes": [
+        "s|tbl|company.letterheads",
+        "n|tbl|company.letterheads",
+        "e|tbl|company.letterheads",
+        "n|rel|company.letterheads",
+        "n|type|company.letterheads",
+        "n|rel|company.letterheads_pkey"
+      ],
+      "reads": [
+        "n|sch|company"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "procurement",
+        "purchase_term_templates"
+      ],
+      "writes": [
+        "s|tbl|procurement.purchase_term_templates",
+        "n|tbl|procurement.purchase_term_templates",
+        "e|tbl|procurement.purchase_term_templates",
+        "n|rel|procurement.purchase_term_templates",
+        "n|type|procurement.purchase_term_templates",
+        "n|rel|procurement.purchase_term_templates_pkey"
+      ],
+      "reads": [
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "procurement",
+        "purchase_orders",
+        "letterhead_id"
+      ],
+      "writes": [
+        "s|col|procurement.purchase_orders.letterhead_id",
+        "n|col|procurement.purchase_orders.letterhead_id",
+        "e|col|procurement.purchase_orders.letterhead_id"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_orders",
+        "n|sch|procurement"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "company",
+        "letterheads",
+        "letterheads_default_uq"
+      ],
+      "writes": [
+        "s|idx|company.letterheads_default_uq",
+        "n|idx|company.letterheads_default_uq",
+        "e|idx|company.letterheads_default_uq",
+        "n|rel|company.letterheads_default_uq"
+      ],
+      "reads": [
+        "n|tbl|company.letterheads",
+        "n|sch|company",
+        "n|col|company.letterheads.is_default"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "procurement",
+        "purchase_term_templates",
+        "purchase_term_templates_default_uq"
+      ],
+      "writes": [
+        "s|idx|procurement.purchase_term_templates_default_uq",
+        "n|idx|procurement.purchase_term_templates_default_uq",
+        "e|idx|procurement.purchase_term_templates_default_uq",
+        "n|rel|procurement.purchase_term_templates_default_uq"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_term_templates",
+        "n|sch|procurement",
+        "n|col|procurement.purchase_term_templates.is_default"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "name": "letterheads",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "name": "purchase_term_templates",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "name",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "header_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "footer_object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "is_default",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_orders",
+        "name": "letterhead_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "name",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "payment_terms",
+        "type": "varchar(500)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "terms",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "is_default",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "letterheads_default_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "is_default",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND is_default",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "purchase_term_templates_default_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "is_default",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND is_default",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "company",
+        "table": "letterheads",
+        "name": "letterheads_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_term_templates",
+        "name": "purchase_term_templates_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

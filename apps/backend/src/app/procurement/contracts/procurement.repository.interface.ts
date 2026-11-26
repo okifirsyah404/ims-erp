@@ -9,6 +9,7 @@ import type {
 	TPurchaseOrderItemInsert,
 	TPurchaseOrderItemSelect,
 	TPurchaseOrderSelect,
+	TPurchaseTermTemplateSelect,
 } from '@drizzle/schemas/procurement.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { IPurchaseOrderReceiving } from './goods-receipt.repository.interface';
@@ -177,3 +178,23 @@ export interface IPurchaseRequestRepository {
 	): Promise<TPurchaseRequestSelect | null | 'ordered'>;
 	openLines(query: TOpenLinesQuery): Promise<TOpenRequestLine[]>;
 }
+
+/** Persistence port for `procurement.purchase_term_templates` (ERP-0165). */
+export interface IPurchaseTermTemplateRepository {
+	/** Live templates, the default first, then by name. */
+	findAll(): Promise<TPurchaseTermTemplateSelect[]>;
+	/** A live template, or `null`. */
+	findLive(id: string): Promise<TPurchaseTermTemplateSelect | null>;
+	/** Inserts one; with `isDefault` the previous default stops being one, in the same transaction. */
+	create(data: TPurchaseTermTemplateData & { createdBy: string }): Promise<TPurchaseTermTemplateSelect>;
+	/** Replaces a live template (`null` when it is not live); `isDefault` moves the default in one transaction. */
+	update(id: string, data: TPurchaseTermTemplateData): Promise<TPurchaseTermTemplateSelect | null>;
+	/** Soft-deletes a live template; `false` when it is not live. */
+	softDelete(id: string, updatedBy: string): Promise<boolean>;
+}
+
+/** The writable columns of a term template. */
+export type TPurchaseTermTemplateData = Pick<
+	TPurchaseTermTemplateSelect,
+	'name' | 'paymentTerms' | 'terms' | 'notes' | 'isDefault' | 'updatedBy'
+>;

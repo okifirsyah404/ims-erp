@@ -13,6 +13,8 @@ import {
 	PURCHASE_RETURN_SERVICE_TOKEN,
 	PURCHASE_REQUEST_REPOSITORY_TOKEN,
 	PURCHASE_REQUEST_SERVICE_TOKEN,
+	PURCHASE_TERM_TEMPLATE_REPOSITORY_TOKEN,
+	PURCHASE_TERM_TEMPLATE_SERVICE_TOKEN,
 } from './constants/di';
 import { PurchaseRequestRepository } from './repositories/purchase-request.repository';
 import { PurchaseRequestService } from './services/purchase-request.service';
@@ -25,6 +27,8 @@ import { GoodsReceiptService } from './services/goods-receipt.service';
 import { PurchaseBillingService } from './services/purchase-billing.service';
 import { PurchaseReturnRepository } from './repositories/purchase-return.repository';
 import { PurchaseReturnService } from './services/purchase-return.service';
+import { PurchaseTermTemplateRepository } from './repositories/purchase-term-template.repository';
+import { PurchaseTermTemplateService } from './services/purchase-term-template.service';
 
 export * from './constants/di';
 
@@ -42,4 +46,6 @@ export function registerProcurement(container: DependencyContainer): void {
 	container.register(PURCHASE_RETURN_SERVICE_TOKEN, { useClass: PurchaseReturnService });
 	container.register(PURCHASE_REQUEST_REPOSITORY_TOKEN, { useClass: PurchaseRequestRepository });
 	container.register(PURCHASE_REQUEST_SERVICE_TOKEN, { useClass: PurchaseRequestService });
+	container.register(PURCHASE_TERM_TEMPLATE_REPOSITORY_TOKEN, { useClass: PurchaseTermTemplateRepository });
+	container.register(PURCHASE_TERM_TEMPLATE_SERVICE_TOKEN, { useClass: PurchaseTermTemplateService });
 }

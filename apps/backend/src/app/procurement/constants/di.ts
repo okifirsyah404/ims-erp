@@ -20,6 +20,8 @@ import type { IPurchaseReturnRepository } from '../contracts/purchase-return.rep
 import type { PurchaseReturnService } from '../services/purchase-return.service';
 import type { IPurchaseRequestRepository } from '../contracts/procurement.repository.interface';
 import type { PurchaseRequestService } from '../services/purchase-request.service';
+import type { IPurchaseTermTemplateRepository } from '../contracts/procurement.repository.interface';
+import type { PurchaseTermTemplateService } from '../services/purchase-term-template.service';
 
 export const PROCUREMENT_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<ProcurementCodeNumberingRepository> = Symbol('PROCUREMENT_CODE_NUMBERING_REPOSITORY');
 export const PROCUREMENT_NUMBERING_SERVICE_TOKEN: InjectionToken<ProcurementNumberingService> = Symbol('PROCUREMENT_NUMBERING_SERVICE');
@@ -36,3 +38,7 @@ export const PURCHASE_REQUEST_SERVICE_TOKEN: InjectionToken<PurchaseRequestServi
 
 /** Repository-only purchase-order facade for finance (ERP-0146). */
 export const EXPORTED_PURCHASE_ORDER_SERVICE_TOKEN: InjectionToken<ExportedPurchaseOrderService> = Symbol('EXPORTED_PURCHASE_ORDER_SERVICE');
+
+/** `procurement.purchase_term_templates` repository and use cases (ERP-0165). */
+export const PURCHASE_TERM_TEMPLATE_REPOSITORY_TOKEN: InjectionToken<IPurchaseTermTemplateRepository> = Symbol('PURCHASE_TERM_TEMPLATE_REPOSITORY');
+export const PURCHASE_TERM_TEMPLATE_SERVICE_TOKEN: InjectionToken<PurchaseTermTemplateService> = Symbol('PURCHASE_TERM_TEMPLATE_SERVICE');

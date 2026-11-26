@@ -14,12 +14,14 @@ import type { TSupplierCompanySelect, TSupplierSelect } from '@drizzle/schemas/s
 import type { IPurchaseOrderRepository } from '../../src/app/procurement/contracts/procurement.repository.interface';
 import type { TPurchaseOrderWrite } from '../../src/app/procurement/contracts/procurement.repository.interface';
 import { purchaseOrderBodySchema } from '../../src/app/procurement/contracts/purchase-order.contract';
+import { LetterheadNotFoundError } from '../../src/app/company/errors/company.errors';
 import {
 	PurchaseOrderItemUnavailableError,
 	PurchaseOrderSelfApprovalError,
 	PurchaseOrderStateError,
 	PurchaseRequestLineUnavailableError,
 	PurchaseOrderSupplierUnavailableError,
+	PurchaseTermPlaceholderError,
 } from '../../src/app/procurement/errors/procurement.errors';
 import { PurchaseOrderService } from '../../src/app/procurement/services/purchase-order.service';
 import { computePoTotals } from '../../src/app/procurement/utils/po-totals';
@@ -251,6 +253,51 @@ describe('purchase orders', () => {
 		const approved = await budgeted.decide('owner', order.id, { decision: 'approve' });
 		expect(approved.status).toBe('approved');
 		expect(checks[1]).toEqual({ projectId: '01930000-0000-7000-8000-0000000000f1', amount: approved.subtotal, excludePurchaseOrderId: order.id });
+	});
+
+	test('ERP-0165: unknown placeholders in terms or notes are refused; valid ones are stored as written', async () => {
+		const supplier = suppliers.addCompany();
+		await expect(orders.create('purchasing', body(supplier.id, { terms: 'Pembayaran: DP {{dp}}' }))).rejects.toBeInstanceOf(
+			PurchaseTermPlaceholderError,
+		);
+		await expect(orders.create('purchasing', body(supplier.id, { notes: '{{grand_total_pct:150}}' }))).rejects.toBeInstanceOf(
+			PurchaseTermPlaceholderError,
+		);
+		const order = await orders.create('purchasing', body(supplier.id, { terms: 'Pembayaran: DP 50% sebesar {{grand_total_pct:50}}' }));
+		expect(order.terms).toBe('Pembayaran: DP 50% sebesar {{grand_total_pct:50}}');
+	});
+
+	test('ERP-0165: the chosen letterhead is checked, stored and printed; without one the default prints', async () => {
+		const LETTERHEAD = '01930000-0000-7000-8000-00000000aa01';
+		const asked: (string | null)[] = [];
+		const withCompany = new PurchaseOrderService(
+			orderRepo,
+			suppliers,
+			{ getActiveProducts: async () => [{ id: ITEM, sku: 'QR50', name: 'QR50 Mifare', specification: null, unitLabel: 'pcs', purchasePrice: 190_000_000 }] as never },
+			{ next: async () => 'PO/IMS-HIT/HW/1026/010' },
+			{ register: async () => ({}) as never, voidBySource: async () => 0 },
+			undefined,
+			undefined,
+			{
+				assertLetterhead: async (id: string) => {
+					if (id !== LETTERHEAD) throw new LetterheadNotFoundError();
+				},
+				getLetterheadForPrint: async (id: string | null) => {
+					asked.push(id);
+					return { id: id ?? 'default', name: id ? 'IMS' : 'Default', headerUrl: 'https://files.test/h.webp', footerUrl: null };
+				},
+			},
+		);
+		const supplier = suppliers.addCompany();
+		await expect(withCompany.create('purchasing', body(supplier.id, { letterheadId: crypto.randomUUID() }))).rejects.toBeInstanceOf(
+			LetterheadNotFoundError,
+		);
+		const picked = await withCompany.create('purchasing', body(supplier.id, { letterheadId: LETTERHEAD }));
+		expect(picked.letterheadId).toBe(LETTERHEAD);
+		expect((await withCompany.get(picked.id)).letterhead).toMatchObject({ id: LETTERHEAD, name: 'IMS' });
+		const plain = await withCompany.create('purchasing', body(supplier.id));
+		expect((await withCompany.get(plain.id)).letterhead?.name).toBe('Default');
+		expect(asked).toEqual([LETTERHEAD, null]);
 	});
 
 	test('submit, reject back to draft, approve with number — never by the creator', async () => {

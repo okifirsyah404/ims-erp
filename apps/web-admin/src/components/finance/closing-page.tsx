@@ -46,6 +46,8 @@ export function ClosingPage() {
 	const queryClient = useQueryClient();
 	const search = routeApi.useSearch();
 	const canRead = usePermission('accounting_period.read');
+	// ERP-0167: opening a month needs `accounting_period:create` (owner, accountant).
+	const canCreatePeriod = usePermission('accounting_period.create');
 	const canClose = usePermission('accounting_period.close');
 	const canReopen = usePermission('accounting_period.reopen');
 
@@ -248,14 +250,16 @@ export function ClosingPage() {
 							<Button size='sm' variant='outline' onClick={apply}>
 								{t('finance:aging.apply')}
 							</Button>
-							<Button
-								size='sm'
-								variant='ghost'
-								disabled={ensure.isPending}
-								onClick={() => void ensure.mutateAsync()}
-							>
-								{t('finance:periods.create')}
-							</Button>
+							{canCreatePeriod && (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={ensure.isPending}
+									onClick={() => void ensure.mutateAsync()}
+								>
+									{t('finance:periods.create')}
+								</Button>
+							)}
 							{canAmortise ? (
 								<Button
 									size='sm'

@@ -595,6 +595,9 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
   value view exists, see implemented).
 
 ### implemented
+- ERP-0165 Purchase order document templates (2026-11-26): uploaded letterhead (kop surat) library on `/settings/documents` (`company.letterheads`, header + optional footer image, one default, soft delete keeps old prints), purchase term templates on `/procurement/term-templates` (`procurement.purchase_term_templates`, one default prefilled on new POs), `purchase_orders.letterhead_id`, and `{{placeholders}}` (`@ims-erp/common` `po-placeholders`) validated on save and resolved on the browser print. Verified with unit tests, a live API walk-through on a throwaway database and a browser check (letterhead images swapped for local SVGs, no S3 upload).
+- ERP-0168 Goods receipt of a non-stock product (2026-11-26): a licence or service line is received against the PO but posts no movement, no balance and no inventory journal line; its purchase return moves no stock either. Verified live (licence line: no stock row, GR/IR covers only the stock lines).
+- ERP-0166 Stock balance scope indexes `NULLS NOT DISTINCT` (2026-11-26): every bin-less movement used to insert two duplicate `inventory.stocks` rows and apply the delta to all of them; a hand-written append-only migration rebuilds both indexes. Verified live: one balance row per product after two receipts (door 2, cable 100).
 - ERP-0109 Multi-image galleries (2026-11-23) for products/components/materials (M05), assets (M06) and warehouses: backend implemented (3 gallery tables + backfill migration, `/images` CRUD, cover mirrored into `image_object_key`); web-admin gallery UI and migration apply on a disposable DB still open.
 - ERP-0110 Components and materials of a product (2026-11-23): informational composition per product (`product.product_components`, `GET|PUT /products/:id/components`), table on the detail page and editor in the create/edit form; not browser-verified.
 - ERP-0116 Robust supplier master (2026-11-23): server-side sort + URL-backed filters on `/procurement/suppliers` (admin/users pattern), grouped form with an inline location cascade (create posts the address right after the company, edit PATCHes the primary one), company/PIC phone through the shared `CountryPhoneField` (E.164), company/person address CRUD behind `ExportedLocationService.assertVillage`, and the `whatsapp` / `payment_terms_days` / `payment_term_note` columns dropped (payment terms are written per purchase order). Migration generated, not applied; no browser walk-through.
@@ -874,6 +877,8 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   the business.
 
 ## M09 Finance
+
+- ERP-0167 `accounting_period:create` (2026-11-26) granted to `owner` and `accountant`: the statement lacked the action, so `POST /finance/periods` answered 403 to every role and a fresh environment could never open a month, which blocks every goods receipt ("Accounting period not found"). The closing page hides "Create period" without the grant. Verified live (owner opens 2026-11 through the API).
 
 ### in-progress (Stage 1 - F1..F9, commits 7a44dbd..<f9>; backlog mismatch, see note)
 - Ledger core: `accounting` pg-schema (COA, journal entries/lines, periods,

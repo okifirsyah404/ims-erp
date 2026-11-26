@@ -64,8 +64,8 @@ Table customer.customers {
 
 | Metric | Value |
 |---|---|
-| Logical reference columns | 214 |
-| Distinct targets | 28 |
+| Logical reference columns | 216 |
+| Distinct targets | 29 |
 | Cross-module `Ref:` declarations | 0 |
 | Intra-module `Ref:` declarations | 169 |
 
@@ -78,7 +78,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | Target | Owner | Referring columns |
 |---|---|---|
 | `auth.organizations.id` | Identity | 62 |
-| `auth.users.id` | Identity | 32 |
+| `auth.users.id` | Identity | 33 |
 | `product.products.id` | Product | 16 |
 | `customer.customers.id` | Customer | 13 |
 | `human_resource.employees.id` | Human Resource | 10 |
@@ -97,6 +97,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `procurement.purchase_orders.id` | Procurement | 2 |
 | `project.leads.id` | Project | 2 |
 | `sale.orders.id` | Sale | 2 |
+| `company.letterheads.id` | Company | 1 |
 | `finance.cash_bank_accounts.id` | Finance | 1 |
 | `finance.payment_terms.id` | Finance | 1 |
 | `inventory.item_serials.id` | Inventory | 1 |
@@ -106,7 +107,7 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 | `supplier.suppliers.id` | Supplier | 1 |
 | `tax.taxes.id` | Tax | 1 |
 
-## The 28 targets in full
+## The 29 targets in full
 
 ### `auth.organizations.id` - owner Identity, 62 referring columns
 
@@ -173,9 +174,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 - `ticket.ticket_templates`  ->  `organization_id`
 - `warehouse.warehouse_organizations`  ->  `organization_id`
 
-### `auth.users.id` - owner Identity, 32 referring columns
+### `auth.users.id` - owner Identity, 33 referring columns
 
 - `audit.audit_logs`  ->  `actor_user_id`
+- `company.letterheads`  ->  `updated_by`
 - `company.profiles`  ->  `updated_by`
 - `company.settings`  ->  `updated_by`
 - `customer.code_numberings`  ->  `updated_by`
@@ -373,6 +375,10 @@ boundary. This document is regenerated with `gen-logical-references.ts`.
 
 - `project.license_contracts`  ->  `order_id`
 - `project.projects`  ->  `order_id`
+
+### `company.letterheads.id` - owner Company, 1 referring column
+
+- `procurement.purchase_orders`  ->  `letterhead_id`
 
 ### `finance.cash_bank_accounts.id` - owner Finance, 1 referring column
 

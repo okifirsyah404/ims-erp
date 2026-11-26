@@ -279,6 +279,7 @@ const api = {
 	'organization.notFound': 'Organization not found',
 	'company.profileRequired':
 		'Fill in the company profile (with its document code) first',
+	'company.letterheadNotFound': 'Letterhead not found',
 	'supplier.bankForbidden': 'You may not read or change supplier bank details',
 	'company.settingInvalid': 'The value does not match its type',
 	'numbering.unknownCodeType': 'Unknown code type',
@@ -701,6 +702,8 @@ const api = {
 	'accounting.budget.duplicateLine': 'An account appears twice for the same month',
 	'accounting.budgetExceeded': 'This would exceed the project budget (available Rp {{available}})',
 	'procurement.order.projectInvalid': 'The project does not exist',
+	'procurement.termPlaceholder': 'Unknown or malformed placeholder: {{placeholders}}',
+	'procurement.termTemplateNotFound': 'Purchase term template not found',
 } as const;
 
 export default api;

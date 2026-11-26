@@ -16,6 +16,7 @@ import { createCodeNumberingTable } from '@shared/numbering/table';
 import { sql } from 'drizzle-orm';
 import {
 	bigint,
+	boolean,
 	check,
 	date,
 	index,
@@ -246,8 +247,15 @@ export const purchaseOrders = procurementSchema.table(
 			.notNull()
 			.default('IDR'),
 		paymentTerms: varchar('payment_terms', { length: 500 }),
+		/** One term per line; may hold `{{placeholders}}` resolved when printed (ERP-0165). */
 		terms: text('terms'),
 		notes: text('notes'),
+		/**
+		 * Logical reference to company.letterheads.id — cross-module FK omitted;
+		 * validated by `ExportedCompanyService.assertLetterhead`. Null prints
+		 * with the default letterhead (ERP-0165).
+		 */
+		letterheadId: uuid('letterhead_id'),
 		rejectionReason: text('rejection_reason'),
 		/** Logical references to auth.users.id — cross-module FK omitted. */
 		createdBy: text('created_by'),
@@ -337,6 +345,42 @@ export const purchaseOrderItems = procurementSchema.table(
 			'purchase_order_items_amounts_check',
 			sql`quantity > 0 AND unit_price >= 0 AND line_total >= 0 AND quantity_received >= 0`,
 		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * procurement.purchase_term_templates
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Reusable payment terms, purchase terms and notes for purchase orders
+ * (ERP-0165), company-wide like the orders.
+ *
+ * @remarks
+ * Choosing a template copies its text into the order, which stays editable;
+ * the order never references the template. Text may hold `{{placeholders}}`
+ * (`@ims-erp/common` `PO_PLACEHOLDERS`). At most one live default.
+ */
+export const purchaseTermTemplates = procurementSchema.table(
+	'purchase_term_templates',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		name: varchar('name', { length: 100 }).notNull(),
+		paymentTerms: varchar('payment_terms', { length: 500 }),
+		terms: text('terms'),
+		notes: text('notes'),
+		isDefault: boolean('is_default').notNull().default(false),
+		/** Logical references to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		updatedBy: text('updated_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('purchase_term_templates_default_uq')
+			.on(table.isDefault)
+			.where(sql`deleted_at IS NULL AND is_default`),
 	],
 );
 
@@ -539,6 +583,8 @@ export type TPurchaseOrderSelect = typeof purchaseOrders.$inferSelect;
 export type TPurchaseOrderInsert = typeof purchaseOrders.$inferInsert;
 export type TPurchaseOrderItemSelect = typeof purchaseOrderItems.$inferSelect;
 export type TPurchaseOrderItemInsert = typeof purchaseOrderItems.$inferInsert;
+export type TPurchaseTermTemplateSelect = typeof purchaseTermTemplates.$inferSelect;
+export type TPurchaseTermTemplateInsert = typeof purchaseTermTemplates.$inferInsert;
 export type TGoodsReceiptSelect = typeof goodsReceipts.$inferSelect;
 export type TGoodsReceiptInsert = typeof goodsReceipts.$inferInsert;
 export type TGoodsReceiptItemSelect = typeof goodsReceiptItems.$inferSelect;

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next';
 
 import { CompanySettingsCard } from '@/components/settings/company-settings-card';
+import { LetterheadLibraryCard } from '@/components/settings/letterhead-library-card';
 import { usePermission } from '@/lib/use-permission';
 
 /**
@@ -14,6 +15,9 @@ import { usePermission } from '@/lib/use-permission';
  * `document.*` key in the design so far is
  * `document.signature_request_expiry_days` (ERP-0048); it appears here once it
  * has been written, because settings are edited, not created, from this page.
+ *
+ * ERP-0165: the letterhead (kop surat) template library lives here too; it is
+ * managed with `company:update` like the other company-wide document data.
  */
 export const Route = createFileRoute('/_authed/settings/documents/')({
 	component: DocumentSettingsPage,
@@ -29,6 +33,7 @@ function DocumentSettingsPage() {
 				<h1 className='text-2xl font-bold'>{t('settings:document.title')}</h1>
 				<p className='text-sm text-muted-foreground'>{t('settings:document.description')}</p>
 			</div>
+			<LetterheadLibraryCard canEdit={canEdit} />
 			<CompanySettingsCard
 				canEdit={canEdit}
 				groups={['document']}

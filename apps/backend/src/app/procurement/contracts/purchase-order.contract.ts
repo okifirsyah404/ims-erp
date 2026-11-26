@@ -63,8 +63,11 @@ export const purchaseOrderBodySchema = z.object({
 	/** Basis points; defaults to 11% when VAT applies. */
 	vatRateBps: z.number().int().min(0).max(10_000).nullish(),
 	paymentTerms: optionalText(500),
+	/** One term per line; `{{placeholders}}` are resolved when printed (ERP-0165). */
 	terms: optionalText(8000),
 	notes: optionalText(4000),
+	/** ERP-0165: the letterhead (kop surat) it prints with; null uses the default. */
+	letterheadId: z.uuid().nullish().transform((v) => v ?? null),
 	lines: z.array(purchaseOrderLineSchema).min(1).max(200),
 });
 

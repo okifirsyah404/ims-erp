@@ -12,8 +12,10 @@ import type {
 	ICompanyContactRepository,
 	ICompanyProfileRepository,
 	ICompanySettingRepository,
+	ILetterheadRepository,
 } from '../contracts/company.repository.interface';
 import type { CompanyService } from '../services/company.service';
+import type { LetterheadService } from '../services/letterhead.service';
 import type { ExportedCompanyService } from '../services/exported-company.service';
 
 /** `company.profiles` repository. */
@@ -31,6 +33,14 @@ export const COMPANY_CONTACT_REPOSITORY_TOKEN: InjectionToken<ICompanyContactRep
 /** `company.settings` repository. */
 export const COMPANY_SETTING_REPOSITORY_TOKEN: InjectionToken<ICompanySettingRepository> =
 	Symbol('COMPANY_SETTING_REPOSITORY_TOKEN');
+
+/** `company.letterheads` repository (ERP-0165). */
+export const LETTERHEAD_REPOSITORY_TOKEN: InjectionToken<ILetterheadRepository> =
+	Symbol('LETTERHEAD_REPOSITORY_TOKEN');
+
+/** Letterhead template use cases (ERP-0165). */
+export const LETTERHEAD_SERVICE_TOKEN: InjectionToken<LetterheadService> =
+	Symbol('LETTERHEAD_SERVICE_TOKEN');
 
 /** Full company service: the settings-page use cases (profile, images, settings). */
 export const COMPANY_SERVICE_TOKEN: InjectionToken<CompanyService> =

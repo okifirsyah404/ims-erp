@@ -8,9 +8,11 @@
 import Elysia from 'elysia';
 
 import { CompanyController } from './controllers/company.controller';
+import { LetterheadController } from './controllers/letterhead.controller';
 
 export * from './container';
 export * from './controllers/company.controller';
+export * from './controllers/letterhead.controller';
 export type { CompanyService } from './services/company.service';
 export type { ExportedCompanyService } from './services/exported-company.service';
 export type {
@@ -18,8 +20,9 @@ export type {
 	TCompanyProfileSnapshot,
 	TCompanyProfileView,
 } from './contracts/company.contract';
+export type { TLetterheadPrint, TLetterheadView } from './contracts/letterhead.contract';
 
-/** Elysia instance mounting the company controller. */
+/** Elysia instance mounting the company controllers. */
 export function companyModule() {
-	return new Elysia({ name: 'company' }).use(CompanyController.plugin());
+	return new Elysia({ name: 'company' }).use(CompanyController.plugin()).use(LetterheadController.plugin());
 }

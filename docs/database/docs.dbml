@@ -29,6 +29,7 @@ TableGroup "Company" {
   company.addresses
   company.contacts
   company.settings
+  company.letterheads
 }
 
 TableGroup "Customer" {
@@ -120,6 +121,7 @@ TableGroup "Procurement" {
   procurement.purchase_request_items
   procurement.purchase_orders
   procurement.purchase_order_items
+  procurement.purchase_term_templates
   procurement.goods_receipts
   procurement.goods_receipt_items
   procurement.purchase_returns
@@ -660,6 +662,19 @@ Table company.settings {
   Checks {
     `value_type IN ('string', 'number', 'boolean', 'json', 'date')`
   }
+}
+
+Table company.letterheads {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(100) [not null]
+  header_object_key text [not null, note: "Object-storage key of the letterhead (kop surat) image printed across the top of a document (WebP)."]
+  footer_object_key text [note: "Object-storage key of the optional footer image printed across the bottom of every page (WebP)."]
+  is_default boolean [not null, default: false, note: "The letterhead a new document starts with; at most one live row."]
+  updated_by text [note: "Logical reference to auth.users.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Uploaded letterhead (kop surat) templates, company-wide (ERP-0165). A document picks one (procurement.purchase_orders.letterhead_id); a soft-deleted letterhead keeps its images, so a document that used it still prints. Images get a fresh key on every upload. At most one live default, enforced by the partial unique index letterheads_default_uq ON (is_default) WHERE deleted_at IS NULL AND is_default."
 }
 
 // ---------------------------------------------------------------------------
@@ -1538,7 +1553,7 @@ Table inventory.stocks {
   last_movement_at bigint
   created_at bigint [not null]
   updated_at bigint
-  Note: "Balance projection over inventory.movements for products only (was inventory.stock_balances). Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation. No deleted_at (projection). Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller - a global warehouse has ONE shared balance row."
+  Note: "Balance projection over inventory.movements for products only (was inventory.stock_balances). Service-maintained inside the same transaction as the movement that caused it, never by a trigger; recomputeFromLedger is the repair operation. No deleted_at (projection). Scope rule: a balance's organization_id follows the WAREHOUSE scope, not the caller - a global warehouse has ONE shared balance row. Both scope indexes are NULLS NOT DISTINCT, so a NULL bin_id is one key; drizzle-orm cannot declare that on a partial unique index, so the hand-written migration 20261126101626_erp0166_stocks_nulls_not_distinct carries it (ERP-0166)."
   Indexes {
     (organization_id, warehouse_id, product_id, bin_id) [unique, name: 'stocks_org_scope_uq', note: 'NULLS NOT DISTINCT WHERE organization_id IS NOT NULL']
     (warehouse_id, product_id, bin_id) [unique, name: 'stocks_global_scope_uq', note: 'NULLS NOT DISTINCT WHERE organization_id IS NULL']
@@ -2672,8 +2687,9 @@ Table procurement.purchase_orders {
   grand_total bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   payment_terms varchar(500)
-  terms text
-  notes text
+  terms text [note: "Purchase terms, one per line; may contain {{placeholders}} resolved from the order when printed (ERP-0165)."]
+  notes text [note: "May contain {{placeholders}} resolved from the order when printed (ERP-0165)."]
+  letterhead_id uuid [note: "Logical reference to company.letterheads.id. Cross-module FK intentionally omitted. Validated through ExportedCompanyService.assertLetterhead on write; null prints with the default letterhead (ERP-0165)."]
   rejection_reason text
   created_by text [note: "Logical reference to auth.users.id."]
   submitted_by text [note: "Logical reference to auth.users.id."]
@@ -2732,6 +2748,21 @@ Table procurement.purchase_order_items {
     `line_total >= 0`
     `quantity_received >= 0`
   }
+}
+
+Table procurement.purchase_term_templates {
+  id uuid [pk, default: `uuidv7()`]
+  name varchar(100) [not null]
+  payment_terms varchar(500)
+  terms text [note: "Purchase terms, one per line; may contain {{placeholders}}."]
+  notes text [note: "May contain {{placeholders}}."]
+  is_default boolean [not null, default: false, note: "Prefilled into a new purchase order; at most one live row."]
+  created_by text [note: "Logical reference to auth.users.id."]
+  updated_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Reusable payment terms, purchase terms and notes for purchase orders, company-wide (ERP-0165). Choosing one copies its text into the order, which stays editable; the order never references the template. At most one live default, enforced by the partial unique index purchase_term_templates_default_uq ON (is_default) WHERE deleted_at IS NULL AND is_default."
 }
 
 Table procurement.goods_receipts {

@@ -3,6 +3,7 @@ import type {
 	TCompanyProfileSelect,
 	TCompanySettingSelect,
 	TContactSelect,
+	TLetterheadSelect,
 } from '@drizzle/schemas/company.schema';
 import type { TTx } from '@drizzle/types';
 import type { TCompanySettingValueType } from './company.contract';
@@ -91,4 +92,40 @@ export interface ICompanySettingRepository {
 		key: string,
 		data: { valueType: TCompanySettingValueType; value: string | null; updatedBy: string },
 	): Promise<TCompanySettingSelect>;
+}
+
+/** Persistence port for `company.letterheads` (ERP-0165). */
+export interface ILetterheadRepository {
+	/** Live letterheads, the default first, then by name. */
+	findAll(): Promise<TLetterheadSelect[]>;
+
+	/** A live letterhead, or `null`. */
+	findLive(id: string): Promise<TLetterheadSelect | null>;
+
+	/** A letterhead even after it was deleted (an issued document still prints with it), or `null`. */
+	findAny(id: string): Promise<TLetterheadSelect | null>;
+
+	/** The live default letterhead, or `null`. */
+	findDefault(): Promise<TLetterheadSelect | null>;
+
+	/** Inserts one; with `isDefault` the previous default stops being one, in the same transaction. */
+	create(data: {
+		name: string;
+		headerObjectKey: string;
+		footerObjectKey: string | null;
+		isDefault: boolean;
+		updatedBy: string;
+	}): Promise<TLetterheadSelect>;
+
+	/**
+	 * Changes a live letterhead; `isDefault: true` takes the default from the
+	 * previous one in the same transaction. `null` when it is not live.
+	 */
+	update(
+		id: string,
+		data: Partial<Pick<TLetterheadSelect, 'name' | 'isDefault' | 'headerObjectKey' | 'footerObjectKey'>> & { updatedBy: string },
+	): Promise<TLetterheadSelect | null>;
+
+	/** Soft-deletes a live letterhead (it also stops being the default); `false` when it is not live. */
+	softDelete(id: string, updatedBy: string): Promise<boolean>;
 }

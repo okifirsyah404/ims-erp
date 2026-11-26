@@ -184,7 +184,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `cash_bank` | read, create, update, reconcile, export |
 | `chart_of_account` | read, create, update, archive |
 | `journal` | read, create, update, submit, approve, post, reverse, export |
-| `accounting_period` | read, close, reopen |
+| `accounting_period` | read, create, close, reopen |
 | `posting_rule` | read, update |
 | `cost_center` | read, create, update, archive |
 | `credit_memo` | read, create, apply, void |
@@ -484,7 +484,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `master_data` | read |
 | `chart_of_account` | read, create, update, archive |
 | `journal` | read, create, update, submit, approve, post, reverse, export |
-| `accounting_period` | read, close, reopen |
+| `accounting_period` | read, create, close, reopen |
 | `posting_rule` | read, update |
 | `cost_center` | read, create, update, archive |
 | `credit_memo` | read, apply, void |
@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-803 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+815 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -675,6 +675,13 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | Method | Path | Guard | Requirement | Who |
 | --- | --- | --- | --- | --- |
 | GET | `/companies/branding` | no guard macro | - | - |
+| GET | `/companies/letterheads` | org member | - | every organization member |
+| POST | `/companies/letterheads` | org member + permission | `company:update` | `owner`, `admin` |
+| DELETE | `/companies/letterheads/:id` | org member + permission | `company:update` | `owner`, `admin` |
+| GET | `/companies/letterheads/:id` | org member | - | every organization member |
+| PATCH | `/companies/letterheads/:id` | org member + permission | `company:update` | `owner`, `admin` |
+| PUT | `/companies/letterheads/:id/:kind` | org member + permission | `company:update` | `owner`, `admin` |
+| DELETE | `/companies/letterheads/:id/footer` | org member + permission | `company:update` | `owner`, `admin` |
 | GET | `/companies/profile` | org member | - | every organization member |
 | PUT | `/companies/profile` | org member + permission | `company:update` | `owner`, `admin` |
 | DELETE | `/companies/profile/:kind` | org member + permission | `company:update` | `owner`, `admin` |
@@ -870,7 +877,7 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/finance/payments/:id/void-executed` | org member + permission | `payment:approve` | `owner`, `finance` |
 | POST | `/finance/payroll/payments` | org member + permission | `payroll_payment:execute` | `owner`, `finance` |
 | GET | `/finance/periods` | org member + permission | `accounting_period:read` | `owner`, `accountant`, `auditor` |
-| POST | `/finance/periods` | org member + permission | `accounting_period:create` | no org role |
+| POST | `/finance/periods` | org member + permission | `accounting_period:create` | `owner`, `accountant` |
 | POST | `/finance/periods/:id/transition` | org member + permission | `accounting_period:close` | `owner`, `accountant` |
 | GET | `/finance/posting-rules` | org member + permission | `posting_rule:read` | `owner`, `finance`, `accountant`, `auditor` |
 | POST | `/finance/posting-rules` | org member + permission | `posting_rule:update` | `owner`, `accountant` |
@@ -1226,6 +1233,11 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | POST | `/procurement/purchase-returns/:id/ship` | org member + permission | `purchase_return:ship` | `owner`, `warehouse` |
 | POST | `/procurement/purchase-returns/:id/submit` | org member + permission | `purchase_return:submit` | `owner`, `purchasing` |
 | GET | `/procurement/purchase-returns/returnable-receipts` | org member + permission | `purchase_return:create` | `owner`, `purchasing` |
+| GET | `/procurement/purchase-term-templates` | org member + permission | `purchase_order:read` | `owner`, `operations_manager`, `purchasing`, `auditor` |
+| POST | `/procurement/purchase-term-templates` | org member + permission | `purchase_order:update` | `owner`, `purchasing` |
+| DELETE | `/procurement/purchase-term-templates/:id` | org member + permission | `purchase_order:update` | `owner`, `purchasing` |
+| GET | `/procurement/purchase-term-templates/:id` | org member + permission | `purchase_order:read` | `owner`, `operations_manager`, `purchasing`, `auditor` |
+| PUT | `/procurement/purchase-term-templates/:id` | org member + permission | `purchase_order:update` | `owner`, `purchasing` |
 
 ### product
 
