@@ -220,10 +220,13 @@ function NewGoodsReceiptPage() {
 									</Field>
 									{item.isSerialized && (
 										<Field className='sm:col-span-2'>
-											<FieldLabel htmlFor={`gr-serials-${item.id}`} optional>{t('procurement:receipt.serialNumbers')}</FieldLabel>
+											{/* Required: the backend refuses a serialised line unless
+											    there is exactly one distinct serial per unit received. */}
+											<FieldLabel htmlFor={`gr-serials-${item.id}`}>{t('procurement:receipt.serialNumbers')}</FieldLabel>
 											<Textarea
 												id={`gr-serials-${item.id}`}
 												rows={2}
+												required={Number(draft(item.id).quantity) > 0}
 												value={draft(item.id).serials}
 												onChange={(event) => setLine(item.id, { serials: event.target.value })}
 											/>
