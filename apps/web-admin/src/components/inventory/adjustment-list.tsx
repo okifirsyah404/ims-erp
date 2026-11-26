@@ -20,6 +20,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { Ban, Check, ClipboardList, Play, Send, X } from 'lucide-react';
 import { RowActions } from '@/components/data-table/row-actions';
 import { toast } from '@/components/toast';
+import { usePermission } from '@/lib/use-permission';
 
 /** Badge emphasis per status: only `posted` actually moved stock. */
 const STATUS_VARIANT: Record<
@@ -47,6 +48,10 @@ const STATUS_VARIANT: Record<
 export function AdjustmentList() {
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
+	// Same permissions the backend guards each transition with.
+	const canWrite = usePermission('stock_adjustment.create');
+	const canApprove = usePermission('stock_adjustment.approve');
+	const canPost = usePermission('stock_adjustment.post');
 	const { data, isPending, isError, error } = useQuery(
 		adjustmentsQueryOptions({ limit: 100 }),
 	);
@@ -153,7 +158,7 @@ export function AdjustmentList() {
 								key: 'submit',
 								label: t('inventory:adjustmentActions.submit'),
 								icon: Send,
-								hidden: row.original.status !== 'draft',
+								hidden: row.original.status !== 'draft' || !canWrite,
 								disabled: transition.isPending,
 								onSelect: () =>
 									transition.mutate({ id: row.original.id, action: 'submit' }),
@@ -162,7 +167,7 @@ export function AdjustmentList() {
 								key: 'cancel',
 								label: t('inventory:adjustmentActions.cancel'),
 								icon: Ban,
-								hidden: row.original.status !== 'draft',
+								hidden: row.original.status !== 'draft' || !canWrite,
 								disabled: transition.isPending,
 								onSelect: () =>
 									transition.mutate({ id: row.original.id, action: 'cancel' }),
@@ -171,7 +176,7 @@ export function AdjustmentList() {
 								key: 'approve',
 								label: t('inventory:adjustmentActions.approve'),
 								icon: Check,
-								hidden: row.original.status !== 'submitted',
+								hidden: row.original.status !== 'submitted' || !canApprove,
 								disabled: transition.isPending,
 								onSelect: () =>
 									transition.mutate({ id: row.original.id, action: 'approve' }),
@@ -180,7 +185,7 @@ export function AdjustmentList() {
 								key: 'reject',
 								label: t('inventory:adjustmentActions.reject'),
 								icon: X,
-								hidden: row.original.status !== 'submitted',
+								hidden: row.original.status !== 'submitted' || !canApprove,
 								disabled: transition.isPending,
 								onSelect: () =>
 									transition.mutate({ id: row.original.id, action: 'reject' }),
@@ -189,7 +194,7 @@ export function AdjustmentList() {
 								key: 'post',
 								label: t('inventory:adjustmentActions.post'),
 								icon: Play,
-								hidden: row.original.status !== 'approved',
+								hidden: row.original.status !== 'approved' || !canPost,
 								disabled: transition.isPending,
 								onSelect: () =>
 									transition.mutate({ id: row.original.id, action: 'post' }),
@@ -199,7 +204,7 @@ export function AdjustmentList() {
 				),
 			},
 		],
-		[t, transition],
+		[t, transition, canWrite, canApprove, canPost],
 	);
 
 	const rows = data?.rows ?? [];
@@ -215,12 +220,14 @@ export function AdjustmentList() {
 						{t('inventory:adjustments.description')}
 					</p>
 				</div>
-				<Button
-					render={<Link to='/inventory/stock/adjust' />}
-					className='shrink-0'
-				>
-					{t('inventory:adjustments.new')}
-				</Button>
+				{canWrite ? (
+					<Button
+						render={<Link to='/inventory/stock/adjust' />}
+						className='shrink-0'
+					>
+						{t('inventory:adjustments.new')}
+					</Button>
+				) : null}
 			</div>
 
 			{transition.isError ? (

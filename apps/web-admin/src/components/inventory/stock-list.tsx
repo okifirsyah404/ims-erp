@@ -49,6 +49,10 @@ export function StockList({
 	const queryClient = useQueryClient();
 	const confirm = useConfirm();
 	const canSeeCost = usePermission('product.read_cost');
+	// Backend guards: raising an adjustment needs `stock_adjustment:create`,
+	// recomputing balances from the ledger needs `stock_adjustment:post`.
+	const canAdjust = usePermission('stock_adjustment.create');
+	const canRecompute = usePermission('stock_adjustment.post');
 	const [inStockOnly, setInStockOnly] = useState(false);
 	const { data, isPending, isError, error } = useQuery({
 		...balancesQueryOptions({ page, limit: PAGE_SIZE, inStockOnly }),
@@ -208,15 +212,18 @@ export function StockList({
 					>
 						{t('inventory:stock.movements')}
 					</Button>
-					<Button render={<Link to='/inventory/stock/adjust' />}>
-						{t('inventory:stock.adjust')}
-					</Button>
+					{canAdjust && (
+						<Button render={<Link to='/inventory/stock/adjust' />}>
+							{t('inventory:stock.adjust')}
+						</Button>
+					)}
 				</div>
 			</div>
 
 			{/* A repair tool, not a routine call: the running balance is already
 			    correct, so this is offered but not advertised. */}
 			<div className='flex items-center gap-3'>
+				{canRecompute && (
 				<Button
 					variant='ghost'
 					size='sm'
@@ -235,6 +242,7 @@ export function StockList({
 				>
 					{t('inventory:stock.recompute')}
 				</Button>
+				)}
 				{recompute.isSuccess && recompute.data ? (
 					<span className='text-xs text-muted-foreground'>
 						{t('inventory:stock.recomputed', {

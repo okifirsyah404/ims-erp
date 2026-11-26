@@ -22,6 +22,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state';
 import { ArrowLeftRight, Undo2 } from 'lucide-react';
 import { RowActions } from '@/components/data-table/row-actions';
 import { useConfirm } from '@/components/confirm-dialog';
+import { usePermission } from '@/lib/use-permission';
 
 /** Rows per page: 24 keeps a full-height page without endless scrolling. */
 const PAGE_SIZE = 24;
@@ -50,6 +51,8 @@ export function MovementList({
 	onPageChange: (page: number) => void;
 }) {
 	const { t } = useTranslation(['inventory', 'common']);
+	// Reversing a movement is guarded by `stock_adjustment:post` on the backend.
+	const canReverse = usePermission('stock_adjustment.post');
 	const queryClient = useQueryClient();
 	const confirm = useConfirm();
 	const { data, isPending, isError, error } = useQuery({
@@ -183,7 +186,7 @@ export function MovementList({
 								key: 'reverse',
 								label: t('inventory:movements.reverse'),
 								icon: Undo2,
-								hidden: row.original.status !== 'posted',
+								hidden: row.original.status !== 'posted' || !canReverse,
 								disabled: reversal.isPending,
 								// Irreversible and refused if it would go negative, so the
 								// consequence is stated before the request, not after.
@@ -205,7 +208,7 @@ export function MovementList({
 				),
 			},
 		],
-		[confirm, reversal, t],
+		[canReverse, confirm, reversal, t],
 	);
 
 	const rows = data?.rows ?? [];

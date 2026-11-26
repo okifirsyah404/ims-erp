@@ -37,6 +37,7 @@ const nav = {
 	'item.subscription': 'Subscription & Licensing',
 	'item.apiKeys': 'API Keys',
 	'item.licenseApplications': 'Applications',
+	'item.licenseContracts': 'License contracts',
 	'item.activations': 'Validation & Activation',
 	'item.websiteCatalog': 'Website Catalog',
 	'item.whatsappAi': 'WhatsApp AI',

@@ -180,6 +180,12 @@ export const navSections: {
 				url: '/subscription',
 				icon: KeyRound,
 				items: [
+					// The contract list had no menu entry (only dashboard links).
+					{
+						titleKey: 'item.licenseContracts',
+						url: '/subscription',
+						permission: 'license.read',
+					},
 					{
 						titleKey: 'item.licenseApplications',
 						url: '/subscription/applications',
@@ -193,7 +199,8 @@ export const navSections: {
 					{
 						titleKey: 'item.activations',
 						url: '/subscription/activations',
-						permission: 'license.activate',
+						// The event log is read with `license:read` on the backend.
+						permission: 'license.read',
 					},
 				],
 			},
@@ -214,7 +221,10 @@ export const navSections: {
 				titleKey: 'item.whatsappAi',
 				url: '/integrations/whatsapp-ai',
 				icon: MessageSquare,
-				permission: 'automation.read',
+				// Backend: conversations and FAQ read with `whatsapp:read`, so the
+				// people meant to answer handed-off chats (customer service, sales
+				// manager) see the menu too.
+				permission: 'whatsapp.read',
 			},
 			{
 				titleKey: 'item.notifications',
@@ -226,7 +236,8 @@ export const navSections: {
 				titleKey: 'item.webhooks',
 				url: '/integrations/webhooks',
 				icon: Webhook,
-				permission: 'integration.read',
+				// Backend: the outbox log is read with `automation:read_log`.
+				permission: 'automation.read_log',
 			},
 		],
 	},
@@ -249,7 +260,8 @@ export const navSections: {
 				titleKey: 'item.inventoryValue',
 				url: '/inventory/stock/value',
 				icon: Calculator,
-				permission: 'stock.read',
+				// Backend: valuation needs both `stock:read` and `product:read_cost`.
+				permission: ['stock.read', 'product.read_cost'],
 			},
 			// Products are the main master, so they sit beside the group instead of
 			// inside it. Detail and edit live under `/products/$productId`.
