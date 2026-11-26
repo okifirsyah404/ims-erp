@@ -43,6 +43,10 @@ export const betterAuthSocialProviders: SocialProviders = buildSocialProviders(
 export const betterAuthTrustedOrigins: string[] = [
 	appConfig.app.url!,
 	'http://localhost:5173',
+	// The employee portal's dev server (same Better Auth backend, own origin —
+	// without it every portal sign-in fails Better Auth's origin check with
+	// "Invalid origin").
+	'http://localhost:5174',
 	// The customer portal's reset-password page (ERP-0022): password links
 	// redirect there, so Better Auth must accept it as a callback origin.
 	...(appConfig.app.portalUrl ? [new URL(appConfig.app.portalUrl).origin] : []),

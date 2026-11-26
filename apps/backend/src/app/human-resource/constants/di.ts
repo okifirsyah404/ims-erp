@@ -34,6 +34,7 @@ import type { IScheduleRepository } from '../contracts/schedule.repository.inter
 import type { EmployeeService } from '../services/employee.service';
 import type { EmployeeInviteService } from '../services/employee-invite.service';
 import type { ExportedEmployeeService } from '../services/exported-employee.service';
+import type { EmployeePortalService } from '../services/employee-portal.service';
 
 export const EMPLOYEE_REPOSITORY_TOKEN: InjectionToken<IEmployeeRepository> =
 	Symbol('EMPLOYEE_REPOSITORY');
@@ -90,6 +91,9 @@ export const AGREEMENT_PDF_SERVICE_TOKEN: InjectionToken<AgreementPdfService> = 
 /** Payslips (ERP-0122). */
 export const PAYSLIP_QUEUE_TOKEN: InjectionToken<IPayslipQueue> = Symbol('PAYSLIP_QUEUE');
 export const PAYSLIP_SERVICE_TOKEN: InjectionToken<PayslipService> = Symbol('PAYSLIP_SERVICE');
+
+/** Employee portal self-service use cases (`/human-resources/me/*`). */
+export const EMPLOYEE_PORTAL_SERVICE_TOKEN: InjectionToken<EmployeePortalService> = Symbol('EMPLOYEE_PORTAL_SERVICE');
 
 /** Token resolving to the repository of `human_resource.code_numberings`. */
 export const HUMAN_RESOURCE_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<HumanResourceCodeNumberingRepository> =

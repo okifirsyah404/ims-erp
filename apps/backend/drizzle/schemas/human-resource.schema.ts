@@ -64,7 +64,7 @@ export const ATTENDANCE_STATUSES = [
 ] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
 
-export const ATTENDANCE_SOURCES = ['manual', 'import', 'leave'] as const;
+export const ATTENDANCE_SOURCES = ['manual', 'import', 'leave', 'self'] as const;
 export type AttendanceSource = (typeof ATTENDANCE_SOURCES)[number];
 
 /** Attendance written for an approved leave of a type. */
@@ -218,7 +218,7 @@ export const attendances = humanResourceSchema.table(
 			'attendances_status_check',
 			sql`status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')`,
 		),
-		check('attendances_source_check', sql`source IN ('manual', 'import', 'leave')`),
+		check('attendances_source_check', sql`source IN ('manual', 'import', 'leave', 'self')`),
 		check(
 			'attendances_times_check',
 			sql`check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at`,

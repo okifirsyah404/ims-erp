@@ -28,6 +28,8 @@ import { join } from 'node:path';
 import { en } from './index';
 
 const APP_SRC = join(import.meta.dir, '../../../apps/web-admin/src');
+/** The employee portal renders the same bundles (its own `employee` namespace too). */
+const PORTAL_SRC = join(import.meta.dir, '../../../apps/web-employee/src');
 /** The backend resolves `api.*` keys from its own controllers and errors. */
 const API_SRC = join(import.meta.dir, '../../../apps/backend/src');
 /** The package's own entry point: `LANGUAGES` references keys by name. */
@@ -48,7 +50,12 @@ function sourceFiles(dir: string): string[] {
 	return out;
 }
 
-const SOURCES = [...sourceFiles(APP_SRC), ...sourceFiles(API_SRC), PACKAGE_ENTRY];
+const SOURCES = [
+	...sourceFiles(APP_SRC),
+	...sourceFiles(PORTAL_SRC),
+	...sourceFiles(API_SRC),
+	PACKAGE_ENTRY,
+];
 const CONCATENATED = SOURCES.map((file) => readFileSync(file, 'utf8')).join('\n');
 
 /**
@@ -193,6 +200,9 @@ const DYNAMIC_PREFIXES = [
 	'projects.childNotFound.',
 	'projects.forbidden.',
 	'projects.file.',
+	// Field attendance (employee portal Phase B): composed error keys.
+	'projects.selfie.',
+	'projects.siteAttendance.',
 	'aftersales.ticketRef.',
 	'sales.invoiceTerm.',
 	'aftersales.ticketState.',
@@ -291,6 +301,22 @@ const DYNAMIC_PREFIXES = [
 	'hr:account.status.',
 	'hr:account.genderOption.',
 	'hr:account.maritalOption.',
+	// Portal project vocabularies come from server values (stage, task status,
+	// evidence kind) and are composed at render time.
+	'projects.stage.',
+	'projects.status.',
+	'projects.task.',
+	'projects.evidenceKind.',
+	// Portal signature request statuses (server values) and the payslip amount
+	// label, which the page renders through `formatIdr` + a literal key.
+	'signature.status.',
+	// Notification copy is rendered from the server's `templateCode` mapped to
+	// `template.<camelCase>` by `notification-text.ts` (both apps).
+	'template.org.',
+	'template.sales.',
+	'template.document.',
+	'template.hr.',
+	'template.project.',
 ];
 
 function isReferenced(namespace: string, key: string): boolean {
@@ -319,3 +345,6 @@ describe('locale dead keys', () => {
 		});
 	}
 });
+
+
+

@@ -23,6 +23,7 @@ import {
 	boolean,
 	check,
 	date,
+	geometry,
 	index,
 	integer,
 	jsonb,
@@ -66,6 +67,18 @@ export const EVIDENCE_KINDS = [
 	'other',
 ] as const;
 export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
+
+/**
+ * Field-attendance verification outcome (employee portal).
+ *
+ * @remarks
+ * `verified` means the phone was inside the project site radius when the
+ * photo was taken (checked by PostGIS in the service). `out_of_range` keeps
+ * the record - the row is evidence, not a request - so a supervisor can see a
+ * teleporting check-in instead of the database silently dropping it.
+ */
+export const SITE_ATTENDANCE_STATUSES = ['verified', 'out_of_range'] as const;
+export type SiteAttendanceStatus = (typeof SITE_ATTENDANCE_STATUSES)[number];
 
 /** Closing needs a function test, a training and a signed BAST (2026-11-04). */
 export const REQUIRED_EVIDENCE: readonly EvidenceKind[] = [
@@ -434,11 +447,23 @@ export const addresses = projectSchema.table(
 		postalCode: varchar('postal_code', { length: 10 }),
 		latitude: numeric('latitude', { precision: 10, scale: 7 }),
 		longitude: numeric('longitude', { precision: 10, scale: 7 }),
+		/**
+		 * The site point as PostGIS geometry, indexed for spatial queries.
+		 *
+		 * @remarks
+		 * `latitude`/`longitude` stay the human-readable mirror (forms, print,
+		 * docs); this column is what `ST_Distance` / `ST_DWithin` read, so the
+		 * radius check is an index-backed geometry query instead of a per-row
+		 * haversine. `mode: 'xy'` maps to `{ x: longitude, y: latitude }`.
+		 */
+		sitePoint: geometry('site_point', { type: 'point', mode: 'xy', srid: 4326 }),
 		isPrimary: boolean('is_primary').notNull().default(false),
 		...timestamps,
 	},
 	(table) => [
 		index('project_addresses_project_id_idx').on(table.projectId),
+		// GiST is the index PostGIS uses for ST_DWithin on geometry.
+		index('project_addresses_site_point_idx').using('gist', table.sitePoint),
 		check(
 			'project_addresses_kind_check',
 			sql`${table.kind} IN ('site', 'billing', 'other')`,
@@ -907,6 +932,78 @@ export const projectSettings = projectSchema.table(
 
 export const projectCodeNumberings = createCodeNumberingTable(projectSchema);
 
+/**
+ * Field attendance at a project site (employee portal, Phase B).
+ *
+ * @remarks
+ * One row per employee per project per business date: check-in creates it,
+ * check-out stamps the same row (`site_attendances_day_uq` enforces it). A day
+ * spent on two sites is two rows; a break inside one visit is not.
+ *
+ * Written **only** by the employee themself through
+ * `/projects/me/site-attendance/check-in`; `employee_id` is a logical reference
+ * to `human_resource.employees.id` (cross-module) and
+ * `latitude`/`longitude` are plain numeric columns - the distance is computed
+ * by PostGIS in the query against the radius in force at check-in, then
+ * snapshotted on the row so a later settings change cannot rewrite history.
+ *
+ * `selfie_key` is the object-storage key; the photo is mandatory, which is what
+ * makes the GPS coordinates a claim worth keeping.
+ */
+export const siteAttendances = projectSchema.table(
+	'site_attendances',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		organizationId: text('organization_id'),		/** Same-module reference to project.projects.id (no FK by design). */
+		projectId: uuid('project_id').notNull(),
+		/** Logical reference to human_resource.employees.id - cross-module FK omitted. */
+		employeeId: uuid('employee_id').notNull(),
+		/** Logical reference to auth.users.id - cross-module FK omitted. */
+		userId: text('user_id').notNull(),
+		businessDate: date('business_date').notNull(),
+		checkInAt: unixTimestamp('check_in_at').notNull(),
+		checkOutAt: unixTimestampNullable('check_out_at'),
+		latitude: numeric('latitude', { precision: 10, scale: 7 }).notNull(),
+		longitude: numeric('longitude', { precision: 10, scale: 7 }).notNull(),
+		accuracyMeters: numeric('accuracy_meters', { precision: 8, scale: 2 }),
+		checkOutLatitude: numeric('check_out_latitude', { precision: 10, scale: 7 }),
+		checkOutLongitude: numeric('check_out_longitude', { precision: 10, scale: 7 }),
+		/** Metres from the site at check-in, computed with PostGIS. */
+		distanceMeters: numeric('distance_meters', { precision: 10, scale: 2 }).notNull(),
+		radiusMeters: integer('radius_meters').notNull(),
+		status: text('status').$type<SiteAttendanceStatus>().notNull(),
+		selfieKey: text('selfie_key').notNull(),
+		selfieContentType: varchar('selfie_content_type', { length: 100 }).notNull(),
+		note: varchar('note', { length: 500 }),
+		...timestamps,
+	},
+	(table) => [
+		index('site_attendances_project_date_idx').on(table.projectId, table.businessDate),
+		index('site_attendances_employee_date_idx').on(table.employeeId, table.businessDate),
+		index('site_attendances_organization_id_idx').on(table.organizationId),
+		check(
+			'site_attendances_status_check',
+			sql`status IN ('verified', 'out_of_range')`,
+		),
+		check(
+			'site_attendances_distance_check',
+			sql`distance_meters >= 0 AND radius_meters > 0`,
+		),
+		check(
+			'site_attendances_times_check',
+			sql`check_out_at IS NULL OR check_out_at >= check_in_at`,
+		),
+		check(
+			'site_attendances_coordinates_check',
+			sql`latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180`,
+		),
+		uniqueIndex('site_attendances_day_uq')
+			.on(table.projectId, table.employeeId, table.businessDate)
+			.where(sql`deleted_at IS NULL`),
+	],);
+
 export type TProjectSelect = typeof projects.$inferSelect;
 export type TProjectInsert = typeof projects.$inferInsert;
 export type TTaskSelect = typeof tasks.$inferSelect;
@@ -941,6 +1038,8 @@ export type TLicenseEventSelect = typeof licenseEvents.$inferSelect;
 export type TLicenseEventInsert = typeof licenseEvents.$inferInsert;
 export type TProjectSettingSelect = typeof projectSettings.$inferSelect;
 export type TProjectSettingInsert = typeof projectSettings.$inferInsert;
+export type TSiteAttendanceSelect = typeof siteAttendances.$inferSelect;
+export type TSiteAttendanceInsert = typeof siteAttendances.$inferInsert;
 export type TProjectCodeNumberingSelect =
 	typeof projectCodeNumberings.$inferSelect;
 export type TProjectCodeNumberingInsert =

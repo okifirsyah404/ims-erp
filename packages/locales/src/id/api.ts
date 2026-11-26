@@ -114,9 +114,20 @@ const api: Record<keyof typeof en, string> = {
 	'projects.childNotFound.cost': 'Biaya tidak ditemukan di proyek ini',
 	'projects.forbidden.task': 'Hanya petugas atau manajer proyek yang bisa mengubah tugas ini',
 	'projects.forbidden.evidence': 'Hanya pengunggah atau manajer proyek yang bisa menghapus file ini',
+	'projects.forbidden.pic': 'Hanya penanggung jawab proyek yang bisa melakukan ini',
 	'projects.file.type': 'Gunakan file JPG, PNG, WebP atau PDF',
 	'projects.file.size': 'Setiap file maksimal 15 MB',
 	'projects.file.empty': 'File kosong',
+	// Absensi lapangan (portal karyawan fase B).
+	'projects.siteCoordinates':
+		'Proyek ini belum punya koordinat lokasi; minta admin mengisi alamat lokasinya',
+	'projects.selfie.missing': 'Selfie wajib untuk check-in di lokasi proyek',
+	'projects.selfie.type': 'Selfie harus berupa gambar JPG, PNG atau WebP',
+	'projects.selfie.size': 'Selfie maksimal 5 MB',
+	'projects.selfie.empty': 'File selfie kosong',
+	'projects.siteAttendance.alreadyCheckedIn': 'Anda sudah check-in di proyek ini hari ini',
+	'projects.siteAttendance.notCheckedIn': 'Check-in dulu sebelum check-out',
+	'projects.siteAttendance.alreadyCheckedOut': 'Kunjungan lokasi ini sudah check-out',
 	'projects.costVoided': 'Biaya ini sudah dibatalkan',
 	'sales.orderHasProject': 'Sales order ini sudah punya proyek; batalkan proyeknya dulu',
 	'projects.bastNotFound': 'BAST tidak ditemukan di proyek ini',
@@ -474,6 +485,10 @@ const api: Record<keyof typeof en, string> = {
 	'hr.attendanceTimes': 'Jam pulang lebih awal dari jam masuk',
 	'hr.attendance.leaveOwned': 'Hari ini dicatat oleh cuti yang disetujui; batalkan cutinya',
 	'hr.attendance.duplicate': 'Karyawan sudah memiliki data absensi pada tanggal ini',
+	'hr.attendance.notActive': 'Karyawan tidak aktif',
+	'hr.attendance.alreadyCheckedIn': 'Anda sudah check-in hari ini',
+	'hr.attendance.alreadyCheckedOut': 'Anda sudah check-out hari ini',
+	'hr.attendance.notCheckedIn': 'Check-in dulu sebelum check-out',
 	'hr.schedule.duplicate': 'Karyawan sudah memiliki jadwal pada tanggal ini',
 	'hr.schedule.rangeTooLong': 'Pengisian jadwal paling banyak {{max}} hari',
 	'hr.salaryPeriod.overlap': 'Periode baru harus dimulai setelah {{after}}',
@@ -693,3 +708,4 @@ const api: Record<keyof typeof en, string> = {
 };
 
 export default api;
+

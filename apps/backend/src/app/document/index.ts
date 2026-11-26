@@ -13,10 +13,12 @@ import {
 	DocumentSignatureController,
 	SignatureController,
 } from './controllers/signature.controller';
+import { EmployeeDocumentController } from './controllers/employee-document.controller';
 
 export * from './container';
 export * from './controllers/document.controller';
 export * from './controllers/signature.controller';
+export * from './controllers/employee-document.controller';
 export type { DocumentService } from './services/document.service';
 export type { SignatureService } from './services/signature.service';
 export type {
@@ -39,5 +41,9 @@ export function documentModule() {
 		.use(DocumentController.plugin())
 		.use(DocumentSignatureController.plugin())
 		.use(SignatureController.plugin())
+		// Employee portal (Phase C): the caller's own documents and signature requests.
+		.use(EmployeeDocumentController.plugin())
 		.use(PublicDocumentController.plugin());
 }
+
+

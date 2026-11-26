@@ -647,7 +647,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
 		license: ['read', 'create', 'extend', 'read_key'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -685,7 +685,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		advance: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
 		purchase_request: ['read', 'create', 'submit'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -696,7 +696,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		task: ['read', 'update', 'submit'],
 		daily_report: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 	},
 
 	purchasing: {
@@ -713,7 +713,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// Prepares opening stock / adjustments with costs; never approves
 		// (decision 2026-11-03).
 		stock_adjustment: ['read', 'create', 'submit'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -736,7 +736,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 			'mark_lost',
 			'export',
 		],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -806,7 +806,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		cash_bank: ['read', 'reconcile', 'export'],
 		investor: ['read'],
 		investor_report: ['read', 'create', 'publish', 'export'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -849,7 +849,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		license: ['read', 'read_key'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -866,7 +866,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		whatsapp: ['read', 'manage_faq'],
 		product: ['read'],
 		customer: ['read'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -915,8 +915,9 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		financial_report: ['read', 'export'],
 		service_ticket: ['read'],
 		asset: ['read', 'export'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		budget: ['read', 'export'],
 		license: ['read'],
 	},
 } as const satisfies Record<ErpRoleName, ErpPermissionRequest>;
+

@@ -19,6 +19,7 @@ import {
 	sessionGuard,
 	warehouseGuard,
 } from '@authorization/elysia-auth';
+import { employeePortalGuard } from '@authorization/employee-portal-guard';
 import { portalGuard } from '@authorization/portal-auth';
 import { translator } from '@providers/i18n/translator';
 import { toErrorResponse } from './errors';
@@ -35,7 +36,9 @@ export type TGuardSet =
 	/** The customer-portal session cookie (ERP-0022, ERP-0094), never combined with the ERP guards. */
 	| 'portal'
 	/** Application admin, or an organization member holding the permission (code numbering). */
-	| 'admin-or-erp';
+	| 'admin-or-erp'
+	/** Employee portal: session + an employee record in the active organization. */
+	| 'employee-portal';
 
 /** Options describing one module's plugin. */
 export type TDomainPluginOptions = {
@@ -120,6 +123,7 @@ export function domainPlugin(
 	}
 	if (guards === 'portal') app = app.use(portalGuard());
 	if (guards === 'admin-or-erp') app = app.use(adminOrErpGuard());
+	if (guards === 'employee-portal') app = app.use(employeePortalGuard());
 
 	return app.onError({ as: 'local' }, (ctx) => {
 		const { code, error, set } = ctx;

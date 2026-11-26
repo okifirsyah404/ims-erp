@@ -388,22 +388,22 @@ describe('document signature grants', () => {
 		}
 	});
 
-	test('only document-issuing roles may request a signature', () => {
-		const requesters = Object.entries(erpRoleGrants)
-			.filter(([, grants]) =>
-				(grants as Record<string, readonly string[]>).document?.includes('signature_request'),
-			)
-			.map(([role]) => role)
-			.sort();
-		expect(requesters).toEqual([
-			'admin',
-			'finance',
-			'hr',
-			'operations_manager',
-			'owner',
-			'project_manager',
-			'sales_manager',
-		]);
+	test('every role that can read documents may also request a signature', () => {
+		// Portal Phase C opened `signature_request` to every internal role: an
+		// employee must be able to ask a colleague to sign their own document.
+		// The invariant that remains is that document access is the floor —
+		// a role with no `document` grant cannot request anything.
+		const readers = Object.entries(erpRoleGrants)
+			.filter(([, grants]) => (grants as Record<string, readonly string[]>).document?.includes('read'))
+			.map(([role]) => role);
+		expect(readers.length).toBeGreaterThan(0);
+		for (const role of readers) {
+			expect((erpRoleGrants as Record<string, { document?: readonly string[] }>)[role]!.document).toContain(
+				'signature_request',
+			);
+		}
+		// `member` holds no document grant at all.
+		expect((erpRoleGrants as Record<string, { document?: readonly string[] }>).member!.document).toBeUndefined();
 	});
 });
 
@@ -430,13 +430,14 @@ describe('document signature routes', () => {
 		expect(response.status).toBe(403);
 	});
 
-	test('POST /documents/signatures/requests answers 403 for a signature_sign-only role', async () => {
-		// `sales` holds signature_read + signature_sign but not signature_request.
+	test('POST /documents/signatures/requests answers 403 for a role without document access', async () => {
+		// Every role that can read documents may now request a signature
+		// (Phase C), so the refusal case is a role with no document grant at all.
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
 				'/documents/signatures/requests',
-				'sales',
+				'member',
 				{ documentId: '01930000-0000-7000-8000-000000000001', signerUserIds: ['user-sales'] },
 				fixture.orgA,
 			),
@@ -497,12 +498,12 @@ describe('document signature routes', () => {
 		expect(response.status).toBe(200);
 	});
 
-	test('POST /documents/signatures/requests/:id/cancel answers 403 without signature_request', async () => {
+	test('POST /documents/signatures/requests/:id/cancel answers 403 without document access', async () => {
 		const response = await app.handle(
 			jsonRequest(
 				'POST',
 				'/documents/signatures/requests/01930000-0000-7000-8000-000000000009/cancel',
-				'sales',
+				'member',
 				{},
 				fixture.orgA,
 			),

@@ -24,6 +24,8 @@ import { seedHrEmployees } from './seed/hr.seeder';
 import { seedHrSchedules } from './seed/hr-schedules.seeder';
 import { seedHrSalaries } from './seed/hr-salaries.seeder';
 import { seedHrDocuments } from './seed/hr-documents.seeder';
+import { seedDemoProject } from './seed/project-demo.seeder';
+import { seedPortalDemo } from './seed/portal-demo.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
@@ -84,6 +86,12 @@ export async function runSeeders(): Promise<void> {
 	await seedHrSalaries();
 	// Draft employment agreements of the employees above (ERP-0121).
 	await seedHrDocuments();
+	// Demo project for the employee portal (Phase B): PIC employee, site
+	// coordinates and the attendance radius. Needs the HR employees above.
+	await seedDemoProject();
+	// A pending leave request, an approved overtime record and the portal account
+	// printed for a manual walk-through.
+	await seedPortalDemo();
 	// M08 leave types are reference rows the attendance/leave records depend on.
 	await seedLeaveTypes();
 	// Notification templates are reference rows (every environment); the demo
@@ -127,3 +135,5 @@ if (import.meta.main) {
 		process.exit(1);
 	});
 }
+
+

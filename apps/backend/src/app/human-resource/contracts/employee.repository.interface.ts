@@ -22,6 +22,16 @@ export interface IEmployeeRepository {
 	/** Alive employee linked to a login user, if any. */
 	findByUserId(userId: string, tx?: TTx): Promise<TEmployeeSelect | null>;
 
+	/** Alive employee linked to a login user inside one organization (portal). */
+	findByUserAndOrganization(
+		userId: string,
+		organizationId: string,
+		tx?: TTx,
+	): Promise<TEmployeeSelect | null>;
+
+	/** Every live employee row of a login user (portal org switcher). */
+	listByUserId(userId: string, tx?: TTx): Promise<TEmployeeSelect[]>;
+
 	findByEmail(email: string, tx?: TTx): Promise<TEmployeeSelect | null>;
 
 	/** Whether another alive employee already holds this code in the org. */

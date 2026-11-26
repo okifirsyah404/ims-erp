@@ -24,6 +24,7 @@ import integrations_ from './integrations';
 import documents_ from './documents';
 import notifications_ from './notifications';
 import signatures_ from './signatures';
+import employee_ from './employee';
 
 /** Indonesian resources — same namespace/key shape as `en`. */
 export const id = {
@@ -53,4 +54,5 @@ export const id = {
 	documents: documents_,
 	notifications: notifications_,
 	signatures: signatures_,
+	employee: employee_,
 } as const;

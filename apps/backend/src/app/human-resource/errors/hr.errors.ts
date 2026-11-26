@@ -132,12 +132,25 @@ export class AttendanceTimeError extends AppError {
 
 /** A single attendance row cannot be written as asked. */
 export class AttendanceStateError extends AppError {
-	constructor(kind: 'leaveOwned' | 'duplicate') {
+	constructor(
+		kind:
+			| 'leaveOwned'
+			| 'duplicate'
+			| 'notActive'
+			| 'alreadyCheckedIn'
+			| 'alreadyCheckedOut'
+			| 'notCheckedIn',
+	) {
 		const messages = {
 			leaveOwned: 'This day was written by an approved leave request; cancel the leave instead',
 			duplicate: 'The employee already has an attendance record on this date',
+			notActive: 'The employee is not active',
+			alreadyCheckedIn: 'You have already checked in today',
+			alreadyCheckedOut: 'You have already checked out today',
+			notCheckedIn: 'Check in before checking out',
 		};
-		super(kind === 'duplicate' ? 409 : 422, `hr.attendance.${kind}` as const, messages[kind]);
+		const conflict = kind === 'duplicate' || kind === 'alreadyCheckedIn' || kind === 'alreadyCheckedOut';
+		super(conflict ? 409 : 422, `hr.attendance.${kind}` as const, messages[kind]);
 	}
 }
 

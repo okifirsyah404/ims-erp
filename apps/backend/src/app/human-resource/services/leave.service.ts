@@ -2,6 +2,8 @@ import type { TLeaveRequestSelect, TLeaveTypeSelect, TOvertimeRequestSelect } fr
 import type { TPaginationResult } from '@ims-erp/common';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
+import { EXPORTED_NOTIFICATION_SERVICE_TOKEN } from '@app/notification/constants/di';
+import type { ExportedNotificationService } from '@app/notification/services/exported-notification.service';
 import { ATTENDANCE_REPOSITORY_TOKEN, HR_PEOPLE_SERVICE_TOKEN, LEAVE_REPOSITORY_TOKEN } from '../constants/di';
 import type { THrScope, TLeaveBody, TOvertimeBody, TRequestListQuery } from '../contracts/hr-records.contract';
 import type { IAttendanceRepository, ILeaveRepository } from '../contracts/hr-records.repository.interface';
@@ -38,6 +40,9 @@ export class LeaveService {
 		@inject(ATTENDANCE_REPOSITORY_TOKEN) private readonly attendance: Pick<IAttendanceRepository, 'upsertMany' | 'removeForLeave'>,
 		@inject(HR_PEOPLE_SERVICE_TOKEN) private readonly employees: Pick<HrPeopleService, 'require' | 'requireActive' | 'listVisible'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
+		/** Cross-module notification seam; a failure never blocks the decision. */
+		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN)
+		private readonly notifications?: Pick<ExportedNotificationService, 'notify'>,
 	) {}
 
 	listTypes(includeInactive = false): Promise<TLeaveTypeSelect[]> {
@@ -170,7 +175,9 @@ export class LeaveService {
 				tx,
 			);
 		});
-		return this.leaveView(scope, await this.requireLeave(scope, id));
+		const approved = await this.requireLeave(scope, id);
+		await this.notifyDecision(scope, approved, 'leave', 'approved');
+		return this.leaveView(scope, approved);
 	}
 
 	async rejectLeave(scope: THrScope, actorUserId: string, id: string, note: string | null): Promise<TLeaveView> {
@@ -183,6 +190,7 @@ export class LeaveService {
 			decisionNote: note,
 		});
 		if (!rejected) throw new RequestStateError('decide');
+		await this.notifyDecision(scope, rejected, 'leave', 'rejected');
 		return this.leaveView(scope, rejected);
 	}
 
@@ -200,6 +208,33 @@ export class LeaveService {
 			await this.attendance.removeForLeave(id, tx);
 		});
 		return this.leaveView(scope, await this.requireLeave(scope, id));
+	}
+
+	/**
+	 * Tells the employee their request was decided.
+	 *
+	 * @remarks
+	 * Enqueue-only and best-effort: the decision is already committed, and the
+	 * notification service swallows its own Redis failures, so a missing notice
+	 * can never roll a decision back.
+	 */
+	private async notifyDecision(
+		scope: THrScope,
+		row: { id: string; employeeId: string; startDate?: string; endDate?: string; workDate?: string },
+		requestType: 'leave' | 'overtime',
+		decision: 'approved' | 'rejected',
+	): Promise<void> {
+		if (!this.notifications) return;
+		const employee = await this.employees.require(scope, row.employeeId).catch(() => null);
+		if (!employee?.userId) return;
+		const period = row.startDate ? `${row.startDate}..${row.endDate ?? row.startDate}` : (row.workDate ?? '-');
+		await this.notifications.notify({
+			userIds: [employee.userId],
+			templateCode: 'hr.leave_decided',
+			variables: { requestType, period, decision },
+			sourceType: `hr_${requestType}`,
+			sourceId: row.id,
+		});
 	}
 
 	// Overtime ----------------------------------------------------------------
@@ -257,6 +292,7 @@ export class LeaveService {
 			decisionNote: note,
 		});
 		if (!decided) throw new RequestStateError('decide');
+		await this.notifyDecision(scope, decided, 'overtime', status);
 		return this.overtimeView(scope, decided);
 	}
 
@@ -280,3 +316,5 @@ export class LeaveService {
 		return this.overtimeView(scope, cancelled);
 	}
 }
+
+

@@ -60,6 +60,16 @@ describe('locale values', () => {
 		// Guards against copy-pasting the English bundle into `id`. Brand names
 		// and locale-neutral tokens are expected to match, so they're exempt.
 		const ALLOWED_IDENTICAL = new Set([
+			// The product name is a brand, not copy (employee portal).
+			'employee:appName',
+			// Acronyms and loanwords that are the same in Indonesian.
+			'employee:projects.picBadge',
+			'employee:projects.evidenceKind.bast',
+			'employee:projects.radius',
+			'employee:projects.selfie',
+			// "Email" and "Status" are the same word in Indonesian.
+			'employee:profile.email',
+			'employee:profile.status',
 			// Statutory acronyms and programme names are the same in both languages (ERP-0138).
 			'hr:form.taxId',
 			'tax:pph21.ptkpTitle',
@@ -271,3 +281,4 @@ describe('locale values', () => {
 		expect(untranslated).toEqual([]);
 	});
 });
+

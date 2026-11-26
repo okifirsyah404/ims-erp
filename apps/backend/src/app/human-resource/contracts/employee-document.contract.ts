@@ -43,7 +43,7 @@ export const EMPLOYEE_DOCUMENT_TITLES: Record<EmployeeDocumentType, string> = {
 };
 
 /** The residence address an employee enters on the claim form. */
-export type TEmployeeAddressInput = { addressLine: string; villageId: string; postalCode: string };
+export type TEmployeeAddressInput = { addressLine: string; villageId: string | null; postalCode: string | null };
 
 /** Persistence port of `human_resource.employee_addresses`. */
 export interface IEmployeeAddressRepository {

@@ -1,0 +1,38 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "954f7e97-5f1c-4fec-b279-23a71445ea3b",
+  "prevIds": [
+    "07e6b790-c3f2-46f7-bbdc-67f6b78b98d0"
+  ],
+  "footprints": [
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "attendances"
+      ],
+      "writes": [
+        "s|ck|human_resource.attendances.attendances_source_check"
+      ],
+      "reads": [
+        "n|tbl|human_resource.attendances",
+        "n|sch|human_resource",
+        "n|col|human_resource.attendances.source",
+        "e|col|human_resource.attendances.source"
+      ],
+      "sqlHash": "f0750e65a6ae2cc7"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"human_resource\",\"attendances\",\"attendances_source_check\"]",
+      "set": {
+        "value": "source IN ('manual', 'import', 'leave', 'self')"
+      }
+    }
+  ]
+}

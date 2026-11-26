@@ -5,6 +5,8 @@ import { DocumentRepository } from './repositories/document.repository';
 import { DocumentService } from './services/document.service';
 import { SignatureRepository } from './repositories/signature.repository';
 import { SignatureService } from './services/signature.service';
+import { MyDocumentRepository } from './repositories/my-document.repository';
+import { EmployeeDocumentPortalService } from './services/employee-document-portal.service';
 import {
 	DOCUMENT_CODE_NUMBERING_REPOSITORY_TOKEN,
 	DOCUMENT_NUMBERING_SERVICE_TOKEN,
@@ -12,6 +14,8 @@ import {
 	DOCUMENT_SERVICE_TOKEN,
 	SIGNATURE_REPOSITORY_TOKEN,
 	SIGNATURE_SERVICE_TOKEN,
+	MY_DOCUMENT_REPOSITORY_TOKEN,
+	EMPLOYEE_DOCUMENT_PORTAL_SERVICE_TOKEN,
 } from './constants/di';
 
 export * from './constants/di';
@@ -31,4 +35,8 @@ export function registerDocument(container: DependencyContainer): void {
 	container.register(DOCUMENT_SERVICE_TOKEN, { useClass: DocumentService });
 	container.register(SIGNATURE_REPOSITORY_TOKEN, { useClass: SignatureRepository });
 	container.register(SIGNATURE_SERVICE_TOKEN, { useClass: SignatureService });
+	// Employee portal (Phase C): the caller's own documents and signature requests.
+	container.register(MY_DOCUMENT_REPOSITORY_TOKEN, { useClass: MyDocumentRepository });
+	container.register(EMPLOYEE_DOCUMENT_PORTAL_SERVICE_TOKEN, { useClass: EmployeeDocumentPortalService });
 }
+
