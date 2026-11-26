@@ -17,6 +17,9 @@ import {
 	PROJECT_PORTAL_SERVICE_TOKEN,
 	PROJECT_REPOSITORY_TOKEN,
 	PROJECT_SERVICE_TOKEN,
+	PORTAL_PROJECT_SERVICE_TOKEN,
+	SITE_ATTENDANCE_REPOSITORY_TOKEN,
+	SITE_ATTENDANCE_SERVICE_TOKEN,
 	WARRANTY_REPOSITORY_TOKEN,
 	WARRANTY_SERVICE_TOKEN,
 	WEBSITE_INQUIRY_SERVICE_TOKEN,
@@ -39,6 +42,9 @@ import { ProjectLookupService } from './services/project-lookup.service';
 import { ProjectNumberingService } from './services/project-numbering.service';
 import { ProjectPortalService } from './services/project-portal.service';
 import { ProjectService } from './services/project.service';
+import { PortalProjectService } from './services/portal-project.service';
+import { SiteAttendanceService } from './services/site-attendance.service';
+import { SiteAttendanceRepository } from './repositories/site-attendance.repository';
 import { WarrantyService } from './services/warranty.service';
 import { WebsiteInquiryService } from './services/website-inquiry.service';
 
@@ -64,6 +70,9 @@ export function registerProject(container: DependencyContainer): void {
 	// Projects and handovers.
 	container.register(PROJECT_REPOSITORY_TOKEN, { useClass: ProjectRepository });
 	container.register(PROJECT_SERVICE_TOKEN, { useClass: ProjectService });
+	container.register(PORTAL_PROJECT_SERVICE_TOKEN, { useClass: PortalProjectService });
+	container.register(SITE_ATTENDANCE_REPOSITORY_TOKEN, { useClass: SiteAttendanceRepository });
+	container.register(SITE_ATTENDANCE_SERVICE_TOKEN, { useClass: SiteAttendanceService });
 	container.register(PROJECT_LOOKUP_SERVICE_TOKEN, { useClass: ProjectLookupService });
 	container.register(PROJECT_PORTAL_SERVICE_TOKEN, { useClass: ProjectPortalService });
 	container.register(HANDOVER_REPOSITORY_TOKEN, { useClass: HandoverRepository });
@@ -84,3 +93,4 @@ export function registerProject(container: DependencyContainer): void {
 	container.register(PROJECT_CODE_NUMBERING_REPOSITORY_TOKEN, { useClass: ProjectCodeNumberingRepository });
 	container.register(PROJECT_NUMBERING_SERVICE_TOKEN, { useClass: ProjectNumberingService });
 }
+

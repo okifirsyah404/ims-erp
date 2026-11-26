@@ -279,6 +279,13 @@ const projects = {
 	'ticket.serviceCost': 'Service cost',
 	'ticket.serviceCostRp': 'Service cost (Rp)',
 	'ticket.confirmedBy': 'Confirmed by the customer',
+	'costs.paymentSource': 'Paid by',
+	'costs.paymentSource.employee_claim': 'Employee (expense claim)',
+	'costs.paymentSource.petty_cash': 'Petty cash',
+	'costs.paymentSource.bank': 'Company bank account',
+	'costs.reference': 'Reference number',
+	'costs.duplicateReference': 'Another cost of this project already uses this reference. Is it entered twice?',
+	'costs.ledgerHint': 'Each cost is posted to the general ledger as project COGS; voiding it reverses the journal. Costs already recorded through supplier bills or expense claims must not be entered here again.',
 } as const;
 
 export default projects;

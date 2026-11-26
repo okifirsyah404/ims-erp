@@ -278,6 +278,13 @@ const projects: Record<keyof typeof en, string> = {
 	'ticket.serviceCost': 'Biaya servis',
 	'ticket.serviceCostRp': 'Biaya servis (Rp)',
 	'ticket.confirmedBy': 'Dikonfirmasi pelanggan',
+	'costs.paymentSource': 'Dibayar dari',
+	'costs.paymentSource.employee_claim': 'Karyawan (klaim biaya)',
+	'costs.paymentSource.petty_cash': 'Kas kecil',
+	'costs.paymentSource.bank': 'Rekening bank perusahaan',
+	'costs.reference': 'Nomor referensi',
+	'costs.duplicateReference': 'Biaya lain di proyek ini sudah memakai referensi ini. Apakah tercatat dua kali?',
+	'costs.ledgerHint': 'Setiap biaya diposting ke buku besar sebagai HPP proyek; membatalkannya membalik jurnal. Biaya yang sudah tercatat lewat tagihan pemasok atau klaim biaya jangan diinput lagi di sini.',
 };
 
 export default projects;

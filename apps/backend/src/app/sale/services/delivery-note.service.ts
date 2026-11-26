@@ -9,6 +9,11 @@ import type { WarehouseService } from '@app/warehouse/services/warehouse.service
 import { SALE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { SaleNumberingService } from './sale-numbering.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
+import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PostingService } from '@app/finance/services/posting.service';
+import { inventoryValue } from '@app/finance/utils/inventory-value';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import type { DocumentService } from '@app/document';
 import type {
 	TDeliveryNoteItemSelect,
@@ -106,6 +111,12 @@ export class DeliveryNoteService {
 		/** ERP-0044: shipped delivery notes are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0137: shipping posts COGS at the moving-average cost. */
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
+		/** ERP-0137: an order with a live project books project COGS with `project_id`. */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'liveProjectOfOrder'>,
 	) {}
 
 	list(query: TDeliveryNoteListQuery): Promise<TPaginationResult<TDeliveryNoteRow>> {
@@ -312,8 +323,10 @@ export class DeliveryNoteService {
 			lines.map(async (line) => (line.productId ? await this.items.getProduct(line.productId).catch(() => null) : null)),
 		);
 		const occurredAt = noon(note.deliveryDate);
+		const project = this.projects ? await this.projects.liveProjectOfOrder(note.orderId) : null;
 
 		await this.transactions.run(async (tx) => {
+			const cogs: Array<{ productId: string; value: number }> = [];
 			const shipped = await this.notes.markShipped(id, actor.userId, tx);
 			if (!shipped) throw new DeliveryNoteStateError('ship');
 			for (const [index, line] of lines.entries()) {
@@ -341,6 +354,7 @@ export class DeliveryNoteService {
 					);
 					movementId = posted.movement.id;
 					await this.notes.setLineIssue(line.id, { movementId, unitCost: posted.movement.unitCost ?? 0 }, tx);
+					cogs.push({ productId: item.id, value: inventoryValue(line.quantity, posted.movement.unitCost) });
 				}
 				if (item.isSerialized && line.serialNumbers?.length) {
 					const missing = await this.units.sellUnits(
@@ -352,12 +366,46 @@ export class DeliveryNoteService {
 					if (missing.length > 0) throw new DeliveryNoteLineError('notInStock', index + 1);
 				}
 			}
+			// ERP-0137 (grill Q26): Dr COGS (project COGS for a project order) /
+			// Cr inventory at the moving-average cost of the issue movements.
+			const total = cogs.reduce((sum, line) => sum + line.value, 0);
+			if (this.posting && total > 0) {
+				const role = project ? 'project_cogs' : 'cogs';
+				await this.posting.postBusinessEvent(tx, {
+					organizationId: actor.organizationId,
+					entryDate: note.deliveryDate,
+					sourceModule: 'sale',
+					sourceType: 'delivery_note',
+					sourceId: note.id,
+					idempotencyKey: `delivery_note:${note.id}`,
+					eventType: 'sale.delivery_shipped',
+					description: `Delivery note ${note.code}`,
+					lines: [
+						...cogs
+							.filter((line) => line.value > 0)
+							.map((line) => ({
+								role,
+								debit: line.value,
+								credit: 0,
+								productId: line.productId,
+								projectId: project?.id ?? null,
+								// ERP-0150: the customer dimension for profitability.
+								partyType: 'customer',
+								partyId: note.customerId,
+							})),
+						...cogs
+							.filter((line) => line.value > 0)
+							.map((line) => ({ role: 'inventory', debit: 0, credit: line.value, productId: line.productId })),
+					],
+				});
+			}
 			await this.orders.markInProgress(note.orderId, actor.userId, `delivery note ${note.code} shipped`, tx);
 			// ERP-0044: the surat jalan is registered once it actually ships,
 			// inside the same transaction as the stock movement.
 			await this.documents.register(
 				{
 					code: note.code,
+					title: `Surat Jalan - ${note.customerName}`,
 					documentType: 'delivery_note',
 					module: 'sale',
 					sourceType: 'delivery_note',

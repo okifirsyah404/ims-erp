@@ -1,25 +1,44 @@
 import type { TEmployeeSelect, TEmployeeSalaryRecordSelect } from '@drizzle/schemas/human-resource.schema';
 import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
 import { inject, injectable } from 'tsyringe';
-import { HR_PEOPLE_SERVICE_TOKEN, LEAVE_SERVICE_TOKEN, SALARY_REPOSITORY_TOKEN } from '../constants/di';
+import { PAYROLL_LEDGER_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PayrollLedgerService } from '@app/finance/services/payroll-ledger.service';
+import { EXPORTED_TAX_SERVICE_TOKEN } from '@app/tax/constants/di';
+import type { ExportedTaxService } from '@app/tax/services/exported-tax.service';
+import {
+	HR_PEOPLE_SERVICE_TOKEN,
+	LEAVE_SERVICE_TOKEN,
+	PAYROLL_CALCULATION_SERVICE_TOKEN,
+	PAYSLIP_QUEUE_TOKEN,
+	SALARY_PERIOD_SERVICE_TOKEN,
+	SALARY_REPOSITORY_TOKEN,
+} from '../constants/di';
+import type { TTx } from '@drizzle/types';
+import type { PayrollCalculationService, TPayrollMonth } from './payroll-calculation.service';
+import { type TSalaryAmounts, type TStatutoryResult, withoutStatutory } from '../utils/payroll-statutory';
+import type { IPayslipQueue } from '../contracts/payslip.contract';
 import type { THrScope, TSalaryBody } from '../contracts/hr-records.contract';
 import type { ISalaryRepository } from '../contracts/hr-records.repository.interface';
-import { HrNotFoundError, ImportFileError, SalaryStateError } from '../errors/hr.errors';
-import { netPay, periodRange, previousPeriod } from '../utils/hr';
+import { HrNotFoundError, ImportFileError, PayrollStatutoryError, SalaryStateError } from '../errors/hr.errors';
+import { periodRange, previousPeriod } from '../utils/hr';
 import { assertImportFile, type TImportResult, type TRowError } from '../utils/import-file';
 import { MAX_IMPORT_ROWS, readRows, templateWorkbook } from '../utils/spreadsheet';
 import { type HrPeopleService, worksOn } from './people.service';
 import type { LeaveService } from './leave.service';
+import type { SalaryPeriodService } from './salary-period.service';
 
 export type TSalaryPeriod = {
 	period: string;
 	rows: (TEmployeeSalaryRecordSelect & { overtimeHours: number })[];
-	totals: Pick<TEmployeeSalaryRecordSelect, 'baseSalary' | 'allowances' | 'overtimePay' | 'bonus' | 'deductions' | 'netPay'>;
+	totals: Pick<
+		TEmployeeSalaryRecordSelect,
+		'baseSalary' | 'allowances' | 'overtimePay' | 'bonus' | 'deductions' | 'pph21Amount' | 'bpjsEmployeeAmount' | 'bpjsCompanyAmount' | 'netPay'
+	>;
 	/** `empty`, `draft` (something to approve) or `approved` (all locked). */
 	state: 'empty' | 'draft' | 'approved';
 };
 
-const AMOUNTS = ['baseSalary', 'allowances', 'overtimePay', 'bonus', 'deductions', 'netPay'] as const;
+const AMOUNTS = ['baseSalary', 'allowances', 'overtimePay', 'bonus', 'deductions', 'pph21Amount', 'bpjsEmployeeAmount', 'bpjsCompanyAmount', 'netPay'] as const;
 
 /** Whole or decimal rupiah as typed in a sheet (`1.500.000`, `1500000,50`) → minor units. */
 /** Employees by upper-cased code; a code used in two organizations maps to `null` (ambiguous). */
@@ -56,7 +75,53 @@ export class SalaryService {
 		@inject(HR_PEOPLE_SERVICE_TOKEN) private readonly employees: Pick<HrPeopleService, 'require' | 'listVisible' | 'findByCodes'>,
 		@inject(LEAVE_SERVICE_TOKEN) private readonly leave: Pick<LeaveService, 'approvedHours'>,
 		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions: ITransactionRunner,
+		@inject(SALARY_PERIOD_SERVICE_TOKEN) private readonly periods: Pick<SalaryPeriodService, 'amountsFor'>,
+		/** ERP-0122: the payslip PDF queue; optional so tests that do not approve can omit it. */
+		@inject(PAYSLIP_QUEUE_TOKEN) private readonly payslips?: IPayslipQueue,
+		/** ERP-0138: PPh 21 and BPJS; without it records carry no statutory amounts. */
+		@inject(PAYROLL_CALCULATION_SERVICE_TOKEN) private readonly calculator?: Pick<PayrollCalculationService, 'month' | 'calculate'>,
+		/** ERP-0138: the payroll journal on approval. */
+		@inject(PAYROLL_LEDGER_SERVICE_TOKEN) private readonly finance?: Pick<PayrollLedgerService, 'postPayroll'>,
+		/** ERP-0138: the BP21 Coretax file. */
+		@inject(EXPORTED_TAX_SERVICE_TOKEN) private readonly taxes?: Pick<ExportedTaxService, 'bp21Xml'>,
 	) {}
+
+	private month(period: string): Promise<TPayrollMonth | null> {
+		return this.calculator ? this.calculator.month(period) : Promise.resolve(null);
+	}
+
+	/** Net pay and the statutory amounts of one record; refuses a negative net. */
+	private async figures(month: TPayrollMonth | null, employee: TEmployeeSelect, amounts: TSalaryAmounts, tx?: TTx): Promise<TStatutoryResult> {
+		const result =
+			month && this.calculator ? await this.calculator.calculate(month, employee, amounts, tx) : withoutStatutory(amounts, employee.ptkpStatus);
+		if (result.netPay < 0) throw new SalaryStateError('netNegative');
+		return result;
+	}
+
+	/** Recalculates every visible draft of a period (after a table or setting change). */
+	private async recalculateDrafts(scope: THrScope, period: string, month: TPayrollMonth, tx?: TTx): Promise<number> {
+		const drafts = (await this.repository.listPeriod(period, scope)).filter((row) => row.status === 'draft');
+		if (drafts.length === 0) return 0;
+		const people = new Map((await this.employees.listVisible(scope)).map((employee) => [employee.id, employee]));
+		for (const row of drafts) {
+			const employee = people.get(row.employeeId);
+			if (!employee) continue;
+			const amounts = { baseSalary: row.baseSalary, allowances: row.allowances, overtimePay: row.overtimePay, bonus: row.bonus, deductions: row.deductions };
+			const result = await this.figures(month, employee, amounts, tx);
+			await this.repository.upsertDraft(
+				{ ...amounts, ...result, period, employeeId: row.employeeId, employeeName: row.employeeName, notes: row.notes, status: 'draft', createdBy: row.createdBy },
+				tx,
+			);
+		}
+		return drafts.length;
+	}
+
+	/** `payroll:calculate`: recomputes PPh 21 and BPJS on the period's drafts. */
+	async recalculate(scope: THrScope, period: string): Promise<TSalaryPeriod> {
+		const month = await this.month(period);
+		if (month) await this.transactions.run((tx) => this.recalculateDrafts(scope, period, month, tx));
+		return this.period(scope, period);
+	}
 
 	async period(scope: THrScope, period: string): Promise<TSalaryPeriod> {
 		const [rows, hours] = await Promise.all([this.repository.listPeriod(period, scope), this.leave.approvedHours(period)]);
@@ -72,11 +137,11 @@ export class SalaryService {
 
 	async save(scope: THrScope, actorUserId: string, body: TSalaryBody): Promise<TEmployeeSalaryRecordSelect> {
 		const employee = await this.employees.require(scope, body.employeeId);
-		if (netPay(body) < 0) throw new SalaryStateError('netNegative');
+		const result = await this.figures(await this.month(body.period), employee, body);
 		const saved = await this.repository.upsertDraft({
 			...body,
+			...result,
 			employeeName: employee.fullName,
-			netPay: netPay(body),
 			status: 'draft',
 			createdBy: actorUserId,
 		});
@@ -97,26 +162,30 @@ export class SalaryService {
 	 * month's summary (ERP-0034 employees carry no salary; the salary
 	 * components of `docs.dbml` are not built yet), otherwise 0.
 	 */
-	async generate(scope: THrScope, actorUserId: string, period: string): Promise<TSalaryPeriod> {
-		const [current, previous, people] = await Promise.all([
+	/** `actorUserId` is `null` for the daily payday run (ERP-0120). */
+	async generate(scope: THrScope, actorUserId: string | null, period: string): Promise<TSalaryPeriod> {
+		const { start, end } = periodRange(period);
+		const [current, previous, people, agreed] = await Promise.all([
 			this.repository.listPeriod(period, scope),
 			this.repository.listPeriod(previousPeriod(period), scope),
 			this.employees.listVisible(scope),
+			this.periods.amountsFor(start, end),
 		]);
+		const month = await this.month(period);
 		const existing = new Set(current.map((row) => row.employeeId));
 		const last = new Map(previous.map((row) => [row.employeeId, row]));
-		const { start, end } = periodRange(period);
 		const working = (employee: TEmployeeSelect) => worksOn(employee, start) || worksOn(employee, end);
 		for (const employee of people.filter(working)) {
 			if (existing.has(employee.id)) continue;
-			const before = last.get(employee.id);
+			// The salary period in force (ERP-0119); without one, last month's summary.
+			const before = agreed.get(employee.id) ?? last.get(employee.id);
 			const amounts = { baseSalary: before?.baseSalary ?? 0, allowances: before?.allowances ?? 0, overtimePay: 0, bonus: 0, deductions: 0 };
 			await this.repository.upsertDraft({
 				...amounts,
+				...(await this.figures(month, employee, amounts)),
 				period,
 				employeeId: employee.id,
 				employeeName: employee.fullName,
-				netPay: netPay(amounts),
 				notes: null,
 				status: 'draft',
 				createdBy: actorUserId,
@@ -127,8 +196,74 @@ export class SalaryService {
 
 	/** The owner locks the period (`payroll:approve`, checked by the controller). */
 	async approve(scope: THrScope, actorUserId: string, period: string): Promise<TSalaryPeriod> {
-		if ((await this.repository.approvePeriod(period, actorUserId, scope)) === 0) throw new SalaryStateError('nothingToApprove');
+		const month = await this.month(period);
+		// ERP-0138: drafts are recalculated with the tables in force, locked, and
+		// posted as one payroll journal in the same transaction.
+		const approved = await this.transactions.run(async (tx) => {
+			if (month) await this.recalculateDrafts(scope, period, month, tx);
+			const ids = await this.repository.approvePeriod(period, actorUserId, scope, tx);
+			if (ids.length === 0) throw new SalaryStateError('nothingToApprove');
+			if (this.finance) {
+				const rows = await this.repository.listByIds(ids, tx);
+				const sum = (pick: (row: TEmployeeSalaryRecordSelect) => number) => rows.reduce((total, row) => total + pick(row), 0);
+				const journalEntryId = await this.finance.postPayroll(tx, {
+					organizationId: scope.organizationId,
+					actorUserId,
+					period,
+					entryDate: periodRange(period).end,
+					recordIds: ids,
+					totals: {
+						pay: sum((row) => row.baseSalary + row.allowances + row.overtimePay + row.bonus),
+						deductions: sum((row) => row.deductions),
+						pph21: sum((row) => row.pph21Amount),
+						bpjsEmployee: sum((row) => row.bpjsEmployeeAmount),
+						bpjsCompany: sum((row) => row.bpjsCompanyAmount),
+						net: sum((row) => row.netPay),
+					},
+				});
+				if (journalEntryId) await this.repository.setJournalEntry(ids, journalEntryId, tx);
+			}
+			return ids;
+		});
+		// ERP-0122 (grill-me Q32): one payslip PDF per approved record; the queue never fails the approval.
+		for (const recordId of approved) await this.payslips?.enqueue(recordId);
 		return this.period(scope, period);
+	}
+
+	/**
+	 * The monthly BP21 Coretax file of an approved period (ERP-0138). Every
+	 * employee needs a NIK or NPWP; the last tax month goes on the annual slip,
+	 * which this export does not build.
+	 */
+	async bp21Xml(scope: THrScope, period: string): Promise<string> {
+		if (!this.taxes) throw new PayrollStatutoryError('bp21NothingToExport');
+		const rows = (await this.repository.listPeriod(period, scope)).filter((row) => row.status === 'approved' && row.taxMethod !== null);
+		if (rows.length === 0) throw new PayrollStatutoryError('bp21NothingToExport');
+		if (rows.some((row) => row.taxMethod === 'annual')) throw new PayrollStatutoryError('bp21AnnualUnsupported');
+		const people = new Map((await this.employees.listVisible(scope)).map((employee) => [employee.id, employee]));
+		const missing = rows.filter((row) => {
+			const employee = people.get(row.employeeId);
+			return !employee || !(employee.taxId || employee.nationalId);
+		});
+		if (missing.length > 0) {
+			throw new PayrollStatutoryError('bp21IdentityMissing', { names: missing.map((row) => row.employeeName).join(', ') });
+		}
+		const [year, month] = period.split('-').map(Number) as [number, number];
+		return this.taxes.bp21Xml(
+			rows.map((row) => {
+				const employee = people.get(row.employeeId)!;
+				return {
+					periodYear: year,
+					periodMonth: month,
+					counterpartyTin: (employee.taxId || employee.nationalId) as string,
+					ptkpStatus: row.ptkpStatus ?? 'TK/0',
+					taxObjectCode: '21-100-01',
+					gross: row.taxableGross,
+					ratePercent: row.terRate ? String(Number(row.terRate)) : '0',
+					withholdingDate: periodRange(period).end,
+				};
+			}),
+		);
 	}
 
 	template(): Promise<Uint8Array> {
@@ -146,6 +281,7 @@ export class SalaryService {
 		if (rows.length > MAX_IMPORT_ROWS) throw new ImportFileError('tooMany');
 		const locked = new Set((await this.repository.listPeriod(period, scope)).filter((row) => row.status === 'approved').map((row) => row.employeeId));
 		const people = byCode(await this.employees.findByCodes(scope, [...new Set(rows.map(({ cells }) => (cells[0] ?? '').toUpperCase()))]));
+		const month = await this.month(period);
 		const errors: TRowError[] = [];
 		const seen = new Set<string>();
 		const drafts: Parameters<ISalaryRepository['upsertDraft']>[0][] = [];
@@ -165,13 +301,22 @@ export class SalaryService {
 			seen.add(employee.id);
 			const [baseSalary, allowances, overtimePay, bonus, deductions] = amounts as number[];
 			const values = { baseSalary: baseSalary!, allowances: allowances!, overtimePay: overtimePay!, bonus: bonus!, deductions: deductions! };
-			if (netPay(values) < 0) errors.push({ row, code: 'netNegative', value: code });
+			let result: TStatutoryResult;
+			try {
+				result = await this.figures(month, employee, values);
+			} catch (error) {
+				if (error instanceof SalaryStateError) {
+					errors.push({ row, code: 'netNegative', value: code });
+					continue;
+				}
+				throw error;
+			}
 			drafts.push({
 				...values,
+				...result,
 				period,
 				employeeId: employee.id,
 				employeeName: employee.fullName,
-				netPay: netPay(values),
 				notes: rest[5] || null,
 				status: 'draft',
 				createdBy: actorUserId,

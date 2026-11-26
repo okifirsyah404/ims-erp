@@ -56,10 +56,11 @@ export class ProjectChildNotFoundError extends AppError {
 
 /** Only the assignee (or `task:assign`) moves a task; only the uploader (or a manager) removes a file. */
 export class ProjectForbiddenError extends AppError {
-	constructor(kind: 'task' | 'evidence') {
+	constructor(kind: 'task' | 'evidence' | 'pic') {
 		const messages = {
 			task: 'Only the assignee or a project manager can update this task',
 			evidence: 'Only the uploader or a project manager can remove this file',
+			pic: 'Only the project person in charge can do this',
 		};
 		super(403, `projects.forbidden.${kind}` as const, messages[kind]);
 	}
@@ -97,3 +98,42 @@ export class SalesOrderHasProjectError extends AppError {
 		super(422, 'sales.orderHasProject', 'This sales order has a project; cancel the project first');
 	}
 }
+
+// Field attendance (employee portal Phase B) -------------------------------
+
+/** The project has no site coordinates, so no radius can be checked. */
+export class ProjectSiteCoordinatesError extends AppError {
+	constructor() {
+		super(
+			422,
+			'projects.siteCoordinates' as const,
+			'This project has no site coordinates; ask an administrator to fill its site address',
+		);
+	}
+}
+
+/** The selfie is missing or not an accepted image. */
+export class SiteSelfieError extends AppError {
+	constructor(kind: 'missing' | 'type' | 'size' | 'empty') {
+		const messages = {
+			missing: 'A selfie is required to check in at a project site',
+			type: 'The selfie must be a JPG, PNG or WebP image',
+			size: 'The selfie must be 5 MB or smaller',
+			empty: 'The selfie file is empty',
+		};
+		super(kind === 'size' ? 413 : 422, `projects.selfie.${kind}` as const, messages[kind]);
+	}
+}
+
+/** A site check-in/out cannot be written as asked. */
+export class SiteAttendanceStateError extends AppError {
+	constructor(kind: 'alreadyCheckedIn' | 'notCheckedIn' | 'alreadyCheckedOut') {
+		const messages = {
+			alreadyCheckedIn: 'You already checked in on this project today',
+			notCheckedIn: 'Check in before checking out',
+			alreadyCheckedOut: 'This site visit is already checked out',
+		};
+		super(kind === 'notCheckedIn' ? 422 : 409, `projects.siteAttendance.${kind}` as const, messages[kind]);
+	}
+}
+

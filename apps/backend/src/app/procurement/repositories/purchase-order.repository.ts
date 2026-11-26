@@ -243,4 +243,17 @@ export class PurchaseOrderRepository implements IPurchaseOrderRepository, IPurch
 			.limit(1);
 		return !!row;
 	}
+
+	listOpenForProject(projectId: string) {
+		return this.database
+			.select({ id: purchaseOrders.id, subtotal: purchaseOrders.subtotal })
+			.from(purchaseOrders)
+			.where(
+				and(
+					eq(purchaseOrders.projectId, projectId),
+					inArray(purchaseOrders.status, ['approved', 'sent', 'partially_received', 'received']),
+					isNull(purchaseOrders.deletedAt),
+				),
+			);
+	}
 }

@@ -16,12 +16,14 @@ export function jakartaDate(value: string | null | undefined): Date | null {
  */
 export function toRow(body: {
 	fullName: string;
-	legalName?: string | null;
 	nickname?: string | null;
 	nationalId?: string | null;
+	taxId?: string | null;
+	ptkpStatus?: string | null;
+	bpjsHealthNumber?: string | null;
+	bpjsEmploymentNumber?: string | null;
 	email?: string | null;
 	phone?: string | null;
-	whatsapp?: string | null;
 	employmentStatus?: string;
 	employmentType?: string;
 	workType?: string;
@@ -31,12 +33,14 @@ export function toRow(body: {
 }): Omit<TEmployeeInsert, 'employeeCode' | 'createdAt'> {
 	return {
 		fullName: body.fullName,
-		legalName: body.legalName ?? null,
 		nickname: body.nickname ?? null,
 		nationalId: body.nationalId ?? null,
+		taxId: body.taxId ?? null,
+		ptkpStatus: body.ptkpStatus ?? null,
+		bpjsHealthNumber: body.bpjsHealthNumber ?? null,
+		bpjsEmploymentNumber: body.bpjsEmploymentNumber ?? null,
 		email: body.email ?? null,
 		phone: body.phone ?? null,
-		whatsapp: body.whatsapp ?? null,
 		employmentStatus: body.employmentStatus,
 		employmentType: body.employmentType,
 		workType: body.workType,

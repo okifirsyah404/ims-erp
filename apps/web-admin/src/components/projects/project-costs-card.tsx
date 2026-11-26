@@ -32,6 +32,8 @@ import {
 import {
 	addCost,
 	COST_CATEGORIES,
+	COST_PAYMENT_SOURCES,
+	type TCostPaymentSource,
 	type TCostCategory,
 	type TProjectCost,
 	type TProjectDetail,
@@ -56,6 +58,12 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 	const [amount, setAmount] = useState('');
 	const [description, setDescription] = useState('');
 	const [receipt, setReceipt] = useState<File | null>(null);
+	const [paymentSource, setPaymentSource] = useState<TCostPaymentSource>('employee_claim');
+	const [reference, setReference] = useState('');
+	// ERP-0141: a reference already used by a live cost of this project is probably a double entry.
+	const duplicateReference =
+		reference.trim() !== '' &&
+		costs.entries.some((cost) => !cost.voidedAt && cost.reference?.trim().toLowerCase() === reference.trim().toLowerCase());
 	const [busy, setBusy] = useState(false);
 
 	const run = async (work: () => Promise<unknown>, done: string) => {
@@ -206,7 +214,10 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 									amount: Math.round(Number(amount) * 100),
 									description: description.trim(),
 									receipt,
+									paymentSource,
+									reference: reference.trim() || null,
 								});
+								setReference('');
 								setAmount('');
 								setDescription('');
 								setReceipt(null);
@@ -256,6 +267,30 @@ export function ProjectCostsCard({ project }: { project: TProjectDetail & { cost
 								onChange={(event) => setReceipt(event.target.files?.[0] ?? null)}
 							/>
 						</Field>
+						<Field>
+							<FieldLabel htmlFor='cost-payment-source'>{t('projects:costs.paymentSource')}</FieldLabel>
+							<Select
+								value={paymentSource}
+								onValueChange={(value: string | null) => value && setPaymentSource(value as TCostPaymentSource)}
+							>
+								<SelectTrigger id='cost-payment-source' className='w-full'>
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{COST_PAYMENT_SOURCES.map((value) => (
+										<SelectItem key={value} value={value}>
+											{t(`projects:costs.paymentSource.${value}`)}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='cost-reference'>{t('projects:costs.reference')}</FieldLabel>
+							<Input id='cost-reference' maxLength={100} value={reference} onChange={(event) => setReference(event.target.value)} />
+							{duplicateReference ? <p className='text-destructive text-xs'>{t('projects:costs.duplicateReference')}</p> : null}
+						</Field>
+						<p className='text-muted-foreground text-xs sm:col-span-3'>{t('projects:costs.ledgerHint')}</p>
 						<div className='sm:col-span-3 flex justify-end'>
 							<Button type='submit' disabled={busy || !amount || !description.trim()}>
 								{t('projects:costs.add')}

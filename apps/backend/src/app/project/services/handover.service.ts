@@ -117,12 +117,13 @@ export class HandoverService {
 	}
 
 	async create(ctx: TProjectContext, projectId: string, body: TBastBodyRequest): Promise<THandoverSelect> {
-		await this.requireActive(ctx, projectId);
+		const project = await this.requireActive(ctx, projectId);
 		const code = await this.numbering.next('bast', undefined, new Date(`${body.bastDate}T12:00:00+07:00`));
 		const bast = await this.basts.create(projectId, code, ctx.actorUserId, body);
 		// ERP-0044: the signed handover is the document the customer keeps.
 		await this.documents.register({
 			code: bast.code,
+			title: `BAST - ${project.customerName} - ${project.code}`,
 			documentType: 'bast',
 			module: 'projects',
 			sourceType: 'bast',

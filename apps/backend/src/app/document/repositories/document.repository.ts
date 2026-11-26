@@ -19,7 +19,7 @@ import {
 import type { TTx } from '@drizzle/types';
 import type { TPaginationResult } from '@ims-erp/common';
 import { paginationResult } from '@utils/pagination.util';
-import { and, count, desc, eq, ilike, isNull, ne, or } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, isNull, ne, or } from 'drizzle-orm';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
 import { inject, injectable } from 'tsyringe';
 import type { IDocumentRepository } from '../contracts/document.repository.interface';
@@ -120,6 +120,21 @@ export class DocumentRepository implements IDocumentRepository {
 		return rows.length;
 	}
 
+	listBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect[]> {
+		return this.database
+			.select()
+			.from(documents)
+			.where(
+				and(
+					eq(documents.module, module),
+					eq(documents.sourceType, sourceType),
+					eq(documents.sourceId, sourceId),
+					isNull(documents.deletedAt),
+				),
+			)
+			.orderBy(desc(documents.createdAt), desc(documents.id));
+	}
+
 	async findLiveBySource(module: string, sourceType: string, sourceId: string): Promise<TDocumentSelect | null> {
 		const [row] = await this.database
 			.select()
@@ -169,6 +184,17 @@ export class DocumentRepository implements IDocumentRepository {
 			.select()
 			.from(documentFiles)
 			.where(and(eq(documentFiles.documentId, documentId), isNull(documentFiles.deletedAt)))
+			.orderBy(desc(documentFiles.uploadedAt), desc(documentFiles.id));
+	}
+
+	latestFiles(documentIds: string[]): Promise<TDocumentFileSelect[]> {
+		if (documentIds.length === 0) return Promise.resolve([]);
+		return this.database
+			.select()
+			.from(documentFiles)
+			.where(
+				and(inArray(documentFiles.documentId, documentIds), isNull(documentFiles.deletedAt)),
+			)
 			.orderBy(desc(documentFiles.uploadedAt), desc(documentFiles.id));
 	}
 

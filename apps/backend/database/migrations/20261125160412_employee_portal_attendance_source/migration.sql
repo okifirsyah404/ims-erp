@@ -1,0 +1,1 @@
+ALTER TABLE "human_resource"."attendances" DROP CONSTRAINT "attendances_source_check", ADD CONSTRAINT "attendances_source_check" CHECK (source IN ('manual', 'import', 'leave', 'self'));

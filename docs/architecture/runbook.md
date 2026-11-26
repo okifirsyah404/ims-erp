@@ -27,6 +27,7 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun dev` | `apps/backend` | ✅ verified 2026-10-29/30 — `bun run --watch src/index.ts` |
 | `bun run build` | repo root / `apps/web-admin` | ✅ verified 2026-10-29/30 (web-admin tsc + vite) |
 | `bun run dev:website` / `bun run dev:portal` | repo root | proposed — the public website (`@ims-erp/web-landing`, :4321) and the customer portal (`@ims-erp/web-customer-portal`, :4322) in `apps/`, moved in 2026-11-15; their `astro check` (0 errors) and `astro build` were verified the same day, dev servers not started here |
+| `bun run dev:employee` | repo root | ✅ verified 2026-11-25 (build only) — the employee portal (`@ims-erp/web-employee`, :5174; web-admin keeps :5173). `vite build` and `tsc -p tsconfig.app.json --noEmit` clean; the dev server was not started |
 | `bun run typecheck` | repo root | ✅ verified 2026-11-15 — 6/6 turbo tasks, including `astro check` of `@ims-erp/web-landing` (167 files) and `@ims-erp/web-customer-portal` (147 files), 0 errors each |
 
 ## Checks
@@ -35,8 +36,9 @@ Environment is loaded per-workspace from `.env` (the backend uses
 |---|---|---|
 | `bun run lint` | repo root | ✅ verified 2026-10-28→30 — pass; remaining warnings pre-existing |
 | `bun run typecheck` | repo root | ✅ verified 2026-10-28→30 — backend clean |
-| `bun run test` | repo root | ✅ verified 2026-11-20 — 7/7 turbo tasks (backend 1232, web-landing 24, web-customer-portal 60 pass); earlier 2026-11-02: backend 131, web-admin 21 |
+| `bun run test` | repo root | ✅ verified 2026-11-25 — 8/8 turbo tasks (backend 1608 incl. 8 new employee-portal, web-admin 211, locales 110, employee-portal 5, web-customer-portal 68, web-landing 25, react-email 6) |
 | `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-admin` | ✅ verified 2026-11-20 — 0 errors. The root `typecheck` does not cover web-admin (no `typecheck` script); this is the real check (also part of `build`) |
+| `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-employee` | ✅ verified 2026-11-25 — 0 errors (same reason: the app has no `typecheck` script) |
 | `bun docs/gen-role-permission.ts` | repo root | ✅ verified 2026-11-23 — rewrites the generated block of `docs/role-permission.md` (628 routes, 0 unresolved). Run after any route, guard option or role-grant change |
 
 ### Live smoke tests (need a running backend on :3001)
@@ -50,7 +52,7 @@ loaded per-workspace from `.env`).
 | `bun run scripts/smoke-admin-api.ts` | 18 checks over `/admin/users`, `/admin/roles`, `/admin/roles/permissions`, `/admin/audit`, `/admin/invitations`, the escalation guard, and every member denial (403) | ✅ verified 2026-11-02 — 18 passed / 0 failed |
 | `bun run scripts/smoke-cache-invalidation.ts` | the shared `auth.users` cache: an admin deactivate/restore/soft-delete is visible on the self-service read path **immediately** (no 5-minute staleness) | ✅ verified 2026-11-02 — 9 passed / 0 failed, idempotent |
 | `bun run scripts/smoke-avatar-worker.ts` | the avatar BullMQ worker was **started through the worker registry** and is subscribed to the queue: dispatches a job and waits for the worker to consume it (state leaves `waiting`) | ✅ verified 2026-11-02 — consumed, idempotent |
-| `bun run scripts/smoke-login-gate.ts` | the web-admin login gate on the real Better Auth instance (ADR-0017 §8, ADR-0018): app admin without membership signs in, portal role alone is refused with 403, portal role plus an internal membership signs in. Creates and removes its own users | ✅ verified 2026-11-14 — 8/8 cases on a disposable database. Needs `POSTGRES_URL` pointed at a throwaway database, never the dev one |
+| `bun run scripts/smoke-login-gate.ts` | the web-admin login gate on the real Better Auth instance (ADR-0017 §8, ADR-0018): app admin without membership signs in, portal role alone is refused with 403, portal role plus an internal membership signs in. Creates and removes its own users | ✅ verified 2026-11-14 — 8/8 cases on a throwaway local database. Needs `POSTGRES_URL` pointed at that database, never the dev one |
 
 Both scripts sign in as the seeded admin (`admin@local.com`) and/or member
 (`member.seed@entragate.local`) and reference the seeded organization id.
@@ -100,8 +102,8 @@ driver is `drizzle-orm/bun-sql`:
 
 ```powershell
 bun run drizzle:generate   # from schema diff (config: apps/backend/drizzle.config.ts) — verified 2026-11-19 (baseline below: "No schema changes")
-bun run drizzle:migrate    # apply migrations — verified 2026-11-19 on a disposable database (baseline below)
-bun run drizzle:push       # disposable DBs only
+bun run drizzle:migrate    # apply migrations — verified 2026-11-19 on a local database (baseline below)
+bun run drizzle:push       # only against a local database you can drop and recreate
 bun run drizzle:studio     # inspect
 bun run drizzle:seed       # seed runners (database/seeders) — verified idempotent (run twice)
 ```
@@ -110,8 +112,8 @@ bun run drizzle:seed       # seed runners (database/seeders) — verified idempo
 generator regresses `drizzle/schemas/auth.schema.ts` and its script path is
 stale — hand-write auth-schema deltas instead (root `AGENTS.md` hard rule).
 
-**Migration baseline (ADR-0024 + ADR-0019, per-schema since 2026-11-21).**
-History, kept honest:
+**Migration baseline (ADR-0024 + ADR-0019, per-schema since 2026-11-21,
+re-squashed 2026-11-24).** History, kept honest:
 
 - 2026-11-12 → 2026-11-19: `generate` / `migrate` were **blocked on main**
   ("Conflicting migrations detected", a branching snapshot chain), and
@@ -123,30 +125,48 @@ History, kept honest:
 - 2026-11-21: that single baseline was re-split into **one migration per
   Postgres schema** — 20 folders, `20261120214111_create_auth_schema` through
   `20261120214130_create_warehouse_schema` — restoring the ADR-0019 property
-  that a reader can see which migration introduced which table. The single
-  baseline is archived at
-  `apps/backend/database/migrations-archive/v3-per-schema-20261121` (history
-  only, never applied). The chain is **1 `base` + 19 chained `diff` snapshots**
-  in dependency order (`auth` first, then alphabetical), produced by
+  that a reader can see which migration introduced which table. That single
+  baseline folder is no longer in the tree (git history only; the 2026-11-24
+  re-squash replaced the chain). The chain is **1 `base` + 19 chained `diff`
+  snapshots** in dependency order (`auth` first, then alphabetical), produced by
   `drizzle-kit generate` against a cumulative `--schema` list — generated, not
   hand-assembled, so `check`/`generate` agree by construction.
 - Verified 2026-11-19 (single baseline) and 2026-11-21 (per-schema chain) on
-  disposable databases (dropped afterwards): `drizzle:migrate` applied it
+  throwaway local databases (dropped afterwards): `drizzle:migrate` applied it
   cleanly; `drizzle:seed` ran twice and the second run inserted nothing; a
   second `drizzle-kit generate` printed "No schema changes"; `drizzle-kit check`
-  printed "Everything's fine". On 2026-11-20 a fresh disposable database
+  printed "Everything's fine". On 2026-11-20 a fresh local database
   (`ims_smoke`) was migrated and seeded again for the live API smoke test. The
   2026-11-21 run additionally proved the split is **equivalent** to the
-  archived baseline: the 20 folders concatenate to the same 728 statements, and
+  single baseline: the 20 folders concatenate to the same 728 statements, and
   `pg_dump --schema-only` of a database built from the chain is identical to one
   built from the single baseline (9669 lines, 169 tables, 22 schemas, 20 journal
   rows, 0 cross-schema FKs).
 - So `generate` and `migrate` work again. New schema changes: edit
   `docs/database/docs.dbml` first, then the Drizzle schema, run
-  `bun run drizzle:generate`, inspect the SQL, and apply it to a **disposable**
-  database only.
+  `bun run drizzle:generate`, inspect the SQL, and apply it to a local database
+  you can drop and recreate.
+- 2026-11-24: the 33-folder chain (20 per-schema baseline folders + 13
+  incremental ones added between 2026-11-21 and 2026-11-24) was **squashed back
+  to 20 per-schema folders** — `20261123204301_create_auth_schema` through
+  `20261123204332_create_warehouse_schema` — so `database/migrations` again
+  matches `drizzle/schemas` one folder per Postgres schema. The 33 old folders
+  are gone from the tree and remain in git history only (no
+  `migrations-archive/v4`: the archive folders `v2`/`v3` were already dropped
+  from the tree on 2026-11-21 for the same reason). Regenerated, not
+  hand-assembled: same cumulative `--schema` order (`auth` first, then
+  alphabetical), 1 `base` + 19 chained `diff` snapshots. Equivalence checked
+  without a database: the 20 folders concatenate to the **same 758 statements**
+  as a single `generate` from `drizzle/schemas/*.schema.ts` (0 missing, 0 extra),
+  both create **176 tables**, every statement touches only its own schema, and
+  `check` → "Everything's fine" plus `generate --explain` → `no_changes`. Two
+  things were intentionally **not** carried over because a baseline starts from
+  an empty database: the ERP-0094 portal-role `UPDATE` backfill and the
+  `add_gallery_images` `INSERT … SELECT` backfill (both were data-only, both
+  remain in git history). A database migrated by the 33-folder chain cannot be
+  upgraded in place; rebuild it with `bun run drizzle:migrate-reset`.
 
-Disposable-database recipe (also used for the reset tooling):
+Local reset recipe (also used for the reset tooling):
 
 ```powershell
 docker exec ims-erp-postgres-1 sh -c 'createdb -U "$POSTGRES_USER" ims_erp_scratch'
@@ -162,7 +182,6 @@ bunx --bun drizzle-kit push --explain      # prints the diff, executes nothing
 
 Local infra: `docker-compose.yml` publishes no Postgres/Redis ports; the dev
 `.env` expects 15432/16379. Use an override file kept outside the repo:
-
 ```yaml
 services:
   postgres: { ports: ["15432:5432"] }
@@ -170,11 +189,30 @@ services:
 ```
 
 Rules:
+- **PostGIS is required** for the project module's field attendance
+  (`ST_Distance` / `ST_DWithin` on `project.addresses.site_point`, a
+  `geometry(point, 4326)` column with a GiST index — the Drizzle PostGIS guide
+  pattern). `docker-compose.yml` runs `postgis/postgis:18-3.6`; the local
+  FlyEnv Postgres 18.7 has PostGIS 3.7.0 installed from the OSGeo
+  `postgis-bundle-pg18` build (its `bin\postgisgui\` brotli DLLs and a
+  `libnghttp2-14.dll` must sit next to `postgres.exe`, or the extension fails
+  to load). The backend calls `ensurePostgisExtension` at boot and **warns**
+  (does not crash) when the extension is missing — only site check-in fails
+  then, every other route works.
+- The radius is the `project.settings` row `attendance/site_radius_meters`
+  (default **100 m** when absent), snapshotted onto each `project.site_attendances`
+  row at check-in.
+- **The employee portal's dev origin must be allowed twice** (verified
+  2026-11-26 by browser walk-through): `cors.json` `allow` needs
+  `http://localhost:5174` for credentialed XHR, **and**
+  `betterAuthTrustedOrigins` needs it too — without the second entry every
+  portal sign-in answers "Invalid origin" even though CORS passes. The
+  committed template `cors.example.json` already carries both origins.
 - Never run `drizzle-kit push` or migrations against a database you cannot
-  recreate. Push is for disposable DBs only.
+  recreate. Push only ever runs against such a database.
 - Before a `generate` run, confirm `drizzle-kit check` is clean; if the chain
-  looks inconsistent, create a disposable DB, apply the full set from scratch,
-  and record the outcome before proceeding.
+  looks inconsistent, create a fresh local database, apply the full set from
+  scratch, and record the outcome before proceeding.
 - `auth:generate` script pins nothing (`auth@latest`) — pin before running.
 - Seeds must be idempotent (safe to run twice).
 

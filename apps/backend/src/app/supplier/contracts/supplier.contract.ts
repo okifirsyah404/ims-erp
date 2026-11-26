@@ -1,4 +1,6 @@
 import type {
+	TSupplierAddressSelect,
+	TSupplierCompanyAddressSelect,
 	TSupplierCompanySelect,
 	TSupplierSelect,
 } from '@drizzle/schemas/supplier.schema';
@@ -26,10 +28,7 @@ export const supplierCompanyCreateSchema = z.object({
 	taxId: z.string().max(16).optional().nullable(),
 	email: z.string().email().optional().nullable(),
 	phone: z.string().max(30).optional().nullable(),
-	whatsapp: z.string().max(30).optional().nullable(),
 	website: z.string().max(200).optional().nullable(),
-	paymentTermsDays: z.coerce.number().int().min(0).default(0),
-	paymentTermNote: z.string().max(300).optional().nullable(),
 	bankName: z.string().max(200).optional().nullable(),
 	bankAccountNumber: z.string().max(100).optional().nullable(),
 	bankAccountHolder: z.string().max(200).optional().nullable(),
@@ -54,6 +53,8 @@ export const supplierCompanyListQuerySchema = z.object({
 	limit: z.coerce.number().int().min(1).max(100).default(20),
 	search: z.string().min(1).optional(),
 	status: z.enum(['active', 'inactive']).optional(),
+	sortBy: z.enum(['name', 'code', 'createdAt']).default('name'),
+	sortDir: z.enum(['asc', 'desc']).default('asc'),
 });
 
 /** Parsed list query for supplier companies. */
@@ -71,7 +72,6 @@ export const supplierCreateSchema = z.object({
 	title: z.string().max(100).optional().nullable(),
 	phone: z.string().max(30).optional().nullable(),
 	email: z.string().email().optional().nullable(),
-	whatsapp: z.string().max(30).optional().nullable(),
 	isPrimary: z.boolean().default(false),
 });
 
@@ -100,7 +100,79 @@ export type TSupplierCompanyPaginated = TPaginationResult<
 /** Paginated supplier people, the response of `GET /suppliers/people`. */
 export type TSupplierPaginated = TPaginationResult<TSupplierSelect[]>;
 
-/** One supplier company with its people, the detail view. */
+/* ------------------------------------------------------------------------ *
+ * Addresses (person + company)
+ * ------------------------------------------------------------------------ */
+
+export const supplierCompanyAddressSchema = z
+	.object({
+		kind: z
+			.enum(['office', 'factory', 'warehouse', 'billing', 'other'])
+			.default('office'),
+		label: z.string().trim().max(100).optional().nullable(),
+		contactName: z.string().trim().max(200).optional().nullable(),
+		contactPhone: z.string().trim().max(30).optional().nullable(),
+		addressLine: z.string().trim().min(1).max(500),
+		/** Village of `location.villages`; validated through the location contract. */
+		villageId: z.uuid().nullish().transform((value) => value ?? null),
+		postalCode: z
+			.string()
+			.trim()
+			.regex(/^[0-9]{0,10}$/)
+			.nullish()
+			.transform((value) => (value ? value : null)),
+		isPrimary: z.boolean().default(false),
+	})
+	.strict();
+
+/** Parsed create input for a supplier company address. */
+export type TSupplierCompanyAddressInput = z.output<
+	typeof supplierCompanyAddressSchema
+>;
+
+export const updateSupplierCompanyAddressSchema =
+	supplierCompanyAddressSchema.partial().strict();
+
+/** Parsed update input for a supplier company address. */
+export type TUpdateSupplierCompanyAddressInput = z.output<
+	typeof updateSupplierCompanyAddressSchema
+>;
+
+export const supplierAddressSchema = z
+	.object({
+		kind: z.enum(['office', 'other']).default('office'),
+		label: z.string().trim().max(100).optional().nullable(),
+		addressLine: z.string().trim().min(1).max(500),
+		villageId: z.uuid().nullish().transform((value) => value ?? null),
+		postalCode: z
+			.string()
+			.trim()
+			.regex(/^[0-9]{0,10}$/)
+			.nullish()
+			.transform((value) => (value ? value : null)),
+		isPrimary: z.boolean().default(false),
+	})
+	.strict();
+
+/** Parsed create input for a supplier person address. */
+export type TSupplierAddressInput = z.output<typeof supplierAddressSchema>;
+
+export const updateSupplierAddressSchema =
+	supplierAddressSchema.partial().strict();
+
+/** Parsed update input for a supplier person address. */
+export type TUpdateSupplierAddressInput = z.output<
+	typeof updateSupplierAddressSchema
+>;
+
+/** Two-level address param: the owner id and the address id. */
+export const supplierAddressParamSchema = z.object({
+	id: z.string().uuid(),
+	addressId: z.string().uuid(),
+});
+
+/** One supplier company with its people and addresses, the detail view. */
 export type TSupplierCompanyView = TSupplierCompanySelect & {
 	people: TSupplierSelect[];
+	addresses: TSupplierCompanyAddressSelect[];
 };

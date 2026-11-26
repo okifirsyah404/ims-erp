@@ -1,0 +1,2168 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "3c863fcc-a513-4aeb-a012-06976d509859",
+  "prevIds": [
+    "f23e72be-1282-4cdd-b5e3-1ccc8472f68e"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "supplier"
+      ],
+      "writes": [
+        "s|sch|supplier",
+        "n|sch|supplier",
+        "e|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "addresses"
+      ],
+      "writes": [
+        "s|tbl|supplier.addresses",
+        "n|tbl|supplier.addresses",
+        "e|tbl|supplier.addresses",
+        "n|rel|supplier.addresses",
+        "n|type|supplier.addresses",
+        "n|rel|supplier.addresses_pkey"
+      ],
+      "reads": [
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "code_numberings"
+      ],
+      "writes": [
+        "s|tbl|supplier.code_numberings",
+        "n|tbl|supplier.code_numberings",
+        "e|tbl|supplier.code_numberings",
+        "n|rel|supplier.code_numberings",
+        "n|type|supplier.code_numberings",
+        "n|rel|supplier.code_numberings_pkey"
+      ],
+      "reads": [
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "companies"
+      ],
+      "writes": [
+        "s|tbl|supplier.companies",
+        "n|tbl|supplier.companies",
+        "e|tbl|supplier.companies",
+        "n|rel|supplier.companies",
+        "n|type|supplier.companies",
+        "n|rel|supplier.companies_pkey"
+      ],
+      "reads": [
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "company_addresses"
+      ],
+      "writes": [
+        "s|tbl|supplier.company_addresses",
+        "n|tbl|supplier.company_addresses",
+        "e|tbl|supplier.company_addresses",
+        "n|rel|supplier.company_addresses",
+        "n|type|supplier.company_addresses",
+        "n|rel|supplier.company_addresses_pkey"
+      ],
+      "reads": [
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "settings"
+      ],
+      "writes": [
+        "s|tbl|supplier.settings",
+        "n|tbl|supplier.settings",
+        "e|tbl|supplier.settings",
+        "n|rel|supplier.settings",
+        "n|type|supplier.settings",
+        "n|rel|supplier.settings_pkey"
+      ],
+      "reads": [
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "suppliers"
+      ],
+      "writes": [
+        "s|tbl|supplier.suppliers",
+        "n|tbl|supplier.suppliers",
+        "e|tbl|supplier.suppliers",
+        "n|rel|supplier.suppliers",
+        "n|type|supplier.suppliers",
+        "n|rel|supplier.suppliers_pkey"
+      ],
+      "reads": [
+        "n|sch|supplier"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "addresses",
+        "supplier_addresses_supplier_id_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_addresses_supplier_id_idx",
+        "n|idx|supplier.supplier_addresses_supplier_id_idx",
+        "e|idx|supplier.supplier_addresses_supplier_id_idx",
+        "n|rel|supplier.supplier_addresses_supplier_id_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.addresses",
+        "n|sch|supplier",
+        "n|col|supplier.addresses.supplier_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "code_numberings",
+        "supplier_code_numberings_type_uq"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_code_numberings_type_uq",
+        "n|idx|supplier.supplier_code_numberings_type_uq",
+        "e|idx|supplier.supplier_code_numberings_type_uq",
+        "n|rel|supplier.supplier_code_numberings_type_uq"
+      ],
+      "reads": [
+        "n|tbl|supplier.code_numberings",
+        "n|sch|supplier",
+        "n|col|supplier.code_numberings.code_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "companies",
+        "supplier_companies_code_uq"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_companies_code_uq",
+        "n|idx|supplier.supplier_companies_code_uq",
+        "e|idx|supplier.supplier_companies_code_uq",
+        "n|rel|supplier.supplier_companies_code_uq"
+      ],
+      "reads": [
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.companies.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "companies",
+        "supplier_companies_name_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_companies_name_idx",
+        "n|idx|supplier.supplier_companies_name_idx",
+        "e|idx|supplier.supplier_companies_name_idx",
+        "n|rel|supplier.supplier_companies_name_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.companies.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "companies",
+        "supplier_companies_status_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_companies_status_idx",
+        "n|idx|supplier.supplier_companies_status_idx",
+        "e|idx|supplier.supplier_companies_status_idx",
+        "n|rel|supplier.supplier_companies_status_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.companies.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "companies",
+        "supplier_companies_tax_id_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_companies_tax_id_idx",
+        "n|idx|supplier.supplier_companies_tax_id_idx",
+        "e|idx|supplier.supplier_companies_tax_id_idx",
+        "n|rel|supplier.supplier_companies_tax_id_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.companies.tax_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "company_addresses",
+        "supplier_company_addresses_company_id_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_company_addresses_company_id_idx",
+        "n|idx|supplier.supplier_company_addresses_company_id_idx",
+        "e|idx|supplier.supplier_company_addresses_company_id_idx",
+        "n|rel|supplier.supplier_company_addresses_company_id_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.company_addresses",
+        "n|sch|supplier",
+        "n|col|supplier.company_addresses.company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "settings",
+        "supplier_settings_scope_uq"
+      ],
+      "writes": [
+        "s|idx|supplier.supplier_settings_scope_uq",
+        "n|idx|supplier.supplier_settings_scope_uq",
+        "e|idx|supplier.supplier_settings_scope_uq",
+        "n|rel|supplier.supplier_settings_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|supplier.settings",
+        "n|sch|supplier",
+        "n|col|supplier.settings.setting_group",
+        "n|col|supplier.settings.setting_key"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "suppliers",
+        "suppliers_primary_uq"
+      ],
+      "writes": [
+        "s|idx|supplier.suppliers_primary_uq",
+        "n|idx|supplier.suppliers_primary_uq",
+        "e|idx|supplier.suppliers_primary_uq",
+        "n|rel|supplier.suppliers_primary_uq"
+      ],
+      "reads": [
+        "n|tbl|supplier.suppliers",
+        "n|sch|supplier",
+        "n|col|supplier.suppliers.company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "suppliers",
+        "suppliers_company_id_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.suppliers_company_id_idx",
+        "n|idx|supplier.suppliers_company_id_idx",
+        "e|idx|supplier.suppliers_company_id_idx",
+        "n|rel|supplier.suppliers_company_id_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.suppliers",
+        "n|sch|supplier",
+        "n|col|supplier.suppliers.company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "supplier",
+        "suppliers",
+        "suppliers_status_idx"
+      ],
+      "writes": [
+        "s|idx|supplier.suppliers_status_idx",
+        "n|idx|supplier.suppliers_status_idx",
+        "e|idx|supplier.suppliers_status_idx",
+        "n|rel|supplier.suppliers_status_idx"
+      ],
+      "reads": [
+        "n|tbl|supplier.suppliers",
+        "n|sch|supplier",
+        "n|col|supplier.suppliers.status"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "addresses"
+      ],
+      "writes": [
+        "s|fk|supplier.addresses.addresses_supplier_id_suppliers_id_fkey",
+        "n|fk|supplier.addresses.addresses_supplier_id_suppliers_id_fkey",
+        "e|fk|supplier.addresses.addresses_supplier_id_suppliers_id_fkey",
+        "n|con|supplier.addresses.addresses_supplier_id_suppliers_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|supplier.addresses",
+        "n|sch|supplier",
+        "n|tbl|supplier.suppliers",
+        "n|sch|supplier",
+        "n|col|supplier.addresses.supplier_id",
+        "n|col|supplier.suppliers.id",
+        "e|uniqueness|supplier.suppliers.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "company_addresses"
+      ],
+      "writes": [
+        "s|fk|supplier.company_addresses.company_addresses_company_id_companies_id_fkey",
+        "n|fk|supplier.company_addresses.company_addresses_company_id_companies_id_fkey",
+        "e|fk|supplier.company_addresses.company_addresses_company_id_companies_id_fkey",
+        "n|con|supplier.company_addresses.company_addresses_company_id_companies_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|supplier.company_addresses",
+        "n|sch|supplier",
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.company_addresses.company_id",
+        "n|col|supplier.companies.id",
+        "e|uniqueness|supplier.companies.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "supplier",
+        "suppliers"
+      ],
+      "writes": [
+        "s|fk|supplier.suppliers.suppliers_company_id_companies_id_fkey",
+        "n|fk|supplier.suppliers.suppliers_company_id_companies_id_fkey",
+        "e|fk|supplier.suppliers.suppliers_company_id_companies_id_fkey",
+        "n|con|supplier.suppliers.suppliers_company_id_companies_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|supplier.suppliers",
+        "n|sch|supplier",
+        "n|tbl|supplier.companies",
+        "n|sch|supplier",
+        "n|col|supplier.suppliers.company_id",
+        "n|col|supplier.companies.id",
+        "e|uniqueness|supplier.companies.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "supplier",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "name": "addresses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "name": "code_numberings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "name": "companies",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "name": "company_addresses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "name": "settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "name": "suppliers",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "supplier_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'office'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "label",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "address_line",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "village_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "postal_code",
+        "type": "varchar(10)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "is_primary",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "code_type",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "pattern",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "reset_policy",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "period_key",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "next_number",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "legal_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'company'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "tax_id",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "phone",
+        "type": "varchar(30)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "website",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "bank_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "bank_account_number",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "bank_account_holder",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'office'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "label",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "contact_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "contact_phone",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "address_line",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "village_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "postal_code",
+        "type": "varchar(10)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "is_primary",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "setting_group",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "setting_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "setting_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "value_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'string'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "title",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "phone",
+        "type": "varchar(30)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "is_primary",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "supplier_addresses_supplier_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "supplier_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "supplier_code_numberings_type_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_companies_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_companies_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_companies_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_companies_tax_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "tax_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "supplier_company_addresses_company_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "supplier_settings_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "setting_group",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "setting_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "suppliers_primary_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "is_primary AND deleted_at IS NULL AND company_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "suppliers_company_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "suppliers_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "addresses_supplier_id_suppliers_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "supplier_id"
+        ],
+        "schemaTo": "supplier",
+        "tableTo": "suppliers",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "company_addresses_company_id_companies_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "company_id"
+        ],
+        "schemaTo": "supplier",
+        "tableTo": "companies",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "suppliers_company_id_companies_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "company_id"
+        ],
+        "schemaTo": "supplier",
+        "tableTo": "companies",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "addresses_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "code_numberings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "companies_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "company_addresses_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "settings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "suppliers_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "addresses",
+        "name": "supplier_addresses_kind_check",
+        "value": "\"kind\" IN ('office', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "supplier_code_numberings_reset_check",
+        "value": "reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "code_numberings",
+        "name": "supplier_code_numberings_next_check",
+        "value": "next_number > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_companies_type_check",
+        "value": "\"supplier_type\" IN ('company', 'government')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "companies",
+        "name": "supplier_companies_status_check",
+        "value": "\"status\" IN ('active', 'inactive')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "company_addresses",
+        "name": "supplier_company_addresses_kind_check",
+        "value": "\"kind\" IN ('office', 'factory', 'warehouse', 'billing', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "settings",
+        "name": "supplier_settings_value_type_check",
+        "value": "\"value_type\" IN ('string', 'number', 'boolean', 'json', 'date')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "supplier",
+        "table": "suppliers",
+        "name": "suppliers_status_check",
+        "value": "\"status\" IN ('active', 'inactive')",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

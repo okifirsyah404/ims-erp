@@ -1,0 +1,1784 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "213bf250-6a5a-4da8-9175-42e69a4885f6",
+  "prevIds": [
+    "feeb438c-aab8-4a16-9895-6f6c4ee6362d"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "employee_advances"
+      ],
+      "writes": [
+        "s|tbl|finance.employee_advances",
+        "n|tbl|finance.employee_advances",
+        "e|tbl|finance.employee_advances",
+        "n|rel|finance.employee_advances",
+        "n|type|finance.employee_advances",
+        "n|rel|finance.employee_advances_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_settlement_items"
+      ],
+      "writes": [
+        "s|tbl|finance.expense_settlement_items",
+        "n|tbl|finance.expense_settlement_items",
+        "e|tbl|finance.expense_settlement_items",
+        "n|rel|finance.expense_settlement_items",
+        "n|type|finance.expense_settlement_items",
+        "n|rel|finance.expense_settlement_items_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_settlements"
+      ],
+      "writes": [
+        "s|tbl|finance.expense_settlements",
+        "n|tbl|finance.expense_settlements",
+        "e|tbl|finance.expense_settlements",
+        "n|rel|finance.expense_settlements",
+        "n|type|finance.expense_settlements",
+        "n|rel|finance.expense_settlements_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "employee_advances",
+        "employee_advances_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|finance.employee_advances_org_code_uq",
+        "n|idx|finance.employee_advances_org_code_uq",
+        "e|idx|finance.employee_advances_org_code_uq",
+        "n|rel|finance.employee_advances_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.employee_advances",
+        "n|sch|finance",
+        "n|col|finance.employee_advances.organization_id",
+        "n|col|finance.employee_advances.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "employee_advances",
+        "employee_advances_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.employee_advances_employee_id_idx",
+        "n|idx|finance.employee_advances_employee_id_idx",
+        "e|idx|finance.employee_advances_employee_id_idx",
+        "n|rel|finance.employee_advances_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.employee_advances",
+        "n|sch|finance",
+        "n|col|finance.employee_advances.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "employee_advances",
+        "employee_advances_project_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.employee_advances_project_id_idx",
+        "n|idx|finance.employee_advances_project_id_idx",
+        "e|idx|finance.employee_advances_project_id_idx",
+        "n|rel|finance.employee_advances_project_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.employee_advances",
+        "n|sch|finance",
+        "n|col|finance.employee_advances.project_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "employee_advances",
+        "employee_advances_status_idx"
+      ],
+      "writes": [
+        "s|idx|finance.employee_advances_status_idx",
+        "n|idx|finance.employee_advances_status_idx",
+        "e|idx|finance.employee_advances_status_idx",
+        "n|rel|finance.employee_advances_status_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.employee_advances",
+        "n|sch|finance",
+        "n|col|finance.employee_advances.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "expense_settlement_items",
+        "expense_settlement_items_settlement_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.expense_settlement_items_settlement_id_idx",
+        "n|idx|finance.expense_settlement_items_settlement_id_idx",
+        "e|idx|finance.expense_settlement_items_settlement_id_idx",
+        "n|rel|finance.expense_settlement_items_settlement_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlement_items",
+        "n|sch|finance",
+        "n|col|finance.expense_settlement_items.expense_settlement_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "expense_settlements",
+        "expense_settlements_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|finance.expense_settlements_org_code_uq",
+        "n|idx|finance.expense_settlements_org_code_uq",
+        "e|idx|finance.expense_settlements_org_code_uq",
+        "n|rel|finance.expense_settlements_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|col|finance.expense_settlements.organization_id",
+        "n|col|finance.expense_settlements.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "expense_settlements",
+        "expense_settlements_employee_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.expense_settlements_employee_id_idx",
+        "n|idx|finance.expense_settlements_employee_id_idx",
+        "e|idx|finance.expense_settlements_employee_id_idx",
+        "n|rel|finance.expense_settlements_employee_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|col|finance.expense_settlements.employee_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "expense_settlements",
+        "expense_settlements_advance_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.expense_settlements_advance_id_idx",
+        "n|idx|finance.expense_settlements_advance_id_idx",
+        "e|idx|finance.expense_settlements_advance_id_idx",
+        "n|rel|finance.expense_settlements_advance_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|col|finance.expense_settlements.employee_advance_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "expense_settlements",
+        "expense_settlements_status_idx"
+      ],
+      "writes": [
+        "s|idx|finance.expense_settlements_status_idx",
+        "n|idx|finance.expense_settlements_status_idx",
+        "e|idx|finance.expense_settlements_status_idx",
+        "n|rel|finance.expense_settlements_status_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|col|finance.expense_settlements.status"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_settlement_items"
+      ],
+      "writes": [
+        "s|fk|finance.expense_settlement_items.expense_settlement_items_b6O0p7P8fnIk_fkey",
+        "n|fk|finance.expense_settlement_items.expense_settlement_items_b6O0p7P8fnIk_fkey",
+        "e|fk|finance.expense_settlement_items.expense_settlement_items_b6O0p7P8fnIk_fkey",
+        "n|con|finance.expense_settlement_items.expense_settlement_items_b6O0p7P8fnIk_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlement_items",
+        "n|sch|finance",
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|col|finance.expense_settlement_items.expense_settlement_id",
+        "n|col|finance.expense_settlements.id",
+        "e|uniqueness|finance.expense_settlements.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_settlements"
+      ],
+      "writes": [
+        "s|fk|finance.expense_settlements.expense_settlements_jWGyrdYo8GyM_fkey",
+        "n|fk|finance.expense_settlements.expense_settlements_jWGyrdYo8GyM_fkey",
+        "e|fk|finance.expense_settlements.expense_settlements_jWGyrdYo8GyM_fkey",
+        "n|con|finance.expense_settlements.expense_settlements_jWGyrdYo8GyM_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|tbl|finance.employee_advances",
+        "n|sch|finance",
+        "n|col|finance.expense_settlements.employee_advance_id",
+        "n|col|finance.employee_advances.id",
+        "e|uniqueness|finance.employee_advances.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "expense_settlements"
+      ],
+      "writes": [
+        "s|fk|finance.expense_settlements.expense_settlements_journal_entry_id_journal_entries_id_fkey",
+        "n|fk|finance.expense_settlements.expense_settlements_journal_entry_id_journal_entries_id_fkey",
+        "e|fk|finance.expense_settlements.expense_settlements_journal_entry_id_journal_entries_id_fkey",
+        "n|con|finance.expense_settlements.expense_settlements_journal_entry_id_journal_entries_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.expense_settlements",
+        "n|sch|finance",
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.expense_settlements.journal_entry_id",
+        "n|col|finance.journal_entries.id",
+        "e|uniqueness|finance.journal_entries.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "employee_advances",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "expense_settlement_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "expense_settlements",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "settled_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "request_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "purpose",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "requested_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "submitted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "disbursed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "payment_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "category_code",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "tax_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "is_advance_offset",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "receipt_document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "employee_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "settlement_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'expense'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "employee_advance_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "total_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "advance_offset_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "payable_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "paid_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "journal_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "payment_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "settlement_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "submitted_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "submitted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "verified_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "verified_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "approved_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_project_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "project_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_items_settlement_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "expense_settlement_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_employee_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_advance_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "employee_advance_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_items_b6O0p7P8fnIk_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "expense_settlement_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "expense_settlements",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_jWGyrdYo8GyM_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "employee_advance_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "employee_advances",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_journal_entry_id_journal_entries_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "journal_entry_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "journal_entries",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_status_check",
+        "value": "status IN ('draft', 'submitted', 'approved', 'disbursed', 'settled', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_amount_check",
+        "value": "amount > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_settled_amount_check",
+        "value": "settled_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "employee_advances",
+        "name": "employee_advances_settled_le_amount_check",
+        "value": "settled_amount <= amount",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_items_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_items_amount_check",
+        "value": "amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlement_items",
+        "name": "expense_settlement_items_tax_amount_check",
+        "value": "tax_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_settlement_type_check",
+        "value": "settlement_type IN ('expense', 'advance')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_status_check",
+        "value": "status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_total_amount_check",
+        "value": "total_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_split_check",
+        "value": "advance_offset_amount >= 0 AND payable_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "expense_settlements",
+        "name": "expense_settlements_paid_check",
+        "value": "paid_amount >= 0 AND paid_amount <= payable_amount",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

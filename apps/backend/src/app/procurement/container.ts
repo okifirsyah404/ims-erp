@@ -1,7 +1,9 @@
 import type { DependencyContainer } from 'tsyringe';
+import { ExportedPurchaseOrderService } from './services/exported-purchase-order.service';
 import {
 	PURCHASE_ORDER_REPOSITORY_TOKEN,
 	PURCHASE_ORDER_SERVICE_TOKEN,
+	EXPORTED_PURCHASE_ORDER_SERVICE_TOKEN,
 	PROCUREMENT_CODE_NUMBERING_REPOSITORY_TOKEN,
 	PROCUREMENT_NUMBERING_SERVICE_TOKEN,
 	GOODS_RECEIPT_REPOSITORY_TOKEN,
@@ -32,6 +34,7 @@ export function registerProcurement(container: DependencyContainer): void {
 	container.register(PROCUREMENT_NUMBERING_SERVICE_TOKEN, { useClass: ProcurementNumberingService });
 	container.register(PURCHASE_ORDER_REPOSITORY_TOKEN, { useClass: PurchaseOrderRepository });
 	container.register(PURCHASE_ORDER_SERVICE_TOKEN, { useClass: PurchaseOrderService });
+	container.register(EXPORTED_PURCHASE_ORDER_SERVICE_TOKEN, { useClass: ExportedPurchaseOrderService });
 	container.register(GOODS_RECEIPT_REPOSITORY_TOKEN, { useClass: GoodsReceiptRepository });
 	container.register(GOODS_RECEIPT_SERVICE_TOKEN, { useClass: GoodsReceiptService });
 	container.register(PURCHASE_BILLING_SERVICE_TOKEN, { useClass: PurchaseBillingService });

@@ -58,6 +58,14 @@ export class OrganizationRepository implements IOrganizationRepository {
 	private readonly cachePrefix = 'organization';
 
 	/** Live organizations where `userId` is a member, with that member's role. */
+	async listMemberRoles(): Promise<{ organizationId: string; userId: string; role: string }[]> {
+		return this.db
+			.select({ organizationId: members.organizationId, userId: members.userId, role: members.role })
+			.from(members)
+			.innerJoin(organizations, eq(members.organizationId, organizations.id))
+			.where(isNull(organizations.deletedAt));
+	}
+
 	async findMembershipsForUser(
 		userId: string,
 	): Promise<{ organization: TOrganizationSelect; role: string }[]> {

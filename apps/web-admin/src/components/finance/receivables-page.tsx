@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { AgingTable } from '@/components/finance/aging-table';
 import { PaymentsTable } from '@/components/finance/payments-table';
+import { WriteOffRequests } from '@/components/finance/write-off-requests';
 import { arAgingQueryOptions } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
 
@@ -18,6 +19,7 @@ export function ReceivablesPage() {
 
 	return (
 		<div className='space-y-6'>
+			<WriteOffRequests />
 			<AgingTable
 				title={t('finance:receivables.title')}
 				description={t('finance:receivables.description')}

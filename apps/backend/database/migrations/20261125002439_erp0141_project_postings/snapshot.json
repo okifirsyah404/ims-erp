@@ -1,0 +1,203 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "05a2b2bc-68af-4a2c-86fb-f7cf89fd0420",
+  "prevIds": [
+    "df354b5c-54ac-4ee2-8d38-63e4dba34589"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "project",
+        "costs",
+        "payment_source"
+      ],
+      "writes": [
+        "s|col|project.costs.payment_source",
+        "n|col|project.costs.payment_source",
+        "e|col|project.costs.payment_source"
+      ],
+      "reads": [
+        "n|tbl|project.costs",
+        "n|sch|project"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "project",
+        "costs",
+        "reference"
+      ],
+      "writes": [
+        "s|col|project.costs.reference",
+        "n|col|project.costs.reference",
+        "e|col|project.costs.reference"
+      ],
+      "reads": [
+        "n|tbl|project.costs",
+        "n|sch|project"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "project",
+        "costs",
+        "journal_entry_id"
+      ],
+      "writes": [
+        "s|col|project.costs.journal_entry_id",
+        "n|col|project.costs.journal_entry_id",
+        "e|col|project.costs.journal_entry_id"
+      ],
+      "reads": [
+        "n|tbl|project.costs",
+        "n|sch|project"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sale",
+        "invoices",
+        "project_id"
+      ],
+      "writes": [
+        "s|col|sale.invoices.project_id",
+        "n|col|sale.invoices.project_id",
+        "e|col|sale.invoices.project_id"
+      ],
+      "reads": [
+        "n|tbl|sale.invoices",
+        "n|sch|sale"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "project",
+        "costs"
+      ],
+      "writes": [
+        "s|ck|project.costs.costs_payment_source_check",
+        "n|ck|project.costs.costs_payment_source_check",
+        "e|ck|project.costs.costs_payment_source_check",
+        "n|con|project.costs.costs_payment_source_check"
+      ],
+      "reads": [
+        "n|tbl|project.costs",
+        "n|sch|project",
+        "n|col|project.costs.payment_source"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "journal_entries"
+      ],
+      "writes": [
+        "s|ck|finance.journal_entries.journal_entries_source_module_check"
+      ],
+      "reads": [
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.journal_entries.source_module",
+        "e|col|finance.journal_entries.source_module"
+      ],
+      "sqlHash": "30fecbd6fee1754a"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "costs",
+        "name": "payment_source",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'employee_claim'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "costs",
+        "name": "reference",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "costs",
+        "name": "journal_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sale",
+        "table": "invoices",
+        "name": "project_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "project",
+        "table": "costs",
+        "name": "costs_payment_source_check",
+        "value": "\"payment_source\" IN ('employee_claim', 'petty_cash', 'bank')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"finance\",\"journal_entries\",\"journal_entries_source_module_check\"]",
+      "set": {
+        "value": "source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource', 'project')"
+      }
+    }
+  ]
+}

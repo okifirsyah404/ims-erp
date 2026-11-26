@@ -129,6 +129,7 @@ describe('seam — ExportedProductService.assertProduct (ADR-0026)', () => {
 			isActive: true,
 			isSerialized: true,
 			isStockTracked: true,
+			productCategoryId: null,
 		});
 	});
 
@@ -278,6 +279,7 @@ function makeSerialUnitService(products: TProductSelect[] = [productRow()]) {
 					isActive: row.isActive,
 					isSerialized: row.isSerialized,
 					isStockTracked: row.isStockTracked,
+					productCategoryId: row.productCategoryId,
 				};
 			},
 		},

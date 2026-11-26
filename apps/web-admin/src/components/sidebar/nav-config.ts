@@ -1,20 +1,23 @@
 import {
-	Bell,
 	Boxes,
 	Building2,
 	Calculator,
+	CalendarCheck,
+	CalendarClock,
+	CalendarOff,
 	Contact,
 	CreditCard,
 	FileCheck2,
 	FileSpreadsheet,
 	FileText,
 	Globe,
-	GraduationCap,
 	HandCoins,
 	Hash,
+	IdCard,
 	KeyRound,
 	LayoutDashboard,
 	LayoutTemplate,
+	ListTodo,
 	MessageSquare,
 	Package,
 	PenLine,
@@ -24,6 +27,7 @@ import {
 	Settings,
 	ShieldCheck,
 	Ticket,
+	Timer,
 	Toolbox,
 	Truck,
 	Users,
@@ -36,6 +40,13 @@ import type { SidebarItem } from './sidebar-item';
 
 /**
  * Full ERP navigation map (docs module map M01–M12 + Administration).
+ *
+ * @remarks
+ * Section order is the product's own order, not the M-numbering: Dashboard,
+ * CRM & Sales, Finance, Projects, Inventory, Human Resource, Documents,
+ * Reports, Integrations, Administration, Settings. Subscription & Licensing
+ * (M03) is a leaf inside Projects because it belongs to the same customer
+ * engagement. The per-block `M0x —` comments keep the module trace.
  *
  * Visibility is declared per item (see `filterNav`):
  * - `permission`: shown when the active organization holds it.
@@ -118,8 +129,13 @@ export const navSections: {
 						url: '/sales/invoices',
 						permission: 'invoice.read',
 					},
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.downPayments', url: '/sales/down-payments' },
+					// DP invoices are the same list as `/sales/invoices`, narrowed by
+					// `termKind=down_payment`, so they share `invoice.read`.
+					{
+						titleKey: 'item.downPayments',
+						url: '/sales/down-payments',
+						permission: 'invoice.read',
+					},
 					{
 						titleKey: 'item.receipts',
 						url: '/sales/receipts',
@@ -130,51 +146,170 @@ export const navSections: {
 		],
 	},
 
-	// Document registry (ERP-0042). Signatures are gated by the
-	// `document.signature_*` actions (ERP-0048/ERP-0049, flow not built yet);
-	// templates have no catalog resource yet (ERP-0050): hidden.
+	// M09 — Finance, with Tax (M10) and Investors (M11) merged in.
 	{
-		labelKey: 'section.documents',
+		labelKey: 'section.finance',
 		items: [
 			{
-				titleKey: 'item.files',
-				url: '/documents/files',
-				icon: FileText,
-				permission: 'document.read',
-			},
-			{
-				titleKey: 'item.signatures',
-				icon: PenLine,
+				titleKey: 'item.finance',
+				url: '/finance',
+				icon: Wallet,
 				items: [
 					{
-						titleKey: 'item.documentSignatures',
-						url: '/documents/signatures/documents',
-						permission: 'document.signature_read',
+						titleKey: 'item.cashBank',
+						url: '/finance/cash-bank',
+						permission: 'cash_bank.read',
+					},
+					// The page posts through `/finance/ledger/opening-balances`
+					// (`journal:read` / `create` / `post`).
+					{
+						titleKey: 'item.openingBalances',
+						url: '/finance/opening-balances',
+						permission: 'journal.read',
 					},
 					{
-						titleKey: 'item.requestSignature',
-						url: '/documents/signatures/request',
-						permission: 'document.signature_request',
+						titleKey: 'item.accounts',
+						url: '/finance/accounts',
+						permission: 'chart_of_account.read',
 					},
 					{
-						titleKey: 'item.mySignature',
-						url: '/documents/signatures/mine',
-						permission: 'document.signature_sign',
+						titleKey: 'item.journal',
+						url: '/finance/journal',
+						permission: 'journal.read',
+					},
+					{
+						titleKey: 'item.postingRules',
+						url: '/finance/posting-rules',
+						permission: 'posting_rule.read',
+					},
+					{
+						titleKey: 'item.costCenters',
+						url: '/finance/cost-centers',
+						permission: 'cost_center.read',
+					},
+					{
+						titleKey: 'item.projectBudgets',
+						url: '/finance/project-budgets',
+						permission: 'project.read',
+					},
+					{
+						titleKey: 'item.fixedAssets',
+						url: '/finance/fixed-assets',
+						permission: 'asset.read',
+					},
+					{
+						titleKey: 'item.reconciliation',
+						url: '/finance/reconciliation',
+						permission: 'cash_bank.reconcile',
+					},
+					{
+						titleKey: 'item.receivables',
+						url: '/finance/receivables',
+						permission: 'invoice.read',
+					},
+					{
+						titleKey: 'item.payables',
+						url: '/finance/payables',
+						permission: 'bill.read',
+					},
+					{
+						titleKey: 'item.expenses',
+						url: '/finance/expenses',
+						permission: 'expense_claim.read',
+					},
+					{
+						titleKey: 'item.financialReports',
+						url: '/finance/reports',
+						permission: 'financial_report.read',
+					},
+					{
+						titleKey: 'item.periodClosing',
+						url: '/finance/closing',
+						permission: 'accounting_period.close',
 					},
 				],
 			},
 			{
-				titleKey: 'item.templates',
-				url: '/documents/templates',
-				icon: LayoutTemplate,
+				titleKey: 'item.tax',
+				url: '/finance/tax',
+				icon: Scale,
+				items: [
+					{
+						titleKey: 'item.taxTypes',
+						url: '/finance/tax/types',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxRecords',
+						url: '/finance/tax/records',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxRecap',
+						url: '/finance/tax/recap',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxWithholding',
+						url: '/finance/tax/withholding',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxPph21',
+						url: '/finance/tax/pph21',
+						permission: 'tax.read',
+					},
+					{
+						titleKey: 'item.taxCorrections',
+						url: '/finance/tax/corrections',
+						permission: 'tax.read',
+					},
+				],
+			},
+			{
+				// M11 — Investors, merged into Finance per plan review.
+				titleKey: 'item.investors',
+				url: '/finance/investors',
+				icon: HandCoins,
+				items: [
+					{
+						titleKey: 'item.investorList',
+						url: '/finance/investors/registry',
+						permission: 'investor.read',
+					},
+					{
+						titleKey: 'item.profitSharing',
+						url: '/finance/investors/profit-sharing',
+						permission: 'profit_distribution.read',
+					},
+				],
 			},
 		],
 	},
 
-	// M03 — Subscription & Licensing.
+	// M07 — Projects, with Subscription & Licensing (M03) as a leaf: same
+	// customer engagement, so it sits next to Projects/Tickets/Warranty.
 	{
-		labelKey: 'section.subscription',
+		labelKey: 'section.projects',
 		items: [
+			{
+				titleKey: 'item.projects',
+				url: '/projects',
+				icon: FileCheck2,
+				permission: 'project.read',
+			},
+			{
+				titleKey: 'item.tickets',
+				url: '/tickets',
+				icon: Ticket,
+				permission: 'service_ticket.read',
+			},
+			{
+				titleKey: 'item.warranty',
+				url: '/warranties',
+				icon: ShieldCheck,
+				permission: 'project.read',
+			},
 			{
 				titleKey: 'item.subscription',
 				url: '/subscription',
@@ -203,41 +338,6 @@ export const navSections: {
 						permission: 'license.read',
 					},
 				],
-			},
-		],
-	},
-
-	// M04 — Integrations. Flat items.
-	{
-		labelKey: 'section.integrations',
-		items: [
-			{
-				titleKey: 'item.websiteCatalog',
-				url: '/integrations/website-catalog',
-				icon: Globe,
-				permission: 'catalog.read',
-			},
-			{
-				titleKey: 'item.whatsappAi',
-				url: '/integrations/whatsapp-ai',
-				icon: MessageSquare,
-				// Backend: conversations and FAQ read with `whatsapp:read`, so the
-				// people meant to answer handed-off chats (customer service, sales
-				// manager) see the menu too.
-				permission: 'whatsapp.read',
-			},
-			{
-				titleKey: 'item.notifications',
-				url: '/integrations/notifications',
-				icon: Bell,
-				open: true,
-			},
-			{
-				titleKey: 'item.webhooks',
-				url: '/integrations/webhooks',
-				icon: Webhook,
-				// Backend: the outbox log is read with `automation:read_log`.
-				permission: 'automation.read_log',
 			},
 		],
 	},
@@ -328,8 +428,27 @@ export const navSections: {
 						url: '/assets/service-records',
 						permission: 'asset.read',
 					},
-					// No catalog resource yet: hidden.
-					{ titleKey: 'item.depreciation', url: '/assets/depreciation' },
+					{
+						titleKey: 'item.assetCategories',
+						url: '/assets/categories',
+						permission: 'asset.read',
+					},
+					{
+						titleKey: 'item.toolSets',
+						url: '/assets/tool-sets',
+						permission: 'asset.read',
+					},
+					{
+						titleKey: 'item.disposals',
+						url: '/assets/disposals',
+						permission: 'asset.read',
+					},
+					// `/finance/depreciations` is guarded by `asset:read`.
+					{
+						titleKey: 'item.depreciation',
+						url: '/assets/depreciation',
+						permission: 'asset.read',
+					},
 				],
 			},
 			{
@@ -369,190 +488,99 @@ export const navSections: {
 		],
 	},
 
-	// M07 — Projects.
-	{
-		labelKey: 'section.projects',
-		items: [
-			{
-				titleKey: 'item.projects',
-				url: '/projects',
-				icon: FileCheck2,
-				permission: 'project.read',
-			},
-			{
-				titleKey: 'item.tickets',
-				url: '/tickets',
-				icon: Ticket,
-				permission: 'service_ticket.read',
-			},
-			{
-				titleKey: 'item.warranty',
-				url: '/warranties',
-				icon: ShieldCheck,
-				permission: 'project.read',
-			},
-		],
-	},
-
-	// M08 — HR & Attendance.
+	// M08 — Human Resource: flat items (no collapsible parent, `/hr` redirects
+	// to the employee list).
 	{
 		labelKey: 'section.hr',
 		items: [
 			{
-				titleKey: 'item.hr',
-				url: '/hr',
-				icon: GraduationCap,
-				items: [
-					{
-						titleKey: 'item.employees',
-						url: '/hr/employees',
-						permission: 'employee.read',
-					},
-					{
-						titleKey: 'item.attendance',
-						url: '/hr/attendance',
-						permission: 'attendance.read',
-					},
-					{
-						titleKey: 'item.leave',
-						url: '/hr/leave',
-						permission: 'leave.read',
-					},
-					{
-						titleKey: 'item.overtime',
-						url: '/hr/overtime',
-						permission: 'overtime.read',
-					},
-					{
-						titleKey: 'item.payroll',
-						url: '/hr/payroll',
-						permission: 'payroll.read',
-					},
-					{
-						titleKey: 'item.hrTasks',
-						url: '/hr/tasks',
-						permission: 'task.read',
-					},
-				],
+				titleKey: 'item.employees',
+				url: '/hr/employees',
+				icon: IdCard,
+				permission: 'employee.read',
+			},
+			{
+				titleKey: 'item.hrTasks',
+				url: '/hr/tasks',
+				icon: ListTodo,
+				permission: 'task.read',
+			},
+			{
+				titleKey: 'item.schedule',
+				url: '/hr/schedule',
+				icon: CalendarClock,
+				permission: 'schedule.read',
+			},
+			{
+				titleKey: 'item.attendance',
+				url: '/hr/attendance',
+				icon: CalendarCheck,
+				permission: 'attendance.read',
+			},
+			{
+				titleKey: 'item.leave',
+				url: '/hr/leave',
+				icon: CalendarOff,
+				permission: 'leave.read',
+			},
+			{
+				titleKey: 'item.overtime',
+				url: '/hr/overtime',
+				icon: Timer,
+				permission: 'overtime.read',
+			},
+			{
+				titleKey: 'item.payroll',
+				url: '/hr/payroll',
+				icon: Wallet,
+				permission: 'payroll.read',
 			},
 		],
 	},
 
-	// M09 — Finance, with Tax (M10) and Investors (M11) merged in.
+	// Document registry (ERP-0042). Signatures are gated by the
+	// `document.signature_*` actions (ERP-0048/ERP-0049); templates stay a
+	// placeholder page (ERP-0050) but already sit behind `document.read`.
 	{
-		labelKey: 'section.finance',
+		labelKey: 'section.documents',
 		items: [
 			{
-				titleKey: 'item.finance',
-				url: '/finance',
-				icon: Wallet,
+				titleKey: 'item.files',
+				url: '/documents/files',
+				icon: FileText,
+				permission: 'document.read',
+			},
+			{
+				titleKey: 'item.signatures',
+				icon: PenLine,
 				items: [
-					// No catalog resource yet: hidden.
 					{
-						titleKey: 'item.cashBank',
-						url: '/finance/cash-bank',
-						permission: 'cash_bank.read',
+						titleKey: 'item.documentSignatures',
+						url: '/documents/signatures/documents',
+						permission: 'document.signature_read',
 					},
 					{
-						titleKey: 'item.openingBalances',
-						url: '/finance/opening-balances',
+						titleKey: 'item.requestSignature',
+						url: '/documents/signatures/request',
+						permission: 'document.signature_request',
 					},
 					{
-						titleKey: 'item.accounts',
-						url: '/finance/accounts',
-						permission: 'chart_of_account.read',
-					},
-					{
-						titleKey: 'item.journal',
-						url: '/finance/journal',
-						permission: 'journal.read',
-					},
-					{
-						titleKey: 'item.reconciliation',
-						url: '/finance/reconciliation',
-						permission: 'cash_bank.reconcile',
-					},
-					{
-						titleKey: 'item.receivables',
-						url: '/finance/receivables',
-						permission: 'invoice.read',
-					},
-					{
-						titleKey: 'item.payables',
-						url: '/finance/payables',
-						permission: 'bill.read',
-					},
-					{
-						titleKey: 'item.expenses',
-						url: '/finance/expenses',
-						permission: 'bill.read',
-					},
-					{
-						titleKey: 'item.financialReports',
-						url: '/finance/reports',
-						permission: 'financial_report.read',
-					},
-					{
-						titleKey: 'item.periodClosing',
-						url: '/finance/closing',
-						permission: 'accounting_period.close',
+						titleKey: 'item.mySignature',
+						url: '/documents/signatures/mine',
+						permission: 'document.signature_sign',
 					},
 				],
 			},
 			{
-				titleKey: 'item.tax',
-				url: '/finance/tax',
-				icon: Scale,
-				items: [
-					{
-						titleKey: 'item.taxTypes',
-						url: '/finance/tax/types',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxRecords',
-						url: '/finance/tax/records',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxRecap',
-						url: '/finance/tax/recap',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxWithholding',
-						url: '/finance/tax/withholding',
-						permission: 'tax.read',
-					},
-					{
-						titleKey: 'item.taxCorrections',
-						url: '/finance/tax/corrections',
-						permission: 'tax.read',
-					},
-				],
-			},
-			{
-				// M11 — Investors, merged into Finance per plan review.
-				titleKey: 'item.investors',
-				url: '/finance/investors',
-				icon: HandCoins,
-				items: [
-					{
-						titleKey: 'item.investorList',
-						url: '/finance/investors/registry',
-						permission: 'investor.read',
-					},
-					{
-						titleKey: 'item.profitSharing',
-						url: '/finance/investors/profit-sharing',
-						permission: 'profit_distribution.read',
-					},
-				],
+				titleKey: 'item.templates',
+				url: '/documents/templates',
+				icon: LayoutTemplate,
+				permission: 'document.read',
 			},
 		],
 	},
 
-	// M12 — Reports & Access.
+	// M12 — Reports.
 	{
 		labelKey: 'section.reports',
 		items: [
@@ -567,6 +595,46 @@ export const navSections: {
 						permission: 'financial_report.read',
 					},
 				],
+			},
+		],
+	},
+
+	// M04 — Integrations.
+	{
+		labelKey: 'section.integrations',
+		items: [
+			{
+				titleKey: 'item.websiteCatalog',
+				url: '/integrations/website-catalog',
+				icon: Globe,
+				permission: 'catalog.read',
+			},
+			{
+				titleKey: 'item.whatsappAi',
+				url: '/integrations/whatsapp-ai',
+				icon: MessageSquare,
+				items: [
+					// Backend: conversations and the FAQ are read with `whatsapp:read`,
+					// so the people meant to answer handed-off chats (customer service,
+					// sales manager) see them too.
+					{
+						titleKey: 'item.conversations',
+						url: '/integrations/whatsapp-ai',
+						permission: 'whatsapp.read',
+					},
+					{
+						titleKey: 'item.faq',
+						url: '/integrations/whatsapp-ai/faq',
+						permission: 'whatsapp.read',
+					},
+				],
+			},
+			{
+				titleKey: 'item.webhooks',
+				url: '/integrations/webhooks',
+				icon: Webhook,
+				// Backend: the outbox log is read with `automation:read_log`.
+				permission: 'automation.read_log',
 			},
 		],
 	},
@@ -621,14 +689,22 @@ export const navSections: {
 				icon: CreditCard,
 				permission: 'payment_gateway.read',
 			},
-			// No catalog resource yet: hidden. The document settings page carries
-			// no permission of its own (its values are edited per group), so it
-			// stays open like the settings section itself.
+			// The document settings page carries no permission of its own (its
+			// values are edited per group), so it stays open like the settings
+			// section itself.
 			{
 				titleKey: 'item.documentSettings',
 				url: '/settings/documents',
 				icon: FileText,
 				open: true,
+			},
+			// ERP-0120: the payday of the daily payroll draft run; application
+			// admins only (the backend uses `appAdminOnly`).
+			{
+				titleKey: 'item.payrollSettings',
+				url: '/settings/payroll',
+				icon: Wallet,
+				appAdminOnly: true,
 			},
 		],
 	},

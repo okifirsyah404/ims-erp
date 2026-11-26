@@ -16,8 +16,17 @@ import type { IOrganizationRepository } from '../contracts/organization.reposito
 export class ExportedOrganizationService {
 	constructor(
 		@inject(ORGANIZATION_REPOSITORY_TOKEN)
-		private readonly organizations: Pick<IOrganizationRepository, 'findById'>,
+		private readonly organizations: Pick<IOrganizationRepository, 'findById' | 'listMemberRoles'>,
 	) {}
+
+	/**
+	 * Memberships of the live organizations (organization, user, comma-joined
+	 * role), so a module can resolve who holds a permission through the
+	 * permission resolver (the payroll draft notice, ERP-0120).
+	 */
+	listMemberRoles(): Promise<{ organizationId: string; userId: string; role: string }[]> {
+		return this.organizations.listMemberRoles();
+	}
 
 	/**
 	 * The `{ORG}` token of document numbers: the organization slug, upper-cased

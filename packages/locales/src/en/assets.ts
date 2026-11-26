@@ -149,6 +149,10 @@ const assets = {
 	'categories.depMethod': 'Default depreciation',
 	'categories.lifeMonths': 'Useful life (months)',
 	'categories.created': 'Category created.',
+	'categories.edit': 'Edit category',
+	'categories.updated': 'Category updated.',
+	'categories.immutableHint': 'The code cannot be changed after create.',
+	'categories.lifeMonthsInvalid': 'Enter a whole number of months.',
 
 	// Enum labels (composed at runtime).
 	'status.ready': 'Ready',
@@ -193,6 +197,9 @@ const assets = {
 	'itemKind.furniture': 'Furniture',
 	'itemKind.it': 'IT hardware',
 	'itemKind.intangible': 'Intangible',
+	'depreciationMethod.straight_line': 'Straight line',
+	'depreciationMethod.declining_balance': 'Declining balance',
+	'depreciationMethod.none': 'None',
 	'movementType.borrow_out': 'Borrowed out',
 	'movementType.borrow_return': 'Borrowed return',
 	'movementType.project_site': 'Project site',

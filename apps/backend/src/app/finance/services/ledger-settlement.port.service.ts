@@ -1,4 +1,10 @@
+import { EMPLOYEE_ADVANCE_SERVICE_TOKEN, EXPENSE_CLAIM_REPOSITORY_TOKEN } from '../constants/di';
+import type { EmployeeAdvanceService } from './employee-advance.service';
+import type { IExpenseClaimRepository } from '../contracts/expense-claim.repository.interface';
+import type { TEmployeePayableType } from '../contracts/ledger-settlement.port';
 import { inject, injectable } from 'tsyringe';
+import { POSTING_SERVICE_TOKEN } from '../constants/di';
+import type { PostingService } from './posting.service';
 import type { TTx } from '@drizzle/types';
 import { AR_ACCOUNT_RESOLVER_TOKEN, CASH_BANK_SERVICE_TOKEN } from '../constants/ar-di';
 import {
@@ -43,7 +49,45 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		private readonly cashBank: Pick<CashBankService, 'postMovement'>,
 		@inject(AR_ACCOUNT_RESOLVER_TOKEN)
 		private readonly arResolver: Pick<ArAccountResolverService, 'resolve'>,
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
+		/** ERP-0144: advances and settlements paid through `payment`. */
+		@inject(EMPLOYEE_ADVANCE_SERVICE_TOKEN)
+		private readonly advances?: Pick<EmployeeAdvanceService, 'payable' | 'applyPayment'>,
+		@inject(EXPENSE_CLAIM_REPOSITORY_TOKEN)
+		private readonly claims?: Pick<IExpenseClaimRepository, 'findExpenseClaimById' | 'updateExpenseClaim'>,
 	) {}
+
+	async findEmployeePayable(
+		organizationId: string,
+		type: TEmployeePayableType,
+		id: string,
+		direction: 'in' | 'out',
+		tx?: unknown,
+	): Promise<{ outstanding: number; exact: boolean; employeeId: string | null } | null> {
+		if (type === 'expense_claim') {
+			const claim = this.claims ? await this.claims.findExpenseClaimById(organizationId, id, tx as TTx) : null;
+			if (!claim || direction !== 'out' || claim.status !== 'approved') return null;
+			return { outstanding: claim.totalAmount, exact: true, employeeId: claim.employeeId };
+		}
+		return this.advances ? this.advances.payable(organizationId, type, id, direction, tx as TTx) : null;
+	}
+
+	async applyEmployeePayable(
+		organizationId: string,
+		type: TEmployeePayableType,
+		id: string,
+		direction: 'in' | 'out',
+		amount: number,
+		paymentId: string,
+		tx: TTx,
+	): Promise<void> {
+		if (type === 'expense_claim') {
+			await this.claims?.updateExpenseClaim(organizationId, id, { status: 'paid', paymentId }, tx);
+			return;
+		}
+		await this.advances?.applyPayment(organizationId, type, id, direction, amount, paymentId, tx);
+	}
 
 	async findSalesInvoice(
 		organizationId: string,
@@ -135,12 +179,45 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		);
 	}
 
+	async postWithholding(
+		input: {
+			organizationId: string;
+			actorUserId: string;
+			paymentId: string;
+			paymentCode: string;
+			businessDate: string;
+			amount: number;
+			taxCode: string;
+			supplierId: string | null;
+		},
+		tx: TTx,
+	): Promise<void> {
+		if (!this.posting) return;
+		const party = { partyType: 'supplier', partyId: input.supplierId };
+		await this.posting.postBusinessEvent(tx, {
+			organizationId: input.organizationId,
+			entryDate: input.businessDate,
+			sourceModule: 'payment',
+			sourceType: 'payment_withholding',
+			sourceId: input.paymentId,
+			idempotencyKey: `payment_withholding:${input.paymentId}`,
+			eventType: 'payment.withholding_recorded',
+			description: `PPh withheld on payment ${input.paymentCode}`,
+			actorUserId: input.actorUserId,
+			lines: [
+				{ role: 'payable', debit: input.amount, credit: 0, ...party },
+				{ role: 'wht_payable', discriminatorType: 'tax', discriminatorValue: input.taxCode, debit: 0, credit: input.amount, ...party },
+			],
+		});
+	}
+
 	async postCashMovement(
 		input: {
 			organizationId: string;
 			actorUserId: string;
 			cashBankAccountId: string;
 			side: 'receivable' | 'payable';
+			counterpartRole?: 'claim_payable' | 'employee_advance';
 			direction: 'in' | 'out';
 			amount: number;
 			businessDate: string;
@@ -151,7 +228,8 @@ export class LedgerSettlementPortService implements ILedgerSettlementPort {
 		},
 		tx: TTx,
 	): Promise<void> {
-		const counterpartAccountId = await this.arResolver.resolve(input.organizationId, input.side === 'payable' ? 'ap' : 'ar');
+		const key = input.counterpartRole === 'claim_payable' ? 'claimPayable' : input.counterpartRole === 'employee_advance' ? 'employeeAdvance' : input.side === 'payable' ? 'ap' : 'ar';
+		const counterpartAccountId = await this.arResolver.resolve(input.organizationId, key);
 		await this.cashBank.postMovement(
 			{ organizationId: input.organizationId, actorUserId: input.actorUserId },
 			{

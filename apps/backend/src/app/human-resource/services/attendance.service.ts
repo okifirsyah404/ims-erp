@@ -1,9 +1,10 @@
 import { ATTENDANCE_STATUSES, type AttendanceStatus, type TAttendanceSelect, type TEmployeeSelect } from '@drizzle/schemas/human-resource.schema';
 import { inject, injectable } from 'tsyringe';
 import { ATTENDANCE_REPOSITORY_TOKEN, HR_PEOPLE_SERVICE_TOKEN } from '../constants/di';
-import type { TAttendanceEntry, THrScope } from '../contracts/hr-records.contract';
+import type { TPaginationResult } from '@ims-erp/common';
+import type { TAttendanceEntry, TAttendanceListQuery, TAttendanceRecordBody, THrScope } from '../contracts/hr-records.contract';
 import type { IAttendanceRepository, TAttendanceUpsert } from '../contracts/hr-records.repository.interface';
-import { AttendanceTimeError, ImportFileError } from '../errors/hr.errors';
+import { AttendanceStateError, AttendanceTimeError, HrNotFoundError, ImportFileError } from '../errors/hr.errors';
 import { isBusinessDate, jakartaTime, periodRange, toJakartaTime } from '../utils/hr';
 import { MAX_IMPORT_ROWS, readRows, templateWorkbook } from '../utils/spreadsheet';
 import { type HrPeopleService, personOf, type TPersonRef, worksOn } from './people.service';
@@ -16,6 +17,14 @@ export type TAttendanceView = {
 	notes: string | null;
 	source: TAttendanceSelect['source'];
 	leaveRequestId: string | null;
+};
+
+/** One attendance row of the list view. */
+export type TAttendanceListRow = TAttendanceView & {
+	id: string;
+	employeeId: string;
+	attendanceDate: string;
+	employee: TPersonRef | null;
 };
 
 export type TAttendanceDayRow = {
@@ -71,6 +80,78 @@ export class AttendanceService {
 		@inject(ATTENDANCE_REPOSITORY_TOKEN) private readonly repository: IAttendanceRepository,
 		@inject(HR_PEOPLE_SERVICE_TOKEN) private readonly employees: Pick<HrPeopleService, 'listVisible' | 'findByCodes' | 'require'>,
 	) {}
+
+	private listRow(record: TAttendanceSelect, employee: TPersonRef | null): TAttendanceListRow {
+		return { ...view(record), id: record.id, employeeId: record.employeeId, attendanceDate: record.attendanceDate, employee };
+	}
+
+	/** Attendance rows across dates (the list view), newest first. */
+	async list(scope: THrScope, query: TAttendanceListQuery): Promise<TPaginationResult<TAttendanceListRow>> {
+		const [result, people] = await Promise.all([this.repository.paginate(query, scope), this.employees.listVisible(scope)]);
+		const byId = new Map(people.map((employee) => [employee.id, personOf(employee)]));
+		return { meta: result.meta, data: result.data.map((record) => this.listRow(record, byId.get(record.employeeId) ?? null)) };
+	}
+
+	/** The row, if its employee is visible to the caller. */
+	private async requireRecord(scope: THrScope, id: string): Promise<TAttendanceSelect> {
+		const record = await this.repository.findById(id);
+		const employee = record ? await this.employees.require(scope, record.employeeId).catch(() => null) : null;
+		if (!record || !employee) throw new HrNotFoundError('attendance');
+		return record;
+	}
+
+	private times(date: string, body: Pick<TAttendanceEntry, 'checkIn' | 'checkOut'>) {
+		const checkInAt = jakartaTime(date, body.checkIn);
+		const checkOutAt = jakartaTime(date, body.checkOut);
+		if (checkInAt && checkOutAt && checkOutAt < checkInAt) throw new AttendanceTimeError();
+		return { checkInAt, checkOutAt };
+	}
+
+	/** Enters one row; the employee may not have a live row that day yet. */
+	async create(scope: THrScope, actorUserId: string, body: TAttendanceRecordBody): Promise<TAttendanceListRow> {
+		const employee = await this.employees.require(scope, body.employeeId);
+		if (await this.repository.findByDay(body.employeeId, body.date)) throw new AttendanceStateError('duplicate');
+		const created = await this.repository.insertOne({
+			employeeId: body.employeeId,
+			attendanceDate: body.date,
+			status: body.status,
+			...this.times(body.date, body),
+			source: 'manual',
+			leaveRequestId: null,
+			notes: body.notes,
+			recordedBy: actorUserId,
+		});
+		return this.listRow(created, personOf(employee));
+	}
+
+	/** Edits one row; a day written by an approved leave belongs to that leave. */
+	async update(scope: THrScope, actorUserId: string, id: string, body: TAttendanceRecordBody): Promise<TAttendanceListRow> {
+		const record = await this.requireRecord(scope, id);
+		if (record.source === 'leave') throw new AttendanceStateError('leaveOwned');
+		const employee = await this.employees.require(scope, body.employeeId);
+		if (body.employeeId !== record.employeeId || body.date !== record.attendanceDate) {
+			const clash = await this.repository.findByDay(body.employeeId, body.date);
+			if (clash && clash.id !== id) throw new AttendanceStateError('duplicate');
+		}
+		const updated = await this.repository.updateOne(id, {
+			employeeId: body.employeeId,
+			attendanceDate: body.date,
+			status: body.status,
+			...this.times(body.date, body),
+			notes: body.notes,
+			recordedBy: actorUserId,
+		});
+		if (!updated) throw new HrNotFoundError('attendance');
+		return this.listRow(updated, personOf(employee));
+	}
+
+	/** Soft deletes one row; leave days are removed by cancelling the leave. */
+	async remove(scope: THrScope, id: string): Promise<{ removed: true }> {
+		const record = await this.requireRecord(scope, id);
+		if (record.source === 'leave') throw new AttendanceStateError('leaveOwned');
+		if (!(await this.repository.softDelete(id))) throw new HrNotFoundError('attendance');
+		return { removed: true };
+	}
 
 	/** The day sheet: every active employee with that day's record, if any. */
 	async day(scope: THrScope, date: string): Promise<TAttendanceDayRow[]> {

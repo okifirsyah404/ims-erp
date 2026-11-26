@@ -103,6 +103,14 @@ Asia/Jakarta, only with `SCHEDULER_ENABLED=true`): open bills (recorded, not
 fully paid) due within 7 days get threshold 7, due or overdue ones threshold 0,
 once per bill, due date and threshold.
 
+The payroll payday run (ERP-0120) uses the BullMQ queue `payroll-pay-day`
+(cron `SCHEDULER_PAYROLL_CRON`, default `0 1 * * *` Asia/Jakarta, only with
+`SCHEDULER_ENABLED=true`). It is an in-app flow, not an outbox event: on the
+payday stored in `human_resource.settings` (`payroll` / `pay_day`, set at
+`/settings/payroll` by application admins; a shorter month uses its last day)
+it creates the month's draft salary records company-wide and sends the
+`hr.payroll_draft_ready` notification to every `payroll:approve` holder.
+
 ## WhatsApp assistant
 
 Flow: WAHA → `POST /webhooks/whatsapp` (no session; WAHA's

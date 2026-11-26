@@ -109,6 +109,12 @@ const account = {
 	'profile.updated': 'Profile updated',
 
 	'form.saving': 'Saving…',
+
+	// Payslips (ERP-0122).
+	'payslips.title': 'My payslips',
+	'payslips.description': 'Payslips of the approved payroll periods.',
+	'payslips.download': 'Download',
+	'payslips.pending': 'Being prepared',
 } as const;
 
 export default account;

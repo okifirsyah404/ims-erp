@@ -3,16 +3,18 @@ import type { TTx } from '@drizzle/types';
 import {
 	cashBankAccounts,
 	cashBankTransactions,
+	bankAccountLinks,
 	type TCashBankAccountSelect,
 	type TCashBankTransactionSelect,
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, asc, count, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNull, lte, ne, sql } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type {
 	ICashBankRepository,
+	TCashBankAccountWithLink,
 	TCashBankTransactionPaginationRequest,
 	TCashFlowSummaryBucket,
 } from '../contracts/cash-bank.repository.interface';
@@ -44,6 +46,8 @@ export class CashBankRepository implements ICashBankRepository {
 					eq(cashBankAccounts.code, code),
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.limit(1);
@@ -64,6 +68,8 @@ export class CashBankRepository implements ICashBankRepository {
 					eq(cashBankAccounts.id, id),
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.limit(1);
@@ -78,9 +84,47 @@ export class CashBankRepository implements ICashBankRepository {
 				and(
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.orderBy(asc(cashBankAccounts.code));
+	}
+
+	/**
+	 * Lists treasury accounts with their GL link.
+	 *
+	 * @remarks
+	 * The link lives in `finance.bank_account_links` (one live row per account),
+	 * so a left join answers "which GL account does this cash account post to"
+	 * in the same query the list already runs.
+	 */
+	async listCashBankAccountsWithLink(
+		organizationId: string,
+	): Promise<TCashBankAccountWithLink[]> {
+		const rows = await this.database
+			.select({
+				account: cashBankAccounts,
+				glAccountId: bankAccountLinks.chartOfAccountId,
+			})
+			.from(cashBankAccounts)
+			.leftJoin(
+				bankAccountLinks,
+				and(
+					eq(bankAccountLinks.cashBankAccountId, cashBankAccounts.id),
+					eq(bankAccountLinks.isActive, true),
+					isNull(bankAccountLinks.deletedAt),
+				),
+			)
+			.where(
+				and(
+					eq(cashBankAccounts.organizationId, organizationId),
+					isNull(cashBankAccounts.deletedAt),
+					isNull(cashBankAccounts.employeeId),
+				),
+			)
+			.orderBy(asc(cashBankAccounts.code));
+		return rows.map((row) => ({ ...row.account, glAccountId: row.glAccountId ?? null }));
 	}
 
 	async insertCashBankAccount(
@@ -92,6 +136,8 @@ export class CashBankRepository implements ICashBankRepository {
 			bankName: string | null;
 			accountNumber: string | null;
 			accountHolder: string | null;
+			invoiceUsage: string | null;
+			isPrimary: boolean;
 			openingBalance: number;
 			currentBalance: number;
 		},
@@ -114,6 +160,9 @@ export class CashBankRepository implements ICashBankRepository {
 			bankName?: string | null;
 			accountNumber?: string | null;
 			accountHolder?: string | null;
+			invoiceUsage?: string | null;
+			statementMapping?: Record<string, unknown> | null;
+			isPrimary?: boolean;
 			isActive?: boolean;
 			currentBalance?: number;
 		},
@@ -128,10 +177,31 @@ export class CashBankRepository implements ICashBankRepository {
 					eq(cashBankAccounts.id, id),
 					eq(cashBankAccounts.organizationId, organizationId),
 					isNull(cashBankAccounts.deletedAt),
+					// Employee payee accounts are not treasury accounts (ERP-0119).
+					isNull(cashBankAccounts.employeeId),
 				),
 			)
 			.returning();
 		return updated ?? null;
+	}
+
+	async clearPrimaryForInvoiceUsage(
+		organizationId: string,
+		usage: string,
+		exceptId: string,
+	): Promise<void> {
+		await this.database
+			.update(cashBankAccounts)
+			.set({ isPrimary: false, updatedAt: new Date() })
+			.where(
+				and(
+					eq(cashBankAccounts.organizationId, organizationId),
+					eq(cashBankAccounts.invoiceUsage, usage),
+					eq(cashBankAccounts.isPrimary, true),
+					ne(cashBankAccounts.id, exceptId),
+					isNull(cashBankAccounts.deletedAt),
+				),
+			);
 	}
 
 	async insertCashBankTransaction(

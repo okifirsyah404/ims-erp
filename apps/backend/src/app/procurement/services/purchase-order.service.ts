@@ -1,3 +1,7 @@
+import { PROJECT_BUDGET_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { ProjectBudgetService } from '@app/finance/services/project-budget.service';
+import { PROJECT_LOOKUP_SERVICE_TOKEN } from '@app/project/constants/di';
+import type { ProjectLookupService } from '@app/project/services/project-lookup.service';
 import { PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import type { ProductService } from '@app/product/services/product.service';
 import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
@@ -37,6 +41,7 @@ import {
 	PurchaseOrderStateError,
 	PurchaseOrderSupplierUnavailableError,
 	PurchaseRequestLineUnavailableError,
+	PurchaseOrderProjectError,
 } from '../errors/procurement.errors';
 import { computePoTotals, DEFAULT_PO_VAT_RATE_BPS, poLineTotal } from '../utils/po-totals';
 
@@ -46,11 +51,11 @@ export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
 	taxBase: number;
 };
 
-function snapshotOf(supplier: TSupplierCompanySelect, pic: TSupplierSelect | null): TPoSupplierSnapshot {
+function snapshotOf(supplier: TSupplierCompanySelect, pic: TSupplierSelect | null, address: string | null): TPoSupplierSnapshot {
 	return {
 		code: supplier.code,
 		name: supplier.legalName ?? supplier.name,
-		address: null,
+		address,
 		taxId: supplier.taxId,
 		phone: supplier.phone,
 		email: supplier.email,
@@ -81,7 +86,7 @@ export class PurchaseOrderService {
 		@inject(EXPORTED_SUPPLIER_SERVICE_TOKEN)
 		private readonly suppliers: Pick<
 			ExportedSupplierService,
-			'assertActiveCompany' | 'findPerson'
+			'assertActiveCompany' | 'findPerson' | 'getPurchaseSnapshot'
 		>,
 		@inject(PRODUCT_SERVICE_TOKEN)
 		private readonly items: Pick<ProductService, 'getActiveProducts'>,
@@ -90,7 +95,18 @@ export class PurchaseOrderService {
 		/** ERP-0044: approved purchase orders are recorded in the registry. */
 		@inject(DOCUMENT_SERVICE_TOKEN)
 		private readonly documents: Pick<DocumentService, 'register' | 'voidBySource'>,
+		/** ERP-0146: project validation and the budget check on approval; optional for older tests. */
+		@inject(PROJECT_LOOKUP_SERVICE_TOKEN)
+		private readonly projects?: Pick<ProjectLookupService, 'getProject'>,
+		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
+		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
 	) {}
+
+	private async assertProject(projectId: string | null): Promise<string | null> {
+		if (!projectId || !this.projects) return projectId;
+		if (!(await this.projects.getProject(projectId))) throw new PurchaseOrderProjectError();
+		return projectId;
+	}
 
 	private async require(id: string): Promise<TPurchaseOrderSelect> {
 		const order = await this.orders.findById(id);
@@ -126,7 +142,7 @@ export class PurchaseOrderService {
 			header: {
 				supplierCompanyId: supplier.id,
 				supplierPicId: pic?.id ?? null,
-				supplierSnapshot: snapshotOf(supplier, pic),
+				supplierSnapshot: snapshotOf(supplier, pic, await this.suppliers.getPurchaseSnapshot(supplier.id).then((s) => s.address)),
 				category: body.category,
 				subject: body.subject,
 				orderDate: body.orderDate ?? businessDateOf(),
@@ -134,14 +150,16 @@ export class PurchaseOrderService {
 				supplierQuoteRef: body.supplierQuoteRef,
 				supplierQuoteDate: body.supplierQuoteDate ?? null,
 				projectName: body.projectName,
+				projectId: await this.assertProject(body.projectId ?? null),
 				buyerPicName: body.buyerPicName,
 				vatMode: body.vatMode,
 				vatRateBps,
 				subtotal: totals.subtotal,
 				taxTotal: totals.taxTotal,
 				grandTotal: totals.grandTotal,
-				// The printed payment line defaults to the supplier's terms.
-				paymentTerms: body.paymentTerms ?? supplier.paymentTermNote,
+				// The printed payment line comes from the PO form only; the
+				// supplier master no longer holds default payment terms.
+				paymentTerms: body.paymentTerms,
 				terms: body.terms,
 				notes: body.notes,
 			},
@@ -210,6 +228,8 @@ export class PurchaseOrderService {
 			if (!rejected) throw new PurchaseOrderStateError('notSubmitted');
 			return rejected;
 		}
+		// ERP-0146: an approved order commits the project budget.
+		if (order.projectId) await this.budgets?.check({ projectId: order.projectId, amount: order.subtotal, excludePurchaseOrderId: order.id });
 		const code = await this.numbering.next('purchase_order', {
 			date: new Date(`${order.orderDate}T12:00:00+07:00`),
 			context: { supplier: order.supplierSnapshot.code, category: PURCHASE_CATEGORY_CODES[order.category] },
@@ -226,6 +246,7 @@ export class PurchaseOrderService {
 			// code is allocated above, so the registry copies it verbatim.
 			await this.documents.register({
 				code: approved.code ?? code,
+				title: `Pesanan Pembelian - ${order.supplierSnapshot.name}`,
 				documentType: 'purchase_order',
 				module: 'procurement',
 				sourceType: 'purchase_order',

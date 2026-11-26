@@ -1,0 +1,81 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "b4f1973a-7eb0-42e3-a262-ebff878c2725",
+  "prevIds": [
+    "e70620c8-8980-47d3-a43c-bc93aa9d1143"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "supplier_bill_items",
+        "grir_amount"
+      ],
+      "writes": [
+        "s|col|finance.supplier_bill_items.grir_amount",
+        "n|col|finance.supplier_bill_items.grir_amount",
+        "e|col|finance.supplier_bill_items.grir_amount"
+      ],
+      "reads": [
+        "n|tbl|finance.supplier_bill_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "procurement",
+        "purchase_returns",
+        "journal_entry_id"
+      ],
+      "writes": [
+        "s|col|procurement.purchase_returns.journal_entry_id",
+        "n|col|procurement.purchase_returns.journal_entry_id",
+        "e|col|procurement.purchase_returns.journal_entry_id"
+      ],
+      "reads": [
+        "n|tbl|procurement.purchase_returns",
+        "n|sch|procurement"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "supplier_bill_items",
+        "name": "grir_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "procurement",
+        "table": "purchase_returns",
+        "name": "journal_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    }
+  ]
+}

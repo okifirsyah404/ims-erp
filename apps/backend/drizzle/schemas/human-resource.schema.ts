@@ -8,8 +8,8 @@
  * `organization` schema (Q4). Money is bigint IDR minor units; business dates are
  * Jakarta `date` strings.
  *
- * Target-only tables (`employee_addresses`, `schedules`) are defined in
- * `docs.dbml` only (Q22).
+ * `schedules` is built since ERP-0118 and `employee_addresses` since ERP-0121;
+ * both were target-only before (Q22).
  */
 import {
 	unixTimestamp,
@@ -64,7 +64,7 @@ export const ATTENDANCE_STATUSES = [
 ] as const;
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
 
-export const ATTENDANCE_SOURCES = ['manual', 'import', 'leave'] as const;
+export const ATTENDANCE_SOURCES = ['manual', 'import', 'leave', 'self'] as const;
 export type AttendanceSource = (typeof ATTENDANCE_SOURCES)[number];
 
 /** Attendance written for an approved leave of a type. */
@@ -121,13 +121,17 @@ export const employees = humanResourceSchema.table(
 		userId: text('user_id'),
 		employeeCode: varchar('employee_code', { length: 32 }).notNull(),
 		fullName: text('full_name').notNull(),
-		legalName: text('legal_name'),
 		nickname: text('nickname'),
 		/** National identity number (NIK). */
 		nationalId: varchar('national_id', { length: 32 }),
+		/** NPWP (ERP-0138); optional. */
+		taxId: varchar('tax_id', { length: 32 }),
+		/** PTKP status TK/0..K/3 (ERP-0138); NULL counts as TK/0. */
+		ptkpStatus: varchar('ptkp_status', { length: 5 }),
+		bpjsHealthNumber: varchar('bpjs_health_number', { length: 32 }),
+		bpjsEmploymentNumber: varchar('bpjs_employment_number', { length: 32 }),
 		email: varchar('email', { length: 320 }),
 		phone: varchar('phone', { length: 100 }),
-		whatsapp: varchar('whatsapp', { length: 100 }),
 		photoObjectKey: text('photo_object_key'),
 		employmentStatus: text('employment_status').notNull().default('active'),
 		employmentType: text('employment_type').notNull().default('permanent'),
@@ -164,6 +168,10 @@ export const employees = humanResourceSchema.table(
 		check(
 			'employees_work_type_check',
 			sql`work_type IN ('onsite', 'remote', 'hybrid')`,
+		),
+		check(
+			'employees_ptkp_status_check',
+			sql`ptkp_status IS NULL OR ptkp_status IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`,
 		),
 		check(
 			'employees_termination_check',
@@ -210,7 +218,7 @@ export const attendances = humanResourceSchema.table(
 			'attendances_status_check',
 			sql`status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')`,
 		),
-		check('attendances_source_check', sql`source IN ('manual', 'import', 'leave')`),
+		check('attendances_source_check', sql`source IN ('manual', 'import', 'leave', 'self')`),
 		check(
 			'attendances_times_check',
 			sql`check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at`,
@@ -343,17 +351,93 @@ export const employeeTasks = humanResourceSchema.table(
 );
 
 /* ------------------------------------------------------------------------ *
- * human_resource.employee_salaries (new, absorbs hr.bank_accounts)
+ * human_resource.employee_addresses (ERP-0121)
+ * ------------------------------------------------------------------------ */
+
+export const EMPLOYEE_ADDRESS_KINDS = ['residence', 'current', 'birth', 'other'] as const;
+export type EmployeeAddressKind = (typeof EMPLOYEE_ADDRESS_KINDS)[number];
+
+/**
+ * Address of an employee (ADR-0024 Q10 address contract: only `village_id`
+ * is stored; district, regency and province come from the location module).
+ * The residence address is entered on the invitation claim form.
+ */
+export const employeeAddresses = humanResourceSchema.table(
+	'employee_addresses',
+	{
+		id: id(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'restrict' }),
+		kind: text('kind').$type<EmployeeAddressKind>().notNull().default('residence'),
+		addressLine: text('address_line').notNull(),
+		/** Logical reference to location.villages.id — cross-module FK omitted. */
+		villageId: uuid('village_id'),
+		postalCode: varchar('postal_code', { length: 10 }),
+		isPrimary: boolean('is_primary').notNull().default(false),
+		...timestamps,
+	},
+	(table) => [
+		index('employee_addresses_employee_id_idx').on(table.employeeId),
+		uniqueIndex('employee_addresses_primary_uq')
+			.on(table.employeeId)
+			.where(sql`is_primary AND deleted_at IS NULL`),
+		check('employee_addresses_kind_check', sql`kind IN ('residence', 'current', 'birth', 'other')`),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * human_resource.schedules (ERP-0118)
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Work shift of one employee on one date (ADR-0024 Q20).
+ *
+ * @remarks
+ * Entered per cell or filled from a weekly pattern by HR. A day off has no
+ * times; a working day has both, and an end earlier than the start is an
+ * overnight shift. One live row per employee and date.
+ */
+export const schedules = humanResourceSchema.table(
+	'schedules',
+	{
+		id: id(),
+		employeeId: uuid('employee_id')
+			.notNull()
+			.references(() => employees.id, { onDelete: 'restrict' }),
+		workDate: date('work_date').notNull(),
+		shiftStart: varchar('shift_start', { length: 5 }),
+		shiftEnd: varchar('shift_end', { length: 5 }),
+		shiftLabel: text('shift_label'),
+		isDayOff: boolean('is_day_off').notNull().default(false),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		createdBy: text('created_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('schedules_employee_date_uq')
+			.on(table.employeeId, table.workDate)
+			.where(sql`deleted_at IS NULL`),
+		index('schedules_work_date_idx').on(table.workDate),
+		check(
+			'schedules_shift_check',
+			sql`(is_day_off AND shift_start IS NULL AND shift_end IS NULL) OR (NOT is_day_off AND shift_start IS NOT NULL AND shift_end IS NOT NULL)`,
+		),
+	],
+);
+
+/* ------------------------------------------------------------------------ *
+ * human_resource.employee_salaries
  * ------------------------------------------------------------------------ */
 
 /**
  * Effective dated salary agreement of an employee (ADR-0024 Q39).
  *
  * @remarks
- * Base salary, fixed allowances and the salary bank account, which absorbs
- * `hr.bank_accounts`. Finance and payment read it through
- * `ExportedEmployeeService`. `bank_account_number` is masked for callers without
- * `employee:read_private`.
+ * Base salary and fixed allowances per period. A new period closes the
+ * previous one; only the active period is edited and only the latest is
+ * deleted. The salary bank account moved to `finance.cash_bank_accounts`
+ * (`employee_id`, ERP-0119).
  */
 export const employeeSalaries = humanResourceSchema.table(
 	'employee_salaries',
@@ -369,9 +453,6 @@ export const employeeSalaries = humanResourceSchema.table(
 		currencyCode: varchar('currency_code', { length: 3 })
 			.notNull()
 			.default('IDR'),
-		bankName: varchar('bank_name', { length: 100 }),
-		bankAccountNumber: varchar('bank_account_number', { length: 50 }),
-		bankAccountHolder: varchar('bank_account_holder', { length: 200 }),
 		effectiveFrom: date('effective_from').notNull(),
 		effectiveTo: date('effective_to'),
 		isActive: boolean('is_active').notNull().default(true),
@@ -414,6 +495,17 @@ export const employeeSalaryRecords = humanResourceSchema.table(
 			.default(0),
 		bonus: bigint('bonus', { mode: 'number' }).notNull().default(0),
 		deductions: bigint('deductions', { mode: 'number' }).notNull().default(0),
+		/** PPh 21 withheld (ERP-0138); negative only on an annual refund. */
+		pph21Amount: bigint('pph21_amount', { mode: 'number' }).notNull().default(0),
+		bpjsEmployeeAmount: bigint('bpjs_employee_amount', { mode: 'number' }).notNull().default(0),
+		bpjsCompanyAmount: bigint('bpjs_company_amount', { mode: 'number' }).notNull().default(0),
+		pensionEmployeeAmount: bigint('pension_employee_amount', { mode: 'number' }).notNull().default(0),
+		taxableGross: bigint('taxable_gross', { mode: 'number' }).notNull().default(0),
+		ptkpStatus: varchar('ptkp_status', { length: 5 }),
+		terRate: numeric('ter_rate', { precision: 7, scale: 4 }),
+		taxMethod: text('tax_method').$type<'ter' | 'annual'>(),
+		/** Logical reference to finance.journal_entries.id — cross-module FK omitted. */
+		journalEntryId: uuid('journal_entry_id'),
 		netPay: bigint('net_pay', { mode: 'number' }).notNull(),
 		notes: text('notes'),
 		status: text('status').$type<SalaryStatus>().notNull().default('draft'),
@@ -439,7 +531,15 @@ export const employeeSalaryRecords = humanResourceSchema.table(
 		),
 		check(
 			'employee_salary_records_net_check',
-			sql`net_pay = base_salary + allowances + overtime_pay + bonus - deductions`,
+			sql`net_pay = base_salary + allowances + overtime_pay + bonus - deductions - pph21_amount - bpjs_employee_amount`,
+		),
+		check(
+			'employee_salary_records_statutory_check',
+			sql`bpjs_employee_amount >= 0 AND bpjs_company_amount >= 0 AND pension_employee_amount >= 0 AND taxable_gross >= 0`,
+		),
+		check(
+			'employee_salary_records_tax_method_check',
+			sql`tax_method IS NULL OR tax_method IN ('ter', 'annual')`,
 		),
 	],
 );
@@ -486,6 +586,10 @@ export type TLeaveRequestInsert = typeof leaveRequests.$inferInsert;
 export type TOvertimeRequestSelect = typeof overtimeRequests.$inferSelect;
 export type TOvertimeRequestInsert = typeof overtimeRequests.$inferInsert;
 export type TEmployeeTaskSelect = typeof employeeTasks.$inferSelect;
+export type TScheduleSelect = typeof schedules.$inferSelect;
+export type TEmployeeAddressSelect = typeof employeeAddresses.$inferSelect;
+export type TEmployeeAddressInsert = typeof employeeAddresses.$inferInsert;
+export type TScheduleInsert = typeof schedules.$inferInsert;
 export type TEmployeeTaskInsert = typeof employeeTasks.$inferInsert;
 export type TEmployeeSalarySelect = typeof employeeSalaries.$inferSelect;
 export type TEmployeeSalaryInsert = typeof employeeSalaries.$inferInsert;

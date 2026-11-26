@@ -17,6 +17,7 @@ function makeDeps(overrides: {
 	findByEmail?: IEmployeeRepository['findByEmail'];
 	findByUserId?: IEmployeeRepository['findByUserId'];
 	insert?: IEmployeeRepository['insert'];
+	ensureAgreement?: () => Promise<unknown>;
 } = {}) {
 	const invitation = { id: 'inv-1' };
 	const invitations = {
@@ -33,6 +34,8 @@ function makeDeps(overrides: {
 		),
 	};
 	const numbering = { next: mock(async () => 'EMP-0001') };
+	// ERP-0121: the draft agreement opened with the employee.
+	const documents = { ensureAgreement: mock(overrides.ensureAgreement ?? (async () => ({ id: 'doc-1' }))) };
 	const personalFields = {
 		get: mock(async () => null),
 		update: mock(async () => undefined),
@@ -42,8 +45,9 @@ function makeDeps(overrides: {
 		employees as unknown as IEmployeeRepository,
 		numbering as never,
 		personalFields as unknown as IUserPersonalFieldsPort,
+		documents as never,
 	);
-	return { service, invitations, employees, personalFields };
+	return { service, invitations, employees, personalFields, documents };
 }
 
 const row = { email: 'budi@example.com', name: 'Budi' };
@@ -129,5 +133,25 @@ describe('EmployeeInviteService', () => {
 		expect(result.ok).toBe(true);
 		expect(employees.insert).not.toHaveBeenCalled();
 		expect(invitations.rollbackPending).not.toHaveBeenCalled();
+	});
+
+	test('ERP-0121: every invited employee gets the draft employment agreement', async () => {
+		const { service, documents } = makeDeps();
+		await service.invite(row, ACTOR);
+		expect(documents.ensureAgreement).toHaveBeenCalledTimes(1);
+		expect((documents.ensureAgreement.mock.calls[0] as unknown[])[0]).toMatchObject({ id: 'emp-1', fullName: row.name });
+	});
+
+	test('ERP-0121: the agreement failing rolls the invite back (new and retried rows)', async () => {
+		const failing = async () => {
+			throw new EmployeeInviteError('numbering failed');
+		};
+		const fresh = makeDeps({ ensureAgreement: failing });
+		await expect(fresh.service.invite(row, ACTOR)).rejects.toBeInstanceOf(EmployeeInviteError);
+		expect(fresh.invitations.rollbackPending).toHaveBeenCalledWith('inv-1', 'user-1', ACTOR);
+
+		const retried = makeDeps({ ensureAgreement: failing, findByUserId: async () => ({ id: 'emp-1', organizationId: null }) as never });
+		await expect(retried.service.invite(row, ACTOR)).rejects.toBeInstanceOf(EmployeeInviteError);
+		expect(retried.invitations.rollbackPending).toHaveBeenCalledWith('inv-1', 'user-1', ACTOR);
 	});
 });

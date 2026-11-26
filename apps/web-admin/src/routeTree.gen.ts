@@ -41,6 +41,8 @@ import { Route as AuthedTicketsNewRouteImport } from './routes/_authed/tickets/n
 import { Route as AuthedWarehousesIndexRouteImport } from './routes/_authed/warehouses/index'
 import { Route as AuthedWarehousesWarehouseIdRouteImport } from './routes/_authed/warehouses/$warehouseId'
 import { Route as AuthedWarrantiesIndexRouteImport } from './routes/_authed/warranties/index'
+import { Route as PrintEmploymentAgreementsDocumentIdRouteImport } from './routes/print/employment-agreements.$documentId'
+import { Route as PrintPayslipsDocumentIdRouteImport } from './routes/print/payslips.$documentId'
 import { Route as PrintQuotationsQuotationIdRouteImport } from './routes/print/quotations.$quotationId'
 import { Route as AuthedAdminAuditIndexRouteImport } from './routes/_authed/admin/audit/index'
 import { Route as AuthedAdminCompanyIndexRouteImport } from './routes/_authed/admin/company/index'
@@ -66,11 +68,15 @@ import { Route as AuthedDocumentsSignaturesRequestRouteImport } from './routes/_
 import { Route as AuthedFinanceAccountsIndexRouteImport } from './routes/_authed/finance/accounts/index'
 import { Route as AuthedFinanceCashBankIndexRouteImport } from './routes/_authed/finance/cash-bank/index'
 import { Route as AuthedFinanceClosingIndexRouteImport } from './routes/_authed/finance/closing/index'
+import { Route as AuthedFinanceCostCentersIndexRouteImport } from './routes/_authed/finance/cost-centers/index'
 import { Route as AuthedFinanceExpensesIndexRouteImport } from './routes/_authed/finance/expenses/index'
+import { Route as AuthedFinanceFixedAssetsIndexRouteImport } from './routes/_authed/finance/fixed-assets/index'
 import { Route as AuthedFinanceInvestorsIndexRouteImport } from './routes/_authed/finance/investors/index'
 import { Route as AuthedFinanceJournalIndexRouteImport } from './routes/_authed/finance/journal/index'
 import { Route as AuthedFinanceOpeningBalancesIndexRouteImport } from './routes/_authed/finance/opening-balances/index'
 import { Route as AuthedFinancePayablesIndexRouteImport } from './routes/_authed/finance/payables/index'
+import { Route as AuthedFinancePostingRulesIndexRouteImport } from './routes/_authed/finance/posting-rules/index'
+import { Route as AuthedFinanceProjectBudgetsIndexRouteImport } from './routes/_authed/finance/project-budgets/index'
 import { Route as AuthedFinanceReceivablesIndexRouteImport } from './routes/_authed/finance/receivables/index'
 import { Route as AuthedFinanceReconciliationIndexRouteImport } from './routes/_authed/finance/reconciliation/index'
 import { Route as AuthedFinanceReportsIndexRouteImport } from './routes/_authed/finance/reports/index'
@@ -78,10 +84,10 @@ import { Route as AuthedFinanceTaxIndexRouteImport } from './routes/_authed/fina
 import { Route as AuthedHrAttendanceIndexRouteImport } from './routes/_authed/hr/attendance/index'
 import { Route as AuthedHrEmployeesIndexRouteImport } from './routes/_authed/hr/employees/index'
 import { Route as AuthedHrEmployeesEmployeeIdRouteImport } from './routes/_authed/hr/employees/$employeeId'
-import { Route as AuthedHrEmployeesNewRouteImport } from './routes/_authed/hr/employees/new'
 import { Route as AuthedHrLeaveIndexRouteImport } from './routes/_authed/hr/leave/index'
 import { Route as AuthedHrOvertimeIndexRouteImport } from './routes/_authed/hr/overtime/index'
 import { Route as AuthedHrPayrollIndexRouteImport } from './routes/_authed/hr/payroll/index'
+import { Route as AuthedHrScheduleIndexRouteImport } from './routes/_authed/hr/schedule/index'
 import { Route as AuthedHrTasksIndexRouteImport } from './routes/_authed/hr/tasks/index'
 import { Route as AuthedIntegrationsWebhooksIndexRouteImport } from './routes/_authed/integrations/webhooks/index'
 import { Route as AuthedIntegrationsWebsiteCatalogIndexRouteImport } from './routes/_authed/integrations/website-catalog/index'
@@ -125,6 +131,7 @@ import { Route as AuthedSettingsCodeNumbersIndexRouteImport } from './routes/_au
 import { Route as AuthedSettingsCompanyIndexRouteImport } from './routes/_authed/settings/company/index'
 import { Route as AuthedSettingsDocumentsIndexRouteImport } from './routes/_authed/settings/documents/index'
 import { Route as AuthedSettingsPaymentGatewaysIndexRouteImport } from './routes/_authed/settings/payment-gateways/index'
+import { Route as AuthedSettingsPayrollIndexRouteImport } from './routes/_authed/settings/payroll/index'
 import { Route as AuthedSubscriptionContractIdIndexRouteImport } from './routes/_authed/subscription/$contractId/index'
 import { Route as AuthedSubscriptionContractIdEditRouteImport } from './routes/_authed/subscription/$contractId/edit'
 import { Route as AuthedSubscriptionActivationsIndexRouteImport } from './routes/_authed/subscription/activations/index'
@@ -132,13 +139,16 @@ import { Route as AuthedSubscriptionApiKeysIndexRouteImport } from './routes/_au
 import { Route as AuthedSubscriptionApplicationsIndexRouteImport } from './routes/_authed/subscription/applications/index'
 import { Route as AuthedWarehousesWarehouseIdEditRouteImport } from './routes/_authed/warehouses/$warehouseId.edit'
 import { Route as AuthedDocumentsSignaturesMineIndexRouteImport } from './routes/_authed/documents/signatures/mine/index'
+import { Route as AuthedFinanceExpensesClaimIdIndexRouteImport } from './routes/_authed/finance/expenses/$claimId/index'
 import { Route as AuthedFinanceInvestorsProfitSharingIndexRouteImport } from './routes/_authed/finance/investors/profit-sharing/index'
 import { Route as AuthedFinanceInvestorsRegistryIndexRouteImport } from './routes/_authed/finance/investors/registry/index'
 import { Route as AuthedFinanceTaxCorrectionsIndexRouteImport } from './routes/_authed/finance/tax/corrections/index'
+import { Route as AuthedFinanceTaxPph21IndexRouteImport } from './routes/_authed/finance/tax/pph21/index'
 import { Route as AuthedFinanceTaxRecapIndexRouteImport } from './routes/_authed/finance/tax/recap/index'
 import { Route as AuthedFinanceTaxRecordsIndexRouteImport } from './routes/_authed/finance/tax/records/index'
 import { Route as AuthedFinanceTaxTypesIndexRouteImport } from './routes/_authed/finance/tax/types/index'
 import { Route as AuthedFinanceTaxWithholdingIndexRouteImport } from './routes/_authed/finance/tax/withholding/index'
+import { Route as AuthedHrEmployeesEmployeeIdEditRouteImport } from './routes/_authed/hr/employees/$employeeId_.edit'
 import { Route as AuthedInventoryComponentsProductIdIndexRouteImport } from './routes/_authed/inventory/components/$productId/index'
 import { Route as AuthedInventoryComponentsProductIdEditRouteImport } from './routes/_authed/inventory/components/$productId/edit'
 import { Route as AuthedInventoryMaterialsProductIdIndexRouteImport } from './routes/_authed/inventory/materials/$productId/index'
@@ -333,6 +343,17 @@ const AuthedWarrantiesIndexRoute = AuthedWarrantiesIndexRouteImport.update({
   path: '/warranties/',
   getParentRoute: () => AuthedRoute,
 } as any)
+const PrintEmploymentAgreementsDocumentIdRoute =
+  PrintEmploymentAgreementsDocumentIdRouteImport.update({
+    id: '/print/employment-agreements/$documentId',
+    path: '/print/employment-agreements/$documentId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const PrintPayslipsDocumentIdRoute = PrintPayslipsDocumentIdRouteImport.update({
+  id: '/print/payslips/$documentId',
+  path: '/print/payslips/$documentId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrintQuotationsQuotationIdRoute =
   PrintQuotationsQuotationIdRouteImport.update({
     id: '/print/quotations/$quotationId',
@@ -477,10 +498,22 @@ const AuthedFinanceClosingIndexRoute =
     path: '/finance/closing/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceCostCentersIndexRoute =
+  AuthedFinanceCostCentersIndexRouteImport.update({
+    id: '/finance/cost-centers/',
+    path: '/finance/cost-centers/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceExpensesIndexRoute =
   AuthedFinanceExpensesIndexRouteImport.update({
     id: '/finance/expenses/',
     path: '/finance/expenses/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceFixedAssetsIndexRoute =
+  AuthedFinanceFixedAssetsIndexRouteImport.update({
+    id: '/finance/fixed-assets/',
+    path: '/finance/fixed-assets/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceInvestorsIndexRoute =
@@ -505,6 +538,18 @@ const AuthedFinancePayablesIndexRoute =
   AuthedFinancePayablesIndexRouteImport.update({
     id: '/finance/payables/',
     path: '/finance/payables/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinancePostingRulesIndexRoute =
+  AuthedFinancePostingRulesIndexRouteImport.update({
+    id: '/finance/posting-rules/',
+    path: '/finance/posting-rules/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceProjectBudgetsIndexRoute =
+  AuthedFinanceProjectBudgetsIndexRouteImport.update({
+    id: '/finance/project-budgets/',
+    path: '/finance/project-budgets/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceReceivablesIndexRoute =
@@ -546,11 +591,6 @@ const AuthedHrEmployeesEmployeeIdRoute =
     path: '/hr/employees/$employeeId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedHrEmployeesNewRoute = AuthedHrEmployeesNewRouteImport.update({
-  id: '/hr/employees/new',
-  path: '/hr/employees/new',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const AuthedHrLeaveIndexRoute = AuthedHrLeaveIndexRouteImport.update({
   id: '/hr/leave/',
   path: '/hr/leave/',
@@ -564,6 +604,11 @@ const AuthedHrOvertimeIndexRoute = AuthedHrOvertimeIndexRouteImport.update({
 const AuthedHrPayrollIndexRoute = AuthedHrPayrollIndexRouteImport.update({
   id: '/hr/payroll/',
   path: '/hr/payroll/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHrScheduleIndexRoute = AuthedHrScheduleIndexRouteImport.update({
+  id: '/hr/schedule/',
+  path: '/hr/schedule/',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHrTasksIndexRoute = AuthedHrTasksIndexRouteImport.update({
@@ -818,6 +863,12 @@ const AuthedSettingsPaymentGatewaysIndexRoute =
     path: '/settings/payment-gateways/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedSettingsPayrollIndexRoute =
+  AuthedSettingsPayrollIndexRouteImport.update({
+    id: '/settings/payroll/',
+    path: '/settings/payroll/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedSubscriptionContractIdIndexRoute =
   AuthedSubscriptionContractIdIndexRouteImport.update({
     id: '/subscription/$contractId/',
@@ -860,6 +911,12 @@ const AuthedDocumentsSignaturesMineIndexRoute =
     path: '/documents/signatures/mine/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedFinanceExpensesClaimIdIndexRoute =
+  AuthedFinanceExpensesClaimIdIndexRouteImport.update({
+    id: '/finance/expenses/$claimId/',
+    path: '/finance/expenses/$claimId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedFinanceInvestorsProfitSharingIndexRoute =
   AuthedFinanceInvestorsProfitSharingIndexRouteImport.update({
     id: '/finance/investors/profit-sharing/',
@@ -876,6 +933,12 @@ const AuthedFinanceTaxCorrectionsIndexRoute =
   AuthedFinanceTaxCorrectionsIndexRouteImport.update({
     id: '/finance/tax/corrections/',
     path: '/finance/tax/corrections/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedFinanceTaxPph21IndexRoute =
+  AuthedFinanceTaxPph21IndexRouteImport.update({
+    id: '/finance/tax/pph21/',
+    path: '/finance/tax/pph21/',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedFinanceTaxRecapIndexRoute =
@@ -900,6 +963,12 @@ const AuthedFinanceTaxWithholdingIndexRoute =
   AuthedFinanceTaxWithholdingIndexRouteImport.update({
     id: '/finance/tax/withholding/',
     path: '/finance/tax/withholding/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedHrEmployeesEmployeeIdEditRoute =
+  AuthedHrEmployeesEmployeeIdEditRouteImport.update({
+    id: '/hr/employees/$employeeId_/edit',
+    path: '/hr/employees/$employeeId/edit',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedInventoryComponentsProductIdIndexRoute =
@@ -1093,6 +1162,8 @@ export interface FileRoutesByFullPath {
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
+  '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
+  '/print/payslips/$documentId': typeof PrintPayslipsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/assets/': typeof AuthedAssetsIndexRoute
   '/crm/': typeof AuthedCrmIndexRoute
@@ -1119,7 +1190,6 @@ export interface FileRoutesByFullPath {
   '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
   '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
-  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1155,11 +1225,15 @@ export interface FileRoutesByFullPath {
   '/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
   '/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
   '/finance/closing/': typeof AuthedFinanceClosingIndexRoute
+  '/finance/cost-centers/': typeof AuthedFinanceCostCentersIndexRoute
   '/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/fixed-assets/': typeof AuthedFinanceFixedAssetsIndexRoute
   '/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
   '/finance/journal/': typeof AuthedFinanceJournalIndexRoute
   '/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
   '/finance/payables/': typeof AuthedFinancePayablesIndexRoute
+  '/finance/posting-rules/': typeof AuthedFinancePostingRulesIndexRoute
+  '/finance/project-budgets/': typeof AuthedFinanceProjectBudgetsIndexRoute
   '/finance/receivables/': typeof AuthedFinanceReceivablesIndexRoute
   '/finance/reconciliation/': typeof AuthedFinanceReconciliationIndexRoute
   '/finance/reports/': typeof AuthedFinanceReportsIndexRoute
@@ -1169,6 +1243,7 @@ export interface FileRoutesByFullPath {
   '/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/hr/schedule/': typeof AuthedHrScheduleIndexRoute
   '/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -1195,10 +1270,12 @@ export interface FileRoutesByFullPath {
   '/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
   '/settings/payment-gateways/': typeof AuthedSettingsPaymentGatewaysIndexRoute
+  '/settings/payroll/': typeof AuthedSettingsPayrollIndexRoute
   '/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
   '/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
+  '/hr/employees/$employeeId/edit': typeof AuthedHrEmployeesEmployeeIdEditRoute
   '/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
   '/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -1214,9 +1291,11 @@ export interface FileRoutesByFullPath {
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
   '/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/documents/signatures/mine/': typeof AuthedDocumentsSignaturesMineIndexRoute
+  '/finance/expenses/$claimId/': typeof AuthedFinanceExpensesClaimIdIndexRoute
   '/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/finance/tax/pph21/': typeof AuthedFinanceTaxPph21IndexRoute
   '/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
   '/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
@@ -1253,6 +1332,8 @@ export interface FileRoutesByTo {
   '/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/tickets/new': typeof AuthedTicketsNewRoute
   '/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
+  '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
+  '/print/payslips/$documentId': typeof PrintPayslipsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/assets': typeof AuthedAssetsIndexRoute
   '/crm': typeof AuthedCrmIndexRoute
@@ -1279,7 +1360,6 @@ export interface FileRoutesByTo {
   '/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
   '/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
-  '/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1315,11 +1395,15 @@ export interface FileRoutesByTo {
   '/finance/accounts': typeof AuthedFinanceAccountsIndexRoute
   '/finance/cash-bank': typeof AuthedFinanceCashBankIndexRoute
   '/finance/closing': typeof AuthedFinanceClosingIndexRoute
+  '/finance/cost-centers': typeof AuthedFinanceCostCentersIndexRoute
   '/finance/expenses': typeof AuthedFinanceExpensesIndexRoute
+  '/finance/fixed-assets': typeof AuthedFinanceFixedAssetsIndexRoute
   '/finance/investors': typeof AuthedFinanceInvestorsIndexRoute
   '/finance/journal': typeof AuthedFinanceJournalIndexRoute
   '/finance/opening-balances': typeof AuthedFinanceOpeningBalancesIndexRoute
   '/finance/payables': typeof AuthedFinancePayablesIndexRoute
+  '/finance/posting-rules': typeof AuthedFinancePostingRulesIndexRoute
+  '/finance/project-budgets': typeof AuthedFinanceProjectBudgetsIndexRoute
   '/finance/receivables': typeof AuthedFinanceReceivablesIndexRoute
   '/finance/reconciliation': typeof AuthedFinanceReconciliationIndexRoute
   '/finance/reports': typeof AuthedFinanceReportsIndexRoute
@@ -1329,6 +1413,7 @@ export interface FileRoutesByTo {
   '/hr/leave': typeof AuthedHrLeaveIndexRoute
   '/hr/overtime': typeof AuthedHrOvertimeIndexRoute
   '/hr/payroll': typeof AuthedHrPayrollIndexRoute
+  '/hr/schedule': typeof AuthedHrScheduleIndexRoute
   '/hr/tasks': typeof AuthedHrTasksIndexRoute
   '/integrations/webhooks': typeof AuthedIntegrationsWebhooksIndexRoute
   '/integrations/website-catalog': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -1355,10 +1440,12 @@ export interface FileRoutesByTo {
   '/settings/company': typeof AuthedSettingsCompanyIndexRoute
   '/settings/documents': typeof AuthedSettingsDocumentsIndexRoute
   '/settings/payment-gateways': typeof AuthedSettingsPaymentGatewaysIndexRoute
+  '/settings/payroll': typeof AuthedSettingsPayrollIndexRoute
   '/subscription/$contractId': typeof AuthedSubscriptionContractIdIndexRoute
   '/subscription/activations': typeof AuthedSubscriptionActivationsIndexRoute
   '/subscription/api-keys': typeof AuthedSubscriptionApiKeysIndexRoute
   '/subscription/applications': typeof AuthedSubscriptionApplicationsIndexRoute
+  '/hr/employees/$employeeId/edit': typeof AuthedHrEmployeesEmployeeIdEditRoute
   '/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
   '/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -1374,9 +1461,11 @@ export interface FileRoutesByTo {
   '/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
   '/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/documents/signatures/mine': typeof AuthedDocumentsSignaturesMineIndexRoute
+  '/finance/expenses/$claimId': typeof AuthedFinanceExpensesClaimIdIndexRoute
   '/finance/investors/profit-sharing': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/finance/investors/registry': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/finance/tax/corrections': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/finance/tax/pph21': typeof AuthedFinanceTaxPph21IndexRoute
   '/finance/tax/recap': typeof AuthedFinanceTaxRecapIndexRoute
   '/finance/tax/records': typeof AuthedFinanceTaxRecordsIndexRoute
   '/finance/tax/types': typeof AuthedFinanceTaxTypesIndexRoute
@@ -1415,6 +1504,8 @@ export interface FileRoutesById {
   '/_authed/tickets/$ticketId': typeof AuthedTicketsTicketIdRoute
   '/_authed/tickets/new': typeof AuthedTicketsNewRoute
   '/_authed/warehouses/$warehouseId': typeof AuthedWarehousesWarehouseIdRouteWithChildren
+  '/print/employment-agreements/$documentId': typeof PrintEmploymentAgreementsDocumentIdRoute
+  '/print/payslips/$documentId': typeof PrintPayslipsDocumentIdRoute
   '/print/quotations/$quotationId': typeof PrintQuotationsQuotationIdRoute
   '/_authed/assets/': typeof AuthedAssetsIndexRoute
   '/_authed/crm/': typeof AuthedCrmIndexRoute
@@ -1441,7 +1532,6 @@ export interface FileRoutesById {
   '/_authed/documents/signatures/documents': typeof AuthedDocumentsSignaturesDocumentsRoute
   '/_authed/documents/signatures/request': typeof AuthedDocumentsSignaturesRequestRoute
   '/_authed/hr/employees/$employeeId': typeof AuthedHrEmployeesEmployeeIdRoute
-  '/_authed/hr/employees/new': typeof AuthedHrEmployeesNewRoute
   '/_authed/integrations/whatsapp-ai/$conversationId': typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   '/_authed/integrations/whatsapp-ai/faq': typeof AuthedIntegrationsWhatsappAiFaqRoute
   '/_authed/inventory/stock/adjust': typeof AuthedInventoryStockAdjustRoute
@@ -1477,11 +1567,15 @@ export interface FileRoutesById {
   '/_authed/finance/accounts/': typeof AuthedFinanceAccountsIndexRoute
   '/_authed/finance/cash-bank/': typeof AuthedFinanceCashBankIndexRoute
   '/_authed/finance/closing/': typeof AuthedFinanceClosingIndexRoute
+  '/_authed/finance/cost-centers/': typeof AuthedFinanceCostCentersIndexRoute
   '/_authed/finance/expenses/': typeof AuthedFinanceExpensesIndexRoute
+  '/_authed/finance/fixed-assets/': typeof AuthedFinanceFixedAssetsIndexRoute
   '/_authed/finance/investors/': typeof AuthedFinanceInvestorsIndexRoute
   '/_authed/finance/journal/': typeof AuthedFinanceJournalIndexRoute
   '/_authed/finance/opening-balances/': typeof AuthedFinanceOpeningBalancesIndexRoute
   '/_authed/finance/payables/': typeof AuthedFinancePayablesIndexRoute
+  '/_authed/finance/posting-rules/': typeof AuthedFinancePostingRulesIndexRoute
+  '/_authed/finance/project-budgets/': typeof AuthedFinanceProjectBudgetsIndexRoute
   '/_authed/finance/receivables/': typeof AuthedFinanceReceivablesIndexRoute
   '/_authed/finance/reconciliation/': typeof AuthedFinanceReconciliationIndexRoute
   '/_authed/finance/reports/': typeof AuthedFinanceReportsIndexRoute
@@ -1491,6 +1585,7 @@ export interface FileRoutesById {
   '/_authed/hr/leave/': typeof AuthedHrLeaveIndexRoute
   '/_authed/hr/overtime/': typeof AuthedHrOvertimeIndexRoute
   '/_authed/hr/payroll/': typeof AuthedHrPayrollIndexRoute
+  '/_authed/hr/schedule/': typeof AuthedHrScheduleIndexRoute
   '/_authed/hr/tasks/': typeof AuthedHrTasksIndexRoute
   '/_authed/integrations/webhooks/': typeof AuthedIntegrationsWebhooksIndexRoute
   '/_authed/integrations/website-catalog/': typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -1517,10 +1612,12 @@ export interface FileRoutesById {
   '/_authed/settings/company/': typeof AuthedSettingsCompanyIndexRoute
   '/_authed/settings/documents/': typeof AuthedSettingsDocumentsIndexRoute
   '/_authed/settings/payment-gateways/': typeof AuthedSettingsPaymentGatewaysIndexRoute
+  '/_authed/settings/payroll/': typeof AuthedSettingsPayrollIndexRoute
   '/_authed/subscription/$contractId/': typeof AuthedSubscriptionContractIdIndexRoute
   '/_authed/subscription/activations/': typeof AuthedSubscriptionActivationsIndexRoute
   '/_authed/subscription/api-keys/': typeof AuthedSubscriptionApiKeysIndexRoute
   '/_authed/subscription/applications/': typeof AuthedSubscriptionApplicationsIndexRoute
+  '/_authed/hr/employees/$employeeId_/edit': typeof AuthedHrEmployeesEmployeeIdEditRoute
   '/_authed/inventory/components/$productId/edit': typeof AuthedInventoryComponentsProductIdEditRoute
   '/_authed/inventory/materials/$productId/edit': typeof AuthedInventoryMaterialsProductIdEditRoute
   '/_authed/inventory/stock/adjustments/$adjustmentId': typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -1536,9 +1633,11 @@ export interface FileRoutesById {
   '/_authed/sales/quotes/$quotationId/print': typeof AuthedSalesQuotesQuotationIdPrintRoute
   '/_authed/sales/returns/$salesReturnId/edit': typeof AuthedSalesReturnsSalesReturnIdEditRoute
   '/_authed/documents/signatures/mine/': typeof AuthedDocumentsSignaturesMineIndexRoute
+  '/_authed/finance/expenses/$claimId/': typeof AuthedFinanceExpensesClaimIdIndexRoute
   '/_authed/finance/investors/profit-sharing/': typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   '/_authed/finance/investors/registry/': typeof AuthedFinanceInvestorsRegistryIndexRoute
   '/_authed/finance/tax/corrections/': typeof AuthedFinanceTaxCorrectionsIndexRoute
+  '/_authed/finance/tax/pph21/': typeof AuthedFinanceTaxPph21IndexRoute
   '/_authed/finance/tax/recap/': typeof AuthedFinanceTaxRecapIndexRoute
   '/_authed/finance/tax/records/': typeof AuthedFinanceTaxRecordsIndexRoute
   '/_authed/finance/tax/types/': typeof AuthedFinanceTaxTypesIndexRoute
@@ -1577,6 +1676,8 @@ export interface FileRouteTypes {
     | '/tickets/$ticketId'
     | '/tickets/new'
     | '/warehouses/$warehouseId'
+    | '/print/employment-agreements/$documentId'
+    | '/print/payslips/$documentId'
     | '/print/quotations/$quotationId'
     | '/assets/'
     | '/crm/'
@@ -1603,7 +1704,6 @@ export interface FileRouteTypes {
     | '/documents/signatures/documents'
     | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
-    | '/hr/employees/new'
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/stock/adjust'
@@ -1639,11 +1739,15 @@ export interface FileRouteTypes {
     | '/finance/accounts/'
     | '/finance/cash-bank/'
     | '/finance/closing/'
+    | '/finance/cost-centers/'
     | '/finance/expenses/'
+    | '/finance/fixed-assets/'
     | '/finance/investors/'
     | '/finance/journal/'
     | '/finance/opening-balances/'
     | '/finance/payables/'
+    | '/finance/posting-rules/'
+    | '/finance/project-budgets/'
     | '/finance/receivables/'
     | '/finance/reconciliation/'
     | '/finance/reports/'
@@ -1653,6 +1757,7 @@ export interface FileRouteTypes {
     | '/hr/leave/'
     | '/hr/overtime/'
     | '/hr/payroll/'
+    | '/hr/schedule/'
     | '/hr/tasks/'
     | '/integrations/webhooks/'
     | '/integrations/website-catalog/'
@@ -1679,10 +1784,12 @@ export interface FileRouteTypes {
     | '/settings/company/'
     | '/settings/documents/'
     | '/settings/payment-gateways/'
+    | '/settings/payroll/'
     | '/subscription/$contractId/'
     | '/subscription/activations/'
     | '/subscription/api-keys/'
     | '/subscription/applications/'
+    | '/hr/employees/$employeeId/edit'
     | '/inventory/components/$productId/edit'
     | '/inventory/materials/$productId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
@@ -1698,9 +1805,11 @@ export interface FileRouteTypes {
     | '/sales/quotes/$quotationId/print'
     | '/sales/returns/$salesReturnId/edit'
     | '/documents/signatures/mine/'
+    | '/finance/expenses/$claimId/'
     | '/finance/investors/profit-sharing/'
     | '/finance/investors/registry/'
     | '/finance/tax/corrections/'
+    | '/finance/tax/pph21/'
     | '/finance/tax/recap/'
     | '/finance/tax/records/'
     | '/finance/tax/types/'
@@ -1737,6 +1846,8 @@ export interface FileRouteTypes {
     | '/tickets/$ticketId'
     | '/tickets/new'
     | '/warehouses/$warehouseId'
+    | '/print/employment-agreements/$documentId'
+    | '/print/payslips/$documentId'
     | '/print/quotations/$quotationId'
     | '/assets'
     | '/crm'
@@ -1763,7 +1874,6 @@ export interface FileRouteTypes {
     | '/documents/signatures/documents'
     | '/documents/signatures/request'
     | '/hr/employees/$employeeId'
-    | '/hr/employees/new'
     | '/integrations/whatsapp-ai/$conversationId'
     | '/integrations/whatsapp-ai/faq'
     | '/inventory/stock/adjust'
@@ -1799,11 +1909,15 @@ export interface FileRouteTypes {
     | '/finance/accounts'
     | '/finance/cash-bank'
     | '/finance/closing'
+    | '/finance/cost-centers'
     | '/finance/expenses'
+    | '/finance/fixed-assets'
     | '/finance/investors'
     | '/finance/journal'
     | '/finance/opening-balances'
     | '/finance/payables'
+    | '/finance/posting-rules'
+    | '/finance/project-budgets'
     | '/finance/receivables'
     | '/finance/reconciliation'
     | '/finance/reports'
@@ -1813,6 +1927,7 @@ export interface FileRouteTypes {
     | '/hr/leave'
     | '/hr/overtime'
     | '/hr/payroll'
+    | '/hr/schedule'
     | '/hr/tasks'
     | '/integrations/webhooks'
     | '/integrations/website-catalog'
@@ -1839,10 +1954,12 @@ export interface FileRouteTypes {
     | '/settings/company'
     | '/settings/documents'
     | '/settings/payment-gateways'
+    | '/settings/payroll'
     | '/subscription/$contractId'
     | '/subscription/activations'
     | '/subscription/api-keys'
     | '/subscription/applications'
+    | '/hr/employees/$employeeId/edit'
     | '/inventory/components/$productId/edit'
     | '/inventory/materials/$productId/edit'
     | '/inventory/stock/adjustments/$adjustmentId'
@@ -1858,9 +1975,11 @@ export interface FileRouteTypes {
     | '/sales/quotes/$quotationId/print'
     | '/sales/returns/$salesReturnId/edit'
     | '/documents/signatures/mine'
+    | '/finance/expenses/$claimId'
     | '/finance/investors/profit-sharing'
     | '/finance/investors/registry'
     | '/finance/tax/corrections'
+    | '/finance/tax/pph21'
     | '/finance/tax/recap'
     | '/finance/tax/records'
     | '/finance/tax/types'
@@ -1898,6 +2017,8 @@ export interface FileRouteTypes {
     | '/_authed/tickets/$ticketId'
     | '/_authed/tickets/new'
     | '/_authed/warehouses/$warehouseId'
+    | '/print/employment-agreements/$documentId'
+    | '/print/payslips/$documentId'
     | '/print/quotations/$quotationId'
     | '/_authed/assets/'
     | '/_authed/crm/'
@@ -1924,7 +2045,6 @@ export interface FileRouteTypes {
     | '/_authed/documents/signatures/documents'
     | '/_authed/documents/signatures/request'
     | '/_authed/hr/employees/$employeeId'
-    | '/_authed/hr/employees/new'
     | '/_authed/integrations/whatsapp-ai/$conversationId'
     | '/_authed/integrations/whatsapp-ai/faq'
     | '/_authed/inventory/stock/adjust'
@@ -1960,11 +2080,15 @@ export interface FileRouteTypes {
     | '/_authed/finance/accounts/'
     | '/_authed/finance/cash-bank/'
     | '/_authed/finance/closing/'
+    | '/_authed/finance/cost-centers/'
     | '/_authed/finance/expenses/'
+    | '/_authed/finance/fixed-assets/'
     | '/_authed/finance/investors/'
     | '/_authed/finance/journal/'
     | '/_authed/finance/opening-balances/'
     | '/_authed/finance/payables/'
+    | '/_authed/finance/posting-rules/'
+    | '/_authed/finance/project-budgets/'
     | '/_authed/finance/receivables/'
     | '/_authed/finance/reconciliation/'
     | '/_authed/finance/reports/'
@@ -1974,6 +2098,7 @@ export interface FileRouteTypes {
     | '/_authed/hr/leave/'
     | '/_authed/hr/overtime/'
     | '/_authed/hr/payroll/'
+    | '/_authed/hr/schedule/'
     | '/_authed/hr/tasks/'
     | '/_authed/integrations/webhooks/'
     | '/_authed/integrations/website-catalog/'
@@ -2000,10 +2125,12 @@ export interface FileRouteTypes {
     | '/_authed/settings/company/'
     | '/_authed/settings/documents/'
     | '/_authed/settings/payment-gateways/'
+    | '/_authed/settings/payroll/'
     | '/_authed/subscription/$contractId/'
     | '/_authed/subscription/activations/'
     | '/_authed/subscription/api-keys/'
     | '/_authed/subscription/applications/'
+    | '/_authed/hr/employees/$employeeId_/edit'
     | '/_authed/inventory/components/$productId/edit'
     | '/_authed/inventory/materials/$productId/edit'
     | '/_authed/inventory/stock/adjustments/$adjustmentId'
@@ -2019,9 +2146,11 @@ export interface FileRouteTypes {
     | '/_authed/sales/quotes/$quotationId/print'
     | '/_authed/sales/returns/$salesReturnId/edit'
     | '/_authed/documents/signatures/mine/'
+    | '/_authed/finance/expenses/$claimId/'
     | '/_authed/finance/investors/profit-sharing/'
     | '/_authed/finance/investors/registry/'
     | '/_authed/finance/tax/corrections/'
+    | '/_authed/finance/tax/pph21/'
     | '/_authed/finance/tax/recap/'
     | '/_authed/finance/tax/records/'
     | '/_authed/finance/tax/types/'
@@ -2049,6 +2178,8 @@ export interface RootRouteChildren {
   ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   LoginIndexRoute: typeof LoginIndexRoute
   ResetPasswordIndexRoute: typeof ResetPasswordIndexRoute
+  PrintEmploymentAgreementsDocumentIdRoute: typeof PrintEmploymentAgreementsDocumentIdRoute
+  PrintPayslipsDocumentIdRoute: typeof PrintPayslipsDocumentIdRoute
   PrintQuotationsQuotationIdRoute: typeof PrintQuotationsQuotationIdRoute
 }
 
@@ -2278,6 +2409,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedWarrantiesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/print/employment-agreements/$documentId': {
+      id: '/print/employment-agreements/$documentId'
+      path: '/print/employment-agreements/$documentId'
+      fullPath: '/print/employment-agreements/$documentId'
+      preLoaderRoute: typeof PrintEmploymentAgreementsDocumentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/print/payslips/$documentId': {
+      id: '/print/payslips/$documentId'
+      path: '/print/payslips/$documentId'
+      fullPath: '/print/payslips/$documentId'
+      preLoaderRoute: typeof PrintPayslipsDocumentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/print/quotations/$quotationId': {
       id: '/print/quotations/$quotationId'
       path: '/print/quotations/$quotationId'
@@ -2453,11 +2598,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedFinanceClosingIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/cost-centers/': {
+      id: '/_authed/finance/cost-centers/'
+      path: '/finance/cost-centers'
+      fullPath: '/finance/cost-centers/'
+      preLoaderRoute: typeof AuthedFinanceCostCentersIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/expenses/': {
       id: '/_authed/finance/expenses/'
       path: '/finance/expenses'
       fullPath: '/finance/expenses/'
       preLoaderRoute: typeof AuthedFinanceExpensesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/fixed-assets/': {
+      id: '/_authed/finance/fixed-assets/'
+      path: '/finance/fixed-assets'
+      fullPath: '/finance/fixed-assets/'
+      preLoaderRoute: typeof AuthedFinanceFixedAssetsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/investors/': {
@@ -2486,6 +2645,20 @@ declare module '@tanstack/react-router' {
       path: '/finance/payables'
       fullPath: '/finance/payables/'
       preLoaderRoute: typeof AuthedFinancePayablesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/posting-rules/': {
+      id: '/_authed/finance/posting-rules/'
+      path: '/finance/posting-rules'
+      fullPath: '/finance/posting-rules/'
+      preLoaderRoute: typeof AuthedFinancePostingRulesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/project-budgets/': {
+      id: '/_authed/finance/project-budgets/'
+      path: '/finance/project-budgets'
+      fullPath: '/finance/project-budgets/'
+      preLoaderRoute: typeof AuthedFinanceProjectBudgetsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/receivables/': {
@@ -2537,13 +2710,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedHrEmployeesEmployeeIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/hr/employees/new': {
-      id: '/_authed/hr/employees/new'
-      path: '/hr/employees/new'
-      fullPath: '/hr/employees/new'
-      preLoaderRoute: typeof AuthedHrEmployeesNewRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/hr/leave/': {
       id: '/_authed/hr/leave/'
       path: '/hr/leave'
@@ -2563,6 +2729,13 @@ declare module '@tanstack/react-router' {
       path: '/hr/payroll'
       fullPath: '/hr/payroll/'
       preLoaderRoute: typeof AuthedHrPayrollIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/schedule/': {
+      id: '/_authed/hr/schedule/'
+      path: '/hr/schedule'
+      fullPath: '/hr/schedule/'
+      preLoaderRoute: typeof AuthedHrScheduleIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/hr/tasks/': {
@@ -2866,6 +3039,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsPaymentGatewaysIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings/payroll/': {
+      id: '/_authed/settings/payroll/'
+      path: '/settings/payroll'
+      fullPath: '/settings/payroll/'
+      preLoaderRoute: typeof AuthedSettingsPayrollIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/subscription/$contractId/': {
       id: '/_authed/subscription/$contractId/'
       path: '/subscription/$contractId'
@@ -2915,6 +3095,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDocumentsSignaturesMineIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/finance/expenses/$claimId/': {
+      id: '/_authed/finance/expenses/$claimId/'
+      path: '/finance/expenses/$claimId'
+      fullPath: '/finance/expenses/$claimId/'
+      preLoaderRoute: typeof AuthedFinanceExpensesClaimIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/finance/investors/profit-sharing/': {
       id: '/_authed/finance/investors/profit-sharing/'
       path: '/finance/investors/profit-sharing'
@@ -2934,6 +3121,13 @@ declare module '@tanstack/react-router' {
       path: '/finance/tax/corrections'
       fullPath: '/finance/tax/corrections/'
       preLoaderRoute: typeof AuthedFinanceTaxCorrectionsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/finance/tax/pph21/': {
+      id: '/_authed/finance/tax/pph21/'
+      path: '/finance/tax/pph21'
+      fullPath: '/finance/tax/pph21/'
+      preLoaderRoute: typeof AuthedFinanceTaxPph21IndexRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/finance/tax/recap/': {
@@ -2962,6 +3156,13 @@ declare module '@tanstack/react-router' {
       path: '/finance/tax/withholding'
       fullPath: '/finance/tax/withholding/'
       preLoaderRoute: typeof AuthedFinanceTaxWithholdingIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/hr/employees/$employeeId_/edit': {
+      id: '/_authed/hr/employees/$employeeId_/edit'
+      path: '/hr/employees/$employeeId/edit'
+      fullPath: '/hr/employees/$employeeId/edit'
+      preLoaderRoute: typeof AuthedHrEmployeesEmployeeIdEditRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/inventory/components/$productId/': {
@@ -3255,7 +3456,6 @@ interface AuthedRouteChildren {
   AuthedDocumentsSignaturesDocumentsRoute: typeof AuthedDocumentsSignaturesDocumentsRoute
   AuthedDocumentsSignaturesRequestRoute: typeof AuthedDocumentsSignaturesRequestRoute
   AuthedHrEmployeesEmployeeIdRoute: typeof AuthedHrEmployeesEmployeeIdRoute
-  AuthedHrEmployeesNewRoute: typeof AuthedHrEmployeesNewRoute
   AuthedIntegrationsWhatsappAiConversationIdRoute: typeof AuthedIntegrationsWhatsappAiConversationIdRoute
   AuthedIntegrationsWhatsappAiFaqRoute: typeof AuthedIntegrationsWhatsappAiFaqRoute
   AuthedInventoryStockAdjustRoute: typeof AuthedInventoryStockAdjustRoute
@@ -3286,11 +3486,15 @@ interface AuthedRouteChildren {
   AuthedFinanceAccountsIndexRoute: typeof AuthedFinanceAccountsIndexRoute
   AuthedFinanceCashBankIndexRoute: typeof AuthedFinanceCashBankIndexRoute
   AuthedFinanceClosingIndexRoute: typeof AuthedFinanceClosingIndexRoute
+  AuthedFinanceCostCentersIndexRoute: typeof AuthedFinanceCostCentersIndexRoute
   AuthedFinanceExpensesIndexRoute: typeof AuthedFinanceExpensesIndexRoute
+  AuthedFinanceFixedAssetsIndexRoute: typeof AuthedFinanceFixedAssetsIndexRoute
   AuthedFinanceInvestorsIndexRoute: typeof AuthedFinanceInvestorsIndexRoute
   AuthedFinanceJournalIndexRoute: typeof AuthedFinanceJournalIndexRoute
   AuthedFinanceOpeningBalancesIndexRoute: typeof AuthedFinanceOpeningBalancesIndexRoute
   AuthedFinancePayablesIndexRoute: typeof AuthedFinancePayablesIndexRoute
+  AuthedFinancePostingRulesIndexRoute: typeof AuthedFinancePostingRulesIndexRoute
+  AuthedFinanceProjectBudgetsIndexRoute: typeof AuthedFinanceProjectBudgetsIndexRoute
   AuthedFinanceReceivablesIndexRoute: typeof AuthedFinanceReceivablesIndexRoute
   AuthedFinanceReconciliationIndexRoute: typeof AuthedFinanceReconciliationIndexRoute
   AuthedFinanceReportsIndexRoute: typeof AuthedFinanceReportsIndexRoute
@@ -3300,6 +3504,7 @@ interface AuthedRouteChildren {
   AuthedHrLeaveIndexRoute: typeof AuthedHrLeaveIndexRoute
   AuthedHrOvertimeIndexRoute: typeof AuthedHrOvertimeIndexRoute
   AuthedHrPayrollIndexRoute: typeof AuthedHrPayrollIndexRoute
+  AuthedHrScheduleIndexRoute: typeof AuthedHrScheduleIndexRoute
   AuthedHrTasksIndexRoute: typeof AuthedHrTasksIndexRoute
   AuthedIntegrationsWebhooksIndexRoute: typeof AuthedIntegrationsWebhooksIndexRoute
   AuthedIntegrationsWebsiteCatalogIndexRoute: typeof AuthedIntegrationsWebsiteCatalogIndexRoute
@@ -3326,10 +3531,12 @@ interface AuthedRouteChildren {
   AuthedSettingsCompanyIndexRoute: typeof AuthedSettingsCompanyIndexRoute
   AuthedSettingsDocumentsIndexRoute: typeof AuthedSettingsDocumentsIndexRoute
   AuthedSettingsPaymentGatewaysIndexRoute: typeof AuthedSettingsPaymentGatewaysIndexRoute
+  AuthedSettingsPayrollIndexRoute: typeof AuthedSettingsPayrollIndexRoute
   AuthedSubscriptionContractIdIndexRoute: typeof AuthedSubscriptionContractIdIndexRoute
   AuthedSubscriptionActivationsIndexRoute: typeof AuthedSubscriptionActivationsIndexRoute
   AuthedSubscriptionApiKeysIndexRoute: typeof AuthedSubscriptionApiKeysIndexRoute
   AuthedSubscriptionApplicationsIndexRoute: typeof AuthedSubscriptionApplicationsIndexRoute
+  AuthedHrEmployeesEmployeeIdEditRoute: typeof AuthedHrEmployeesEmployeeIdEditRoute
   AuthedInventoryComponentsProductIdEditRoute: typeof AuthedInventoryComponentsProductIdEditRoute
   AuthedInventoryMaterialsProductIdEditRoute: typeof AuthedInventoryMaterialsProductIdEditRoute
   AuthedInventoryStockAdjustmentsAdjustmentIdRoute: typeof AuthedInventoryStockAdjustmentsAdjustmentIdRoute
@@ -3345,9 +3552,11 @@ interface AuthedRouteChildren {
   AuthedSalesQuotesQuotationIdPrintRoute: typeof AuthedSalesQuotesQuotationIdPrintRoute
   AuthedSalesReturnsSalesReturnIdEditRoute: typeof AuthedSalesReturnsSalesReturnIdEditRoute
   AuthedDocumentsSignaturesMineIndexRoute: typeof AuthedDocumentsSignaturesMineIndexRoute
+  AuthedFinanceExpensesClaimIdIndexRoute: typeof AuthedFinanceExpensesClaimIdIndexRoute
   AuthedFinanceInvestorsProfitSharingIndexRoute: typeof AuthedFinanceInvestorsProfitSharingIndexRoute
   AuthedFinanceInvestorsRegistryIndexRoute: typeof AuthedFinanceInvestorsRegistryIndexRoute
   AuthedFinanceTaxCorrectionsIndexRoute: typeof AuthedFinanceTaxCorrectionsIndexRoute
+  AuthedFinanceTaxPph21IndexRoute: typeof AuthedFinanceTaxPph21IndexRoute
   AuthedFinanceTaxRecapIndexRoute: typeof AuthedFinanceTaxRecapIndexRoute
   AuthedFinanceTaxRecordsIndexRoute: typeof AuthedFinanceTaxRecordsIndexRoute
   AuthedFinanceTaxTypesIndexRoute: typeof AuthedFinanceTaxTypesIndexRoute
@@ -3409,7 +3618,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedDocumentsSignaturesDocumentsRoute,
   AuthedDocumentsSignaturesRequestRoute: AuthedDocumentsSignaturesRequestRoute,
   AuthedHrEmployeesEmployeeIdRoute: AuthedHrEmployeesEmployeeIdRoute,
-  AuthedHrEmployeesNewRoute: AuthedHrEmployeesNewRoute,
   AuthedIntegrationsWhatsappAiConversationIdRoute:
     AuthedIntegrationsWhatsappAiConversationIdRoute,
   AuthedIntegrationsWhatsappAiFaqRoute: AuthedIntegrationsWhatsappAiFaqRoute,
@@ -3446,12 +3654,16 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedFinanceAccountsIndexRoute: AuthedFinanceAccountsIndexRoute,
   AuthedFinanceCashBankIndexRoute: AuthedFinanceCashBankIndexRoute,
   AuthedFinanceClosingIndexRoute: AuthedFinanceClosingIndexRoute,
+  AuthedFinanceCostCentersIndexRoute: AuthedFinanceCostCentersIndexRoute,
   AuthedFinanceExpensesIndexRoute: AuthedFinanceExpensesIndexRoute,
+  AuthedFinanceFixedAssetsIndexRoute: AuthedFinanceFixedAssetsIndexRoute,
   AuthedFinanceInvestorsIndexRoute: AuthedFinanceInvestorsIndexRoute,
   AuthedFinanceJournalIndexRoute: AuthedFinanceJournalIndexRoute,
   AuthedFinanceOpeningBalancesIndexRoute:
     AuthedFinanceOpeningBalancesIndexRoute,
   AuthedFinancePayablesIndexRoute: AuthedFinancePayablesIndexRoute,
+  AuthedFinancePostingRulesIndexRoute: AuthedFinancePostingRulesIndexRoute,
+  AuthedFinanceProjectBudgetsIndexRoute: AuthedFinanceProjectBudgetsIndexRoute,
   AuthedFinanceReceivablesIndexRoute: AuthedFinanceReceivablesIndexRoute,
   AuthedFinanceReconciliationIndexRoute: AuthedFinanceReconciliationIndexRoute,
   AuthedFinanceReportsIndexRoute: AuthedFinanceReportsIndexRoute,
@@ -3461,6 +3673,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHrLeaveIndexRoute: AuthedHrLeaveIndexRoute,
   AuthedHrOvertimeIndexRoute: AuthedHrOvertimeIndexRoute,
   AuthedHrPayrollIndexRoute: AuthedHrPayrollIndexRoute,
+  AuthedHrScheduleIndexRoute: AuthedHrScheduleIndexRoute,
   AuthedHrTasksIndexRoute: AuthedHrTasksIndexRoute,
   AuthedIntegrationsWebhooksIndexRoute: AuthedIntegrationsWebhooksIndexRoute,
   AuthedIntegrationsWebsiteCatalogIndexRoute:
@@ -3494,6 +3707,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsDocumentsIndexRoute: AuthedSettingsDocumentsIndexRoute,
   AuthedSettingsPaymentGatewaysIndexRoute:
     AuthedSettingsPaymentGatewaysIndexRoute,
+  AuthedSettingsPayrollIndexRoute: AuthedSettingsPayrollIndexRoute,
   AuthedSubscriptionContractIdIndexRoute:
     AuthedSubscriptionContractIdIndexRoute,
   AuthedSubscriptionActivationsIndexRoute:
@@ -3501,6 +3715,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSubscriptionApiKeysIndexRoute: AuthedSubscriptionApiKeysIndexRoute,
   AuthedSubscriptionApplicationsIndexRoute:
     AuthedSubscriptionApplicationsIndexRoute,
+  AuthedHrEmployeesEmployeeIdEditRoute: AuthedHrEmployeesEmployeeIdEditRoute,
   AuthedInventoryComponentsProductIdEditRoute:
     AuthedInventoryComponentsProductIdEditRoute,
   AuthedInventoryMaterialsProductIdEditRoute:
@@ -3529,11 +3744,14 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedSalesReturnsSalesReturnIdEditRoute,
   AuthedDocumentsSignaturesMineIndexRoute:
     AuthedDocumentsSignaturesMineIndexRoute,
+  AuthedFinanceExpensesClaimIdIndexRoute:
+    AuthedFinanceExpensesClaimIdIndexRoute,
   AuthedFinanceInvestorsProfitSharingIndexRoute:
     AuthedFinanceInvestorsProfitSharingIndexRoute,
   AuthedFinanceInvestorsRegistryIndexRoute:
     AuthedFinanceInvestorsRegistryIndexRoute,
   AuthedFinanceTaxCorrectionsIndexRoute: AuthedFinanceTaxCorrectionsIndexRoute,
+  AuthedFinanceTaxPph21IndexRoute: AuthedFinanceTaxPph21IndexRoute,
   AuthedFinanceTaxRecapIndexRoute: AuthedFinanceTaxRecapIndexRoute,
   AuthedFinanceTaxRecordsIndexRoute: AuthedFinanceTaxRecordsIndexRoute,
   AuthedFinanceTaxTypesIndexRoute: AuthedFinanceTaxTypesIndexRoute,
@@ -3577,6 +3795,9 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   LoginIndexRoute: LoginIndexRoute,
   ResetPasswordIndexRoute: ResetPasswordIndexRoute,
+  PrintEmploymentAgreementsDocumentIdRoute:
+    PrintEmploymentAgreementsDocumentIdRoute,
+  PrintPayslipsDocumentIdRoute: PrintPayslipsDocumentIdRoute,
   PrintQuotationsQuotationIdRoute: PrintQuotationsQuotationIdRoute,
 }
 export const routeTree = rootRouteImport

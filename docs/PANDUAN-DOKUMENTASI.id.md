@@ -37,11 +37,11 @@ Dokumen lain yang berbeda dari ketiganya dianggap usang dan perlu diperbaiki. Da
 
 | Folder | Jumlah file | Isi | Kebaruan |
 | --- | --- | --- | --- |
-| `docs/architecture/` | 10 | Aturan teknis inti: README (indeks), project-audit, stack-compatibility, architecture, runbook, domain-map, data-model, api-conventions, security-and-access, testing-strategy | Campuran. Banyak yang masih menulis "18 schema / 188 tabel" (sekarang 20 / 192) |
+| `docs/architecture/` | 10 | Aturan teknis inti: README (indeks), project-audit, stack-compatibility, architecture, runbook, domain-map, data-model, api-conventions, security-and-access, testing-strategy | Angka schema/tabel sudah 20 / 196 (disinkronkan 2026-11-24); drift lain masih ada |
 | `docs/architecture/api/` | 1 | `licensing.yaml`: OpenAPI untuk License API | Isinya benar, path kodenya lama |
-| `docs/architecture/decisions/` | 28 | ADR-0001 s/d ADR-0026 (ada dua file ADR-0012) | Banyak ADR lama belum ditandai "superseded" |
-| `docs/architecture/modules/` | 34 | Satu dokumen per modul backend + website/portal | Separuh berlabel *deprecated*; beberapa modul hidup belum punya halaman |
-| `docs/database/` | 8 | **Kontrak database** (`docs.dbml`), aturan kepemilikan, integritas, kamus data, referensi logis, riwayat fase, skrip generator dan validator | `docs.dbml` terkini dan valid. Dokumen pendampingnya masih memakai angka lama |
+| `docs/architecture/decisions/` | 29 | ADR-0001 s/d ADR-0029 (ada dua file ADR-0012) | Banyak ADR lama belum ditandai "superseded" |
+| `docs/architecture/modules/` | 34 | Satu dokumen per modul backend + website/portal | `product`, `warehouse`, `inventory` ditulis ulang 2026-11-24 (ADR-0026); halaman lain sebagian *deprecated* |
+| `docs/database/` | 8 | **Kontrak database** (`docs.dbml`), aturan kepemilikan, integritas, kamus data, referensi logis, riwayat fase, skrip generator dan validator | `docs.dbml` valid (196 tabel / 153 ref / 189 kolom referensi); pendampingnya disinkronkan 2026-11-24 |
 | `docs/plan/` | 6 | `progress.md` (log kerja, ±14.000 baris), `backlog.md` (daftar ERP-xxxx), `plan.md`, rencana komersial EN/ID v5.1, rencana port portal | Bagian atas progress terkini; bagian bawahnya historis |
 | `docs/plan/database-refactor/` | 22 | Rencana refactor database ADR-0024 per modul | Status masih "planned" padahal sudah dikerjakan |
 | `docs/plan/plans/` | 15 | `features.md` (rangkuman fitur per modul) + rencana per topik (finance, tax, inventory, dashboard, signature, dll.) | `features.md` dipelihara; file lain historis |
@@ -153,10 +153,10 @@ Sumber: `docs/database/*`, `docs/plan/database-refactor/*`, ADR-0024 dan ADR-002
 
 ### 4.1 Angka saat ini
 
-Hasil `bun docs/database/validate-dbml.ts`, dijalankan 2026-11-21:
+Hasil `bun docs/database/validate-dbml.ts`, dijalankan 2026-11-24:
 
 ```
-parsed: 192 tables, 147 refs
+parsed: 196 tables, 153 refs
 cross-module refs: 0
 timestamp gaps: 0
 drizzle parity drift: 0
@@ -164,8 +164,8 @@ column parity drift (nullability, type): 0
 OK
 ```
 
-- Ada **20 schema dan 192 tabel**: 168 sudah dibangun, 24 berstatus `status: target` (baru ada di kontrak).
-- Ada 190 kolom referensi logis lintas modul, menunjuk ke 25 tabel target.
+- Ada **20 schema dan 196 tabel**: 176 sudah dibangun (jumlah `CREATE TABLE` di 20 migrasi baseline), 20 berstatus `status: target` (baru ada di kontrak).
+- Ada 189 kolom referensi logis lintas modul, menunjuk ke 25 tabel target.
 
 ### 4.2 Konvensi kolom
 
@@ -199,7 +199,7 @@ OK
 | 8 | `inventory` (menyerap `assets`) | item_serials, items (unit fisik alat/aset), item_categories, documents, movements (ledger append-only), stocks (proyeksi), stock_adjustments (+items), borrowing_requests, borrowings, borrowing_items, borrowing_events, borrowing_request_events, maintenances, condition_checks, disposals, tool_sets, tool_set_items, settings, code_numberings | – | `ExportedInventoryService` |
 | 9 | `sale` (dulu `sales`) | quotations (SPH), quotation_items, quotation_status_history, orders, order_items, order_status_history, delivery_notes (surat jalan), delivery_note_items, returns, return_items, invoices, invoice_items, receipts (kwitansi), settings, code_numberings | discount_requests, contracts, targets | `ExportedOrderService`, `ExportedInvoiceService`, `IInvoicePaymentPort` |
 | 10 | `procurement` | purchase_requests (+items), purchase_orders (+items), goods_receipts (BPB, +items), purchase_returns (+items), code_numberings | – | (`ExportedPurchaseOrderService` direncanakan) |
-| 11 | `finance` (menyerap `accounting`) | chart_of_accounts, accounting_periods, journal_entries, journal_lines, opening_balances, account_balances, bank_account_links, report_archives, payment_terms, cash_bank_accounts, cash_bank_transactions, bank_reconciliations (+items), supplier_bills (+items), ar_open_items, ap_open_items, asset_depreciations, settings, code_numberings | journal_templates, credit_memos, expense_claims (+items), employee_advances, expense_settlements (+items) | posting service; `ExportedFinanceService` / `ExportedJournalService` **belum dibangun** |
+| 11 | `finance` (menyerap `accounting`) | chart_of_accounts, accounting_periods, journal_entries, journal_lines, opening_balances, account_balances, bank_account_links, report_archives, payment_terms, cash_bank_accounts, cash_bank_transactions, bank_reconciliations (+items), supplier_bills (+items), ar_open_items, ap_open_items, expense_claims (+items), asset_depreciations, settings, code_numberings | journal_templates, credit_memos, employee_advances, expense_settlements (+items) | posting service; `ExportedFinanceService` / `ExportedJournalService` **belum dibangun** |
 | 12 | `tax` | taxes (tarif per tanggal efektif), records (rekap periode), corrections, withholding_tax_records, code_numberings | – | – |
 | 13 | `payment` | payments (satu-satunya ledger uang; channel manual/gateway), payment_allocations (polimorf), gateways (secret AES-256-GCM), settings, code_numberings | – | `ExportedPaymentService`, `ExportedPaymentWebhookService` |
 | 14 | `project` (menyerap leads, licensing, warranty) | projects, tasks, evidence, costs, handover (BAST), addresses, leads, lead_activities, lead_attachments, warranties, license_applications, license_contracts, license_keys, license_activations, license_events, license_api_keys, settings, code_numberings | types, phases, task_dependencies, milestones, daily_reports, site_assignments, kpi_definitions, kpi_evaluations, changes, work_plans | (`ExportedLeadService`, `ExportedProjectService`, `ExportedWarrantyService` direncanakan) |
@@ -215,7 +215,7 @@ OK
 
 **Mengapa ada refactor.**
 - Sebelumnya ada sekitar 27 schema dan 270 tabel rencana, banyak di antaranya hanya ada di dokumen, dan ada pelanggaran batas modul.
-- ADR-0024 (dirapatkan 2026-11-19) menormalkan menjadi 18 schema dan 188 tabel. ADR-0026 lalu memisahkan `product` dan `warehouse` dari `inventory`, menjadi **20 schema dan 192 tabel**.
+- ADR-0024 (dirapatkan 2026-11-19) menormalkan menjadi 18 schema dan 188 tabel. ADR-0026 lalu memisahkan `product` dan `warehouse` dari `inventory`, menjadi **20 schema dan 196 tabel** (tabel `docs.dbml`; migrasi baseline membuat 176 di antaranya).
 
 **Keputusan penting** (Q1-Q39 di `docs/plan/database-refactor/00-overview.md`):
 
@@ -669,7 +669,7 @@ Pekerjaan portal tahap 2 dan website dinamis ada di branch `feat/erp-0069-portal
 | 0023 | Modul payment memiliki checkout gateway | accepted | `IInvoicePaymentPort` | Sebagian diganti 0024 |
 | 0024 | Normalisasi database baseline v2 | **proposed** (sudah dibangun) | 18 schema, tanpa FK lintas schema, penomoran per schema | Status perlu dinaikkan |
 | 0025 | TanStack Table untuk web-admin | accepted | Satu komponen `DataTable` | Baru |
-| 0026 | Product dan warehouse jadi modul sendiri | accepted (tertulis 2026-11-23) | 20 schema / 192 tabel | Tanggal di file lebih maju dari hari ini |
+| 0026 | Product dan warehouse jadi modul sendiri | accepted (tertulis 2026-11-23) | 20 schema / 196 tabel | Tanggal di file lebih maju dari hari ini |
 
 Nomor berikutnya yang dipesan rencana port: **ADR-0027** (sesi portal, di PR #139) dan **ADR-0028** (website). Sebelum memakai nomor ADR atau ERP baru, **cek dulu main, semua branch, dan PR yang masih terbuka**. Tabrakan nomor sudah terjadi berkali-kali.
 
@@ -690,13 +690,13 @@ Nomor berikutnya yang dipesan rencana port: **ADR-0027** (sesi portal, di PR #13
 | `bun run dev` | root | Turbo; backend `bun run --watch src/index.ts` |
 | `bun run lint` / `test` / `typecheck` | root | Test 7/7 workspace. **Typecheck root tidak mencakup web-admin**; jalankan `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`. Aplikasi Astro dicek dengan `astro check` |
 | `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend` | Selalu `bunx --bun drizzle-kit` (`--bun` wajib) |
-| `bun run database/migrate-reset.ts` | `apps/backend` | Untuk database sekali pakai |
+| `bun run database/migrate-reset.ts` | `apps/backend` | Drop semua schema, migrate, seed — hanya untuk database lokal yang boleh dibuat ulang |
 | `bun docs/database/gen-logical-references.ts` / `validate-dbml.ts` | root | `validate-dbml.ts` harus mencetak `OK` |
 
 **Migrasi:**
-- Baseline ADR-0024 berupa **satu folder per schema**: 20 folder, dari `20261120214111_create_auth_schema` sampai `20261120214130_create_warehouse_schema`.
-- Migrasi baru bersifat append-only, SQL-nya diperiksa manual, dan diuji di database sekali pakai.
-- `drizzle-kit push` hanya untuk database sekali pakai.
+- Baseline ADR-0024 berupa **satu folder per schema**: 20 folder, dari `20261123204301_create_auth_schema` sampai `20261123204332_create_warehouse_schema` (re-squash 2026-11-24; 176 `CREATE TABLE`, 20 tabel `docs.dbml` masih target-only).
+- Migrasi baru bersifat append-only, SQL-nya diperiksa manual, dan diuji di database lokal yang boleh dibuat ulang.
+- `drizzle-kit push` hanya untuk database yang boleh dibuat ulang.
 - **Jangan pernah** `generate --fix-conflicts`.
 - **Jangan pernah** `auth:generate`.
 
@@ -717,23 +717,13 @@ Nomor berikutnya yang dipesan rencana port: **ADR-0027** (sesi portal, di PR #13
 
 ## 12. Dokumen usang dan kontradiksi
 
-Daftar ini hasil pembacaan menyeluruh pada 2026-11-21. Urutannya dari dampak terbesar. **Belum ada yang diperbaiki.**
+Daftar ini hasil pembacaan menyeluruh pada 2026-11-21. Urutannya dari dampak terbesar. **Bagian A sudah diperbaiki 2026-11-24; bagian B dan seterusnya belum.**
 
-### A. Angka dan struktur setelah ADR-0026
-- **"18 schema / 188 tabel"** masih tertulis di:
-  - `docs/architecture/README.md`, `project-audit.md`, `architecture.md`, `domain-map.md`, `data-model.md`, `security-and-access.md`;
-  - `docs/architecture/modules/README.md`;
-  - `docs/database/integrity-and-consistency.md`, `data-dictionary.md`, `implementation-phases.md`;
-  - `features.md`.
-
-  Yang benar: **20 schema / 192 tabel**.
-- **Produk dan gudang masih ditulis sebagai bagian `inventory`** di:
-  - `architecture.md`, `domain-map.md`, `data-model.md`;
-  - `modules/inventory.md`, `modules/product.md`, `modules/warehouse.md`;
-  - `data-dictionary.md`, `integrity-and-consistency.md`, `logical-references.md` (bagian yang ditulis manual);
-  - `database-refactor/01-target-schema.md`, `database-refactor/modules/inventory.md`.
-- **`AGENTS.md`** menulis "164 CREATE TABLE"; yang benar 168. Juga merujuk arsip `database/migrations-archive/v3-per-schema-20261121` yang **tidak ada** di repo (yang ada hanya `v1`).
-- **Angka referensi:** `module-ownership.md` dan `implementation-phases.md` menulis "162 ref / 169 kolom referensi"; yang benar 147 ref / 190 kolom.
+### A. Angka dan struktur setelah ADR-0026 — ✅ diperbaiki 2026-11-24
+- Angka schema/tabel diseragamkan ke **20 schema / 196 tabel** (hasil `bun docs/database/validate-dbml.ts`: 196 tabel, 153 `Ref:` intra-modul, 189 kolom referensi logis, 25 target) di `AGENTS.md`, `README.md`, `docs/architecture/*`, `docs/architecture/modules/README.md`, `docs/database/*`, dan `features.md` (catatan di kepala file; entri historis ERP-0070 tidak diubah).
+- `product` dan `warehouse` sekarang didokumentasikan sebagai modul + schema sendiri (ADR-0026): `modules/product.md`, `modules/warehouse.md`, `modules/inventory.md` ditulis ulang; `architecture.md`, `domain-map.md`, `data-model.md` diperbarui.
+- `AGENTS.md` tidak lagi mengklaim arsip `database/migrations-archive/v3-per-schema-20261121` (yang ada hanya `v1`) dan memakai angka 176 `CREATE TABLE` (bukan 164/168).
+- Istilah "disposable database" diganti "local/throwaway database you can drop and recreate" di `AGENTS.md`, `README.md`, `runbook.md`, `data-model.md`, `project-audit.md`, `testing-strategy.md`, `integrity-and-consistency.md`, `implementation-phases.md`, dan halaman modul. `migrate-reset.ts` + `drizzle:migrate-reset` tetap ada.
 
 ### B. URL lama
 - **Katalog** ditulis `/inventory/public/v1/catalog` di `api-conventions.md`, `modules/automation.md`, `modules/inventory.md`, dan `database-refactor/*`. Yang benar `/products/public/v1/catalog`.

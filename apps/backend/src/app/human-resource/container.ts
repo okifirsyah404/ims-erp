@@ -5,7 +5,7 @@ import { EmployeeRepository } from './repositories/employee.repository';
 import { EmployeeService } from './services/employee.service';
 import { EmployeeInviteService } from './services/employee-invite.service';
 import { InvitationEmployeeAdapter } from './adapters/invitation-employee';
-import { INVITATION_EMPLOYEE_PORT_TOKEN } from '@app/user/constants/di';
+import { INVITATION_CLAIM_PORT_TOKEN, INVITATION_EMPLOYEE_PORT_TOKEN } from '@app/user/constants/di';
 import { ExportedEmployeeService } from './services/exported-employee.service';
 import { AttendanceRepository } from './repositories/attendance.repository';
 import { LeaveRepository } from './repositories/leave.repository';
@@ -16,6 +16,25 @@ import { LeaveService } from './services/leave.service';
 import { HrPeopleService } from './services/people.service';
 import { SalaryService } from './services/salary.service';
 import { TaskService } from './services/task.service';
+import { ScheduleRepository } from './repositories/schedule.repository';
+import { ScheduleService } from './services/schedule.service';
+import { SalaryPeriodRepository } from './repositories/salary-period.repository';
+import { SalaryPeriodService } from './services/salary-period.service';
+import { HrSettingsRepository } from './repositories/hr-settings.repository';
+import { PayrollScheduleService } from './services/payroll-schedule.service';
+import { PayrollStatutoryService } from './services/payroll-statutory.service';
+import { PayrollCalculationService } from './services/payroll-calculation.service';
+import { ExportedPayrollService } from './services/exported-payroll.service';
+import { EmployeeAddressRepository } from './repositories/employee-address.repository';
+import { AgreementPdfQueue } from './queues/agreement-pdf.queue';
+import { EmployeeDocumentService } from './services/employee-document.service';
+import { AgreementPdfService } from './services/agreement-pdf.service';
+import { InvitationClaimAdapter } from './adapters/invitation-claim';
+import { PayslipPdfQueue } from './queues/payslip-pdf.queue';
+import { PayslipService } from './services/payslip.service';
+import { EmployeePortalResolver } from './adapters/employee-portal-resolver';
+import { EmployeePortalService } from './services/employee-portal.service';
+import { EMPLOYEE_PORTAL_RESOLVER_TOKEN } from '@authorization/employee-portal-resolver';
 import {
 	ATTENDANCE_REPOSITORY_TOKEN,
 	ATTENDANCE_SERVICE_TOKEN,
@@ -31,6 +50,22 @@ import {
 	LEAVE_SERVICE_TOKEN,
 	SALARY_REPOSITORY_TOKEN,
 	SALARY_SERVICE_TOKEN,
+	SCHEDULE_REPOSITORY_TOKEN,
+	SALARY_PERIOD_REPOSITORY_TOKEN,
+	SALARY_PERIOD_SERVICE_TOKEN,
+	HR_SETTINGS_REPOSITORY_TOKEN,
+	PAYROLL_SCHEDULE_SERVICE_TOKEN,
+	PAYROLL_STATUTORY_SERVICE_TOKEN,
+	PAYROLL_CALCULATION_SERVICE_TOKEN,
+	EXPORTED_PAYROLL_SERVICE_TOKEN,
+	EMPLOYEE_ADDRESS_REPOSITORY_TOKEN,
+	AGREEMENT_PDF_QUEUE_TOKEN,
+	EMPLOYEE_DOCUMENT_SERVICE_TOKEN,
+	AGREEMENT_PDF_SERVICE_TOKEN,
+	PAYSLIP_QUEUE_TOKEN,
+	PAYSLIP_SERVICE_TOKEN,
+	EMPLOYEE_PORTAL_SERVICE_TOKEN,
+	SCHEDULE_SERVICE_TOKEN,
 	TASK_REPOSITORY_TOKEN,
 	TASK_SERVICE_TOKEN,
 } from './constants/di';
@@ -80,4 +115,34 @@ export function registerHumanResource(container: DependencyContainer): void {
 	container.register(LEAVE_SERVICE_TOKEN, { useClass: LeaveService });
 	container.register(TASK_SERVICE_TOKEN, { useClass: TaskService });
 	container.register(SALARY_SERVICE_TOKEN, { useClass: SalaryService });
+
+	// Employee work schedule (ERP-0118).
+	container.register(SCHEDULE_REPOSITORY_TOKEN, { useClass: ScheduleRepository });
+	container.register(SCHEDULE_SERVICE_TOKEN, { useClass: ScheduleService });
+
+	// Salary periods (ERP-0119).
+	container.register(SALARY_PERIOD_REPOSITORY_TOKEN, { useClass: SalaryPeriodRepository });
+	container.register(SALARY_PERIOD_SERVICE_TOKEN, { useClass: SalaryPeriodService });
+
+	// Payday setting and the daily draft run (ERP-0120).
+	container.register(HR_SETTINGS_REPOSITORY_TOKEN, { useClass: HrSettingsRepository });
+	container.register(PAYROLL_SCHEDULE_SERVICE_TOKEN, { useClass: PayrollScheduleService });
+	container.register(PAYROLL_STATUTORY_SERVICE_TOKEN, { useClass: PayrollStatutoryService });
+	container.register(PAYROLL_CALCULATION_SERVICE_TOKEN, { useClass: PayrollCalculationService });
+	container.register(EXPORTED_PAYROLL_SERVICE_TOKEN, { useClass: ExportedPayrollService });
+
+	// Employee documents, the claim's personal data and the agreement PDF (ERP-0121).
+	container.register(EMPLOYEE_ADDRESS_REPOSITORY_TOKEN, { useClass: EmployeeAddressRepository });
+	container.register(AGREEMENT_PDF_QUEUE_TOKEN, { useClass: AgreementPdfQueue });
+	container.register(EMPLOYEE_DOCUMENT_SERVICE_TOKEN, { useClass: EmployeeDocumentService });
+	container.register(AGREEMENT_PDF_SERVICE_TOKEN, { useClass: AgreementPdfService });
+	container.register(INVITATION_CLAIM_PORT_TOKEN, { useClass: InvitationClaimAdapter });
+
+	// Payslips (ERP-0122).
+	container.register(PAYSLIP_QUEUE_TOKEN, { useClass: PayslipPdfQueue });
+	container.register(PAYSLIP_SERVICE_TOKEN, { useClass: PayslipService });
+
+	// Employee portal self-service (Phase A).
+	container.register(EMPLOYEE_PORTAL_RESOLVER_TOKEN, { useClass: EmployeePortalResolver });
+	container.register(EMPLOYEE_PORTAL_SERVICE_TOKEN, { useClass: EmployeePortalService });
 }

@@ -47,7 +47,7 @@ tokens/contracts, never by re-creating pools or caches.
   files importing `drizzleDB` in repositories are defects to fix in their
   slices (known: `customer.repository.ts`).
 - Migration policy: append-only; `drizzle:generate` → inspect → apply to
-  disposable DB. Journal state of the baseline
+  throwaway local DB. Journal state of the baseline
   (`20261025064638_create_auth_schema`) unverified — check before first
   generate/migrate.
 
@@ -70,4 +70,4 @@ tokens/contracts, never by re-creating pools or caches.
 ## Tests
 
 - No infrastructure tests exist; integration tests (test/int) will cover
-  connection, cache round-trip, and idempotent seeding on a disposable PG.
+  connection, cache round-trip, and idempotent seeding on a throwaway local PG.

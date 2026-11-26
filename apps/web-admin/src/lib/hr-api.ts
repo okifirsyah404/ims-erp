@@ -40,16 +40,18 @@ export type TEmployee = {
 	userId: string | null;
 	employeeCode: string;
 	fullName: string;
-	legalName: string | null;
 	nickname: string | null;
 	gender: 'male' | 'female' | null;
 	birthDate: string | null;
 	birthPlace: string | null;
 	nationalId: string | null;
+	taxId: string | null;
+	ptkpStatus: TPtkpStatus | null;
+	bpjsHealthNumber: string | null;
+	bpjsEmploymentNumber: string | null;
 	maritalStatus: string | null;
 	email: string | null;
 	phone: string | null;
-	whatsapp: string | null;
 	employmentStatus: TEmploymentStatus;
 	employmentType: TEmploymentType;
 	workType: TWorkType;
@@ -59,6 +61,31 @@ export type TEmployee = {
 	createdAt: string;
 	updatedAt: string;
 	deletedAt: string | null;
+	/** Avatar and handle of the login, on list rows; `null` without a login. */
+	login?: { username: string | null; image: string | null } | null;
+	/** The linked login (`auth.users`), detail endpoint only; `null` without a login. */
+	account?: TEmployeeAccount | null;
+};
+
+/** The login behind an employee, as the employee detail returns it (no credential data). */
+export type TEmployeeAccount = {
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	username: string | null;
+	displayUsername: string | null;
+	image: string | null;
+	phone: string | null;
+	bio: string | null;
+	role: string | null;
+	status: 'pending' | 'active' | 'deactivated';
+	banned: boolean;
+	banReason: string | null;
+	banExpires: string | null;
+	claimedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
 };
 
 type TPaginated<T> = { rows: T[]; pagination: TPaginationMeta };
@@ -112,16 +139,32 @@ export type TEmployeeListParams = {
 	search?: string;
 	status?: TEmploymentStatus;
 	scope?: 'all' | 'organization' | 'company';
+	employmentType?: TEmploymentType;
+	workType?: TWorkType;
+	gender?: TGender;
+	maritalStatus?: TMaritalStatus;
+	/** `yes`: has a login account; `no`: none. */
+	login?: 'yes' | 'no';
+	sortBy?: TEmployeeSortField;
+	sortDir?: 'asc' | 'desc';
 };
+
+export const GENDERS = ['male', 'female'] as const;
+export type TGender = (typeof GENDERS)[number];
+export const MARITAL_STATUSES = ['single', 'married', 'divorced', 'widowed'] as const;
+export type TMaritalStatus = (typeof MARITAL_STATUSES)[number];
+export const EMPLOYEE_SORT_FIELDS = ['fullName', 'employeeCode', 'hireDate', 'createdAt'] as const;
+export type TEmployeeSortField = (typeof EMPLOYEE_SORT_FIELDS)[number];
 
 export function employeesQueryOptions(params: TEmployeeListParams) {
 	const search = new URLSearchParams({
 		page: String(params.page),
 		limit: String(params.limit),
 	});
-	if (params.search) search.set('search', params.search);
-	if (params.status) search.set('status', params.status);
-	if (params.scope) search.set('scope', params.scope);
+	for (const key of ['search', 'status', 'scope', 'employmentType', 'workType', 'gender', 'maritalStatus', 'login', 'sortBy', 'sortDir'] as const) {
+		const value = params[key];
+		if (value) search.set(key, value);
+	}
 	return queryOptions({
 		queryKey: ['hr', 'employees', params],
 		queryFn: () => getDataPaginated<TEmployee>(`/human-resources/employees?${search.toString()}`),
@@ -164,15 +207,17 @@ export function createEmployee(input: {
 	organizationId?: string | null;
 	organizationRoles?: string[];
 	employeeCode?: string | null;
-	legalName?: string | null;
 	nickname?: string | null;
 	gender?: 'male' | 'female' | null;
 	birthDate?: string | null;
 	birthPlace?: string | null;
 	nationalId?: string | null;
+	taxId?: string | null;
+	ptkpStatus?: TPtkpStatus | null;
+	bpjsHealthNumber?: string | null;
+	bpjsEmploymentNumber?: string | null;
 	maritalStatus?: string | null;
 	phone?: string | null;
-	whatsapp?: string | null;
 	employmentStatus?: TEmploymentStatus;
 	employmentType?: TEmploymentType;
 	workType?: TWorkType;
@@ -189,3 +234,7 @@ export function updateEmployee(id: string, input: Record<string, unknown>) {
 export function archiveEmployee(id: string) {
 	return sendData<{ archived: boolean }>(`/human-resources/employees/${id}`, 'DELETE');
 }
+
+/** PTKP statuses (ERP-0138); an employee without one is taxed as TK/0. */
+export const PTKP_STATUSES = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'] as const;
+export type TPtkpStatus = (typeof PTKP_STATUSES)[number];

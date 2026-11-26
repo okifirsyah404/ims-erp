@@ -1,3 +1,5 @@
+import { USER_REPOSITORY_TOKEN } from '../constants/di';
+import type { IUserRepository } from '../contracts/user.repository.interface';
 import { presignObjectUrl, s3Client } from '@providers/s3/s3';
 import { toWebp } from '@utils/image.util';
 import { inject, injectable } from 'tsyringe';
@@ -16,6 +18,35 @@ import type { IUserAccountGateway, TAuthUser } from '../contracts/user-account.g
  * cycle.
  */
 /** A user as a customer list shows it: `image` is a presigned URL, not the key. */
+/**
+ * The login (`auth.users`) behind another module's record, for a detail
+ * screen (ERP-0117 follow-up: the employee page). No credential data: Better
+ * Auth keeps passwords in `auth.accounts`, which this never reads.
+ */
+export type TAccountDetail = {
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	username: string | null;
+	displayUsername: string | null;
+	image: string | null;
+	phone: string | null;
+	bio: string | null;
+	/** Application role(s), comma-joined (ADR-0018); `null` for a plain user. */
+	role: string | null;
+	status: string;
+	banned: boolean;
+	banReason: string | null;
+	banExpires: string | null;
+	claimedAt: string | null;
+	createdAt: string;
+	updatedAt: string;
+};
+
+/** A cached row comes back from Redis with ISO strings instead of dates. */
+const isoOf = (value: Date | string | number | null | undefined): string | null => (value == null ? null : new Date(value).toISOString());
+
 export type TAccountSummary = {
 	id: string;
 	name: string;
@@ -33,7 +64,35 @@ export class ExportedUserService {
 	constructor(
 		@inject(USER_ACCOUNT_GATEWAY_TOKEN)
 		private readonly accounts: IUserAccountGateway,
+		/** The `auth.users` row for {@link ExportedUserService.accountDetail}; optional for tests that never read it. */
+		@inject(USER_REPOSITORY_TOKEN)
+		private readonly users?: Pick<IUserRepository, 'findById'>,
 	) {}
+
+	/** The live login behind a record, or `null` (none, deleted, or not wired). */
+	async accountDetail(userId: string): Promise<TAccountDetail | null> {
+		const user = this.users ? await this.users.findById(userId) : null;
+		if (!user) return null;
+		return {
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			emailVerified: user.emailVerified,
+			username: user.username ?? null,
+			displayUsername: user.displayUsername ?? null,
+			image: user.image ? presignObjectUrl(user.image) : null,
+			phone: user.phone ?? null,
+			bio: user.bio ?? null,
+			role: user.role ?? null,
+			status: user.status ?? 'active',
+			banned: user.banned ?? false,
+			banReason: user.banReason ?? null,
+			banExpires: isoOf(user.banExpires),
+			claimedAt: isoOf(user.claimedAt),
+			createdAt: isoOf(user.createdAt)!,
+			updatedAt: isoOf(user.updatedAt)!,
+		};
+	}
 
 	findByEmail(email: string): Promise<TAuthUser | null> {
 		return this.accounts.findUserByEmail(email);

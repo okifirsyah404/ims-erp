@@ -146,6 +146,10 @@ const assets = {
 	'categories.depMethod': 'Penyusutan bawaan',
 	'categories.lifeMonths': 'Umur ekonomis (bulan)',
 	'categories.created': 'Kategori dibuat.',
+	'categories.edit': 'Ubah kategori',
+	'categories.updated': 'Kategori diperbarui.',
+	'categories.immutableHint': 'Kode tidak dapat diubah setelah dibuat.',
+	'categories.lifeMonthsInvalid': 'Masukkan jumlah bulan dalam bilangan bulat.',
 
 	// Enum labels (composed at runtime).
 	'status.ready': 'Siap',
@@ -190,6 +194,9 @@ const assets = {
 	'itemKind.furniture': 'Perabot',
 	'itemKind.it': 'Perangkat TI',
 	'itemKind.intangible': 'Aset tak berwujud',
+	'depreciationMethod.straight_line': 'Garis lurus',
+	'depreciationMethod.declining_balance': 'Saldo menurun',
+	'depreciationMethod.none': 'Tidak ada',
 	'movementType.borrow_out': 'Dipinjamkan',
 	'movementType.borrow_return': 'Pengembalian pinjaman',
 	'movementType.project_site': 'Lokasi proyek',

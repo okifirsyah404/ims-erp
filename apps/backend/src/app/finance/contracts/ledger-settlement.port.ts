@@ -25,6 +25,9 @@ export type TSettlementDocument = {
 	status: string;
 };
 
+/** Employee payables a payment may settle (ERP-0144). */
+export type TEmployeePayableType = 'expense_claim' | 'employee_advance' | 'expense_settlement';
+
 /** Which side of the ledger the cash movement settles. */
 export type TSettlementSide = 'receivable' | 'payable';
 
@@ -58,12 +61,58 @@ export interface ILedgerSettlementPort {
 	 * DR cash / CR AR or DR AP / CR cash), joining the caller's transaction.
 	 * This module resolves the counterpart GL account from `side`.
 	 */
+	/**
+	 * PPh withheld from a supplier payment (ERP-0140): Dr payable / Cr the
+	 * withholding payable of that tax (posting-rule discriminator `tax` = tax
+	 * code). The cash movement carries only the net amount.
+	 */
+	postWithholding(
+		input: {
+			organizationId: string;
+			actorUserId: string;
+			paymentId: string;
+			paymentCode: string;
+			businessDate: string;
+			amount: number;
+			taxCode: string;
+			supplierId: string | null;
+		},
+		tx: TTx,
+	): Promise<void>;
+
+	/**
+	 * What a payment may still allocate to an employee payable (ERP-0144):
+	 * `exact` means the allocation must equal `outstanding` (claims and advance
+	 * disbursements are paid in full). `null` when the target is not payable
+	 * in that direction.
+	 */
+	findEmployeePayable(
+		organizationId: string,
+		type: TEmployeePayableType,
+		id: string,
+		direction: 'in' | 'out',
+		tx?: unknown,
+	): Promise<{ outstanding: number; exact: boolean; employeeId: string | null } | null>;
+
+	/** Applies an executed allocation to an employee payable. */
+	applyEmployeePayable(
+		organizationId: string,
+		type: TEmployeePayableType,
+		id: string,
+		direction: 'in' | 'out',
+		amount: number,
+		paymentId: string,
+		tx: TTx,
+	): Promise<void>;
+
 	postCashMovement(
 		input: {
 			organizationId: string;
 			actorUserId: string;
 			cashBankAccountId: string;
 			side: TSettlementSide;
+			/** ERP-0144: counterpart for employee payments instead of AR/AP. */
+			counterpartRole?: 'claim_payable' | 'employee_advance';
 			direction: 'in' | 'out';
 			amount: number;
 			businessDate: string;

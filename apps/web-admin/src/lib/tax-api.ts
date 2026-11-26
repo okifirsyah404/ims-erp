@@ -243,7 +243,23 @@ export type TWithholdingRecord = {
 	periodYear: number | null;
 	periodMonth: number | null;
 	status: string;
+	taxObjectCode: string | null;
+	withholdingSlipNumber: string | null;
+	counterpartyTaxId: string | null;
+	sourceModule: string | null;
+	coretaxStatus: TCoretaxStatus;
 };
+
+export const CORETAX_STATUSES = ['not_exported', 'exported', 'uploaded'] as const;
+export type TCoretaxStatus = (typeof CORETAX_STATUSES)[number];
+
+/** Bukti-potong data and Coretax status (ERP-0140). */
+export function updateWithholdingCoretax(
+	id: string,
+	input: { coretaxStatus?: TCoretaxStatus; withholdingSlipNumber?: string | null; counterpartyTaxId?: string | null; taxObjectCode?: string | null },
+) {
+	return sendData<TWithholdingRecord>(`/taxes/withholdings/${id}/coretax`, 'PATCH', input);
+}
 
 export function withholdingQueryOptions(params: { page: number; limit: number }) {
 	const search = new URLSearchParams({
@@ -271,4 +287,44 @@ export function transitionWithholding(id: string, to: string) {
 		'POST',
 		{ to },
 	);
+}
+
+/* ----------------------------- PPh 21 tables (ERP-0138) ----------------------------- */
+
+export type TPph21Tables = {
+	ptkp: { statusCode: string; annualAmount: number; terCategory: string }[];
+	ptkpEffectiveFrom: string | null;
+	ter: { category: string; lowerBound: number; rate: string }[];
+	terEffectiveFrom: string | null;
+	brackets: { lowerBound: number; rate: string }[];
+	bracketsEffectiveFrom: string | null;
+	terVersions: { effectiveFrom: string; rows: number }[];
+};
+
+export type TTerImportResult = {
+	imported: number;
+	effectiveFrom: string[];
+	errors: { row: number; code: string; value: string }[];
+};
+
+export function pph21TablesQueryOptions(date?: string) {
+	return queryOptions({
+		queryKey: ['tax', 'pph21', date ?? 'today'],
+		queryFn: () => getData<TPph21Tables>(`/taxes/pph21/tables${date ? `?date=${date}` : ''}`),
+	});
+}
+
+/** Uploads the official TER table (CSV); all rows or none. */
+export async function importTerRates(file: File): Promise<TTerImportResult> {
+	const form = new FormData();
+	form.append('file', file);
+	const response = await fetch(`${API_URL}/taxes/pph21/ter-rates/import`, {
+		method: 'POST',
+		credentials: 'include',
+		headers: { ...organizationHeaders() },
+		body: form,
+	});
+	const envelope = (await response.json()) as TApiResponse<TTerImportResult>;
+	if (!response.ok) throw new Error(envelope.errors?.[0]?.message ?? envelope.message ?? 'Request failed');
+	return envelope.data as TTerImportResult;
 }

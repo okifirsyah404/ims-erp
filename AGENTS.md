@@ -42,7 +42,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
 | `bun install`                                                   | repo root                         | ✅ verified 2026-10-28/29 — clean installs (nest removal, dicebear add)                                                                                                                    |
 | `bun run dev`                                                   | repo root                         | ✅ verified 2026-10-29 — `turbo run dev`; live HTTP bring-up (auth 200, Redis, 401 envelope)                                                                                               |
 | `bun run lint` / `test` / `typecheck`                           | repo root, fans out per workspace | ✅ verified 2026-11-20 — lint 0 errors; `test` 7/7 tasks (backend 1232, web-admin 119, locales 98, web-landing 24, web-customer-portal 60). ⚠️ root `typecheck` does **not** cover web-admin (no script): use `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` (also part of `build`). The two Astro apps are checked with `astro check` (`bun run typecheck` inside each) |
-| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-11-19/21 — ADR-0024 **baseline**: **one migration per Postgres schema**, `database/migrations/20261120214111_create_auth_schema` … `20261120214130_create_warehouse_schema` (20 folders, 1 `base` + 19 chained `diff` snapshots; 20 schemas, 164 `CREATE TABLE`, 0 cross-schema `REFERENCES`). The earlier single baseline (`20261120061847_last_daredevil`, regenerated 2026-11-20 when ADR-0014 nullability was enforced) is archived at `database/migrations-archive/v3-per-schema-20261121`; the two are equivalent (same 728 statements, identical `pg_dump --schema-only`). A second `generate` reports no changes; `check` reports "Everything's fine"; `migrate` + `seed` applied on a disposable database and the second `seed` inserted 0 rows. The pre-ADR-0024 chain is archived in `database/migrations-archive/v1` and is not applied. All use `bunx --bun drizzle-kit` (`--bun` is required: the driver is `drizzle-orm/bun-sql`). Seed content is deterministic (`faker.seed`). The old "blocked on main" note (branching snapshot chain) is resolved by the baseline; see `runbook.md` |
+| `bun run drizzle:generate` / `drizzle:migrate` / `drizzle:seed` | `apps/backend`                    | ✅ verified 2026-11-19/21, re-squashed 2026-11-24 — ADR-0024 **baseline**: **one migration per Postgres schema**, `database/migrations/20261123204301_create_auth_schema` … `20261123204332_create_warehouse_schema` (20 folders, 1 `base` + 19 chained `diff` snapshots; 20 schemas, 176 `CREATE TABLE`, 0 cross-schema `REFERENCES`). The 33-folder chain this replaced (20 baseline folders + 13 incremental ones, including a duplicated `20261123015149_erp0114/erp0116` pair) is gone from the tree — git history only, no `migrations-archive/v4`. The re-squash was verified **without** a database: the 20 folders concatenate to the same 758 statements as one `generate` from `drizzle/schemas/*.schema.ts`, `check` reports "Everything's fine", `generate --explain` reports `no_changes`. Earlier single baseline (`20261120061847_last_daredevil`) is not in the tree (git history only; `database/migrations-archive/` holds just `v1`); `migrate` + `seed` were last applied to a throwaway local database on 2026-11-21 (second `seed` inserted 0 rows) and that proof still stands for the DDL, which did not change. The pre-ADR-0024 chain is archived in `database/migrations-archive/v1` and is not applied. All use `bunx --bun drizzle-kit` (`--bun` is required: the driver is `drizzle-orm/bun-sql`). Seed content is deterministic (`faker.seed`). The old "blocked on main" note (branching snapshot chain) is resolved by the baseline; see `runbook.md` |
 
 > The previous NestJS backend (`apps/backend-nest`, package `backend`) was
 > deleted 2026-10-28; its verified-command history is superseded. Docker
@@ -67,7 +67,7 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   `location`, `company`, `customer`, `supplier`, `product`, `warehouse`,
   `inventory`, `sale`, `procurement`, `finance`, `tax`, `payment`, `project`,
   `ticket`, `human_resource`, `document`, `notification`, `audit`,
-  `automation`) and 192 tables; each
+  `automation`) and 199 tables; each
   business module owns exactly one of them. Two exceptions are by design: the
   `user` and `organization` backend modules both live in the `auth` schema
   because Better Auth owns those tables (the standalone `organization` *schema*
@@ -92,9 +92,9 @@ else is _proposed_: verify before claiming it works. Full list with outcomes:
   checks are UX only.
 - **Migrations are append-only.** Preserve historical migrations/snapshots.
   Generate new migrations with the script above, inspect the SQL, test against a
-  disposable database (`drizzle-kit push` is for disposable DBs only). Never
-  migrate a production database or run destructive operations against unknown
-  `POSTGRES_URL` values.
+  local database you can drop and recreate (`drizzle-kit push` only ever runs
+  against such a database). Never migrate a production database or run
+  destructive operations against unknown `POSTGRES_URL` values.
 - **Never run `auth:generate`.** The `@better-auth/cli` 1.4.x generator
   regresses `apps/backend/drizzle/schemas/auth.schema.ts` (drops
   `pgSchema('auth')`, pluralized table names, and relations — verified
@@ -202,7 +202,7 @@ the same change); a backend-only move is an incomplete change.
 Creating, updating, or deleting a feature module — and any backend feature
 work that adds or changes endpoints, services, repositories, Drizzle schemas,
 or migrations — passes through two gates **before** code and one **after** it.
-The schema contract is 192 tables across 20 schemas; nobody holds it in their
+The schema contract is 199 tables across 20 schemas; nobody holds it in their
 head, and inventing a column or a cross-module link is the most expensive
 mistake available here.
 
@@ -351,7 +351,7 @@ call sites.
 2. `bun run lint` and workspace tests pass, or remaining failures are
    documented as pre-existing in `project-audit.md` with causes.
 3. New schema changes have a generated, human-inspected migration applied
-   to a disposable database.
+   to a local database you can drop and recreate.
 4. Unit + integration coverage for authorization, ownership, and validation;
    any slice touching DB shape seeds idempotently (verify by running twice).
 5. `progress.md` updated with exact commands and results; `backlog.md`

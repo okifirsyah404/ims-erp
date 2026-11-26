@@ -12,6 +12,3147 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-26 - employee portal Phase C: documents, signature requests, payslips
+
+**Scope.** Last of the three phases: the employee's documents (issued to their
+employee record or waiting for their signature), the signature inbox with the
+caller's own signature image, and the payslip history.
+
+**Design gate.** No schema change (`docs.dbml` untouched, `validate-dbml.ts` OK).
+Decisions, carried from the grill and the follow-up request:
+- documents are **not** the registry: the portal shows the ones addressed to the
+  caller — `module='human_resource'` + `source_type='employee'` +
+  `source_id = <their employee id>`, union the ones with a pending request for
+  them. The registry's own filters stay behind `document:read`;
+- signing reuses the existing state machine (`/documents/signatures`): the portal
+  route only pins the request to the session user, and the signer/owner/state
+  checks remain in `SignatureService`;
+- payslips reuse `/users/me/payslips` (+ `/download`) unchanged — session-only,
+  no id to tamper with — and the PDF renders through the existing document
+  attachment, so no new print page was needed;
+- `signature_request` opened to every internal role that can read documents
+  (request: "buka grant signature_request"), keeping "no document access, no
+  request" as the floor.
+
+**Changes.** Backend `document`: `contracts/employee-document-portal.contract.ts`,
+`repositories/my-document.repository.ts` (SQL-paginated union + newest file per
+row), `services/employee-document-portal.service.ts`,
+`controllers/employee-document.controller.ts` (`/documents/me/*`: documents,
+file download, signature requests, sign, decline, signature image
+GET/PUT/DELETE), DI tokens + container + mount. `packages/common`: `document`
+grants gain `signature_request` for sales, technician, freelancer, warehouse,
+customer_service, marketing and the other document-reading roles. Seed: one
+pending signature request on the portal account's own employment agreement
+(idempotent on document+signer). Portal: `lib/documents-api.ts`,
+`lib/payslip-api.ts`, `/documents`, `/signature`, `/payslips`, Phase C nav
+(SHIPPED includes `c`), locale keys en+id.
+
+**Two bugs the walk-through caught:**
+
+1. `/documents` crashed on `formatBusinessDate(createdAt)` — a timestamp fed to a
+   business-date formatter (`RangeError: Invalid time value`). Uses
+   `formatDateTime`.
+2. The backend started through turbo resolved `cors.json` against the repo root,
+   so the allowlist silently fell back to *no file* → every origin allowed. That
+   is why the browser walk-through never surfaced a CORS rejection while the
+   `Origin` preflight showed none. `findCorsPath` now falls back to the
+   workspace's own file.
+
+```bash
+bunx tsc -p tsconfig.json && bunx tsc --noEmit -p tsconfig.app.json   # 0 errors
+bun test test/unit/employee-document-portal.service.test.ts           # 5 pass
+bun run lint                                                          # 7/7, 0 errors
+bun run test                                                          # 8/8: backend 1625, web-admin 211,
+                                                                      # locales 110, web-employee 5,
+                                                                      # customer 68, landing 25, email 6
+bun run drizzle:seed                                                  # twice: 1 signature request inserted once
+bun docs/gen-role-permission.ts                                       # 803 routes
+```
+
+Browser (signed in as `hr_seed_08`): `/documents` lists `0009/DOC/DEV/XI/26
+Perjanjian Kerja - Adinata Jailani`, `/signature` renders the inbox filter +
+signature image card, `/payslips` renders its empty state, the sidebar shows
+Documents (Berkas, Tanda tangan) and Penggajian, 0 console errors.
+
+**Not verified.** Signing end to end (the seeded request belongs to the portal
+account `admin_seed`, not to `hr_seed_08`), the signed-PDF placement (needs the
+renderer/Chromium), and a payslip download (no approved salary record in the
+tenant).
+
+**Bug log.** Every defect found while building phases A–C (12 fixed, 1
+environment limitation, 4 still open) is written up in
+`docs/found-bugs/employee-portal-payroll-26112026.md`.
+
+Next executable task: employee portal is feature-complete for the 13 requested
+areas; next is a browser acceptance pass with an account that owns a signature
+request, and Phase C in the PR description.
+
+## 2026-11-26 - rename `web-investor-portal` to `web-investor`
+
+**Scope.** Same rename for the investor scaffold, for consistency with
+`web-employee`: folder `apps/web-investor`, package
+`@ims-erp/web-investor`, document title `web-investor`.
+
+**Changes.** `apps/web-investor-portal` → `apps/web-investor` (plain move: the
+folder was still untracked), `package.json` name scoped to `@ims-erp/web-investor`
+so it matches `@ims-erp/web-admin` / `@ims-erp/web-employee`, `index.html` title,
+`bun.lock` regenerated (`@ims-erp/web-investor@workspace:apps/web-investor`),
+stale `dist/` removed. The scaffold is otherwise untouched — it is still the bare
+Vite template with no router, auth or UI.
+
+```bash
+bun install                                  # lockfile rewritten, 1 package added
+bunx tsc -b --noEmit                         # (apps/web-investor) 0 errors
+bunx vite build                              # clean
+bunx oxlint                                  # 0 errors
+bun run lint                                 # 7/7 tasks, 0 errors
+bun run test                                 # 8/8 tasks (unchanged counts)
+```
+
+No tracked file referenced the old name outside `bun.lock`, so nothing else
+needed editing.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips).
+
+## 2026-11-26 - rename `web-employee-portal` to `web-employee`
+
+**Scope.** The app folder, package name and every reference are now
+`web-employee` / `@ims-erp/web-employee`. No behaviour changed.
+
+**Changes.** `git mv apps/web-employee-portal apps/web-employee`;
+`package.json` name `@ims-erp/web-employee`; root `dev:employee` filter;
+`bun install` regenerated `bun.lock` (workspace entry + `@ims-erp/web-employee`);
+Dockerfile build paths and comments; compose service `web-employee` with image
+`ghcr.io/okifirsyah404/ims-erp-web-employee` and host port env
+`WEB_EMPLOYEE_PORT`; both CI workflows renamed to
+`main-{test-and-build,deploy}-web-employee.yml` (paths filters, job names,
+`bun run --cwd apps/web-employee`, Dockerfile path, GHA cache scope
+`web-employee`); portal README; locale dead-key scan path; `runbook.md`,
+`backlog.md`, `features.md`, `progress.md`; the doc comments in
+`employee-portal-guard.ts` and both `employee.ts` locale bundles.
+
+```bash
+bun install                                     # 1 package installed, lockfile rewritten
+bunx tsc --noEmit -p tsconfig.app.json          # (apps/web-employee) 0 errors
+bun test                                        # (apps/web-employee) 5 pass
+bun run lint                                    # 7/7 tasks, 0 errors
+bun run test                                    # 8/8 tasks: backend 1620, web-admin 211,
+                                                # locales 110, web-employee 5, customer 68,
+                                                # landing 25, email 6
+bun run --filter '@ims-erp/web-employee' build   # clean
+```
+
+Browser: dev server on :5174 boots from the new path and `/projects` renders
+with the seeded project, 0 console errors.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips).
+
+## 2026-11-26 - employee portal: UI aligned with web-admin, verified in the browser
+
+**Scope.** Browser walk-through of the portal (real backend, real Postgres +
+PostGIS, seeded `hr_seed_08` PIC account) and the layout/UI corrections the
+walk-through made obvious.
+
+**Bugs the browser caught (none of them were visible to lint/tsc/tests):**
+
+1. **`/projects/$projectId` never rendered.** `_authed.projects.tsx` was both the
+   list page and the parent of `_authed.projects.$projectId.tsx`, so the parent
+   route matched `/projects/<id>` and showed the list. Split into
+   `_authed.projects.tsx` (layout `<Outlet/>`), `_authed.projects.index.tsx`
+   (list) and the detail route.
+2. **Portal sign-in failed with "Invalid origin".** CORS allowed 5174 but
+   `betterAuthTrustedOrigins` did not — two separate allowlists. Added
+   `http://localhost:5174` to `social-providers.auth.ts` and to the committed
+   `cors.example.json` (the gitignored `cors.json` was patched locally too).
+3. **Breadcrumbs read leaf-first** (`Instalasi Demo > Projects`):
+   `useMatches()` is outermost-first, the builder reversed it. Rewritten, and a
+   project crumb now takes the title from `myProjectQueryOptions` (subscribed,
+   so it fills in instead of sticking on the fallback label).
+4. **Selfie capture rendered a large empty `<video>`** while idle; the element
+   now mounts only while streaming.
+5. Task rows could not be identified (`mine` compared against the PIC, not the
+   caller) — every row offered the same controls.
+
+**UI corrections requested (web-admin parity):**
+- **Organization switcher** rebuilt on the admin's component: `SidebarMenu` +
+  `size="lg"` `SidebarMenuButton`, org logo in a `size-8` primary tile, name over
+  slug, dropdown with check/spinner per row and the role as a shortcut. The list
+  stays narrowed to organizations with an employee record.
+- **Side nav sections**: `portal-nav.ts` is now `{ labelKey, items }[]` sections
+  (Dashboard / Human Resource / Projects / Documents / Account) rendered by
+  `PortalSidebarSection`, the same `SidebarGroup` + `SidebarMenu` markup the
+  admin uses. The app-name header tile is gone (the org switcher is the header,
+  as in web-admin).
+- **Leave and overtime are separate pages** (`/leave`, `/overtime`), matching
+  `/hr/leave` and `/hr/overtime`; the tab that hid one of them is gone.
+- **Profile renamed "Employee Profile" / "Profil Karyawan"** (`item.employeeProfile`
+  in the `nav` namespace), and the org switcher card was removed from it (the
+  switcher lives in the rail header, one place).
+- **Notifications removed from the side nav**; the header bell is the inbox.
+- **Employee Profile is no longer a rail entry** (follow-up request): the page
+  stays at `/profile` and is reached from the account menu in the header
+  (`NavUser` → "Akun"), like web-admin's `/profiles`. The `Account` section is
+  therefore empty in this build (payroll is Phase C) and is dropped by
+  `liveNavSections`.
+- **Project task CRUD is a dialog** (`components/projects/task-dialog.tsx`): one
+  dialog for create and edit, `+ Add task` in the card header, `Edit`/`Delete`
+  per row (delete behind the confirm dialog). Status and assignee stay inline
+  selects because they are one-click actions.
+
+**Browser verification (Playwright-free, in-app browser):**
+
+```text
+sign in hr_seed_08            -> lands on /projects, org tile "Entragate / entragate"
+org switcher dropdown         -> "Ganti organisasi", one row with check + role "hr"
+sidebar                       -> Dasbor / Sumber Daya Manusia (Absensi, Jadwal Kerja,
+                                 Cuti, Lembur, Tugas) / Proyek / Akun (Profil Karyawan)
+/projects                     -> PRJ-DEMO-001 card with PIC + Active + Installation
+detail Tasks tab              -> task list, inline status select, Ubah/Hapus
+"+ Tambah tugas"              -> dialog (title, stage, due date, assignee), Simpan disabled while empty
+save                          -> row appears; edit renames it; delete asks and removes it
+/leave, /overtime, /profile   -> separate pages, "Cuti", "Lembur", "Profil Karyawan"
+console                       -> 0 errors on every route
+```
+
+Gates: `bun run lint` 0 errors · `bun run test` 8/8 (backend 1620, web-admin
+211, locales 110, portal 5, customer 68, landing 25, email 6) · portal `tsc` 0
+errors · portal `vite build` clean.
+
+**Not verified.** Mobile bottom bar at phone width, camera/GPS on a device
+(geolocation is blocked in the desktop browser, so the check-in itself was
+exercised through the API, not the button).
+
+**Follow-up.** "Profil Karyawan" removed from the side nav on request; `/profile`
+remains reachable from the header account menu ("Akun"), verified in the browser
+(sidebar now: Dasbor / Sumber Daya Manusia / Proyek, 0 console errors).
+
+## 2026-11-26 - PostGIS installed and wired (Drizzle `geometry` guide)
+
+**Scope.** PostGIS is now real, not aspirational: the local FlyEnv Postgres 18.7
+has PostGIS 3.7.0, and the radius check reads an indexed `geometry(point, 4326)`
+column following the Drizzle PostGIS guide.
+
+**Install (FlyEnv MCP).** Postgres runs from FlyEnv
+(`C:\Program Files\FlyEnv-Data\app\postgresql-18.7\pgsql`). Downloaded
+`postgis-bundle-pg18-3.7.0x64.zip` from OSGeo, stopped the service through
+FlyEnv, copied `bin/ lib/ share/` into the pgsql root, added three DLLs the
+bundle hides in `bin\postgisgui\` (`libbrotlicommon/dec/enc.dll`) plus
+`libnghttp2-14.dll` (from Git's mingw64) into `pgsql\bin` — the server resolves
+`postgis-3.dll`'s dependencies from its own exe directory, so without those the
+extension failed with "The specified module could not be found". Restarted via
+FlyEnv, `CREATE EXTENSION postgis` succeeded, `postgis_lib_version()` = 3.7.0.
+
+**Schema (guide-faithful).** `project.addresses` gains
+`site_point geometry(point, 4326)` (`geometry(..., { type: 'point', mode: 'xy',
+srid: 4326 })`) with a GiST index; `latitude`/`longitude` stay as the display
+mirror. Two migrations:
+
+- `20261125201740_postgis_extension` — **custom** migration (`drizzle-kit
+  generate --custom`) with `CREATE EXTENSION IF NOT EXISTS postgis` (the guide's
+  recommendation: Drizzle never generates extensions);
+- `20261125201752_project_site_point_geometry` — the column + index, plus a
+  backfill `UPDATE` that builds the point from existing coordinates.
+
+`drizzle/datatypes/geo.ts` is now just `pointSql` (`ST_SetSRID(ST_MakePoint(lng,
+lat), 4326)`) and `ensurePostgisExtension`; the measure query composes the
+guide's operators over the column: `ST_Distance(site_point::geography,
+point::geography)` / `ST_DWithin(..., meters)` — the `geography` cast is what
+makes the answer metres. The seeder writes `sitePoint` (`{ x, y }`).
+
+**Verified live against the seeded demo project** (real service, real
+repository, real PostGIS — scripts removed afterwards):
+
+```text
+measure same point   -> { distanceMeters: 0,      within: true  }
+measure +11 m        -> { distanceMeters: 11.07,  within: true  }   (SQL: 11.07)
+measure +110 m       -> { distanceMeters: 121.75, within: false }
+check-in (PIC)       -> status verified, distance 0.00, row persisted
+check-in again       -> 409 "You already checked in on this project today"
+check-out            -> stamps check_out_at
+check-in far, other
+employee with a task -> notify -> { projectName, employeeName, checkedAt }
+                       status out_of_range, distance 121.75, radius 100
+seed re-run          -> "Demo project already seeded; skipping" (idempotent)
+```
+
+Gates: `bun run lint` 0 errors · `bun run test` 8/8 (backend 1620, web-admin
+211, locales 110, portal 5, customer 68, landing 25, email 6) · backend tsc
+clean · `drizzle:generate` reports no changes · `validate-dbml.ts` OK.
+
+**Not verified.** The HTTP route itself (no server started); camera/GPS on a
+real phone. Everything below the controller is proven above.
+
+## 2026-11-26 - employee portal: gap fixes after the phase audit
+
+**Scope.** Follow-up to the Phase A/B audit (code + database checked, not the
+notes). Six defects the gates could not catch:
+
+1. `portal-nav.ts` gated the rail on `phase === 'a'` while `/projects` is Phase
+   B (menu entry missing) and listed `/documents` + `/payslips` as Phase A
+   before those pages exist (two 404 links). The rail is now derived from
+   `SHIPPED` phases, and `/profile` + `/notifications` are entries of their own.
+2. `/notifications` and `/profile` had no way in (the bell is a popover).
+3. `hr.task_assigned` and `hr.leave_decided` were seeded but never produced:
+   `TaskService.create` now notifies the assignee's login user, and
+   `LeaveService` notifies on approve/reject for both leave and overtime
+   (`notifyDecision`, best-effort, never blocks the decision).
+4. The profile's "account security" card was a `<Skeleton>` placeholder;
+   `AccountSecurityCard` now changes the password (`revokeOtherSessions: true`)
+   and signs out. Email/username/roles stay HR-owned and say so.
+5. The seed had no project and no site coordinates, so Phase B could not be
+   tried at all: `project-demo.seeder.ts` creates `PRJ-DEMO-001` (PIC = first
+   linked employee, primary site address with Monas-area coordinates, one open
+   task) plus the `attendance/site_radius_meters = 100` setting. Idempotent on
+   the project code.
+6. Dead locale keys removed (`profile.account`), nav labels resolved per
+   namespace through `portalLabel`.
+
+```bash
+bun run --cwd apps/backend drizzle:seed      # twice: 2nd run "Demo project already seeded; skipping"
+bun run lint                                 # 0 errors
+bun run test                                 # 8/8: backend 1620, web-admin 211, locales 110, portal 5, customer 68, landing 25, email 6
+bunx tsc --noEmit -p tsconfig.app.json       # (portal) 0 errors
+bun run --filter '@ims-erp/web-employee' build
+bun docs/database/validate-dbml.ts           # OK
+```
+
+Seed verified in the database: project `PRJ-DEMO-001` with a PIC that has a
+linked login, primary site address `-6.1753920 / 106.8271530`, one `todo` task
+assigned to that PIC, and the 100 m radius setting.
+
+**Not verified.** Still no browser walk-through and no live check-in: this
+machine has no PostGIS (`pg_available_extensions` has no `postgis`) and Docker
+Desktop is not running, so `ensurePostgisExtension` returns false and
+`ST_Distance` / `ST_DWithin` have never executed. The seeded coordinates mean
+the demo is one PostGIS-enabled database away from working.
+
+A second seeder pass added the rest of the manual-test fixture: a **pending
+leave request** (`ANNUAL`, 2 days starting D+3) and an **approved overtime**
+record (2 h, yesterday) for `EMP-00001`, plus the portal account printed for a
+walk-through — `admin_seed` / `admin.seed@entragate.local`, role `user`, employee
+of org `entragate`, member of it, and the PIC of `PRJ-DEMO-001` (verified by
+query: 1 leave row, 1 overtime row, no duplicates on a re-run). No password is
+seeded; reset it through the login page's "forgot password" flow before
+signing in.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips).
+
+## 2026-11-26 - employee portal Phase B: projects, project tasks, PIC management, field attendance (PostGIS)
+
+**Scope.** Second phase of `apps/web-employee`: the project surface. An
+employee sees the projects they are involved in, works their own tasks, and a
+PIC manages tasks/evidence and reviews the site visits; field check-in is
+verified server-side with PostGIS.
+
+**Design gate.** `docs/database/` read: one new table
+`project.site_attendances`, no changes to existing tables (`docs.dbml` updated;
+`validate-dbml.ts` OK, 0 drift). Manual grill pass on the new design:
+- table owned by `project` (no cross-schema FK); `employee_id` is a logical
+  reference to `human_resource.employees.id`, `organization_id` to `auth`;
+- one row per **employee × project × business date** (unique partial index);
+  a day on two sites is two rows, a break inside one visit is not;
+- coordinates stay plain `numeric(10,7)` columns and the distance is computed by
+  PostGIS (`ST_Distance` / `ST_DWithin` on a `geography` cast) — no stored
+  geometry, so every other reader needs no GIS type;
+- the radius is the `project.settings` `attendance/site_radius_meters` row
+  (default 100 m) and is **snapshotted** on the row with the measured distance
+  and the verdict, so a later settings change cannot rewrite history;
+- an out-of-range check-in is **recorded** (`out_of_range`), not rejected —
+  the row is evidence; a missing selfie is rejected, because without it the
+  coordinates are only the phone's claim;
+- PIC rights come from `project.projects.pic_user_id = caller` (the fact the
+  admin screen shows); no organization permission is required on the portal
+  path, and a technician's `project:read` alone never grants a write.
+
+**Changes.** Migration `20261125165744_project_site_attendances` (1 table, 4
+indexes). `drizzle/datatypes/geo.ts` (PostGIS expressions +
+`ensurePostgisExtension`), wired at boot with a warning when the extension is
+missing. Project module: `contracts/site-attendance.{contract,repository.interface}.ts`,
+`repositories/site-attendance.repository.ts`,
+`services/site-attendance.service.ts`, `services/portal-project.service.ts`,
+`controllers/portal-project.controller.ts` (13 routes under `/projects/me/*`,
+`employee-portal` guard, `GET /projects/me/staff` for the assignee picker),
+3 new error classes + `projects.forbidden.pic`. Compose: `postgis/postgis:18-3.6`.
+Portal: `lib/project-api.ts`, selfie capture component, `/projects` and
+`/projects/$projectId` (tasks / evidence / site attendance tabs), `employee`
+locale keys (en+id). Docs: `module-ownership.md`, `runbook.md`.
+
+```bash
+cd apps/backend && bun run drizzle:generate --name project_site_attendances && bun run drizzle:migrate
+bun docs/database/gen-logical-references.ts && bun docs/database/validate-dbml.ts   # OK
+bun docs/gen-role-permission.ts                                   # 795 routes written
+bun test test/unit/site-attendance.service.test.ts                # 12 pass
+bun run lint                                                      # 0 errors
+bun run test                                                      # 8/8: backend 1620, web-admin 211, locales 110, portal 5, customer 68, landing 25, email 6
+bunx tsc --noEmit -p tsconfig.app.json                            # (portal) 0 errors
+bun run --filter '@ims-erp/web-employee' build             # clean
+```
+
+**Not verified.** The local Postgres here does not ship PostGIS
+(`extension "postgis" is not available`), so the `ST_Distance` / `ST_DWithin`
+query itself was **not executed**: `ensurePostgisExtension` returns false and
+the migration was applied without the extension statement (which makes the
+migration portable). No browser walk-through, no real camera/GPS run, and no
+end-to-end check-in against a PostGIS-enabled database.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips), and verify Phase B on a PostGIS-enabled database.
+
+## 2026-11-25 - employee portal Phase A: foundation, auth gate, HR self-service
+
+**Scope.** First of three phases for `apps/web-employee`. Delivers the
+foundation (dependency parity with web-admin, auth, employee-only gate, shell,
+i18n) and the HR slice: attendance, schedule, leave/overtime, tasks,
+notifications, profile.
+
+**Design gate.** `docs/database/` reviewed: the only schema change is
+`human_resource.attendances.source` gaining `'self'` (check constraint only;
+`docs.dbml` updated, `validate-dbml.ts` OK: 0 drift), plus three notification
+template codes (`hr.task_assigned`, `hr.leave_decided`,
+`project.attendance_recorded`) which seed `notification.push_notification_templates`
+rows, not DDL. Manual grill pass (23 decisions, recorded in the session):
+- portal serves employees only; app roles `admin`/`investor`/`customer` are
+  refused **even with an employee record** (they belong in their own app);
+- self-service endpoints live at `/human-resources/me/*` inside the owning
+  module, authorised by a new `employee-portal` guard (session + employee record
+  in the resolved organization), never by an org permission, and no route takes
+  an `employeeId`;
+- multi-org: the employee is resolved per active organization
+  (`x-organization-id` > session), so a user with records in two organizations
+  reads the right one;
+- a refused session is **revoked** (`signOut`) by the client guard, not merely
+  redirected;
+- leave/overtime are requested by the employee and still decided by HR/owner;
+- attendance keeps one row per employee-day; `source = 'self'` plus
+  `recorded_by = user` marks self check-in, and a `leave` day refuses check-in.
+
+**Changes.** Migration `20261125160412_employee_portal_attendance_source`
+(1 check constraint). Backend: `authorization/employee-portal-resolver.ts`
+(port), `authorization/employee-portal-guard.ts` (guard + error envelope),
+`guards: 'employee-portal'` in `http/plugin.ts`,
+`human-resource/adapters/employee-portal-resolver.ts`,
+`services/employee-portal.service.ts`, `contracts/employee-portal.contract.ts`,
+`controllers/employee-portal.controller.ts` (`GET /human-resources/me/access`
+with the session guard + 17 `/me` routes), `findByUserAndOrganization` and
+`listByUserId` on `IEmployeeRepository`, three new `AttendanceStateError` kinds,
+three notification templates (schema enum + seeder + `en`/`id` copy +
+`notification-text.ts`). Web-admin: the three new notification cases.
+Locales: new `employee` namespace (en + id), `nav.item.more`, `signatures` and
+`employee` added to `NAMESPACES`, `EmployeeKey` exported, dead-key scan now also
+scans the portal and treats `template.*` as live. web-employee: package
+and tsconfigs copied verbatim from web-admin (deps identical; `zod` declared
+explicitly, which web-admin resolves transitively), vite on :5174, TanStack
+Router, i18n, shell (desktop sidebar + mobile bottom bar), mobile-first pages,
+Dockerfile + `.docker/nginx.conf` + compose service (`WEB_EMPLOYEE_PORT`,
+8081) + two CI workflows, `dev:employee` at the root.
+
+```bash
+bun install                                                       # lockfile now lists the portal
+cd apps/backend && bun run drizzle:generate --name employee_portal_attendance_source && bun run drizzle:migrate
+bun docs/database/gen-logical-references.ts && bun docs/database/validate-dbml.ts   # OK, 0 drift
+bun docs/gen-role-permission.ts                                   # 782 routes written
+bun run lint                                                      # 0 errors
+bun run test                                                      # 8/8 tasks: backend 1608, web-admin 211, locales 110, portal 5, customer portal 68, landing 25, email 6
+bunx tsc --noEmit -p tsconfig.app.json                            # (apps/web-employee) 0 errors
+bun run build                                                     # (apps/web-employee) tsc -b + vite build OK
+bun run --cwd apps/backend scripts/seed.ts                        # twice: second run inserted 0 (3 templates on the first)
+```
+
+**Not verified.** No browser walk-through (no dev server started; login, the
+denial path and check-in were not exercised against a running backend), and the
+seed used the existing demo employee — no portal user was created to log in as.
+`git status` may show `tsconfig.tsbuildinfo` artefacts from the inline builds.
+
+Next executable task: employee portal Phase B (projects: assigned projects,
+project tasks, PIC management, field attendance with GPS + selfie).
+
+## 2026-11-25 - merge `main` into the ADR-0030 branch: backlog ID collision
+
+`main` (PRs #162, #163) used ERP-0126..ERP-0130 for work unrelated to the
+ADR-0030 finance IDs of the same numbers on this branch (whose IDs are already
+baked into migration folder names and commits). Main's five items are
+renumbered: ERP-0126 -> ERP-0154 (sidebar nav audit), ERP-0127 -> ERP-0155
+(asset category dialog), ERP-0128 -> ERP-0156 (sidebar section order),
+ERP-0129 -> ERP-0157 (document card grid + viewer), ERP-0130 -> ERP-0158
+(document file names), in `backlog.md`, `features.md`, `progress.md` and one
+test comment. No code behaviour changed by the merge resolution.
+
+## 2026-11-25 - dev tooling: `.claude/launch.json`
+
+Adds a preview launch config (`backend` on 3001, `web-admin` on 5173). No code,
+migration, seed or test change; no backlog item moves. Note for worktrees:
+`apps/web-admin/.env` is gitignored and is not copied into a new worktree;
+without it the web admin falls back to `localhost:3000` and login fails with
+"Cannot reach the server" — copy `.env.example` to `.env` (verified
+2026-11-25: after the copy the page calls `localhost:3001`, session endpoint
+200).
+
+## 2026-11-25 - ERP-0153: closed-period profit contract (Phase D complete)
+
+**Scope.** Phase D slice 6, the last ADR-0030 slice.
+
+**Design gate.** `docs/database/` read (`finance.accounting_periods` status
+vocabulary, `finance.posting_rules`): no table or column change; the posting
+role vocabulary is application-guarded (no DB check), so `docs.dbml` is
+unchanged; `module-ownership.md` gains the contract method. Manual grill
+pass: owner finance; tenant-scoped; read-only; `locked` only because closed
+periods can still be reopened by the accountant and locked ones accept no
+posting; figures from the GL P&L (single source); income tax identified by a
+posting role, not a hard-coded code; no investor schema, no route (M11 is out
+of scope, ADR-0030).
+
+**Changes.** Backend: `ExportedProfitService`, `EXPORTED_PROFIT_SERVICE_TOKEN`
+exported from `@app/finance`, `ProfitPeriodNotLockedError`, posting role
+`income_tax_expense` (default 8-3000, seeded). Web-admin: the role appears in
+the posting-rule list (en/id); api error key (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun test test/finance/exported-profit.test.ts   # 3 pass
+bun run drizzle:seed                            # rulesInserted 1 (income_tax_expense); second run rulesInserted 0
+bun run <temporary profit-contract smoke>       # 5/5 PASS: open November refused 409, missing period 404; with
+                                                # November locked temporarily: after tax = P&L net income, the
+                                                # seeded rule resolves, before tax = after tax + 8-3000; status restored
+bun run test                                    # 7/7 tasks: backend 1589, web-admin 209, locales 106
+bun run lint                                    # 0 errors
+```
+
+`docs/database/docs.dbml` reviewed and unchanged; `validate-dbml.ts` OK
+(from ERP-0152, no schema change since).
+
+**Not verified.** No consumer exists yet (M11 is not built).
+
+Next executable task: ADR-0030 Phases A-D are implemented. Next is the
+browser walk-through of the finance screens and owner acceptance of Phases
+B-D; then the open gaps listed in `modules/finance.md` (old
+`/reports/cash-flow` endpoint, Coretax format verification, annual A1 slip,
+stock/asset opening detail, capitalisation from goods receipts).
+
+## 2026-11-25 - ERP-0152: monthly management pack
+
+**Scope.** Phase D slice 5.
+
+**Design gate.** `docs/database/` read (`finance.report_archives`,
+`finance.project_budgets`/`project_budget_lines`). Manual grill pass:
+ownership stays in finance (archive table is finance's; project names through
+`ProjectLookupService`); tenant-scoped by `organization_id`; no new money or
+date columns; status vocabulary change = `report_archives.report_type` gains
+`management_pack`. Decisions: budget vs actual is per project (no company
+budget exists and the `budgeting` schema must not return); PDF is the
+browser print of the pack tab (no new server renderer); the pack is archived
+by the existing closed-period archive, not a new route.
+
+**Changes.** `docs.dbml` check + note, Drizzle check, migration
+`20261125132603_erp0152_management_pack`. Backend: `ManagementPackService`
+(`build`, `budgetVsActual`, `toXlsx`), `ProjectBudgetRepository.listActiveBudgets`,
+`ReportArchiveService` archives the pack, routes
+`GET /finance/reports/management-pack` and `.xlsx`. Web-admin: "Management
+pack" tab, archive list shows the new type (en/id).
+
+**Commands and outcomes.**
+
+```text
+bunx --bun drizzle-kit generate --name erp0152_management_pack   # one ALTER of report_archives_type_check (inspected)
+bunx --bun drizzle-kit migrate                                    # applied to the local scratch database
+bun docs/database/gen-logical-references.ts                       # regenerated, unchanged
+bun docs/database/validate-dbml.ts                                # OK
+bun docs/gen-role-permission.ts                                   # 763 routes written
+bun test test/finance/management-pack.test.ts                     # 5 pass
+bun run <temporary management-pack smoke>                         # 7/7 then 8/8 PASS: pack P&L, balance sheet, ratios equal the
+                                                                  # reports; profitability ties to revenue; cash flow ties (0);
+                                                                  # xlsx written (12.5 KB); open month refused; with November
+                                                                  # closed temporarily the archive wrote the four types incl.
+                                                                  # management_pack, re-archive wrote nothing; November reopened
+bun run test                                                      # 7/7 tasks: backend 1586, web-admin 209, locales 106
+bun run lint                                                      # 0 errors
+```
+
+**Not verified.** No browser walk-through (print layout prints the whole
+app shell around the tab).
+
+Next executable task: ERP-0153 (closed-period profit contract for M11).
+
+## 2026-11-25 - ERP-0151: financial ratios
+
+**Scope.** Phase D slice 4.
+
+**Design gate.** `docs/database/` reviewed: no schema change, unchanged.
+Manual grill pass: read-only, tenant-scoped, figures from posted journal
+lines with the ERP-0147 sign convention; definitions recorded in
+`modules/finance.md` (current items by code prefix, roles for AR/AP/
+inventory, 5-xxxx as cost of goods, closing balances for ROA/ROE).
+
+**Changes.** Backend: `RatioService`, `GET /finance/reports/ratios`.
+Web-admin: "Ratios" tab (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary ratios smoke>              # 3/3 PASS: total assets, liabilities and equity equal the balance
+                                              # sheet (7,483,458.12 / 4,076,790.21 / 3,406,667.91); net income equals
+                                              # the P&L; ratios computed (DSO is large on scratch data: AR 3,000,000
+                                              # against revenue 9,009)
+bun test test/finance/ratios.test.ts          # 1 pass (hand-computed)
+bun run test                                  # 7/7 tasks: backend 1581, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 761 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: ERP-0152 (management pack: budget vs actual,
+monthly PDF/Excel, archive).
+
+## 2026-11-25 - ERP-0150: profitability by project, customer, product, business line
+
+**Scope.** Phase D slice 3.
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`
+`project_id`, `product_id`, `party_type`/`party_id`; product categories): no
+schema change, `docs/database/` unchanged. Manual grill pass: read-only,
+dimensions from the ledger, names through the owning modules' facades
+(project lookup, `ExportedCustomerService.assertCustomer`,
+`ExportedProductService.productsById` + new `categoryNames`). Decision:
+business line = product category; no overhead allocation (the unattributed
+row keeps the total honest).
+
+**Changes.** Backend: `CostReportRepository.byDimension`,
+`CostReportService.profitability`, `GET /finance/reports/profitability`;
+sale invoice posting adds the customer party to revenue and deferred-revenue
+lines, delivery COGS lines carry the customer; product facade
+`categoryNames`. Web-admin: "Profitability" tab with a dimension selector
+(en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary profitability smoke>       # 4/4 PASS: project, customer, product and business-line views each add
+                                              # up to the November P&L (revenue and cost)
+bun test test/finance/cost-reports.test.ts    # 5 pass
+bun test test/finance test/unit               # 1149 pass (sale posting tests unchanged)
+bun run test                                  # 7/7 tasks: backend 1580, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 760 routes
+```
+
+**Not verified.** The scratch database's revenue lines predate the customer
+dimension, so the customer view shows them unattributed; no browser
+walk-through.
+
+Next executable task: ERP-0151 (financial ratios).
+
+## 2026-11-25 - ERP-0149: 13-week cash forecast
+
+**Scope.** Phase D slice 2.
+
+**Design gate.** `docs/database/` read for `finance.ar_open_items`,
+`ap_open_items`, `human_resource.employee_salary_records`, `settings`,
+`project.license_contracts` (no amount column). New table
+`finance.cash_forecast_lines` (one new logical reference `created_by`).
+Manual grill pass: ownership - finance owns the forecast and manual lines; HR
+exposes a repository-only payroll estimate, project a renewals list through
+its repository-only lookup; tenancy - `organization_id`; soft delete; money -
+minor units; no status vocabulary beyond direction in/out. Decisions:
+overdue and undated items fall in week 1; payroll uses the latest approved
+month as run-rate; renewals are informational because contracts carry no
+amount.
+
+**Changes.** Migration `20261125130528_erp0149_cash_forecast` (1 CREATE
+TABLE). Backend: `CashForecastRepository`, `CashForecastService`, routes under
+`/finance/reports/cash-forecast*`, `SalaryRepository.latestApprovedTotals`,
+`ExportedPayrollService`, `ProjectLookupService.renewalsDue`. Web-admin:
+"Cash forecast" tab (weeks, manual lines, renewals; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 212 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0149_cash_forecast; bun run drizzle:migrate   # applied
+bun run <temporary forecast smoke>            # 6/6 PASS: opening cash = ledger cash (15,256,210.00); payroll
+                                              # run-rate from the approved 2026-11 period (net 10,812,760); opening
+                                              # AR 3,000,000 / AP 1,200,000 in the horizon; a manual line lands in
+                                              # week 3 and is removed; weeks chain
+bun test test/finance/cash-forecast.test.ts   # 2 pass
+bun run test                                  # 7/7 tasks: backend 1578, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 759 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: ERP-0150 (profitability by project, customer,
+product, business line).
+
+## 2026-11-25 - ERP-0148: direct and indirect cash flow, changes in equity, comparatives
+
+**Scope.** Phase D slice 1 (owner: "Lanjut fase D").
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`,
+`journal_entries`, `chart_of_accounts.cash_flow_category`,
+`bank_account_links`): no schema change, `docs/database/` unchanged. Manual
+grill pass: read-only, finance tables, tenant-scoped, posted and reversed
+entries. Decisions: cash accounts = postable 1-11xx plus linked GL accounts;
+the direct method uses the balanced-entry identity instead of proportional
+allocation; contra assets are a non-cash operating adjustment in the
+indirect view; equity without a category is financing; whole-month ranges
+compare with whole months.
+
+**Changes.** Backend: `StatementRepository` (cash accounts, cash
+counterparts, activity), `StatementService` (build, statements with
+comparatives), `GET /finance/reports/statements`. Web-admin: "Cash flow &
+equity" tab (direct, indirect, equity, comparative column; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary statements smoke>          # run 1: 4/4 but the "previous period" of November was 2-31 October;
+                                              # fixed to whole months; run 2: 4/4 - direct ties to balance-sheet
+                                              # cash (opening 0 + 4,427,459.12 = closing), indirect = direct,
+                                              # closing equity = balance-sheet equity, comparative 1-31 October
+bun test test/finance/statements.test.ts      # 4 pass (hand-worked mini ledger)
+bun run test                                  # 7/7 tasks: backend 1576, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 755 routes
+```
+
+**Not verified.** No browser walk-through. The ERP-0133 cash-flow endpoint is
+unchanged and still misclassifies non-cash entries (documented).
+
+Next executable task: ERP-0149 (13-week cash-flow forecast).
+
+## 2026-11-25 - ERP-0147: cost accounting reports; contra-account signing fixed
+
+**Scope.** Phase C slice 5 (Phase C complete).
+
+**Design gate.** `docs/database/` reviewed (`finance.journal_lines`
+dimensions `project_id`, `cost_center_id`; `finance.cost_centers`): no schema
+change, `docs/database/` unchanged. Manual grill pass: read-only reports in
+finance, tenant-scoped, posted and reversed entries (the reversal nets the
+original), revenue credit - debit and cost debit - credit by account type.
+
+**Changes.** Backend: `CostReportRepository`, `CostReportService`,
+`CostReportController` (`/finance/reports/project-costing`,
+`/project-costing/:projectId`, `/cost-center-pl`). `ReportService` signs P&L
+and balance-sheet amounts by account type (contra accounts negative); the
+general-ledger detail keeps the normal-side running balance. Web-admin:
+"Project costing" (expandable per account) and "Cost centres" tabs on the
+reports page (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun run <temporary cost-report smoke>         # run 1: 2/3 - project costing (PRJ-SMOKE-0146 cost 600,000, budget
+                                              # 1,500,000) and per-account detail pass; cost-centre revenue 900,901 vs
+                                              # P&L 1,099,099: the P&L added the 4-1900 Retur Penjualan debit 99,099;
+                                              # run 2 after the fix: 3/3, totals tie (revenue 900,901)
+bun test test/finance/cost-reports.test.ts test/finance/reports-reconciliation.test.ts   # 10 pass
+bun run test                                  # 7/7 tasks: backend 1572, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 754 routes
+```
+
+**Not verified.** No browser walk-through.
+
+Next executable task: Phase C is done. Walk the Phase B and C screens in a
+browser, push the branch and open a PR, then ERP-0131 (year-end close) or
+Phase D (ERP-0148 statements).
+
+## 2026-11-25 - ERP-0146: project budgets with actual, commitment and checks
+
+**Scope.** Phase C slice 4.
+
+**Design gate.** `docs/database/` read for `project.projects` (company-wide,
+no tenant column), `procurement.purchase_orders` (company-wide, statuses),
+`finance.expense_claims`, `finance.supplier_bills`, `finance.journal_lines`
+(`project_id`) and `logical-references.md`. New logical references:
+`project_budgets.project_id`, `activated_by`, `created_by`,
+`expense_claims.project_id`, `purchase_orders.project_id`. Manual grill pass:
+ownership - finance owns budgets and the check; procurement exposes open
+orders through a repository-only facade (finance reads it, procurement calls
+finance on approval: no service cycle); tenancy - budgets carry the creating
+organization, the check follows the project's single active budget because
+projects are company-wide; soft delete - versions and lines soft-delete;
+money - minor units; status - draft / active / superseded, warn / block.
+Decisions: the check is on the project total (lines give the report
+granularity); the order being approved is excluded from commitment; claim
+approval now tags expense lines with the project so claims become actuals.
+
+**Changes.** Migration `20261125060448_erp0146_project_budgets` (2 CREATE
+TABLE, 2 ADD COLUMN, intra-module FKs). Backend: `ProjectBudgetRepository`,
+`ProjectBudgetService` (versions, createVersion, replaceLines, activate,
+setControlMode, report, check), `ProjectBudgetController`,
+`ExportedPurchaseOrderService.openOrdersOfProject`,
+`PurchaseOrderRepository.listOpenForProject`, project on the PO body
+(validated), budget check in `PurchaseOrderService.decide`,
+`ExpenseClaimService` (project on create/update, check at submit, project on
+approval lines), `ProjectService.addCost` check. Web-admin:
+`/finance/project-budgets` (version editor, mode, report), project select on
+the PO form and the claim form, nav entry (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 211 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0146_project_budgets; bun run drizzle:migrate   # applied
+bun run <temporary budget-smoke script>       # 7/7 PASS: v1 active (Rp1,000,000); project claim approved ->
+                                              # actual 600,000 from project-tagged journal lines; warn reports an
+                                              # overrun; block refuses a 500,000 claim (available 400,000), claim
+                                              # stays draft; v2 (1,500,000) supersedes v1 and the claim submits
+bun test test/finance/project-budgets.test.ts test/unit/procurement.service.test.ts   # 3 + 8 pass
+bun run test                                  # 7/7 tasks: backend 1569, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 751 routes
+```
+
+The smoke inserted project `PRJ-SMOKE-0146` into the scratch database.
+
+**Not verified.** PO approval check on a database (no supplier/product seed;
+unit-tested); no browser walk-through.
+
+Next executable task: ERP-0147 (cost accounting reports: project job
+costing, cost-centre P&L).
+
+## 2026-11-25 - ERP-0145: fixed assets in the general ledger
+
+**Scope.** Phase C slice 3.
+
+**Design gate.** `docs/database/` read for `inventory.items` (asset columns),
+`inventory.disposals`, `finance.asset_depreciations`, `finance.posting_rules`
+(discriminator check) and the CoA. New logical references:
+`fixed_asset_books.item_id`, `created_by`. Manual grill pass: ownership -
+inventory keeps the physical asset and its valuation (ADR-0024 Q15), finance
+keeps the book, journals and fiscal view; inventory calls finance only to post
+the disposal; tenancy - `organization_id`; soft delete - `deleted_at`; money -
+minor units, rupiah rounding down; status - `active` / `disposed`; one new
+discriminator value `item_kind`. Decision: no `fixed_assets` /
+`asset_categories` tables (the grill's wording) because that would be a second
+register of the same units; capitalization from goods receipts deferred.
+
+**Changes.** Migrations `20261125054928_erp0145_fixed_asset_books` (1 CREATE
+TABLE, 3 intra-module FKs) and `20261125055729_erp0145_item_kind_discriminator`
+(posting-rule check widened). Backend: `utils/depreciation.ts`,
+`FixedAssetBookRepository`, `FixedAssetService` (list, capitalize,
+setFiscalGroup, runMonth, fiscalReport, postDisposal), `FixedAssetController`
+(`/finance/fixed-assets*`), `DepreciationRepository.listForItem`,
+`DisposalService.executeDisposal` posts through finance; roles
+`disposal_receivable`, `asset_disposal_gain`, `asset_disposal_loss`, defaults
+for `fixed_asset` / `accumulated_depreciation`, events
+`finance.asset_capitalized|depreciated|disposed`; seed 1-2390 and 8 item-kind
+rules. Web-admin: `/finance/fixed-assets` (list, capitalize, run, fiscal
+group, fiscal report), nav entry, item-kind discriminator label (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 206 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0145_fixed_asset_books / erp0145_item_kind_discriminator; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # first run failed: item_kind rules violated the discriminator check
+                                              # (fixed by the second migration); then rulesInserted 8
+bun run <temporary asset-smoke script>        # run 1: 6 PASS (capitalize Dr 1-2120 / Cr equity, November run 1,333 Dr
+                                              # 6-2500 / Cr 1-2220, rerun posts nothing, item valuation moved, fiscal
+                                              # report) then the disposal was refused - no December 2026 period - and
+                                              # rolled back; run 2: 2/2 PASS (disposal still approved; re-dated to
+                                              # 2026-11-28, journal Dr 1-1330 25,000 + 1-2220 1,333 + 8-2000 5,667 /
+                                              # Cr 1-2120 32,000, book disposed)
+bun test test/finance/fixed-assets.test.ts    # 7 pass
+bun run test                                  # 7/7 tasks: backend 1565, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors, no new warnings
+bun docs/gen-role-permission.ts               # 744 routes
+```
+
+The smoke changed the scratch item AST-SEED-002 (vehicle, 24 months) and
+disposed it.
+
+**Not verified.** Capitalization from goods receipts (not built); no browser
+walk-through.
+
+Next executable task: ERP-0146 (project budgets: versioned, actual +
+commitment, warn/block on PO approval, claim submit, project cost entry).
+
+## 2026-11-25 - ERP-0144: employee advances, settlements and employee payments
+
+**Scope.** Phase C slice 2.
+
+**Design gate.** `docs/database/` read for `finance.employee_advances`,
+`expense_settlements`, `expense_settlement_items` (all `status: target`),
+`expense_claims`, `payment.payments`, `payment.payment_allocations` (the
+`payable_type` vocabulary already listed the three employee types) and
+`journal_lines` (no party check). One new logical reference:
+`expense_settlements.payment_id`. Manual grill pass: ownership - finance owns
+the documents, payment owns the money movement and calls finance's
+settlement port; tenancy - `organization_id`; soft delete - `deleted_at`;
+money - minor units, `settled_amount <= amount`, `paid_amount <=
+payable_amount`; status - the DBML vocabularies, no `rejected` on advances
+(rejection cancels). Decisions: settlements only for advances (claims cover
+plain reimbursements); maker-checker on every step; one payment one
+counterpart kind; voiding employee payments refused until a rollback exists;
+new account 1-1340 Uang Muka Karyawan (1-1320 Piutang Karyawan stays for
+payroll deductions).
+
+**Changes.** Migration `20261125053043_erp0144_employee_advances` (3 CREATE
+TABLE, 3 intra-module FKs). Backend: `EmployeeAdvanceRepository`,
+`EmployeeAdvanceService`, `EmployeeAdvanceController` (`/finance/advances*`,
+`/finance/settlements*`), settlement-port `findEmployeePayable` /
+`applyEmployeePayable` and `counterpartRole` on the cash movement, payment
+validation/execution for employee payables, `PaymentAllocationMixedError`,
+`EmployeePaymentVoidError`, `GET /payments?counterpartyType=`, numbering
+`employee_advance` (ADV) and `expense_settlement` (SET), role
+`employee_advance`, event `finance.advance_settled`, seed account 1-1340.
+Web-admin: advances and settlements panel, employee payment dialog, "Pay
+claim" on the claim detail, employee payments table on `/finance/expenses`,
+payment tables send real filters (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 204 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0144_employee_advances; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # inserted 1 account (1-1340), rulesInserted 1
+bun run <temporary advance-smoke script>      # 8/8 PASS: requester cannot approve; partial disbursement refused;
+                                              # payment executes -> disbursed, Dr 1-1340 2,000,000; settlement
+                                              # 1,521,000 (with PPN) offsets the advance, balanced journal, Cr 1-1340
+                                              # party employee; 479,000 received back -> settled, 1-1340 back to its
+                                              # start; claim paid through payment -> paid, Dr 2-1200; mixed refused
+bun test test/finance/employee-advances.test.ts test/finance/ap-flows.test.ts   # 4 + 9 pass
+bun run test                                  # 7/7 tasks: backend 1558, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors (web-admin warnings down to 20: two date initializers fixed)
+bun docs/gen-role-permission.ts               # 739 routes
+```
+
+The first smoke run stopped on insufficient bank balance in the scratch
+database (setup; funded with a cash-in, Rp5,000,000).
+
+**Not verified.** Voiding an employee payment (refused by design); no browser
+walk-through.
+
+Next executable task: ERP-0145 (fixed-asset register, categories, monthly
+depreciation, disposal).
+
+## 2026-11-25 - ERP-0143: bank statement CSV import and auto-match
+
+**Scope.** Phase C slice 1 (owner: "Lanjut Fase C").
+
+**Design gate.** `docs/database/` read for `finance.cash_bank_accounts`,
+`cash_bank_transactions`, `bank_reconciliations`, `bank_reconciliation_items`;
+no new logical reference. Manual grill pass: ownership - all finance; tenancy
+- `organization_id` on every query; soft delete - unchanged; money - minor
+units, statement amounts parsed exactly from Indonesian or English formats;
+status vocabulary - new `direction` (in/out) and `match_method`
+(auto/manual/created) on lines. Decisions: reuse the reconciliation tables
+instead of the `bank_statements` / `bank_statement_lines` named in the grill
+(one structure per statement); the mapping lives on the account as jsonb; the
+reconcile check compares the statement balance with the book balance on the
+statement date (the old "matched lines sum to the statement balance" rule was
+wrong for movement lines; its test was rewritten).
+
+**Changes.** Migration `20261125051738_erp0143_bank_statement` (5 ADD COLUMN,
+2 checks). Backend: `utils/bank-statement.ts` (mapping schema, parser,
+matcher), `BankReconciliationService.setStatementMapping / importStatement /
+autoMatch / createTransaction`, `get` returns the lines, reconcile check;
+repository `listMatchCandidates`, `balanceAsOf`; routes
+`PUT /finance/cash-bank-accounts/:id/statement-mapping`,
+`POST /finance/reconciliations/:id/statement`, `.../auto-match`,
+`.../items/:itemId/transaction`. Web-admin: mapping dialog, statement import,
+auto-match, "book as transaction" per unmatched line, lines read from the
+server (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/validate-dbml.ts            # OK (203 refs, unchanged)
+bun run drizzle:generate --name erp0143_bank_statement; bun run drizzle:migrate   # applied
+bun run <temporary bank-smoke script>         # 8/8 PASS on BANK-MANDIRI: 4 book movements + 1 fee imported
+                                              # (balance footer skipped), re-import skipped 5, auto-match 4/1,
+                                              # reconcile refused while the fee is unmatched, fee booked against a
+                                              # 6-xxxx expense, reconciled with difference 0 on 2026-11-30
+bun test test/finance/bank-statement.test.ts test/finance/reports-reconciliation.test.ts   # 7 + 7 pass
+bun run test                                  # 7/7 tasks: backend 1553, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 725 routes
+```
+
+`docs/database/` updated (docs.dbml: two tables' columns and checks).
+
+**Not verified.** Real bank exports (finance maps each bank's layout); no
+browser walk-through.
+
+Next executable task: ERP-0144 (employee advances and settlements, claim
+payment through `payment`).
+
+## 2026-11-25 - ERP-0142: AR and AP opening detail tied to the control accounts
+
+**Scope.** Phase B slice 7, the last of the owner's 2026-11-25 order.
+
+**Design gate.** `docs/database/` read for `finance.opening_balances`,
+`ar_open_items`, `ap_open_items`, `supplier_bills`, `customer.customers`,
+`supplier.companies` and `logical-references.md` (three new logical
+references on `finance.opening_subledger_items`: `customer_id`,
+`supplier_company_id`, `created_by`). Manual grill pass: ownership - finance
+owns the staging table and the open items, parties are resolved through the
+customer and supplier facades (one new contract method,
+`ExportedCustomerService.findCustomerByCode`); tenancy - `organization_id`;
+soft delete - imports soft-delete the unposted rows they replace; money -
+bigint minor units, `amount > 0`; status - `posted_at` stamp, no new
+vocabulary. Decisions: one staging table for both ledgers; the tie check runs
+when either the detail or the control row is non-zero (a control balance with
+no detail is refused); opening AP becomes approved supplier bills so the
+existing payment flow settles them; opening items post no journal of their
+own; stock and assets are left out (no inventory valuation contract, asset
+register is Phase C).
+
+**Changes.** Migration `20261125021519_erp0142_opening_subledger` (1 CREATE
+TABLE, 3 intra-module FKs). Backend: `OpeningSubledgerRepository`,
+`OpeningSubledgerService` (import, summary, discard, assertTied, materialize),
+`OpeningBalanceService.post` calls the tie check before posting and creates
+the open items inside the opening-journal transaction; `utils/csv.ts`;
+routes `GET /finance/ledger/opening-balances/subledger`,
+`GET .../subledger/template.csv`, `POST .../subledger/import`,
+`POST .../subledger/discard`; errors `accounting.openingSubledger*`.
+Web-admin: "Receivable and payable detail" card on the opening-balance page
+(import, tie status, discard, row errors; en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 203 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0142_opening_subledger; bun run drizzle:migrate   # applied
+bun run <temporary opening-smoke script>      # 12/12 PASS: AR/AP import, AP short by Rp200.000 refuses the
+                                              # post with no journal written, re-import ties, post creates 2 AR
+                                              # open items (no invoice) and 2 approved bills + AP open items with
+                                              # no bill journal, detail stamped, re-import after posting refused
+bun test test/finance/opening-subledger.test.ts   # 5 pass
+bun run test                                  # 7/7 tasks: backend 1546, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 721 routes
+```
+
+The smoke inserted one customer (`CUS-OPEN`) and one supplier company
+(`SUP-OPEN`) into the scratch database, which had none.
+
+**Not verified.** Stock and fixed-asset opening detail (not built); collecting
+an opening AR item through a receipt (not wired); no browser walk-through.
+
+Next executable task: Phase B is done except the stock and fixed-asset
+opening detail. Next in ADR-0030 order: ERP-0131 (year-end close) or Phase C
+(ERP-0143 bank statement import); walk the Phase B screens in a browser first.
+
+## 2026-11-25 - ERP-0138 part 2: PPh 21 and BPJS on salary records, payroll journal, payment, BP21
+
+**Scope.** Phase B slice 6b (owner's proposal 4 of 2026-11-25, completed).
+
+**Design gate.** `docs/database/` read for `human_resource.employee_salary_records`,
+`finance.journal_entries` and `logical-references.md` (one new logical
+reference: `employee_salary_records.journal_entry_id`). Manual grill pass:
+ownership - HR computes and owns the amounts, tax owns tables and the BP21
+builder, finance owns the journal through a new facade (`PayrollLedgerService`)
+because `ExportedFinanceService` must stay repository-only (it is read by HR
+while finance reads HR's facade); tenancy - HR is company-wide, the journal
+goes to the approving organization's ledger; money - integer minor units,
+PPh 21 may be negative only on an annual refund (no non-negative check on that
+column, the others are checked); status vocabulary - `tax_method` ter / annual.
+Decisions: the salary period stays the payroll run; recalculation happens on
+every draft write and again at approval; other deductions credit Piutang
+Karyawan (1-1320, new role `employee_receivable`); BP21 refuses missing
+NIK/NPWP and the last tax month (annual slip not built).
+
+**Changes.** Migration `20261125015720_erp0138_payroll_statutory` (9 ADD COLUMN,
+2 checks added, the net-pay check replaced). Backend:
+`utils/payroll-statutory.ts`, `PayrollCalculationService`, SalaryService
+(save / generate / import / recalculate / approve / bp21Xml),
+`PayrollLedgerService.postPayroll`, `TaxLedgerService.payPayroll`,
+`buildBp21Xml`, `ExportedTaxService.bp21Xml`; routes
+`POST /human-resources/salary-records/recalculate`,
+`GET /human-resources/salary-records/bp21.xml`, `POST /finance/payroll/payments`;
+events `payroll.approved`, `payroll.paid`; errors `hr.payroll.*`. Web-admin:
+PPh 21 and BPJS columns, "Recalculate" and "BP21 XML" on `/hr/payroll`,
+"Pay salaries / BPJS" on the cash/bank page (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 200 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0138_payroll_statutory; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # rulesInserted 1 (employee_receivable)
+bun run <temporary payroll-smoke script>      # 9/9 PASS: JP cap and TER missing are refused; with a synthetic
+                                              # 5% TER (1990, soft-deleted after) the draft carries PPh 21 627,240 /
+                                              # BPJS 460,000 + 1,188,800 / net 10,812,760 (rupiah); approval posts
+                                              # a balanced human_resource journal and stamps it; BP21 refuses a
+                                              # missing NIK/NPWP, then builds; the salary payment clears 2-1600
+bun test test/unit/payroll-statutory.test.ts  # 8 pass (hand-computed TER month, December refund, ledger, approval)
+bun run test                                  # 7/7 tasks: backend 1541, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 717 routes
+```
+
+The smoke left an approved 2026-11 salary record, its journal and NPWP/PTKP
+values on the scratch employees (throwaway database).
+
+**Not verified.** BP21 Coretax import (format unverified); the annual BP A1
+slip is not built; no official TER table imported; no browser walk-through.
+
+Next executable task: ERP-0142 (sub-ledger opening balance import).
+
+## 2026-11-25 - ERP-0138 part 1: PPh 21 tables, TER import, employee tax fields, statutory toggles
+
+**Scope.** Phase B slice 6a (owner's proposal 4 of 2026-11-25: build the
+engine and tables, seed PTKP and Pasal 17, never fabricate TER rows).
+
+**Design gate.** `docs/database/` read for the `tax` and `human_resource`
+modules (`taxes`, `employees`, `employee_salary_records`, `settings`) and
+`data-dictionary.md` (global reference data without a tenant column, like
+`location.*`). Manual grill pass (the `grilling` skill is not installed):
+ownership - the statutory tables live in `tax`, HR reads them through
+`ExportedTaxService`; tenancy - global, statutory law is not per tenant; soft
+delete - `deleted_at`, an import soft-deletes the version it replaces;
+money - bigint minor units, rates `numeric(7,4)` strings applied in integer
+arithmetic; dates - `effective_from` business dates, the version in force is
+the latest on or before a date; no new cross-module reference. Decisions:
+missing PTKP status = TK/0 (grill Q30); the existing salary period stays the
+payroll run (a separate `payroll_runs` table is not added); the JP wage cap
+has no default, so payroll with BPJS Ketenagakerjaan on will refuse to run
+until it is entered.
+
+**Changes.** Migration `20261125014130_erp0138_pph21_tables` (3 CREATE TABLE,
+4 ADD COLUMN on `human_resource.employees`, 1 check). Backend:
+`Pph21Repository`, `Pph21TableService` (tables in force, TER CSV import with
+per-row errors), `utils/pph21.ts`, `ExportedTaxService.pph21Tables`,
+`PayrollStatutoryService`; routes `GET /taxes/pph21/tables`,
+`GET /taxes/pph21/ter-rates/template.csv`, `POST /taxes/pph21/ter-rates/import`,
+`GET|PUT /human-resources/payroll-settings/statutory`; seeder
+`seedPph21Statutory` (8 PTKP rows, 5 brackets). Web-admin: `/finance/tax/pph21`
+page (tables + CSV import), "Tax & BPJS" card on the employee form, PPh 21 /
+BPJS card on `/settings/payroll` (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 199 refs across 28 targets (unchanged)
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0138_pph21_tables; bun run drizzle:migrate   # applied
+bun run drizzle:seed; bun run drizzle:seed    # ptkp 8 / brackets 5, then 0 / 0
+bun run <temporary pph21-smoke script>        # 10/10 PASS: seeded tables in force, none before 2024 for PTKP,
+                                              # synthetic 1990 TER import + replace (soft-deleted again after),
+                                              # import without a 0 row rejected, ptkp check, settings round trip
+bun test test/unit/pph21.test.ts              # 10 pass
+bun test test/authorization/tax-authorization.test.ts   # 104 pass (3 new routes)
+bun run test                                  # 7/7 tasks: backend 1533, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors
+bun docs/gen-role-permission.ts               # 714 routes
+```
+
+**Not verified.** No browser walk-through; no official TER table imported
+(finance owns that step).
+
+Next executable task: ERP-0138 part 2 (PPh 21 and BPJS on salary records,
+payroll journal on approval, payroll payment, BP21 export).
+
+## 2026-11-25 - ERP-0140: PPh withholding at payment, PPN settlement, tax payments, Coretax XML
+
+**Scope.** Phase B slice 5 (owner's proposals 1-3 of 2026-11-25).
+
+**Design gate.** `docs/database/` read for `payment.payments`,
+`tax.withholding_tax_records`, `tax.taxes`, `sale.invoices` and
+`logical-references.md` (one new logical reference:
+`payment.payments.withholding_tax_id`). Decisions: withholding happens at
+payment, not at bill (the bill stays gross, AP settles in full); PPN figures
+come from the GL, not the tax working papers; Coretax files are built from the
+DJP template as understood and flagged unverified.
+
+**Changes.** Schema (migration `20261125011648_erp0140_tax_postings`):
+`payment.payments.withholding_tax_id` / `withholding_amount` (check
+`>= 0 AND < amount`) / `tax_object_code`; `tax.withholding_tax_records`
+`tax_object_code`, `withholding_slip_number`, `counterparty_tax_id`,
+`source_module`, `source_id`, `coretax_status`. Backend: payment create
+validates the withholding (`payment.withholdingInvalid`), execute posts
+`payment.withholding_recorded` and records the withholding through
+`ExportedTaxService`; void reverses both; `TaxLedgerService.settlePpn`
+/ `payTax`; `CoretaxExportService` + `coretax-xml.ts`; routes
+`POST /finance/tax/ppn-settlements`, `POST /finance/tax/payments`,
+`GET /taxes/coretax/{faktur,bupot}.xml`, `PATCH /taxes/withholdings/:id/coretax`.
+Roles `wht_payable`, `vat_payable`, `vat_overpaid`, `pph25_payable`; seed
+accounts 1-1830 PPN Lebih Bayar, 2-1460 Utang PPN; rule `tax=PPH4_2 -> 2-1440`.
+Web-admin: "Setor pajak" dialog (cash/bank), "Tutup PPN masa" (closing), Coretax
+downloads + bukti-potong dialog on withholdings (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 199 refs across 28 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0140_tax_postings; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # inserted 2 accounts, rulesInserted 5
+bun run <temporary tax-smoke script>          # 7/7 PASS (second run): PPN 2026-11 output 99099 / input 11 ->
+                                              # Utang PPN 99088, repeat returns the same journal, payment clears
+                                              # 2-1460, zero payment rejected, faktur XML lists 1 invoice, bupot builds
+bun test test/finance/ap-flows.test.ts test/finance/tax-postings.test.ts   # pass
+bun run test                                  # 7/7 tasks: backend 1511, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun run lint                                  # 0 errors (21 pre-existing warnings)
+bun docs/gen-role-permission.ts               # 709 routes
+```
+
+`test/authorization/tax-authorization.test.ts` covers the three new tax routes
+(401/403) and stubs `CORETAX_EXPORT_SERVICE_TOKEN`; the first full run failed
+there on the unregistered token.
+
+The first smoke run failed twice: a repeat settlement reported zeros (its own
+journal had zeroed the activity; fixed: it returns the posted journal) and the
+scratch bank account had no balance (smoke setup; funded with a cash-in).
+
+**Not verified.** Coretax import of either XML (format unverified); the
+withholding-at-payment flow on a database (no disbursement form or seeded
+supplier bill); no browser walk-through. `docs/database/` updated (docs.dbml +
+logical-references.md).
+
+Next executable task: ERP-0138 (payroll runs, PPh 21 TER engine with imported
+TER tables, BPJS, payroll journal, BP21 export).
+
+## 2026-11-25 - ERP-0141: project-tagged invoices and project costs in the GL
+
+**Scope.** Phase B slice 4 (grill Q32/Q39/Q42).
+
+**Design gate.** `docs/database/` read for `sale.invoices`, `project.costs`,
+`project.projects` and `logical-references.md` (two new logical references:
+`sale.invoices.project_id`, `project.costs.journal_entry_id`). Decisions:
+stamp the project at issue (projects can be created after an invoice draft);
+`payment_source` (employee_claim / petty_cash / bank, default employee_claim
+for existing rows) decides the credit side; the duplicate check is a UI
+warning on `reference`, not a server refusal.
+
+**Changes.** Schema: `sale.invoices.project_id`, `project.costs.payment_source`
+/ `reference` / `journal_entry_id`, journal `source_module` + `project`
+(migration `20261125002439_erp0141_project_postings`: 4 ADD COLUMN, 1 check
+added, 1 replaced). Backend: invoice issue stamps the live project and tags
+revenue/advance/deferral lines; `ProjectService.addCost/voidCost` post and
+reverse in one transaction; role `cash_payment` (seed: default 1-1120, cash
+-> 1-1110), event `project.cost_recorded`. Web-admin: cost form "paid by" +
+reference + duplicate warning + ledger hint (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 198 refs across 27 targets
+bun docs/database/validate-dbml.ts            # OK
+bun run drizzle:generate --name erp0141_project_postings; bun run drizzle:migrate   # applied
+bun run drizzle:seed                          # rulesInserted 2 (cash_payment default + cash)
+bun run <temporary project-smoke script>      # 3/3 PASS: source module project accepted; Dr 5-1200 / Cr 2-1200,
+                                              # Cr 1-1110 (petty cash), Cr 1-1120 (bank)
+bun test test/unit/project.service.test.ts test/finance/ar-postings.test.ts   # 8 + 10 pass
+bun run test                                  # 7/7: backend 1491, web-admin 209, locales 106, portal 68, landing 25, email 6
+```
+
+**Not verified.** Invoice project stamping on a database (no seeded orders or
+projects); no browser walk-through.
+
+Next executable task: ERP-0140 (tax postings, withholding slip data, Coretax
+XML export).
+
+## 2026-11-25 - ERP-0139: receipts post to the ledger, gateway clearing and settlement
+
+**Scope.** Phase B slice 3 (M09 plan "gateway accounting split", grill Q45).
+
+**Design gate.** `docs/database/` read for `sale` (receipts, invoices),
+`payment` (payments, allocations), `finance` (posting_rules, cash/bank).
+Finding: a sale receipt (kuitansi) only raised `sale.invoices.paid_total`;
+it wrote no journal and did not touch `finance.ar_open_items`, so the GL
+receivable was never cleared on the receipt path - and the gateway callback
+records its payment as such a receipt. Second finding: receipts recomputed
+`outstanding = grand_total - paid_total`, which undoes a credit memo
+(ERP-0135). Both are fixed here. Decisions: the cash account of a receipt
+comes from posting rules discriminated by the receipt method (no new column
+or form field); the settlement is recorded by finance from the provider's
+payout figures (no report import yet).
+
+**Changes.** Schema: `posting_rules` discriminator vocabulary + `payment_method`
+(migration `20261125001655_erp0139_receipts_gateway`, 1 check replaced).
+Backend: `sale/services/receipt-ledger.service.ts` (receipt journal +
+open item, reversal), `InvoiceService.addReceipt/reverseReceipt` now run in one
+transaction with it, the gateway's `InvoicePaymentPortService.addReceipt`
+posts in the callback transaction, repository outstanding math and
+`receiptStatus`, `IArLedgerPort.applyReceipt`, `GatewaySettlementService` +
+`POST /finance/gateway-settlements`, role `cash_receipt`, events
+`sale.receipt_posted` / `payment.gateway_settled`, seed rule cash -> 1-1110.
+Web-admin: gateway settlement dialog on `/finance/cash-bank`, posting-rule
+labels, en/id.
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/validate-dbml.ts                  # OK
+bun run drizzle:generate --name erp0139_receipts_gateway; bun run drizzle:migrate   # applied
+bun run drizzle:seed                                # rulesInserted 2 (cash_receipt default + cash), then 0
+bun run <temporary receipt-smoke script>            # 8/8 PASS: cash receipt Dr 1-1110 / Cr 1-1310; open item and invoice
+                                                    # 600 000 open after a 110 000 credit + 400 000 receipt; reversal restores
+                                                    # both; gateway receipt Dr 1-1250; invoice paid; settlement Dr 1-1120 995 000
+                                                    # / Cr 1-1250 and fee Dr 6-3200 5 000 / Cr 1-1250
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run test                                        # 7/7: backend 1489, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun docs/gen-role-permission.ts                     # 704 routes written
+```
+
+`docs/database/` updated (`docs.dbml` posting_rules check).
+
+**Not verified.** No browser walk-through; the payment-gateway callback
+itself was not replayed (the smoke called its receipt port in a transaction).
+
+Next executable task: ERP-0141 (`sale.invoices.project_id`, manual project
+costs posted to the GL).
+
+## 2026-11-25 - ERP-0136/0137: GR/IR, purchase price variance, COGS, stock adjustment journals
+
+**Scope.** Phase B slice 2 (grill Q24/Q25/Q26/Q40).
+
+**Design gate.** `docs/database/` read for `procurement` (goods_receipts,
+purchase_returns), `finance` (supplier_bill_items), `sale` (delivery notes,
+returns), `inventory` (adjustments). Facts that shaped it: every goods
+receipt line has a product and is valued at the ex-VAT order price; bills are
+already capped at received-minus-billed (the 3-way match of Q25 existed);
+delivery notes issue stock on `shipped` with the moving-average cost on the
+line; sales returns come back at the delivery cost; a sale order's project is
+found through `PROJECT_LOOKUP_SERVICE_TOKEN.liveProjectOfOrder`.
+
+**Changes.** Schema: `finance.supplier_bill_items.grir_amount`,
+`procurement.purchase_returns.journal_entry_id` (logical reference). Migration
+`20261124214438_erp0136_grir_cogs` (2 ADD COLUMN). A first generate put the
+procurement column on `purchase_requests` (wrong table matched by the edit
+script); that folder was never committed, was deleted, the schema fixed, the
+migration regenerated and the scratch DB rebuilt with `drizzle:migrate-reset`.
+Backend: goods receipt, purchase return, delivery note, sales return and stock
+adjustment post through `postBusinessEvent`; supplier bill clears GR/IR with
+PPV; billable PO lines carry `receivedUnitCost`; new role `project_cogs`
+(5-1200) and five event types; `finance/utils/inventory-value.ts`. Web-admin:
+posting-rule labels for the new role/events (en/id).
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts; bun docs/database/validate-dbml.ts   # OK
+bun run drizzle:generate --name erp0136_grir_cogs; bun run drizzle:migrate-reset   # migrated + seeded
+bun run drizzle:seed                         # rulesInserted 1 (project_cogs), 0 else
+bun run <temporary stock-smoke script>       # 7/7 PASS: stock adjustment create -> submit -> approve -> post gives
+                                             # Dr 1-1410 1 000 000 / Cr 5-1400; goods_received, purchase_returned,
+                                             # supplier_bill_recorded (with PPV), delivery_shipped (cogs and project_cogs),
+                                             # return_received resolve to 1-1410 / 2-1150 / 5-1300 / 1-1810 / 2-1100 / 5-1100 / 5-1200
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+bun run test                                 # 7/7: backend 1482, web-admin 209, locales 106, portal 68, landing 25, email 6
+```
+
+**Not verified.** PO -> goods receipt -> bill and order -> delivery note ->
+return were not run end to end on a database: the seed has no suppliers,
+purchase orders or sale orders. The services' own unit tests construct them
+without the posting dependency (optional injection), so their journals are
+covered by the rule-resolution smoke and the PPV test, not by an end-to-end run.
+
+Next executable task: ERP-0139 (payment gateway clearing and settlement fees).
+
+## 2026-11-25 - ERP-0135: AR postings (Phase B slice 1, ADR-0030 accepted)
+
+**Scope.** The owner ordered Phase B and confirmed that this is the owner's
+approval of ADR-0030 (ADR status -> accepted; module plans now say the ADR
+wins). Phase B runs in order 0135 -> 0136/0137 -> 0139 -> 0141 -> 0140 ->
+0138 -> 0142, one commit per slice. This entry is slice 1 (AR).
+
+**Design gate.** `docs/database/` read for `sale` (invoices, invoice_items,
+returns) and `finance` (ar_open_items, credit_memos target). Decisions are the
+grill answers Q27/Q28/Q47/Q56/Q57 plus three facts found in the code:
+(1) order invoices are single-line terms without a product, so per-category
+revenue only applies to line-item invoices (API); (2) `sale.returns` are
+replacements whose DBML note says "no credit memo", so the credit memo is a
+finance document issued from the invoice (deviation from Q56, recorded in
+`finance.md`); (3) the payment module computes `outstanding = original - paid`,
+so adjustments lower `original_amount` and are tracked in a new
+`adjusted_amount` instead of touching payment.
+
+**Changes.** Schema (`docs.dbml` first): `sale.invoice_items.service_period_*`,
+`sale.invoices` + `finance.ar_open_items` status `written_off`, AR open item
+`adjusted_amount` + write-off columns, `finance.credit_memos` built (+
+`tax_amount`, `journal_entry_id`, `created_by`), new
+`finance.deferred_revenue_schedules`. Migration
+`20261124212044_erp0135_ar_postings` (inspected: 2 CREATE TABLE, 9 ADD COLUMN,
+checks/indexes/FKs). Backend: `sale/utils/invoice-posting.ts` (pure builder),
+invoice issue through `postBusinessEvent` + schedules, void cancels schedules
+and refuses an invoice with an applied credit memo, `DeferredRevenueService`
+(port for sale, monthly run), `ReceivableAdjustmentService` (credit memo,
+write-off), lock gate for pending amortisation, product snapshot gains
+`productCategoryId`, code type `credit_memo` (`CN`), permissions
+`credit_memo:*`, `ar_write_off:read/request/approve`, routes
+`/finance/credit-memos*`, `/finance/ar/write-offs`,
+`/finance/ar/:invoiceId/write-off/{request,cancel,approve}`,
+`/finance/deferred-revenue{,/run}`. Web-admin: credit memo / write-off card
+on the invoice page, pending write-offs on `/finance/receivables`,
+amortisation button on `/finance/closing`, `written_off` labels, en/id.
+
+**Commands and outcomes.**
+
+```text
+bun docs/database/gen-logical-references.ts   # 195 refs across 26 targets, 160 intra-module
+bun docs/database/validate-dbml.ts            # OK (199 tables, 0 drift)
+bun run drizzle:generate --name erp0135_ar_postings; bun run drizzle:migrate   # applied to the scratch DB
+bun run <temporary ar-smoke script>           # 11/11 PASS: invoice journal (1-1310 / 4-1100 / 2-1500 / 2-1410), product
+                                              # dimension, schedule opened, November amortises 100 000 once (re-run 0),
+                                              # credit memo lowers open item + invoice, void refused with an applied memo,
+                                              # write-off maker-checker, void cancels schedule, lock refused while pending
+cd packages/common && bun run build           # new permissions
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json         # exit 0
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run test                                  # 7/7: backend 1481, web-admin 209, locales 106, portal 68, landing 25, email 6
+bun docs/gen-role-permission.ts               # 703 routes written
+```
+
+**docs/database/** updated (`docs.dbml`, `logical-references.md`,
+`module-ownership.md`: finance 30 tables / 27 refs, totals 199 / 160).
+
+**Not verified / open.** No browser walk-through. Service periods and
+per-category revenue are API-only (no line-item invoice editor). Credit
+allocation to another invoice and refunds are not built.
+
+Next executable task: ERP-0136/0137 (GR/IR on goods receipt, bill clears
+GR/IR with PPV and a 3-way match, COGS at delivery-note `shipped`, stock
+adjustment journals).
+
+## 2026-11-25 - ERP-0126..ERP-0134: ERP-grade finance design (ADR-0030) + Phase A GL foundation
+
+**Scope.** User request: make finance an ERP-grade accounting module (CoA, GL
+as single source of truth, journals, AR/AP, cash & bank, period close, budget,
+expense, tax, cost accounting, fixed assets, bank reconciliation, statements,
+forecast, profitability, ratios, management reports), every operational module
+posting through one standard mechanism. Delivered: the full A-D design
+(ADR-0030 + `docs/architecture/modules/finance.md`), backlog ERP-0126..0153,
+and Phase A (GL foundation). Phases B-D are `planned`.
+
+**Design gate.** Grill-me session 2026-11-25, rounds 1-4 (Q1-Q59), answers
+recorded in `finance.md` and ADR-0030; checked against
+`docs/plan/erp-plan-id.md` v5.1 and `docs/plan/erp-module-plans/m05,m06,m08,
+m09,m10,m11` - the lifted v5.1 limits are listed in ADR-0030 and flagged in
+each module plan; the owner must record the scope change before B-D leave
+`planned`. `docs/database/` read: `docs.dbml` (finance, tax, payment, sale,
+procurement, inventory, human_resource, project modules),
+`module-ownership.md`, `integrity-and-consistency.md`, `data-dictionary.md`,
+`logical-references.md` (new `journal_lines.product_id` reference);
+`implementation-phases.md` skipped (history only). Key answers: posting is a
+synchronous call in the caller's transaction (existing D9) with source modules
+naming roles, not accounts; IDR only; SAK EP accrual; moving average;
+maker-checker on manual journals; `closed` = soft close (finance adjusting
+entries only), `locked` = hard close; GR/IR (Phase B); PPh 21 TER + BPJS behind
+toggles (Phase B); Coretax XML export, no DJP API (Phase B); POS replaced by
+the sales flow; M11 out of scope.
+
+**Gate failure found and fixed (step 0).** `bun run drizzle:migrate` on an
+empty local database failed: `snapshot.json is not of the latest version,
+please run "drizzle-kit up"` (cause: the merged dependabot bump drizzle-kit
+rc.5 -> rc.6). `bunx --bun drizzle-kit up` rewrote the 21 `snapshot.json`
+files (`"version": "9"` -> `"10"`, `concurrently` key dropped); no
+`migration.sql` changed. Then migrate succeeded and `drizzle:seed` ran twice
+with identical row counts (176 tables, 92 333 rows) - this also closes the
+2026-11-25 "verify the COA seed" task (the old duplicate-folder note was stale:
+the 2026-11-24 re-squash removed it).
+
+**Phase A changes.**
+- Schema (`docs.dbml` first, then Drizzle): new `finance.cost_centers`,
+  `finance.posting_rules`; `journal_entries.code` nullable for drafts
+  (`code IS NOT NULL OR status IN (draft, submitted, approved, void)`),
+  `event_type`, `is_adjusting`, `reverses_entry_id`; `journal_lines.cost_center_id`
+  is now an FK to `cost_centers`, new `product_id` (logical reference),
+  `line_no` unique only among live lines; `currency_code = 'IDR'` check on
+  every finance money table. Migration
+  `20261124201506_erp0127_finance_gl_foundation` (inspected: 2 CREATE TABLE,
+  4 ADD COLUMN, 1 DROP NOT NULL, index/FK/check additions only).
+- Backend `finance`: `PostingRuleService` + `pickPostingRule` (event+disc >
+  event > `*`+disc > `*`), `PostingService.postBusinessEvent`,
+  `ArAccountResolverService` now delegates to rules (call sites unchanged;
+  `constants/ar-posting.ts` deleted), `ManualJournalService` (draft, update,
+  submit, approve = post with maker-checker, reject with reason, void,
+  reverse with reason), reversal dating (next open period when the original
+  is closed), period rules (soft close / hard lock + lock gate), CoA locking
+  (postable flag frozen once posted; deactivate only at zero balance, no active
+  rule, not system), `CostCenterService`, trial balance + general ledger in
+  `ReportService`, audit writes for every transition (`FINANCE_AUDIT_WRITER_TOKEN`).
+  New routes: `/finance/cost-centers*`, `/finance/posting-rules*`,
+  `/finance/ledger/journal/:id/{submit,approve,reject,void}`, `PATCH
+  /finance/ledger/journal/:id`, `/finance/reports/{trial-balance,general-ledger}`;
+  `POST /finance/ledger/journal` now creates a draft (`journal:create`).
+- **Bug fixed:** every ledger query summed `status = 'posted'` only, so after a
+  reversal the original (now `reversed`) dropped out and the mirror stayed:
+  reports showed the negated amount instead of zero. Ledger queries now sum
+  `posted` and `reversed` (`LEDGER_JOURNAL_STATUSES`).
+- Permissions (`packages/common`): `posting_rule: read, update`,
+  `cost_center: read, create, update, archive` (accountant full, finance and
+  auditor read, owner blanket). `docs/role-permission.md` regenerated.
+- Seed: 94-account `X-XXXX` CoA (SAK EP layout, headers + leaves), 25 `*`
+  posting rules, 3 cost centres; cash/bank links moved to `1-1110/1-1120/1-1130`.
+  Existing local databases built from the old 22-account seed keep their rows
+  (the seeder never overwrites); rebuild them with `drizzle:migrate-reset`.
+- Web-admin: journal page reworked (draft form with adjusting flag and cost
+  centre per line, status filter, submit/approve/reject/void/reverse with a
+  reason dialog), new `/finance/posting-rules` and `/finance/cost-centers`,
+  trial balance + general ledger tabs on `/finance/reports`, nav items, en/id
+  locales (finance, nav, api). `routeTree.gen.ts` regenerated by `vite build`.
+
+**Commands and outcomes (worktree, local scratch database `ims_finance_scratch`,
+dropped and recreated for this work).**
+
+```text
+bunx --bun drizzle-kit up                      # 21 snapshots upgraded, "Everything's fine"
+bun run drizzle:migrate                        # migrations applied successfully
+bun run drizzle:seed (x2)                      # identical row counts (176 tables)
+bun run drizzle:generate --name erp0127_finance_gl_foundation   # SQL inspected
+bun run drizzle:migrate                        # applied
+bun docs/database/gen-logical-references.ts    # 192 refs across 25 targets, 157 intra-module
+bun docs/database/validate-dbml.ts             # OK: 198 tables, 0 cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity drift
+bun run drizzle:migrate-reset; bun run drizzle:seed   # COA 94 / rules 25 / cost centres 3, then 0/0/0; row counts identical (178 tables)
+bun run <temporary gl-smoke script>            # 15/15 PASS against Postgres (rule resolution, reversal nets to zero in TB and P&L,
+                                               # maker-checker, soft close refuses system posting, adjusting entry posts,
+                                               # lock gate, reversal lands 2026-11-01, TB ties, GL running balance, audit rows)
+cd apps/backend && bunx tsc --noEmit -p tsconfig.json   # exit 0
+cd packages/common && bun run build            # dist refreshed for the new permissions
+cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit   # exit 0
+bun run lint                                   # 0 errors (warnings pre-existing)
+bun run test                                   # 7/7 tasks: backend 1472, web-admin 209, locales 106, web-customer-portal 68, web-landing 25, react-email 6
+bun docs/gen-role-permission.ts                # 693 routes written
+```
+
+New tests: `apps/backend/test/finance/gl-foundation.test.ts` (19). Updated:
+four flow test files use `test/finance/posting-rules.fixture.ts` (fixtures
+map roles to the codes they already seed), `dashboard-aggregates.test.ts`
+stubs the new manual-journal token.
+
+**docs/database/** updated: `docs.dbml`, `logical-references.md`
+(regenerated), `module-ownership.md` (finance 29 tables / 24 refs, totals
+198 / 157). AGENTS.md and `docs/architecture/README.md` table counts follow.
+
+**Not verified.** No browser walk-through of the new and changed pages. The
+DB smoke ran against services wired from the real container, not over HTTP.
+
+Next executable task: walk `/finance/journal` (draft -> submit -> approve as a
+second user -> reverse), `/finance/posting-rules`, `/finance/cost-centers` and
+the trial-balance / general-ledger tabs in the browser on a freshly reset local
+database; then get the owner's decision on ADR-0030 before starting Phase B
+(ERP-0131 year-end close is inside the v5.1 baseline and can go first).
+## 2026-11-25 - ERP-0158: document files named after the document
+
+**Request.** An uploaded or generated file must be named after its document,
+e.g. `perjanjian_kerja_pertiwi_jamalia_25_11_2026.pdf`, instead of whatever the
+uploader's file was called (`scan001.pdf`) or the bare registry code.
+
+**Design (grilled in-session, 14 decisions).** Name =
+`<slug(title)>_<dd_mm_yyyy>_<HHmmss>.<ext>`; the title is the source (falling
+back to the code); the stamp is always the creation instant in Asia/Jakarta, so
+two files never collide, with `_2`, `_3` for a same-second match; the slug is
+cut at 80 characters on a word boundary; the uploader's file name is discarded;
+the S3 key stays `<prefix>/<uuid>.<ext>`; existing rows are not backfilled; the
+signed-PDF artifact follows the same rule; and every document that registers
+from another module gets a human title so the name means something.
+
+**Change — naming.**
+
+- New `app/document/utils/document-file-name.ts`: `slugifyDocumentTitle`,
+  `jakartaFileStamp` (`dd_mm_yyyy_HHmmss`, +7h shift, no new dependency) and
+  `documentFileName` (`taken` names get the next suffix). Unit test
+  `test/unit/document-file-name.test.ts` (8 tests: diacritics, punctuation,
+  word-boundary cap, Jakarta day rollover, code fallback, collision, case).
+- `document.service.ts`: one private `attachFile(document, file, actor)` used by
+  upload and both generated-file paths; it lists the document's live files for
+  `taken` and stores the derived name. `attachGeneratedFile` and
+  `attachGeneratedFileTo` now return `{ id, fileName } | null`, so callers stop
+  inventing a name.
+- `providers/s3/document-file.ts`: `fileExtensionOf(mimeType)` exported.
+- `signature.service.ts`: the signed-PDF URL uses
+  `<slug(title)>_signed_<stamp>.pdf` instead of `signed.pdf`.
+- `human-resource`: agreement + payslip PDFs no longer build a name from the
+  code (the service names them); `payslip.controller.ts` ZIP header is
+  `slip_gaji_<periode>_<dd_mm_yyyy>.zip` (ZIP entries already carry each file's
+  stored name, so they follow automatically).
+- `sale/quotation-delivery.service.ts`: uses the returned `fileName` for the
+  public link instead of `code.pdf`.
+
+**Change — titles** (label Indonesia; no backfill, `docs.dbml` untouched):
+
+| register site | title |
+|---|---|
+| quotation | `Penawaran - <customerSnapshot.name>` |
+| sales order | `Pesanan Penjualan - <customerSnapshot.name>` |
+| delivery note | `Surat Jalan - <customerName>` |
+| invoice | `Faktur - <customerSnapshot.name>` (fallback `title`) |
+| receipt (sale + gateway) | `Kuitansi - <customerSnapshot.name>` |
+| sales return | `Retur Penjualan - <row.customerName>` |
+| purchase order | `Pesanan Pembelian - <supplierSnapshot.name>` |
+| goods receipt | `Penerimaan Barang - <supplierSnapshot.name>` |
+| purchase return | `Retur Pembelian - <row.supplierName>` |
+| BAST | `BAST - <project.customerName> - <project.code>` |
+| warranty | `Garansi - <customer.name> - <project.code>` |
+| license contract | `Kontrak Lisensi - <customer.name>` (one `getActiveCustomer`) |
+| ticket | `Tiket Servis - <code> - <customerName>` |
+
+Every name comes from data already loaded at that point (snapshot columns,
+joined row types, the project row) except the licence contract, which reads the
+customer once. `handover.service.ts` now keeps the `requireActive` result
+instead of discarding it.
+
+**Checks.**
+
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `cd apps/backend && bun test`: 1464 pass, 0 fail (was 1455: +8 helper tests,
+  +1 upload-name test; upload/preview/generated-file/quotation-delivery/
+  agreement assertions updated for the new contract).
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- `bun docs/database/validate-dbml.ts`: OK (196 tables, 153 refs).
+- Browser (dev servers :5173/:3001, admin): uploaded `scan001.pdf` to
+  `0029/DOC/DEV/XI/26` → stored as
+  `perjanjian_kerja_elma_elma_pratiwi_25_11_2026_111818.pdf`, shown under that
+  name in the viewer's Files table, and the download URL's
+  `response-content-disposition` carried the same name. The QA file was deleted
+  afterwards (200). **Not exercised**: the payslip ZIP header (no salary
+  records for any period in this tenant, `409`), and no PDF render was run
+  (Chromium not configured here) so the agreement/payslip/signed-PDF names are
+  covered by unit tests only.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (the name is computed at write
+time into the existing `document.files.file_name`), so `docs.dbml` is unchanged.
+No route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0157: document registry as a card grid + full-page viewer
+
+**Request.** `/documents/files` was a table. Make each registry document a
+card whose image is the first page of the document (or a document icon), and
+open the document as a full page when the card is clicked — Google Docs as the
+reference, simpler.
+
+**Design (grilled in-session, 12 decisions).** The existing detail route
+`/documents/files/$documentId` becomes the viewer (no second route); PDFs render
+as a continuous, lazily drawn page stack at fit-width with no zoom; one
+document shows its newest file with a file switcher when it has more; card
+thumbnails are rendered client-side by `pdfjs-dist` and cached for the session;
+cards show preview + title + code + type + date + status with void behind a
+hover menu; a document without files still shows a card (icon) and its viewer
+offers the upload; everything that used to be the detail page moves into a
+right-hand Details sheet; pagination stays at 20/page; a thumbnail render never
+writes an access-trail row; print draws every page first, then opens the
+browser dialog; void asks for confirmation; signed-PDF artifacts stay out of
+scope.
+
+**Change — backend.**
+
+- `GET /documents` rows now carry `preview: { fileId, fileName, mimeType, url }
+  | null` — the newest live file of the row, presigned inline for 300 s.
+  `IDocumentRepository.latestFiles(documentIds)` fetches the files of a whole
+  page in one `IN (...)` query, so a page of cards is two queries and the
+  service picks the newest per document. No migration, no schema change.
+- `test/unit/document.service.test.ts`: two new tests (newest file wins and the
+  preview writes no trail row; a row without files has `preview: null`).
+
+**Change — web-admin.**
+
+- New `components/documents/document-canvas.tsx`: `DocumentThumbnail` (page-one
+  render near the viewport, session cache keyed by presigned URL, capped at 200,
+  images render directly, icon fallback, one refetch on a dead URL) and
+  `DocumentPages` (page stack, `IntersectionObserver` per page, device-pixel
+  ratio capped at 2, `force` renders everything for print and reports when all
+  pages are drawn).
+- `routes/_authed/documents/files/index.tsx`: DataTable replaced by a responsive
+  card grid (2/3/4/5 columns) with skeleton cards; the card link is not
+  prefetched on purpose (the detail endpoint appends a `view` row); void moved
+  to a hover `RowActions` outside the anchor and now asks for confirmation.
+- `routes/_authed/documents/files/$documentId.tsx`: rewritten as the viewer —
+  toolbar (back, code/title/status, file switcher, download, print, void,
+  details), canvas, and a Details `Sheet` holding the overview, files, share
+  links, signatures and access trail cards unchanged.
+- `lib/documents-api.ts`: `TDocumentPreview` and `preview` on `TDocument`.
+- Locales en+id: `details`, `print`, `previewUnavailable`,
+  `voidConfirmTitle`, `voidConfirmDescription`.
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `cd apps/web-admin && bun run build`: built (same pre-existing >500 kB chunk
+  warning; `pdfjs` now also sits in the main chunk because the list page needs
+  it for thumbnails).
+- `bunx oxlint src/components/documents src/routes/_authed/documents/files`:
+  clean (the two warnings in `signatures/.../place.tsx` are pre-existing).
+- `cd apps/backend && bun test`: 1455 pass, 0 fail.
+- `bun test apps/web-admin`: 211 pass, 0 fail.
+- `bun test packages/locales`: 106 pass, 0 fail.
+- `cd apps/backend && bunx tsc --noEmit`: clean.
+- `bun docs/database/validate-dbml.ts`: OK (196 tables, 153 refs).
+
+**Browser verification** (in-app browser, dev servers on :5173 + :3001, app
+admin, tenant with 29 documents):
+
+- `/documents/files`: 29 documents render as a card grid (4 columns at
+  1280 px), each with title, code, type, status badge; documents without files
+  show the `FileText` icon. No console error.
+- Uploaded a 3-page QA PDF to `0029/DOC/DEV/XI/26` (multipart through the API
+  from the page context): the first card rendered page one as a 320 px WebP
+  thumbnail (`data:image/webp`, 320x453) within ~2 s; the other 28 cards kept
+  the icon and rendered nothing.
+- Clicking that card opened `/documents/files/01a20e95-…`; the viewer stacked
+  three A4 pages (`900x1274` canvases) and the third canvas stayed at its
+  default size until it scrolled into range, then rendered `900x1274` — the
+  lazy per-page path works.
+- Toolbar: Download and Print are disabled for a document with no file; Void
+  opened the confirm dialog ("Void this document? … This cannot be undone"),
+  Cancel closed it and the status stayed `Draft`.
+- Print (with `window.print` stubbed in the page): the button rendered the
+  unvisited third page and then called `window.print` exactly once — all three
+  canvases were drawn first.
+- Uploaded a second 1-page PDF: the toolbar showed a file switcher reading the
+  newest file, and switching back to `qa-3pages.pdf` re-rendered the stack from
+  page one.
+- Details sheet: shows code as its title, the overview, both files with size and
+  upload time, the empty share/signature states and the access trail — the
+  trail shows the viewer visits and nothing from the list or the thumbnails,
+  which is the intended behaviour.
+- Deleted both QA files through the API afterwards (200, 200); the card went
+  back to the icon and the registry is as it was.
+
+Two fixes came out of that pass: the back button used `render={<Link/>}` without
+`nativeButton={false}` (Base UI `nativeButton` console error), and the Details
+sheet needed `data-[side=right]:sm:max-w-2xl` because the base class's
+`sm:max-w-sm` was capping it at 384 px.
+
+**Follow-up, same day (card corner menu).** The corner action was a bare Void
+button on hover; it is now a `…` dropdown with **Detail, Void, Print,
+Download**:
+
+- `components/data-table/row-actions.tsx` gained an optional `menu` prop so a
+  short action list still renders as a dropdown (the table default of turning
+  ≤3 actions into an icon strip is unchanged everywhere else).
+- `RowActions` in a card needs no anchor: it stays outside the card's `<Link>`,
+  revealed on hover/focus.
+- Detail navigates to the viewer; Void opens the existing confirm dialog;
+  Download calls `downloadDocumentFile` (writes a `download` trail row) and
+  opens the presigned URL; Print navigates to the viewer with `?print=1`, which
+  the viewer reads via `validateSearch` and auto-prints once every page is
+  drawn, then drops the flag (`navigate({ search: {}, replace: true })`) so a
+  reload does not print again.
+- Print and Download are disabled when the row has no file (no `preview`);
+  Void is hidden without `document.update` or for a void document; Download is
+  also disabled without `document.download`.
+- Locale key `documents:detailAction` (en `Detail`, id `Lihat detail`).
+
+Browser re-verified with a QA 2-page PDF: the menu lists exactly Detail, Void,
+Print, Download in that order; Detail opened the viewer (`900x1274` canvases,
+no console error); Print navigated to `…$documentId`, rendered both pages and
+called `window.print` once, leaving no `print` query in the URL; Download
+opened the MinIO presigned URL; Void opened and cancelled the confirm dialog;
+after deleting the file the card showed the icon and Print/Download were
+`aria-disabled`. The QA file was deleted afterwards (200).
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (the preview is a computed
+presigned URL, not a stored column), so `docs.dbml` is unchanged. No route,
+guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0156: sidebar section order and Subscription inside Projects
+
+**Request.** Reorder the sidebar sections to Dashboard, CRM & Sales, Finance,
+Projects, Inventory, Human Resource, Documents, Reports, Integrations,
+Administration, Settings; move Subscription & Licensing into Projects; shorten
+the Reports label.
+
+**Change.**
+
+- `components/sidebar/nav-config.ts`: array reordered to the product order
+  above. The `M03 — Subscription & Licensing` section is gone; its
+  `item.subscription` block (icon `KeyRound`, children `license.read` /
+  `license.manage_api` / `license.activate`) now sits after Warranty inside
+  `section.projects`. No gate, URL or `SidebarItem` field changed - only
+  placement. The file header now states that section order is the product's
+  order, not the M-numbering, and the per-block `M0x —` comments stay.
+- `packages/locales/src/{en,id}/nav.ts`: `section.subscription` removed from
+  both bundles (the key was referenced only by the deleted section);
+  `section.reports` is `Reports` / `Laporan` (was `Reports & Access` /
+  `Laporan & Hak Akses`).
+- `test/unit/filter-nav.test.ts`: the M07 URL assertion extended to
+  `['/projects','/tickets','/warranties','/subscription']` and its leaf-gate
+  loop now descends into children (Subscription has children, so the top-level
+  loop would have skipped its gate check). Two new tests: the exact 11-key
+  section order, and "Subscription is a Projects leaf, no `section.subscription`".
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test packages/locales/src`: 317 pass, 0 fail.
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- Browser (`:5173`, backend :3001, app admin): the sidebar renders exactly 11
+  groups in the requested order; Projects holds Projects, Tickets, Warranty,
+  Subscription & Licensing, and the last one expands to Applications, API Keys,
+  Validation & Activation. Clicking `Applications` navigated to
+  `/subscription/applications` with the leaf `data-active="true"`. Direct visits
+  to `/documents/files`, `/reports`, `/reports/monthly-archives`,
+  `/integrations/webhooks`, `/hr/employees`, `/warehouses`, `/finance/accounts`,
+  `/projects`, `/tickets`, `/warranties`, `/subscription/api-keys`,
+  `/subscription/activations`, `/documents/templates`, `/hr/payroll` all
+  rendered with no console error (the known Base UI `nativeButton` warning on
+  `/integrations/whatsapp-ai` is unchanged and unrelated).
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed. No route, guard or role grant
+changed, so `docs/role-permission.md` needs no regeneration.
+
+## 2026-11-25 - ERP-0155: asset categories create/edit dialog
+
+**Request.** `/assets/categories` only had two bare inline inputs that created a
+category with a hardcoded `equipment` / `straight_line` default and no way to
+edit anything. Give it the create/edit dialog pattern the other list pages use.
+
+**Change.**
+
+- New `components/assets/asset-category-form-dialog.tsx`: one dialog for both
+  modes, `code` (create only, disabled with a hint when editing because the
+  backend's `itemCategoryUpdateSchema` has no `code`), `name`, `itemKind`,
+  `defaultDepreciationMethod` and an optional `defaultUsefulLifeMonths` that
+  must be a positive integer before Save enables.
+- `asset-category-list.tsx`: inline create row removed; `New category` button in
+  the page header (`asset.create`) opens the dialog, and a `RowActions` edit
+  button (`asset.update`) opens it prefilled. Archive still has no UI (the API
+  helper exists) - out of scope for this request.
+- `lib/asset-api.ts`: `DEPRECIATION_METHODS` / `TDepreciationMethod` exported and
+  used by `createAssetCategory` / `updateAssetCategory` instead of inline unions.
+- Locales en+id: `categories.edit`, `categories.updated`,
+  `categories.immutableHint`, `categories.lifeMonthsInvalid`, and
+  `depreciationMethod.{straight_line,declining_balance,none}` (added to the
+  dead-key test's `DYNAMIC_PREFIXES` as `assets:depreciationMethod.`).
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test`: 209 pass, 0 fail.
+- `bun test packages/locales/src`: 106 pass, 0 fail (parity + dead keys).
+- `bun run lint` (root): 5/5 tasks, 0 errors.
+- Browser (`/assets/categories`, backend :3001 + vite :5173, app admin):
+  `New category` opened the dialog; saving `QA-DLG1 / Dialog QA category /
+  Equipment / Straight line / 24` toasted "Category created." and the row
+  appeared. `Edit` on that row opened it prefilled with `Code` disabled; saving
+  `Dialog QA edited / Tool / Declining balance` toasted "Category updated." and
+  the row reflected all three. Typing `0` in useful life showed the hint and
+  kept Save disabled. A reload still showed the edited values (server round
+  trip, not local state). The QA row was then archived through
+  `DELETE /inventory/item-categories/:id` (200), leaving the two seeded
+  categories.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed, so `docs.dbml` is unchanged. No
+route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0154: sidebar nav audit (drop Notifications, add orphan-page menus, un-hide four items)
+
+**Request.** Audit `apps/web-admin/src/components/sidebar/nav-config.ts`
+against `docs/` and the route tree, then: remove the Notifications item, add
+menus for pages that existed without one, and un-hide the four items that were
+denied by default.
+
+**Findings that drove the change.**
+
+- `item.notifications` pointed at `/integrations/notifications`, which has no
+  route file and no entry in `routeTree.gen.ts`, and carried `open: true` -
+  every logged-in user could click into a 404.
+- `/assets/categories`, `/assets/disposals`, `/assets/tool-sets` and
+  `/integrations/whatsapp-ai/faq` had routes and pages but no nav leaf.
+- Four leaves were commented "no catalog resource yet" and therefore hidden
+  while their pages were fully built: Down payments, Templates, Opening
+  balances, Depreciation.
+
+**Change.**
+
+- Notifications leaf removed; `Bell` import dropped. `item.notifications`
+  removed from `packages/locales/src/{en,id}/nav.ts` (dead-key guard).
+- Assets group gained `item.assetCategories` (`/assets/categories`),
+  `item.toolSets` (`/assets/tool-sets`) and `item.disposals`
+  (`/assets/disposals`), all `asset.read` - the same grant the backend uses
+  (`asset:read` on `/inventory/item-categories`, `/inventory/tool-sets`,
+  `/inventory/disposals`). `item.depreciation` un-hidden with `asset.read`
+  (`/finance/depreciations` is `asset:read`).
+- WhatsApp AI became a parent (icon kept) with `item.conversations`
+  (`/integrations/whatsapp-ai`) and `item.faq`
+  (`/integrations/whatsapp-ai/faq`), both `automation.read`. `findNavLeaf`
+  resolves the longer FAQ url first, so the FAQ page is not guarded by the
+  conversations leaf.
+- Un-hidden with the permission the page itself already calls:
+  `item.downPayments` -> `invoice.read` (`InvoiceList` reads
+  `/sales/invoices` with `termKind=down_payment`), `item.templates` ->
+  `document.read` (still the ERP-0050 placeholder page),
+  `item.openingBalances` -> `journal.read`
+  (`opening-balance-page.tsx` uses `journal.read`/`update`/`post`).
+- Locales en/id: new `item.assetCategories`, `item.toolSets`, `item.disposals`,
+  `item.conversations`, `item.faq`.
+
+**Checks.**
+
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit`: clean.
+- `bun test apps/web-admin/test packages/locales/src`: 315 pass, 0 fail
+  (includes `locale-parity` and `locale-dead-keys`).
+- `bun run lint` at the root: 5/5 tasks, 0 errors (26 pre-existing backend
+  warnings).
+- Browser walk-through (in-app browser, backend :3001 + vite :5173, signed in
+  as the seeded app admin):
+  - Sidebar renders no Notifications leaf; the bell in the header still opens
+    its popover on `/` (that is the in-app notification panel, not a route).
+  - Integrations shows `Website Catalog`, `WhatsApp AI` (parent),
+    `Webhooks (n8n)`. WhatsApp AI expands to `Conversations` + `FAQ Knowledge`.
+  - Inventory > Assets & Equipment expands to `Asset Register`, `Borrowings`,
+    `Service Records`, `Asset Categories`, `Tool Sets`, `Disposals`,
+    `Depreciation`.
+  - Sales expands to 7 leaves including `Down Payments`; Finance to 10
+    including `Opening Balances`; Documents shows `Files`, `Signatures`,
+    `Templates`.
+  - Clicking `Asset Categories` navigated to `/assets/categories` and the leaf
+    took `data-active="true"`.
+  - Direct visits to `/assets/categories`, `/assets/tool-sets`,
+    `/assets/disposals`, `/assets/depreciation`, `/sales/down-payments`,
+    `/finance/opening-balances`, `/documents/templates`,
+    `/integrations/whatsapp-ai`, `/integrations/whatsapp-ai/faq` all rendered
+    their own heading with no console error. (The WhatsApp inbox page logs one
+    pre-existing Base UI `nativeButton` warning at
+    `integrations/whatsapp-ai/index.tsx:124`; it is unrelated to this change and
+    was left alone.)
+- Login note: the password in `apps/backend/.env` does not match the one
+  recorded in earlier `progress.md` entries, so the seeded credentials were
+  read from `.env` for the walk-through and never printed. Both dev servers
+  were stopped afterwards.
+
+**Docs.** `docs/database/` reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed, so `docs.dbml` is unchanged.
+No route, guard or role grant changed, so `docs/role-permission.md` needs no
+regeneration.
+
+## 2026-11-25 - ERP-0123..ERP-0125: COA page CRUD, cash/bank invoice details + GL link, default COA seed
+
+**Scope.** `/finance/accounts` was the weakest list page in the app (bare
+placeholder inputs, no edit at all, and a bug where the *filter* select also
+chose the created account's type). `/finance/cash-bank` could not fill the
+invoice bank fields, so a form-created account never appeared on a printed
+invoice, and the GL link was a session-only UI hack. A fresh database also had
+no chart of accounts, so invoice/bill posting could not resolve its
+`constants/ar-posting.ts` codes.
+
+**Design gate.** `docs/database/` read: `docs.dbml` (Finance
+`chart_of_accounts`, `cash_bank_accounts`, `bank_account_links`),
+`module-ownership.md` (finance owns all three), `integrity-and-consistency.md`,
+`data-dictionary.md`; `logical-references.md` not needed (no new cross-module
+link). Manual grill pass (the `grill-me`/`grilling` skills are not installed):
+ownership unchanged (finance), tenant scoping (`organization_id` on every
+query), soft delete (`deleted_at` filters kept), column types untouched (money
+stays integer minor units; `invoice_usage`/`is_primary` already existed), no
+status vocabulary change. No schema change was required - every column used
+here was already in `finance.*`.
+
+**Backend.**
+
+- `finance/contracts/ledger.contract.ts`: `accountListQuerySchema` gained
+  `search` (trimmed, max 100) and `isPostable`; `cashBankAccountCreateSchema`
+  gained `invoiceUsage` (`vat`/`non_vat`) and `isPrimary`;
+  `cashBankAccountUpdateSchema` gained both (nullable `invoiceUsage`).
+- `ChartOfAccountRepository.paginateAccounts`: `ilike` on `code` or `name` plus
+  the `isPostable` filter.
+- `CashBankRepository`: insert/update carry `invoiceUsage`/`isPrimary`; new
+  `listCashBankAccountsWithLink` (left join `bank_account_links` on the active,
+  non-deleted link) and `clearPrimaryForInvoiceUsage`. `CashBankService`
+  enforces one primary per usage on create and on update (only when the patch
+  touches `isPrimary`/`invoiceUsage`), and `listAccounts` now returns the link.
+
+**Seeder.** `database/seeders/seed/chart-of-accounts.seeder.ts` (new): 22
+Indonesian accounts, one header per account type (`isPostable: false`) and every
+`constants/ar-posting.ts` code (`1-1300`, `1-1400`, `1-1800`, `2-1000`,
+`2-1100`, `2-1200`, `4-1000`, `5-1000`) marked `isSystem`. Idempotent on
+`(organization, code)`; existing rows are never updated. `index.ts` runs it
+before `seedFinance`, and `finance.seeder.ts` now links `BANK-BCA`->`1-1100`,
+`BANK-MANDIRI`->`1-1200`, `CASH`->`1-1000` (skips an existing link).
+
+**Web admin.** New `components/finance/account-form-dialog.tsx` and
+`cash-bank-form-dialog.tsx`; `account-list.tsx` rewritten on the
+`/procurement/suppliers` pattern (header icon, URL-backed
+search/type/status/postable filters, count, row actions Edit / Activate /
+Archive with confirm); `cash-bank-page.tsx` drops the inline create form and the
+session-only `linkedGl` map and shows the GL link from the API instead;
+`routes/_authed/finance/accounts/index.tsx` validates the new search params;
+`lib/finance-api.ts` types `glAccountId` and the new input fields and adds
+`search`/`isPostable` to `accountsQueryOptions`. i18n: new `finance:accounts.*`
+and `finance:cashBank.*` keys plus `accountType.ewallet`/`accountType.clearing`,
+all in `en` + `id`.
+
+**Verified.**
+
+- `cd apps/backend && bun test` - 1453 pass, 0 fail (116 files).
+- `cd apps/backend && bunx tsc --noEmit` - clean.
+- `cd apps/backend && bun run lint` - 0 errors (pre-existing warnings only).
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` - clean.
+- `cd apps/web-admin && bun test` - 209 pass, 0 fail.
+- `cd apps/web-admin && bun run lint` - 0 errors (pre-existing warnings only).
+- `cd packages/locales && bun test` - 106 pass (parity + dead keys); the
+  `accounts.nonPostable` key failed the no-untranslated-copy guard on the first
+  run ("Header" in both bundles) and was changed to `Header account` /
+  `Akun header`.
+- `docs/database/` reviewed, **unchanged**: no table, column, index or
+  constraint moved, so nothing in `docs.dbml` changed (it was `OK` in the
+  2026-11-24 entry).
+- `docs/role-permission.md` not regenerated: no route, guard option or role
+  grant changed (the same routes take extra body fields/query params).
+
+**Not verified.** `bun run drizzle:seed` was **not** executed: this environment
+has no `POSTGRES_URL`/`POSTGRES_DB` in `apps/backend/.env` and Docker is not
+running, so the seeder's double-run idempotency is by construction (select on
+the unique key before insert) rather than measured. No browser walk-through of
+either page, and no invoice print checked against a form-created account.
+
+**Docs.** `docs/plan/backlog.md` ERP-0123/0124/0125,
+`docs/plan/plans/features.md` (M09 finance), this entry.
+
+Next executable task: verify the COA seed on a local database you can drop and
+recreate (`bun run drizzle:seed` twice -> second run inserts 0 accounts and 0
+links), then walk `/finance/accounts` and `/finance/cash-bank` in the browser
+and print one invoice whose bank account was created from the form. Still open
+from ERP-0117..ERP-0122: the duplicate supplier migration folder
+(`...erp0114...` vs `...erp0116...`) breaks `drizzle:migrate` on an empty
+database.
+
+## 2026-11-24 - dependabot PR #157: re-patch `@unplugin-pwa/core` 0.0.8 for Bun
+
+`Docker Build Web Customer Portal` failed on PR #157 (`@vite-pwa/astro`
+`2.0.3` -> `2.0.4`, which pulls `@unplugin-pwa/core`/`vite`/`inspector`
+`0.0.7` -> `0.0.8`). Symptom, job `138373169544`:
+
+```text
+[ERROR] [@vite-pwa/astro-integration] An unhandled error occurred while
+running the "astro:config:setup" hook
+Export named 'findPackageJSON' not found in module 'node:module'.
+error: script "build" exited with code 1
+```
+
+Cause: the `bun patch` in ERP-0107 is keyed by exact version
+(`"@unplugin-pwa/core@0.0.7"`), so the bump silently dropped it and the
+unpatched `0.0.8` went back to the static `findPackageJSON` import. Same
+failure mode already recorded in `stack-compatibility.md`.
+
+Fix: `patches/@unplugin-pwa%2Fcore@0.0.8.patch` (same hunk, retargeted; the
+`0.0.7` patch and its `patchedDependencies` entry are gone) — only
+`dist/resolve-inspector-dist.mjs` carries the import; all 30 `core` and 25
+`vite` `0.0.8` `dist/*.mjs` files were scanned, no other hit.
+
+Verified locally on `fix/dependabot-pwa-0-0-8` (based on the dependabot
+commit `f9318f7e`):
+
+- `bun install` -> patched file present in `node_modules/@unplugin-pwa/core/dist/resolve-inspector-dist.mjs`; `bun.lock` `patchedDependencies` now keyed `0.0.8`.
+- `bun install --frozen-lockfile` -> `Checked 1394 installs across 1445 packages (no changes)`.
+- `bun --bun run --cwd apps/web-customer-portal build` -> `[build] ✓ Completed in 12.53s` (was the CI failure point).
+- `docs/database/` reviewed, unchanged (dependency-only change).
+
+## 2026-11-24 - docs sync: project structure, ADR-0026 modules, no more "disposable DB"
+
+Docs-only change (no code, no migration, no seed). Scope: `AGENTS.md`,
+`README.md`, `docs/**`. `migrate-reset.ts` and the `drizzle:migrate-reset`
+script stay; only the *concept* of "disposable database" was retired in favour
+of "a local database you can drop and recreate".
+
+**Verified numbers (source of truth: `docs.dbml` + validator, not prose).**
+`bun docs/database/validate-dbml.ts` → `parsed: 196 tables, 153 refs /
+cross-module refs: 0 / timestamp gaps: 0 / drizzle parity drift: 0 / column
+parity drift (nullability, type): 0 / OK`; `gen-logical-references.ts` →
+`regenerated: 189 refs across 25 targets, 153 intra-module refs`. The previous
+prose figures (188/192 tables, 147/162 refs, 169/190 logical columns) were all
+stale, so every doc now says **20 schemas / 196 tables / 153 `Ref:` / 189
+logical-reference columns / 25 targets**. Baseline migrations create **176**
+`CREATE TABLE`, so 20 `docs.dbml` tables are still target-only
+(`sale.discount_requests|contracts|targets`, `finance.journal_templates|
+credit_memos|employee_advances|expense_settlements|expense_settlement_items`,
+8 `project.*`, `ticket.ticket_templates`, `ticket.sub_ticket_templates`).
+
+**Structure.** `README.md` project tree rewritten to what exists: 4 apps
+(backend, web-admin, web-landing, web-customer-portal), the real backend
+`src/` layout (`app/`, `app/app.ts`, `authorization/`, `cache/`, `di/`,
+`http/`, `providers/`, `shared/`, `utils/`), `database/` vs `drizzle/`,
+5 packages (common, design-tokens, locales, react-email, ui), 5 doc folders;
+env setup for all four apps; ports corrected to backend 3001 / admin 5173 /
+landing 4321 / portal 4322; the stale 2026-11-12 "blocked on main" note removed
+(replaced by the `drizzle:migrate-reset` explanation); deploy section lists the
+Astro services and their host-port knobs.
+
+**Modules.** `product` and `warehouse` are now documented as current modules
+with their own schemas (ADR-0026): `docs/architecture/modules/product.md` and
+`warehouse.md` rewritten, `inventory.md` rewritten (21 tables, product/estate
+moved out, `/products` + `/warehouse` + `/stock` route map), `modules/README.md`
+index moved them out of the deprecated table, `architecture.md`, `domain-map.md`
+and `data-model.md` updated, `security-and-access.md` says 20 modules.
+`docs/database/module-ownership.md` per-module table/ref counts recomputed from
+`docs.dbml` and its broken header row fixed.
+
+**Not touched on purpose:** ADR files (decision records), `progress.md` history,
+`docs/plan/database-refactor/**`, `docs/plan/uat/**`,
+`docs/plan/erp-module-plans/**`, `apps/**`, `package.json`. Historical entries
+inside `implementation-phases.md` keep their dates and figures; only its
+present-tense summary and command table were corrected.
+
+**docs/database/ status.** Reviewed: no table, column, index, constraint,
+logical reference or status vocabulary changed (prose only) — but the
+companion MDs were wrong about counts, so `module-ownership.md`,
+`integrity-and-consistency.md` (incl. the `ON DELETE` split, re-derived:
+CASCADE 74 / RESTRICT 59 / SET NULL 20), `data-dictionary.md` and
+`implementation-phases.md` were corrected. `docs.dbml` itself is untouched and
+`validate-dbml.ts` prints `OK`. No `ERP-*` status moved.
+
+## 2026-11-24 - HR employee list: whole row opens the detail page
+
+User request: on `/hr/employees`, clicking the row should open the detail page
+instead of only the name link.
+
+- `components/data-table/data-table.tsx`: new optional `onRowClick`. When set,
+  the row gets `cursor-pointer`, `tabIndex=0` and Enter/Space activation, so it
+  is reachable without a pointer (a clickable `<tr>` is not a button, so the
+  keyboard path is spelled out).
+- `components/hr/employee-list.tsx`: `onRowClick` navigates to
+  `/hr/employees/$employeeId`; the name is now plain text (no `Link`, `Link`
+  import dropped); the row-actions cell wraps `RowActions` in a
+  `stopPropagation` div so the View/Edit/Archive icons do not also trigger the
+  row navigation.
+
+**Checks.**
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun test` (web-admin): 209 pass, 0 fail.
+- `bunx biome check` on the two files: clean.
+- Browser pass as `hr.seed@…`: clicking a row opened
+  `/hr/employees/01a20adf-d876-…`; focusing a row with Tab and pressing Enter
+  did the same; the Archive icon opened its confirm dialog while the URL stayed
+  on `/hr/employees` (propagation stopped). The only console error is the
+  pre-existing `nativeButton` warning from the detail page.
+
+**Follow-up (same day).** Owner asked to drop the redundant View (eye) icon now
+that the row itself opens the detail page: the `view` action and the `Eye`
+import are gone from `employee-list.tsx`, and the now-unused `list.view` locale
+key was deleted from `en`/`id` (dead-key guard). Row actions are Edit + Archive.
+Re-checked in the browser: two icons per row, no console errors; web-admin 209
+pass, locales 106 pass, root lint 0 errors.
+
+## 2026-11-24 - HR employees: `legal_name` / `whatsapp` columns dropped, phone uses the country field
+
+User request: Identity card on `/hr/employees/:id/edit` should drop Legal name
+and WhatsApp, and Phone should use `CountryPhoneField` (E.164 assembly) like the
+new-employee dialog. Owner then asked for the columns to go too, not just the
+form fields.
+
+**Schema (destructive, applied to the local dev database).**
+- `docs/database/docs.dbml` edited first: `legal_name text` and
+  `whatsapp varchar(100)` removed from `human_resource.employees`, then
+  `drizzle/schemas/human-resource.schema.ts` matched to it.
+- `bun run drizzle:generate` → `database/migrations/20261124112024_slimy_gideon`
+  with exactly two statements (`ALTER TABLE "human_resource"."employees" DROP
+  COLUMN "legal_name"`, `DROP COLUMN "whatsapp"`), inspected before applying.
+- Checked the dev database first: 29 employee rows, **0** with either column
+  set, so nothing was lost. `bun run drizzle:migrate` applied it;
+  `information_schema.columns` no longer lists the two columns.
+- `bun docs/database/gen-logical-references.ts` (189 refs across 25 targets) and
+  `bun docs/database/validate-dbml.ts` → `OK: 0 cross-module refs, 0 timestamp
+  gaps, 0 drizzle parity drift, 0 column parity drift`.
+
+**Backend.**
+- `hr.contract.ts`: both fields removed from `employeeBaseSchema` (create and
+  update share it).
+- `employee.mappers.ts` (`toRow`), `employee.service.ts` (patch builder): the
+  two assignments removed.
+- PDF fallbacks now use the surviving column: `agreement-pdf.service.ts` →
+  `employee.fullName`; `payslip.service.ts` → `employee?.fullName ??
+  record.employeeName`. Company letterhead `legalName` (company profile) is
+  untouched.
+- Fixtures: `hr-employee-document.service.test.ts`, `hr-payslip.service.test.ts`
+  dropped their `legalName: null`.
+
+**Frontend.**
+- `hr-api.ts`: `legalName`/`whatsapp` removed from `TEmployee` and
+  `createEmployee`.
+- `employee-edit-form.tsx`: both inputs and their state removed; Phone is now
+  `<CountryPhoneField id='phone' defaultValue={employee.phone} required={false}>`
+  spanning both grid columns. Identity is now code | full name, nickname | NIK,
+  phone (full width).
+- Locales en/id: `form.legalName` and `form.whatsapp` deleted (dead-key guard
+  would fail otherwise).
+
+**Checks.**
+- `bunx tsc --noEmit -p tsconfig.json` (backend): clean.
+- `bun test` (backend): 1453 pass, 0 fail.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean; `bun test` 209 pass.
+- `bun test` (packages/locales): 106 pass.
+- `bun run lint` (root): 0 errors (18 web-admin, 26 backend, 19 ui warnings are
+  pre-existing).
+- Browser pass (`/hr/employees/01a20adf-…/edit`, logged in as `hr.seed@…`):
+  Identity shows five fields, the country picker defaults to Indonesia (+62),
+  typing `81234567890` and saving wrote `+6281234567890` (read back from
+  Postgres), then clearing it and saving wrote `NULL` — round trip both ways.
+  As org HR the role dropdown renders read-only with the hint. No new console
+  errors (the `nativeButton` warning on the employee detail page is
+  pre-existing).
+
+## 2026-11-24 - web-admin: organization role dropdown on the new-employee dialog
+
+User request: `/hr/employees` "Karyawan baru" dialog had no role picker, while
+`/admin/users` does. Backend already supported it — `POST
+/human-resources/employees` accepts `organizationRoles` (`hr.contract.ts`),
+validates it against the shared ladder (`employee.controller.ts`), and
+`EmployeeInviteService` defaults to `['member']` when an organization is set —
+so this was frontend-only. Invited employees silently always got `member`.
+
+- `components/hr/employee-create-dialog.tsx`: `useGrantableOrgRoles(activeOrganizationId)`
+  supplies the options (same ladder as the invitation dialog: no `owner`, no
+  `admin`/`hr` above the caller's tier), `erpRoleLabel` renders them in the UI
+  language, and the picked role is sent as `organizationRoles: [effectiveRole]`.
+  The effective role is clamped at render (a role picked before the ladder
+  loads is not trusted), and the field only renders when an active
+  organization exists — without one the backend reads a role list as an org
+  invite and rejects it, so `organizationRoles` stays `undefined`.
+- Locales en/id: `form.role` ("Organization role"/"Peran organisasi"),
+  `form.roleHint`.
+
+**Edit page (same day, follow-up).** `/hr/employees/$employeeId/edit` now has an
+organization role card too. It is a *membership* fact, not an employee column,
+so it saves through the existing `PATCH /organizations/:id/members/:memberId`
+(the endpoint the organization member page uses) instead of the employee PATCH:
+`PATCH /human-resources/employees/:id` still does not accept `organizationRoles`.
+- `components/hr/employee-edit-form.tsx`: member row resolved from
+  `GET /organizations/:id/members` (limit 100 — the contract caps it at 100)
+  by `employee.userId`; checkbox grid over `useAssignableOrgRoles` (existing
+  grants stay visible, the ladder hides what the caller may not grant);
+  separate "Save role" button with its own mutation and member-query
+  invalidation.
+- First attempt gated the whole card on `member.update`, which hid it for the
+  org `hr` role (grants `member: ['read']` only) — reported by the owner as
+  "still missing". The card now always renders and only the write controls
+  (checkbox enabled state + Save role) are gated; a caller without the grant
+  sees the roles read-only (`form.roleReadOnly`). Verified against the dev DB:
+  employee `01a20adf-…` has a membership row with `role = 'hr'`, so the lookup
+  itself was fine.
+- A pending invite has no membership row yet, so the card shows a hint instead
+  (`form.roleNoMember`): the role is granted on claim, and no endpoint updates
+  a pending invitation's roles.
+- Locales en/id: `form.roleNoMember`, `form.roleReadOnly`, `form.rolesLocked`,
+  `form.rolesMultiple`, `form.saveRole`; `form.roleHint` shortened to the
+  generic wording (it now serves both dialogs).
+- Owner follow-up: the checkbox grid was replaced by a single `Select`, the
+  same shape `/admin/users` (invite dialog) uses. Saving sends
+  `[effectiveRole]`, so it replaces a member's whole comma-joined role set —
+  `form.rolesMultiple` warns when the member currently holds more than one.
+- Owner follow-up 2: the separate role card is gone; the role field now sits
+  inside the "Kepegawaian" (employment) card, below work type and the dates.
+- Owner follow-up 3 (browser pass): the role field was a `sm:col-span-2` block
+  under a five-field grid, which left the third row half empty and made the
+  save button stretch inside the grid. It is now a normal sixth grid cell
+  (status/type, work type/hire date, termination date/role), with the hint and
+  an outline "Save role" on their own full-width row. Verified in the browser
+  on `/hr/employees/01a20adf-…/edit` as an org admin: dropdown lists the
+  assignable roles, saving rewrote `auth.members.role` (`hr` → `member`, read
+  back from Postgres, then restored to `hr`), no console errors.
+- Owner follow-up 4: every `SelectTrigger` in the employment card is `w-full`
+  (they were intrinsic-width, narrower than the date pickers), and the grid is
+  reordered to status/type, work type/role, hire date/termination date so the
+  two dates sit on one row. Re-checked in the browser: six equal columns, no
+  console errors.
+- Ceiling: the member lookup reads one page of 100 (40 members in the dev
+  tenant); an organization with more members would need a `userId` filter on
+  the members list.
+
+**Checks.**
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun test` (web-admin): 209 pass, 0 fail.
+- `bun test` (packages/locales): 106 pass, 0 fail (en/id parity + dead keys).
+- `bunx biome check` on the touched files: clean.
+- `bun run lint` (root): 0 errors (18 pre-existing web-admin warnings).
+- No browser walk-through.
+
+**Docs.** `backlog.md` ERP-0117 evidence appended. `docs/database/` reviewed:
+no table/column/index/constraint change, `docs.dbml` unchanged.
+
+## 2026-11-24 - migrations squashed back to one folder per Postgres schema
+
+User request: squash `apps/backend/database/migrations` against
+`apps/backend/drizzle/schemas`, one migration per DB schema, and delete the old
+folders (no disposable database available, so the proof is SQL-level).
+
+**Before.** 33 folders: the 20 per-schema baseline folders
+(`20261120214111_create_auth_schema` … `20261120214130_create_warehouse_schema`)
+plus 13 incremental ones added 2026-11-21 → 2026-11-24. Two of those 13 were
+the same migration twice (`20261123015149_erp0114_drop_supplier_whatsapp_payment_terms`
+and `..._erp0116_...`, identical `migration.sql` and identical snapshot id
+`df124139-cab1-4dc0-8012-773aab12fe1c`), one was data-only
+(`20261121064831_erp0094_portal_customer_role`, an `UPDATE` on `auth.users.role`),
+and `20261122174431_add_gallery_images` mixed DDL with an `INSERT … SELECT`
+backfill.
+
+**After.** 20 folders, `20261123204301_create_auth_schema` …
+`20261123204332_create_warehouse_schema`, `auth` first then alphabetical, same
+cumulative `--schema` order as the 2026-11-21 split. Generated, not hand-written:
+one `bunx --bun drizzle-kit generate --dialect postgresql --out ./database/migrations --name create_<schema>_schema --schema '{…cumulative list…}'`
+run per schema (CLI mode, so no `POSTGRES_URL` needed), producing 1 `base` + 19
+chained `diff` snapshots.
+
+**Verification (no database — user instruction).**
+
+- The 20 folders concatenate to **758 statements**, identical as a multiset to a
+  single `generate` from `drizzle/schemas/*.schema.ts` (0 missing, 0 extra).
+- Both produce **176 `CREATE TABLE`**; every `CREATE SCHEMA` / `ALTER TABLE` /
+  `CREATE INDEX` / `REFERENCES` in a folder targets that folder's own schema —
+  0 foreign objects, so still 0 cross-schema FKs (ADR-0014 / `elysia-module` 3.2).
+- `bunx --bun drizzle-kit check` → `Everything's fine 🐶🔥`.
+- `bunx --bun drizzle-kit generate --explain --output json` → `{"status":"no_changes","dialect":"postgresql"}`,
+  i.e. the chain still agrees with `drizzle/schemas` by construction.
+- `bun docs/database/validate-dbml.ts` → `OK` (196 tables, 153 refs, 0
+  cross-module refs, 0 timestamp gaps, 0 drizzle parity drift, 0 column parity
+  drift). `docs/database/` needed **no change**: no table, column, index,
+  constraint, logical reference or status vocabulary moved — only the packaging
+  of the same DDL.
+- Not verified this session: `drizzle:migrate` + `drizzle:seed` on a real
+  database (the last such proof is the 2026-11-21 run; the DDL it proved is
+  unchanged, only regrouped). Rebuild any existing database with
+  `bun run drizzle:migrate-reset` — the first folder starts with `CREATE SCHEMA`.
+
+**Dropped, deliberately.** The two data-only migrations (ERP-0094 role backfill,
+gallery-image backfill) were not carried into the baseline: they run against an
+empty database and would be no-ops. Both remain in git history.
+
+**Docs.** `runbook.md` (baseline section), `data-model.md`, `project-audit.md`,
+`implementation-phases.md` (new P8c) and `AGENTS.md` (command-status row) now
+name the 2026-11-24 folders; `backlog.md` gained a "Re-squash, 2026-11-24" note
+under the existing migration-name note. No `ERP-*` row changed status (the
+squash is packaging, not scope), so `features.md` does not move.
+
+## 2026-11-24 - merge `origin/main` into `feat/erp0013-expense-claims`
+
+Merged main (PR #152 suppliers, PR #153 HR/ERP-0117..0122 incl. employee payee
+accounts in finance) into the expense-claim branch. Four conflicts, all
+mechanical:
+
+- `finance/index.ts` — both sides mounted a controller; kept
+  `EmployeeBankAccountController` (main) and `ExpenseController` (ours).
+- `build-crumbs.ts` — kept `/settings/payroll` (main) plus the three
+  `/finance*` entries (ours).
+- `docs/plan/progress.md` — both sides prepended session entries; kept both,
+  newest first (main's 2026-11-24 entries, then ERP-0013).
+- `docs/role-permission.md` — generated file; took main's copy and re-ran
+  `bun docs/gen-role-permission.ts` (677 routes, both slices included).
+
+Auto-merged files checked by hand for duplicate declarations: `finance.schema.ts`,
+`constants/di.ts`, `container.ts`, `numbering/domain.ts`, `erp-permissions.ts`.
+`packages/common` was rebuilt (its `dist` was stale for main's `schedule`
+resource, which broke the web-admin typecheck until `bun run build`).
+
+Checks after the merge: backend `tsc` clean, web-admin `tsc -p tsconfig.app.json`
+clean, `bun run test` 7/7 (backend 1453 pass), `bun run lint` 0 errors,
+`validate-dbml.ts` OK, `drizzle-kit generate` "No schema changes",
+`drizzle-kit check` "Everything's fine".
+
+Still open from ERP-0013: migration `20261123150453_erp0013_expense_claims` not
+applied to a database (Docker down) and no browser walk-through.
+
+## 2026-11-24 - CI fix for PR #153: payslip tests depended on the local .env
+
+**Failed check:** "Unit Test Backend" (and the JUnit report) on PR #153: three
+`hr-payslip.service.test.ts` cases expected `attached` and got `skipped`.
+`PayslipService.render` (and `AgreementPdfService.render`) skipped when
+`appConfig.pdf.renderBaseUrl` was empty, on top of `renderer.configured`. CI
+has no `PDF_RENDER_BASE_URL`/`APP_WEB_URL`; a developer `.env` sets
+`APP_WEB_URL`, so it passed locally (Bun loads `.env` even with the variables
+emptied in the shell, which is why it did not reproduce at first).
+
+**Fix:** both services gate on `renderer.configured` only -
+`ChromiumPdfRenderer.configured` already requires the render base URL in
+production, so behaviour there is unchanged. The payslip test now sets
+`appConfig.pdf.renderBaseUrl = null` for its run (restored afterwards), so it
+behaves like CI everywhere. Checked both ways: under that setting the old
+service code fails the same 3 cases CI reported, the fixed code passes 6/6.
+Backend `bun test` 1444 pass, backend lint 0 errors, `tsc` clean.
+
+## 2026-11-24 - ERP-0117 follow-up: employee page full width + linked login account
+
+**Owner request (review):** make `/hr/employees/:id` full width and show the
+employee's `auth.users` details.
+
+- Backend: `ExportedUserService.accountDetail(userId)` (user module facade, now
+  also reads `USER_REPOSITORY_TOKEN`; no credential data - passwords live in
+  `auth.accounts`, never read) returns name, email + verified, username /
+  display username, avatar URL, phone, bio, application role, status
+  (`pending|active|deactivated`), ban fields, claimed/created/updated dates.
+  `EmployeeService.get` attaches it as `account` on the **detail** response
+  only (`null` without a login; list rows unchanged).
+- Web-admin: the detail page drops `max-w-4xl` (full width, `p-6`); Details
+  and a new "Login account" card (`employee-account-card.tsx`: account plus
+  the personal fields stored on the user) sit side by side on `lg`. en/id keys.
+- `docs/database/` reviewed and unchanged (no schema change).
+- Commands: backend `tsc` clean; `bun run test` 7/7 - backend **1441 pass**
+  (new detail/account case in `hr-records.service.test.ts`), web-admin 209,
+  locales 106; `bun run lint` 0 errors; web-admin `tsc` clean. Checked in the
+  browser against `ims_scratch`: `/hr/employees/01a20863-…` renders full width
+  with the login account card.
+- Same request for `/hr/employees/:id/edit`: the form drops `max-w-2xl`
+  (full width, `p-6`); Identity and Employment cards side by side on `lg`.
+  Checked in the browser.
+- Owner request: `/hr/employees/new` removed; the invite-first create form is
+  now `EmployeeCreateDialog` (`components/hr/employee-create-dialog.tsx`,
+  `ScrollDialogContent`) opened by "New employee" on the list; same fields,
+  same `POST /human-resources/employees`, still navigates to the new
+  employee's page. `employee-form.tsx` and `routes/_authed/hr/employees/new.tsx`
+  deleted, `routeTree.gen.ts` regenerated (`vite build`). Checked in the
+  browser (dialog opens from the list). `bun run test` 7/7 (web-admin 209,
+  backend 1441, locales 106), lint 0 errors, web-admin `tsc` clean.
+- Owner request: `/hr/employees` becomes a table like `/admin/users` (no
+  organization picker). `GET /human-resources/employees` gains
+  `employmentType`, `workType`, `gender`, `maritalStatus` (both on
+  `auth.users`: resolved to user ids through the new optional
+  `IUserPersonalFieldsPort.findUserIds`, so HR never reads `auth`), `login`
+  (`yes|no`), and `sortBy` (`fullName|employeeCode|hireDate|createdAt`,
+  whitelisted) + `sortDir`; `scope=organization` without an explicit
+  organization now means the caller's own (it matched nothing before). List
+  rows carry `login` (avatar + username via `ExportedUserService.summaries`).
+  Web: `employee-list.tsx` rewritten - search, Filters popover (status,
+  employment type, work type, gender, marital status, level, login account),
+  sort headers, server pagination, row actions (view, edit, archive with
+  confirmation); filters/sort live in the URL (validated in the route).
+  Old card-grid keys `list.empty`/`list.filterAllStatuses` removed.
+  Verified against `ims_scratch` through the signed-in page: every filter and
+  sort answered as expected (gender/marital checked after giving one seeded
+  user `female`/`married`: 1 match each, `male` 0). `bun run test` 7/7
+  (backend 1442), lint 0 errors, `gen-role-permission` 669 routes.
+- Fixed on owner request (predated this branch): `src/providers/logger/request-logger.ts`
+  called `new URL(request.url)` without a guard; an invalid request URL threw
+  `TypeError: Invalid URL` inside the `onError` microtask, which nothing
+  catches, and the review backend process exited (code 1). Now `pathOf()`
+  falls back to the raw URL text up to `?`, and every access-log write is
+  wrapped so logging can never fail a request or the process
+  (`test/unit/request-logger.test.ts`, 2 cases). End to end: six raw
+  malformed requests (`//[bad`, `/%%`, `/a b`, `http://[::1`, `*`, a bad
+  percent escape) against the review backend - each answered (404/400/505),
+  the raw paths appear in the access log, and the process kept serving.
+  `bun run test` 7/7 (backend 1444), backend lint 0 errors.
+
+## 2026-11-23 - ERP-0122: payslip PDF on payroll approval (slice 6)
+
+**Scope** (grill-me Q32-Q37, recorded in the ERP-0117 entry below).
+
+**Design gate.** No table, column, index or status change: payslips are
+`document.documents` rows (`document_type = payslip`, `status = issued`,
+`module = human_resource`, `source_type = employee_salary_record`,
+`source_id = employee_salary_records.id`) with their PDF in `document.files`;
+`docs/database/` reviewed and unchanged apart from `module-ownership.md`
+(the new facade and document contract methods). `validate-dbml` `OK`.
+Cross-module reads: `ExportedFinanceService` (new, repository-only, the
+facade deferred from ERP-0119), `ExportedUserService.summary` (approver name),
+`CompanyService.get`, `DocumentService`, `ExportedNotificationService`.
+
+**Backend.**
+- `SalaryService.approve` queues one `payslip-pdf` job per record that
+  approval locked (`approvePeriod` now returns the ids); the queue never
+  fails the approval.
+- `PayslipService.render` (worker): registers the `issued` payslip
+  (`DocumentService.issueForSource`), renders `/print/payslips/:id?token=`
+  in Chromium, attaches the PDF, notifies the employee in-app
+  (`hr.payslip_ready`, `sourceId` = the payslip, so a rerun never doubles it).
+  Idempotent (`exists` when the PDF is there); `skipped` without Chromium.
+- Public print data at `/human-resources/public/v1/render/payslips/:id?token=`:
+  pay lines, net pay, payee account masked to the last four digits, approver
+  and date, letterhead.
+- `GET /human-resources/salary-records/:id/payslip` and
+  `GET /human-resources/salary-records/payslips.zip?period=` (`payroll:read`,
+  ERP-0034 scope), `POST /human-resources/salary-records/:id/payslip/regenerate`
+  (`payroll:update`, approved records only).
+- Self-service `GET /users/me/payslips`, `GET /users/me/payslips/:id/download`
+  (session guard; the employee comes from the session user, anyone else's
+  record answers 404). The existing `self_service:read_payslip` statement is
+  not used: ownership, not a role grant, decides here.
+- `DocumentService.issueForSource` and `readFile` (download trail row), optional
+  `IObjectStorage.get` (S3 implementation), `ExportedFinanceService`.
+- Dependency: `jszip@3.10.2` added to `apps/backend` (already in `bun.lock` as a
+  transitive dependency of exceljs; `bun add` downloaded nothing new).
+
+**Web-admin.** Payroll page: "Unduh semua slip gaji (ZIP)" on an approved
+period, per-row "Slip gaji" download and "Generate ulang PDF"; print view
+`/print/payslips/$documentId` (`payslip-document.tsx`, Indonesian on purpose,
+"dibuat secara elektronik", no wet signature); "Slip gaji saya" card on
+`/accounts` (`?section=payslips`, the notification deep link), hidden for
+non-employees. en/id keys (`hr`, `account`, `notifications`, `api`).
+
+**Commands and outcomes.**
+- `cd apps/backend && bun add jszip@3.10.2` - done (no new download).
+- `bun run test` (root) - 7/7: backend **1440 pass** (new
+  `hr-payslip.service.test.ts` 6, the approve-queues-payslips assertion),
+  web-admin 209, locales 106, customer-portal 68, landing 25, react-email 6;
+  0 fail.
+- `bun run lint` - 0 errors; web-admin `tsc` clean, `vite build` built;
+  backend `tsc` clean.
+- `bun docs/gen-role-permission.ts` - 669 routes; `validate-dbml.ts` - `OK`.
+- Not verified: no Chromium render, no live approval over HTTP with Redis, no
+  ZIP download against real S3, no browser walk-through.
+
+Next executable task: the robust HR module (ERP-0117..ERP-0122) is complete in
+code on `claude/robust-hr-module-c97aa4`. Open: browser walk-through of all
+six slices; a real Chromium render of the agreement and the payslip; a live
+scheduler run; legal review of the agreement clauses; the owner decision on
+the duplicate supplier migration folder (`…erp0114…` vs `…erp0116…`), which
+breaks `drizzle:migrate` on an empty database.
+
+## 2026-11-23 - ERP-0121: invite employment agreement, claim personal data, agreement PDF, employee documents (slice 5)
+
+**Scope** (grill-me Q6/Q11-Q14/Q19-Q21, recorded in the ERP-0117 entry below).
+
+**Facts found while building.** The claim flow has a single form; the "profile
+form after login" mentioned in `invitation.service.ts` comments never existed,
+so the personal data joined the one claim form. The location endpoints are
+public, so the village cascade works before the invitee has a session.
+
+**Design gate.** `docs.dbml` (Human Resource `employee_addresses`, target-only
+until now; Document `documents`/`files`), `module-ownership.md`,
+`logical-references.md` read first. Manual grill items: ownership (HR owns
+addresses; the document module owns registry rows and files and now opens
+drafts with `createDraft`), tenant scoping (documents copy the employee's
+`organization_id`; every HR document route checks the ERP-0034 scope and that
+the document belongs to that employee), soft delete (addresses; documents are
+voided, never deleted), types (`date` business dates; no money), cross-module
+contracts (`DocumentService` via `DOCUMENT_SERVICE_TOKEN`,
+`ExportedLocationService.assertVillage`/`resolveVillagePath`, the ERP-0034
+personal-fields port, `CompanyService.get` for the letterhead), status
+vocabulary (unchanged: agreement `draft` until signed).
+
+**docs.dbml + migration.** `employee_addresses`: no longer `status: target`,
+`updated_at` not null, partial unique `employee_addresses_primary_uq` (one live
+primary), ref to `employees` `delete: restrict`. Migration
+`20261123130505_erp0121_create_employee_addresses` (SQL inspected: one
+`CREATE TABLE`, two indexes, the restrict FK). `module-ownership.md` documents
+`createDraft`. `validate-dbml` `OK`.
+
+**Backend.**
+- Invite (`EmployeeInviteService`): after the employee insert, `ensureAgreement`
+  opens one draft `employment_agreement` ("Perjanjian Kerja - {name}",
+  `module = human_resource`, `source_type = employee`, the invite scope's
+  organization); a failure rolls the invite row back (Q12); a retried invite
+  re-checks it.
+- Claim: `claimInvitationSchema.personal` (16-digit NIK, birth place/date,
+  gender, residence address with village and 5-digit postal code required;
+  marital status optional). New user-module port `IInvitationClaimPort`
+  (`INVITATION_CLAIM_PORT_TOKEN`), implemented by HR `InvitationClaimAdapter`:
+  `recordPersonalData` runs before the credentials (village asserted first;
+  user personal fields, employee NIK, primary residence address) and
+  `afterClaim` queues the agreement PDF and never throws.
+- PDF: queue `employee-agreement-pdf` (3 attempts, exponential backoff, enqueue
+  never throws) + worker; `AgreementPdfService.render` opens
+  `/print/employment-agreements/:id?token=` in Chromium and attaches the PDF
+  with `DocumentService.attachGeneratedFileTo`; without Chromium or a render
+  base URL the job ends `skipped`. Public render data at
+  `/human-resources/public/v1/render/employment-agreements/:id?token=` (render
+  token only; no salary in it).
+- Documents tab: `GET|POST /human-resources/employees/:id/documents`, `POST
+  …/:documentId/files`, `GET …/files/:fileId/download`, `POST …/void`, `POST
+  …/regenerate-pdf` (`employee:read` / `employee:update`).
+- Document module: `createDraft` (code from the `document` series, status
+  `draft`), `listBySource`, `find`, `attachGeneratedFileTo`; repository
+  `listBySource`.
+- Seeder `hr-documents.seeder.ts`: a draft agreement for every seeded employee
+  (Q14, no backfill migration).
+
+**Web-admin.** Claim form gains the personal-data section
+(`claim-personal-fields.tsx`, helpers in `lib/claim-personal.ts`, the shared
+`LocationCascade`); print view `/print/employment-agreements/$documentId`
+(`employment-agreement-document.tsx`: letterhead, both parties, employment
+type, work location, start date, placeholder clauses for legal review, two
+signature blocks, no salary; Indonesian on purpose); Documents card on the
+employee page (add, create agreement when none, upload, download, void,
+regenerate PDF). en/id keys (`claim`, `hr`, `api`).
+
+**Commands and outcomes.**
+- `bunx --bun drizzle-kit generate --name erp0121_create_employee_addresses`;
+  `drizzle-kit check` - "Everything's fine".
+- Throwaway PostgreSQL (`ims_scratch`): migration applied (stale duplicate
+  supplier folder set aside for the run only, restored unchanged);
+  `\d human_resource.employee_addresses` shows both indexes, the CHECK and the
+  restrict FK; `EmployeeAddressRepository.savePrimaryResidence` twice - one
+  live primary (`Jl. B`), the first soft-deleted; seeder run 1: 29 draft
+  agreements (codes like `0001/DOC/DEV/XI/26`), run 2: 0.
+- `bun run test` (root) - 7/7: backend **1434 pass** (new
+  `hr-employee-document.service.test.ts` 6, two invite cases, claim-schema
+  case), web-admin 209, locales 106, customer-portal 68, landing 25,
+  react-email 6; 0 fail.
+- `bun run lint` - 0 errors (web-admin back to 18 warnings after moving the
+  claim helpers out of the component file).
+- `bun docs/gen-role-permission.ts` - 663 routes; `validate-dbml.ts` - `OK`.
+- Not verified: no Chromium render (no `PDF_CHROMIUM_PATH` here), no live claim
+  over HTTP, no browser walk-through.
+
+Next executable task: ERP-0122 (payslip PDF on payroll approval; also builds
+`ExportedFinanceService.findPrimaryEmployeeBankAccount`). Still open: the
+owner decision on the duplicate supplier migration folder; browser
+walk-throughs of slices 1-5; a real Chromium render of the agreement; legal
+review of the agreement clauses.
+
+## 2026-11-23 - ERP-0120: payday setting and the daily payroll draft run (slice 4)
+
+**Scope** (grill-me Q17/Q18/Q28/Q31, recorded in the ERP-0117 entry below):
+an application admin sets the company-wide payday (1-31, a shorter month uses
+its last day) on `/settings/payroll` in the Settings section; a daily job
+creates the month's draft payroll on payday and notifies in-app whoever holds
+`payroll:approve`; approval stays manual; overtime pay stays 0.
+
+**Design gate.** No table, column, index or status change: the value lives in
+the existing `human_resource.settings` (`setting_group = 'payroll'`,
+`setting_key = 'pay_day'`, `value_type = 'number'`). `docs/database/` was
+reviewed and is unchanged; `validate-dbml.ts` printed `OK`. Cross-module reads
+go through repository-only facades: `ExportedOrganizationService.listMemberRoles`
+(new, organization -> member roles of live organizations) and the existing
+`ExportedNotificationService.notify`; the permission check uses the shared
+permission resolver.
+
+**Backend.**
+- `GET|PUT /human-resources/payroll-settings` - `admin-or-erp` guard with
+  `appAdminOnly` (application admins only, read and write; `role-permission.md`
+  shows "app admin"). Returns `{ payDay, nextRunDate }`; `payDay: null` turns
+  the run off.
+- `PayrollScheduleService.runDaily`: off or not payday -> nothing; on payday ->
+  `SalaryService.generate` with the company scope (`all`) and no actor
+  (`generate` now accepts `actorUserId: null`), counts the new drafts, and only
+  when it created some notifies the approvers (`sourceId` = the period, so a
+  rerun never doubles the notice). Helpers `payDayOf` / `nextPayDay` in
+  `utils/hr.ts`.
+- Queue `payroll-pay-day` + worker (`startPayrollPayDayWorker`,
+  `registerPayrollPayDaySchedule`), config `scheduler.payrollCron`
+  (`SCHEDULER_PAYROLL_CRON`, default `0 1 * * *`, Asia/Jakarta), started from
+  `src/index.ts` behind `SCHEDULER_ENABLED` like the other daily jobs;
+  `.env.example` and `docs/architecture/modules/automation.md` updated.
+- Notification template `hr.payroll_draft_ready` (variables `period`,
+  `records` - not `count`, which i18next reserves for plurals): code list,
+  seeder row, en/id `notifications` keys, web `notification-text.ts`.
+
+**Web-admin.** `/settings/payroll` ("Payroll" / "Penggajian" under Settings,
+`appAdminOnly` nav item; the page also refuses non-admins): switch on/off, day
+1-31, next run date, explanation of the 01:00 WIB check. en/id keys.
+
+**Commands and outcomes.**
+- `cd apps/backend && bunx tsc --noEmit -p tsconfig.json` - clean.
+- Throwaway PostgreSQL (`ims_scratch`): `HrSettingsRepository.upsert` twice
+  for (`payroll`, `pay_day`) - one row, value `31` (the partial unique index is
+  the conflict target); seeder: "Notification templates seeded" inserted 1
+  (`hr.payroll_draft_ready`).
+- `bun run test` (root) - 7/7: backend **1425 pass** (new
+  `hr-payroll-schedule.service.test.ts` 6), web-admin 209, locales 106,
+  customer-portal 68, landing 25, react-email 6; 0 fail.
+- `bun run lint` - 0 errors; web-admin `tsc` clean, `vite build` built.
+- `bun docs/gen-role-permission.ts` - 656 routes; `validate-dbml.ts` - `OK`.
+- Not verified: the BullMQ job against a live Redis (no `SCHEDULER_ENABLED`
+  run), no live HTTP run, no browser walk-through.
+
+Next executable task: ERP-0121 (invite employment-agreement document, claim
+personal data, agreement PDF, employee Documents tab). Still open: the owner
+decision on the duplicate supplier migration folder; browser walk-throughs of
+slices 1-4; a live scheduler run.
+
+## 2026-11-23 - ERP-0119: salary periods + employee payee accounts in finance (slice 3)
+
+**Scope** (grill-me Q7/Q8/Q16/Q23-Q26/Q29, recorded in the ERP-0117 entry
+below): no Salary pages; the effective-dated `employee_salaries` periods are
+edited on the employee page; the salary bank account leaves HR and becomes
+`finance.cash_bank_accounts` rows with `employee_id`.
+
+**One deviation from the grilled answer (Q29).** The answer said the code
+comes from "the existing `cash_bank_account` series"; no such series exists
+(company account codes are typed by hand). A new finance code type
+`employee_bank_account` (prefix `REK`) was added to `CODE_TYPES_BY_SCHEMA`, so
+it also shows on Settings -> Code Number (en/id labels added). The
+`ExportedFinanceService.findPrimaryEmployeeBankAccount` facade from Q25 is
+**not** built yet: nothing in HR reads the account until the payslip
+(ERP-0122), so it lands there instead of as dead code.
+
+**Design gate.** `docs.dbml` Human Resource (`employee_salaries`) and Finance
+(`cash_bank_accounts`), `module-ownership.md`, `logical-references.md`,
+`integrity-and-consistency.md` read first. Manual grill items: ownership
+(finance owns payee rows, HR owns periods), tenant scoping (payee rows copy the
+employee's `organization_id`; visibility follows the ERP-0034 rule), soft delete
+(both), types (bigint IDR minor units, `date` business dates), cross-module
+contract (`ExportedEmployeeService.findEmployeeById`, finance -> HR; repository
+-only facade, no cycle), status vocabulary (none; `is_active`/`is_primary`).
+
+**docs.dbml (edited first).** `employee_salaries`: bank columns removed, note
+rewritten, `employee_salaries_period_uq` documented as partial (it already was
+in Drizzle). `cash_bank_accounts`: `employee_id` (standard logical-reference
+note), `cash_bank_accounts_employee_id_idx`, partial unique
+`cash_bank_accounts_employee_primary_uq` (one live primary per employee), CHECK
+`employee_id IS NULL OR (bank|ewallet AND both balances 0 AND invoice_usage
+IS NULL)`. `gen-logical-references.ts` regenerated (189 refs; human_resource
+.employees now 9 referring columns); `module-ownership.md` notes the finance
+consumer of `findEmployeeById`.
+
+**Migrations (one per schema, Q26), SQL inspected.**
+- `20261123122308_erp0119_finance_employee_bank_accounts`: `ADD COLUMN
+  employee_id`, the two indexes, the CHECK.
+- `20261123122309_erp0119_drop_salary_bank_columns`: drops `bank_name`,
+  `bank_account_number`, `bank_account_holder` (nothing deployed; Q26 "no data
+  migration").
+
+**Backend.**
+- HR: `GET|POST /human-resources/employees/:id/salaries` (`payroll:read` /
+  `payroll:create`), `PUT|DELETE /human-resources/salaries/:id`
+  (`payroll:update`). A new period must start after the latest (422
+  `hr.salaryPeriod.overlap`) and closes it the day before; only the active
+  period's amounts are edited (`notActive`); only the latest is deleted
+  (`notLatest`), reopening the previous one; two-row writes in one transaction.
+  `SalaryService.generate` takes base/allowances from the period in force at
+  the month's end (`SalaryPeriodService.amountsFor`), falling back to last
+  month's summary. Removed: `GET|PUT /human-resources/employees/:id/bank-account`,
+  `HrPeopleService.bank/saveBank`, the repository methods and the
+  `employeeSalarySchema`.
+- Finance: `GET|POST /finance/employee-bank-accounts`, `PUT|DELETE
+  /finance/employee-bank-accounts/:id` (`payroll:read` / `payroll:update`),
+  number masked without `employee:read_private`, employee visibility per
+  ERP-0034 (app admin sees all; otherwise 404). First account is primary; a new
+  primary clears the old one in the same transaction; deleting the primary
+  promotes the newest remaining account. The four company-account queries of
+  `CashBankRepository` (by code, by id, list, update) now require
+  `employee_id IS NULL`.
+- Seeder `hr-salaries.seeder.ts`: one period (from 2026-01-01) and one primary
+  BCA payee account per active employee, amounts and numbers fixed by position;
+  skips when rows exist.
+
+**Web-admin.** The employee page shows a "Gaji" card (periods table, new
+period / edit amounts / delete latest, rupiah `MoneyInput`) and a "Rekening
+penerima gaji" card (add, edit, make primary, delete) with `payroll.read`;
+the old single bank-account card and its API wrappers are gone. en/id keys;
+`hr:bank.type.` declared as a dynamic prefix.
+
+**Commands and outcomes.**
+- `bunx --bun drizzle-kit generate --name …` twice (HR schema change held back
+  for the first run) - the two migrations above; `drizzle-kit check` -
+  "Everything's fine".
+- Throwaway PostgreSQL 18.6 (`ims_scratch`, port 55432): full chain migrated
+  (stale duplicate supplier folder set aside for the run only, restored
+  unchanged) - "migrations applied successfully"; seeder run 1: 29 salary
+  periods + 29 payee accounts (codes like `0001/REK/DEV/XI/26`), the finance
+  seeder's 3 company accounts untouched; run 2: both skipped, counts unchanged
+  (29 / 29 / 3).
+- `bun run test` (root) - 7/7: backend **1419 pass** (new
+  `hr-salary-period.service.test.ts` 4, `employee-bank-account.service.test.ts`
+  4, payroll draft-from-period case; the old HR bank-masking test removed with
+  the feature), web-admin 209, locales 106, customer-portal 68, landing 25,
+  react-email 6; 0 fail.
+- `bun run lint` - 0 errors; web-admin `tsc -p tsconfig.app.json` clean,
+  `vite build` built; backend `tsc` clean.
+- `bun docs/gen-role-permission.ts` - 654 routes; `validate-dbml.ts` - `OK`.
+- Not verified: no live HTTP run, no browser walk-through.
+
+Next executable task: ERP-0120 (payday cron, `payroll.pay_day` setting,
+`/settings/payroll` for application admins only). Still open: the owner
+decision on the duplicate supplier migration folder, and browser walk-throughs
+of slices 1-3.
+
+## 2026-11-23 - ERP-0118: HR work schedule (slice 2)
+
+**Scope** (grill-me Q9/Q10, recorded in the ERP-0117 entry below): a weekly
+grid of employees x 7 days with CRUD per cell, a fill from a Monday-first
+weekly pattern (default Mon-Sat 08:00-17:00, Sunday off) that never overwrites
+a taken cell, and the new `schedule` permission resource granted like
+`attendance`. Attendance is not compared against the schedule yet.
+
+**Design gate.** `docs/database/docs.dbml` (Human Resource `schedules`,
+target-only until now), `module-ownership.md` (human_resource owns schedules),
+`integrity-and-consistency.md` (soft delete, partial unique) read first. No
+cross-module reference: `created_by` is the standard logical reference to
+`auth.users.id`. Manual grill items: ownership (human_resource), tenant scoping
+(through the employee: the ERP-0034 scope, no own `organization_id`), soft
+delete (`deleted_at`, partial unique on live rows), types (`date` business
+date, `varchar(5)` HH:MM Jakarta, unix-ms timestamps), status vocabulary (none;
+`is_day_off` + a CHECK tying the times to it).
+
+**docs.dbml (edited before Drizzle).** `human_resource.schedules`: no longer
+`status: target`; `updated_at` now `not null` (shared timestamps convention),
+new `created_by`, new index `schedules_work_date_idx`, CHECK
+`schedules_shift_check` (a day off has no times, a working day both; an end
+before the start is an overnight shift), the intra-module ref to `employees`
+is `delete: restrict` (was `cascade`; employees are only soft-deleted).
+`gen-logical-references.ts` regenerated (188 refs), `validate-dbml.ts` `OK`.
+
+**Backend (`human-resource`).** Drizzle `schedules` table; migration
+`20261123121018_erp0118_create_schedules` (SQL inspected: one `CREATE TABLE`,
+the partial unique index, the date index, the restrict FK - nothing else).
+Its snapshot has two parents and so also merges the two migration branches
+`main` carried (`20261123010354_customer_account_owner` and the supplier
+drop); `drizzle-kit check` now prints "Everything's fine" (it warned about 3
+unmerged branches before) and a second `generate` reports no changes.
+`ScheduleRepository`, `ScheduleService`, `ScheduleController`:
+`GET /human-resources/schedules/week?start=` (`schedule:read`),
+`POST /human-resources/schedules` (`schedule:create`, 409 on a taken day),
+`PUT|DELETE /human-resources/schedules/:id` (`schedule:update` / `:delete`),
+`POST /human-resources/schedules/fill` (`schedule:create`, at most 62 days,
+422 beyond; returns `{created, skipped}`). Date helpers `addDays` /
+`weekdayIndex` in `utils/hr.ts`. `packages/common`: `schedule:
+['read','create','update','delete']` - owner (spread), `admin` and `hr` all
+four, `auditor` read. Seeder `hr-schedules.seeder.ts`: this and next week for
+every active employee with the default pattern; skips when any live row
+exists.
+
+**Web-admin.** Nav item "Schedule" / "Jadwal Kerja" under Human Resource
+(order Employee, Tasks, Schedule, Attendance, Leave, Overtime, Payroll);
+`/hr/schedule` week grid (previous/next/this week, date picker snapping to
+Monday), cell dialog (day off switch, start/end, shift name, delete with
+confirmation), "Fill from pattern" dialog (range, one or all employees, 7
+pattern rows); en + id keys.
+
+**Found on main, not fixed here.** `apps/backend/database/migrations` holds
+the supplier drop twice: `20261123015149_erp0114_drop_supplier_whatsapp_payment_terms`
+and `20261123015149_erp0116_drop_supplier_whatsapp_payment_terms` (same snapshot
+id `df124139-…`, identical SQL; left by the ERP-0116 rename during the main
+rebase). `drizzle-kit migrate` on an empty database fails on the second copy
+(`DROP CONSTRAINT "supplier_companies_payment_terms_check"` does not exist).
+Removing the stale `erp0114` folder is an owner decision (append-only rule),
+so it was left in place.
+
+**Commands and outcomes.**
+- Disposable database: a throwaway PostgreSQL 18.6 cluster (`initdb` in the
+  session scratchpad, port 55432, database `ims_scratch`; Docker was not
+  running). `drizzle-kit migrate` with the full chain: fails on the duplicate
+  supplier migration above. With the `erp0114` copy moved aside for the run
+  only (restored afterwards, unchanged in git): "migrations applied
+  successfully"; `\d human_resource.schedules` shows the columns, both indexes,
+  the CHECK and the restrict FK.
+- `bun run database/seeders/index.ts` on that database: "Seeded
+  human_resource.schedules" created 406 (29 employees x 14 days, 58 day-off
+  rows); second run "already seeded; skipping", count still 406.
+- `bunx --bun drizzle-kit check` - "Everything's fine"; `drizzle-kit generate`
+  - "No schema changes".
+- `cd packages/common && bun run build` (the backend and web-admin read
+  `@ims-erp/common` from `dist`).
+- `bun run test` (root) - 7/7 tasks: backend **1412 pass**
+  (`hr-schedule.service.test.ts` 6 new), web-admin 209, locales 106,
+  web-customer-portal 68, web-landing 25, react-email 6; 0 fail.
+- `bun run lint` - 0 errors. `cd apps/web-admin && bunx tsc -p
+  tsconfig.app.json --noEmit` clean; `bunx vite build` built (route tree
+  regenerated).
+- `bun docs/gen-role-permission.ts` - 648 routes; `bun
+  docs/database/validate-dbml.ts` - `OK`.
+- Not verified: no live HTTP run, no browser walk-through.
+
+Next executable task: ERP-0119 (salary periods in the employee "Gaji" tab +
+employee bank accounts in `finance.cash_bank_accounts`). The owner decision on
+the duplicate supplier migration folder is open, and the browser walk-through
+of `/hr/schedule` plus the slice 1 pages.
+
+## 2026-11-23 - ERP-0117: robust Human Resource module, slice 1 (nav + CRUD gaps)
+
+**Owner request** (grill-me, Q1-Q37 settled in session): rename the
+"HR & Attendance" sidenav to "Human Resource", give every HR page full CRUD,
+and attach an HR document to every invited user (organization and application
+scope). The design is split into six slices (ERP-0117..ERP-0122); this entry
+lands slice 1 and records every grilled answer for the later slices.
+
+**Grilled answers (recorded before coding, AGENTS.md gate 2).**
+- Nav (Q1/Q2/Q4/Q30): section `Human Resource` / `Sumber Daya Manusia`, flat
+  items (no collapsible parent; `/hr` redirects to `/hr/employees`), order
+  Employee, Tasks, Schedule, Attendance, Leave, Overtime, Payroll. Web URLs stay
+  `/hr/*`; backend stays `/human-resources/*`.
+- CRUD scope (Q5/Q15/Q30): Employee list/create/detail/edit/soft delete;
+  Tasks (`human_resource.employee_tasks`, kept for tasks outside projects -
+  project tasks stay in `project.tasks`, Q22 reversed by Q27/Q30) gets edit and
+  soft delete; Attendance gets a list view across dates with single-row CRUD
+  (day sheet and import kept); Leave/Overtime edit while `submitted`, "delete"
+  is `cancel`, no self-approval; Payroll page unchanged in this slice.
+- Schedule (Q9, ERP-0118): `schedules` table (target-only today) gets Drizzle +
+  migration; weekly grid employees x 7 days, CRUD per cell, bulk fill from a
+  pattern (default Mon-Sat 08:00-17:00, Sunday off) skipping filled cells; no
+  attendance comparison yet. New permission resource `schedule`
+  (read/create/update/delete) granted like `attendance` (Q10).
+- Salary (Q7/Q8/Q16, ERP-0119): no Salary/Salary History pages; the
+  effective-dated `employee_salaries` periods live in a "Gaji" tab of the
+  employee detail under `payroll.*`; a new period closes the previous one
+  (`effective_to` = start - 1 day), only the active period is editable, only the
+  latest can be deleted (reopening the previous), overlaps are 422; payroll
+  drafts read base/allowances from the active period. The bank columns leave
+  `employee_salaries`.
+- Employee bank accounts (Q23-Q26/Q29, ERP-0119): stored in the existing
+  `finance.cash_bank_accounts` with a new nullable `employee_id` (logical
+  reference, no FK); employee rows are `bank`/`ewallet`, zero balance, no
+  `invoice_usage`, code from the `cash_bank_account` series; several per
+  employee, one primary (partial unique; the company primary index is limited
+  to `employee_id IS NULL`); every existing treasury query filters
+  `employee_id IS NULL`. Endpoint `/finance/employee-bank-accounts` (finance
+  owns it, `payroll:read`/`payroll:update`, number masked without
+  `employee:read_private`); finance validates through
+  `ExportedEmployeeService.assertEmployee`, HR reads through
+  `ExportedFinanceService.findPrimaryEmployeeBankAccount`, both facades
+  repository-only. `/human-resources/employees/:id/bank-account` is removed; no
+  data migration (nothing deployed), the seeder moves; one migration per schema.
+- Payday cron (Q17/Q18/Q28/Q31, ERP-0120): `human_resource.settings`
+  `payroll.pay_day` (1-31, clamped to the month's last day), company-wide;
+  BullMQ job scheduler daily 01:00 Asia/Jakarta creates the month's draft
+  payroll on payday (idempotent, existing rows untouched) and notifies
+  `payroll.approve` holders in-app; approval stays manual; `overtime_pay` stays
+  0. Page `/settings/payroll` in the Settings sidenav, **application admins
+  only** (frontend and backend).
+- Invite document (Q6/Q11-Q14/Q19-Q21, ERP-0121): every invite (org + app
+  scope) also registers a draft `document.documents` row
+  (`employment_agreement`, "Perjanjian Kerja - {name}", `module =
+  human_resource`, `source_type = employee`, `organization_id` from the invite
+  scope, code from document numbering through a new contract method); a failure
+  rolls the whole invite row back. The claim form gains NIK, birth place/date,
+  gender, residence address (village + postal code; `employee_addresses` gets
+  Drizzle + migration) - required - and marital status (optional). After a
+  successful claim a port enqueues the HR queue `employee-agreement-pdf`; the
+  worker renders the agreement through `ChromiumPdfRenderer` (render-token
+  pattern) and attaches it with `attachGeneratedFile`; 3 retries, the claim never
+  fails because of the PDF, a "regenerate PDF" button covers a dead job. The PDF
+  has company and employee data, employment type, work type, start date and
+  signature blocks, no salary, placeholder clauses for owner review; the
+  document stays `draft` until signed. Employee detail gets a Documents tab
+  (upload, add `employment_agreement | id_card | tax_id | cv | certificate |
+  other`, void); no backfill - a "create agreement" button instead; the seeder
+  creates one for seeded employees.
+- Payslip (Q32-Q37, ERP-0122): on period approval, one PDF per employee via HR
+  queue `payslip-pdf` (3 retries, approval never fails on it), registered as an
+  `issued` `payslip` document (`source_type = employee_salary_record`) with the
+  file in `document.files`; content: letterhead, period, employee, the pay lines
+  and net pay in rupiah, masked target account, approval info, "generated
+  electronically" note. `payroll:read` downloads one or all (ZIP); an employee
+  with a login downloads only their own through `/users/me/payslips`
+  (ownership server-side); in-app notification only; no unlock flow
+  (corrections go to the next period).
+
+**Design gate.** `docs/database/docs.dbml` (Human Resource, Document, Finance
+`cash_bank_accounts`, Project `tasks`), `module-ownership.md` and
+`logical-references.md` were read for the design above. Slice 1 adds no table,
+column, index or status: `docs/database/` was reviewed and is unchanged;
+`bun docs/database/validate-dbml.ts` printed `OK` (0 drift).
+
+**Slice 1 - backend (`human-resource`).**
+- `DELETE /human-resources/employee-tasks/:id` (soft delete, `task:update`).
+- `PUT /human-resources/leave/:id` (`leave:create`) and
+  `PUT /human-resources/overtime/:id` (`overtime:create`): edit while
+  `submitted` (`hr.requestState.edit`, 422 otherwise); leave re-runs the
+  creation checks with the request itself left out of overlap and quota
+  (`ILeaveRepository.overlapping(..., excludeId)`).
+- `GET|POST /human-resources/attendances`, `PUT|DELETE
+  /human-resources/attendances/:id` (`attendance:read` / `attendance:record`):
+  paginated list (employee, date range, status), one row per employee per day
+  (`hr.attendance.duplicate`, 409), days written by an approved leave are
+  refused (`hr.attendance.leaveOwned`, 422), check-out before check-in 422.
+- `api` locale keys en + id; `locale-dead-keys.test.ts` declares the composed
+  `hr.attendance.` prefix.
+
+**Slice 1 - web-admin.** Flat Human Resource nav (`nav-config.ts`, crumbs,
+`/hr` redirect, `item.hr` key removed); employee edit page
+`/hr/employees/$employeeId/edit` (`employee-edit-form.tsx`) and an Edit button
+on the detail; archive asks for confirmation on the detail and the list;
+Tasks edit + delete; Leave/Overtime "Edit" action while submitted (shared
+`RequestActions` gains `canEdit`/`onEdit`); Attendance "List" view
+(`components/hr/attendance-list.tsx`) with add/edit/delete dialogs;
+`routeTree.gen.ts` regenerated by `vite build`.
+
+**Commands and outcomes (worktree `robust-hr-module-c97aa4`).**
+- `bun install` - 1249 packages installed (fresh worktree).
+- `cd apps/backend && bunx tsc --noEmit -p tsconfig.json` - clean.
+- `cd apps/backend && bun test` - first run 455 pass / 64 fail, all
+  `ZodError` on `app.name` because the worktree had no `apps/backend/.env`
+  (gitignored); after copying the local `.env`: **1406 pass, 0 fail**
+  (`hr-records.service.test.ts` 20: new leave/overtime edit, attendance row CRUD,
+  task delete cases).
+- `cd apps/web-admin && bunx tsc -p tsconfig.app.json --noEmit` - clean;
+  `bunx vite build` - built (route tree regenerated).
+- `bun run test` (root) - web-admin 209 pass, web-landing 25, web-customer-portal
+  68; `packages/locales` `bun test` **106 pass, 0 fail** after the prefix fix.
+- `bun run lint` - 0 errors (warnings only, pre-existing count range).
+- `bun docs/gen-role-permission.ts` - 643 routes written.
+- `bun docs/database/validate-dbml.ts` - `OK`.
+- Not verified: no live HTTP run against a database, no browser walk-through.
+
+Next executable task: ERP-0118 (Schedule: `docs.dbml` check, Drizzle schema +
+migration on a disposable database, `schedule` permission, weekly grid), then
+ERP-0119..ERP-0122 in order. A browser walk-through of the slice 1 pages
+(`/hr/employees/:id/edit`, Tasks edit/delete, Leave/Overtime edit, Attendance
+list) is still open.
+
+## 2026-11-23 - ERP-0013: employee expense claims (`/finance/expenses`)
+
+**Owner request** (grill-me, Q1-Q18, all settled in session): implement
+`/finance/expenses` per `docs` - the stub page becomes a real expense-claim
+feature.
+
+**Answers recorded.** (1) Claims only (`expense_claims` +
+`expense_claim_items`); settlements/advances untouched. (2) Approval is the
+ledger event (accrual), not cash. (3) Paying a claim (`paid`, `payment_id`) is
+deferred. (4) New `expense_claim` permission resource. (5) `category_code` is a
+`chart_of_accounts.code`; no COA seeder added. (6) Dialog line editor + table.
+(7) Provisional `claimPayable: '2-1200'`. (8) `employee_id` required, picker +
+`ExportedEmployeeService` check, no self-service. (9) `rejected` reopens as
+`draft`; `cancelled` only from `draft`/`submitted`; an approved claim is
+corrected through the existing journal reversal. (10) Receipts deferred. (11)
+VAT per line, total derived server-side. (12) Two tables per DBML. (13) DBML
+CHECK kept verbatim; unit tests. (14) Server filters + whitelisted sort. (15)
+Detail page `$claimId`. (16) `accountant: read|approve|reject`. (17) Detail
+carries lines, workflow actions and the posted entry. (18) Editing lives on the
+detail page only.
+
+**Design gate.** `docs/database/` read first (`docs.dbml` finance module,
+`module-ownership.md`, `logical-references.md`, `data-dictionary.md`). The two
+tables already existed in the contract as `status: target` with the exact
+column set, so no table was invented; the only DBML edits are dropping
+`status: target` from both notes and marking `updated_at` `[not null]` to match
+the universal convention (the validator's nullability parity is strict).
+
+**Contract changes.**
+- `src/shared/numbering/domain.ts`: `expense_claim` code type + `EC` code.
+- `constants/ar-posting.ts`: `claimPayable: '2-1200'` (provisional).
+- `packages/common/src/authorization/erp-permissions.ts`: new
+  `expense_claim: [read, create, update, submit, approve, reject, cancel]`;
+  full grant to `finance`, `read|approve|reject` to `accountant`.
+
+**Backend.**
+- `finance.schema.ts`: `expense_claims` + `expense_claim_items` (tenant column,
+  unix-ms timestamps, bigint minor units, status CHECK, intra-schema FK
+  cascade), `EXPENSE_CLAIM_STATUSES`.
+- `contracts/expense.contract.ts` (zod), `contracts/expense-claim.repository.interface.ts`,
+  `repositories/expense-claim.repository.ts` (tenant scoped, soft delete,
+  whitelisted sort), `services/expense-claim.service.ts`,
+  `controllers/expense.controller.ts`, `errors/expense.errors.ts`.
+- Routes under `/finance/expenses`: `GET` list, `GET /:id`, `POST` (201),
+  `PATCH /:id`, `POST /:id/{submit,approve,reject,cancel}`, each behind its own
+  `expense_claim:*` permission.
+- `approve` is one transaction: DR each expense account (merged per
+  `category_code`), DR input tax `1-1800`, CR claims payable `2-1200`, posted
+  through `PostingService.post` with idempotency key `expense_claim:<id>`.
+  `detail` also returns the posted entry (looked up via
+  `journal.findEntryBySource`).
+- 6 new api locale keys (en + id).
+
+**Schema/migration.** Migration
+`database/migrations/20261123150453_erp0013_expense_claims` generated (2
+`CREATE TABLE`, 4 indexes, 1 intra-schema FK, 4 CHECKs), inspected by hand.
+**Not applied to a database in this session**: Docker was not running, so no
+disposable database was available (see Open).
+
+**web-admin.** `lib/finance-api.ts` gained the claim types, list/detail query
+options and the five mutations; `components/finance/expense-list.tsx` (URL-backed
+page/status/from/to/search, status filter, date range, `DataTable` +
+`PaginationControls`, `RowActions` for submit/approve/reject/cancel),
+`expense-form-dialog.tsx` (employee picker, claim date, notes, line editor with
+`DatePicker`/`MoneyInput`, live total) and `expense-detail.tsx` (header, lines,
+workflow actions, posted-entry link, edit dialog). The stub route was replaced
+and `/finance/expenses/$claimId` added; `routeTree.gen.ts` regenerated by the
+vite plugin. Nav item `/finance/expenses` now gates on `expense_claim.read`
+(was `bill.read`); `build-crumbs.ts` gained `/finance`, `/finance/expenses` and
+`/finance/expenses/$claimId`. New `finance` locale keys (en + id) for the page,
+statuses and the six api error keys.
+
+**Checks.**
+- `bunx tsc --noEmit` (backend): clean.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun test` (backend): 1411 pass / 0 fail, incl. the 9 new
+  `test/finance/expense-flows.test.ts` cases.
+- `bun run test` (root): 7/7 tasks.
+- `bun run lint` (root): 0 errors (26 pre-existing backend warnings).
+- `bun docs/database/gen-logical-references.ts` + `validate-dbml.ts`: OK
+  (196 tables, 0 cross-module refs, 0 timestamp gaps, 0 parity drift).
+- `bun docs/gen-role-permission.ts`: 644 routes.
+- `drizzle-kit generate` second run: "No schema changes"; `check`:
+  "Everything's fine".
+
+**Open.** Migration not applied to a disposable database (Docker down) and no
+browser walk-through of the list, form and detail page. Paying a claim, receipt
+upload and `expense_settlements`/`employee_advances` remain unbuilt.
+
+Next executable task: start Docker, apply
+`20261123150453_erp0013_expense_claims` and the still-unapplied
+`20261123015149_erp0116_…` migration on a disposable database, then click
+through `/finance/expenses` (create → submit → approve, check the journal).
+
+
+## 2026-11-23 - ERP-0116: robust supplier master CRUD
+
+**Owner request** (grill-me, 4 decisions): make the supplier master robust —
+drop the WhatsApp, payment-term and default-payment-line fields (payment terms
+belong to the purchase order), add a location selector like `/warehouses`,
+group the form, keep only Company/Government as the type, use the
+`/admin/users` table pattern (shared `Table`, TanStack Table, `PaginationControls`,
+search, filter, sort), and keep repository-level caching.
+
+**Answers recorded.** (1) Drop the columns at the database level, not just from
+the form. (2) Keep `government` as a valid type (only `company`/`government`).
+(3) Full address CRUD (backend + UI), mirroring the `customer` module.
+(4) Server-side sort via `sortBy`/`sortDir` query params.
+
+**Design gate.** `docs/database/` read first (`docs.dbml` Supplier module,
+`module-ownership.md`, `logical-references.md`); the address tables
+(`supplier.addresses`, `supplier.company_addresses`) already existed in the
+contract with no endpoints, so no new tables were invented. Manual grilling
+pass covered ownership (supplier owns both address tables), tenant scoping
+(supplier is company-wide, ADR-0011 — no `organization_id`), soft delete
+(`deleted_at IS NULL` in every scoped query), column types (no money/datetime
+change), cross-module contract methods (`ExportedLocationService.assertVillage`
+for `villageId`, already declared in `logical-references.md`), and status
+vocabulary (`active`/`inactive` unchanged; `supplier_type` CHECK unchanged).
+
+**Backend.**
+- `supplierCompanyListQuerySchema` gained `sortBy` (`name`|`code`|`createdAt`,
+  default `name`) and `sortDir`; `SupplierCompanyRepository.paginate` orders by
+  a whitelisted column map (never raw user input) and the search now covers
+  `legal_name` too.
+- New `repositories/supplier-address.repository.ts`
+  (`SupplierCompanyAddressRepository`, `SupplierAddressRepository`),
+  owner-scoped CRUD, no cache (small sets read through their owner — same
+  reasoning as `customer/repositories/address.repository.ts`).
+- `SupplierService` gained address use cases that validate a supplied
+  `villageId` through `ExportedLocationService.assertVillage` and throw
+  `SupplierAddressNotFoundError`; `getCompany` now returns `addresses`.
+- Routes: `POST|PATCH|DELETE /suppliers/companies/:id/addresses[/:addressId]`
+  and `/suppliers/people/:id/addresses[/:addressId]` behind
+  `supplier:update`.
+- `ExportedSupplierService.getPurchaseSnapshot` now fills `address` from the
+  primary live company address and the PIC block from the primary live person
+  (previously hard-coded `null`).
+- `procurement` PO `paymentTerms` no longer falls back to the supplier default;
+  the PO body is the only source.
+
+**Schema/migration.** `docs.dbml` edited first (dropped `whatsapp` from
+`supplier.companies` and `supplier.suppliers`, dropped `payment_terms_days` /
+`payment_term_note` and the `payment_terms_days >= 0` check), then the Drizzle
+schema, then migration
+`database/migrations/20261123015149_erp0116_drop_supplier_whatsapp_payment_terms`
+(4 `DROP COLUMN` + 1 `DROP CONSTRAINT`, inspected by hand). Append-only;
+not applied to any database in this session.
+
+**web-admin.** `lib/supplier-api.ts` rewritten (sort params, address types and
+calls). `/procurement/suppliers` follows `/admin/users`: URL-backed
+`validateSearch` (page/search/status/sortBy/sortDir), server sort headers with
+arrow icons, a `FiltersPopover` for status, `PaginationControls`, `RowActions`
+for activate/deactivate, and a count in the card header. The form dialog is
+grouped with the warehouse `FormSection` pattern (Company / Contact / Address)
+and carries the location cascade inline, like the warehouse form: on create the
+address is posted right after the company, on edit the primary (else first)
+address is PATCHed, or created when the supplier had none. The detail page
+keeps its Addresses card for the extra rows. The WhatsApp/payment fields are
+gone. Company and PIC phone use the shared `CountryPhoneField`
+(`components/form/country-phone-field.tsx`), so the value stored is E.164;
+`defaultValue` and `required={false}` were added to that field for the edit
+form and for the optional supplier phone.
+
+**Checks.**
+- `bunx tsc --noEmit` (backend): clean.
+- `bunx tsc -p tsconfig.app.json --noEmit` (web-admin): clean.
+- `bun run test` (root): 7/7 tasks — backend 1385 pass, locales 106 pass.
+- `bun run lint` (root): 0 errors (26 pre-existing backend warnings).
+- `bun docs/database/validate-dbml.ts`: OK (0 cross-module refs, 0 timestamp
+  gaps, 0 drizzle parity drift, 0 column parity drift).
+- `bun docs/gen-role-permission.ts`: 634 routes written (the 6 new address
+  routes included).
+- Migration generated and read by hand; **not** applied to a database, so the
+  drop is unverified against real data. No seeder referenced the dropped
+  columns (grep over `database/seeders`).
+
+**Open.** Live/browser walk-through of the new list, form and address card;
+migration not run on a disposable database in this session.
+
+Next executable task: apply migration `20261123015149_erp0116_…` on a
+disposable database and click through `/procurement/suppliers`, then the
+ERP-0112 browser check below.
+
 ## 2026-11-23 - ERP-0114: `/crm/customers` robustness, one account per customer, one owner per company, global form conventions
 
 **Owner request** (grill-me, Q1-Q34, all settled in session): make

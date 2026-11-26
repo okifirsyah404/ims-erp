@@ -17,6 +17,15 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 export const DOCUMENT_STATUSES = ['draft', 'issued', 'void', 'archived'] as const;
 export type TDocumentStatus = (typeof DOCUMENT_STATUSES)[number];
 
+/** The newest file of a registry row, presigned for the card thumbnail. */
+export type TDocumentPreview = {
+	fileId: string;
+	fileName: string;
+	mimeType: string | null;
+	/** Short-lived inline URL; fetching it writes no access-trail row. */
+	url: string;
+};
+
 export type TDocument = {
 	id: string;
 	organizationId: string | null;
@@ -29,6 +38,8 @@ export type TDocument = {
 	module: string | null;
 	sourceType: string | null;
 	sourceId: string | null;
+	/** Newest live file, or `null` when the document has none yet. */
+	preview: TDocumentPreview | null;
 };
 
 export type TDocumentFile = {

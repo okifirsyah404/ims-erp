@@ -165,18 +165,45 @@ export type TTaxRepository = {
 		id: string,
 	): Promise<TWithholdingTaxRecordSelect | null>;
 
-	insertWithholding(row: {
-		organizationId: string;
-		code: string;
-		taxTypeId: string;
-		counterpartyType: string | null;
-		counterpartyId: string | null;
-		baseAmount: number;
-		taxAmount: number;
-		transactionDate: string | null;
-		periodYear: number | null;
-		periodMonth: number | null;
-	}): Promise<TWithholdingTaxRecordSelect>;
+	insertWithholding(
+		row: {
+			organizationId: string;
+			code: string;
+			taxTypeId: string;
+			counterpartyType: string | null;
+			counterpartyId: string | null;
+			baseAmount: number;
+			taxAmount: number;
+			transactionDate: string | null;
+			periodYear: number | null;
+			periodMonth: number | null;
+			taxObjectCode?: string | null;
+			counterpartyTaxId?: string | null;
+			sourceModule?: string | null;
+			sourceId?: string | null;
+		},
+		tx?: unknown,
+	): Promise<TWithholdingTaxRecordSelect>;
+	/** Live, non-reversed withholding rows of a tax period (Coretax export). */
+	listWithholdingsForPeriod(organizationId: string, year: number, month: number): Promise<TWithholdingTaxRecordSelect[]>;
+	/** Bukti-potong data and Coretax status; any status but reversed (ERP-0140). */
+	updateWithholdingCoretax(
+		organizationId: string,
+		id: string,
+		patch: Partial<{
+			coretaxStatus: string;
+			withholdingSlipNumber: string | null;
+			counterpartyTaxId: string | null;
+			taxObjectCode: string | null;
+		}>,
+	): Promise<TWithholdingTaxRecordSelect | null>;
+	/** Reverses the live withholding a source document produced (ERP-0140). */
+	reverseWithholdingBySource(
+		organizationId: string,
+		sourceModule: string,
+		sourceId: string,
+		tx?: unknown,
+	): Promise<void>;
 
 	/** Edits a withholding row only while it is still `recorded`. */
 	updateRecordedWithholding(

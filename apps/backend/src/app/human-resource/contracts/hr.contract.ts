@@ -1,3 +1,4 @@
+import type { TAccountDetail } from '@app/user/services/exported-user.service';
 import { z } from 'zod';
 import { organizationRoleSchema } from '@ims-erp/common';
 import {
@@ -24,6 +25,9 @@ const optionalText = (max: number) =>
 		.nullish()
 		.transform((value) => (value ? value : null));
 
+/** PTKP statuses (ERP-0138); `NULL` on the employee counts as TK/0. */
+export const EMPLOYEE_PTKP_STATUSES = ['TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3'] as const;
+
 /** Identity/contact fields a caller can set on create and update. */
 export const employeeBaseSchema = z.object({
 	employeeCode: z
@@ -33,18 +37,21 @@ export const employeeBaseSchema = z.object({
 		.nullish()
 		.transform((value) => (value ? value : null)),
 	fullName: z.string().trim().min(1).max(200),
-	legalName: optionalText(200),
 	nickname: optionalText(100),
 	gender: z.enum(['male', 'female']).nullish(),
 	birthDate: z.iso.date().nullish(),
 	birthPlace: optionalText(200),
 	nationalId: optionalText(32),
+	/** NPWP; private like the NIK (ERP-0138). */
+	taxId: optionalText(32),
+	ptkpStatus: z.enum(EMPLOYEE_PTKP_STATUSES).nullish(),
+	bpjsHealthNumber: optionalText(32),
+	bpjsEmploymentNumber: optionalText(32),
 	maritalStatus: z
 		.enum(['single', 'married', 'divorced', 'widowed'])
 		.nullish(),
 	email: z.email().max(320).nullish(),
 	phone: optionalText(100),
-	whatsapp: optionalText(100),
 	employmentStatus: z.enum(EMPLOYMENT_STATUSES).default('active'),
 	employmentType: z.enum(EMPLOYMENT_TYPES).default('permanent'),
 	workType: z.enum(WORK_TYPES).default('onsite'),
@@ -72,6 +79,9 @@ export const updateEmployeeSchema = employeeBaseSchema.partial().extend({
 		.transform((value) => (value ? value : null)),
 });
 
+/** Sort fields of the employee table (a whitelist; never raw input in SQL). */
+export const EMPLOYEE_SORT_FIELDS = ['fullName', 'employeeCode', 'hireDate', 'createdAt'] as const;
+
 export const employeeListQuerySchema = z.object({
 	page: z.coerce.number().int().min(1).default(1),
 	limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -80,6 +90,15 @@ export const employeeListQuerySchema = z.object({
 	organizationId: z.string().min(1).optional(),
 	/** `company` selects only company-level (`organization_id IS NULL`). */
 	scope: z.enum(['all', 'organization', 'company']).default('all'),
+	employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
+	workType: z.enum(WORK_TYPES).optional(),
+	/** On `auth.users` (ERP-0034): resolved to user ids through the user module. */
+	gender: z.enum(['male', 'female']).optional(),
+	maritalStatus: z.enum(['single', 'married', 'divorced', 'widowed']).optional(),
+	/** `yes`: has a login; `no`: no login (`user_id IS NULL`). */
+	login: z.enum(['yes', 'no']).optional(),
+	sortBy: z.enum(EMPLOYEE_SORT_FIELDS).default('fullName'),
+	sortDir: z.enum(['asc', 'desc']).default('asc'),
 });
 
 export const idParamSchema = z.object({ id: z.uuid() });
@@ -115,6 +134,8 @@ export type TEmployeePaginationRequest = TEmployeeListQuery & {
 	organizationIds: string[] | null;
 	/** Include company-level rows (organization_id IS NULL). */
 	includeCompany: boolean;
+	/** Only these user ids (a personal-field filter matched them); `null` = no such filter. */
+	userIds?: string[] | null;
 };
 export type TEmployeePickerQuery = z.output<typeof employeePickerQuerySchema>;
 
@@ -134,6 +155,13 @@ export type TEmployeeDto = TEmployeeSelect & {
 	birthDate: string | null;
 	hireDate: string | null;
 	terminationDate: string | null;
+	/**
+	 * The linked login (`auth.users`), on the detail endpoint only: `null`
+	 * when the employee has no login, absent on lists.
+	 */
+	account?: TAccountDetail | null;
+	/** Avatar and handle of the login, on list rows (the table identity cell). */
+	login?: { username: string | null; image: string | null } | null;
 };
 
 export type TEmployeePage = TPaginationResult<TEmployeeDto>;

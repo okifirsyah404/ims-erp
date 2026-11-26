@@ -20,6 +20,8 @@ import type { DataTableFeatures } from '@/components/data-table/data-table-featu
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
+	runDeferredRevenue,
+	settlePpn,
 	closeChecklistQueryOptions,
 	ensurePeriod,
 	periodsQueryOptions,
@@ -72,6 +74,36 @@ export function ClosingPage() {
 		mutationFn: () => ensurePeriod(applied.year, applied.month),
 		onSuccess: async () => {
 			toast.success(t('finance:periods.created'));
+			invalidate();
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+
+	const canAmortise = usePermission('journal.post');
+	const amortise = useMutation({
+		mutationFn: () => runDeferredRevenue(applied.year, applied.month),
+		onSuccess: (result) => {
+			toast.success(
+				t('finance:closing.deferredRevenueDone', {
+					entries: result.entries,
+					amount: (result.amount / 100).toLocaleString(),
+				}),
+			);
+			invalidate();
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+
+	const ppn = useMutation({
+		mutationFn: () => settlePpn(applied.year, applied.month),
+		onSuccess: (result) => {
+			toast.success(
+				t('finance:closing.ppnSettled', {
+					output: (result.output / 100).toLocaleString(),
+					input: (result.input / 100).toLocaleString(),
+					net: (result.net / 100).toLocaleString(),
+				}),
+			);
 			invalidate();
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
@@ -224,6 +256,26 @@ export function ClosingPage() {
 							>
 								{t('finance:periods.create')}
 							</Button>
+							{canAmortise ? (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={amortise.isPending}
+									onClick={() => void amortise.mutateAsync()}
+								>
+									{t('finance:closing.runDeferredRevenue')}
+								</Button>
+							) : null}
+							{canAmortise ? (
+								<Button
+									size='sm'
+									variant='ghost'
+									disabled={ppn.isPending}
+									onClick={() => void ppn.mutateAsync()}
+								>
+									{t('finance:closing.settlePpn')}
+								</Button>
+							) : null}
 						</div>
 						{checklist ? (
 							<>

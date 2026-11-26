@@ -277,6 +277,8 @@ export class LicensingService {
 	private async activateDraft(current: TLicenseContractSelect, actorUserId: string | null, description: string | null) {
 		if (current.status !== 'draft') throw new ContractStateError('activate');
 		if (!current.startDate) throw new ContractInvalidError('startRequired');
+		// The registry title names the counterparty, so the file name does too.
+		const customer = current.customerId ? await this.customers.getActiveCustomer(current.customerId).catch(() => null) : null;
 		await this.transactions.run(async (tx) => {
 			const activated = await this.repository.transition(
 				current.id,
@@ -290,6 +292,7 @@ export class LicensingService {
 			await this.documents.register(
 				{
 					code: activated.code,
+					title: `Kontrak Lisensi - ${customer?.name ?? activated.code}`,
 					documentType: 'license_contract',
 					module: 'licensing',
 					sourceType: 'license_contract',

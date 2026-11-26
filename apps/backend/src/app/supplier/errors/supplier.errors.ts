@@ -37,3 +37,10 @@ export class SupplierBankForbiddenError extends AppError {
 		super(403, 'supplier.bankForbidden', 'You may not read or change supplier bank details');
 	}
 }
+
+/** The address id does not resolve under its owner. */
+export class SupplierAddressNotFoundError extends AppError {
+	constructor() {
+		super(404, 'procurement.supplierNotFound', 'Supplier address not found');
+	}
+}

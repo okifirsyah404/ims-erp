@@ -65,6 +65,20 @@ class FakeRepository {
 		return this.document?.id === id ? this.document : null;
 	}
 
+	async paginate() {
+		const rows = this.document ? [this.document] : [];
+		return {
+			meta: { page: 1, limit: 20, total: rows.length, totalPages: rows.length ? 1 : 0 },
+			data: rows,
+		};
+	}
+
+	async latestFiles(documentIds: string[]) {
+		return this.files
+			.filter((file) => documentIds.includes(file.documentId))
+			.sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
+	}
+
 	async findLiveBySource(module: string, sourceType: string, sourceId: string) {
 		const doc = this.document;
 		return doc && doc.status !== 'void' && doc.module === module && doc.sourceType === sourceType && doc.sourceId === sourceId
@@ -151,14 +165,31 @@ beforeEach(() => {
 });
 
 describe('document files', () => {
-	test('uploads under a fresh key and keeps the file name', async () => {
-		const file = new File(['hello'], 'scan.pdf', { type: 'application/pdf' });
+	test('uploads under a fresh key and names the file after the document', async () => {
+		const file = new File(['hello'], 'scan001.pdf', { type: 'application/pdf' });
 		const view = await service.uploadFile(repository.document!.id, { file }, USER);
 
-		expect(view.fileName).toBe('scan.pdf');
+		// The uploader's own name is discarded: the document says what it is.
+		expect(view.fileName).toMatch(/^invoice_1_\d{2}_\d{2}_\d{4}_\d{6}\.pdf$/);
 		expect(view.sizeBytes).toBe(5);
 		expect(view.url).toContain('https://files.test/documents/');
 		expect(stored).toHaveLength(1);
+	});
+
+	test('two files of one document never share a name', async () => {
+		const first = await service.uploadFile(
+			repository.document!.id,
+			{ file: new File(['a'], 'scan.pdf', { type: 'application/pdf' }) },
+			USER,
+		);
+		const second = await service.uploadFile(
+			repository.document!.id,
+			{ file: new File(['b'], 'scan.pdf', { type: 'application/pdf' }) },
+			USER,
+		);
+
+		expect(second.fileName).not.toBe(first.fileName);
+		expect(second.fileName).toMatch(/_2\.pdf$/);
 	});
 
 	test('rejects a void document', async () => {
@@ -257,6 +288,28 @@ describe('document share links', () => {
 	});
 });
 
+describe('document list previews', () => {
+	test('a row carries the newest file and the preview writes no trail row', async () => {
+		const first = new File(['a'], 'original.pdf', { type: 'application/pdf' });
+		const second = new File(['bb'], 'signed.pdf', { type: 'application/pdf' });
+		await service.uploadFile(repository.document!.id, { file: first }, USER);
+		repository.files[0].uploadedAt = new Date(Date.now() - 60_000);
+		await service.uploadFile(repository.document!.id, { file: second }, USER);
+
+		const page = await service.list({ page: 1, limit: 20, search: null, status: null, documentType: null, organizationId: null });
+
+		expect(page.data[0].preview).toMatchObject({ mimeType: 'application/pdf' });
+		expect(page.data[0].preview?.fileName).toMatch(/^invoice_1_\d{2}_\d{2}_\d{4}_\d{6}(_2)?\.pdf$/);
+		expect(page.data[0].preview?.url).toContain('https://files.test/documents/');
+		expect(repository.trail).toHaveLength(0);
+	});
+
+	test('a row with no file has a null preview', async () => {
+		const page = await service.list({ page: 1, limit: 20, search: null, status: null, documentType: null, organizationId: null });
+		expect(page.data[0].preview).toBeNull();
+	});
+});
+
 describe('document detail', () => {
 	test('returns the row with its files, live links and the trail', async () => {
 		const file = new File(['x'], 'scan.pdf', { type: 'application/pdf' });
@@ -275,9 +328,11 @@ describe('generated files (ERP-0067)', () => {
 	const pdf = () => new File([new Uint8Array([37, 80, 68, 70])], 'INV-00001.pdf', { type: 'application/pdf' });
 
 	test('attaches to the live registry row of the source, without a user', async () => {
-		const id = await service.attachGeneratedFile(source, pdf(), null);
-		expect(id).toBe(repository.document!.id);
-		expect(repository.files[0]).toMatchObject({ fileName: 'INV-00001.pdf', mimeType: 'application/pdf', uploadedByUserId: null });
+		const attached = await service.attachGeneratedFile(source, pdf(), null);
+		expect(attached?.id).toBe(repository.document!.id);
+		// The stored name comes from the document, not from the uploader's file.
+		expect(attached?.fileName).toMatch(/^invoice_1_\d{2}_\d{2}_\d{4}_\d{6}\.pdf$/);
+		expect(repository.files[0]).toMatchObject({ mimeType: 'application/pdf', uploadedByUserId: null });
 		expect(stored[0]).toStartWith(`documents/${repository.document!.id}/`);
 	});
 

@@ -1,0 +1,1516 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "e70620c8-8980-47d3-a43c-bc93aa9d1143",
+  "prevIds": [
+    "b3a4f1d4-1fcc-4307-b37a-a002f4f9b535"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "credit_memos"
+      ],
+      "writes": [
+        "s|tbl|finance.credit_memos",
+        "n|tbl|finance.credit_memos",
+        "e|tbl|finance.credit_memos",
+        "n|rel|finance.credit_memos",
+        "n|type|finance.credit_memos",
+        "n|rel|finance.credit_memos_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "deferred_revenue_schedules"
+      ],
+      "writes": [
+        "s|tbl|finance.deferred_revenue_schedules",
+        "n|tbl|finance.deferred_revenue_schedules",
+        "e|tbl|finance.deferred_revenue_schedules",
+        "n|rel|finance.deferred_revenue_schedules",
+        "n|type|finance.deferred_revenue_schedules",
+        "n|rel|finance.deferred_revenue_schedules_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "adjusted_amount"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.adjusted_amount",
+        "n|col|finance.ar_open_items.adjusted_amount",
+        "e|col|finance.ar_open_items.adjusted_amount"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "write_off_reason"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.write_off_reason",
+        "n|col|finance.ar_open_items.write_off_reason",
+        "e|col|finance.ar_open_items.write_off_reason"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "write_off_requested_by"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.write_off_requested_by",
+        "n|col|finance.ar_open_items.write_off_requested_by",
+        "e|col|finance.ar_open_items.write_off_requested_by"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "write_off_requested_at"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.write_off_requested_at",
+        "n|col|finance.ar_open_items.write_off_requested_at",
+        "e|col|finance.ar_open_items.write_off_requested_at"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "written_off_by"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.written_off_by",
+        "n|col|finance.ar_open_items.written_off_by",
+        "e|col|finance.ar_open_items.written_off_by"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "written_off_at"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.written_off_at",
+        "n|col|finance.ar_open_items.written_off_at",
+        "e|col|finance.ar_open_items.written_off_at"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "finance",
+        "ar_open_items",
+        "write_off_entry_id"
+      ],
+      "writes": [
+        "s|col|finance.ar_open_items.write_off_entry_id",
+        "n|col|finance.ar_open_items.write_off_entry_id",
+        "e|col|finance.ar_open_items.write_off_entry_id"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sale",
+        "invoice_items",
+        "service_period_start"
+      ],
+      "writes": [
+        "s|col|sale.invoice_items.service_period_start",
+        "n|col|sale.invoice_items.service_period_start",
+        "e|col|sale.invoice_items.service_period_start"
+      ],
+      "reads": [
+        "n|tbl|sale.invoice_items",
+        "n|sch|sale"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "sale",
+        "invoice_items",
+        "service_period_end"
+      ],
+      "writes": [
+        "s|col|sale.invoice_items.service_period_end",
+        "n|col|sale.invoice_items.service_period_end",
+        "e|col|sale.invoice_items.service_period_end"
+      ],
+      "reads": [
+        "n|tbl|sale.invoice_items",
+        "n|sch|sale"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "credit_memos",
+        "credit_memos_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|finance.credit_memos_org_code_uq",
+        "n|idx|finance.credit_memos_org_code_uq",
+        "e|idx|finance.credit_memos_org_code_uq",
+        "n|rel|finance.credit_memos_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.credit_memos",
+        "n|sch|finance",
+        "n|col|finance.credit_memos.organization_id",
+        "n|col|finance.credit_memos.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "credit_memos",
+        "credit_memos_invoice_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.credit_memos_invoice_id_idx",
+        "n|idx|finance.credit_memos_invoice_id_idx",
+        "e|idx|finance.credit_memos_invoice_id_idx",
+        "n|rel|finance.credit_memos_invoice_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.credit_memos",
+        "n|sch|finance",
+        "n|col|finance.credit_memos.invoice_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "credit_memos",
+        "credit_memos_status_idx"
+      ],
+      "writes": [
+        "s|idx|finance.credit_memos_status_idx",
+        "n|idx|finance.credit_memos_status_idx",
+        "e|idx|finance.credit_memos_status_idx",
+        "n|rel|finance.credit_memos_status_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.credit_memos",
+        "n|sch|finance",
+        "n|col|finance.credit_memos.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "deferred_revenue_schedules",
+        "deferred_revenue_schedules_invoice_id_idx"
+      ],
+      "writes": [
+        "s|idx|finance.deferred_revenue_schedules_invoice_id_idx",
+        "n|idx|finance.deferred_revenue_schedules_invoice_id_idx",
+        "e|idx|finance.deferred_revenue_schedules_invoice_id_idx",
+        "n|rel|finance.deferred_revenue_schedules_invoice_id_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.deferred_revenue_schedules",
+        "n|sch|finance",
+        "n|col|finance.deferred_revenue_schedules.invoice_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "deferred_revenue_schedules",
+        "deferred_revenue_schedules_status_idx"
+      ],
+      "writes": [
+        "s|idx|finance.deferred_revenue_schedules_status_idx",
+        "n|idx|finance.deferred_revenue_schedules_status_idx",
+        "e|idx|finance.deferred_revenue_schedules_status_idx",
+        "n|rel|finance.deferred_revenue_schedules_status_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.deferred_revenue_schedules",
+        "n|sch|finance",
+        "n|col|finance.deferred_revenue_schedules.status"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "ar_open_items"
+      ],
+      "writes": [
+        "s|fk|finance.ar_open_items.ar_open_items_write_off_entry_id_journal_entries_id_fkey",
+        "n|fk|finance.ar_open_items.ar_open_items_write_off_entry_id_journal_entries_id_fkey",
+        "e|fk|finance.ar_open_items.ar_open_items_write_off_entry_id_journal_entries_id_fkey",
+        "n|con|finance.ar_open_items.ar_open_items_write_off_entry_id_journal_entries_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance",
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.ar_open_items.write_off_entry_id",
+        "n|col|finance.journal_entries.id",
+        "e|uniqueness|finance.journal_entries.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "credit_memos"
+      ],
+      "writes": [
+        "s|fk|finance.credit_memos.credit_memos_journal_entry_id_journal_entries_id_fkey",
+        "n|fk|finance.credit_memos.credit_memos_journal_entry_id_journal_entries_id_fkey",
+        "e|fk|finance.credit_memos.credit_memos_journal_entry_id_journal_entries_id_fkey",
+        "n|con|finance.credit_memos.credit_memos_journal_entry_id_journal_entries_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.credit_memos",
+        "n|sch|finance",
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.credit_memos.journal_entry_id",
+        "n|col|finance.journal_entries.id",
+        "e|uniqueness|finance.journal_entries.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "deferred_revenue_schedules"
+      ],
+      "writes": [
+        "s|fk|finance.deferred_revenue_schedules.deferred_revenue_schedules_siL5e2WU5Nxp_fkey",
+        "n|fk|finance.deferred_revenue_schedules.deferred_revenue_schedules_siL5e2WU5Nxp_fkey",
+        "e|fk|finance.deferred_revenue_schedules.deferred_revenue_schedules_siL5e2WU5Nxp_fkey",
+        "n|con|finance.deferred_revenue_schedules.deferred_revenue_schedules_siL5e2WU5Nxp_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.deferred_revenue_schedules",
+        "n|sch|finance",
+        "n|tbl|finance.journal_entries",
+        "n|sch|finance",
+        "n|col|finance.deferred_revenue_schedules.issue_entry_id",
+        "n|col|finance.journal_entries.id",
+        "e|uniqueness|finance.journal_entries.id"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "ar_open_items"
+      ],
+      "writes": [
+        "s|ck|finance.ar_open_items.ar_open_items_adjusted_check",
+        "n|ck|finance.ar_open_items.ar_open_items_adjusted_check",
+        "e|ck|finance.ar_open_items.ar_open_items_adjusted_check",
+        "n|con|finance.ar_open_items.ar_open_items_adjusted_check"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance",
+        "n|col|finance.ar_open_items.adjusted_amount"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "sale",
+        "invoice_items"
+      ],
+      "writes": [
+        "s|ck|sale.invoice_items.invoice_items_service_period_pair_check",
+        "n|ck|sale.invoice_items.invoice_items_service_period_pair_check",
+        "e|ck|sale.invoice_items.invoice_items_service_period_pair_check",
+        "n|con|sale.invoice_items.invoice_items_service_period_pair_check"
+      ],
+      "reads": [
+        "n|tbl|sale.invoice_items",
+        "n|sch|sale",
+        "n|col|sale.invoice_items.service_period_start",
+        "n|col|sale.invoice_items.service_period_end"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "sale",
+        "invoice_items"
+      ],
+      "writes": [
+        "s|ck|sale.invoice_items.invoice_items_service_period_range_check",
+        "n|ck|sale.invoice_items.invoice_items_service_period_range_check",
+        "e|ck|sale.invoice_items.invoice_items_service_period_range_check",
+        "n|con|sale.invoice_items.invoice_items_service_period_range_check"
+      ],
+      "reads": [
+        "n|tbl|sale.invoice_items",
+        "n|sch|sale",
+        "n|col|sale.invoice_items.service_period_end",
+        "n|col|sale.invoice_items.service_period_start"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "finance",
+        "ar_open_items"
+      ],
+      "writes": [
+        "s|ck|finance.ar_open_items.ar_open_items_status_check"
+      ],
+      "reads": [
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance",
+        "n|col|finance.ar_open_items.status",
+        "e|col|finance.ar_open_items.status"
+      ],
+      "sqlHash": "3dfb24b673ecf691"
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "sale",
+        "invoices"
+      ],
+      "writes": [
+        "s|ck|sale.invoices.invoices_status_check"
+      ],
+      "reads": [
+        "n|tbl|sale.invoices",
+        "n|sch|sale",
+        "n|col|sale.invoices.status",
+        "e|col|sale.invoices.status"
+      ],
+      "sqlHash": "892d16be0c95026d"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "credit_memos",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "deferred_revenue_schedules",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "adjusted_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "write_off_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "write_off_requested_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "write_off_requested_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "written_off_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "written_off_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "write_off_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "invoice_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "memo_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "tax_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "journal_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "issued_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "issued_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "invoice_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "invoice_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "issue_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "discriminator_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "''",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "discriminator_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "''",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "total_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "recognized_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "start_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "end_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "recognized_through",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sale",
+        "table": "invoice_items",
+        "name": "service_period_start",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sale",
+        "table": "invoice_items",
+        "name": "service_period_end",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_invoice_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "invoice_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_invoice_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "invoice_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "ar_open_items_write_off_entry_id_journal_entries_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "write_off_entry_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "journal_entries",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_journal_entry_id_journal_entries_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "journal_entry_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "journal_entries",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_siL5e2WU5Nxp_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "issue_entry_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "journal_entries",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "ar_open_items",
+        "name": "ar_open_items_adjusted_check",
+        "value": "adjusted_amount >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_status_check",
+        "value": "status IN ('draft', 'issued', 'applied', 'void')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_amount_check",
+        "value": "amount > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "credit_memos",
+        "name": "credit_memos_tax_check",
+        "value": "tax_amount >= 0 AND tax_amount <= amount",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_status_check",
+        "value": "status IN ('active', 'completed', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_total_check",
+        "value": "total_amount > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_recognized_check",
+        "value": "recognized_amount >= 0 AND recognized_amount <= total_amount",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "deferred_revenue_schedules",
+        "name": "deferred_revenue_schedules_range_check",
+        "value": "end_date >= start_date",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sale",
+        "table": "invoice_items",
+        "name": "invoice_items_service_period_pair_check",
+        "value": "(service_period_start IS NULL) = (service_period_end IS NULL)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "sale",
+        "table": "invoice_items",
+        "name": "invoice_items_service_period_range_check",
+        "value": "service_period_end IS NULL OR service_period_end >= service_period_start",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"finance\",\"ar_open_items\",\"ar_open_items_status_check\"]",
+      "set": {
+        "value": "status IN ('open', 'partially_paid', 'paid', 'written_off', 'void')"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"sale\",\"invoices\",\"invoices_status_check\"]",
+      "set": {
+        "value": "status IN ('draft', 'issued', 'partially_paid', 'paid', 'written_off', 'void', 'cancelled')"
+      }
+    }
+  ]
+}

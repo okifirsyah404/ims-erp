@@ -1,0 +1,285 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "3c04eeb4-75b3-46e5-99a9-056c083ed138",
+  "prevIds": [
+    "d7763c1a-300b-4700-a323-2e8d7fc8447b"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "cash_forecast_lines"
+      ],
+      "writes": [
+        "s|tbl|finance.cash_forecast_lines",
+        "n|tbl|finance.cash_forecast_lines",
+        "e|tbl|finance.cash_forecast_lines",
+        "n|rel|finance.cash_forecast_lines",
+        "n|type|finance.cash_forecast_lines",
+        "n|rel|finance.cash_forecast_lines_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "cash_forecast_lines",
+        "cash_forecast_lines_date_idx"
+      ],
+      "writes": [
+        "s|idx|finance.cash_forecast_lines_date_idx",
+        "n|idx|finance.cash_forecast_lines_date_idx",
+        "e|idx|finance.cash_forecast_lines_date_idx",
+        "n|rel|finance.cash_forecast_lines_date_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.cash_forecast_lines",
+        "n|sch|finance",
+        "n|col|finance.cash_forecast_lines.organization_id",
+        "n|col|finance.cash_forecast_lines.expected_date"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "cash_forecast_lines",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "expected_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "direction",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "cash_forecast_lines_date_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "expected_date",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "cash_forecast_lines_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "cash_forecast_lines_direction_check",
+        "value": "direction IN ('in', 'out')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "cash_forecast_lines",
+        "name": "cash_forecast_lines_amount_check",
+        "value": "amount > 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

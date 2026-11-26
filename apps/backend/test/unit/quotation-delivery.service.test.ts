@@ -89,7 +89,9 @@ beforeEach(() => {
 		{
 			attachGeneratedFile: async (source, file, actor) => {
 				attached.push({ source, file, actor });
-				return documentId;
+				return documentId
+					? { id: documentId, fileName: 'penawaran_pt_maju_25_11_2026_143205.pdf' }
+					: null;
 			},
 			createShare: async (id, days, actor) => {
 				shares.push({ id, days, actor });
@@ -114,7 +116,6 @@ describe('quotation delivery', () => {
 		expect(rendered).toHaveLength(1);
 		expect(rendered[0]).toStartWith(`http://web.test/print/quotations/${ID}?token=`);
 		expect(attached[0]).toMatchObject({ source: { module: 'sale', sourceType: 'quotation', sourceId: ID }, actor: 'sales-1' });
-		expect(attached[0].file.name).toBe('1376-QT-IMS-XI-26.pdf');
 		expect(attached[0].file.type).toBe('application/pdf');
 		expect(shares).toEqual([{ id: 'doc-1', days: 30, actor: 'sales-1' }]);
 		expect(published).toHaveLength(1);
@@ -126,7 +127,8 @@ describe('quotation delivery', () => {
 			owner: { userId: 'sales-1', name: 'Sari' },
 			pdf: {
 				url: 'https://erp.test/documents/public/v1/shares/tok-1/file',
-				fileName: '1376-QT-IMS-XI-26.pdf',
+				// The stored document file name, not one the caller invents.
+				fileName: 'penawaran_pt_maju_25_11_2026_143205.pdf',
 				expiresAt: '2026-12-17T03:00:00.000Z',
 			},
 		});

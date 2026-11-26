@@ -9,9 +9,21 @@ import { inject, injectable } from 'tsyringe';
 import { DRIZZLE_TOKEN } from '@di/provider';
 import { FINANCE_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { FinanceNumberingService } from './finance-numbering.service';
-import { CHART_OF_ACCOUNT_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN, ACCOUNTING_PERIOD_REPOSITORY_TOKEN } from '../constants/di';
+import {
+	CHART_OF_ACCOUNT_REPOSITORY_TOKEN,
+	JOURNAL_REPOSITORY_TOKEN,
+	ACCOUNTING_PERIOD_REPOSITORY_TOKEN,
+	COST_CENTER_REPOSITORY_TOKEN,
+	POSTING_RULE_SERVICE_TOKEN,
+} from '../constants/di';
+import type { ICostCenterRepository } from '../contracts/cost-center.repository.interface';
+import type { PostingRuleService } from './posting-rule.service';
+import type { TAccountingPeriodSelect } from '@drizzle/schemas/finance.schema';
 import {
 	AccountInactiveError,
+	CostCenterInactiveError,
+	CostCenterNotFoundError,
+	NoOpenPeriodForReversalError,
 	AccountNotPostableError,
 	AccountNotFoundError,
 	JournalAlreadyReversedError,
@@ -47,6 +59,8 @@ export type TPostingLine = {
 	projectId?: string | null;
 	partyType?: string | null;
 	partyId?: string | null;
+	/** Logical reference to product.products.id, validated by the caller. */
+	productId?: string | null;
 };
 
 export type TPostingInput = {
@@ -61,6 +75,30 @@ export type TPostingInput = {
 	idempotencyKey?: string | null;
 	description?: string | null;
 	lines: TPostingLine[];
+	/** Business event behind the entry (set by {@link PostingService.postBusinessEvent}). */
+	eventType?: string | null;
+	/** Manual adjusting entry: allowed into a soft-closed period (finance only). */
+	isAdjusting?: boolean;
+	/** On a reversal, the original entry. */
+	reversesEntryId?: string | null;
+	/** Actor stamped as preparer and poster (manual paths). */
+	actorUserId?: string | null;
+};
+
+/**
+ * One line of a business-event posting: a semantic role instead of an
+ * account. Finance resolves the account through `finance.posting_rules`.
+ */
+export type TBusinessEventLine = Omit<TPostingLine, 'accountId' | 'accountCode'> & {
+	role: string;
+	discriminatorType?: string | null;
+	discriminatorValue?: string | null;
+};
+
+export type TBusinessEventInput = Omit<TPostingInput, 'lines' | 'eventType'> & {
+	/** e.g. `sale.invoice_issued`; rules for `'*'` act as defaults. */
+	eventType: string;
+	lines: TBusinessEventLine[];
 };
 
 export type TPostingResult = {
@@ -99,7 +137,32 @@ export class PostingService {
 		@inject(ACCOUNTING_PERIOD_REPOSITORY_TOKEN) private readonly periods: IAccountingPeriodRepository,
 		@inject(FINANCE_NUMBERING_SERVICE_TOKEN)
 		private readonly numbering: FinanceNumberingService,
+		@inject(COST_CENTER_REPOSITORY_TOKEN)
+		private readonly costCenters?: Pick<ICostCenterRepository, 'findById'>,
+		@inject(POSTING_RULE_SERVICE_TOKEN)
+		private readonly rules?: Pick<PostingRuleService, 'resolveAccountId'>,
 	) {}
+
+	/**
+	 * Posts a business event (ERP-0128, ADR-0030): THE contract for source
+	 * modules. Each line names a role; the account comes from the most
+	 * specific active posting rule. A missing rule throws
+	 * `PostingRuleNotFoundError`, which rolls back the caller's transaction.
+	 */
+	async postBusinessEvent(tx: TTx, input: TBusinessEventInput): Promise<TPostingResult> {
+		if (!this.rules) throw new JournalTransitionError();
+		const lines: TPostingLine[] = [];
+		for (const line of input.lines) {
+			const { role, discriminatorType, discriminatorValue, ...rest } = line;
+			const accountId = await this.rules.resolveAccountId(
+				input.organizationId,
+				{ eventType: input.eventType, role, discriminatorType, discriminatorValue },
+				tx,
+			);
+			lines.push({ ...rest, accountId });
+		}
+		return this.post(tx, { ...input, lines });
+	}
 
 	/**
 	 * Posts a balanced journal entry inside the caller's transaction.
@@ -138,9 +201,10 @@ export class PostingService {
 			}
 		}
 
-		const period = await this.findOpenPeriod(
+		const period = await this.findPostablePeriod(
 			input.organizationId,
 			input.entryDate,
+			{ isAdjusting: input.isAdjusting === true, sourceModule: input.sourceModule },
 			tx,
 		);
 
@@ -176,8 +240,11 @@ export class PostingService {
 				totalDebit,
 				totalCredit,
 				currencyCode: 'IDR',
-				postedBy: null,
+				postedBy: input.actorUserId ?? null,
 				postedAt: new Date(),
+				eventType: input.eventType ?? null,
+				isAdjusting: input.isAdjusting === true,
+				reversesEntryId: input.reversesEntryId ?? null,
 			},
 			tx,
 		);
@@ -196,6 +263,7 @@ export class PostingService {
 				projectId: line.projectId ?? null,
 				partyType: line.partyType ?? null,
 				partyId: line.partyId ?? null,
+				productId: line.productId ?? null,
 			})),
 			tx,
 		);
@@ -226,48 +294,63 @@ export class PostingService {
 	}
 
 	/**
-	 * Manual posting from the `/journal` HTTP surface: opens its own
-	 * transaction (unlike {@link post}, which joins the caller's).
+	 * Posts an approved manual draft in place (ERP-0129): re-validates its
+	 * lines and period, assigns the journal number and stamps approver and
+	 * poster. Maker-checker is enforced by the caller.
 	 */
-	async postManual(
-		ctx: { organizationId: string; actorUserId: string },
-		input: Omit<TPostingInput, 'organizationId' | 'sourceModule'>,
-	) {
-		return this.database.transaction(async (tx) => {
-			const result = await this.post(tx, {
-				...input,
-				organizationId: ctx.organizationId,
-				sourceModule: 'finance',
-			});
-			if (!result.replayed) {
-				await this.journal.stampPostedBy(
-					ctx.organizationId,
-					result.entry.id,
-					ctx.actorUserId,
-					tx,
-				);
-			}
-			return result;
-		});
-	}
-
-	/** Manual reversal from the `/journal` HTTP surface. */
-	async reverseManual(
-		ctx: { organizationId: string; actorUserId: string },
-		entryId: string,
-		options: { entryDate?: string; description?: string | null },
-	) {
-		return this.database.transaction(async (tx) =>
-			this.reverse(tx, ctx.organizationId, entryId, ctx.actorUserId, options),
+	async postDraft(
+		tx: TTx,
+		organizationId: string,
+		entry: TJournalEntrySelect,
+		approverUserId: string,
+	): Promise<TJournalEntrySelect> {
+		const lines = await this.journal.findLinesByEntryId(organizationId, entry.id, tx);
+		const resolved = await this.resolveAndValidateLines(organizationId, lines, tx);
+		const totalDebit = resolved.reduce((sum, l) => sum + l.debit, 0);
+		const totalCredit = resolved.reduce((sum, l) => sum + l.credit, 0);
+		if (totalDebit !== totalCredit || totalDebit <= 0) {
+			throw new JournalUnbalancedError();
+		}
+		const period = await this.findPostablePeriod(
+			organizationId,
+			entry.entryDate,
+			{ isAdjusting: entry.isAdjusting, sourceModule: entry.sourceModule },
+			tx,
 		);
+		const code = await this.numbering.next('journal_entry', {
+			date: new Date(`${entry.entryDate}T12:00:00+07:00`),
+			tx,
+		});
+		const now = new Date();
+		const posted = await this.journal.updateEntry(
+			organizationId,
+			entry.id,
+			{
+				status: 'posted',
+				code,
+				accountingPeriodId: period.id,
+				totalDebit,
+				totalCredit,
+				approvedBy: approverUserId,
+				approvedAt: now,
+				postedBy: approverUserId,
+				postedAt: now,
+			},
+			tx,
+		);
+		if (!posted) throw new JournalTransitionError();
+		return posted;
 	}
 
 	/**
-	 * Reverses a posted entry: a mirrored entry (sides swapped) posted at the
-	 * same or a later date, and the original marked `reversed`.
+	 * Reverses a posted entry: a mirrored entry (sides swapped), and the
+	 * original marked `reversed` (append-only, never an edit).
 	 *
-	 * @remarks Append-only correction — the original entry is never edited.
-	 * The reversal is itself a posting, so it also honours the period lock.
+	 * @remarks Date rule (ERP-0129, grill Q54): when the original's period is
+	 * still open, the reversal takes the original date or a later date the
+	 * caller chooses; when it is closed or locked, the reversal lands on the
+	 * first day of the first open period after it (or on the caller's date).
+	 * The reversal is itself a posting, so it honours the period rules.
 	 */
 	async reverse(
 		tx: TTx,
@@ -276,11 +359,7 @@ export class PostingService {
 		actorUserId: string,
 		options: { entryDate?: string; description?: string | null } = {},
 	): Promise<TPostingResult> {
-		const original = await this.journal.findEntryById(
-			organizationId,
-			entryId,
-			tx,
-		);
+		const original = await this.journal.findEntryById(organizationId, entryId, tx);
 		if (!original) {
 			throw new JournalTransitionError();
 		}
@@ -290,17 +369,12 @@ export class PostingService {
 		if (original.status !== 'posted') {
 			throw new JournalTransitionError();
 		}
-
-		const originalLines = await this.journal.findLinesByEntryId(
-			organizationId,
-			entryId,
-			tx,
-		);
-
-		const reversalDate = options.entryDate ?? original.entryDate;
-		if (reversalDate < original.entryDate) {
+		if (options.entryDate && options.entryDate < original.entryDate) {
 			throw new ReversalPeriodLockedError();
 		}
+
+		const originalLines = await this.journal.findLinesByEntryId(organizationId, entryId, tx);
+		const reversalDate = await this.reversalDate(organizationId, original, options.entryDate, tx);
 
 		const result = await this.post(tx, {
 			organizationId,
@@ -309,8 +383,10 @@ export class PostingService {
 			sourceType: 'journal_reversal',
 			sourceId: original.id,
 			idempotencyKey: `reversal:${original.id}`,
-			description:
-				options.description ?? `Reversal of ${original.code}`,
+			description: options.description ?? `Reversal of ${original.code}`,
+			reversesEntryId: original.id,
+			eventType: original.eventType,
+			actorUserId: actorUserId === 'system' ? null : actorUserId,
 			lines: originalLines.map((line) => ({
 				accountId: line.accountId,
 				debit: line.credit,
@@ -320,39 +396,81 @@ export class PostingService {
 				projectId: line.projectId,
 				partyType: line.partyType,
 				partyId: line.partyId,
+				productId: line.productId,
 			})),
 		});
-		void actorUserId;
 
 		await this.journal.markReversed(organizationId, entryId, result.entry.id, tx);
 		return result;
 	}
 
+	private async reversalDate(
+		organizationId: string,
+		original: TJournalEntrySelect,
+		requested: string | undefined,
+		tx: TTx,
+	): Promise<string> {
+		const [year, month] = original.entryDate.split('-').map(Number);
+		const originalPeriod = await this.periods.findPeriodByMonth(organizationId, year, month, tx);
+		if (!originalPeriod || originalPeriod.status === 'open') {
+			return requested ?? original.entryDate;
+		}
+		if (requested) return requested;
+		const next = await this.periods.findFirstOpenPeriodFrom(organizationId, original.entryDate, tx);
+		if (!next) throw new NoOpenPeriodForReversalError();
+		return next.startDate > original.entryDate ? next.startDate : original.entryDate;
+	}
+
 	/**
-	 * Resolves the period for `entryDate` and refuses anything not `open`.
-	 *
-	 * @remarks Server-side period lock (finance plan F7 target): closed and
-	 * locked periods reject postings with a date inside them.
+	 * Resolves the period for `entryDate` and applies the period rules
+	 * (ERP-0130): `open` accepts everything, `closed` (soft close) accepts
+	 * only finance's adjusting manual entries, `locked` accepts nothing.
 	 */
-	private async findOpenPeriod(
+	private async findPostablePeriod(
 		organizationId: string,
 		entryDate: string,
+		entry: { isAdjusting: boolean; sourceModule: string },
 		tx?: TTx,
-	) {
+	): Promise<TAccountingPeriodSelect> {
 		const [year, month] = entryDate.split('-').map(Number);
-		const period = await this.periods.findPeriodByMonth(
-			organizationId,
-			year,
-			month,
-			tx,
-		);
+		const period = await this.periods.findPeriodByMonth(organizationId, year, month, tx);
 		if (!period) {
 			throw new PeriodNotFoundError();
 		}
-		if (period.status !== 'open') {
-			throw new PeriodLockedError();
+		if (period.status === 'open') return period;
+		if (period.status === 'closed' && entry.isAdjusting && entry.sourceModule === 'finance') {
+			return period;
 		}
-		return period;
+		throw new PeriodLockedError();
+	}
+
+	/**
+	 * Validates lines for a draft (ERP-0129): accounts exist, are active and
+	 * postable, one side per line, cost centres are live, and the period of
+	 * the date accepts this kind of entry.
+	 */
+	async validateDraft(
+		organizationId: string,
+		input: { entryDate: string; isAdjusting: boolean; lines: TPostingLine[] },
+		tx?: TTx,
+	): Promise<{
+		period: TAccountingPeriodSelect;
+		lines: Array<TPostingLine & { accountId: string }>;
+		total: number;
+	}> {
+		const period = await this.findPostablePeriod(
+			organizationId,
+			input.entryDate,
+			{ isAdjusting: input.isAdjusting, sourceModule: 'finance' },
+			tx,
+		);
+		const lines = await this.resolveAndValidateLines(organizationId, input.lines, tx);
+		const totalDebit = lines.reduce((sum, l) => sum + l.debit, 0);
+		const totalCredit = lines.reduce((sum, l) => sum + l.credit, 0);
+		if (totalDebit !== totalCredit || totalDebit <= 0) {
+			throw new JournalUnbalancedError();
+		}
+		return { period, lines, total: totalDebit };
 	}
 
 	/**
@@ -398,6 +516,13 @@ export class PostingService {
 			}
 			if (!account.isPostable) {
 				throw new AccountNotPostableError();
+			}
+			if (line.costCenterId) {
+				const costCenter = this.costCenters
+					? await this.costCenters.findById(organizationId, line.costCenterId, tx)
+					: null;
+				if (!costCenter) throw new CostCenterNotFoundError();
+				if (!costCenter.isActive) throw new CostCenterInactiveError();
 			}
 			resolved.push({ ...line, accountId: account.id });
 		}

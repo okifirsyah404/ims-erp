@@ -50,6 +50,10 @@ export interface IBankReconciliationRepository {
 			statementAmount: number | null;
 			isMatched: boolean;
 			notes: string | null;
+			statementDate?: string | null;
+			description?: string | null;
+			direction?: 'in' | 'out' | null;
+			matchMethod?: 'auto' | 'manual' | 'created' | null;
 		}>,
 		tx?: TTx,
 	): Promise<unknown[]>;
@@ -64,4 +68,17 @@ export interface IBankReconciliationRepository {
 		patch: Record<string, unknown>,
 		tx?: TTx,
 	): Promise<unknown | null>;
+	/**
+	 * Posted movements of an account dated `from`..`to` that no live matched
+	 * statement line uses yet (ERP-0143 auto-match).
+	 */
+	listMatchCandidates(
+		organizationId: string,
+		cashBankAccountId: string,
+		from: string,
+		to: string,
+		tx?: TTx,
+	): Promise<Array<{ id: string; code: string; transactionDate: string; direction: 'in' | 'out'; amount: number; referenceNumber: string | null }>>;
+	/** Opening balance plus posted movements up to and including `date`. */
+	balanceAsOf(organizationId: string, cashBankAccountId: string, date: string, tx?: TTx): Promise<number>;
 }

@@ -1,3 +1,4 @@
+import type { ExportedPurchaseOrderService } from '../services/exported-purchase-order.service';
 /**
  * Injection tokens of the Procurement module (ADR-0011 step 4).
  *
@@ -32,3 +33,6 @@ export const PURCHASE_RETURN_REPOSITORY_TOKEN: InjectionToken<IPurchaseReturnRep
 export const PURCHASE_RETURN_SERVICE_TOKEN: InjectionToken<PurchaseReturnService> = Symbol('PURCHASE_RETURN_SERVICE');
 export const PURCHASE_REQUEST_REPOSITORY_TOKEN: InjectionToken<IPurchaseRequestRepository> = Symbol('PURCHASE_REQUEST_REPOSITORY');
 export const PURCHASE_REQUEST_SERVICE_TOKEN: InjectionToken<PurchaseRequestService> = Symbol('PURCHASE_REQUEST_SERVICE');
+
+/** Repository-only purchase-order facade for finance (ERP-0146). */
+export const EXPORTED_PURCHASE_ORDER_SERVICE_TOKEN: InjectionToken<ExportedPurchaseOrderService> = Symbol('EXPORTED_PURCHASE_ORDER_SERVICE');

@@ -66,9 +66,27 @@ class FakeSuppliers {
 	async findPerson(id: string) {
 		return this.people.find((person) => person.id === id) ?? null;
 	}
+	async getPurchaseSnapshot(companyId: string) {
+		const company = await this.assertActiveCompany(companyId);
+		return {
+			code: company.code,
+			name: company.name,
+			address: null,
+			taxId: company.taxId,
+			phone: company.phone,
+			email: company.email,
+			picName: null,
+			picTitle: null,
+			picPhone: null,
+			picEmail: null,
+		};
+	}
 }
 
 class FakeOrders implements IPurchaseOrderRepository {
+	async listOpenForProject(): Promise<Array<{ id: string; subtotal: number }>> {
+		return [];
+	}
 	rows: TPurchaseOrderSelect[] = [];
 	items = new Map<string, TPurchaseOrderItemSelect[]>();
 	received = new Set<string>();
@@ -179,15 +197,21 @@ describe('purchase orders', () => {
 			...extra,
 		});
 
-	test('snapshots supplier and item, prices default to the purchase price, payment line from the supplier', async () => {
+	test('snapshots supplier and item, prices default to the purchase price, payment line only from the PO body', async () => {
 		const supplier = suppliers.addCompany();
 		const pic = suppliers.addPerson(supplier.id);
-		const order = await orders.create('purchasing', body(supplier.id, { supplierPicId: pic.id }));
+		const order = await orders.create('purchasing', body(supplier.id, { supplierPicId: pic.id, paymentTerms: 'DP 50%, pelunasan sebelum kirim' }));
 		expect(order).toMatchObject({ status: 'draft', code: null, subtotal: 6_270_000_000, grandTotal: 6_270_000_000, vatRateBps: 1100 });
 		expect(order.supplierSnapshot).toMatchObject({ code: 'HIT', picName: 'Ria Nainggolan', picTitle: 'Marketing' });
 		expect(order.paymentTerms).toBe('DP 50%, pelunasan sebelum kirim');
 		const [line] = await orderRepo.findItems(order.id);
 		expect(line).toMatchObject({ sku: 'QR50', unitPrice: 190_000_000, lineTotal: 6_270_000_000 });
+	});
+
+	test('without a body payment line the PO prints none even though the old supplier column had one', async () => {
+		const supplier = suppliers.addCompany();
+		const order = await orders.create('purchasing', body(supplier.id));
+		expect(order.paymentTerms).toBeNull();
 	});
 
 	test('an inactive supplier or an unknown item is refused', async () => {
@@ -197,6 +221,36 @@ describe('purchase orders', () => {
 		);
 		supplier.status = 'inactive';
 		await expect(orders.create('purchasing', body(supplier.id))).rejects.toBeInstanceOf(PurchaseOrderSupplierUnavailableError);
+	});
+
+	test('approval of a project order runs the budget check; a blocking budget keeps it submitted (ERP-0146)', async () => {
+		const checks: unknown[] = [];
+		let block = false;
+		const budgeted = new PurchaseOrderService(
+			orderRepo,
+			suppliers,
+			{ getActiveProducts: async (ids: string[]) => (ids.includes(ITEM) ? ([{ id: ITEM, sku: 'QR50', name: 'QR50 Mifare', specification: null, unitLabel: 'pcs', purchasePrice: 190_000_000 }] as never) : []) },
+			{ next: async () => 'PO/IMS-HIT/HW/1026/009' },
+			{ register: async () => ({}) as never, voidBySource: async () => 0 },
+			{ getProject: async (id: string) => (id === '01930000-0000-7000-8000-0000000000f1' ? ({ id } as never) : null) },
+			{
+				check: async (input: unknown) => {
+					checks.push(input);
+					if (block) throw new Error('budget exceeded');
+					return null;
+				},
+			},
+		);
+		const supplier = suppliers.addCompany();
+		await expect(budgeted.create('purchasing', body(supplier.id, { projectId: '01930000-0000-7000-8000-0000000000ff' }))).rejects.toThrow();
+		const order = await budgeted.create('purchasing', body(supplier.id, { projectId: '01930000-0000-7000-8000-0000000000f1' }));
+		await budgeted.submit('purchasing', order.id);
+		block = true;
+		await expect(budgeted.decide('owner', order.id, { decision: 'approve' })).rejects.toThrow('budget exceeded');
+		block = false;
+		const approved = await budgeted.decide('owner', order.id, { decision: 'approve' });
+		expect(approved.status).toBe('approved');
+		expect(checks[1]).toEqual({ projectId: '01930000-0000-7000-8000-0000000000f1', amount: approved.subtotal, excludePurchaseOrderId: order.id });
 	});
 
 	test('submit, reject back to draft, approve with number — never by the creator', async () => {

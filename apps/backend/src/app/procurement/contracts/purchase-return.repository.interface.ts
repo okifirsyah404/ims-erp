@@ -35,6 +35,7 @@ export type TPurchaseReturnTransitionPatch = Partial<
 		| 'cancelledBy'
 		| 'cancelledAt'
 		| 'cancelledReason'
+		| 'journalEntryId'
 	>
 >;
 

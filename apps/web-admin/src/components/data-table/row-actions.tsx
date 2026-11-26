@@ -27,16 +27,19 @@ export type TRowAction = {
  * @remarks
  * Three or fewer visible actions render as icon buttons; more collapse into an
  * ellipsis dropdown so the actions column keeps one width. `onSelect` owns any
- * confirmation dialog, matching the users table.
+ * confirmation dialog, matching the users table. `menu` forces the dropdown
+ * even for one or two actions (card corners, where an icon strip is noisy).
  */
 export function RowActions({
 	actions,
 	label,
 	disabled,
+	menu = false,
 }: {
 	actions: TRowAction[];
 	label: string;
 	disabled?: boolean;
+	menu?: boolean;
 }) {
 	const visible = actions.filter((action) => !action.hidden);
 
@@ -44,7 +47,7 @@ export function RowActions({
 		return <span className='text-xs text-muted-foreground'>—</span>;
 	}
 
-	if (visible.length <= 3) {
+	if (visible.length <= 3 && !menu) {
 		return (
 			<div className='flex justify-end gap-1'>
 				{visible.map((action) => (

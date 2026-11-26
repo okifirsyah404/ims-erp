@@ -55,6 +55,8 @@ _Interpretation, needs owner confirmation:_
   there is no employee app (M12 limit).
 
 ## Explicit limits (out of scope)
+> **ADR-0030 (accepted by the owner 2026-11-25):** the finance ERP-grade extension lifts some of the limits below (see the ADR's "Limits lifted" table); where they conflict, the ADR wins.
+
 
 - No attendance machine, fingerprint or GPS integration.
 - No complex shifts or rotating schedules.

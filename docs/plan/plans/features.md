@@ -14,7 +14,11 @@ Rules:
   (AGENTS.md Definition of Done item 5).
 - Evidence = module path + test file or `progress.md` date.
 
-Last synced: 2026-11-15 (ERP-0111 account pages added 2026-11-21). Full inventory of what has no code yet:
+Last synced: 2026-11-15 (ERP-0111 account pages added 2026-11-21). The schema
+numbers quoted in the ERP-0070 entry below (18 schemas / 188 tables) are the
+ADR-0024 figures as of 2026-11-19; ADR-0026 (2026-11-23) split `product` and
+`warehouse` out of `inventory`, so the current contract is **20 schemas /
+196 tables** (`docs/database/docs.dbml`). Full inventory of what has no code yet:
 `plans/2026-11-15_0538_todo_undone.md` (revision 2 — it corrects five
 "missing feature" claims that actually ship, e.g. the report API and the
 assets operations surface). §7 item 3 (statement exports + monthly archive +
@@ -42,6 +46,7 @@ Plan: `docs/plan/database-refactor/`. Decision: ADR-0024 (`proposed`).
 - ERP-0077 sale: **backend done** (folder `sale`, `/sales/*`, own numbering, quotation person + company, legacy payments removed); web-admin, customer portal and seeder open; invoice-billing test blocked on P5.
 - ERP-0079/0080/0081 finance, tax, payment: **backend done** (`finance` replaces `accounting` with depreciation; `tax` split out at `/taxes`; payment reworked to one ledger with polymorphic allocations, encrypted gateway config and `ExportedPaymentWebhookService`). `code-number` deleted. Web-admin, portal, webhook module (P7) and seeders open.
 - ERP-0082/0083/0084 project, ticket, human-resource: **backend done** (project absorbs licensing + warranty; ticket replaces aftersales at `/tickets`; `human-resource` with salary records and `ExportedEmployeeService`). Web-admin, portal, landing and seeders open.
+- ERP-0159 employee portal: **Phases A–C done** — `apps/web-employee` (auth, employee-only gate with session revoke, shell, i18n) with attendance, schedule, leave, overtime, tasks, notifications and profile via `/human-resources/me/*` (A); assigned projects, project tasks, PIC management and field attendance with PostGIS radius verification via `/projects/me/*` (B); documents, signature requests and payslip history via `/documents/me/*` + `/users/me/payslips` (C). UI parity with web-admin (org switcher, sidebar sections, task CRUD dialog) in ERP-0161. All 13 requested areas are implemented.
 - ERP-0085/0086/0087/0089 document, notification, audit/automation, webhook: **backend done** (document owns its numbering, notification tables renamed to `push_notifications`, the `webhook` module owns `/webhooks/<provider>` with the legacy aliases and no schema). Web-admin wrappers, provider dashboards and seeders open.
   categories, item serials, stocks, movements, adjustments, valuation and the
   warehouse family run on the new schema (`/inventory/products`,
@@ -162,6 +167,27 @@ Plan: `docs/plan/plans/side-nav-role-based.md`. Decision: ADR-0017 (`accepted` 2
   `warehouse-authorization.test.ts` (the guard is action-agnostic and the controller
   declares only `read`/`update`/`archive`), and Phase 5 was re-run 47/47 against a
   freshly reset `ims_erp_local`.
+
+### implemented
+- Sidebar section order + Subscription inside Projects (ERP-0156, 2026-11-25):
+  sections follow the product order (Dashboard, CRM & Sales, Finance, Projects,
+  Inventory, HR, Documents, Reports, Integrations, Administration, Settings);
+  Subscription & Licensing became a Projects leaf after Warranty;
+  `section.reports` shortened to "Reports"/"Laporan" and `section.subscription`
+  deleted. Evidence: web-admin tsc clean, 317 web-admin + 106 locale tests pass,
+  root lint 0 errors, browser walk-through (11 sections in order, Subscription
+  expansion, `/subscription/*` still guarded by the leaf); no schema change.
+- Sidebar nav audit (ERP-0154, 2026-11-25): the dangling Notifications leaf
+  (`open: true` with no route, a guaranteed 404) removed; Assets group gained
+  Categories/Tool sets/Disposals and Depreciation was un-hidden (all
+  `asset.read`); WhatsApp AI became a parent with Conversations + FAQ
+  (`automation.read`); Down payments (`invoice.read`), Templates
+  (`document.read`) and Opening balances (`journal.read`) un-hidden with the
+  grant each page already calls; en/id keys added and the dead
+  `item.notifications` key removed. Evidence: web-admin tsc clean, 315 tests
+  pass (locale parity + dead keys), root lint 0 errors, browser walk-through
+  (sidebar leaves, click-through, direct visits to all nine affected URLs);
+  no backend, route or schema change.
 
 ### planned
 - Nothing open for ERP-0051 itself. Delivery follow-ups are tracked separately in
@@ -571,6 +597,7 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 ### implemented
 - ERP-0109 Multi-image galleries (2026-11-23) for products/components/materials (M05), assets (M06) and warehouses: backend implemented (3 gallery tables + backfill migration, `/images` CRUD, cover mirrored into `image_object_key`); web-admin gallery UI and migration apply on a disposable DB still open.
 - ERP-0110 Components and materials of a product (2026-11-23): informational composition per product (`product.product_components`, `GET|PUT /products/:id/components`), table on the detail page and editor in the create/edit form; not browser-verified.
+- ERP-0116 Robust supplier master (2026-11-23): server-side sort + URL-backed filters on `/procurement/suppliers` (admin/users pattern), grouped form with an inline location cascade (create posts the address right after the company, edit PATCHes the primary one), company/PIC phone through the shared `CountryPhoneField` (E.164), company/person address CRUD behind `ExportedLocationService.assertVillage`, and the `whatsapp` / `payment_terms_days` / `payment_term_note` columns dropped (payment terms are written per purchase order). Migration generated, not applied; no browser walk-through.
 - Payables from goods receipts: finance bills a purchase order for what was
   received and not billed yet (order price and VAT, supplier invoice number),
   recording debits Persediaan for stock lines — T07, ERP-0012 / ERP-0035.
@@ -684,6 +711,13 @@ Decision: ADR-0019 (`accepted` 2026-11-14).
 - Depreciation as manual journal — T07, ERP-0015. Evidence: none.
 
 ### implemented
+- Asset categories create/edit dialog (ERP-0155, 2026-11-25): `/assets/categories`
+  lost its two bare inline inputs in favour of `AssetCategoryFormDialog`
+  (code create-only, name, kind, default depreciation method, useful life) plus
+  an `Edit` row action; `asset.create`/`asset.update` gate the button and the
+  action. Evidence: web-admin tsc clean, 209 web-admin + 106 locale tests pass,
+  root lint 0 errors, browser create/edit/validation/persistence walk-through;
+  no schema change.
 - Location tracking + borrowing ownership — ERP-0036. Evidence: contract
   shipped 2026-11-05 (`docs/database/docs.dbml`: assets 14 tables incl.
   `asset_types` + borrowing trio, inventory 13 tables, `validate-dbml.ts`
@@ -793,7 +827,34 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `progress.md` 2026-11-06 (step 6c). Gaps: real-PG integration tests; SLA
   and escalation not decided.
 
-## M08 Employees and Attendance
+## M08 Employees and Attendance (sidenav: Human Resource)
+
+### implemented
+- ERP-0117 robust HR slice 1 (2026-11-23): flat "Human Resource" sidenav,
+  employee edit page + archive confirmation, task edit/soft delete,
+  leave/overtime edit while submitted, attendance list with single-row CRUD.
+  Evidence: `progress.md` 2026-11-23 (backend 1406 pass). No browser
+  walk-through yet.
+- ERP-0118 work schedule (2026-11-23): `/hr/schedule` week grid with cell
+  CRUD and a weekly-pattern fill, `schedule` permission, seeder. Evidence:
+  `progress.md` 2026-11-23 (migration on a throwaway database, backend 1412
+  pass). No browser walk-through yet.
+- ERP-0119 salary (2026-11-23): salary periods on the employee page, salary
+  payee accounts in `finance.cash_bank_accounts` (`/finance/employee-bank-accounts`),
+  payroll drafts from the period in force. Evidence: `progress.md` 2026-11-23
+  (backend 1419 pass). No browser walk-through yet.
+- ERP-0120 payday run (2026-11-23): `/settings/payroll` (application admins
+  only), daily `payroll-pay-day` job creating draft payroll on payday and
+  notifying `payroll:approve` holders. Evidence: `progress.md` 2026-11-23
+  (backend 1425 pass). Scheduler not run against a live Redis yet.
+- ERP-0121 invite documents (2026-11-23): draft employment agreement on every
+  invite, personal data on the claim form, agreement PDF after the claim,
+  employee Documents card. Evidence: `progress.md` 2026-11-23 (backend 1434
+  pass). PDF render and browser walk-through not verified.
+- ERP-0122 payslips (2026-11-23): payslip PDF per approved salary record,
+  downloads one / all (ZIP) on the Payroll page, "Slip gaji saya" on
+  `/accounts`. Evidence: `progress.md` 2026-11-23 (backend 1440 pass).
+  Chromium render and browser walk-through not verified.
 
 ### done
 - Employees (invite-first, organization or company level) — ERP-0034.
@@ -806,7 +867,7 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   see `progress.md` 2026-11-15. Not yet accepted by the owner.
 
 ### planned
-- Payslips, approval, payroll journals — T20, ERP-0018. Evidence: none.
+- Payroll journals — T20, ERP-0018. Evidence: none.
 
 ### blocked
 - Automated payroll calculation — T19, ERP-0018. Needs component rules from
@@ -832,20 +893,179 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   draft→in_progress→reconciled→closed with exact statement=book gate.
 - Month-end close: advisory pre-close checklist; period transitions.
 - Web-admin UI: 9 finance routes + finance-api typed client (F8).
-- Backlog mismatch: ERP-0010 (accounting foundations) and ERP-0011..0013 are
-  still `planned` in `backlog.md`, so this section stays `in-progress` here
-  until the backlog is decided. Code evidence is in `main` (accounting schema,
-  migrations, tests).
+- Expense claims (ERP-0013, 2026-11-23, branch
+  `feat/erp0013-expense-claims`): `finance.expense_claims(+items)` built,
+  `/finance/expenses*` backend + web-admin (list, create/edit dialog, detail
+  page), approval posts the accrual journal (idempotent `expense_claim:<id>`,
+  DR expense per `category_code` / DR input tax / CR claims payable `2-1200`),
+  new `expense_claim:*` permission. Evidence: 9 unit tests, migration
+  `20261123150453_erp0013_expense_claims`, `validate-dbml.ts` OK, `progress.md`
+  2026-11-23. Open: disposable-DB apply (Docker down) + browser check.
+- Backlog mismatch resolved 2026-11-25: ERP-0010 moved to `implemented`
+  (grill Q19); ERP-0011/0012 were already `implemented`.
+- COA and cash/bank UX + default seed (ERP-0123..ERP-0125, 2026-11-25):
+  `/finance/accounts` rebuilt on the `/procurement/suppliers` pattern (URL-backed
+  search/type/status/postable filters, create/edit dialog, row actions, count)
+  with a backend `search` (ilike code/name) + `isPostable` list filter;
+  `/finance/cash-bank` gained a create/edit dialog carrying the invoice bank
+  details (number, holder, usage, primary — one primary per usage enforced in
+  the service) and the list now returns `glAccountId` (left join
+  `bank_account_links`), so invoice printing finally sees form-entered accounts;
+  `chart-of-accounts.seeder.ts` seeds 22 Indonesian accounts (every
+  `constants/ar-posting.ts` code marked `isSystem`) and `finance.seeder.ts`
+  links the seeded cash/bank accounts to `1-1000`/`1-1100`/`1-1200`. Evidence:
+  backend 1453 pass, web-admin 209, locales 106, lint 0 errors,
+  `validate-dbml.ts` OK; no schema change. Open: the seeder was not run against
+  a database in this environment (no `POSTGRES_URL`), and there is no browser
+  walk-through.
+
+- GL foundation, Phase A of ADR-0030 (ERP-0126..0130, ERP-0132..0134,
+  2026-11-25): `finance.posting_rules` + `PostingService.postBusinessEvent`
+  (most specific rule wins; the hard-coded posting codes became 25 seeded `*`
+  rules), `finance.cost_centers` (validated on journal lines),
+  `journal_lines.product_id`, manual journals draft -> submitted ->
+  approved/posted with maker-checker, reversal with mandatory reason that lands
+  in the next open period when the original is closed, soft close (adjusting
+  entries only) vs hard lock behind a no-pending-journal gate, CoA locking,
+  IDR checks, trial balance + general ledger, audit trail; full 94-account
+  `X-XXXX` CoA seed. Fixed: reports summed `posted` only, so a reversal negated
+  the original instead of cancelling it. Evidence: migration
+  `20261124201506_erp0127_finance_gl_foundation` applied to a local scratch DB,
+  seed twice (second run 0 inserts), DB smoke 15/15, 19 new unit tests,
+  backend 1472 / web-admin 209 / locales 106 pass, lint 0 errors,
+  `validate-dbml.ts` OK. Open: browser walk-through; ADR-0030 owner approval.
+
+- AR postings, Phase B (ERP-0135, 2026-11-25): invoices post through posting
+  rules (DP to customer advances, revenue per product category, settlement
+  releases the DP, service-period lines to deferred revenue with a monthly
+  amortisation run and a lock gate), credit memos (apply/void) and
+  maker-checker write-offs on the invoice page, `written_off` statuses.
+  Evidence: migration `20261124212044_erp0135_ar_postings` on a local scratch
+  DB, DB smoke 11/11, 9 unit tests, backend 1481 pass. Open: line-item invoice
+  editor (service periods are API-only), credit allocation/refund.
+
+- GR/IR and COGS, Phase B (ERP-0136/0137, 2026-11-25): goods receipts post
+  Dr inventory / Cr GR/IR, bills clear GR/IR with purchase price variance,
+  purchase returns reverse it, delivery notes post COGS (project COGS for a
+  project order), sales returns reverse COGS, stock adjustments post against
+  inventory variance. Evidence: migration `20261124214438_erp0136_grir_cogs`,
+  DB smoke 7/7, PPV unit test. Open: PO-to-bill not run end to end on a
+  database, supplier credit note, GR/IR aging warning.
+
+- Receipts and gateway settlement, Phase B (ERP-0139, 2026-11-25): kuitansi
+  (manual and online) now post to the GL and the AR open item (they did not
+  before), credit memos survive later receipts, and gateway payouts are
+  recorded as net to bank + fee against gateway clearing. Evidence: migration
+  `20261125001655_erp0139_receipts_gateway`, DB smoke 8/8, 7 unit tests.
+  Open: settlement-report import, refunds.
+
+- Project postings, Phase B (ERP-0141, 2026-11-25): invoices carry the
+  order's project and tag their revenue lines; manual project costs post to
+  project COGS against claims payable or cash (by payment source) and their
+  void reverses the journal; the cost form asks who paid and warns about a
+  duplicate reference. Evidence: migration
+  `20261125002439_erp0141_project_postings`, unit tests, DB smoke 3/3.
+
+- Tax postings, Phase B (ERP-0140, 2026-11-25): PPh withheld at supplier
+  payment (AP settled in full, bank pays the net, Utang PPh by tax code);
+  monthly PPN settlement to Utang PPN / PPN lebih bayar; tax payments from
+  cash/bank; Coretax e-Faktur and bukti-potong XML downloads (format
+  unverified until a test import). Evidence: migration
+  `20261125011648_erp0140_tax_postings`, unit tests, DB smoke 7/7.
+
+- Opening receivables and payables, Phase B (ERP-0142, 2026-11-25): the open
+  customer invoices and supplier bills at cutover are imported as CSV on the
+  opening-balance page; the batch posts only when each ledger equals its
+  control account, and posting creates the open items (supplier bills ready
+  to pay). Stock and fixed-asset opening detail are not covered yet.
+  Evidence: migration `20261125021519_erp0142_opening_subledger`, unit tests,
+  DB smoke 12/12.
+
+- Bank statement import, Phase C (ERP-0143, 2026-11-25): each bank account
+  keeps its CSV layout; a statement imports into the reconciliation, lines
+  match book movements automatically (amount, direction, +-3 days,
+  reference), leftover lines such as bank fees are booked from the line, and
+  reconciling checks the statement balance against the book balance on the
+  statement date. Evidence: migration `20261125051738_erp0143_bank_statement`,
+  unit tests, DB smoke 8/8.
+
+- Employee advances and settlements, Phase C (ERP-0144, 2026-11-25): staff
+  request advances, a manager approves, finance disburses through a payment;
+  the employee accounts for it with expense lines that finance verifies and a
+  manager approves; any excess is paid out and unused cash is received back.
+  Approved expense claims are paid the same way. All on the expenses page.
+  Evidence: migration `20261125053043_erp0144_employee_advances`, unit tests,
+  DB smoke 8/8.
+
+- Fixed assets in the ledger, Phase C (ERP-0145, 2026-11-25): finance
+  capitalizes inventory assets, runs monthly depreciation into the ledger,
+  disposals post their gain or loss, and a fiscal report compares tax
+  depreciation per group with the books. Evidence: migrations
+  `20261125054928_erp0145_fixed_asset_books`,
+  `20261125055729_erp0145_item_kind_discriminator`, unit tests, DB smoke.
+
+- Project budgets, Phase C (ERP-0146, 2026-11-25): a versioned budget per
+  project, account and month; actual costs and open purchase orders count
+  against it; purchase-order approval, project claims and project costs are
+  checked (warn by default, block when set); budget vs actual on its own
+  page. Evidence: migration `20261125060448_erp0146_project_budgets`, unit
+  tests, DB smoke 7/7.
+
+- Cost accounting reports, Phase C (ERP-0147, 2026-11-25): project job
+  costing with margin and budget, and a P&L per cost centre, on the reports
+  page. The P&L and balance sheet now subtract contra accounts (sales
+  returns, accumulated depreciation) instead of adding them.
+
+- Statements, Phase D (ERP-0148, 2026-11-25): cash flow by the direct method
+  tied to the cash balance, the indirect reconciliation and the statement of
+  changes in equity, each with a comparative column.
+
+- Cash forecast, Phase D (ERP-0149, 2026-11-25): 13 weeks ahead from today's
+  cash with receivables and payables by due date, payroll and its taxes,
+  and manual lines; licence renewals due are listed. Evidence: migration
+  `20261125130528_erp0149_cash_forecast`, unit tests, DB smoke 6/6.
+
+- Profitability, Phase D (ERP-0150, 2026-11-25): revenue, cost and margin by
+  business line, project, customer or product; what cannot be attributed is
+  shown separately so the total always equals the P&L.
+
+- Financial ratios, Phase D (ERP-0151, 2026-11-25): liquidity,
+  profitability, leverage and efficiency ratios for a range on the reports
+  page.
+
+- Management pack, Phase D (ERP-0152, 2026-11-25): one monthly pack with
+  the statements, ratios, profitability and project budget vs actual; Excel
+  download, print to PDF, archived with the month-end close.
+
+- Closed-period profit for profit sharing, Phase D (ERP-0153, 2026-11-25):
+  finance gives a final profit before and after tax for locked months only,
+  ready for a future profit-sharing module.
+
+### planned (ADR-0030 Phases B-D, accepted by the owner 2026-11-25)
+- ERP-0131 year-end close to retained earnings (still planned). Phases B, C
+  and D (ERP-0148..0153) are implemented; open gaps: stock/asset opening
+  detail and capitalization from goods receipts.
 
 ### planned (Stage 2)
-- Expense entry + journal posting - ERP-0013. Evidence: none.
-- Payroll + gateway postings (Stage 2) - T20, T22. Evidence: none.
-- Final COA seed list from finance/owner (provisional codes
-  `1-1300`/`1-1100`/`4-1000`/`2-1000`/`2-1100`/`5-1000`/`1-1800` in use).
+- Payroll + gateway postings (Stage 2) - T20, T22 (now ERP-0138 / ERP-0139). Evidence: none.
+- Final COA list confirmed by finance/owner. The default seed is the 94-account
+  `X-XXXX` hierarchy (ERP-0127); accounts are remapped through posting rules,
+  not code changes, so the confirmation no longer needs a deploy.
 
 ## M10 Tax
 
 ### in-progress
+- PPh 21 tables, ERP-0138 part 1 (2026-11-25): PTKP and Pasal 17 seeded,
+  the TER table imported by finance as CSV at `/finance/tax/pph21` (never
+  seeded), the PPh 21 engine, optional employee NPWP / PTKP / BPJS numbers,
+  and company-wide PPh 21 / BPJS switches in the payroll settings. Evidence:
+  migration `20261125014130_erp0138_pph21_tables`, unit tests, DB smoke 10/10.
+- Payroll PPh 21 and BPJS, ERP-0138 part 2 (2026-11-25): salary records
+  calculate PPh 21 (TER monthly, annual Pasal 17 in the last tax month) and
+  BPJS when switched on; approval posts the payroll journal; salaries and
+  BPJS are paid from the cash/bank page; BP21 XML from an approved month
+  (format unverified, no annual slip). Evidence: migration
+  `20261125015720_erp0138_payroll_statutory`, unit tests, DB smoke 9/9.
 - ERP-0016 Phases 1–3: backend (tax rate master, period working papers
   draft → verified → filed, corrections, withholding, recap), web-admin UI
   at `/finance/tax/*` (recap with CSV/XLSX export, types, records, corrections,
@@ -998,6 +1218,38 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   `is_secret` stays reserved (`false`): the API neither accepts nor returns it.
   UI `CompanySettingsCard` on `/admin/company`. Evidence: `progress.md`
   2026-11-13 ERP-0045; `test/unit/company.service.test.ts` 15 pass.
+- ERP-0158 Document files named after the document (2026-11-25). Uploaded and
+  generated files are stored as `<slug(title)>_<dd_mm_yyyy>_<HHmmss>.<ext>` in
+  Jakarta time (`_2` on a same-second match, 80-char word-boundary slug, the
+  uploader's own name discarded); the S3 key stays `<prefix>/<uuid>.<ext>` so a
+  re-upload never overwrites. `attachGeneratedFile{,To}` return
+  `{ id, fileName }`, the signed-PDF artifact is `<slug>_signed_<stamp>.pdf`, and
+  the payslip ZIP is `slip_gaji_<periode>_<dd_mm_yyyy>.zip`. Every registry
+  registration now carries a human title so the name means something
+  (`Penawaran`, `Pesanan Penjualan`, `Surat Jalan`, `Faktur`, `Kuitansi`,
+  `Retur Penjualan`, `Pesanan Pembelian`, `Penerimaan Barang`,
+  `Retur Pembelian`, `BAST`, `Garansi`, `Kontrak Lisensi`, `Tiket Servis` + the
+  counterparty / project code). Evidence: `progress.md` 2026-11-25 ERP-0158
+  (browser-checked upload name + download `content-disposition`); backend 1464
+  pass. Gaps: existing rows are not backfilled, the payslip ZIP header and the
+  three Chromium render paths are unit-tested only.
+- ERP-0157 Document registry as a card grid + full-page viewer (2026-11-25).
+  `/documents/files` lists registry rows as cards whose image is the first page
+  of the newest live file (client-rendered by `pdfjs-dist`, viewport-lazy,
+  session-cached) or a document icon; `GET /documents` rows carry
+  `preview {fileId,fileName,mimeType,url}` from one file query per page and the
+  preview writes no access-trail row. `/documents/files/$documentId` is the
+  viewer: continuous lazily drawn page stack at fit-width, file switcher,
+  download/print/void/details toolbar, and a Details sheet holding the overview,
+  files, share links, signatures and access trail. Print draws every page before
+  `window.print()`; void asks for confirmation. The card's corner is a forced
+  dropdown — Detail, Void, Print (`?print=1` on the viewer, auto-print then the
+  flag is dropped), Download — with Print/Download disabled for a row without a
+  file, so the list exposes the same actions as the viewer without opening it.
+  Evidence: `progress.md`
+  2026-11-25 ERP-0157 (browser-verified: thumbnail, lazy pages, print, file
+  switcher, details sheet); backend 1455, web-admin 211, locales 106.
+  Gaps: no e2e, no zoom, signed-PDF artifacts stay out of the viewer.
 - ERP-0044 Document registry wiring + files + public share links (2026-11-13).
   11 outward-facing types register through `DocumentService.register` and void
   with `voidBySource`; `document.files` upload/list/soft-delete/presigned download

@@ -41,6 +41,13 @@ export interface IArLedgerPort {
 	): Promise<void>;
 
 	/** The latest posted journal entry that names this source document. */
+	/**
+	 * Applies a kuitansi to the open item (ERP-0139): `delta` > 0 records a
+	 * receipt, < 0 its reversal. Paid and outstanding move together, so
+	 * `outstanding = original - paid` keeps holding.
+	 */
+	applyReceipt(organizationId: string, invoiceId: string, delta: number, tx?: unknown): Promise<void>;
+
 	findPostedEntryForSource(
 		organizationId: string,
 		sourceType: string,

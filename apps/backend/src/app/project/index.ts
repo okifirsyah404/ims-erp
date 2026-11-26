@@ -14,6 +14,7 @@ import { LeadController } from './controllers/lead.controller';
 import { LicenseApiController } from './controllers/license-api.controller';
 import { LicensingController } from './controllers/licensing.controller';
 import { ProjectController } from './controllers/project.controller';
+import { PortalProjectController } from './controllers/portal-project.controller';
 import { PublicWebsiteController } from './controllers/public-website.controller';
 import { WarrantyController } from './controllers/warranty.controller';
 
@@ -29,6 +30,8 @@ export {
 	PROJECT_LOOKUP_SERVICE_TOKEN,
 	PROJECT_PORTAL_SERVICE_TOKEN,
 	PROJECT_SERVICE_TOKEN,
+	PORTAL_PROJECT_SERVICE_TOKEN,
+	SITE_ATTENDANCE_SERVICE_TOKEN,
 	WARRANTY_SERVICE_TOKEN,
 } from './constants/di';
 export type { LeadService } from './services/lead.service';
@@ -45,6 +48,9 @@ export function projectModule() {
 		.use(ProjectCodeNumberingController.plugin())
 		.use(LeadController.plugin())
 		.use(ProjectController.plugin())
+		// Employee portal: /projects/me/* (Phase B). Mounted before the admin
+		// controller's /:id routes would otherwise match.
+		.use(PortalProjectController.plugin())
 		.use(WarrantyController.plugin())
 		.use(LicensingController.plugin())
 		// Machine API of installed applications.
@@ -52,3 +58,4 @@ export function projectModule() {
 		// Server-to-server website API: API-key guard, no session.
 		.use(PublicWebsiteController.plugin());
 }
+

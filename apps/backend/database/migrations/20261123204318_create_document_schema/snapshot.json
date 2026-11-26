@@ -1,0 +1,4248 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "e397cf9e-619b-4a10-927f-00610afdcf0b",
+  "prevIds": [
+    "47107736-9b2d-40f9-8f64-22e4e6770c45"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "document"
+      ],
+      "writes": [
+        "s|sch|document",
+        "n|sch|document",
+        "e|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "access_logs"
+      ],
+      "writes": [
+        "s|tbl|document.access_logs",
+        "n|tbl|document.access_logs",
+        "e|tbl|document.access_logs",
+        "n|rel|document.access_logs",
+        "n|type|document.access_logs",
+        "n|rel|document.access_logs_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "code_numberings"
+      ],
+      "writes": [
+        "s|tbl|document.code_numberings",
+        "n|tbl|document.code_numberings",
+        "e|tbl|document.code_numberings",
+        "n|rel|document.code_numberings",
+        "n|type|document.code_numberings",
+        "n|rel|document.code_numberings_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "files"
+      ],
+      "writes": [
+        "s|tbl|document.files",
+        "n|tbl|document.files",
+        "e|tbl|document.files",
+        "n|rel|document.files",
+        "n|type|document.files",
+        "n|rel|document.files_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "settings"
+      ],
+      "writes": [
+        "s|tbl|document.settings",
+        "n|tbl|document.settings",
+        "e|tbl|document.settings",
+        "n|rel|document.settings",
+        "n|type|document.settings",
+        "n|rel|document.settings_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "shares"
+      ],
+      "writes": [
+        "s|tbl|document.shares",
+        "n|tbl|document.shares",
+        "e|tbl|document.shares",
+        "n|rel|document.shares",
+        "n|type|document.shares",
+        "n|rel|document.shares_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "signature_requests"
+      ],
+      "writes": [
+        "s|tbl|document.signature_requests",
+        "n|tbl|document.signature_requests",
+        "e|tbl|document.signature_requests",
+        "n|rel|document.signature_requests",
+        "n|type|document.signature_requests",
+        "n|rel|document.signature_requests_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "signatures"
+      ],
+      "writes": [
+        "s|tbl|document.signatures",
+        "n|tbl|document.signatures",
+        "e|tbl|document.signatures",
+        "n|rel|document.signatures",
+        "n|type|document.signatures",
+        "n|rel|document.signatures_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "tag_links"
+      ],
+      "writes": [
+        "s|tbl|document.tag_links",
+        "n|tbl|document.tag_links",
+        "e|tbl|document.tag_links",
+        "n|rel|document.tag_links",
+        "n|type|document.tag_links",
+        "n|rel|document.tag_links_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "tags"
+      ],
+      "writes": [
+        "s|tbl|document.tags",
+        "n|tbl|document.tags",
+        "e|tbl|document.tags",
+        "n|rel|document.tags",
+        "n|type|document.tags",
+        "n|rel|document.tags_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "templates"
+      ],
+      "writes": [
+        "s|tbl|document.templates",
+        "n|tbl|document.templates",
+        "e|tbl|document.templates",
+        "n|rel|document.templates",
+        "n|type|document.templates",
+        "n|rel|document.templates_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "user_signatures"
+      ],
+      "writes": [
+        "s|tbl|document.user_signatures",
+        "n|tbl|document.user_signatures",
+        "e|tbl|document.user_signatures",
+        "n|rel|document.user_signatures",
+        "n|type|document.user_signatures",
+        "n|rel|document.user_signatures_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "document",
+        "documents"
+      ],
+      "writes": [
+        "s|tbl|document.documents",
+        "n|tbl|document.documents",
+        "e|tbl|document.documents",
+        "n|rel|document.documents",
+        "n|type|document.documents",
+        "n|rel|document.documents_pkey"
+      ],
+      "reads": [
+        "n|sch|document"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "access_logs",
+        "access_logs_document_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.access_logs_document_id_idx",
+        "n|idx|document.access_logs_document_id_idx",
+        "e|idx|document.access_logs_document_id_idx",
+        "n|rel|document.access_logs_document_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.access_logs",
+        "n|sch|document",
+        "n|col|document.access_logs.document_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "access_logs",
+        "access_logs_accessed_at_idx"
+      ],
+      "writes": [
+        "s|idx|document.access_logs_accessed_at_idx",
+        "n|idx|document.access_logs_accessed_at_idx",
+        "e|idx|document.access_logs_accessed_at_idx",
+        "n|rel|document.access_logs_accessed_at_idx"
+      ],
+      "reads": [
+        "n|tbl|document.access_logs",
+        "n|sch|document",
+        "n|col|document.access_logs.accessed_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "code_numberings",
+        "document_code_numberings_type_uq"
+      ],
+      "writes": [
+        "s|idx|document.document_code_numberings_type_uq",
+        "n|idx|document.document_code_numberings_type_uq",
+        "e|idx|document.document_code_numberings_type_uq",
+        "n|rel|document.document_code_numberings_type_uq"
+      ],
+      "reads": [
+        "n|tbl|document.code_numberings",
+        "n|sch|document",
+        "n|col|document.code_numberings.code_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "files",
+        "files_document_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.files_document_id_idx",
+        "n|idx|document.files_document_id_idx",
+        "e|idx|document.files_document_id_idx",
+        "n|rel|document.files_document_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.files",
+        "n|sch|document",
+        "n|col|document.files.document_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "files",
+        "files_storage_key_uq"
+      ],
+      "writes": [
+        "s|idx|document.files_storage_key_uq",
+        "n|idx|document.files_storage_key_uq",
+        "e|idx|document.files_storage_key_uq",
+        "n|rel|document.files_storage_key_uq"
+      ],
+      "reads": [
+        "n|tbl|document.files",
+        "n|sch|document",
+        "n|col|document.files.storage_key"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "settings",
+        "document_settings_scope_uq"
+      ],
+      "writes": [
+        "s|idx|document.document_settings_scope_uq",
+        "n|idx|document.document_settings_scope_uq",
+        "e|idx|document.document_settings_scope_uq",
+        "n|rel|document.document_settings_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|document.settings",
+        "n|sch|document",
+        "n|col|document.settings.setting_group",
+        "n|col|document.settings.setting_key"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "shares",
+        "shares_document_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.shares_document_id_idx",
+        "n|idx|document.shares_document_id_idx",
+        "e|idx|document.shares_document_id_idx",
+        "n|rel|document.shares_document_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.shares",
+        "n|sch|document",
+        "n|col|document.shares.document_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "shares",
+        "shares_target_idx"
+      ],
+      "writes": [
+        "s|idx|document.shares_target_idx",
+        "n|idx|document.shares_target_idx",
+        "e|idx|document.shares_target_idx",
+        "n|rel|document.shares_target_idx"
+      ],
+      "reads": [
+        "n|tbl|document.shares",
+        "n|sch|document",
+        "n|col|document.shares.share_type",
+        "n|col|document.shares.shared_with_type",
+        "n|col|document.shares.shared_with_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "shares",
+        "shares_token_uq"
+      ],
+      "writes": [
+        "s|idx|document.shares_token_uq",
+        "n|idx|document.shares_token_uq",
+        "e|idx|document.shares_token_uq",
+        "n|rel|document.shares_token_uq"
+      ],
+      "reads": [
+        "n|tbl|document.shares",
+        "n|sch|document",
+        "n|col|document.shares.token"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "shares",
+        "shares_token_live_idx"
+      ],
+      "writes": [
+        "s|idx|document.shares_token_live_idx",
+        "n|idx|document.shares_token_live_idx",
+        "e|idx|document.shares_token_live_idx",
+        "n|rel|document.shares_token_live_idx"
+      ],
+      "reads": [
+        "n|tbl|document.shares",
+        "n|sch|document",
+        "n|col|document.shares.token",
+        "n|col|document.shares.expires_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signature_requests",
+        "signature_requests_document_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.signature_requests_document_id_idx",
+        "n|idx|document.signature_requests_document_id_idx",
+        "e|idx|document.signature_requests_document_id_idx",
+        "n|rel|document.signature_requests_document_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.signature_requests",
+        "n|sch|document",
+        "n|col|document.signature_requests.document_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signature_requests",
+        "signature_requests_signer_status_idx"
+      ],
+      "writes": [
+        "s|idx|document.signature_requests_signer_status_idx",
+        "n|idx|document.signature_requests_signer_status_idx",
+        "e|idx|document.signature_requests_signer_status_idx",
+        "n|rel|document.signature_requests_signer_status_idx"
+      ],
+      "reads": [
+        "n|tbl|document.signature_requests",
+        "n|sch|document",
+        "n|col|document.signature_requests.signer_user_id",
+        "n|col|document.signature_requests.status"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signature_requests",
+        "signature_requests_requested_by_idx"
+      ],
+      "writes": [
+        "s|idx|document.signature_requests_requested_by_idx",
+        "n|idx|document.signature_requests_requested_by_idx",
+        "e|idx|document.signature_requests_requested_by_idx",
+        "n|rel|document.signature_requests_requested_by_idx"
+      ],
+      "reads": [
+        "n|tbl|document.signature_requests",
+        "n|sch|document",
+        "n|col|document.signature_requests.requested_by_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signature_requests",
+        "signature_requests_pending_uq"
+      ],
+      "writes": [
+        "s|idx|document.signature_requests_pending_uq",
+        "n|idx|document.signature_requests_pending_uq",
+        "e|idx|document.signature_requests_pending_uq",
+        "n|rel|document.signature_requests_pending_uq"
+      ],
+      "reads": [
+        "n|tbl|document.signature_requests",
+        "n|sch|document",
+        "n|col|document.signature_requests.document_id",
+        "n|col|document.signature_requests.signer_user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signatures",
+        "signatures_document_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.signatures_document_id_idx",
+        "n|idx|document.signatures_document_id_idx",
+        "e|idx|document.signatures_document_id_idx",
+        "n|rel|document.signatures_document_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.signatures",
+        "n|sch|document",
+        "n|col|document.signatures.document_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "signatures",
+        "signatures_source_file_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.signatures_source_file_id_idx",
+        "n|idx|document.signatures_source_file_id_idx",
+        "e|idx|document.signatures_source_file_id_idx",
+        "n|rel|document.signatures_source_file_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.signatures",
+        "n|sch|document",
+        "n|col|document.signatures.source_file_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "tag_links",
+        "tag_links_uq"
+      ],
+      "writes": [
+        "s|idx|document.tag_links_uq",
+        "n|idx|document.tag_links_uq",
+        "e|idx|document.tag_links_uq",
+        "n|rel|document.tag_links_uq"
+      ],
+      "reads": [
+        "n|tbl|document.tag_links",
+        "n|sch|document",
+        "n|col|document.tag_links.document_id",
+        "n|col|document.tag_links.document_tag_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "tag_links",
+        "tag_links_tag_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.tag_links_tag_id_idx",
+        "n|idx|document.tag_links_tag_id_idx",
+        "e|idx|document.tag_links_tag_id_idx",
+        "n|rel|document.tag_links_tag_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.tag_links",
+        "n|sch|document",
+        "n|col|document.tag_links.document_tag_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "tags",
+        "tags_org_tag_uq"
+      ],
+      "writes": [
+        "s|idx|document.tags_org_tag_uq",
+        "n|idx|document.tags_org_tag_uq",
+        "e|idx|document.tags_org_tag_uq",
+        "n|rel|document.tags_org_tag_uq"
+      ],
+      "reads": [
+        "n|tbl|document.tags",
+        "n|sch|document",
+        "n|col|document.tags.organization_id",
+        "n|col|document.tags.tag"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "tags",
+        "tags_global_tag_uq"
+      ],
+      "writes": [
+        "s|idx|document.tags_global_tag_uq",
+        "n|idx|document.tags_global_tag_uq",
+        "e|idx|document.tags_global_tag_uq",
+        "n|rel|document.tags_global_tag_uq"
+      ],
+      "reads": [
+        "n|tbl|document.tags",
+        "n|sch|document",
+        "n|col|document.tags.tag"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "templates",
+        "templates_org_code_version_uq"
+      ],
+      "writes": [
+        "s|idx|document.templates_org_code_version_uq",
+        "n|idx|document.templates_org_code_version_uq",
+        "e|idx|document.templates_org_code_version_uq",
+        "n|rel|document.templates_org_code_version_uq"
+      ],
+      "reads": [
+        "n|tbl|document.templates",
+        "n|sch|document",
+        "n|col|document.templates.organization_id",
+        "n|col|document.templates.code",
+        "n|col|document.templates.version"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "templates",
+        "templates_global_code_version_uq"
+      ],
+      "writes": [
+        "s|idx|document.templates_global_code_version_uq",
+        "n|idx|document.templates_global_code_version_uq",
+        "e|idx|document.templates_global_code_version_uq",
+        "n|rel|document.templates_global_code_version_uq"
+      ],
+      "reads": [
+        "n|tbl|document.templates",
+        "n|sch|document",
+        "n|col|document.templates.code",
+        "n|col|document.templates.version"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "user_signatures",
+        "user_signatures_user_id_uq"
+      ],
+      "writes": [
+        "s|idx|document.user_signatures_user_id_uq",
+        "n|idx|document.user_signatures_user_id_uq",
+        "e|idx|document.user_signatures_user_id_uq",
+        "n|rel|document.user_signatures_user_id_uq"
+      ],
+      "reads": [
+        "n|tbl|document.user_signatures",
+        "n|sch|document",
+        "n|col|document.user_signatures.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "documents",
+        "documents_org_code_uq"
+      ],
+      "writes": [
+        "s|idx|document.documents_org_code_uq",
+        "n|idx|document.documents_org_code_uq",
+        "e|idx|document.documents_org_code_uq",
+        "n|rel|document.documents_org_code_uq"
+      ],
+      "reads": [
+        "n|tbl|document.documents",
+        "n|sch|document",
+        "n|col|document.documents.organization_id",
+        "n|col|document.documents.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "documents",
+        "documents_global_code_uq"
+      ],
+      "writes": [
+        "s|idx|document.documents_global_code_uq",
+        "n|idx|document.documents_global_code_uq",
+        "e|idx|document.documents_global_code_uq",
+        "n|rel|document.documents_global_code_uq"
+      ],
+      "reads": [
+        "n|tbl|document.documents",
+        "n|sch|document",
+        "n|col|document.documents.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "documents",
+        "documents_template_id_idx"
+      ],
+      "writes": [
+        "s|idx|document.documents_template_id_idx",
+        "n|idx|document.documents_template_id_idx",
+        "e|idx|document.documents_template_id_idx",
+        "n|rel|document.documents_template_id_idx"
+      ],
+      "reads": [
+        "n|tbl|document.documents",
+        "n|sch|document",
+        "n|col|document.documents.template_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "documents",
+        "documents_source_idx"
+      ],
+      "writes": [
+        "s|idx|document.documents_source_idx",
+        "n|idx|document.documents_source_idx",
+        "e|idx|document.documents_source_idx",
+        "n|rel|document.documents_source_idx"
+      ],
+      "reads": [
+        "n|tbl|document.documents",
+        "n|sch|document",
+        "n|col|document.documents.module",
+        "n|col|document.documents.source_type",
+        "n|col|document.documents.source_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "document",
+        "documents",
+        "documents_status_idx"
+      ],
+      "writes": [
+        "s|idx|document.documents_status_idx",
+        "n|idx|document.documents_status_idx",
+        "e|idx|document.documents_status_idx",
+        "n|rel|document.documents_status_idx"
+      ],
+      "reads": [
+        "n|tbl|document.documents",
+        "n|sch|document",
+        "n|col|document.documents.status"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "document",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "access_logs",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "code_numberings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "files",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "shares",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "signature_requests",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "signatures",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "tag_links",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "tags",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "templates",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "user_signatures",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "name": "documents",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "accessed_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "action",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "accessed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "ip_address",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "user_agent",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "code_type",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "pattern",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "reset_policy",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "period_key",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "next_number",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "file_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "storage_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "mime_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "size_bytes",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "checksum",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "uploaded_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "uploaded_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "setting_group",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "setting_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "setting_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "value_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'string'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "share_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "token",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shared_with_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shared_with_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shared_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shared_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "expires_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "is_revoked",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "requested_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signer_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signer_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'pending'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "note",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "decline_reason",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "expires_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "responded_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signer_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signer_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signer_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signed_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signature_method",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'electronic'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "ip_address",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "certificate_serial",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signature_image_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "source_file_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signed_file_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "document_tag_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "tag",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "document_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "module",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "version",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "content_template",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "numbering_pattern",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "is_active",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "object_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "uploaded_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "document_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "title",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "template_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "module",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "source_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "source_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'draft'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "issued_on",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "issued_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "approved_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "approved_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "version",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "is_current",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "true",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "supersedes_document_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "access_logs_document_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "access_logs_accessed_at_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "accessed_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "document_code_numberings_type_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "files_document_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "files_storage_key_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "storage_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "document_settings_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "setting_group",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "setting_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shares_document_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shares_target_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "share_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "shared_with_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "shared_with_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shares_token_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "token",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shares_token_live_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "token",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "expires_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": "deleted_at IS NULL AND is_revoked = false",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signature_requests_document_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signature_requests_signer_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "signer_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signature_requests_requested_by_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "requested_by_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signature_requests_pending_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "signer_user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "status = 'pending' AND deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signatures_document_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signatures_source_file_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "source_file_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "tag_links_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "document_tag_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "tag_links_tag_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "document_tag_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "tags_org_tag_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "tag",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "tags_global_tag_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "tag",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "templates_org_code_version_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "version",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "templates_global_code_version_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "version",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "user_signatures_user_id_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_org_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND organization_id IS NOT NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_global_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL AND organization_id IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_template_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "template_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_source_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "module",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "source_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "source_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_status_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "status",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "access_logs_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "code_numberings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "files_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "settings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shares_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signature_requests_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signatures_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tag_links",
+        "name": "tag_links_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "tags",
+        "name": "tags_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "templates_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "user_signatures",
+        "name": "user_signatures_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "access_logs",
+        "name": "access_logs_action_check",
+        "value": "\"action\" IN ('view', 'download', 'print', 'share', 'delete', 'pdf_sign')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "document_code_numberings_reset_check",
+        "value": "reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "code_numberings",
+        "name": "document_code_numberings_next_check",
+        "value": "next_number > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "files",
+        "name": "files_size_bytes_check",
+        "value": "\"size_bytes\" >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "settings",
+        "name": "document_settings_value_type_check",
+        "value": "value_type IN ('string', 'number', 'boolean', 'json', 'date')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "shares",
+        "name": "shares_share_type_check",
+        "value": "\"share_type\" IN ('internal', 'customer', 'portal', 'public_link')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signature_requests",
+        "name": "signature_requests_status_check",
+        "value": "\"status\" IN ('pending', 'signed', 'declined', 'expired', 'cancelled')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signatures_signer_type_check",
+        "value": "\"signer_type\" IN ('internal', 'customer', 'partner')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "signatures",
+        "name": "signatures_signature_method_check",
+        "value": "\"signature_method\" IN ('electronic', 'wet_ink', 'stamp')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "templates",
+        "name": "templates_version_check",
+        "value": "\"version\" > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_status_check",
+        "value": "\"status\" IN ('draft', 'submitted', 'approved', 'issued', 'void', 'expired', 'archived')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "document",
+        "table": "documents",
+        "name": "documents_version_check",
+        "value": "\"version\" > 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

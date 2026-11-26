@@ -13,6 +13,7 @@ import { seedWarehouse } from './seed/warehouse.seeder';
 import { seedInventory } from './seed/inventory.seeder';
 import { seedWarehouseManagers } from './seed/warehouse-managers.seeder';
 import { seedFinance } from './seed/finance.seeder';
+import { seedChartOfAccounts } from './seed/chart-of-accounts.seeder';
 import { seedTax } from './seed/tax.seeder';
 import { SEED_ORGANIZATION_SLUG, seedOrganization } from './seed/organization.seeder';
 import { seedOrganizationMembers } from './seed/organization-members.seeder';
@@ -20,6 +21,11 @@ import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
 import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
+import { seedHrSchedules } from './seed/hr-schedules.seeder';
+import { seedHrSalaries } from './seed/hr-salaries.seeder';
+import { seedHrDocuments } from './seed/hr-documents.seeder';
+import { seedDemoProject } from './seed/project-demo.seeder';
+import { seedPortalDemo } from './seed/portal-demo.seeder';
 import { seedNotificationTemplates } from './seed/notification-templates.seeder';
 import { seedNotificationDemo } from './seed/notification-demo.seeder';
 import { redisClient } from '../../src/providers/redis/redis';
@@ -69,9 +75,23 @@ export async function runSeeders(): Promise<void> {
 	// Needs the live warehouse rows above and the seeded `warehouse` role
 	// account from `seedOrganizationMembers` (ADR-0017).
 	await seedWarehouseManagers();
+	// COA first: `seedFinance` links the cash/bank accounts to its `1-1xxx` rows.
+	await seedChartOfAccounts();
 	await seedFinance();
 	await seedTax();
 	await seedHrEmployees();
+	// Needs the employees above (ERP-0118).
+	await seedHrSchedules();
+	// Salary periods + payee accounts of the employees above (ERP-0119).
+	await seedHrSalaries();
+	// Draft employment agreements of the employees above (ERP-0121).
+	await seedHrDocuments();
+	// Demo project for the employee portal (Phase B): PIC employee, site
+	// coordinates and the attendance radius. Needs the HR employees above.
+	await seedDemoProject();
+	// A pending leave request, an approved overtime record and the portal account
+	// printed for a manual walk-through.
+	await seedPortalDemo();
 	// M08 leave types are reference rows the attendance/leave records depend on.
 	await seedLeaveTypes();
 	// Notification templates are reference rows (every environment); the demo
@@ -115,3 +135,5 @@ if (import.meta.main) {
 		process.exit(1);
 	});
 }
+
+

@@ -13,6 +13,9 @@ import type { OutboxService } from '@app/automation/services/outbox.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
 import { isUniqueViolation } from '@drizzle/errors';
+import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PostingService } from '@app/finance/services/posting.service';
+import { inventoryValue } from '@app/finance/utils/inventory-value';
 import type {
 	PurchaseReturnStatus,
 	TGoodsReceiptItemSelect,
@@ -122,6 +125,9 @@ export class PurchaseReturnService {
 		/** M04: every state change goes to n8n as `purchase_return.updated`. */
 		@inject(OUTBOX_SERVICE_TOKEN)
 		private readonly outbox: Pick<OutboxService, 'publish'>,
+		/** ERP-0136: shipped returns post Dr GR/IR / Cr inventory. */
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
 	) {}
 
 	/** Publishes `purchase_return.updated` after a committed change; never throws. */
@@ -352,6 +358,7 @@ export class PurchaseReturnService {
 			// ERP-0044: the approved return goes to the supplier with the goods.
 			await this.documents.register({
 				code: approved.code ?? code,
+				title: `Retur Pembelian - ${row.supplierName}`,
 				documentType: 'purchase_return',
 				module: 'procurement',
 				sourceType: 'purchase_return',
@@ -443,11 +450,36 @@ export class PurchaseReturnService {
 					if (missing.length) throw new PurchaseReturnLineError('notInStock', index + 1);
 				}
 			}
+			// ERP-0136: the goods leave at their receipt cost; GR/IR is debited
+			// back. Units already billed keep a GR/IR debit until a supplier
+			// credit note exists (not built, see finance.md).
+			const returnLines = lines
+				.map((line) => ({ productId: line.productId, value: inventoryValue(line.quantity, line.unitCost) }))
+				.filter((line) => line.value > 0);
+			const total = returnLines.reduce((sum, line) => sum + line.value, 0);
+			let journalEntryId: string | null = null;
+			if (this.posting && total > 0) {
+				const { entry } = await this.posting.postBusinessEvent(tx, {
+					organizationId: actor.organizationId,
+					entryDate: occurredAt.toISOString().slice(0, 10),
+					sourceModule: 'procurement',
+					sourceType: 'purchase_return',
+					sourceId: row.id,
+					idempotencyKey: `purchase_return:${row.id}`,
+					eventType: 'procurement.purchase_returned',
+					description: `Purchase return ${row.code ?? ''}`.trim(),
+					lines: [
+						{ role: 'grir_clearing', debit: total, credit: 0 },
+						...returnLines.map((line) => ({ role: 'inventory', debit: 0, credit: line.value, productId: line.productId })),
+					],
+				});
+				journalEntryId = entry.id;
+			}
 			const updated = await this.returns.transition(
 				id,
 				['approved'],
 				'shipped',
-				{ shippedBy: actor.userId, shippedAt: new Date() },
+				{ shippedBy: actor.userId, shippedAt: new Date(), journalEntryId },
 				tx,
 			);
 			if (!updated) throw new PurchaseReturnStateError('notApproved');

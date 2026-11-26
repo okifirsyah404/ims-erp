@@ -5,6 +5,7 @@ import { AR_OPEN_ITEM_REPOSITORY_TOKEN, JOURNAL_REPOSITORY_TOKEN } from '../cons
 import type { IArOpenItemRepository } from '../contracts/ar-open-item.repository.interface';
 import type { IJournalRepository } from '../contracts/journal.repository.interface';
 import type { IArLedgerPort } from '../contracts/ar-ledger.port';
+import { receivableStatus } from './receivable-adjustment.service';
 
 /**
  * Accounting side of {@link IArLedgerPort}: the AR open-item mirror and the
@@ -14,7 +15,7 @@ import type { IArLedgerPort } from '../contracts/ar-ledger.port';
 export class ArLedgerPortService implements IArLedgerPort {
 	constructor(
 		@inject(AR_OPEN_ITEM_REPOSITORY_TOKEN)
-		private readonly ar: Pick<IArOpenItemRepository, 'insertArOpenItem' | 'updateArOpenItem'>,
+		private readonly ar: Pick<IArOpenItemRepository, 'insertArOpenItem' | 'updateArOpenItem' | 'findArOpenItemByInvoice'>,
 		@inject(JOURNAL_REPOSITORY_TOKEN)
 		private readonly journal: Pick<IJournalRepository, 'findEntryBySource'>,
 	) {}
@@ -44,6 +45,19 @@ export class ArLedgerPortService implements IArLedgerPort {
 		tx?: unknown,
 	): Promise<void> {
 		await this.ar.updateArOpenItem(organizationId, invoiceId, patch, tx as TTx | undefined);
+	}
+
+	async applyReceipt(organizationId: string, invoiceId: string, delta: number, tx?: unknown): Promise<void> {
+		const item = await this.ar.findArOpenItemByInvoice(organizationId, invoiceId, tx as TTx | undefined);
+		if (!item) return;
+		const paidAmount = item.paidAmount + delta;
+		const outstandingAmount = item.outstandingAmount - delta;
+		await this.ar.updateArOpenItem(
+			organizationId,
+			invoiceId,
+			{ paidAmount, outstandingAmount, status: receivableStatus({ paidAmount, outstandingAmount }).openItem },
+			tx as TTx | undefined,
+		);
 	}
 
 	findPostedEntryForSource(

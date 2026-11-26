@@ -1,6 +1,8 @@
 import type { TEmployeeTaskSelect, TaskStatus } from '@drizzle/schemas/human-resource.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import { inject, injectable } from 'tsyringe';
+import { EXPORTED_NOTIFICATION_SERVICE_TOKEN } from '@app/notification/constants/di';
+import type { ExportedNotificationService } from '@app/notification/services/exported-notification.service';
 import { HR_PEOPLE_SERVICE_TOKEN, TASK_REPOSITORY_TOKEN } from '../constants/di';
 import type { THrScope, TTaskBody, TTaskListQuery } from '../contracts/hr-records.contract';
 import type { ITaskRepository } from '../contracts/hr-records.repository.interface';
@@ -15,6 +17,9 @@ export class TaskService {
 	constructor(
 		@inject(TASK_REPOSITORY_TOKEN) private readonly repository: ITaskRepository,
 		@inject(HR_PEOPLE_SERVICE_TOKEN) private readonly employees: Pick<HrPeopleService, 'require' | 'requireActive'>,
+		/** The only cross-module notification entry point; failures never block the write. */
+		@inject(EXPORTED_NOTIFICATION_SERVICE_TOKEN)
+		private readonly notifications?: Pick<ExportedNotificationService, 'notify'>,
 	) {}
 
 	private async view(scope: THrScope, row: TEmployeeTaskSelect): Promise<TTaskView> {
@@ -35,8 +40,20 @@ export class TaskService {
 	}
 
 	async create(scope: THrScope, actorUserId: string, body: TTaskBody): Promise<TTaskView> {
-		await this.employees.requireActive(scope, body.employeeId);
-		return this.view(scope, await this.repository.create({ ...body, status: 'open', createdBy: actorUserId }));
+		const employee = await this.employees.requireActive(scope, body.employeeId);
+		const created = await this.repository.create({ ...body, status: 'open', createdBy: actorUserId });
+		// The assignee's login user, when the employee has one. A portal user
+		// without a linked account simply gets no notification.
+		if (employee.userId) {
+			await this.notifications?.notify({
+				userIds: [employee.userId],
+				templateCode: 'hr.task_assigned',
+				variables: { title: created.title, dueDate: created.dueDate ?? '-' },
+				sourceType: 'employee_task',
+				sourceId: created.id,
+			});
+		}
+		return this.view(scope, created);
 	}
 
 	async update(scope: THrScope, id: string, body: TTaskBody): Promise<TTaskView> {
@@ -53,4 +70,12 @@ export class TaskService {
 		if (!updated) throw new HrNotFoundError('task');
 		return this.view(scope, updated);
 	}
+
+	/** Soft deletes a task (any status). */
+	async remove(scope: THrScope, id: string): Promise<{ removed: true }> {
+		await this.requireTask(scope, id);
+		if (!(await this.repository.softDelete(id))) throw new HrNotFoundError('task');
+		return { removed: true };
+	}
 }
+

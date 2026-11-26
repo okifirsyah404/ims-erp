@@ -152,3 +152,10 @@ export class PurchaseRequestLineUnavailableError extends AppError {
 		super(422, 'procurement.prLineUnavailable', `Line ${line}: the purchase request line is not open for ordering`, { line });
 	}
 }
+
+/** The order's project does not exist (ERP-0146). */
+export class PurchaseOrderProjectError extends AppError {
+	constructor() {
+		super(422, 'procurement.order.projectInvalid', 'The project does not exist');
+	}
+}

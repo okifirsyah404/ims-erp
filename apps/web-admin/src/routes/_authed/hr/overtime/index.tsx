@@ -31,6 +31,7 @@ import {
 	REQUEST_STATUSES,
 	type TOvertime,
 	type TRequestStatus,
+	updateOvertime,
 } from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
 import { EmptyState, ErrorState } from '@/components/empty-state';
@@ -53,11 +54,22 @@ function OvertimePage() {
 	const [period, setPeriod] = useState(todayBusinessDate().slice(0, 7));
 	const { data, isPending, isError, error } = useQuery(overtimeQueryOptions({ page, status: status || undefined, period: period || undefined }));
 	const [recording, setRecording] = useState(false);
+	/** The record being edited; `null` while the dialog records a new one. */
+	const [editing, setEditing] = useState<TOvertime | null>(null);
 	const [employeeId, setEmployeeId] = useState('');
 	const [workDate, setWorkDate] = useState(todayBusinessDate());
 	const [hours, setHours] = useState('1');
 	const [reason, setReason] = useState('');
 	const [busy, setBusy] = useState(false);
+
+	const openEdit = useCallback((row: TOvertime) => {
+		setEditing(row);
+		setEmployeeId(row.employeeId);
+		setWorkDate(row.workDate);
+		setHours(String(Number(row.hours)));
+		setReason(row.reason ?? '');
+		setRecording(true);
+	}, []);
 
 	const run = useCallback(
 		async (work: () => Promise<unknown>, done: string) => {
@@ -128,6 +140,8 @@ function OvertimePage() {
 						canApprove={canApprove}
 						canReject={canReject}
 						canCancel={canCancel}
+						canEdit={canCreate}
+						onEdit={() => openEdit(row.original)}
 						busy={busy}
 						onAction={(action) =>
 							void run(() => decideOvertime(row.original.id, action, null), t(`hr:request.done.${action}`))
@@ -136,7 +150,7 @@ function OvertimePage() {
 				),
 			},
 		],
-		[busy, canApprove, canCancel, canReject, i18n.language, run, t, userId],
+		[busy, canApprove, canCancel, canCreate, canReject, i18n.language, openEdit, run, t, userId],
 	);
 
 	return (
@@ -146,7 +160,17 @@ function OvertimePage() {
 					<h1 className='text-2xl font-bold'>{t('hr:overtime.title')}</h1>
 					<p className='text-sm text-muted-foreground'>{t('hr:overtime.description')}</p>
 				</div>
-				{canCreate && <Button onClick={() => setRecording(true)}>{t('hr:overtime.new')}</Button>}
+				{canCreate && (
+					<Button
+						onClick={() => {
+							setEditing(null);
+							setReason('');
+							setRecording(true);
+						}}
+					>
+						{t('hr:overtime.new')}
+					</Button>
+				)}
 			</div>
 			<div className='flex flex-wrap gap-2'>
 				<Select
@@ -197,18 +221,20 @@ function OvertimePage() {
 					<form
 						onSubmit={async (event) => {
 							event.preventDefault();
+							const input = { employeeId, workDate, hours: Number(hours), reason: reason.trim() || null };
 							const done = await run(
-								() => createOvertime({ employeeId, workDate, hours: Number(hours), reason: reason.trim() || null }),
-								t('hr:overtime.created'),
+								() => (editing ? updateOvertime(editing.id, input) : createOvertime(input)),
+								editing ? t('hr:request.updated') : t('hr:overtime.created'),
 							);
 							if (done) {
 								setRecording(false);
+								setEditing(null);
 								setReason('');
 							}
 						}}
 					>
 						<DialogHeader>
-							<DialogTitle>{t('hr:overtime.new')}</DialogTitle>
+							<DialogTitle>{editing ? t('hr:overtime.edit') : t('hr:overtime.new')}</DialogTitle>
 						</DialogHeader>
 						<FieldGroup className='py-4'>
 							<Field>
@@ -245,7 +271,7 @@ function OvertimePage() {
 								{t('common:action.cancel')}
 							</Button>
 							<Button type='submit' disabled={busy || !employeeId || !(Number(hours) > 0)}>
-								{t('hr:overtime.new')}
+								{editing ? t('common:action.save') : t('hr:overtime.new')}
 							</Button>
 						</DialogFooter>
 					</form>

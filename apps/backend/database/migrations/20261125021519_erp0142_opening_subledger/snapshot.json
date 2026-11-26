@@ -1,0 +1,667 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "052508d3-b46b-4d3a-a208-a9633c575835",
+  "prevIds": [
+    "e6ff3dff-069e-433a-950e-39ec3c0a57f4"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "finance",
+        "opening_subledger_items"
+      ],
+      "writes": [
+        "s|tbl|finance.opening_subledger_items",
+        "n|tbl|finance.opening_subledger_items",
+        "e|tbl|finance.opening_subledger_items",
+        "n|rel|finance.opening_subledger_items",
+        "n|type|finance.opening_subledger_items",
+        "n|rel|finance.opening_subledger_items_pkey"
+      ],
+      "reads": [
+        "n|sch|finance"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "opening_subledger_items",
+        "opening_subledger_items_document_uq"
+      ],
+      "writes": [
+        "s|idx|finance.opening_subledger_items_document_uq",
+        "n|idx|finance.opening_subledger_items_document_uq",
+        "e|idx|finance.opening_subledger_items_document_uq",
+        "n|rel|finance.opening_subledger_items_document_uq"
+      ],
+      "reads": [
+        "n|tbl|finance.opening_subledger_items",
+        "n|sch|finance",
+        "n|col|finance.opening_subledger_items.organization_id",
+        "n|col|finance.opening_subledger_items.ledger",
+        "n|col|finance.opening_subledger_items.document_number"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "finance",
+        "opening_subledger_items",
+        "opening_subledger_items_ledger_idx"
+      ],
+      "writes": [
+        "s|idx|finance.opening_subledger_items_ledger_idx",
+        "n|idx|finance.opening_subledger_items_ledger_idx",
+        "e|idx|finance.opening_subledger_items_ledger_idx",
+        "n|rel|finance.opening_subledger_items_ledger_idx"
+      ],
+      "reads": [
+        "n|tbl|finance.opening_subledger_items",
+        "n|sch|finance",
+        "n|col|finance.opening_subledger_items.organization_id",
+        "n|col|finance.opening_subledger_items.ledger",
+        "n|col|finance.opening_subledger_items.posted_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "opening_subledger_items"
+      ],
+      "writes": [
+        "s|fk|finance.opening_subledger_items.opening_subledger_items_ar_open_item_id_ar_open_items_id_fkey",
+        "n|fk|finance.opening_subledger_items.opening_subledger_items_ar_open_item_id_ar_open_items_id_fkey",
+        "e|fk|finance.opening_subledger_items.opening_subledger_items_ar_open_item_id_ar_open_items_id_fkey",
+        "n|con|finance.opening_subledger_items.opening_subledger_items_ar_open_item_id_ar_open_items_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.opening_subledger_items",
+        "n|sch|finance",
+        "n|tbl|finance.ar_open_items",
+        "n|sch|finance",
+        "n|col|finance.opening_subledger_items.ar_open_item_id",
+        "n|col|finance.ar_open_items.id",
+        "e|uniqueness|finance.ar_open_items.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "opening_subledger_items"
+      ],
+      "writes": [
+        "s|fk|finance.opening_subledger_items.opening_subledger_items_supplier_bill_id_supplier_bills_id_fkey",
+        "n|fk|finance.opening_subledger_items.opening_subledger_items_supplier_bill_id_supplier_bills_id_fkey",
+        "e|fk|finance.opening_subledger_items.opening_subledger_items_supplier_bill_id_supplier_bills_id_fkey",
+        "n|con|finance.opening_subledger_items.opening_subledger_items_supplier_bill_id_supplier_bills_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.opening_subledger_items",
+        "n|sch|finance",
+        "n|tbl|finance.supplier_bills",
+        "n|sch|finance",
+        "n|col|finance.opening_subledger_items.supplier_bill_id",
+        "n|col|finance.supplier_bills.id",
+        "e|uniqueness|finance.supplier_bills.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "finance",
+        "opening_subledger_items"
+      ],
+      "writes": [
+        "s|fk|finance.opening_subledger_items.opening_subledger_items_ap_open_item_id_ap_open_items_id_fkey",
+        "n|fk|finance.opening_subledger_items.opening_subledger_items_ap_open_item_id_ap_open_items_id_fkey",
+        "e|fk|finance.opening_subledger_items.opening_subledger_items_ap_open_item_id_ap_open_items_id_fkey",
+        "n|con|finance.opening_subledger_items.opening_subledger_items_ap_open_item_id_ap_open_items_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|finance.opening_subledger_items",
+        "n|sch|finance",
+        "n|tbl|finance.ap_open_items",
+        "n|sch|finance",
+        "n|col|finance.opening_subledger_items.ap_open_item_id",
+        "n|col|finance.ap_open_items.id",
+        "e|uniqueness|finance.ap_open_items.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "name": "opening_subledger_items",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "organization_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "ledger",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "supplier_company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "party_code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "party_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "document_number",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "document_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "due_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "currency_code",
+        "type": "varchar(3)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'IDR'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "as_of_date",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "ar_open_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "supplier_bill_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "ap_open_item_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "posted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_document_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "ledger",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "document_number",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_ledger_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "ledger",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "posted_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_ar_open_item_id_ar_open_items_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "ar_open_item_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "ar_open_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_supplier_bill_id_supplier_bills_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "supplier_bill_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "supplier_bills",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_ap_open_item_id_ap_open_items_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "ap_open_item_id"
+        ],
+        "schemaTo": "finance",
+        "tableTo": "ap_open_items",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_currency_idr_check",
+        "value": "currency_code = 'IDR'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_ledger_check",
+        "value": "ledger IN ('ar', 'ap')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "finance",
+        "table": "opening_subledger_items",
+        "name": "opening_subledger_items_amount_check",
+        "value": "amount > 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

@@ -386,8 +386,9 @@ table as they land; the catalog resources (`audit_log:read`,
 
 ## Integration gaps (modules not yet built)
 
-The catalog registers the full ERP vocabulary. After ADR-0024 the backend
-mounts the 18 schema modules plus `webhook` (see `docs/database/module-ownership.md`),
+The catalog registers the full ERP vocabulary. After ADR-0024 + ADR-0026 the
+backend mounts the 20 schema modules plus `webhook` (see
+`docs/database/module-ownership.md`),
 and the 2026-11-20 live smoke test read 69 list/detail endpoints across them
 without a 404/5xx; that proves reachability, **not** that every permission,
 ownership rule or write path is exercised. Routes for resources still being

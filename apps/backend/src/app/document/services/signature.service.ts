@@ -36,6 +36,7 @@ import {
 	SignatureRequestNotFoundError,
 	SignatureRequestStateError,
 } from '../errors/signature.errors';
+import { documentFileName } from '../utils/document-file-name';
 
 /** Presigned URLs for the signed PDF artifact live this long (seconds). */
 const DOWNLOAD_TTL_SECONDS = 300;
@@ -495,12 +496,23 @@ export class SignatureService {
 			ipAddress: meta.ipAddress ?? null,
 			userAgent: meta.userAgent ?? null,
 		});
+		const document = await this.documents.findById(request.documentId);
+		// Same rule as a stored document file, plus `_signed` so the artifact is
+		// never confused with the file it was placed on.
+		const fileName = document
+			? documentFileName({
+					title: `${document.title} - signed`,
+					code: document.code,
+					extension: 'pdf',
+					at: signature.signedAt ?? new Date(),
+				})
+			: 'signed.pdf';
 		return {
 			url: this.storage.presignGet(signature.signedFileKey, {
-				fileName: 'signed.pdf',
+				fileName,
 				expiresIn: DOWNLOAD_TTL_SECONDS,
 			}),
-			fileName: 'signed.pdf',
+			fileName,
 		};
 	}
 

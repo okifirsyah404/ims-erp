@@ -1,14 +1,12 @@
-import type { TEmployeeSalarySelect, TEmployeeSelect } from '@drizzle/schemas/human-resource.schema';
+import type { TEmployeeSelect } from '@drizzle/schemas/human-resource.schema';
 import { businessDateOf } from '@utils/business-date.util';
 import { inject, injectable } from 'tsyringe';
 import { HR_PEOPLE_REPOSITORY_TOKEN } from '../constants/di';
-import type { TEmployeeSalaryBody, THrContext, THrScope } from '../contracts/hr-records.contract';
+import type { THrScope } from '../contracts/hr-records.contract';
 import type { IHrPeopleRepository } from '../contracts/hr-records.repository.interface';
 import { EmployeeStateError, HrNotFoundError } from '../errors/hr.errors';
-import { maskTail } from '../utils/hr';
 
 export type TPersonRef = { id: string; employeeCode: string; fullName: string };
-export type TSalaryBankView = Pick<TEmployeeSalarySelect, 'bankName' | 'bankAccountNumber' | 'bankAccountHolder'> & { masked: boolean };
 
 /** Jakarta business date of an ERP-0034 date column (unix ms at Jakarta midnight). */
 const dayOf = (value: Date | null) => (value ? businessDateOf(value) : null);
@@ -40,8 +38,7 @@ export const personOf = (employee: TEmployeeSelect): TPersonRef => ({
  * Employees are created and edited by ERP-0034 (`EmployeeService`). The M08
  * records reach them only through this service, which applies the same
  * visibility rule as the employee list: company-level employees and those of
- * the caller's active organization, or all for an application admin. It
- * also owns the bank account, masked without `employee:read_private`.
+ * the caller's active organization, or all for an application admin.
  */
 @injectable()
 export class HrPeopleService {
@@ -71,25 +68,5 @@ export class HrPeopleService {
 
 	findByCodes(scope: THrScope, codes: string[]): Promise<TEmployeeSelect[]> {
 		return this.repository.findByCodes(codes, scope);
-	}
-
-	async bank(ctx: THrContext, employeeId: string): Promise<TSalaryBankView | null> {
-		await this.require(ctx.scope, employeeId);
-		const bank = await this.repository.findBank(employeeId);
-		if (!bank) return null;
-		return {
-			bankName: bank.bankName,
-			bankAccountHolder: bank.bankAccountHolder,
-			bankAccountNumber: ctx.canReadPrivate
-				? bank.bankAccountNumber
-				: (maskTail(bank.bankAccountNumber) ?? ''),
-			masked: !ctx.canReadPrivate,
-		};
-	}
-
-	async saveBank(ctx: THrContext, employeeId: string, body: TEmployeeSalaryBody): Promise<TSalaryBankView | null> {
-		await this.require(ctx.scope, employeeId);
-		await this.repository.saveBank(employeeId, body);
-		return this.bank(ctx, employeeId);
 	}
 }

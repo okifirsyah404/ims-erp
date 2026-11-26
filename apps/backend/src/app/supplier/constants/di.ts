@@ -1,5 +1,5 @@
 import { InjectionToken } from 'tsyringe';
-import type { ISupplierCompanyRepository } from '../contracts/supplier.repository.interface';
+import type { ISupplierAddressRepository, ISupplierCompanyAddressRepository, ISupplierCompanyRepository } from '../contracts/supplier.repository.interface';
 import type { ISupplierRepository } from '../contracts/supplier.repository.interface';
 import type { SupplierService } from '../services/supplier.service';
 import type { ExportedSupplierService } from '../services/exported-supplier.service';
@@ -21,6 +21,14 @@ export const SUPPLIER_COMPANY_REPOSITORY_TOKEN: InjectionToken<ISupplierCompanyR
 /** Token resolving to the {@link ISupplierRepository} implementation. */
 export const SUPPLIER_PERSON_REPOSITORY_TOKEN: InjectionToken<ISupplierRepository> =
 	Symbol('SUPPLIER_PERSON_REPOSITORY');
+
+/** Token resolving to the {@link ISupplierCompanyAddressRepository} implementation. */
+export const SUPPLIER_COMPANY_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ISupplierCompanyAddressRepository> =
+	Symbol('SUPPLIER_COMPANY_ADDRESS_REPOSITORY');
+
+/** Token resolving to the {@link ISupplierAddressRepository} implementation. */
+export const SUPPLIER_ADDRESS_REPOSITORY_TOKEN: InjectionToken<ISupplierAddressRepository> =
+	Symbol('SUPPLIER_ADDRESS_REPOSITORY');
 
 /** Token resolving to the {@link SupplierService} implementation. */
 export const SUPPLIER_SERVICE_TOKEN: InjectionToken<SupplierService> = Symbol(

@@ -29,12 +29,16 @@ import {
 	matchReconciliationItem,
 	cashBankTransactionsQueryOptions,
 	reconcileReconciliation,
+	reconciliationQueryOptions,
 	reconciliationsQueryOptions,
+	accountsQueryOptions,
+	createStatementTransaction,
 	type TBankReconciliation,
 	type TBankReconciliationItem,
 	toMinor,
 } from '@/lib/finance-api';
 import { usePermission } from '@/lib/use-permission';
+import { StatementImportPanel } from './statement-import-panel';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -71,12 +75,16 @@ export function ReconciliationPage() {
 		enabled: canReconcile,
 	});
 
-	// The backend has no endpoint listing statement items, so this page shows the
-	// items added or matched in the current session, keyed by reconciliation.
-	const [itemsByReconciliation, setItemsByReconciliation] = useState<
-		Record<string, TBankReconciliationItem[]>
-	>({});
-	const items = selectedId ? itemsByReconciliation[selectedId] : undefined;
+	// ERP-0143: the detail read carries the statement lines.
+	const { data: detail } = useQuery({
+		...reconciliationQueryOptions(selectedId ?? ''),
+		enabled: canRead && selectedId != null,
+	});
+	const items: TBankReconciliationItem[] | undefined = detail?.items;
+	const { data: postable } = useQuery({
+		...accountsQueryOptions({ page: 1, limit: 200, isActive: true, isPostable: true }),
+		enabled: canReconcile && selectedId != null,
+	});
 
 	const reconciliation = page?.rows.find((row) => row.id === selectedId) ?? null;
 
@@ -177,13 +185,7 @@ export function ReconciliationPage() {
 					statementAmount: statementAmount ? toMinor(statementAmount) : null,
 				},
 			]),
-		onSuccess: async (added) => {
-			if (selectedId) {
-				setItemsByReconciliation((previous) => ({
-					...previous,
-					[selectedId]: [...(previous[selectedId] ?? []), ...added],
-				}));
-			}
+		onSuccess: async () => {
 			toast.success(t('finance:reconciliation.itemsAdded'));
 			setStatementReference('');
 			setStatementAmount('');
@@ -199,17 +201,20 @@ export function ReconciliationPage() {
 				input.itemId,
 				input.cashBankTransactionId,
 			),
-		onSuccess: async (updated) => {
-			if (selectedId) {
-				setItemsByReconciliation((previous) => ({
-					...previous,
-					[selectedId]: (previous[selectedId] ?? []).map((item) =>
-						item.id === updated.id ? updated : item,
-					),
-				}));
-			}
+		onSuccess: async () => {
 			toast.success(t('finance:reconciliation.matchedDone'));
 			invalidate();
+		},
+		onError: (mutationError: Error) => toast.error(mutationError.message),
+	});
+
+	const book = useMutation({
+		mutationFn: (input: { itemId: string; accountId: string }) =>
+			createStatementTransaction(selectedId ?? '', input.itemId, input.accountId),
+		onSuccess: async () => {
+			toast.success(t('finance:statement.booked'));
+			invalidate();
+			void queryClient.invalidateQueries({ queryKey: ['cash-bank-transactions'] });
 		},
 		onError: (mutationError: Error) => toast.error(mutationError.message),
 	});
@@ -308,6 +313,14 @@ export function ReconciliationPage() {
 						{t('finance:reconciliation.items')} — {reconciliation.code}
 					</h2>
 
+					{canReconcile && (reconciliation.status === 'draft' || reconciliation.status === 'in_progress') ? (
+						<StatementImportPanel
+							reconciliationId={reconciliation.id}
+							cashBankAccountId={reconciliation.cashBankAccountId}
+							mapping={accounts?.find((account) => account.id === reconciliation.cashBankAccountId)?.statementMapping ?? null}
+						/>
+					) : null}
+
 					{canReconcile && reconciliation.status !== 'closed' ? (
 						<div className='flex flex-wrap items-center gap-2'>
 							<Input
@@ -343,12 +356,20 @@ export function ReconciliationPage() {
 									className='flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm'
 								>
 									<span>
+										{item.statementDate ? <span className='text-muted-foreground mr-2 text-xs'>{item.statementDate}</span> : null}
 										<span className='font-mono text-xs'>
-											{item.statementReference ?? item.id.slice(0, 8)}
+											{item.statementReference ?? (item.description ? '' : item.id.slice(0, 8))}
 										</span>{' '}
+										{item.description ? <span className='mr-2'>{item.description}</span> : null}
+										{item.direction === 'out' ? '−' : item.direction === 'in' ? '+' : ''}
 										{item.statementAmount != null
 											? formatMoney(item.statementAmount)
 											: ''}
+										{item.matchMethod ? (
+											<span className='text-muted-foreground ml-2 text-xs'>
+												{t(`finance:statement.method.${item.matchMethod}`)}
+											</span>
+										) : null}
 									</span>
 									<span className='flex items-center gap-2'>
 										<Badge variant={item.isMatched ? 'secondary' : 'outline'}>
@@ -367,7 +388,7 @@ export function ReconciliationPage() {
 													})
 												}
 											>
-												<SelectTrigger className='w-64 text-xs'>
+												<SelectTrigger className='w-56 text-xs'>
 													<SelectValue />
 												</SelectTrigger>
 												<SelectContent>
@@ -379,6 +400,27 @@ export function ReconciliationPage() {
 															{movement.transactionDate}{' '}
 															{movement.direction === 'in' ? '+' : '−'}
 															{formatMoney(movement.amount)}
+														</SelectItem>
+													))}
+												</SelectContent>
+											</Select>
+										) : null}
+										{canReconcile && !item.isMatched && item.direction && reconciliation.status !== 'closed' ? (
+											<Select
+												value='none'
+												disabled={book.isPending}
+												onValueChange={(value: string | null) => {
+													if (value && value !== 'none') void book.mutateAsync({ itemId: item.id, accountId: value });
+												}}
+											>
+												<SelectTrigger className='w-56 text-xs'>
+													<SelectValue />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value='none'>{t('finance:statement.bookAs')}</SelectItem>
+													{postable?.rows.map((account) => (
+														<SelectItem key={account.id} value={account.id}>
+															{account.code} — {account.name}
 														</SelectItem>
 													))}
 												</SelectContent>

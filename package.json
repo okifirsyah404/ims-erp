@@ -14,6 +14,7 @@
     "dev": "turbo run dev",
     "dev:website": "bun run --filter '@ims-erp/web-landing' dev",
     "dev:portal": "bun run --filter '@ims-erp/web-customer-portal' dev",
+    "dev:employee": "bun run --filter '@ims-erp/web-employee' dev",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
@@ -29,15 +30,15 @@
   "devDependencies": {
     "@dbml/core": "^12.1.0",
     "@types/bun": "^1.4.4",
-    "drizzle-kit": "^1.0.0-rc.5",
+    "drizzle-kit": "^1.0.0-rc.6",
     "husky": "^9.1.7",
-    "turbo": "^2.11.12"
+    "turbo": "^2.11.13"
   },
   "peerDependencies": {
     "typescript": "^6.0.3"
   },
   "patchedDependencies": {
     "@vite-pwa/workbox-build@8.0.15": "patches/@vite-pwa%2Fworkbox-build@8.0.15.patch",
-    "@unplugin-pwa/core@0.0.7": "patches/@unplugin-pwa%2Fcore@0.0.7.patch"
+    "@unplugin-pwa/core@0.0.8": "patches/@unplugin-pwa%2Fcore@0.0.8.patch"
   }
 }

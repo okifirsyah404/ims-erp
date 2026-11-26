@@ -24,6 +24,7 @@ import integrations from './integrations';
 import documents from './documents';
 import notifications from './notifications';
 import signatures from './signatures';
+import employee from './employee';
 
 /**
  * English resources, grouped by namespace. This bundle is the source of
@@ -56,6 +57,7 @@ export const en = {
 	documents,
 	notifications,
 	signatures,
+	employee,
 } as const;
 
 export type Namespace = keyof typeof en;

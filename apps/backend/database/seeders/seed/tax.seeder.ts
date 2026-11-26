@@ -1,7 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import pino from 'pino';
 import { drizzleDB } from '../../../drizzle/db';
-import { taxes } from '../../../drizzle/schemas/tax.schema';
+import { pph21Brackets, pph21Ptkp, taxes } from '../../../drizzle/schemas/tax.schema';
 import { organizations } from '../../../drizzle/schemas/auth.schema';
 import { SEED_ORGANIZATION_SLUG } from './organization.seeder';
 
@@ -98,4 +98,67 @@ export async function seedTax(): Promise<void> {
 	}
 
 	logger.info({ inserted }, 'Tax seeding complete');
+	await seedPph21Statutory();
+}
+
+/** Rupiah to minor units. */
+const rp = (rupiah: number) => rupiah * 100;
+
+/**
+ * PTKP per status (PMK 101/PMK.010/2016, unchanged since) with the TER
+ * category of PP 58/2023, which the 2024-01-01 set introduces.
+ */
+const PTKP_2024 = [
+	{ statusCode: 'TK/0', annualAmount: rp(54_000_000), terCategory: 'A' },
+	{ statusCode: 'TK/1', annualAmount: rp(58_500_000), terCategory: 'A' },
+	{ statusCode: 'TK/2', annualAmount: rp(63_000_000), terCategory: 'B' },
+	{ statusCode: 'TK/3', annualAmount: rp(67_500_000), terCategory: 'B' },
+	{ statusCode: 'K/0', annualAmount: rp(58_500_000), terCategory: 'A' },
+	{ statusCode: 'K/1', annualAmount: rp(63_000_000), terCategory: 'B' },
+	{ statusCode: 'K/2', annualAmount: rp(67_500_000), terCategory: 'B' },
+	{ statusCode: 'K/3', annualAmount: rp(72_000_000), terCategory: 'C' },
+] as const;
+
+/** Pasal 17 ayat (1) huruf a as amended by UU HPP (7/2021), from 2022. */
+const BRACKETS_2022 = [
+	{ lowerBound: 0, rate: '5.0000' },
+	{ lowerBound: rp(60_000_000), rate: '15.0000' },
+	{ lowerBound: rp(250_000_000), rate: '25.0000' },
+	{ lowerBound: rp(500_000_000), rate: '30.0000' },
+	{ lowerBound: rp(5_000_000_000), rate: '35.0000' },
+] as const;
+
+/**
+ * Seeds the PPh 21 statutory tables (ERP-0138): PTKP and Pasal 17 only.
+ *
+ * @remarks
+ * TER rates are deliberately not seeded: finance imports the official
+ * PP 58/2023 table (`POST /taxes/pph21/ter-rates/import`). Global reference
+ * data, keyed on the natural key, so a second run inserts nothing.
+ */
+export async function seedPph21Statutory(): Promise<void> {
+	const now = new Date();
+	let ptkp = 0;
+	for (const row of PTKP_2024) {
+		const [existing] = await drizzleDB
+			.select({ id: pph21Ptkp.id })
+			.from(pph21Ptkp)
+			.where(and(eq(pph21Ptkp.statusCode, row.statusCode), eq(pph21Ptkp.effectiveFrom, '2024-01-01'), isNull(pph21Ptkp.deletedAt)))
+			.limit(1);
+		if (existing) continue;
+		await drizzleDB.insert(pph21Ptkp).values({ ...row, effectiveFrom: '2024-01-01', createdAt: now, updatedAt: now });
+		ptkp += 1;
+	}
+	let brackets = 0;
+	for (const row of BRACKETS_2022) {
+		const [existing] = await drizzleDB
+			.select({ id: pph21Brackets.id })
+			.from(pph21Brackets)
+			.where(and(eq(pph21Brackets.lowerBound, row.lowerBound), eq(pph21Brackets.effectiveFrom, '2022-01-01'), isNull(pph21Brackets.deletedAt)))
+			.limit(1);
+		if (existing) continue;
+		await drizzleDB.insert(pph21Brackets).values({ ...row, effectiveFrom: '2022-01-01', createdAt: now, updatedAt: now });
+		brackets += 1;
+	}
+	logger.info({ ptkp, brackets }, 'PPh 21 statutory tables seeded (TER rows are imported, not seeded)');
 }

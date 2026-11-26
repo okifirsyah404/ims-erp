@@ -15,14 +15,14 @@ acceptance of a feature.
 - No Docker/testcontainers wiring exists yet - integration tests, when
   introduced, target a real local PostgreSQL configured by env names
   (`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`, `POSTGRES_DB`,
-  disposable DB values supplied per run).
+  throwaway local DB values supplied per run).
 
 ## Test pyramid
 
 | Layer | Location | Scope | Dependencies |
 |---|---|---|---|
 | Unit | `apps/backend/test/unit/` | services with mocked repositories (pass-through, null propagation); repositories with mocked Drizzle chain + Redis client (soft-delete filter construction, cache-aside flow, TTL 300, write invalidation) | mocks only, fully offline |
-| Integration (real PG) | not yet introduced | migrations applied, constraints (unique/23505, FK), pagination counts, soft-delete filtering against real data | disposable PostgreSQL |
+| Integration (real PG) | not yet introduced | migrations applied, constraints (unique/23505, FK), pagination counts, soft-delete filtering against real data | a throwaway local PostgreSQL |
 | e2e | `apps/backend/test/e2e/` (empty, reserved) | real HTTP against the booted app: session flow, authorization denial, write success, deactivation | disposed app + PG |
 | Frontend | not established yet | component/query tests when slices land; route tree generated, never hand-edited | - |
 
@@ -59,7 +59,7 @@ stale state. `build` stays out of the hook (too slow).
    once, and concurrent inserts cannot produce duplicate alive rows.
 7. **Relational v2** — at least one real query exercising an actual declared
    relationship when the model has one (never invent a demo relationship).
-8. **Migration integrity** — new migrations apply on a clean disposable DB and
+8. **Migration integrity** — new migrations apply on a clean throwaway local DB and
    seeding twice is safe.
 
 ## Financial/audit scenarios (from phase 4 onward)

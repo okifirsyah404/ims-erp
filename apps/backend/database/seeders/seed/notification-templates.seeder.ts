@@ -79,6 +79,41 @@ export const NOTIFICATION_TEMPLATE_SEEDS: ReadonlyArray<{
 		bodyTemplate: '{{signerName}} declined to sign {{documentName}}.',
 		variables: ['signerName', 'documentName'],
 	},
+	{
+		code: 'hr.task_assigned',
+		name: 'Task assigned',
+		subjectTemplate: 'New task: {{title}}',
+		bodyTemplate: 'You were given the task {{title}} due {{dueDate}}.',
+		variables: ['title', 'dueDate'],
+	},
+	{
+		code: 'hr.leave_decided',
+		name: 'Leave decided',
+		subjectTemplate: 'Your {{requestType}} request was {{decision}}',
+		bodyTemplate: 'Your {{requestType}} request for {{period}} was {{decision}}.',
+		variables: ['requestType', 'period', 'decision'],
+	},
+	{
+		code: 'project.attendance_recorded',
+		name: 'Project attendance recorded',
+		subjectTemplate: 'Attendance recorded on {{projectName}}',
+		bodyTemplate: '{{employeeName}} checked in on {{projectName}} at {{checkedAt}}.',
+		variables: ['projectName', 'employeeName', 'checkedAt'],
+	},
+	{
+		code: 'hr.payroll_draft_ready',
+		name: 'Payroll draft ready',
+		subjectTemplate: 'Payroll {{period}} is ready for approval',
+		bodyTemplate: 'The payday run created {{records}} draft salary record(s) for {{period}}.',
+		variables: ['period', 'records'],
+	},
+	{
+		code: 'hr.payslip_ready',
+		name: 'Payslip ready',
+		subjectTemplate: 'Your payslip for {{period}} is ready',
+		bodyTemplate: 'Your payslip for {{period}} can be downloaded from your account page.',
+		variables: ['period'],
+	},
 ];
 
 /**

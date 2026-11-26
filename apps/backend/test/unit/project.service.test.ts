@@ -37,6 +37,8 @@ let evidence: TEvidenceSelect[];
 let costs: TCostSelect[];
 let roles: Record<string, string>;
 let stored: string[];
+let journals: Array<Array<Record<string, unknown>>> = [];
+let reversals: string[] = [];
 let service: ProjectService;
 
 const order = {
@@ -138,6 +140,10 @@ function fakeRepository(): IProjectRepository {
 			const cost = costs.find((row) => row.id === costId && row.projectId === projectId && !row.voidedAt);
 			return cost ? Object.assign(cost, { voidedAt: new Date(), voidedBy: actor, voidReason: reason }) : null;
 		},
+		async setCostJournal(costId: string, journalEntryId: string) {
+			const cost = costs.find((row) => row.id === costId);
+			if (cost) cost.journalEntryId = journalEntryId;
+		},
 	};
 }
 
@@ -147,6 +153,8 @@ beforeEach(() => {
 	evidence = [];
 	costs = [];
 	stored = [];
+	journals = [];
+	reversals = [];
 	roles = { pm: 'project_manager', tech: 'technician', sales: 'sales' };
 	const grants: Record<string, string[]> = { project_manager: ['project:update', 'task:update'], technician: ['task:update'], sales: [] };
 	service = new ProjectService(
@@ -178,6 +186,17 @@ beforeEach(() => {
 			},
 			presignGet: (key: string) => `https://files/${key}`,
 		},
+		{ run: <T,>(work: (tx: never) => Promise<T>) => work({} as never) } as never,
+		{
+			postBusinessEvent: async (_tx: unknown, input: { lines: Array<Record<string, unknown>> }) => {
+				journals.push(input.lines);
+				return { entry: { id: `je-${journals.length}` } } as never;
+			},
+			reverse: async (_tx: unknown, _org: string, entryId: string) => {
+				reversals.push(entryId);
+				return {} as never;
+			},
+		} as never,
 	);
 });
 
@@ -265,11 +284,25 @@ describe('projects', () => {
 
 	test('costs: direct entries plus shipped materials against the contract value; voiding', async () => {
 		const project = await createProject();
-		await service.addCost(pm, project.id, { category: 'transport', costDate: '2026-11-12', amount: 75_000_000, description: 'Bensin + tol' });
-		const bad = await service.addCost(pm, project.id, { category: 'other', costDate: '2026-11-12', amount: 10_000, description: 'Salah' });
+		await service.addCost(pm, project.id, { category: 'transport', costDate: '2026-11-12', amount: 75_000_000, description: 'Bensin + tol', paymentSource: 'employee_claim' });
+		const bad = await service.addCost(pm, project.id, { category: 'other', costDate: '2026-11-12', amount: 10_000, description: 'Salah', paymentSource: 'petty_cash' });
 		await service.voidCost(pm, project.id, bad.id, 'salah input');
 		const detail = await service.get(pm, project.id);
 		expect(detail.costs).toMatchObject({ directTotal: 75_000_000, materialTotal: 2_000_000_000, total: 2_075_000_000, contractValue: 11_100_000_000 });
+	});
+
+	test('costs post Dr project COGS by category / Cr the payment source; voiding reverses (ERP-0141)', async () => {
+		const project = await createProject();
+		await service.addCost(pm, project.id, { category: 'transport', costDate: '2026-11-12', amount: 75_000, description: 'Tol', paymentSource: 'employee_claim' });
+		const cash = await service.addCost(pm, project.id, { category: 'material', costDate: '2026-11-12', amount: 20_000, description: 'Kabel', paymentSource: 'petty_cash' });
+		expect(journals[0]).toEqual([
+			{ role: 'project_cogs', discriminatorType: 'cost_category', discriminatorValue: 'transport', debit: 75_000, credit: 0, projectId: project.id },
+			{ role: 'claim_payable', debit: 0, credit: 75_000 },
+		]);
+		expect(journals[1][1]).toEqual({ role: 'cash_payment', discriminatorType: 'payment_method', discriminatorValue: 'cash', debit: 0, credit: 20_000 });
+		expect(cash.journalEntryId).toBe('je-2');
+		await service.voidCost(pm, project.id, cash.id, 'dobel');
+		expect(reversals).toEqual(['je-2']);
 	});
 
 	test('cancelling frees the deal for a new project', async () => {

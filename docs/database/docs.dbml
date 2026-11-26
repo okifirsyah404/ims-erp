@@ -201,6 +201,7 @@ TableGroup "Project" {
   project.changes
   project.work_plans
   project.settings
+  project.site_attendances
   project.code_numberings
 }
 
@@ -834,10 +835,7 @@ Table supplier.companies {
   tax_id varchar(16) [note: "NPWP digits only, 15 or 16."]
   email text
   phone varchar(30)
-  whatsapp varchar(30)
   website varchar(200)
-  payment_terms_days integer [not null, default: 0]
-  payment_term_note varchar(300) [note: "Default payment line of new purchase orders."]
   bank_name text
   bank_account_number text
   bank_account_holder text
@@ -847,7 +845,7 @@ Table supplier.companies {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
+  Note: "Supplier company, company-wide. Was procurement.suppliers for company/government rows (ADR-0024 Q17). ERP-0116 dropped whatsapp (contacts live on the PIC and the purchase order) and payment_terms_days/payment_term_note (payment terms belong to the purchase order, ERP-0116). Bank details are restricted and never returned without supplier:read_bank. Inactive suppliers cannot be used on new purchase orders."
   Indexes {
     name [name: 'supplier_companies_name_idx']
     status [name: 'supplier_companies_status_idx']
@@ -856,7 +854,6 @@ Table supplier.companies {
   Checks {
     `supplier_type IN ('company', 'government')`
     `status IN ('active', 'inactive')`
-    `payment_terms_days >= 0`
   }
 }
 
@@ -867,7 +864,6 @@ Table supplier.suppliers {
   title varchar(100) [note: "Job title, printed on purchase orders."]
   phone varchar(30)
   email text
-  whatsapp varchar(30)
   is_primary boolean [not null, default: false, note: "The supplier-side person in charge printed on purchase orders; at most one live row per company."]
   status text [not null, default: 'active']
   notes text
@@ -875,7 +871,7 @@ Table supplier.suppliers {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17)."
+  Note: "Supplier-side person in charge (PIC), or an individual supplier when company_id is null. Was the procurement.suppliers PIC columns (ADR-0024 Q17). ERP-0116 dropped whatsapp (the PIC address block carries the phone)."
   Indexes {
     company_id [name: 'suppliers_company_id_idx']
     status [name: 'suppliers_status_idx']
@@ -2311,6 +2307,7 @@ Table sale.invoices {
   company_id uuid [note: "Logical reference to customer.companies.id. Cross-module FK intentionally omitted. Validated through the Customer module contract."]
   customer_snapshot jsonb [note: "Customer data copied from the sales order. Null when the invoice has no order."]
   order_id uuid [note: "Plain id of a row in sale.orders (same module). Nullable: proforma and recurring invoices may have no order."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through the Project module contract. The live project of the order, stamped when the invoice is issued (ERP-0141)."]
   order_code varchar(32)
   quotation_code varchar(40) [note: "The SPH number printed as No. Ref."]
   title text [note: "Subject (Perihal), from the order."]
@@ -2354,7 +2351,7 @@ Table sale.invoices {
   Checks {
     `invoice_type IN ('sales', 'proforma', 'recurring')`
     `term_kind IS NULL OR term_kind IN ('down_payment', 'installment', 'settlement')`
-    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'void', 'cancelled')`
+    `status IN ('draft', 'issued', 'partially_paid', 'paid', 'written_off', 'void', 'cancelled')`
     `vat_rate_bps >= 0 AND vat_rate_bps <= 10000`
     `subtotal >= 0`
     `discount_total >= 0`
@@ -2379,6 +2376,8 @@ Table sale.invoice_items {
   line_total bigint [not null, default: 0]
   sort_order integer [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
+  service_period_start date [note: "Service period of a maintenance/subscription line (ERP-0135): when set, the line's revenue is deferred and amortised monthly over the period."]
+  service_period_end date
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -2393,6 +2392,8 @@ Table sale.invoice_items {
     `discount_amount >= 0`
     `tax_amount >= 0`
     `line_total >= 0`
+    `(service_period_start IS NULL) = (service_period_end IS NULL)`
+    `service_period_end IS NULL OR service_period_end >= service_period_start`
   }
 }
 
@@ -2653,6 +2654,7 @@ Table procurement.purchase_orders {
   code varchar(40) [note: "Assigned on approval, e.g. PO/IMS-HIT/HW/1026/001; null before. Unique among live rows."]
   supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
   supplier_pic_id uuid [note: "Logical reference to supplier.suppliers.id. Cross-module FK intentionally omitted. Validated through the Supplier module contract."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through ProjectLookupService.getProject; an approved, unbilled order is a commitment against the project budget (ERP-0146)."]
   supplier_snapshot jsonb [not null, note: "Supplier name, address, NPWP and PIC printed on the PO."]
   category text [not null, note: "{CATEGORY} token of the number: hardware HW, software SW, service JS, other LN."]
   subject varchar(200) [not null]
@@ -2807,6 +2809,7 @@ Table procurement.purchase_returns {
   cancelled_by text [note: "Logical reference to auth.users.id."]
   cancelled_at bigint
   cancelled_reason text
+  journal_entry_id uuid [note: "Logical reference to finance.journal_entries.id. Cross-module FK intentionally omitted. Validated through the Finance module contract. The Dr GR/IR / Cr inventory journal posted when the return shipped (ERP-0136)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
@@ -2952,7 +2955,7 @@ Table finance.accounting_periods {
 Table finance.journal_entries {
   id uuid [pk, default: `uuidv7()`]
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
-  code varchar(32) [not null]
+  code varchar(32) [note: "Journal number, assigned at posting (JE series). Null while a manual entry is draft/submitted/void (ERP-0129)."]
   accounting_period_id uuid [not null]
   entry_date date [not null]
   description text
@@ -2960,6 +2963,8 @@ Table finance.journal_entries {
   source_id text
   idempotency_key text [note: "Posting-service idempotency: a second posted entry with the same (organization_id, idempotency_key) is refused. Null keys skip the rule."]
   source_module text [not null, default: 'finance', note: "Producing module, guarded by the posting service. Other modules never write journal rows directly."]
+  event_type text [note: "Business event that produced the entry through postBusinessEvent (e.g. sale.invoice_issued); null for manual journals and explicit-account postings (ERP-0128)."]
+  is_adjusting boolean [not null, default: false, note: "Manual adjusting entry: the only kind a soft-closed period accepts (ERP-0130)."]
   status text [not null, default: 'draft']
   total_debit bigint [not null, default: 0]
   total_credit bigint [not null, default: 0]
@@ -2971,10 +2976,11 @@ Table finance.journal_entries {
   posted_by text [note: "Logical reference to auth.users.id."]
   posted_at bigint
   reversed_by_entry_id uuid
+  reverses_entry_id uuid [note: "On a reversal: the original entry it mirrors (ERP-0129)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Journal header (was accounting.journal_entries). Debit must equal credit; the posting service enforces it inside one transaction."
+  Note: "Journal header (was accounting.journal_entries). Debit must equal credit; the posting service enforces it inside one transaction. Manual entries: draft -> submitted -> approved/posted with maker-checker; reports sum posted and reversed entries."
   Indexes {
     (organization_id, code) [unique, name: 'journal_entries_org_code_uq']
     accounting_period_id [name: 'journal_entries_period_id_idx']
@@ -2982,6 +2988,7 @@ Table finance.journal_entries {
     entry_date [name: 'journal_entries_entry_date_idx']
     source_type [name: 'journal_entries_source_type_idx']
     source_id [name: 'journal_entries_source_id_idx']
+    reverses_entry_id [name: 'journal_entries_reverses_entry_id_idx']
     (organization_id, idempotency_key) [unique, name: 'journal_entries_idempotency_uq', note: "WHERE idempotency_key IS NOT NULL AND status <> 'void'"]
   }
   Checks {
@@ -2989,7 +2996,9 @@ Table finance.journal_entries {
     `total_debit >= 0`
     `total_credit >= 0`
     `total_debit = total_credit`
-    `source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource')`
+    `source_module IN ('finance', 'sale', 'procurement', 'inventory', 'payment', 'tax', 'human_resource', 'project')`
+    `code IS NOT NULL OR status IN ('draft', 'submitted', 'approved', 'void')`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3003,23 +3012,27 @@ Table finance.journal_lines {
   credit bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
   description text
-  cost_center_id uuid [note: "Column kept nullable and unvalidated: branches, departments, positions and cost centres were never built and are dropped with the organization schema (ADR-0024 Q4). Not a logical reference."]
+  cost_center_id uuid [note: "Same-schema reference to finance.cost_centers.id (ERP-0127); the posting service rejects unknown or inactive cost centres."]
   project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through the Project module contract."]
   party_type text
   party_id text
+  product_id uuid [note: "Logical reference to product.products.id. Cross-module FK intentionally omitted. Validated through the Product module contract by the source module before it posts (ERP-0128)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Journal line (was accounting.journal_lines). Exactly one of debit and credit is positive."
+  Note: "Journal line (was accounting.journal_lines). Exactly one of debit and credit is positive. Dimensions: cost centre, project, party, product."
   Indexes {
     journal_entry_id [name: 'journal_lines_entry_id_idx']
     account_id [name: 'journal_lines_account_id_idx']
-    (journal_entry_id, line_no) [unique, name: 'journal_lines_line_no_uq']
+    cost_center_id [name: 'journal_lines_cost_center_id_idx']
+    project_id [name: 'journal_lines_project_id_idx']
+    (journal_entry_id, line_no) [unique, name: 'journal_lines_line_no_uq', note: "WHERE deleted_at IS NULL (draft lines are replaced by soft delete)"]
   }
   Checks {
     `debit >= 0`
     `credit >= 0`
     `(debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0)`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3043,6 +3056,41 @@ Table finance.opening_balances {
   Checks {
     `debit_balance >= 0`
     `credit_balance >= 0`
+    `currency_code = 'IDR'`
+  }
+}
+
+Table finance.opening_subledger_items {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  ledger text [not null, note: "ar or ap."]
+  customer_id uuid [note: "Logical reference to customer.customers.id. Cross-module FK intentionally omitted. Resolved by code through ExportedCustomerService.findCustomerByCode on import; set on ar rows."]
+  supplier_company_id uuid [note: "Logical reference to supplier.companies.id. Cross-module FK intentionally omitted. Resolved by code through ExportedSupplierService.findCompanyByCode on import; set on ap rows."]
+  party_code varchar(32) [not null, note: "Customer or supplier code as imported (snapshot)."]
+  party_name text [not null, note: "Snapshot."]
+  document_number varchar(100) [not null, note: "The open invoice or bill number at cutover."]
+  document_date date [not null]
+  due_date date
+  amount bigint [not null, note: "Outstanding amount at the as-of date, IDR minor units."]
+  currency_code varchar(3) [not null, default: 'IDR']
+  as_of_date date [not null, note: "Cutover date; must equal the opening-balance batch date when posted."]
+  ar_open_item_id uuid [ref: > finance.ar_open_items.id, note: "The AR open item created when the batch posted."]
+  supplier_bill_id uuid [ref: > finance.supplier_bills.id, note: "The opening supplier bill created when the batch posted (ap rows)."]
+  ap_open_item_id uuid [ref: > finance.ap_open_items.id, note: "The AP open item created when the batch posted."]
+  posted_at bigint
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Sub-ledger detail behind the opening balance of the AR and AP control accounts (ERP-0142). Imported per ledger as CSV (all or nothing; an import replaces the unposted rows of its ledger). Posting the opening batch is refused while a ledger's total differs from its control account's opening row; on posting, AR rows become ar_open_items (no invoice) and AP rows become approved supplier bills with ap_open_items, without a journal of their own (the opening journal carries the amounts)."
+  Indexes {
+    (organization_id, ledger, document_number) [unique, name: 'opening_subledger_items_document_uq', note: 'WHERE deleted_at IS NULL']
+    (organization_id, ledger, posted_at) [name: 'opening_subledger_items_ledger_idx']
+  }
+  Checks {
+    `ledger IN ('ar', 'ap')`
+    `amount > 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3067,6 +3115,79 @@ Table finance.account_balances {
   Checks {
     `debit_total >= 0`
     `credit_total >= 0`
+    `currency_code = 'IDR'`
+  }
+}
+
+Table finance.cost_centers {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  code varchar(32) [not null]
+  name text [not null]
+  parent_cost_center_id uuid
+  is_active boolean [not null, default: true]
+  description text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Cost centre for cost accounting and management reports (ERP-0127). Finance-owned: the organization schema's departments are gone (ADR-0024 Q4)."
+  Indexes {
+    (organization_id, code) [unique, name: 'cost_centers_org_code_uq', note: "WHERE deleted_at IS NULL"]
+    parent_cost_center_id [name: 'cost_centers_parent_id_idx']
+  }
+}
+
+Table finance.posting_rules {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  event_type text [not null, default: '*', note: "Business event (e.g. sale.invoice_issued) or '*' for any event."]
+  role text [not null, note: "Semantic posting role (receivable, revenue, vat_output, payable, expense, vat_input, inventory, claim_payable, ...); vocabulary guarded by POSTING_ROLES in application code."]
+  discriminator_type text [not null, default: '', note: "Optional refinement; '' means none."]
+  discriminator_value text [not null, default: '', note: "Id or code the discriminator matches; '' when discriminator_type is ''."]
+  account_id uuid [not null]
+  is_active boolean [not null, default: true]
+  description text
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Account determination for postBusinessEvent (ERP-0128, ADR-0030). Resolution order: event+discriminator, event, '*'+discriminator, '*'. A missing rule fails the posting."
+  Indexes {
+    (organization_id, event_type, role, discriminator_type, discriminator_value) [unique, name: 'posting_rules_scope_uq', note: "WHERE deleted_at IS NULL"]
+    account_id [name: 'posting_rules_account_id_idx']
+  }
+  Checks {
+    `discriminator_type IN ('', 'product_category', 'tax', 'cash_bank_account', 'expense_category', 'asset_category', 'cost_category', 'payment_method', 'item_kind')`
+    `(discriminator_type = '') = (discriminator_value = '')`
+  }
+}
+
+Table finance.deferred_revenue_schedules {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  invoice_id uuid [note: "Logical reference to sale.invoices.id. Cross-module FK intentionally omitted. Validated through the Sale module contract."]
+  invoice_item_id uuid [note: "Logical reference to sale.invoice_items.id. Cross-module FK intentionally omitted. Validated through the Sale module contract."]
+  issue_entry_id uuid [note: "Same-schema reference to the invoice journal that credited deferred revenue."]
+  discriminator_type text [not null, default: '', note: "Revenue posting-rule discriminator carried to each amortisation (e.g. product_category)."]
+  discriminator_value text [not null, default: '']
+  total_amount bigint [not null]
+  recognized_amount bigint [not null, default: 0]
+  start_date date [not null]
+  end_date date [not null]
+  recognized_through varchar(7) [note: "Last month (YYYY-MM) amortised; null before the first run."]
+  status text [not null, default: 'active']
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Deferred revenue of one invoice line with a service period (ERP-0135). The monthly run posts Dr deferred revenue / Cr revenue straight-line per calendar month, idempotent per schedule and month; voiding the invoice cancels the schedule and reverses its amortisations."
+  Indexes {
+    invoice_id [name: 'deferred_revenue_schedules_invoice_id_idx']
+    status [name: 'deferred_revenue_schedules_status_idx']
+  }
+  Checks {
+    `status IN ('active', 'completed', 'cancelled')`
+    `total_amount > 0`
+    `recognized_amount >= 0 AND recognized_amount <= total_amount`
+    `end_date >= start_date`
   }
 }
 
@@ -3098,13 +3219,13 @@ Table finance.report_archives {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Immutable snapshot of a financial statement for a closed month (was accounting.report_archives). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent."
+  Note: "Immutable snapshot of a financial statement for a closed month (was accounting.report_archives); `management_pack` (ERP-0152) is the monthly management pack (statements, ratios, profitability, project budget vs actual). Append-only in practice: no update or delete route exists, and a reopened period is re-archived - the unique index keeps the write idempotent."
   Indexes {
     (organization_id, period_year, period_month, report_type) [unique, name: 'report_archives_scope_uq']
   }
   Checks {
     `period_month BETWEEN 1 AND 12`
-    `report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow')`
+    `report_type IN ('profit_and_loss', 'balance_sheet', 'cash_flow', 'management_pack')`
   }
 }
 
@@ -3145,20 +3266,26 @@ Table finance.cash_bank_accounts {
   opening_balance bigint [not null, default: 0]
   current_balance bigint [not null, default: 0, note: "Denormalized running balance, maintained transactionally by the service."]
   invoice_usage text [note: "Account printed on invoices with VAT (vat) or without VAT (non_vat); null for other accounts. Came from company.bank_accounts."]
+  employee_id uuid [note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract (ExportedEmployeeService.findEmployeeById). Set on an employee's salary payee account (ERP-0119); NULL on every company cash or bank account, and every treasury query filters employee_id IS NULL."]
+  statement_mapping jsonb [note: "Bank statement CSV layout (ERP-0143): delimiter, rows to skip, date column and format, description and reference columns, amount mode (signed, split debit/credit, or amount + DB/CR indicator), decimal separator. Null until finance maps the bank's export."]
   is_primary boolean [not null, default: false]
   is_active boolean [not null, default: true]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Operational cash and bank account used by the payment ledger, by reconciliation and by document printing. Merged from finance.cash_bank_accounts and company.bank_accounts (ADR-0024 Q19): the company master columns (bank_code, branch_name, invoice_usage, is_primary) live here now. Partial unique indexes in the Drizzle schema keep code and invoice_usage unique among live rows."
+  Note: "Operational cash and bank account used by the payment ledger, by reconciliation and by document printing. Merged from finance.cash_bank_accounts and company.bank_accounts (ADR-0024 Q19): the company master columns (bank_code, branch_name, invoice_usage, is_primary) live here now. A row with employee_id is an employee's salary payee account (ERP-0119): bank or ewallet, never a balance, never printed on invoices, one primary per employee."
   Indexes {
     (organization_id, code) [unique, name: 'cash_bank_accounts_org_code_uq']
     account_number [name: 'cash_bank_accounts_account_number_idx']
+    employee_id [name: 'cash_bank_accounts_employee_id_idx']
+    employee_id [unique, name: 'cash_bank_accounts_employee_primary_uq', note: 'WHERE is_primary AND employee_id IS NOT NULL AND deleted_at IS NULL']
   }
   Checks {
     `account_type IN ('cash', 'bank', 'ewallet', 'clearing')`
     `opening_balance >= 0`
     `invoice_usage IS NULL OR invoice_usage IN ('vat', 'non_vat')`
+    `employee_id IS NULL OR (account_type IN ('bank', 'ewallet') AND opening_balance = 0 AND current_balance = 0 AND invoice_usage IS NULL)`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3193,6 +3320,7 @@ Table finance.cash_bank_transactions {
     `direction IN ('in', 'out')`
     `status IN ('draft', 'posted', 'reversed')`
     `amount > 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3230,15 +3358,23 @@ Table finance.bank_reconciliation_items {
   cash_bank_transaction_id uuid
   statement_reference text
   statement_amount bigint
+  statement_date date [note: "Value date of the statement line (ERP-0143); null on lines keyed in by hand before ERP-0143."]
+  description text [note: "Statement line text as exported by the bank."]
+  direction text [note: "in (credit to our account) or out (debit); null on hand-keyed lines."]
+  match_method text [note: "auto (amount, direction, +-3 days, reference), manual, or created (an unmatched line turned into a cash/bank transaction)."]
   is_matched boolean [not null, default: false]
   notes text
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Line of a reconciliation, matched against a book transaction."
+  Note: "Line of a reconciliation, matched against a book transaction. ERP-0143: a reconciliation is one bank statement; its lines come from a CSV import (deduplicated on date, direction, amount and text) or are keyed in. A book transaction is matched by at most one live line."
   Indexes {
     bank_reconciliation_id [name: 'bank_reconciliation_items_reconciliation_id_idx']
     cash_bank_transaction_id [name: 'bank_reconciliation_items_transaction_id_idx']
+  }
+  Checks {
+    `direction IS NULL OR direction IN ('in', 'out')`
+    `match_method IS NULL OR match_method IN ('auto', 'manual', 'created')`
   }
 }
 
@@ -3278,6 +3414,7 @@ Table finance.supplier_bills {
     `grand_total >= 0`
     `paid_total >= 0`
     `outstanding_total >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3293,7 +3430,8 @@ Table finance.supplier_bill_items {
   unit_price bigint [not null, default: 0, note: "The purchase order unit price (IDR minor units), VAT as the order states it."]
   line_total bigint [not null, default: 0, note: "round(quantity x unit_price)."]
   tax_base bigint [not null, default: 0, note: "Ex-VAT part of the line total (IDR minor units); what the line debits."]
-  is_stock boolean [not null, default: false, note: "Stock-tracked product: the line debits inventory instead of expense."]
+  is_stock boolean [not null, default: false, note: "Stock-tracked product: the line clears GR/IR instead of debiting expense."]
+  grir_amount bigint [not null, default: 0, note: "Value the goods receipt credited to GR/IR for these units (quantity x ex-VAT receipt cost, ERP-0136); tax_base - grir_amount is the purchase price variance."]
   sort_order integer [not null, default: 0]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -3321,8 +3459,15 @@ Table finance.ar_open_items {
   original_amount bigint [not null]
   paid_amount bigint [not null, default: 0]
   outstanding_amount bigint [not null]
+  adjusted_amount bigint [not null, default: 0, note: "Credit memos and write-offs taken off the invoice amount (ERP-0135); original_amount is already net of it."]
   currency_code varchar(3) [not null, default: 'IDR']
   status text [not null, default: 'open']
+  write_off_reason text
+  write_off_requested_by text [note: "Logical reference to auth.users.id."]
+  write_off_requested_at bigint
+  written_off_by text [note: "Logical reference to auth.users.id. Must differ from write_off_requested_by (maker-checker)."]
+  written_off_at bigint
+  write_off_entry_id uuid
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "Accounts receivable open-item sub-ledger. Finance's own mirror of what is still owed per issued invoice, updated through the posting flow - never computed by reading sale tables. Aging reports are built on this table. No deleted_at: the row is a running balance cleared by status (projection exemption)."
@@ -3333,11 +3478,13 @@ Table finance.ar_open_items {
     due_date [name: 'ar_open_items_due_date_idx']
   }
   Checks {
-    `status IN ('open', 'partially_paid', 'paid', 'void')`
+    `status IN ('open', 'partially_paid', 'paid', 'written_off', 'void')`
     `original_amount >= 0`
     `paid_amount >= 0`
     `outstanding_amount >= 0`
+    `adjusted_amount >= 0`
     `outstanding_amount = original_amount - paid_amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3368,6 +3515,7 @@ Table finance.ap_open_items {
     `paid_amount >= 0`
     `outstanding_amount >= 0`
     `outstanding_amount = original_amount - paid_amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3397,6 +3545,100 @@ Table finance.asset_depreciations {
     `depreciation_method IN ('straight_line', 'declining_balance', 'none')`
     `depreciation_amount >= 0`
     `closing_book_value >= 0`
+    `currency_code = 'IDR'`
+  }
+}
+
+Table finance.fixed_asset_books {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  item_id uuid [note: "Logical reference to inventory.items.id. Cross-module FK intentionally omitted. Validated through ItemService.getItem (same organization, acquisition cost > 0, not disposed). The physical unit stays the asset master in inventory (ADR-0024 Q15)."]
+  fiscal_group text [note: "Tax depreciation group (UU PPh Pasal 11): kelompok_1..kelompok_4, bangunan_permanen, bangunan_tidak_permanen. Null until finance assigns it; such assets are left out of the fiscal report."]
+  capitalized_on date [not null]
+  capitalized_amount bigint [not null]
+  counterpart_account_id uuid [not null, note: "Account credited at capitalization (GR/IR, inventory, payables, cash or opening equity)."]
+  capitalization_entry_id uuid [note: "The capitalization journal: Dr fixed asset (by item kind) / Cr counterpart."]
+  disposal_entry_id uuid [note: "The disposal journal posted when inventory executes the disposal."]
+  status text [not null, default: 'active']
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Finance's book of a capitalized fixed asset (ERP-0145): links an inventory item to its capitalization and disposal journals and its fiscal group. Only capitalized items enter the monthly depreciation run (Dr Beban Penyusutan / Cr Akumulasi Penyusutan by item kind)."
+  Indexes {
+    (organization_id, item_id) [unique, name: 'fixed_asset_books_item_uq', note: 'WHERE deleted_at IS NULL']
+    status [name: 'fixed_asset_books_status_idx']
+  }
+  Checks {
+    `status IN ('active', 'disposed')`
+    `capitalized_amount > 0`
+    `fiscal_group IS NULL OR fiscal_group IN ('kelompok_1', 'kelompok_2', 'kelompok_3', 'kelompok_4', 'bangunan_permanen', 'bangunan_tidak_permanen')`
+  }
+}
+
+Table finance.project_budgets {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract. The project's organization."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through ProjectLookupService.getProject."]
+  version integer [not null]
+  status text [not null, default: 'draft']
+  control_mode text [not null, default: 'warn', note: "warn: overruns are reported; block: an approval, claim or cost entry that would overrun is refused."]
+  notes text
+  activated_by text [note: "Logical reference to auth.users.id."]
+  activated_at bigint
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Versioned budget of a project (ERP-0146): draft -> active -> superseded; one active version per project. Checked against actual (posted journal lines of expense accounts with the project) plus commitment (approved purchase orders of the project not yet billed)."
+  Indexes {
+    (organization_id, project_id, version) [unique, name: 'project_budgets_version_uq', note: 'WHERE deleted_at IS NULL']
+    project_id [unique, name: 'project_budgets_active_uq', note: "WHERE status = 'active' AND deleted_at IS NULL"]
+  }
+  Checks {
+    `status IN ('draft', 'active', 'superseded')`
+    `control_mode IN ('warn', 'block')`
+    `version > 0`
+  }
+}
+
+Table finance.project_budget_lines {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  project_budget_id uuid [not null]
+  account_id uuid [not null]
+  period varchar(7) [not null, note: "YYYY-MM."]
+  amount bigint [not null, note: "IDR minor units."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Budget amount of one account for one month of a project budget version (ERP-0146)."
+  Indexes {
+    (project_budget_id, account_id, period) [unique, name: 'project_budget_lines_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `amount >= 0`
+  }
+}
+
+Table finance.cash_forecast_lines {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
+  expected_date date [not null]
+  direction text [not null]
+  amount bigint [not null, note: "IDR minor units."]
+  description text [not null]
+  created_by text [note: "Logical reference to auth.users.id."]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Manual line of the 13-week cash forecast (ERP-0149): expected receipts or payments that no document carries yet (renewal amounts, tax instalments, capital, loans)."
+  Indexes {
+    (organization_id, expected_date) [name: 'cash_forecast_lines_date_idx']
+  }
+  Checks {
+    `direction IN ('in', 'out')`
+    `amount > 0`
   }
 }
 
@@ -3459,16 +3701,19 @@ Table finance.credit_memos {
   invoice_id uuid [note: "Logical reference to sale.invoices.id. Cross-module FK intentionally omitted."]
   customer_id uuid [note: "Logical reference to customer.customers.id. Cross-module FK intentionally omitted."]
   memo_date date
-  amount bigint [not null, default: 0]
+  amount bigint [not null, default: 0, note: "Total credited including VAT (IDR minor units)."]
+  tax_amount bigint [not null, default: 0, note: "VAT part of amount, split at the invoice's VAT ratio."]
   currency_code varchar(3) [not null, default: 'IDR']
   reason text
   status text [not null, default: 'draft']
+  journal_entry_id uuid
+  created_by text [note: "Logical reference to auth.users.id."]
   issued_by text [note: "Logical reference to auth.users.id."]
   issued_at bigint
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Credit note against an invoice. It reduces the receivable, it is not a payment."
+  Note: "Credit note against an issued invoice (ERP-0135; built). draft -> applied (posting Dr sales returns + Dr VAT output / Cr receivable and lowering the invoice's open amount) -> void (a reversal). It reduces the receivable, it is not a payment; sale.returns are replacements and do not create one."
   Indexes {
     (organization_id, code) [unique, name: 'credit_memos_org_code_uq']
     invoice_id [name: 'credit_memos_invoice_id_idx']
@@ -3477,6 +3722,8 @@ Table finance.credit_memos {
   Checks {
     `status IN ('draft', 'issued', 'applied', 'void')`
     `amount > 0`
+    `tax_amount >= 0 AND tax_amount <= amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3485,6 +3732,7 @@ Table finance.expense_claims {
   organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted. Validated through the Identity module contract."]
   code varchar(32) [not null]
   employee_id uuid [note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted. Validated through the Human Resource module contract."]
+  project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted. Validated through ProjectLookupService.getProject; the claim counts against the project budget at submit (ERP-0146)."]
   claim_date date
   total_amount bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
@@ -3496,9 +3744,9 @@ Table finance.expense_claims {
   payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted."]
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Operational expense claim of an employee, settled by a payment.payments disbursement."
+  Note: "Operational expense claim of an employee, settled by a payment.payments disbursement."
   Indexes {
     (organization_id, code) [unique, name: 'expense_claims_org_code_uq']
     employee_id [name: 'expense_claims_employee_id_idx']
@@ -3507,6 +3755,7 @@ Table finance.expense_claims {
   Checks {
     `status IN ('draft', 'submitted', 'approved', 'rejected', 'paid', 'cancelled')`
     `total_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3522,15 +3771,16 @@ Table finance.expense_claim_items {
   currency_code varchar(3) [not null, default: 'IDR']
   receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Line of an expense claim."
+  Note: "Line of an expense claim."
   Indexes {
     expense_claim_id [name: 'expense_claim_items_claim_id_idx']
   }
   Checks {
     `amount >= 0`
     `tax_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3553,9 +3803,9 @@ Table finance.employee_advances {
   disbursed_at bigint
   payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Cash advance to an employee. Disbursement is a payment.payments row; the advance is never a payment ledger of its own."
+  Note: "Cash advance to an employee (ERP-0144): draft -> submitted -> approved -> disbursed -> settled, or cancelled. Disbursement is a payment.payments row (allocation payable_type employee_advance, Dr Uang Muka Karyawan / Cr cash); the advance is never a payment ledger of its own. settled_amount counts what an approved settlement offset plus cash the employee returned (a receipt allocated to the advance); settled when it reaches amount."
   Indexes {
     (organization_id, code) [unique, name: 'employee_advances_org_code_uq']
     employee_id [name: 'employee_advances_employee_id_idx']
@@ -3567,6 +3817,7 @@ Table finance.employee_advances {
     `amount > 0`
     `settled_amount >= 0`
     `settled_amount <= amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3579,6 +3830,11 @@ Table finance.expense_settlements {
   settlement_type text [not null, default: 'expense']
   employee_advance_id uuid
   total_amount bigint [not null, default: 0]
+  advance_offset_amount bigint [not null, default: 0, note: "Part of the total charged against the advance at approval (ERP-0144)."]
+  payable_amount bigint [not null, default: 0, note: "Expenses above the advance's open balance, owed to the employee (claims payable)."]
+  paid_amount bigint [not null, default: 0, note: "Paid out of payable_amount through payment allocations (payable_type expense_settlement)."]
+  journal_entry_id uuid [note: "The settlement journal posted at approval."]
+  payment_id uuid [note: "Logical reference to payment.payments.id. Cross-module FK intentionally omitted. The payment that paid payable_amount."]
   currency_code varchar(3) [not null, default: 'IDR']
   settlement_date date
   status text [not null, default: 'draft']
@@ -3590,9 +3846,9 @@ Table finance.expense_settlements {
   approved_at bigint
   notes text
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Settlement of a project advance and of the operational expenses of an employee. Verification and approval are separate steps."
+  Note: "Settlement of an employee advance (ERP-0144): draft -> submitted -> verified -> approved -> paid, or rejected / cancelled; verification and approval are separate steps by different users. Approval posts Dr expenses (+ PPN input) / Cr Uang Muka Karyawan up to the advance's open balance / Cr claims payable for the rest. Only settlement_type advance is created; plain expense reimbursements stay finance.expense_claims."
   Indexes {
     (organization_id, code) [unique, name: 'expense_settlements_org_code_uq']
     employee_id [name: 'expense_settlements_employee_id_idx']
@@ -3603,6 +3859,9 @@ Table finance.expense_settlements {
     `settlement_type IN ('expense', 'advance')`
     `status IN ('draft', 'submitted', 'verified', 'approved', 'rejected', 'paid', 'cancelled')`
     `total_amount >= 0`
+    `advance_offset_amount >= 0 AND payable_amount >= 0`
+    `paid_amount >= 0 AND paid_amount <= payable_amount`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3620,15 +3879,16 @@ Table finance.expense_settlement_items {
   project_id uuid [note: "Logical reference to project.projects.id. Cross-module FK intentionally omitted."]
   receipt_document_id uuid [note: "Logical reference to document.documents.id. Cross-module FK intentionally omitted."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Line of an expense settlement."
+  Note: "Line of an expense settlement (ERP-0144). category_code is the expense account code, as on expense claim items."
   Indexes {
     expense_settlement_id [name: 'expense_settlement_items_settlement_id_idx']
   }
   Checks {
     `amount >= 0`
     `tax_amount >= 0`
+    `currency_code = 'IDR'`
   }
 }
 
@@ -3637,6 +3897,13 @@ Ref: finance.journal_entries.accounting_period_id > finance.accounting_periods.i
 Ref: finance.journal_entries.reversed_by_entry_id > finance.journal_entries.id [delete: set null]
 Ref: finance.journal_lines.journal_entry_id > finance.journal_entries.id [delete: cascade]
 Ref: finance.journal_lines.account_id > finance.chart_of_accounts.id [delete: restrict]
+Ref: finance.journal_lines.cost_center_id > finance.cost_centers.id [delete: restrict]
+Ref: finance.journal_entries.reverses_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.cost_centers.parent_cost_center_id > finance.cost_centers.id [delete: restrict]
+Ref: finance.posting_rules.account_id > finance.chart_of_accounts.id [delete: restrict]
+Ref: finance.deferred_revenue_schedules.issue_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.credit_memos.journal_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.ar_open_items.write_off_entry_id > finance.journal_entries.id [delete: set null]
 Ref: finance.opening_balances.account_id > finance.chart_of_accounts.id [delete: cascade]
 Ref: finance.account_balances.account_id > finance.chart_of_accounts.id [delete: cascade]
 Ref: finance.account_balances.accounting_period_id > finance.accounting_periods.id [delete: cascade]
@@ -3652,6 +3919,12 @@ Ref: finance.asset_depreciations.journal_entry_id > finance.journal_entries.id [
 Ref: finance.expense_claim_items.expense_claim_id > finance.expense_claims.id [delete: cascade]
 Ref: finance.expense_settlements.employee_advance_id > finance.employee_advances.id [delete: set null]
 Ref: finance.expense_settlement_items.expense_settlement_id > finance.expense_settlements.id [delete: cascade]
+Ref: finance.expense_settlements.journal_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.fixed_asset_books.counterpart_account_id > finance.chart_of_accounts.id [delete: restrict]
+Ref: finance.fixed_asset_books.capitalization_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.fixed_asset_books.disposal_entry_id > finance.journal_entries.id [delete: set null]
+Ref: finance.project_budget_lines.project_budget_id > finance.project_budgets.id [delete: cascade]
+Ref: finance.project_budget_lines.account_id > finance.chart_of_accounts.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Tax  (schema: tax, new; split out of accounting). Tax rates, the
@@ -3755,10 +4028,16 @@ Table tax.withholding_tax_records {
   period_year integer
   period_month integer
   status text [not null, default: 'recorded']
+  tax_object_code varchar(20) [note: "Kode objek pajak (ERP-0140), needed by the Coretax bukti potong."]
+  withholding_slip_number varchar(40) [note: "Bukti potong number once Coretax issued it (entered after upload)."]
+  counterparty_tax_id varchar(32) [note: "NPWP/NIK of the party withheld from."]
+  source_module text [note: "Module whose document produced the record (payment for a supplier payment withholding)."]
+  source_id text
+  coretax_status text [not null, default: 'not_exported']
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Withholding tax collected on a payment (was accounting.withholding_tax_records)."
+  Note: "Withholding tax collected on a payment (was accounting.withholding_tax_records). Since ERP-0140 a supplier payment with PPh creates its row (source_module = payment)."
   Indexes {
     (organization_id, code) [unique, name: 'withholding_tax_records_org_code_uq']
     tax_type_id [name: 'withholding_tax_records_tax_type_id_idx']
@@ -3768,6 +4047,65 @@ Table tax.withholding_tax_records {
     `base_amount >= 0`
     `tax_amount >= 0`
     `status IN ('recorded', 'verified', 'paid', 'reversed')`
+    `coretax_status IN ('not_exported', 'exported', 'uploaded')`
+  }
+}
+
+Table tax.pph21_ptkp {
+  id uuid [pk, default: `uuidv7()`]
+  status_code varchar(5) [not null, note: "PTKP status: TK/0..TK/3, K/0..K/3."]
+  annual_amount bigint [not null, note: "Annual PTKP in IDR minor units."]
+  ter_category varchar(1) [not null, note: "TER category of the status (PP 58/2023): A, B or C."]
+  effective_from date [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "PPh 21 non-taxable income per PTKP status and its TER category (ERP-0138). Global statutory reference data: no organization_id, like location.*. A change is a new row set with a later effective_from; the set in force on a date is the one with the latest effective_from on or before it."
+  Indexes {
+    (status_code, effective_from) [unique, name: 'pph21_ptkp_status_effective_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `status_code IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`
+    `ter_category IN ('A', 'B', 'C')`
+    `annual_amount >= 0`
+  }
+}
+
+Table tax.pph21_ter_rates {
+  id uuid [pk, default: `uuidv7()`]
+  category varchar(1) [not null, note: "TER category: A, B or C."]
+  lower_bound bigint [not null, note: "Monthly gross income in IDR minor units from which the rate applies (inclusive); the rate holds until the next row's lower_bound."]
+  rate numeric(7,4) [not null, note: "Percentage, e.g. 0.2500 for 0.25%."]
+  effective_from date [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Monthly PPh 21 effective rates (TER, PP 58/2023) per category (ERP-0138). Global statutory reference data: no organization_id. Never seeded: finance imports the official table as CSV; an import replaces the rows of its effective_from."
+  Indexes {
+    (category, lower_bound, effective_from) [unique, name: 'pph21_ter_rates_category_bound_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `category IN ('A', 'B', 'C')`
+    `lower_bound >= 0`
+    `rate >= 0 AND rate <= 100`
+  }
+}
+
+Table tax.pph21_brackets {
+  id uuid [pk, default: `uuidv7()`]
+  lower_bound bigint [not null, note: "Annual taxable income (PKP) in IDR minor units from which the rate applies (inclusive); the rate holds until the next row's lower_bound."]
+  rate numeric(7,4) [not null, note: "Percentage."]
+  effective_from date [not null]
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "Progressive Pasal 17 rates for the annual PPh 21 reconciliation (UU HPP, ERP-0138). Global statutory reference data: no organization_id."
+  Indexes {
+    (lower_bound, effective_from) [unique, name: 'pph21_brackets_bound_effective_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `lower_bound >= 0`
+    `rate >= 0 AND rate <= 100`
   }
 }
 
@@ -3840,6 +4178,9 @@ Table payment.payments {
   notes text
   voided_at bigint
   void_reason text
+  withholding_tax_id uuid [note: "Logical reference to tax.taxes.id. Cross-module FK intentionally omitted. Validated through the Tax module contract. PPh withheld from a supplier payment (ERP-0140)."]
+  withholding_amount bigint [not null, default: 0, note: "PPh withheld (IDR minor units): the bank pays amount - withholding_amount, the rest is owed to the state."]
+  tax_object_code varchar(20) [note: "Kode objek pajak of the withholding, e.g. 24-104-14."]
   created_at bigint [not null]
   updated_at bigint [not null]
   Note: "THE single payment ledger of the ERP, receipts and disbursements both (merged with payment.gateway_payments per ADR-0024 Q18). A payment settles payables through payment.payment_allocations, so the direct invoice/bill/advance columns are gone. Execution requires approval and is not allowed by the requester. A paid webhook on an expired or failed gateway row still counts: money received is a fact; paid is applied once, and a replayed webhook finds receipt_id and does nothing."
@@ -3852,6 +4193,7 @@ Table payment.payments {
     receipt_id [unique, name: 'payments_receipt_id_uq', note: "Partial: WHERE receipt_id IS NOT NULL."]
   }
   Checks {
+    `withholding_amount >= 0 AND withholding_amount < amount`
     `payment_type IN ('receipt', 'disbursement', 'refund', 'advance_disbursement', 'payroll', 'profit_distribution', 'investment')`
     `direction IN ('in', 'out')`
     `channel IN ('manual', 'gateway')`
@@ -4075,16 +4417,20 @@ Table project.costs {
   voided_by text [note: "Logical reference to auth.users.id."]
   voided_at bigint
   void_reason text
+  payment_source text [not null, default: 'employee_claim', note: "Who paid (ERP-0141): employee_claim (owed to the employee, Cr claims payable), petty_cash or bank (Cr cash by method)."]
+  reference varchar(100) [note: "Receipt or claim number; the UI warns on a duplicate within the project."]
+  journal_entry_id uuid [note: "Logical reference to finance.journal_entries.id. Cross-module FK intentionally omitted. Validated through the Finance module contract. Dr project COGS / Cr the payment source, posted with the cost (ERP-0141)."]
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Direct cost of a project (was projects.project_costs); visible only with project:read_cost. Corrected by voiding, never deleted."
+  Note: "Direct cost of a project (was projects.project_costs); visible only with project:read_cost. Corrected by voiding, never deleted. Every cost posts to the general ledger and its void reverses the journal (ERP-0141)."
   Indexes {
     (project_id, cost_date) [name: 'costs_project_date_idx']
   }
   Checks {
     `category IN ('material', 'transport', 'accommodation', 'subcontract', 'other')`
     `amount > 0`
+    `payment_source IN ('employee_claim', 'petty_cash', 'bank')`
   }
 }
 
@@ -4130,6 +4476,7 @@ Table project.addresses {
   postal_code varchar(10)
   latitude numeric(10,7)
   longitude numeric(10,7)
+  site_point geometry(point,4326) [note: "PostGIS point built from latitude/longitude; the spatial source for ST_Distance / ST_DWithin (GiST-indexed). Written by the service/seeder, backfilled by the migration."]
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
   updated_at bigint [not null]
@@ -4137,6 +4484,7 @@ Table project.addresses {
   Note: "Project site address (ADR-0024 Q10: only village_id is stored)."
   Indexes {
     project_id [name: 'project_addresses_project_id_idx']
+    site_point [type: gist, name: 'project_addresses_site_point_idx']
   }
   Checks {
     `kind IN ('site', 'billing', 'other')`
@@ -4667,6 +5015,44 @@ Table project.work_plans {
   }
 }
 
+Table project.site_attendances {
+  id uuid [pk, default: `uuidv7()`]
+  organization_id text [note: "Logical reference to auth.organizations.id. Cross-module FK intentionally omitted."]
+  project_id uuid [not null, note: "Same-module reference to project.projects.id (validated by the service, no FK by design)."]
+  employee_id uuid [not null, note: "Logical reference to human_resource.employees.id. Cross-module FK intentionally omitted."]
+  user_id text [not null, note: "Logical reference to auth.users.id; the device owner who checked in."]
+  business_date date [not null, note: "Jakarta business date of the check-in."]
+  check_in_at bigint [not null, note: "Unix ms (UTC), server-stamped."]
+  check_out_at bigint
+  latitude numeric(10,7) [not null]
+  longitude numeric(10,7) [not null]
+  accuracy_meters numeric(8,2) [note: "Device-reported GPS accuracy in metres."]
+  check_out_latitude numeric(10,7)
+  check_out_longitude numeric(10,7)
+  distance_meters numeric(10,2) [not null, note: "Metres from the project site at check-in, computed by PostGIS (ST_Distance on geography)."]
+  radius_meters integer [not null, note: "Radius in force at check-in (project.settings site_radius_meters, default 100)."]
+  status text [not null, note: "verified when the phone was inside the radius, out_of_range otherwise; the row is kept either way."]
+  selfie_key text [not null, note: "Object-storage key of the mandatory check-in selfie."]
+  selfie_content_type varchar(100) [not null]
+  note varchar(500)
+  created_at bigint [not null]
+  updated_at bigint [not null]
+  deleted_at bigint
+  Note: "One row per site check-in by an employee (employee portal Phase B). PostGIS supplies the distance and the radius test; coordinates stay plain numeric columns so every other reader needs no GIS type. Unique (project_id, employee_id, business_date) among live rows: one visit per site per day."
+  Indexes {
+    (project_id, business_date) [name: 'site_attendances_project_date_idx']
+    (employee_id, business_date) [name: 'site_attendances_employee_date_idx']
+    organization_id [name: 'site_attendances_organization_id_idx']
+    (project_id, employee_id, business_date) [unique, name: 'site_attendances_day_uq', note: 'WHERE deleted_at IS NULL']
+  }
+  Checks {
+    `status IN ('verified', 'out_of_range')`
+    `distance_meters >= 0 AND radius_meters > 0`
+    `check_out_at IS NULL OR check_out_at >= check_in_at`
+    `latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180`
+  }
+}
+
 Table project.settings {
   deleted_at bigint
   id uuid [pk, default: `uuidv7()`]
@@ -4911,12 +5297,14 @@ Table human_resource.employees {
   user_id text [note: "Logical reference to auth.users.id. Set only by the invite-first creation flow; a user is linked to at most one alive employee."]
   employee_code varchar(32) [not null, note: "Issued from the numbering authority (EMP-00001), editable."]
   full_name text [not null]
-  legal_name text
   nickname text
   national_id varchar(32) [note: "National identity number (NIK)."]
+  tax_id varchar(32) [note: "NPWP (ERP-0138). Optional; missing NIK and NPWP blocks the BP21 export."]
+  ptkp_status varchar(5) [note: "PTKP status (TK/0..K/3). Optional; payroll treats NULL as TK/0."]
+  bpjs_health_number varchar(32) [note: "BPJS Kesehatan participant number. Optional."]
+  bpjs_employment_number varchar(32) [note: "BPJS Ketenagakerjaan participant number. Optional."]
   email varchar(320)
   phone varchar(100)
-  whatsapp varchar(100)
   photo_object_key text
   employment_status text [not null, default: 'active']
   employment_type text [not null, default: 'permanent']
@@ -4937,6 +5325,7 @@ Table human_resource.employees {
     (organization_id, full_name) [name: 'employees_org_name_idx']
   }
   Checks {
+    `ptkp_status IS NULL OR ptkp_status IN ('TK/0', 'TK/1', 'TK/2', 'TK/3', 'K/0', 'K/1', 'K/2', 'K/3')`
     `employment_status IN ('active', 'inactive', 'terminated')`
     `employment_type IN ('permanent', 'contract', 'probation', 'internship', 'outsourced')`
     `work_type IN ('onsite', 'remote', 'hybrid')`
@@ -4953,11 +5342,12 @@ Table human_resource.employee_addresses {
   postal_code varchar(10)
   is_primary boolean [not null, default: false]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Address of an employee, reshaped to the Q10 address contract (only village_id is stored)."
+  Note: "Address of an employee, reshaped to the Q10 address contract (only village_id is stored). The residence address is entered by the employee on the invitation claim form (ERP-0121); one live primary address per employee."
   Indexes {
     employee_id [name: 'employee_addresses_employee_id_idx']
+    employee_id [unique, name: 'employee_addresses_primary_uq', note: 'WHERE is_primary AND deleted_at IS NULL']
   }
   Checks {
     `kind IN ('residence', 'current', 'birth', 'other')`
@@ -4971,7 +5361,7 @@ Table human_resource.attendances {
   status text [not null]
   check_in_at bigint [note: "Unix ms (UTC)."]
   check_out_at bigint
-  source text [not null, default: 'manual', note: "manual, import, or leave (written by an approved leave request)."]
+  source text [not null, default: 'manual', note: "manual, import, leave (written by an approved leave request), or self (employee portal check-in)."]
   leave_request_id uuid
   notes text
   recorded_by text [note: "Logical reference to auth.users.id."]
@@ -4986,7 +5376,7 @@ Table human_resource.attendances {
   }
   Checks {
     `status IN ('present', 'permit', 'sick', 'leave', 'absent', 'holiday')`
-    `source IN ('manual', 'import', 'leave')`
+    `source IN ('manual', 'import', 'leave', 'self')`
     `check_out_at IS NULL OR check_in_at IS NULL OR check_out_at >= check_in_at`
   }
 }
@@ -5090,9 +5480,6 @@ Table human_resource.employee_salaries {
   base_salary bigint [not null, default: 0, note: "IDR minor units."]
   fixed_allowances bigint [not null, default: 0]
   currency_code varchar(3) [not null, default: 'IDR']
-  bank_name varchar(100) [note: "Salary bank account (absorbed from hr.bank_accounts, ADR-0024 Q19/Q39)."]
-  bank_account_number varchar(50) [note: "Masked for callers without employee:read_private."]
-  bank_account_holder varchar(200)
   effective_from date [not null]
   effective_to date
   is_active boolean [not null, default: true]
@@ -5100,9 +5487,9 @@ Table human_resource.employee_salaries {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Effective dated salary agreement of an employee (ADR-0024 Q39): base salary, fixed allowances and the salary bank account (which absorbs hr.bank_accounts). Finance and payment read it through ExportedEmployeeService."
+  Note: "Effective dated salary agreement of an employee (ADR-0024 Q39): base salary and fixed allowances. A new period closes the previous one (effective_to = start - 1 day, is_active false); only the active period is edited, only the latest is deleted (reopening the previous). The salary bank account lives in finance.cash_bank_accounts (employee_id) since ERP-0119."
   Indexes {
-    (employee_id, effective_from) [unique, name: 'employee_salaries_period_uq']
+    (employee_id, effective_from) [unique, name: 'employee_salaries_period_uq', note: 'WHERE deleted_at IS NULL']
     employee_id [name: 'employee_salaries_employee_id_idx']
   }
   Checks {
@@ -5122,6 +5509,15 @@ Table human_resource.employee_salary_records {
   overtime_pay bigint [not null, default: 0]
   bonus bigint [not null, default: 0]
   deductions bigint [not null, default: 0]
+  pph21_amount bigint [not null, default: 0, note: "PPh 21 withheld (ERP-0138). Negative only in the last tax month when the annual reconciliation refunds."]
+  bpjs_employee_amount bigint [not null, default: 0, note: "Employee BPJS share: Kesehatan 1% plus JHT 2% and JP 1%."]
+  bpjs_company_amount bigint [not null, default: 0, note: "Company BPJS share: Kesehatan 4%, JHT 3.7%, JP 2%, JKK, JKM."]
+  pension_employee_amount bigint [not null, default: 0, note: "Employee JHT + JP, the deductible pension part of bpjs_employee_amount."]
+  taxable_gross bigint [not null, default: 0, note: "TER base: pay plus the taxable company benefits (JKK, JKM, BPJS Kesehatan company share)."]
+  ptkp_status varchar(5) [note: "Snapshot of the employee's PTKP status used (NULL employee status = TK/0)."]
+  ter_rate numeric(7,4) [note: "TER rate applied; NULL in the last tax month or when PPh 21 is off."]
+  tax_method text [note: "ter or annual; NULL when PPh 21 is off."]
+  journal_entry_id uuid [note: "Logical reference to finance.journal_entries.id. Cross-module FK intentionally omitted. The payroll journal posted when the period was approved (ERP-0138)."]
   net_pay bigint [not null]
   notes text
   status text [not null, default: 'draft']
@@ -5131,7 +5527,7 @@ Table human_resource.employee_salary_records {
   created_at bigint [not null]
   updated_at bigint [not null]
   deleted_at bigint
-  Note: "Monthly salary record per employee (was hr.salary_summaries, ADR-0024 Q39), entered or imported by HR/finance and approved by the owner; approved rows are locked. Unique (period, employee_id) among live rows. Payment allocates against it (payable_type employee_salary_record)."
+  Note: "Monthly salary record per employee (was hr.salary_summaries, ADR-0024 Q39), entered or imported by HR/finance and approved by the owner; approved rows are locked. Unique (period, employee_id) among live rows. Payment allocates against it (payable_type employee_salary_record). ERP-0138: PPh 21 (TER monthly, annual Pasal 17 in the last tax month) and BPJS are calculated on every draft write when switched on; approval posts one payroll journal per approval and stamps journal_entry_id."
   Indexes {
     (period, employee_id) [unique, name: 'employee_salary_records_period_uq', note: 'WHERE deleted_at IS NULL']
     period [name: 'employee_salary_records_period_idx']
@@ -5140,24 +5536,31 @@ Table human_resource.employee_salary_records {
   Checks {
     `status IN ('draft', 'approved')`
     `base_salary >= 0 AND allowances >= 0 AND overtime_pay >= 0 AND bonus >= 0 AND deductions >= 0`
-    `net_pay = base_salary + allowances + overtime_pay + bonus - deductions`
+    `net_pay = base_salary + allowances + overtime_pay + bonus - deductions - pph21_amount - bpjs_employee_amount`
+    `bpjs_employee_amount >= 0 AND bpjs_company_amount >= 0 AND pension_employee_amount >= 0 AND taxable_gross >= 0`
+    `tax_method IS NULL OR tax_method IN ('ter', 'annual')`
   }
 }
 
 Table human_resource.schedules {
   id uuid [pk, default: `uuidv7()`]
   employee_id uuid [not null]
-  work_date date [not null]
-  shift_start varchar(5) [note: "HH:MM in Asia/Jakarta."]
-  shift_end varchar(5)
+  work_date date [not null, note: "Business date (Asia/Jakarta)."]
+  shift_start varchar(5) [note: "HH:MM in Asia/Jakarta. NULL on a day off."]
+  shift_end varchar(5) [note: "HH:MM in Asia/Jakarta; earlier than shift_start means an overnight shift."]
   shift_label text
   is_day_off boolean [not null, default: false]
+  created_by text [note: "Logical reference to auth.users.id."]
   created_at bigint [not null]
-  updated_at bigint
+  updated_at bigint [not null]
   deleted_at bigint
-  Note: "status: target. Work shift of one employee on one date (ADR-0024 Q20); attendance compares against it."
+  Note: "Work shift of one employee on one date (ADR-0024 Q20), entered per cell or filled from a weekly pattern by HR (ERP-0118). One live row per employee and date. Attendance does not compare against it yet."
   Indexes {
     (employee_id, work_date) [unique, name: 'schedules_employee_date_uq', note: 'WHERE deleted_at IS NULL']
+    work_date [name: 'schedules_work_date_idx']
+  }
+  Checks {
+    `(is_day_off AND shift_start IS NULL AND shift_end IS NULL) OR (NOT is_day_off AND shift_start IS NOT NULL AND shift_end IS NOT NULL)`
   }
 }
 
@@ -5200,7 +5603,7 @@ Table human_resource.code_numberings {
 }
 
 Ref: human_resource.employees.manager_employee_id > human_resource.employees.id [delete: set null]
-Ref: human_resource.employee_addresses.employee_id > human_resource.employees.id [delete: cascade]
+Ref: human_resource.employee_addresses.employee_id > human_resource.employees.id [delete: restrict]
 Ref: human_resource.attendances.employee_id > human_resource.employees.id [delete: restrict]
 Ref: human_resource.attendances.leave_request_id > human_resource.leave_requests.id [delete: restrict]
 Ref: human_resource.leave_requests.leave_type_id > human_resource.leave_types.id [delete: restrict]
@@ -5209,7 +5612,7 @@ Ref: human_resource.overtime_requests.employee_id > human_resource.employees.id 
 Ref: human_resource.employee_tasks.employee_id > human_resource.employees.id [delete: restrict]
 Ref: human_resource.employee_salaries.employee_id > human_resource.employees.id [delete: cascade]
 Ref: human_resource.employee_salary_records.employee_id > human_resource.employees.id [delete: restrict]
-Ref: human_resource.schedules.employee_id > human_resource.employees.id [delete: cascade]
+Ref: human_resource.schedules.employee_id > human_resource.employees.id [delete: restrict]
 
 // ---------------------------------------------------------------------------
 // MODULE: Document  (schema: document). Registry + issuance: business documents

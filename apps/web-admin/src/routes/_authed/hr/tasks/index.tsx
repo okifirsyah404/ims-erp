@@ -13,7 +13,7 @@ import { FieldLabel } from '@/components/form/field-label';
 import { Input } from '@ims-erp/ui/components/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ims-erp/ui/components/select';
 import { Textarea } from '@ims-erp/ui/components/textarea';
-import { Ban, Check, RotateCcw } from 'lucide-react';
+import { Ban, Check, Pencil, RotateCcw, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
@@ -22,7 +22,17 @@ import { EmployeeSelect } from '@/components/hr/employee-select';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { toast } from '@/components/toast';
 import { formatBusinessDate, todayBusinessDate } from '@/lib/format';
-import { createTask, setTaskStatus, TASK_STATUSES, tasksQueryOptions, type TTask, type TTaskStatus } from '@/lib/hr-records-api';
+import { useConfirm } from '@/components/confirm-dialog';
+import {
+	createTask,
+	removeTask,
+	setTaskStatus,
+	TASK_STATUSES,
+	tasksQueryOptions,
+	type TTask,
+	type TTaskStatus,
+	updateTask,
+} from '@/lib/hr-records-api';
 import { usePermission } from '@/lib/use-permission';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 
@@ -45,12 +55,32 @@ function TasksPage() {
 		tasksQueryOptions({ page, status: status || undefined, employeeId: employeeFilter || undefined }),
 	);
 	const [creating, setCreating] = useState(false);
+	/** The task being edited; `null` while the dialog creates a new one. */
+	const [editing, setEditing] = useState<TTask | null>(null);
+	const confirm = useConfirm();
 	const [employeeId, setEmployeeId] = useState('');
 	const [title, setTitle] = useState('');
 	const [description, setDescription] = useState('');
 	const [dueDate, setDueDate] = useState('');
 	const [busy, setBusy] = useState(false);
 	const today = todayBusinessDate();
+
+	const openEdit = useCallback((task: TTask) => {
+		setEditing(task);
+		setEmployeeId(task.employeeId);
+		setTitle(task.title);
+		setDescription(task.description ?? '');
+		setDueDate(task.dueDate ?? '');
+		setCreating(true);
+	}, []);
+
+	const openCreate = () => {
+		setEditing(null);
+		setTitle('');
+		setDescription('');
+		setDueDate('');
+		setCreating(true);
+	};
 
 	const run = useCallback(
 		async (work: () => Promise<unknown>, done: string) => {
@@ -121,6 +151,13 @@ function TasksPage() {
 						disabled={busy}
 						actions={[
 							{
+								key: 'edit',
+								label: t('hr:tasks.edit'),
+								icon: Pencil,
+								hidden: !canUpdate,
+								onSelect: () => openEdit(row.original),
+							},
+							{
 								key: 'done',
 								label: t('hr:tasks.markDone'),
 								icon: Check,
@@ -145,12 +182,24 @@ function TasksPage() {
 								onSelect: () =>
 									void run(() => setTaskStatus(row.original.id, 'open'), t('hr:taskStatus.open')),
 							},
+							{
+								key: 'delete',
+								label: t('hr:tasks.delete'),
+								icon: Trash2,
+								destructive: true,
+								hidden: !canUpdate,
+								onSelect: async () => {
+									if (await confirm({ title: t('hr:tasks.deleteConfirm', { title: row.original.title }), destructive: true })) {
+										void run(() => removeTask(row.original.id), t('hr:tasks.deleted'));
+									}
+								},
+							},
 						]}
 					/>
 				),
 			},
 		],
-		[busy, canUpdate, i18n.language, run, t, today],
+		[busy, canUpdate, confirm, i18n.language, openEdit, run, t, today],
 	);
 
 	return (
@@ -160,7 +209,7 @@ function TasksPage() {
 					<h1 className='text-2xl font-bold'>{t('hr:tasks.title')}</h1>
 					<p className='text-sm text-muted-foreground'>{t('hr:tasks.description')}</p>
 				</div>
-				{canCreate && <Button onClick={() => setCreating(true)}>{t('hr:tasks.new')}</Button>}
+				{canCreate && <Button onClick={openCreate}>{t('hr:tasks.new')}</Button>}
 			</div>
 			<div className='flex flex-wrap gap-2'>
 				<Select
@@ -211,12 +260,14 @@ function TasksPage() {
 					<form
 						onSubmit={async (event) => {
 							event.preventDefault();
+							const input = { employeeId, title: title.trim(), description: description.trim() || null, dueDate: dueDate || null };
 							const done = await run(
-								() => createTask({ employeeId, title: title.trim(), description: description.trim() || null, dueDate: dueDate || null }),
-								t('hr:tasks.created'),
+								() => (editing ? updateTask(editing.id, input) : createTask(input)),
+								editing ? t('hr:tasks.updated') : t('hr:tasks.created'),
 							);
 							if (done) {
 								setCreating(false);
+								setEditing(null);
 								setTitle('');
 								setDescription('');
 								setDueDate('');
@@ -224,7 +275,7 @@ function TasksPage() {
 						}}
 					>
 						<DialogHeader>
-							<DialogTitle>{t('hr:tasks.new')}</DialogTitle>
+							<DialogTitle>{editing ? t('hr:tasks.edit') : t('hr:tasks.new')}</DialogTitle>
 						</DialogHeader>
 						<FieldGroup className='py-4'>
 							<Field>
@@ -249,7 +300,7 @@ function TasksPage() {
 								{t('common:action.cancel')}
 							</Button>
 							<Button type='submit' disabled={busy || !employeeId || !title.trim()}>
-								{t('hr:tasks.new')}
+								{editing ? t('common:action.save') : t('hr:tasks.new')}
 							</Button>
 						</DialogFooter>
 					</form>

@@ -15,6 +15,7 @@ import { TimePicker } from '@ims-erp/ui/components/time-picker';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
+import { AttendanceList } from '@/components/hr/attendance-list';
 import { ImportDialog } from '@/components/hr/import-dialog';
 import { toast } from '@/components/toast';
 import { todayBusinessDate } from '@/lib/format';
@@ -42,7 +43,7 @@ function AttendancePage() {
 	const { t } = useTranslation(['hr', 'common']);
 	const queryClient = useQueryClient();
 	const canRecord = usePermission('attendance.record');
-	const [view, setView] = useState<'day' | 'month'>('day');
+	const [view, setView] = useState<'day' | 'list' | 'month'>('day');
 	const [date, setDate] = useState(todayBusinessDate());
 	const [period, setPeriod] = useState(todayBusinessDate().slice(0, 7));
 	const [importing, setImporting] = useState(false);
@@ -62,15 +63,14 @@ function AttendancePage() {
 			</div>
 			<div className='flex flex-wrap items-center gap-2'>
 				<div className='inline-flex rounded-md border p-0.5'>
-					{(['day', 'month'] as const).map((value) => (
+					{(['day', 'list', 'month'] as const).map((value) => (
 						<Button key={value} size='sm' variant={view === value ? 'default' : 'ghost'} onClick={() => setView(value)}>
-							{t(value === 'day' ? 'hr:attendance.day' : 'hr:attendance.month')}
+							{t(value === 'day' ? 'hr:attendance.day' : value === 'list' ? 'hr:attendance.list' : 'hr:attendance.month')}
 						</Button>
 					))}
 				</div>
-				{view === 'day' ? (
-					<DatePicker className='w-44' aria-label={t('hr:field.date')} value={date} onChange={setDate} />
-				) : (
+				{view === 'day' && <DatePicker className='w-44' aria-label={t('hr:field.date')} value={date} onChange={setDate} />}
+				{view === 'month' && (
 					<MonthPicker
 						className='w-44'
 						aria-label={t('hr:attendance.period')}
@@ -79,7 +79,9 @@ function AttendancePage() {
 					/>
 				)}
 			</div>
-			{view === 'day' ? <DayView date={date} canRecord={canRecord} /> : <MonthView period={period} />}
+			{view === 'day' && <DayView date={date} canRecord={canRecord} />}
+			{view === 'list' && <AttendanceList canRecord={canRecord} />}
+			{view === 'month' && <MonthView period={period} />}
 			<ImportDialog
 				open={importing}
 				onOpenChange={setImporting}

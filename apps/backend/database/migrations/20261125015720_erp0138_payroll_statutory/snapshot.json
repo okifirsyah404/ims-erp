@@ -1,0 +1,417 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "e6ff3dff-069e-433a-950e-39ec3c0a57f4",
+  "prevIds": [
+    "3a58890f-8d7d-46d7-bf91-bbba2767380a"
+  ],
+  "footprints": [
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "pph21_amount"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.pph21_amount",
+        "n|col|human_resource.employee_salary_records.pph21_amount",
+        "e|col|human_resource.employee_salary_records.pph21_amount"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "bpjs_employee_amount"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.bpjs_employee_amount",
+        "n|col|human_resource.employee_salary_records.bpjs_employee_amount",
+        "e|col|human_resource.employee_salary_records.bpjs_employee_amount"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "bpjs_company_amount"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.bpjs_company_amount",
+        "n|col|human_resource.employee_salary_records.bpjs_company_amount",
+        "e|col|human_resource.employee_salary_records.bpjs_company_amount"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "pension_employee_amount"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.pension_employee_amount",
+        "n|col|human_resource.employee_salary_records.pension_employee_amount",
+        "e|col|human_resource.employee_salary_records.pension_employee_amount"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "taxable_gross"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.taxable_gross",
+        "n|col|human_resource.employee_salary_records.taxable_gross",
+        "e|col|human_resource.employee_salary_records.taxable_gross"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "ptkp_status"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.ptkp_status",
+        "n|col|human_resource.employee_salary_records.ptkp_status",
+        "e|col|human_resource.employee_salary_records.ptkp_status"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "ter_rate"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.ter_rate",
+        "n|col|human_resource.employee_salary_records.ter_rate",
+        "e|col|human_resource.employee_salary_records.ter_rate"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "tax_method"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.tax_method",
+        "n|col|human_resource.employee_salary_records.tax_method",
+        "e|col|human_resource.employee_salary_records.tax_method"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "human_resource",
+        "employee_salary_records",
+        "journal_entry_id"
+      ],
+      "writes": [
+        "s|col|human_resource.employee_salary_records.journal_entry_id",
+        "n|col|human_resource.employee_salary_records.journal_entry_id",
+        "e|col|human_resource.employee_salary_records.journal_entry_id"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salary_records"
+      ],
+      "writes": [
+        "s|ck|human_resource.employee_salary_records.employee_salary_records_statutory_check",
+        "n|ck|human_resource.employee_salary_records.employee_salary_records_statutory_check",
+        "e|ck|human_resource.employee_salary_records.employee_salary_records_statutory_check",
+        "n|con|human_resource.employee_salary_records.employee_salary_records_statutory_check"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.bpjs_employee_amount",
+        "n|col|human_resource.employee_salary_records.bpjs_company_amount",
+        "n|col|human_resource.employee_salary_records.pension_employee_amount",
+        "n|col|human_resource.employee_salary_records.taxable_gross"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salary_records"
+      ],
+      "writes": [
+        "s|ck|human_resource.employee_salary_records.employee_salary_records_tax_method_check",
+        "n|ck|human_resource.employee_salary_records.employee_salary_records_tax_method_check",
+        "e|ck|human_resource.employee_salary_records.employee_salary_records_tax_method_check",
+        "n|con|human_resource.employee_salary_records.employee_salary_records_tax_method_check"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.tax_method"
+      ]
+    },
+    {
+      "statementType": "alter_check",
+      "statementTarget": [
+        "table",
+        "human_resource",
+        "employee_salary_records"
+      ],
+      "writes": [
+        "s|ck|human_resource.employee_salary_records.employee_salary_records_net_check"
+      ],
+      "reads": [
+        "n|tbl|human_resource.employee_salary_records",
+        "n|sch|human_resource",
+        "n|col|human_resource.employee_salary_records.net_pay",
+        "n|col|human_resource.employee_salary_records.base_salary",
+        "n|col|human_resource.employee_salary_records.allowances",
+        "n|col|human_resource.employee_salary_records.overtime_pay",
+        "n|col|human_resource.employee_salary_records.bonus",
+        "n|col|human_resource.employee_salary_records.deductions",
+        "n|col|human_resource.employee_salary_records.pph21_amount",
+        "n|col|human_resource.employee_salary_records.bpjs_employee_amount",
+        "e|col|human_resource.employee_salary_records.net_pay",
+        "e|col|human_resource.employee_salary_records.base_salary",
+        "e|col|human_resource.employee_salary_records.allowances",
+        "e|col|human_resource.employee_salary_records.overtime_pay",
+        "e|col|human_resource.employee_salary_records.bonus",
+        "e|col|human_resource.employee_salary_records.deductions"
+      ],
+      "sqlHash": "4735604305a5eb88"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "pph21_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "bpjs_employee_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "bpjs_company_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "pension_employee_amount",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "taxable_gross",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "0",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "ptkp_status",
+        "type": "varchar(5)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "ter_rate",
+        "type": "numeric(7,4)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "tax_method",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "journal_entry_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_statutory_check",
+        "value": "bpjs_employee_amount >= 0 AND bpjs_company_amount >= 0 AND pension_employee_amount >= 0 AND taxable_gross >= 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "human_resource",
+        "table": "employee_salary_records",
+        "name": "employee_salary_records_tax_method_check",
+        "value": "tax_method IS NULL OR tax_method IN ('ter', 'annual')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "checks\u0000[\"human_resource\",\"employee_salary_records\",\"employee_salary_records_net_check\"]",
+      "set": {
+        "value": "net_pay = base_salary + allowances + overtime_pay + bonus - deductions - pph21_amount - bpjs_employee_amount"
+      }
+    }
+  ]
+}

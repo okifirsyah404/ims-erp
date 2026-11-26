@@ -1,0 +1,2417 @@
+{
+  "type": "diff",
+  "version": "10",
+  "dialect": "postgres",
+  "id": "47107736-9b2d-40f9-8f64-22e4e6770c45",
+  "prevIds": [
+    "d69c5688-1476-4660-aed7-527c39d04025"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "customer"
+      ],
+      "writes": [
+        "s|sch|customer",
+        "n|sch|customer",
+        "e|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "customer",
+        "addresses"
+      ],
+      "writes": [
+        "s|tbl|customer.addresses",
+        "n|tbl|customer.addresses",
+        "e|tbl|customer.addresses",
+        "n|rel|customer.addresses",
+        "n|type|customer.addresses",
+        "n|rel|customer.addresses_pkey"
+      ],
+      "reads": [
+        "n|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "customer",
+        "code_numberings"
+      ],
+      "writes": [
+        "s|tbl|customer.code_numberings",
+        "n|tbl|customer.code_numberings",
+        "e|tbl|customer.code_numberings",
+        "n|rel|customer.code_numberings",
+        "n|type|customer.code_numberings",
+        "n|rel|customer.code_numberings_pkey"
+      ],
+      "reads": [
+        "n|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "customer",
+        "companies"
+      ],
+      "writes": [
+        "s|tbl|customer.companies",
+        "n|tbl|customer.companies",
+        "e|tbl|customer.companies",
+        "n|rel|customer.companies",
+        "n|type|customer.companies",
+        "n|rel|customer.companies_pkey"
+      ],
+      "reads": [
+        "n|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "customer",
+        "company_addresses"
+      ],
+      "writes": [
+        "s|tbl|customer.company_addresses",
+        "n|tbl|customer.company_addresses",
+        "e|tbl|customer.company_addresses",
+        "n|rel|customer.company_addresses",
+        "n|type|customer.company_addresses",
+        "n|rel|customer.company_addresses_pkey"
+      ],
+      "reads": [
+        "n|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "customer",
+        "settings"
+      ],
+      "writes": [
+        "s|tbl|customer.settings",
+        "n|tbl|customer.settings",
+        "e|tbl|customer.settings",
+        "n|rel|customer.settings",
+        "n|type|customer.settings",
+        "n|rel|customer.settings_pkey"
+      ],
+      "reads": [
+        "n|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "customer",
+        "customers"
+      ],
+      "writes": [
+        "s|tbl|customer.customers",
+        "n|tbl|customer.customers",
+        "e|tbl|customer.customers",
+        "n|rel|customer.customers",
+        "n|type|customer.customers",
+        "n|rel|customer.customers_pkey"
+      ],
+      "reads": [
+        "n|sch|customer"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "addresses",
+        "customer_addresses_customer_id_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customer_addresses_customer_id_idx",
+        "n|idx|customer.customer_addresses_customer_id_idx",
+        "e|idx|customer.customer_addresses_customer_id_idx",
+        "n|rel|customer.customer_addresses_customer_id_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.addresses",
+        "n|sch|customer",
+        "n|col|customer.addresses.customer_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "code_numberings",
+        "customer_code_numberings_type_uq"
+      ],
+      "writes": [
+        "s|idx|customer.customer_code_numberings_type_uq",
+        "n|idx|customer.customer_code_numberings_type_uq",
+        "e|idx|customer.customer_code_numberings_type_uq",
+        "n|rel|customer.customer_code_numberings_type_uq"
+      ],
+      "reads": [
+        "n|tbl|customer.code_numberings",
+        "n|sch|customer",
+        "n|col|customer.code_numberings.code_type"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "companies",
+        "customer_companies_code_uq"
+      ],
+      "writes": [
+        "s|idx|customer.customer_companies_code_uq",
+        "n|idx|customer.customer_companies_code_uq",
+        "e|idx|customer.customer_companies_code_uq",
+        "n|rel|customer.customer_companies_code_uq"
+      ],
+      "reads": [
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|col|customer.companies.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "companies",
+        "customer_companies_name_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customer_companies_name_idx",
+        "n|idx|customer.customer_companies_name_idx",
+        "e|idx|customer.customer_companies_name_idx",
+        "n|rel|customer.customer_companies_name_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|col|customer.companies.name"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "companies",
+        "customer_companies_tax_id_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customer_companies_tax_id_idx",
+        "n|idx|customer.customer_companies_tax_id_idx",
+        "e|idx|customer.customer_companies_tax_id_idx",
+        "n|rel|customer.customer_companies_tax_id_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|col|customer.companies.tax_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "companies",
+        "customer_companies_owner_uq"
+      ],
+      "writes": [
+        "s|idx|customer.customer_companies_owner_uq",
+        "n|idx|customer.customer_companies_owner_uq",
+        "e|idx|customer.customer_companies_owner_uq",
+        "n|rel|customer.customer_companies_owner_uq"
+      ],
+      "reads": [
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|col|customer.companies.owner_customer_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "company_addresses",
+        "customer_company_addresses_company_id_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customer_company_addresses_company_id_idx",
+        "n|idx|customer.customer_company_addresses_company_id_idx",
+        "e|idx|customer.customer_company_addresses_company_id_idx",
+        "n|rel|customer.customer_company_addresses_company_id_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.company_addresses",
+        "n|sch|customer",
+        "n|col|customer.company_addresses.company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "company_addresses",
+        "customer_company_addresses_kind_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customer_company_addresses_kind_idx",
+        "n|idx|customer.customer_company_addresses_kind_idx",
+        "e|idx|customer.customer_company_addresses_kind_idx",
+        "n|rel|customer.customer_company_addresses_kind_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.company_addresses",
+        "n|sch|customer",
+        "n|col|customer.company_addresses.company_id",
+        "n|col|customer.company_addresses.kind",
+        "n|col|customer.company_addresses.is_primary"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "settings",
+        "customer_settings_scope_uq"
+      ],
+      "writes": [
+        "s|idx|customer.customer_settings_scope_uq",
+        "n|idx|customer.customer_settings_scope_uq",
+        "e|idx|customer.customer_settings_scope_uq",
+        "n|rel|customer.customer_settings_scope_uq"
+      ],
+      "reads": [
+        "n|tbl|customer.settings",
+        "n|sch|customer",
+        "n|col|customer.settings.setting_group",
+        "n|col|customer.settings.setting_key"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "customers",
+        "customers_code_uq"
+      ],
+      "writes": [
+        "s|idx|customer.customers_code_uq",
+        "n|idx|customer.customers_code_uq",
+        "e|idx|customer.customers_code_uq",
+        "n|rel|customer.customers_code_uq"
+      ],
+      "reads": [
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|col|customer.customers.code"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "customers",
+        "customers_user_uq"
+      ],
+      "writes": [
+        "s|idx|customer.customers_user_uq",
+        "n|idx|customer.customers_user_uq",
+        "e|idx|customer.customers_user_uq",
+        "n|rel|customer.customers_user_uq"
+      ],
+      "reads": [
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|col|customer.customers.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "customers",
+        "customers_company_id_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customers_company_id_idx",
+        "n|idx|customer.customers_company_id_idx",
+        "e|idx|customer.customers_company_id_idx",
+        "n|rel|customer.customers_company_id_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|col|customer.customers.company_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "customer",
+        "customers",
+        "customers_name_idx"
+      ],
+      "writes": [
+        "s|idx|customer.customers_name_idx",
+        "n|idx|customer.customers_name_idx",
+        "e|idx|customer.customers_name_idx",
+        "n|rel|customer.customers_name_idx"
+      ],
+      "reads": [
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|col|customer.customers.name"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "customer",
+        "addresses"
+      ],
+      "writes": [
+        "s|fk|customer.addresses.addresses_customer_id_customers_id_fkey",
+        "n|fk|customer.addresses.addresses_customer_id_customers_id_fkey",
+        "e|fk|customer.addresses.addresses_customer_id_customers_id_fkey",
+        "n|con|customer.addresses.addresses_customer_id_customers_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|customer.addresses",
+        "n|sch|customer",
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|col|customer.addresses.customer_id",
+        "n|col|customer.customers.id",
+        "e|uniqueness|customer.customers.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "customer",
+        "companies"
+      ],
+      "writes": [
+        "s|fk|customer.companies.companies_owner_customer_id_customers_id_fkey",
+        "n|fk|customer.companies.companies_owner_customer_id_customers_id_fkey",
+        "e|fk|customer.companies.companies_owner_customer_id_customers_id_fkey",
+        "n|con|customer.companies.companies_owner_customer_id_customers_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|col|customer.companies.owner_customer_id",
+        "n|col|customer.customers.id",
+        "e|uniqueness|customer.customers.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "customer",
+        "company_addresses"
+      ],
+      "writes": [
+        "s|fk|customer.company_addresses.company_addresses_company_id_companies_id_fkey",
+        "n|fk|customer.company_addresses.company_addresses_company_id_companies_id_fkey",
+        "e|fk|customer.company_addresses.company_addresses_company_id_companies_id_fkey",
+        "n|con|customer.company_addresses.company_addresses_company_id_companies_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|customer.company_addresses",
+        "n|sch|customer",
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|col|customer.company_addresses.company_id",
+        "n|col|customer.companies.id",
+        "e|uniqueness|customer.companies.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "customer",
+        "customers"
+      ],
+      "writes": [
+        "s|fk|customer.customers.customers_company_id_companies_id_fkey",
+        "n|fk|customer.customers.customers_company_id_companies_id_fkey",
+        "e|fk|customer.customers.customers_company_id_companies_id_fkey",
+        "n|con|customer.customers.customers_company_id_companies_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|customer.customers",
+        "n|sch|customer",
+        "n|tbl|customer.companies",
+        "n|sch|customer",
+        "n|col|customer.customers.company_id",
+        "n|col|customer.companies.id",
+        "e|uniqueness|customer.companies.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "customer",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "name": "addresses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "name": "code_numberings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "name": "companies",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "name": "company_addresses",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "name": "settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "name": "customers",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'residence'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "label",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "address_line",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "village_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "postal_code",
+        "type": "varchar(10)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "is_primary",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "code_type",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "pattern",
+        "type": "varchar(100)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "reset_policy",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "period_key",
+        "type": "varchar(7)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "next_number",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "1",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "legal_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "company_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'company'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "tax_id",
+        "type": "varchar(16)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "phone",
+        "type": "varchar(30)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "website",
+        "type": "varchar(200)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "owner_customer_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "kind",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'billing'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "label",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "contact_name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "contact_phone",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "address_line",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "village_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "postal_code",
+        "type": "varchar(10)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "is_primary",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "setting_group",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "setting_key",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "setting_value",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "value_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'string'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "description",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "updated_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "uuidv7()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "code",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "company_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "name",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "position",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "phone",
+        "type": "varchar(30)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customer_type",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'individual'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "'active'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "portal_role",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "portal_status",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "portal_invited_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "portal_last_login_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "portal_password_change_required",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "false",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "notes",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "created_by",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "created_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "updated_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "deleted_at",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "customer_addresses_customer_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "customer_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "customer_code_numberings_type_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code_type",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "customer_companies_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "customer_companies_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "customer_companies_tax_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "tax_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "customer_companies_owner_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "owner_customer_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "owner_customer_id IS NOT NULL AND deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "customer_company_addresses_company_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "customer_company_addresses_kind_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "is_primary",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "customer_settings_scope_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "setting_group",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "setting_key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_code_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "code",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_user_uq",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "user_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": "user_id IS NOT NULL AND deleted_at IS NULL",
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_company_id_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "company_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_name_idx",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "name",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "addresses_customer_id_customers_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "customer_id"
+        ],
+        "schemaTo": "customer",
+        "tableTo": "customers",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "companies_owner_customer_id_customers_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "owner_customer_id"
+        ],
+        "schemaTo": "customer",
+        "tableTo": "customers",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "company_addresses_company_id_companies_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "company_id"
+        ],
+        "schemaTo": "customer",
+        "tableTo": "companies",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_company_id_companies_id_fkey",
+        "nameExplicit": false,
+        "columns": [
+          "company_id"
+        ],
+        "schemaTo": "customer",
+        "tableTo": "companies",
+        "columnsTo": [
+          "id"
+        ],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "addresses_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "code_numberings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "companies_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "company_addresses_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "settings_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "addresses",
+        "name": "customer_addresses_kind_check",
+        "value": "\"kind\" IN ('residence', 'office', 'billing', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "customer_code_numberings_reset_check",
+        "value": "reset_policy IS NULL OR reset_policy IN ('never', 'yearly', 'monthly')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "code_numberings",
+        "name": "customer_code_numberings_next_check",
+        "value": "next_number > 0",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "customer_companies_type_check",
+        "value": "\"company_type\" IN ('company', 'government', 'partner')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "companies",
+        "name": "customer_companies_status_check",
+        "value": "\"status\" IN ('active', 'inactive')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "company_addresses",
+        "name": "customer_company_addresses_kind_check",
+        "value": "\"kind\" IN ('billing', 'shipping', 'service', 'site', 'other')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "settings",
+        "name": "customer_settings_value_type_check",
+        "value": "\"value_type\" IN ('string', 'number', 'boolean', 'json', 'date')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_type_check",
+        "value": "\"customer_type\" IN ('individual', 'contact')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_status_check",
+        "value": "\"status\" IN ('active', 'inactive')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_portal_role_check",
+        "value": "\"portal_role\" IS NULL OR \"portal_role\" IN ('owner', 'approver', 'finance', 'viewer')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_portal_status_check",
+        "value": "\"portal_status\" IS NULL OR \"portal_status\" IN ('active', 'suspended', 'revoked')",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "customer",
+        "table": "customers",
+        "name": "customers_company_required_check",
+        "value": "\"company_id\" IS NOT NULL OR \"customer_type\" = 'individual'",
+        "entityType": "checks"
+      }
+    }
+  ]
+}

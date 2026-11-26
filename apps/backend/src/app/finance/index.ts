@@ -8,17 +8,26 @@
  * the module's controllers individually. Mirrors every other module
  * entry point.
  */
+import { EmployeeAdvanceController } from './controllers/employee-advance.controller';
+import { FixedAssetController } from './controllers/fixed-asset.controller';
+import { ProjectBudgetController } from './controllers/project-budget.controller';
+import { CostReportController } from './controllers/cost-report.controller';
+import { ReceivablesController } from './controllers/receivables.controller';
+import { FinanceSetupController } from './controllers/finance-setup.controller';
 import Elysia from 'elysia';
 
 import { FinanceCodeNumberingController } from './controllers/code-numbering.controller';
 import { DepreciationController } from './controllers/depreciation.controller';
+import { ExpenseController } from './controllers/expense.controller';
 import { LedgerController } from './controllers/ledger.controller';
 import { FinanceOperationsController } from './controllers/finance-operations.controller';
+import { EmployeeBankAccountController } from './controllers/employee-bank-account.controller';
 
 export { registerFinance } from './container';
 export { registerSupplierBillDueSchedule } from './queues/supplier-bill-due.queue';
 export { startSupplierBillDueWorker } from './queues/supplier-bill-due.worker';
-export { POSTING_SERVICE_TOKEN } from './constants/di';
+export { EXPORTED_PROFIT_SERVICE_TOKEN, POSTING_SERVICE_TOKEN } from './constants/di';
+export type { ExportedProfitService, TClosedPeriodProfit } from './services/exported-profit.service';
 export { LEDGER_SETTLEMENT_PORT_TOKEN } from './constants/ar-di';
 export type { ILedgerSettlementPort } from './contracts/ledger-settlement.port';
 export type { TPostingInput, TPostingLine, TPostingResult } from './services/posting.service';
@@ -31,5 +40,13 @@ export function financeModule() {
 		.use(FinanceCodeNumberingController.plugin())
 		.use(LedgerController.plugin())
 		.use(DepreciationController.plugin())
-		.use(FinanceOperationsController.plugin());
+		.use(FinanceOperationsController.plugin())
+		.use(EmployeeBankAccountController.plugin())
+		.use(ExpenseController.plugin())
+		.use(FinanceSetupController.plugin())
+		.use(ReceivablesController.plugin())
+		.use(EmployeeAdvanceController.plugin())
+		.use(FixedAssetController.plugin())
+		.use(ProjectBudgetController.plugin())
+		.use(CostReportController.plugin());
 }

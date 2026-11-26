@@ -65,3 +65,21 @@ export class PaymentCashAccountRequiredError extends AppError {
 		super(422, 'accounting.paymentCashAccountRequired', 'A cash/bank account is required to execute this payment');
 	}
 }
+
+/** PPh withholding only on a supplier disbursement, with a PPh tax, below the amount (ERP-0140). */
+export class PaymentWithholdingError extends AppError {
+	constructor() {
+		super(
+			422,
+			'payment.withholdingInvalid',
+			'Withholding needs a supplier disbursement, a PPh tax and an amount below the payment',
+		);
+	}
+}
+
+/** One payment settles one kind of counterpart (ERP-0144). */
+export class PaymentAllocationMixedError extends AppError {
+	constructor() {
+		super(422, 'payment.allocationMixed', 'A payment cannot mix invoices or bills, claims and advances');
+	}
+}

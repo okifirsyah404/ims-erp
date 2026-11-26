@@ -7,7 +7,7 @@ import {
 } from '@drizzle/schemas/finance.schema';
 import type { TPaginationResult } from '@ims-erp/common';
 import type { BunSQLDatabase } from 'drizzle-orm/bun-sql/postgres';
-import { and, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNull } from 'drizzle-orm';
 import { inject, injectable } from 'tsyringe';
 import { paginationResult } from '@utils/pagination.util';
 import type { IAccountingPeriodRepository, TPeriodPaginationRequest } from '../contracts/accounting-period.repository.interface';
@@ -150,5 +150,27 @@ export class AccountingPeriodRepository implements IAccountingPeriodRepository {
 			)
 			.limit(1);
 		return row.value > 0;
+	}
+
+	async findFirstOpenPeriodFrom(
+		organizationId: string,
+		date: string,
+		tx?: TTx,
+	): Promise<TAccountingPeriodSelect | null> {
+		const db = tx ?? this.database;
+		const [row] = await db
+			.select()
+			.from(accountingPeriods)
+			.where(
+				and(
+					eq(accountingPeriods.organizationId, organizationId),
+					eq(accountingPeriods.status, 'open'),
+					gte(accountingPeriods.endDate, date),
+					isNull(accountingPeriods.deletedAt),
+				),
+			)
+			.orderBy(asc(accountingPeriods.startDate))
+			.limit(1);
+		return row ?? null;
 	}
 }

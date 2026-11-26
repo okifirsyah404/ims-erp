@@ -111,6 +111,12 @@ const account_: Record<keyof typeof account, string> = {
 	'profile.updated': 'Profil diperbarui',
 
 	'form.saving': 'Menyimpan…',
+
+	// Payslips (ERP-0122).
+	'payslips.title': 'Slip gaji saya',
+	'payslips.description': 'Slip gaji dari periode penggajian yang sudah disetujui.',
+	'payslips.download': 'Unduh',
+	'payslips.pending': 'Sedang disiapkan',
 };
 
 export default account_;

@@ -1,4 +1,7 @@
+import type { TEmployeePayableType } from '@app/finance/contracts/ledger-settlement.port';
 import { inject, injectable } from 'tsyringe';
+import { EXPORTED_TAX_SERVICE_TOKEN } from '@app/tax/constants/di';
+import type { ExportedTaxService } from '@app/tax/services/exported-tax.service';
 import type { TTx } from '@drizzle/types';
 import type { TPaymentSelect } from '@drizzle/schemas/payment.schema';
 import type { TPaginationResult } from '@ims-erp/common';
@@ -18,14 +21,30 @@ import type {
 import {
 	PaymentAllocationMismatchError,
 	PaymentCashAccountRequiredError,
+	PaymentWithholdingError,
 	PaymentInvalidTransitionError,
 	PaymentNotFoundError,
 	PaymentOverAllocationError,
 	PaymentTargetNotIssuedError,
 	PaymentVoidNotAllowedError,
+	PaymentAllocationMixedError,
 } from '../errors/payment.errors';
 
 /** Which side of the ledger a payment type settles. */
+const EMPLOYEE_PAYABLES: readonly TEmployeePayableType[] = ['expense_claim', 'employee_advance', 'expense_settlement'];
+
+/** The cash counterpart of a payment's allocations; mixing kinds is refused (ERP-0144). */
+function counterpartFor(types: string[]): 'claim_payable' | 'employee_advance' | undefined {
+	const kinds = new Set(
+		types.map((type) =>
+			type === 'employee_advance' ? 'employee_advance' : type === 'expense_claim' || type === 'expense_settlement' ? 'claim_payable' : 'ledger',
+		),
+	);
+	if (kinds.size > 1) throw new PaymentAllocationMixedError();
+	const [kind] = [...kinds];
+	return kind === 'ledger' ? undefined : (kind as 'claim_payable' | 'employee_advance');
+}
+
 const PAYMENT_SIDE: Record<TCreatePaymentInput['paymentType'], 'receivable' | 'payable'> = {
 	receipt: 'receivable',
 	disbursement: 'payable',
@@ -39,6 +58,9 @@ export class PaymentService implements IPaymentService {
 		/** Accounting/Finance effects of a settled payment (mirrors, cash/bank). */
 		@inject(LEDGER_SETTLEMENT_PORT_TOKEN) private readonly settlement: ILedgerSettlementPort,
 		@inject(PAYMENT_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<PaymentNumberingService, 'next'>,
+		/** ERP-0140: validates and records PPh withheld from supplier payments. */
+		@inject(EXPORTED_TAX_SERVICE_TOKEN)
+		private readonly taxes?: Pick<ExportedTaxService, 'findTax' | 'recordWithholding'>,
 	) {}
 
 	async get(organizationId: string, id: string): Promise<TPaymentSelect> {
@@ -56,6 +78,13 @@ export class PaymentService implements IPaymentService {
 		input: TCreatePaymentInput,
 		_allocations: TAllocationInput[],
 	): Promise<TPaymentSelect> {
+		const withholding = input.withholding ?? null;
+		if (withholding) {
+			// ERP-0140: only a supplier disbursement withholds, never all of it.
+			if (input.paymentType !== 'disbursement' || withholding.amount >= input.amount) throw new PaymentWithholdingError();
+			const tax = this.taxes ? await this.taxes.findTax(ctx.organizationId, withholding.taxId) : null;
+			if (!tax || tax.taxType !== 'pph') throw new PaymentWithholdingError();
+		}
 		return this.database.transaction(async (tx) => {
 			const code = await this.numbering.next('payment', {
 				date: new Date(`${input.paymentDate}T12:00:00+07:00`),
@@ -84,6 +113,9 @@ export class PaymentService implements IPaymentService {
 					cashBankAccountId: input.cashBankAccountId,
 					referenceNumber: input.referenceNumber,
 					notes: input.notes,
+					withholdingTaxId: withholding?.taxId ?? null,
+					withholdingAmount: withholding?.amount ?? 0,
+					taxObjectCode: withholding?.taxObjectCode ?? null,
 				},
 				tx,
 			);
@@ -159,26 +191,73 @@ export class PaymentService implements IPaymentService {
 				tx,
 			);
 
+			const side = PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']];
+			const direction = side === 'payable' ? 'out' : 'in';
 			for (const allocation of allocations) {
 				if (allocation.payableType === 'supplier_bill') {
 					await this.applyBillAllocation(ctx.organizationId, allocation.payableId, allocation.amount, tx);
 				} else if (allocation.payableType === 'sale_invoice') {
 					await this.applyInvoiceAllocation(ctx.organizationId, allocation.payableId, allocation.amount, tx);
+				} else if (EMPLOYEE_PAYABLES.includes(allocation.payableType as TEmployeePayableType)) {
+					await this.settlement.applyEmployeePayable(
+						ctx.organizationId,
+						allocation.payableType as TEmployeePayableType,
+						allocation.payableId,
+						direction,
+						allocation.amount,
+						payment.id,
+						tx,
+					);
 				} else {
 					throw new PaymentTargetNotIssuedError();
 				}
 			}
-
-			const side = PAYMENT_SIDE[payment.paymentType as TCreatePaymentInput['paymentType']];
+			const counterpartRole = counterpartFor(allocations.map((a) => a.payableType));
+			const businessDate = payment.paymentDate ?? new Date().toISOString().slice(0, 10);
+			// ERP-0140: PPh withheld stays with the company until it is paid to the
+			// state: AP is settled in full, the bank pays the net, the rest becomes
+			// the withholding payable and a withholding record in the tax module.
+			const withheld = payment.withholdingAmount ?? 0;
+			if (withheld > 0 && payment.withholdingTaxId) {
+				const tax = this.taxes ? await this.taxes.findTax(ctx.organizationId, payment.withholdingTaxId) : null;
+				if (!tax) throw new PaymentWithholdingError();
+				await this.settlement.postWithholding(
+					{
+						organizationId: ctx.organizationId,
+						actorUserId: ctx.actorUserId,
+						paymentId: payment.id,
+						paymentCode: payment.code ?? '',
+						businessDate,
+						amount: withheld,
+						taxCode: tax.code,
+						supplierId: payment.counterpartyId,
+					},
+					tx,
+				);
+				await this.taxes?.recordWithholding(tx, {
+					organizationId: ctx.organizationId,
+					taxTypeId: tax.id,
+					counterpartyType: payment.counterpartyType,
+					counterpartyId: payment.counterpartyId,
+					counterpartyTaxId: null,
+					baseAmount: payment.amount,
+					taxAmount: withheld,
+					transactionDate: businessDate,
+					taxObjectCode: payment.taxObjectCode,
+					sourceModule: 'payment',
+					sourceId: payment.id,
+				});
+			}
 			await this.settlement.postCashMovement(
 				{
 					organizationId: ctx.organizationId,
 					actorUserId: ctx.actorUserId,
 					cashBankAccountId: payment.cashBankAccountId,
 					side,
-					direction: side === 'payable' ? 'out' : 'in',
-					amount: payment.amount,
-					businessDate: payment.paymentDate ?? new Date().toISOString().slice(0, 10),
+					counterpartRole,
+					direction,
+					amount: payment.amount - withheld,
+					businessDate,
 					description: `Payment ${payment.code}`,
 					referenceNumber: payment.code,
 					sourceType: 'payment',
@@ -233,8 +312,25 @@ export class PaymentService implements IPaymentService {
 		const total = allocations.reduce((s, a) => s + a.amount, 0);
 		if (total !== amount) throw new PaymentAllocationMismatchError();
 		const expectsPayable = PAYMENT_SIDE[paymentType] === 'payable';
+		// ERP-0144: one payment settles one kind of counterpart (AR, AP, claims
+		// payable or advances), because it posts one cash movement.
+		counterpartFor(allocations.map((a) => a.payableType));
 		for (const allocation of allocations) {
-			// Resolver map: only the payables of the two ledger sides are wired so far.
+			if (EMPLOYEE_PAYABLES.includes(allocation.payableType as TEmployeePayableType)) {
+				const target = await this.settlement.findEmployeePayable(
+					organizationId,
+					allocation.payableType as TEmployeePayableType,
+					allocation.payableId,
+					expectsPayable ? 'out' : 'in',
+					tx,
+				);
+				if (!target) throw new PaymentTargetNotIssuedError();
+				if (target.exact ? allocation.amount !== target.outstanding : allocation.amount > target.outstanding) {
+					throw new PaymentOverAllocationError();
+				}
+				continue;
+			}
+			// Resolver map: invoices and bills on the two ledger sides.
 			if (allocation.payableType !== 'sale_invoice' && allocation.payableType !== 'supplier_bill') {
 				throw new PaymentTargetNotIssuedError();
 			}

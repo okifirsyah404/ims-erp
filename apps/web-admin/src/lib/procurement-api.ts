@@ -65,6 +65,8 @@ export type TPurchaseOrder = {
 	supplierQuoteRef: string | null;
 	supplierQuoteDate: string | null;
 	projectName: string | null;
+	/** ERP-0146: the project the order is bought for. */
+	projectId?: string | null;
 	buyerPicName: string | null;
 	vatMode: TPoVatMode;
 	vatRateBps: number;
@@ -110,6 +112,7 @@ export type TPurchaseOrderInput = {
 	supplierQuoteRef: string | null;
 	supplierQuoteDate: string | null;
 	projectName: string | null;
+	projectId?: string | null;
 	buyerPicName: string | null;
 	vatMode: TPoVatMode;
 	vatRateBps: number | null;

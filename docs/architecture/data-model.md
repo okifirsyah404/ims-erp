@@ -4,15 +4,19 @@ Schema, keys, constraints, and conventions. Current declarations:
 `apps/backend/drizzle/schemas/*.ts` (auth + per-feature schemas) and
 `apps/backend/drizzle/datatypes/unix-timestamp.ts`.
 
-> Rewritten 2026-11-20 for ADR-0024 (database normalization baseline v2):
-> **18 Postgres schemas, 188 tables** in `docs/database/docs.dbml`, plus the
-> schema-less `webhook` module. `docs.dbml` is canonical; the Drizzle files in
-> `apps/backend/drizzle/schemas/` mirror it, but the baseline migrations create
-> **164** tables, so some `docs.dbml` tables are still target-only (for
-> example `human_resource.employee_addresses`; ticket templates and sub-tickets,
-> Q29). Per-module ownership, table counts and contracts live in
-> `docs/database/module-ownership.md`; this file keeps only the cross-cutting
-> summary and the conventions.
+> Rewritten 2026-11-20 for ADR-0024 (database normalization baseline v2), then
+> updated 2026-11-24 for ADR-0026: **20 Postgres schemas, 196 tables** in
+> `docs/database/docs.dbml`, plus the schema-less `webhook` module. `docs.dbml`
+> is canonical; the Drizzle files in `apps/backend/drizzle/schemas/` mirror it,
+> but the baseline migrations create **176** tables, so 20 `docs.dbml` tables
+> are still target-only (`sale.discount_requests`, `sale.contracts`,
+> `sale.targets`, `finance.journal_templates`, `finance.credit_memos`,
+> `finance.employee_advances`, `finance.expense_settlements`,
+> `finance.expense_settlement_items`, 8 `project.*` tables including `types`,
+> `phases`, `milestones`, `kpi_*`, `ticket.ticket_templates` and
+> `ticket.sub_ticket_templates`). Per-module ownership, table counts and
+> contracts live in `docs/database/module-ownership.md`; this file keeps only
+> the cross-cutting summary and the conventions.
 
 ## PostgreSQL schemas
 
@@ -23,7 +27,9 @@ Schema, keys, constraints, and conventions. Current declarations:
 | `company` | Company | The one legal company: `profiles`, `addresses`, `contacts`, `settings`. Bank accounts are `finance.cash_bank_accounts`. |
 | `customer` | Customer | `companies`, `customers` (people, incl. portal login), addresses, settings. |
 | `supplier` | Supplier | `companies`, `suppliers` (PIC people), addresses, settings; bank details restricted. |
-| `inventory` | Inventory | Products, physical items, stock ledger/balances, adjustments, borrowing, maintenance, disposals and the **warehouse tables**. One schema; the old separate `warehouse` schema is gone. |
+| `product` | Product | Product (SKU) master, images, components (BOM), categories, settings (ADR-0026). No stock here. |
+| `warehouse` | Warehouse | Warehouse master, images, 1:1 address, storages (bins), PICs, organization access, settings (ADR-0026). No quantities here. |
+| `inventory` | Inventory | Physical items, serial units, stock ledger/balances, adjustments, borrowing, maintenance, condition checks, disposals, tool sets, item categories/documents. |
 | `sale` | Sale | Quotations, orders, delivery notes, returns, invoices, receipts, contracts. |
 | `procurement` | Procurement | Purchase requests/orders, goods receipts, purchase returns. |
 | `finance` | Finance | Ledger, journals, periods, cash/bank, reconciliations, supplier bills, AR/AP, depreciation. |
@@ -133,20 +139,26 @@ never ships in a frontend bundle.
 ## Migration policy
 
 - Historical migrations are immutable. New schema changes → new migration via
-  `drizzle:generate`, SQL inspected by a human, then applied to a **disposable**
-  database for testing. `drizzle-kit push` is for disposable DBs only.
+  `drizzle:generate`, SQL inspected by a human, then applied to a local database
+  you can drop and recreate for testing. `drizzle-kit push` only ever runs
+  against such a database.
 - Auth schema changes: hand-written, append-only edits to `auth.schema.ts`; never run `auth:generate` (AGENTS.md hard rule).
-- Baseline (ADR-0024, per-schema since 2026-11-21): the schema is **one
-  migration per Postgres schema**, `database/migrations/20261120214111_create_auth_schema`
-  through `20261120214130_create_warehouse_schema` (20 folders; 1 `base` + 19
-  chained `diff` snapshots, 20 schemas, 164 `CREATE TABLE` statements, no
-  cross-schema `REFERENCES`). The previous single baseline
-  (`20261120061847_last_daredevil`) and the 31-step v1 chain are kept for
-  history in `database/migrations-archive/` (`v1`, `v3-per-schema-20261121`;
-  not applied). Verified on a disposable database on 2026-11-21:
-  `drizzle:migrate`, then `drizzle:seed` twice (second run inserted nothing), a
-  second `drizzle-kit generate` reported no schema changes, `drizzle-kit check`
-  reported "Everything's fine", and `pg_dump --schema-only` of the resulting
-  database is identical to one built from the archived single baseline. The
-  earlier "blocked on main" branching-snapshot problem (2026-11-12) is resolved
-  (`runbook.md`).
+- Baseline (ADR-0024, per-schema since 2026-11-21, re-squashed 2026-11-24): the
+  schema is **one migration per Postgres schema**,
+  `database/migrations/20261123204301_create_auth_schema` through
+  `20261123204332_create_warehouse_schema` (20 folders; 1 `base` + 19 chained
+  `diff` snapshots, 20 schemas, 176 `CREATE TABLE` statements, no cross-schema
+  `REFERENCES`). The 33-folder chain that preceded the 2026-11-24 re-squash is in
+  git history only; the 31-step v1 chain is kept for history in
+  `database/migrations-archive/v1` (never applied). The earlier single baseline
+  (`20261120061847_last_daredevil`) is in git history only — it is not in
+  `database/migrations-archive/`. Verified on a throwaway local database on
+  2026-11-21 (before the re-squash): `drizzle:migrate`, then `drizzle:seed`
+  twice (second run inserted nothing), a second `drizzle-kit generate` reported
+  no schema changes, `drizzle-kit check` reported "Everything's fine", and
+  `pg_dump --schema-only` of the resulting database was identical to one built
+  from the single baseline. The 2026-11-24 chain was verified without a
+  database: it concatenates to the same 758 statements as a single `generate`
+  from `drizzle/schemas`, `check` is clean and `generate --explain` reports
+  `no_changes`. The earlier "blocked on main" branching-snapshot problem
+  (2026-11-12) is resolved (`runbook.md`).

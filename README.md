@@ -1,8 +1,8 @@
 # IMS ERP
 
-An inventory management / ERP system built as a **Bun + Turborepo** monorepo. It consists of a typed API backend (Elysia + PostgreSQL + Redis) and an admin web client (React + Vite), with shared packages for common code and UI components.
+An inventory management / ERP system built as a **Bun + Turborepo** monorepo. It consists of a typed API backend (Elysia + PostgreSQL + Redis), an admin web client (React + Vite), and two Astro sites (public website + customer portal), with shared packages for common code, UI components, locales, design tokens and email templates.
 
-Domain modules currently include **users & auth**, **organizations**, **locations** (provinces/regencies/districts/villages), and **sales** (quotations, payments).
+Domain modules: 22 backend modules over **20 Postgres schemas / 196 tables** (ADR-0024, ADR-0026) — identity (`auth`), location, company, customer, supplier, product, warehouse, inventory, sale, procurement, finance, tax, payment, project, ticket, human resource, document, notification, audit, automation, plus the schema-less `webhook` edge. Ownership and contracts: `docs/database/module-ownership.md`.
 
 ## Tech Stack
 
@@ -16,6 +16,7 @@ Domain modules currently include **users & auth**, **organizations**, **location
 | Auth                      | [Better Auth](https://www.better-auth.com) (+ api-key, passkey, Drizzle adapter plugins)                                                                |
 | DI / validation           | [tsyringe](https://github.com/microsoft/tsyringe), [Zod](https://zod.dev)                                                                               |
 | Admin frontend            | [React 19](https://react.dev) + [Vite](https://vite.dev), [TanStack Router/Query/Form](https://tanstack.com), [Tailwind CSS 4](https://tailwindcss.com) |
+| Public website & portal   | [Astro](https://astro.build) (SSR via `@astrojs/node`) — `apps/web-landing`, `apps/web-customer-portal`                                              |
 | UI library                | `@ims-erp/ui` (shadcn-style components)                                                                                                                 |
 | i18n                      | [i18next](https://www.i18next.com/) + [elysia-i18next](https://github.com/eelkevdbos/elysia-i18next) + `@ims-erp/locales` (shared locales)              |
 | Lint / format / hooks     | oxlint, Prettier, husky                                                                                                                                 |
@@ -28,28 +29,43 @@ Domain modules currently include **users & auth**, **organizations**, **location
 ├── apps/
 │   ├── backend/             # Elysia API (@ims-erp/backend)
 │   │   ├── src/
-│   │   │   ├── app/         # Domain modules (user, organization, location, sales)
+│   │   │   ├── app/         # 22 domain modules (audit … warehouse, webhook)
 │   │   │   │   └── <module>/
 │   │   │   │       ├── contracts/     # Repository interfaces & DTO contracts
 │   │   │   │       ├── controllers/   # Elysia route plugins
 │   │   │   │       ├── services/      # Business logic
 │   │   │   │       ├── repositories/  # Drizzle data access
+│   │   │   │       ├── errors/        # Domain errors (extend AppError)
+│   │   │   │       ├── constants/di.ts
 │   │   │   │       └── container.ts   # tsyringe DI registration
-│   │   │   ├── providers/   # Infra providers (better-auth, logger, queue, ...)
-│   │   │   ├── authorization/
-│   │   │   ├── contracts/
-│   │   │   ├── di/
-│   │   │   └── config/
-│   │   ├── database/        # Seeders & migration helpers
-│   │   ├── drizzle/         # Generated migrations
-│   │   └── scripts/
-│   └── web-admin/           # Admin SPA (@ims-erp/web-admin) — Vite + React + TanStack Router
+│   │   │   ├── app/app.ts   # createApp() factory — mounts every controller
+│   │   │   ├── authorization/  # guards, role/permission checks
+│   │   │   ├── cache/       # Redis cache helpers
+│   │   │   ├── di/          # DRIZZLE_TOKEN / REDIS_TOKEN, provider
+│   │   │   ├── http/        # response envelopes, AppError, domainPlugin
+│   │   │   ├── providers/   # better-auth, logger, queue, mail, storage
+│   │   │   ├── shared/      # per-module numbering table factory, etc.
+│   │   │   ├── utils/
+│   │   │   └── index.ts     # composition root: registers modules, listens
+│   │   ├── database/        # migrations/, migrations-archive/v1, seeders/, migrate-reset.ts
+│   │   ├── drizzle/         # schemas/ (one per Postgres schema), datatypes/
+│   │   ├── scripts/         # smoke tests, one-off scripts
+│   │   └── test/            # unit tests (bun:test)
+│   ├── web-admin/           # Admin SPA (@ims-erp/web-admin) — Vite + React + TanStack Router (:5173)
+│   ├── web-landing/         # Public website (@ims-erp/web-landing) — Astro (:4321)
+│   └── web-customer-portal/ # Customer portal (@ims-erp/web-customer-portal) — Astro (:4322)
 ├── packages/
-│   ├── common/              # Shared code (@ims-erp/common)
-│   ├── ui/                  # Shared UI components (@ims-erp/ui)
-│   └── eslint-config/
+│   ├── common/              # Shared types & permission catalog (@ims-erp/common)
+│   ├── design-tokens/       # Design tokens (@ims-erp/design-tokens)
+│   ├── locales/             # en/id translation bundles (@ims-erp/locales)
+│   ├── react-email/         # Email templates (@ims-erp/react-email)
+│   └── ui/                  # Shared UI components (@ims-erp/ui)
 ├── docs/
-│   └── database/            # DBML schema, data dictionary, module ownership, phases
+│   ├── architecture/        # boundaries, runbook, ADRs, per-module pages
+│   ├── database/            # docs.dbml (canonical), data dictionary, ownership
+│   ├── integrations/        # n8n workflows, WhatsApp
+│   ├── plan/                # progress, backlog, phases
+│   └── user-guide/          # end-user guides (EN/ID)
 ├── graphify-out/            # Generated codebase knowledge graph (not source of truth)
 ├── docker-compose.yml       # Deployment compose (pulls published images)
 ├── docker-compose.local.yml # Local override (builds images from source)
@@ -77,6 +93,8 @@ Environment files are decentralized per workspace — each app owns its own `.en
 ```sh
 cp apps/backend/.env.example apps/backend/.env
 cp apps/web-admin/.env.example apps/web-admin/.env
+cp apps/web-landing/.env.example apps/web-landing/.env
+cp apps/web-customer-portal/.env.example apps/web-customer-portal/.env
 ```
 
 At minimum, set in `apps/backend/.env`:
@@ -111,6 +129,8 @@ boot. Override its location with `CORS_CONFIG_PATH` (docker-compose mounts
 
 In `apps/web-admin/.env`, set `VITE_API_URL` to the backend URL (must match the backend's `APP_PORT`).
 
+The two Astro apps read `ERP_API_BASE_URL` (server-to-server, default `http://localhost:3001`). Both default to demo/sample data locally; see each `.env.example`.
+
 Other variables (app name/port, Redis, initial admin bootstrap, timezone) have sensible defaults — see `apps/backend/.env.example`.
 
 ### 3. Start infrastructure
@@ -132,24 +152,26 @@ bun run drizzle:seed       # seed initial data (incl. admin bootstrap)
 bun run drizzle:studio     # browse the DB (optional)
 ```
 
-> **Note (2026-11-12):** `drizzle:generate` and `drizzle:migrate` are currently
-> blocked on `main` by a branching migration snapshot chain. Until it is
-> repaired, set up a fresh database with `bun run database/migrate-reset.ts`
-> (drops every schema, migrates and seeds — **disposable databases only**).
-> Details: `docs/architecture/runbook.md`.
+Migrations are one folder per Postgres schema (`database/migrations/`). To rebuild
+a local database from zero — drops every schema, re-applies the 20 migrations,
+then seeds — run `bun run drizzle:migrate-reset`. It is destructive by design, so
+point it at a local database you can recreate and never at data you need to keep.
+Details: `docs/architecture/runbook.md`.
 
 ### 5. Run the apps
 
 From the repo root:
 
 ```sh
-bun dev                                  # backend + web-admin
+bun dev                                  # backend + web-admin + web-landing + web-customer-portal
 bun dev --filter=@ims-erp/backend        # backend only
 bun dev --filter=@ims-erp/web-admin      # admin frontend only
 ```
 
-- Backend API: http://localhost:3000 (serves OpenAPI docs via `@elysia/openapi`)
+- Backend API: http://localhost:3001 (serves OpenAPI docs via `@elysia/openapi`)
 - Admin frontend: http://localhost:5173
+- Public website: http://localhost:4321
+- Customer portal: http://localhost:4322
 
 ### 6. Build the codebase knowledge graph (optional)
 
@@ -194,7 +216,7 @@ Each image is tagged with both the short commit SHA (`sha-<sha>`) and a moving `
 
 ### Running in production / on a server
 
-`docker-compose.yml` pulls the published images and starts the full stack: **backend**, **web-admin**, **postgres**, **redis**. Compose substitution needs a deployment `.env` next to `docker-compose.yml` (or pass `--env-file`), separate from the dev workspace env files — configure `APP_NAME`, `APP_ID`, `APP_SECRET`, `POSTGRES_PASSWORD`, optional `S3_*` / `SMTP_*`, then:
+`docker-compose.yml` pulls the published images and starts the full stack: **backend**, **web-admin**, **web-landing**, **web-customer-portal**, **postgres**, **redis** (plus **dicebear** for avatars). Compose substitution needs a deployment `.env` next to `docker-compose.yml` (or pass `--env-file`), separate from the dev workspace env files — configure `APP_NAME`, `APP_ID`, `APP_SECRET`, `POSTGRES_PASSWORD`, optional `S3_*` / `SMTP_*`, then:
 
 ```sh
 # Only while the GHCR packages are private: a classic PAT with read:packages.
@@ -204,12 +226,14 @@ docker compose up -d
 
 Useful knobs:
 
-| Variable         | Default        | Description                                           |
-| ---------------- | -------------- | ----------------------------------------------------- |
-| `IMAGE_TAG`      | `dev`          | Which image tag to pull (`dev` or a `sha-...` tag)    |
-| `APP_PORT`       | `3001`         | Host port mapped to the backend (container port 3000) |
-| `WEB_ADMIN_PORT` | `8080`         | Host port mapped to the web admin (container port 80) |
-| `TZ`             | `Asia/Jakarta` | Timezone for services                                 |
+| Variable                    | Default        | Description                                            |
+| --------------------------- | -------------- | ------------------------------------------------------ |
+| `IMAGE_TAG`                 | `dev`          | Which image tag to pull (`dev` or a `sha-...` tag)     |
+| `APP_PORT`                  | `3001`         | Host port mapped to the backend (container port 3000)  |
+| `WEB_ADMIN_PORT`            | `8080`         | Host port mapped to the web admin (container port 80)  |
+| `WEB_LANDING_PORT`          | `4321`         | Host port mapped to the public website                 |
+| `WEB_CUSTOMER_PORTAL_PORT`  | `4322`         | Host port mapped to the customer portal                |
+| `TZ`                        | `Asia/Jakarta` | Timezone for services                                  |
 
 To build and run the application images from source instead of pulling from GHCR (e.g. for a local end-to-end check):
 

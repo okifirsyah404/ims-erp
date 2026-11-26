@@ -1,3 +1,5 @@
+import { PROJECT_BUDGET_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { ProjectBudgetService } from '@app/finance/services/project-budget.service';
 import { ORGANIZATION_SERVICE_TOKEN } from '@app/organization/constants/di';
 import { PROJECT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { ProjectNumberingService } from './project-numbering.service';
@@ -22,6 +24,10 @@ import type { ErpPermissionRequest, TPaginationResult } from '@ims-erp/common';
 import { businessDateOf } from '@utils/business-date.util';
 import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
+import type { TTx } from '@drizzle/types';
+import { type ITransactionRunner, TRANSACTION_RUNNER_TOKEN } from '@providers/database/transaction-runner';
+import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PostingService } from '@app/finance/services/posting.service';
 import { PROJECT_REPOSITORY_TOKEN } from '../constants/di';
 import type {
 	TCostBodyRequest,
@@ -142,6 +148,13 @@ export class ProjectService {
 		@inject(USER_SERVICE_TOKEN) private readonly users: Pick<UserService, 'getUser'>,
 		@inject(PROJECT_NUMBERING_SERVICE_TOKEN) private readonly numbering: Pick<ProjectNumberingService, 'next'>,
 		@inject(OBJECT_STORAGE_TOKEN) private readonly storage: Pick<IObjectStorage, 'put' | 'presignGet'>,
+		/** ERP-0141: every direct cost posts to the GL in the same transaction. */
+		@inject(TRANSACTION_RUNNER_TOKEN) private readonly transactions?: ITransactionRunner,
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent' | 'reverse'>,
+			/** ERP-0146: the project budget check on cost entry. */
+		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
+		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
 	) {}
 
 	// Visibility -------------------------------------------------------------
@@ -470,6 +483,8 @@ export class ProjectService {
 
 	async addCost(ctx: TProjectContext, id: string, body: TCostBodyRequest): Promise<TCostSelect> {
 		await this.requireActive(ctx, id);
+		// ERP-0146: a cost entry counts against the project budget.
+		await this.budgets?.check({ projectId: id, amount: body.amount });
 		let receipt: { key: string; name: string; type: string } | null = null;
 		if (body.receipt && body.receipt.size > 0) {
 			const type = await this.checkFile(body.receipt);
@@ -477,7 +492,7 @@ export class ProjectService {
 			await this.storage.put(key, body.receipt, type.contentType);
 			receipt = { key, name: cleanFileName(body.receipt.name), type: type.contentType };
 		}
-		return this.repository.addCost({
+		const row = {
 			projectId: id,
 			category: body.category,
 			costDate: body.costDate,
@@ -487,12 +502,70 @@ export class ProjectService {
 			receiptFileName: receipt?.name ?? null,
 			receiptContentType: receipt?.type ?? null,
 			createdBy: ctx.actorUserId,
+			paymentSource: body.paymentSource ?? 'employee_claim',
+			reference: body.reference?.trim() || null,
+		};
+		if (!this.transactions || !this.posting) return this.repository.addCost(row);
+		const posting = this.posting;
+		// ERP-0141 (grill Q42): Dr project COGS (refined by cost category) /
+		// Cr the payment source: claims payable for an employee's claim, cash
+		// by method for petty cash or bank.
+		return this.transactions.run(async (tx: TTx) => {
+			const cost = await this.repository.addCost(row, tx);
+			const credit =
+				row.paymentSource === 'employee_claim'
+					? { role: 'claim_payable', debit: 0, credit: cost.amount }
+					: {
+							role: 'cash_payment',
+							discriminatorType: 'payment_method',
+							discriminatorValue: row.paymentSource === 'petty_cash' ? 'cash' : 'bank_transfer',
+							debit: 0,
+							credit: cost.amount,
+						};
+			const { entry } = await posting.postBusinessEvent(tx, {
+				organizationId: ctx.organizationId,
+				entryDate: cost.costDate,
+				sourceModule: 'project',
+				sourceType: 'project_cost',
+				sourceId: cost.id,
+				idempotencyKey: `project_cost:${cost.id}`,
+				eventType: 'project.cost_recorded',
+				description: cost.description,
+				actorUserId: ctx.actorUserId,
+				lines: [
+					{
+						role: 'project_cogs',
+						discriminatorType: 'cost_category',
+						discriminatorValue: cost.category,
+						debit: cost.amount,
+						credit: 0,
+						projectId: id,
+					},
+					credit,
+				],
+			});
+			await this.repository.setCostJournal(cost.id, entry.id, tx);
+			return { ...cost, journalEntryId: entry.id };
 		});
 	}
 
 	async voidCost(ctx: TProjectContext, id: string, costId: string, reason: string): Promise<TCostSelect> {
 		await this.requireActive(ctx, id);
-		const voided = await this.repository.voidCost(id, costId, ctx.actorUserId, reason);
+		const posting = this.posting;
+		const voided =
+			this.transactions && posting
+				? await this.transactions.run(async (tx: TTx) => {
+						const row = await this.repository.voidCost(id, costId, ctx.actorUserId, reason, tx);
+						// ERP-0141: the void reverses the cost's journal (costs recorded before
+						// ERP-0141 have none).
+						if (row?.journalEntryId) {
+							await posting.reverse(tx, ctx.organizationId, row.journalEntryId, ctx.actorUserId, {
+								description: `Project cost voided: ${reason}`.slice(0, 500),
+							});
+						}
+						return row;
+					})
+				: await this.repository.voidCost(id, costId, ctx.actorUserId, reason);
 		if (!voided) {
 			const exists = (await this.repository.listCosts(id)).some((cost) => cost.id === costId);
 			throw exists ? new ProjectCostVoidedError() : new ProjectChildNotFoundError('cost');

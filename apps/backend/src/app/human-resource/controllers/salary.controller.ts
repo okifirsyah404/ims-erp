@@ -62,6 +62,24 @@ export class SalaryController {
 				{ erp: { permission: ['payroll:create'] }, detail: { description: 'Imports a filled template; all rows or none' } },
 			)
 			.post(
+				'/recalculate',
+				async ({ query, erp }) => ok(await service.recalculate((await context(erp)).scope, period(query))),
+				{ erp: { permission: ['payroll:calculate'] }, detail: { description: 'Recalculates PPh 21 and BPJS on the drafts of a month (ERP-0138)' } },
+			)
+			.get(
+				'/bp21.xml',
+				async ({ query, erp }) => {
+					const month = period(query);
+					return new Response(await service.bp21Xml((await context(erp)).scope, month), {
+						headers: {
+							'content-type': 'application/xml; charset=utf-8',
+							'content-disposition': `attachment; filename="coretax-bp21-${month}.xml"`,
+						},
+					});
+				},
+				{ erp: { permission: ['payroll:export'] }, detail: { description: 'Coretax BP21 XML of an approved month (format unverified, ERP-0138)' } },
+			)
+			.post(
 				'/approve',
 				async ({ query, erp }) => {
 					const ctx = await context(erp);

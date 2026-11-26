@@ -13,6 +13,7 @@ import { registerHumanResource } from '@app/human-resource';
 import { registerWebhook } from '@app/webhook';
 import { registerQuotationFollowUpSchedule, startQuotationFollowUpWorker, startQuotationSentWorker } from '@app/sale';
 import { registerSupplierBillDueSchedule, startSupplierBillDueWorker } from '@app/finance';
+import { registerPayrollPayDaySchedule, startAgreementPdfWorker, startPayrollPayDayWorker, startPayslipPdfWorker } from '@app/human-resource';
 import { registerAutomation, startOutboxWorker, startWhatsappWorker } from '@app/automation';
 import { registerFinance } from '@app/finance';
 import { registerTax } from '@app/tax';
@@ -20,6 +21,8 @@ import { appConfig } from '@config/providers/config';
 import { registerProvider } from '@di/provider';
 import { cors } from '@elysiajs/cors';
 import { DEFAULT_LANGUAGE, LANGUAGE_CODES, en, id } from '@ims-erp/locales';
+import { ensurePostgisExtension } from '@drizzle/datatypes/geo';
+import { drizzleDB } from '@drizzle/db';
 import { pinoLogger } from '@providers/logger/logger';
 import { requestLogger } from '@providers/logger/request-logger';
 import {
@@ -105,6 +108,21 @@ registerAuthorization(container);
 const apiI18n = createInstance();
 
 /**
+ * PostGIS is a database capability, not a table, so it cannot live in the
+ * Drizzle baseline: the custom migration `20261125201740_postgis_extension`
+ * creates it, and this call is the safety net for a database where that
+ * migration ran without superuser rights. When the database is a plain
+ * Postgres the app still boots and only site check-in fails, which is a far
+ * better failure than a dead server.
+ */
+await ensurePostgisExtension(drizzleDB).then(
+	(ready) =>
+		ready
+			? pinoLogger.info('PostGIS ready (field attendance)')
+			: pinoLogger.warn('PostGIS unavailable: site attendance check-in will fail'),
+);
+
+/**
  * Root Elysia application. The i18n plugin is mounted first so every controller
  * and guard inherited from `createApp()` below receives request-scoped `t`.
  *
@@ -173,6 +191,8 @@ const leadFollowUpWorker = startLeadFollowUpWorker();
 const quotationFollowUpWorker = startQuotationFollowUpWorker();
 // ERP-0012: `supplier_bill.due` reminders, same switch.
 const billDueWorker = startSupplierBillDueWorker();
+// ERP-0120: the daily payroll draft tick, same switch.
+const payrollPayDayWorker = startPayrollPayDayWorker();
 startWorkers(
 	[
 		startAvatarWorker(),
@@ -182,11 +202,16 @@ startWorkers(
 		startWhatsappWorker(),
 		// ERP-0067: SPH PDF + `quotation.sent` after a quotation is sent.
 		startQuotationSentWorker(),
+		// ERP-0121: the employment agreement PDF after an invite is claimed.
+		startAgreementPdfWorker(),
+		// ERP-0122: payslip PDFs after a payroll period is approved.
+		startPayslipPdfWorker(),
 		...(mailWorker ? [mailWorker] : []),
 		...(licenseDueWorker ? [licenseDueWorker] : []),
 		...(leadFollowUpWorker ? [leadFollowUpWorker] : []),
 		...(quotationFollowUpWorker ? [quotationFollowUpWorker] : []),
 		...(billDueWorker ? [billDueWorker] : []),
+		...(payrollPayDayWorker ? [payrollPayDayWorker] : []),
 	],
 	(error) => pinoLogger.error({ err: error }, 'background worker error'),
 );
@@ -206,6 +231,12 @@ if (billDueWorker) {
 	await registerSupplierBillDueSchedule().then(
 		() => pinoLogger.info('supplier_bill.due reminder schedule registered'),
 		(error: unknown) => pinoLogger.error({ err: error }, 'supplier_bill.due schedule not registered'),
+	);
+}
+if (payrollPayDayWorker) {
+	await registerPayrollPayDaySchedule().then(
+		() => pinoLogger.info('payroll payday schedule registered'),
+		(error: unknown) => pinoLogger.error({ err: error }, 'payroll payday schedule not registered'),
 	);
 }
 if (mailWorker) {
@@ -246,3 +277,4 @@ process.on('SIGTERM', async () => {
 pinoLogger.info(
 	`🦊 Elysia is running at ${bootstrap.server?.hostname}:${bootstrap.server?.port}`,
 );
+

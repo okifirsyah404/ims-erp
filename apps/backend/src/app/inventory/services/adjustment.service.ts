@@ -30,6 +30,9 @@ import {
 } from '../errors/inventory.errors';
 import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
+import { POSTING_SERVICE_TOKEN } from '@app/finance/constants/di';
+import type { PostingService } from '@app/finance/services/posting.service';
+import { inventoryValue } from '@app/finance/utils/inventory-value';
 import type { ExportedProductService } from '@app/product/services/exported-product.service';
 import { EXPORTED_USER_SERVICE_TOKEN } from '@app/user/constants/di';
 import type { ExportedUserService } from '@app/user/services/exported-user.service';
@@ -184,6 +187,9 @@ export class AdjustmentService {
 		/** Bin ownership, read through the `warehouse` module (ADR-0026). */
 		@inject(EXPORTED_WAREHOUSE_SERVICE_TOKEN)
 		private readonly warehouses: Pick<ExportedWarehouseService, 'storageInWarehouse'>,
+		/** ERP-0137: posted adjustments book inventory against inventory variance. */
+		@inject(POSTING_SERVICE_TOKEN)
+		private readonly posting?: Pick<PostingService, 'postBusinessEvent'>,
 	) {}
 
 	/** Fetches one page of adjustment documents. */
@@ -450,6 +456,7 @@ export class AdjustmentService {
 		// here rather than double-posting. A rollback of any movement returns
 		// the document to `approved` and re-postable — no compensating update.
 		const posted = await this.database.transaction(async (tx) => {
+			const valued: Array<{ productId: string; value: number; increase: boolean }> = [];
 			const claimed = await this.adjustmentRepository.claimForPost(id, tx);
 			if (!claimed) throw new AdjustmentTransitionError('approved', 'posted');
 
@@ -478,7 +485,7 @@ export class AdjustmentService {
 				const movementType: MovementType =
 					delta > 0 ? 'adjustment_in' : 'adjustment_out';
 
-				await this.stockService.postMovement(
+				const movement = await this.stockService.postMovement(
 					{
 						// The acting tenant is recorded on the ledger even when the
 						// warehouse is global and the balance is shared.
@@ -500,6 +507,41 @@ export class AdjustmentService {
 					},
 					tx,
 				);
+				valued.push({
+					productId: requireId(line.productId, 'product'),
+					value: inventoryValue(Math.abs(delta), movement.movement.unitCost),
+					increase: delta > 0,
+				});
+			}
+
+			// ERP-0137 (grill Q40): Dr inventory / Cr inventory variance for gains,
+			// the reverse for losses, at the movement's cost.
+			const journalLines = valued
+				.filter((line) => line.value > 0)
+				.flatMap((line) =>
+					line.increase
+						? [
+								{ role: 'inventory', debit: line.value, credit: 0, productId: line.productId },
+								{ role: 'inventory_variance', debit: 0, credit: line.value, productId: line.productId },
+							]
+						: [
+								{ role: 'inventory_variance', debit: line.value, credit: 0, productId: line.productId },
+								{ role: 'inventory', debit: 0, credit: line.value, productId: line.productId },
+							],
+				);
+			if (this.posting && journalLines.length > 0) {
+				await this.posting.postBusinessEvent(tx, {
+					organizationId,
+					entryDate: new Date().toISOString().slice(0, 10),
+					sourceModule: 'inventory',
+					sourceType: 'stock_adjustment',
+					sourceId: adjustment.id,
+					idempotencyKey: `stock_adjustment:${adjustment.id}`,
+					eventType: 'inventory.adjustment_posted',
+					description: `Stock adjustment ${adjustment.code ?? ''}`.trim(),
+					actorUserId: actor.actorUserId,
+					lines: journalLines,
+				});
 			}
 
 			return claimed;

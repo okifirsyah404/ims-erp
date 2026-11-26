@@ -39,6 +39,7 @@ declare module 'i18next' {
 		documents: typeof en.documents;
 		notifications: typeof en.notifications;
 		signatures: typeof en.signatures;
+		employee: typeof en.employee;
 	}
 
 	interface CustomTypeOptions {

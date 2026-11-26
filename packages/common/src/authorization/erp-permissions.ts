@@ -70,6 +70,8 @@ export const erpStatements = {
 	leave: ['read', 'create', 'cancel', 'approve', 'reject'],
 	/** Overtime recorded by HR and approved by someone else (M08). */
 	overtime: ['read', 'create', 'cancel', 'approve', 'reject'],
+	/** Employee work schedule: one shift per employee per date (ERP-0118). */
+	schedule: ['read', 'create', 'update', 'delete'],
 	disciplinary_record: ['read', 'create', 'update', 'approve'],
 	payroll: ['read', 'create', 'calculate', 'update', 'submit', 'approve', 'export'],
 	payroll_payment: ['read', 'execute'],
@@ -106,10 +108,24 @@ export const erpStatements = {
 	receipt: ['read', 'create', 'verify', 'post', 'reverse', 'export'],
 	payment: ['read', 'create', 'submit', 'approve', 'execute', 'reverse', 'export'],
 	bill: ['read', 'create', 'record'],
+	/**
+	 * ERP-0013 employee expense claim: `submit` files it, `approve` posts the
+	 * accrual journal. Kept apart from `bill` so approving a supplier bill and
+	 * approving a claim stay separate grants.
+	 */
+	expense_claim: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'cancel'],
 	cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 	chart_of_account: ['read', 'create', 'update', 'archive'],
 	journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
 	accounting_period: ['read', 'close', 'reopen'],
+	/** Account determination for business-event postings (ERP-0128). */
+	posting_rule: ['read', 'update'],
+	/** Cost-centre master data (ERP-0127). */
+	cost_center: ['read', 'create', 'update', 'archive'],
+	/** Credit notes against issued invoices (ERP-0135). */
+	credit_memo: ['read', 'create', 'apply', 'void'],
+	/** Receivable write-off, maker-checker (ERP-0135). */
+	ar_write_off: ['read', 'request', 'approve'],
 	tax: ['read', 'create', 'update', 'verify', 'export'],
 	financial_report: ['read', 'export'],
 
@@ -520,6 +536,8 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		whatsapp: ['read', 'reply', 'manage_faq'],
 		// Records attendance with HR (M08, decision 2026-11-07).
 		attendance: ['read', 'record'],
+		// Plans the work schedule with HR, like attendance (ERP-0118).
+		schedule: ['read', 'create', 'update', 'delete'],
 		product: ['read'],
 		asset_borrowing: [
 			'read',
@@ -629,7 +647,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		product: ['read'],
 		// Registers licenses sold and starts renewals (M03, decision 2026-11-06).
 		license: ['read', 'create', 'extend', 'read_key'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -667,7 +685,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		advance: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
 		purchase_request: ['read', 'create', 'submit'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -678,7 +696,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		task: ['read', 'update', 'submit'],
 		daily_report: ['read', 'create', 'update', 'submit'],
 		settlement: ['read', 'create', 'update', 'submit'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 	},
 
 	purchasing: {
@@ -695,7 +713,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// Prepares opening stock / adjustments with costs; never approves
 		// (decision 2026-11-03).
 		stock_adjustment: ['read', 'create', 'submit'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -718,7 +736,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 			'mark_lost',
 			'export',
 		],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -740,6 +758,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		// Project direct costs, read only (decision 2026-11-04).
 		project: ['read', 'read_cost'],
 		bill: ['read', 'create', 'record'],
+		expense_claim: ['read', 'create', 'update', 'submit', 'approve', 'reject', 'cancel'],
 		cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 		payroll_payment: ['read', 'execute'],
 		// Enters the monthly salary summaries with HR; the owner approves
@@ -747,6 +766,10 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		employee: ['read', 'read_private'],
 		payroll: ['read', 'create', 'update', 'export'],
 		financial_report: ['read', 'export'],
+		posting_rule: ['read'],
+		cost_center: ['read'],
+		credit_memo: ['read', 'create', 'apply', 'void'],
+		ar_write_off: ['read', 'request'],
 		tax: ['read', 'export'],
 		product: ['read', 'read_cost'],
 		// Supplier payments need the supplier's bank account (decision 2026-11-02).
@@ -767,16 +790,23 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		chart_of_account: ['read', 'create', 'update', 'archive'],
 		journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
 		accounting_period: ['read', 'close', 'reopen'],
+		posting_rule: ['read', 'update'],
+		cost_center: ['read', 'create', 'update', 'archive'],
+		credit_memo: ['read', 'apply', 'void'],
+		ar_write_off: ['read', 'approve'],
 		tax: ['read', 'create', 'update', 'verify', 'export'],
 		financial_report: ['read', 'export'],
 		invoice: ['read', 'export'],
 		receipt: ['read', 'export'],
 		payment: ['read', 'export'],
 		bill: ['read', 'create', 'record'],
+		// Files nothing and submits nothing: the accountant checks and signs
+		// off claims someone else filed (ERP-0013).
+		expense_claim: ['read', 'approve', 'reject'],
 		cash_bank: ['read', 'reconcile', 'export'],
 		investor: ['read'],
 		investor_report: ['read', 'create', 'publish', 'export'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -791,6 +821,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		attendance: ['read', 'check_in', 'check_out', 'request_correction', 'approve_correction', 'export', 'record'],
 		leave: ['read', 'create', 'cancel', 'approve', 'reject'],
 		overtime: ['read', 'create', 'cancel', 'approve', 'reject'],
+		schedule: ['read', 'create', 'update', 'delete'],
 		// Tasks given to employees outside projects (M08).
 		task: ['read', 'create', 'update'],
 		disciplinary_record: ['read', 'create', 'update', 'approve'],
@@ -818,7 +849,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		license: ['read', 'read_key'],
 		// Answers WhatsApp chats handed off by the assistant (M04 stage 2).
 		whatsapp: ['read', 'reply'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -835,7 +866,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		whatsapp: ['read', 'manage_faq'],
 		product: ['read'],
 		customer: ['read'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		self_service: ['read_profile', 'update_profile', 'read_attendance', 'read_payslip', 'request_leave'],
 	},
 
@@ -865,6 +896,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		daily_report: ['read', 'export'],
 		employee: ['read', 'export'],
 		attendance: ['read', 'export'],
+		schedule: ['read'],
 		product: ['read', 'export'],
 		stock: ['read', 'export'],
 		asset_borrowing: ['read', 'export'],
@@ -875,12 +907,17 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		chart_of_account: ['read'],
 		journal: ['read', 'export'],
 		accounting_period: ['read'],
+		posting_rule: ['read'],
+		cost_center: ['read'],
+		credit_memo: ['read'],
+		ar_write_off: ['read'],
 		tax: ['read', 'export'],
 		financial_report: ['read', 'export'],
 		service_ticket: ['read'],
 		asset: ['read', 'export'],
-		document: ['read', 'download', 'signature_read', 'signature_sign'],
+		document: ['read', 'download', 'signature_read', 'signature_sign', 'signature_request'],
 		budget: ['read', 'export'],
 		license: ['read'],
 	},
 } as const satisfies Record<ErpRoleName, ErpPermissionRequest>;
+

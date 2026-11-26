@@ -64,3 +64,35 @@ export function previousPeriod(period: string): string {
 	const [year, month] = period.split('-').map(Number) as [number, number];
 	return month === 1 ? `${year - 1}-12` : `${year}-${String(month - 1).padStart(2, '0')}`;
 }
+
+const DAY_MS = 86_400_000;
+
+/** `date` plus `days` calendar days (business dates carry no time zone shift). */
+export function addDays(date: string, days: number): string {
+	return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/** Monday-first weekday index: 0 = Monday … 6 = Sunday. */
+export function weekdayIndex(date: string): number {
+	return (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
+}
+
+/**
+ * Payday of a payroll month: `payDay` clamped to the month's last day
+ * (31 → 28/29 in February, 30 in April; grill-me Q17).
+ */
+export function payDayOf(period: string, payDay: number): string {
+	const { end } = periodRange(period);
+	const last = Number(end.slice(8, 10));
+	return `${period}-${String(Math.min(payDay, last)).padStart(2, '0')}`;
+}
+
+/** The next payday on or after `today` (a business date). */
+export function nextPayDay(today: string, payDay: number): string {
+	const period = today.slice(0, 7);
+	const thisMonth = payDayOf(period, payDay);
+	if (thisMonth >= today) return thisMonth;
+	const [year, month] = period.split('-').map(Number) as [number, number];
+	const next = month === 12 ? `${year + 1}-01` : `${year}-${String(month + 1).padStart(2, '0')}`;
+	return payDayOf(next, payDay);
+}

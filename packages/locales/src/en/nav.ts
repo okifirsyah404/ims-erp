@@ -9,13 +9,14 @@ const nav = {
 	'section.dashboard': 'Dashboard',
 	'section.crmSales': 'CRM & Sales',
 	'section.documents': 'Documents',
-	'section.subscription': 'Subscription & Licensing',
 	'section.integrations': 'Integrations',
 	'section.projects': 'Projects',
-	'section.hr': 'HR & Attendance',
+	'section.hr': 'Human Resource',
 	'section.finance': 'Finance',
-	'section.reports': 'Reports & Access',
+	'section.reports': 'Reports',
 	'section.settings': 'Settings',
+	/** Portal-only: the employee's own account area. */
+	'section.account': 'Account',
 
 	'item.dashboard': 'Dashboard',
 	'item.files': 'Files',
@@ -41,7 +42,8 @@ const nav = {
 	'item.activations': 'Validation & Activation',
 	'item.websiteCatalog': 'Website Catalog',
 	'item.whatsappAi': 'WhatsApp AI',
-	'item.notifications': 'Notifications',
+	'item.conversations': 'Conversations',
+	'item.faq': 'FAQ Knowledge',
 	'item.webhooks': 'Webhooks (n8n)',
 	'item.procurement': 'Procurement',
 	'item.suppliers': 'Suppliers',
@@ -55,16 +57,23 @@ const nav = {
 	'item.assets': 'Assets & Equipment',
 	'item.assetRegister': 'Asset Register',
 	'item.serviceRecords': 'Service Records',
+	'item.assetCategories': 'Asset Categories',
+	'item.toolSets': 'Tool Sets',
+	'item.disposals': 'Disposals',
 	'item.depreciation': 'Depreciation',
 	'item.projects': 'Projects',
 	'item.tickets': 'Tickets',
 	'item.warranty': 'Warranty',
-	'item.hr': 'HR & Attendance',
 	'item.hrTasks': 'Tasks',
+	/** Portal-only: the bottom-bar sheet holding the destinations without a tab. */
+	'item.more': 'More',
+	'item.schedule': 'Schedule',
 	'item.employees': 'Employees',
 	'item.attendance': 'Attendance',
 	'item.leave': 'Leave',
 	'item.overtime': 'Overtime',
+	/** Portal-only label: the employee's own profile screen. */
+	'item.employeeProfile': 'Employee Profile',
 	'item.payroll': 'Payroll',
 	'item.finance': 'Finance',
 	'item.accounts': 'Chart of Accounts',
@@ -112,6 +121,7 @@ const nav = {
 	'item.companyProfile': 'Company',
 	'item.codeNumbers': 'Code Number',
 	'item.documentSettings': 'Document',
+	'item.payrollSettings': 'Payroll',
 	'item.paymentGateways': 'Payment gateways',
 
 	'theme.label': 'Theme',
@@ -147,6 +157,12 @@ const nav = {
 	'breadcrumb.salesReturnNew': 'Customer return',
 	'breadcrumb.whatsappFaq': 'Assistant FAQ',
 	'breadcrumb.whatsappChat': 'Conversation',
+	'item.postingRules': 'Posting Rules',
+	'item.costCenters': 'Cost Centres',
+	'item.taxPph21': 'PPh 21 tables',
+	'item.fixedAssets': 'Fixed assets',
+	'item.projectBudgets': 'Project budgets',
 } as const;
 
 export default nav;
+

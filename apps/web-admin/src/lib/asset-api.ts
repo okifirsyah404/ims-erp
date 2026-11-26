@@ -62,6 +62,14 @@ export const DISPOSAL_STATUSES = [
 ] as const;
 export type TDisposalStatus = (typeof DISPOSAL_STATUSES)[number];
 
+/** Category-level default depreciation rule (backend `DEPRECIATION_METHODS`). */
+export const DEPRECIATION_METHODS = [
+	'straight_line',
+	'declining_balance',
+	'none',
+] as const;
+export type TDepreciationMethod = (typeof DEPRECIATION_METHODS)[number];
+
 /** One item row as `GET /inventory/items/:id/history` returns it. Money is integer minor units. */
 export type TAssetCore = {
 	id: string;
@@ -385,7 +393,7 @@ export function createAssetCategory(input: {
 	itemKind?: TItemKind;
 	parentCategoryId?: string | null;
 	defaultUsefulLifeMonths?: number | null;
-	defaultDepreciationMethod?: 'straight_line' | 'declining_balance' | 'none';
+	defaultDepreciationMethod?: TDepreciationMethod;
 }) {
 	return sendData<TAssetCategory>('/inventory/item-categories', 'POST', input);
 }
@@ -397,7 +405,7 @@ export function updateAssetCategory(
 		parentCategoryId: string | null;
 		itemKind: TItemKind;
 		defaultUsefulLifeMonths: number | null;
-		defaultDepreciationMethod: 'straight_line' | 'declining_balance' | 'none';
+		defaultDepreciationMethod: TDepreciationMethod;
 		isActive: boolean;
 	}>,
 ) {

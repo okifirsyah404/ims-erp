@@ -25,6 +25,7 @@ import {
 } from '../errors/ledger.errors';
 import type {
 	ICashBankRepository,
+	TCashBankAccountWithLink,
 	TCashBankTransactionPaginationRequest,
 	TCashFlowSummary,
 } from '../contracts/cash-bank.repository.interface';
@@ -42,6 +43,10 @@ export type TCreateCashBankAccountInput = {
 	bankName?: string | null;
 	accountNumber?: string | null;
 	accountHolder?: string | null;
+	/** Which invoice kind prints this account; `null` = never printed. */
+	invoiceUsage?: string | null;
+	/** One primary per invoice usage; set on another account clears it there. */
+	isPrimary?: boolean;
 	/** Informasional saja (finance plan F3 Q3) — kebenaran GL tetap dari JE. */
 	openingBalance?: number;
 	/** Opsional saat create; WAJIB sebelum transaksi pertama (Q4). */
@@ -53,6 +58,8 @@ export type TUpdateCashBankAccountInput = {
 	bankName?: string | null;
 	accountNumber?: string | null;
 	accountHolder?: string | null;
+	invoiceUsage?: string | null;
+	isPrimary?: boolean;
 	isActive?: boolean;
 	glAccountId?: string | null;
 };
@@ -120,9 +127,20 @@ export class CashBankService {
 			bankName: input.bankName ?? null,
 			accountNumber: input.accountNumber ?? null,
 			accountHolder: input.accountHolder ?? null,
+			invoiceUsage: input.invoiceUsage ?? null,
+			isPrimary: input.isPrimary ?? false,
 			openingBalance: input.openingBalance ?? 0,
 			currentBalance: 0,
 		});
+
+		// One primary per invoice usage: a new primary displaces the old one.
+		if (account.isPrimary && account.invoiceUsage) {
+			await this.cashAccounts.clearPrimaryForInvoiceUsage(
+				ctx.organizationId,
+				account.invoiceUsage,
+				account.id,
+			);
+		}
 
 		if (input.glAccountId) {
 			await this.links.upsertBankAccountLink({
@@ -137,8 +155,8 @@ export class CashBankService {
 
 	async listAccounts(
 		organizationId: string,
-	): Promise<TCashBankAccountSelect[]> {
-		return this.cashAccounts.listCashBankAccounts(organizationId);
+	): Promise<TCashBankAccountWithLink[]> {
+		return this.cashAccounts.listCashBankAccountsWithLink(organizationId);
 	}
 
 	async getAccount(
@@ -155,22 +173,38 @@ export class CashBankService {
 		id: string,
 		patch: TUpdateCashBankAccountInput,
 	): Promise<TCashBankAccountSelect> {
-		await this.getAccount(ctx.organizationId, id);
+		const existing = await this.getAccount(ctx.organizationId, id);
+		// `glAccountId` is a link-table fact, not a column of this table.
+		const { glAccountId, ...columns } = patch;
 		const updated = await this.cashAccounts.updateCashBankAccount(
 			ctx.organizationId,
 			id,
-			patch,
+			columns,
 		);
 		if (!updated) throw new CashBankAccountNotFoundError();
 
-		if (patch.glAccountId !== undefined) {
-			if (patch.glAccountId === null) {
+		// One primary per invoice usage: promoting this account demotes the rest.
+		if (patch.isPrimary !== undefined || patch.invoiceUsage !== undefined) {
+			const usage =
+				patch.invoiceUsage !== undefined ? patch.invoiceUsage : existing.invoiceUsage;
+			const primary = patch.isPrimary ?? existing.isPrimary;
+			if (primary && usage) {
+				await this.cashAccounts.clearPrimaryForInvoiceUsage(
+					ctx.organizationId,
+					usage,
+					id,
+				);
+			}
+		}
+
+		if (glAccountId !== undefined) {
+			if (glAccountId === null) {
 				await this.links.deactivateBankAccountLink(ctx.organizationId, id);
 			} else {
 				await this.links.upsertBankAccountLink({
 					organizationId: ctx.organizationId,
 					cashBankAccountId: id,
-					chartOfAccountId: patch.glAccountId,
+					chartOfAccountId: glAccountId,
 					isActive: true,
 				});
 			}

@@ -1,30 +1,32 @@
 /**
  * M08 employee records on top of ERP-0034 employees: pure rules; the
- * employee scope (company-level + the caller's organization); bank account
- * masked without employee:read_private; leave with working days, quota
+ * employee scope (company-level + the caller's organization); leave with
+ * working days, quota
  * (pending counted), overlap, no self-decision, attendance written on
  * approval and removed on cancel; overtime; the attendance import (all rows
  * or none, errors per row, ambiguous codes); salary summaries (net computed,
- * generated from last month, locked once approved, import in rupiah).
+ * generated from the salary period or last month, locked once approved,
+ * import in rupiah).
  */
 import { beforeEach, describe, expect, test } from 'bun:test';
 import type {
 	TAttendanceSelect,
-	TEmployeeSalarySelect,
 	TEmployeeSelect,
 	TLeaveRequestSelect,
 	TLeaveTypeSelect,
 	TOvertimeRequestSelect,
 	TEmployeeSalaryRecordSelect,
 } from '@drizzle/schemas/human-resource.schema';
-import { leaveBodySchema, salaryBodySchema, type THrScope } from '../../src/app/human-resource/contracts/hr-records.contract';
+import { attendanceRecordSchema, leaveBodySchema, overtimeBodySchema, salaryBodySchema, type THrScope } from '../../src/app/human-resource/contracts/hr-records.contract';
 import type { IHrPeopleRepository, TAttendanceUpsert } from '../../src/app/human-resource/contracts/hr-records.repository.interface';
-import { EmployeeStateError, HrNotFoundError, LeaveInvalidError, SalaryStateError, SelfDecisionError } from '../../src/app/human-resource/errors/hr.errors';
+import { AttendanceStateError, AttendanceTimeError, EmployeeStateError, HrNotFoundError, LeaveInvalidError, RequestStateError, SalaryStateError, SelfDecisionError } from '../../src/app/human-resource/errors/hr.errors';
 import { AttendanceService } from '../../src/app/human-resource/services/attendance.service';
 import { EmployeeService } from '../../src/app/human-resource/services/employee.service';
 import { LeaveService } from '../../src/app/human-resource/services/leave.service';
 import { HrPeopleService, worksOn } from '../../src/app/human-resource/services/people.service';
 import { SalaryService } from '../../src/app/human-resource/services/salary.service';
+import { TaskService } from '../../src/app/human-resource/services/task.service';
+import type { TEmployeeTaskSelect } from '@drizzle/schemas/human-resource.schema';
 import { isBusinessDate, jakartaTime, leaveDates, maskTail, netPay, periodRange, previousPeriod, toJakartaTime } from '../../src/app/human-resource/utils/hr';
 
 const E1 = '0190a1b2-0000-7000-8000-0000000000e1';
@@ -37,12 +39,15 @@ const OTHER_ORG = 'org-other';
 const scope: THrScope = { organizationId: ORG, all: false };
 
 let staff: TEmployeeSelect[];
-let banks: Map<string, TEmployeeSalarySelect>;
 let types: TLeaveTypeSelect[];
 let leaves: TLeaveRequestSelect[];
 let overtime: TOvertimeRequestSelect[];
 let attendance: TAttendanceSelect[];
 let salaries: TEmployeeSalaryRecordSelect[];
+/** Salary periods in force per employee (ERP-0119), as `SalaryPeriodService.amountsFor` returns them. */
+let agreed: Map<string, { baseSalary: number; allowances: number }>;
+/** Payslip PDF jobs queued on approval (ERP-0122). */
+let payslipJobs: string[];
 
 /** Jakarta midnight of a business date, as ERP-0034 stores dates. */
 const day = (value: string) => new Date(`${value}T00:00:00+07:00`);
@@ -69,12 +74,6 @@ const peopleRepository: IHrPeopleRepository = {
 	findVisible: async (id, scoped) => staff.find((row) => row.id === id && visible(row, scoped)) ?? null,
 	listVisible: async (scoped) => staff.filter((row) => visible(row, scoped)),
 	findByCodes: async (codes, scoped) => staff.filter((row) => codes.includes(row.employeeCode.toUpperCase()) && visible(row, scoped)),
-	findBank: async (employeeId) => banks.get(employeeId) ?? null,
-	saveBank: async (employeeId, data) => {
-		const row = { ...data, employeeId, id: crypto.randomUUID() } as TEmployeeSalarySelect;
-		banks.set(employeeId, row);
-		return row;
-	},
 };
 
 const people = () => new HrPeopleService(peopleRepository);
@@ -119,9 +118,14 @@ function leaveService() {
 				const sum = (status: string) => rows.filter((row) => row.status === status).reduce((total, row) => total + row.days, 0);
 				return { approved: sum('approved'), pending: sum('submitted') };
 			},
-			overlapping: async (employeeId, start, end) =>
+			overlapping: async (employeeId, start, end, excludeId) =>
 				leaves.filter(
-					(row) => row.employeeId === employeeId && ['submitted', 'approved'].includes(row.status) && row.startDate <= end && row.endDate >= start,
+					(row) =>
+						row.employeeId === employeeId &&
+						row.id !== excludeId &&
+						['submitted', 'approved'].includes(row.status) &&
+						row.startDate <= end &&
+						row.endDate >= start,
 				),
 			paginateOvertime: async (_query, scoped) => {
 				const data = overtime.filter(inScope(scoped));
@@ -163,6 +167,26 @@ function attendanceService() {
 			listBetween: async (start, end) => attendance.filter((row) => row.attendanceDate >= start && row.attendanceDate <= end),
 			upsertMany: upsert,
 			removeForLeave: async () => 0,
+			paginate: async (_query, scoped) => {
+				const data = attendance.filter(inScope(scoped));
+				return { meta: { page: 1, limit: 20, total: data.length, totalPages: 1 }, data };
+			},
+			findById: async (id) => attendance.find((row) => row.id === id) ?? null,
+			findByDay: async (employeeId, date) => attendance.find((row) => row.employeeId === employeeId && row.attendanceDate === date) ?? null,
+			insertOne: async (row) => {
+				const created = { ...row, id: crypto.randomUUID() } as TAttendanceSelect;
+				attendance.push(created);
+				return created;
+			},
+			updateOne: async (id, data) => {
+				const row = attendance.find((item) => item.id === id);
+				return row ? Object.assign(row, data) : null;
+			},
+			softDelete: async (id) => {
+				const before = attendance.length;
+				attendance = attendance.filter((row) => row.id !== id);
+				return attendance.length < before;
+			},
 		},
 		people(),
 	);
@@ -190,12 +214,19 @@ function salaryService() {
 			approvePeriod: async (period, _actor, scoped) => {
 				const drafts = salaries.filter((row) => row.period === period && row.status === 'draft').filter(inScope(scoped));
 				for (const row of drafts) row.status = 'approved';
-				return drafts.length;
+				return drafts.map((row) => row.id);
 			},
+			listApprovedForEmployee: async (employeeId) => salaries.filter((row) => row.employeeId === employeeId && row.status === 'approved'),
+			listEmployeeYear: async () => [],
+			listByIds: async (ids) => salaries.filter((row) => ids.includes(row.id)),
+			setJournalEntry: async () => {},
+			latestApprovedTotals: async () => null,
 		},
 		people(),
 		leaveService(),
 		{ run: (work) => work({} as never) },
+		{ amountsFor: async () => agreed },
+		{ enqueue: async (recordId) => void payslipJobs.push(recordId) },
 	);
 }
 
@@ -203,7 +234,6 @@ const csv = (name: string, text: string) => new File([text], name, { type: 'text
 
 beforeEach(() => {
 	staff = [person(E1, 'EMP-0001'), person(E2, 'EMP-0002', { organizationId: null }), person(E3, 'EMP-0003', { organizationId: OTHER_ORG })];
-	banks = new Map();
 	types = [
 		{ id: ANNUAL, code: 'ANNUAL', name: 'Cuti tahunan', attendanceStatus: 'leave', usesQuota: true, annualQuotaDays: 12, isActive: true } as TLeaveTypeSelect,
 		{ id: SICK, code: 'SICK', name: 'Sakit', attendanceStatus: 'sick', usesQuota: false, annualQuotaDays: 0, isActive: true } as TLeaveTypeSelect,
@@ -212,6 +242,8 @@ beforeEach(() => {
 	overtime = [];
 	attendance = [];
 	salaries = [];
+	agreed = new Map();
+	payslipJobs = [];
 });
 
 describe('HR rules', () => {
@@ -233,7 +265,7 @@ describe('HR rules', () => {
 	});
 });
 
-describe('employee scope and bank account', () => {
+describe('employee scope', () => {
 	test('records reach company-level and own-organization employees only; an admin sees all', async () => {
 		expect((await people().listActive(scope)).map((row) => row.employeeCode)).toEqual(['EMP-0001', 'EMP-0002']);
 		await expect(people().require(scope, E3)).rejects.toBeInstanceOf(HrNotFoundError);
@@ -241,13 +273,6 @@ describe('employee scope and bank account', () => {
 		await expect(
 			leaveService().createLeave(scope, 'hr', leaveBodySchema.parse({ employeeId: E3, leaveTypeId: SICK, startDate: '2026-11-09', endDate: '2026-11-09' })),
 		).rejects.toBeInstanceOf(HrNotFoundError);
-	});
-
-	test('the bank account number is masked without employee:read_private', async () => {
-		const ctx = { actorUserId: 'hr', scope, canReadPrivate: true };
-		await people().saveBank(ctx, E1, { bankName: 'BCA', bankAccountNumber: '1234567890', bankAccountHolder: 'Person' });
-		expect(await people().bank({ ...ctx, canReadPrivate: false }, E1)).toMatchObject({ bankAccountNumber: '••••••7890', masked: true });
-		expect((await people().bank(ctx, E1))?.bankAccountNumber).toBe('1234567890');
 	});
 
 	test('ERP-0034 employee reads mask the NIK without employee:read_private and never write it back', async () => {
@@ -274,6 +299,67 @@ describe('employee scope and bank account', () => {
 		await service.update({ ...base, canReadPrivate: false }, E1, { fullName: 'Renamed', nationalId: '••••••••••••0123' } as never);
 		expect(updates[0]).toMatchObject({ fullName: 'Renamed' });
 		expect(updates[0]).not.toHaveProperty('nationalId');
+	});
+
+	test('the employee detail carries the linked auth.users account (lists do not); no login gives null', async () => {
+		staff[0] = { ...staff[0]!, userId: 'user-1' };
+		const asked: string[] = [];
+		const service = new EmployeeService(
+			{ findById: async (id: string) => staff.find((row) => row.id === id) ?? null, paginate: async () => ({ meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [staff[0]!] }) } as never,
+			{} as never,
+			{ get: async () => null } as never,
+			{} as never,
+			{
+				accountDetail: async (userId) => {
+					asked.push(userId);
+					return { id: userId, email: 'p@x', username: 'person_1', status: 'active' } as never;
+				},
+			},
+		);
+		const ctx = { actor: { userId: 'u', email: 'u@x' }, organizationId: ORG, isPlatformAdmin: false, canManage: true, canReadPrivate: true };
+		expect((await service.get(ctx, E1)).account).toMatchObject({ id: 'user-1', username: 'person_1', status: 'active' });
+		expect((await service.get(ctx, E2)).account).toBeNull();
+		expect((await service.list(ctx, { page: 1, limit: 20 } as never)).data[0]).not.toHaveProperty('account');
+		expect(asked).toEqual(['user-1']);
+	});
+
+	test('employee list: gender/marital filters become user ids, rows carry the login avatar and handle', async () => {
+		staff[0] = { ...staff[0]!, userId: 'user-1' };
+		const requests: Record<string, unknown>[] = [];
+		const asked: unknown[] = [];
+		const service = new EmployeeService(
+			{
+				paginate: async (request: Record<string, unknown>) => {
+					requests.push(request);
+					return { meta: { page: 1, limit: 20, total: 1, totalPages: 1 }, data: [staff[0]!] };
+				},
+			} as never,
+			{} as never,
+			{
+				get: async () => null,
+				findUserIds: async (filter: unknown) => {
+					asked.push(filter);
+					return ['user-1'];
+				},
+			} as never,
+			{} as never,
+			{
+				accountDetail: async () => null,
+				summaries: async () => new Map([['user-1', { id: 'user-1', name: 'P', email: 'p@x', emailVerified: true, username: 'person_1', image: 'https://img' }]]),
+			},
+		);
+		const ctx = { actor: { userId: 'u', email: 'u@x' }, organizationId: ORG, isPlatformAdmin: false, canManage: true, canReadPrivate: true };
+		const page = await service.list(ctx, { page: 1, limit: 20, gender: 'female', employmentType: 'contract', sortBy: 'hireDate', sortDir: 'desc' } as never);
+		expect(asked).toEqual([{ gender: 'female', maritalStatus: undefined }]);
+		expect(requests[0]).toMatchObject({ userIds: ['user-1'], employmentType: 'contract', sortBy: 'hireDate', sortDir: 'desc' });
+		expect(page.data[0]!.login).toEqual({ username: 'person_1', image: 'https://img' });
+		// Without a personal-field filter the user module is not asked.
+		await service.list(ctx, { page: 1, limit: 20 } as never);
+		expect(asked).toHaveLength(1);
+		expect(requests[1]).toMatchObject({ userIds: null });
+		// "Organization level" filters on the caller's own organization.
+		await service.list(ctx, { page: 1, limit: 20, scope: 'organization' } as never);
+		expect(requests[2]).toMatchObject({ scope: 'organization', organizationId: ORG });
 	});
 
 	test('an employee who is not active cannot get new records', async () => {
@@ -383,6 +469,89 @@ describe('attendance', () => {
 	});
 });
 
+describe('slice 1: editing records', () => {
+	test('a submitted leave can be edited (own row left out of overlap and quota); a decided one cannot', async () => {
+		const service = leaveService();
+		const created = await service.createLeave(
+			scope,
+			'hr',
+			leaveBodySchema.parse({ employeeId: E1, leaveTypeId: ANNUAL, startDate: '2026-11-09', endDate: '2026-11-20' }),
+		);
+		// 11 working days are used; widening its own range to the full 12-day quota must not trip overlap or quota on itself.
+		const edited = await service.updateLeave(
+			scope,
+			created.id,
+			leaveBodySchema.parse({ employeeId: E1, leaveTypeId: ANNUAL, startDate: '2026-11-09', endDate: '2026-11-21' }),
+		);
+		expect(edited.days).toBe(12);
+		await expect(
+			service.updateLeave(scope, created.id, leaveBodySchema.parse({ employeeId: E1, leaveTypeId: ANNUAL, startDate: '2026-11-09', endDate: '2026-11-25' })),
+		).rejects.toMatchObject({ key: 'hr.leave.quota' });
+		await service.approveLeave(scope, 'owner', created.id, null);
+		await expect(
+			service.updateLeave(scope, created.id, leaveBodySchema.parse({ employeeId: E1, leaveTypeId: SICK, startDate: '2026-11-09', endDate: '2026-11-09' })),
+		).rejects.toBeInstanceOf(RequestStateError);
+	});
+
+	test('a submitted overtime can be edited; an approved one cannot', async () => {
+		const service = leaveService();
+		const created = await service.createOvertime(scope, 'hr', overtimeBodySchema.parse({ employeeId: E1, workDate: '2026-11-09', hours: 2 }));
+		expect((await service.updateOvertime(scope, created.id, overtimeBodySchema.parse({ employeeId: E1, workDate: '2026-11-10', hours: 3.5 }))).hours).toBe('3.50');
+		await service.approveOvertime(scope, 'owner', created.id, null);
+		await expect(
+			service.updateOvertime(scope, created.id, overtimeBodySchema.parse({ employeeId: E1, workDate: '2026-11-10', hours: 1 })),
+		).rejects.toMatchObject({ key: 'hr.requestState.edit' });
+	});
+
+	test('attendance rows: create once per day, edit, delete; leave days stay with their leave', async () => {
+		const service = attendanceService();
+		const body = (extra: Record<string, unknown> = {}) =>
+			attendanceRecordSchema.parse({ employeeId: E1, date: '2026-11-09', status: 'present', checkIn: '08:00', checkOut: '17:00', ...extra });
+		const row = await service.create(scope, 'hr', body());
+		expect(row).toMatchObject({ attendanceDate: '2026-11-09', checkIn: '08:00', source: 'manual', employee: { employeeCode: 'EMP-0001' } });
+		await expect(service.create(scope, 'hr', body())).rejects.toBeInstanceOf(AttendanceStateError);
+		await expect(service.create(scope, 'hr', body({ date: '2026-11-10', checkIn: '18:00' }))).rejects.toBeInstanceOf(AttendanceTimeError);
+		await expect(service.create(scope, 'hr', body({ employeeId: E3 }))).rejects.toBeInstanceOf(HrNotFoundError);
+		expect((await service.update(scope, 'hr', row.id, body({ status: 'sick', checkIn: null, checkOut: null }))).status).toBe('sick');
+		expect((await service.list(scope, attendanceRecordSchema.partial().parse({}) as never)).data).toHaveLength(1);
+		expect(await service.remove(scope, row.id)).toEqual({ removed: true });
+		await expect(service.remove(scope, row.id)).rejects.toBeInstanceOf(HrNotFoundError);
+
+		attendance.push({ id: 'leave-day', employeeId: E1, attendanceDate: '2026-11-11', status: 'leave', source: 'leave', leaveRequestId: 'lv' } as TAttendanceSelect);
+		await expect(service.update(scope, 'hr', 'leave-day', body({ date: '2026-11-11' }))).rejects.toMatchObject({ key: 'hr.attendance.leaveOwned' });
+		await expect(service.remove(scope, 'leave-day')).rejects.toMatchObject({ key: 'hr.attendance.leaveOwned' });
+	});
+});
+
+describe('slice 1: tasks', () => {
+	test('a task is soft deleted once; tasks of employees outside the scope are not found', async () => {
+		let tasks: TEmployeeTaskSelect[] = [
+			{ id: 't1', employeeId: E1, title: 'A', status: 'open' } as TEmployeeTaskSelect,
+			{ id: 't3', employeeId: E3, title: 'B', status: 'open' } as TEmployeeTaskSelect,
+		];
+		const service = new TaskService(
+			{
+				paginate: async () => ({ meta: { page: 1, limit: 20, total: 0, totalPages: 0 }, data: [] }),
+				findById: async (id) => tasks.find((row) => row.id === id) ?? null,
+				create: async () => {
+					throw new Error('unused');
+				},
+				update: async () => null,
+				softDelete: async (id) => {
+					const before = tasks.length;
+					tasks = tasks.filter((row) => row.id !== id);
+					return tasks.length < before;
+				},
+			},
+			people(),
+		);
+		expect(await service.remove(scope, 't1')).toEqual({ removed: true });
+		await expect(service.remove(scope, 't1')).rejects.toBeInstanceOf(HrNotFoundError);
+		await expect(service.remove(scope, 't3')).rejects.toBeInstanceOf(HrNotFoundError);
+		expect(tasks.map((row) => row.id)).toEqual(['t3']);
+	});
+});
+
 describe('salary summaries', () => {
 	test('net pay is computed; generate copies last month; approval locks the period', async () => {
 		const service = salaryService();
@@ -396,7 +565,13 @@ describe('salary summaries', () => {
 		// E3 is outside the scope; E2 gets last month's base and allowances.
 		expect(generated.rows.map((row) => row.employeeId).sort()).toEqual([E1, E2].sort());
 		expect(generated.rows.find((row) => row.employeeId === E2)).toMatchObject({ baseSalary: 4_000_000_00, allowances: 300_000_00, netPay: 4_300_000_00 });
+		// A salary period in force wins over last month's summary (ERP-0119).
+		salaries = salaries.filter((row) => !(row.period === '2026-11' && row.employeeId === E2));
+		agreed.set(E2, { baseSalary: 4_500_000_00, allowances: 0 });
+		expect((await service.generate(scope, 'hr', '2026-11')).rows.find((row) => row.employeeId === E2)).toMatchObject({ baseSalary: 4_500_000_00, allowances: 0 });
 		expect((await service.approve(scope, 'owner', '2026-11')).state).toBe('approved');
+		// ERP-0122: one payslip job per record this approval locked (not the earlier October one).
+		expect(payslipJobs.sort()).toEqual(salaries.filter((row) => row.period === '2026-11').map((row) => row.id).sort());
 		await expect(service.approve(scope, 'owner', '2026-11')).rejects.toBeInstanceOf(SalaryStateError);
 		await expect(service.save(scope, 'hr', salaryBodySchema.parse({ period: '2026-11', employeeId: E1, baseSalary: 1 }))).rejects.toMatchObject({ key: 'hr.salary.locked' });
 	});

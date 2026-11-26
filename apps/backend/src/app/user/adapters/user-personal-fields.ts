@@ -36,6 +36,20 @@ export class UserPersonalFieldsAdapter implements IUserPersonalFieldsPort {
 		return (row as TUserPersonalFields | undefined) ?? null;
 	}
 
+	async findUserIds(filter: Pick<TUserPersonalFieldsPatch, 'gender' | 'maritalStatus'>): Promise<string[]> {
+		const rows = await this.database
+			.select({ id: users.id })
+			.from(users)
+			.where(
+				and(
+					isNull(users.deletedAt),
+					filter.gender ? eq(users.gender, filter.gender) : undefined,
+					filter.maritalStatus ? eq(users.maritalStatus, filter.maritalStatus) : undefined,
+				),
+			);
+		return rows.map((row) => row.id);
+	}
+
 	async update(userId: string, patch: TUserPersonalFieldsPatch): Promise<void> {
 		if (Object.keys(patch).length === 0) return;
 		await this.database

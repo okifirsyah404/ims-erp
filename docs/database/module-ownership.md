@@ -16,8 +16,8 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   Identity module owns the single `auth` schema, shared by Better Auth's 9 core
   tables and the 6 ERP extension tables.
 - A **foreign key may only connect two tables of the same module**.
-  `docs.dbml` contains 147 `Ref:` declarations and **0 cross-module refs**
-  (`validate-dbml.ts` checks all 147; before 2026-11-05 it read
+  `docs.dbml` contains 153 `Ref:` declarations and **0 cross-module refs**
+  (`validate-dbml.ts` checks all 160; before 2026-11-05 it read
   `db.refs`, which `@dbml/core` v11 leaves empty, so the check passed vacuously).
 - A **cross-module link** is a plain id column plus a column note that **starts
   with** the sentence below — `gen-logical-references.ts` anchors its regex at
@@ -25,7 +25,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
   silently not counted:
   `Logical reference to <target>.id. Cross-module FK intentionally omitted.
   Validated through the <Module> module contract.`
-- 169 such logical reference columns exist across 25 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
+- 212 such logical reference columns exist across 28 targets (re-derived on each run of `gen-logical-references.ts` and checked by `validate-dbml.ts`).
 - Every one of them is a **nullable** plain id column (ADR-0014); presence is
   a service-layer fact, enforced by the owning module's contract method, not
   by the database.
@@ -35,17 +35,19 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 
 ## The 20 modules
 
+| # | Module | Schema | Tables | Refs |
+|---|---|---|---|---|
 | 1 | Identity | `auth` | 11 | 9 |
 | 2 | Location | `location` | 4 | 3 |
 | 3 | Company | `company` | 4 | 0 |
-| 4 | Customer | `customer` | 6 | 3 |
+| 4 | Customer | `customer` | 6 | 4 |
 | 5 | Supplier | `supplier` | 6 | 3 |
-| 6 | Product | `product` | 4 | 1 |
-| 7 | Warehouse | `warehouse` | 8 | 5 |
-| 8 | Inventory | `inventory` | 20 | 16 |
+| 6 | Product | `product` | 6 | 4 |
+| 7 | Warehouse | `warehouse` | 9 | 6 |
+| 8 | Inventory | `inventory` | 21 | 17 |
 | 9 | Sale | `sale` | 18 | 20 |
 | 10 | Procurement | `procurement` | 9 | 11 |
-| 11 | Finance | `finance` | 27 | 20 |
+| 11 | Finance | `finance` | 30 | 27 |
 | 12 | Tax | `tax` | 5 | 3 |
 | 13 | Payment | `payment` | 5 | 2 |
 | 14 | Project | `project` | 28 | 23 |
@@ -55,15 +57,15 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 18 | Notification | `notification` | 2 | 1 |
 | 19 | Audit | `audit` | 1 | 0 |
 | 20 | Automation | `automation` | 4 | 2 |
-| | **Total** | **20 schemas** | **192** | **147** |
+| | **Total** | **20 schemas** | **199** | **160** |
 
 The `webhook` module (ADR-0024 Q38) has **no schema and no tables**: it owns
 the inbound provider HTTP edge and hands every call to `payment` or
 `automation` through their exported webhook services.
 
-Counts are re-derived from `docs.dbml` on every validation run
+Table and `Ref:` counts are re-derived from `docs.dbml` on every validation run
 (`validate-dbml.ts`), and the cross-module references are in
-`logical-references.md` (169 logical reference columns, 25 targets, 0
+`logical-references.md` (189 logical reference columns, 25 targets, 0
 cross-module `Ref:`).
 ## Module profiles
 
@@ -114,7 +116,7 @@ no central code-number module.
   identity folded into `customers` (Q5, Q12, Q16).
 - **Contract**: `ExportedCustomerService` (`assertCustomer`,
   `getActiveCustomer`, `getActiveCompany`, `resolvePortalIdentity`,
-  `getSnapshot`).
+  `getSnapshot`, `findCustomerByCode` - finance's opening AR import, ERP-0142).
 
 ### 5. Supplier - `supplier` (new, split from procurement)
 
@@ -200,9 +202,16 @@ no central code-number module.
   supplier bills, AR/AP open items, credit memos, expense claims, advances and
   settlements, asset depreciation, report archives, payment terms, settings.
 - Journal `source_module` vocabulary: `finance|sale|payment|tax|...`.
-- Salary stays in `human_resource` (Q39).
-- **Contract**: finance services for posting; `ExportedFinanceService` and
-  `ExportedJournalService` (tax recap) are not built yet.
+- Salary stays in `human_resource` (Q39); the employees' salary payee accounts
+  are `cash_bank_accounts` rows with `employee_id` (ERP-0119), served at
+  `/finance/employee-bank-accounts` and invisible to every treasury query.
+- **Contract**: finance services for posting; `ExportedFinanceService`
+  (repository-only, ERP-0122: `findPrimaryEmployeeBankAccount` for the
+  payslip); `ExportedProfitService.closedPeriodProfit(organizationId, year,
+  month)` (ERP-0153, `EXPORTED_PROFIT_SERVICE_TOKEN`): profit before and
+  after income tax of a `locked` period only, for a future M11 profit-sharing
+  module (finance keeps no investor data); `ExportedJournalService` (tax
+  recap) is not built yet.
 
 ### 12. Tax - `tax` (new, split from accounting)
 
@@ -221,7 +230,8 @@ no central code-number module.
 ### 14. Project - `project` (was `projects`; absorbs leads, licensing, warranty)
 
 - **Owns** projects and their tasks, phases, milestones, costs, evidence,
-  handover, daily reports, site assignments, KPIs, changes, work plans, leads
+  handover, daily reports, site assignments, site attendance (field check-ins
+  with PostGIS radius verification), KPIs, changes, work plans, leads
   and lead activities/attachments, warranties, and the license tables
   (applications, contracts, keys, activations, events, API keys).
 - **Contract**: project/lead/warranty reads through its services.
@@ -237,7 +247,8 @@ no central code-number module.
 - **Owns** employees and addresses, attendance, leave types/requests,
   overtime, tasks, salaries and salary records, schedules, settings.
 - **Contract**: `ExportedEmployeeService` (`findEmployeeById`,
-  `findEmployeeByUserId`).
+  `findEmployeeByUserId`). Finance calls `findEmployeeById` before writing an
+  employee payee account (`finance.cash_bank_accounts.employee_id`, ERP-0119).
 
 ### 17. Document - `document`
 
@@ -245,6 +256,14 @@ no central code-number module.
   user signatures, access logs, shares, tags and links, settings.
   `organization_id` is nullable (NULL = company-wide).
 - `document.issue` takes the owning module's `code`.
+- `DocumentService.createDraft` (ERP-0121) is the exception: it codes the draft
+  from this module's own `document` series, for an owning module that has no
+  code of its own (the employee documents of `human_resource`: `module =
+  human_resource`, `source_type = employee`, `source_id = employees.id`).
+  `listBySource` and `attachGeneratedFileTo` serve the same callers;
+  `issueForSource` registers an already-final row the same way (the payslip,
+  `source_type = employee_salary_record`, ERP-0122) and `readFile` returns a
+  file's bytes for a ZIP bundle.
 
 ### 18. Notification - `notification`
 

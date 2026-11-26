@@ -18,6 +18,11 @@ const FILE_TYPES: Record<string, string> = {
 
 export const MAX_DOCUMENT_FILE_MB = 10;
 
+/** The extension a stored file gets, from its declared MIME type. */
+export function fileExtensionOf(mimeType: string): string {
+	return FILE_TYPES[mimeType] ?? 'bin';
+}
+
 /** Not a file we accept, or too large. */
 export class DocumentFileInvalidError extends AppError {
 	constructor() {
