@@ -12,6 +12,34 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-26 - rename `web-investor-portal` to `web-investor`
+
+**Scope.** Same rename for the investor scaffold, for consistency with
+`web-employee`: folder `apps/web-investor`, package
+`@ims-erp/web-investor`, document title `web-investor`.
+
+**Changes.** `apps/web-investor-portal` → `apps/web-investor` (plain move: the
+folder was still untracked), `package.json` name scoped to `@ims-erp/web-investor`
+so it matches `@ims-erp/web-admin` / `@ims-erp/web-employee`, `index.html` title,
+`bun.lock` regenerated (`@ims-erp/web-investor@workspace:apps/web-investor`),
+stale `dist/` removed. The scaffold is otherwise untouched — it is still the bare
+Vite template with no router, auth or UI.
+
+```bash
+bun install                                  # lockfile rewritten, 1 package added
+bunx tsc -b --noEmit                         # (apps/web-investor) 0 errors
+bunx vite build                              # clean
+bunx oxlint                                  # 0 errors
+bun run lint                                 # 7/7 tasks, 0 errors
+bun run test                                 # 8/8 tasks (unchanged counts)
+```
+
+No tracked file referenced the old name outside `bun.lock`, so nothing else
+needed editing.
+
+Next executable task: employee portal Phase C (documents, signature requests,
+payslips).
+
 ## 2026-11-26 - rename `web-employee-portal` to `web-employee`
 
 **Scope.** The app folder, package name and every reference are now
