@@ -20,6 +20,8 @@ const api = {
 	'common.fileInvalid': 'Upload a PDF, PNG, JPG or WebP file of at most {{max}} MB',
 	'common.payloadTooLarge': 'Payload too large',
 	'common.authenticationRequired': 'Authentication required',
+	'common.internalError':
+		'Something went wrong on the server. Try again; if it keeps happening, contact the administrator.',
 	'common.forbidden': 'Forbidden',
 
 	'location.provinceNotFound': 'Province not found',
@@ -285,7 +287,7 @@ const api = {
 	'numbering.organizationRequired':
 		'This number uses {ORG}: pick an active organization first',
 	'numbering.codeTooLong':
-		'The generated code {{code}} is longer than {{max}} characters; shorten the numbering pattern',
+		'The generated code {{code}} is longer than {{max}} characters; shorten the numbering pattern or a code it contains, such as the supplier code',
 	'numbering.pattern.length': 'The pattern must be 1-100 characters',
 	'numbering.pattern.unknownToken': 'Unknown token {{token}}',
 	'numbering.pattern.tokenNotForType':

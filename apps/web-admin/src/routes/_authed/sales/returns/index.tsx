@@ -37,7 +37,7 @@ export const Route = createFileRoute('/_authed/sales/returns/')({
 
 function SalesReturnListPage() {
 	const { t, i18n } = useTranslation(['sales', 'common']);
-	const canCreate = usePermission('purchase_return.create');
+	const canCreate = usePermission('sales_return.create');
 	const canSeeCost = usePermission('product.read_cost');
 	const [page, setPage] = useState(1);
 	const [search, setSearch] = useState('');

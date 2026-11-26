@@ -141,8 +141,7 @@ const inventory = {
 	'adjustmentForm.addLine': 'Tambah baris',
 	'adjustmentForm.removeLine': 'Hapus',
 	'adjustmentForm.create': 'Buat penyesuaian',
-	'adjustmentForm.creating': 'Membuat.',
-	'adjustmentForm.created': 'Penyesuaian dibuat',
+	'adjustmentForm.creating': 'Membuat…',
 	'adjustmentForm.emptyLines': 'Tambahkan minimal satu baris.',
 
 	'adjustmentForm.unitCost': 'Harga pokok per unit (Rp)',

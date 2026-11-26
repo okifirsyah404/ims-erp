@@ -216,6 +216,9 @@ function PurchaseOrderDetailPage() {
 			{data.status === 'submitted' && canApprove && own && (
 				<p className='text-sm text-muted-foreground'>{t('procurement:pos.ownNoApprove')}</p>
 			)}
+			{data.status === 'approved' && (
+				<p className='text-sm text-muted-foreground'>{t('procurement:pos.approvedNotSent')}</p>
+			)}
 			{data.status === 'draft' && data.rejectionReason && (
 				<p className='text-sm text-destructive'>
 					{t('procurement:po.rejectionReason')}: {data.rejectionReason}

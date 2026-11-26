@@ -5,6 +5,7 @@ import { i18nInstance } from '@/i18n';
 import { canOpenPath } from '@/lib/route-guard';
 import { queryClient } from '@/lib/query-client';
 import { toast } from '@/components/toast';
+import { useReloadOnAccountSwitch } from '@/lib/account-switch';
 
 /**
  * Authenticated shell: redirects to /login when no valid session cookie is
@@ -31,9 +32,16 @@ export const Route = createFileRoute('/_authed')({
 			throw redirect({ to: '/login', search: { redirect: location.href } });
 		}
 	},
-	component: () => (
+	component: AuthedShell,
+});
+
+function AuthedShell() {
+	// Another tab signing in as someone else (or out) must not leave this
+	// page showing the previous account's data and buttons.
+	useReloadOnAccountSwitch();
+	return (
 		<MainLayout>
 			<Outlet />
 		</MainLayout>
-	),
-});
+	);
+}

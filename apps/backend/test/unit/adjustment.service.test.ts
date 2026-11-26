@@ -31,6 +31,7 @@ import type {
 	TAdjustmentLineData,
 	TAdjustmentPaginationRequest,
 } from '../../src/app/inventory/contracts/adjustment.repository.interface';
+import type { ExportedUserService } from '../../src/app/user/services/exported-user.service';
 import type { ExportedProductService } from '../../src/app/product/services/exported-product.service';
 import {
 	ADJUSTMENT_REPOSITORY_TOKEN,
@@ -49,6 +50,7 @@ import {
 	AdjustmentHasNoLinesError,
 	AdjustmentNotFoundError,
 	AdjustmentTransitionError,
+	InventoryReferenceError,
 	SelfApprovalForbiddenError,
 } from '../../src/app/inventory/errors/inventory.errors';
 import { ProductNotFoundError } from '../../src/app/product/errors/product.errors';
@@ -58,6 +60,9 @@ const ORG_B = 'org-b';
 const WAREHOUSE_ID = '01920000-0000-7000-8000-0000000000aa';
 const ITEM_ID = '01920000-0000-7000-8000-000000000001';
 const ITEM_ID_2 = '01920000-0000-7000-8000-000000000002';
+/** A bin of WAREHOUSE_ID, and one that belongs to another warehouse. */
+const BIN_ID = '01920000-0000-7000-8000-0000000000b1';
+const FOREIGN_BIN_ID = '01920000-0000-7000-8000-0000000000b2';
 
 const REQUESTER = 'user-requester';
 const APPROVER = 'user-approver';
@@ -238,7 +243,13 @@ function fakeStock(onHand: Record<string, string> = {}) {
  */
 function fakeProducts(known: readonly string[]) {
 	const asserted: string[] = [];
-	const facade: Pick<ExportedProductService, 'assertProduct'> = {
+	const facade: Pick<ExportedProductService, 'assertProduct' | 'productsById'> = {
+		async productsById(ids: string[]) {
+			const snapshots = await Promise.all(
+				ids.filter((id) => known.includes(id)).map((id) => facade.assertProduct(id)),
+			);
+			return new Map(snapshots.map((snapshot) => [snapshot.id, snapshot]));
+		},
 		async assertProduct(productId: string) {
 			asserted.push(productId);
 			if (!known.includes(productId)) throw new ProductNotFoundError();
@@ -269,6 +280,18 @@ let products: ReturnType<typeof fakeProducts>;
 let service: AdjustmentService;
 
 /** Builds the service against a fresh fake world. */
+/** User-contract double: names the two fixture people, nobody else. */
+const users: Pick<ExportedUserService, 'summaries'> = {
+	async summaries(ids: string[]) {
+		const known: Record<string, string> = { [REQUESTER]: 'Gudang Satu', [APPROVER]: 'Manajer Dua' };
+		return new Map(
+			ids
+				.filter((id) => known[id])
+				.map((id) => [id, { id, name: known[id]!, username: null, image: null }] as never),
+		);
+	},
+};
+
 function build(onHand: Record<string, string> = {}) {
 	adjustments = fakeAdjustments();
 	stock = fakeStock(onHand);
@@ -322,6 +345,8 @@ function build(onHand: Record<string, string> = {}) {
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,
+			users,
+			{ storageInWarehouse: async (storageId: string) => storageId === BIN_ID },
 		),
 	});
 	service = container.resolve<AdjustmentService>(ADJUSTMENT_SERVICE_TOKEN);
@@ -466,6 +491,23 @@ describe('adjustment — lifecycle', () => {
 	});
 });
 
+describe('adjustment — the detail carries display names, not raw ids', () => {
+	test('products and people resolve through their module contracts', async () => {
+		const id = await raise();
+		await approved(id);
+		const detail = await service.findDetail(id, ORG_A);
+		expect(detail.names?.products[ITEM_ID]).toEqual({ name: 'Door controller', sku: 'CTRL-01' });
+		expect(detail.names?.people[REQUESTER]).toBe('Gudang Satu');
+		expect(detail.names?.people[APPROVER]).toBe('Manajer Dua');
+	});
+
+	test('an id the owning module does not know is simply absent', async () => {
+		const detail = await service.findDetail(await raise(), ORG_A);
+		expect(detail.names?.people[APPROVER]).toBeUndefined();
+		expect(Object.keys(detail.names?.products ?? {})).toEqual([ITEM_ID]);
+	});
+});
+
 describe('adjustment — lines are validated against the product module (ADR-0026)', () => {
 	test('an unknown product is refused by the product contract before any write', async () => {
 		// ADR-0026: the product id is a logical reference validated by the
@@ -507,6 +549,35 @@ describe('adjustment — lines are validated against the product module (ADR-002
 			actor(REQUESTER),
 		);
 		expect(products.asserted).toEqual([ITEM_ID, ITEM_ID_2]);
+	});
+
+	test('a bin of the adjusted warehouse is accepted', async () => {
+		const detail = await service.create(
+			ORG_A,
+			{
+				warehouseId: WAREHOUSE_ID,
+				adjustmentType: 'recount',
+				lines: [{ productId: ITEM_ID, binId: BIN_ID, quantityAfter: '1.000' }],
+			},
+			actor(REQUESTER),
+		);
+		expect(detail.lines[0]?.binId).toBe(BIN_ID);
+	});
+
+	test('a bin that is not in the adjusted warehouse is refused before any write', async () => {
+		await expect(
+			service.create(
+				ORG_A,
+				{
+					warehouseId: WAREHOUSE_ID,
+					adjustmentType: 'recount',
+					lines: [{ productId: ITEM_ID, binId: FOREIGN_BIN_ID, quantityAfter: '1.000' }],
+				},
+				actor(REQUESTER),
+			),
+		).rejects.toBeInstanceOf(InventoryReferenceError);
+		expect(adjustments.documents).toHaveLength(0);
+		expect(adjustments.lines).toHaveLength(0);
 	});
 
 	test('two lines for one product and bin are refused', async () => {

@@ -8,9 +8,9 @@ import {
 	isRedirect,
 	redirect,
 	useNavigate,
-	useRouter,
 } from '@tanstack/react-router';
 import { getSession } from '@/lib/auth-client';
+import { resetAndNavigate, safeRedirectPath } from '@/lib/account-switch';
 
 /**
  * `redirect` carries the path the user originally requested (set by the
@@ -32,7 +32,7 @@ export const Route = createFileRoute('/login/')({
 	beforeLoad: async ({ search }) => {
 		try {
 			const { data } = await getSession();
-			if (data) throw redirect({ href: search.redirect ?? '/' });
+			if (data) throw redirect({ href: safeRedirectPath(search.redirect) });
 		} catch (error) {
 			// A failed session check (e.g. network) must not block the login
 			// form — only real redirects are re-thrown.
@@ -43,7 +43,6 @@ export const Route = createFileRoute('/login/')({
 });
 
 function LoginPage() {
-	const router = useRouter();
 	const navigate = useNavigate({ from: Route.fullPath });
 	const search = Route.useSearch();
 	const { t } = useTranslation('auth');
@@ -66,9 +65,10 @@ function LoginPage() {
 					redirect={search.redirect}
 					initialError={initialErrorKey ? t(initialErrorKey) : null}
 					onSuccess={() =>
-						// A router path; history.push keeps it verbatim (navigate
-						// would re-run search serialization on it).
-						router.history.push(search.redirect ?? '/')
+						// Full page load with an empty cache, so the new account
+						// never sees the previous one's cached data or buttons.
+						// The path is kept verbatim (same-origin paths only).
+						resetAndNavigate(search.redirect ?? '/')
 					}
 				/>
 			</div>

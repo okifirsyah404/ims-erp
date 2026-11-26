@@ -8,6 +8,10 @@
 		"build": "tsc -b && vite build",
 		"lint": "oxlint",
 		"test": "bun test",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "E2E_SLOWMO=800 playwright test --ui",
+		"test:e2e:headed": "E2E_SLOWMO=800 playwright test --headed",
+		"test:e2e:report": "playwright show-report e2e/.results/report",
 		"test:cov": "bun test --coverage --coverage-reporter=text --coverage-reporter=lcov --coverage-dir=./coverage",
 		"preview": "vite preview"
 	},
@@ -33,6 +37,8 @@
 		"zustand": "^5.1.0"
 	},
 	"devDependencies": {
+		"@axe-core/playwright": "^4.14.1",
+		"@playwright/test": "1.65.1",
 		"@tailwindcss/vite": "^4.3.5",
 		"@tanstack/router-plugin": "^1.169.0",
 		"@types/node": "^26.6.6",

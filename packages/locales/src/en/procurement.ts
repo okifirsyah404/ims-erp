@@ -147,6 +147,7 @@ const procurement = {
 	'pos.cancel': 'Cancel order',
 	'pos.cancelled': 'Purchase order cancelled',
 	'pos.ownNoApprove': 'You made this purchase order, so someone else has to approve it.',
+	'pos.approvedNotSent': 'Approved. Mark it as sent once it has gone to the supplier: only sent purchase orders can be received at the warehouse.',
 
 	'po.code': 'PO number',
 	'po.noNumber': 'Not numbered yet',
@@ -213,7 +214,7 @@ const procurement = {
 	'receipts.receiveGoods': 'Receive goods',
 	'receipts.source': 'Receipt',
 	'receipts.pickOrder': 'Pick a purchase order',
-	'receipts.noOrders': 'No sent purchase order is waiting for goods.',
+	'receipts.noOrders': 'No sent purchase order is waiting for goods. An approved purchase order shows up here once Purchasing marks it as sent.',
 	'receipts.pickWarehouse': 'Pick a warehouse',
 	'receipts.noBin': 'No specific storage',
 	'receipts.lines': 'What arrived',
@@ -230,7 +231,7 @@ const procurement = {
 	'receipt.quantity': 'Quantity received',
 	'receipt.unitCost': 'Unit cost (ex-VAT)',
 	'receipt.serialNumbers': 'Serial numbers',
-	'receipt.serialHint': 'One per unit, separated by commas or new lines.',
+	'receipt.serialHint': 'Required: exactly one serial number per unit received, separated by commas or new lines.',
 	'receipt.notes': 'Notes',
 
 	// Purchase returns (ERP-0068): goods go back to the supplier for replacement.

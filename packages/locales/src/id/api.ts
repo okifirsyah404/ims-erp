@@ -16,6 +16,8 @@ const api: Record<keyof typeof en, string> = {
 	'common.fileInvalid': 'Unggah file PDF, PNG, JPG, atau WebP maksimal {{max}} MB',
 	'common.payloadTooLarge': 'Data yang dikirim terlalu besar',
 	'common.authenticationRequired': 'Autentikasi diperlukan',
+	'common.internalError':
+		'Terjadi kesalahan di server. Coba lagi; bila terus terjadi, hubungi administrator.',
 	'common.forbidden': 'Akses ditolak',
 
 	'location.provinceNotFound': 'Provinsi tidak ditemukan',
@@ -280,7 +282,7 @@ const api: Record<keyof typeof en, string> = {
 	'numbering.organizationRequired':
 		'Nomor ini memakai {ORG}: pilih organisasi aktif terlebih dahulu',
 	'numbering.codeTooLong':
-		'Kode yang dihasilkan {{code}} lebih dari {{max}} karakter; persingkat pola penomorannya',
+		'Kode yang dihasilkan {{code}} lebih dari {{max}} karakter; persingkat pola penomorannya atau kode di dalamnya, misalnya kode pemasok',
 	'numbering.pattern.length': 'Pola harus 1-100 karakter',
 	'numbering.pattern.unknownToken': 'Token {{token}} tidak dikenal',
 	'numbering.pattern.tokenNotForType':

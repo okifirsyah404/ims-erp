@@ -1,6 +1,7 @@
 import { MoneyInput } from '@/components/money-input';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -8,7 +9,8 @@ import {
 	type TAdjustmentLineInput,
 	type TAdjustmentType,
 } from '@/lib/adjustment-api';
-import { productsQueryOptions } from '@/lib/inventory-api';
+import { getProduct, productsQueryOptions } from '@/lib/inventory-api';
+import { SearchableSelect } from '@/components/inventory/searchable-select';
 import { balancesQueryOptions } from '@/lib/stock-api';
 import { linkedWarehousesQueryOptions } from '@/lib/warehouse-api';
 import { Button } from '@ims-erp/ui/components/button';
@@ -65,6 +67,56 @@ const blankLine = (): TLineDraft => ({
 /** One combobox choice; `searchText` is what client-side filtering matches. */
 type TOption = { value: string; label: string; searchText: string };
 
+/** Select sentinel for "no bin": a Select item cannot carry an empty value. */
+const NO_BIN = 'none';
+
+/**
+ * Product picker for one line, searched **server-side**.
+ *
+ * @remarks
+ * The product list is paginated (20 per page), so filtering one page in the
+ * browser hid every product past the first page. The chosen product stays an
+ * option even when the current search no longer returns it, and a prefilled
+ * id (from the stock card menu) is resolved by id.
+ */
+function ProductPicker({
+	id,
+	value,
+	onChange,
+}: {
+	id: string;
+	value: string;
+	onChange: (itemId: string) => void;
+}) {
+	const { t } = useTranslation(['inventory', 'common']);
+	const [term, setTerm] = useState('');
+	const onSearch = useCallback((next: string) => setTerm(next), []);
+	const results = useQuery(productsQueryOptions({ search: term || undefined, activeOnly: true }));
+	const rows = results.data?.rows ?? [];
+	const chosenListed = value === '' || rows.some((row) => row.id === value);
+	const chosen = useQuery({
+		queryKey: ['products', 'one', value],
+		queryFn: () => getProduct(value),
+		enabled: !chosenListed,
+	});
+	const options = rows.map((row) => ({ value: row.id, label: `${row.sku} — ${row.name}` }));
+	if (!chosenListed && chosen.data) {
+		options.unshift({ value: chosen.data.id, label: `${chosen.data.sku} — ${chosen.data.name}` });
+	}
+	return (
+		<SearchableSelect
+			id={id}
+			value={value === '' ? null : value}
+			options={options}
+			loading={results.isFetching}
+			placeholder={t('inventory:adjustmentForm.item')}
+			emptyLabel={t('common:state.noResults')}
+			onSearch={onSearch}
+			onChange={(next) => onChange(next ?? '')}
+		/>
+	);
+}
+
 /**
  * The adjustment create form.
  *
@@ -98,16 +150,17 @@ export function AdjustmentForm({
 		{ ...blankLine(), itemId: initial?.productId ?? '' },
 	]);
 
+	const navigate = useNavigate();
 	const warehouses = useQuery(linkedWarehousesQueryOptions());
-	const items = useQuery(productsQueryOptions({}));
 	// The system's belief, so the counter sees what they are counting against.
-	// Only meaningful once a warehouse is chosen: a balance is per warehouse.
-	const balances = useQuery({
-		...balancesQueryOptions({
-			limit: 100,
-			...(warehouseId === '' ? {} : { warehouseId }),
-		}),
-		enabled: warehouseId !== '',
+	// One query per chosen product, filtered to the warehouse: a balance is per
+	// warehouse and bin, and one warehouse-wide page could miss the row.
+	const chosenProducts = [...new Set(lines.map((line) => line.itemId).filter((id) => id !== ''))];
+	const balanceQueries = useQueries({
+		queries: chosenProducts.map((productId) => ({
+			...balancesQueryOptions({ warehouseId, productId, limit: 100 }),
+			enabled: warehouseId !== '',
+		})),
 	});
 
 	const creation = useMutation({
@@ -118,13 +171,14 @@ export function AdjustmentForm({
 			notes: string | null;
 			lines: TAdjustmentLineInput[];
 		}) => createAdjustment(payload),
-		onSuccess: () => {
+		onSuccess: (created) => {
 			void queryClient.invalidateQueries({ queryKey: ['stock'] });
-			// Creating a draft does not move stock, so the balance queries are
-			// untouched; resetting the form is all that is left.
-			setLines([blankLine()]);
-			setNotes('');
-			setReasonCode('');
+			// Open the new draft so the counter sees its number and can submit it.
+			if (!created) return;
+			void navigate({
+				to: '/inventory/stock/adjustments/$adjustmentId',
+				params: { adjustmentId: created.adjustment.id },
+			});
 		},
 	});
 
@@ -163,21 +217,16 @@ export function AdjustmentForm({
 	}
 
 	const warehouseRows = warehouses.data ?? [];
-	const itemRows = items.data?.rows ?? [];
-	const balanceRows = balances.data?.rows ?? [];
+	const balanceRows = balanceQueries.flatMap((query) => query.data?.rows ?? []);
+	const storages = (warehouseRows.find((warehouse) => warehouse.id === warehouseId)?.storages ?? []).filter(
+		(storage) => storage.isActive && storage.deletedAt === null,
+	);
 
 	/** Warehouse choices: searchable by code and name. */
 	const warehouseOptions: TOption[] = warehouseRows.map((warehouse) => ({
 		value: warehouse.id,
 		label: `${warehouse.code} — ${warehouse.name}`,
 		searchText: `${warehouse.code} ${warehouse.name}`,
-	}));
-
-	/** Item choices: searchable by SKU and name. */
-	const itemOptions: TOption[] = itemRows.map((item) => ({
-		value: item.id,
-		label: `${item.sku} — ${item.name}`,
-		searchText: `${item.sku} ${item.name}`,
 	}));
 
 	/** The system's on-hand for an item in the chosen warehouse, or `null`. */
@@ -236,9 +285,11 @@ export function AdjustmentForm({
 								value={
 									warehouseOptions.find((o) => o.value === warehouseId) ?? null
 								}
-								onValueChange={(next) =>
-									setWarehouseId((next as TOption | null)?.value ?? '')
-								}
+								onValueChange={(next) => {
+									setWarehouseId((next as TOption | null)?.value ?? '');
+									// Bins belong to one warehouse: a bin chosen for the old one is invalid.
+									setLines((current) => current.map((line) => ({ ...line, binId: '' })));
+								}}
 								isItemEqualToValue={(item: TOption, candidate: TOption) =>
 									item.value === candidate.value
 								}
@@ -336,54 +387,36 @@ export function AdjustmentForm({
 								<FieldLabel htmlFor={`line-item-${line.key}`}>
 									{t('inventory:adjustmentForm.item')}
 								</FieldLabel>
-								<Combobox
-									items={itemOptions}
-									value={
-										itemOptions.find((o) => o.value === line.itemId) ?? null
-									}
-									onValueChange={(next) =>
-										updateLine(line.key, {
-											itemId: (next as TOption | null)?.value ?? '',
-										})
-									}
-									isItemEqualToValue={(item: TOption, candidate: TOption) =>
-										item.value === candidate.value
-									}
-									filter={(item: TOption, query: string) =>
-										item.searchText.toLowerCase().includes(query.toLowerCase())
-									}
-								>
-									<ComboboxInput
-										id={`line-item-${line.key}`}
-										placeholder={t('inventory:adjustmentForm.item')}
-										showClear
-									/>
-									<ComboboxContent>
-										<ComboboxList>
-											<ComboboxEmpty>
-												{t('common:state.noResults')}
-											</ComboboxEmpty>
-											{itemOptions.map((option) => (
-												<ComboboxItem key={option.value} value={option}>
-													{option.label}
-												</ComboboxItem>
-											))}
-										</ComboboxList>
-									</ComboboxContent>
-								</Combobox>
+								<ProductPicker
+									id={`line-item-${line.key}`}
+									value={line.itemId}
+									onChange={(itemId) => updateLine(line.key, { itemId })}
+								/>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor={`line-bin-${line.key}`} optional>
 									{t('inventory:adjustmentForm.bin')}
 								</FieldLabel>
-								<Input
-									id={`line-bin-${line.key}`}
-									value={line.binId}
-									onChange={(event) =>
-										updateLine(line.key, { binId: event.target.value })
+								<Select
+									disabled={warehouseId === ''}
+									value={line.binId || NO_BIN}
+									onValueChange={(value: string | null) =>
+										updateLine(line.key, { binId: value === NO_BIN || value === null ? '' : value })
 									}
-									placeholder={t('inventory:stock.noBin')}
-								/>
+								>
+									<SelectTrigger id={`line-bin-${line.key}`} className='w-full'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value={NO_BIN}>{t('inventory:stock.noBin')}</SelectItem>
+										{storages.map((storage) => (
+											<SelectItem key={storage.id} value={storage.id}>
+												{storage.code}
+												{storage.name ? ` — ${storage.name}` : ''}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
 							</Field>
 							<Field>
 								<FieldLabel htmlFor={`line-system-${line.key}`}>
@@ -490,11 +523,6 @@ export function AdjustmentForm({
 
 			{creation.isError ? (
 				<p className='text-sm text-destructive'>{creation.error.message}</p>
-			) : null}
-			{creation.isSuccess ? (
-				<p className='text-sm text-muted-foreground'>
-					{t('inventory:adjustmentForm.created')}
-				</p>
 			) : null}
 
 			<div className='flex justify-end gap-2'>

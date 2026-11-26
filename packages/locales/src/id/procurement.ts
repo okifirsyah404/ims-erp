@@ -148,6 +148,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'pos.cancel': 'Batalkan order',
 	'pos.cancelled': 'Purchase order dibatalkan',
 	'pos.ownNoApprove': 'Anda yang membuat purchase order ini, jadi persetujuannya harus oleh orang lain.',
+	'pos.approvedNotSent': 'Sudah disetujui. Tandai terkirim setelah PO dikirim ke pemasok: hanya PO berstatus Terkirim yang bisa diterima di gudang.',
 
 	'po.code': 'Nomor PO',
 	'po.noNumber': 'Belum bernomor',
@@ -214,7 +215,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'receipts.receiveGoods': 'Terima barang',
 	'receipts.source': 'Penerimaan',
 	'receipts.pickOrder': 'Pilih purchase order',
-	'receipts.noOrders': 'Tidak ada purchase order terkirim yang menunggu barang.',
+	'receipts.noOrders': 'Tidak ada purchase order terkirim yang menunggu barang. PO yang sudah disetujui baru muncul di sini setelah bagian Pembelian menandainya terkirim.',
 	'receipts.pickWarehouse': 'Pilih gudang',
 	'receipts.noBin': 'Tanpa lokasi penyimpanan',
 	'receipts.lines': 'Barang yang datang',
@@ -231,7 +232,7 @@ const procurement: Record<keyof typeof en, string> = {
 	'receipt.quantity': 'Jumlah diterima',
 	'receipt.unitCost': 'Harga pokok (tanpa PPN)',
 	'receipt.serialNumbers': 'Nomor seri',
-	'receipt.serialHint': 'Satu per unit, pisahkan dengan koma atau baris baru.',
+	'receipt.serialHint': 'Wajib: tepat satu nomor seri per unit yang diterima, pisahkan dengan koma atau baris baru.',
 	'receipt.notes': 'Catatan',
 
 	'returns.title': 'Retur pembelian',

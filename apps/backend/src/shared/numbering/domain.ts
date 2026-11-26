@@ -197,6 +197,11 @@ export const CODE_MAX_LENGTH: Partial<Record<CodeType, number>> = {
 	customer: 32,
 	customer_company: 32,
 	supplier_company: 32,
+	// A PO code is copied into the document registry (`document.documents.code`,
+	// varchar(32)) when the PO is approved. `{SUPPLIER}` is the supplier's own
+	// code, so a long generated supplier code made approval fail with a raw SQL
+	// error; refuse it with a numbering error the owner can act on instead.
+	purchase_order: 32,
 };
 
 /** Default pattern per code type (used until the owner overrides it). */

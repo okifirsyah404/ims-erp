@@ -89,6 +89,11 @@ export type TStockAdjustmentItem = {
 export type TStockAdjustmentDetail = {
 	adjustment: TStockAdjustment;
 	lines: TStockAdjustmentItem[];
+	/** Display names for the ids above (product name + SKU, person name). */
+	names?: {
+		products: Record<string, { name: string; sku: string }>;
+		people: Record<string, string>;
+	};
 };
 
 /** One line as the form submits it. */
