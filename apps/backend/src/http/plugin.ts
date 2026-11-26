@@ -23,6 +23,7 @@ import { portalGuard } from '@authorization/portal-auth';
 import { translator } from '@providers/i18n/translator';
 import { toErrorResponse } from './errors';
 import { errorEnvelope } from './response';
+import { pinoLogger } from '@providers/logger/logger';
 
 /** Guard combinations a module can declare. */
 export type TGuardSet =
@@ -155,6 +156,16 @@ export function domainPlugin(
 		if (mapped) {
 			set.status = mapped.status;
 			return mapped;
+		}
+		// An error nobody mapped (a failed query, a bug) used to fall through to
+		// Elysia's plain-text body, which the clients then failed to parse as
+		// JSON ("Unexpected token 'F', \"Failed que\"..."). Answer with the
+		// standard envelope and a generic message instead; the detail (SQL,
+		// stack) goes to the server log only, never to the client.
+		if (code === 'UNKNOWN' || code === 'INTERNAL_SERVER_ERROR') {
+			pinoLogger.error({ err: error, path: ctx.path }, 'unhandled error');
+			set.status = 500;
+			return errorEnvelope(500, t('common.internalError'));
 		}
 		return undefined;
 	}) as AnyElysia;
