@@ -52,7 +52,7 @@ Versi lengkap per form, disusun 2026-11-25 dari form aslinya di kode. **Setiap k
 
 ### A1. Buat karyawan baru dengan undangan (login `hr_seed`, semua kolom)
 
-Menu **Karyawan & Kehadiran → Karyawan** → tombol **Karyawan baru**. Judul "Karyawan baru", satu kartu **Identitas**.
+Menu **Sumber Daya Manusia → Karyawan** → tombol **Karyawan baru**. Judul "Karyawan baru", satu kartu **Identitas**.
 
 | Isian | Isi dengan |
 |---|---|
@@ -226,7 +226,7 @@ Di daftar Karyawan, cari `EMP-00029` → di kartunya klik **Arsipkan**.
 
 ### A9. Keuangan membuka detail karyawan (login `finance_seed`)
 
-Menu **Karyawan & Kehadiran → Karyawan** → buka **Rina Kusuma UAT**.
+Menu **Sumber Daya Manusia → Karyawan** → buka **Rina Kusuma UAT**.
 **Harus terlihat:** NIK lengkap `3201010101900001` dan nomor rekening lengkap `0987654321`. **Tidak ada** tombol Karyawan baru, Arsipkan, atau Ubah rekening. Kartu Sisa cuti tidak tampil. Di menu hanya ada Karyawan dan Penggajian.
 
 - [ ] Sesuai
@@ -239,7 +239,7 @@ Menu **Karyawan & Kehadiran → Karyawan** → buka **Rina Kusuma UAT**.
 
 ### A10. Admin organisasi hanya melihat (login `admin_seed`)
 
-Menu **Karyawan & Kehadiran → Karyawan** → buka **Rina Kusuma UAT**.
+Menu **Sumber Daya Manusia → Karyawan** → buka **Rina Kusuma UAT**.
 **Harus terlihat:** data tampil, tetapi NIK dan nomor rekening tersamar (hanya angka terakhir terlihat). Tidak ada tombol Karyawan baru, Arsipkan, atau Ubah rekening. Di menu ada Karyawan dan Absensi saja.
 
 - [ ] Sesuai
@@ -256,7 +256,7 @@ Menu **Karyawan & Kehadiran → Karyawan** → buka **Rina Kusuma UAT**.
 
 ### B1. Isi lembar harian (login `hr_seed`, semua kolom)
 
-Menu **Karyawan & Kehadiran → Absensi**. Tombol tampilan **Lembar harian** (aktif) / **Rekap bulanan**; kolom Tanggal = hari ini (bawaan). Kolom tabel: Karyawan, Status, Masuk, Pulang, Catatan. Semua baris awalnya "Belum diisi"; Masuk, Pulang, Catatan abu-abu sampai Status dipilih.
+Menu **Sumber Daya Manusia → Absensi**. Tombol tampilan **Lembar harian** (aktif) / **Rekap bulanan**; kolom Tanggal = hari ini (bawaan). Kolom tabel: Karyawan, Status, Masuk, Pulang, Catatan. Semua baris awalnya "Belum diisi"; Masuk, Pulang, Catatan abu-abu sampai Status dipilih.
 
 1. Klik **Isi baris kosong dengan Hadir**: semua baris jadi Hadir.
 2. Isi baris berikut:
@@ -384,7 +384,7 @@ File lain:
 
 ### B7. Admin organisasi mengisi absensi (login `admin_seed`)
 
-Menu **Karyawan & Kehadiran → Absensi** → Lembar harian, tanggal 23 November 2026 → **Isi baris kosong dengan Hadir** → **Simpan hari ini**.
+Menu **Sumber Daya Manusia → Absensi** → Lembar harian, tanggal 23 November 2026 → **Isi baris kosong dengan Hadir** → **Simpan hari ini**.
 **Harus terlihat:** tombol Impor juga tampil; pesan "N disimpan, 0 hari cuti tetap". (Admin boleh mencatat absensi.)
 
 - [ ] Sesuai
@@ -401,7 +401,7 @@ Menu **Karyawan & Kehadiran → Absensi** → Lembar harian, tanggal 23 November
 
 ### C1. Catat cuti tahunan (login `hr_seed`, semua kolom)
 
-Menu **Karyawan & Kehadiran → Cuti** → tombol **Catat cuti**.
+Menu **Sumber Daya Manusia → Cuti** → tombol **Catat cuti**.
 
 | Isian | Isi dengan |
 |---|---|
@@ -462,7 +462,7 @@ Di daftar Cuti, lihat baris C1 (kolom Tindakan).
 
 ### C4. Pemilik menyetujui cuti (login `admin`)
 
-Menu **Karyawan & Kehadiran → Cuti** → baris C1 → menu Tindakan → **Setujui**.
+Menu **Sumber Daya Manusia → Cuti** → baris C1 → menu Tindakan → **Setujui**.
 **Harus terlihat:** pesan "Disetujui"; status **Disetujui**. Di **Absensi** → Lembar harian 4, 5, dan 7 Desember 2026: baris `EMP-00003` berlabel "Cuti · Dari cuti" dan tidak bisa diubah. 6 Desember (Minggu) tidak terisi. Kartu Sisa cuti: "Sisa 9 dari 12 hari (3 terpakai, 0 menunggu)".
 
 **Uji salah:** impor absensi (login `hr_seed`) baris `EMP-00003`, `2026-12-04`, `hadir` → "Baris 2: adalah hari cuti yang sudah disetujui"; tidak ada yang diimpor.
@@ -520,7 +520,7 @@ Daftar **Cuti** → baris C1 → menu Tindakan → **Batalkan**.
 
 ### C8. Catat dan setujui lembur (`hr_seed` → `admin`, semua kolom)
 
-`hr_seed`: menu **Karyawan & Kehadiran → Lembur** → tombol **Catat lembur**.
+`hr_seed`: menu **Sumber Daya Manusia → Lembur** → tombol **Catat lembur**.
 
 | Isian | Isi dengan |
 |---|---|
@@ -588,7 +588,7 @@ Menu **Cuti**, lalu **Lembur**.
 
 ### D1. Tambah baris gaji bulan ini (login `hr_seed`, semua kolom)
 
-Menu **Karyawan & Kehadiran → Penggajian**, Bulan = November 2026 (bawaan bulan ini). Status awal **Kosong**, "Belum ada baris gaji bulan ini." → tombol **Tambah baris**. Dialog "Tambah baris" dengan petunjuk "Nominal dalam rupiah."
+Menu **Sumber Daya Manusia → Penggajian**, Bulan = November 2026 (bawaan bulan ini). Status awal **Kosong**, "Belum ada baris gaji bulan ini." → tombol **Tambah baris**. Dialog "Tambah baris" dengan petunjuk "Nominal dalam rupiah."
 
 | Isian | Isi dengan |
 |---|---|
@@ -712,7 +712,7 @@ Ganti Bulan ke **November 2026**, cari tombol **Setujui bulan ini**.
 
 ### D7. Keuangan mengisi tapi tidak menyetujui (login `finance_seed`)
 
-Menu **Karyawan & Kehadiran → Penggajian**.
+Menu **Sumber Daya Manusia → Penggajian**.
 - November 2026: **Disetujui**, tidak ada tombol ubah.
 - Desember 2026: ada Isi dari bulan lalu, Impor, Tambah baris; **tidak ada** Setujui bulan ini. Baris `EMP-00005` → **Ubah baris** → Bonus `100000` → **Simpan**.
 
@@ -734,7 +734,7 @@ Belum ada: perhitungan payroll otomatis (T19), slip gaji, dan jurnal gaji (T20).
 
 ### E1. Buat tugas (login `hr_seed`, semua kolom)
 
-Menu **Karyawan & Kehadiran → Tugas** → tombol **Tugas baru**.
+Menu **Sumber Daya Manusia → Tugas** → tombol **Tugas baru**.
 
 | Isian | Isi dengan |
 |---|---|
@@ -804,7 +804,7 @@ Cari cara mengubah Tugas, Rincian, Tenggat, atau Karyawan pada tugas E1.
 
 ### E5 ⚠️. Teknisi membuka Tugas (login `technician_seed`)
 
-Buka menu **Karyawan & Kehadiran → Tugas**.
+Buka menu **Sumber Daya Manusia → Tugas**.
 **Temuan:** menu tampil untuk teknisi, PM, pekerja lepas, dan auditor. Cek apa yang terlihat dan apakah sesuai.
 **Yang diperkirakan:** di menu hanya ada Tugas; tidak ada tombol Tugas baru; teknisi melihat **semua** tugas organisasi (bukan hanya tugasnya sendiri) dan bisa menandai Selesai/Batalkan/Buka lagi tugas siapa pun; pilihan saringan Karyawan kosong (hanya tulisan "Karyawan").
 

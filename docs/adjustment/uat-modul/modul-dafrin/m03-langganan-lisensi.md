@@ -60,7 +60,7 @@ Untuk `validate` kirim `{"licenseKey":"<KUNCI_LISENSI>"}` (boleh ditambah `"inst
 
 ### A1. Buat aplikasi sendiri (semua kolom)
 
-Menu **Langganan & Lisensi → Aplikasi** → tombol **Aplikasi baru**. Dialog berjudul "Aplikasi baru".
+Menu **Proyek → Langganan & Lisensi → Aplikasi** → tombol **Aplikasi baru**. Dialog berjudul "Aplikasi baru".
 
 | Isian | Isi dengan |
 |---|---|
@@ -116,7 +116,7 @@ Ganti isian:
 
 ### A3. Buat kunci API untuk GYM
 
-Menu **Langganan & Lisensi → Kunci API**. Hanya aplikasi sendiri yang tampil (kartu "GYM - Gym Access UAT"; ZKT-BIO tidak ada). Di kartu GYM klik **Kunci API baru**.
+Menu **Proyek → Langganan & Lisensi → Kunci API**. Hanya aplikasi sendiri yang tampil (kartu "GYM - Gym Access UAT"; ZKT-BIO tidak ada). Di kartu GYM klik **Kunci API baru**.
 
 | Isian | Isi dengan |
 |---|---|
@@ -143,7 +143,7 @@ Menu **Langganan & Lisensi → Kunci API**. Hanya aplikasi sendiri yang tampil (
 
 ### A4. Pensiunkan lalu pulihkan aplikasi kedua
 
-Menu **Langganan & Lisensi → Aplikasi** → baris ZKT-BIO → tombol **Tindakan** → **Pensiunkan**.
+Menu **Proyek → Langganan & Lisensi → Aplikasi** → baris ZKT-BIO → tombol **Tindakan** → **Pensiunkan**.
 **Harus terlihat:**
 - Pesan "Aplikasi disimpan"; ZKT-BIO hilang dari daftar.
 - Buka **Kontrak lisensi → Kontrak baru** → pilihan **Aplikasi** tidak memuat ZKT-BIO. Klik **Batal**.
@@ -187,7 +187,7 @@ Baris ZKT-BIO → **Tindakan** → **Ubah**. Dialog "Ubah aplikasi".
 
 ### A6. Cabut kunci API
 
-Menu **Langganan & Lisensi → Kunci API** → kartu GYM → **Kunci API baru** → Nama `Kunci cadangan UAT` → **Buat kunci** → **Salin** → **Sudah saya salin**. Lalu pada baris Kunci cadangan UAT → **Tindakan** → **Cabut**.
+Menu **Proyek → Langganan & Lisensi → Kunci API** → kartu GYM → **Kunci API baru** → Nama `Kunci cadangan UAT` → **Buat kunci** → **Salin** → **Sudah saya salin**. Lalu pada baris Kunci cadangan UAT → **Tindakan** → **Cabut**.
 **Harus terlihat:**
 - Pesan "Kunci API dicabut"; Status **Dicabut**; di bawah nama penerbit ada "Dicabut oleh <nama akun>"; baris ini tidak punya tindakan lagi.
 - Panggil API `validate` (contoh di atas) dengan kunci cadangan ini → `"status": 401`, pesan "Kunci API lisensi tidak valid".
@@ -207,7 +207,7 @@ Menu **Langganan & Lisensi → Kunci API** → kartu GYM → **Kunci API baru** 
 
 ### B1 🔧. Menu Kontrak lisensi (login `sales_seed`)
 
-Buka menu **Langganan & Lisensi → Kontrak lisensi**.
+Buka menu **Proyek → Langganan & Lisensi → Kontrak lisensi**.
 **Harus terlihat:** menu ada dan membuka halaman "Kontrak lisensi" berisi daftar kontrak (atau "Belum ada kontrak lisensi."), dengan tombol **Kontrak baru** *(diperbaiki 2026-11-24)*.
 
 - [ ] Sesuai
@@ -340,7 +340,7 @@ Masih `sales_seed`, buka kontrak B2.
 
 ### B7. Customer Service melihat dan menyalin (login `customer_service_seed`)
 
-Buka **Langganan & Lisensi → Kontrak lisensi** → kontrak B2.
+Buka **Proyek → Langganan & Lisensi → Kontrak lisensi** → kontrak B2.
 **Harus terlihat:** kunci tampil lengkap dan tombol **Salin** ada (klik → "Disalin"). **Tidak ada** tombol Ubah, Tambah kunci, Tangguhkan, Perpanjang, Buat SPH, Hentikan, atau Cabut.
 
 - [ ] Sesuai
@@ -412,7 +412,7 @@ Buka kontrak B2, tekan F5.
 
 ### B11. Daftar kontrak: kolom, cari, dan saring
 
-Menu **Langganan & Lisensi → Kontrak lisensi**.
+Menu **Proyek → Langganan & Lisensi → Kontrak lisensi**.
 **Harus terlihat:** kolom Kode, Pelanggan, Aplikasi, Masa berlaku, Nilai kontrak, Status; kontrak GYM (Aktif) dan ZKT (Draf) ada.
 
 | Isian | Isi dengan | Harus terlihat |
@@ -491,7 +491,7 @@ Ulangi activate dengan `"instanceId":"PC-UAT-02"`, lalu `"instanceId":"PC-UAT-03
 
 ### C4. Log validasi & aktivasi (login `sales_manager_seed`)
 
-Menu **Langganan & Lisensi → Validasi & Aktivasi**.
+Menu **Proyek → Langganan & Lisensi → Validasi & Aktivasi**.
 **Harus terlihat:** judul "Log validasi & aktivasi", keterangan menyebut masa tenggang 7 hari. Kolom Waktu, Kejadian, Hasil, Kontrak, Oleh, Rincian. Baris terbaru (dibaca dari bawah ke atas):
 
 | Kejadian | Hasil | Kontrak | Oleh | Rincian |
@@ -515,7 +515,7 @@ Panggilan yang ditolak sebelum masuk (tanpa kunci API, kunci API dicabut, body t
 
 ### C5 🔧. Sales membaca log (login `sales_seed`)
 
-Buka menu **Langganan & Lisensi → Validasi & Aktivasi**.
+Buka menu **Proyek → Langganan & Lisensi → Validasi & Aktivasi**.
 **Harus terlihat:** menu tampil dan log C4 terbaca (hak baca lisensi cukup) *(diperbaiki 2026-11-24)*. Menu **Kunci API** tidak tampil untuk `sales_seed`.
 
 - [ ] Sesuai

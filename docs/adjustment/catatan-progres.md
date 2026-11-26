@@ -858,3 +858,107 @@ dibuat dengan akun RogexSan, `fix/web-admin-account-switch-and-po-hint` →
 `PDF_CHROMIUM_PATH` memakai Chrome di Program Files dan masih ada.
 
 README UAT bagian Persiapan menyebut image PostGIS.
+
+## 2026-11-26 - PR #169 di-merge; branch dihapus
+
+- PR #169 di-merge ke `main` (9974a817). `main` lokal ditarik dengan
+  fast-forward; isi kode sama dengan branch sebelum merge, dan migrasi tetap
+  41 (database tidak perlu dimigrasi ulang).
+- Branch `fix/web-admin-account-switch-and-po-hint` dihapus di lokal dan di
+  GitHub.
+- Semua catatan `docs/adjustment/` ada di `main`.
+- **Arahan programmer B:** tidak ada eksekusi (perubahan kode) sampai catatan
+  benar-benar beres. Yang masih terbuka di catatan:
+  - keputusan Pemilik di `bahan-keputusan.md`, terutama A1 (persetujuan
+    sendiri oleh Pemilik) dan B1–B4, C1–C3, D1–D5;
+  - pertanyaan 3.6 di `validasi-konsep-saat-ini.md`;
+  - hasil UAT manual M05 setelah database baru (mulai lagi dari A1);
+  - daftar temuan UI otomatis yang belum diputuskan perbaikannya.
+
+Catatan ini belum di-commit (`main` hanya diubah lewat PR).
+- 2026-11-26: `validasi-konsep-saat-ini.md` 3.7 dibetulkan berdasarkan temuan catatan skema dan UAT M06 (dicek di kode):
+  - **Jurnal manual:** ✋ 🟢. `JournalSelfApprovalError` di
+    `manual-journal.service.ts`, jadi Bella tidak bisa menyetujui jurnalnya
+    sendiri.
+  - **Peminjaman aset:** 🟡. `canApprove` = hak approve di
+    `borrowing.controller.ts:38`, sehingga pengecualian di service selalu
+    lolos.
+  - **Kasbon/pertanggungjawaban:** ✋.
+- 2026-11-26: label menu di checklist UAT programmer B disesuaikan dengan sidebar setelah merge main:
+  - M08: "Karyawan & Kehadiran →" menjadi "Sumber Daya Manusia →" (12
+    tempat);
+  - M03: "Langganan & Lisensi →" menjadi "Proyek → Langganan & Lisensi →"
+    (9 tempat);
+  - M04: WhatsApp AI sekarang punya submenu "Percakapan" dan "Basis
+    Pengetahuan FAQ".
+
+## 2026-11-26 - Catatan lengkap: modul Oki, skema database, lintas modul
+
+Programmer B minta semua modul ditulis, modul Oki dipisah, skema database dan
+hal di luar scope modul dicatat, termasuk kondisi sekarang dan perubahan
+mendatang. Ini pekerjaan dokumen saja; tidak ada perubahan kode atau database.
+
+**Struktur baru:**
+- `README.md`: indeks folder dan pembagian modul.
+- `uat-modul/modul-oki/`: README dan 8 checklist, format sama dengan modul
+  programmer B (centang Sesuai + tabel kecil per langkah):
+
+  | Checklist | Langkah |
+  |---|---|
+  | M01 Dasbor | 30 |
+  | M06 Aset & Peralatan | 53 |
+  | M09 Keuangan transaksi | 82 |
+  | M09 Keuangan laporan | 34 |
+  | M10 Pajak | 43 |
+  | M11 Bonus & Investor | 23 |
+  | M12 Laporan & Hak Akses | 43 |
+  | Portal karyawan | 39 |
+
+  Total 347 langkah. Format setiap file dicek: jumlah heading = baris
+  Sesuai = tabel.
+- `skema-database/`: README dan 20 file, satu per schema. Isinya tabel,
+  relasi, alur data, penomoran, temuan, dan perubahan mendatang.
+  `bun docs/database/validate-dbml.ts` (hanya baca) OK: 208 tabel, 0 drift.
+  Mermaid dicek: 20 blok, 0 error.
+- `lintas-modul/`: README dan 7 file (autentikasi & hak akses, penomoran,
+  dokumen/tanda tangan/file, notifikasi/otomasi/integrasi, portal & website,
+  infrastruktur, di luar scope). Mermaid: 7 blok, 0 error.
+- `rencana-perubahan.md`: gabungan semua perubahan mendatang:
+  - K1–K11 keputusan;
+  - B-1..B-20 modul programmer B;
+  - O-1..O-9 modul Oki;
+  - L-1..L-9 lintas modul;
+  - D-1..D-9 dokumen;
+  - urutan yang disarankan.
+- `uat-modul/README.md` menautkan `modul-oki/`.
+
+Ditulis oleh 7 subagent paralel, lalu diperiksa: format, Mermaid, dan
+cek kode pada temuan pilihan, yaitu `borrowing.controller.ts:38`,
+`JournalSelfApprovalError`, CSV laporan tanpa `/finance`, dan batas 100
+daftar akun.
+
+**Koreksi akibat temuan:**
+- `validasi-konsep-saat-ini.md` 3.7 (jurnal 🟢, peminjaman aset 🟡, kasbon ✋);
+- label menu di checklist M08, M03, M04 disamakan dengan sidebar baru dari
+  main.
+
+**Belum di-commit:** `main` hanya diubah lewat PR. Catatan ini menunggu
+branch dokumen berikutnya.
+
+## 2026-11-26 - Merapikan struktur catatan dan menyimpannya lewat PR
+
+Programmer B memindahkan checklist modulnya ke `uat-modul/modul-dafrin/`.
+Rujukan dirapikan:
+- `uat-modul/README.md` baru: indeks kedua folder (241 langkah programmer B,
+  347 langkah Oki), bacaan pendukung, urutan menguji, persiapan;
+- `modul-dafrin/README.md`: judul, tautan kembali, tautan ke diagram,
+  catatan skema, modul Oki, dan `bahan-keputusan.md` disesuaikan dengan
+  lokasi baru;
+- `README.md` utama dan `rencana-perubahan.md` (B-2) menunjuk ke
+  `modul-dafrin/`.
+
+Komentar di `apps/web-admin/e2e/m05-a-barang.e2e.ts` masih menyebut jalur
+lama. Tidak diubah karena itu kode; dicatat di README `uat-modul`.
+
+Catatan disimpan di branch dokumen dan diajukan sebagai PR (isi hanya
+`docs/adjustment/`).

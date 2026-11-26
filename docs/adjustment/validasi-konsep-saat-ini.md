@@ -333,13 +333,13 @@ menyetujui" berlaku untuk dokumen bertanda ✋, termasuk bagi Pemilik.
 | SPH ✋                         | Bilal, Agus MD                                                                     | Agus MD, Bilal, Aqim                      | 🟢 Aman: Bilal dan Agus MD saling menyetujui                                      |
 | Retur penjualan ✋             | Bilal, Agus MD                                                                     | Agus MD, Bilal, Aqim                      | 🟢 Aman                                                                           |
 | Cuti / lembur ✋               | Setiap karyawan (layanan mandiri) atau SDM                                         | SDM (usulan: Aqim)                        | 🟢 Aman untuk semua orang. 🔴 **Cuti Aqim sendiri macet** bila SDM hanya Aqim     |
-| Peminjaman aset ✋             | Teknisi, Manajer Proyek, Penjualan, Layanan Pelanggan                              | Manajer Proyek (Agus, Jamil, Hatta), Aqim | 🟢 Aman (sesama PM bisa saling menyetujui)                                        |
-| Kasbon dan pertanggungjawaban | Teknisi, Manajer Proyek, Pekerja Lepas                                             | Aqim                                      | 🟢 Aman                                                                           |
+| Peminjaman aset | Teknisi, Manajer Proyek, Penjualan, Layanan Pelanggan | Manajer Proyek (Agus, Jamil, Hatta), Aqim | 🟡 Tanpa pemeriksa: aturan "tidak boleh menyetujui sendiri" di kode selalu lolos bagi pemegang hak setuju (`borrowing.controller.ts:38`), jadi PM bisa menyetujui pinjamannya sendiri (dicek 2026-11-26). Teknisi juga belum bisa mengajukan (temuan M06) |
+| Kasbon dan pertanggungjawaban ✋ | Teknisi, Manajer Proyek, Pekerja Lepas | Aqim | 🟢 Aman (larangan menyetujui sendiri ada di service) |
 | Klaim garansi                 | Bilal                                                                              | Bilal                                     | 🟡 Tanpa pemeriksa: Bilal membuat dan menyetujui sendiri                          |
 | SO → surat jalan              | Bilal (SO)                                                                         | Bilal atau Agus (kirim)                   | 🟡 Tanpa pemeriksa bila Bilal mengirim SO-nya sendiri (R5)                        |
 | Gaji                          | Aqim (SDM/Keuangan)                                                                | Aqim (Pemilik)                            | 🟡 Tanpa pemeriksa: satu orang menyiapkan, menyetujui, dan membayar (R6)          |
 | Pembayaran                    | Aqim                                                                               | Aqim                                      | 🟡 Tanpa pemeriksa (R6)                                                           |
-| Jurnal                        | Bella                                                                              | Bella                                     | 🟡 Tanpa pemeriksa kedua                                                          |
+| Jurnal manual ✋ | Bella, Aqim | Bella, Aqim | 🟢 Aman: kode menolak penyetuju = pembuat (`JournalSelfApprovalError`), jadi jurnal Bella disetujui Aqim dan sebaliknya (dibetulkan 2026-11-26) |
 
 Keterangan:
 
