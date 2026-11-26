@@ -776,3 +776,48 @@ pengaturan ulang role anggota.
 - 2026-11-26: rekomendasi 3.8 diterima programmer B. Status di `validasi-konsep-saat-ini.md` (baris status dan 3.8) diperbarui; masih menunggu Pemilik dan perubahan ADR-0006 oleh Oki. Pekerjaan sesi ini di-commit dan di-push ke branch `fix/web-admin-account-switch-and-po-hint`, lalu `origin/main` digabung ke branch ini.
 - 2026-11-26: rekomendasi 3.8 diterima programmer B; status di `validasi-konsep-saat-ini.md` diperbarui (masih menunggu Pemilik dan perubahan ADR-0006 oleh Oki). Pekerjaan sesi ini di-commit dan di-push ke branch `fix/web-admin-account-switch-and-po-hint`, lalu `origin/main` digabung ke branch ini.
 - 2026-11-26: hook pre-commit gagal hanya di `graphify update .` (graphify/Python tidak terpasang). Lint, test, dan build lulus dijalankan manual; commit dibuat dengan `--no-verify` atas persetujuan programmer B.
+
+## 2026-11-26 - Commit, push, dan merge main
+
+Atas permintaan programmer B, semua pekerjaan dibuat menjadi 7 commit di
+branch `fix/web-admin-account-switch-and-po-hint`:
+- 9f58341b ganti akun;
+- 75443196 PO dan nomor seri;
+- 6ecd91da menu sesuai hak;
+- aa013b0e penyesuaian stok;
+- 6c08152c error JSON dan nomor PO;
+- 8bbcb4b9 Playwright;
+- 0958a782 dokumen.
+
+Semuanya di-push ke origin.
+
+**Merge `origin/main`** (91 commit baru, termasuk modul keuangan, portal
+karyawan/investor, dan pratinjau dokumen) menjadi commit 8f952c31, lalu
+di-push. Ada 2 konflik:
+- `adjustment.service.ts`: parameter `users` dan `warehouses` dari branch ini
+  digabung dengan `posting?` (opsional) dari main. `posting?` ditaruh
+  terakhir karena opsional.
+- `nav-config.ts`: dipakai susunan menu Integrasi milik main (submenu
+  Percakapan/FAQ; menu Notifikasi tidak ada lagi di sidebar). Hak menunya
+  disamakan lagi dengan guard backend, yang tidak berubah di main:
+  Percakapan/FAQ → `whatsapp.read` (main: `automation.read`), Webhook n8n →
+  `automation.read_log` (main: `integration.read`).
+
+**Pemeriksaan setelah merge:**
+- `bun install`;
+- `packages/common` di-build ulang (dist lama menyebabkan error tipe izin
+  baru dari main);
+- `bunx tsc` backend dan web-admin: 0 error;
+- `bun run test`: 8/8 task lulus (backend 1631, web-admin 217, locales 110
+  pass, 0 fail);
+- `bun run lint`: 7/7;
+- `bun run build`: 7/7.
+
+**Catatan:**
+- Commit dibuat dengan `--no-verify` karena hook berhenti di `graphify`
+  (tidak terpasang); lint, test, dan build dijalankan manual dan lulus.
+- `.claude/launch.json` lokal (belum dilacak git) dipindah ke
+  `%TEMP%\launch.json.local-backup`, karena main sekarang membawa versi
+  sendiri.
+- `docs/plan/progress.md` dan `backlog.md` tidak diubah, sesuai arahan
+  programmer B sebelumnya (dokumen bersama perlu persetujuan).
