@@ -821,3 +821,40 @@ di-push. Ada 2 konflik:
   sendiri.
 - `docs/plan/progress.md` dan `backlog.md` tidak diubah, sesuai arahan
   programmer B sebelumnya (dokumen bersama perlu persetujuan).
+
+## 2026-11-26 - Pull request dan migrasi ulang database dev
+
+**Pull request:** #169 (https://github.com/okifirsyah404/ims-erp/pull/169),
+dibuat dengan akun RogexSan, `fix/web-admin-account-switch-and-po-hint` →
+`main`.
+
+**Migrasi ulang (permintaan programmer B: "dimigrate ulang dengan datanya"):**
+- Main sekarang memakai PostGIS: `docker-compose.yml` beralih ke
+  `postgis/postgis:18-3.6`, dan ada migrasi `20261125201740_postgis_extension`
+  (`CREATE EXTENSION postgis`). Database dev lama memakai
+  `postgres:18-alpine` tanpa PostGIS, dengan 26 dari 41 migrasi terpasang.
+- Database lama **tidak dihapus**: container dihentikan dan diganti nama
+  menjadi `ims-erp-postgres-old-20261126` (volume `ims-erp-pgdata` utuh). Data
+  UAT manual sebelumnya ada di sana bila dibutuhkan.
+- Container baru: `ims-erp-postgres-1`, image `postgis/postgis:18-3.6`, port
+  15432, volume baru `ims-erp-pgdata-postgis`. Kredensial disalin dari
+  container lama lewat env-file sementara (sudah dihapus, tidak
+  ditampilkan).
+- `bun run drizzle:migrate`: berhasil, 41 migrasi, PostGIS 3.6.4, 20 schema,
+  192 tabel.
+- `bun run drizzle:seed`: berhasil (sekitar 7 detik). Isinya mengikuti seeder
+  main: 40 akun, 3 produk, 29 karyawan, proyek demo, dan lain-lain. **Tidak
+  ada pemasok atau pelanggan contoh**; checklist UAT membuat datanya
+  sendiri. Seeder menjalankan `flushall` Redis, jadi semua sesi login harus
+  login ulang.
+
+**Pemeriksaan:**
+- login `warehouse_seed` dan `purchasing_seed` via API: 200;
+- Playwright setup: 7 role login lulus;
+- `m05-a-barang` + `m05-akses`: 16 passed.
+
+**Catatan lingkungan:** folder `%LOCALAPPDATA%\ms-playwright` ikut hilang
+(seperti Python sebelumnya), jadi Chromium Playwright dipasang ulang.
+`PDF_CHROMIUM_PATH` memakai Chrome di Program Files dan masih ada.
+
+README UAT bagian Persiapan menyebut image PostGIS.

@@ -41,7 +41,7 @@ Langkah dan tombol di checklist diambil dari kode pada 2026-11-24. Status:
 | Mailpit (email dev) | http://localhost:8025 |
 
 Database, Redis, Mailpit, dan penyimpanan file jalan di Docker:
-`ims-erp-postgres-1`, `ims-erp-redis-1`, `ims-erp-mailpit-1`, dan
+`ims-erp-postgres-1` (image `postgis/postgis:18-3.6`, wajib sejak main memakai PostGIS), `ims-erp-redis-1`, `ims-erp-mailpit-1`, dan
 `ims-erp-s3-1` (RustFS, port 9000, untuk foto dan lampiran). Tanpa
 `ims-erp-s3-1`, unggah foto gagal dengan pesan "an unexpected error has occurred".
 
