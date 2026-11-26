@@ -161,8 +161,7 @@ const inventory = {
 	'adjustmentForm.addLine': 'Add line',
 	'adjustmentForm.removeLine': 'Remove',
 	'adjustmentForm.create': 'Create adjustment',
-	'adjustmentForm.creating': 'Creating.',
-	'adjustmentForm.created': 'Adjustment created',
+	'adjustmentForm.creating': 'Creating…',
 	'adjustmentForm.emptyLines': 'Add at least one line.',
 
 	'adjustmentForm.unitCost': 'Unit cost (Rp)',

@@ -31,6 +31,10 @@ import {
 import { AuditWriter, SYSTEM_AUDIT_ACTOR, type TAuditActor } from '@shared/audit';
 import { EXPORTED_PRODUCT_SERVICE_TOKEN } from '@app/product/constants/di';
 import type { ExportedProductService } from '@app/product/services/exported-product.service';
+import { EXPORTED_USER_SERVICE_TOKEN } from '@app/user/constants/di';
+import type { ExportedUserService } from '@app/user/services/exported-user.service';
+import { EXPORTED_WAREHOUSE_SERVICE_TOKEN } from '@app/warehouse/constants/di';
+import type { ExportedWarehouseService } from '@app/warehouse/services/exported-warehouse.service';
 
 /**
  * Adapts the route-layer {@link TAdjustmentActor} (permission flags, no
@@ -114,6 +118,20 @@ export type TAdjustmentActor = {
 export type TAdjustmentDetail = {
 	adjustment: TStockAdjustmentSelect;
 	lines: TStockAdjustmentItemSelect[];
+	/**
+	 * Display names for the ids on the document, filled by
+	 * {@link AdjustmentService.findDetail} so the screen never shows raw ids.
+	 * Absent on the write paths, which the client re-reads anyway.
+	 */
+	names?: TAdjustmentNames;
+};
+
+/** Names for the product and person ids a document carries. */
+export type TAdjustmentNames = {
+	/** Product name and SKU by product id; unknown ids are absent. */
+	products: Record<string, { name: string; sku: string }>;
+	/** User display name by user id (requester, approver); unknown ids are absent. */
+	people: Record<string, string>;
 };
 
 /**
@@ -148,7 +166,7 @@ export class AdjustmentService {
 		private readonly adjustmentRepository: IAdjustmentRepository,
 		/** Product validation, read through the `product` module (ADR-0026). */
 		@inject(EXPORTED_PRODUCT_SERVICE_TOKEN)
-		private readonly products: Pick<ExportedProductService, 'assertProduct'>,
+		private readonly products: Pick<ExportedProductService, 'assertProduct' | 'productsById'>,
 		@inject(STOCK_SERVICE_TOKEN)
 		private readonly stockService: StockService,
 		/**
@@ -160,6 +178,12 @@ export class AdjustmentService {
 		/** Fire-and-forget audit writer (hardening plan D3). */
 		private readonly audit: AuditWriter,
 		@inject(DRIZZLE_TOKEN) private readonly database: BunSQLDatabase,
+		/** Requester/approver names, read through the `user` module contract. */
+		@inject(EXPORTED_USER_SERVICE_TOKEN)
+		private readonly users: Pick<ExportedUserService, 'summaries'>,
+		/** Bin ownership, read through the `warehouse` module (ADR-0026). */
+		@inject(EXPORTED_WAREHOUSE_SERVICE_TOKEN)
+		private readonly warehouses: Pick<ExportedWarehouseService, 'storageInWarehouse'>,
 	) {}
 
 	/** Fetches one page of adjustment documents. */
@@ -183,7 +207,27 @@ export class AdjustmentService {
 	): Promise<TAdjustmentDetail> {
 		const adjustment = await this.requireDocument(id, organizationId);
 		const lines = await this.adjustmentRepository.listLines(id);
-		return { adjustment, lines };
+		return { adjustment, lines, names: await this.namesFor(adjustment, lines) };
+	}
+
+	/**
+	 * Resolves the display names of a document's products and people through
+	 * the owning modules' contracts (never their tables).
+	 */
+	private async namesFor(
+		adjustment: TStockAdjustmentSelect,
+		lines: readonly TStockAdjustmentItemSelect[],
+	): Promise<TAdjustmentNames> {
+		const productIds = [...new Set(lines.map((line) => line.productId).filter((value): value is string => !!value))];
+		const userIds = [adjustment.requestedBy, adjustment.approvedBy].filter((value): value is string => !!value);
+		const [products, people] = await Promise.all([
+			this.products.productsById(productIds),
+			this.users.summaries(userIds),
+		]);
+		return {
+			products: Object.fromEntries([...products].map(([key, product]) => [key, { name: product.name, sku: product.sku }])),
+			people: Object.fromEntries([...people].map(([key, person]) => [key, person.name])),
+		};
 	}
 
 	/**
@@ -576,6 +620,13 @@ export class AdjustmentService {
 			// The product master lives in the `product` module: validate the id
 			// before freezing the line (ADR-0014 / ADR-0026).
 			await this.products.assertProduct(input.productId);
+
+			// A bin is a logical reference into the `warehouse` module, and it
+			// must be one of the adjusted warehouse's bins: a balance is keyed by
+			// warehouse and bin, so a foreign bin would open a phantom balance.
+			if (input.binId && !(await this.warehouses.storageInWarehouse(input.binId, warehouseId))) {
+				throw new InventoryReferenceError('storage');
+			}
 
 			// Snapshot the system's current quantity. Not just for audit: showing
 			// the counter what the system believed makes a recount reviewable.

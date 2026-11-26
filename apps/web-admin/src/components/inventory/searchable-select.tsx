@@ -28,6 +28,7 @@ export type TSearchableOption = { value: string; label: string };
  * cascade invalidation, which is the part most likely to be got wrong.
  */
 export function SearchableSelect({
+	id,
 	value,
 	options,
 	loading = false,
@@ -37,6 +38,8 @@ export function SearchableSelect({
 	onSearch,
 	onChange,
 }: {
+	/** Input element id, so a `<label htmlFor>` can point at the control. */
+	id?: string;
 	/** Currently selected option value, or `null` when nothing is selected. */
 	value: string | null;
 	/** Options for the current search term. */
@@ -78,6 +81,7 @@ export function SearchableSelect({
 			disabled={disabled}
 		>
 			<ComboboxInput
+				id={id}
 				placeholder={placeholder}
 				disabled={disabled}
 				showClear

@@ -19,6 +19,7 @@ import { SearchX, ClipboardList } from 'lucide-react';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { formatIdr } from '@/lib/format';
 import { usePermission } from '@/lib/use-permission';
+import { authClient } from '@/lib/auth-client';
 import {
 	adjustmentQueryOptions,
 	transitionAdjustment,
@@ -36,6 +37,11 @@ import {
  */
 export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 	const canSeeCost = usePermission('product.read_cost');
+	// Same permissions the backend guards each transition with.
+	const canWrite = usePermission('stock_adjustment.create');
+	const canApprove = usePermission('stock_adjustment.approve');
+	const canPost = usePermission('stock_adjustment.post');
+	const { data: session } = authClient.useSession();
 	const { t } = useTranslation(['inventory', 'common']);
 	const queryClient = useQueryClient();
 	const { data, isPending, isError, error } = useQuery(
@@ -58,8 +64,18 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 			{
 				id: 'item',
 				header: t('inventory:adjustmentForm.item'),
-				meta: { cellClassName: 'font-mono text-xs' },
-				cell: ({ row }) => row.original.productId,
+				cell: ({ row }) => {
+					const productId = row.original.productId;
+					const product = productId ? data?.names?.products[productId] : undefined;
+					return product ? (
+						<span>
+							{product.name}{' '}
+							<span className='font-mono text-xs text-muted-foreground'>{product.sku}</span>
+						</span>
+					) : (
+						<span className='font-mono text-xs'>{productId ?? '—'}</span>
+					);
+				},
 			},
 			{
 				id: 'qtyBefore',
@@ -108,7 +124,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 			cell: ({ row }) => row.original.note ?? '—',
 		});
 		return base;
-	}, [canSeeCost, t]);
+	}, [canSeeCost, data?.names, t]);
 
 	if (isPending) return <PageSkeleton />;
 
@@ -123,6 +139,9 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 	}
 
 	const { adjustment, lines } = data;
+	const personName = (userId: string | null) =>
+		userId === null ? '—' : (data.names?.people[userId] ?? userId);
+	const ownSubmission = adjustment.requestedBy !== null && adjustment.requestedBy === session?.user.id;
 
 	return (
 		<div className='space-y-4'>
@@ -141,9 +160,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 							<dt className='inline'>
 								{t('inventory:adjustments.requestedBy')}:{' '}
 							</dt>
-							<dd className='inline font-mono'>
-								{adjustment.requestedBy ?? '—'}
-							</dd>
+							<dd className='inline'>{personName(adjustment.requestedBy)}</dd>
 						</div>
 						<div>
 							<dt className='inline'>
@@ -166,9 +183,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 							<dt className='inline'>
 								{t('inventory:adjustments.approvedBy')}:{' '}
 							</dt>
-							<dd className='inline font-mono'>
-								{adjustment.approvedBy ?? '—'}
-							</dd>
+							<dd className='inline'>{personName(adjustment.approvedBy)}</dd>
 						</div>
 						<div>
 							<dt className='inline'>{t('inventory:adjustments.postedAt')}: </dt>
@@ -205,7 +220,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 				 */}
 				<div className='flex shrink-0 flex-col items-end gap-2'>
 					<div className='flex gap-2'>
-					{adjustment.status === 'draft' ? (
+					{adjustment.status === 'draft' && canWrite ? (
 						<>
 							<Button
 								disabled={transition.isPending}
@@ -222,7 +237,7 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 							</Button>
 						</>
 					) : null}
-					{adjustment.status === 'submitted' ? (
+					{adjustment.status === 'submitted' && canApprove ? (
 						<>
 							<Button
 								disabled={transition.isPending}
@@ -239,12 +254,15 @@ export function AdjustmentDetail({ adjustmentId }: { adjustmentId: string }) {
 							</Button>
 						</>
 					) : null}
-					{adjustment.status === 'submitted' ? (
+					{/* Holders of the approve permission may approve their own
+					    adjustment (documented bypass in AdjustmentService), so the
+					    hint is only for a requester who cannot. */}
+					{adjustment.status === 'submitted' && ownSubmission && !canApprove ? (
 						<p className='max-w-xs text-right text-xs text-muted-foreground'>
 							{t('inventory:adjustmentActions.selfApprovalBlocked')}
 						</p>
 					) : null}
-					{adjustment.status === 'approved' ? (
+					{adjustment.status === 'approved' && canPost ? (
 						<Button
 							disabled={transition.isPending}
 							onClick={() => transition.mutate('post')}

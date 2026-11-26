@@ -530,6 +530,9 @@ export function installStockDoubles(): void {
 			createNumberingDouble(),
 			new AuditWriterDouble(),
 			database,
+			// Names are presentation only; the authorization suites do not read them.
+			{ summaries: async () => new Map() },
+			{ storageInWarehouse: async () => true },
 		),
 	});
 }
