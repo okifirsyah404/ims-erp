@@ -165,6 +165,13 @@ re-squashed 2026-11-24).** History, kept honest:
   `add_gallery_images` `INSERT … SELECT` backfill (both were data-only, both
   remain in git history). A database migrated by the 33-folder chain cannot be
   upgraded in place; rebuild it with `bun run drizzle:migrate-reset`.
+- 2026-11-26 (ERP-0166): `20261126101626_erp0166_stocks_nulls_not_distinct` is
+  **hand-written** (`drizzle-kit generate --custom`): it rebuilds the two
+  `inventory.stocks` scope indexes `NULLS NOT DISTINCT`, which drizzle-orm
+  cannot declare on a partial unique index. A schema-only regeneration or a
+  future squash would silently drop it — carry its SQL into the inventory
+  baseline, and check `pg_indexes` afterwards. Verified on a throwaway
+  database: full chain applied, both indexes `NULLS NOT DISTINCT`.
 
 Local reset recipe (also used for the reset tooling):
 

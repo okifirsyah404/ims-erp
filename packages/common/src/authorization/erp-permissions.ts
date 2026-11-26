@@ -117,7 +117,7 @@ export const erpStatements = {
 	cash_bank: ['read', 'create', 'update', 'reconcile', 'export'],
 	chart_of_account: ['read', 'create', 'update', 'archive'],
 	journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
-	accounting_period: ['read', 'close', 'reopen'],
+	accounting_period: ['read', 'create', 'close', 'reopen'],
 	/** Account determination for business-event postings (ERP-0128). */
 	posting_rule: ['read', 'update'],
 	/** Cost-centre master data (ERP-0127). */
@@ -789,7 +789,7 @@ export const erpRoleGrants: Record<ErpRoleName, ErpPermissionRequest> = {
 		master_data: ['read'],
 		chart_of_account: ['read', 'create', 'update', 'archive'],
 		journal: ['read', 'create', 'update', 'submit', 'approve', 'post', 'reverse', 'export'],
-		accounting_period: ['read', 'close', 'reopen'],
+		accounting_period: ['read', 'create', 'close', 'reopen'],
 		posting_rule: ['read', 'update'],
 		cost_center: ['read', 'create', 'update', 'archive'],
 		credit_memo: ['read', 'apply', 'void'],

@@ -45,7 +45,8 @@ const receiptLine = (id: string, productId: string, quantity: string, unitCost: 
 		quantity,
 		unitCost,
 		serialNumbers: serials,
-		movementId: null,
+		// The receipt posted a movement for a stock line; a non-stock line has none.
+		movementId: `mv-${id}`,
 	}) as TGoodsReceiptItemSelect;
 
 class FakeReturns implements IPurchaseReturnRepository {
@@ -115,6 +116,7 @@ let events: string[];
 let service: PurchaseReturnService;
 let receiptWarehouse: string | null;
 let orderSupplier: string | null;
+let receiptLines: TGoodsReceiptItemSelect[];
 
 beforeEach(() => {
 	receiptWarehouse = WAREHOUSE;
@@ -127,7 +129,7 @@ beforeEach(() => {
 	returnedUnits = [];
 	documents = [];
 	events = [];
-	const lines = [receiptLine(CABLE_LINE, CABLE, '10.000', 5_000_00, null), receiptLine(READER_LINE, READER, '3.000', 1_200_000_00, ['SN-1', 'SN-2', 'SN-3'])];
+	receiptLines = [receiptLine(CABLE_LINE, CABLE, '10.000', 5_000_00, null), receiptLine(READER_LINE, READER, '3.000', 1_200_000_00, ['SN-1', 'SN-2', 'SN-3'])];
 	service = new PurchaseReturnService(
 		returns,
 		{
@@ -140,7 +142,7 @@ beforeEach(() => {
 					: null;
 			},
 			async findItems() {
-				return lines;
+				return receiptLines;
 			},
 		},
 		{
@@ -330,6 +332,15 @@ describe('shipping a purchase return', () => {
 			'purchase_return.updated:approved',
 			'purchase_return.updated:shipped',
 		]);
+	});
+
+	test('a line whose receipt posted no movement (non-stock) moves no stock back', async () => {
+		receiptLines[0] = { ...receiptLines[0]!, movementId: null };
+		const row = await approved([{ goodsReceiptItemId: CABLE_LINE, quantity: '2' }]);
+		const shipped = await service.ship({ userId: 'user-warehouse', organizationId: 'org-1' }, row.id);
+		expect(shipped.status).toBe('shipped');
+		expect(movements).toEqual([]);
+		expect(unreceived).toEqual([{ purchaseOrderItemId: `${CABLE_LINE}-po`, quantity: '2' }]);
 	});
 
 	test('fails when a serial left stock after approval', async () => {

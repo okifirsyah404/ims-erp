@@ -162,6 +162,7 @@ const nav = {
 	'item.taxPph21': 'PPh 21 tables',
 	'item.fixedAssets': 'Fixed assets',
 	'item.projectBudgets': 'Project budgets',
+	'item.termTemplates': 'Term Templates',
 } as const;
 
 export default nav;

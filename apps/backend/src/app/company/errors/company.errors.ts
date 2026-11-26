@@ -20,3 +20,10 @@ export class CompanySettingInvalidError extends AppError {
 		super(422, 'company.settingInvalid', `Value is not a valid ${valueType}`);
 	}
 }
+
+/** No live letterhead with this id (ERP-0165). */
+export class LetterheadNotFoundError extends AppError {
+	constructor() {
+		super(404, 'company.letterheadNotFound', 'Letterhead not found');
+	}
+}

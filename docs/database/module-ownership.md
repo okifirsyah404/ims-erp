@@ -39,14 +39,14 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 |---|---|---|---|---|
 | 1 | Identity | `auth` | 11 | 9 |
 | 2 | Location | `location` | 4 | 3 |
-| 3 | Company | `company` | 4 | 0 |
+| 3 | Company | `company` | 5 | 0 |
 | 4 | Customer | `customer` | 6 | 4 |
 | 5 | Supplier | `supplier` | 6 | 3 |
 | 6 | Product | `product` | 6 | 4 |
 | 7 | Warehouse | `warehouse` | 9 | 6 |
 | 8 | Inventory | `inventory` | 21 | 17 |
 | 9 | Sale | `sale` | 18 | 20 |
-| 10 | Procurement | `procurement` | 9 | 11 |
+| 10 | Procurement | `procurement` | 10 | 11 |
 | 11 | Finance | `finance` | 30 | 27 |
 | 12 | Tax | `tax` | 5 | 3 |
 | 13 | Payment | `payment` | 5 | 2 |
@@ -57,7 +57,7 @@ parsing it (`@dbml/core` 11.0.0, transient, outside the repo).
 | 18 | Notification | `notification` | 2 | 1 |
 | 19 | Audit | `audit` | 1 | 0 |
 | 20 | Automation | `automation` | 4 | 2 |
-| | **Total** | **20 schemas** | **199** | **160** |
+| | **Total** | **20 schemas** | **201** | **160** |
 
 The `webhook` module (ADR-0024 Q38) has **no schema and no tables**: it owns
 the inbound provider HTTP edge and hands every call to `payment` or
@@ -102,11 +102,14 @@ no central code-number module.
 ### 3. Company - `company`
 
 - **Owns** the one legal company (ADR-0011): `profiles`, `addresses`,
-  `contacts`, `settings`. Company-wide, no `organization_id`.
+  `contacts`, `settings`, and the uploaded letterhead (kop surat) templates
+  `letterheads` (ERP-0165). Company-wide, no `organization_id`.
 - `profiles.document_code` feeds the `{COMPANY}` numbering token.
 - Bank accounts are **not** here any more: `finance.cash_bank_accounts`.
 - **Contract**: `ExportedCompanyService` (`getLetterhead`, `getDocumentCode`,
-  `requireDocumentCode`, `getDisplayName`).
+  `requireDocumentCode`, `getDisplayName`, `assertLetterhead` before a
+  document references a letterhead, `getLetterheadForPrint` for the images a
+  print uses - the picked one even when deleted since, else the default).
 
 ### 4. Customer - `customer` (was `crm`)
 
@@ -191,9 +194,12 @@ no central code-number module.
 ### 10. Procurement - `procurement`
 
 - **Owns** purchase requests, purchase orders, goods receipts, purchase
-  returns, each with items. The supplier master is `supplier`.
-- **Contract**: consumes `ExportedSupplierService`; offers PO/receipt reads to
-  `finance` (supplier bills) through its services.
+  returns, each with items, and the purchase term templates
+  (`purchase_term_templates`, ERP-0165). The supplier master is `supplier`.
+- **Contract**: consumes `ExportedSupplierService` and, for
+  `purchase_orders.letterhead_id`, `ExportedCompanyService.assertLetterhead` /
+  `getLetterheadForPrint`; offers PO/receipt reads to `finance` (supplier
+  bills) through its services.
 
 ### 11. Finance - `finance` (absorbs `accounting`)
 

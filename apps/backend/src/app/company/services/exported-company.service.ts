@@ -1,18 +1,23 @@
 import type { TTx } from '@drizzle/types';
+import { documentImageUrl } from '@providers/s3/document-image';
+import { type IObjectStorage, OBJECT_STORAGE_TOKEN } from '@providers/s3/object-storage';
 import { inject, injectable } from 'tsyringe';
 import {
 	COMPANY_ADDRESS_REPOSITORY_TOKEN,
 	COMPANY_CONTACT_REPOSITORY_TOKEN,
 	COMPANY_PROFILE_REPOSITORY_TOKEN,
+	LETTERHEAD_REPOSITORY_TOKEN,
 } from '../constants/di';
 import type { TCompanyProfileSnapshot } from '../contracts/company.contract';
 import type {
 	ICompanyAddressRepository,
 	ICompanyContactRepository,
 	ICompanyProfileRepository,
+	ILetterheadRepository,
 	TCompanyProfileRecord,
 } from '../contracts/company.repository.interface';
-import { CompanyProfileRequiredError } from '../errors/company.errors';
+import type { TLetterheadPrint } from '../contracts/letterhead.contract';
+import { CompanyProfileRequiredError, LetterheadNotFoundError } from '../errors/company.errors';
 import { toSnapshot } from '../utils/profile-mapper';
 
 /**
@@ -34,6 +39,10 @@ export class ExportedCompanyService {
 		private readonly addresses: ICompanyAddressRepository,
 		@inject(COMPANY_CONTACT_REPOSITORY_TOKEN)
 		private readonly contacts: ICompanyContactRepository,
+		@inject(LETTERHEAD_REPOSITORY_TOKEN)
+		private readonly letterheads: ILetterheadRepository,
+		@inject(OBJECT_STORAGE_TOKEN)
+		private readonly storage: Pick<IObjectStorage, 'presignGet'>,
 	) {}
 
 	private async record(tx?: TTx): Promise<TCompanyProfileRecord | null> {
@@ -73,5 +82,30 @@ export class ExportedCompanyService {
 	async getDisplayName(): Promise<string | null> {
 		const profile = await this.profiles.find();
 		return profile ? (profile.tradingName ?? profile.legalName) : null;
+	}
+
+	/**
+	 * Checks a letterhead a document is about to reference (ERP-0165).
+	 *
+	 * @throws {LetterheadNotFoundError} No live letterhead with this id
+	 */
+	async assertLetterhead(id: string): Promise<void> {
+		if (!(await this.letterheads.findLive(id))) throw new LetterheadNotFoundError();
+	}
+
+	/**
+	 * The letterhead a document prints with: the one it picked (even when it
+	 * was deleted since), else the live default, else `null` (the generated
+	 * header). Image URLs are short-lived inline links.
+	 */
+	async getLetterheadForPrint(id: string | null): Promise<TLetterheadPrint | null> {
+		const row = (id ? await this.letterheads.findAny(id) : null) ?? (await this.letterheads.findDefault());
+		if (!row) return null;
+		return {
+			id: row.id,
+			name: row.name,
+			headerUrl: documentImageUrl(this.storage, row.headerObjectKey),
+			footerUrl: documentImageUrl(this.storage, row.footerObjectKey),
+		};
 	}
 }

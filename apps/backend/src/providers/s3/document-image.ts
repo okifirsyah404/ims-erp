@@ -13,12 +13,12 @@ export const MAX_DOCUMENT_IMAGE_MB = 2;
 
 /** Not a decodable image, or too large. */
 export class DocumentImageInvalidError extends AppError {
-	constructor() {
+	constructor(max: number = MAX_DOCUMENT_IMAGE_MB) {
 		super(
 			422,
 			'common.imageInvalid',
 			'Upload a PNG, JPG, WebP or HEIC image',
-			{ max: MAX_DOCUMENT_IMAGE_MB },
+			{ max },
 		);
 	}
 }
@@ -31,15 +31,14 @@ export class DocumentImageInvalidError extends AppError {
  * bytes in {@link storeDocumentImage}, because the multipart `Content-Type` is
  * client-supplied.
  */
-export function documentImageFrom(body: unknown): File {
+export function documentImageFrom(
+	body: unknown,
+	{ field = 'file', maxMb = MAX_DOCUMENT_IMAGE_MB }: { field?: string; maxMb?: number } = {},
+): File {
 	const file =
-		body && typeof body === 'object' ? (body as { file?: unknown }).file : undefined;
-	if (
-		!(file instanceof File) ||
-		file.size === 0 ||
-		file.size > MAX_DOCUMENT_IMAGE_MB * 1024 * 1024
-	) {
-		throw new DocumentImageInvalidError();
+		body && typeof body === 'object' ? (body as Record<string, unknown>)[field] : undefined;
+	if (!(file instanceof File) || file.size === 0 || file.size > maxMb * 1024 * 1024) {
+		throw new DocumentImageInvalidError(maxMb);
 	}
 	return file;
 }
@@ -53,10 +52,12 @@ export async function storeDocumentImage(
 	storage: IObjectStorage,
 	prefix: string,
 	file: File,
+	/** Longest side in pixels; a letterhead spans the page, so it keeps more than a logo. */
+	{ maxSize }: { maxSize?: number } = {},
 ): Promise<string> {
 	let webp: Buffer;
 	try {
-		webp = await toWebp(await fileBytes(file));
+		webp = await toWebp(await fileBytes(file), maxSize ? { maxSize } : undefined);
 	} catch (error) {
 		if (error instanceof UnsupportedImageError) throw new DocumentImageInvalidError();
 		throw error;

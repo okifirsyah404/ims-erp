@@ -112,6 +112,7 @@ import { Route as AuthedProcurementReceiptsReceiptIdRouteImport } from './routes
 import { Route as AuthedProcurementReceiptsNewRouteImport } from './routes/_authed/procurement/receipts/new'
 import { Route as AuthedProcurementSuppliersIndexRouteImport } from './routes/_authed/procurement/suppliers/index'
 import { Route as AuthedProcurementSuppliersSupplierIdRouteImport } from './routes/_authed/procurement/suppliers/$supplierId'
+import { Route as AuthedProcurementTermTemplatesIndexRouteImport } from './routes/_authed/procurement/term-templates/index'
 import { Route as AuthedProductsProductIdIndexRouteImport } from './routes/_authed/products/$productId/index'
 import { Route as AuthedProductsProductIdEditRouteImport } from './routes/_authed/products/$productId/edit'
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
@@ -754,6 +755,12 @@ const AuthedProcurementSuppliersSupplierIdRoute =
     path: '/procurement/suppliers/$supplierId',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProcurementTermTemplatesIndexRoute =
+  AuthedProcurementTermTemplatesIndexRouteImport.update({
+    id: '/procurement/term-templates/',
+    path: '/procurement/term-templates/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProductsProductIdIndexRoute =
   AuthedProductsProductIdIndexRouteImport.update({
     id: '/products/$productId/',
@@ -1256,6 +1263,7 @@ export interface FileRoutesByFullPath {
   '/procurement/purchase-returns/': typeof AuthedProcurementPurchaseReturnsIndexRoute
   '/procurement/receipts/': typeof AuthedProcurementReceiptsIndexRoute
   '/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
+  '/procurement/term-templates/': typeof AuthedProcurementTermTemplatesIndexRoute
   '/products/$productId/': typeof AuthedProductsProductIdIndexRoute
   '/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
   '/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
@@ -1426,6 +1434,7 @@ export interface FileRoutesByTo {
   '/procurement/purchase-returns': typeof AuthedProcurementPurchaseReturnsIndexRoute
   '/procurement/receipts': typeof AuthedProcurementReceiptsIndexRoute
   '/procurement/suppliers': typeof AuthedProcurementSuppliersIndexRoute
+  '/procurement/term-templates': typeof AuthedProcurementTermTemplatesIndexRoute
   '/products/$productId': typeof AuthedProductsProductIdIndexRoute
   '/projects/$projectId': typeof AuthedProjectsProjectIdIndexRoute
   '/reports/monthly-archives': typeof AuthedReportsMonthlyArchivesIndexRoute
@@ -1598,6 +1607,7 @@ export interface FileRoutesById {
   '/_authed/procurement/purchase-returns/': typeof AuthedProcurementPurchaseReturnsIndexRoute
   '/_authed/procurement/receipts/': typeof AuthedProcurementReceiptsIndexRoute
   '/_authed/procurement/suppliers/': typeof AuthedProcurementSuppliersIndexRoute
+  '/_authed/procurement/term-templates/': typeof AuthedProcurementTermTemplatesIndexRoute
   '/_authed/products/$productId/': typeof AuthedProductsProductIdIndexRoute
   '/_authed/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
   '/_authed/reports/monthly-archives/': typeof AuthedReportsMonthlyArchivesIndexRoute
@@ -1770,6 +1780,7 @@ export interface FileRouteTypes {
     | '/procurement/purchase-returns/'
     | '/procurement/receipts/'
     | '/procurement/suppliers/'
+    | '/procurement/term-templates/'
     | '/products/$productId/'
     | '/projects/$projectId/'
     | '/reports/monthly-archives/'
@@ -1940,6 +1951,7 @@ export interface FileRouteTypes {
     | '/procurement/purchase-returns'
     | '/procurement/receipts'
     | '/procurement/suppliers'
+    | '/procurement/term-templates'
     | '/products/$productId'
     | '/projects/$projectId'
     | '/reports/monthly-archives'
@@ -2111,6 +2123,7 @@ export interface FileRouteTypes {
     | '/_authed/procurement/purchase-returns/'
     | '/_authed/procurement/receipts/'
     | '/_authed/procurement/suppliers/'
+    | '/_authed/procurement/term-templates/'
     | '/_authed/products/$productId/'
     | '/_authed/projects/$projectId/'
     | '/_authed/reports/monthly-archives/'
@@ -2906,6 +2919,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProcurementSuppliersSupplierIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/procurement/term-templates/': {
+      id: '/_authed/procurement/term-templates/'
+      path: '/procurement/term-templates'
+      fullPath: '/procurement/term-templates/'
+      preLoaderRoute: typeof AuthedProcurementTermTemplatesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/products/$productId/': {
       id: '/_authed/products/$productId/'
       path: '/products/$productId'
@@ -3517,6 +3537,7 @@ interface AuthedRouteChildren {
   AuthedProcurementPurchaseReturnsIndexRoute: typeof AuthedProcurementPurchaseReturnsIndexRoute
   AuthedProcurementReceiptsIndexRoute: typeof AuthedProcurementReceiptsIndexRoute
   AuthedProcurementSuppliersIndexRoute: typeof AuthedProcurementSuppliersIndexRoute
+  AuthedProcurementTermTemplatesIndexRoute: typeof AuthedProcurementTermTemplatesIndexRoute
   AuthedProductsProductIdIndexRoute: typeof AuthedProductsProductIdIndexRoute
   AuthedProjectsProjectIdIndexRoute: typeof AuthedProjectsProjectIdIndexRoute
   AuthedReportsMonthlyArchivesIndexRoute: typeof AuthedReportsMonthlyArchivesIndexRoute
@@ -3691,6 +3712,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
     AuthedProcurementPurchaseReturnsIndexRoute,
   AuthedProcurementReceiptsIndexRoute: AuthedProcurementReceiptsIndexRoute,
   AuthedProcurementSuppliersIndexRoute: AuthedProcurementSuppliersIndexRoute,
+  AuthedProcurementTermTemplatesIndexRoute:
+    AuthedProcurementTermTemplatesIndexRoute,
   AuthedProductsProductIdIndexRoute: AuthedProductsProductIdIndexRoute,
   AuthedProjectsProjectIdIndexRoute: AuthedProjectsProjectIdIndexRoute,
   AuthedReportsMonthlyArchivesIndexRoute:

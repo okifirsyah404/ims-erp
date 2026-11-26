@@ -5,3 +5,4 @@ export * from './authorization/erp-permissions.js';
 export * from './hr/employment.js';
 export * from './files/invite-sheet.js';
 
+export * from './procurement/po-placeholders.js';

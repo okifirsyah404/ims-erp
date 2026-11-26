@@ -155,7 +155,18 @@ function build() {
 	const contacts = new FakeContacts();
 	const settings = new FakeSettings();
 	const service = new CompanyService(profiles, addresses, contacts, settings, storage, transactions);
-	const exported = new ExportedCompanyService(profiles, addresses, contacts);
+	const letterheads = {
+		findAll: async () => [],
+		findLive: async () => null,
+		findAny: async () => null,
+		findDefault: async () => null,
+		create: async () => {
+			throw new Error('not used');
+		},
+		update: async () => null,
+		softDelete: async () => false,
+	};
+	const exported = new ExportedCompanyService(profiles, addresses, contacts, letterheads, storage);
 	return { profiles, addresses, contacts, settings, service, exported };
 }
 

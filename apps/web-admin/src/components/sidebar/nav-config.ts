@@ -471,6 +471,12 @@ export const navSections: {
 						url: '/procurement/purchase-orders',
 						permission: 'purchase_order.read',
 					},
+					// ERP-0165: payment terms, purchase terms and notes reused by POs.
+					{
+						titleKey: 'item.termTemplates',
+						url: '/procurement/term-templates',
+						permission: 'purchase_order.read',
+					},
 					// Same grant as `GET /goods-receipts` (ERP-0068: the leaf had none, so
 					// the route guard refused the BPB pages to everyone).
 					{

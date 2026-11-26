@@ -112,6 +112,7 @@ const LABELS: Record<string, NavKey> = {
 	'/procurement/purchase-requests/$purchaseRequestId/edit': 'breadcrumb.quotationEdit',
 	'/procurement/purchase-orders': 'item.purchaseOrders',
 	'/procurement/purchase-orders/new': 'breadcrumb.purchaseOrderNew',
+	'/procurement/term-templates': 'item.termTemplates',
 	'/procurement/receipts': 'item.goodsReceipts',
 	'/procurement/receipts/new': 'breadcrumb.goodsReceiptNew',
 	'/procurement/purchase-returns': 'item.purchaseReturns',

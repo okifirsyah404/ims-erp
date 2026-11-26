@@ -8,6 +8,8 @@ import { PROCUREMENT_NUMBERING_SERVICE_TOKEN } from '../constants/di';
 import type { ProcurementNumberingService } from './procurement-numbering.service';
 import { DOCUMENT_SERVICE_TOKEN } from '@app/document/constants/di';
 import type { DocumentService } from '@app/document';
+import { EXPORTED_COMPANY_SERVICE_TOKEN } from '@app/company/constants/di';
+import type { ExportedCompanyService, TLetterheadPrint } from '@app/company';
 import { EXPORTED_SUPPLIER_SERVICE_TOKEN } from '@app/supplier';
 import type { ExportedSupplierService } from '@app/supplier';
 import type { TSupplierCompanySelect, TSupplierSelect } from '@drizzle/schemas/supplier.schema';
@@ -44,11 +46,14 @@ import {
 	PurchaseOrderProjectError,
 } from '../errors/procurement.errors';
 import { computePoTotals, DEFAULT_PO_VAT_RATE_BPS, poLineTotal } from '../utils/po-totals';
+import { assertTermPlaceholders } from '../utils/term-placeholders';
 
 export type TPurchaseOrderDetail = TPurchaseOrderSelect & {
 	items: (TPurchaseOrderItemSelect & { purchaseRequestId: string | null; purchaseRequestCode: string | null })[];
 	/** Tax base (DPP), derived for `included`. */
 	taxBase: number;
+	/** ERP-0165: the letterhead it prints with (its own, else the default); `null` prints the generated header. */
+	letterhead: TLetterheadPrint | null;
 };
 
 function snapshotOf(supplier: TSupplierCompanySelect, pic: TSupplierSelect | null, address: string | null): TPoSupplierSnapshot {
@@ -100,6 +105,9 @@ export class PurchaseOrderService {
 		private readonly projects?: Pick<ProjectLookupService, 'getProject'>,
 		@inject(PROJECT_BUDGET_SERVICE_TOKEN)
 		private readonly budgets?: Pick<ProjectBudgetService, 'check'>,
+		/** ERP-0165: letterhead validation and the letterhead a print uses; optional for older tests. */
+		@inject(EXPORTED_COMPANY_SERVICE_TOKEN)
+		private readonly company?: Pick<ExportedCompanyService, 'assertLetterhead' | 'getLetterheadForPrint'>,
 	) {}
 
 	private async assertProject(projectId: string | null): Promise<string | null> {
@@ -115,6 +123,8 @@ export class PurchaseOrderService {
 	}
 
 	private async build(body: TPurchaseOrderBody): Promise<{ header: TPurchaseOrderHeaderData; items: TPurchaseOrderItemData[] }> {
+		assertTermPlaceholders([body.paymentTerms, body.terms, body.notes]);
+		if (body.letterheadId && this.company) await this.company.assertLetterhead(body.letterheadId);
 		const supplier = await this.suppliers.assertActiveCompany(body.supplierCompanyId);
 		if (supplier.status !== 'active') throw new PurchaseOrderSupplierUnavailableError();
 		const pic = body.supplierPicId ? await this.suppliers.findPerson(body.supplierPicId) : null;
@@ -162,6 +172,7 @@ export class PurchaseOrderService {
 				paymentTerms: body.paymentTerms,
 				terms: body.terms,
 				notes: body.notes,
+				letterheadId: body.letterheadId,
 			},
 			items,
 		};
@@ -173,7 +184,11 @@ export class PurchaseOrderService {
 
 	async get(id: string): Promise<TPurchaseOrderDetail> {
 		const order = await this.require(id);
-		const [items, requests] = await Promise.all([this.orders.findItems(id), this.orders.findItemRequests(id)]);
+		const [items, requests, letterhead] = await Promise.all([
+			this.orders.findItems(id),
+			this.orders.findItemRequests(id),
+			this.company?.getLetterheadForPrint(order.letterheadId) ?? null,
+		]);
 		const byLine = new Map(requests.map((request) => [request.purchaseOrderItemId, request]));
 		const { taxBase } = computePoTotals(items.map((item) => item.lineTotal), order.vatMode, order.vatRateBps);
 		return {
@@ -184,6 +199,7 @@ export class PurchaseOrderService {
 				purchaseRequestCode: byLine.get(item.id)?.purchaseRequestCode ?? null,
 			})),
 			taxBase,
+			letterhead,
 		};
 	}
 

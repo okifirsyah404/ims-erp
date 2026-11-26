@@ -77,6 +77,8 @@ export type TPurchaseOrder = {
 	paymentTerms: string | null;
 	terms: string | null;
 	notes: string | null;
+	/** ERP-0165: the letterhead (kop surat) it prints with; `null` uses the default. */
+	letterheadId?: string | null;
 	rejectionReason: string | null;
 	cancelledReason: string | null;
 	createdBy: string | null;
@@ -100,7 +102,15 @@ export type TPurchaseOrderItem = {
 	purchaseRequestCode: string | null;
 };
 
-export type TPurchaseOrderDetail = TPurchaseOrder & { items: TPurchaseOrderItem[]; taxBase: number };
+/** ERP-0165: the letterhead images a print uses (the order's own, else the default). */
+export type TPrintLetterhead = { id: string; name: string; headerUrl: string | null; footerUrl: string | null };
+
+export type TPurchaseOrderDetail = TPurchaseOrder & {
+	items: TPurchaseOrderItem[];
+	taxBase: number;
+	/** `null`: no letterhead uploaded, the generated header prints. */
+	letterhead?: TPrintLetterhead | null;
+};
 
 export type TPurchaseOrderInput = {
 	supplierCompanyId: string;
@@ -119,6 +129,7 @@ export type TPurchaseOrderInput = {
 	paymentTerms: string | null;
 	terms: string | null;
 	notes: string | null;
+	letterheadId: string | null;
 	lines: {
 		productId: string;
 		quantity: string;
@@ -336,3 +347,32 @@ export function previewPoTotals(lineTotals: number[], vatMode: TPoVatMode, vatRa
 	const taxBase = Math.round((subtotal * 10_000) / (10_000 + vatRateBps));
 	return { subtotal, taxTotal: subtotal - taxBase, grandTotal: subtotal };
 }
+
+/* ------------------------ purchase term templates ------------------------ */
+
+/** ERP-0165: reusable payment terms, purchase terms and notes; the text may hold `{{placeholders}}`. */
+export type TPurchaseTermTemplate = {
+	id: string;
+	name: string;
+	paymentTerms: string | null;
+	terms: string | null;
+	notes: string | null;
+	isDefault: boolean;
+	updatedAt: string;
+};
+
+export type TPurchaseTermTemplateInput = Pick<TPurchaseTermTemplate, 'name' | 'paymentTerms' | 'terms' | 'notes' | 'isDefault'>;
+
+export function purchaseTermTemplatesQueryOptions(enabled = true) {
+	return queryOptions({
+		queryKey: ['procurement', 'purchase-term-templates'] as const,
+		queryFn: async () => (await request<TPurchaseTermTemplate[]>('/procurement/purchase-term-templates')).data as TPurchaseTermTemplate[],
+		enabled,
+	});
+}
+
+export const createPurchaseTermTemplate = (input: TPurchaseTermTemplateInput) =>
+	send<TPurchaseTermTemplate>('/procurement/purchase-term-templates', 'POST', input);
+export const updatePurchaseTermTemplate = (id: string, input: TPurchaseTermTemplateInput) =>
+	send<TPurchaseTermTemplate>(`/procurement/purchase-term-templates/${id}`, 'PUT', input);
+export const deletePurchaseTermTemplate = (id: string) => send<null>(`/procurement/purchase-term-templates/${id}`, 'DELETE');

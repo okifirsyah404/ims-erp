@@ -158,6 +158,7 @@ const nav_: Record<keyof typeof nav, string> = {
 	'item.taxPph21': 'Tabel PPh 21',
 	'item.fixedAssets': 'Aset tetap',
 	'item.projectBudgets': 'Anggaran proyek',
+	'item.termTemplates': 'Template Syarat',
 };
 
 export default nav_;

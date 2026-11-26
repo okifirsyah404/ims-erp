@@ -261,6 +261,10 @@ export class GoodsReceiptService {
 			);
 			for (const [index, row] of items.entries()) {
 				const { poItem, productId, item, serials } = lines[index]!;
+				// A non-stock product (a licence, a service) is received against the
+				// PO but never enters a warehouse: no movement, no balance, and no
+				// inventory journal line below, like a delivery note's non-stock lines.
+				if (!item.isStockTracked) continue;
 				const posted = await this.stock.postMovement(
 					{
 						actorOrganizationId: actor.organizationId,

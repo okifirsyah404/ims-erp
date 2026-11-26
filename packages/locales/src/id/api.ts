@@ -276,6 +276,7 @@ const api: Record<keyof typeof en, string> = {
 	'organization.notFound': 'Organisasi tidak ditemukan',
 	'company.profileRequired':
 		'Lengkapi profil perusahaan (beserta kode dokumen) terlebih dahulu',
+	'company.letterheadNotFound': 'Kop surat tidak ditemukan',
 	'supplier.bankForbidden': 'Anda tidak boleh melihat atau mengubah data bank pemasok',
 	'company.settingInvalid': 'Nilai tidak sesuai dengan tipenya',
 	'numbering.unknownCodeType': 'Jenis kode tidak dikenal',
@@ -707,6 +708,8 @@ const api: Record<keyof typeof en, string> = {
 	'accounting.budget.duplicateLine': 'Satu akun muncul dua kali di bulan yang sama',
 	'accounting.budgetExceeded': 'Ini akan melampaui anggaran proyek (tersisa Rp {{available}})',
 	'procurement.order.projectInvalid': 'Proyek tidak ditemukan',
+	'procurement.termPlaceholder': 'Placeholder tidak dikenal atau salah tulis: {{placeholders}}',
+	'procurement.termTemplateNotFound': 'Template syarat pembelian tidak ditemukan',
 };
 
 export default api;

@@ -20,6 +20,7 @@ import { seedOrganizationMembers } from './seed/organization-members.seeder';
 import { seedOrganizationRoles } from './seed/organization-roles.seeder';
 import { seedCompany } from './seed/company.seeder';
 import { seedLeaveTypes } from './seed/hr-leave-types.seeder';
+import { seedPurchaseTermTemplates } from './seed/procurement-term-templates.seeder';
 import { seedHrEmployees } from './seed/hr.seeder';
 import { seedHrSchedules } from './seed/hr-schedules.seeder';
 import { seedHrSalaries } from './seed/hr-salaries.seeder';
@@ -94,6 +95,8 @@ export async function runSeeders(): Promise<void> {
 	await seedPortalDemo();
 	// M08 leave types are reference rows the attendance/leave records depend on.
 	await seedLeaveTypes();
+	// ERP-0165: starter purchase term templates (reference rows, every environment).
+	await seedPurchaseTermTemplates();
 	// Notification templates are reference rows (every environment); the demo
 	// rows that reference them are dev-only and need the seed admin, which
 	// `seedAuth` created above.

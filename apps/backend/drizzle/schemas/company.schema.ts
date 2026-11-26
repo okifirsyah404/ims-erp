@@ -228,6 +228,41 @@ export const companySettings = companySchema.table(
 	],
 );
 
+/* ------------------------------------------------------------------------ *
+ * company.letterheads
+ * ------------------------------------------------------------------------ */
+
+/**
+ * Uploaded letterhead (kop surat) templates, company-wide (ERP-0165).
+ *
+ * @remarks
+ * A document picks one (`procurement.purchase_orders.letterhead_id`). A
+ * soft-deleted letterhead keeps its images, so a document that used it still
+ * prints. Every upload gets a fresh object key. At most one live default.
+ */
+export const letterheads = companySchema.table(
+	'letterheads',
+	{
+		id: uuid('id')
+			.primaryKey()
+			.default(sql`uuidv7()`),
+		name: varchar('name', { length: 100 }).notNull(),
+		/** Object-storage key of the header image printed across the top (WebP). */
+		headerObjectKey: text('header_object_key').notNull(),
+		/** Object-storage key of the optional footer image printed on every page (WebP). */
+		footerObjectKey: text('footer_object_key'),
+		isDefault: boolean('is_default').notNull().default(false),
+		/** Logical reference to auth.users.id — cross-module FK omitted. */
+		updatedBy: text('updated_by'),
+		...timestamps,
+	},
+	(table) => [
+		uniqueIndex('letterheads_default_uq')
+			.on(table.isDefault)
+			.where(sql`deleted_at IS NULL AND is_default`),
+	],
+);
+
 export type TCompanyProfileSelect = typeof companyProfiles.$inferSelect;
 export type TCompanyProfileInsert = typeof companyProfiles.$inferInsert;
 export type TCompanyAddressSelect = typeof companyAddresses.$inferSelect;
@@ -236,3 +271,5 @@ export type TContactSelect = typeof contacts.$inferSelect;
 export type TContactInsert = typeof contacts.$inferInsert;
 export type TCompanySettingSelect = typeof companySettings.$inferSelect;
 export type TCompanySettingInsert = typeof companySettings.$inferInsert;
+export type TLetterheadSelect = typeof letterheads.$inferSelect;
+export type TLetterheadInsert = typeof letterheads.$inferInsert;

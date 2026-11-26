@@ -159,3 +159,19 @@ export class PurchaseOrderProjectError extends AppError {
 		super(422, 'procurement.order.projectInvalid', 'The project does not exist');
 	}
 }
+
+/** Terms or notes hold an unknown or malformed `{{placeholder}}` (ERP-0165). */
+export class PurchaseTermPlaceholderError extends AppError {
+	constructor(placeholders: string[]) {
+		super(422, 'procurement.termPlaceholder', `Unknown placeholder: ${placeholders.join(', ')}`, {
+			placeholders: placeholders.join(', '),
+		});
+	}
+}
+
+/** No live purchase term template with this id (ERP-0165). */
+export class PurchaseTermTemplateNotFoundError extends AppError {
+	constructor() {
+		super(404, 'procurement.termTemplateNotFound', 'Purchase term template not found');
+	}
+}

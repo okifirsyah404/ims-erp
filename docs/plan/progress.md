@@ -12,6 +12,120 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-26 - procurement → warehouse re-check; PO document templates (ERP-0165..ERP-0168)
+
+**Scope.** The user asked to re-check the flow from a purchase order until the
+goods are recorded in the warehouse, and to generate the PO document like their
+sample (`PO_01_Hardware_CV_IMS_ke_PT_HIT_TTD.pdf`) with dynamic terms and notes
+and an uploadable letterhead. The print layout itself already existed
+(ERP-0044); what was missing was the letterhead upload and reusable terms.
+
+**Design gate.** Read `docs.dbml` (Company, Procurement, Inventory, Finance
+periods), `module-ownership.md`, `integrity-and-consistency.md` (soft delete,
+partial unique indexes); skipped `implementation-phases.md` (history only).
+`grill-me` delegates to `grilling`, which is not installed: manual pass, with
+the user's answers (2026-11-26):
+- letterhead = **template library** (several, one default), owned by `company`
+  (`company.letterheads`, company-wide, no `organization_id`, soft delete; a
+  deleted one still prints for documents that picked it);
+- terms = **selectable templates + placeholders**, owned by `procurement`
+  (`procurement.purchase_term_templates`, company-wide like POs); choosing one
+  copies the text into the PO, which never references the template;
+- `purchase_orders.letterhead_id` is a nullable logical reference validated by
+  `ExportedCompanyService.assertLetterhead`; a new PO stores the default
+  explicitly, null prints with the current default;
+- placeholders (`{{grand_total_pct:50}}` …) live in `@ims-erp/common`, are
+  validated on save (422 `procurement.termPlaceholder`) and resolved on the
+  browser print from the frozen order; money stays integer IDR minor units;
+- output = **browser print → PDF** (no server PDF);
+- read: letterheads any member, managed with `company:update`; term templates
+  `purchase_order:read` / `purchase_order:update`. No new statements except
+  ERP-0167.
+
+**Findings while re-checking (fixed with the user's go-ahead).**
+- ERP-0168: a goods receipt posted stock movements for non-stock products
+  (licences) while the GR/IR journal skipped them, so the warehouse held a
+  balance with no value in the ledger. Non-stock lines now raise
+  `quantity_received` only; a purchase return of such a line moves nothing.
+- ERP-0166: `inventory.stocks` scope indexes were missing `NULLS NOT
+  DISTINCT` (in `docs.dbml`, not in Drizzle/DB). Every bin-less movement
+  inserted two balance rows and the delta hit all of them (live: 100 m of cable
+  stored as 100/100/60/60). drizzle-orm cannot declare it on a partial unique
+  index, so a hand-written append-only migration rebuilds both indexes.
+- ERP-0167: `POST /finance/periods` required `accounting_period:create`, which
+  no statement defined ("no org role"), so no one could open a month and every
+  goods receipt failed "Accounting period not found". Granted to `owner`
+  (statement spread) and `accountant`; the closing page hides the button
+  without it. **The dev database (`ims_erp_local`) has no accounting period
+  yet**: open the current month before receiving goods.
+
+**Changes.** Backend `company` (letterhead contract/repository/service/
+controller `/companies/letterheads`, exported `assertLetterhead`,
+`getLetterheadForPrint`), `procurement` (term templates
+`/procurement/purchase-term-templates`, placeholder guard, `letterheadId` on
+PO write and `letterhead` on PO detail, non-stock receipt/return fix),
+`providers/s3/document-image.ts` (field, size and resolution options),
+`packages/common` (`po-placeholders.ts`, `accounting_period:create`),
+migrations `20261126043631_erp0165_letterheads_term_templates` and
+`20261126101626_erp0166_stocks_nulls_not_distinct`, seeder
+`procurement-term-templates.seeder.ts` (Hardware default + Lisensi, anchored
+on name). Web: letterhead card on `/settings/documents`,
+`/procurement/term-templates` (+ nav, crumbs, `routeTree.gen.ts`), PO form
+letterhead + "fill from template" pickers and placeholder reference, PO print
+with letterhead header/footer repeated per page and resolved placeholders,
+closing page gate. Locales `procurement`, `settings`, `nav`, `api` (en + id).
+`docs/database/`: `docs.dbml` (2 tables, 1 column, notes),
+`logical-references.md` regenerated, `module-ownership.md`;
+`docs/role-permission.md` regenerated.
+
+**Commands and outcomes.**
+- `bun docs/database/gen-logical-references.ts` → 216 refs; `bun
+  docs/database/validate-dbml.ts` → OK (0 cross-module refs, 0 timestamp gaps,
+  0 drizzle/column parity drift).
+- `bunx --bun drizzle-kit generate --name erp0165_letterheads_term_templates`
+  → 2 `CREATE TABLE`, 1 `ADD COLUMN`, 2 partial unique indexes (inspected);
+  `generate --custom --name erp0166_stocks_nulls_not_distinct` (hand-written);
+  `drizzle-kit check` → "Everything's fine"; `generate --explain` → no drift.
+- Throwaway DB `ims_erp_scratch_erp0165` on the local server (dropped
+  afterwards): `drizzle-kit migrate` full chain OK, `pg_indexes` shows
+  `NULLS NOT DISTINCT`; seed run twice → templates inserted 2 then 0.
+- Backend `bun test` → 1642 pass / 0 fail (140 files); `bunx tsc --noEmit`
+  clean. `packages/locales` `bun test` → 110 pass. web-admin `bun test` → 211
+  pass, `bunx tsc -p tsconfig.app.json --noEmit` clean. Root `bun run lint` →
+  0 errors (changed files add no warnings).
+- `bun docs/gen-role-permission.ts` → 815 routes.
+- Live API walk-through on the throwaway DB (scratch backend on :3011, its own
+  Redis DBs, no SMTP): 24/24 PASS — owner opens 2026-11, placeholder 422s,
+  self-approval 403, numbered on approval, receipt refused before `sent`,
+  partial receipt → `partially_received`, over-receipt 422, serial units
+  `in_stock`, PO `received`; DB: one balance row per product (door 2,
+  cable 100), licence without movement or stock row, journals Dr 1-1410 /
+  Cr 2-1150 for the stock lines only.
+- Browser (web-admin :5174 on the scratch API, seed `purchasing` account):
+  term templates page, PO form prefilled with the default letterhead and the
+  Hardware template, print with resolved placeholders (DP 50% = Rp271.750 of
+  Rp543.500, no `{{` left) and the letterhead header/footer (images swapped
+  for local SVGs in the page: no file was uploaded to object storage).
+
+**Incident, contained.** The first scratch backend bound port 3001, which the
+user's own dev backend also holds, and shared Redis DB 0. No dev database row
+was written (no supplier/product, 0 audit rows in the window); two cache keys
+the scratch run wrote (`company:profile:singleton`, one `supplier:company:id:*`)
+were deleted so the dev backend reloads them. Later runs used port 3011 and
+Redis DBs 5/6.
+
+**Not done.** A real letterhead upload to object storage (the S3 endpoint is a
+remote server); per-document-type letterheads for quotations/invoices (only the
+PO uses the library so far). `docs/database/` changed as listed; the
+`module-ownership.md` table total was already behind `docs.dbml` (210 tables
+parsed) and was only bumped by this change's two tables.
+
+Next executable task: open the current accounting period in the dev
+environment (owner/accountant, Finance > Closing), upload the company
+letterhead under Settings > Documents, then walk one real PO through
+receipt in the browser; afterwards the employee portal browser acceptance pass
+(previous next task).
+
 ## 2026-11-26 - employee portal Phase C: documents, signature requests, payslips
 
 **Scope.** Last of the three phases: the employee's documents (issued to their

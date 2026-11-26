@@ -26,11 +26,15 @@ import { Search } from 'lucide-react';
 import { EmptyState } from '@/components/empty-state';
 import { formatIdr, minorToRupiah, rupiahToMinor, todayBusinessDate } from '@/lib/format';
 import { listProducts, type TProduct } from '@/lib/inventory-api';
+import { letterheadsQueryOptions } from '@/lib/letterhead-api';
+import { toast } from '@/components/toast';
+import { PoPlaceholderHelp } from './po-placeholder-help';
 import {
 	openRequestLinesQueryOptions,
 	PO_VAT_MODES,
 	previewPoTotals,
 	PURCHASE_CATEGORIES,
+	purchaseTermTemplatesQueryOptions,
 	type TOpenRequestLine,
 	type TPoVatMode,
 	type TPurchaseCategory,
@@ -140,6 +144,37 @@ export function PurchaseOrderForm({
 	const [paymentTerms, setPaymentTerms] = useState(order?.paymentTerms ?? '');
 	const [terms, setTerms] = useState(order?.terms ?? '');
 	const [notes, setNotes] = useState(order?.notes ?? '');
+	// ERP-0165: the letterhead it prints with. A new order stores the current
+	// default explicitly, so changing the default later does not reprint it;
+	// an existing order without one keeps printing with whatever is default.
+	const letterheads = useQuery(letterheadsQueryOptions());
+	const [pickedLetterheadId, setLetterheadId] = useState(order?.letterheadId ?? '');
+	const letterheadId = pickedLetterheadId || (order ? '' : (letterheads.data?.find((row) => row.isDefault)?.id ?? ''));
+	// A new order starts from the default term template, once it has loaded
+	// (state adjusted during render, not in an effect).
+	const termTemplates = useQuery(purchaseTermTemplatesQueryOptions());
+	const [termTemplateId, setTermTemplateId] = useState('');
+	const [templatePrefilled, setTemplatePrefilled] = useState(order !== null);
+	if (!templatePrefilled && termTemplates.data) {
+		setTemplatePrefilled(true);
+		const template = termTemplates.data.find((row) => row.isDefault);
+		if (template) {
+			setTermTemplateId(template.id);
+			setPaymentTerms((current) => current || (template.paymentTerms ?? ''));
+			setTerms((current) => current || (template.terms ?? ''));
+			setNotes((current) => current || (template.notes ?? ''));
+		}
+	}
+
+	function applyTermTemplate(id: string) {
+		const template = termTemplates.data?.find((row) => row.id === id);
+		if (!template) return;
+		setTermTemplateId(id);
+		setPaymentTerms(template.paymentTerms ?? '');
+		setTerms(template.terms ?? '');
+		setNotes(template.notes ?? '');
+		toast.success(t('procurement:po.termTemplateApplied', { name: template.name }));
+	}
 	const [lines, setLines] = useState<TLineDraft[]>(
 		(order?.items ?? []).map((item) => ({
 			key: crypto.randomUUID(),
@@ -249,6 +284,7 @@ export function PurchaseOrderForm({
 					paymentTerms: text(paymentTerms),
 					terms: text(terms),
 					notes: text(notes),
+					letterheadId: letterheadId || null,
 					lines: lines.map((line) => ({
 						productId: line.productId,
 						quantity: line.quantity,
@@ -562,6 +598,61 @@ export function PurchaseOrderForm({
 							<dd>{formatIdr(totals.grandTotal)}</dd>
 						</div>
 					</dl>
+					<FieldGroup className='grid gap-4 sm:col-span-2 sm:grid-cols-2'>
+						<Field>
+							<FieldLabel htmlFor='po-letterhead' optional>{t('procurement:po.letterhead')}</FieldLabel>
+							{letterheads.data && letterheads.data.length > 0 ? (
+								<Select value={letterheadId} onValueChange={(value: string | null) => setLetterheadId(value ?? '')}>
+									<SelectTrigger id='po-letterhead' className='w-full'>
+										<SelectValue>
+											{(value: string) =>
+												letterheads.data.find((row) => row.id === value)?.name ??
+												t('procurement:po.letterheadDefaultNamed', {
+													name: letterheads.data.find((row) => row.isDefault)?.name ?? '—',
+												})
+											}
+										</SelectValue>
+									</SelectTrigger>
+									<SelectContent>
+										{letterheads.data.map((row) => (
+											<SelectItem key={row.id} value={row.id}>
+												{row.isDefault ? t('procurement:po.letterheadDefaultNamed', { name: row.name }) : row.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							) : (
+								<p id='po-letterhead' className='text-sm text-muted-foreground'>
+									{t('procurement:po.letterheadNone')}
+								</p>
+							)}
+							<FieldDescription>{t('procurement:po.letterheadHint')}</FieldDescription>
+						</Field>
+						<Field>
+							<FieldLabel htmlFor='po-term-template' optional>{t('procurement:po.termTemplate')}</FieldLabel>
+							<Select
+								value={termTemplateId}
+								onValueChange={(value: string | null) => value && applyTermTemplate(value)}
+								disabled={!termTemplates.data?.length}
+							>
+								<SelectTrigger id='po-term-template' className='w-full'>
+									<SelectValue placeholder={t('procurement:po.termTemplatePlaceholder')}>
+										{(value: string) =>
+											termTemplates.data?.find((row) => row.id === value)?.name ?? t('procurement:po.termTemplatePlaceholder')
+										}
+									</SelectValue>
+								</SelectTrigger>
+								<SelectContent>
+									{(termTemplates.data ?? []).map((row) => (
+										<SelectItem key={row.id} value={row.id}>
+											{row.name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<FieldDescription>{t('procurement:po.termTemplateHint')}</FieldDescription>
+						</Field>
+					</FieldGroup>
 					<Field className='sm:col-span-2'>
 						<FieldLabel htmlFor='po-terms' optional>{t('procurement:po.terms')}</FieldLabel>
 						<Textarea id='po-terms' rows={5} maxLength={8000} value={terms} onChange={(event) => setTerms(event.target.value)} />
@@ -571,6 +662,7 @@ export function PurchaseOrderForm({
 						<FieldLabel htmlFor='po-notes' optional>{t('procurement:po.notes')}</FieldLabel>
 						<Textarea id='po-notes' rows={3} maxLength={4000} value={notes} onChange={(event) => setNotes(event.target.value)} />
 					</Field>
+					<PoPlaceholderHelp />
 				</CardContent>
 				<CardFooter className='justify-end gap-2'>
 					<Button type='button' variant='outline' onClick={onCancel}>

@@ -18,6 +18,7 @@ import { GoodsReceiptService } from '../../src/app/procurement/services/goods-re
 const PO = '0190a1b2-0000-7000-8000-00000000d001';
 const LINE_A = '0190a1b2-0000-7000-8000-00000000d0a1';
 const LINE_S = '0190a1b2-0000-7000-8000-00000000d0a2';
+const LINE_L = '0190a1b2-0000-7000-8000-00000000d0a3';
 const WAREHOUSE = '0190a1b2-0000-7000-8000-00000000e001';
 
 let order: TPurchaseOrderSelect;
@@ -85,7 +86,7 @@ beforeEach(() => {
 			},
 		},
 		{
-			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', organizationId: null }) as never,
+			getProduct: async (id: string) => ({ id, isSerialized: id === 'item-s', isStockTracked: id !== 'item-lic', organizationId: null }) as never,
 		},
 		{
 			/** ADR-0026: unit registration stayed in `inventory`. */
@@ -156,6 +157,20 @@ describe('goods receipts', () => {
 			expect.objectContaining({ serialNumber: 'SN2', movementId: 'mv-1' }),
 		]);
 		expect(order.status).toBe('received');
+	});
+
+	test('a non-stock line (licence) is received on the PO but never enters the warehouse', async () => {
+		poItems.push({ id: LINE_L, productId: 'item-lic', sku: 'LIC', name: 'Lisensi', unit: 'pcs', quantity: '1.000', quantityReceived: '0.000', unitPrice: 5_000_000 } as TPurchaseOrderItemSelect);
+		const receipt = await service.create(
+			{ userId: 'wh', organizationId: 'org' },
+			body([
+				{ purchaseOrderItemId: LINE_L, quantity: 1 },
+				{ purchaseOrderItemId: LINE_A, quantity: 10 },
+			]),
+		);
+		expect(receipt.items).toHaveLength(2);
+		expect(poItems.find((item) => item.id === LINE_L)!.quantityReceived).toBe('1.000');
+		expect(movements).toEqual([expect.objectContaining({ productId: 'item-a', quantity: '10' })]);
 	});
 
 	test('never more than is open; only sent or partly received POs', async () => {

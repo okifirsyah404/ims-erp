@@ -706,6 +706,11 @@ export const stocks = inventorySchema.table(
 		updatedAt: unixTimestampNullable('updated_at').$onUpdate(() => new Date()),
 	},
 	(table) => [
+		// ERP-0166: both scope indexes are NULLS NOT DISTINCT in the database
+		// (a NULL bin is one key), set by the hand-written migration
+		// `20261126101626_erp0166_stocks_nulls_not_distinct`: drizzle-orm cannot
+		// declare it on a partial unique index. Keep that migration when the
+		// chain is squashed, or every bin-less movement duplicates a balance.
 		uniqueIndex('stocks_org_scope_uq')
 			.on(
 				table.organizationId,
