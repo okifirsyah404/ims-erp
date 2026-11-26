@@ -12,6 +12,81 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-26 - employee portal Phase C: documents, signature requests, payslips
+
+**Scope.** Last of the three phases: the employee's documents (issued to their
+employee record or waiting for their signature), the signature inbox with the
+caller's own signature image, and the payslip history.
+
+**Design gate.** No schema change (`docs.dbml` untouched, `validate-dbml.ts` OK).
+Decisions, carried from the grill and the follow-up request:
+- documents are **not** the registry: the portal shows the ones addressed to the
+  caller — `module='human_resource'` + `source_type='employee'` +
+  `source_id = <their employee id>`, union the ones with a pending request for
+  them. The registry's own filters stay behind `document:read`;
+- signing reuses the existing state machine (`/documents/signatures`): the portal
+  route only pins the request to the session user, and the signer/owner/state
+  checks remain in `SignatureService`;
+- payslips reuse `/users/me/payslips` (+ `/download`) unchanged — session-only,
+  no id to tamper with — and the PDF renders through the existing document
+  attachment, so no new print page was needed;
+- `signature_request` opened to every internal role that can read documents
+  (request: "buka grant signature_request"), keeping "no document access, no
+  request" as the floor.
+
+**Changes.** Backend `document`: `contracts/employee-document-portal.contract.ts`,
+`repositories/my-document.repository.ts` (SQL-paginated union + newest file per
+row), `services/employee-document-portal.service.ts`,
+`controllers/employee-document.controller.ts` (`/documents/me/*`: documents,
+file download, signature requests, sign, decline, signature image
+GET/PUT/DELETE), DI tokens + container + mount. `packages/common`: `document`
+grants gain `signature_request` for sales, technician, freelancer, warehouse,
+customer_service, marketing and the other document-reading roles. Seed: one
+pending signature request on the portal account's own employment agreement
+(idempotent on document+signer). Portal: `lib/documents-api.ts`,
+`lib/payslip-api.ts`, `/documents`, `/signature`, `/payslips`, Phase C nav
+(SHIPPED includes `c`), locale keys en+id.
+
+**Two bugs the walk-through caught:**
+
+1. `/documents` crashed on `formatBusinessDate(createdAt)` — a timestamp fed to a
+   business-date formatter (`RangeError: Invalid time value`). Uses
+   `formatDateTime`.
+2. The backend started through turbo resolved `cors.json` against the repo root,
+   so the allowlist silently fell back to *no file* → every origin allowed. That
+   is why the browser walk-through never surfaced a CORS rejection while the
+   `Origin` preflight showed none. `findCorsPath` now falls back to the
+   workspace's own file.
+
+```bash
+bunx tsc -p tsconfig.json && bunx tsc --noEmit -p tsconfig.app.json   # 0 errors
+bun test test/unit/employee-document-portal.service.test.ts           # 5 pass
+bun run lint                                                          # 7/7, 0 errors
+bun run test                                                          # 8/8: backend 1625, web-admin 211,
+                                                                      # locales 110, web-employee 5,
+                                                                      # customer 68, landing 25, email 6
+bun run drizzle:seed                                                  # twice: 1 signature request inserted once
+bun docs/gen-role-permission.ts                                       # 803 routes
+```
+
+Browser (signed in as `hr_seed_08`): `/documents` lists `0009/DOC/DEV/XI/26
+Perjanjian Kerja - Adinata Jailani`, `/signature` renders the inbox filter +
+signature image card, `/payslips` renders its empty state, the sidebar shows
+Documents (Berkas, Tanda tangan) and Penggajian, 0 console errors.
+
+**Not verified.** Signing end to end (the seeded request belongs to the portal
+account `admin_seed`, not to `hr_seed_08`), the signed-PDF placement (needs the
+renderer/Chromium), and a payslip download (no approved salary record in the
+tenant).
+
+**Bug log.** Every defect found while building phases A–C (12 fixed, 1
+environment limitation, 4 still open) is written up in
+`docs/found-bugs/employee-portal-payroll-26112026.md`.
+
+Next executable task: employee portal is feature-complete for the 13 requested
+areas; next is a browser acceptance pass with an account that owns a signature
+request, and Phase C in the PR description.
+
 ## 2026-11-26 - rename `web-investor-portal` to `web-investor`
 
 **Scope.** Same rename for the investor scaffold, for consistency with

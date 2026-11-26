@@ -21,10 +21,16 @@ function findEnvPath(): string {
  * pointing somewhere else inside the container).
  */
 function findCorsPath(): string {
-	return path.resolve(
-		process.cwd(),
-		process.env.CORS_CONFIG_PATH || 'cors.json',
-	);
+	// Bun and turbo can start the backend with the repo root as cwd, not the
+	// workspace: when the file is not there, fall back to this workspace's own
+	// `cors.json` instead of silently answering "unset" (which allows every
+	// origin).
+	if (!process.env.CORS_CONFIG_PATH) {
+		const fromCwd = path.resolve(process.cwd(), 'cors.json');
+		if (fs.existsSync(fromCwd)) return fromCwd;
+		return path.resolve(import.meta.dir, '../../cors.json');
+	}
+	return path.resolve(process.cwd(), process.env.CORS_CONFIG_PATH);
 }
 
 const CorsOriginListSchema = z

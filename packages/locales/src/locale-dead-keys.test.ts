@@ -307,6 +307,9 @@ const DYNAMIC_PREFIXES = [
 	'projects.status.',
 	'projects.task.',
 	'projects.evidenceKind.',
+	// Portal signature request statuses (server values) and the payslip amount
+	// label, which the page renders through `formatIdr` + a literal key.
+	'signature.status.',
 	// Notification copy is rendered from the server's `templateCode` mapped to
 	// `template.<camelCase>` by `notification-text.ts` (both apps).
 	'template.org.',
@@ -342,5 +345,6 @@ describe('locale dead keys', () => {
 		});
 	}
 });
+
 
 

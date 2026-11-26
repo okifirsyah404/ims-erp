@@ -7,6 +7,7 @@ import {
 	FolderKanban,
 	House,
 	Timer,
+	PenLine,
 	Wallet,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -39,7 +40,7 @@ export type TPortalNavSection = {
 };
 
 /** Phases whose pages exist in this build. */
-const SHIPPED: TPortalNavItem['phase'][] = ['a', 'b'];
+const SHIPPED: TPortalNavItem['phase'][] = ['a', 'b', 'c'];
 
 export const portalNavSections: TPortalNavSection[] = [
 	{
@@ -68,6 +69,7 @@ export const portalNavSections: TPortalNavSection[] = [
 		labelKey: 'section.documents',
 		items: [
 			{ titleKey: 'item.files', url: '/documents', icon: FileText, phase: 'c' },
+			{ titleKey: 'item.signatures', url: '/signature', icon: PenLine, phase: 'c' },
 		],
 	},
 	{
@@ -90,4 +92,5 @@ export const liveNavSections: TPortalNavSection[] = portalNavSections
 
 /** Flat list, for the mobile bar and the route guard. */
 export const liveNavItems: TPortalNavItem[] = liveNavSections.flatMap((section) => section.items);
+
 

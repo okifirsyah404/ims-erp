@@ -12,12 +12,15 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
 import { Route as AuthedAttendanceRouteImport } from './routes/_authed.attendance'
+import { Route as AuthedDocumentsRouteImport } from './routes/_authed.documents'
 import { Route as AuthedLeaveRouteImport } from './routes/_authed.leave'
 import { Route as AuthedNotificationsRouteImport } from './routes/_authed.notifications'
 import { Route as AuthedOvertimeRouteImport } from './routes/_authed.overtime'
+import { Route as AuthedPayslipsRouteImport } from './routes/_authed.payslips'
 import { Route as AuthedProfileRouteImport } from './routes/_authed.profile'
 import { Route as AuthedProjectsRouteImport } from './routes/_authed.projects'
 import { Route as AuthedScheduleRouteImport } from './routes/_authed.schedule'
+import { Route as AuthedSignatureRouteImport } from './routes/_authed.signature'
 import { Route as AuthedTasksRouteImport } from './routes/_authed.tasks'
 import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed.projects.index'
@@ -37,6 +40,11 @@ const AuthedAttendanceRoute = AuthedAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedDocumentsRoute = AuthedDocumentsRouteImport.update({
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedLeaveRoute = AuthedLeaveRouteImport.update({
   id: '/leave',
   path: '/leave',
@@ -52,6 +60,11 @@ const AuthedOvertimeRoute = AuthedOvertimeRouteImport.update({
   path: '/overtime',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPayslipsRoute = AuthedPayslipsRouteImport.update({
+  id: '/payslips',
+  path: '/payslips',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedProfileRoute = AuthedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -65,6 +78,11 @@ const AuthedProjectsRoute = AuthedProjectsRouteImport.update({
 const AuthedScheduleRoute = AuthedScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSignatureRoute = AuthedSignatureRouteImport.update({
+  id: '/signature',
+  path: '/signature',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedTasksRoute = AuthedTasksRouteImport.update({
@@ -91,12 +109,15 @@ const AuthedProjectsProjectIdRoute = AuthedProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/attendance': typeof AuthedAttendanceRoute
+  '/documents': typeof AuthedDocumentsRoute
   '/leave': typeof AuthedLeaveRoute
   '/notifications': typeof AuthedNotificationsRoute
   '/overtime': typeof AuthedOvertimeRoute
+  '/payslips': typeof AuthedPayslipsRoute
   '/profile': typeof AuthedProfileRoute
   '/projects': typeof AuthedProjectsRouteWithChildren
   '/schedule': typeof AuthedScheduleRoute
+  '/signature': typeof AuthedSignatureRoute
   '/tasks': typeof AuthedTasksRoute
   '/login/': typeof LoginIndexRoute
   '/projects/$projectId': typeof AuthedProjectsProjectIdRoute
@@ -104,11 +125,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/attendance': typeof AuthedAttendanceRoute
+  '/documents': typeof AuthedDocumentsRoute
   '/leave': typeof AuthedLeaveRoute
   '/notifications': typeof AuthedNotificationsRoute
   '/overtime': typeof AuthedOvertimeRoute
+  '/payslips': typeof AuthedPayslipsRoute
   '/profile': typeof AuthedProfileRoute
   '/schedule': typeof AuthedScheduleRoute
+  '/signature': typeof AuthedSignatureRoute
   '/tasks': typeof AuthedTasksRoute
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginIndexRoute
@@ -119,12 +143,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/_authed/attendance': typeof AuthedAttendanceRoute
+  '/_authed/documents': typeof AuthedDocumentsRoute
   '/_authed/leave': typeof AuthedLeaveRoute
   '/_authed/notifications': typeof AuthedNotificationsRoute
   '/_authed/overtime': typeof AuthedOvertimeRoute
+  '/_authed/payslips': typeof AuthedPayslipsRoute
   '/_authed/profile': typeof AuthedProfileRoute
   '/_authed/projects': typeof AuthedProjectsRouteWithChildren
   '/_authed/schedule': typeof AuthedScheduleRoute
+  '/_authed/signature': typeof AuthedSignatureRoute
   '/_authed/tasks': typeof AuthedTasksRoute
   '/_authed/': typeof AuthedIndexRoute
   '/login/': typeof LoginIndexRoute
@@ -136,12 +163,15 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/attendance'
+    | '/documents'
     | '/leave'
     | '/notifications'
     | '/overtime'
+    | '/payslips'
     | '/profile'
     | '/projects'
     | '/schedule'
+    | '/signature'
     | '/tasks'
     | '/login/'
     | '/projects/$projectId'
@@ -149,11 +179,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/attendance'
+    | '/documents'
     | '/leave'
     | '/notifications'
     | '/overtime'
+    | '/payslips'
     | '/profile'
     | '/schedule'
+    | '/signature'
     | '/tasks'
     | '/'
     | '/login'
@@ -163,12 +196,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/_authed/attendance'
+    | '/_authed/documents'
     | '/_authed/leave'
     | '/_authed/notifications'
     | '/_authed/overtime'
+    | '/_authed/payslips'
     | '/_authed/profile'
     | '/_authed/projects'
     | '/_authed/schedule'
+    | '/_authed/signature'
     | '/_authed/tasks'
     | '/_authed/'
     | '/login/'
@@ -204,6 +240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAttendanceRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/documents': {
+      id: '/_authed/documents'
+      path: '/documents'
+      fullPath: '/documents'
+      preLoaderRoute: typeof AuthedDocumentsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/leave': {
       id: '/_authed/leave'
       path: '/leave'
@@ -225,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedOvertimeRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/payslips': {
+      id: '/_authed/payslips'
+      path: '/payslips'
+      fullPath: '/payslips'
+      preLoaderRoute: typeof AuthedPayslipsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/profile': {
       id: '/_authed/profile'
       path: '/profile'
@@ -244,6 +294,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof AuthedScheduleRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/signature': {
+      id: '/_authed/signature'
+      path: '/signature'
+      fullPath: '/signature'
+      preLoaderRoute: typeof AuthedSignatureRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/tasks': {
@@ -293,24 +350,30 @@ const AuthedProjectsRouteWithChildren = AuthedProjectsRoute._addFileChildren(
 
 interface AuthedRouteChildren {
   AuthedAttendanceRoute: typeof AuthedAttendanceRoute
+  AuthedDocumentsRoute: typeof AuthedDocumentsRoute
   AuthedLeaveRoute: typeof AuthedLeaveRoute
   AuthedNotificationsRoute: typeof AuthedNotificationsRoute
   AuthedOvertimeRoute: typeof AuthedOvertimeRoute
+  AuthedPayslipsRoute: typeof AuthedPayslipsRoute
   AuthedProfileRoute: typeof AuthedProfileRoute
   AuthedProjectsRoute: typeof AuthedProjectsRouteWithChildren
   AuthedScheduleRoute: typeof AuthedScheduleRoute
+  AuthedSignatureRoute: typeof AuthedSignatureRoute
   AuthedTasksRoute: typeof AuthedTasksRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedAttendanceRoute: AuthedAttendanceRoute,
+  AuthedDocumentsRoute: AuthedDocumentsRoute,
   AuthedLeaveRoute: AuthedLeaveRoute,
   AuthedNotificationsRoute: AuthedNotificationsRoute,
   AuthedOvertimeRoute: AuthedOvertimeRoute,
+  AuthedPayslipsRoute: AuthedPayslipsRoute,
   AuthedProfileRoute: AuthedProfileRoute,
   AuthedProjectsRoute: AuthedProjectsRouteWithChildren,
   AuthedScheduleRoute: AuthedScheduleRoute,
+  AuthedSignatureRoute: AuthedSignatureRoute,
   AuthedTasksRoute: AuthedTasksRoute,
   AuthedIndexRoute: AuthedIndexRoute,
 }

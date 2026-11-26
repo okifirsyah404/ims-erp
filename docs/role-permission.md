@@ -338,7 +338,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `sales_return` | read, create, update, submit, cancel |
 | `product` | read |
 | `license` | read, create, extend, read_key |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -381,7 +381,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `advance` | read, create, update, submit |
 | `settlement` | read, create, update, submit |
 | `purchase_request` | read, create, submit |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -395,7 +395,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `task` | read, update, submit |
 | `daily_report` | read, create, update, submit |
 | `settlement` | read, create, update, submit |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 
 </details>
 
@@ -414,7 +414,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `product` | read, create, update, read_cost |
 | `stock` | read |
 | `stock_adjustment` | read, create, submit |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -431,7 +431,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `purchase_return` | read, ship |
 | `sales_return` | read, receive |
 | `asset_borrowing` | read, update, issue, return, extend, mark_late, mark_lost, export |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -499,7 +499,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `cash_bank` | read, reconcile, export |
 | `investor` | read |
 | `investor_report` | read, create, publish, export |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -544,7 +544,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `warranty_claim` | read, create, update, approve, reject, close |
 | `license` | read, read_key |
 | `whatsapp` | read, reply |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -564,7 +564,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `whatsapp` | read, manage_faq |
 | `product` | read |
 | `customer` | read |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `self_service` | read_profile, update_profile, read_attendance, read_payslip, request_leave |
 
 </details>
@@ -615,7 +615,7 @@ Each role is a closed grant set from `erpRoleGrants`; a member holding several r
 | `financial_report` | read, export |
 | `service_ticket` | read |
 | `asset` | read, export |
-| `document` | read, download, signature_read, signature_sign |
+| `document` | read, download, signature_read, signature_sign, signature_request |
 | `budget` | read, export |
 | `license` | read |
 
@@ -639,7 +639,7 @@ App roles live on `user.role` and grant **no** organization permission; they onl
 
 ## Endpoints
 
-795 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
+803 routes across 22 modules, read from `apps/backend/src/app/*/controllers` and the shared code-numbering controller. 0 route(s) could not be resolved statically.
 
 Columns: **Guard** is the check the route opts into; **Requirement** is every `resource:action` it needs (ALL must pass);
 **Who** lists the organization roles whose grants satisfy it (`owner` holds every ERP statement except `warehouse:*`, which is app-admin-only).
@@ -758,20 +758,28 @@ Columns: **Guard** is the check the route opts into; **Requirement** is every `r
 | GET | `/documents/code-numberings` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
 | PUT | `/documents/code-numberings/:codeType` | app admin, or org member + permission | `code_number:update` | app admin; `owner`, `admin` |
 | POST | `/documents/code-numberings/:codeType/preview` | app admin, or org member + permission | `code_number:read` | app admin; `owner`, `admin`, `auditor` |
+| GET | `/documents/me/documents` | no guard macro | - | - |
+| GET | `/documents/me/documents/:id/files/:fileId/download` | no guard macro | - | - |
+| DELETE | `/documents/me/signature-image` | no guard macro | - | - |
+| GET | `/documents/me/signature-image` | no guard macro | - | - |
+| PUT | `/documents/me/signature-image` | no guard macro | - | - |
+| GET | `/documents/me/signature-requests` | no guard macro | - | - |
+| POST | `/documents/me/signature-requests/:id/decline` | no guard macro | - | - |
+| POST | `/documents/me/signature-requests/:id/sign` | no guard macro | - | - |
 | GET | `/documents/public/v1/shares/:token` | no guard macro | - | - |
 | GET | `/documents/public/v1/shares/:token/file` | no guard macro | - | - |
 | GET | `/documents/signatures` | org member + permission | `document:signature_read` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | DELETE | `/documents/signatures/my-image` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | GET | `/documents/signatures/my-image` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | PUT | `/documents/signatures/my-image` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
-| POST | `/documents/signatures/requests` | org member + permission | `document:signature_request` | `owner`, `admin`, `operations_manager`, `sales_manager`, `project_manager`, `finance`, `hr` |
-| POST | `/documents/signatures/requests/:id/cancel` | org member + permission | `document:signature_request` | `owner`, `admin`, `operations_manager`, `sales_manager`, `project_manager`, `finance`, `hr` |
+| POST | `/documents/signatures/requests` | org member + permission | `document:signature_request` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
+| POST | `/documents/signatures/requests/:id/cancel` | org member + permission | `document:signature_request` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | POST | `/documents/signatures/requests/:id/decline` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | POST | `/documents/signatures/requests/:id/sign` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | GET | `/documents/signatures/requests/:id/signed-pdf` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | PUT | `/documents/signatures/requests/:id/signed-pdf` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | GET | `/documents/signatures/requests/incoming` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
-| GET | `/documents/signatures/requests/outgoing` | org member + permission | `document:signature_request` | `owner`, `admin`, `operations_manager`, `sales_manager`, `project_manager`, `finance`, `hr` |
+| GET | `/documents/signatures/requests/outgoing` | org member + permission | `document:signature_request` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | POST | `/documents/signatures/user-images` | org member + permission | `document:signature_sign` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | GET | `/documents/templates` | org member + permission | `document:read` | `owner`, `admin`, `operations_manager`, `sales_manager`, `sales`, `project_manager`, `technician`, `freelancer`, `purchasing`, `warehouse`, `finance`, `accountant`, `hr`, `customer_service`, `marketing`, `auditor` |
 | POST | `/documents/templates` | org member + permission | `document:update` | `owner` |

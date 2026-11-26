@@ -12,6 +12,8 @@ import type { IDocumentRepository } from '../contracts/document.repository.inter
 import type { ISignatureRepository } from '../contracts/signature.repository.interface';
 import type { DocumentService } from '../services/document.service';
 import type { SignatureService } from '../services/signature.service';
+import type { MyDocumentRepository } from '../repositories/my-document.repository';
+import type { EmployeeDocumentPortalService } from '../services/employee-document-portal.service';
 
 /** Token resolving to the {@link IDocumentRepository} implementation. */
 export const DOCUMENT_REPOSITORY_TOKEN: InjectionToken<IDocumentRepository> =
@@ -32,6 +34,12 @@ export const SIGNATURE_REPOSITORY_TOKEN: InjectionToken<ISignatureRepository> =
 export const SIGNATURE_SERVICE_TOKEN: InjectionToken<SignatureService> =
 	Symbol('SIGNATURE_SERVICE_TOKEN');
 
+/** The employee portal's document surface (Phase C): own documents + signature requests. */
+export const MY_DOCUMENT_REPOSITORY_TOKEN: InjectionToken<MyDocumentRepository> =
+	Symbol('MY_DOCUMENT_REPOSITORY_TOKEN');
+export const EMPLOYEE_DOCUMENT_PORTAL_SERVICE_TOKEN: InjectionToken<EmployeeDocumentPortalService> =
+	Symbol('EMPLOYEE_DOCUMENT_PORTAL_SERVICE_TOKEN');
+
 /** Token resolving to the repository of `document.code_numberings`. */
 export const DOCUMENT_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<DocumentCodeNumberingRepository> =
 	Symbol('DOCUMENT_CODE_NUMBERING_REPOSITORY');
@@ -39,3 +47,4 @@ export const DOCUMENT_CODE_NUMBERING_REPOSITORY_TOKEN: InjectionToken<DocumentCo
 /** Token resolving to the {@link DocumentNumberingService}. */
 export const DOCUMENT_NUMBERING_SERVICE_TOKEN: InjectionToken<DocumentNumberingService> =
 	Symbol('DOCUMENT_NUMBERING_SERVICE');
+

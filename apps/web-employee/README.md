@@ -27,6 +27,9 @@ route, plus "employee record in the active organization".
 | `/projects` | Projects the caller is the PIC of or has a live task in |
 | `/projects/$projectId` | Project detail: tasks (own-task status, PIC management), evidence, site visits |
 | `/notifications` | Inbox (the header bell is the preview) |
+| `/documents` | Documents issued to the caller or awaiting their signature |
+| `/signature` | Signature inbox (sign/decline) and the caller's own signature image |
+| `/payslips` | Approved payslips with a short-lived download |
 | `/profile` | Editable nickname, phone, primary address; HR facts read-only |
 | `/login` | Sign-in (Better Auth, same backend as web-admin) |
 
@@ -75,6 +78,21 @@ POST   /projects/me/site-attendance/check-in # selfie + GPS, PostGIS radius
 POST   /projects/me/site-attendance/:id/check-out
 ```
 
+Document routes (Phase C, same guard):
+
+```
+GET    /documents/me/documents                    # employee-record docs ∪ pending signature
+GET    /documents/me/documents/:id/files/:fileId/download
+GET    /documents/me/signature-requests           # inbox (status filter)
+POST   /documents/me/signature-requests/:id/sign
+POST   /documents/me/signature-requests/:id/decline
+GET    /documents/me/signature-image
+PUT    /documents/me/signature-image              # multipart `file`, normalised to WebP
+DELETE /documents/me/signature-image
+GET    /users/me/payslips                         # reused from HR (session-only)
+GET    /users/me/payslips/:id/download
+```
+
 ### Field attendance
 
 The phone sends its coordinates; **the server decides**. `project.addresses`
@@ -112,9 +130,13 @@ docker compose up -d web-employee   # host port WEB_EMPLOYEE_PORT (8081)
 
 `VITE_API_URL` is baked in at build time (same as web-admin).
 
-## Roadmap
+## Status
 
-Phase C adds documents, signature requests and payslips.
+Phases A–C are implemented: the 13 requested areas (auth, attendance, schedule,
+tasks, assigned projects, project tasks, PIC management, field attendance,
+documents, signature requests, payroll history, notifications, profile).
+Still open as follow-up work: a browser acceptance pass on a device (camera/GPS),
+and the signed-PDF placement path (needs the Chromium renderer).
 
 **PostGIS is required** for field attendance: `docker-compose.yml` runs
 `postgis/postgis:18-3.6`; on another Postgres run `CREATE EXTENSION postgis`
