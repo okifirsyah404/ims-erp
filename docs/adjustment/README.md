@@ -13,6 +13,7 @@ disetujui (arahan programmer B, 2026-11-26).
 |---|---|
 | [`catatan-progres.md`](catatan-progres.md) | Log kerja per tanggal: perubahan, perintah, hasil |
 | [`validasi-konsep-saat-ini.md`](validasi-konsep-saat-ini.md) | Matriks role, validasi dengan tim nyata, peta bentrok persetujuan, rekomendasi role dan alur |
+| [`lembar-keputusan-rapat.md`](lembar-keputusan-rapat.md) | **Untuk rapat**: semua keputusan dalam satu lembar, tinggal diisi |
 | [`bahan-keputusan.md`](bahan-keputusan.md) | Hal yang harus diputuskan Pemilik/Oki, dengan pilihan dan rekomendasi |
 | [`rencana-perubahan.md`](rencana-perubahan.md) | Gabungan semua perubahan mendatang dari seluruh catatan |
 | [`ringkasan-arsitektur.md`](ringkasan-arsitektur.md) | Ringkasan aturan arsitektur dan dokumen yang sudah tidak cocok dengan kode |

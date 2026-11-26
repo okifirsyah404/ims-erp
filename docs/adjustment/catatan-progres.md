@@ -962,3 +962,14 @@ lama. Tidak diubah karena itu kode; dicatat di README `uat-modul`.
 
 Catatan disimpan di branch dokumen dan diajukan sebagai PR (isi hanya
 `docs/adjustment/`).
+- 2026-11-26: `lembar-keputusan-rapat.md` baru: satu lembar untuk rapat dengan
+  Pemilik dan Oki. Isinya menggabungkan:
+  - `bahan-keputusan.md` A1–D5 dan E;
+  - `validasi-konsep-saat-ini.md`: daftar 17 role (1.1), empat matriks hak
+    per dokumen (1.2), pertanyaan 1.3 (dipetakan ke butir lain), 3.6, dan
+    usulan role 3.8;
+  - `rencana-perubahan.md` K6–K11.
+
+  Butir yang sudah dijawab programmer B (K1 = b, K2 setuju, SDM hanya Aqim)
+  ditandai *jawaban sementara*. Di akhir ada kesimpulan, tindak lanjut, dan
+  tanda tangan. README utama menautkannya.
