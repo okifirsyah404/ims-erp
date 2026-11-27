@@ -140,7 +140,7 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Pengaturan → Perjalanan **[baru]** | Uang makan dalam/luar kota, batas hotel dan kategori | M09-19 | Tinggi | O |
 | Detail proyek → Biaya | Kategori makan, tiket; biaya per orang; uang makan harian | B-48 | Tinggi | D |
 | Investor: Daftar, Dana, Bagi Hasil, Laporan **[baru]** | Menggantikan halaman "Segera hadir" | M11-4–M11-6 | Tinggi | O |
-| Portal investor **[baru]** (`apps/web-investor`) | Setoran, angsuran, bagi hasil, laporan, proyek didanai | M11-7 | Tinggi | O |
+| Portal investor **[baru]** (`apps/web-investor`) | Masuk (undangan + kata sandi + kode email); **dasbor satu halaman analitik** + ekspor Excel/PDF | M11-7 | Tinggi | O |
 
 **Jumlah:** sekitar 35 halaman, termasuk 5 halaman baru (Pembayaran
 Pemasok, Servis & Kondisi, Kasbon portal, Riwayat absen lokasi, Perlu

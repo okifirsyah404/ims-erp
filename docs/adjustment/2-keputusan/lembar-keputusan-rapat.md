@@ -378,9 +378,11 @@ Rincian di `3-rancangan/rancangan-biaya-perjalanan.md` dan `3-rancangan/rancanga
 | BP-1 | Kasbon + pertanggungjawaban dengan foto nota, dan klaim penggantian di portal; masuk biaya proyek |
 | BP-2, BP-3 | Uang makan harian tetap (dalam/luar kota) dari check-in sah; hotel, transport, tiket, bensin, tol, parkir pakai nota |
 | BP-4, BP-5 | Batas di pengaturan + peringatan + alasan; kategori hotel, makan, transport (bensin/tol/parkir), tiket perjalanan |
+| BP (konfirmasi) | Dikonfirmasi programmer B 28/11 ("baiklah") |
 | **IV-1** | **M11 dibangun lengkap sekarang (mengubah K10, OE1–OE4)**, prioritas Tinggi |
 | IV-2–IV-4 | Dana investor: modal, pinjaman (angsuran + imbal tetap), dana per proyek; dicatat Aqim sendiri |
-| IV-5 | Aturan bagi hasil menunggu Aqim |
+| IV-5 | Bagi hasil tahunan, dasar laba sesudah pajak dengan rincian, porsi persen per investor di pengaturan, ada cadangan, dana per proyek dari margin proyek (rinci saat desain) |
+| IV-7–IV-10 | Banyak investor (contoh "Bapak Budi Santoso", samaran); dana dicatat Aqim saja; login undangan email + kata sandi + kode verifikasi email; dasbor satu halaman analitik, ekspor Excel/PDF |
 | IV-6 | Portal investor: setoran/saldo, angsuran, bagi hasil, laporan ringkas, hasil proyek yang didanai |
 
 ## 9. Kesimpulan

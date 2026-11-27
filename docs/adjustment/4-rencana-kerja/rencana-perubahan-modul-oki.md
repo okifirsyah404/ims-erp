@@ -148,8 +148,8 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 |---|---|---|---|---|
 | M11-4 | **ADR baru + schema investor** (letak tabel diputuskan; `docs.dbml` dulu) | IV-1 | Tinggi | Diputuskan 28/11 |
 | M11-5 | **Daftar investor dan dana**: modal, pinjaman (jadwal angsuran + imbal tetap, pengingat), dana per proyek; setoran dicatat Aqim dengan bukti; jurnal otomatis | IV-2–IV-4 | Tinggi | Diputuskan 28/11 |
-| M11-6 | **Bagi hasil** per periode, disetujui Aqim, dibayar Bella; **menunggu aturan dari Aqim** (IV-5) | IV-5 | Tinggi (setelah aturan ada) | Diputuskan 28/11 |
-| M11-7 | **Portal investor** (`apps/web-investor`): setoran/saldo, angsuran, bagi hasil, laporan ringkas, hasil proyek yang didanai | IV-6 (T29, T30) | Tinggi | Diputuskan 28/11 |
+| M11-6 | **Bagi hasil tahunan** dari laba sesudah pajak dengan rincian, **cadangan %** dan **porsi % per investor** di pengaturan, dana per proyek dari margin proyek (rinci saat desain); disetujui Aqim, dibayar Bella | IV-5 | Tinggi | Diputuskan 28/11 |
+| M11-7 | **Portal investor** (`apps/web-investor`): login undangan email + kata sandi + kode verifikasi email (IV-9); **dasbor satu halaman gaya analitik** dengan ekspor Excel/PDF (IV-10): kartu ringkas, grafik, rincian bagi hasil, pinjaman, proyek didanai, kinerja ringkas, riwayat setoran | IV-6 (T29, T30) | Tinggi | Diputuskan 28/11 |
 
 
 | No | Perubahan | Sumber | Prioritas | Perlu keputusan |

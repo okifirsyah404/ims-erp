@@ -69,8 +69,8 @@ pelanggan. **Disetujui Pak Aqim 2026-11-28** (dilaporkan programmer B).
 | 22 | Karyawan kantor dan lapangan | Data karyawan punya penempatan Kantor/Lapangan; karyawan kantor yang ditugaskan ke proyek bekerja dengan cara lapangan hari itu; kasbon untuk siapa pun yang punya tugas proyek | ☑ Ya |
 | 23 | Teknisi freelance | Dicatat sebagai karyawan jenis Freelance, memakai portal karyawan untuk tugas proyek, absen lokasi, laporan; dibayar **harian atau borongan** lewat Keuangan; boleh pinjam alat dan kasbon; tidak mengerjakan tiket servis | ☑ Ya |
 | 24 | Pesanan online | Pelanggan memesan di portal/website → jadi SPH yang diperiksa Penjualan → pelanggan menyetujui di portal → SO → faktur → **pelanggan membayar sendiri di portal** per termin | ☑ Ya |
-| 26 | Biaya perjalanan teknisi | Kasbon sebelum berangkat + pertanggungjawaban dengan nota, atau klaim ganti; uang makan harian tetap (dalam/luar kota); batas hotel di pengaturan, lebih dari batas wajib alasan | ⬜ perlu dikonfirmasi Pak Aqim |
-| 27 | **Investor (mengubah butir 18)** | Modul investor **dibangun sekarang**: modal, pinjaman (angsuran + imbal tetap), dana per proyek; Pak Aqim mencatat setoran; portal investor; **aturan bagi hasil perlu diberikan Pak Aqim** | ☑ Berlaku (programmer B 28/11: dianggap disetujui Pak Aqim) |
+| 26 | Biaya perjalanan teknisi | Kasbon sebelum berangkat + pertanggungjawaban dengan nota, atau klaim ganti; uang makan harian tetap (dalam/luar kota); batas hotel di pengaturan, lebih dari batas wajib alasan | ☑ Ya (28/11) |
+| 27 | **Investor (mengubah butir 18)** | Modul investor **dibangun sekarang**: modal, pinjaman (angsuran + imbal tetap), dana per proyek; Pak Aqim mencatat setoran; portal investor; bagi hasil **tahunan dari laba sesudah pajak, porsi persen per investor, ada cadangan**; dasbor investor satu halaman dengan ekspor Excel/PDF | ☑ Berlaku (programmer B 28/11: dianggap disetujui Pak Aqim) |
 | 25 | Menu aplikasi | Menu dipangkas (84 → ±33 untuk Pemilik); menu harian Pak Aqim: Dasbor, Perlu Tindakan, Laporan, SDM; lainnya di "Lainnya", bisa dicari | ☑ Ya |
 
 ## Tanda tangan

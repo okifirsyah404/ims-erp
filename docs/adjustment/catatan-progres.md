@@ -1922,3 +1922,32 @@ teknisi (hotel, makan) dan suntikan dana investor.
 Pemeriksa Mermaid: 2 dokumen baru, masing-masing 0 error.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Aturan bagi hasil, login, dan dasbor investor
+
+Jawaban programmer B:
+- **Bagi hasil:**
+  - periode tahunan;
+  - dasar laba sesudah pajak, dengan rincian perhitungan;
+  - porsi berupa persen per investor di pengaturan;
+  - ada cadangan;
+  - dana per proyek dari margin proyek (rinciannya menyusul saat desain).
+- **Data uji:** banyak investor, dengan contoh nama samaran "Bapak Budi
+  Santoso".
+- **Biaya perjalanan (BP)** dikonfirmasi; butir 26 ringkasan Pemilik ☑.
+- **Pendanaan:** bentuk dan jumlah ditentukan investor, dan **dicatat Aqim
+  saja**.
+- **Login investor:** undangan email + kata sandi + kode verifikasi email
+  untuk perangkat baru.
+- **Dasbor investor:** satu halaman gaya analitik, bisa diekspor Excel/PDF.
+  Isinya kartu ringkas, grafik, rincian bagi hasil per tahun, pinjaman,
+  proyek yang didanai, kinerja ringkas perusahaan, dan riwayat setoran.
+
+Diperbarui:
+- `rancangan-investor-m11.md`: IV-5, IV-7–IV-10, bagian 3a dasbor.
+- `lembar-keputusan-rapat.md` bagian 8i.
+- `ringkasan-untuk-pemilik.md`: butir 26 dan 27.
+- `rencana-perubahan-modul-oki.md`: M11-6, M11-7.
+- `peta-halaman.md`.
+
+Tidak ada perubahan kode.
