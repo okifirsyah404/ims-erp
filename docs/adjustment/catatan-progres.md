@@ -2008,3 +2008,52 @@ Tidak ada perubahan kode.
   tautan rencana.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Catatan beres; folder 5-pengerjaan (aturan, peta kode, UAT, prompt)
+
+**Programmer B menyatakan catatan beres.** Perubahan kode boleh dimulai
+mengikuti rencana langkah 7 dan aturan pengerjaan.
+
+Folder `5-pengerjaan/` (baru):
+- `README.md` (aturan pengerjaan):
+  - alur satu tugas (diagram);
+  - aturan menulis kode A-1 sampai A-9;
+  - checklist sebelum push: semua UAT Valid, daftar perbaikan kosong;
+  - templat PR;
+  - cara menangani temuan setelah merge.
+- `uat-pengerjaan.md`:
+  - UAT oleh penulis kode, satu file per tugas di `uat/`;
+  - status Valid/Tidak valid;
+  - daftar perbaikan `<tugas>-F<n>`, push hanya bila semua Valid;
+  - templat dan contoh P7-3.
+- `prompt-ai.md`: prinsip T-1 sampai T-12, templat prompt (tugas baru,
+  perbaikan UAT, kesalahan test, tinjauan sebelum push), dan daftar hal
+  yang membuat boros token.
+- `peta-kode-dafrin.md`: 29 tugas, disusun agen pemeriksa.
+- `peta-kode-oki.md`: 42 entri lengkap + 12 penunjuk, disusun agen
+  pemeriksa.
+- Setiap tugas di peta kode memuat seharusnya, sekarang (`path:baris`),
+  file yang diubah, skema/migrasi, test, UAT, dan ketergantungan.
+
+Temuan dari penyusunan peta kode:
+- Celah K1 di penyesuaian stok: semua pemegang hak approve bisa menyetujui
+  dokumennya sendiri.
+- Rujukan PO bergeser ke `purchase-order.service.ts:241`;
+  `rencana-langkah-7.md` sudah dibetulkan.
+- `numbering.next` sudah menerima `tx`, tetapi pemanggilnya tidak
+  meneruskannya.
+- `meta.requestId` sudah ada untuk RF-27.
+- Audit menelan galat dan repository-nya tidak menerima `tx`.
+- `accounting_period:create` sudah ada untuk Pemilik dan Akuntan, belum
+  untuk `finance`.
+- Compose memakai `SMTP_*`, sedangkan config membaca `MAIL_SMTP_*`; image
+  backend tanpa Chromium; `auth.options.ts` tanpa `rateLimit`.
+- Satuan uang aset salah di `formatMoney` dan disposal.
+- Peminjaman disetujui otomatis saat diserahkan (bertentangan dengan C13).
+
+`README.md`: posisi sekarang (catatan beres) dan bagian folder
+5-pengerjaan.
+
+Pemeriksaan tautan: 269 tautan, 0 rusak.
+
+Tidak ada perubahan kode.

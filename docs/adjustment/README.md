@@ -9,9 +9,12 @@ disetujui (arahan programmer B, 2026-11-26). Catatan dinyatakan beres setelah
 langkah 6 selesai.
 
 **Posisi sekarang (2026-11-28):** langkah 1–6 selesai (PR #171 di-merge).
-Rencana rinci langkah 7 sudah disusun
-([`4-rencana-kerja/rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md)).
-Kode dimulai setelah programmer B menyatakan catatan beres.
+**Catatan dinyatakan beres oleh programmer B (28/11)**, jadi kode boleh
+dimulai. Rencana rinci langkah 7:
+[`4-rencana-kerja/rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md).
+**Semua pengerjaan kode mengikuti
+[`5-pengerjaan/README.md`](5-pengerjaan/README.md)** (aturan, peta kode, UAT
+pengerjaan, trik prompt AI).
 
 ---
 
@@ -87,6 +90,16 @@ tulis entri di [`catatan-progres.md`](catatan-progres.md).
 | [`rencana-perubahan-modul-oki.md`](4-rencana-kerja/rencana-perubahan-modul-oki.md) | Tugas Oki per modul (M01, M06, M09, M10, M11, M12, portal karyawan) |
 | [`rencana-langkah-7.md`](4-rencana-kerja/rencana-langkah-7.md) | Rencana rinci langkah 7: paket P7-1 sampai P7-7, pemegang, ketergantungan, aturan PR, kriteria selesai |
 | [`peta-halaman.md`](4-rencana-kerja/peta-halaman.md) | Halaman yang diperbaiki, prioritas, dan pemegangnya |
+
+### 5-pengerjaan
+
+| File | Isi |
+|---|---|
+| [`README.md`](5-pengerjaan/README.md) | **Aturan pengerjaan kode**: alur satu tugas, aturan menulis kode, checklist sebelum push, templat PR |
+| [`peta-kode-dafrin.md`](5-pengerjaan/peta-kode-dafrin.md) | Per tugas programmer B: seharusnya, sekarang, file yang diubah, skema, test, UAT |
+| [`peta-kode-oki.md`](5-pengerjaan/peta-kode-oki.md) | Sama, untuk tugas Oki |
+| [`uat-pengerjaan.md`](5-pengerjaan/uat-pengerjaan.md) | UAT setelah pengerjaan: Valid / Tidak valid, daftar perbaikan, syarat push |
+| [`prompt-ai.md`](5-pengerjaan/prompt-ai.md) | Trik prompt supaya AI langsung ke file yang dituju dan hemat token |
 
 [`catatan-progres.md`](catatan-progres.md): log kerja per tanggal.
 
