@@ -1150,3 +1150,15 @@ konfigurasi, atau database yang diubah.
 - `lintas-modul/autentikasi-dan-hak-akses.md` dan `lintas-modul/portal-dan-website.md`: baris "Perubahan mendatang" K12, K13, OA4, K2b, K2d, Anggota/Admin.
 
 Pemeriksa Mermaid: `sekarang-vs-sesudah.md` 22 blok, 0 error.
+- 2026-11-27: tanya-jawab kedua dengan programmer B:
+  - OB13/RO6: kasbon teknisi dicairkan Aqim; pengajuan dan riwayatnya lewat
+    portal karyawan.
+  - C13: unit pinjaman wajib disetujui sebelum diserahkan.
+  - PK-1: check-out lokasi juga dicek radius.
+  - Matriks PO dan Surat Jalan (lembar bagian 6) disetujui.
+
+  Dicatat di `lembar-keputusan-rapat.md` (bagian 0 dan bagian 6),
+  `rencana-perubahan-modul-oki.md` (tabel tambahan), dan
+  `rencana-perubahan.md` (catatan tambahan). Perubahan sebelumnya disebar ke
+  11 file oleh subagen, lalu di-commit ke PR #171 (59832f6d); Mermaid
+  `sekarang-vs-sesudah.md` 22 blok, 0 error.

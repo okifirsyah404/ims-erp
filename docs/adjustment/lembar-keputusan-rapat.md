@@ -51,6 +51,10 @@ dan diagram sudah disesuaikan dengan daftar ini.
 | K10 / OE1 | M11 **ditunda**; halaman investor ditutup (hanya Pemilik) | |
 | OG1 | Absen lokasi di luar radius **ditolak** | Berbeda dari rekomendasi (simpan dan tandai) |
 | K8, K9, K11 | **Dibahas di rapat** | Kontrak A/B, fitur di luar kontrak, pemilik bagian bersama |
+| OB13 / RO6 | Kasbon teknisi **dicairkan Aqim**; teknisi **mengajukan dan melihat kasbonnya dari portal karyawan** | Portal karyawan belum punya halaman kasbon (wilayah Oki) |
+| C13 | Unit pinjaman **wajib disetujui dulu** sebelum diserahkan Gudang | Sekarang Gudang bisa menyerahkan tanpa persetujuan |
+| PK-1 | Check-out lokasi proyek **juga dicek radius** (di luar radius ditolak) | Konsisten dengan OG1 |
+| Lembar 6 | Matriks PO dan Surat Jalan **disetujui**: PO dibuat, disetujui, dan dibatalkan Aqim; Gudang menerima dan boleh melihat PO. Surat jalan disiapkan, dikirim, dan ditandai diterima oleh Gudang; Penjualan melihat | |
 
 **Rapat**
 
@@ -184,8 +188,8 @@ nyatakan setuju atau tidak per matriks.
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | Pelanggan dan pemasok    | Penjualan dan Manajer Penjualan mengelola pelanggan; Pembelian mengelola pemasok; akun portal oleh Admin, Manajer Penjualan, Layanan Pelanggan | Ubah sesuai rekomendasi kamu gimana? → **Rekomendasi (dengan K2b):** Penjualan (Agus MD, Bilal) melihat, menambah, mengubah, dan mengarsipkan pelanggan. Layanan Pelanggan, Pemasaran, dan Manajer Proyek hanya melihat. Akun portal diundang/dicabut oleh Penjualan dan Layanan Pelanggan. Pemasok dikelola Aqim (Pemilik) |
 | SPH dan Sales Order      | Penjualan membuat dan mengajukan; Manajer Penjualan menyetujui dan membatalkan SO                                                              | Ubah rekomendasinya gimana? → **Rekomendasi (dengan K2b):** Penjualan membuat, mengajukan, dan mengirim SPH, membuat dan membatalkan SO, serta **menyetujui SPH rekan** (bukan miliknya sendiri). Pemilik juga boleh menyetujui, termasuk SPH buatannya sendiri (K1). Pemilik melihat semua; Akuntan hanya melihat invoice dan kuitansi turunannya |
-| PO dan Penerimaan Barang | Pembelian membuat, Manajer Operasional menyetujui, Gudang menerima, batal hanya Pemilik                                                        |                                      |
-| Surat Jalan              | Gudang menyiapkan, mengirim, dan menandai diterima                                                                                             |                                      |
+| PO dan Penerimaan Barang | Pembelian membuat, Manajer Operasional menyetujui, Gudang menerima, batal hanya Pemilik                                                        | Setuju (jawaban programmer B 27/11): Aqim membuat, menyetujui, membatalkan PO; Gudang menerima dan melihat PO |
+| Surat Jalan              | Gudang menyiapkan, mengirim, dan menandai diterima                                                                                             | Setuju (jawaban programmer B 27/11): Gudang menyiapkan, mengirim, menandai diterima; Penjualan melihat |
 
 ## 7. Kontrak dan lingkup
 

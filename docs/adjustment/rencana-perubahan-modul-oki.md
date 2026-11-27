@@ -182,3 +182,11 @@ Rincian dan bukti di
 3. **Perbaikan Tinggi:** M09-1..M09-5 (RO1, RO4), M09-7 (RO5), M09-8, M10-1..M10-3, M06-1..M06-3, M06-6, lalu M12-2.
 4. **UAT ulang** M12 → M09 → M10 → M06 sesuai urutan di checklist, lalu perbaikan Sedang dan Rendah.
 5. **Lintas modul X-5, X-7** sebelum rilis produksi; **M11** ditunda (K10, 27/11), halaman investor ditutup lewat M11-1; **dokumen** bagian 4 setelah Oki setuju.
+
+## Tambahan keputusan programmer B (27/11, sesudah tanya-jawab kedua)
+
+| Keputusan | Dampak ke rencana | Wilayah |
+|---|---|---|
+| OB13 / RO6: kasbon teknisi dicairkan Aqim; teknisi mengajukan dan melihat kasbon dari portal karyawan | Tambah halaman kasbon di portal karyawan; pencairan tetap hak Pemilik | Oki (portal karyawan, M09) |
+| C13: unit pinjaman wajib disetujui sebelum diserahkan | `borrowing.service.ts`: tolak serah unit bila status masih `requested` | Oki (M06) |
+| PK-1: check-out lokasi juga dicek radius | Cek radius saat check-out, sama dengan check-in (OG1) | Oki (portal karyawan) |

@@ -129,3 +129,9 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 3. **Perbaikan Tinggi** di masing-masing wilayah: B-1, B-13, B-21, O-1, O-2, O-4, O-10, O-11.
 4. **UAT ulang** modul yang terdampak, lalu perbaikan Sedang dan Rendah.
 5. **Dokumen** (bagian 5) setelah pemiliknya setuju.
+
+**Tambahan 27/11:** matriks PO dan Surat Jalan di lembar rapat bagian 6
+disetujui programmer B: Aqim membuat, menyetujui, dan membatalkan PO; Gudang
+menerima barang dan boleh melihat PO (B4); Gudang menyiapkan, mengirim, dan
+menandai surat jalan diterima; Penjualan melihat. Keputusan modul Oki
+tambahan (OB13/RO6, C13, PK-1) ada di `rencana-perubahan-modul-oki.md`.
