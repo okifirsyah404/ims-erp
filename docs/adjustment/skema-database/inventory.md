@@ -6,6 +6,20 @@ Kebenaran stok: buku besar pergerakan barang, saldo per gudang/rak, unit bernomo
 - **Backend:** `apps/backend/src/app/inventory/`. Drizzle: `apps/backend/drizzle/schemas/inventory.schema.ts`.
 - **Lingkup:** `organization_id` boleh NULL = global (ADR-0008). Saldo mengikuti lingkup **gudang**, bukan lingkup pengguna.
 
+## Pembagian pemilik tabel
+
+Diperbarui 2026-11-27 (OD8, jawaban programmer B, menunggu konfirmasi Oki): satu schema, dua pemilik.
+
+| Bagian | Tabel | Pemilik |
+|---|---|---|
+| Stok | `movements`, `stocks`, `item_serials`, `stock_adjustments`, `stock_adjustment_items`, `settings`, `code_numberings` (seri stok) | M05, programmer B (Dafrin) |
+| Aset dan peminjaman | `items`, `item_images`, `item_categories`, `documents`, `borrowing_*`, `maintenances`, `condition_checks`, `disposals`, `tool_sets`, `tool_set_items` | M06, Oki |
+
+`movements` dipakai kedua bagian (baris aset memakai `item_id`): perubahan
+aturannya dibicarakan berdua. Schema dipecah hanya bila aset menjadi banyak
+atau rumit, kedua programmer saling ganggu di schema ini, atau aset menjadi
+aplikasi terpisah.
+
 ## Tabel
 
 | Tabel | Fungsi | Kolom penting | Status (vocabulary) |
@@ -93,3 +107,9 @@ erDiagram
 | Rekonsiliasi nilai persediaan ke akun GL | ERP-0014 | none | direncanakan |
 | Reservasi stok saat SO dikonfirmasi (isi `quantity_reserved`) atau hapus janji di dbml | Temuan dokumen ini | aturan | usulan |
 | Salin CHECK `stock_adjustments` dari Drizzle ke dbml | Temuan dokumen ini | none (dokumen) | usulan |
+| Nilai uang aset (`items.acquisition_cost`, `book_value`, nilai disposal/penyusutan): sen di penyimpanan, rupiah di layar; perbaiki form, tampilan, dan seeder | OD3 (jawaban programmer B 27/11), ADR-0002 | none (aturan + data seed dev) | diputuskan, menunggu konfirmasi |
+| Penghapusan/nonaktif `items` berstatus `borrowed` ditolak | OD6 (jawaban programmer B 27/11) | aturan (`disposal.service.ts`, `item.service.ts`) | diputuskan, menunggu konfirmasi |
+| Pengembalian pinjaman dengan kondisi Baik/Rusak/Tidak lengkap + catatan; peminjaman yang semua unitnya hilang bisa ditutup | OD7 (jawaban programmer B 27/11) | aturan (kosakata kondisi di `borrowing_items` dicek ke dbml sebelum dikerjakan) | diputuskan, menunggu konfirmasi |
+| Unit pinjaman wajib disetujui sebelum diserahkan | C13 (jawaban programmer B 27/11) | aturan (`borrowing.service.ts`) | diputuskan, menunggu konfirmasi |
+| Catatan servis dan cek kondisi dipakai layar; `tool_sets` disembunyikan di menu (tabel tetap) | OD5 (jawaban programmer B 27/11) | none | diputuskan, menunggu konfirmasi |
+| Schema tetap: aset fisik di `inventory`, nilai di `finance`; tanpa modul `assets`. Pemilik tabel dibagi (lihat "Pembagian pemilik tabel"); dipecah ke schema sendiri hanya bila muncul tanda: aset banyak/rumit, kedua programmer saling ganggu di schema ini, atau aset jadi aplikasi terpisah | OD8 (jawaban programmer B 27/11) | none (dokumen: `module-ownership.md`, rencana M06) | diputuskan, menunggu konfirmasi |

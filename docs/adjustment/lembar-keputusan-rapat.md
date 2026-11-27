@@ -55,6 +55,43 @@ dan diagram sudah disesuaikan dengan daftar ini.
 | C13 | Unit pinjaman **wajib disetujui dulu** sebelum diserahkan Gudang | Sekarang Gudang bisa menyerahkan tanpa persetujuan |
 | PK-1 | Check-out lokasi proyek **juga dicek radius** (di luar radius ditolak) | Konsisten dengan OG1 |
 | Lembar 6 | Matriks PO dan Surat Jalan **disetujui**: PO dibuat, disetujui, dan dibatalkan Aqim; Gudang menerima dan boleh melihat PO. Surat jalan disiapkan, dikirim, dan ditandai diterima oleh Gudang; Penjualan melihat | |
+| OA2 | `organization_id` **langsung dihapus** di tahap pertama K12 | ⚠️ Risiko: migrasi besar sejak awal; bertentangan dengan rekomendasi bertahap |
+| OA8 | Log Audit **hanya dibaca Pemilik** | |
+| OA12 | Hak mengundang **dihapus dari role SDM** (mengundang lewat Pemilik) | |
+| OA13 | Hapus undangan dan nonaktifkan pengguna **pakai dialog konfirmasi** | |
+| OA14 | Pesan login akun nonaktif dan akun yang belum klaim undangan **dibedakan** | |
+| OB2 | Pilihan akun **dengan pencarian** ke server | |
+| OB3 | **Layar pembayaran pemasok dibuat** (termasuk potongan PPh) | |
+| OB5 | Keuangan (Bella) **bisa membuka Aset tetap dan Anggaran proyek** | |
+| OB10 | Penghapusan piutang **langsung jadi beban** (tanpa cadangan) | |
+| OB11 | Arus kas tidak langsung (kapitalisasi nonkas): **dibahas di rapat** | |
+| OB12 | Ekspor CSV laporan **diperbaiki** | |
+| OB14 | Tagihan pemasok manual **bisa memilih akun beban** | |
+| OB15 | Teks Inggris di Keuangan: **nanti** | Prioritas rendah |
+| OC1 | Bug jenis pajak `vat` **diperbaiki** | |
+| OC2 | Pajak draf **dihitung ulang otomatis** (DPP × tarif) | |
+| OC3 | Masa Bupot **diisi otomatis** dari tanggal transaksi | |
+| OC4 | Tarif PPN dari **master pajak bertanggal berlaku**; dokumen menyimpan salinan tarif; pengecualian per dokumen dengan alasan | |
+| OC5 | Tombol **Batalkan + alasan** untuk pemotongan yang sudah terbayar | |
+| OC6 | Kode pemotongan ganda **diberi pesan jelas** | |
+| OC7 | Masa pajak yang sudah ditutup **dikunci (read-only)** | |
+| OC8 | **PPh 21 otomatis belum dipakai**; dihitung di luar aplikasi | Tabel TER resmi belum perlu |
+| OD3 | Nilai uang aset **disamakan** (sen di penyimpanan, rupiah di layar) | |
+| OD4 | Layar aset **menampilkan nama dan memakai pilihan**, bukan ID | |
+| OD5 | **Catatan servis/kondisi dilengkapi; Set Peralatan disembunyikan** | |
+| OD6 | Penghapusan aset **ditolak bila sedang dipinjam** | |
+| OD7 | Pengembalian pinjaman **punya pilihan kondisi** (Baik/Rusak/Tidak lengkap); unit hilang bisa menutup peminjaman | |
+| OD8 | Data aset **tetap** di `inventory` (fisik) + `finance` (nilai); dipecah hanya bila muncul tanda (aset banyak/rumit, saling ganggu antar-programmer, aplikasi terpisah). Rencana M06 dibetulkan | |
+| OD9 | PIC dan kondisi aset tetap: **belum perlu** | |
+| OE3 / OE4 | Portal investor dan hak investor: **ikut K10, ditunda** | |
+| OF1 | Kartu/tautan dasbor **disembunyikan** bila role tidak berhak | |
+| OF2 | Lencana "Sementara" **dihapus**, karena pembukuan tidak ditutup rutin | |
+| OF3 | Hak `dashboard:read` **diperiksa** | |
+| OG2 | Pekerja proyek **melihat riwayat absen lokasinya sendiri** | |
+| OG3 | Halaman **lupa kata sandi** portal karyawan dibuat | |
+| OG4 | **Semua karyawan wajib punya data karyawan** (kecuali pekerja lepas) | |
+| OG5 | Aqim **tidak perlu** portal karyawan | |
+| OG6 | Tanda tangan di portal karyawan **pakai pratinjau dan konfirmasi**; pesan diterjemahkan | |
 
 **Rapat**
 

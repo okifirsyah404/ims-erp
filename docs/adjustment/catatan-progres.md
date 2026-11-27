@@ -1162,3 +1162,29 @@ Pemeriksa Mermaid: `sekarang-vs-sesudah.md` 22 blok, 0 error.
   `rencana-perubahan.md` (catatan tambahan). Perubahan sebelumnya disebar ke
   11 file oleh subagen, lalu di-commit ke PR #171 (59832f6d); Mermaid
   `sekarang-vs-sesudah.md` 22 blok, 0 error.
+
+## 2026-11-27 - Tanya-jawab ketiga disebar ke catatan modul Oki; ringkasan untuk Pemilik
+
+Sumber: `lembar-keputusan-rapat.md` bagian 0 (baris baru OA2, OA8,
+OA12–OA14, OB2, OB3, OB5, OB10–OB15, OC1–OC8, OD3–OD9, OE3/OE4, OF1–OF3,
+OG2–OG6). Statusnya jawaban programmer B 27/11, menunggu konfirmasi Pemilik
+dan Oki. Tidak ada perubahan kode, konfigurasi, atau database; belum di-commit.
+
+**Keputusan yang disebar:**
+- M12: OA2 `organization_id` langsung dihapus di tahap 1 K12 (⚠️ bertentangan dengan K12 bertahap, perlu dikonfirmasi ulang); OA8 Log Audit hanya Pemilik; OA12 `invitation:create` dicabut dari SDM; OA13 dialog konfirmasi; OA14 pesan login dibedakan.
+- M09: OB2 pilihan akun berpencarian; OB3 layar pembayaran pemasok (pekerjaan baru); OB5 Keuangan gabungan membuka Aset tetap dan Anggaran proyek; OB10 write-off langsung ke beban; OB12 CSV diperbaiki; OB13 kasbon dicairkan Aqim, diajukan dari portal karyawan; OB14 akun beban di tagihan manual; OB15 nanti.
+- M10: OC1 bug `vat`; OC2 hitung ulang DPP × tarif; OC3 masa Bupot otomatis; OC4 tarif PPN dari master bertanggal berlaku, salinan di dokumen, pengecualian beralasan; OC5 Batalkan + alasan; OC6 pesan kode ganda; OC7 masa tertutup read-only; OC8 PPh 21 otomatis belum dipakai.
+- M06: OD3 sen/rupiah; OD4 nama bukan ID; OD5 servis dilengkapi, Set Peralatan disembunyikan; OD6 tolak hapus aset dipinjam; OD7 kondisi pengembalian; OD8 schema tetap, pemilik tabel `inventory` dibagi (stok M05, aset M06) dengan tanda pemecahan; OD9 belum perlu.
+- M11/M01/portal: OE3/OE4 ditunda ikut K10; OF1 kartu disembunyikan; OF2 lencana "Sementara" dihapus; OF3 `dashboard:read` diperiksa; OG2–OG6.
+- Masih dibahas di rapat: OB11, K8, K9, K11.
+
+**File yang diubah:**
+- `bahan-keputusan-modul-oki.md`: semua kolom Keputusan yang kosong diisi (41 butir); paragraf "Diperbarui" baru dengan risiko OA2. Tidak ada sel Keputusan kosong; OB11 berisi "Dibahas di rapat".
+- `rencana-perubahan-modul-oki.md`: tabel keputusan bagian 1 (K12 + risiko OA2, OD8 diputuskan, 10 baris baru); M12-2/3/5/9, M09-2/3/5/8–12, M10-1..6/9 + M10-10 baru (PPh 21 dimatikan), M06-3..7/11 + M06-13 baru (OD8), M11-3, M01-1..3, PK-2..5; urutan.
+- `validasi-konsep-modul-oki.md`: catatan "Diperbarui 2026-11-27" di sembilan matriks 1.2; 3.1 baris Bella; 3.6 jawaban no. 4–10 dan no. 11 baru (PPh 21); 3.7 enam baris + catatan; 3.8 baris Bella, aturan 9–11, dua pekerjaan baru.
+- `skema-database/inventory.md`: bagian baru "Pembagian pemilik tabel"; Perubahan mendatang OD3, OD5, OD6, OD7, C13, OD8.
+- `skema-database/finance.md`: Perubahan mendatang OB10, OB3, OB14, OD3, OD8, K1a/RO5.
+- `skema-database/tax.md`: Perubahan mendatang OC2–OC8.
+- `ringkasan-untuk-pemilik.md` (baru): satu halaman untuk Pak Aqim, 19 butir bisnis + susunan role + "Dibahas di rapat" + tanda tangan.
+- `README.md`: baris `ringkasan-untuk-pemilik.md` (**Untuk Pemilik**) di tabel Dokumen bersama.
+- `catatan-progres.md`: entri ini.

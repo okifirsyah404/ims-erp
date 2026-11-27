@@ -25,6 +25,7 @@ rencana, ringkasan arsitektur):
 | Folder / file | Isi |
 |---|---|
 | [`lembar-keputusan-rapat.md`](lembar-keputusan-rapat.md) | **Untuk rapat**: semua keputusan (kedua wilayah) dalam satu lembar, tinggal diisi |
+| [`ringkasan-untuk-pemilik.md`](ringkasan-untuk-pemilik.md) | **Untuk Pemilik**: satu halaman keputusan bisnis yang perlu disetujui Pak Aqim, tinggal dicentang |
 | [`catatan-progres.md`](catatan-progres.md) | Log kerja per tanggal: perubahan, perintah, hasil |
 | [`uat-modul/`](uat-modul/README.md) | Indeks UAT kedua wilayah, diagram alur, catatan skema lama |
 | [`diagram-alur/`](diagram-alur/README.md) | **Semua diagram alur**: kondisi sekarang (kedua wilayah) dan sekarang vs sesudah perbaikan |
