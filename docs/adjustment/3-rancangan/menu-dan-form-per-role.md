@@ -54,7 +54,7 @@ bagian dokumen ini yang memuat perubahannya.
 |---|---|---|
 | K1, K1a, RO16 | Aqim boleh menyetujui dokumennya sendiri (SPH, PO, PR, retur, penyesuaian stok, kasbon, gaji), tercatat di audit. Jurnal manual tetap dua orang (Bella ↔ Aqim). Tombol Setujui tetap tampil untuk Aqim di dokumen buatannya | 4.2, 4.7, 4.9, 4.11 |
 | K2, K2b, K2d, X4, Admin | Susunan role bagian 1; menu dihitung ulang (bagian 2). Pilihan role di form anggota dan undangan hanya menawarkan role yang dipakai | 2, 4.13 |
-| K12, OA2 (diubah 28/11: sekaligus) | Menu Organisasi dan pemilih organisasi dihapus; isian Organisasi di form Undang pengguna dihapus | 2, 4.13 |
+| K12, OA2 (diubah 28/11: satu organisasi) | Pemilih organisasi disembunyikan dan tombol Tambah organisasi dihapus; menu Organisasi tetap untuk Pemilik; isian Organisasi di form Undang pengguna dihapus | 2, 4.13 |
 | K13, OA14 | Login web-admin dan portal karyawan: nama pengguna/email + kata sandi, **tanpa tombol Google**; pesan akun nonaktif dibedakan dari akun yang belum klaim undangan | 4.13, 5.1 |
 | K13, OA4 | Portal pelanggan: **masuk dengan Google, satu jenis akun**; data perusahaan diisi belakangan di profil. Di web-admin, daftar pelanggan diberi **filter pelanggan biasa / pelanggan bisnis** | 4.1, 5.2 |
 | OA8, OA12, OA13 | Log Audit hanya Pemilik; **mengundang hanya Pemilik** (hak dicabut dari SDM); hapus undangan dan nonaktifkan pengguna memakai dialog konfirmasi | 4.13 |
@@ -93,7 +93,7 @@ Keterangan:
 - **PIC** = hanya untuk admin aplikasi atau orang yang ditunjuk sebagai
   penanggung jawab gudang. Bilal dan Agus **harus ditunjuk dulu** di
   Gudang → Penanggung jawab, kalau tidak menu Gudang tidak muncul untuk mereka.
-- Menu **Organisasi** sudah tidak ada di tabel karena dihapus (K12).
+- Menu **Organisasi** tetap ada untuk Pemilik (profil, anggota, role), tanpa tombol Tambah organisasi (K12 diubah 28/11).
 
 | Menu | Pemilik | SDM | Penjualan | Gudang | Lay. Pelanggan | Pemasaran | Man. Proyek | Teknisi | Keuangan | Pek. Lepas |
 |---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -198,7 +198,7 @@ Keterangan:
 
 | Menu | Sekarang | Sesudah | Sebab |
 |---|---|---|---|
-| Administrasi → Organisasi | Pemilik | Dihapus | K12 |
+| Administrasi → Organisasi | Pemilik | Tetap, tanpa Tambah organisasi | K12 (diubah 28/11) |
 | Bonus & Investor → Data Investor | Pemilik, Keuangan | Pemilik saja | K10 |
 | Pengadaan → Pesanan Pembelian | Pemilik | Pemilik, Gudang | B4 |
 | Penjualan → Sales order | Pemilik, Penjualan, Keuangan | + Gudang | B4 |
@@ -470,7 +470,7 @@ Semua diisi **Keuangan**.
 | Ubah gudang | Detail gudang | Sama dengan gudang baru | Aqim, PIC gudang |
 | Tambah / ubah penyimpanan (bin) | Detail gudang → Penyimpanan | Kode, nama, jenis bin, kapasitas, aktif | Aqim, PIC gudang |
 | Penanggung jawab | Detail gudang → Penanggung jawab | Pengguna (cari) | Aqim, PIC gudang |
-| Organisasi tertaut | Detail gudang → Organisasi | Organisasi | Aqim (hilang di K12) |
+| Organisasi tertaut | Detail gudang → Organisasi | Organisasi | Aqim (tetap; satu organisasi) |
 | Barang baru / ubah | Produk, Komponen, Material | Kode, jenis, nama, SKU, nomor seri, kategori, merek, deskripsi, foto, harga jual, harga beli, satuan, stok minimum, barcode, berseri / dilacak jumlah / aktif, spesifikasi | Pemilik. **[ubah] (B3):** halaman ubah barang mengikuti hak `product.update`, tidak lagi khusus admin aplikasi |
 | Susunan komponen/material | Detail barang | Barang (cari), jumlah | Pemilik |
 | Kategori barang baru / ubah | Kategori barang | Slug, nama, urutan, nama pendek, deskripsi, aktif | Pemilik |
@@ -543,7 +543,7 @@ PO muat (K6).
 | Gateway pembayaran | Pengaturan → Gateway pembayaran | Penyedia, kode, nama, mode, aktif, secret, token webhook | Pemilik |
 | Tanggal gajian | Pengaturan → Penggajian | Aktif, tanggal gajian | Admin aplikasi |
 | PPh 21 dan BPJS | Pengaturan → Penggajian | PPh 21, BPJS Kesehatan/Ketenagakerjaan (sakelar), tarif JKK, batas upah . **PPh 21 dimatikan** (OC8) | Admin aplikasi |
-| ~~Organisasi baru / ubah~~ | Organisasi | Gambar, nama, deskripsi, slug | **Dihapus (K12)** |
+| Ubah organisasi (~~organisasi baru~~) | Organisasi | Gambar, nama, deskripsi, slug | **Hanya ubah; Tambah organisasi dimatikan (K12, 28/11)** |
 | Ubah role anggota | Pengguna → detail (pindah dari Organisasi → Anggota, K12) | Role (centang, bisa beberapa, D2); hanya role yang dipakai | Pemilik |
 | Undang pengguna | Pengguna | Tunggal: email, nama, role, karyawan tetap (**isian organisasi dihapus**, K12). Massal: baris teks + role. Berkas: unggah. Pilihan role hanya role yang dipakai (K2) | **Pemilik saja** (OA12) |
 | **Masuk (web-admin) [ubah]** | Halaman masuk | Nama pengguna/email, kata sandi; **tombol Google dihapus** (K13); pesan akun nonaktif dibedakan dari akun yang belum klaim undangan (OA14) | Semua staf |
@@ -610,4 +610,4 @@ Absen masuk dan pulang berupa **tombol satu klik** tanpa isian.
 | FR7 | ***Sudah tercakup keputusan B3.*** Halaman **ubah barang** dikunci untuk admin aplikasi saja, padahal B3 = ikut hak role | — | Ikut hak `product.update` (sesuai B3) |
 | FR8 | ***Sudah tercakup keputusan K13 dan OA4*** (sisa: teks portal ke bahasa Indonesia). **Portal pelanggan** masih punya jenis akun perorangan/perusahaan dan login email + kata sandi, padahal keputusannya **satu jenis akun dengan Google** (OA4, K13). Teks portal masih bahasa Inggris dan ditulis langsung di kode | Masuk, Daftar langkah 1–2 | Sesuaikan saat K13 dikerjakan; teks ke bahasa Indonesia |
 | FR9 | Beberapa form portal pelanggan (wishlist, pesan servis, daftarkan perangkat, bayar invoice, klaim RFQ) **belum dicek** apakah sudah tersambung ke ERP | — | Cek saat UAT portal (M07) |
-| FR10 | ***Sudah tercakup keputusan K12.*** Form **Undang pengguna** masih punya pilihan organisasi | — | Hilang di K12 |
+| FR10 | ***Sudah tercakup keputusan K12 (satu organisasi).*** Form **Undang pengguna** masih punya pilihan organisasi | — | Disembunyikan di K12 (M12-2) |

@@ -478,7 +478,7 @@ sequenceDiagram
 **Yang berubah dan mengapa.** ERP dipakai satu perusahaan, tetapi role disimpan
 per organisasi (`auth.members.role`), web-admin mengirim header
 `x-organization-id`, ada pemilih organisasi di sidebar, dan `organization_id` ada
-di 18 file skema. Usulannya dihapus ~~bertahap~~ **sekaligus** (K12, diubah 28/11). Login web-admin cukup
+di 18 file skema. Usulannya dihapus ~~bertahap~~; **diubah 28/11: tidak dihapus, tetap satu organisasi** (K12). Login web-admin cukup
 email/username + kata sandi tanpa Google; portal pelanggan memakai Google (K13).
 Portal karyawan juga tanpa Google: karyawan diundang, mengganti kata sandi,
 lalu login (K13, 27/11). Pelanggan memakai satu jenis akun tanpa pilihan
@@ -488,7 +488,7 @@ organisasi Admin dihapus, dan perubahan role wajib diaudit (sekarang tidak).
 
 | Keputusan | Isi | Status |
 |---|---|---|
-| K12 / OA1 / OA2 | Hapus organisasi bertahap: tahap 1 sembunyikan pemilih, tahap 2 role ke pengguna, tahap 3 buang `organization_id`. Selama peralihan kolom tetap diisi organisasi tunggal | jawaban programmer B 27/11: (b) bertahap → **diubah 28/11: sekaligus (M12-2)**; butuh ADR baru |
+| K12 / OA1 / OA2 | Hapus organisasi bertahap: tahap 1 sembunyikan pemilih, tahap 2 role ke pengguna, tahap 3 buang `organization_id`. Selama peralihan kolom tetap diisi organisasi tunggal | jawaban programmer B 27/11: (b) bertahap → **diubah 28/11: tetap satu organisasi, tambah organisasi dimatikan, pemilih disembunyikan (M12-2)**; ADR singkat |
 | K13 / OA3 | Web-admin tanpa Google | jawaban programmer B 27/11: (a) |
 | K13 / OA4 | Portal pelanggan dengan Google, dicocokkan ke kontak lewat email; **satu jenis akun**, data perusahaan diisi di profil | jawaban programmer B 27/11 (mengganti "pelanggan perusahaan diundang dulu") |
 | OA3 / RO19 | Portal karyawan tanpa Google; karyawan diundang, mengganti kata sandi, lalu login | jawaban programmer B 27/11 |
@@ -536,11 +536,11 @@ sequenceDiagram
     AUTH-->>U: email undangan
     U->>AUTH: klaim undangan, buat kata sandi
     U->>WA: login: email/username + kata sandi (tanpa Google, K13)
-    rect rgb(240, 255, 240)
-        Note over WA,AUTH: K12 sekaligus (M12-2, ADR baru, docs.dbml, migrasi)
-        WA->>AUTH: sesi tanpa organisasi, pemilih dan halaman Organisasi hilang
-        AUTH->>AUTH: role disimpan di tingkat pengguna
-        AUTH->>AUTH: header x-organization-id dan kolom organization_id dibuang dari semua modul
+    rect rgb(235, 245, 255)
+        Note over WA,AUTH: K12 diubah 28/11: tetap satu organisasi (M12-2)
+        WA->>AUTH: sesi otomatis ke organisasi tunggal, pemilih organisasi hilang
+        AUTH->>AUTH: membuat organisasi kedua ditolak
+        AUTH->>AUTH: role tetap di members, organization_id tetap diisi organisasi tunggal (OA2)
     end
     W->>WA: ubah role pengguna (label Penjualan, Keuangan gabungan)
     WA->>AUTH: simpan role
@@ -582,12 +582,11 @@ sequenceDiagram
 
 **Yang perlu diubah di kode:**
 
-- K12 sekaligus (diubah 28/11, Oki: M12-2, ditinjau programmer B untuk
-  modulnya): pemilih dan halaman Organisasi dihapus, role ke pengguna, buang
-  `organization_id` dan header di semua modul (`docs.dbml`, migrasi
-  append-only, seed, test). ADR baru menggantikan ADR-0001/0007/0012 dan
-  mengubah ADR-0006/0008. Portal karyawan mengenali karyawan tanpa
-  keanggotaan organisasi.
+- K12 (diubah 28/11, Oki: M12-2): tetap satu organisasi. Server menolak
+  organisasi kedua, tombol Tambah organisasi dihapus, pemilih organisasi
+  disembunyikan, sesi otomatis ke organisasi tunggal. Halaman Organisasi,
+  role, undangan, dan `organization_id` tetap. ADR singkat mengubah
+  ADR-0001/0007/0012 (multi-organisasi). M12-3 gugur.
 - Hapus tombol Google di `apps/web-admin/src/components/form/login-form.tsx`
   dan di `apps/web-employee` (K13, 27/11); isi `GOOGLE_*` di server dan
   aktifkan tombol Google di `apps/web-customer-portal` (Oki: konfigurasi

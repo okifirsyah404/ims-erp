@@ -34,7 +34,7 @@ Ini ringkasan, bukan pengganti: bila ragu, dokumen aslinya yang berlaku.
 - Beberapa role per orang disimpan dipisah koma, haknya digabung. Hanya owner memberi owner; owner terakhir tidak bisa dihapus.
 - Admin aplikasi tanpa keanggotaan tidak punya akses ERP; investor/customer saja ditolak web-admin (login gate, ADR-0018 butir 5).
 - Guard di `src/http/plugin.ts` (`none | session | erp | erp+session`) dan guard khusus di `src/authorization/` (gudang, portal karyawan, portal pelanggan, kunci website). Cek hak di web-admin hanya tampilan.
-- **K12** (hapus organisasi) akan mengubah lapis kedua: role pindah dari `members` ke pengguna. Sampai ada ADR baru, aturan di atas tetap berlaku.
+- **K12** (diubah 28/11): organisasi **tidak dihapus**; tetap satu organisasi dan role tetap di `members`. Aturan di atas tetap berlaku.
 
 ## 2. Login (ADR-0029, Better Auth)
 
