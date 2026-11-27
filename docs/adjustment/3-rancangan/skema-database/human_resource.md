@@ -78,6 +78,8 @@ erDiagram
 
 | Perubahan | Sumber | Dampak ke schema | Status |
 |---|---|---|---|
+| Pengaturan potongan gaji: alpa, izin tanpa gaji, terlambat (toleransi + nominal), pro-rata; baris potongan di rekap dan slip | PG-1–PG-5, B-39 | aturan + kemungkinan kolom/pengaturan baru (jenis cuti tidak dibayar, toleransi, nominal); dicek ke `docs.dbml` | diputuskan 28/11, Tinggi |
+| Laporan kerja karyawan: harian, mingguan, bulanan, penilaian Aqim | LK-1–LK-7, B-44 | tabel baru (atau `project.daily_reports` dari dbml untuk laporan proyek); pemilik tabel diputuskan saat grill | diputuskan 28/11, Tinggi |
 | Pemilik boleh menyetujui cuti/lembur miliknya sendiri, dengan audit | A1 (b), A3, 3.8 | aturan | disetujui 27/11 (K1); Aqim tidak cuti lewat aplikasi (A3a) |
 | Role SDM hanya untuk Aqim; yang lain layanan mandiri | R1 | none (pemberian role) | disetujui 27/11 (K2a) |
 | Uang lembur dihitung otomatis dari jam disetujui | Temuan M08 no. 4, ERP-0018 | aturan | direncanakan (ERP-0018 planned, Oki) |

@@ -240,6 +240,7 @@ portal ini (OG5).
 | Dasbor | Dasbor |
 | SDM | Absensi, Jadwal Kerja, Cuti, Lembur, Tugas |
 | Keuangan | **Kasbon [baru]** (ajukan, lihat status, pertanggungjawaban; OB13, RO6) |
+| Laporan | **Laporan Kerja [baru]** (harian; ringkasan mingguan dan bulanan; LK-1–LK-7, B-44) |
 | Proyek | Proyek, **Riwayat absen lokasi [baru]** (OG2) |
 | Dokumen | Berkas, Tanda tangan |
 | Akun | Penggajian (slip gaji) |

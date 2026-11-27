@@ -224,7 +224,7 @@ yang ada hanya tiga halaman "Segera hadir", izin investor di
 
 | No | Kekurangan | Jenis | Kontrak | Prioritas | Bukti / alasan |
 |---|---|---|---|---|---|
-| KF-H1 | Gaji memakai absensi: potongan, izin tanpa gaji, pro-rata | Belum ada | Ya (T19) | Tinggi | `salary.service.ts:177-182`, `payroll-calculation.service.ts:38-55` |
+| KF-H1 | Gaji memakai absensi: potongan, izin tanpa gaji, pro-rata, terlambat (pengaturan PG-1–PG-5, B-39) | Belum ada | Ya (T19) | Tinggi | `salary.service.ts:177-182`, `payroll-calculation.service.ts:38-55` |
 | KF-H2 | Upah lembur selalu 0 dan diketik manual | Setengah jadi | Ya | Tinggi | `salary.service.ts:182` (ERP-0018) |
 | KF-H3 | Kalender libur nasional (cuti di hari libur memotong kuota) | Belum ada | Abu-abu | Sedang | `hr.ts:25-26` |
 | KF-H4 | Jabatan dan departemen karyawan (untuk slip gaji dan perjanjian kerja) | Belum ada | Ya | Sedang | `human-resource.schema.ts:114-186` |

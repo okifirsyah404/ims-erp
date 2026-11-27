@@ -10,8 +10,9 @@ Dasar yang sudah ada di kode:
   gaji bulanan, persetujuan Pemilik, slip PDF (lihat
   [`kekurangan-fitur.md`](kekurangan-fitur.md) KF-H1, KF-H2).
 - Absensi harian, jadwal kerja (shift per tanggal), cuti dan lembur.
-- Tabel `project.daily_reports` dan tabel KPI sudah ada di skema tetapi
-  belum punya alur (S6, keputusan T-4 "dibangun").
+- Tabel `project.daily_reports`, `kpi_definitions`, `kpi_evaluations`
+  **baru ada di `docs.dbml` sebagai target** (belum ada di Drizzle maupun
+  database; S6, keputusan T-4 "dibangun").
 
 ---
 
@@ -62,7 +63,7 @@ sequenceDiagram
 
 | Hal | Catatan |
 |---|---|
-| Letak data | Laporan harian memakai tabel `project.daily_reports` yang sudah ada bila cocok (Gate 1: cek `docs.dbml`); laporan mingguan/bulanan dan penilaian butuh tabel baru. Laporan karyawan non-proyek (staf kantor) tidak punya proyek, jadi pemilik tabel diputuskan saat grill: modul `human_resource` (laporan kerja karyawan) atau `project` |
+| Letak data | Laporan harian bisa memakai rancangan `project.daily_reports` di `docs.dbml` (belum ada di database, jadi butuh migrasi baru); laporan mingguan/bulanan dan penilaian butuh tabel baru (Gate 1). Laporan karyawan non-proyek (staf kantor) tidak punya proyek, jadi pemilik tabel diputuskan saat grill: modul `human_resource` (laporan kerja karyawan) atau `project` |
 | Wilayah | Data dan backend: programmer B (M07/M08). Layar portal karyawan: aplikasi `web-employee` (Oki); dikerjakan lewat PR bersama (K11) |
 | Hubungan dengan S6 | Butir laporan harian dan KPI di B-26 (T-4) tercakup oleh rancangan ini; rencana kerja (`work_plans`) dan milestone tetap di B-26 |
 | Kontrak | Tambahan dari programmer B; fitur di luar kontrak diterima (K9) |

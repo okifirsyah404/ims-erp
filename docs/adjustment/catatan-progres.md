@@ -1688,3 +1688,23 @@ lewat tanya-jawab, prioritas **Tinggi**.
   karyawan dikerjakan bersama Oki.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Laporan kerja dan potongan gaji disebar ke semua catatan terkait
+
+Arahan programmer B: langsung perbarui file supaya semua catatan sejalan.
+- `skema-database/human_resource.md`: dua baris "Perubahan mendatang"
+  (pengaturan potongan, laporan kerja).
+- `skema-database/project.md`: `daily_reports` dan KPI dipakai B-44.
+- `rencana-perubahan.md`: B-26 menyebut laporan harian dan KPI pindah ke
+  B-44.
+- `menu-dan-form-per-role.md`: menu portal karyawan "Laporan Kerja".
+- `rancangan-menu-dasbor-dan-form.md`:
+  - Perlu Tindakan Aqim: laporan siap dinilai.
+  - Perlu Tindakan Teknisi: laporan harian hari ini.
+  - Kartu SDM: laporan harian belum diisi.
+- `kekurangan-fitur.md`: KF-H1 menautkan PG-1 sampai PG-5.
+- **Koreksi** di `rancangan-laporan-kerja-dan-potongan-gaji.md`:
+  `daily_reports` dan tabel KPI baru ada di `docs.dbml` sebagai target,
+  belum ada di Drizzle maupun database, jadi butuh migrasi baru.
+
+Tidak ada perubahan kode.

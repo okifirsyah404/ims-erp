@@ -28,6 +28,7 @@ Schema gabungan: proyek pelaksanaan SO (tugas, bukti, biaya, BAST, garansi, abse
 | `license_events` | Log panggilan API lisensi dan tindakan staf (append-only) | `event_type`, `result`, `instance_id` | `event_type`: validated, activated, deactivated, renewed, suspended, reactivated, terminated, key_revoked |
 | `license_api_keys` | Kunci mesin aplikasi milik sendiri untuk API lisensi | `license_application_id`, `api_key_id`, `key_start` | `status`: active, revoked |
 | `types`, `phases`, `task_dependencies`, `milestones`, `daily_reports`, `site_assignments`, `kpi_definitions`, `kpi_evaluations`, `changes`, `work_plans` | **Target**: hanya di dbml, belum ada di Drizzle/DB (S6) | — | lihat dbml |
+| `daily_reports`, `kpi_definitions`, `kpi_evaluations` dipakai untuk **laporan kerja karyawan** (B-44, LK-1–LK-7, 28/11); sisa tabel target tetap B-26 | B-44 | migrasi baru saat dibangun | diputuskan 28/11, Tinggi |
 | `settings`, `code_numberings` | Pengaturan (mis. `site_radius_meters`, bawaan 100) dan seri nomor | — | — |
 
 ## Relasi

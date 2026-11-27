@@ -221,12 +221,12 @@ dikelompokkan per jenis, dengan jumlah di menu (lencana angka).
 
 | Untuk | Isi |
 |---|---|
-| Aqim (Pemilik, SDM) | SPH, PO, PR, retur pembelian/penjualan, penyesuaian stok, peminjaman (bila diajukan Manajer Proyek sendiri), cuti, lembur, gaji bulanan, kasbon (setujui dan cairkan), pertanggungjawaban, jurnal buatan Bella, penghapusan piutang |
+| Aqim (Pemilik, SDM) | SPH, PO, PR, retur pembelian/penjualan, penyesuaian stok, peminjaman (bila diajukan Manajer Proyek sendiri), cuti, lembur, gaji bulanan, kasbon (setujui dan cairkan), pertanggungjawaban, jurnal buatan Bella, penghapusan piutang, **laporan kerja mingguan/bulanan siap dinilai** (B-44) |
 | Penjualan (Agus MD, Bilal) | SPH rekan yang menunggu persetujuan; retur penjualan rekan; prospek yang jadwal follow-up-nya hari ini |
 | Gudang | PO yang siap diterima, SO yang siap dikirim (belum ada surat jalan), retur penjualan yang harus diterima, retur pembelian yang harus dikirim, peminjaman yang disetujui dan siap diserahkan |
 | Manajer Proyek | Peminjaman yang menunggu persetujuan, tugas tim yang terlambat, tiket belum ditugaskan |
 | Layanan Pelanggan | Tiket belum ditugaskan, chat WhatsApp yang diserahkan ke manusia |
-| Teknisi | Tugas saya, tiket saya |
+| Teknisi | Tugas saya, tiket saya, **laporan harian hari ini** (B-44) |
 | Keuangan (Bella) | SO yang belum ditagih, faktur draf belum diterbitkan, faktur jatuh tempo, tagihan pemasok jatuh tempo, jurnal buatan Aqim yang menunggu |
 | Pekerja Lepas | Tugas saya, permintaan tanda tangan |
 
@@ -261,7 +261,7 @@ ringkas per modul (wilayah masing-masing pemilik modul).
 | Role | Kartu (urut dari atas) |
 |---|---|
 | **Pemilik** (Aqim) | 1. Menunggu persetujuan saya (jumlah per jenis). 2. Kas & bank hari ini. 3. Penjualan bulan ini vs bulan lalu. 4. Laba bulan ini. 5. Piutang jatuh tempo / lewat jatuh tempo. 6. Utang pemasok jatuh tempo. 7. Stok di bawah minimum. 8. Proyek berjalan (terlambat ditandai). 9. Lisensi habis dalam 30 hari |
-| **SDM** (Aqim) | 1. Absensi hari ini (hadir / belum absen / cuti). 2. Cuti dan lembur menunggu. 3. Gaji bulan ini (status draf / disetujui / dibayar). 4. Kontrak kerja habis dalam 30 hari |
+| **SDM** (Aqim) | 1. Absensi hari ini (hadir / belum absen / cuti). 2. Cuti dan lembur menunggu. 3. Gaji bulan ini (status draf / disetujui / dibayar). 4. Kontrak kerja habis dalam 30 hari. 5. **Laporan harian belum diisi** hari ini/minggu ini (B-44) |
 | **Penjualan** (Agus MD, Bilal) | 1. Follow-up prospek hari ini. 2. SPH rekan menunggu persetujuan saya. 3. SPH saya: draf / diajukan / dikirim / akan kedaluwarsa. 4. SO belum dikirim. 5. Penjualan saya bulan ini. 6. Lisensi pelanggan habis dalam 30 hari |
 | **Gudang** (Bilal, Agus) | 1. PO siap diterima. 2. SO siap dikirim. 3. Retur yang harus diterima/dikirim. 4. Peminjaman siap diserahkan / harus kembali hari ini. 5. Stok di bawah minimum |
 | **Layanan Pelanggan** (Bilal) | 1. Tiket belum ditugaskan. 2. Tiket terbuka per status. 3. Chat WhatsApp menunggu dibalas. 4. Klaim garansi menunggu |

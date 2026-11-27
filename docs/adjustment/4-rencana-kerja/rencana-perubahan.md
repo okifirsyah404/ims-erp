@@ -72,7 +72,7 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-23 | Halaman barang dan gudang ikut hak role (B3); Gudang diberi hak baca PO dan SO (B4, hak diajukan ke Oki) | K4 / B3, B4 | Sedang | Disetujui Pemilik 27/11 |
 | B-24 | Portal pelanggan: satu jenis akun (tanpa tipe perorangan/perusahaan saat login), login Google dicocokkan lewat email, data perusahaan diisi di profil | K13 / OA4 | Sedang | Disetujui Pemilik 27/11 |
 | B-25 | Menu Tugas: teknisi dan pekerja lepas hanya melihat tugasnya sendiri | D4 | Rendah | Disetujui Pemilik 27/11 |
-| B-26 | Bangun alur tabel S6: diskon, kontrak, target (penjualan); tahap, milestone, laporan harian, KPI, rencana kerja (proyek); templat dan sub-tiket. Dikerjakan **setelah perbaikan prioritas tinggi**, tiap kelompok dirancang dulu | T-4 / S6 | Sedang | Diputuskan 27/11 |
+| B-26 | Bangun alur tabel S6: diskon, kontrak, target (penjualan); tahap, milestone, laporan harian, KPI, rencana kerja (proyek); templat dan sub-tiket. Dikerjakan **setelah perbaikan prioritas tinggi**, tiap kelompok dirancang dulu (laporan harian dan KPI pindah ke **B-44**, 28/11) | T-4 / S6 | Sedang | Diputuskan 27/11 |
 | B-27 | Nomor dokumen tanpa celah: alokasi nomor di dalam transaksi penyimpanan (bagian bersama, K11) | T-1 | Sedang | Diputuskan 27/11 |
 | B-28 | Rapikan dokumen arsitektur lewat PR (status ADR-0024/0020/0010, ADR-0012 ganda, `architecture.md` 20 schema); `security-and-access.md` ditunda | T-6 / E1–E5 | Rendah | Diputuskan 27/11 |
 | B-29 | **Layar terima/keluarkan stok manual** (bahan proyek dan pemakaian sendiri) dengan pilihan proyek dan nomor seri; backend `/stock/receipts`, `/stock/issues` sudah ada | KF-G1 | Tinggi | Diputuskan 27/11 (KF-1) |
