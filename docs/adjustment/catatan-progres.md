@@ -1259,3 +1259,50 @@ File yang diperbarui:
 Belum ada perubahan kode. Masih terbuka:
 - tinjauan Oki di PR #171;
 - usulan MN1–MN7 dan FR1–FR10.
+
+## 2026-11-27 - Menu dan form disamakan dengan keputusan yang disetujui
+
+Permintaan programmer B: usulan ditahan dulu. File diperbarui dulu, setelah
+itu baru dibahas menu dan UI form.
+
+Perubahan di `menu-dan-form-per-role.md`:
+- **Bagian baru 1a.** Daftar semua keputusan rapat 27/11 yang mengubah menu
+  atau form, beserta bagian dokumen tempat perubahannya dicatat:
+  - K1/K1a, K2, K12, K13, OA4, OA8, OA12–OA14, B1, B3, B4, C1, C2, D4;
+  - RO1, RO4, RO5, OB2, OB3, OB5, OB10–OB15, OC1–OC8;
+  - OD1–OD7, C13, OF1–OF3, OG1–OG6, PK-1, Lembar 6.
+- **Matriks menu:**
+  - Set Peralatan disembunyikan (OD5).
+  - Menu baru Keuangan → Pembayaran pemasok (OB3).
+  - Catatan pada Log Audit (OA8), Tugas (D4), dan Dasbor (OF1).
+- **Portal karyawan:**
+  - Menu Kasbon baru (OB13) dan Riwayat absen lokasi (OG2).
+  - Halaman Lupa kata sandi (OG3).
+  - Siapa yang memakai portal (OG4, OG5).
+- **Portal pelanggan:** masuk dengan Google, satu jenis akun (K13, OA4).
+- **Tabel form:** isian dan kolom "Siapa" disesuaikan, dengan tanda
+  **[baru]**/**[ubah]**:
+  - PPN dari master (OC4);
+  - SO otomatis (C1);
+  - tagihan dengan akun beban (OB14);
+  - form pembayaran pemasok baru;
+  - kasbon pindah ke portal karyawan; Aqim mencairkan dan menyetujui
+    pertanggungjawaban dalam satu langkah;
+  - periode: siapkan/tutup oleh Pemilik dan Keuangan, buka kembali hanya
+    Pemilik;
+  - pajak otomatis (OC2, OC3, OC6) dan form batalkan pemotongan (OC5);
+  - PPh 21 dimatikan;
+  - ubah barang ikut hak role (B3);
+  - aset memakai nama, bukan ID; daftar unit khusus; serahkan setelah
+    disetujui; pengembalian dengan kondisi; catat servis baru; hapus aset
+    yang dipinjam ditolak;
+  - PO tanpa "Tandai terkirim";
+  - undang pengguna hanya Pemilik, tanpa isian organisasi; login web-admin
+    tanpa Google.
+- **Status MN/FR:**
+  - Sudah tercakup keputusan: MN7 (OB13), FR7 (B3), FR8 (K13/OA4),
+    FR10 (K12).
+  - Sebagian tercakup: MN2 (OB5), MN5 (K10), FR1 (OD4).
+  - Sisanya tetap usulan.
+
+Tidak ada perubahan kode.
