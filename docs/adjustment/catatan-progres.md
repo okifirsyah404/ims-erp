@@ -1201,3 +1201,27 @@ dan Oki. Tidak ada perubahan kode, konfigurasi, atau database; belum di-commit.
 
   Semua butir keputusan sudah terjawab, kecuali K8, K9, K11, dan OB11 yang
   dibawa ke rapat.
+
+## 2026-11-27 - Menu dan form per role
+
+Permintaan programmer B: menu apa yang perlu tampil untuk setiap role, dan
+form apa saja yang ada.
+
+- `menu-dan-form-per-role.md` (baru):
+  - **Matriks menu × role (sesudah keputusan).** Dihitung dengan skrip bun
+    sementara (di luar repo) yang membaca `nav-config.ts`, aturan
+    `filter-nav.ts`, dan `erpRoleGrants`. Keputusan K2b, K2d, K10, K12
+    tahap 1, dan B4 diterapkan di memori, **tidak di kode**.
+  - Menu per orang, portal karyawan, portal pelanggan, dan portal investor.
+  - **Daftar form dari kode.** Web-admin 148, portal karyawan 10, portal
+    pelanggan 24. Setiap form ditulis dengan isian dan role pengisinya.
+  - Usulan baru yang **belum diputuskan**:
+    - MN1–MN7 (perapian menu). Contoh: Anggaran proyek tampil untuk Teknisi;
+      Aset tetap tidak tampil untuk Keuangan; form kasbon tidak terjangkau
+      Teknisi.
+    - FR1–FR10 (temuan form).
+- FR6 dicek di kode: penghapusan piutang tidak bisa disetujui oleh pengajunya
+  sendiri (`receivable-adjustment.service.ts:205`). Akibatnya, setelah K2d
+  persetujuannya jatuh ke Aqim.
+- `README.md`: baris baru di tabel Dokumen bersama.
+- Tidak ada perubahan kode.
