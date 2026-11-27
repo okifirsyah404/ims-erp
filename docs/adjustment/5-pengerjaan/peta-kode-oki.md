@@ -174,7 +174,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | Lapisan | Path | Perubahan |
 |---|---|---|
 | docs | `docs/architecture/decisions/ADR-0006-two-layer-authorization.md` | Butir 6 diubah + bagian "Revisi 2026-11" |
-| docs | `docs/architecture/security-and-access.md` | Aturan K1/K1a, daftar role sesudah P7-4, hapus `approval_rule` |
+| docs | `docs/architecture/security-and-access.md` | **Tidak diubah** (ditahan atas arahan programmer B, T-6); jangan dibuka |
 | docs | `docs/plan/progress.md`, `docs/plan/backlog.md` | Entri ERP baru |
 
 - **Skema/migrasi:** tidak.
@@ -187,7 +187,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan P7-2 Ubah ADR-0006.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-2 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: docs/architecture/decisions/ADR-0006-two-layer-authorization.md, docs/architecture/security-and-access.md, docs/plan/progress.md, docs/plan/backlog.md.
+Buka hanya file ini: docs/architecture/decisions/ADR-0006-two-layer-authorization.md, docs/plan/progress.md, docs/plan/backlog.md. Jangan membuka atau mengubah security-and-access.md (ditahan, T-6).
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
@@ -219,7 +219,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | locale | `packages/locales/src/{en,id}/admin.ts` (dicek saat desain: kunci label role) | Label baru |
 | test | `packages/common/test/grantable-roles.test.ts`, `packages/common/test/invite-sheet.test.ts` | Role yang ditawarkan |
 | test | `apps/backend/test/authorization/permission-matrix.test.ts`, `test/unit/role-assignment.test.ts` | Matriks hak baru, reopen hanya owner |
-| docs | `docs/role-permission.md` (jalankan `bun docs/gen-role-permission.ts`), `docs/architecture/security-and-access.md` | Regenerasi |
+| docs | `docs/role-permission.md` (jalankan `bun docs/gen-role-permission.ts`) | Regenerasi; `security-and-access.md` tidak diubah (ditahan, T-6) |
 
 - **Skema/migrasi:** tidak (data `auth.members.role` diatur ulang oleh Aqim setelah rilis; seeder ikut).
 - **Test:** di atas.
@@ -1131,7 +1131,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 
 ### M06-3 Sen di penyimpanan, rupiah di layar (Tinggi, OD3)
 
-- **Seharusnya:** semua nilai aset disimpan dalam sen (ADR-0002) dan tampil sebagai rupiah: form, detail, disposal, penyusutan, seeder (OD3 a).
+- **Seharusnya:** semua nilai aset disimpan dalam sen (aturan uang di `AGENTS.md`) dan tampil sebagai rupiah: form, detail, disposal, penyusutan, seeder (OD3 a).
 - **Sekarang:** form aset sudah mengonversi (`components/assets/asset-form.tsx:4, 71`), tetapi `formatMoney` tidak membagi 100 (`lib/asset-api.ts:605-611`, dipakai `asset-detail.tsx:133, 179, 188`, `asset-disposal-list.tsx:132`, `asset-depreciation-list.tsx:73`); hasil penjualan disposal dikirim tanpa konversi (`asset-disposal-list.tsx:253`); seeder `acquisitionCost: 2_500_000` = Rp 25.000 (`database/seeders/seed/inventory.seeder.ts:48`).
 - **File yang diubah:**
 
@@ -1280,7 +1280,7 @@ Laporkan hanya: file yang diubah dan hasil test.
   - ADR baru: letak tabel investor (schema `investor` baru atau di `finance`), mengganti status ditunda K10/OE1 (IV-1).
   - Tabel minimal (dicek saat desain): investor, perjanjian (bentuk modal/pinjaman/dana proyek), setoran + bukti, jadwal angsuran, pengaturan porsi + cadangan, periode bagi hasil + baris per investor, laporan yang dipublikasikan, tautan akun portal.
   - Uang integer sen; tanggal bisnis `date` Asia/Jakarta; soft delete; referensi ke `project`/`auth` sebagai id nullable tanpa FK.
-- **Sekarang:** schema `investor` dihapus (ADR-0024, ADR-0030); hanya halaman "Segera hadir" `routes/_authed/finance/investors/{index,registry/index,profit-sharing/index}.tsx`; izin `investor`, `investor_report`, `investor_portal` masih ada (`packages/common/src/authorization/erp-permissions.ts:164-169, 232, 461`).
+- **Sekarang:** schema `investor` dihapus (riwayat ADR-0024/ADR-0030, tidak perlu dibuka); hanya halaman "Segera hadir" `routes/_authed/finance/investors/{index,registry/index,profit-sharing/index}.tsx`; izin `investor`, `investor_report`, `investor_portal` masih ada (`packages/common/src/authorization/erp-permissions.ts:164-169, 232, 461`).
 - **File yang diubah:**
 
 | Lapisan | Path | Perubahan |
@@ -1399,7 +1399,7 @@ Laporkan hanya: file yang diubah dan hasil test.
   - `apps/web-investor`: masuk lewat **undangan email** → buat kata sandi → **kode verifikasi email** di perangkat baru (IV-9).
   - **Satu halaman dasbor analitik**: kartu ringkas, grafik, rincian bagi hasil, pinjaman, proyek didanai, kinerja ringkas yang dipublikasikan, riwayat setoran; saringan tahun; ekspor PDF (berkop) dan Excel (IV-10, bagian 3a).
   - Investor hanya melihat datanya sendiri (cek di server).
-- **Sekarang:** `apps/web-investor/src/App.tsx` templat Vite kosong; tidak ada di compose/CI (`docker-compose.yml`, `.github/workflows/` tanpa `web-investor`); app role `investor` sudah ada (`packages/common/src/authorization/erp-permissions.ts:344, 461`; ADR-0018).
+- **Sekarang:** `apps/web-investor/src/App.tsx` templat Vite kosong; tidak ada di compose/CI (`docker-compose.yml`, `.github/workflows/` tanpa `web-investor`); app role `investor` sudah ada (`packages/common/src/authorization/erp-permissions.ts:344, 461`; riwayat ADR-0018, tidak perlu dibuka).
 - **File yang diubah:**
 
 | Lapisan | Path | Perubahan |
@@ -1754,7 +1754,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ### X-14 n8n dan WAHA self-host (Tinggi, N8-1, N8-2)
 
 - **Seharusnya:** n8n Community di Docker pada server perusahaan dengan **HTTPS publik**, ikut backup harian (N8-1); WAHA di server yang sama dengan nomor khusus perusahaan, pindah ke Meta Cloud API nanti (N8-2).
-- **Sekarang:** compose tanpa layanan n8n/WAHA (`docker-compose.yml:12-207`); webhook ERP sudah di `/webhooks/whatsapp` (modul `webhook`) dan outbox di `automation` (ADR-0020).
+- **Sekarang:** compose tanpa layanan n8n/WAHA (`docker-compose.yml:12-207`); webhook ERP sudah di `/webhooks/whatsapp` (modul `webhook`) dan outbox di `automation` (rincian keputusan di `3-rancangan/rancangan-n8n-whatsapp.md`; ADR-0020 tidak perlu dibuka).
 - **File yang diubah:**
 
 | Lapisan | Path | Perubahan |

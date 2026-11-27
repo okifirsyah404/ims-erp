@@ -2149,3 +2149,24 @@ lingkup kerja hanya `docs/adjustment/`.
   dan `peta-kode-dafrin.md` (entri + prompt).
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - simple-version dihapus; rujukan ADR di peta kode dirapikan
+
+- `docs/simple-version/` **dihapus** atas konfirmasi programmer B. Folder ini
+  hanya ada di komputer lokal (`.git/info/exclude`), tidak di repo, jadi
+  tidak ada perubahan git.
+- **Rujukan ADR di peta kode dicek:** ADR-0006 (12×), ADR-0001/0007/0008/0012
+  (di ADR K12), ADR-0002, ADR-0018, ADR-0020, ADR-0024, ADR-0030.
+  - **Dipertahankan** bila tugasnya memang menulis atau mengubah ADR: P7-2
+    ADR-0006, ADR baru K12, M11-4 investor, ADR schema `website` (B-38).
+  - **Rujukan latar belakang** diganti dengan sumber aturannya atau
+    ditandai "riwayat, tidak perlu dibuka": ADR-0002 → aturan uang
+    `AGENTS.md`; ADR-0024/0030, ADR-0018, ADR-0020 → riwayat (rincian di
+    rancangan n8n).
+  - **`security-and-access.md` dikeluarkan** dari pekerjaan P7-2 dan P7-4
+    (sebelumnya tercantum untuk diubah), karena ditahan (T-6).
+- **Aturan baru di `5-pengerjaan/README.md`:**
+  - A-12: ADR hanya dibuka bila tugas menulis/mengubah ADR.
+  - A-13: `security-and-access.md` ditahan, tidak dibuka dan tidak diubah.
+
+Tidak ada perubahan kode.

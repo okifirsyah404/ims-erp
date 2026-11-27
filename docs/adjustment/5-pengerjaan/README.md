@@ -97,6 +97,8 @@ flowchart TD
 | A-8 | Satu PR fokus satu tugas; perubahan kecil lain yang ketemu dicatat sebagai tugas baru, bukan diselipkan |
 | A-10 | **Data seeder:** fitur baru ikut menambah data ujinya di seeder (rancangan `../3-rancangan/rancangan-data-seeder.md`), deterministik dan idempoten (dijalankan dua kali) |
 | A-11 | **Informasi penggunaan:** menu, halaman, tabel, form, status, dan kartu dasbor yang disentuh diberi keterangan cara pakai dan aturan validasi (RF-28–RF-34) |
+| A-12 | **ADR hanya dibuka bila tugas menulis atau mengubah ADR** (P7-2 ADR-0006, ADR K12, M11-4 investor, ADR schema `website` B-38, B-28 status ADR). Di luar itu ADR adalah riwayat: aturannya sudah dirangkum di `AGENTS.md` dan keputusan di `docs/adjustment/`; jangan mengambil perilaku dari ADR lama |
+| A-13 | `docs/architecture/security-and-access.md` **ditahan**: tidak dibuka dan tidak diubah sampai ada arahan (T-6) |
 | A-9 | Dokumen yang ikut berubah di PR yang sama: `docs/plan/progress.md`, `docs/plan/backlog.md`, `docs/plan/plans/features.md`, `docs/adjustment/catatan-progres.md`, file UAT tugas, dan `docs/database/` bila skema berubah |
 
 ---
