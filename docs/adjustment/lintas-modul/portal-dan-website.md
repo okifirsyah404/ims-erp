@@ -118,3 +118,4 @@ flowchart LR
 | Halaman admin konten website | `../bahan-keputusan.md` D5 | web-admin + API `product`/konten | menunggu keputusan |
 | Catat portal karyawan dan absen GPS sebagai tambahan di luar kontrak (atau minta persetujuan Pemilik) | temuan 1 | Administrasi kontrak, bukan kode | usulan |
 | Tambahkan `web-investor` ke compose/CI saat mulai dibangun | temuan 5 | Wilayah deploy (Oki) | usulan |
+| Portal pelanggan login dengan Google; web-admin tanpa Google | `../lembar-keputusan-rapat.md` K13 (arah baru 2026-11-26) | `web-customer-portal` login, pencocokan email ke kontak, `GOOGLE_*` | menunggu keputusan |

@@ -23,7 +23,7 @@ Rincian setiap butir ada di file sumber yang disebut.
 | No | Keputusan | Sumber | Wilayah | Status |
 |---|---|---|---|---|
 | K1 | Pemilik boleh menyetujui dokumennya sendiri, tercatat di audit (A1 b). Termasuk apakah berlaku juga untuk jurnal, kasbon, dan pertanggungjawaban di keuangan | `bahan-keputusan.md` A1; `validasi-konsep-saat-ini.md` 3.8 | Pemilik + O (ADR-0006) | Diterima programmer B, menunggu Pemilik dan Oki |
-| K2 | Susunan role per orang (16 → 12 role terpakai) dan role SDM hanya untuk Aqim | `validasi-konsep-saat-ini.md` 3.6, 3.8 | Pemilik | Diterima programmer B, menunggu Pemilik |
+| K2 | Susunan role per orang (16 → 11 role terpakai), role SDM hanya untuk Aqim, dan Manajer Penjualan + Penjualan digabung menjadi satu role Penjualan (K2b) | `validasi-konsep-saat-ini.md` 3.6, 3.8 | Pemilik | Diterima programmer B, menunggu Pemilik |
 | K3 | Langkah "Tandai terkirim" pada PO tetap atau dihapus | `bahan-keputusan.md` B1 | Pemilik | Menunggu |
 | K4 | Siapa boleh membatalkan PO; siapa mengelola data barang; Gudang boleh melihat PO/SO | B2, B3, B4 | Pemilik | Menunggu |
 | K5 | SO otomatis Terkirim/Selesai; menu Uang Muka dibuka; Admin boleh tambah pelanggan | C1, C2, C3 | Pemilik | Menunggu |
@@ -33,6 +33,10 @@ Rincian setiap butir ada di file sumber yang disebut.
 | K9 | Fitur di luar kontrak yang sudah ada (portal karyawan, absen GPS, dua gateway, PPh 21/Coretax, fitur keuangan ADR-0030): diterima sebagai tambahan atau tidak | `lintas-modul/di-luar-scope.md` | Pemilik | Perlu dibicarakan |
 | K10 | M11 Bonus & Investor: dibangun (butuh ADR baru karena schema `investor` dihapus) atau ditunda | `uat-modul/modul-oki/m11-bonus-investor.md` | Pemilik + O | Menunggu |
 | K11 | Pemilik modul yang belum jelas: `document`, `notification`, `webhook`, `company`, `location`, `src/shared`, `src/http`, deploy/CI | `lintas-modul/di-luar-scope.md` | Kedua programmer | Perlu dibicarakan |
+| K12 | Hapus lapisan organisasi (satu perusahaan, role tidak per organisasi) | `lembar-keputusan-rapat.md` K12 | Pemilik + O (M12) | Arah baru programmer B 2026-11-26; usulan bertahap, butuh ADR |
+| K13 | Login: web-admin email/username + kata sandi (Google dihapus); portal pelanggan dengan Google | K13 | Pemilik + O (M12) + B (portal M07) | Arah baru programmer B 2026-11-26 |
+| K2c | Role Pembelian dipakai sekarang atau tidak | K2c | Pemilik | Rekomendasi: tidak, selama Aqim membeli sendiri |
+| K2d | Akuntan digabung ke Keuangan atau Bella diberi dua role | K2d | Pemilik + O | Rekomendasi: dua role, tanpa ubah kode |
 
 ## 2. Perbaikan di modul programmer B
 

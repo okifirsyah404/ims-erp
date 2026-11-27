@@ -274,21 +274,13 @@ Gudang menerima barang. Bila ada barang rusak: Retur pembelian → Ajukan →\
 
 4. Penyesuaian stok: hitung fisik → Ajukan → (Aqim menyetujui).
 
-**Manajer Penjualan (Agus MD, Bilal).** Semua tugas Penjualan, ditambah:\
-\
-menyetujui/menolak SPH dan retur penjualan buatan rekan, membatalkan SO,\
-\
-mengarsipkan pelanggan, mengelola lisensi penuh dan kunci API, serta\
-\
-mengundang akun portal pelanggan.
-
-**Penjualan (Bilal).** Lead → Jadikan pelanggan → SPH → Ajukan →\
-\
-(Manajer Penjualan yang lain menyetujui) → Tandai terkirim (PDF ke\
-\
-pelanggan) → Buat sales order → Gudang mengirim → Keuangan menagih. Juga:\
-\
-kontrak lisensi dan retur penjualan.
+**Penjualan (Agus MD, Bilal), gabungan Manajer Penjualan + Penjualan (K2b, usulan 2026-11-26).**
+Lead → Jadikan pelanggan → SPH → Ajukan → (rekan Penjualan menyetujui;
+tidak boleh SPH sendiri) → Tandai terkirim (PDF ke pelanggan) → Buat sales
+order → Gudang mengirim → Pemilik menagih. Juga: menyetujui/menolak SPH dan
+retur penjualan buatan rekan, membatalkan SO, mengarsipkan pelanggan,
+kontrak lisensi dan kunci API, katalog, serta mengundang akun portal
+pelanggan.
 
 **Keuangan (Aqim).** Dari SO: Terbitkan invoice (DP/termin) → Catat\
 \
@@ -332,9 +324,14 @@ garansi (setujui/tolak). Akun portal pelanggan (undang/cabut). Membalas\
 \
 WhatsApp yang diteruskan asisten AI.
 
-**Pemasaran (Bilal).** Katalog Website (barang yang tampil, harga,\
-\
-keterangan), konten website, promo, pesanan online, dan FAQ WhatsApp AI.
+**Pemasaran (Bilal).** Yang bisa dikerjakan sekarang: Katalog Website
+(barang yang tampil di website, cara harga ditampilkan, keterangan, label
+stok habis, terbitkan/arsipkan), Basis Pengetahuan FAQ untuk asisten WhatsApp
+AI (tambah/ubah/hapus), melihat percakapan WhatsApp tanpa membalas, dan
+melihat log Webhook n8n. Haknya ada tetapi halamannya belum: konten website
+(testimoni, gambar), promo, dan pesanan online (T21). Tidak bisa membuat
+pelanggan/SPH atau membalas WhatsApp; Bilal melakukannya lewat role Penjualan
+dan Layanan Pelanggan.
 
 **SDM (usulan: Aqim saja, lihat R1).** Data karyawan → absensi (manual atau\
 \
@@ -367,7 +364,7 @@ slip gaji sendiri, mengajukan cuti.
 
 4. Hapus rangkapan yang tidak menambah hak (R7)?
 
-5. Cuti Aqim sendiri: siapa yang menyetujui? (lihat 3.7)
+5. Cuti Aqim sendiri: siapa yang menyetujui? *(Dijawab 2026-11-26: Aqim tidak cuti lewat aplikasi.)*
 
 ### 3.7 Peta bentrok persetujuan
 
@@ -385,9 +382,9 @@ menyetujui" berlaku untuk dokumen bertanda ✋, termasuk bagi Pemilik.
 | Penyesuaian stok ✋              | Agus, Bilal, Aqim                                                                  | Aqim                                      | 🟢 Aman bila dibuat Agus atau Bilal. 🟡 Buatan Aqim lolos lewat pengecualian (A1)                                                                                                                                                                         |
 | SPH ✋                           | Bilal, Agus MD                                                                     | Agus MD, Bilal, Aqim                      | 🟢 Aman: Bilal dan Agus MD saling menyetujui                                                                                                                                                                                                              |
 | Retur penjualan ✋               | Bilal, Agus MD                                                                     | Agus MD, Bilal, Aqim                      | 🟢 Aman                                                                                                                                                                                                                                                   |
-| Cuti / lembur ✋                 | Setiap karyawan (layanan mandiri) atau SDM                                         | SDM (usulan: Aqim)                        | 🟢 Aman untuk semua orang. 🔴 **Cuti Aqim sendiri macet** bila SDM hanya Aqim                                                                                                                                                                             |
+| Cuti / lembur ✋                 | Setiap karyawan (layanan mandiri) atau SDM                                         | SDM (usulan: Aqim)                        | 🟢 Aman untuk semua orang. Aqim (SDM dan Pemilik) tidak cuti lewat aplikasi (jawaban A3a, 2026-11-26), jadi tidak ada titik macet                                                                                                                                                                             |
 | Peminjaman aset                 | Teknisi, Manajer Proyek, Penjualan, Layanan Pelanggan                              | Manajer Proyek (Agus, Jamil, Hatta), Aqim | 🟡 Tanpa pemeriksa: aturan "tidak boleh menyetujui sendiri" di kode selalu lolos bagi pemegang hak setuju (`borrowing.controller.ts:38`), jadi PM bisa menyetujui pinjamannya sendiri (dicek 2026-11-26). Teknisi juga belum bisa mengajukan (temuan M06) |
-| Kasbon dan pertanggungjawaban ✋ | Teknisi, Manajer Proyek, Pekerja Lepas                                             | Aqim                                      | 🟢 Aman (larangan menyetujui sendiri ada di service)                                                                                                                                                                                                      |
+| Kasbon dan pertanggungjawaban ✋ | Teknisi, Manajer Proyek, Pekerja Lepas | Aqim (Pemilik; Manajer Operasional tidak dipakai) | 🔴 **Pertanggungjawaban macet**: kode mewajibkan verifikator ≠ penyetuju (`employee-advance.service.ts:217`, `:235`), padahal yang punya hak verifikasi dan setuju hanya Aqim. Kasbon sendiri aman. Dibetulkan 2026-11-27 dari temuan RO5 (`validasi-konsep-modul-oki.md`) |
 | Klaim garansi                   | Bilal                                                                              | Bilal                                     | 🟡 Tanpa pemeriksa: Bilal membuat dan menyetujui sendiri                                                                                                                                                                                                  |
 | SO → surat jalan                | Bilal (SO)                                                                         | Bilal atau Agus (kirim)                   | 🟡 Tanpa pemeriksa bila Bilal mengirim SO-nya sendiri (R5)                                                                                                                                                                                                |
 | Gaji                            | Aqim (SDM/Keuangan)                                                                | Aqim (Pemilik)                            | 🟡 Tanpa pemeriksa: satu orang menyiapkan, menyetujui, dan membayar (R6)                                                                                                                                                                                  |
@@ -451,8 +448,8 @@ sudah tercakup role lain dihapus supaya daftar anggota mudah dibaca.
 | Orang       | Sekarang                                                                    | Rekomendasi                                             | Alasan                                                                                  |
 | ----------- | --------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Aqim        | Pemilik, Admin, Manajer Operasional, Pembelian, Keuangan                    | **Pemilik**, ditambah **SDM**                           | Pemilik sudah mencakup semuanya. SDM ditulis supaya jelas siapa pengelola gaji dan cuti |
-| Agus MD     | Manajer Penjualan                                                           | Manajer Penjualan                                       | —                                                                                       |
-| Bilal       | Manajer Penjualan, Penjualan, Gudang, Layanan Pelanggan, Pemasaran, Anggota | Manajer Penjualan, Gudang, Layanan Pelanggan, Pemasaran | Penjualan dan Anggota sudah tercakup                                                    |
+| Agus MD     | Manajer Penjualan                                                           | Penjualan (gabungan, K2b)                               | —                                                                                       |
+| Bilal       | Manajer Penjualan, Penjualan, Gudang, Layanan Pelanggan, Pemasaran, Anggota | Penjualan (gabungan, K2b), Gudang, Layanan Pelanggan, Pemasaran | Penjualan dan Anggota sudah tercakup                                                    |
 | Agus        | Manajer Proyek, Teknisi, Gudang, Anggota                                    | Manajer Proyek, Teknisi, Gudang                         | Teknisi tetap untuk kasbon; Anggota tercakup                                            |
 | Jamil       | Manajer Proyek, Teknisi, Anggota                                            | Manajer Proyek, Teknisi                                 | Anggota tercakup                                                                        |
 | Hatta       | Manajer Proyek, Pekerja Lepas                                               | Manajer Proyek                                          | Pekerja Lepas tercakup. Status lepas dicatat di data karyawan                           |
@@ -461,9 +458,11 @@ sudah tercakup role lain dihapus supaya daftar anggota mudah dibaca.
 | Bella       | Akuntan                                                                     | Akuntan                                                 | —                                                                                       |
 | Dafrin, Oki | Pekerja Lepas, Anggota                                                      | Pekerja Lepas, Anggota                                  | Anggota memberi absen, cuti, dan slip gaji sendiri                                      |
 
-Role yang dipakai turun dari 16 menjadi 12. Tidak terpakai: Admin,\
-Manajer Operasional, Pembelian, Keuangan, Penjualan (bisa diberikan lagi bila\
-ada orang baru), dan Auditor.
+Role yang dipakai turun dari 16 menjadi 11, setelah Manajer Penjualan dan
+Penjualan digabung menjadi satu role **Penjualan** (K2b, permintaan
+programmer B 2026-11-26; di kode: `sales_manager` diberi label "Penjualan",
+`sales` tidak ditawarkan lagi). Tidak terpakai: Admin, Manajer Operasional,
+Pembelian, Keuangan (bisa diberikan lagi bila ada orang baru), dan Auditor.
 
 #### Aturan persetujuan yang direkomendasikan
 
@@ -485,7 +484,7 @@ ada orang baru), dan Auditor.
 | Retur pembelian | Aqim buat retur → **Aqim setujui sendiri** → Agus/Bilal kirim ke pemasok → terima barang pengganti                                                                                                                |
 | Penjualan       | Bilal buat SPH → Agus MD setujui (atau sebaliknya; Aqim juga boleh) → Bilal buat SO → Agus/Bilal kirim → Aqim tagih → Bella periksa                                                                               |
 | Stok opname     | Agus/Bilal hitung → Aqim setujui dan catat. Penyesuaian buatan Aqim disetujui sendiri                                                                                                                             |
-| Cuti            | Karyawan ajukan → Aqim setujui. **Cuti Aqim disetujui sendiri**                                                                                                                                                   |
+| Cuti            | Karyawan ajukan → Aqim setujui. Aqim tidak cuti lewat aplikasi (A3a)                                                                                                                                                   |
 | Gaji            | Aqim siapkan → Aqim setujui → Aqim bayar → Bella periksa jurnal (tetap 🟡)                                                                                                                                        |
 
 Dengan aturan ini, semua 🔴 di 3.7 menjadi 🟢 (disetujui Pemilik, dengan\
@@ -499,6 +498,81 @@ audit). Yang 🟡 tetap 🟡.
 | Satu aturan bersama "pembuat boleh menyetujui bila Pemilik" di service PR, PO, retur pembelian, SPH, retur penjualan, cuti/lembur, penyesuaian stok; catatan audit; test | programmer B     | ±1 hari          |
 | Tampilkan tombol Setujui untuk Pemilik pada dokumennya sendiri, beserta keterangan "tercatat di audit"                                                                   | programmer B     | termasuk di atas |
 | Atur ulang role anggota sesuai tabel di atas (Administrasi → Pengguna → ubah anggota)                                                                                    | Aqim             | 10 menit         |
+
+### 3.9 Penjelasan: arti "admin", role Pembelian, serta investor dan pelanggan (2026-11-26)
+
+Jawaban programmer B atas lembar keputusan: role SDM hanya Aqim dan Aqim
+tidak cuti; **role Admin dihapus** dari susunan role.
+
+#### Tiga hal yang sama-sama disebut "admin"
+
+| Nama | Apa itu | Disimpan di | Fungsi | Setelah role Admin dihapus |
+|---|---|---|---|---|
+| **Role organisasi Admin** (`admin`) | Salah satu dari 17 role di perusahaan | `auth.members.role` | Administrasi: undang dan atur pengguna/role, profil perusahaan, nomor kode, data master, akun portal pelanggan, log n8n, FAQ dan balas WhatsApp, catat absensi, tiket servis. **Tanpa** penjualan, pembelian, keuangan, atau persetujuan | Tidak diberikan ke siapa pun. Tugasnya dikerjakan Aqim sebagai Pemilik |
+| **Admin aplikasi** | Tanda khusus di akun (Better Auth `admin()`), di atas semua organisasi | `auth.users.role` | Halaman yang hanya untuk admin aplikasi: Produk, Material, Kategori barang, Gudang, Administrasi → Pengguna dan Log Audit, Pengaturan Penggajian | **Tetap ada dan tetap wajib** di akun Aqim. Bila dicabut, tidak ada yang bisa membuka halaman Produk, Gudang, dan Pengguna |
+| **Akun bernama `admin`** | Akun login milik Aqim (username `admin`) | `auth.users.username` | Memegang role Pemilik **dan** tanda admin aplikasi sekaligus | Tetap dipakai Aqim |
+
+Jadi "Admin sudah dihapus" berarti **role organisasi Admin** tidak dipakai.
+Tanda admin aplikasi di akun Aqim **tidak boleh ikut dihapus**. Keputusan
+B3 (Pembelian/Gudang boleh membuka halaman barang dan gudang) akan
+mengurangi ketergantungan pada tanda ini.
+
+#### Role Pembelian (`purchasing`)
+
+| | Rincian |
+|---|---|
+| **Bisa** | Pemasok: lihat (termasuk rekening bank), tambah, ubah, arsipkan. Permintaan Pembelian: buat dan ajukan. PO: buat, ubah, ajukan, tandai terkirim, cetak/ekspor. Retur pembelian: buat, ajukan, batalkan. Data barang: buat, ubah, dan melihat harga pokok (tetapi halamannya sekarang hanya untuk admin aplikasi, lihat B3). Melihat stok. Membuat dan mengajukan penyesuaian stok |
+| **Tidak bisa** | Menyetujui PR, PO, atau retur (itu Manajer Operasional atau Pemilik). Menerima barang (itu Gudang). Membatalkan PO (sekarang hanya Pemilik; lihat B2) |
+| **Status di tim** | **Tidak dipakai** (K2): Aqim mengerjakan pembelian sebagai Pemilik. Role tetap ada di aplikasi dan bisa diberikan bila nanti ada staf pembelian; saat itu PO-nya disetujui Aqim, jadi tidak ada bentrok |
+
+#### Pengguna di luar web-admin: investor dan pelanggan
+
+Investor dan pelanggan **bukan** role organisasi, jadi tidak masuk daftar 17
+role dan tidak bisa membuka web-admin. Keduanya adalah **role aplikasi**
+(`appRoleNames = ['investor', 'customer']`, ADR-0018), disimpan di
+`auth.users.role`. Web-admin menolak login akun yang hanya punya role
+aplikasi ini.
+
+| | Pelanggan (`customer`) | Investor (`investor`) |
+|---|---|---|
+| **Aplikasi** | Portal pelanggan `apps/web-customer-portal` (http://localhost:4322) | Portal investor `apps/web-investor` |
+| **Cara dapat akun** | Pelanggan perusahaan diundang (Penjualan atau Layanan Pelanggan → akun portal); pelanggan perorangan bisa mendaftar sendiri; akun otomatis saat lead dijadikan pelanggan | Belum ada alurnya; tidak ada akun contoh `investor_seed` |
+| **Yang sudah bisa** | Login per kontak, melihat proyek, membuat dan membalas tiket servis, mendaftarkan perangkat/booking servis | **Belum ada**: aplikasinya masih template kosong, dan M11 belum dibangun |
+| **Yang belum** | SPH, invoice, pembayaran, dan dokumen masih "segera hadir" (T25); foto dan prioritas tiket belum tersimpan | Semua fitur investor (modal, bagi hasil, laporan). Schema `investor` sudah dihapus (ADR-0024), jadi butuh ADR baru (K10) |
+| **Pemilik modul** | Programmer B (M07) | Oki (M11) |
+
+Karyawan memakai aplikasi ketiga di luar web-admin, yaitu **portal karyawan**
+(`apps/web-employee`, http://localhost:5174). Portal ini tidak memakai role
+aplikasi; ia memakai keanggotaan organisasi dan data karyawan. Absensi
+lokasi proyek, cuti, dokumen, dan slip gaji ada di sana; rinciannya di
+`uat-modul/modul-oki/portal-karyawan.md`.
+
+#### Cara absensi karyawan sekarang
+
+Ada **tiga jalan** absensi. Semuanya masuk ke satu catatan per karyawan per
+hari di `human_resource` (status: Hadir, Izin, Sakit, Cuti, Alpa, Libur).
+
+| Jalan | Siapa | Di mana | Cara | Catatan |
+|---|---|---|---|---|
+| **1. Absen mandiri di kantor** | Karyawan sendiri | Portal karyawan → **Absensi** | Tekan **Check-in** saat datang, **Check-out** saat pulang. Hanya sekali per hari; tidak bisa check-out sebelum check-in; terkunci pada hari cuti yang disetujui | Tanpa lokasi dan tanpa foto. Tercatat sebagai "Check-in mandiri" |
+| **2. Absen di lokasi proyek** | Karyawan yang ditugaskan di proyek | Portal karyawan → proyek → **Kunjungan lokasi saya** | Izinkan lokasi (GPS) → ambil **selfie** → **Check-in**; saat selesai **Check-out** (lokasi dibaca ulang) | Jarak dihitung dari titik proyek (PostGIS), radius contoh 100 m. Di luar radius **tetap tersimpan** tetapi ditandai "di luar radius" (temuan O-8). Pekerja yang bukan PIC belum bisa melihat kunjungannya sendiri |
+| **3. Dicatat SDM** | SDM (Aqim) | Web-admin → **Sumber Daya Manusia → Absensi** | Isi **lembar harian** per tanggal (status, jam masuk, jam pulang, catatan), atau **impor file** dengan kolom kode_karyawan, tanggal, status, jam_masuk, jam_pulang, catatan | Untuk yang tidak absen lewat portal, atau untuk koreksi. Ada **rekap bulanan** |
+
+**Cuti dan lembur:**
+- Karyawan **mengajukan cuti** dari portal (atau SDM mencatatnya).
+- **SDM menyetujui atau menolak.**
+- Kuota cuti tahunan 12 hari; hari Minggu tidak dihitung.
+- Hari cuti yang disetujui otomatis tercatat "Cuti" di absensi.
+- Lembur dicatat dalam jam (kelipatan 0,25) lalu disetujui SDM. Jumlah jam
+  yang disetujui tampil saat menyiapkan gaji; uang lembur diisi manual.
+
+**Siapa saja yang absen:** karyawan yang punya **data karyawan** (dibuat
+SDM). Akun tanpa data karyawan tidak bisa memakai portal; ini terjadi pada
+akun uji `technician_seed`.
+
+Bila lapisan organisasi dihapus (K12), portal karyawan tetap dipakai, tetapi
+cara ia mengenali karyawan (sekarang lewat keanggotaan organisasi) ikut
+diubah.
 
 ***
 

@@ -85,3 +85,5 @@ Tidak ada tabel `code_numberings` di schema ini. Namun `organizations.slug` (hur
 | CRUD pengaturan organisasi memakai `organization_settings` | ERP-0045b | none (tabel sudah ada) | direncanakan |
 | ADR-0029 (undangan saja) masih `proposed` walau sudah berjalan | ADR-0029 | none | usulan |
 | `security-and-access.md` masih menulis 19 role; seharusnya 17 (ADR-0018) | `bahan-keputusan.md` E3, `ringkasan-arsitektur.md` D3 | none (dokumen) | menunggu keputusan |
+| Hapus lapisan organisasi: `organizations`, `members`, `invitations` (organisasi), dan role per organisasi pindah ke tingkat pengguna | `../lembar-keputusan-rapat.md` K12 (arah baru 2026-11-26) | tabel + aturan (dan kolom `organization_id` di schema lain) | menunggu keputusan |
+| Login web-admin tanpa Google; portal pelanggan dengan Google (`accounts` provider google untuk pelanggan) | K13 | none (Better Auth sudah punya `accounts`) | menunggu keputusan |

@@ -1,0 +1,32 @@
+# Diagram alur (sekarang dan sesudah perbaikan)
+
+Kembali ke [catatan penyesuaian](../README.md). Satu tempat untuk semua
+diagram alur (UML/Mermaid) konsep saat ini, dengan aktor ditulis
+"Role - nama orang". Bisa dibuka di GitHub atau di VS Code (Markdown Preview
+dengan dukungan Mermaid).
+
+Semua diagram dicek dengan pemeriksa Mermaid (`mermaid.parse` + jsdom)
+supaya tidak ada yang rusak saat ditampilkan.
+
+## Kondisi sekarang
+
+| Wilayah | File | Isi |
+|---|---|---|
+| Modul programmer B (Dafrin) | [`../uat-modul/diagram-alur-per-role.md`](../uat-modul/diagram-alur-per-role.md) | 8 diagram urutan (pembelian, retur/penyesuaian, penjualan, retur penjualan, proyek, lisensi, karyawan/gaji, integrasi) + 4 diagram status dokumen |
+| Modul Oki | [`sekarang-modul-oki.md`](sekarang-modul-oki.md) | Login/undangan/role, faktur sampai kas, tagihan dan pembayaran, kasbon dan pertanggungjawaban, jurnal dan tutup periode, gaji dan pajak, aset dan peminjaman, absensi portal karyawan, diagram status |
+| Relasi tabel (ERD) | [`../skema-database/`](../skema-database/README.md) | 20 diagram, satu per schema |
+| Lintas modul | [`../lintas-modul/`](../lintas-modul/README.md) | 7 diagram: login, penomoran, dokumen/file, notifikasi, portal, infrastruktur, di luar scope |
+
+## Sekarang vs sesudah perbaikan
+
+| File | Isi |
+|---|---|
+| [`sekarang-vs-sesudah.md`](sekarang-vs-sesudah.md) | Untuk setiap alur yang berubah: diagram **Sekarang** (dengan titik macet/bermasalah) dan **Sesudah (usulan)**, beserta nomor keputusan dan bagian kode yang terdampak. Ditutup peta bentrok sesudah perbaikan |
+
+**Penting:** diagram "Sesudah" adalah **usulan**. Isinya mengikuti
+rekomendasi dan jawaban sementara programmer B di
+[`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md), dan akan
+dibetulkan setelah rapat dengan Pemilik dan Oki.
+
+`docs/user-guide/diagrams.md` (2026-11-06) adalah versi lama dan sebagian
+sudah usang; pakai diagram di folder ini.

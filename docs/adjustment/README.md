@@ -9,16 +9,26 @@ disetujui (arahan programmer B, 2026-11-26).
 
 ## Isi folder
 
+**Dokumen per wilayah programmer** (isi sejajar: validasi, keputusan,
+rencana, ringkasan arsitektur):
+
+| Jenis | Modul programmer B (Dafrin) | Modul Oki |
+|---|---|---|
+| Validasi role dan alur dengan tim nyata | [`validasi-konsep-saat-ini.md`](validasi-konsep-saat-ini.md) | [`validasi-konsep-modul-oki.md`](validasi-konsep-modul-oki.md) |
+| Hal yang harus diputuskan | [`bahan-keputusan.md`](bahan-keputusan.md) | [`bahan-keputusan-modul-oki.md`](bahan-keputusan-modul-oki.md) |
+| Rencana perubahan | [`rencana-perubahan.md`](rencana-perubahan.md) (juga memuat keputusan bersama K1–K13 dan lintas modul) | [`rencana-perubahan-modul-oki.md`](rencana-perubahan-modul-oki.md) |
+| Ringkasan aturan arsitektur | [`ringkasan-arsitektur.md`](ringkasan-arsitektur.md) | [`ringkasan-arsitektur-modul-oki.md`](ringkasan-arsitektur-modul-oki.md) |
+| UAT | [`uat-modul/modul-dafrin/`](uat-modul/modul-dafrin/README.md) | [`uat-modul/modul-oki/`](uat-modul/modul-oki/README.md) |
+
+**Dokumen bersama:**
+
 | Folder / file | Isi |
 |---|---|
+| [`lembar-keputusan-rapat.md`](lembar-keputusan-rapat.md) | **Untuk rapat**: semua keputusan (kedua wilayah) dalam satu lembar, tinggal diisi |
 | [`catatan-progres.md`](catatan-progres.md) | Log kerja per tanggal: perubahan, perintah, hasil |
-| [`validasi-konsep-saat-ini.md`](validasi-konsep-saat-ini.md) | Matriks role, validasi dengan tim nyata, peta bentrok persetujuan, rekomendasi role dan alur |
-| [`lembar-keputusan-rapat.md`](lembar-keputusan-rapat.md) | **Untuk rapat**: semua keputusan dalam satu lembar, tinggal diisi |
-| [`bahan-keputusan.md`](bahan-keputusan.md) | Hal yang harus diputuskan Pemilik/Oki, dengan pilihan dan rekomendasi |
-| [`rencana-perubahan.md`](rencana-perubahan.md) | Gabungan semua perubahan mendatang dari seluruh catatan |
-| [`ringkasan-arsitektur.md`](ringkasan-arsitektur.md) | Ringkasan aturan arsitektur dan dokumen yang sudah tidak cocok dengan kode |
-| [`uat-modul/`](uat-modul/README.md) | Checklist UAT per modul: modul programmer B di `modul-dafrin/`, modul Oki di `modul-oki/`, plus diagram alur dan catatan skema lama |
-| [`skema-database/`](skema-database/README.md) | Skema database per schema: tabel, relasi, alur data, penomoran, perubahan mendatang |
+| [`uat-modul/`](uat-modul/README.md) | Indeks UAT kedua wilayah, diagram alur, catatan skema lama |
+| [`diagram-alur/`](diagram-alur/README.md) | **Semua diagram alur**: kondisi sekarang (kedua wilayah) dan sekarang vs sesudah perbaikan |
+| [`skema-database/`](skema-database/README.md) | Skema database per schema (20): tabel, relasi, alur data, penomoran, perubahan mendatang |
 | [`lintas-modul/`](lintas-modul/README.md) | Hal yang dipakai banyak modul dan hal di luar pembagian modul/kontrak |
 
 ## Pembagian modul
