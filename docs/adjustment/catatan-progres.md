@@ -1708,3 +1708,18 @@ Arahan programmer B: langsung perbarui file supaya semua catatan sejalan.
   belum ada di Drizzle maupun database, jadi butuh migrasi baru.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Alur teknisi
+
+Programmer B meminta penjelasan alur teknisi setelah ditugaskan ke proyek.
+- `3-rancangan/diagram-alur/alur-teknisi.md` (baru):
+  - Tabel 16 langkah dengan kolom "sekarang (kode)" dan "sesudah
+    (keputusan)".
+  - Diagram alur proyek dan diagram tiket servis (pemeriksa Mermaid: 2 blok,
+    0 error).
+  - Catatan: dua jenis tugas, tiket di portal karyawan, pinjaman saya.
+  - Notifikasi tiket tidak ditulis sebagai keputusan karena KF-N1 masih
+    daftar tunggu. Tiket tampil lewat Perlu Tindakan dan kartu dasbor.
+- `3-rancangan/diagram-alur/README.md`: tautan baru.
+
+Tidak ada perubahan kode.
