@@ -175,47 +175,46 @@ export function BillsTable() {
 
 	if (!canRead) return null;
 
+	const createActions = canCreate ? (
+		<div className='flex gap-2'>
+			<Button size='sm' variant='outline' onClick={() => setShowFromOrder(true)}>
+				<Plus className='size-4' data-icon='inline-start' />
+				{t('finance:bills.fromOrder.open')}
+			</Button>
+			<Button size='sm' onClick={() => setShowForm(true)}>
+				<Plus className='size-4' data-icon='inline-start' />
+				{t('finance:bills.create')}
+			</Button>
+		</div>
+	) : null;
+
 	return (
 		<div className='space-y-3'>
 			{canCreate && showFromOrder ? (
 				<BillFromOrderForm onDone={() => setShowFromOrder(false)} />
 			) : null}
 
-			{isError ? (
-				<ErrorState error={error} bordered />
-			) : !isPending && (data?.rows.length ?? 0) === 0 ? (
-				<EmptyState title={t('finance:bills.empty')} bordered />
-			) : (
-				<DataTableCard
-					title={t('finance:bills.title')}
-					action={
-						canCreate ? (
-							<div className='flex gap-2'>
-								<Button size='sm' variant='outline' onClick={() => setShowFromOrder(true)}>
-									<Plus className='size-4' data-icon='inline-start' />
-									{t('finance:bills.fromOrder.open')}
-								</Button>
-								<Button size='sm' onClick={() => setShowForm(true)}>
-									<Plus className='size-4' data-icon='inline-start' />
-									{t('finance:bills.create')}
-								</Button>
-							</div>
-						) : null
-					}
-				>
-					<DataTable
-						columns={columns}
-						data={data?.rows ?? []}
-						loading={isPending}
-						getRowId={(row) => row.id}
-					/>
-					<PaginationControls
-						page={page}
-						totalPages={data?.pagination.totalPages ?? 1}
-						onPageChange={setPage}
-					/>
-				</DataTableCard>
-			)}
+			<DataTableCard title={t('finance:bills.title')} action={createActions}>
+				{isError ? (
+					<ErrorState error={error} />
+				) : !isPending && (data?.rows.length ?? 0) === 0 ? (
+					<EmptyState title={t('finance:bills.empty')} />
+				) : (
+					<>
+						<DataTable
+							columns={columns}
+							data={data?.rows ?? []}
+							loading={isPending}
+							getRowId={(row) => row.id}
+						/>
+						<PaginationControls
+							page={page}
+							totalPages={data?.pagination.totalPages ?? 1}
+							onPageChange={setPage}
+						/>
+					</>
+				)}
+			</DataTableCard>
 			{showForm ? <BillFormDialog onClose={() => setShowForm(false)} /> : null}
 		</div>
 	);

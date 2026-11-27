@@ -887,6 +887,15 @@ outes/_authed/warranties/, src/app/project/controllers/warranty.controller.ts,
   removed; filters no longer survive reload). Tax recap uses a live year/month
   filter. Verified: tsc 0, web-admin 217 tests, locales 110, root lint 0 errors,
   browser walkthrough of 7 pages with 0 console errors.
+- ERP-0177 tax record create dialog (2026-11-28): the inline "Catatan baru" form
+  on `/finance/tax/records` moved to `tax-record-create-dialog.tsx` with its own
+  preview and mutation; the button sits in the table card header. Verified:
+  tsc 0, web-admin 217 tests, locales 110, browser dialog render, 0 errors.
+- ERP-0178 bills empty-state actions (2026-11-28): `BillsTable` now renders one
+  `DataTableCard` for every state, so an empty bill list still shows "Bill from
+  a purchase order" and "New bill". Added `test/bills-table.test.tsx`, which
+  fails when the old branching is restored. Verified: web-admin 218 tests,
+  tsc 0, browser empty payables + New bill dialog.
 
 - ERP-0170 opening-balance row dialog (2026-11-27): the inline add-row form on
   `/finance/opening-balances` moved to `opening-balance-row-dialog.tsx`; the

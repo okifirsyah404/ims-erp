@@ -1,4 +1,3 @@
-import { MoneyInput } from '@/components/money-input';
 import {
 	useMutation,
 	useQuery,
@@ -9,41 +8,26 @@ import { useTranslation } from 'react-i18next';
 
 import { Badge } from '@ims-erp/ui/components/badge';
 import { Button } from '@ims-erp/ui/components/button';
-import { Input } from '@ims-erp/ui/components/input';
 import type { CellData, ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableCard } from '@/components/data-table/data-table-card';
 import { RowActions } from '@/components/data-table/row-actions';
 import type { DataTableFeatures } from '@/components/data-table/data-table-features';
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@ims-erp/ui/components/select';
 import { Check, FileText, Pencil, Plus, Send } from 'lucide-react';
 import { PaginationControls } from '@/components/pagination/pagination-controls';
 import { EmptyState, ErrorState } from '@/components/empty-state';
 import { toast } from '@/components/toast';
 import {
-	createTaxRecord,
-	previewTax,
 	taxRecordsQueryOptions,
 	taxTypesQueryOptions,
 	transitionTaxRecord,
 	type TTaxRecord,
 } from '@/lib/tax-api';
 import { usePermission } from '@/lib/use-permission';
+import { TaxRecordCreateDialog } from '@/components/tax/tax-record-create-dialog';
 import { TaxRecordEditDialog } from '@/components/tax/tax-record-edit-dialog';
 
-/** The route API for `/finance/tax/records` (validated search params). */
-
 const PAGE_SIZE = 20;
-
-/** Default period = current month, computed once at module load. */
-const CURRENT_YEAR = new Date().getFullYear();
-const CURRENT_MONTH = new Date().getMonth() + 1;
 
 /** Known filing statuses, mirroring the backend state machine. */
 const FILING_STATUSES = ['draft', 'verified', 'filed', 'corrected'] as const;
@@ -67,11 +51,7 @@ export function TaxRecordList() {
 	const canUpdate = usePermission('tax.update');
 	const canVerify = usePermission('tax.verify');
 
-	const [taxTypeId, setTaxTypeId] = useState('');
-	const [periodYear, setPeriodYear] = useState(CURRENT_YEAR);
-	const [periodMonth, setPeriodMonth] = useState(CURRENT_MONTH);
-	const [taxableBase, setTaxableBase] = useState('');
-	const [preview, setPreview] = useState<string | null>(null);
+	const [creating, setCreating] = useState(false);
 	const [editing, setEditing] = useState<TTaxRecord | null>(null);
 
 	const [page, setPage] = useState(1);
@@ -83,43 +63,6 @@ export function TaxRecordList() {
 
 	const invalidate = () =>
 		queryClient.invalidateQueries({ queryKey: ['tax-records'] });
-
-	const create = useMutation({
-		mutationFn: () =>
-			createTaxRecord({
-				taxTypeId,
-				periodYear,
-				periodMonth,
-				taxableBase: Math.round(Number(taxableBase) * 100),
-			}),
-		onSuccess: async () => {
-			toast.success(t('tax:records.created'));
-			setTaxTypeId('');
-			setTaxableBase('');
-			setPreview(null);
-			await invalidate();
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
-
-	const runPreview = useMutation({
-		mutationFn: () =>
-			previewTax({
-				taxTypeId,
-				taxableBase: Math.round(Number(taxableBase) * 100),
-				date: `${periodYear}-${String(periodMonth).padStart(2, '0')}-01`,
-			}),
-		onSuccess: (result) => {
-			setPreview(
-				t('tax:records.previewResult', {
-					amount: (result.taxAmount / 100).toLocaleString(),
-					rate: result.rate,
-					date: result.effectiveFrom,
-				}),
-			);
-		},
-		onError: (mutationError: Error) => toast.error(mutationError.message),
-	});
 
 	const transition = useMutation({
 		mutationFn: (row: { id: string; to: string }) =>
@@ -236,83 +179,17 @@ export function TaxRecordList() {
 				</p>
 			</div>
 
-			{canUpdate ? (
-				<div className='space-y-2'>
-					<div className='flex flex-wrap items-center gap-2'>
-						<Select
-							value={taxTypeId === '' ? 'none' : taxTypeId}
-							onValueChange={(value: string | null) => setTaxTypeId(value == null || value === 'none' ? '' : value)}
-						>
-							<SelectTrigger aria-label={t('tax:records.taxType')}>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value='none'>{t('tax:records.taxType')}</SelectItem>
-								{(types.data?.rows ?? [])
-									.filter((row) => row.isActive)
-									.map((row) => (
-										<SelectItem key={row.id} value={row.id}>
-											{row.code} — {row.name}
-										</SelectItem>
-									))}
-							</SelectContent>
-						</Select>
-						<Input
-							type='number'
-							className='w-24'
-							value={periodYear}
-							min={2000}
-							max={2100}
-							onChange={(event) => setPeriodYear(Number(event.target.value))}
-							aria-label={t('tax:recap.year')}
-						/>
-						<Select
-							value={String(periodMonth)}
-							onValueChange={(value: string | null) => setPeriodMonth(Number(value ?? 1))}
-						>
-							<SelectTrigger aria-label={t('tax:recap.month')}>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								{Array.from({ length: 12 }, (_, index) => index + 1).map(
-									(value) => (
-										<SelectItem key={value} value={String(value)}>
-											{value}
-										</SelectItem>
-									),
-								)}
-							</SelectContent>
-						</Select>
-						<MoneyInput
-							className='w-44'
-							placeholder={t('tax:records.taxableBase')}
-							value={taxableBase}
-							onValueChange={setTaxableBase}
-						/>
-						<Button
-							variant='outline'
-							disabled={!taxTypeId || !taxableBase || runPreview.isPending}
-							onClick={() => void runPreview.mutateAsync()}
-						>
-							{t('tax:records.preview')}
-						</Button>
-						<Button
-							disabled={
-								!taxTypeId || !taxableBase || Number(taxableBase) < 0 || create.isPending
-							}
-							onClick={() => void create.mutateAsync()}
-						>
+			<DataTableCard
+				title={t('tax:records.title')}
+				action={
+					canUpdate ? (
+						<Button size='sm' onClick={() => setCreating(true)}>
 							<Plus className='size-4' data-icon='inline-start' />
-							{create.isPending ? t('tax:records.creating') : t('tax:records.create')}
+							{t('tax:records.create')}
 						</Button>
-					</div>
-					{preview ? (
-						<p className='text-sm text-muted-foreground'>{preview}</p>
-					) : null}
-				</div>
-			) : null}
-
-			<DataTableCard>
+					) : null
+				}
+			>
 				{!isPending && (!data || data.rows.length === 0) ? (
 					<EmptyState
 						icon={FileText}
@@ -337,6 +214,13 @@ export function TaxRecordList() {
 					</>
 				)}
 			</DataTableCard>
+
+			{creating ? (
+				<TaxRecordCreateDialog
+					types={types.data?.rows ?? []}
+					onClose={() => setCreating(false)}
+				/>
+			) : null}
 
 			{editing ? (
 				<TaxRecordEditDialog

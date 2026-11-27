@@ -316,11 +316,12 @@ Menu **Pajak** menyediakan kertas kerja, **bukan** pengajuan otomatis ke DJP.
 
 ### 12.2 Catatan Pajak
 
-- Satu kertas kerja per jenis pajak per periode. Status:
+- Satu kertas kerja per jenis pajak per periode. Klik **Catatan baru** di header
+  card; dialog berisi jenis pajak, tahun, bulan, dan dasar pengenaan. Tombol
+  **Pratinjau** menunjukkan pajak yang dihitung dari tarif aktif pada tanggal
+  tersebut sebelum disimpan. Status kertas kerja:
   `Draf → Terverifikasi → Dilaporkan`.
 - Jumlah dasar dan jumlah pajak bisa diubah **hanya saat masih Draf**.
-- Tombol **Pratinjau** menunjukkan pajak yang dihitung dari tarif aktif pada
-  tanggal tersebut sebelum disimpan.
 
 ### 12.3 Koreksi & Bukti
 

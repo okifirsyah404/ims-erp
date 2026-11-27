@@ -12,6 +12,52 @@ exact commands and outcomes. `progress.md` lies are worse than missing code.
 > `docs/architecture/`, planning/status docs to `docs/plan/`. Historical
 > entries are left as written; only current/live sections use the new paths.
 
+## 2026-11-28 - bills table: creation actions survive the empty state
+
+**Scope.** Reported bug: `BillsTable` rendered its empty state outside
+`DataTableCard`, so an empty bill list hid both creation buttons ("Bill from a
+purchase order" and "New bill").
+
+**Changes.** `bills-table.tsx` now renders one `DataTableCard` for every state
+(error, empty, list) and passes the shared `createActions` element to its
+`action` slot, so the buttons no longer depend on the list having rows. The
+inner `EmptyState`/`ErrorState` lost their `bordered` prop because the card
+already frames them. No backend, schema or locale change; `docs/database/`
+reviewed, unchanged.
+
+**Test.** New `apps/web-admin/test/bills-table.test.tsx` renders `BillsTable`
+inside a real `QueryClientProvider` with an empty bill query and the real `en`
+locale, mocking only `usePermission` and `useConfirm`. It asserts the empty text
+plus both button labels. Proved it fails without the fix: reverting
+`bills-table.tsx` to `HEAD` makes it fail on the missing "Bill from a purchase
+order" label; with the fix it passes.
+
+**Commands and outcomes.** `bun test` (web-admin) → 218 pass / 0 fail (was 217;
+one new test); `bunx tsc -p tsconfig.app.json --noEmit` → 0 errors;
+`bunx oxlint` on the table and the test → 0 warnings. Browser: `/finance/payables`
+with no bills shows "Belum ada tagihan pemasok." together with **Tagihan dari
+PO** and **Tagihan baru**; **Tagihan baru** opens the dialog; 0 console errors.
+
+## 2026-11-28 - tax records: create note in a dialog
+
+**Scope.** User asked for the inline "Catatan baru" form on
+`/finance/tax/records` to use a dialog like the other create actions.
+
+**Changes.** New `apps/web-admin/src/components/tax/tax-record-create-dialog.tsx`
+holds the tax type, year, month and taxable base inputs, the rate preview and
+the create mutation; it invalidates `tax-records` and `tax-recap` on success.
+`tax-record-list.tsx` drops the inline form, its five states and both
+mutations; "Catatan baru" moves into the table card header action and mounts
+the dialog with active tax types. No backend, schema, permission or locale
+change; `docs/database/` reviewed, unchanged.
+
+**Commands and outcomes.** `bunx tsc -p tsconfig.app.json --noEmit` → 0 errors;
+`bunx oxlint` on both files → 0 warnings after lazy date initializers;
+web-admin `bun test` → 217 pass; `packages/locales` `bun test` → 110 pass;
+browser: header button opens the dialog with tax type, year, month, taxable
+base, preview and disabled Save until valid; 0 console errors. No draft was
+created during the walkthrough.
+
 ## 2026-11-27 - user guide: finance & accounting for non-technical users
 
 Added `docs/user-guide/finance-accounting-guide.md` (Bahasa Indonesia) for
