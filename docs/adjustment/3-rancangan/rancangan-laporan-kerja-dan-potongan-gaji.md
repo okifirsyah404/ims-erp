@@ -24,6 +24,7 @@ Dasar yang sudah ada di kode:
 | PG-2 | **Potongan per hari = gaji pokok ÷ jumlah hari kerja bulan itu**; hari kerja diambil dari jadwal kerja karyawan |
 | PG-3 | Yang dipotong: **tidak hadir tanpa keterangan (alpa)**, **izin tanpa gaji** (jenis cuti yang ditandai tidak dibayar), **terlambat**, dan **pro-rata** karyawan yang masuk/keluar di tengah bulan |
 | PG-4 | **Terlambat:** ada **toleransi** (misal 15 menit) dan **nominal per kejadian** di atas toleransi; keduanya diatur di pengaturan. Jam masuk acuan dari jadwal kerja |
+| PG-6 | **Hari tugas lapangan (28/11, KL-8, KL-9):** check-in pertama di kantor atau di lokasi proyek dihitung hadir; terlambat tidak dihitung kecuali Manajer Proyek mengisi jam mulai lapangan |
 | PG-5 | Potongan muncul sebagai baris terpisah di rekap gaji dan slip gaji (alpa, izin tanpa gaji, terlambat, pro-rata), bisa diubah SDM sebelum Aqim menyetujui |
 
 Isian pengaturan (usulan, dicek saat desain): aktif/tidak per jenis potongan,

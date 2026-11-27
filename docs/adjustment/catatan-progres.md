@@ -1753,3 +1753,38 @@ dipakai.
     `diagram-alur/alur-teknisi.md`, `README.md`.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 - Karyawan kantor ditugaskan ke lapangan, dan tampilannya
+
+Programmer B bertanya bagaimana bila Bilal (kantor) ditugaskan ke proyek.
+Saran disetujui, lalu diminta dicatat juga untuk bahan tampilan.
+
+- `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`:
+  - **Bagian 5, KL-7 sampai KL-12:**
+    - penempatan adalah bawaan, bukan batasan; ada tugas proyek berarti hari
+      itu bekerja dengan cara lapangan;
+    - check-in pertama di kantor atau di lokasi dihitung hadir;
+    - hari lapangan tidak dihitung terlambat, kecuali ada jam mulai
+      lapangan;
+    - kasbon untuk siapa pun yang punya tugas proyek aktif;
+    - penempatan tetap dua pilihan; bayaran tetap gaji bulanan + lembur.
+  - **Bagian 6, tampilan:**
+    - kartu "Hari ini" portal per keadaan hari, isi Beranda;
+    - menu portal per jenis karyawan;
+    - pesan check-in, radius, dan kasbon;
+    - layar web-admin: absensi dengan kolom Sumber, kunjungan lokasi, tugas
+      proyek dengan jam mulai lapangan, rekap gaji, rekap upah freelance,
+      data karyawan, kartu "Di lapangan hari ini".
+- Diperbarui:
+  - `lembar-keputusan-rapat.md` bagian 8f;
+  - `rencana-perubahan.md`: B-39 dan B-45;
+  - `rencana-perubahan-modul-oki.md`: PK-10, dan M09-7 dengan cakupan
+    kasbon baru;
+  - `rancangan-laporan-kerja-dan-potongan-gaji.md`: PG-6;
+  - `rancangan-menu-dasbor-dan-form.md`: form kasbon, kartu SDM;
+  - `menu-dan-form-per-role.md`;
+  - `skema-database/human_resource.md` (sumber absen) dan
+    `skema-database/project.md` (jam mulai lapangan);
+  - `diagram-alur/alur-teknisi.md`.
+
+Tidak ada perubahan kode.

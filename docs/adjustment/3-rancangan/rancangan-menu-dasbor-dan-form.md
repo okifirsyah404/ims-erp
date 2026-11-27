@@ -261,7 +261,7 @@ ringkas per modul (wilayah masing-masing pemilik modul).
 | Role | Kartu (urut dari atas) |
 |---|---|
 | **Pemilik** (Aqim) | 1. Menunggu persetujuan saya (jumlah per jenis). 2. Kas & bank hari ini. 3. Penjualan bulan ini vs bulan lalu. 4. Laba bulan ini. 5. Piutang jatuh tempo / lewat jatuh tempo. 6. Utang pemasok jatuh tempo. 7. Stok di bawah minimum. 8. Proyek berjalan (terlambat ditandai). 9. Lisensi habis dalam 30 hari |
-| **SDM** (Aqim) | 1. Absensi hari ini (hadir / belum absen / cuti). 2. Cuti dan lembur menunggu. 3. Gaji bulan ini (status draf / disetujui / dibayar). 4. Kontrak kerja habis dalam 30 hari. 5. **Laporan harian belum diisi** hari ini/minggu ini (B-44) |
+| **SDM** (Aqim) | 1. Absensi hari ini (hadir / belum absen / cuti). 2. Cuti dan lembur menunggu. 3. Gaji bulan ini (status draf / disetujui / dibayar). 4. Kontrak kerja habis dalam 30 hari. 5. **Laporan harian belum diisi** hari ini/minggu ini (B-44). 6. **Di lapangan hari ini**: siapa, proyek mana, jam check-in (KL-7, termasuk karyawan kantor yang ditugaskan) |
 | **Penjualan** (Agus MD, Bilal) | 1. Follow-up prospek hari ini. 2. SPH rekan menunggu persetujuan saya. 3. SPH saya: draf / diajukan / dikirim / akan kedaluwarsa. 4. SO belum dikirim. 5. Penjualan saya bulan ini. 6. Lisensi pelanggan habis dalam 30 hari |
 | **Gudang** (Bilal, Agus) | 1. PO siap diterima. 2. SO siap dikirim. 3. Retur yang harus diterima/dikirim. 4. Peminjaman siap diserahkan / harus kembali hari ini. 5. Stok di bawah minimum |
 | **Layanan Pelanggan** (Bilal) | 1. Tiket belum ditugaskan. 2. Tiket terbuka per status. 3. Chat WhatsApp menunggu dibalas. 4. Klaim garansi menunggu |
@@ -679,7 +679,7 @@ faktur**; detail faktur → **Terbitkan** / **Catat pembayaran**.
 | Ajukan cuti | Jenis \*, mulai \*, selesai \*, alasan | selesai ≥ mulai; sisa kuota tampil di atas form; **melebihi kuota ditolak** [27/11] | "Tanggal selesai tidak boleh sebelum tanggal mulai." · "Sisa cuti Anda {x} hari; pengajuan {y} hari. Ajukan kelebihannya sebagai izin tanpa gaji." |
 | Catat lembur | Tanggal \*, jam \*, alasan \* | **0,25–4 jam per hari** [27/11] (batas umum UU Ketenagakerjaan); tanggal ≤ hari ini | "Lembur maksimal 4 jam per hari." · "Tanggal lembur tidak boleh di masa depan." |
 | Absen masuk / pulang | — (tombol) | lokasi proyek: di luar radius ditolak (OG1, PK-1) | "Anda berada {jarak} m dari lokasi proyek (batas {radius} m). Absen tidak bisa dicatat." · "Izinkan akses lokasi di browser untuk absen." |
-| **Ajukan kasbon [baru]** | Tanggal \*, jumlah \*, keperluan \*, proyek | jumlah > 0; **tanpa batas nominal**, Aqim yang memutuskan [27/11]; **ditolak bila masih ada kasbon lama yang belum dipertanggungjawabkan** | "Jumlah kasbon wajib diisi." · "Kasbon {nomor} belum dipertanggungjawabkan. Selesaikan dulu sebelum mengajukan kasbon baru." |
+| **Ajukan kasbon [baru]** (untuk yang punya tugas proyek aktif, KL-10) | Tanggal \*, jumlah \*, keperluan \*, proyek | jumlah > 0; **tanpa batas nominal**, Aqim yang memutuskan [27/11]; **ditolak bila masih ada kasbon lama yang belum dipertanggungjawabkan** | "Jumlah kasbon wajib diisi." · "Kasbon {nomor} belum dipertanggungjawabkan. Selesaikan dulu sebelum mengajukan kasbon baru." |
 | **Pertanggungjawaban [baru]** | Baris \*: kategori, keterangan, jumlah, foto nota | minimal satu baris; total tampil dibanding kasbon | "Tambahkan minimal satu pengeluaran." · info: "Sisa kasbon Rp {x} dikembalikan ke kantor." / "Kekurangan Rp {x} akan dibayar kantor." |
 
 - **Berhasil:** "Pengajuan cuti terkirim. Menunggu persetujuan." · "Lembur

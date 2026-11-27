@@ -29,6 +29,7 @@ Schema gabungan: proyek pelaksanaan SO (tugas, bukti, biaya, BAST, garansi, abse
 | `license_api_keys` | Kunci mesin aplikasi milik sendiri untuk API lisensi | `license_application_id`, `api_key_id`, `key_start` | `status`: active, revoked |
 | `types`, `phases`, `task_dependencies`, `milestones`, `daily_reports`, `site_assignments`, `kpi_definitions`, `kpi_evaluations`, `changes`, `work_plans` | **Target**: hanya di dbml, belum ada di Drizzle/DB (S6) | — | lihat dbml |
 | `daily_reports`, `kpi_definitions`, `kpi_evaluations` dipakai untuk **laporan kerja karyawan** (B-44, LK-1–LK-7, 28/11); sisa tabel target tetap B-26 | B-44 | migrasi baru saat dibangun | diputuskan 28/11, Tinggi |
+| **Jam mulai lapangan** (opsional) per tugas proyek atau jadwal, acuan terlambat di hari lapangan | KL-9, B-45 | kolom baru (dicek ke `docs.dbml`) | diputuskan 28/11, Tinggi |
 | `settings`, `code_numberings` | Pengaturan (mis. `site_radius_meters`, bawaan 100) dan seri nomor | — | — |
 
 ## Relasi

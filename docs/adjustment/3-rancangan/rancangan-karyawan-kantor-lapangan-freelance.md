@@ -53,3 +53,76 @@ Semua "portal untuk teknisi" di catatan ini berarti **`apps/web-employee`**.
 | Pembayaran harian | Hari kerja sah dihitung dari check-in lokasi yang diterima + laporan harian hari itu; Bella melihat rekap per periode lalu membayar |
 | Hak role | Perluasan Pekerja Lepas di `erp-permissions.ts` (wilayah Oki, M12-5); pembatasan "hanya proyek yang ditugaskan" sudah berlaku di portal (`/projects/me`) |
 | Portal karyawan | Menu mengikuti penempatan dan jenis kepegawaian (freelance tanpa cuti, lembur, slip gaji; dengan rekap upah) |
+
+---
+
+## 5. Karyawan kantor yang ditugaskan ke lapangan (diputuskan 28/11)
+
+Contoh: Bilal (penempatan Kantor) diberi tugas di proyek.
+
+| No | Keputusan |
+|---|---|
+| KL-7 | **Penempatan adalah bawaan, bukan batasan.** Karyawan kantor yang punya **tugas proyek** bekerja dengan cara lapangan pada hari itu, tanpa mengubah penempatannya. Proyeknya otomatis tampil di "Proyek saya" (sudah berlaku di kode: proyek tampil untuk PIC dan siapa pun yang punya tugas di proyek itu). Tidak perlu role Teknisi |
+| KL-8 | **Hadir:** check-in pertama hari itu, **di kantor atau di lokasi proyek**, dihitung hadir (tidak alpa, tidak dipotong) |
+| KL-9 | **Terlambat tidak dihitung** pada hari yang punya tugas lapangan, **kecuali** Manajer Proyek mengisi **jam mulai lapangan** di jadwal/tugas; bila diisi, terlambat diukur dari jam itu ke check-in lokasi |
+| KL-10 | **Kasbon untuk siapa pun yang punya tugas proyek aktif** (bukan hanya Teknisi); mengubah cakupan OB13/RO6 |
+| KL-11 | Penempatan tetap **dua pilihan** (Kantor/Lapangan), tanpa "Campuran" |
+| KL-12 | Bayaran karyawan kantor yang ke lapangan tetap **gaji bulanan**; kerja lewat jam kerja dicatat sebagai **lembur** seperti biasa |
+
+## 6. Tampilan (bahan desain layar)
+
+### 6.1 Portal karyawan: Beranda
+
+Kartu paling atas **"Hari ini"** berubah mengikuti keadaan hari itu:
+
+| Keadaan hari | Isi kartu "Hari ini" |
+|---|---|
+| Tidak ada tugas lapangan | **Absen kantor**: tombol **Masuk** / **Pulang**; jam masuk dan pulang dari jadwal |
+| Ada tugas lapangan (karyawan lapangan, freelance, atau karyawan kantor yang ditugaskan) | **Tugas lapangan: {nama proyek}**, alamat lokasi + tombol buka peta, jam mulai lapangan bila ada, tombol **Check-in di lokasi** / **Check-out di lokasi**. Di bawahnya tautan kecil "Absen di kantor" untuk hari ia mampir kantor dulu |
+| Lebih dari satu proyek hari itu | Daftar proyek; check-in per proyek |
+| Sudah hadir | "Hadir pukul 08.05 · di lokasi {proyek} (32 m)" atau "Hadir pukul 07.58 · di kantor" |
+| Cuti | "Cuti hari ini", tombol absen disembunyikan |
+
+Di bawah kartu "Hari ini":
+- **Tugas saya hari ini** (tugas proyek dan tugas SDM, tanda proyek).
+- **Laporan harian**: "Belum diisi" (tombol Isi laporan) / "Sudah diisi pukul 17.40". Hari yang masih bisa disusul (maks. 2 hari) tampil dengan tanda kuning.
+- **Pinjaman alat** yang harus kembali.
+- **Kasbon terbuka** dan sisa yang belum dipertanggungjawabkan.
+
+### 6.2 Portal karyawan: menu
+
+| Menu | Tampil untuk |
+|---|---|
+| Beranda | Semua |
+| Absensi (riwayat gabungan kantor + lokasi, dengan label sumber) | Semua |
+| Proyek saya | Yang punya tugas proyek atau PIC |
+| Laporan kerja (harian, ringkasan mingguan/bulanan, nilai) | Semua |
+| Kasbon | **Yang punya tugas proyek aktif atau kasbon terbuka** (KL-10) |
+| Jadwal kerja | Karyawan (bukan freelance) |
+| Cuti, Lembur | Karyawan (bukan freelance) |
+| Slip gaji | Karyawan (bukan freelance) |
+| Rekap upah | **Freelance** (hari kerja sah / borongan, status bayar) |
+| Dokumen, Tanda tangan | Semua |
+
+### 6.3 Portal karyawan: pesan
+
+| Keadaan | Pesan |
+|---|---|
+| Check-in lokasi berhasil | "Hadir tercatat pukul 08.05 di lokasi {proyek} ({jarak} m)." |
+| Di luar radius | "Anda berada {jarak} m dari lokasi {proyek} (batas {radius} m). Check-in tidak bisa dicatat." |
+| Izin lokasi mati | "Izinkan akses lokasi dan kamera di browser untuk check-in." |
+| Sudah check-in di kantor lalu ke lokasi | Check-in lokasi tetap dicatat sebagai kunjungan; status hadir memakai check-in pertama |
+| Kasbon tanpa tugas proyek | Menu Kasbon tidak tampil; bila dipaksa: "Kasbon hanya untuk karyawan yang punya tugas proyek aktif." |
+| Pengingat laporan (sore) | "Laporan harian {tanggal} belum diisi." |
+
+### 6.4 Web-admin
+
+| Layar | Tampilan |
+|---|---|
+| **Absensi harian (SDM)** | Kolom **Sumber**: Kantor / Lokasi {proyek} / Dicatat SDM; jam, jarak; baris dari check-in sendiri bertanda dan **perubahan oleh SDM tercatat** (KF-E4) |
+| **Kunjungan lokasi** (PK-9) | Semua orang yang check-in di lokasi, termasuk karyawan kantor; saring per orang, proyek, tanggal; swafoto dan peta |
+| **Tugas proyek** (detail proyek) | Pilihan petugas = semua karyawan aktif (kantor, lapangan, freelance) dengan label penempatan/jenis; isian opsional **jam mulai lapangan** (KL-9) |
+| **Rekap gaji** | Kolom **hari lapangan**; hari lapangan tanpa jam mulai tidak dihitung terlambat; lembur dari jam yang disetujui |
+| **Rekap upah freelance** | Hari kerja sah per freelance (check-in diterima + laporan harian) atau borongan per proyek; tombol bayar oleh Bella (M09-18) |
+| **Data karyawan** | Isian Penempatan Kantor/Lapangan, jenis kepegawaian (+ Freelance), tarif freelance harian/borongan |
+| **Dasbor Aqim** | Kartu "Di lapangan hari ini" (siapa, proyek mana, jam check-in) dan "Laporan harian belum diisi" |

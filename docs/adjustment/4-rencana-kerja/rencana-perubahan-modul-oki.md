@@ -88,7 +88,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M09-4 | Aksi `accounting_period:create` untuk "Siapkan periode" untuk Pemilik dan Keuangan (RO1, 27/11) | OB4 | Tinggi | Tidak |
 | M09-5 | Akuntan diberi `asset:read`, `project:read`; `reopen` hanya Pemilik → 27/11: hak Akuntan pindah ke role Keuangan gabungan (K2d), jadi Bella membuka Aset tetap dan Anggaran proyek (OB5); route pembuka periode memeriksa `reopen`, hanya Pemilik (RO4) | OB5, OB6 | Sedang | Diputuskan programmer B 27/11 |
 | M09-6 | Klaim biaya: pengaju ≠ penyetuju; pembayaran tetap tanpa cek tetapi diaudit → diganti 27/11: klaim biaya juga tanpa pemeriksa kedua (OB8 diterima), cukup diaudit | OB7, OB8 | Sedang | Diputuskan programmer B 27/11 |
-| M09-7 | Kasbon/pertanggungjawaban: hak `advance`/`settlement` untuk Keuangan/Akuntan supaya Aqim punya pemeriksa → diganti 27/11: Aqim tidak mengajukan kasbon; pertanggungjawaban satu langkah oleh Aqim, aturan verifikator ≠ penyetuju dihapus di `employee-advance.service.ts` (RO5) | OB9, OB13 | Tinggi (macet sekarang) | Diputuskan programmer B 27/11 |
+| M09-7 | Kasbon/pertanggungjawaban: hak `advance`/`settlement` untuk Keuangan/Akuntan supaya Aqim punya pemeriksa → diganti 27/11: Aqim tidak mengajukan kasbon; pertanggungjawaban satu langkah oleh Aqim, aturan verifikator ≠ penyetuju dihapus di `employee-advance.service.ts` (RO5)  (cakupan pengaju diperluas 28/11, KL-10: siapa pun yang punya tugas proyek aktif) | OB9, OB13 | Tinggi (macet sekarang) | Diputuskan programmer B 27/11 |
 | M09-8 | Write-off piutang **langsung ke beban kerugian piutang**, tanpa cadangan (OB10, 27/11); write-off tidak lagi mendebit akun cadangan 1-1390 | OB10 | Tinggi (angka laba salah) | Diputuskan programmer B 27/11 |
 | M09-9 | Arus kas tidak langsung: abaikan transaksi nonkas | OB11 | Sedang | Ya (OB11 = (a), rapat 27/11) |
 | M09-10 | Ekspor CSV ke `/finance/reports/*.csv`, tampilkan galat, label tombol berbeda | OB12 | Sedang | Diputuskan programmer B 27/11 |
@@ -169,7 +169,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | PK-7 | Hak `self_service` diperiksa di guard portal atau dihapus (kaitan: Anggota "hapus") → Anggota dihapus (27/11) | UAT portal 12; OA9 | Rendah | Ya |
 | PK-8 | Login portal karyawan tanpa Google: karyawan diundang, mengganti kata sandi, lalu login dengan username/email + kata sandi | K13 | Sedang | Diputuskan programmer B 27/11 |
 | PK-9 | **Layar admin kunjungan lokasi dan swafoto teknisi** untuk Aqim (bukan hanya PIC proyek) | KF-E1 | Tinggi | Diputuskan 28/11 (KF bagian kedua) |
-| PK-10 | Menu portal karyawan mengikuti **penempatan** (kantor: absen kantor; lapangan: check-in lokasi) dan **jenis Freelance** (tanpa cuti, lembur, slip gaji; dengan rekap upah); perluasan role **Pekerja Lepas** untuk freelance: proyek yang ditugaskan, pinjam alat, kasbon, tanpa tiket (M12-5) | KL-2, KL-5, KL-6 | Tinggi | Diputuskan programmer B 28/11 |
+| PK-10 | Menu portal karyawan mengikuti **penempatan** (kantor: absen kantor; lapangan: check-in lokasi) dan **jenis Freelance** (tanpa cuti, lembur, slip gaji; dengan rekap upah); perluasan role **Pekerja Lepas** untuk freelance: proyek yang ditugaskan, pinjam alat, kasbon, tanpa tiket (M12-5); **kartu "Hari ini" mengikuti keadaan hari dan menu Kasbon untuk yang punya tugas proyek aktif** (KL-7–KL-10, tampilan bagian 6 dokumen kantor/lapangan) | KL-2, KL-5, KL-6 | Tinggi | Diputuskan programmer B 28/11 |
 
 ## 3. Lintas modul yang dipegang atau ikut dipegang Oki
 

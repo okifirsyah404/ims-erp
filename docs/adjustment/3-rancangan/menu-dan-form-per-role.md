@@ -241,6 +241,8 @@ portal ini (OG5).
 | SDM | Absensi, Jadwal Kerja, Cuti, Lembur, Tugas |
 | Keuangan | **Kasbon [baru]** (ajukan, lihat status, pertanggungjawaban; OB13, RO6) |
 | Laporan | **Laporan Kerja [baru]** (harian; ringkasan mingguan dan bulanan; LK-1–LK-7, B-44) |
+
+Menu dan kartu "Hari ini" portal karyawan mengikuti penempatan, jenis Freelance, dan ada/tidaknya tugas lapangan hari itu; rincian tampilan di `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md` bagian 6.
 | Proyek | Proyek, **Riwayat absen lokasi [baru]** (OG2) |
 | Dokumen | Berkas, Tanda tangan |
 | Akun | Penggajian (slip gaji) |

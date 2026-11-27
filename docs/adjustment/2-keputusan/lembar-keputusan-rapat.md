@@ -334,6 +334,12 @@ Rincian di `3-rancangan/rancangan-karyawan-kantor-lapangan-freelance.md`.
 | KL-3 | Teknisi freelance = data karyawan jenis Freelance, bisa masuk portal karyawan, tanpa kuota cuti dan gaji bulanan (memperjelas OG4) |
 | KL-4 | Bayaran freelance harian atau borongan per orang, dibayar Keuangan, masuk biaya proyek |
 | KL-5, KL-6 | Freelance: tugas proyek yang ditugaskan, check-in, bukti, laporan harian, pinjam alat, kasbon, dinilai; tanpa tiket; role Pekerja Lepas diperluas. Dafrin dan Oki tetap tanpa data karyawan (X4) |
+| KL-7 | Karyawan kantor yang punya tugas proyek bekerja dengan cara lapangan hari itu, penempatan tidak diubah (contoh Bilal) |
+| KL-8 | Check-in pertama di kantor **atau** di lokasi dihitung hadir |
+| KL-9 | Hari tugas lapangan tidak dihitung terlambat, kecuali PM mengisi jam mulai lapangan |
+| KL-10 | Kasbon untuk siapa pun yang punya tugas proyek aktif (mengubah cakupan OB13/RO6) |
+| KL-11, KL-12 | Penempatan tetap dua pilihan; bayaran tetap gaji bulanan + lembur |
+| Tampilan | Kartu "Hari ini" di portal mengikuti keadaan hari (absen kantor / tugas lapangan / cuti), menu portal per jenis karyawan, kolom Sumber di absensi SDM, jam mulai lapangan di tugas proyek, kartu "Di lapangan hari ini" untuk Aqim (rincian bagian 6 dokumen) |
 
 ## 9. Kesimpulan
 

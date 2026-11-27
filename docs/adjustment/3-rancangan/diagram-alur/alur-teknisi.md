@@ -20,7 +20,7 @@ yang perlu (tiket servis, sampai tiket masuk portal karyawan, KF-P4).
 | 2 | **Lihat detail proyek** | Portal: detail proyek | Lokasi, pelanggan, kontak, tahap, tugas, bukti (tanpa biaya) | ✅ ada | sama |
 | 3 | **Pinjam alat** | Peminjaman | Ajukan dari **daftar unit khusus** → Manajer Proyek menyetujui → Gudang menyerahkan | Teknisi tidak bisa memilih unit; Gudang bisa menyerahkan tanpa persetujuan | OD1, C13 |
 | 4 | **Ambil bahan** | Gudang | Tidak menginput; Gudang mengeluarkan bahan ke proyek atau mengirim lewat surat jalan SO | Hanya lewat surat jalan SO | Layar keluar stok ke proyek (B-29) |
-| 5 | **Kasbon** (bila perlu biaya operasional) | Portal: Kasbon | Ajukan kasbon → Aqim menyetujui dan mencairkan | Tidak bisa (menu Keuangan tertutup) | Kasbon di portal (OB13); ditolak bila kasbon lama belum dipertanggungjawabkan (FU12) |
+| 5 | **Kasbon** (bila perlu biaya operasional; siapa pun yang punya tugas proyek, KL-10) | Portal: Kasbon | Ajukan kasbon → Aqim menyetujui dan mencairkan | Tidak bisa (menu Keuangan tertutup) | Kasbon di portal (OB13); ditolak bila kasbon lama belum dipertanggungjawabkan (FU12) |
 | 6 | **Tiba di lokasi** | Portal: Proyek → Check-in | Swafoto + GPS | Di luar radius **tetap diterima** (ditandai) | **Ditolak** di luar radius (OG1); Aqim melihat semua kunjungan (PK-9) |
 | 7 | **Kerjakan tugas** | Portal: tugas proyek | Ubah status tugas: Belum → Dikerjakan → Selesai (hanya tugas sendiri) | ✅ ada | sama |
 | 8 | **Unggah bukti** | Portal: Bukti | Foto, uji fungsi, training, terkait tugasnya | ✅ ada | sama |
@@ -102,6 +102,7 @@ sequenceDiagram
 |---|---|
 | Teknisi freelance (28/11) | Memakai portal karyawan yang sama (`apps/web-employee`) sebagai data karyawan jenis Freelance: tugas proyek yang ditugaskan, check-in lokasi, bukti, laporan harian, pinjam alat, kasbon, dinilai. **Tidak** mengerjakan tiket servis, tanpa cuti/lembur/slip gaji; dibayar harian atau borongan lewat Keuangan (KL-1–KL-6) |
 | Karyawan kantor vs lapangan | Kantor absen cap waktu; lapangan absen dengan check-in lokasi proyek (KL-2) |
+| Karyawan kantor ditugaskan ke lapangan (contoh Bilal) | Penempatan tetap Kantor; hari yang punya tugas proyek = cara lapangan: check-in lokasi dihitung hadir, tidak terlambat kecuali ada jam mulai lapangan, boleh kasbon (KL-7–KL-10). Kartu "Hari ini" di portal menampilkan tugas lapangan |
 | Dua jenis tugas | **Tugas proyek** (dari PM, per tahap) dan **tugas SDM** (dari Aqim, di luar proyek). Keduanya tampil di portal karyawan; teknisi hanya melihat tugasnya sendiri (D4) |
 | Tiket di portal karyawan | Belum ada (KF-P4, daftar tunggu "Tambahan"); sementara teknisi membuka tiket di web-admin |
 | Alat "pinjaman saya" | Kartu dasbor Teknisi menampilkan pinjaman yang harus kembali (RD1); layar khusus di portal masih daftar tunggu (KF-A7) |
