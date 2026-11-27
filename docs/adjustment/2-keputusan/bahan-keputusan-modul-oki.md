@@ -1,15 +1,15 @@
 # Bahan keputusan untuk Pemilik dan Oki (modul Oki)
 
-Kembali ke [catatan penyesuaian](README.md). Disusun 2026-11-27 untuk modul
+Kembali ke [catatan penyesuaian](../README.md). Disusun 2026-11-27 untuk modul
 programmer kedua (Oki): M12 Laporan & Hak Akses, M09 Keuangan, M10 Pajak, M06
 Aset & Peralatan, M11 Bonus & Investor, M01 Dasbor, dan portal karyawan
 (`apps/web-employee`). Pasangan dari [`bahan-keputusan.md`](bahan-keputusan.md)
 (modul programmer B). Isi kolom **Keputusan**, lalu Oki mengerjakannya.
 
-Sumber rinciannya: checklist [`uat-modul/modul-oki/`](uat-modul/modul-oki/README.md)
-(langkah ⚠️/❓ dan "Catatan penyusun"), [`rencana-perubahan.md`](rencana-perubahan.md)
+Sumber rinciannya: checklist [`uat-modul/modul-oki/`](../1-validasi/uat-modul/modul-oki/README.md)
+(langkah ⚠️/❓ dan "Catatan penyusun"), [`rencana-perubahan.md`](../4-rencana-kerja/rencana-perubahan.md)
 bagian 3 (O-1..O-9), [`lembar-keputusan-rapat.md`](lembar-keputusan-rapat.md),
-[`lintas-modul/autentikasi-dan-hak-akses.md`](lintas-modul/autentikasi-dan-hak-akses.md),
+[`lintas-modul/autentikasi-dan-hak-akses.md`](../3-rancangan/lintas-modul/autentikasi-dan-hak-akses.md),
 dan `skema-database/`. Klaim utama dicek ulang ke kode `main` pada 2026-11-27;
 semua temuan UAT masih **dugaan dari membaca kode**, belum dilihat di layar.
 
@@ -155,7 +155,7 @@ menerimanya sebagai tambahan.
 ## H. Dokumen arsitektur milik Oki yang sudah tidak cocok
 
 Bukan keputusan bisnis. Rincian di
-[`ringkasan-arsitektur-modul-oki.md`](ringkasan-arsitektur-modul-oki.md) bagian 9.
+[`ringkasan-arsitektur-modul-oki.md`](../3-rancangan/ringkasan-arsitektur-modul-oki.md) bagian 9.
 
 | No | Dokumen | Masalah |
 |---|---|---|

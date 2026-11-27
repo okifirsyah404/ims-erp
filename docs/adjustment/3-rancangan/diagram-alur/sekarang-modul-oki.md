@@ -12,10 +12,10 @@ dari pembacaan kode dan catatan, belum diperiksa Oki maupun Pemilik. Belum ada
 langkah yang dicoba di aplikasi untuk dokumen ini.
 
 **Cara membaca** (sama dengan
-[uat-modul/diagram-alur-per-role.md](../uat-modul/diagram-alur-per-role.md)):
+[uat-modul/diagram-alur-per-role.md](../../1-validasi/uat-modul/diagram-alur-per-role.md)):
 
 * Aktor ditulis `Role - nama orang`, memakai susunan role yang
-  direkomendasikan ([validasi-konsep-modul-oki.md](../validasi-konsep-modul-oki.md)
+  direkomendasikan ([validasi-konsep-modul-oki.md](../../1-validasi/validasi-konsep-modul-oki.md)
   3.1 dan 3.8): Aqim = Pemilik + SDM (pekerjaan keuangan, pembelian, dan
   operasional dikerjakannya sebagai Pemilik), Bella = Akuntan (+ Keuangan bila
   K2d b), Agus MD dan Bilal = Penjualan, Bilal juga Gudang / Layanan Pelanggan /
@@ -24,8 +24,8 @@ langkah yang dicoba di aplikasi untuk dokumen ini.
   Pekerja Lepas.
 * Orang yang **seharusnya** bertindak tetap digambar. Bila kode menolaknya,
   ada `Note` berisi **DITOLAK KODE** atau **MACET**.
-* Nomor temuan: RO1–RO20 di [validasi-konsep-modul-oki.md](../validasi-konsep-modul-oki.md)
-  Bagian 3.2; OA–OH di [bahan-keputusan-modul-oki.md](../bahan-keputusan-modul-oki.md).
+* Nomor temuan: RO1–RO20 di [validasi-konsep-modul-oki.md](../../1-validasi/validasi-konsep-modul-oki.md)
+  Bagian 3.2; OA–OH di [bahan-keputusan-modul-oki.md](../../2-keputusan/bahan-keputusan-modul-oki.md).
 
 **Sumber, dibaca 2026-11-27:**
 
@@ -43,8 +43,8 @@ langkah yang dicoba di aplikasi untuk dokumen ini.
   `components/sidebar/organization-switcher.tsx`; `apps/web-employee/src/routes/`;
   status di `apps/backend/drizzle/schemas/{finance,payment,tax,inventory,human-resource}.schema.ts`;
   hak di `packages/common/src/authorization/erp-permissions.ts`.
-* Catatan: [validasi-konsep-modul-oki.md](../validasi-konsep-modul-oki.md),
-  [uat-modul/modul-oki/](../uat-modul/modul-oki/README.md),
+* Catatan: [validasi-konsep-modul-oki.md](../../1-validasi/validasi-konsep-modul-oki.md),
+  [uat-modul/modul-oki/](../../1-validasi/uat-modul/modul-oki/README.md),
   [skema-database/finance.md](../skema-database/finance.md),
   [skema-database/tax.md](../skema-database/tax.md),
   [skema-database/auth.md](../skema-database/auth.md),

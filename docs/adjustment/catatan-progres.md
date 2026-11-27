@@ -7,11 +7,11 @@ B, catatan skema, dan diagram per role. Dokumen bersama
 diubah. Isi catatan ini dipindahkan ke sana setelah disepakati.
 
 Isi folder ini:
-- [validasi-konsep-saat-ini.md](validasi-konsep-saat-ini.md): matriks role
+- [validasi-konsep-saat-ini.md](1-validasi/validasi-konsep-saat-ini.md): matriks role
   dan keputusan terbuka.
-- [uat-modul/](uat-modul/README.md): checklist UAT per modul, catatan
+- [uat-modul/](1-validasi/uat-modul/README.md): checklist UAT per modul, catatan
   skema, dan diagram alur per role.
-- [ringkasan-arsitektur.md](ringkasan-arsitektur.md): ringkasan aturan
+- [ringkasan-arsitektur.md](3-rancangan/ringkasan-arsitektur.md): ringkasan aturan
   arsitektur yang berpengaruh ke modul programmer B.
 
 ## 2026-11-24 - Uji alur PO/SPH/Surat Jalan: dua perbaikan web-admin
@@ -1475,5 +1475,44 @@ Bagian 2.2a baru di `rancangan-menu-dasbor-dan-form.md`:
 - **PM-6, menu harian Aqim:** Dasbor, Perlu Tindakan, Laporan, dan SDM tampil
   di atas; grup lain masuk ke "Lainnya". PO yang dibuat Aqim sendiri dibuka
   lewat favorit atau Ctrl+K.
+
+Tidak ada perubahan kode.
+
+## 2026-11-27 - Kekurangan fitur dan perapian folder
+
+**Kekurangan fitur.** Dua agen pemeriksa membandingkan batas kontrak
+(`docs/plan/erp-plan-id.md`, `erp-module-plans/`), kode, dan catatan yang
+sudah ada. Hasilnya ditulis di `3-rancangan/kekurangan-fitur.md`:
+- Proyek KF-P1–P11, Gudang KF-G1–G7, Pengadaan KF-B1–B6, Aset KF-A1–A10,
+  Keuangan KF-K1–K10, Pajak KF-T1–T8.
+- Keputusan programmer B:
+  - **KF-1:** 10 butir terpenting masuk rencana.
+    - Programmer B: B-29 sampai B-33.
+    - Oki: M09-15 sampai M09-17, M10-11 sampai M10-13, M06-14.
+  - **KF-2:** butir Sedang/Rendah masuk daftar tunggu (B-34, M06-15).
+  - **KF-3:** butir "Tambahan" menunggu permintaan Pemilik.
+  - **KF-4:** rezim pajak dipastikan Bella.
+- `4-rencana-kerja/peta-halaman.md` (baru): halaman yang diperbaiki,
+  ditambah bagian "Tambahan dari kekurangan fitur".
+
+**Perapian folder** (keputusan programmer B: folder bernomor sesuai langkah
+kerja). Dipindah dengan `git mv`, dan 61 tautan relatif ditulis ulang oleh
+skrip:
+- `1-validasi/`: validasi kedua wilayah dan `uat-modul/`.
+- `2-keputusan/`: bahan keputusan, lembar rapat, ringkasan Pemilik.
+- `3-rancangan/`: ringkasan arsitektur, `skema-database/`, `lintas-modul/`,
+  `diagram-alur/`, menu dan form, rancangan menu/dasbor/form, kekurangan
+  fitur.
+- `4-rencana-kerja/`: rencana perubahan kedua wilayah, peta halaman.
+- `README.md` ditulis ulang sebagai **panduan langkah 1–11** dengan status
+  (langkah 1–5 selesai, langkah 6 berjalan).
+
+Pemeriksaan tautan: 184 tautan relatif, 0 rusak.
+
+Belum diperbarui: tiga komentar di kode Playwright
+(`apps/web-admin/e2e/m05-a-barang.e2e.ts`, `e2e/README.md`,
+`playwright.config.ts`) masih menunjuk `docs/adjustment/uat-modul/`.
+Diperbaiki saat perubahan kode berikutnya, karena belum boleh ada perubahan
+kode.
 
 Tidak ada perubahan kode.

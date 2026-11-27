@@ -1,6 +1,6 @@
 # Menu dan form per role
 
-Disusun 2026-11-27. Kembali ke [catatan penyesuaian](README.md).
+Disusun 2026-11-27. Kembali ke [catatan penyesuaian](../README.md).
 
 Dokumen ini menjawab dua pertanyaan:
 1. **Menu apa yang tampil untuk setiap role** (dan setiap orang).
@@ -47,7 +47,7 @@ Satu orang boleh memegang beberapa role (D2). Menu yang ia lihat adalah
 ## 1a. Keputusan disetujui yang mengubah menu dan form
 
 Semua butir di bawah disetujui Pemilik pada rapat 27/11 (sumber: bagian 0
-[lembar rapat](lembar-keputusan-rapat.md)). Kolom **Layar** menunjuk ke
+[lembar rapat](../2-keputusan/lembar-keputusan-rapat.md)). Kolom **Layar** menunjuk ke
 bagian dokumen ini yang memuat perubahannya.
 
 | Keputusan | Akibat pada menu / form | Layar |

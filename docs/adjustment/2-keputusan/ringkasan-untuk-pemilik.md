@@ -1,6 +1,6 @@
 # Ringkasan keputusan untuk Pemilik
 
-Kembali ke [catatan penyesuaian](README.md). Rincian setiap butir ada di
+Kembali ke [catatan penyesuaian](../README.md). Rincian setiap butir ada di
 [lembar keputusan rapat](lembar-keputusan-rapat.md). Disusun 2026-11-27.
 
 **Status: disetujui Pak Aqim pada rapat 2026-11-27, semua butir sesuai usulan** (dilaporkan programmer B).

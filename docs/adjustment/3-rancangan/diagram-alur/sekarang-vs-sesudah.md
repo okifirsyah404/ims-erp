@@ -8,13 +8,13 @@ Mermaid berurutan:
 - **Sekarang**: perilaku kode hari ini, dengan titik macet atau bermasalah
   ditandai di `Note`.
 - **Sesudah (usulan)**: alur menurut **jawaban programmer B 27/11**
-  (bagian 0 [`../lembar-keputusan-rapat.md`](../lembar-keputusan-rapat.md)),
+  (bagian 0 [`../lembar-keputusan-rapat.md`](../../2-keputusan/lembar-keputusan-rapat.md)),
   disetujui Pemilik 27/11 (tinjauan Oki di PR #171). Butir yang belum dijawab memakai
   rekomendasi lembar rapat.
 
 Di bawah setiap pasangan ada daftar singkat **yang perlu diubah di kode**
 (wilayah dan pemiliknya, tanpa kode). File ini satu set dengan diagram
-kondisi sekarang di [`../uat-modul/diagram-alur-per-role.md`](../uat-modul/diagram-alur-per-role.md)
+kondisi sekarang di [`../uat-modul/diagram-alur-per-role.md`](../../1-validasi/uat-modul/diagram-alur-per-role.md)
 (modul programmer B) dan [`sekarang-modul-oki.md`](sekarang-modul-oki.md)
 (modul Oki). Gaya aktornya sama: `Role - nama orang`.
 

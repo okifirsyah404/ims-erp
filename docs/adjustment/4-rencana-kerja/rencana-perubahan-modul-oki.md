@@ -1,6 +1,6 @@
 # Rencana perubahan mendatang (modul Oki)
 
-Kembali ke [catatan penyesuaian](README.md). Satu daftar untuk semua perubahan
+Kembali ke [catatan penyesuaian](../README.md). Satu daftar untuk semua perubahan
 di modul programmer kedua (Oki): M12, M09, M10, M06, M11, M01, dan portal
 karyawan, ditambah hal lintas modul yang dipegang atau ikut dipegang Oki.
 Pasangan dari [`rencana-perubahan.md`](rencana-perubahan.md) (gabungan, bagian
@@ -8,9 +8,9 @@ Pasangan dari [`rencana-perubahan.md`](rencana-perubahan.md) (gabungan, bagian
 
 **Status:** semua butir di sini **belum dikerjakan**. Aturan folder ini: tidak
 ada eksekusi kode sampai catatan beres dan disetujui. Rincian setiap butir ada
-di [`bahan-keputusan-modul-oki.md`](bahan-keputusan-modul-oki.md) (kolom
+di [`bahan-keputusan-modul-oki.md`](../2-keputusan/bahan-keputusan-modul-oki.md) (kolom
 Sumber menyebut nomornya) dan di checklist
-[`uat-modul/modul-oki/`](uat-modul/modul-oki/README.md).
+[`uat-modul/modul-oki/`](../1-validasi/uat-modul/modul-oki/README.md).
 
 **Arti kolom:**
 - **Perlu keputusan:** ya bila belum boleh dikerjakan sebelum Pemilik/Oki memutuskan (nomor OA…/K…).
@@ -92,6 +92,9 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M09-12 | Teks: checklist tutup bulan en + id, peran posting di web disamakan dengan backend, status periode di paket manajemen, label tanggal laporan, pesan anggaran berformat ribuan (OB15: **nanti**) | OB15; UAT M09 | Rendah | Diputuskan programmer B 27/11 (nanti) |
 | M09-13 | Rute laba periode tertutup (`ExportedProfitService`) hanya bila M11 dibangun (M11 ditunda, 27/11) | UAT M09 laporan; OE1 | Rendah | Ya (K10) |
 | M09-14 | Tutup buku akhir tahun ke laba ditahan (ERP-0131), tes audit buka ulang (ERP-0017) | `skema-database/finance.md` | Sedang | Tidak |
+| M09-15 | **Pindah dana antar akun kas/bank** (setor tunai, tarik tunai, isi kas kecil), tercatat di kedua akun | KF-K1 | Tinggi | Diputuskan 27/11 (KF-1) |
+| M09-16 | **Batalkan/koreksi transaksi kas/bank** (status `reversed` sudah ada di skema) dengan alasan | KF-K2 | Tinggi | Diputuskan 27/11 (KF-1) |
+| M09-17 | **PPh 23 dipotong pelanggan**: akun "PPh 23 dibayar dimuka", posting saat kuitansi, sisa faktur tertutup (bersama B-33 di `sale`) | KF-K3 | Tinggi | Diputuskan 27/11 (KF-1) (bersama Dafrin) |
 
 ### M10 Pajak
 
@@ -107,6 +110,9 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M10-8 | `tax:create` diperiksa atau dihapus dari kosakata | UAT M10 8 | Rendah | Tidak |
 | M10-9 | Gerbang D12/D14/D18, uji impor Coretax, form potongan PPh saat bayar (ERP-0140, lewat M09-3). Tabel TER resmi **tidak perlu sekarang** (OC8) | OC8; M09-3 | Tinggi sebelum lapor | Ya (Bella + Pemilik) |
 | M10-10 | PPh 21 otomatis dimatikan: setelan PPh 21 di pengaturan penggajian dalam posisi mati, tombol hitung ulang PPh 21 di rekap gaji tidak dipakai; PPh 21 dihitung di luar aplikasi. Tabel `pph21_*` tetap, tidak dihapus | OC8 | Sedang | Diputuskan programmer B 27/11 (Bersama: gaji milik Dafrin M08) |
+| M10-11 | **Status terutang / dibayar / sisa per masa pajak**: setor pajak di Keuangan tersambung ke catatan pajak dan pemotongan | KF-T1 | Tinggi | Diputuskan 27/11 (KF-1) |
+| M10-12 | **Rezim pajak dipastikan Bella** (PPh Final UMKM 0,5% atau normal); bila UMKM, rekap 0,5% omzet per bulan | KF-T2 | Sedang (Tinggi bila UMKM) | Diputuskan 27/11 (KF-1) |
+| M10-13 | Bupot PPh 23 dari pelanggan sebagai kredit pajak | KF-T3 | Tinggi | Diputuskan 27/11 (KF-1) (satu paket M09-17) |
 
 ### M06 Aset & Peralatan
 
@@ -125,6 +131,8 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 | M06-11 | PIC tetap dan kondisi aset | OD9 | Rendah | Ditunda (OD9: belum perlu, 27/11) |
 | M06-12 | Notifikasi peminjaman terlambat (sekarang hanya tanda tiap 15 menit) | UAT M06 18 | Rendah | Ya |
 | M06-13 | OD8: schema tetap (`inventory` fisik + `finance` nilai), tanpa modul `assets`. Catat pembagian pemilik tabel di `inventory` (stok = programmer B/M05; aset dan peminjaman = Oki/M06) di `module-ownership.md` dan rencana M06; catat tanda pemecahan (aset banyak/rumit, saling ganggu antar-programmer, aplikasi aset terpisah) | OD8; `skema-database/inventory.md` | Rendah (dokumen) | Diputuskan programmer B 27/11 |
+| M06-14 | **Satu jalur penyusutan**: entri manual dihapus atau ikut memposting jurnal, supaya "Jalankan penyusutan" tidak melewati aset | KF-A1 | Tinggi | Diputuskan 27/11 (KF-1) |
+| M06-15 | Daftar tunggu kekurangan fitur Sedang/Rendah Aset, Keuangan, Pajak (KF-A2–A10, KF-K4–K10, KF-T4–T8); butir "Tambahan" menunggu permintaan Pemilik | KF-2, KF-3 | Sedang/Rendah | Diputuskan 27/11 (KF-2, KF-3) |
 
 ### M11 Bonus & Investor
 
@@ -176,7 +184,7 @@ risiko OA2 (diganti 27/11: kolom dihapus di tahap 3), OD8 diputuskan.
 ## 4. Dokumen yang perlu dirapikan (pemilik: Oki)
 
 Rincian dan bukti di
-[`ringkasan-arsitektur-modul-oki.md`](ringkasan-arsitektur-modul-oki.md) bagian 9.
+[`ringkasan-arsitektur-modul-oki.md`](../3-rancangan/ringkasan-arsitektur-modul-oki.md) bagian 9.
 
 | No | Dokumen | Masalah | Pemilik |
 |---|---|---|---|

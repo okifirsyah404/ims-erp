@@ -1,6 +1,6 @@
 # UAT modul (konsep saat ini)
 
-Kembali ke [catatan penyesuaian](../README.md). Checklist uji terima (UAT)
+Kembali ke [catatan penyesuaian](../../README.md). Checklist uji terima (UAT)
 per modul, dipisah menurut programmer yang mengerjakannya. Semua checklist
 memakai format yang sama: setiap langkah berisi menu, isian, tombol, hasil
 yang harus terlihat, uji salah, lalu `[ ] Sesuai` dan tabel kecil
@@ -18,7 +18,7 @@ ketidaksesuaian di bawahnya.
   memegangnya.
 - [catatan-skema-dan-alur.md](catatan-skema-dan-alur.md): catatan lama
   tentang letak skema dan hal yang membingungkan (S1–S6, A1–A11). Versi
-  lengkap per schema ada di [`../skema-database/`](../skema-database/README.md).
+  lengkap per schema ada di [`../skema-database/`](../../3-rancangan/skema-database/README.md).
 
 ## Urutan menguji
 

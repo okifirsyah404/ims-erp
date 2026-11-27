@@ -1,6 +1,6 @@
 # Rancangan menu, dasbor, dan form
 
-Disusun 2026-11-27. Kembali ke [catatan penyesuaian](README.md).
+Disusun 2026-11-27. Kembali ke [catatan penyesuaian](../README.md).
 
 **Status: disetujui programmer B lewat tanya-jawab 2026-11-27** (tabel
 keputusan di bawah). Bagian yang menyentuh wilayah Oki ditinjau lewat PR.

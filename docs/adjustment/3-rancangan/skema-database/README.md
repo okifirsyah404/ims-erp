@@ -1,6 +1,6 @@
 # Skema database (konsep saat ini)
 
-Kembali ke [catatan penyesuaian](../README.md). Ringkasan berbahasa Indonesia
+Kembali ke [catatan penyesuaian](../../README.md). Ringkasan berbahasa Indonesia
 untuk setiap schema PostgreSQL: tabel, relasi, alur data, penomoran, temuan,
 dan perubahan mendatang.
 
@@ -47,4 +47,4 @@ service backend.
 | `audit` | Log audit | inti | [audit.md](audit.md) |
 
 Catatan lama tentang letak skema dan hal yang membingungkan (S1–S6) ada di
-[`../uat-modul/catatan-skema-dan-alur.md`](../uat-modul/catatan-skema-dan-alur.md).
+[`../uat-modul/catatan-skema-dan-alur.md`](../../1-validasi/uat-modul/catatan-skema-dan-alur.md).

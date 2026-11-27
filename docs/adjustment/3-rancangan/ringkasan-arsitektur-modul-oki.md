@@ -1,6 +1,6 @@
 # Ringkasan aturan arsitektur (untuk modul Oki)
 
-Kembali ke [catatan penyesuaian](README.md). Ringkasan satu halaman dari
+Kembali ke [catatan penyesuaian](../README.md). Ringkasan satu halaman dari
 dokumen yang paling berpengaruh ke modul programmer kedua (Oki): M01, M06,
 M09, M10, M11, M12, dan portal karyawan. Pasangan dari
 [`ringkasan-arsitektur.md`](ringkasan-arsitektur.md) (modul programmer B;

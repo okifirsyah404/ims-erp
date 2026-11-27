@@ -1,6 +1,6 @@
 # Rencana perubahan mendatang (gabungan)
 
-Kembali ke [catatan penyesuaian](README.md). Satu daftar untuk semua perubahan
+Kembali ke [catatan penyesuaian](../README.md). Satu daftar untuk semua perubahan
 yang ditemukan di catatan folder ini, dikelompokkan supaya mudah diputuskan
 dan dibagi. Disusun 2026-11-26.
 
@@ -75,6 +75,12 @@ OA1–OA7, OB7/OB8, OD1/OD2, OE1, OG1) ada di
 | B-26 | Bangun alur tabel S6: diskon, kontrak, target (penjualan); tahap, milestone, laporan harian, KPI, rencana kerja (proyek); templat dan sub-tiket. Dikerjakan **setelah perbaikan prioritas tinggi**, tiap kelompok dirancang dulu | T-4 / S6 | Sedang | Diputuskan 27/11 |
 | B-27 | Nomor dokumen tanpa celah: alokasi nomor di dalam transaksi penyimpanan (bagian bersama, K11) | T-1 | Sedang | Diputuskan 27/11 |
 | B-28 | Rapikan dokumen arsitektur lewat PR (status ADR-0024/0020/0010, ADR-0012 ganda, `architecture.md` 20 schema); `security-and-access.md` ditunda | T-6 / E1–E5 | Rendah | Diputuskan 27/11 |
+| B-29 | **Layar terima/keluarkan stok manual** (bahan proyek dan pemakaian sendiri) dengan pilihan proyek dan nomor seri; backend `/stock/receipts`, `/stock/issues` sudah ada | KF-G1 | Tinggi | Diputuskan 27/11 (KF-1) |
+| B-30 | **Cek garansi untuk barang yang dijual tanpa proyek**: pakai `item_serials.warranty_expires_on` atau tanggal kirim SO + masa garansi produk | KF-P2 | Tinggi | Diputuskan 27/11 (KF-1) |
+| B-31 | **Tiket berbayar bisa ditagih**: dari tiket selesai dibuat SPH atau faktur dengan biaya servis | KF-P1 | Tinggi | Diputuskan 27/11 (KF-1) |
+| B-32 | **Tutup PO kurang kirim**: tindakan Tutup untuk PO yang diterima sebagian, dengan alasan; sisa tidak lagi ditunggu | KF-B1 | Tinggi | Diputuskan 27/11 (KF-1) |
+| B-33 | **PPh 23 dipotong pelanggan** di form kuitansi (bagian `sale`); akun dan bupot di sisi Oki (O-KF3) | KF-K3, KF-T3 | Tinggi | Diputuskan 27/11 (KF-1) (bersama Oki) |
+| B-34 | Daftar tunggu kekurangan fitur Sedang/Rendah modul programmer B (KF-P3–P11, KF-G2–G7, KF-B2–B6); butir "Tambahan" menunggu permintaan Pemilik | KF-2, KF-3 | Sedang/Rendah | Diputuskan 27/11 (KF-2, KF-3) |
 
 ## 3. Temuan di modul Oki (pertanyaan untuk Oki)
 

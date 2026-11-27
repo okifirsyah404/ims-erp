@@ -1,6 +1,6 @@
 # Lembar keputusan rapat
 
-Kembali ke [catatan penyesuaian](README.md). Satu lembar untuk rapat dengan\
+Kembali ke [catatan penyesuaian](../README.md). Satu lembar untuk rapat dengan\
 \
 Pemilik dan Oki. Isinya gabungan semua keputusan dari\
 \

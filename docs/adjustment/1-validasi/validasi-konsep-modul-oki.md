@@ -1,6 +1,6 @@
 # Validasi konsep saat ini: role dan alur modul Oki (M01, M06, M09, M10, M11, M12, portal karyawan)
 
-Kembali ke [catatan penyesuaian](README.md). Pasangan dari
+Kembali ke [catatan penyesuaian](../README.md). Pasangan dari
 [validasi-konsep-saat-ini.md](validasi-konsep-saat-ini.md) (modul programmer B),
 dengan susunan dan cara isi yang sama, untuk modul yang dikerjakan **Oki**:
 M01 Dasbor, M06 Aset & Peralatan, M09 Keuangan, M10 Pajak, M11 Bonus & Investor,
@@ -9,7 +9,7 @@ kode), serta portal karyawan `apps/web-employee`.
 
 Tujuannya memutuskan apakah **konsep dan hak yang berjalan sekarang** di modul
 Oki tetap dipakai dengan tim nyata dan arah keputusan rapat (K1, K1a, K2, K2a,
-K2d, K7a, K12, K13 di [lembar-keputusan-rapat.md](lembar-keputusan-rapat.md)).
+K2d, K7a, K12, K13 di [lembar-keputusan-rapat.md](../2-keputusan/lembar-keputusan-rapat.md)).
 Arah itu tidak diputuskan ulang di sini; dokumen ini hanya menerapkannya ke modul
 Oki dan mencatat akibatnya.
 
@@ -18,7 +18,7 @@ Sumber, dibaca 2026-11-27 dari kode di branch ini:
 * Hak per role: `packages/common/src/authorization/erp-permissions.ts` (blok `owner` baris 503, `admin` 520, `operations_manager` 576, `project_manager` 654, `technician` 677, `freelancer` 694, `warehouse` 720, `finance` 746, `accountant` 786, `hr` 815, `auditor` 876), dibaca lewat skrip sementara di folder temp OS.
 * Guard route: `docs/role-permission.md` (bagian finance, tax, inventory, audit, company, organization, user, payment) dan `apps/backend/src/authorization/elysia-auth.ts`.
 * Aturan persetujuan di service finance, tax, payment, inventory, human-resource (baris disebut di tiap temuan).
-* Checklist dan "Catatan penyusun" di [uat-modul/modul-oki/](uat-modul/modul-oki/README.md), catatan [skema-database/](skema-database/README.md), [lintas-modul/autentikasi-dan-hak-akses.md](lintas-modul/autentikasi-dan-hak-akses.md), rencana `docs/plan/erp-module-plans/m01`, `m06`, `m09`, `m10`, `m11`, `m12`.
+* Checklist dan "Catatan penyusun" di [uat-modul/modul-oki/](uat-modul/modul-oki/README.md), catatan [skema-database/](../3-rancangan/skema-database/README.md), [lintas-modul/autentikasi-dan-hak-akses.md](../3-rancangan/lintas-modul/autentikasi-dan-hak-akses.md), rencana `docs/plan/erp-module-plans/m01`, `m06`, `m09`, `m10`, `m11`, `m12`.
 
 Status: **draf**, belum diperiksa Oki dan Pemilik. Semua butir bertanda ⚠️ adalah
 hasil membaca kode dan belum dicoba di aplikasi.
@@ -295,7 +295,7 @@ adalah **pertanyaan untuk Oki**, bukan perbaikan yang langsung dikerjakan.
 
 ## Bagian 3 - Validasi dengan tim saat ini (2026-11-27)
 
-Tim dan arah keputusan diambil dari [lembar-keputusan-rapat.md](lembar-keputusan-rapat.md):
+Tim dan arah keputusan diambil dari [lembar-keputusan-rapat.md](../2-keputusan/lembar-keputusan-rapat.md):
 10 karyawan + 2 pengembang; K1 = (b) Pemilik boleh menyetujui dokumennya sendiri
 dengan audit; K1a tercatat "B" (jurnal, kasbon, dan pertanggungjawaban **tetap**
 butuh orang kedua; perlu dikonfirmasi saat rapat karena rekomendasinya berbeda

@@ -1,6 +1,6 @@
 # Lintas modul dan di luar scope
 
-Kembali ke [catatan penyesuaian](../README.md). Disusun 2026-11-26 untuk
+Kembali ke [catatan penyesuaian](../../README.md). Disusun 2026-11-26 untuk
 programmer B (Dafrin), Oki, dan Pemilik. Semua isi dicek ke kode di `main`
 (9974a817) dan memakai catatan yang sudah ada di `docs/adjustment/`, bukan
 diturunkan ulang.
