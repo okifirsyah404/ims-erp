@@ -15,7 +15,7 @@ diturunkan ulang.
   1. ada di kode tetapi **tidak masuk pembagian modul** (tidak ada pemiliknya),
      misalnya modul `document` dan `notification`;
   2. ada di kode tetapi **melewati batas kontrak v5.1**
-     (`docs/plan/erp-plan-id.md`), misalnya banyak gudang atau portal karyawan;
+     (`docs/plan/kontrak/erp-plan-id.md`), misalnya banyak gudang atau portal karyawan;
   3. ada di kontrak tetapi **belum dibangun atau belum tercakup**, misalnya
      portal investor dan backup/restore.
 

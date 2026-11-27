@@ -77,7 +77,7 @@ tugas lain) dicatat di sini dan di rencana kerja.
 
 | ID | Dari tugas | Temuan | Butuh | Pemegang | Status |
 |---|---|---|---|---|---|
-| FB-1 | `docs/found-bugs/employee-portal-payroll-26112026.md` #1 | Permintaan tanda tangan seed bukan milik akun uji portal | L-16 (seeder akun per orang) | Bersama | Terbuka |
+| FB-1 | `docs/adjustment/1-validasi/laporan-bug/employee-portal-payroll-26112026.md` #1 | Permintaan tanda tangan seed bukan milik akun uji portal | L-16 (seeder akun per orang) | Bersama | Terbuka |
 | FB-2 | found-bugs #2 | Tugas proyek tidak memberi notifikasi | B-35 | Dafrin | Terbuka |
 | FB-3 | found-bugs #3 | Penempatan tanda tangan di PDF belum pernah diuji (butuh Chromium) | P7-7 / L-10 | Oki | Terbuka |
 | FB-4 | found-bugs #4 | Slip gaji tanpa data di dev; `renderBaseUrl` slip mengarah ke web-admin, bukan portal | L-16 (data gaji disetujui) + cek render slip (PK) | Oki + Dafrin | Terbuka |

@@ -15,7 +15,7 @@ bisa diputuskan: perbaiki, ganti nama, atau terima.
 | Diagram alur per role (terbaru) | [diagram-alur-per-role.md](diagram-alur-per-role.md) |
 | Diagram alur lama | `docs/user-guide/diagrams.md` (dihapus 2026-11-28, ada di riwayat git) |
 | Panduan pemakaian (Indonesia) | `docs/user-guide/id.md` (dihapus 2026-11-28, ada di riwayat git), bagian 4–8 |
-| Panduan n8n dan WhatsApp | `docs/user-guide/n8n-workflows.id.md`, `whatsapp-n8n-setup.id.md`, `whatsapp-business-meta.id.md` |
+| Panduan n8n dan WhatsApp | `docs/integrations/n8n/guide-workflows.id.md`, `whatsapp-n8n-setup.id.md`, `whatsapp-business-meta.id.md` |
 | Langkah uji per modul | folder ini (`uat-modul/`) |
 
 ### Dokumen lain yang membahas role (bukan diagram per role)
@@ -26,7 +26,7 @@ bisa diputuskan: perbaiki, ganti nama, atau terima.
 | `docs/architecture/security-and-access.md` | Oki | Maksud tiap role; "no self-approval regardless of roles" |
 | `docs/architecture/decisions/ADR-0017-warehouse-person-in-charge.md` | Oki | Akses penanggung jawab gudang |
 | `docs/architecture/decisions/ADR-0018-investor-customer-app-roles.md` | Oki | Role aplikasi investor dan customer |
-| `docs/role-permission.md` | Oki, 2026-11-23 (sebagian dibuat skrip) | Tabel role, hak, dan guard tiap endpoint; tanpa alur |
+| `docs/architecture/role-permission.md` | Oki, 2026-11-23 (sebagian dibuat skrip) | Tabel role, hak, dan guard tiap endpoint; tanpa alur |
 | `docs/user-guide/diagrams.md` | programmer B + Claude, 2026-11-06 | Diagram alur dengan aktor umum; sebagian usang |
 | `docs/user-guide/id.md` bagian 2 (dihapus 2026-11-28) | programmer B (+ Oki) | Tabel peran ringkas; sebagian usang (menulis Pemilik menyetujui PO, padahal sekarang Manajer Operasional) |
 

@@ -130,7 +130,7 @@ dokumennya diperbaiki.
    tabel. Bila berbeda dengan Drizzle, `docs.dbml` yang benar.
 2. Tautan ke modul lain = kolom id nullable + cek di service pemilik.
 3. Hak baru = ubah `erp-permissions.ts` (wilayah programmer kedua, M12),
-   lalu jalankan ulang `bun docs/gen-role-permission.ts`.
+   lalu jalankan ulang `bun docs/architecture/gen-role-permission.ts`.
 4. Setiap persetujuan: cek status, larang menyetujui sendiri, dan buat
    perubahan status yang aman dari tabrakan.
 5. Migrasi hanya boleh ditambah (append-only); jangan mengubah migrasi lama.

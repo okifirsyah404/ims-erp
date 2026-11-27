@@ -3,8 +3,8 @@
 How to use Meta's **WhatsApp Business Platform (Cloud API)** for ERP notifications, and how to
 register.
 
-- Indonesian version (the fuller one): [whatsapp-business-meta.id.md](whatsapp-business-meta.id.md).
-- The n8n workflow: [n8n-workflows.en.md](n8n-workflows.en.md).
+- Indonesian version (the fuller one): [whatsapp-business-meta.id.md](meta-cloud-api.id.md).
+- The n8n workflow: [n8n-workflows.en.md](../n8n/guide-workflows.en.md).
 
 > **Why switch?** WAHA drives WhatsApp Web (unofficial). A number sending many automated messages
 > can be **banned** at any time, with no appeal. The Cloud API is Meta's official route: numbers
@@ -100,7 +100,7 @@ BSP only the URL and token of the sender node change.
   lines to " / ".
 - Review usually takes minutes and at most about 24 hours.
 
-Catalog: [`docs/integrations/n8n/meta-templates.json`](../integrations/n8n/meta-templates.json)
+Catalog: [`docs/integrations/n8n/meta-templates.json`](../n8n/meta-templates.json)
 (20 Indonesian Utility templates; the table is in the Indonesian guide). There are two ways to
 submit them:
 - **With the script:**

@@ -1,7 +1,7 @@
 /**
- * Regenerates the generated half of `docs/role-permission.md` (ERP-0113).
+ * Regenerates the generated half of `docs/architecture/role-permission.md` (ERP-0113).
  *
- * Usage (repo root): `bun docs/gen-role-permission.ts`
+ * Usage (repo root): `bun docs/architecture/gen-role-permission.ts`
  *
  * Sources, both read as code, never as prose:
  * - the role catalog in `packages/common/src/authorization/erp-permissions.ts`
@@ -25,13 +25,13 @@ import {
 	erpRoleLabels,
 	erpRoleNames,
 	type ErpPermissionRequest,
-} from '../packages/common/src/authorization/erp-permissions';
+} from '../../packages/common/src/authorization/erp-permissions';
 
-const ROOT = join(import.meta.dir, '..');
+const ROOT = join(import.meta.dir, '../..');
 const BACKEND_APP = join(ROOT, 'apps/backend/src/app');
 const NUMBERING_CONTROLLER = join(ROOT, 'apps/backend/src/shared/numbering/controller.ts');
-const DOC = join(ROOT, 'docs/role-permission.md');
-const BEGIN = '<!-- BEGIN GENERATED: bun docs/gen-role-permission.ts -->';
+const DOC = join(ROOT, 'docs/architecture/role-permission.md');
+const BEGIN = '<!-- BEGIN GENERATED: bun docs/architecture/gen-role-permission.ts -->';
 const END = '<!-- END GENERATED -->';
 
 const HTTP_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'all']);
@@ -308,7 +308,7 @@ function grantsBlock(request: ErpPermissionRequest): string {
 }
 
 function render(routes: TRoute[]): string {
-	const lines: string[] = [BEGIN, '', '> Generated. Do not edit by hand; run `bun docs/gen-role-permission.ts`.', ''];
+	const lines: string[] = [BEGIN, '', '> Generated. Do not edit by hand; run `bun docs/architecture/gen-role-permission.ts`.', ''];
 
 	lines.push('## Organization roles', '', '| Role | English | Indonesian | Resources granted |', '| --- | --- | --- | --- |');
 	for (const role of erpRoleNames) {

@@ -2255,3 +2255,35 @@ Isinya:
 Deskripsi PR memuat panduan tinjauan untuk Oki.
 
 Tidak ada perubahan kode.
+
+## 2026-11-28 — Folder `docs/` dirapikan
+
+Isi `docs/` dikelompokkan menjadi lima folder dan satu indeks baru,
+`docs/README.md`:
+
+| Folder | Isi |
+|---|---|
+| `adjustment/` | Program sekarang |
+| `database/` | Kontrak skema |
+| `plan/` | Log, backlog, fitur, dan `kontrak/` |
+| `architecture/` | Referensi teknis, ADR, dan `role-permission.md` beserta generatornya |
+| `integrations/` | n8n dan WhatsApp |
+
+Perpindahan berkas (dengan `git mv`):
+
+| Asal | Tujuan |
+|---|---|
+| `docs/role-permission.md` dan `gen-role-permission.ts` | `docs/architecture/` |
+| `docs/found-bugs/` | `adjustment/1-validasi/laporan-bug/` |
+| `plan/plans/features.md` | `plan/features.md` |
+| `plan/erp-plan-id.md` dan `plan/erp-module-plans/` | `plan/kontrak/` (`erp-plan-id.md`, `modul/`) |
+| `user-guide/` (n8n) | `integrations/n8n/guide-workflows.*` |
+| `user-guide/` (WhatsApp) | `integrations/whatsapp/waha-n8n-setup.*` dan `integrations/whatsapp/meta-cloud-api.*` |
+
+Generator dijalankan ulang dengan
+`bun docs/architecture/gen-role-permission.ts`; hasilnya 815 rute ditulis.
+Tautan di `AGENTS.md`, `.agents/docs/README.md`, dan semua dokumen
+diperbarui. Cek tautan: 357 tautan, 0 rusak. Log lama (`progress.md`,
+`backlog.md`, catatan ini) tidak diubah.
+
+Tidak ada perubahan kode aplikasi.

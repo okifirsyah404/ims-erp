@@ -3,7 +3,7 @@
 Untuk orang yang menghubungkan ERP dengan WAHA, n8n, dan penyedia AI.
 Kontrak teknisnya ada di `docs/architecture/modules/notification.md` (removed 2026-11-28, see git history) dan
 ADR-0020; panduan ini versi langkah demi langkahnya. Versi Inggris:
-[whatsapp-n8n-setup.en.md](whatsapp-n8n-setup.en.md) (keduanya diubah
+[whatsapp-n8n-setup.en.md](waha-n8n-setup.en.md) (keduanya diubah
 bersamaan).
 
 > **Status (2026-11-12):** sisi ERP sudah dibangun dan diuji dengan penerima
@@ -13,7 +13,7 @@ bersamaan).
 > WAHA tidak resmi dan nomor bisa diblokir.
 
 > **WAHA tidak resmi dan nomor bisa diblokir.** Untuk produksi, pakai WhatsApp Business resmi
-> (Meta Cloud API): [whatsapp-business-meta.id.md](whatsapp-business-meta.id.md).
+> (Meta Cloud API): [whatsapp-business-meta.id.md](meta-cloud-api.id.md).
 
 ## 1. Alur
 
@@ -138,7 +138,7 @@ Pemecahan masalah:
 
 Daftar field per topik: `notification.md`, "The event contract".
 
-Workflow siap import yang menangani semua topik ini: [n8n-workflows.id.md](n8n-workflows.id.md).
+Workflow siap import yang menangani semua topik ini: [n8n-workflows.id.md](../n8n/guide-workflows.id.md).
 
 ## 6. Penyedia AI (opsional)
 

@@ -39,7 +39,7 @@ Environment is loaded per-workspace from `.env` (the backend uses
 | `bun run test` | repo root | ✅ verified 2026-11-25 — 8/8 turbo tasks (backend 1608 incl. 8 new employee-portal, web-admin 211, locales 110, employee-portal 5, web-customer-portal 68, web-landing 25, react-email 6) |
 | `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-admin` | ✅ verified 2026-11-20 — 0 errors. The root `typecheck` does not cover web-admin (no `typecheck` script); this is the real check (also part of `build`) |
 | `bunx tsc -p tsconfig.app.json --noEmit` | `apps/web-employee` | ✅ verified 2026-11-25 — 0 errors (same reason: the app has no `typecheck` script) |
-| `bun docs/gen-role-permission.ts` | repo root | ✅ verified 2026-11-23 — rewrites the generated block of `docs/role-permission.md` (628 routes, 0 unresolved). Run after any route, guard option or role-grant change |
+| `bun docs/architecture/gen-role-permission.ts` | repo root | ✅ verified 2026-11-23 — rewrites the generated block of `docs/architecture/role-permission.md` (628 routes, 0 unresolved). Run after any route, guard option or role-grant change |
 
 ### Live smoke tests (need a running backend on :3001)
 

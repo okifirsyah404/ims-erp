@@ -73,7 +73,7 @@ profiles: `module-ownership.md`.
 4. **Controllers do HTTP only; services own use cases; repositories own
    Drizzle queries.** No module imports another module's repository.
 5. **Every code change writes `progress.md`, `backlog.md` and
-   `plans/features.md`** in the same change.
+   `features.md`** in the same change.
 6. **Honesty.** Statuses are `in-progress` until a reviewer accepts them.
 
 ## Phases

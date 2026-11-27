@@ -3,7 +3,7 @@
 For the person who connects the ERP to WAHA, n8n and an AI provider. The
 technical contract is in `docs/architecture/modules/notification.md` (removed 2026-11-28, see git history) and
 ADR-0020; this guide is the step-by-step version. Indonesian version:
-[whatsapp-n8n-setup.id.md](whatsapp-n8n-setup.id.md) (keep both in step).
+[whatsapp-n8n-setup.id.md](waha-n8n-setup.id.md) (keep both in step).
 
 > **Status (2026-11-12):** the ERP side is implemented and tested against a
 > local fake receiver and signed test webhooks. It has **not yet been tried
@@ -12,7 +12,7 @@ ADR-0020; this guide is the step-by-step version. Indonesian version:
 > unofficial and a number can be banned.
 
 > **WAHA is unofficial and numbers can be banned.** For production use the official WhatsApp
-> Business (Meta Cloud API): [whatsapp-business-meta.en.md](whatsapp-business-meta.en.md).
+> Business (Meta Cloud API): [whatsapp-business-meta.en.md](meta-cloud-api.en.md).
 
 ## 1. What talks to what
 
@@ -136,7 +136,7 @@ Troubleshooting:
 
 Field lists per topic: `notification.md`, "The event contract".
 
-An importable workflow that handles all of these topics: [n8n-workflows.en.md](n8n-workflows.en.md).
+An importable workflow that handles all of these topics: [n8n-workflows.en.md](../n8n/guide-workflows.en.md).
 
 ## 6. AI provider (optional)
 

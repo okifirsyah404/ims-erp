@@ -29,14 +29,14 @@ migrasi, test, dan cek UAT. Sumber tugas:
   (`apps/backend/drizzle/schemas/*.schema.ts`) dan
   `bunx --bun drizzle-kit generate` di `apps/backend`. Kolom lintas modul =
   id biasa, nullable, tanpa FK.
-- Rute/guard/hak baru: `bun docs/gen-role-permission.ts`.
+- Rute/guard/hak baru: `bun docs/architecture/gen-role-permission.ts`.
 - Teks layar: kunci di `packages/locales/src/en/<ns>.ts` **dan**
   `packages/locales/src/id/<ns>.ts`; pesan error server di
   `packages/locales/src/{en,id}/api.ts`.
 - Rute web-admin baru: `apps/web-admin/src/routeTree.gen.ts` ikut berubah;
   menu di `apps/web-admin/src/components/sidebar/nav-config.ts`.
 - Setiap PR: `docs/plan/progress.md`, `docs/plan/backlog.md`,
-  `docs/plan/plans/features.md`, dan `docs/adjustment/catatan-progres.md`.
+  `docs/plan/features.md`, dan `docs/adjustment/catatan-progres.md`.
 
 ---
 
@@ -338,7 +338,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `apps/web-admin/src/routes/_authed/procurement/receipts/new.tsx` | Pilihan PO memuat `approved` |
 | locale | `packages/locales/src/{en,id}/procurement.ts` | Hapus `pos.markSent`, `pos.sent` (dead-key test); teks sukses FU6 |
 | test | `apps/backend/test/unit/goods-receipt.service.test.ts`, `procurement.service.test.ts` | PO approved bisa diterima; rute send hilang |
-| docs | `docs/role-permission.md` (generator) | Rute `/send` hilang |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute `/send` hilang |
 
 - **Skema/migrasi:** Tidak. Nilai `sent` tetap di CHECK
   (`procurement.schema.ts:281`) untuk baris lama; catatan di `docs.dbml`
@@ -355,7 +355,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan B-21 Hapus "Tandai terkirim" pada PO.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-dafrin.md bagian B-21 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: apps/backend/src/app/procurement/services/goods-receipt.service.ts, apps/backend/src/app/procurement/repositories/purchase-order.repository.ts, apps/backend/src/app/procurement/services/purchase-order.service.ts, controllers/purchase-order.controller.ts, apps/web-admin/src/routes/_authed/procurement/purchase-orders/$purchaseOrderId/index.tsx, apps/web-admin/src/lib/procurement-api.ts, apps/web-admin/src/routes/_authed/procurement/receipts/new.tsx, packages/locales/src/{en,id}/procurement.ts, docs/role-permission.md.
+Buka hanya file ini: apps/backend/src/app/procurement/services/goods-receipt.service.ts, apps/backend/src/app/procurement/repositories/purchase-order.repository.ts, apps/backend/src/app/procurement/services/purchase-order.service.ts, controllers/purchase-order.controller.ts, apps/web-admin/src/routes/_authed/procurement/purchase-orders/$purchaseOrderId/index.tsx, apps/web-admin/src/lib/procurement-api.ts, apps/web-admin/src/routes/_authed/procurement/receipts/new.tsx, packages/locales/src/{en,id}/procurement.ts, docs/architecture/role-permission.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
@@ -1441,7 +1441,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | integrasi | `docs/integrations/n8n/erp-event-router.workflow.json`, `docs/integrations/n8n/build-workflow.ts`, `docs/integrations/n8n/samples.ts`, `send-test-event.ts` | Penerima role baru, cek sakelar dari payload, teks dari `teks-pesan-wa-pelanggan.md` |
 | locale | `packages/locales/src/{en,id}/settings.ts`, `integrations.ts`, `nav.ts` | Teks |
 | test | `apps/backend/test/unit/outbox.service.test.ts`, `sales-invoice-events.test.ts`, `whatsapp-assistant.test.ts` | Payload membawa sakelar; topik baru |
-| docs | `docs/user-guide/n8n-workflows.id.md`, `docs/user-guide/whatsapp-n8n-setup.id.md` | Penerima dan sakelar |
+| docs | `docs/integrations/n8n/guide-workflows.id.md`, `docs/integrations/whatsapp/waha-n8n-setup.id.md` | Penerima dan sakelar |
 
 - **Skema/migrasi:** Ya: `automation.settings` (atau pengaturan di schema
   lain, dicek saat desain); `docs.dbml` dulu.

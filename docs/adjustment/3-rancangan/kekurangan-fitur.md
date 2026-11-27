@@ -5,8 +5,8 @@ Disusun 2026-11-27. Kembali ke [catatan penyesuaian](../README.md).
 Pemeriksaan **apa yang masih kurang** di Proyek & Purna Jual, Gudang &
 Inventaris, Pengadaan (modul programmer B), serta Aset, Keuangan, dan Pajak
 (modul Oki). Pembandingnya:
-- batas kontrak di `docs/plan/erp-plan-id.md` (M05, M06, M07, M09, M10) dan
-  `docs/plan/erp-module-plans/`;
+- batas kontrak di `docs/plan/kontrak/erp-plan-id.md` (M05, M06, M07, M09, M10) dan
+  `docs/plan/kontrak/modul/`;
 - kode backend dan web-admin (dibaca, tidak diuji di browser);
 - catatan yang sudah ada di folder ini, supaya tidak ada butir ganda.
 

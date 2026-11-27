@@ -37,7 +37,7 @@ ADR-0024 + ADR-0026), 5 companion MDs
 database-refactor plan was `docs/plan/database-refactor/` (removed 2026-11-28, see git history).
 
 End-user documentation (how to use the web admin, English and Indonesian,
-with UML flow diagrams) lives in `docs/user-guide/`; update it in the same
+with UML flow diagrams) is planned for step 12 of `docs/adjustment/README.md`; update it in the same
 change when a user-visible flow, label or status changes.
 
 Any backend feature work reads that folder first and runs the `grill-me`

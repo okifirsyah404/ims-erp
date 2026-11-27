@@ -51,7 +51,7 @@ banyak modul.
 - Log dan kirim ulang manual: `/automation/outbox` (menu Integrasi → Webhook
   n8n, izin `automation.read_log`).
 - Workflow n8n-nya sendiri ada di luar ERP; panduan di
-  `docs/user-guide/n8n-workflows.id.md`.
+  `docs/integrations/n8n/guide-workflows.id.md`.
 
 ### WhatsApp dan AI
 

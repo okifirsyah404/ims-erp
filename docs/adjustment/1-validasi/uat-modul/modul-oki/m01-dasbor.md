@@ -536,7 +536,7 @@ Catatan penguji:
 
 **Beda rencana dan kode**
 
-- `docs/plan/erp-module-plans/m01-dashboard.md` menyebut tombol Refresh di header dasbor; kode sengaja tanpa tombol, pembaruan diam-diam tiap 60 detik (`apps/web-admin/src/lib/dashboard-api.ts:41-50`).
+- `docs/plan/kontrak/modul/m01-dashboard.md` menyebut tombol Refresh di header dasbor; kode sengaja tanpa tombol, pembaruan diam-diam tiap 60 detik (`apps/web-admin/src/lib/dashboard-api.ts:41-50`).
 - Rencana menyebut kartu Penjualan berisi jumlah dan nilai SPH terbuka; kode tidak menampilkannya (dicatat di rencana sebagai keputusan, halaman SPH pemilik daftarnya).
 - Rencana menulis endpoint lama (`/invoices/summary`, `/cash-bank/accounts`, `/reports/profit-and-loss`, `/licenses/summary`); kode memakai `/sales/invoices/summary`, `/finance/cash-bank-accounts`, `/finance/reports/profit-and-loss`, `/projects/stats`, `/stock/valuation` (`apps/web-admin/src/lib/dashboard-api.ts:310-420`).
 - Rencana: label "provisional" hanya untuk periode yang belum ditutup. Kode selalu menampilkan "Provisional — periode belum ditutup" (`apps/web-admin/src/components/dashboard/dashboard-page.tsx:346`).

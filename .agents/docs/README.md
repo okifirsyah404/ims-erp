@@ -7,7 +7,7 @@ Agent-specific documentation. Most documentation has moved to `docs/`:
   stack compatibility, project audit, per-module docs (`modules/`), and ADRs
   (`decisions/`).
 - **Planning & status**: `docs/plan/` — `plan.md`, `progress.md`, `backlog.md`,
-  `plans/features.md`, and the commercial plan (`erp-plan-id.md`). Current program: `docs/adjustment/`.
+  `features.md`, and the commercial plan (`erp-plan-id.md`). Current program: `docs/adjustment/`.
 
 Stays in this folder:
 

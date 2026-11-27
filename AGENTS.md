@@ -19,8 +19,8 @@ Read in this order:
 behaviour (roles, flows, forms, menus, priorities); (2) the code for the
 *current* behaviour; (3) `docs/database/docs.dbml` for persistence. **Do not
 take roles, flows, endpoints or request/response shapes from
-`docs/architecture/`, `docs/role-permission.md`, `docs/user-guide/` or
-`docs/plan/erp-module-plans/`:** they are background, partly stale (e.g. 17
+`docs/architecture/` (including `role-permission.md`), `docs/integrations/` or
+`docs/plan/kontrak/modul/`:** they are background, partly stale (e.g. 17
 roles, organizations, `security-and-access.md` 19 roles), and are corrected only
 through their planned tasks. When they disagree with `docs/adjustment/` or the
 code, ignore them and verify in code. Read them only when a task entry points
@@ -140,7 +140,7 @@ accepted / blocked`. Automated tests passing is not business acceptance.
   with exact commands and outcomes) and `docs/plan/backlog.md` (claimed
   `ERP-*` status moved with evidence) in the same change — never in a
   follow-up. Statuses live in `progress.md`, `backlog.md`, and
-  `docs/plan/plans/features.md` (feature rollup grouped todo / in-progress /
+  `docs/plan/features.md` (feature rollup grouped todo / in-progress /
   done); `features.md` moves with any `backlog.md` status change, and
   `progress.md`'s "next task" is refreshed when you stop working.
 
@@ -371,7 +371,7 @@ call sites.
    any slice touching DB shape seeds idempotently (verify by running twice).
 5. `progress.md` updated with exact commands and results; `backlog.md`
    statuses moved with evidence (and only to `accepted` on real reviewer
-   approval); `docs/plan/plans/features.md` updated in the same change.
+   approval); `docs/plan/features.md` updated in the same change.
 6. The task's work UAT (`docs/adjustment/5-pengerjaan/uat/<task>.md`) is all
    Valid with no open fix, and the step's exit criteria in `docs/adjustment/`
    that apply to the task are met, or the task is left explicitly partial.
@@ -392,8 +392,8 @@ duplicates. Keep documents short and synchronized with verified code. Meaningful
 architectural choices get a short ADR in `docs/architecture/decisions/`. When a doc
 and the code disagree, fix whichever is wrong and note it in `progress.md`.
 
-`docs/role-permission.md` lists roles, grants and every backend route with
-its guard; its second half is generated. Re-run `bun docs/gen-role-permission.ts`
+`docs/architecture/role-permission.md` lists roles, grants and every backend route with
+its guard; its second half is generated. Re-run `bun docs/architecture/gen-role-permission.ts`
 in the same change as any route, guard option or role-grant change.
 
 `docs/database/` is the persistence contract and is updated in the **same**

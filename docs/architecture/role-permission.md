@@ -7,7 +7,7 @@
 Who may call which backend endpoint, and why. The first half of this page is
 written by hand. The second half (role list, grants per role, every endpoint
 with its guard and the roles that pass it) is **generated from code** by
-`bun docs/gen-role-permission.ts`. Re-run it whenever a route, a guard option
+`bun docs/architecture/gen-role-permission.ts`. Re-run it whenever a route, a guard option
 or a role grant changes. Last regenerated for ERP-0113 (2026-11-23).
 
 Authoritative sources, in this order: the code
@@ -107,9 +107,9 @@ elsewhere and are not in the table:
 - The realtime websocket gateway (`realtimeGateway()`), which authenticates
   the session on connect.
 
-<!-- BEGIN GENERATED: bun docs/gen-role-permission.ts -->
+<!-- BEGIN GENERATED: bun docs/architecture/gen-role-permission.ts -->
 
-> Generated. Do not edit by hand; run `bun docs/gen-role-permission.ts`.
+> Generated. Do not edit by hand; run `bun docs/architecture/gen-role-permission.ts`.
 
 ## Organization roles
 

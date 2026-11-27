@@ -19,13 +19,13 @@ Tinggi, sebelum rilis** (kontrak T14, T27, T28). Belum ada kode.
 - **Workflow n8n siap impor** `docs/integrations/n8n/erp-event-router.workflow.json`
   (satu workflow untuk semua topik; penerima dan teks di satu node), skrip
   uji `send-test-event.ts`, panduan
-  `docs/user-guide/n8n-workflows.id.md` dan
-  `docs/user-guide/whatsapp-n8n-setup.id.md`.
+  `docs/integrations/n8n/guide-workflows.id.md` dan
+  `docs/integrations/whatsapp/waha-n8n-setup.id.md`.
 - **WhatsApp:** adaptor WAHA (`automation/adapters/waha.ts`); kotak masuk WA,
   FAQ, dan serah ke admin di web-admin; asisten AI lewat adaptor yang
   kompatibel OpenAI (`openai-compatible.ts`).
 - **Meta Cloud API:** workflow sudah bisa mengirim template Meta; panduan
-  pendaftaran lengkap di `docs/user-guide/whatsapp-business-meta.id.md`.
+  pendaftaran lengkap di `docs/integrations/whatsapp/meta-cloud-api.id.md`.
   **Asisten chat masuk lewat Meta belum dibangun** (panduan bagian 9).
 
 **Belum berjalan:** server n8n, nomor WhatsApp, penyedia AI, persetujuan teks
@@ -87,7 +87,7 @@ dihidupkan.
 
 ## 5. Pindah ke Meta Cloud API (nanti)
 
-Panduan lengkap: **`docs/user-guide/whatsapp-business-meta.id.md`**. Ringkasan
+Panduan lengkap: **`docs/integrations/whatsapp/meta-cloud-api.id.md`**. Ringkasan
 langkah:
 
 1. **Siapkan:** akun Meta Business atas nama perusahaan (CV), dokumen

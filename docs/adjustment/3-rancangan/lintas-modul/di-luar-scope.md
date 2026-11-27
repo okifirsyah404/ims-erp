@@ -1,8 +1,8 @@
 # Di luar pembagian modul dan kontrak
 
 Kembali ke [README](README.md). Dicatat 2026-11-26. Pembanding:
-`docs/plan/erp-plan-id.md` (kontrak v5.1, task T01–T32, batas per modul),
-`docs/plan/erp-module-plans/*.md`, dan kode di `main` (9974a817). File
+`docs/plan/kontrak/erp-plan-id.md` (kontrak v5.1, task T01–T32, batas per modul),
+`docs/plan/kontrak/modul/*.md`, dan kode di `main` (9974a817). File
 `.agents/docs/erp-plan.md` yang disebut di permintaan **tidak ada**; versi
 Inggrisnya `docs/plan/erp-plan-en.md` (dihapus 2026-11-28).
 

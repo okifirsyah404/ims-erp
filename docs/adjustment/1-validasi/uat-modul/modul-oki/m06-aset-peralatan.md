@@ -1123,7 +1123,7 @@ Ditulis 2026-11-26 dari kode di `main` (setelah PR #169). Belum ada langkah yang
 
 **Rencana vs kode (perlu keputusan Pemilik/Oki):**
 
-| Hal | Rencana M06 (`docs/plan/erp-module-plans/m06-assets-equipment.md`) | Kode sekarang |
+| Hal | Rencana M06 (`docs/plan/kontrak/modul/m06-assets-equipment.md`) | Kode sekarang |
 |---|---|---|
 | Status aset | `active → in_service → active` / `inactive` | `ready`, `borrowed`, `maintenance`, `inactive`, `disposed`, `lost` (`apps/web-admin/src/lib/asset-api.ts:26`) |
 | Kondisi | `good`, `needs_service`, `damaged`, `lost` | `new`, `good`, `fair`, `poor`, `damaged` (`asset-api.ts:50`); tidak bisa diisi atau diubah dari layar |
@@ -1149,7 +1149,7 @@ Ditulis 2026-11-26 dari kode di `main` (setelah PR #169). Belum ada langkah yang
 11. Rute `/assets` memakai `AssetRegisterList` yang membaca `getRouteApi('/_authed/assets/register/')` (`asset-register-list.tsx:49`; `routes/_authed/assets/index.tsx:30`); dugaan error saat dibuka (B12).
 12. Set peralatan: tambah item memakai id aset mentah (`asset-tool-set-list.tsx:239`), hapus item meminta id baris dengan placeholder bahasa Inggris `item id` yang tidak diterjemahkan (`asset-tool-set-list.tsx:292`), isi set tidak pernah ditampilkan, dan peminjaman per set (`toolSetId` di `lib/borrowing-api.ts`) tidak ada di form (E2-E4).
 13. Tombol Peminjaman baru dan tombol tindakan peminjaman tidak disaring hak (`borrowing-list.tsx`, `borrowing-detail.tsx`); penolakan baru terlihat dari server (C20).
-14. Akuntan dan Keuangan tidak punya `asset:read`, padahal `/finance/fixed-assets` dan `/finance/depreciations` dijaga `asset:read` (`docs/role-permission.md:827,841`), sedangkan kapitalisasi dan jalankan penyusutan dijaga `journal:post` yang dimiliki Akuntan (`docs/role-permission.md:842-844`) (H4, G2).
+14. Akuntan dan Keuangan tidak punya `asset:read`, padahal `/finance/fixed-assets` dan `/finance/depreciations` dijaga `asset:read` (`docs/architecture/role-permission.md:827,841`), sedangkan kapitalisasi dan jalankan penyusutan dijaga `journal:post` yang dimiliki Akuntan (`docs/architecture/role-permission.md:842-844`) (H4, G2).
 15. Penghapusan hanya menolak aset yang sudah `disposed` (`apps/backend/src/app/inventory/services/disposal.service.ts:62`); aset yang sedang dipinjam dugaan tetap bisa dihapus (F5). Transisi aset juga mengizinkan `borrowed → inactive` (`apps/backend/src/app/inventory/services/item.service.ts:44`).
 16. Istilah: "Dibusukkan" untuk `scrap` (`packages/locales/src/id/assets.ts:172`); menu "Set Peralatan" vs judul "Set Perkakas" (`id/nav.ts:59`, `id/assets.ts:122`); menu "Penghapusan Aset" vs judul "Penghapusan" (`id/assets.ts:82`); "Arsipkan" menghasilkan Nonaktif sedangkan "Hapus" menghasilkan "Aset diarsipkan." (`asset-register-list.tsx:124-148`, `448`).
 17. Form aset tidak berlabel (hanya placeholder) dan tidak punya kolom Kategori, Deskripsi, Kode batang, meski kontrak backend menerimanya (`asset-api.ts:308-318`, `asset-form.tsx:111-155`).

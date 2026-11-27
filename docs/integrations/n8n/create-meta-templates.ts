@@ -31,7 +31,7 @@ for (const template of catalog.templates) {
 	if (template.header === 'DOCUMENT') {
 		// The API wants a sample PDF uploaded first (a media handle); WhatsApp
 		// Manager takes the same template with a file picker. See README.
-		console.log(`${template.name}: skipped - has a DOCUMENT header, create it in WhatsApp Manager (docs/user-guide/whatsapp-business-meta.*.md, section 4)`);
+		console.log(`${template.name}: skipped - has a DOCUMENT header, create it in WhatsApp Manager (docs/integrations/whatsapp/meta-cloud-api.*.md, section 4)`);
 		continue;
 	}
 	const payload = {

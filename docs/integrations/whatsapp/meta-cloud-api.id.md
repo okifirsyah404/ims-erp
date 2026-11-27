@@ -3,9 +3,9 @@
 Panduan memakai **WhatsApp Business Platform (Cloud API) dari Meta** untuk notifikasi ERP, plus
 cara mendaftarnya.
 
-- Versi Inggris: [whatsapp-business-meta.en.md](whatsapp-business-meta.en.md).
-- Workflow n8n-nya: [n8n-workflows.id.md](n8n-workflows.id.md).
-- Setup WAHA lama: [whatsapp-n8n-setup.id.md](whatsapp-n8n-setup.id.md).
+- Versi Inggris: [whatsapp-business-meta.en.md](meta-cloud-api.en.md).
+- Workflow n8n-nya: [n8n-workflows.id.md](../n8n/guide-workflows.id.md).
+- Setup WAHA lama: [whatsapp-n8n-setup.id.md](waha-n8n-setup.id.md).
 
 > **Kenapa pindah?** WAHA memakai WhatsApp Web (tidak resmi). Nomor yang mengirim banyak pesan
 > otomatis bisa **diblokir** WhatsApp kapan saja, tanpa banding. Cloud API adalah jalur resmi
@@ -116,7 +116,7 @@ Aturan Meta untuk pesan yang **dimulai bisnis** (semua notifikasi ERP termasuk d
 - Review biasanya cepat, paling lama sekitar 24 jam. Template yang isinya hampir semua variabel
   cenderung ditolak.
 
-Katalog siap ajukan: [`docs/integrations/n8n/meta-templates.json`](../integrations/n8n/meta-templates.json)
+Katalog siap ajukan: [`docs/integrations/n8n/meta-templates.json`](../n8n/meta-templates.json)
 (20 template, bahasa `id`, Utility):
 
 | Template | Untuk | Isi |

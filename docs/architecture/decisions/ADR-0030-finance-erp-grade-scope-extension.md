@@ -3,11 +3,11 @@
 - **Status:** accepted (2026-11-25, the owner approved the scope extension when ordering Phase B). Originally proposed under ERP-0126. Phase A (GL foundation) is
   inside the v5.1 baseline. The owner recorded the scope change in the
   session of 2026-11-25 ("lanjut fase B", confirmed as owner approval), which
-  is what `docs/plan/erp-plan-id.md` requires ("Perubahan lingkup, harga,
+  is what `docs/plan/kontrak/erp-plan-id.md` requires ("Perubahan lingkup, harga,
   jadwal atau kebutuhan tambahan harus dicatat owner sebelum menjadi acuan
   baru"); the items under "Limits lifted" may now leave `planned`.
 - **Amends:** the "Explicit limits" sections of
-  `docs/plan/erp-module-plans/m05-inventory-purchasing.md`,
+  `docs/plan/kontrak/modul/m05-inventory-purchasing.md`,
   `m06-assets-equipment.md`, `m08-employees-attendance.md`, `m09-finance.md`
   and `m10-tax.md` (each carries a pointer to this record).
 - **Design source:** the grill-me session of 2026-11-25 (questions Q1-Q59,

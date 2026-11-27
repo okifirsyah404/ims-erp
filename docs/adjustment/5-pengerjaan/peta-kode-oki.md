@@ -219,7 +219,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | locale | `packages/locales/src/{en,id}/admin.ts` (dicek saat desain: kunci label role) | Label baru |
 | test | `packages/common/test/grantable-roles.test.ts`, `packages/common/test/invite-sheet.test.ts` | Role yang ditawarkan |
 | test | `apps/backend/test/authorization/permission-matrix.test.ts`, `test/unit/role-assignment.test.ts` | Matriks hak baru, reopen hanya owner |
-| docs | `docs/role-permission.md` (jalankan `bun docs/gen-role-permission.ts`) | Regenerasi; `security-and-access.md` tidak diubah (ditahan, T-6) |
+| docs | `docs/architecture/role-permission.md` (jalankan `bun docs/architecture/gen-role-permission.ts`) | Regenerasi; `security-and-access.md` tidak diubah (ditahan, T-6) |
 
 - **Skema/migrasi:** tidak (data `auth.members.role` diatur ulang oleh Aqim setelah rilis; seeder ikut).
 - **Test:** di atas.
@@ -235,7 +235,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan P7-4 Hak role baru.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian P7-4 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: packages/common/src/authorization/erp-permissions.ts, src/app/finance/controllers/ledger.controller.ts:205-218, src/authorization/role-assignment.ts, database/seeders/seed/organization-roles.seeder.ts, organization-members.seeder.ts, lib/use-caller-org-roles.ts, components/invite/invite-dialog.tsx, packages/locales/src/{en,id}/admin.ts, docs/role-permission.md, docs/architecture/security-and-access.md.
+Buka hanya file ini: packages/common/src/authorization/erp-permissions.ts, src/app/finance/controllers/ledger.controller.ts:205-218, src/authorization/role-assignment.ts, database/seeders/seed/organization-roles.seeder.ts, organization-members.seeder.ts, lib/use-caller-org-roles.ts, components/invite/invite-dialog.tsx, packages/locales/src/{en,id}/admin.ts, docs/architecture/role-permission.md, docs/architecture/security-and-access.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
@@ -372,7 +372,7 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
 | web-admin | `lib/admin-api.ts` | Fungsi `updateUserRoles` |
 | locale | `packages/locales/src/{en,id}/admin.ts`, `hr.ts` | Teks dialog |
 | test | `test/unit/user-admin.service.test.ts`, `test/unit/role-assignment.test.ts` | Ganti role, tolak role tak ditawarkan, audit |
-| docs | `docs/role-permission.md` (generator) | Rute baru |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute baru |
 
 - **Skema/migrasi:** tidak.
 - **Test:** di atas.
@@ -387,7 +387,7 @@ Sama dengan [P7-4](#p7-4-hak-role-baru-tinggi-k2-k2b-k2d-ro1-ro4-oa8-oa12-kl-6-k
 ```text
 Kerjakan M12-14 Ubah role dari halaman Pengguna + bug form karyawan.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M12-14 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: src/app/user/controllers/user-admin.controller.ts, src/app/user/services/user-admin.service.ts, src/app/organization/services/organization.service.ts:553, src/app/user/contracts/admin.contract.ts, routes/_authed/admin/users/index.tsx, components/admin/user-roles-dialog.tsx, components/hr/employee-edit-form.tsx, lib/admin-api.ts, packages/locales/src/{en,id}/admin.ts, hr.ts, docs/role-permission.md.
+Buka hanya file ini: src/app/user/controllers/user-admin.controller.ts, src/app/user/services/user-admin.service.ts, src/app/organization/services/organization.service.ts:553, src/app/user/contracts/admin.contract.ts, routes/_authed/admin/users/index.tsx, components/admin/user-roles-dialog.tsx, components/hr/employee-edit-form.tsx, lib/admin-api.ts, packages/locales/src/{en,id}/admin.ts, hr.ts, docs/architecture/role-permission.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
@@ -459,7 +459,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `lib/download.ts` | Dipakai ulang |
 | locale | `packages/locales/src/{en,id}/finance.ts`, `admin.ts` | Label tombol |
 | test | `test/finance/reports-reconciliation.test.ts`, `test/unit/report-csv.test.ts`, test audit ekspor **(baru)** | Isi CSV, audit ekspor, hak `export` |
-| docs | `docs/role-permission.md` (generator) | Rute baru |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute baru |
 
 - **Skema/migrasi:** tidak.
 - **Test:** di atas.
@@ -1074,7 +1074,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | backend | `src/app/inventory/repositories/` (repository item/serial, dicek saat desain) | Query ringkas |
 | web-admin | `components/assets/borrowing-form.tsx`, `lib/borrowing-api.ts` | Pakai endpoint baru + pencarian |
 | test | `test/unit/borrowing.service.test.ts`, `test/authorization/inventory-authorization.test.ts` | Teknisi boleh, tanpa nilai aset |
-| docs | `docs/role-permission.md` (generator) | Rute baru |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute baru |
 
 - **Skema/migrasi:** tidak.
 - **Test:** di atas.
@@ -1088,7 +1088,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan M06-1 Daftar unit yang bisa dipinjam.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-1 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: src/app/inventory/controllers/borrowing.controller.ts, src/app/inventory/services/borrowing-request.service.ts, src/app/inventory/repositories/, components/assets/borrowing-form.tsx, lib/borrowing-api.ts, docs/role-permission.md.
+Buka hanya file ini: src/app/inventory/controllers/borrowing.controller.ts, src/app/inventory/services/borrowing-request.service.ts, src/app/inventory/repositories/, components/assets/borrowing-form.tsx, lib/borrowing-api.ts, docs/architecture/role-permission.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
@@ -1210,7 +1210,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `components/assets/asset-detail.tsx`, `components/assets/asset-depreciation-list.tsx`, `lib/asset-api.ts` | Hapus form manual; tautan ke Keuangan → Aset tetap |
 | locale | `packages/locales/src/{en,id}/assets.ts` | Hapus kunci mati |
 | test | `test/finance/fixed-assets.test.ts`, `test/unit/finance-depreciation-gateway.test.ts` | Tidak ada entri tanpa jurnal |
-| docs | `docs/role-permission.md` (generator) | Rute dihapus |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute dihapus |
 
 - **Skema/migrasi:** tidak.
 - **Test:** di atas.
@@ -1224,7 +1224,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan M06-14 Satu jalur penyusutan.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian M06-14 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: src/app/finance/controllers/depreciation.controller.ts, src/app/finance/services/depreciation.service.ts, src/app/finance/services/fixed-asset.service.ts, components/assets/asset-detail.tsx, components/assets/asset-depreciation-list.tsx, lib/asset-api.ts, packages/locales/src/{en,id}/assets.ts, docs/role-permission.md.
+Buka hanya file ini: src/app/finance/controllers/depreciation.controller.ts, src/app/finance/services/depreciation.service.ts, src/app/finance/services/fixed-asset.service.ts, components/assets/asset-detail.tsx, components/assets/asset-depreciation-list.tsx, lib/asset-api.ts, packages/locales/src/{en,id}/assets.ts, docs/architecture/role-permission.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
@@ -1331,7 +1331,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `components/investor/` **(baru)**, `lib/investor-api.ts` **(baru)**, `components/sidebar/nav-config.ts:271-282`, `lib/route-guard.ts` | Layar, menu, guard rute induk |
 | locale | `packages/locales/src/{en,id}/finance.ts` (atau namespace `investor` baru + `i18next.d.ts`) | Teks |
 | test | `test/unit/investor.service.test.ts` **(baru)**, `test/authorization/investor-authorization.test.ts` **(baru)** | Hak, jurnal, jadwal angsuran |
-| docs | `docs/role-permission.md` (generator) | Rute |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute |
 
 - **Skema/migrasi:** lihat M11-4.
 - **Test:** di atas.
@@ -1455,7 +1455,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 | web-admin | `components/sidebar/nav-config.ts` | Menu di SDM |
 | locale | `packages/locales/src/{en,id}/hr.ts` | Teks |
 | test | `test/unit/site-attendance.service.test.ts` | Saringan, hak |
-| docs | `docs/role-permission.md` (generator) | Rute |
+| docs | `docs/architecture/role-permission.md` (generator) | Rute |
 
 - **Skema/migrasi:** tidak.
 - **Test:** di atas.
@@ -1470,7 +1470,7 @@ Laporkan hanya: file yang diubah dan hasil test.
 ```text
 Kerjakan PK-9 Layar admin kunjungan lokasi.
 Acuan: docs/adjustment/5-pengerjaan/peta-kode-oki.md bagian PK-9 (Seharusnya, File yang diubah, Test, UAT).
-Buka hanya file ini: src/app/project/controllers/project.controller.ts, src/app/project/services/site-attendance.service.ts, routes/_authed/hr/site-visits/index.tsx, components/hr/site-visit-list.tsx, lib/project-api.ts, components/sidebar/nav-config.ts, packages/locales/src/{en,id}/hr.ts, docs/role-permission.md.
+Buka hanya file ini: src/app/project/controllers/project.controller.ts, src/app/project/services/site-attendance.service.ts, routes/_authed/hr/site-visits/index.tsx, components/hr/site-visit-list.tsx, lib/project-api.ts, components/sidebar/nav-config.ts, packages/locales/src/{en,id}/hr.ts, docs/architecture/role-permission.md.
 Jangan menjelajah folder lain, jangan refactor di luar tugas. Ikuti AGENTS.md dan 5-pengerjaan/README.md.
 Bila skema berubah: edit docs/database/docs.dbml dulu, lalu validate-dbml harus OK.
 Tambahkan data seeder untuk fitur ini (A-10) dan teks bantuan menu/tabel/form (RF-28–RF-34, A-11).
