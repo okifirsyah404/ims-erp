@@ -91,6 +91,6 @@ Sesuai `AGENTS.md` (Definition of done):
 
 Langkah 8 dimulai dari halaman **Tinggi** di
 [`peta-halaman.md`](peta-halaman.md). Yang harus didahulukan di awal
-langkah 8: **M12-14** (ubah role dari halaman Pengguna) **sebelum M12-2**
-(K12 tahap 1 menyembunyikan halaman Organisasi), dan rancangan **B-38**
+langkah 8: **M12-2** (K12: hapus organisasi total dalam satu PR, diubah
+28/11) **sebelum M12-14** (ubah role dari halaman Pengguna), dan rancangan **B-38**
 (portal pesanan) dibahas lebih dulu karena paling besar.

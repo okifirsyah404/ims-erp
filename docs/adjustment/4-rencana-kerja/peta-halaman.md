@@ -70,7 +70,7 @@ Sedang/Rendah = langkah 9 dan sesudahnya (lihat README).
 | Halaman | Perbaikan | Keputusan | Prioritas | Oleh |
 |---|---|---|---|---|
 | Masuk (web-admin dan portal karyawan) | Tombol Google dihapus; pesan akun nonaktif dibedakan | K13, OA14 | Tinggi | O |
-| Organisasi | Disembunyikan | K12 tahap 1 | Tinggi | O |
+| Organisasi | Dihapus (halaman, menu, pemilih, data) | K12 (sekaligus, diubah 28/11) | Tinggi | O |
 | Pengguna / Undang | Hanya Pemilik mengundang; isian organisasi dihapus; dialog konfirmasi | OA12, K12, OA13 | Tinggi | O |
 | Nomor Dokumen | Pratinjau dengan kode pemasok asli; nomor tanpa celah | K6, T-1 | Tinggi | B |
 | Pengaturan Gaji | PPh 21 dimatikan | OC8 | Sedang | O/D |

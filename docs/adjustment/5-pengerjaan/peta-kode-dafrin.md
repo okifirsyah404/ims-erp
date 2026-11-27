@@ -82,6 +82,12 @@ yang menunggu Oki, Aqim, atau Bella ditulis dengan nama orangnya.
 | 29 | [B-46](#b-46-n8n-dan-whatsapp-dijalankan-sungguhan-tinggi-n8-1n8-10) | n8n dan WhatsApp sungguhan | Tinggi | P7-3, B-38, B-44; Oki: X-14; Aqim: nomor WA, penyedia AI |
 | 30 | [B-14](#b-14-masa-perpanjangan-lisensi-dan-kode-aplikasi-sedang-t-2-t-3) | Perpanjangan lisensi + kode aplikasi | **Sedang** (diminta masuk peta) | — (Sedang, langkah 9) |
 
+**Catatan K12 (Oki, M12-2, diubah 28/11):** organisasi dihapus total dalam
+satu PR besar yang juga membuang `organization_id` dari schema modul Dafrin.
+Saat Oki mengumumkan PR itu dimulai, tahan tugas yang menyentuh
+schema/repository atau rebase sesudahnya. Dafrin meninjau bagian modulnya.
+Tugas baru jangan menambah pemakaian `organizationId`.
+
 
 
 **Tidak dipetakan di sini (bukan pekerjaan Dafrin):** L-1 (= P7-1), P7-2,

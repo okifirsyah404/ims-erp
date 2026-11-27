@@ -2328,3 +2328,47 @@ Aturan ini juga ditulis di langkah 1 `5-pengerjaan/README.md`.
 
 Di peta kode Oki ada delapan entri yang sama dengan tugas lain (misalnya
 M12-1 = P7-1). Entri itu tidak diberi nomor sendiri.
+
+## 2026-11-28 — K12 diubah: organisasi dihapus total sekaligus
+
+Programmer B meninjau peta kode Oki dan menemukan masalah: hanya tahap 1
+(menyembunyikan organisasi) yang dipetakan. Tahap 2 berprioritas Sedang dan
+tahap 3 tidak punya tugas, sehingga organisasi tidak pernah benar-benar
+terhapus.
+
+**Keputusan baru programmer B:** K12 diubah dari (b) bertahap menjadi
+**(a) hapus sekaligus dalam satu PR (M12-2)**. Isinya:
+
+- role pindah ke tingkat pengguna;
+- plugin organisasi Better Auth dilepas;
+- `organization_id` dan header `x-organization-id` dibuang dari semua modul;
+- halaman Organisasi dihapus;
+- ADR baru.
+
+OA2 ikut berubah: kolom dihapus di PR yang sama. **Perubahan ini perlu
+diberitahukan ke Pemilik**, karena opsi (b) sudah disetujui pada 27/11.
+
+Perubahan di peta kode:
+
+| Tugas | Perubahan |
+|---|---|
+| M12-2 | Ditulis ulang (lingkup, cara kerja satu PR, UAT); nomor urut 5, sebelum M12-14 |
+| M12-14 | Sekarang nomor 6, bergantung pada M12-2 |
+| M12-3 | Digabung ke M12-2 |
+| M12-7, M12-13 | Gugur |
+| Peta kode Dafrin | Diberi catatan: tahan atau rebase tugas yang menyentuh schema selama PR K12 terbuka |
+
+Dokumen yang diselaraskan:
+
+- lembar keputusan rapat;
+- ringkasan untuk Pemilik;
+- bahan keputusan Oki;
+- rencana perubahan dan rencana perubahan modul Oki;
+- rencana langkah 7;
+- peta halaman;
+- menu dan form per role;
+- diagram sekarang vs sesudah;
+- skema `auth` dan `warehouse`;
+- kekurangan fitur.
+
+Catatan lama dan berkas validasi tidak diubah.
